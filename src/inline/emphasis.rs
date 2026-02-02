@@ -156,29 +156,21 @@ impl EmphasisResolver {
     fn find_opener(&mut self, marks: &[Mark], closer_idx: usize) -> Option<(usize, u32)> {
         let closer = &marks[closer_idx];
         let closer_len = closer.len();
+        let closer_can_open = closer.can_open();
 
-        // CommonMark "rule of three": if opener + closer lengths are multiples of 3,
-        // they can only match if both are multiples of 3.
-        // By using modulo-3 stacks, we only need to search compatible stacks.
+        // CommonMark "rule of three": only applies when one of the delimiters
+        // can BOTH open AND close. If neither can both open and close,
+        // we can ignore the rule of three entirely.
 
         let base_idx = if closer.ch == b'_' { 3 } else { 0 };
 
-        // Calculate which stack(s) to search based on the rule of three
+        // Calculate closer's modulo-3 class (only needed if rule of three applies)
         let closer_mod = closer_len as usize % 3;
 
         // Find the most recent (highest order) opener across compatible stacks
         let mut best_opener: Option<(usize, OpenerEntry, u32)> = None; // (stack_idx, entry, match_count)
 
         for opener_mod in 0..3 {
-            // Check rule of three compatibility
-            // If (opener_len + closer_len) % 3 == 0, both must be multiples of 3
-            // This is satisfied when opener_mod == closer_mod == 0, or when they sum to 3
-            let sum_mod = (opener_mod + closer_mod) % 3;
-            if sum_mod == 0 && (opener_mod != 0 || closer_mod != 0) {
-                // Would violate rule of three
-                continue;
-            }
-
             let stack_idx = base_idx + opener_mod;
             if let Some(&entry) = self.stacks[stack_idx].last() {
                 let opener = &marks[entry.mark_idx];
@@ -186,6 +178,19 @@ impl EmphasisResolver {
                 // Must be same character
                 if opener.ch != closer.ch {
                     continue;
+                }
+
+                // Check rule of three: only applies if opener or closer can both open AND close
+                let opener_can_close = opener.can_close();
+                let rule_of_three_applies = closer_can_open || opener_can_close;
+
+                if rule_of_three_applies {
+                    // If (opener_len + closer_len) % 3 == 0, both must be multiples of 3
+                    let sum_mod = (opener_mod + closer_mod) % 3;
+                    if sum_mod == 0 && (opener_mod != 0 || closer_mod != 0) {
+                        // Would violate rule of three
+                        continue;
+                    }
                 }
 
                 // Check if this is more recent than current best
