@@ -278,12 +278,44 @@ Notes:
 - Keep `#[inline]` on tiny accessors.
 - Avoid bounds checks in inner loops (guard at loop entry).
 
-### 4.3 Ranges
-Text is represented as:
+### 4.3 Ranges (Cache-Optimized)
+
+Text is represented as ranges into the input buffer. Use `u32` for documents up to 4GB:
 
 ```rust
-#[derive(Clone, Copy)]
-struct Range { start: usize, end: usize }
+/// Compact range representation (8 bytes vs 16 for usize pair)
+/// Fits 8 ranges per 64-byte L1 cache line
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(C)]
+struct Range {
+    start: u32,
+    end: u32,
+}
+
+impl Range {
+    #[inline]
+    const fn new(start: u32, end: u32) -> Self {
+        Self { start, end }
+    }
+
+    #[inline]
+    fn slice<'a>(&self, input: &'a [u8]) -> &'a [u8] {
+        &input[self.start as usize..self.end as usize]
+    }
+
+    #[inline]
+    const fn len(&self) -> u32 {
+        self.end - self.start
+    }
+
+    #[inline]
+    const fn is_empty(&self) -> bool {
+        self.start == self.end
+    }
+}
+
+// Compile-time size check (pulldown-cmark pattern)
+const _: () = assert!(std::mem::size_of::<Range>() == 8);
 ```
 
 No `String` allocation. Only ranges.
@@ -342,6 +374,47 @@ enum InlineEvent {
 
 ### 4.5 No Trait Objects / Dynamic Dispatch
 Events should be plain enums, processed via `match`. Avoid virtual calls.
+
+### 4.6 Cache-Aligned Hot Structures
+
+For structures accessed in tight loops, ensure cache-friendly layout:
+
+```rust
+/// Mark entry for inline parsing (12 bytes)
+/// Fits 5 marks per 64-byte L1 cache line
+#[derive(Clone, Copy)]
+#[repr(C)]
+struct Mark {
+    pos: u32,           // 4 bytes: start offset
+    end: u32,           // 4 bytes: end offset
+    prev: i16,          // 2 bytes: link to paired mark or opener chain (-1 = none)
+    ch: u8,             // 1 byte: delimiter character
+    flags: u8,          // 1 byte: OPENER | CLOSER | RESOLVED
+}
+
+const _: () = assert!(std::mem::size_of::<Mark>() == 12);
+
+/// Parser hot state (fits in 64-byte L1 cache line)
+#[repr(C, align(64))]
+struct ParserHotState {
+    pos: u32,           // Current position
+    line_start: u32,    // Start of current line
+    indent: u8,         // Current line indentation
+    flags: u8,          // Parser state flags
+    block_depth: u8,    // Current container nesting
+    inline_depth: u8,   // Current inline nesting
+    _pad: [u8; 24],     // Padding to 64 bytes
+    // Frequently accessed together ↑
+}
+
+const _: () = assert!(std::mem::size_of::<ParserHotState>() == 64);
+```
+
+**Alignment guidelines** (see [Appendix D](#appendix-d-apple-silicon-optimization-guide)):
+- L1 cache line: 64 bytes (all Apple Silicon)
+- L2 cache line: 128 bytes (M1-M4)
+- Align hot structs to 64 bytes to avoid false sharing
+- Keep related fields adjacent for spatial locality
 
 ---
 
