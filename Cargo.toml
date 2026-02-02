@@ -24,6 +24,11 @@ proptest = "1.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+# Competitor libraries for benchmarking
+pulldown-cmark = "0.13"
+comrak = "0.50"
+markdown = "1.0"
+
 [features]
 default = ["std"]
 std = []
@@ -32,6 +37,10 @@ trace = []
 
 [[bench]]
 name = "parsing"
+harness = false
+
+[[bench]]
+name = "comparison"
 harness = false
 
 [profile.release]
