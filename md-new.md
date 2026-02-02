@@ -829,20 +829,86 @@ Every stage must be O(n).
 - no regex
 - no unbounded nested parsing
 
-### 10.2 Caps / Limits
-Enforce:
-- max list nesting: 32
-- max inline nesting: 32
-- max bracket depth: 8
-- max delimiter stack: 64
-- max line length to consider for certain features (optional)
+### 10.2 Caps / Limits (Learned from md4c and pulldown-cmark)
 
-### 10.3 Fallback Behavior
+```rust
+/// Compile-time constants for DoS prevention
+pub mod limits {
+    /// Maximum nesting depth for block containers (lists, blockquotes)
+    pub const MAX_BLOCK_NESTING: usize = 32;
+
+    /// Maximum nesting depth for inline elements (emphasis, links)
+    pub const MAX_INLINE_NESTING: usize = 32;
+
+    /// Maximum bracket depth in link parsing [[[...]]]
+    pub const MAX_BRACKET_DEPTH: usize = 8;
+
+    /// Maximum delimiter stack size per type
+    pub const MAX_DELIMITER_STACK: usize = 64;
+
+    /// Maximum backtick run length for code spans (prevents O(n²) matching)
+    /// md4c uses 32; longer runs are treated as literal text
+    pub const MAX_CODE_SPAN_BACKTICKS: usize = 32;
+
+    /// Maximum parentheses nesting in link destinations (CommonMark spec: 32)
+    pub const MAX_LINK_PAREN_DEPTH: usize = 32;
+
+    /// Maximum digits in ordered list marker (prevents big-integer parsing)
+    pub const MAX_LIST_MARKER_DIGITS: usize = 9;
+
+    /// Link reference expansion limit (prevents recursive expansion DoS)
+    /// pulldown-cmark: min(text_len, 100KB) total expansions
+    pub const MAX_LINK_REF_EXPANSIONS: usize = 100 * 1024;
+
+    /// Maximum table columns (if tables are implemented)
+    /// md4c uses 128 to prevent output explosion
+    pub const MAX_TABLE_COLUMNS: usize = 128;
+
+    /// Maximum math brace nesting (if math is implemented)
+    pub const MAX_MATH_BRACE_DEPTH: usize = 25;
+}
+```
+
+### 10.3 Quadratic Complexity Prevention
+
+**Problem patterns** (from md4c analysis):
+
+| Pattern | Naive Complexity | Solution |
+|---------|-----------------|----------|
+| Many different-length backtick openers | O(n²) | Limit `MAX_CODE_SPAN_BACKTICKS` |
+| Deeply nested link brackets | O(n²) | Limit `MAX_BRACKET_DEPTH` |
+| Recursive link reference expansion | O(n²) | Track expansion count |
+| Many potential emphasis openers | O(n²) | Modulo-3 stacks + limits |
+| Huge tables with many columns | O(n × cols) | Limit `MAX_TABLE_COLUMNS` |
+
+**Implementation strategy**:
+
+```rust
+struct InlineState {
+    bracket_depth: u8,
+    emphasis_depth: u8,
+    code_span_backtick_counts: [u8; MAX_CODE_SPAN_BACKTICKS + 1],
+    link_ref_expansion_count: usize,
+}
+
+impl InlineState {
+    fn can_open_bracket(&self) -> bool {
+        self.bracket_depth < limits::MAX_BRACKET_DEPTH as u8
+    }
+
+    fn can_expand_link_ref(&self, expansion_size: usize) -> bool {
+        self.link_ref_expansion_count + expansion_size <= limits::MAX_LINK_REF_EXPANSIONS
+    }
+}
+```
+
+### 10.4 Fallback Behavior
 If caps are exceeded:
-- stop interpreting further markers
-- treat remaining content as text
+- stop interpreting further markers of that type
+- treat remaining content as literal text
+- continue parsing other element types normally
 
-This avoids time blowups while still producing output.
+This avoids time blowups while still producing valid output.
 
 ---
 
