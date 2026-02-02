@@ -400,8 +400,10 @@ fn render_inline_event(
                 if *is_email {
                     writer.write_str("mailto:");
                 }
-                writer.write_escaped_attr(url.slice(text));
+                // URL-encode special chars then HTML-escape
+                writer.write_url_encoded(url.slice(text));
                 writer.write_str("\">");
+                // Display text is shown as-is (with HTML escaping)
                 writer.write_escaped_text(url.slice(text));
                 writer.write_str("</a>");
             }

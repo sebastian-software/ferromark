@@ -50,15 +50,31 @@ impl InlineParser {
         // First: code spans (highest precedence)
         resolve_code_spans(self.mark_buffer.marks_mut(), text);
 
-        // Second: autolinks
-        let autolinks = find_autolinks(text);
+        // Get code span ranges for filtering
+        let code_spans: Vec<_> = extract_code_spans(self.mark_buffer.marks()).collect();
+
+        // Second: autolinks (filter out those inside code spans)
+        let autolinks: Vec<_> = find_autolinks(text)
+            .into_iter()
+            .filter(|al| {
+                // Autolink should not start inside a code span
+                !code_spans.iter().any(|cs| {
+                    al.start >= cs.opener_pos && al.start < cs.closer_end
+                })
+            })
+            .collect();
 
         // Third: links and images
         let (open_brackets, close_brackets) = self.collect_brackets();
         let resolved_links = resolve_links(text, &open_brackets, &close_brackets);
 
         // Fourth: emphasis (lowest precedence)
-        let emphasis_matches = resolve_emphasis(self.mark_buffer.marks_mut());
+        // Pass link boundaries so emphasis can't cross them
+        let link_boundaries: Vec<(u32, u32)> = resolved_links
+            .iter()
+            .map(|l| (l.start, l.text_end))
+            .collect();
+        let emphasis_matches = resolve_emphasis(self.mark_buffer.marks_mut(), &link_boundaries);
 
         // Phase 3: Emit events
         self.emit_events(text, &emphasis_matches, &resolved_links, &autolinks, events);
@@ -108,8 +124,16 @@ impl InlineParser {
         // Build sorted list of events to emit
         let mut emit_points: Vec<EmitPoint> = Vec::new();
 
-        // Add code span events
+        // Add code span events (filter out spans whose opener is inside an autolink)
         for span in extract_code_spans(marks) {
+            // Skip code spans whose opener starts inside an autolink
+            let inside_autolink = autolinks.iter().any(|al| {
+                span.opener_pos >= al.start && span.opener_pos < al.end
+            });
+            if inside_autolink {
+                continue;
+            }
+
             emit_points.push(EmitPoint {
                 pos: span.opener_pos,
                 kind: EmitKind::CodeSpanStart,
@@ -236,17 +260,22 @@ impl InlineParser {
                 in_url || in_title
             });
 
+            // Check if mark is inside an autolink
+            let in_autolink = autolinks.iter().any(|al| {
+                mark.pos >= al.start && mark.pos < al.end
+            });
+
             if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
                 let escaped_char = text[(mark.pos + 1) as usize];
-                if escaped_char == b'\n' && !in_code {
-                    // Backslash before newline is a hard break (but not in code)
+                if escaped_char == b'\n' && !in_code && !in_autolink {
+                    // Backslash before newline is a hard break (but not in code or autolinks)
                     emit_points.push(EmitPoint {
                         pos: mark.pos,
                         kind: EmitKind::HardBreak,
                         end: mark.end,
                     });
-                } else if !in_code && !in_link_dest {
-                    // Skip escapes inside link URLs/titles (they're processed by renderer)
+                } else if !in_code && !in_link_dest && !in_autolink {
+                    // Skip escapes inside link URLs/titles and autolinks (they're processed by renderer)
                     emit_points.push(EmitPoint {
                         pos: mark.pos,
                         kind: EmitKind::Escape(escaped_char),

@@ -273,10 +273,11 @@ fn try_parse_autolink(text: &[u8], start: usize) -> Option<Autolink> {
     }
 }
 
-/// Check if content is a valid URI autolink (scheme://...).
+/// Check if content is a valid URI autolink.
+/// Per CommonMark: scheme followed by : and non-empty path
+/// Scheme: 2-32 chars, starting with letter, followed by letters/digits/+/-/.
 fn is_uri_autolink(content: &[u8]) -> bool {
-    // Must have a scheme followed by ://
-    // Scheme: [a-zA-Z][a-zA-Z0-9+.-]{0,31}
+    // Minimum: "ab:x" (4 chars - 2-char scheme + colon + 1 char)
     if content.len() < 4 {
         return false;
     }
@@ -289,8 +290,8 @@ fn is_uri_autolink(content: &[u8]) -> bool {
     }
     pos += 1;
 
-    // Following chars: letters, digits, +, -, .
-    while pos < content.len() && pos < 33 {
+    // Following chars: letters, digits, +, -, . (up to 32 total for scheme)
+    while pos < content.len() && pos < 32 {
         let b = content[pos];
         if b == b':' {
             break;
@@ -301,16 +302,13 @@ fn is_uri_autolink(content: &[u8]) -> bool {
         pos += 1;
     }
 
-    // Check for ://
-    if pos + 2 >= content.len() {
-        return false;
-    }
-    if &content[pos..pos + 3] != b"://" {
+    // Must have found a colon, and scheme must be at least 2 chars
+    if pos < 2 || pos >= content.len() || content[pos] != b':' {
         return false;
     }
 
-    // Must have something after ://
-    pos + 3 < content.len()
+    // Must have something after the colon
+    pos + 1 < content.len()
 }
 
 /// Check if content is a valid email autolink.

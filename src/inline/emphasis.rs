@@ -22,9 +22,11 @@ pub struct EmphasisMatch {
 
 /// Resolve emphasis marks using modulo-3 stacks.
 /// Returns a list of matched pairs.
-pub fn resolve_emphasis(marks: &mut [Mark]) -> Vec<EmphasisMatch> {
+/// `link_boundaries` contains (start, text_end) pairs for each resolved link.
+/// Emphasis delimiters cannot match if they cross a link boundary.
+pub fn resolve_emphasis(marks: &mut [Mark], link_boundaries: &[(u32, u32)]) -> Vec<EmphasisMatch> {
     let mut matches = Vec::new();
-    let mut resolver = EmphasisResolver::new();
+    let mut resolver = EmphasisResolver::new(link_boundaries);
 
     // Process marks left to right
     for i in 0..marks.len() {
@@ -67,6 +69,10 @@ pub fn resolve_emphasis(marks: &mut [Mark]) -> Vec<EmphasisMatch> {
                         closer_end: closer_delim_end,
                         count: match_count,
                     });
+
+                    // CommonMark: Remove all openers between opener and closer
+                    // They can no longer form valid matches since we've closed past them
+                    resolver.remove_openers_between(marks, opener_idx, i);
 
                     // Consume characters from both marks
                     let opener = &mut marks[opener_idx];
@@ -119,19 +125,33 @@ struct OpenerEntry {
 }
 
 /// Emphasis resolver with 6 stacks (2 chars x 3 modulo classes).
-struct EmphasisResolver {
+struct EmphasisResolver<'a> {
     /// Stacks indexed by: (is_underscore ? 3 : 0) + (run_length % 3)
     stacks: [Vec<OpenerEntry>; 6],
     /// Global order counter.
     order: usize,
+    /// Link boundaries (start, text_end) - emphasis can't cross these.
+    link_boundaries: &'a [(u32, u32)],
 }
 
-impl EmphasisResolver {
-    fn new() -> Self {
+impl<'a> EmphasisResolver<'a> {
+    fn new(link_boundaries: &'a [(u32, u32)]) -> Self {
         Self {
             stacks: Default::default(),
             order: 0,
+            link_boundaries,
         }
+    }
+
+    /// Find which link boundary (if any) a position is inside.
+    /// Returns Some(index) if inside a link, None if outside all links.
+    fn link_boundary_for(&self, pos: u32) -> Option<usize> {
+        for (i, &(start, end)) in self.link_boundaries.iter().enumerate() {
+            if pos >= start && pos < end {
+                return Some(i);
+            }
+        }
+        None
     }
 
     /// Get stack index for a mark.
@@ -158,6 +178,9 @@ impl EmphasisResolver {
         let closer_len = closer.len();
         let closer_can_open = closer.can_open();
 
+        // Determine which link boundary the closer is in (if any)
+        let closer_link = self.link_boundary_for(closer.pos);
+
         // CommonMark "rule of three": only applies when one of the delimiters
         // can BOTH open AND close. If neither can both open and close,
         // we can ignore the rule of three entirely.
@@ -177,6 +200,12 @@ impl EmphasisResolver {
 
                 // Must be same character
                 if opener.ch != closer.ch {
+                    continue;
+                }
+
+                // Opener and closer must be in the same link boundary (or both outside)
+                let opener_link = self.link_boundary_for(opener.pos);
+                if opener_link != closer_link {
                     continue;
                 }
 
@@ -218,6 +247,18 @@ impl EmphasisResolver {
             None
         }
     }
+
+    /// Remove all openers with mark indices between opener_idx and closer_idx.
+    /// Per CommonMark spec: delimiters between an opener and closer can no longer
+    /// form valid matches once we've closed past them.
+    fn remove_openers_between(&mut self, _marks: &[Mark], opener_idx: usize, closer_idx: usize) {
+        for stack in &mut self.stacks {
+            stack.retain(|entry| {
+                // Keep if the mark index is not between opener and closer
+                entry.mark_idx <= opener_idx || entry.mark_idx >= closer_idx
+            });
+        }
+    }
 }
 
 #[cfg(test)]
@@ -230,7 +271,7 @@ mod tests {
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
         resolve_code_spans(buffer.marks_mut(), text);
-        resolve_emphasis(buffer.marks_mut())
+        resolve_emphasis(buffer.marks_mut(), &[])  // No link boundaries in basic tests
     }
 
     #[test]

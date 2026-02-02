@@ -133,6 +133,13 @@ impl HtmlWriter {
         }
     }
 
+    /// Write autolink URL with percent-encoding and HTML escaping.
+    /// Used for autolink hrefs per CommonMark spec.
+    #[inline]
+    pub fn write_url_encoded(&mut self, url: &[u8]) {
+        escape::url_encode_then_html_escape(&mut self.out, url);
+    }
+
     /// Write a newline.
     #[inline]
     pub fn newline(&mut self) {
@@ -264,12 +271,14 @@ impl HtmlWriter {
     }
 
     /// Write code block start with optional language class.
+    /// Processes backslash escapes in the language string.
     #[inline]
     pub fn code_block_start(&mut self, lang: Option<&[u8]>) {
         match lang {
             Some(l) if !l.is_empty() => {
                 self.write_str("<pre><code class=\"language-");
-                self.write_escaped_attr(l);
+                // Process backslash escapes in info string
+                self.write_escaped_link_attr(l);
                 self.write_str("\">");
             }
             _ => {

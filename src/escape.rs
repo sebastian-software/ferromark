@@ -4,6 +4,7 @@
 //! then bulk-copies segments between escapes.
 
 
+
 /// Characters that need escaping in HTML text content.
 #[allow(dead_code)]
 const TEXT_ESCAPE_CHARS: &[u8] = b"<>&";
@@ -171,6 +172,46 @@ pub fn escape_text_to_string(input: &str) -> String {
     // SAFETY: We only add ASCII sequences, so if input was valid UTF-8,
     // output is also valid UTF-8
     unsafe { String::from_utf8_unchecked(escaped) }
+}
+
+/// URL percent-encode special characters, then HTML-escape for href attribute.
+/// This is specifically for autolink URLs per CommonMark spec.
+///
+/// Characters that need percent-encoding in URLs:
+/// - Backslash `\` → `%5C`
+/// - `[` → `%5B`
+/// - `]` → `%5D`
+/// - Backtick → `%60`
+/// - Control characters
+/// - Non-ASCII characters
+#[inline]
+pub fn url_encode_then_html_escape(out: &mut Vec<u8>, input: &[u8]) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+
+    for &b in input {
+        match b {
+            // Characters that need URL percent-encoding
+            b'\\' => out.extend_from_slice(b"%5C"),
+            b'[' => out.extend_from_slice(b"%5B"),
+            b']' => out.extend_from_slice(b"%5D"),
+            b'`' => out.extend_from_slice(b"%60"),
+            b' ' => out.extend_from_slice(b"%20"),
+            // Characters that need HTML escaping
+            b'<' => out.extend_from_slice(b"&lt;"),
+            b'>' => out.extend_from_slice(b"&gt;"),
+            b'&' => out.extend_from_slice(b"&amp;"),
+            b'"' => out.extend_from_slice(b"&quot;"),
+            b'\'' => out.extend_from_slice(b"&#39;"),
+            // Control characters (0x00-0x1F except tab, LF, CR) and non-ASCII
+            0x00..=0x08 | 0x0B | 0x0C | 0x0E..=0x1F | 0x80..=0xFF => {
+                out.push(b'%');
+                out.push(HEX[(b >> 4) as usize]);
+                out.push(HEX[(b & 0xF) as usize]);
+            }
+            // Everything else passes through
+            _ => out.push(b),
+        }
+    }
 }
 
 #[cfg(test)]
