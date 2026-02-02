@@ -201,3 +201,55 @@ fn spec_hard_line_breaks() {
     }
     eprintln!("\nHard line breaks: {}/{} passed", passed, passed + failed);
 }
+
+#[test]
+fn spec_images() {
+    let (passed, failed, failures) = run_section_tests("Images");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(5)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nImages: {}/{} passed", passed, passed + failed);
+}
+
+#[test]
+fn spec_links() {
+    let (passed, failed, failures) = run_section_tests("Links");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(5)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nLinks: {}/{} passed", passed, passed + failed);
+}
+
+#[test]
+fn spec_code_spans() {
+    let (passed, failed, failures) = run_section_tests("Code spans");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(5)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nCode spans: {}/{} passed", passed, passed + failed);
+}
+
+#[test]
+fn spec_backslash_escapes() {
+    let (passed, failed, failures) = run_section_tests("Backslash escapes");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(5)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nBackslash escapes: {}/{} passed", passed, passed + failed);
+}

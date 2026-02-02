@@ -7,7 +7,11 @@ use super::marks::{flags, Mark};
 
 /// Resolve code spans in mark buffer.
 /// Marks matching backtick openers with their closers.
-pub fn resolve_code_spans(marks: &mut [Mark]) {
+///
+/// Handles backslash escape rules:
+/// - A backtick preceded by backslash OUTSIDE the code span is escaped (not a delimiter)
+/// - A backslash INSIDE the code span is literal (doesn't escape the closer)
+pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8]) {
     let len = marks.len();
 
     for i in 0..len {
@@ -15,7 +19,19 @@ pub fn resolve_code_spans(marks: &mut [Mark]) {
             continue;
         }
 
+        // Check if this opener is preceded by a backslash (would be escaped)
+        let opener_pos = marks[i].pos as usize;
+        if opener_pos > 0 && text[opener_pos - 1] == b'\\' {
+            // Check if that backslash is itself escaped (\\`)
+            let backslash_escaped = opener_pos > 1 && text[opener_pos - 2] == b'\\';
+            if !backslash_escaped {
+                // This backtick is escaped, not a valid opener
+                continue;
+            }
+        }
+
         let opener_len = marks[i].len();
+        let opener_end = marks[i].end as usize;
 
         // Look for matching closer with same backtick count
         for j in (i + 1)..len {
@@ -24,6 +40,27 @@ pub fn resolve_code_spans(marks: &mut [Mark]) {
             }
 
             if marks[j].len() == opener_len {
+                let closer_pos = marks[j].pos as usize;
+
+                // Check if closer is preceded by backslash
+                if closer_pos > 0 && text[closer_pos - 1] == b'\\' {
+                    // Is this backslash inside the code span content?
+                    // Content is from opener_end to closer_pos
+                    let backslash_pos = closer_pos - 1;
+                    if backslash_pos >= opener_end {
+                        // Backslash is inside the code span, so it's literal
+                        // This is a valid closer
+                    } else {
+                        // Backslash is outside (before content), so it escapes the closer
+                        // Check if the backslash itself is escaped
+                        let backslash_escaped = backslash_pos > 0 && text[backslash_pos - 1] == b'\\';
+                        if !backslash_escaped {
+                            // This closer is escaped, skip it
+                            continue;
+                        }
+                    }
+                }
+
                 // Found matching closer
                 marks[i].resolve();
                 marks[j].resolve();
@@ -96,9 +133,10 @@ mod tests {
 
     #[test]
     fn test_simple_code_span() {
+        let text = b"hello `code` world";
         let mut buffer = MarkBuffer::new();
-        collect_marks(b"hello `code` world", &mut buffer);
-        resolve_code_spans(buffer.marks_mut());
+        collect_marks(text, &mut buffer);
+        resolve_code_spans(buffer.marks_mut(), text);
 
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
         assert_eq!(spans.len(), 1);
@@ -107,9 +145,10 @@ mod tests {
 
     #[test]
     fn test_double_backtick() {
+        let text = b"``code with ` backtick``";
         let mut buffer = MarkBuffer::new();
-        collect_marks(b"``code with ` backtick``", &mut buffer);
-        resolve_code_spans(buffer.marks_mut());
+        collect_marks(text, &mut buffer);
+        resolve_code_spans(buffer.marks_mut(), text);
 
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
         assert_eq!(spans.len(), 1);
@@ -117,9 +156,10 @@ mod tests {
 
     #[test]
     fn test_unmatched_backticks() {
+        let text = b"hello `code`` world";
         let mut buffer = MarkBuffer::new();
-        collect_marks(b"hello `code`` world", &mut buffer);
-        resolve_code_spans(buffer.marks_mut());
+        collect_marks(text, &mut buffer);
+        resolve_code_spans(buffer.marks_mut(), text);
 
         // Single backtick can't match double backtick
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
@@ -128,9 +168,10 @@ mod tests {
 
     #[test]
     fn test_multiple_code_spans() {
+        let text = b"`a` and `b`";
         let mut buffer = MarkBuffer::new();
-        collect_marks(b"`a` and `b`", &mut buffer);
-        resolve_code_spans(buffer.marks_mut());
+        collect_marks(text, &mut buffer);
+        resolve_code_spans(buffer.marks_mut(), text);
 
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
         assert_eq!(spans.len(), 2);
@@ -138,9 +179,10 @@ mod tests {
 
     #[test]
     fn test_emphasis_inside_code() {
+        let text = b"`*not emphasis*`";
         let mut buffer = MarkBuffer::new();
-        collect_marks(b"`*not emphasis*`", &mut buffer);
-        resolve_code_spans(buffer.marks_mut());
+        collect_marks(text, &mut buffer);
+        resolve_code_spans(buffer.marks_mut(), text);
 
         // Asterisks inside code should be marked as IN_CODE
         for mark in buffer.marks() {
@@ -148,5 +190,33 @@ mod tests {
                 assert!(mark.flags & flags::IN_CODE != 0);
             }
         }
+    }
+
+    #[test]
+    fn test_backslash_inside_code_span() {
+        // `foo\`bar` - backslash is inside code span, so backtick at pos 5 is valid closer
+        let text = b"`foo\\`bar`";
+        let mut buffer = MarkBuffer::new();
+        collect_marks(text, &mut buffer);
+        resolve_code_spans(buffer.marks_mut(), text);
+
+        let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
+        assert_eq!(spans.len(), 1);
+        // Code span should be `foo\` (positions 0-5)
+        assert_eq!(spans[0].opener_pos, 0);
+        assert_eq!(spans[0].closer_pos, 5);
+    }
+
+    #[test]
+    fn test_escaped_backtick_not_opener() {
+        // \`not code` - backtick at pos 1 is escaped, not a valid opener
+        let text = b"\\`not code`";
+        let mut buffer = MarkBuffer::new();
+        collect_marks(text, &mut buffer);
+        resolve_code_spans(buffer.marks_mut(), text);
+
+        let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
+        // No code spans should be found
+        assert_eq!(spans.len(), 0);
     }
 }

@@ -245,12 +245,16 @@ fn render_block_event(
     }
 }
 
-/// State for tracking image title during rendering.
+/// State for tracking image rendering.
 /// Since we need to render: <img src="..." alt="ALT_TEXT_HERE" title="..." />
 /// But alt text comes as Text events between ImageStart and ImageEnd,
-/// we need to track the title to render it at ImageEnd.
+/// we need to track:
+/// 1. The title to render at ImageEnd
+/// 2. The nesting depth (to handle nested images like ![foo ![bar](url1)](url2))
 struct ImageState {
     title: Option<Range>,
+    /// Nesting depth: 1 = in outermost image, 2+ = in nested image
+    depth: u32,
 }
 
 /// Render a single inline event to HTML.
@@ -260,98 +264,172 @@ fn render_inline_event(
     writer: &mut HtmlWriter,
     image_state: &mut Option<ImageState>,
 ) {
+    // Check if we're inside an image (for alt text rendering)
+    let in_image = image_state.as_ref().map_or(false, |s| s.depth > 0);
+
     match event {
         InlineEvent::Text(range) => {
-            writer.write_escaped_text(range.slice(text));
+            // In image alt text, we still write the text (escaped for attributes)
+            if in_image {
+                writer.write_escaped_attr(range.slice(text));
+            } else {
+                writer.write_escaped_text(range.slice(text));
+            }
         }
         InlineEvent::Code(range) => {
-            writer.write_str("<code>");
-            // CommonMark: line endings in code spans are converted to spaces
-            let code_content = range.slice(text);
-            for &b in code_content {
-                if b == b'\n' {
-                    writer.write_str(" ");
-                } else if b == b'<' {
-                    writer.write_str("&lt;");
-                } else if b == b'>' {
-                    writer.write_str("&gt;");
-                } else if b == b'&' {
-                    writer.write_str("&amp;");
-                } else if b == b'"' {
-                    writer.write_str("&quot;");
-                } else {
-                    writer.buffer_mut().push(b);
+            // In image alt text, just write the code content as plain text
+            if in_image {
+                let code_content = range.slice(text);
+                for &b in code_content {
+                    if b == b'\n' {
+                        writer.write_str(" ");
+                    } else if b == b'<' {
+                        writer.write_str("&lt;");
+                    } else if b == b'>' {
+                        writer.write_str("&gt;");
+                    } else if b == b'&' {
+                        writer.write_str("&amp;");
+                    } else if b == b'"' {
+                        writer.write_str("&quot;");
+                    } else {
+                        writer.buffer_mut().push(b);
+                    }
                 }
+            } else {
+                writer.write_str("<code>");
+                // CommonMark: line endings in code spans are converted to spaces
+                let code_content = range.slice(text);
+                for &b in code_content {
+                    if b == b'\n' {
+                        writer.write_str(" ");
+                    } else if b == b'<' {
+                        writer.write_str("&lt;");
+                    } else if b == b'>' {
+                        writer.write_str("&gt;");
+                    } else if b == b'&' {
+                        writer.write_str("&amp;");
+                    } else if b == b'"' {
+                        writer.write_str("&quot;");
+                    } else {
+                        writer.buffer_mut().push(b);
+                    }
+                }
+                writer.write_str("</code>");
             }
-            writer.write_str("</code>");
         }
         InlineEvent::EmphasisStart => {
-            writer.write_str("<em>");
+            // Suppress HTML tags inside image alt text
+            if !in_image {
+                writer.write_str("<em>");
+            }
         }
         InlineEvent::EmphasisEnd => {
-            writer.write_str("</em>");
+            if !in_image {
+                writer.write_str("</em>");
+            }
         }
         InlineEvent::StrongStart => {
-            writer.write_str("<strong>");
+            if !in_image {
+                writer.write_str("<strong>");
+            }
         }
         InlineEvent::StrongEnd => {
-            writer.write_str("</strong>");
+            if !in_image {
+                writer.write_str("</strong>");
+            }
         }
         InlineEvent::LinkStart { url, title } => {
-            writer.write_str("<a href=\"");
-            writer.write_escaped_attr(url.slice(text));
-            writer.write_str("\"");
-            if let Some(t) = title {
-                writer.write_str(" title=\"");
-                writer.write_escaped_attr(t.slice(text));
+            // Suppress link tags inside image alt text
+            if !in_image {
+                writer.write_str("<a href=\"");
+                writer.write_escaped_attr(url.slice(text));
                 writer.write_str("\"");
-            }
-            writer.write_str(">");
-        }
-        InlineEvent::LinkEnd => {
-            writer.write_str("</a>");
-        }
-        InlineEvent::ImageStart { url, title } => {
-            writer.write_str("<img src=\"");
-            writer.write_escaped_attr(url.slice(text));
-            writer.write_str("\" alt=\"");
-            // Store title for ImageEnd
-            *image_state = Some(ImageState {
-                title: title.clone(),
-            });
-        }
-        InlineEvent::ImageEnd => {
-            writer.write_str("\"");
-            // Add title attribute if present
-            if let Some(state) = image_state.take() {
-                if let Some(title_range) = state.title {
+                if let Some(t) = title {
                     writer.write_str(" title=\"");
-                    writer.write_escaped_attr(title_range.slice(text));
+                    writer.write_escaped_attr(t.slice(text));
                     writer.write_str("\"");
                 }
+                writer.write_str(">");
             }
-            writer.write_str(" />");
+        }
+        InlineEvent::LinkEnd => {
+            if !in_image {
+                writer.write_str("</a>");
+            }
+        }
+        InlineEvent::ImageStart { url, title } => {
+            // If we're already inside an image, just increment depth
+            // (the inner image's alt text becomes plain text in outer alt)
+            if let Some(state) = image_state.as_mut() {
+                state.depth += 1;
+            } else {
+                // Outermost image - emit the img tag start
+                writer.write_str("<img src=\"");
+                writer.write_escaped_attr(url.slice(text));
+                writer.write_str("\" alt=\"");
+                *image_state = Some(ImageState {
+                    title: title.clone(),
+                    depth: 1,
+                });
+            }
+        }
+        InlineEvent::ImageEnd => {
+            if let Some(state) = image_state.as_mut() {
+                state.depth -= 1;
+                // Only close when we exit the outermost image
+                if state.depth == 0 {
+                    writer.write_str("\"");
+                    // Add title attribute if present
+                    let title = state.title.clone();
+                    *image_state = None;
+                    if let Some(title_range) = title {
+                        writer.write_str(" title=\"");
+                        writer.write_escaped_attr(title_range.slice(text));
+                        writer.write_str("\"");
+                    }
+                    writer.write_str(" />");
+                }
+            }
         }
         InlineEvent::Autolink { url, is_email } => {
-            writer.write_str("<a href=\"");
-            if *is_email {
-                writer.write_str("mailto:");
+            // In image alt text, just output the URL as plain text
+            if in_image {
+                writer.write_escaped_attr(url.slice(text));
+            } else {
+                writer.write_str("<a href=\"");
+                if *is_email {
+                    writer.write_str("mailto:");
+                }
+                writer.write_escaped_attr(url.slice(text));
+                writer.write_str("\">");
+                writer.write_escaped_text(url.slice(text));
+                writer.write_str("</a>");
             }
-            writer.write_escaped_attr(url.slice(text));
-            writer.write_str("\">");
-            writer.write_escaped_text(url.slice(text));
-            writer.write_str("</a>");
         }
         InlineEvent::SoftBreak => {
-            writer.write_str("\n");
+            // In image alt text, use space instead of newline
+            if in_image {
+                writer.write_str(" ");
+            } else {
+                writer.write_str("\n");
+            }
         }
         InlineEvent::HardBreak => {
-            writer.write_str("<br />\n");
+            // In image alt text, use space instead of <br />
+            if in_image {
+                writer.write_str(" ");
+            } else {
+                writer.write_str("<br />\n");
+            }
         }
         InlineEvent::EscapedChar(ch) => {
             // Write the escaped character (the actual char, not the backslash)
             let bytes = [*ch];
-            writer.write_escaped_text(&bytes);
+            if in_image {
+                writer.write_escaped_attr(&bytes);
+            } else {
+                writer.write_escaped_text(&bytes);
+            }
         }
     }
 }
@@ -605,5 +683,22 @@ More text."#;
         assert!(html.contains("text before"));
         assert!(html.contains("<img src=\"url\""));
         assert!(html.contains("text after"));
+    }
+
+    #[test]
+    fn test_image_with_nested_emphasis() {
+        // CommonMark: alt text should be plain text, not HTML
+        let html = to_html("![foo *bar*](/url)");
+        // Should have alt="foo bar" (plain text, no <em> tags)
+        assert!(html.contains("alt=\"foo bar\""), "Alt text should be plain: {html}");
+        assert!(!html.contains("<em>"), "No <em> tags in alt text");
+    }
+
+    #[test]
+    fn test_image_with_nested_strong() {
+        let html = to_html("![foo **bar**](/url)");
+        // Should have alt="foo bar" (plain text, no <strong> tags)
+        assert!(html.contains("alt=\"foo bar\""), "Alt text should be plain: {html}");
+        assert!(!html.contains("<strong>"), "No <strong> tags in alt text");
     }
 }

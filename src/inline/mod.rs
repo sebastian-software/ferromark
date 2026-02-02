@@ -48,7 +48,7 @@ impl InlineParser {
 
         // Phase 2: Resolve marks by precedence
         // First: code spans (highest precedence)
-        resolve_code_spans(self.mark_buffer.marks_mut());
+        resolve_code_spans(self.mark_buffer.marks_mut(), text);
 
         // Second: autolinks
         let autolinks = find_autolinks(text);
@@ -247,6 +247,13 @@ impl InlineParser {
                     kind: EmitKind::HardBreak,
                     end: mark.end,
                 });
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_CLOSER != 0 && !in_code {
+                // Soft break (newline without 2+ spaces) - also not in code
+                emit_points.push(EmitPoint {
+                    pos: mark.pos,
+                    kind: EmitKind::SoftBreak,
+                    end: mark.end,
+                });
             }
         }
 
@@ -285,13 +292,17 @@ impl InlineParser {
                     let mut start = point.pos as usize;
                     let mut end = end as usize;
 
-                    // CommonMark: strip one leading and one trailing space if present
-                    // and content doesn't consist entirely of spaces
+                    // CommonMark: line endings are converted to spaces first,
+                    // then if the string both begins AND ends with a space,
+                    // and doesn't consist entirely of spaces, strip one space from each end.
+                    // Note: we treat \n as equivalent to space for stripping purposes.
                     if end > start + 1 {
                         let content = &text[start..end];
-                        if content.starts_with(b" ") && content.ends_with(b" ")
-                            && content.iter().any(|&b| b != b' ')
-                        {
+                        let first_is_space = content[0] == b' ' || content[0] == b'\n';
+                        let last_is_space = content[content.len() - 1] == b' ' || content[content.len() - 1] == b'\n';
+                        let not_all_space = content.iter().any(|&b| b != b' ' && b != b'\n');
+
+                        if first_is_space && last_is_space && not_all_space {
                             start += 1;
                             end -= 1;
                         }
@@ -325,6 +336,10 @@ impl InlineParser {
                 }
                 EmitKind::HardBreak => {
                     events.push(InlineEvent::HardBreak);
+                    skip_until = point.end;
+                }
+                EmitKind::SoftBreak => {
+                    events.push(InlineEvent::SoftBreak);
                     skip_until = point.end;
                 }
                 EmitKind::LinkStart { url_start, url_end, title_start, title_end } => {
@@ -407,6 +422,7 @@ enum EmitKind {
     StrongEnd,
     Escape(u8),
     HardBreak,
+    SoftBreak,
     LinkStart { url_start: u32, url_end: u32, title_start: Option<u32>, title_end: Option<u32> },
     LinkEnd,
     ImageStart { url_start: u32, url_end: u32, title_start: Option<u32>, title_end: Option<u32> },

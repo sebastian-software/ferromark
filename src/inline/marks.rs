@@ -194,6 +194,8 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
 
             b'\\' => {
                 // Backslash escape - mark position and skip escaped char
+                // Backticks after backslash are also collected for code span matching,
+                // but the code span resolver will check for escapes
                 if pos + 1 < len {
                     let next = text[pos + 1];
                     if is_escapable(next) || next == b'\n' {
@@ -204,6 +206,16 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                             b'\\',
                             flags::POTENTIAL_OPENER, // Mark for processing
                         ));
+                        // For backticks, also collect them separately for code span matching
+                        // The code_span resolver will handle the backslash-escape logic
+                        if next == b'`' {
+                            buffer.push(Mark::new(
+                                (pos + 1) as u32,
+                                (pos + 2) as u32,
+                                b'`',
+                                flags::POTENTIAL_OPENER | flags::POTENTIAL_CLOSER,
+                            ));
+                        }
                         pos += 2;
                     } else {
                         pos += 1;
@@ -230,6 +242,25 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                         (pos + 1) as u32,
                         b'\n',
                         flags::POTENTIAL_OPENER, // Hard break marker
+                    ));
+                } else {
+                    // Soft break: find trailing spaces (0-1) and leading spaces after newline
+                    // Mark start includes trailing space (if any) for stripping
+                    let space_start = if pos > 0 && text[pos - 1] == b' ' {
+                        pos - 1
+                    } else {
+                        pos
+                    };
+                    // Mark end includes newline and leading spaces
+                    let mut space_end = pos + 1;
+                    while space_end < len && (text[space_end] == b' ' || text[space_end] == b'\t') {
+                        space_end += 1;
+                    }
+                    buffer.push(Mark::new(
+                        space_start as u32,
+                        space_end as u32,
+                        b'\n',
+                        flags::POTENTIAL_CLOSER, // Soft break marker (distinguished from hard break)
                     ));
                 }
                 pos += 1;
