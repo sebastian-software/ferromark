@@ -1149,20 +1149,137 @@ For supported features:
 
 ## 14. Build/Release Profile and Tooling
 
-### 14.1 Crate Layout
-- `no_std` is possible but likely not necessary.
-- Avoid heavy deps. Favor `memchr`, `smallvec`.
+### 14.1 Crate Layout and Dependencies
 
-### 14.2 Safety and `unsafe`
+```toml
+# Cargo.toml
+[package]
+name = "md-fast"
+version = "0.1.0"
+edition = "2024"       # Rust 1.93+ required
+rust-version = "1.93"
+
+[dependencies]
+memchr = "2.7"         # SIMD-accelerated byte search
+smallvec = "1.13"      # Stack-allocated small vectors
+
+[dev-dependencies]
+criterion = "0.5"      # Benchmarking
+proptest = "1.4"       # Property-based testing
+
+[features]
+default = ["std"]
+std = []
+neon = []              # Enable NEON intrinsics (auto-detected on aarch64)
+trace = []             # Performance counters (dev only)
+
+# Conditional deps
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+# NEON intrinsics available in std::arch
+```
+
+### 14.2 Build Profiles
+
+```toml
+# Cargo.toml continued
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+strip = true
+
+[profile.release-debug]
+inherits = "release"
+debug = true
+strip = false
+
+[profile.bench]
+inherits = "release"
+debug = true           # For flamegraph symbols
+```
+
+### 14.3 Platform-Specific Configuration
+
+```toml
+# .cargo/config.toml
+
+[target.aarch64-apple-darwin]
+rustflags = [
+    "-C", "target-cpu=apple-m1",    # Or apple-m2, apple-m4
+    "-C", "target-feature=+neon",
+    "-C", "link-arg=-Wl,-ld_classic",  # Faster linking on macOS 14+
+]
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+    "-C", "target-cpu=native",
+    "-C", "target-feature=+sse4.2,+avx2",
+]
+
+# For development: faster incremental builds
+[profile.dev]
+opt-level = 1
+[profile.dev.package."*"]
+opt-level = 2
+```
+
+### 14.4 Profile-Guided Optimization (PGO)
+
+For maximum performance on Apple Silicon:
+
+```bash
+# Step 1: Build instrumented binary
+RUSTFLAGS="-Cprofile-generate=/tmp/pgo-data" \
+    cargo build --release
+
+# Step 2: Run with representative workload
+./target/release/md-fast bench/corpus/*.md
+
+# Step 3: Merge profile data
+llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
+
+# Step 4: Build optimized binary
+RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" \
+    cargo build --release
+```
+
+### 14.5 Safety and `unsafe`
+
 `unsafe` is allowed in hot scanning paths if:
-- encapsulated,
-- verified by fuzzing,
-- minimal surface area.
+- encapsulated in a safe public API,
+- verified by fuzzing (10M+ iterations),
+- minimal surface area (< 50 lines per unsafe block),
+- documented with `// SAFETY:` comments.
 
-### 14.3 Observability
+**Unsafe allowlist**:
+- Cursor pointer arithmetic (bounds checked at block entry)
+- NEON intrinsics (behind `#[target_feature]`)
+- Unchecked UTF-8 conversion (input validated at entry)
+
+### 14.6 Observability
+
 Provide optional `trace` feature:
-- emits counters (lines scanned, events produced)
-- does not allocate strings in hot path (use numeric counters)
+
+```rust
+#[cfg(feature = "trace")]
+pub struct ParseStats {
+    pub lines_scanned: u64,
+    pub blocks_emitted: u64,
+    pub inline_marks_collected: u64,
+    pub escapes_written: u64,
+}
+
+#[cfg(feature = "trace")]
+thread_local! {
+    pub static STATS: std::cell::Cell<ParseStats> = const { std::cell::Cell::new(ParseStats::ZERO) };
+}
+```
+
+- Does not allocate strings in hot path
+- Uses numeric counters only
+- Zero overhead when feature disabled
 
 ---
 
