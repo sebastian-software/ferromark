@@ -227,8 +227,41 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                 pos += 1;
             }
 
+            b'[' => {
+                // Check for image: ![
+                let is_image = pos > 0 && text[pos - 1] == b'!';
+                buffer.push(Mark::new(
+                    pos as u32,
+                    (pos + 1) as u32,
+                    b'[',
+                    if is_image { flags::POTENTIAL_OPENER | flags::IN_CODE } else { flags::POTENTIAL_OPENER },
+                ));
+                pos += 1;
+            }
+
+            b']' => {
+                buffer.push(Mark::new(
+                    pos as u32,
+                    (pos + 1) as u32,
+                    b']',
+                    flags::POTENTIAL_CLOSER,
+                ));
+                pos += 1;
+            }
+
+            b'<' => {
+                // Potential autolink
+                buffer.push(Mark::new(
+                    pos as u32,
+                    (pos + 1) as u32,
+                    b'<',
+                    flags::POTENTIAL_OPENER,
+                ));
+                pos += 1;
+            }
+
             _ => {
-                // Other special chars (for future: links, entities)
+                // Other special chars (entities, etc.)
                 pos += 1;
             }
         }

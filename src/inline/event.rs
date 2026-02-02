@@ -21,6 +21,34 @@ pub enum InlineEvent {
     /// End of strong emphasis.
     StrongEnd,
 
+    /// Start of a link `[text](url)`.
+    LinkStart {
+        /// URL destination.
+        url: Range,
+        /// Optional title.
+        title: Option<Range>,
+    },
+    /// End of a link.
+    LinkEnd,
+
+    /// Start of an image `![alt](url)`.
+    ImageStart {
+        /// URL destination.
+        url: Range,
+        /// Optional title.
+        title: Option<Range>,
+    },
+    /// End of an image (after alt text).
+    ImageEnd,
+
+    /// Autolink `<url>` or `<email>`.
+    Autolink {
+        /// The URL or email.
+        url: Range,
+        /// Whether this is an email autolink.
+        is_email: bool,
+    },
+
     /// Soft line break (newline in source).
     SoftBreak,
 
@@ -37,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_event_size() {
-        // Events should be reasonably small
-        assert!(std::mem::size_of::<InlineEvent>() <= 16);
+        // Events should be reasonably small (Link/Image have url + Option<Range>)
+        assert!(std::mem::size_of::<InlineEvent>() <= 32);
     }
 }
