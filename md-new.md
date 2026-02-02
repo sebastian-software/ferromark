@@ -178,6 +178,49 @@ These are **explicitly out of scope** because they either:
 - All intermediate text is represented as **ranges** into the input buffer.
 - Output is written to a single `Vec<u8>` (or `String`), with aggressive reservation and optional reuse.
 
+### 1.3 Dependency Philosophy: Don't Reinvent the Wheel
+
+**Prefer using well-tested crates over writing from scratch** when:
+- The crate does exactly what we need
+- It's actively maintained and widely used
+- Performance is acceptable (benchmark if in doubt)
+- It doesn't pull in heavy transitive dependencies
+
+**Crates we should use** (proven, performant, maintained):
+
+| Need | Crate | Why |
+|------|-------|-----|
+| Byte search | `memchr` | SIMD-optimized, battle-tested, 0 deps |
+| Small vectors | `smallvec` | Avoids heap for typical cases, widely used |
+| Hash map | `hashbrown` | Faster than std, used by std internally |
+| HTML escaping | `v_htmlescape` | SIMD-accelerated, consider for renderer |
+| Unicode tables | `unicode-ident` | If we need Unicode word boundaries |
+
+**Crates we should NOT use** (too heavy or wrong abstraction):
+
+| Crate | Why Not |
+|-------|---------|
+| `regex` | Too slow for hot paths, compiles patterns at runtime |
+| `nom` / `pest` | Parser combinators add overhead, we need manual control |
+| `pulldown-cmark` | We're trying to beat it, not wrap it |
+| `serde` | We don't need serialization in core |
+
+**Gray area** (benchmark before deciding):
+
+| Crate | Consider If |
+|-------|-------------|
+| `bstr` | Byte string utilities, if we need many |
+| `arrayvec` | Alternative to smallvec, compare performance |
+| `itoa` / `ryu` | Fast number formatting, if needed for list markers |
+
+**Evaluation checklist for new dependencies**:
+- [ ] Does it solve a real problem we have?
+- [ ] Is it faster than what we could write in <100 lines?
+- [ ] Is it maintained (commits in last 6 months)?
+- [ ] Does it have minimal transitive dependencies?
+- [ ] Is it `no_std` compatible (if we care)?
+- [ ] Does it compile quickly?
+
 ---
 
 ## 2. System Overview
