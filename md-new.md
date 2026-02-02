@@ -1229,30 +1229,95 @@ Provide optional `trace` feature:
 
 ## Appendix B: Suggested Internal Modules
 
-- `cursor.rs` — Cursor and scanning primitives
-- `range.rs` — Range type, slicing helpers
-- `scan.rs` — `memchr` wrappers, special-byte scanners
-- `block.rs` — block parser + container stack
-- `inline.rs` — inline parser + delimiter/bracket stacks
-- `escape.rs` — text/attr escaping
-- `render.rs` — HtmlWriter + rendering logic
-- `bench/` — criterion benches and corpus harness
-- `fuzz/` — fuzz targets
+```
+src/
+├── lib.rs              — Public API, feature flags
+├── cursor.rs           — Cursor type, pointer-based scanning
+├── range.rs            — Range type (u32-based), slicing helpers
+├── tables.rs           — 256-entry lookup tables (is_special, is_space, etc.)
+├── limits.rs           — DoS prevention constants
+│
+├── scan/
+│   ├── mod.rs          — Scanner trait and common functions
+│   ├── scalar.rs       — Loop-unrolled scalar scanner (portable)
+│   └── neon.rs         — ARM NEON SIMD scanner (cfg(target_arch = "aarch64"))
+│
+├── block/
+│   ├── mod.rs          — Block parser entry point
+│   ├── container.rs    — Container stack (lists, blockquotes)
+│   ├── fence.rs        — Fenced code block handling
+│   └── list.rs         — List parsing logic
+│
+├── inline/
+│   ├── mod.rs          — Inline parser entry point
+│   ├── marks.rs        — Mark collection and buffer
+│   ├── emphasis.rs     — Modulo-3 emphasis resolution
+│   ├── code_span.rs    — Code span matching
+│   └── links.rs        — Link/autolink parsing
+│
+├── escape.rs           — HTML text/attr escaping (SIMD-ready)
+├── render.rs           — HtmlWriter + event consumption
+│
+├── bench/              — Criterion benchmarks
+│   ├── corpus/         — Real-world markdown samples
+│   └── pathological/   — DoS test cases
+│
+└── fuzz/               — Fuzz targets (cargo-fuzz)
+    ├── block_fuzz.rs
+    └── inline_fuzz.rs
+```
+
+**Module dependencies** (acyclic):
+```
+lib → render → inline → block → scan → cursor/range/tables
+                ↓
+              escape
+```
 
 ---
 
 ## Appendix C: Micro-Optimizations Checklist
 
-- Avoid `String` in parsing.
-- Avoid `format!` in rendering (write bytes).
-- Use `SmallVec` for stacks.
-- Reserve output buffer early.
-- Avoid `Vec::push` in tight loops without reservation.
-- Use lookup tables for classification (`is_space`, `is_special`).
-- Keep event enums small (use `u8`/`u16` where possible).
-- Reduce branch depth: scan → handle.
-- Profile before SIMD.
-- Use `#[cold]` for slow-path error handling.
+### Memory & Allocation
+- [ ] Avoid `String` in parsing — use `Range` only
+- [ ] Avoid `format!` in rendering — write bytes directly
+- [ ] Use `SmallVec<[T; 8]>` for stacks (typical nesting < 8)
+- [ ] Reserve output buffer early (`input_len * 1.25`)
+- [ ] Reuse buffers across parses (mark buffer, event buffer)
+- [ ] Use buffer pooling for high-throughput scenarios
+
+### Data Structures
+- [ ] Keep `Range` as `(u32, u32)` — 8 bytes, not 16
+- [ ] Keep `Mark` ≤ 12 bytes (5 per L1 cache line)
+- [ ] Keep event enums small (use `u8`/`u16` discriminants)
+- [ ] Align hot structs to 64 bytes (L1 cache line)
+- [ ] Use `#[repr(C)]` for predictable layout
+
+### Scanning & Branching
+- [ ] Use 256-entry lookup tables for character classification
+- [ ] Apply 4x loop unrolling for scanning loops
+- [ ] Reduce branch depth: scan → handle pattern
+- [ ] Use `#[inline]` on tiny hot functions (< 10 lines)
+- [ ] Use `#[cold]` on error/rare paths
+- [ ] Use `#[inline(never)]` on large cold functions
+
+### SIMD (after profiling)
+- [ ] Start with `memchr` crate (already SIMD-optimized)
+- [ ] Profile before adding custom SIMD
+- [ ] Use NEON intrinsics for aarch64, not `std::simd`
+- [ ] Benchmark SIMD vs scalar — SIMD can be slower for some patterns
+
+### Compiler & Build
+- [ ] Enable LTO (`lto = "fat"`) in release
+- [ ] Use `codegen-units = 1` for better optimization
+- [ ] Set `panic = "abort"` if unwinding not needed
+- [ ] Use `-C target-cpu=native` or `apple-m1` for builds
+- [ ] Consider PGO with representative corpus
+
+### Static Verification
+- [ ] Add compile-time size assertions for critical structs
+- [ ] Use `debug_assert!` for invariants (zero cost in release)
+- [ ] Run with `RUSTFLAGS="-C overflow-checks=on"` in CI
 
 ---
 
