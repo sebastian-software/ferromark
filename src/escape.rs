@@ -3,7 +3,6 @@
 //! Fast-path optimized: scans for first escapable character,
 //! then bulk-copies segments between escapes.
 
-use memchr::memchr3;
 
 /// Characters that need escaping in HTML text content.
 #[allow(dead_code)]
@@ -15,11 +14,13 @@ const ATTR_ESCAPE_CHARS: &[u8] = b"<>&\"'";
 
 /// Lookup table for escapable characters in text content.
 /// Index by byte value, true if needs escaping.
+/// Note: We escape " as &quot; for CommonMark spec compliance.
 const TEXT_ESCAPE_TABLE: [bool; 256] = {
     let mut table = [false; 256];
     table[b'<' as usize] = true;
     table[b'>' as usize] = true;
     table[b'&' as usize] = true;
+    table[b'"' as usize] = true;
     table
 };
 
@@ -70,48 +71,38 @@ pub fn escape_attr_into(out: &mut Vec<u8>, input: &[u8]) {
 
 /// Internal escaping with a custom lookup table.
 #[inline]
-fn escape_into_with_table(out: &mut Vec<u8>, input: &[u8], _escape_table: &[bool; 256]) {
+fn escape_into_with_table(out: &mut Vec<u8>, input: &[u8], escape_table: &[bool; 256]) {
     let mut pos = 0;
 
     while pos < input.len() {
-        // Fast path: find next escapable character using memchr3
-        // This is SIMD-accelerated on most platforms
-        let remaining = &input[pos..];
+        // Scan for any escapable character using lookup table
+        let scan_start = pos;
+        while pos < input.len() && !escape_table[input[pos] as usize] {
+            pos += 1;
+        }
 
-        // Use memchr3 for the most common escapable chars
-        let next_escape = memchr3(b'<', b'>', b'&', remaining);
+        // Copy non-escaped portion
+        if pos > scan_start {
+            out.extend_from_slice(&input[scan_start..pos]);
+        }
 
-        match next_escape {
-            Some(offset) => {
-                // Copy everything before the escape
-                if offset > 0 {
-                    out.extend_from_slice(&remaining[..offset]);
+        // Handle escape if found
+        if pos < input.len() {
+            let escape_seq = match input[pos] {
+                b'<' => b"&lt;" as &[u8],
+                b'>' => b"&gt;",
+                b'&' => b"&amp;",
+                b'"' => b"&quot;",
+                b'\'' => b"&#39;",
+                _ => {
+                    // Shouldn't happen, but handle gracefully
+                    out.push(input[pos]);
+                    pos += 1;
+                    continue;
                 }
-                pos += offset;
-
-                // Write the escape sequence
-                let byte = input[pos];
-                let escape_seq: &[u8] = match byte {
-                    b'<' => b"&lt;",
-                    b'>' => b"&gt;",
-                    b'&' => b"&amp;",
-                    b'"' => b"&quot;",
-                    b'\'' => b"&#39;",
-                    _ => {
-                        // Shouldn't happen with memchr3, but handle it
-                        out.push(byte);
-                        pos += 1;
-                        continue;
-                    }
-                };
-                out.extend_from_slice(escape_seq);
-                pos += 1;
-            }
-            None => {
-                // No more escapes needed, copy rest of input
-                out.extend_from_slice(remaining);
-                break;
-            }
+            };
+            out.extend_from_slice(escape_seq);
+            pos += 1;
         }
     }
 }
@@ -154,7 +145,7 @@ pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
 /// Check if a byte slice needs any escaping for text content.
 #[inline]
 pub fn needs_text_escape(input: &[u8]) -> bool {
-    memchr3(b'<', b'>', b'&', input).is_some()
+    input.iter().any(|&b| TEXT_ESCAPE_TABLE[b as usize])
 }
 
 /// Check if a byte slice needs any escaping for attribute values.
@@ -218,7 +209,7 @@ mod tests {
     fn test_escape_text_mixed() {
         let mut out = Vec::new();
         escape_text_into(&mut out, b"<a href=\"test\">link & stuff</a>");
-        assert_eq!(out, b"&lt;a href=\"test\"&gt;link &amp; stuff&lt;/a&gt;");
+        assert_eq!(out, b"&lt;a href=&quot;test&quot;&gt;link &amp; stuff&lt;/a&gt;");
     }
 
     #[test]
