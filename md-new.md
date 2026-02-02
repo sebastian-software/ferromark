@@ -916,4 +916,214 @@ Provide optional `trace` feature:
 
 ---
 
+## Appendix D: Apple Silicon Optimization Guide
+
+> **Target**: Apple M1/M2/M3/M4 processors (ARMv8.4+/ARMv9)
+> **Rust Version**: 1.93.0+ (stable NEON intrinsics)
+
+### D.1 Apple Silicon Memory Hierarchy
+
+| Level | M1/M2/M3 | M4 | Latency | Line Size |
+|-------|----------|-----|---------|-----------|
+| L1D | 128 KB/core | 128 KB/core | 3 cycles | 64 bytes |
+| L1I | 192 KB/core | 192 KB/core | — | — |
+| L2 | 12-16 MB shared | 16-24 MB shared | ~15 cycles | 128 bytes |
+| SLC | 8-16 MB | 16+ MB | ~30 cycles | 128 bytes |
+| DRAM | Unified | Unified | ~100+ cycles | — |
+
+**Key Insight**: L2/SLC uses 128-byte cache lines. Align hot data structures to 128 bytes to prevent false sharing and maximize prefetch efficiency.
+
+### D.2 SIMD Strategy for ARM NEON
+
+Apple Silicon supports:
+- **NEON**: 128-bit SIMD, 4 instructions/cycle on P-cores (mandatory on all AArch64)
+- **SVE**: Only on M4+ (ARMv9), variable-length vectors up to 2048 bits
+- **AMX**: Undocumented matrix coprocessor (not usable from Rust)
+
+**Recommendation**: Target NEON for M1-M4 compatibility; SVE as optional future path.
+
+#### D.2.1 NEON Intrinsics for Parsing (Rust 1.93+)
+
+```rust
+#[cfg(target_arch = "aarch64")]
+use std::arch::aarch64::*;
+
+/// Find first occurrence of any byte in `needles` (up to 16 bytes)
+/// Returns index or None if not found
+#[inline]
+#[target_feature(enable = "neon")]
+unsafe fn find_special_neon(haystack: &[u8], needles: &[u8; 16]) -> Option<usize> {
+    let needle_vec = vld1q_u8(needles.as_ptr());
+    let mut i = 0;
+
+    while i + 16 <= haystack.len() {
+        let chunk = vld1q_u8(haystack.as_ptr().add(i));
+        // Compare against all needles
+        let mut mask = vdupq_n_u8(0);
+        for j in 0..needles.len() {
+            let cmp = vceqq_u8(chunk, vdupq_n_u8(needles[j]));
+            mask = vorrq_u8(mask, cmp);
+        }
+        // Check if any match
+        let reduced = vmaxvq_u8(mask);
+        if reduced != 0 {
+            // Find exact position
+            let mask_bytes: [u8; 16] = std::mem::transmute(mask);
+            for k in 0..16 {
+                if mask_bytes[k] != 0 {
+                    return Some(i + k);
+                }
+            }
+        }
+        i += 16;
+    }
+    // Scalar fallback for remainder
+    for j in i..haystack.len() {
+        if needles.contains(&haystack[j]) {
+            return Some(j);
+        }
+    }
+    None
+}
+```
+
+#### D.2.2 Optimal NEON Intrinsics for Markdown Parsing
+
+| Operation | NEON Intrinsic | Use Case |
+|-----------|---------------|----------|
+| Load 16 bytes | `vld1q_u8` | Chunk scanning |
+| Compare equal | `vceqq_u8` | Find delimiters |
+| OR combine | `vorrq_u8` | Multi-character search |
+| Horizontal max | `vmaxvq_u8` | Quick "any match" check |
+| Count leading zeros | `vclzq_u8` | Find first match position |
+| Bitwise select | `vbslq_u8` | Conditional operations |
+
+#### D.2.3 When NOT to Use SIMD
+
+SIMD overhead outweighs benefits for:
+- Short strings (< 32 bytes) — use scalar with loop unrolling
+- Complex branching logic — SIMD cannot help
+- Non-contiguous memory — gather operations are slow
+
+**Benchmark first**: `std::simd` can be 7.7x *slower* than scalar for unsuitable workloads.
+
+### D.3 Memory Access Patterns
+
+#### D.3.1 Prefetch Hints
+
+```rust
+#[cfg(target_arch = "aarch64")]
+use std::arch::aarch64::_prefetch;
+
+// Prefetch for read, high temporal locality, L1 cache
+unsafe { _prefetch::<{ _PREFETCH_READ }, { _PREFETCH_LOCALITY3 }>(ptr) };
+```
+
+Use prefetching when:
+- Processing large code blocks (> 4KB)
+- Predictable sequential access patterns
+- About to scan a known buffer region
+
+#### D.3.2 Structure Alignment
+
+```rust
+#[repr(C, align(128))]  // Align to L2 cache line
+struct HotParserState {
+    cursor_pos: usize,
+    cursor_end: usize,
+    // ... keep under 128 bytes total
+}
+
+#[repr(C, align(64))]   // Align to L1 cache line
+struct MarkEntry {
+    start: u32,
+    end: u32,
+    kind: u8,
+    flags: u8,
+    _pad: [u8; 2],      // Explicit padding
+}
+// Size: 12 bytes, fits 5 per L1 line
+```
+
+### D.4 Branch Prediction Optimization
+
+Apple Silicon has excellent branch predictors, but we can help:
+
+```rust
+#[inline]
+fn is_special_char(b: u8) -> bool {
+    // Use lookup table instead of match/if-chain
+    const TABLE: [bool; 256] = {
+        let mut t = [false; 256];
+        t[b'*' as usize] = true;
+        t[b'_' as usize] = true;
+        t[b'`' as usize] = true;
+        t[b'[' as usize] = true;
+        t[b']' as usize] = true;
+        t[b'~' as usize] = true;
+        t[b'\n' as usize] = true;
+        t[b'<' as usize] = true;
+        t[b'&' as usize] = true;
+        t
+    };
+    TABLE[b as usize]
+}
+```
+
+### D.5 Compiler Flags for Apple Silicon
+
+```toml
+# .cargo/config.toml
+[target.aarch64-apple-darwin]
+rustflags = [
+    "-C", "target-cpu=apple-m1",      # Or apple-m2, apple-m4
+    "-C", "target-feature=+neon",
+    "-C", "link-arg=-Wl,-ld_classic", # Faster linking on macOS 14+
+]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+
+[profile.release-with-pgo]
+inherits = "release"
+# Use with: RUSTFLAGS="-Cprofile-generate=/tmp/pgo" cargo build ...
+# Then:     RUSTFLAGS="-Cprofile-use=/tmp/pgo" cargo build ...
+```
+
+### D.6 M4 Specific: ARMv9 and SVE
+
+M4 introduces ARMv9 with Scalable Vector Extension (SVE). For future-proofing:
+
+```rust
+#[cfg(all(target_arch = "aarch64", target_feature = "sve"))]
+fn scan_sve(data: &[u8]) {
+    // SVE code path (M4+)
+}
+
+#[cfg(all(target_arch = "aarch64", not(target_feature = "sve")))]
+fn scan_neon(data: &[u8]) {
+    // NEON fallback (M1-M3)
+}
+```
+
+**Note**: SVE in Rust is still experimental as of Rust 1.93. NEON remains the production target.
+
+### D.7 Benchmark Results (Reference)
+
+From published benchmarks on Apple Silicon:
+
+| Operation | Scalar | NEON | Speedup |
+|-----------|--------|------|---------|
+| memchr (find byte) | 1x | 9.2x | ✓ Strong |
+| Dot product (f32) | 1x | 4.7x | ✓ Strong |
+| CSV parsing | 1x | 7-14x | ✓ Strong |
+| RGB interleave | 1x | 0.3x | ✗ Avoid |
+
+**Recommendation**: Use NEON for byte scanning, escaping, and delimiter finding. Avoid for complex data transformations.
+
+---
+
 **End of document.**
