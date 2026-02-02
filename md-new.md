@@ -99,18 +99,39 @@ enum CowStr<'a> {
 const _: [(); 2] = [(); mem::size_of::<TagEnd>()]; // Must be 2 bytes
 ```
 
-### 0.4 Synthesis: Our Optimal Approach
+### 0.4 Synthesis: Starting Hypotheses (Not Dogma)
 
-Based on analysis, we adopt:
+The following are **starting points for experimentation**, not fixed decisions. Each technique
+must prove itself through benchmarks against our specific workloads:
 
-1. **Push model with reusable event buffers** (md4c-style, lower overhead than iterators)
-2. **Range-based text representation** (no CowStr complexity, just `(start, end)`)
-3. **Mark collection phase** before inline parsing (md4c's biggest win)
-4. **256-byte lookup tables** for character classification
-5. **Loop unrolling in scanning** (4x unroll, proven effective)
-6. **Separate delimiter stacks by type and modulo-3** (md4c emphasis optimization)
-7. **Pre-allocated buffers with 1.5x growth** (both parsers use this)
-8. **Static size assertions** (pulldown-cmark's compile-time guarantees)
+| Hypothesis | Source | Status | Validate By |
+|------------|--------|--------|-------------|
+| Push model < iterator overhead | md4c | **To verify** | Benchmark both |
+| Range-based < CowStr | Analysis | **To verify** | Memory profiling |
+| Mark collection phase | md4c | **To verify** | Inline benchmarks |
+| 256-byte lookup tables | Both | **Likely good** | Branch analysis |
+| 4x loop unrolling | md4c | **To verify** | Perf counters |
+| Modulo-3 emphasis stacks | md4c | **To verify** | Pathological tests |
+| 1.5x buffer growth | Both | **Likely good** | Allocation tracking |
+
+**Key principle**: If benchmarks show a simpler approach performs equally well, prefer simplicity.
+We are not here to implement clever techniques for their own sake.
+
+### 0.4.1 What We Will Definitely Use
+
+Some patterns are proven and low-risk:
+- `memchr` for byte scanning (already SIMD-optimized, battle-tested)
+- Pre-sized output buffers (obvious win)
+- Static size assertions (zero runtime cost)
+- DoS limits (non-negotiable for safety)
+
+### 0.4.2 What Needs Benchmarking
+
+These require A/B comparison before committing:
+- Push vs pull parsing model
+- Three-phase vs two-phase inline parsing
+- NEON intrinsics vs `memchr` alone
+- Modulo-3 stacks vs simple linear scan
 
 ### 0.5 What We Improve Upon
 
