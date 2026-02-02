@@ -284,7 +284,7 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Peek ahead to see if there's a list marker of the same type.
-    fn peek_list_marker(&self, kind: ListKind, _marker: u8) -> bool {
+    fn peek_list_marker(&self, kind: ListKind, marker: u8) -> bool {
         let b = match self.cursor.peek() {
             Some(b) => b,
             None => return false,
@@ -292,8 +292,8 @@ impl<'a> BlockParser<'a> {
 
         match kind {
             ListKind::Unordered => {
-                (b == b'-' || b == b'*' || b == b'+')
-                    && self.cursor.peek_ahead(1) == Some(b' ')
+                // Must be the SAME marker character (-, *, or +)
+                b == marker && self.cursor.peek_ahead(1) == Some(b' ')
             }
             ListKind::Ordered { .. } => {
                 b.is_ascii_digit()
