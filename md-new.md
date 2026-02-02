@@ -466,11 +466,55 @@ Given a text range, emit inline events:
 
 Inline parsing is where most CPU is spent on typical docs.
 
-### 6.2 General Strategy: Scan-to-Special
-Inline parser should:
-1. Emit long runs of plain text via `memchr` / multi-char scan to find next special marker.
-2. On encountering a marker, attempt a deterministic parse.
-3. If parse fails, treat marker as text and continue.
+### 6.2 Three-Phase Inline Processing (Critical Optimization)
+
+Inspired by md4c's architecture, inline parsing uses three phases to avoid backtracking:
+
+**Phase 1: Mark Collection** (single pass)
+- Scan text once, collecting all potential delimiter positions into a mark array
+- Use loop unrolling (4x) with lookup table for speed
+- Store: `(position, character, run_length, flags)`
+
+```rust
+#[derive(Clone, Copy)]
+struct Mark {
+    pos: u32,       // Offset in text
+    end: u32,       // End of mark (pos + run_length)
+    ch: u8,         // The delimiter character
+    flags: u8,      // POTENTIAL_OPENER | POTENTIAL_CLOSER | RESOLVED
+}
+
+// Pre-allocated, reusable across blocks
+struct MarkBuffer {
+    marks: Vec<Mark>,   // Reuse capacity
+}
+```
+
+**Phase 2: Mark Resolution** (by precedence)
+Process marks in order of precedence to avoid ambiguity:
+1. **Entities** (`&amp;`, `&#123;`) — resolve first, never interact with others
+2. **Code spans** (`` ` ``) — highest delimiter precedence
+3. **Raw HTML** (`<tag>`) — recognized early to avoid false positives
+4. **Links** (`[text](url)`) — bracket matching
+5. **Emphasis/Strong** (`*`, `_`) — lowest precedence, uses modulo-3 stacks
+
+```rust
+fn resolve_marks(marks: &mut [Mark], text: &[u8]) {
+    resolve_code_spans(marks, text);    // Skip resolved regions in later passes
+    resolve_html_spans(marks, text);
+    resolve_links(marks, text);
+    resolve_emphasis(marks, text);      // Uses 6 stacks (2 chars × 3 mod classes)
+}
+```
+
+**Phase 3: Event Emission** (linear walk)
+- Walk marks array, emit events between resolved pairs
+- Text between marks becomes `Text(range)` events
+
+This approach is **O(n)** with low constant factors because:
+- Single collection pass (Phase 1)
+- Each resolution pass skips already-resolved regions
+- No backtracking or re-scanning
 
 ### 6.3 Special Character Set
 Common specials:
@@ -484,20 +528,43 @@ Common specials:
 
 Use a byte lookup table `is_special[256]` for fast checks.
 
-### 6.4 Emphasis/Strong (Simplified)
-CommonMark’s delimiter rules are expensive. We implement a pragmatic subset:
+### 6.4 Emphasis/Strong (Modulo-3 Stack Optimization)
 
-- `**` opens/closes strong.
-- `*` opens/closes emphasis.
-- Same for `_` and `__`.
-- No complex left/right-flanking rules; instead:
-  - require non-space inside delimiters (simple heuristic),
-  - limit nesting depth (e.g. 32),
-  - do not treat underscores inside words as emphasis (optional heuristic).
+CommonMark's "rule of three" for emphasis matching is expensive if implemented naively.
+Optimization from md4c: use **6 separate stacks** (2 characters × 3 modulo classes):
 
-Maintain a small delimiter stack with entries:
 ```rust
-struct Delim { kind: DelimKind, pos: usize }
+struct EmphasisResolver {
+    // Stacks indexed by: (char == '_') * 3 + (run_length % 3)
+    stacks: [Vec<usize>; 6],  // Each holds mark indices
+}
+
+impl EmphasisResolver {
+    fn stack_index(ch: u8, run_len: usize) -> usize {
+        let char_offset = if ch == b'_' { 3 } else { 0 };
+        char_offset + (run_len % 3)
+    }
+}
+```
+
+**Why this works**: CommonMark requires that opener + closer lengths sum to a multiple of 3
+(or both are multiples of 3). By separating stacks by `run_length % 3`, we only search
+the correct stack for potential matches.
+
+**Simplified rules** (pragmatic subset):
+- `**` opens/closes strong, `*` opens/closes emphasis
+- Same for `__` and `_`
+- Require non-space adjacent to delimiter (simple flanking heuristic)
+- Underscore inside words does not trigger emphasis (configurable)
+- Limit nesting depth (32 levels)
+
+```rust
+struct Delim {
+    mark_idx: u32,      // Index into marks array
+    run_length: u8,     // Original delimiter run length
+    can_open: bool,
+    can_close: bool,
+}
 ```
 
 ### 6.5 Inline Code Spans
