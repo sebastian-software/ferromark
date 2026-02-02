@@ -863,14 +863,18 @@ impl<'a> BlockParser<'a> {
             None => content_start + self.cursor.remaining(),
         };
 
-        // Move cursor to next line
-        self.cursor = Cursor::new_at(self.input, line_end);
-        if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-            self.cursor.bump();
-        }
+        // Include the newline in the code content range
+        let content_end = if line_end < self.input.len() && self.input[line_end] == b'\n' {
+            line_end + 1
+        } else {
+            line_end
+        };
 
-        // Emit the code line (including newline conceptually)
-        events.push(BlockEvent::Code(Range::from_usize(content_start, line_end)));
+        // Move cursor past the newline
+        self.cursor = Cursor::new_at(self.input, content_end);
+
+        // Emit the code line (including newline)
+        events.push(BlockEvent::Code(Range::from_usize(content_start, content_end)));
     }
 
     /// Parse a paragraph line.
@@ -1191,7 +1195,7 @@ mod tests {
 
         assert_eq!(events.len(), 3);
         assert!(matches!(events[0], BlockEvent::CodeBlockStart { .. }));
-        assert_eq!(get_code(input, &events[1]), "code");
+        assert_eq!(get_code(input, &events[1]), "code\n");
         assert_eq!(events[2], BlockEvent::CodeBlockEnd);
     }
 
@@ -1202,7 +1206,7 @@ mod tests {
 
         assert_eq!(events.len(), 3);
         assert!(matches!(events[0], BlockEvent::CodeBlockStart { .. }));
-        assert_eq!(get_code(input, &events[1]), "code");
+        assert_eq!(get_code(input, &events[1]), "code\n");
         assert_eq!(events[2], BlockEvent::CodeBlockEnd);
     }
 
@@ -1213,7 +1217,7 @@ mod tests {
 
         assert_eq!(events.len(), 3);
         assert_eq!(get_info(input, &events[0]), Some("rust"));
-        assert_eq!(get_code(input, &events[1]), "fn main() {}");
+        assert_eq!(get_code(input, &events[1]), "fn main() {}\n");
     }
 
     #[test]
@@ -1258,9 +1262,9 @@ mod tests {
         let events = parse(input);
 
         assert_eq!(events.len(), 5);
-        assert_eq!(get_code(input, &events[1]), "line1");
-        assert_eq!(get_code(input, &events[2]), "line2");
-        assert_eq!(get_code(input, &events[3]), "line3");
+        assert_eq!(get_code(input, &events[1]), "line1\n");
+        assert_eq!(get_code(input, &events[2]), "line2\n");
+        assert_eq!(get_code(input, &events[3]), "line3\n");
     }
 
     #[test]
@@ -1268,10 +1272,10 @@ mod tests {
         let input = "```\ncode";
         let events = parse(input);
 
-        // Code block should be closed at EOF
+        // Code block should be closed at EOF (no trailing newline)
         assert_eq!(events.len(), 3);
         assert!(matches!(events[0], BlockEvent::CodeBlockStart { .. }));
-        assert_eq!(get_code(input, &events[1]), "code");
+        assert_eq!(get_code(input, &events[1]), "code");  // No newline at EOF
         assert_eq!(events[2], BlockEvent::CodeBlockEnd);
     }
 
@@ -1281,9 +1285,9 @@ mod tests {
         let events = parse(input);
 
         assert_eq!(events.len(), 5);
-        assert_eq!(get_code(input, &events[1]), "");
-        assert_eq!(get_code(input, &events[2]), "code");
-        assert_eq!(get_code(input, &events[3]), "");
+        assert_eq!(get_code(input, &events[1]), "\n");
+        assert_eq!(get_code(input, &events[2]), "code\n");
+        assert_eq!(get_code(input, &events[3]), "\n");
     }
 
     #[test]
@@ -1292,7 +1296,7 @@ mod tests {
         let events = parse(input);
 
         assert_eq!(events.len(), 3);
-        assert_eq!(get_code(input, &events[1]), "```");
+        assert_eq!(get_code(input, &events[1]), "```\n");
     }
 
     #[test]
@@ -1328,8 +1332,8 @@ mod tests {
         let input = "```\n  indented\n    more\n```";
         let events = parse(input);
 
-        assert_eq!(get_code(input, &events[1]), "  indented");
-        assert_eq!(get_code(input, &events[2]), "    more");
+        assert_eq!(get_code(input, &events[1]), "  indented\n");
+        assert_eq!(get_code(input, &events[2]), "    more\n");
     }
 
     // Blockquote tests
