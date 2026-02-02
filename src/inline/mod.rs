@@ -490,4 +490,22 @@ mod tests {
         // Should not have emphasis events
         assert!(!events.iter().any(|e| matches!(e, InlineEvent::EmphasisStart)));
     }
+
+    #[test]
+    fn test_image() {
+        let input = "![alt](image.png)";
+        let events = parse_inline(input);
+
+        // Should have ImageStart and ImageEnd
+        assert!(events.iter().any(|e| matches!(e, InlineEvent::ImageStart { .. })), "No ImageStart found");
+        assert!(events.iter().any(|e| matches!(e, InlineEvent::ImageEnd)), "No ImageEnd found");
+
+        // Should NOT have a text event with just "!"
+        for event in &events {
+            if let InlineEvent::Text(range) = event {
+                let text = range.slice(input.as_bytes());
+                assert!(text != b"!", "Found standalone ! as text");
+            }
+        }
+    }
 }

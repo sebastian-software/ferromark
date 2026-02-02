@@ -152,8 +152,9 @@ fn render_block_event(
                 inline_parser.parse(content, inline_events);
 
                 // Render inline events
+                let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer);
+                    render_inline_event(content, inline_event, writer, &mut image_state);
                 }
             }
             // In tight lists, don't emit </p> tags
@@ -188,8 +189,9 @@ fn render_block_event(
                 inline_parser.parse(text, inline_events);
 
                 // Render inline events
+                let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(text, inline_event, writer);
+                    render_inline_event(text, inline_event, writer, &mut image_state);
                 }
             }
         }
@@ -239,8 +241,21 @@ fn render_block_event(
     }
 }
 
+/// State for tracking image title during rendering.
+/// Since we need to render: <img src="..." alt="ALT_TEXT_HERE" title="..." />
+/// But alt text comes as Text events between ImageStart and ImageEnd,
+/// we need to track the title to render it at ImageEnd.
+struct ImageState {
+    title: Option<Range>,
+}
+
 /// Render a single inline event to HTML.
-fn render_inline_event(text: &[u8], event: &InlineEvent, writer: &mut HtmlWriter) {
+fn render_inline_event(
+    text: &[u8],
+    event: &InlineEvent,
+    writer: &mut HtmlWriter,
+    image_state: &mut Option<ImageState>,
+) {
     match event {
         InlineEvent::Text(range) => {
             writer.write_escaped_text(range.slice(text));
@@ -280,13 +295,22 @@ fn render_inline_event(text: &[u8], event: &InlineEvent, writer: &mut HtmlWriter
             writer.write_str("<img src=\"");
             writer.write_escaped_attr(url.slice(text));
             writer.write_str("\" alt=\"");
-            // Alt text will be written as text events between ImageStart and ImageEnd
-            // Store title for ImageEnd (we can't use it here directly)
-            // For now, title is handled in a simplified way
-            let _ = title; // Suppress unused warning, title handled at ImageEnd
+            // Store title for ImageEnd
+            *image_state = Some(ImageState {
+                title: title.clone(),
+            });
         }
         InlineEvent::ImageEnd => {
-            writer.write_str("\" />");
+            writer.write_str("\"");
+            // Add title attribute if present
+            if let Some(state) = image_state.take() {
+                if let Some(title_range) = state.title {
+                    writer.write_str(" title=\"");
+                    writer.write_escaped_attr(title_range.slice(text));
+                    writer.write_str("\"");
+                }
+            }
+            writer.write_str(" />");
         }
         InlineEvent::Autolink { url, is_email } => {
             writer.write_str("<a href=\"");
@@ -531,5 +555,35 @@ More text."#;
         // Loose list: <p> tags
         assert!(html.contains("<li><p>first</p>"));
         assert!(html.contains("<li><p>second</p>"));
+    }
+
+    // Image tests
+
+    #[test]
+    fn test_image_basic() {
+        let html = to_html("![alt](image.png)");
+        // Should have img tag with src and alt
+        assert!(html.contains("<img src=\"image.png\""), "Missing img src");
+        assert!(html.contains("alt=\"alt\""), "Missing alt attribute");
+        // Should NOT have standalone ! before the img tag
+        assert!(!html.contains("!<img"), "Stray ! before img tag");
+    }
+
+    #[test]
+    fn test_image_with_title() {
+        let html = to_html("![alt](image.png \"title\")");
+        // Should have img tag with title
+        assert!(html.contains("<img"), "No img tag found");
+        assert!(html.contains("title=\"title\""), "Missing title attribute");
+        assert!(!html.contains("!<img"), "Stray ! before img tag");
+    }
+
+    #[test]
+    fn test_image_in_text() {
+        let html = to_html("text before ![img](url) text after");
+        // Image should be between text
+        assert!(html.contains("text before"));
+        assert!(html.contains("<img src=\"url\""));
+        assert!(html.contains("text after"));
     }
 }
