@@ -57,28 +57,50 @@ Three-phase approach inspired by md4c:
 - `#[inline]` on hot paths, `#[cold]` on error paths
 - Buffer reuse across parse calls
 
+## Performance
+
+Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers:
+
+| Parser | Throughput (Medium) | Throughput (Large) | Relative |
+|--------|--------------------:|-------------------:|----------|
+| **md-fast** | **197 MiB/s** | **228 MiB/s** | **1.0x** |
+| pulldown-cmark | 154 MiB/s | 216 MiB/s | 0.78x |
+| comrak | 50 MiB/s | 64 MiB/s | 0.25x |
+| markdown-rs | 7.3 MiB/s | 7.5 MiB/s | 0.04x |
+
+**Key results:**
+- **27% faster** than pulldown-cmark on typical documents
+- **4x faster** than comrak (full CommonMark/GFM)
+- **30x faster** than markdown-rs
+
+Run benchmarks: `cargo bench --bench comparison`
+
 ## CommonMark Compliance
 
-Current: **300/652 tests passing (46.0%)**
+Current: **334/652 tests passing (51.2%)**
 
 | Section | Coverage |
 |---------|----------|
 | Blank lines | 100% |
 | Textual content | 100% |
 | Inlines | 100% |
+| Precedence | 100% |
 | Emphasis | 93% |
 | ATX headings | 89% |
+| Paragraphs | 88% |
+| Hard line breaks | 87% |
 | Autolinks | 79% |
-| Paragraphs | 75% |
-| Thematic breaks | 68% |
-| Code spans | 68% |
+| Thematic breaks | 74% |
+| Code spans | 73% |
 | Fenced code blocks | 62% |
 | Block quotes | 52% |
+| Backslash escapes | 54% |
 | Links | 34% |
 
 **Intentionally out of scope:**
-- Full HTML block parsing
+- HTML blocks (0% - by design)
 - Reference link definitions
+- Setext headings
 - Tables (GFM extension)
 
 ## Usage
