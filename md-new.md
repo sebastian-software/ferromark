@@ -8,24 +8,119 @@
 
 ## Table of Contents
 
-1. [Non-Goals and Ground Rules](#1-non-goals-and-ground-rules)  
-2. [System Overview](#2-system-overview)  
-3. [Scope: What We Implement vs. What We Refuse](#3-scope-what-we-implement-vs-what-we-refuse)  
-4. [Core Data Model: Cursors, Ranges, Events](#4-core-data-model-cursors-ranges-events)  
-5. [Block Parser](#5-block-parser)  
-6. [Inline Parser](#6-inline-parser)  
-7. [HTML Renderer](#7-html-renderer)  
-8. [Escaping, URLs, and Safety Boundaries](#8-escaping-urls-and-safety-boundaries)  
-9. [SIMD and Hot-Path Engineering](#9-simd-and-hot-path-engineering)  
-10. [Complexity Guarantees and DoS Resistance](#10-complexity-guarantees-and-dos-resistance)  
-11. [Public API Design](#11-public-api-design)  
-12. [Benchmarking and Performance Engineering](#12-benchmarking-and-performance-engineering)  
-13. [Testing Strategy](#13-testing-strategy)  
-14. [Build/Release Profile and Tooling](#14-buildrelease-profile-and-tooling)  
-15. [Implementation Plan](#15-implementation-plan)  
-16. [Appendix A: Detailed Feature Semantics](#appendix-a-detailed-feature-semantics)  
-17. [Appendix B: Suggested Internal Modules](#appendix-b-suggested-internal-modules)  
+0. [Lessons from Reference Implementations](#0-lessons-from-reference-implementations)
+1. [Non-Goals and Ground Rules](#1-non-goals-and-ground-rules)
+2. [System Overview](#2-system-overview)
+3. [Scope: What We Implement vs. What We Refuse](#3-scope-what-we-implement-vs-what-we-refuse)
+4. [Core Data Model: Cursors, Ranges, Events](#4-core-data-model-cursors-ranges-events)
+5. [Block Parser](#5-block-parser)
+6. [Inline Parser](#6-inline-parser)
+7. [HTML Renderer](#7-html-renderer)
+8. [Escaping, URLs, and Safety Boundaries](#8-escaping-urls-and-safety-boundaries)
+9. [SIMD and Hot-Path Engineering](#9-simd-and-hot-path-engineering)
+10. [Complexity Guarantees and DoS Resistance](#10-complexity-guarantees-and-dos-resistance)
+11. [Public API Design](#11-public-api-design)
+12. [Benchmarking and Performance Engineering](#12-benchmarking-and-performance-engineering)
+13. [Testing Strategy](#13-testing-strategy)
+14. [Build/Release Profile and Tooling](#14-buildrelease-profile-and-tooling)
+15. [Implementation Plan](#15-implementation-plan)
+16. [Appendix A: Detailed Feature Semantics](#appendix-a-detailed-feature-semantics)
+17. [Appendix B: Suggested Internal Modules](#appendix-b-suggested-internal-modules)
 18. [Appendix C: Micro-Optimizations Checklist](#appendix-c-micro-optimizations-checklist)
+19. [Appendix D: Apple Silicon Optimization Guide](#appendix-d-apple-silicon-optimization-guide)
+
+---
+
+## 0. Lessons from Reference Implementations
+
+This section synthesizes insights from analyzing two high-performance Markdown parsers:
+- **md4c** (C): Push-based callback parser, full CommonMark compliance
+- **pulldown-cmark** (Rust): Pull-based iterator parser, zero-copy design
+
+### 0.1 Architecture Comparison
+
+| Aspect | md4c | pulldown-cmark | Our Approach |
+|--------|------|----------------|--------------|
+| Parsing Model | Push (callbacks) | Pull (iterator) | **Push** (lower overhead) |
+| Memory Model | Reusable mark arrays | CowStr + arena | **Ranges + reusable buffers** |
+| Inline Strategy | 3-phase mark collection | Stack-based resolution | **2-phase scan-then-resolve** |
+| SIMD Usage | Loop unrolling (4x) | memchr only | **NEON intrinsics + memchr** |
+| Allocation | Growth factor 1.5x | CowStr inline optimization | **Pre-sized + pooling** |
+
+### 0.2 Key Techniques from md4c
+
+**Three-Phase Inline Processing** (critical for performance):
+1. **Mark Collection**: Single pass collecting delimiter positions into compact array
+2. **Mark Analysis**: Process by precedence (entities → code → HTML → links → emphasis)
+3. **Rendering**: Walk resolved marks and emit output
+
+**DoS Prevention via Limits**:
+- `CODESPAN_MARK_MAXLEN = 32`: Prevents quadratic code span resolution
+- `TABLE_MAXCOLCOUNT = 128`: Prevents output explosion
+- Early HTML recognition during mark collection
+
+**Loop Unrolling** (measured 4x improvement):
+```c
+while(off + 3 < end && !IS_MARK(off+0) && !IS_MARK(off+1)
+                    && !IS_MARK(off+2) && !IS_MARK(off+3))
+    off += 4;
+```
+
+**Mark Character Map** (256-entry lookup table):
+- O(1) character classification
+- Eliminates complex conditional chains
+
+**Emphasis Modulo-3 Optimization**:
+- 6 separate stacks (asterisk/underscore × 3 modulo classes)
+- Reduces complexity of finding matching openers
+
+### 0.3 Key Techniques from pulldown-cmark
+
+**Zero-Copy String Handling**:
+```rust
+enum CowStr<'a> {
+    Borrowed(&'a str),      // Most common: zero allocation
+    Boxed(Box<str>),        // When modification needed
+    Inlined(InlineStr),     // 22 bytes inline for short strings
+}
+```
+
+**Tree Structure with Vec-Based Arena**:
+- Nodes stored contiguously in `Vec`
+- `NonZeroUsize` indices save memory
+- Better cache locality than pointer-based trees
+
+**Link Reference Expansion Limit**:
+- Tracks expansion count to prevent recursive DoS
+- Limit: `min(text_len, 100KB)`
+
+**Static Size Assertions** (enforce compile-time constraints):
+```rust
+const _: [(); 2] = [(); mem::size_of::<TagEnd>()]; // Must be 2 bytes
+```
+
+### 0.4 Synthesis: Our Optimal Approach
+
+Based on analysis, we adopt:
+
+1. **Push model with reusable event buffers** (md4c-style, lower overhead than iterators)
+2. **Range-based text representation** (no CowStr complexity, just `(start, end)`)
+3. **Mark collection phase** before inline parsing (md4c's biggest win)
+4. **256-byte lookup tables** for character classification
+5. **Loop unrolling in scanning** (4x unroll, proven effective)
+6. **Separate delimiter stacks by type and modulo-3** (md4c emphasis optimization)
+7. **Pre-allocated buffers with 1.5x growth** (both parsers use this)
+8. **Static size assertions** (pulldown-cmark's compile-time guarantees)
+
+### 0.5 What We Improve Upon
+
+| Limitation in Existing Parsers | Our Improvement |
+|-------------------------------|-----------------|
+| md4c: No SIMD, only loop unrolling | ARM NEON intrinsics for scanning |
+| pulldown-cmark: Iterator overhead | Direct buffer writes |
+| Both: Generic x86/ARM code | Apple Silicon-specific optimizations |
+| md4c: C memory safety concerns | Rust with minimal unsafe |
+| pulldown-cmark: CowStr allocation overhead | Pure range-based model |
 
 ---
 
