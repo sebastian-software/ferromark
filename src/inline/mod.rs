@@ -400,15 +400,6 @@ mod tests {
         events
     }
 
-    fn get_text<'a>(input: &'a str, event: &InlineEvent) -> &'a str {
-        match event {
-            InlineEvent::Text(range) | InlineEvent::Code(range) => {
-                std::str::from_utf8(range.slice(input.as_bytes())).unwrap()
-            }
-            _ => panic!("Expected text event"),
-        }
-    }
-
     #[test]
     fn test_plain_text() {
         let events = parse_inline("hello world");
