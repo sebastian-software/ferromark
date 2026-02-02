@@ -54,6 +54,7 @@ impl HtmlWriter {
     /// Grow buffer using md4c's strategy: 1.5x + 128-byte alignment.
     #[cold]
     #[inline(never)]
+    #[allow(dead_code)]
     fn grow(&mut self, needed: usize) {
         let new_cap = ((self.out.len() + needed) * 3 / 2 + 128) & !127;
         self.out.reserve(new_cap.saturating_sub(self.out.capacity()));
@@ -61,6 +62,7 @@ impl HtmlWriter {
 
     /// Ensure capacity for additional bytes.
     #[inline]
+    #[allow(dead_code)]
     fn ensure_capacity(&mut self, additional: usize) {
         if self.out.len() + additional > self.out.capacity() {
             self.grow(additional);

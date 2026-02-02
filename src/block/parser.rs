@@ -40,6 +40,7 @@ struct Container {
     /// Type of container.
     typ: ContainerType,
     /// Whether this container has had any content yet.
+    #[allow(dead_code)]
     has_content: bool,
 }
 
@@ -65,6 +66,7 @@ pub struct BlockParser<'a> {
     /// Stack of open containers (blockquotes, list items).
     container_stack: SmallVec<[Container; 8]>,
     /// Whether we're in a tight list context.
+    #[allow(dead_code)]
     tight_list: bool,
     /// Currently open lists (for tracking across item closes).
     open_lists: SmallVec<[OpenList; 4]>,
@@ -106,7 +108,7 @@ impl<'a> BlockParser<'a> {
 
     /// Parse a single line.
     fn parse_line(&mut self, events: &mut Vec<BlockEvent>) {
-        let line_start = self.cursor.offset();
+        let _line_start = self.cursor.offset();
 
         // If we're inside a fenced code block, handle it specially
         if self.fence_state.is_some() {
@@ -115,7 +117,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Skip leading spaces (up to 3 for most block elements)
-        let initial_indent = self.cursor.skip_spaces();
+        let _initial_indent = self.cursor.skip_spaces();
 
         // Check for blank line
         if self.cursor.is_eof() || self.cursor.at(b'\n') {
@@ -129,7 +131,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Try to match and continue existing containers
-        let matched_containers = self.match_containers(events);
+        let _matched_containers = self.match_containers(events);
 
         // Get current indent after container matching
         let indent = self.cursor.skip_spaces();
@@ -282,7 +284,7 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Peek ahead to see if there's a list marker of the same type.
-    fn peek_list_marker(&self, kind: ListKind, marker: u8) -> bool {
+    fn peek_list_marker(&self, kind: ListKind, _marker: u8) -> bool {
         let b = match self.cursor.peek() {
             Some(b) => b,
             None => return false,
@@ -327,7 +329,7 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Handle blank line for container continuation.
-    fn handle_blank_line_containers(&mut self, events: &mut Vec<BlockEvent>) {
+    fn handle_blank_line_containers(&mut self, _events: &mut Vec<BlockEvent>) {
         // Blank lines can close list items in some cases
         // For now, we keep containers open on blank lines
     }
@@ -369,7 +371,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for ordered list marker (1. 2. etc)
-        if let Some((start_num, marker_len)) = self.try_ordered_marker() {
+        if let Some((start_num, _marker_len)) = self.try_ordered_marker() {
             self.start_list_item(
                 ListKind::Ordered { start: start_num },
                 b'.',
@@ -544,7 +546,7 @@ impl<'a> BlockParser<'a> {
                 ContainerType::BlockQuote => {
                     events.push(BlockEvent::BlockQuoteEnd);
                 }
-                ContainerType::ListItem { kind, .. } => {
+                ContainerType::ListItem { .. } => {
                     events.push(BlockEvent::ListItemEnd);
 
                     // Check if this was the last item in the list
@@ -572,7 +574,7 @@ impl<'a> BlockParser<'a> {
     /// Try to parse a thematic break.
     /// Returns true if successful.
     fn try_thematic_break(&mut self, events: &mut Vec<BlockEvent>) -> bool {
-        let start_pos = self.cursor.offset();
+        let _start_pos = self.cursor.offset();
 
         // Must start with -, *, or _
         let marker = match self.cursor.peek() {
@@ -624,7 +626,7 @@ impl<'a> BlockParser<'a> {
             return false;
         }
 
-        let start_pos = self.cursor.offset();
+        let _start_pos = self.cursor.offset();
 
         // Count # characters (1-6)
         let mut level = 0u8;
@@ -743,7 +745,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // For backtick fences, info string cannot contain backticks
-        let info_start = temp_cursor.offset();
+        let _info_start = temp_cursor.offset();
 
         // Skip optional spaces before info string
         temp_cursor.skip_whitespace();
@@ -872,7 +874,7 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Parse a paragraph line.
-    fn parse_paragraph_line(&mut self, line_start: usize, events: &mut Vec<BlockEvent>) {
+    fn parse_paragraph_line(&mut self, _line_start: usize, _events: &mut Vec<BlockEvent>) {
         // Find end of line
         let content_start = self.cursor.offset();
         let line_end = match self.cursor.find_newline() {
@@ -1380,7 +1382,7 @@ mod tests {
         // Blockquote ends on blank line
         let mut found_quote_end = false;
         let mut found_para_after = false;
-        for (i, event) in events.iter().enumerate() {
+        for event in events.iter() {
             if *event == BlockEvent::BlockQuoteEnd {
                 found_quote_end = true;
             }

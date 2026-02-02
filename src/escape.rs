@@ -6,9 +6,11 @@
 use memchr::memchr3;
 
 /// Characters that need escaping in HTML text content.
+#[allow(dead_code)]
 const TEXT_ESCAPE_CHARS: &[u8] = b"<>&";
 
 /// Characters that need escaping in HTML attribute values.
+#[allow(dead_code)]
 const ATTR_ESCAPE_CHARS: &[u8] = b"<>&\"'";
 
 /// Lookup table for escapable characters in text content.
@@ -68,13 +70,12 @@ pub fn escape_attr_into(out: &mut Vec<u8>, input: &[u8]) {
 
 /// Internal escaping with a custom lookup table.
 #[inline]
-fn escape_into_with_table(out: &mut Vec<u8>, input: &[u8], escape_table: &[bool; 256]) {
+fn escape_into_with_table(out: &mut Vec<u8>, input: &[u8], _escape_table: &[bool; 256]) {
     let mut pos = 0;
 
     while pos < input.len() {
         // Fast path: find next escapable character using memchr3
         // This is SIMD-accelerated on most platforms
-        let search_start = pos;
         let remaining = &input[pos..];
 
         // Use memchr3 for the most common escapable chars
