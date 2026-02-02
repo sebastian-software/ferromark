@@ -175,3 +175,16 @@ fn spec_lists() {
     }
     eprintln!("\nLists: {}/{} passed", passed, passed + failed);
 }
+
+#[test]
+fn spec_emphasis() {
+    let (passed, failed, failures) = run_section_tests("Emphasis and strong emphasis");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(5)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nEmphasis: {}/{} passed", passed, passed + failed);
+}
