@@ -1107,45 +1107,153 @@ Also runtime options struct, but compile-time flags should control code size and
 
 ## 12. Benchmarking and Performance Engineering
 
-### 12.1 Benchmark Corpus
-Use:
-- Open-source README corpus
-- docs from real projects
-- synthetic worst-cases:
-  - deep nesting
-  - long delimiter runs
-  - huge code blocks
-  - repeated bracket patterns
+### 12.1 Benchmark-Focused Development Philosophy
 
-### 12.2 Metrics
-- Throughput (MB/s)
-- ns/byte
-- allocations/op (should be near zero in parsing)
-- branch misses, cache misses (`perf stat`)
-- flamegraphs (`perf record`, `cargo flamegraph`)
+**Every architectural decision must be validated by benchmarks.**
 
-### 12.3 Competitor Baselines
-Benchmark against:
-- `pulldown-cmark`
-- `comrak`
-- `cmark-gfm`
-- `markdown-rs`
+This is not premature optimization — it's the core methodology:
+1. Propose a technique (e.g., "use modulo-3 stacks for emphasis")
+2. Implement both approaches (current vs proposed)
+3. Benchmark on representative corpus
+4. Keep the winner, discard the loser
+5. Document the decision and numbers
 
-### 12.4 Build Profiles
-For benchmark builds:
-- `lto = "fat"`
-- `codegen-units = 1`
-- `panic = "abort"`
-- `opt-level = 3`
+```rust
+// Example: A/B test for inline parsing approach
+#[bench]
+fn inline_emphasis_modulo3_stacks(b: &mut Bencher) { ... }
 
-Consider:
-- PGO with representative corpus.
+#[bench]
+fn inline_emphasis_linear_scan(b: &mut Bencher) { ... }
 
-### 12.5 Regression Gates
-CI should reject:
-- throughput regressions > 2–3%
-- allocation regressions
-- extreme-case slowdowns
+// Results documented in DECISIONS.md:
+// | Approach        | emphasis.md | pathological.md |
+// |-----------------|-------------|-----------------|
+// | modulo-3 stacks | 145 MB/s    | 142 MB/s        |
+// | linear scan     | 138 MB/s    | 12 MB/s (!)     |
+// Winner: modulo-3 stacks (protects against pathological input)
+```
+
+### 12.2 Benchmark Corpus
+
+**Real-world documents** (what users actually parse):
+```
+bench/corpus/
+├── small/           # < 1 KB (API docs, comments)
+├── medium/          # 1-50 KB (READMEs, blog posts)
+├── large/           # 50-500 KB (documentation pages)
+└── huge/            # > 500 KB (generated docs, books)
+```
+
+Sources:
+- Top 100 GitHub READMEs by stars
+- Rust std library documentation
+- Real blog posts and articles
+
+**Synthetic worst-cases** (DoS resistance):
+```
+bench/pathological/
+├── deep_nesting.md        # 1000 nested blockquotes
+├── long_delimiters.md     # `````````...````````` (1000 backticks)
+├── many_openers.md        # *a](*b](*c]( ... (brackets/asterisks)
+├── huge_codeblock.md      # 10 MB code block
+└── emphasis_explosion.md  # *_*_*_*_... alternating
+```
+
+### 12.3 Metrics
+
+| Metric | Tool | Target |
+|--------|------|--------|
+| Throughput (MB/s) | criterion | ≥ pulldown-cmark × 1.2 |
+| ns/byte | criterion | track over time |
+| Allocations/op | dhat, heaptrack | ≈ 0 during parsing |
+| Peak memory | `/usr/bin/time -v` | ≤ 2× input size |
+| Branch misses | `perf stat` | minimize |
+| Cache misses | `perf stat` | minimize |
+| Instruction count | `cachegrind` | stable across runs |
+
+**Flamegraph workflow**:
+```bash
+# Record profile
+cargo flamegraph --bench parsing -- --bench "large_readme"
+
+# Analyze with flamegraph viewer
+open flamegraph.svg
+```
+
+### 12.4 Competitor Baselines
+
+Always benchmark against existing parsers to validate our progress:
+
+| Parser | Language | Notes |
+|--------|----------|-------|
+| `pulldown-cmark` | Rust | Our primary target to beat |
+| `comrak` | Rust | Full GFM, heavier |
+| `markdown-rs` | Rust | Different architecture |
+| `md4c` | C | Reference for raw speed |
+| `cmark-gfm` | C | GitHub's actual parser |
+
+```bash
+# Comparison benchmark
+cargo bench --bench comparison
+
+# Output example:
+# pulldown-cmark:  142 MB/s
+# comrak:           89 MB/s
+# md-fast (ours):  168 MB/s  ← goal
+```
+
+### 12.5 Continuous Benchmarking
+
+Track performance over time to catch regressions:
+
+```yaml
+# .github/workflows/bench.yml
+- name: Run benchmarks
+  run: cargo bench --bench parsing -- --save-baseline current
+
+- name: Compare to main
+  run: |
+    cargo bench --bench parsing -- --baseline main --save-baseline current
+    # Fail if >3% regression
+```
+
+**Benchmark history** (example tracking):
+```
+commit    | date       | large_readme | pathological | notes
+----------|------------|--------------|--------------|------------------
+abc123    | 2025-01-15 | 142 MB/s     | 89 MB/s      | baseline
+def456    | 2025-01-18 | 151 MB/s     | 92 MB/s      | +loop unrolling
+ghi789    | 2025-01-20 | 148 MB/s     | 140 MB/s     | +modulo-3 stacks
+```
+
+### 12.6 Build Profiles for Benchmarking
+
+See [Section 14.2](#142-build-profiles) for detailed configuration.
+
+**Quick reference**:
+```bash
+# Standard benchmark
+cargo bench
+
+# With native CPU optimizations
+RUSTFLAGS="-C target-cpu=native" cargo bench
+
+# With PGO (maximum performance)
+./scripts/bench-with-pgo.sh
+```
+
+### 12.7 When to Benchmark
+
+| Event | Benchmark? | Type |
+|-------|------------|------|
+| New parsing feature | Yes | Full suite |
+| Bug fix | Optional | Affected area |
+| Refactoring | Yes | Before/after |
+| Dependency update | Yes | Full suite |
+| Architecture change | **Required** | Full suite + pathological |
+| PR review | Yes | Comparison to main |
+| Release | **Required** | Full suite + comparison |
 
 ---
 
