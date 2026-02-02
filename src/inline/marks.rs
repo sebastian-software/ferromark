@@ -184,11 +184,8 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                     pos += 1;
                 }
 
-                // Determine opener/closer status based on surrounding chars
-                let before = if start > 0 { text[start - 1] } else { b' ' };
-                let after = if pos < len { text[pos] } else { b' ' };
-
-                let flags = compute_emphasis_flags(ch, before, after);
+                // Determine opener/closer status based on surrounding Unicode chars
+                let flags = compute_emphasis_flags_with_context(ch, text, start, pos);
 
                 if flags != 0 {
                     buffer.push(Mark::new(start as u32, pos as u32, ch, flags));
@@ -270,11 +267,13 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
 
 /// Compute opener/closer flags for emphasis delimiters.
 /// Based on CommonMark "left-flanking" and "right-flanking" rules.
-fn compute_emphasis_flags(ch: u8, before: u8, after: u8) -> u8 {
-    let before_space = is_whitespace_or_start(before);
-    let after_space = is_whitespace_or_end(after);
-    let before_punct = is_punctuation(before);
-    let after_punct = is_punctuation(after);
+///
+/// This version takes the full text and positions to properly handle Unicode.
+fn compute_emphasis_flags_with_context(ch: u8, text: &[u8], start: usize, end: usize) -> u8 {
+    let before_space = is_preceded_by_whitespace(text, start);
+    let after_space = is_followed_by_whitespace(text, end);
+    let before_punct = is_preceded_by_punctuation(text, start);
+    let after_punct = is_followed_by_punctuation(text, end);
 
     // Left-flanking: not followed by whitespace, and either
     // not followed by punctuation or preceded by whitespace/punctuation
@@ -311,18 +310,222 @@ fn compute_emphasis_flags(ch: u8, before: u8, after: u8) -> u8 {
     flags
 }
 
+/// Check if position is preceded by Unicode whitespace (or start of text).
 #[inline]
-fn is_whitespace_or_start(b: u8) -> bool {
-    b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' || b == 0
+fn is_preceded_by_whitespace(text: &[u8], pos: usize) -> bool {
+    if pos == 0 {
+        return true; // Start of text counts as whitespace
+    }
+
+    // Check for ASCII whitespace first (most common case)
+    let prev = text[pos - 1];
+    if prev == b' ' || prev == b'\t' || prev == b'\n' || prev == b'\r' {
+        return true;
+    }
+
+    // Check for multi-byte UTF-8 whitespace
+    // Non-breaking space U+00A0: 0xC2 0xA0
+    if pos >= 2 && text[pos - 2] == 0xC2 && text[pos - 1] == 0xA0 {
+        return true;
+    }
+
+    // Other common Unicode whitespace (3-byte sequences starting with 0xE2)
+    // U+2000-U+200A (various spaces), U+202F (narrow no-break space),
+    // U+205F (medium mathematical space), U+3000 (ideographic space)
+    if pos >= 3 && text[pos - 3] == 0xE2 {
+        let b2 = text[pos - 2];
+        let b3 = text[pos - 1];
+        // U+2000-U+200A: E2 80 80-8A
+        if b2 == 0x80 && (0x80..=0x8A).contains(&b3) {
+            return true;
+        }
+        // U+202F: E2 80 AF
+        if b2 == 0x80 && b3 == 0xAF {
+            return true;
+        }
+        // U+205F: E2 81 9F
+        if b2 == 0x81 && b3 == 0x9F {
+            return true;
+        }
+    }
+    // U+3000 (ideographic space): E3 80 80
+    if pos >= 3 && text[pos - 3] == 0xE3 && text[pos - 2] == 0x80 && text[pos - 1] == 0x80 {
+        return true;
+    }
+
+    false
 }
 
+/// Check if position is followed by Unicode whitespace (or end of text).
 #[inline]
-fn is_whitespace_or_end(b: u8) -> bool {
-    b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' || b == 0
+fn is_followed_by_whitespace(text: &[u8], pos: usize) -> bool {
+    if pos >= text.len() {
+        return true; // End of text counts as whitespace
+    }
+
+    let next = text[pos];
+
+    // ASCII whitespace (most common case)
+    if next == b' ' || next == b'\t' || next == b'\n' || next == b'\r' {
+        return true;
+    }
+
+    // Non-breaking space U+00A0: 0xC2 0xA0
+    if next == 0xC2 && pos + 1 < text.len() && text[pos + 1] == 0xA0 {
+        return true;
+    }
+
+    // Other Unicode whitespace (3-byte sequences)
+    if next == 0xE2 && pos + 2 < text.len() {
+        let b2 = text[pos + 1];
+        let b3 = text[pos + 2];
+        // U+2000-U+200A
+        if b2 == 0x80 && (0x80..=0x8A).contains(&b3) {
+            return true;
+        }
+        // U+202F
+        if b2 == 0x80 && b3 == 0xAF {
+            return true;
+        }
+        // U+205F
+        if b2 == 0x81 && b3 == 0x9F {
+            return true;
+        }
+    }
+    // U+3000
+    if next == 0xE3 && pos + 2 < text.len() && text[pos + 1] == 0x80 && text[pos + 2] == 0x80 {
+        return true;
+    }
+
+    false
 }
 
+/// Check if position is preceded by Unicode punctuation.
+/// For CommonMark purposes, this includes currency and other symbols.
 #[inline]
-fn is_punctuation(b: u8) -> bool {
+fn is_preceded_by_punctuation(text: &[u8], pos: usize) -> bool {
+    if pos == 0 {
+        return false;
+    }
+
+    let prev = text[pos - 1];
+
+    // ASCII punctuation (most common)
+    if is_ascii_punctuation(prev) {
+        return true;
+    }
+
+    // Check for multi-byte UTF-8 punctuation/symbols
+    // We need to look backwards to find the start of the character
+    if prev >= 0x80 {
+        // It's a continuation byte or start of multi-byte char
+
+        // 2-byte sequences (Latin-1 Supplement: U+00A1-U+00BF)
+        // Includes: ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿
+        // These are treated as punctuation/symbols for flanking rules
+        if pos >= 2 && text[pos - 2] == 0xC2 {
+            let cp_low = text[pos - 1];
+            if (0xA1..=0xBF).contains(&cp_low) {
+                return true;
+            }
+        }
+        if pos >= 2 && text[pos - 2] == 0xC3 {
+            // U+00C0-U+00FF - mostly letters, but check for ×(D7) and ÷(F7)
+            let cp_low = text[pos - 1];
+            if cp_low == 0x97 || cp_low == 0xB7 { // × and ÷
+                return true;
+            }
+        }
+
+        // 3-byte sequences
+        if pos >= 3 && text[pos - 3] == 0xE2 {
+            let b2 = text[pos - 2];
+            let b3 = text[pos - 1];
+            // U+2010-U+2027 (dashes, quotes, etc.)
+            if b2 == 0x80 && (0x90..=0xA7).contains(&b3) {
+                return true;
+            }
+            // U+2030-U+205E (per mille, prime, etc.)
+            if b2 == 0x80 && (0xB0..=0xBF).contains(&b3) {
+                return true;
+            }
+            if b2 == 0x81 && (0x80..=0x9E).contains(&b3) {
+                return true;
+            }
+            // U+20A0-U+20CF (Currency Symbols) - includes €
+            // € (U+20AC) = E2 82 AC
+            if b2 == 0x82 && (0xA0..=0xCF).contains(&b3) {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+/// Check if position is followed by Unicode punctuation.
+/// For CommonMark purposes, this includes currency and other symbols.
+#[inline]
+fn is_followed_by_punctuation(text: &[u8], pos: usize) -> bool {
+    if pos >= text.len() {
+        return false;
+    }
+
+    let next = text[pos];
+
+    // ASCII punctuation (most common)
+    if is_ascii_punctuation(next) {
+        return true;
+    }
+
+    // Check for multi-byte UTF-8 punctuation/symbols
+    if next >= 0xC0 {
+        // Start of multi-byte sequence
+
+        // 2-byte sequences (Latin-1 Supplement: U+00A1-U+00BF)
+        if next == 0xC2 && pos + 1 < text.len() {
+            let cp_low = text[pos + 1];
+            // Includes currency symbols like £ (A3), ¥ (A5), etc.
+            if (0xA1..=0xBF).contains(&cp_low) {
+                return true;
+            }
+        }
+        if next == 0xC3 && pos + 1 < text.len() {
+            let cp_low = text[pos + 1];
+            if cp_low == 0x97 || cp_low == 0xB7 { // × and ÷
+                return true;
+            }
+        }
+
+        // 3-byte sequences
+        if next == 0xE2 && pos + 2 < text.len() {
+            let b2 = text[pos + 1];
+            let b3 = text[pos + 2];
+            // U+2010-U+2027 (dashes, quotes, etc.)
+            if b2 == 0x80 && (0x90..=0xA7).contains(&b3) {
+                return true;
+            }
+            // U+2030-U+205E (per mille, prime, etc.)
+            if b2 == 0x80 && (0xB0..=0xBF).contains(&b3) {
+                return true;
+            }
+            if b2 == 0x81 && (0x80..=0x9E).contains(&b3) {
+                return true;
+            }
+            // U+20A0-U+20CF (Currency Symbols) - includes €
+            // € (U+20AC) = E2 82 AC
+            if b2 == 0x82 && (0xA0..=0xCF).contains(&b3) {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+/// Check if a byte is ASCII punctuation.
+#[inline]
+fn is_ascii_punctuation(b: u8) -> bool {
     matches!(b,
         b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
         b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
@@ -396,5 +599,54 @@ mod tests {
                     "Intraword underscore should not be both opener and closer");
             }
         }
+    }
+
+    #[test]
+    fn test_unicode_whitespace_nbsp() {
+        // Non-breaking space U+00A0 should count as whitespace
+        // "*\u{a0}a\u{a0}*" should NOT be emphasis because it's surrounded by whitespace
+        let text = "*\u{a0}a\u{a0}*".as_bytes();
+        let mut buffer = MarkBuffer::new();
+        collect_marks(text, &mut buffer);
+
+        // Both asterisks should be considered adjacent to whitespace
+        // First * is followed by NBSP (whitespace) - not left-flanking, so can't open
+        // Last * is preceded by NBSP (whitespace) - not right-flanking, so can't close
+        // Since neither can open nor close, they won't be added as marks at all
+        // This is correct - they shouldn't form emphasis
+        assert_eq!(buffer.len(), 0, "No marks should be collected when asterisks are surrounded by whitespace");
+    }
+
+    #[test]
+    fn test_unicode_punctuation_precedes() {
+        // Example 352: a*"foo"*
+        // The first * is preceded by 'a' (letter) and followed by '"' (punctuation)
+        // Left-flanking: not followed by space AND (not followed by punct OR preceded by space/punct)
+        // Since it's followed by punct and NOT preceded by space/punct, it's NOT left-flanking
+        let text = b"a*\"foo\"*";
+        let mut buffer = MarkBuffer::new();
+        collect_marks(text, &mut buffer);
+
+        // Should have 2 marks for the asterisks
+        assert_eq!(buffer.len(), 2);
+        let first = &buffer.marks()[0];
+        let last = &buffer.marks()[1];
+
+        // First *: preceded by 'a' (not punct, not space), followed by '"' (punct)
+        // left_flanking = !after_space && (!after_punct || before_space || before_punct)
+        //              = true && (!true || false || false)
+        //              = true && false = false
+        // So first * is NOT left-flanking, can't open
+        assert!(!first.can_open(), "First * should not open: preceded by letter, followed by punct");
+
+        // Last *: preceded by '"' (punct), followed by end (space)
+        // right_flanking = !before_space && (!before_punct || after_space || after_punct)
+        //               = true && (!true || true || false)
+        //               = true && true = true
+        // But wait, it's also:
+        // left_flanking = !after_space && (!after_punct || before_space || before_punct)
+        //              = false (followed by end which is space)
+        // So it IS right-flanking but NOT left-flanking
+        assert!(last.can_close(), "Last * should close: preceded by punct, followed by end");
     }
 }
