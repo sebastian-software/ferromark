@@ -63,47 +63,53 @@ Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers:
 
 | Parser | Throughput (Medium) | Throughput (Large) | Relative |
 |--------|--------------------:|-------------------:|----------|
-| **md-fast** | **197 MiB/s** | **228 MiB/s** | **1.0x** |
-| pulldown-cmark | 154 MiB/s | 216 MiB/s | 0.78x |
-| comrak | 50 MiB/s | 64 MiB/s | 0.25x |
-| markdown-rs | 7.3 MiB/s | 7.5 MiB/s | 0.04x |
+| **md-fast** | **191 MiB/s** | **196 MiB/s** | **1.0x** |
+| pulldown-cmark | 153 MiB/s | 214 MiB/s | 0.80x |
+| comrak | 50 MiB/s | 65 MiB/s | 0.26x |
+| markdown-rs | 7.3 MiB/s | 7.4 MiB/s | 0.04x |
 
 **Key results:**
-- **27% faster** than pulldown-cmark on typical documents
-- **4x faster** than comrak (full CommonMark/GFM)
-- **30x faster** than markdown-rs
+- **25% faster** than pulldown-cmark on typical documents
+- **3.8x faster** than comrak (full CommonMark/GFM)
+- **26x faster** than markdown-rs
 
 Run benchmarks: `cargo bench --bench comparison`
 
 ## CommonMark Compliance
 
-Current: **344/652 tests passing (52.8%)**
+**In-scope compliance: 83.1% (304/366 tests)**
+
+We track compliance against a filtered subset of CommonMark tests, excluding features intentionally not supported (HTML blocks, setext headings, indented code blocks, reference links, tabs).
 
 | Section | Coverage |
 |---------|----------|
+| ATX headings | 100% |
+| Autolinks | 100% |
+| Backslash escapes | 100% |
 | Blank lines | 100% |
-| Textual content | 100% |
+| Code spans | 100% |
+| Fenced code blocks | 100% |
+| Hard line breaks | 100% |
+| Images | 100% |
 | Inlines | 100% |
+| Paragraphs | 100% |
 | Precedence | 100% |
 | Soft line breaks | 100% |
-| Emphasis | 93% |
-| ATX headings | 89% |
-| Paragraphs | 88% |
-| Hard line breaks | 87% |
-| Code spans | 86% |
-| Autolinks | 79% |
-| Thematic breaks | 74% |
-| Fenced code blocks | 66% |
-| Backslash escapes | 62% |
-| Block quotes | 52% |
-| Links | 37% |
-| Images | 36% |
+| Textual content | 100% |
+| Emphasis | 98% |
+| Thematic breaks | 88% |
+| Links | 69% |
+| Block quotes | 65% |
+| List items | 50% |
+| Entity references | 31% |
+| Lists | 29% |
 
 **Intentionally out of scope:**
-- HTML blocks (0% - by design)
+- HTML blocks (security by design)
 - Reference link definitions
 - Setext headings
 - Indented code blocks
+- Tabs
 - Tables (GFM extension)
 
 ## Usage
