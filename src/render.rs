@@ -111,6 +111,28 @@ impl HtmlWriter {
         escape::escape_full_into(&mut self.out, attr);
     }
 
+    /// Write URL/title with backslash escape processing and HTML attribute escaping.
+    /// Backslash-escaped punctuation characters have the backslash removed.
+    #[inline]
+    pub fn write_escaped_link_attr(&mut self, attr: &[u8]) {
+        let mut pos = 0;
+        while pos < attr.len() {
+            if attr[pos] == b'\\' && pos + 1 < attr.len() && is_link_escapable(attr[pos + 1]) {
+                // Skip backslash, write escaped char (with HTML escaping)
+                pos += 1;
+                escape::escape_full_into(&mut self.out, &attr[pos..pos + 1]);
+                pos += 1;
+            } else {
+                // Find next backslash or end
+                let start = pos;
+                while pos < attr.len() && !(attr[pos] == b'\\' && pos + 1 < attr.len() && is_link_escapable(attr[pos + 1])) {
+                    pos += 1;
+                }
+                escape::escape_full_into(&mut self.out, &attr[start..pos]);
+            }
+        }
+    }
+
     /// Write a newline.
     #[inline]
     pub fn newline(&mut self) {
@@ -411,6 +433,17 @@ impl HtmlWriter {
 
         self.write_bytes(&buf[i..]);
     }
+}
+
+/// Characters that can be escaped with backslash in CommonMark links.
+#[inline]
+fn is_link_escapable(b: u8) -> bool {
+    matches!(b,
+        b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
+        b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
+        b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
+        b'`' | b'{' | b'|' | b'}' | b'~'
+    )
 }
 
 impl Default for HtmlWriter {

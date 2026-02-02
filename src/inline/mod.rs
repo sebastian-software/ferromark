@@ -224,6 +224,18 @@ impl InlineParser {
             // Skip marks inside code spans
             let in_code = mark.flags & flags::IN_CODE != 0;
 
+            // Check if mark is inside a link's URL or title (not the link text)
+            let in_link_dest = resolved_links.iter().any(|link| {
+                // URL range: url_start to url_end
+                // Title range: title_start to title_end (if present)
+                let in_url = mark.pos >= link.url_start && mark.pos < link.url_end;
+                let in_title = link.title_start.map_or(false, |ts| {
+                    let te = link.title_end.unwrap();
+                    mark.pos >= ts && mark.pos < te
+                });
+                in_url || in_title
+            });
+
             if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
                 let escaped_char = text[(mark.pos + 1) as usize];
                 if escaped_char == b'\n' && !in_code {
@@ -233,7 +245,8 @@ impl InlineParser {
                         kind: EmitKind::HardBreak,
                         end: mark.end,
                     });
-                } else if !in_code {
+                } else if !in_code && !in_link_dest {
+                    // Skip escapes inside link URLs/titles (they're processed by renderer)
                     emit_points.push(EmitPoint {
                         pos: mark.pos,
                         kind: EmitKind::Escape(escaped_char),
