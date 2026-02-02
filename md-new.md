@@ -1591,81 +1591,83 @@ thread_local! {
 
 **No-regression rule**: Once a test passes, it must never fail again (see [Section 13.2](#132-no-regression-policy)).
 
-### Phase 0: Infrastructure (~1 week)
+### Phase 0: Infrastructure (~1 week) ✅
 
 **Goal**: Project skeleton, CI, benchmark harness
 
-- [ ] `Range`, `Cursor` types with tests
-- [ ] `HtmlWriter` with basic escaping
-- [ ] CommonMark spec test loader
-- [ ] Criterion benchmark harness
+- [x] `Range`, `Cursor` types with tests
+- [x] `HtmlWriter` with basic escaping
+- [x] CommonMark spec test loader
+- [x] Criterion benchmark harness
 - [ ] CI pipeline (test + bench + lint)
 - [ ] Competitor benchmark baseline
 
 **Milestone**: Can run `cargo test` and `cargo bench` against empty parser
 
-### Phase 1: Simplest Blocks (~1 week)
+### Phase 1: Simplest Blocks (~1 week) ✅
 
 **Goal**: Pass CommonMark sections 4.1-4.3 (~50 tests)
 
-- [ ] Thematic breaks (`---`, `***`, `___`)
-- [ ] ATX headings (`# Heading`)
-- [ ] Blank lines
-- [ ] Paragraphs (basic)
+- [x] Thematic breaks (`---`, `***`, `___`)
+- [x] ATX headings (`# Heading`)
+- [x] Blank lines
+- [x] Paragraphs (basic)
 
 **Milestone**: ~50 CommonMark tests passing, first benchmark numbers
 
-### Phase 2: Code Blocks (~1 week)
+### Phase 2: Code Blocks (~1 week) ✅
 
 **Goal**: Pass CommonMark sections 4.4-4.5 (~50 tests)
 
-- [ ] Fenced code blocks (``` and ~~~)
-- [ ] Info strings
+- [x] Fenced code blocks (``` and ~~~)
+- [x] Info strings
 - [ ] Indented code blocks (optional, may skip)
 
 **Milestone**: ~100 tests passing, benchmark code block throughput
 
-### Phase 3: Container Blocks (~2 weeks)
+### Phase 3: Container Blocks (~2 weeks) ✅
 
 **Goal**: Pass CommonMark sections 5.1-5.3 (~100 tests)
 
-- [ ] Block quotes
-- [ ] List items (basic)
-- [ ] Lists (ordered and unordered)
-- [ ] Container stack management
+- [x] Block quotes
+- [x] List items (basic)
+- [x] Lists (ordered and unordered)
+- [x] Container stack management
 
 **Milestone**: ~200 tests passing, no pathological slowdowns
 
-### Phase 4: Inline Basics (~2 weeks)
+### Phase 4: Inline Basics (~2 weeks) ✅
 
 **Goal**: Pass CommonMark sections 6.1-6.4 (~100 tests)
 
-- [ ] Code spans
-- [ ] Emphasis and strong (basic cases)
-- [ ] Backslash escapes
+- [x] Code spans
+- [x] Emphasis and strong (basic cases)
+- [x] Backslash escapes
 - [ ] Entity references (optional)
 
 **Milestone**: ~300 tests passing, inline benchmark baseline
 
-### Phase 5: Links and Images (~2 weeks)
+### Phase 5: Links and Images (~2 weeks) ✅
 
 **Goal**: Pass CommonMark sections 6.5-6.7 (~100 tests)
 
-- [ ] Links (inline)
-- [ ] Images
-- [ ] Autolinks
+- [x] Links (inline)
+- [x] Images
+- [x] Autolinks
 - [ ] Reference links (optional)
 
 **Milestone**: ~400 tests passing, full basic rendering
 
-### Phase 6: Edge Cases and Hardening (~2 weeks)
+### Phase 6: Edge Cases and Hardening (~2 weeks) 🚧
 
 **Goal**: Pass remaining CommonMark tests, DoS resistance
 
-- [ ] Emphasis edge cases (rule of three, etc.)
+- [x] Emphasis edge cases (Unicode whitespace/punctuation, nested emphasis, partial consumption)
 - [ ] Nested containers
 - [ ] Pathological input testing
 - [ ] Fuzzing campaign
+
+**Current**: 292/652 tests (44.8%), Emphasis at 87.1%
 
 **Milestone**: ~500+ tests passing, no crashes on fuzz corpus
 
@@ -1684,7 +1686,7 @@ thread_local! {
 ### Phase 8: Polish and Release (~1 week)
 
 - [ ] API documentation
-- [ ] README with benchmarks
+- [x] README with benchmarks
 - [ ] Publish to crates.io
 - [ ] Announce
 
