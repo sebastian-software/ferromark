@@ -1667,7 +1667,7 @@ thread_local! {
 - [ ] Pathological input testing
 - [ ] Fuzzing campaign
 
-**Current**: 292/652 tests (44.8%), Emphasis at 87.1%
+**Current**: 300/652 tests (46.0%), Emphasis at 93.2%
 
 **Milestone**: ~500+ tests passing, no crashes on fuzz corpus
 

@@ -59,15 +59,15 @@ Three-phase approach inspired by md4c:
 
 ## CommonMark Compliance
 
-Current: **292/652 tests passing (44.8%)**
+Current: **300/652 tests passing (46.0%)**
 
 | Section | Coverage |
 |---------|----------|
 | Blank lines | 100% |
 | Textual content | 100% |
 | Inlines | 100% |
+| Emphasis | 93% |
 | ATX headings | 89% |
-| Emphasis | 87% |
 | Autolinks | 79% |
 | Paragraphs | 75% |
 | Thematic breaks | 68% |
