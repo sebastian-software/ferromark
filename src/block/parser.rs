@@ -546,7 +546,7 @@ impl<'a> BlockParser<'a> {
                 ContainerType::BlockQuote => {
                     events.push(BlockEvent::BlockQuoteEnd);
                 }
-                ContainerType::ListItem { .. } => {
+                ContainerType::ListItem { kind, .. } => {
                     events.push(BlockEvent::ListItemEnd);
 
                     // Check if this was the last item in the list
@@ -556,7 +556,7 @@ impl<'a> BlockParser<'a> {
 
                     if !has_more_items {
                         // Close the list and remove from open_lists
-                        events.push(BlockEvent::ListEnd);
+                        events.push(BlockEvent::ListEnd { kind });
                         self.open_lists.pop();
                     }
                 }
@@ -915,12 +915,11 @@ impl<'a> BlockParser<'a> {
 
         events.push(BlockEvent::ParagraphStart);
 
-        // Emit text ranges for each line
-        // For now, emit them separately; later we might merge
+        // Emit text ranges for each line with soft breaks between
         for (i, range) in self.paragraph_lines.drain(..).enumerate() {
             if i > 0 {
-                // Add soft break between lines (as a single space in text)
-                // For now, just emit each range
+                // Add soft break between lines
+                events.push(BlockEvent::SoftBreak);
             }
             events.push(BlockEvent::Text(range));
         }
@@ -977,12 +976,15 @@ mod tests {
         let input = "Line 1\nLine 2\nLine 3";
         let events = parse(input);
 
-        assert_eq!(events.len(), 5);
+        // ParagraphStart, Text, SoftBreak, Text, SoftBreak, Text, ParagraphEnd
+        assert_eq!(events.len(), 7);
         assert_eq!(events[0], BlockEvent::ParagraphStart);
         assert_eq!(get_text(input, &events[1]), "Line 1");
-        assert_eq!(get_text(input, &events[2]), "Line 2");
-        assert_eq!(get_text(input, &events[3]), "Line 3");
-        assert_eq!(events[4], BlockEvent::ParagraphEnd);
+        assert_eq!(events[2], BlockEvent::SoftBreak);
+        assert_eq!(get_text(input, &events[3]), "Line 2");
+        assert_eq!(events[4], BlockEvent::SoftBreak);
+        assert_eq!(get_text(input, &events[5]), "Line 3");
+        assert_eq!(events[6], BlockEvent::ParagraphEnd);
     }
 
     #[test]
@@ -1352,7 +1354,8 @@ mod tests {
         assert_eq!(events[0], BlockEvent::BlockQuoteStart);
         assert_eq!(events[1], BlockEvent::ParagraphStart);
         assert_eq!(get_text(input, &events[2]), "line1");
-        assert_eq!(get_text(input, &events[3]), "line2");
+        assert_eq!(events[3], BlockEvent::SoftBreak);
+        assert_eq!(get_text(input, &events[4]), "line2");
     }
 
     #[test]
@@ -1494,7 +1497,7 @@ mod tests {
         let input = "- item\n\nparagraph";
         let events = parse(input);
 
-        let has_list_end = events.iter().any(|e| matches!(e, BlockEvent::ListEnd));
+        let has_list_end = events.iter().any(|e| matches!(e, BlockEvent::ListEnd { .. }));
         assert!(has_list_end);
     }
 

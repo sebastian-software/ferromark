@@ -81,6 +81,9 @@ fn render_block_event(input: &[u8], event: &BlockEvent, writer: &mut HtmlWriter)
         BlockEvent::ThematicBreak => {
             writer.thematic_break();
         }
+        BlockEvent::SoftBreak => {
+            writer.write_str("\n");
+        }
         BlockEvent::Text(range) => {
             writer.write_escaped_text(range.slice(input));
         }
@@ -108,10 +111,11 @@ fn render_block_event(input: &[u8], event: &BlockEvent, writer: &mut HtmlWriter)
                 }
             }
         }
-        BlockEvent::ListEnd => {
-            // We'd need to track whether it was ul or ol
-            // For now, assume ul
-            writer.ul_end();
+        BlockEvent::ListEnd { kind } => {
+            match kind {
+                block::ListKind::Unordered => writer.ul_end(),
+                block::ListKind::Ordered { .. } => writer.ol_end(),
+            }
         }
         BlockEvent::ListItemStart { .. } => {
             writer.li_start();

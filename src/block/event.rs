@@ -40,7 +40,10 @@ pub enum BlockEvent {
         kind: ListKind,
     },
     /// End of a list.
-    ListEnd,
+    ListEnd {
+        /// List type (ordered or unordered).
+        kind: ListKind,
+    },
 
     /// Start of a list item.
     ListItemStart {
@@ -52,6 +55,9 @@ pub enum BlockEvent {
 
     /// A thematic break (horizontal rule).
     ThematicBreak,
+
+    /// Soft line break (newline within paragraph).
+    SoftBreak,
 
     /// Inline content range to be parsed by the inline parser.
     Text(Range),
