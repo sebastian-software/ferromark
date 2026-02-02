@@ -194,14 +194,20 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
 
             b'\\' => {
                 // Backslash escape - mark position and skip escaped char
-                if pos + 1 < len && is_escapable(text[pos + 1]) {
-                    buffer.push(Mark::new(
-                        pos as u32,
-                        (pos + 2) as u32,
-                        b'\\',
-                        flags::POTENTIAL_OPENER, // Mark for processing
-                    ));
-                    pos += 2;
+                if pos + 1 < len {
+                    let next = text[pos + 1];
+                    if is_escapable(next) || next == b'\n' {
+                        // Regular escape or hard line break (backslash before newline)
+                        buffer.push(Mark::new(
+                            pos as u32,
+                            (pos + 2) as u32,
+                            b'\\',
+                            flags::POTENTIAL_OPENER, // Mark for processing
+                        ));
+                        pos += 2;
+                    } else {
+                        pos += 1;
+                    }
                 } else {
                     pos += 1;
                 }

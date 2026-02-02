@@ -218,12 +218,29 @@ impl InlineParser {
             }
         }
 
-        // Add backslash escapes
+        // Add backslash escapes and hard breaks
         for mark in marks {
             if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
+                let escaped_char = text[(mark.pos + 1) as usize];
+                if escaped_char == b'\n' {
+                    // Backslash before newline is a hard break
+                    emit_points.push(EmitPoint {
+                        pos: mark.pos,
+                        kind: EmitKind::HardBreak,
+                        end: mark.end,
+                    });
+                } else {
+                    emit_points.push(EmitPoint {
+                        pos: mark.pos,
+                        kind: EmitKind::Escape(escaped_char),
+                        end: mark.end,
+                    });
+                }
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0 {
+                // Two spaces before newline is a hard break
                 emit_points.push(EmitPoint {
                     pos: mark.pos,
-                    kind: EmitKind::Escape(text[(mark.pos + 1) as usize]),
+                    kind: EmitKind::HardBreak,
                     end: mark.end,
                 });
             }
@@ -300,6 +317,10 @@ impl InlineParser {
                 }
                 EmitKind::Escape(ch) => {
                     events.push(InlineEvent::EscapedChar(ch));
+                    skip_until = point.end;
+                }
+                EmitKind::HardBreak => {
+                    events.push(InlineEvent::HardBreak);
                     skip_until = point.end;
                 }
                 EmitKind::LinkStart { url_start, url_end, title_start, title_end } => {
@@ -381,6 +402,7 @@ enum EmitKind {
     StrongStart,
     StrongEnd,
     Escape(u8),
+    HardBreak,
     LinkStart { url_start: u32, url_end: u32, title_start: Option<u32>, title_end: Option<u32> },
     LinkEnd,
     ImageStart { url_start: u32, url_end: u32, title_start: Option<u32>, title_end: Option<u32> },
