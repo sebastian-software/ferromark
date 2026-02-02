@@ -1579,35 +1579,141 @@ thread_local! {
 
 ## 15. Implementation Plan
 
-### Phase 0: Skeleton
-- `Range`, `Cursor`, `HtmlWriter`
-- basic escaping functions
+### 15.0 Development Methodology
 
-### Phase 1: Block Parser MVP
-- paragraphs, headings, fences
-- lists (flat)
-- blockquotes
+**Test-driven, incremental development**:
+1. Pick next CommonMark spec section
+2. Add spec tests to `tests/failing/`
+3. Implement minimum code to pass tests
+4. Move passing tests to `tests/passing/`
+5. Benchmark, optimize if needed
+6. Repeat
 
-### Phase 2: Inline Parser MVP
-- text, emphasis/strong (simplified)
-- code spans
-- links
+**No-regression rule**: Once a test passes, it must never fail again (see [Section 13.2](#132-no-regression-policy)).
 
-### Phase 3: Integrate Renderer
-- block + inline event consumption
-- stable output formatting
+### Phase 0: Infrastructure (~1 week)
 
-### Phase 4: Add Tier-1 Features
-- strike
-- task list items
-- hard breaks
+**Goal**: Project skeleton, CI, benchmark harness
 
-### Phase 5: Performance Pass
-- profile hot loops
-- reserve tuning
-- specialized scanners
-- optional SIMD
-- PGO
+- [ ] `Range`, `Cursor` types with tests
+- [ ] `HtmlWriter` with basic escaping
+- [ ] CommonMark spec test loader
+- [ ] Criterion benchmark harness
+- [ ] CI pipeline (test + bench + lint)
+- [ ] Competitor benchmark baseline
+
+**Milestone**: Can run `cargo test` and `cargo bench` against empty parser
+
+### Phase 1: Simplest Blocks (~1 week)
+
+**Goal**: Pass CommonMark sections 4.1-4.3 (~50 tests)
+
+- [ ] Thematic breaks (`---`, `***`, `___`)
+- [ ] ATX headings (`# Heading`)
+- [ ] Blank lines
+- [ ] Paragraphs (basic)
+
+**Milestone**: ~50 CommonMark tests passing, first benchmark numbers
+
+### Phase 2: Code Blocks (~1 week)
+
+**Goal**: Pass CommonMark sections 4.4-4.5 (~50 tests)
+
+- [ ] Fenced code blocks (``` and ~~~)
+- [ ] Info strings
+- [ ] Indented code blocks (optional, may skip)
+
+**Milestone**: ~100 tests passing, benchmark code block throughput
+
+### Phase 3: Container Blocks (~2 weeks)
+
+**Goal**: Pass CommonMark sections 5.1-5.3 (~100 tests)
+
+- [ ] Block quotes
+- [ ] List items (basic)
+- [ ] Lists (ordered and unordered)
+- [ ] Container stack management
+
+**Milestone**: ~200 tests passing, no pathological slowdowns
+
+### Phase 4: Inline Basics (~2 weeks)
+
+**Goal**: Pass CommonMark sections 6.1-6.4 (~100 tests)
+
+- [ ] Code spans
+- [ ] Emphasis and strong (basic cases)
+- [ ] Backslash escapes
+- [ ] Entity references (optional)
+
+**Milestone**: ~300 tests passing, inline benchmark baseline
+
+### Phase 5: Links and Images (~2 weeks)
+
+**Goal**: Pass CommonMark sections 6.5-6.7 (~100 tests)
+
+- [ ] Links (inline)
+- [ ] Images
+- [ ] Autolinks
+- [ ] Reference links (optional)
+
+**Milestone**: ~400 tests passing, full basic rendering
+
+### Phase 6: Edge Cases and Hardening (~2 weeks)
+
+**Goal**: Pass remaining CommonMark tests, DoS resistance
+
+- [ ] Emphasis edge cases (rule of three, etc.)
+- [ ] Nested containers
+- [ ] Pathological input testing
+- [ ] Fuzzing campaign
+
+**Milestone**: ~500+ tests passing, no crashes on fuzz corpus
+
+### Phase 7: Performance Optimization (~2 weeks)
+
+**Goal**: Beat pulldown-cmark by 20%+
+
+- [ ] Profile hot loops
+- [ ] A/B test optimization hypotheses
+- [ ] NEON intrinsics (if beneficial)
+- [ ] PGO build
+- [ ] Memory optimization
+
+**Milestone**: Documented benchmark wins, or documented "good enough"
+
+### Phase 8: Polish and Release (~1 week)
+
+- [ ] API documentation
+- [ ] README with benchmarks
+- [ ] Publish to crates.io
+- [ ] Announce
+
+### Progress Tracking
+
+Maintain a `PROGRESS.md` file:
+
+```markdown
+# Implementation Progress
+
+## CommonMark Spec Coverage
+
+| Section | Name | Tests | Status |
+|---------|------|-------|--------|
+| 4.1 | Thematic breaks | 19/19 | ✅ Done |
+| 4.2 | ATX headings | 18/18 | ✅ Done |
+| 4.3 | Setext headings | 0/27 | ⏸️ Deferred |
+| 4.4 | Indented code | 0/12 | ⏸️ Deferred |
+| 4.5 | Fenced code | 29/29 | ✅ Done |
+| ... | ... | ... | ... |
+| **Total** | | **312/652** | **48%** |
+
+## Performance vs Competitors
+
+| Corpus | pulldown-cmark | comrak | md-fast |
+|--------|---------------|--------|---------|
+| small  | 180 MB/s | 95 MB/s | 210 MB/s |
+| large  | 142 MB/s | 78 MB/s | 168 MB/s |
+```
 
 ---
 
