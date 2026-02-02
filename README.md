@@ -77,7 +77,7 @@ Run benchmarks: `cargo bench --bench comparison`
 
 ## CommonMark Compliance
 
-Current: **334/652 tests passing (51.2%)**
+Current: **344/652 tests passing (52.8%)**
 
 | Section | Coverage |
 |---------|----------|
@@ -85,22 +85,25 @@ Current: **334/652 tests passing (51.2%)**
 | Textual content | 100% |
 | Inlines | 100% |
 | Precedence | 100% |
+| Soft line breaks | 100% |
 | Emphasis | 93% |
 | ATX headings | 89% |
 | Paragraphs | 88% |
 | Hard line breaks | 87% |
+| Code spans | 86% |
 | Autolinks | 79% |
 | Thematic breaks | 74% |
-| Code spans | 73% |
-| Fenced code blocks | 62% |
+| Fenced code blocks | 66% |
+| Backslash escapes | 62% |
 | Block quotes | 52% |
-| Backslash escapes | 54% |
-| Links | 34% |
+| Links | 37% |
+| Images | 36% |
 
 **Intentionally out of scope:**
 - HTML blocks (0% - by design)
 - Reference link definitions
 - Setext headings
+- Indented code blocks
 - Tables (GFM extension)
 
 ## Usage
