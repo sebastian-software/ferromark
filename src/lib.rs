@@ -8,6 +8,11 @@
 //! - No regex: pure byte-level scanning
 //! - No backtracking: O(n) time on all inputs
 //! - Minimal allocations: ranges into input buffer
+//!
+//! # Future Optimizations
+//! - `simdutf` / `simdutf8`: SIMD-accelerated UTF-8 validation for input
+//! - NEON intrinsics for ARM: inline marker scanning
+//! - Loop unrolling in hot paths (4x unroll like md4c)
 
 pub mod block;
 pub mod cursor;
