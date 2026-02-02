@@ -1,0 +1,49 @@
+[package]
+name = "md-fast"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Ultra-high-performance Markdown to HTML compiler"
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "md_fast"
+path = "src/lib.rs"
+
+[[bin]]
+name = "md-fast"
+path = "src/main.rs"
+
+[dependencies]
+memchr = "2.7"
+smallvec = "1.13"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.4"
+
+[features]
+default = ["std"]
+std = []
+neon = []
+trace = []
+
+[[bench]]
+name = "parsing"
+harness = false
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+strip = true
+
+[profile.release-debug]
+inherits = "release"
+debug = true
+strip = false
+
+[profile.bench]
+inherits = "release"
+debug = true
