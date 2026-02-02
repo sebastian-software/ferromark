@@ -57,6 +57,41 @@ pub fn to_html_into(input: &str, out: &mut Vec<u8>) {
     std::mem::swap(writer.buffer_mut(), out);
 }
 
+/// State for collecting paragraph content before inline parsing.
+struct ParagraphState {
+    /// Collected text content (joined with newlines).
+    content: Vec<u8>,
+    /// Whether we're currently in a paragraph.
+    in_paragraph: bool,
+}
+
+impl ParagraphState {
+    fn new() -> Self {
+        Self {
+            content: Vec::with_capacity(256),
+            in_paragraph: false,
+        }
+    }
+
+    fn start(&mut self) {
+        self.in_paragraph = true;
+        self.content.clear();
+    }
+
+    fn add_text(&mut self, text: &[u8]) {
+        self.content.extend_from_slice(text);
+    }
+
+    fn add_soft_break(&mut self) {
+        self.content.push(b'\n');
+    }
+
+    fn finish(&mut self) -> &[u8] {
+        self.in_paragraph = false;
+        &self.content
+    }
+}
+
 /// Render Markdown to an HtmlWriter.
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     // Parse blocks
@@ -68,9 +103,19 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     let mut inline_parser = InlineParser::new();
     let mut inline_events = Vec::new();
 
+    // State for accumulating paragraph content
+    let mut para_state = ParagraphState::new();
+
     // Render events to HTML
-    for event in events {
-        render_block_event(input, &event, writer, &mut inline_parser, &mut inline_events);
+    for event in &events {
+        render_block_event(
+            input,
+            event,
+            writer,
+            &mut inline_parser,
+            &mut inline_events,
+            &mut para_state,
+        );
     }
 }
 
@@ -81,12 +126,25 @@ fn render_block_event(
     writer: &mut HtmlWriter,
     inline_parser: &mut InlineParser,
     inline_events: &mut Vec<InlineEvent>,
+    para_state: &mut ParagraphState,
 ) {
     match event {
         BlockEvent::ParagraphStart => {
             writer.paragraph_start();
+            para_state.start();
         }
         BlockEvent::ParagraphEnd => {
+            // Parse all accumulated paragraph content at once
+            let content = para_state.finish();
+            if !content.is_empty() {
+                inline_events.clear();
+                inline_parser.parse(content, inline_events);
+
+                // Render inline events
+                for inline_event in inline_events.iter() {
+                    render_inline_event(content, inline_event, writer);
+                }
+            }
             writer.paragraph_end();
         }
         BlockEvent::HeadingStart { level } => {
@@ -99,17 +157,26 @@ fn render_block_event(
             writer.thematic_break();
         }
         BlockEvent::SoftBreak => {
-            writer.write_str("\n");
+            if para_state.in_paragraph {
+                para_state.add_soft_break();
+            } else {
+                writer.write_str("\n");
+            }
         }
         BlockEvent::Text(range) => {
-            // Process text through inline parser
             let text = range.slice(input);
-            inline_events.clear();
-            inline_parser.parse(text, inline_events);
+            if para_state.in_paragraph {
+                // Accumulate for later parsing
+                para_state.add_text(text);
+            } else {
+                // Parse immediately (e.g., heading content)
+                inline_events.clear();
+                inline_parser.parse(text, inline_events);
 
-            // Render inline events
-            for inline_event in inline_events.iter() {
-                render_inline_event(text, inline_event, writer);
+                // Render inline events
+                for inline_event in inline_events.iter() {
+                    render_inline_event(text, inline_event, writer);
+                }
             }
         }
         BlockEvent::Code(range) => {
