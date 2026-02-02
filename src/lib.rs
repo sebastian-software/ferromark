@@ -23,7 +23,7 @@ pub mod range;
 pub mod render;
 
 // Re-export primary types
-pub use block::{BlockEvent, BlockParser};
+pub use block::{fixup_list_tight, BlockEvent, BlockParser};
 pub use inline::{InlineEvent, InlineParser};
 pub use range::Range;
 pub use render::HtmlWriter;
@@ -99,12 +99,18 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     let mut events = Vec::new();
     parser.parse(&mut events);
 
+    // Fix up list tight status (ListStart gets its tight value from ListEnd)
+    fixup_list_tight(&mut events);
+
     // Create inline parser for text content
     let mut inline_parser = InlineParser::new();
     let mut inline_events = Vec::new();
 
     // State for accumulating paragraph content
     let mut para_state = ParagraphState::new();
+
+    // Track tight list nesting for paragraph rendering
+    let mut tight_list_depth = 0u32;
 
     // Render events to HTML
     for event in &events {
@@ -115,6 +121,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
             &mut inline_parser,
             &mut inline_events,
             &mut para_state,
+            &mut tight_list_depth,
         );
     }
 }
@@ -127,10 +134,14 @@ fn render_block_event(
     inline_parser: &mut InlineParser,
     inline_events: &mut Vec<InlineEvent>,
     para_state: &mut ParagraphState,
+    tight_list_depth: &mut u32,
 ) {
     match event {
         BlockEvent::ParagraphStart => {
-            writer.paragraph_start();
+            // In tight lists, don't emit <p> tags
+            if *tight_list_depth == 0 {
+                writer.paragraph_start();
+            }
             para_state.start();
         }
         BlockEvent::ParagraphEnd => {
@@ -145,7 +156,10 @@ fn render_block_event(
                     render_inline_event(content, inline_event, writer);
                 }
             }
-            writer.paragraph_end();
+            // In tight lists, don't emit </p> tags
+            if *tight_list_depth == 0 {
+                writer.paragraph_end();
+            }
         }
         BlockEvent::HeadingStart { level } => {
             writer.heading_start(*level);
@@ -196,7 +210,10 @@ fn render_block_event(
         BlockEvent::BlockQuoteEnd => {
             writer.blockquote_end();
         }
-        BlockEvent::ListStart { kind } => {
+        BlockEvent::ListStart { kind, tight } => {
+            if *tight {
+                *tight_list_depth += 1;
+            }
             match kind {
                 block::ListKind::Unordered => writer.ul_start(),
                 block::ListKind::Ordered { start } => {
@@ -204,10 +221,13 @@ fn render_block_event(
                 }
             }
         }
-        BlockEvent::ListEnd { kind } => {
+        BlockEvent::ListEnd { kind, tight } => {
             match kind {
                 block::ListKind::Unordered => writer.ul_end(),
                 block::ListKind::Ordered { .. } => writer.ol_end(),
+            }
+            if *tight {
+                *tight_list_depth = tight_list_depth.saturating_sub(1);
             }
         }
         BlockEvent::ListItemStart { .. } => {
@@ -472,5 +492,44 @@ More text."#;
         assert!(html.contains("<pre><code class=\"language-python\">"));
         assert!(html.contains("print"));
         assert!(html.contains("<p>More text.</p>"));
+    }
+
+    // Tight/loose list tests
+
+    #[test]
+    fn test_tight_list_unordered() {
+        let html = to_html("- foo\n- bar\n- baz");
+        // Tight list: no <p> tags inside list items
+        assert!(html.contains("<li>foo</li>"));
+        assert!(html.contains("<li>bar</li>"));
+        assert!(html.contains("<li>baz</li>"));
+        assert!(!html.contains("<li><p>"));
+    }
+
+    #[test]
+    fn test_loose_list_unordered() {
+        let html = to_html("- foo\n\n- bar\n\n- baz");
+        // Loose list: <p> tags inside list items
+        assert!(html.contains("<li><p>foo</p>"));
+        assert!(html.contains("<li><p>bar</p>"));
+        assert!(html.contains("<li><p>baz</p>"));
+    }
+
+    #[test]
+    fn test_tight_list_ordered() {
+        let html = to_html("1. first\n2. second\n3. third");
+        // Tight list: no <p> tags
+        assert!(html.contains("<li>first</li>"));
+        assert!(html.contains("<li>second</li>"));
+        assert!(html.contains("<li>third</li>"));
+        assert!(!html.contains("<li><p>"));
+    }
+
+    #[test]
+    fn test_loose_list_ordered() {
+        let html = to_html("1. first\n\n2. second");
+        // Loose list: <p> tags
+        assert!(html.contains("<li><p>first</p>"));
+        assert!(html.contains("<li><p>second</p>"));
     }
 }

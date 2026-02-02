@@ -49,6 +49,12 @@ struct Container {
 struct OpenList {
     kind: ListKind,
     marker: u8,
+    /// Whether the list is still tight (no blank lines between items).
+    tight: bool,
+    /// Whether we've seen a blank line since the last item started.
+    blank_since_item: bool,
+    /// Number of items so far.
+    item_count: u32,
 }
 
 /// Block parser state.
@@ -330,8 +336,10 @@ impl<'a> BlockParser<'a> {
 
     /// Handle blank line for container continuation.
     fn handle_blank_line_containers(&mut self, _events: &mut Vec<BlockEvent>) {
-        // Blank lines can close list items in some cases
-        // For now, we keep containers open on blank lines
+        // Mark any open lists as having seen a blank line
+        for open_list in self.open_lists.iter_mut() {
+            open_list.blank_since_item = true;
+        }
     }
 
     /// Try to start a blockquote.
@@ -470,9 +478,15 @@ impl<'a> BlockParser<'a> {
                 }
             }
 
-            // Start new list
-            events.push(BlockEvent::ListStart { kind });
-            self.open_lists.push(OpenList { kind, marker });
+            // Start new list (tight will be determined later)
+            events.push(BlockEvent::ListStart { kind, tight: true });
+            self.open_lists.push(OpenList {
+                kind,
+                marker,
+                tight: true,
+                blank_since_item: false,
+                item_count: 0,
+            });
         }
         // Note: if continuing_list is true, the previous item was already
         // closed by close_containers_from, so we just add the new item
@@ -489,6 +503,16 @@ impl<'a> BlockParser<'a> {
             },
             has_content: false,
         });
+
+        // Track item count and blank line status for tight/loose detection
+        if let Some(open_list) = self.open_lists.last_mut() {
+            // If we've seen a blank line since the previous item, list becomes loose
+            if open_list.item_count > 0 && open_list.blank_since_item {
+                open_list.tight = false;
+            }
+            open_list.item_count += 1;
+            open_list.blank_since_item = false;
+        }
 
         // Check for task list checkbox
         let task = self.try_task_checkbox();
@@ -556,7 +580,8 @@ impl<'a> BlockParser<'a> {
 
                     if !has_more_items {
                         // Close the list and remove from open_lists
-                        events.push(BlockEvent::ListEnd { kind });
+                        let tight = self.open_lists.last().map_or(true, |l| l.tight);
+                        events.push(BlockEvent::ListEnd { kind, tight });
                         self.open_lists.pop();
                     }
                 }
@@ -1408,7 +1433,7 @@ mod tests {
         let input = "- item";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered }));
+        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered, .. }));
         assert!(matches!(events[1], BlockEvent::ListItemStart { .. }));
         assert_eq!(events[2], BlockEvent::ParagraphStart);
         assert_eq!(get_text(input, &events[3]), "item");
@@ -1419,7 +1444,7 @@ mod tests {
         let input = "* item";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered }));
+        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered, .. }));
     }
 
     #[test]
@@ -1427,7 +1452,7 @@ mod tests {
         let input = "+ item";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered }));
+        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered, .. }));
     }
 
     #[test]
@@ -1453,7 +1478,7 @@ mod tests {
         let input = "1. first\n2. second";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 1 } }));
+        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 1 }, .. }));
     }
 
     #[test]
@@ -1461,7 +1486,7 @@ mod tests {
         let input = "5. fifth";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 5 } }));
+        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 5 }, .. }));
     }
 
     #[test]
@@ -1469,7 +1494,7 @@ mod tests {
         let input = "1) item";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { .. } }));
+        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { .. }, .. }));
     }
 
     #[test]

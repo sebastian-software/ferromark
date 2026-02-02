@@ -38,11 +38,15 @@ pub enum BlockEvent {
     ListStart {
         /// List type (ordered or unordered).
         kind: ListKind,
+        /// Whether the list is tight (no blank lines between items).
+        tight: bool,
     },
     /// End of a list.
     ListEnd {
         /// List type (ordered or unordered).
         kind: ListKind,
+        /// Whether the list is tight.
+        tight: bool,
     },
 
     /// Start of a list item.
