@@ -1151,20 +1151,142 @@ CI should reject:
 
 ## 13. Testing Strategy
 
-### 13.1 Correctness vs Performance Tests
-Separate suites:
-- **Correctness**: targeted examples; stable output snapshots.
-- **Performance**: benchmarks; not run on every PR unless stable environment exists.
+### 13.1 CommonMark Spec as Foundation
 
-### 13.2 Fuzzing
+The CommonMark specification includes **652 test cases** (as of spec 0.31). We use these as our
+correctness baseline, implementing support incrementally from simple to complex:
+
+```
+tests/
+├── spec/
+│   ├── commonmark-0.31.json    # Official test cases
+│   └── gfm-0.29.json           # GitHub extensions (optional)
+├── passing/                     # Tests we currently pass
+│   ├── 001-thematic-breaks.txt
+│   ├── 002-atx-headings.txt
+│   └── ...
+├── failing/                     # Tests we expect to fail (not yet implemented)
+└── regression/                  # Our own regression tests
+```
+
+**Implementation order** (simple → complex):
+
+| Phase | CommonMark Sections | ~Test Count |
+|-------|--------------------|-----------:|
+| 1 | Thematic breaks, ATX headings, Blank lines | ~30 |
+| 2 | Fenced code blocks, Paragraphs | ~50 |
+| 3 | Block quotes | ~25 |
+| 4 | Lists (basic) | ~80 |
+| 5 | Inline: code spans | ~20 |
+| 6 | Inline: emphasis/strong (basic) | ~100 |
+| 7 | Inline: links (basic) | ~80 |
+| 8 | Hard line breaks, soft breaks | ~15 |
+| 9 | Remaining edge cases | ~250 |
+
+### 13.2 No-Regression Policy
+
+**Core rule**: A test that passes must never start failing (unless we consciously decide to
+restructure the architecture for performance reasons).
+
+```rust
+// tests/regression.rs
+#[test]
+fn no_regressions() {
+    let passing_tests = load_tests("tests/passing/");
+    for test in passing_tests {
+        let output = parse_to_html(&test.input);
+        assert_eq!(output, test.expected,
+            "REGRESSION in {}: output changed", test.name);
+    }
+}
+```
+
+**CI enforcement**:
+```yaml
+# .github/workflows/ci.yml
+- name: Run regression tests
+  run: cargo test --test regression -- --nocapture
+
+- name: Check no new failures
+  run: |
+    # Fail if any test moved from passing/ to failing/
+    git diff --name-only tests/passing/ | grep -q . && exit 1 || true
+```
+
+**Exceptions to no-regression**:
+- Deliberate architecture change (documented in PR, reviewed)
+- Spec interpretation correction (with justification)
+- Performance optimization that changes whitespace handling (if acceptable)
+
+### 13.3 Benchmark-Driven Development
+
+Every significant change must include benchmark data:
+
+```rust
+// benches/comparison.rs
+use criterion::{criterion_group, Criterion};
+
+fn bench_approach_comparison(c: &mut Criterion) {
+    let input = include_str!("corpus/large_readme.md");
+
+    let mut group = c.benchmark_group("inline_parsing");
+
+    // Compare approaches
+    group.bench_function("current", |b| b.iter(|| parse_current(input)));
+    group.bench_function("experimental", |b| b.iter(|| parse_experimental(input)));
+
+    group.finish();
+}
+```
+
+**Decision criteria**:
+- New approach must be **≥5% faster** to justify added complexity
+- Or **simpler** at equal performance
+- Memory usage must not increase significantly
+
+### 13.4 Test Categories
+
+| Category | Purpose | When Run |
+|----------|---------|----------|
+| `unit` | Individual function tests | Every commit |
+| `spec` | CommonMark compliance | Every commit |
+| `regression` | No-regression checks | Every commit |
+| `bench` | Performance comparison | PR review, release |
+| `fuzz` | Crash/hang detection | Nightly, pre-release |
+| `pathological` | DoS resistance | Weekly, pre-release |
+
+### 13.5 Fuzzing
+
 Fuzz block parser and inline parser:
-- ensure no panics,
-- ensure termination under caps.
+- ensure no panics on any input,
+- ensure termination within time limits,
+- ensure memory usage bounded.
 
-### 13.3 Golden Tests
-For supported features:
-- maintain minimal “golden” HTML outputs.
-- avoid importing entire CommonMark spec suite unless you can accept failures.
+```bash
+# Run fuzzer
+cargo +nightly fuzz run block_fuzz -- -max_len=100000 -timeout=5
+
+# Minimize crash cases
+cargo +nightly fuzz tmin block_fuzz crash-xxxxx
+```
+
+### 13.6 Coverage Tracking
+
+Track which CommonMark spec sections are covered:
+
+```bash
+# Generate coverage report
+cargo test --test spec -- --report-coverage
+
+# Output:
+# Thematic breaks:     25/25 (100%)
+# ATX headings:        22/22 (100%)
+# Setext headings:      0/15 (  0%)  <- not implemented
+# ...
+# Total:              312/652 ( 48%)
+```
+
+**Goal**: Coverage should only increase, never decrease (unless consciously deferring a feature).
 
 ---
 
