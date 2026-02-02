@@ -253,4 +253,54 @@ Final paragraph."#;
         let html = String::from_utf8(buffer).unwrap();
         assert!(html.contains("<h1>Test</h1>"));
     }
+
+    // Code block tests
+
+    #[test]
+    fn test_code_block_basic() {
+        let html = to_html("```\ncode\n```");
+        assert!(html.contains("<pre><code>"));
+        assert!(html.contains("code"));
+        assert!(html.contains("</code></pre>"));
+    }
+
+    #[test]
+    fn test_code_block_with_language() {
+        let html = to_html("```rust\nfn main() {}\n```");
+        assert!(html.contains("<pre><code class=\"language-rust\">"));
+        assert!(html.contains("fn main() {}"));
+    }
+
+    #[test]
+    fn test_code_block_escapes_html() {
+        let html = to_html("```\n<script>alert('xss')</script>\n```");
+        assert!(html.contains("&lt;script&gt;"));
+        assert!(!html.contains("<script>"));
+    }
+
+    #[test]
+    fn test_code_block_multiline() {
+        let html = to_html("```\nline1\nline2\n```");
+        assert!(html.contains("line1"));
+        assert!(html.contains("line2"));
+    }
+
+    #[test]
+    fn test_code_block_in_document() {
+        let input = r#"# Title
+
+Some text.
+
+```python
+print("hello")
+```
+
+More text."#;
+        let html = to_html(input);
+        assert!(html.contains("<h1>Title</h1>"));
+        assert!(html.contains("<p>Some text.</p>"));
+        assert!(html.contains("<pre><code class=\"language-python\">"));
+        assert!(html.contains("print"));
+        assert!(html.contains("<p>More text.</p>"));
+    }
 }
