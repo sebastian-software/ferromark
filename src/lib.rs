@@ -88,6 +88,10 @@ impl ParagraphState {
 
     fn finish(&mut self) -> &[u8] {
         self.in_paragraph = false;
+        // CommonMark: strip trailing spaces/tabs from paragraph content
+        while self.content.last().map_or(false, |&b| b == b' ' || b == b'\t') {
+            self.content.pop();
+        }
         &self.content
     }
 }
@@ -262,7 +266,23 @@ fn render_inline_event(
         }
         InlineEvent::Code(range) => {
             writer.write_str("<code>");
-            writer.write_escaped_text(range.slice(text));
+            // CommonMark: line endings in code spans are converted to spaces
+            let code_content = range.slice(text);
+            for &b in code_content {
+                if b == b'\n' {
+                    writer.write_str(" ");
+                } else if b == b'<' {
+                    writer.write_str("&lt;");
+                } else if b == b'>' {
+                    writer.write_str("&gt;");
+                } else if b == b'&' {
+                    writer.write_str("&amp;");
+                } else if b == b'"' {
+                    writer.write_str("&quot;");
+                } else {
+                    writer.buffer_mut().push(b);
+                }
+            }
             writer.write_str("</code>");
         }
         InlineEvent::EmphasisStart => {

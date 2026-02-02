@@ -188,3 +188,16 @@ fn spec_emphasis() {
     }
     eprintln!("\nEmphasis: {}/{} passed", passed, passed + failed);
 }
+
+#[test]
+fn spec_hard_line_breaks() {
+    let (passed, failed, failures) = run_section_tests("Hard line breaks");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(5)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nHard line breaks: {}/{} passed", passed, passed + failed);
+}

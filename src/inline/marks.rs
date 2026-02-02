@@ -214,14 +214,19 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
             }
 
             b'\n' => {
-                // Check for hard break (two spaces before newline)
+                // Check for hard break (two or more spaces before newline)
                 let has_hard_break = pos >= 2
                     && text[pos - 1] == b' '
                     && text[pos - 2] == b' ';
 
                 if has_hard_break {
+                    // Find the start of ALL trailing spaces, not just 2
+                    let mut space_start = pos - 2;
+                    while space_start > 0 && text[space_start - 1] == b' ' {
+                        space_start -= 1;
+                    }
                     buffer.push(Mark::new(
-                        (pos - 2) as u32,
+                        space_start as u32,
                         (pos + 1) as u32,
                         b'\n',
                         flags::POTENTIAL_OPENER, // Hard break marker

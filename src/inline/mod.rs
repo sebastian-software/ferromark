@@ -219,25 +219,29 @@ impl InlineParser {
         }
 
         // Add backslash escapes and hard breaks
+        // Note: Hard breaks inside code spans should not be processed
         for mark in marks {
+            // Skip marks inside code spans
+            let in_code = mark.flags & flags::IN_CODE != 0;
+
             if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
                 let escaped_char = text[(mark.pos + 1) as usize];
-                if escaped_char == b'\n' {
-                    // Backslash before newline is a hard break
+                if escaped_char == b'\n' && !in_code {
+                    // Backslash before newline is a hard break (but not in code)
                     emit_points.push(EmitPoint {
                         pos: mark.pos,
                         kind: EmitKind::HardBreak,
                         end: mark.end,
                     });
-                } else {
+                } else if !in_code {
                     emit_points.push(EmitPoint {
                         pos: mark.pos,
                         kind: EmitKind::Escape(escaped_char),
                         end: mark.end,
                     });
                 }
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0 {
-                // Two spaces before newline is a hard break
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0 && !in_code {
+                // Two spaces before newline is a hard break (but not in code)
                 emit_points.push(EmitPoint {
                     pos: mark.pos,
                     kind: EmitKind::HardBreak,
