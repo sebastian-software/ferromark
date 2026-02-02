@@ -5,6 +5,17 @@ use crate::Range;
 
 use super::event::BlockEvent;
 
+/// State for an open fenced code block.
+#[derive(Debug, Clone)]
+struct FenceState {
+    /// The fence character (` or ~).
+    fence_char: u8,
+    /// Length of the opening fence.
+    fence_len: usize,
+    /// Indentation of the opening fence.
+    indent: usize,
+}
+
 /// Block parser state.
 pub struct BlockParser<'a> {
     /// Input bytes.
@@ -15,6 +26,8 @@ pub struct BlockParser<'a> {
     in_paragraph: bool,
     /// Accumulated paragraph text ranges.
     paragraph_lines: Vec<Range>,
+    /// Current fenced code block state, if inside one.
+    fence_state: Option<FenceState>,
 }
 
 impl<'a> BlockParser<'a> {
@@ -25,6 +38,7 @@ impl<'a> BlockParser<'a> {
             cursor: Cursor::new(input),
             in_paragraph: false,
             paragraph_lines: Vec::new(),
+            fence_state: None,
         }
     }
 
@@ -36,11 +50,23 @@ impl<'a> BlockParser<'a> {
 
         // Close any open paragraph at end of input
         self.close_paragraph(events);
+
+        // Close any unclosed code fence
+        if self.fence_state.is_some() {
+            self.fence_state = None;
+            events.push(BlockEvent::CodeBlockEnd);
+        }
     }
 
     /// Parse a single line.
     fn parse_line(&mut self, events: &mut Vec<BlockEvent>) {
         let line_start = self.cursor.offset();
+
+        // If we're inside a fenced code block, handle it specially
+        if self.fence_state.is_some() {
+            self.parse_fence_line(events);
+            return;
+        }
 
         // Skip leading spaces (up to 3 for most block elements)
         let indent = self.cursor.skip_spaces();
@@ -56,6 +82,11 @@ impl<'a> BlockParser<'a> {
 
         // Try to parse block-level constructs (only if indent < 4)
         if indent < 4 {
+            // Check for fenced code block
+            if self.try_code_fence(indent, events) {
+                return;
+            }
+
             // Check for thematic break
             if self.try_thematic_break(events) {
                 return;
@@ -220,6 +251,157 @@ impl<'a> BlockParser<'a> {
         }
 
         pos
+    }
+
+    /// Try to parse a fenced code block opening.
+    /// Returns true if successful.
+    fn try_code_fence(&mut self, indent: usize, events: &mut Vec<BlockEvent>) -> bool {
+        // Must start with ` or ~
+        let fence_char = match self.cursor.peek() {
+            Some(b'`') | Some(b'~') => self.cursor.peek().unwrap(),
+            _ => return false,
+        };
+
+        // Count fence characters (need at least 3)
+        let mut fence_len = 0;
+        let mut temp_cursor = self.cursor;
+
+        while temp_cursor.at(fence_char) {
+            fence_len += 1;
+            temp_cursor.bump();
+        }
+
+        if fence_len < 3 {
+            return false;
+        }
+
+        // For backtick fences, info string cannot contain backticks
+        let info_start = temp_cursor.offset();
+
+        // Skip optional spaces before info string
+        temp_cursor.skip_whitespace();
+        let info_content_start = temp_cursor.offset();
+
+        // Find end of line
+        let line_end = match temp_cursor.find_newline() {
+            Some(pos) => info_content_start + pos,
+            None => info_content_start + temp_cursor.remaining(),
+        };
+
+        // Check for backticks in info string (invalid for backtick fences)
+        if fence_char == b'`' {
+            let info_slice = &self.input[info_content_start..line_end];
+            if info_slice.contains(&b'`') {
+                return false;
+            }
+        }
+
+        // Trim trailing whitespace from info string
+        let mut info_end = line_end;
+        while info_end > info_content_start
+            && (self.input[info_end - 1] == b' ' || self.input[info_end - 1] == b'\t')
+        {
+            info_end -= 1;
+        }
+
+        // Move cursor past the line
+        self.cursor = Cursor::new_at(self.input, line_end);
+        if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+            self.cursor.bump();
+        }
+
+        // Close any open paragraph
+        self.close_paragraph(events);
+
+        // Store fence state
+        self.fence_state = Some(FenceState {
+            fence_char,
+            fence_len,
+            indent,
+        });
+
+        // Emit code block start with info string
+        let info = if info_end > info_content_start {
+            Some(Range::from_usize(info_content_start, info_end))
+        } else {
+            None
+        };
+        events.push(BlockEvent::CodeBlockStart { info });
+
+        true
+    }
+
+    /// Parse a line inside a fenced code block.
+    fn parse_fence_line(&mut self, events: &mut Vec<BlockEvent>) {
+        let fence = self.fence_state.as_ref().unwrap();
+        let fence_char = fence.fence_char;
+        let fence_len = fence.fence_len;
+        let fence_indent = fence.indent;
+
+        let line_start = self.cursor.offset();
+
+        // Skip up to fence_indent spaces
+        let mut spaces = 0;
+        while spaces < fence_indent && self.cursor.at(b' ') {
+            self.cursor.bump();
+            spaces += 1;
+        }
+
+        // Check for closing fence
+        if self.cursor.at(fence_char) {
+            let mut closing_len = 0;
+            let mut temp_cursor = self.cursor;
+
+            while temp_cursor.at(fence_char) {
+                closing_len += 1;
+                temp_cursor.bump();
+            }
+
+            // Closing fence must be at least as long as opening
+            if closing_len >= fence_len {
+                // Check that rest of line is only spaces
+                temp_cursor.skip_whitespace();
+                if temp_cursor.is_eof() || temp_cursor.at(b'\n') {
+                    // Valid closing fence
+                    self.cursor = temp_cursor;
+                    if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+                        self.cursor.bump();
+                    }
+
+                    self.fence_state = None;
+                    events.push(BlockEvent::CodeBlockEnd);
+                    return;
+                }
+            }
+        }
+
+        // Not a closing fence, emit as code content
+        // Reset to line start and capture the whole line
+        self.cursor = Cursor::new_at(self.input, line_start);
+
+        // Skip up to fence_indent spaces for content
+        let mut spaces = 0;
+        while spaces < fence_indent && self.cursor.at(b' ') {
+            self.cursor.bump();
+            spaces += 1;
+        }
+
+        let content_start = self.cursor.offset();
+
+        // Find end of line
+        let line_end = match self.cursor.find_newline() {
+            Some(pos) => content_start + pos,
+            None => content_start + self.cursor.remaining(),
+        };
+
+        // Move cursor to next line
+        self.cursor = Cursor::new_at(self.input, line_end);
+        if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+            self.cursor.bump();
+        }
+
+        // Emit the code line (including newline conceptually)
+        events.push(BlockEvent::Code(Range::from_usize(content_start, line_end)));
     }
 
     /// Parse a paragraph line.
@@ -509,5 +691,173 @@ mod tests {
     fn test_thematic_break_with_leading_spaces() {
         let events = parse("   ---");
         assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+    }
+
+    // Fenced code block tests
+
+    fn get_code<'a>(input: &'a str, event: &BlockEvent) -> &'a str {
+        match event {
+            BlockEvent::Code(range) => {
+                std::str::from_utf8(range.slice(input.as_bytes())).unwrap()
+            }
+            _ => panic!("Expected Code event"),
+        }
+    }
+
+    fn get_info<'a>(input: &'a str, event: &BlockEvent) -> Option<&'a str> {
+        match event {
+            BlockEvent::CodeBlockStart { info } => {
+                info.as_ref().map(|r| std::str::from_utf8(r.slice(input.as_bytes())).unwrap())
+            }
+            _ => panic!("Expected CodeBlockStart event"),
+        }
+    }
+
+    #[test]
+    fn test_code_fence_backticks() {
+        let input = "```\ncode\n```";
+        let events = parse(input);
+
+        assert_eq!(events.len(), 3);
+        assert!(matches!(events[0], BlockEvent::CodeBlockStart { .. }));
+        assert_eq!(get_code(input, &events[1]), "code");
+        assert_eq!(events[2], BlockEvent::CodeBlockEnd);
+    }
+
+    #[test]
+    fn test_code_fence_tildes() {
+        let input = "~~~\ncode\n~~~";
+        let events = parse(input);
+
+        assert_eq!(events.len(), 3);
+        assert!(matches!(events[0], BlockEvent::CodeBlockStart { .. }));
+        assert_eq!(get_code(input, &events[1]), "code");
+        assert_eq!(events[2], BlockEvent::CodeBlockEnd);
+    }
+
+    #[test]
+    fn test_code_fence_with_info() {
+        let input = "```rust\nfn main() {}\n```";
+        let events = parse(input);
+
+        assert_eq!(events.len(), 3);
+        assert_eq!(get_info(input, &events[0]), Some("rust"));
+        assert_eq!(get_code(input, &events[1]), "fn main() {}");
+    }
+
+    #[test]
+    fn test_code_fence_info_with_spaces() {
+        let input = "```rust cargo\ncode\n```";
+        let events = parse(input);
+
+        assert_eq!(get_info(input, &events[0]), Some("rust cargo"));
+    }
+
+    #[test]
+    fn test_code_fence_longer_closing() {
+        let input = "```\ncode\n`````";
+        let events = parse(input);
+
+        assert_eq!(events.len(), 3);
+        assert_eq!(events[2], BlockEvent::CodeBlockEnd);
+    }
+
+    #[test]
+    fn test_code_fence_shorter_closing_invalid() {
+        let input = "````\ncode\n```";
+        let events = parse(input);
+
+        // Should not close, code continues and fence closes at EOF
+        assert_eq!(events.len(), 4); // start, code, "```", end
+    }
+
+    #[test]
+    fn test_code_fence_empty() {
+        let input = "```\n```";
+        let events = parse(input);
+
+        assert_eq!(events.len(), 2);
+        assert!(matches!(events[0], BlockEvent::CodeBlockStart { .. }));
+        assert_eq!(events[1], BlockEvent::CodeBlockEnd);
+    }
+
+    #[test]
+    fn test_code_fence_multiline() {
+        let input = "```\nline1\nline2\nline3\n```";
+        let events = parse(input);
+
+        assert_eq!(events.len(), 5);
+        assert_eq!(get_code(input, &events[1]), "line1");
+        assert_eq!(get_code(input, &events[2]), "line2");
+        assert_eq!(get_code(input, &events[3]), "line3");
+    }
+
+    #[test]
+    fn test_code_fence_no_closing() {
+        let input = "```\ncode";
+        let events = parse(input);
+
+        // Code block should be closed at EOF
+        assert_eq!(events.len(), 3);
+        assert!(matches!(events[0], BlockEvent::CodeBlockStart { .. }));
+        assert_eq!(get_code(input, &events[1]), "code");
+        assert_eq!(events[2], BlockEvent::CodeBlockEnd);
+    }
+
+    #[test]
+    fn test_code_fence_with_blank_lines() {
+        let input = "```\n\ncode\n\n```";
+        let events = parse(input);
+
+        assert_eq!(events.len(), 5);
+        assert_eq!(get_code(input, &events[1]), "");
+        assert_eq!(get_code(input, &events[2]), "code");
+        assert_eq!(get_code(input, &events[3]), "");
+    }
+
+    #[test]
+    fn test_code_fence_backticks_in_tilde_fence() {
+        let input = "~~~\n```\n~~~";
+        let events = parse(input);
+
+        assert_eq!(events.len(), 3);
+        assert_eq!(get_code(input, &events[1]), "```");
+    }
+
+    #[test]
+    fn test_code_fence_closes_paragraph() {
+        let input = "text\n```\ncode\n```";
+        let events = parse(input);
+
+        assert_eq!(events[0], BlockEvent::ParagraphStart);
+        assert_eq!(events[2], BlockEvent::ParagraphEnd);
+        assert!(matches!(events[3], BlockEvent::CodeBlockStart { .. }));
+    }
+
+    #[test]
+    fn test_code_fence_two_backticks_invalid() {
+        let input = "``\ncode\n``";
+        let events = parse(input);
+
+        // Two backticks is not a valid fence
+        assert_eq!(events[0], BlockEvent::ParagraphStart);
+    }
+
+    #[test]
+    fn test_code_fence_backtick_in_info_invalid() {
+        let input = "```rust`extra\ncode\n```";
+        let events = parse(input);
+
+        // Backtick in info string makes it not a code fence
+        assert_eq!(events[0], BlockEvent::ParagraphStart);
+    }
+
+    #[test]
+    fn test_code_fence_preserves_content() {
+        let input = "```\n  indented\n    more\n```";
+        let events = parse(input);
+
+        assert_eq!(get_code(input, &events[1]), "  indented");
+        assert_eq!(get_code(input, &events[2]), "    more");
     }
 }
