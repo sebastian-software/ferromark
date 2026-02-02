@@ -12,12 +12,14 @@
 pub mod block;
 pub mod cursor;
 pub mod escape;
+pub mod inline;
 pub mod limits;
 pub mod range;
 pub mod render;
 
 // Re-export primary types
 pub use block::{BlockEvent, BlockParser};
+pub use inline::{InlineEvent, InlineParser};
 pub use range::Range;
 pub use render::HtmlWriter;
 
@@ -57,14 +59,24 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     let mut events = Vec::new();
     parser.parse(&mut events);
 
+    // Create inline parser for text content
+    let mut inline_parser = InlineParser::new();
+    let mut inline_events = Vec::new();
+
     // Render events to HTML
     for event in events {
-        render_block_event(input, &event, writer);
+        render_block_event(input, &event, writer, &mut inline_parser, &mut inline_events);
     }
 }
 
 /// Render a single block event to HTML.
-fn render_block_event(input: &[u8], event: &BlockEvent, writer: &mut HtmlWriter) {
+fn render_block_event(
+    input: &[u8],
+    event: &BlockEvent,
+    writer: &mut HtmlWriter,
+    inline_parser: &mut InlineParser,
+    inline_events: &mut Vec<InlineEvent>,
+) {
     match event {
         BlockEvent::ParagraphStart => {
             writer.paragraph_start();
@@ -85,9 +97,18 @@ fn render_block_event(input: &[u8], event: &BlockEvent, writer: &mut HtmlWriter)
             writer.write_str("\n");
         }
         BlockEvent::Text(range) => {
-            writer.write_escaped_text(range.slice(input));
+            // Process text through inline parser
+            let text = range.slice(input);
+            inline_events.clear();
+            inline_parser.parse(text, inline_events);
+
+            // Render inline events
+            for inline_event in inline_events.iter() {
+                render_inline_event(text, inline_event, writer);
+            }
         }
         BlockEvent::Code(range) => {
+            // Code block content - no inline parsing
             writer.write_escaped_text(range.slice(input));
         }
         BlockEvent::CodeBlockStart { info } => {
@@ -122,6 +143,43 @@ fn render_block_event(input: &[u8], event: &BlockEvent, writer: &mut HtmlWriter)
         }
         BlockEvent::ListItemEnd => {
             writer.li_end();
+        }
+    }
+}
+
+/// Render a single inline event to HTML.
+fn render_inline_event(text: &[u8], event: &InlineEvent, writer: &mut HtmlWriter) {
+    match event {
+        InlineEvent::Text(range) => {
+            writer.write_escaped_text(range.slice(text));
+        }
+        InlineEvent::Code(range) => {
+            writer.write_str("<code>");
+            writer.write_escaped_text(range.slice(text));
+            writer.write_str("</code>");
+        }
+        InlineEvent::EmphasisStart => {
+            writer.write_str("<em>");
+        }
+        InlineEvent::EmphasisEnd => {
+            writer.write_str("</em>");
+        }
+        InlineEvent::StrongStart => {
+            writer.write_str("<strong>");
+        }
+        InlineEvent::StrongEnd => {
+            writer.write_str("</strong>");
+        }
+        InlineEvent::SoftBreak => {
+            writer.write_str("\n");
+        }
+        InlineEvent::HardBreak => {
+            writer.write_str("<br />\n");
+        }
+        InlineEvent::EscapedChar(ch) => {
+            // Write the escaped character (the actual char, not the backslash)
+            let bytes = [*ch];
+            writer.write_escaped_text(&bytes);
         }
     }
 }

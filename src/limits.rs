@@ -15,6 +15,9 @@ pub const MAX_BRACKET_DEPTH: usize = 8;
 /// Maximum delimiter stack size per type
 pub const MAX_DELIMITER_STACK: usize = 64;
 
+/// Maximum number of marks collected during inline parsing
+pub const MAX_INLINE_MARKS: usize = 4096;
+
 /// Maximum backtick run length for code spans (prevents O(n^2) matching)
 /// Longer runs are treated as literal text
 pub const MAX_CODE_SPAN_BACKTICKS: usize = 32;
