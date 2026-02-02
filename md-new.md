@@ -709,22 +709,87 @@ All caps prevent pathological inputs from exploding time.
 ### 7.1 Responsibilities
 Consume events and write HTML into a single buffer.
 
-### 7.2 Output Buffer
-Use `Vec<u8>` for maximum control. Provide helper:
+### 7.2 Output Buffer (Optimized for Reuse)
+
+Use `Vec<u8>` for maximum control. md4c's growth strategy (1.5x + 128-byte alignment):
 
 ```rust
+/// HTML output writer with optimized buffer management
 struct HtmlWriter {
     out: Vec<u8>,
 }
+
+impl HtmlWriter {
+    /// Create with pre-allocated capacity based on input size
+    fn with_capacity_for(input_len: usize) -> Self {
+        // Typical HTML is 1.25x input size; reserve extra for safety
+        let capacity = input_len + input_len / 4;
+        Self { out: Vec::with_capacity(capacity) }
+    }
+
+    /// Grow buffer using md4c's strategy: 1.5x + 128-byte alignment
+    #[cold]
+    fn grow(&mut self, needed: usize) {
+        let new_cap = ((self.out.len() + needed) * 3 / 2 + 128) & !127;
+        self.out.reserve(new_cap - self.out.capacity());
+    }
+
+    /// Write bytes without formatting overhead
+    #[inline]
+    fn write_bytes(&mut self, bytes: &[u8]) {
+        self.out.extend_from_slice(bytes);
+    }
+
+    /// Write static string (compile-time known)
+    #[inline]
+    fn write_str(&mut self, s: &'static str) {
+        self.out.extend_from_slice(s.as_bytes());
+    }
+
+    /// Clear for reuse (keeps capacity)
+    fn clear(&mut self) {
+        self.out.clear();
+    }
+
+    /// Take ownership of output
+    fn into_vec(self) -> Vec<u8> {
+        self.out
+    }
+}
 ```
 
-Reserve heuristic:
-- `out.reserve(input_len + input_len / 4)` for typical docs.
+**Buffer pooling for high-throughput scenarios**:
 
-If rendering lots of small docs:
-- implement buffer pooling:
-  - `thread_local!` with `RefCell<Vec<u8>>`
-  - or a user-provided buffer reuse API.
+```rust
+use std::cell::RefCell;
+
+thread_local! {
+    static HTML_BUFFER_POOL: RefCell<Vec<u8>> = RefCell::new(Vec::with_capacity(64 * 1024));
+}
+
+/// Render with pooled buffer (for many small documents)
+pub fn to_html_pooled(input: &str) -> String {
+    HTML_BUFFER_POOL.with(|pool| {
+        let mut buf = pool.borrow_mut();
+        buf.clear();
+
+        // ... render into buf ...
+
+        // Return owned String, buffer stays in pool
+        String::from_utf8(buf.clone()).unwrap_or_default()
+    })
+}
+```
+
+**Alternative: User-provided buffer API** (zero allocation for caller):
+
+```rust
+pub fn to_html_into(input: &str, out: &mut Vec<u8>) {
+    out.clear();
+    out.reserve(input.len() + input.len() / 4);
+    // ... render into out ...
+}
+```
 
 ### 7.3 Rendering Rules (Block)
 - Paragraph: `<p>` + inline + `</p>
