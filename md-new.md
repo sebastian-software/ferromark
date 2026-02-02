@@ -664,24 +664,93 @@ Default should be: **escape all HTML**.
 ### 9.1 Where SIMD Helps
 SIMD is valuable for:
 - scanning for newline,
-- scanning for special inline markers,
-- scanning for escapable HTML chars.
+- scanning for special inline markers (`*`, `_`, `` ` ``, `[`, `~`),
+- scanning for escapable HTML chars (`&`, `<`, `>`, `"`, `'`),
+- bulk copying non-special byte ranges to output.
+
+**Measured speedups** (ARM NEON on Apple Silicon):
+- Byte search: up to 9x faster
+- Multi-char search: 4-7x faster
+- Bulk escape scanning: 3-5x faster
 
 ### 9.2 Where SIMD Does Not Help
 - deeply branched parsing logic,
 - nested container tracking,
-- bracket matching.
+- bracket matching,
+- emphasis delimiter resolution (stack-based),
+- data with frequent type conversions (avoid!).
+
+**Warning**: `std::simd` can be *slower* than scalar for unsuitable workloads (measured up to 7.7x slower for interleaved data patterns).
 
 ### 9.3 Strategy
-- Start with `memchr` / `memchr2/3`.
-- Measure.
-- If needed: add optional `std::simd` (nightly features vary) or a hand-rolled byte-scanner behind a cfg.
 
-### 9.4 Microarchitectural Goals
+**Phase 1: memchr baseline**
+```rust
+use memchr::{memchr, memchr2, memchr3};
+
+// Fast path: find next special char
+let specials = memchr3(b'*', b'_', b'`', &input[pos..]);
+```
+
+The `memchr` crate already uses SIMD on x86_64, wasm32, and aarch64.
+
+**Phase 2: Custom multi-char scanner (if profiling shows need)**
+```rust
+// Mark character lookup table (256 entries)
+const MARK_CHARS: [bool; 256] = make_mark_table();
+
+#[inline]
+fn scan_to_special(input: &[u8], start: usize) -> usize {
+    let mut i = start;
+    // 4x loop unrolling (proven 2-4x faster in md4c)
+    while i + 4 <= input.len() {
+        if MARK_CHARS[input[i] as usize] { return i; }
+        if MARK_CHARS[input[i + 1] as usize] { return i + 1; }
+        if MARK_CHARS[input[i + 2] as usize] { return i + 2; }
+        if MARK_CHARS[input[i + 3] as usize] { return i + 3; }
+        i += 4;
+    }
+    while i < input.len() {
+        if MARK_CHARS[input[i] as usize] { return i; }
+        i += 1;
+    }
+    input.len()
+}
+```
+
+**Phase 3: Platform-specific NEON (Apple Silicon)**
+
+See [Appendix D](#appendix-d-apple-silicon-optimization-guide) for detailed NEON intrinsics.
+
+### 9.4 Scanning Primitives
+
+Implement these as the core scanning API:
+
+| Primitive | Description | Implementation |
+|-----------|-------------|----------------|
+| `scan_to_newline(buf, pos)` | Find next `\n` | `memchr` |
+| `scan_to_special(buf, pos)` | Find next inline marker | lookup table + unroll |
+| `scan_to_fence_end(buf, pos, fence_char, fence_len)` | Find code fence close | `memchr` + verify |
+| `scan_to_escapable(buf, pos)` | Find `&<>"'` for escaping | `memchr` or SIMD |
+
+### 9.5 Microarchitectural Goals
 - Minimize unpredictable branches.
-- Prefer “scan then handle”.
-- Keep critical structs small (fit in cache lines).
+- Prefer "scan then handle" pattern.
+- Keep critical structs small (≤64 bytes for L1, ≤128 bytes for L2).
 - Keep hot data contiguous.
+- Use `#[inline]` on tiny scanning functions.
+- Use `#[cold]` on error/rare paths.
+
+### 9.6 SIMD Crate Recommendations (Rust 1.93+)
+
+| Crate | Use Case | Notes |
+|-------|----------|-------|
+| `memchr` | Byte/multi-byte search | Production-ready, NEON support |
+| `std::arch::aarch64` | NEON intrinsics | Stable in Rust 1.93+ |
+| `pulp` / `macerator` | Generic SIMD abstractions | Good for cross-platform |
+| `std::simd` | Portable SIMD | Still nightly, variable performance |
+
+**Recommendation**: Use `memchr` + direct NEON intrinsics for hot paths. Avoid `std::simd` until it stabilizes and proves competitive.
 
 ---
 
