@@ -36,53 +36,69 @@ pub fn resolve_emphasis(marks: &mut [Mark]) -> Vec<EmphasisMatch> {
         }
 
         if mark.can_close() {
-            // Try to find a matching opener
-            if let Some((opener_idx, match_count)) = resolver.find_opener(marks, i) {
-                // Record positions BEFORE modifying marks
-                let opener = &marks[opener_idx];
-                let closer = &marks[i];
+            // Keep trying to close while we can find openers
+            loop {
+                let mark = &marks[i];
+                if mark.is_resolved() || mark.len() == 0 {
+                    break;
+                }
+                if !mark.can_close() {
+                    break;
+                }
 
-                // Opener delimiter is at the END of the opener mark (rightmost chars)
-                let opener_delim_start = opener.end - match_count;
-                let opener_delim_end = opener.end;
+                // Try to find a matching opener
+                if let Some((opener_idx, match_count)) = resolver.find_opener(marks, i) {
+                    // Record positions BEFORE modifying marks
+                    let opener = &marks[opener_idx];
+                    let closer = &marks[i];
 
-                // Closer delimiter is at the START of the closer mark (leftmost chars)
-                let closer_delim_start = closer.pos;
-                let closer_delim_end = closer.pos + match_count;
+                    // Opener delimiter is at the END of the opener mark (rightmost chars)
+                    let opener_delim_start = opener.end - match_count;
+                    let opener_delim_end = opener.end;
 
-                matches.push(EmphasisMatch {
-                    opener_start: opener_delim_start,
-                    opener_end: opener_delim_end,
-                    closer_start: closer_delim_start,
-                    closer_end: closer_delim_end,
-                    count: match_count,
-                });
+                    // Closer delimiter is at the START of the closer mark (leftmost chars)
+                    let closer_delim_start = closer.pos;
+                    let closer_delim_end = closer.pos + match_count;
 
-                // Consume characters from both marks
-                let opener = &mut marks[opener_idx];
-                let opener_remaining = opener.len() - match_count;
-                if opener_remaining == 0 {
-                    opener.resolve();
+                    matches.push(EmphasisMatch {
+                        opener_start: opener_delim_start,
+                        opener_end: opener_delim_end,
+                        closer_start: closer_delim_start,
+                        closer_end: closer_delim_end,
+                        count: match_count,
+                    });
+
+                    // Consume characters from both marks
+                    let opener = &mut marks[opener_idx];
+                    let opener_remaining = opener.len() - match_count;
+                    if opener_remaining == 0 {
+                        opener.resolve();
+                    } else {
+                        // Shrink opener from the right
+                        opener.end -= match_count;
+                        // Re-push opener to correct stack based on new length
+                        resolver.push_opener(marks, opener_idx);
+                    }
+
+                    let closer = &mut marks[i];
+                    let closer_remaining = closer.len() - match_count;
+                    if closer_remaining == 0 {
+                        closer.resolve();
+                        break;
+                    } else {
+                        // Shrink closer from the left
+                        closer.pos += match_count;
+                        // Continue the loop to try matching more
+                    }
                 } else {
-                    // Shrink opener from the right
-                    opener.end -= match_count;
+                    // No more openers to match, break out of the loop
+                    break;
                 }
+            }
 
-                let closer = &mut marks[i];
-                let closer_remaining = closer.len() - match_count;
-                if closer_remaining == 0 {
-                    closer.resolve();
-                } else {
-                    // Shrink closer from the left
-                    closer.pos += match_count;
-                }
-
-                // If closer still has characters and can open, push it
-                if closer_remaining > 0 && closer.can_open() {
-                    resolver.push_opener(marks, i);
-                }
-            } else if mark.can_open() {
-                // Can't close but can open - push to stacks
+            // After closing, if closer still has characters and can open, push it
+            let mark = &marks[i];
+            if !mark.is_resolved() && mark.len() > 0 && mark.can_open() {
                 resolver.push_opener(marks, i);
             }
         } else if mark.can_open() {
@@ -93,16 +109,28 @@ pub fn resolve_emphasis(marks: &mut [Mark]) -> Vec<EmphasisMatch> {
     matches
 }
 
+/// Entry in the opener stack with ordering info.
+#[derive(Debug, Clone, Copy)]
+struct OpenerEntry {
+    /// Index into marks array.
+    mark_idx: usize,
+    /// Global push order for finding most recent opener.
+    order: usize,
+}
+
 /// Emphasis resolver with 6 stacks (2 chars x 3 modulo classes).
 struct EmphasisResolver {
     /// Stacks indexed by: (is_underscore ? 3 : 0) + (run_length % 3)
-    stacks: [Vec<usize>; 6],
+    stacks: [Vec<OpenerEntry>; 6],
+    /// Global order counter.
+    order: usize,
 }
 
 impl EmphasisResolver {
     fn new() -> Self {
         Self {
             stacks: Default::default(),
+            order: 0,
         }
     }
 
@@ -116,7 +144,11 @@ impl EmphasisResolver {
     fn push_opener(&mut self, marks: &[Mark], idx: usize) {
         let mark = &marks[idx];
         let stack_idx = Self::stack_index(mark.ch, mark.len());
-        self.stacks[stack_idx].push(idx);
+        self.stacks[stack_idx].push(OpenerEntry {
+            mark_idx: idx,
+            order: self.order,
+        });
+        self.order += 1;
     }
 
     /// Find a matching opener for a closer.
@@ -131,14 +163,12 @@ impl EmphasisResolver {
 
         let base_idx = if closer.ch == b'_' { 3 } else { 0 };
 
-        // Try to find an opener in compatible stacks
-        // For strong emphasis, prefer matching 2 characters
-        let _match_count = if closer_len >= 2 { 2 } else { 1 };
-
         // Calculate which stack(s) to search based on the rule of three
         let closer_mod = closer_len as usize % 3;
 
-        // Search stacks that could produce a valid match
+        // Find the most recent (highest order) opener across compatible stacks
+        let mut best_opener: Option<(usize, OpenerEntry, u32)> = None; // (stack_idx, entry, match_count)
+
         for opener_mod in 0..3 {
             // Check rule of three compatibility
             // If (opener_len + closer_len) % 3 == 0, both must be multiples of 3
@@ -150,11 +180,20 @@ impl EmphasisResolver {
             }
 
             let stack_idx = base_idx + opener_mod;
-            if let Some(&opener_idx) = self.stacks[stack_idx].last() {
-                let opener = &marks[opener_idx];
+            if let Some(&entry) = self.stacks[stack_idx].last() {
+                let opener = &marks[entry.mark_idx];
 
                 // Must be same character
                 if opener.ch != closer.ch {
+                    continue;
+                }
+
+                // Check if this is more recent than current best
+                let dominated = match &best_opener {
+                    Some((_, best_entry, _)) => entry.order < best_entry.order,
+                    None => false,
+                };
+                if dominated {
                     continue;
                 }
 
@@ -162,17 +201,17 @@ impl EmphasisResolver {
                 let available = opener.len().min(closer_len);
                 let actual_match = if available >= 2 { 2 } else { 1 };
 
-                // Pop from stack and return match
-                self.stacks[stack_idx].pop();
-
-                // If opener has remaining characters, it might need to go back
-                // (handled by caller)
-
-                return Some((opener_idx, actual_match));
+                best_opener = Some((stack_idx, entry, actual_match));
             }
         }
 
-        None
+        // Pop and return the best opener
+        if let Some((stack_idx, entry, match_count)) = best_opener {
+            self.stacks[stack_idx].pop();
+            Some((entry.mark_idx, match_count))
+        } else {
+            None
+        }
     }
 }
 
@@ -229,5 +268,32 @@ mod tests {
         // Asterisk and underscore don't match
         let matches = get_emphasis_matches(b"*hello_");
         assert_eq!(matches.len(), 0);
+    }
+
+    #[test]
+    fn test_nested_strong_in_em() {
+        // *foo **bar***
+        // Position: 0123456789012
+        // Expected: <em>foo <strong>bar</strong></em>
+        let matches = get_emphasis_matches(b"*foo **bar***");
+
+        eprintln!("Matches:");
+        for m in &matches {
+            let kind = if m.count == 2 { "strong" } else { "em" };
+            eprintln!("  {}: opener {}-{}, closer {}-{}", kind, m.opener_start, m.opener_end, m.closer_start, m.closer_end);
+        }
+
+        // Should have 2 matches: one strong, one em
+        assert_eq!(matches.len(), 2);
+
+        // The em opener should be at position 0
+        let em_match = matches.iter().find(|m| m.count == 1).expect("em match");
+        assert_eq!(em_match.opener_start, 0, "em opener should start at 0");
+        assert_eq!(em_match.closer_start, 12, "em closer should start at 12");
+
+        // The strong opener should be at position 5
+        let strong_match = matches.iter().find(|m| m.count == 2).expect("strong match");
+        assert_eq!(strong_match.opener_start, 5, "strong opener should start at 5");
+        assert_eq!(strong_match.closer_start, 10, "strong closer should start at 10");
     }
 }
