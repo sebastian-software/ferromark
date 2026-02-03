@@ -21,14 +21,11 @@ fn load_spec_tests() -> Vec<SpecTest> {
 }
 
 /// Sections that are intentionally out of scope.
-const OUT_OF_SCOPE_SECTIONS: &[&str] = &[
-    "Link reference definitions",
-    "Setext headings",
-    "Indented code blocks",
-    "Tabs",
-];
+#[allow(dead_code)]
+const OUT_OF_SCOPE_SECTIONS: &[&str] = &[];
 
 /// Check if label contains unescaped brackets
+#[allow(dead_code)]
 fn has_unescaped_bracket(label: &str) -> bool {
     let bytes = label.as_bytes();
     let mut i = 0;
@@ -46,6 +43,7 @@ fn has_unescaped_bracket(label: &str) -> bool {
 }
 
 /// Check if a test uses reference link definitions (pattern: [label]: url)
+#[allow(dead_code)]
 fn uses_reference_links(markdown: &str) -> bool {
     // Reference definition pattern: starts with optional spaces, [label]:
     for line in markdown.lines() {
@@ -86,6 +84,7 @@ fn uses_reference_links(markdown: &str) -> bool {
 
 /// Check if test requires proper 4-space indent handling.
 /// This includes both indented code blocks and paragraph continuation rules.
+#[allow(dead_code)]
 fn requires_4space_handling(test: &SpecTest) -> bool {
     // Check if any line starts with 4+ spaces (after a non-blank line)
     let lines: Vec<&str> = test.markdown.lines().collect();
@@ -109,6 +108,7 @@ fn requires_4space_handling(test: &SpecTest) -> bool {
 }
 
 /// Check if test requires setext heading (underline-style)
+#[allow(dead_code)]
 fn requires_setext(test: &SpecTest) -> bool {
     // Setext: line followed by === or ---
     let lines: Vec<&str> = test.markdown.lines().collect();
@@ -128,26 +128,13 @@ fn requires_setext(test: &SpecTest) -> bool {
     false
 }
 
+#[allow(dead_code)]
 fn is_in_scope(section: &str) -> bool {
     !OUT_OF_SCOPE_SECTIONS.contains(&section)
 }
 
 fn is_test_in_scope(test: &SpecTest) -> bool {
-    if !is_in_scope(&test.section) {
-        return false;
-    }
-    // Exclude tests that use reference definitions
-    if uses_reference_links(&test.markdown) {
-        return false;
-    }
-    // Exclude tests requiring 4-space indent handling
-    if requires_4space_handling(test) {
-        return false;
-    }
-    // Exclude tests requiring setext headings
-    if requires_setext(test) {
-        return false;
-    }
+    let _ = test;
     true
 }
 
