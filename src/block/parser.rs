@@ -683,28 +683,35 @@ impl<'a> BlockParser<'a> {
             return Some((marker, 2)); // marker + 1 implicit space
         }
 
-        // Count ALL spaces between marker and content (or newline)
+        // Count spaces between marker and content (or newline)
+        let pos_after_marker = self.cursor.offset();
         let mut spaces_after_marker = 0;
         while self.cursor.at(b' ') {
             spaces_after_marker += 1;
             self.cursor.bump();
         }
 
+        // Check if this is a blank list item (only whitespace after marker)
+        if self.cursor.at(b'\n') || self.cursor.is_eof() {
+            // Blank list item: content_indent = marker(1) + 1 implicit space
+            // Reset cursor to after just 1 space so parse_line_content sees the right position
+            if spaces_after_marker > 0 {
+                self.cursor = Cursor::new_at(self.input, pos_after_marker + 1);
+            }
+            return Some((marker, 2));
+        }
+
         // CommonMark rule: 1-4 spaces after marker is normal
         // 5+ spaces means blank item with indented content (only 1 space counts)
-        let effective_spaces = if spaces_after_marker > 4 {
-            // Too many spaces - this is a blank list item followed by indented content
-            // Only count 1 space for content_indent purposes
-            // But we need to "give back" the extra spaces (they become content indent)
-            // Actually, we already consumed them, so content starts where we are now
-            // But content_indent should only reflect 1 space
-            1
-        } else {
-            spaces_after_marker
-        };
+        if spaces_after_marker >= 5 {
+            // Put cursor back to just after 1 space
+            self.cursor = Cursor::new_at(self.input, pos_after_marker + 1);
+            // content_indent = marker(1) + 1 space
+            return Some((marker, 2));
+        }
 
-        // content_indent = marker(1) + effective_spaces
-        Some((marker, 1 + effective_spaces))
+        // content_indent = marker(1) + spaces_after_marker
+        Some((marker, 1 + spaces_after_marker))
     }
 
     /// Try to parse an ordered list marker (1. 2. etc).
@@ -758,23 +765,37 @@ impl<'a> BlockParser<'a> {
             return Some((num, relative_content_indent, delimiter));
         }
 
-        // Count ALL spaces between marker and content (or newline)
+        // Count spaces between marker and content (or newline)
+        let pos_after_delim = self.cursor.offset();
         let mut spaces_after_marker = 0;
         while self.cursor.at(b' ') {
             spaces_after_marker += 1;
             self.cursor.bump();
         }
 
+        // Check if this is a blank list item (only whitespace after marker)
+        if self.cursor.at(b'\n') || self.cursor.is_eof() {
+            // Blank list item: relative_content_indent = digits + delimiter + 1 space
+            // Reset cursor to after just 1 space
+            if spaces_after_marker > 0 {
+                self.cursor = Cursor::new_at(self.input, pos_after_delim + 1);
+            }
+            let relative_content_indent = digits + 2;
+            return Some((num, relative_content_indent, delimiter));
+        }
+
         // CommonMark rule: 1-4 spaces after marker is normal
         // 5+ spaces means blank item with indented content (only 1 space counts)
-        let effective_spaces = if spaces_after_marker > 4 {
-            1
-        } else {
-            spaces_after_marker
-        };
+        if spaces_after_marker >= 5 {
+            // Put cursor back to just after 1 space
+            self.cursor = Cursor::new_at(self.input, pos_after_delim + 1);
+            // relative_content_indent = digits + delimiter(1) + 1 space
+            let relative_content_indent = digits + 2;
+            return Some((num, relative_content_indent, delimiter));
+        }
 
-        // relative_content_indent = digits + delimiter(1) + effective_spaces
-        let relative_content_indent = digits + 1 + effective_spaces;
+        // relative_content_indent = digits + delimiter(1) + spaces_after_marker
+        let relative_content_indent = digits + 1 + spaces_after_marker;
         Some((num, relative_content_indent, delimiter))
     }
 
