@@ -73,6 +73,8 @@ pub struct BlockParser<'a> {
     fence_state: Option<FenceState>,
     /// Whether we're in an indented code block.
     in_indented_code: bool,
+    /// Pending blank line ranges in indented code (only emit if code continues).
+    pending_code_blanks: Vec<Range>,
     /// Stack of open containers (blockquotes, list items).
     container_stack: SmallVec<[Container; 8]>,
     /// Whether we're in a tight list context.
@@ -92,6 +94,7 @@ impl<'a> BlockParser<'a> {
             paragraph_lines: Vec::new(),
             fence_state: None,
             in_indented_code: false,
+            pending_code_blanks: Vec::new(),
             container_stack: SmallVec::new(),
             tight_list: false,
             open_lists: SmallVec::new(),
@@ -113,8 +116,9 @@ impl<'a> BlockParser<'a> {
             events.push(BlockEvent::CodeBlockEnd);
         }
 
-        // Close any unclosed indented code block
+        // Close any unclosed indented code block (discard trailing blanks)
         if self.in_indented_code {
+            self.pending_code_blanks.clear();
             self.in_indented_code = false;
             events.push(BlockEvent::CodeBlockEnd);
         }
@@ -140,10 +144,11 @@ impl<'a> BlockParser<'a> {
             if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                 self.cursor.bump();
             }
-            // Blank lines inside indented code are preserved
+            // Blank lines inside indented code are preserved (but buffered)
             if self.in_indented_code {
-                // Emit just the newline
-                events.push(BlockEvent::Text(Range::new((line_start + initial_spaces) as u32, (line_start + initial_spaces + 1) as u32)));
+                // Don't emit immediately - buffer and only emit if code continues
+                let blank_start = line_start + initial_spaces;
+                self.pending_code_blanks.push(Range::new(blank_start as u32, (blank_start + 1) as u32));
                 return;
             }
             self.close_paragraph(events);
@@ -191,7 +196,11 @@ impl<'a> BlockParser<'a> {
         // If we're in an indented code block and containers matched, handle continuation
         if self.in_indented_code {
             if indent >= 4 {
-                // Continue the code block
+                // Continue the code block - first emit any pending blank lines
+                for blank_range in self.pending_code_blanks.drain(..) {
+                    events.push(BlockEvent::Text(blank_range));
+                }
+
                 let extra_spaces = indent.saturating_sub(4);
                 let text_start = self.cursor.offset() - extra_spaces;
                 let line_end = self.find_line_end();
@@ -204,7 +213,8 @@ impl<'a> BlockParser<'a> {
                 events.push(BlockEvent::Text(Range::new(text_start as u32, content_end as u32)));
                 return;
             } else {
-                // Close the code block - not enough indent
+                // Close the code block - discard pending blank lines (trailing blanks)
+                self.pending_code_blanks.clear();
                 self.in_indented_code = false;
                 events.push(BlockEvent::CodeBlockEnd);
             }
