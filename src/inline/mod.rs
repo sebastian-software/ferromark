@@ -252,16 +252,12 @@ impl InlineParser {
             // Skip marks inside code spans
             let in_code = mark.flags & flags::IN_CODE != 0;
 
-            // Check if mark is inside a link's URL or title (not the link text)
+            // Check if mark is inside a link's destination area (the (...) part)
+            // This includes URL, title, and any whitespace between them
             let in_link_dest = resolved_links.iter().any(|link| {
-                // URL range: url_start to url_end
-                // Title range: title_start to title_end (if present)
-                let in_url = mark.pos >= link.url_start && mark.pos < link.url_end;
-                let in_title = link.title_start.map_or(false, |ts| {
-                    let te = link.title_end.unwrap();
-                    mark.pos >= ts && mark.pos < te
-                });
-                in_url || in_title
+                // The destination area is from text_end+1 (after ]) to end-1 (before ))
+                // But we also need to include the content: url_start to just before end
+                mark.pos >= link.text_end + 1 && mark.pos < link.end
             });
 
             // Check if mark is inside an autolink
@@ -286,15 +282,15 @@ impl InlineParser {
                         end: mark.end,
                     });
                 }
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0 && !in_code {
-                // Two spaces before newline is a hard break (but not in code)
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0 && !in_code && !in_link_dest {
+                // Two spaces before newline is a hard break (but not in code or link destinations)
                 emit_points.push(EmitPoint {
                     pos: mark.pos,
                     kind: EmitKind::HardBreak,
                     end: mark.end,
                 });
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_CLOSER != 0 && !in_code {
-                // Soft break (newline without 2+ spaces) - also not in code
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_CLOSER != 0 && !in_code && !in_link_dest {
+                // Soft break (newline without 2+ spaces) - also not in code or link destinations
                 emit_points.push(EmitPoint {
                     pos: mark.pos,
                     kind: EmitKind::SoftBreak,

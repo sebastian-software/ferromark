@@ -51,15 +51,23 @@ pub fn resolve_links(
     close_brackets: &[u32],
 ) -> Vec<Link> {
     let mut links = Vec::new();
+    let mut used_opens: Vec<bool> = vec![false; open_brackets.len()];
     let mut used_closes: Vec<bool> = vec![false; close_brackets.len()];
 
     // Process open brackets from right to left (innermost first)
-    for &(open_pos, is_image) in open_brackets.iter().rev() {
-        // Find the first unused close bracket after this open
-        let close_idx = close_brackets
-            .iter()
-            .enumerate()
-            .position(|(i, &close_pos)| close_pos > open_pos && !used_closes[i]);
+    for (open_idx, &(open_pos, is_image)) in open_brackets.iter().enumerate().rev() {
+        if used_opens[open_idx] {
+            continue;
+        }
+
+        // Find the matching close bracket (accounting for nested brackets)
+        let close_idx = find_matching_close(
+            open_pos,
+            open_brackets,
+            close_brackets,
+            &used_opens,
+            &used_closes,
+        );
 
         if let Some(close_idx) = close_idx {
             let close_pos = close_brackets[close_idx];
@@ -81,7 +89,28 @@ pub fn resolve_links(
                         end: end as u32,
                         is_image,
                     });
+                    used_opens[open_idx] = true;
                     used_closes[close_idx] = true;
+
+                    // For links (not images), deactivate any outer open brackets
+                    // that would contain this link (links cannot contain links)
+                    if !is_image {
+                        for (i, &(pos, _)) in open_brackets.iter().enumerate() {
+                            if pos < open_pos && !used_opens[i] {
+                                // This outer bracket would contain our link
+                                // Check if there's a close bracket after our link
+                                // that could match the outer open
+                                let has_outer_close = close_brackets.iter()
+                                    .enumerate()
+                                    .any(|(ci, &cpos)| !used_closes[ci] && cpos > close_pos);
+                                if has_outer_close {
+                                    // The outer bracket could form a link containing our link
+                                    // which is not allowed, so deactivate it
+                                    used_opens[i] = true;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -90,6 +119,49 @@ pub fn resolve_links(
     // Sort by start position
     links.sort_by_key(|l| l.start);
     links
+}
+
+/// Find the matching close bracket for an open bracket, accounting for nesting.
+fn find_matching_close(
+    open_pos: u32,
+    open_brackets: &[(u32, bool)],
+    close_brackets: &[u32],
+    used_opens: &[bool],
+    used_closes: &[bool],
+) -> Option<usize> {
+    // Count nested brackets to find the matching close
+    let mut depth = 1i32;
+    let mut close_idx = None;
+
+    // Create a merged, sorted list of bracket positions for nesting calculation
+    let mut events: Vec<(u32, bool)> = Vec::new(); // (pos, is_open)
+
+    for (i, &(pos, _)) in open_brackets.iter().enumerate() {
+        if !used_opens[i] && pos > open_pos {
+            events.push((pos, true));
+        }
+    }
+    for (i, &pos) in close_brackets.iter().enumerate() {
+        if !used_closes[i] && pos > open_pos {
+            events.push((pos, false));
+        }
+    }
+    events.sort_by_key(|&(pos, _)| pos);
+
+    for (pos, is_open) in events {
+        if is_open {
+            depth += 1;
+        } else {
+            depth -= 1;
+            if depth == 0 {
+                // Found matching close, find its index in close_brackets
+                close_idx = close_brackets.iter().position(|&p| p == pos);
+                break;
+            }
+        }
+    }
+
+    close_idx
 }
 
 /// Parse link destination and optional title.
