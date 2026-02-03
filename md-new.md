@@ -276,6 +276,29 @@ These are **explicitly out of scope** because they either:
 | Hash map | `hashbrown` | Faster than std, used by std internally |
 | HTML escaping | `v_htmlescape` | SIMD-accelerated, consider for renderer |
 | Unicode tables | `unicode-ident` | If we need Unicode word boundaries |
+| Entity decoding | `html-escape` | Temporary solution (see below) |
+
+### 1.4 HTML Entity Decoding Strategy (TODO: Optimize)
+
+**Current state**: Using `html-escape` crate for entity decoding in:
+- Link URLs (`&amp;` -> `&`, `&ouml;` -> `ö`)
+- Link/image titles
+- Inline text content
+
+**Better approach**: Generate our own entity table from WHATWG spec:
+1. Download `https://html.spec.whatwg.org/entities.json` (official, ~2500 entities)
+2. Generate a perfect hash table or trie at compile time
+3. Use that for O(1) lookups with zero runtime dependency
+
+**Alternative sources**:
+- `htmlize` crate has the entity table in JSON format
+- Could extract and optimize for our specific needs
+
+**Why optimize**:
+- `html-escape::decode_html_entities` does UTF-8 conversion + allocation
+- We only need to decode, then immediately HTML-escape for output
+- Could fuse decode + escape into single pass
+- Perfect hash would be faster than string matching
 
 **Crates we should NOT use** (too heavy or wrong abstraction):
 
@@ -1744,11 +1767,20 @@ thread_local! {
 **Goal**: Pass remaining CommonMark tests, DoS resistance
 
 - [x] Emphasis edge cases (Unicode whitespace/punctuation, nested emphasis, partial consumption)
-- [ ] Nested containers
+- [x] HTML entity decoding (URLs, titles, inline text) - using html-escape crate
+- [x] Blockquote lazy continuation
+- [x] Indented code blocks (basic)
+- [ ] Nested containers (complex cases)
+- [ ] Entity decoding optimization (TODO: replace html-escape with generated table)
 - [ ] Pathological input testing
 - [ ] Fuzzing campaign
 
-**Current**: 300/652 tests (46.0%), Emphasis at 93.2%
+**Current**: 332/364 in-scope tests (91.2%)
+- 15 sections at 100%: ATX headings, Autolinks, Backslash escapes, Blank lines, Code spans,
+  Emphasis, Fenced code, Hard line breaks, Images, Inlines, Paragraphs, Precedence,
+  Soft line breaks, Textual content, Thematic breaks
+- Entity refs: 11/13 (84.6%)
+- Remaining work: Lists/List items (~55%), Links edge cases, Block quotes edge cases
 
 **Milestone**: ~500+ tests passing, no crashes on fuzz corpus
 
