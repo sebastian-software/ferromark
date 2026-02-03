@@ -145,14 +145,24 @@ impl<'a> BlockParser<'a> {
                 self.cursor.bump();
             }
             // Blank lines inside indented code are preserved (but buffered)
+            // Check this BEFORE closing blockquotes, as closing will end the code block
             if self.in_indented_code {
-                // Don't emit immediately - buffer and only emit if code continues
-                let blank_start = line_start + initial_spaces;
-                self.pending_code_blanks.push(Range::new(blank_start as u32, (blank_start + 1) as u32));
-                return;
+                // Check if we're inside a blockquote - if so, the blank line closes it
+                // which also closes the indented code block
+                let has_blockquote = self.container_stack.iter()
+                    .any(|c| c.typ == ContainerType::BlockQuote);
+                if !has_blockquote {
+                    // Not inside a blockquote, just buffer the blank line
+                    let blank_start = line_start + initial_spaces;
+                    self.pending_code_blanks.push(Range::new(blank_start as u32, (blank_start + 1) as u32));
+                    return;
+                }
+                // Fall through to close blockquotes (which will close the code block too)
             }
+
             self.close_paragraph(events);
-            self.handle_blank_line_containers(events);
+            // This is a truly blank line (no container markers) - close blockquotes
+            self.handle_blank_line_containers(events, true);
             return;
         }
 
@@ -172,7 +182,8 @@ impl<'a> BlockParser<'a> {
                 self.cursor.bump();
             }
             self.close_paragraph(events);
-            self.handle_blank_line_containers(events);
+            // Container markers were present, so don't close blockquotes
+            self.handle_blank_line_containers(events, false);
             return;
         }
 
@@ -556,7 +567,21 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Handle blank line for container continuation.
-    fn handle_blank_line_containers(&mut self, _events: &mut Vec<BlockEvent>) {
+    /// `close_blockquotes`: true if this is a truly blank line (no `>` markers),
+    /// false if the line had container markers but blank content.
+    fn handle_blank_line_containers(&mut self, events: &mut Vec<BlockEvent>, close_blockquotes: bool) {
+        // A blank line (without > marker) closes blockquotes
+        if close_blockquotes {
+            // Close all blockquote containers from the top
+            while let Some(container) = self.container_stack.last() {
+                if container.typ == ContainerType::BlockQuote {
+                    self.close_top_container(events);
+                } else {
+                    break;
+                }
+            }
+        }
+
         // Mark any open lists as having seen a blank line in current item
         for open_list in self.open_lists.iter_mut() {
             open_list.blank_in_item = true;
@@ -874,6 +899,13 @@ impl<'a> BlockParser<'a> {
         if let Some(container) = self.container_stack.pop() {
             // Close paragraph first
             self.close_paragraph(events);
+
+            // Close any open indented code block inside this container
+            if self.in_indented_code {
+                self.pending_code_blanks.clear();
+                self.in_indented_code = false;
+                events.push(BlockEvent::CodeBlockEnd);
+            }
 
             match container.typ {
                 ContainerType::BlockQuote => {
