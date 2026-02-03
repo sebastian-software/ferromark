@@ -227,7 +227,8 @@ impl<'a> BlockParser<'a> {
             }
 
             // Check for list item - either continuing an existing list or starting new
-            if self.try_list_item(events) {
+            // Pass the pre-marker indent so content_indent can be calculated correctly
+            if self.try_list_item(indent, events) {
                 self.parse_line_content(events);
                 return;
             }
@@ -295,8 +296,8 @@ impl<'a> BlockParser<'a> {
                     return;
                 }
 
-                // Check for list item
-                if self.try_list_item(events) {
+                // Check for list item (pass indent for absolute content_indent calculation)
+                if self.try_list_item(indent, events) {
                     self.parse_line_content(events);
                     return;
                 }
@@ -559,27 +560,32 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Try to start a list item.
-    fn try_list_item(&mut self, events: &mut Vec<BlockEvent>) -> bool {
+    /// `pre_marker_indent` is the number of spaces before the list marker (absolute column position).
+    fn try_list_item(&mut self, pre_marker_indent: usize, events: &mut Vec<BlockEvent>) -> bool {
         let start_offset = self.cursor.offset();
 
         // Check for unordered list marker (-, *, +)
-        if let Some(marker) = self.try_unordered_marker() {
-            self.start_list_item(ListKind::Unordered, marker, start_offset, events);
+        if let Some((marker, relative_content_indent)) = self.try_unordered_marker() {
+            // Absolute content_indent = spaces before marker + marker width + spaces after marker
+            let absolute_content_indent = pre_marker_indent + relative_content_indent;
+            self.start_list_item(ListKind::Unordered, marker, absolute_content_indent, events);
             return true;
         }
 
         // Check for ordered list marker (1. 2. etc)
-        if let Some((start_num, _marker_len, delimiter)) = self.try_ordered_marker() {
+        if let Some((start_num, relative_content_indent, delimiter)) = self.try_ordered_marker() {
             // CommonMark: an ordered list can only interrupt a paragraph if it starts with 1
             if self.in_paragraph && start_num != 1 {
                 // Reset cursor and don't start list
                 self.cursor = Cursor::new_at(self.input, start_offset);
                 return false;
             }
+            // Absolute content_indent = spaces before marker + marker width + spaces after marker
+            let absolute_content_indent = pre_marker_indent + relative_content_indent;
             self.start_list_item(
                 ListKind::Ordered { start: start_num, delimiter },
                 delimiter,
-                start_offset,
+                absolute_content_indent,
                 events,
             );
             return true;
@@ -589,26 +595,54 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Try to parse an unordered list marker (-, *, +).
-    fn try_unordered_marker(&mut self) -> Option<u8> {
+    /// Returns (marker_char, relative_content_indent) where relative_content_indent is
+    /// the offset from marker to where content starts.
+    fn try_unordered_marker(&mut self) -> Option<(u8, usize)> {
         let marker = self.cursor.peek()?;
         if marker != b'-' && marker != b'*' && marker != b'+' {
             return None;
         }
 
-        // Must be followed by space or tab
-        if self.cursor.peek_ahead(1) != Some(b' ') && self.cursor.peek_ahead(1) != Some(b'\t') {
+        // Must be followed by space or tab or newline
+        let after_marker = self.cursor.peek_ahead(1);
+        if after_marker != Some(b' ') && after_marker != Some(b'\t') && after_marker != Some(b'\n') {
             // Could be thematic break for - and *
             return None;
         }
 
         self.cursor.bump(); // consume marker
-        self.cursor.bump(); // consume space
 
-        Some(marker)
+        // Handle blank list item (marker followed by newline)
+        if self.cursor.at(b'\n') {
+            return Some((marker, 2)); // marker + 1 implicit space
+        }
+
+        // Count ALL spaces between marker and content (or newline)
+        let mut spaces_after_marker = 0;
+        while self.cursor.at(b' ') {
+            spaces_after_marker += 1;
+            self.cursor.bump();
+        }
+
+        // CommonMark rule: 1-4 spaces after marker is normal
+        // 5+ spaces means blank item with indented content (only 1 space counts)
+        let effective_spaces = if spaces_after_marker > 4 {
+            // Too many spaces - this is a blank list item followed by indented content
+            // Only count 1 space for content_indent purposes
+            // But we need to "give back" the extra spaces (they become content indent)
+            // Actually, we already consumed them, so content starts where we are now
+            // But content_indent should only reflect 1 space
+            1
+        } else {
+            spaces_after_marker
+        };
+
+        // content_indent = marker(1) + effective_spaces
+        Some((marker, 1 + effective_spaces))
     }
 
     /// Try to parse an ordered list marker (1. 2. etc).
-    /// Returns (number, marker_len, delimiter) where delimiter is '.' or ')'.
+    /// Returns (number, relative_content_indent, delimiter) where delimiter is '.' or ')'.
     fn try_ordered_marker(&mut self) -> Option<(u32, usize, u8)> {
         let start = self.cursor.offset();
         let mut num: u32 = 0;
@@ -645,14 +679,37 @@ impl<'a> BlockParser<'a> {
         };
         self.cursor.bump(); // consume . or )
 
-        // Must be followed by space
-        if !self.cursor.at(b' ') && !self.cursor.at(b'\t') {
+        // Must be followed by space, tab, or newline
+        if !self.cursor.at(b' ') && !self.cursor.at(b'\t') && !self.cursor.at(b'\n') {
             self.cursor = Cursor::new_at(self.input, start);
             return None;
         }
-        self.cursor.bump(); // consume space
 
-        Some((num, digits + 2, delimiter)) // digits + delimiter + space
+        // Handle blank list item (marker followed by newline)
+        if self.cursor.at(b'\n') {
+            // relative_content_indent = digits + delimiter + 1 implicit space
+            let relative_content_indent = digits + 2;
+            return Some((num, relative_content_indent, delimiter));
+        }
+
+        // Count ALL spaces between marker and content (or newline)
+        let mut spaces_after_marker = 0;
+        while self.cursor.at(b' ') {
+            spaces_after_marker += 1;
+            self.cursor.bump();
+        }
+
+        // CommonMark rule: 1-4 spaces after marker is normal
+        // 5+ spaces means blank item with indented content (only 1 space counts)
+        let effective_spaces = if spaces_after_marker > 4 {
+            1
+        } else {
+            spaces_after_marker
+        };
+
+        // relative_content_indent = digits + delimiter(1) + effective_spaces
+        let relative_content_indent = digits + 1 + effective_spaces;
+        Some((num, relative_content_indent, delimiter))
     }
 
     /// Start a new list item.
@@ -660,7 +717,7 @@ impl<'a> BlockParser<'a> {
         &mut self,
         kind: ListKind,
         marker: u8,
-        start_offset: usize,
+        content_indent: usize,
         events: &mut Vec<BlockEvent>,
     ) {
         // Close paragraph if any
@@ -691,9 +748,6 @@ impl<'a> BlockParser<'a> {
         }
         // Note: if continuing_list is true, the previous item was already
         // closed by close_containers_from, so we just add the new item
-
-        // Calculate content indent
-        let content_indent = self.cursor.offset() - start_offset;
 
         // Push list item container
         self.container_stack.push(Container {
