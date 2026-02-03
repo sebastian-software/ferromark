@@ -131,12 +131,6 @@ impl<'a> BlockParser<'a> {
     fn parse_line(&mut self, events: &mut Vec<BlockEvent>) {
         let line_start = self.cursor.offset();
 
-        // If we're inside a fenced code block, handle it specially
-        if self.fence_state.is_some() {
-            self.parse_fence_line(events);
-            return;
-        }
-
         // Check for blank line first (before any space skipping)
         let initial_spaces = self.count_leading_spaces();
         if self.is_blank_after(initial_spaces) {
@@ -144,6 +138,17 @@ impl<'a> BlockParser<'a> {
             if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                 self.cursor.bump();
             }
+
+            // Blank lines inside fenced code are preserved
+            if self.fence_state.is_some() {
+                // Just emit the blank line as code content
+                events.push(BlockEvent::Code(Range::new(
+                    (line_start + initial_spaces) as u32,
+                    self.cursor.offset() as u32,
+                )));
+                return;
+            }
+
             // Blank lines inside indented code are preserved (but buffered)
             // Check this BEFORE closing blockquotes, as closing will end the code block
             if self.in_indented_code {
@@ -172,6 +177,24 @@ impl<'a> BlockParser<'a> {
         // Try to match and continue existing containers
         // This handles the indent requirements per container type
         let matched_containers = self.match_containers(events);
+
+        // If we're inside a fenced code block, handle it after container matching
+        // but BEFORE skip_spaces (since spaces may be part of code content)
+        if self.fence_state.is_some() {
+            // If containers didn't match, close the fenced code block
+            if matched_containers < self.container_stack.len() {
+                self.fence_state = None;
+                events.push(BlockEvent::CodeBlockEnd);
+                // Close unmatched containers and continue with normal parsing
+                let indent = self.cursor.skip_spaces();
+                self.close_containers_from(matched_containers, indent, events);
+                // Fall through to continue parsing the line normally
+            } else {
+                // Containers matched, handle as fenced code line
+                self.parse_fence_line_in_container(events);
+                return;
+            }
+        }
 
         // Get current indent after container matching
         let indent = self.cursor.skip_spaces();
@@ -1321,16 +1344,18 @@ impl<'a> BlockParser<'a> {
         self.cursor.offset()
     }
 
-    /// Parse a line inside a fenced code block.
-    fn parse_fence_line(&mut self, events: &mut Vec<BlockEvent>) {
+    /// Parse a fenced code line after container matching.
+    /// Called when we're inside a fenced code block and containers matched.
+    /// The cursor is at the content position (past container indent).
+    fn parse_fence_line_in_container(&mut self, events: &mut Vec<BlockEvent>) {
         let fence = self.fence_state.as_ref().unwrap();
         let fence_char = fence.fence_char;
         let fence_len = fence.fence_len;
         let fence_indent = fence.indent;
 
-        let line_start = self.cursor.offset();
+        let content_pos = self.cursor.offset();
 
-        // Skip up to fence_indent spaces
+        // Skip up to fence_indent spaces (the fence's original indent within container)
         let mut spaces = 0;
         while spaces < fence_indent && self.cursor.at(b' ') {
             self.cursor.bump();
@@ -1366,22 +1391,20 @@ impl<'a> BlockParser<'a> {
         }
 
         // Not a closing fence, emit as code content
-        // Reset to line start and capture the whole line
-        self.cursor = Cursor::new_at(self.input, line_start);
-
-        // Skip up to fence_indent spaces for content
+        // Reset to content_pos and skip up to fence_indent spaces
+        self.cursor = Cursor::new_at(self.input, content_pos);
         let mut spaces = 0;
         while spaces < fence_indent && self.cursor.at(b' ') {
             self.cursor.bump();
             spaces += 1;
         }
 
-        let content_start = self.cursor.offset();
+        let code_start = self.cursor.offset();
 
         // Find end of line
         let line_end = match self.cursor.find_newline() {
-            Some(pos) => content_start + pos,
-            None => content_start + self.cursor.remaining(),
+            Some(pos) => code_start + pos,
+            None => code_start + self.cursor.remaining(),
         };
 
         // Include the newline in the code content range
@@ -1395,7 +1418,7 @@ impl<'a> BlockParser<'a> {
         self.cursor = Cursor::new_at(self.input, content_end);
 
         // Emit the code line (including newline)
-        events.push(BlockEvent::Code(Range::from_usize(content_start, content_end)));
+        events.push(BlockEvent::Code(Range::from_usize(code_start, content_end)));
     }
 
     /// Parse a paragraph line.

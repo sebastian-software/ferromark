@@ -5,9 +5,9 @@ fn main() {
     let mut parser = BlockParser::new(input.as_bytes());
     let mut events = Vec::new();
     parser.parse(&mut events);
-    
+
     fixup_list_tight(&mut events);
-    
+
     println!("Events for: {:?}", input);
     for (i, e) in events.iter().enumerate() {
         println!("  {}: {:?}", i, e);

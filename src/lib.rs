@@ -230,6 +230,11 @@ fn render_block_event(
             writer.write_escaped_text(range.slice(input));
         }
         BlockEvent::CodeBlockStart { info } => {
+            // If we're at the start of a tight list item, add newline before block content
+            if *at_tight_li_start {
+                writer.newline();
+                *at_tight_li_start = false;
+            }
             let lang = info.as_ref().map(|r| r.slice(input));
             writer.code_block_start(lang);
         }
@@ -237,6 +242,11 @@ fn render_block_event(
             writer.code_block_end();
         }
         BlockEvent::BlockQuoteStart => {
+            // If we're at the start of a tight list item, add newline before block content
+            if *at_tight_li_start {
+                writer.newline();
+                *at_tight_li_start = false;
+            }
             writer.blockquote_start();
         }
         BlockEvent::BlockQuoteEnd => {
@@ -247,6 +257,11 @@ fn render_block_event(
             if *need_newline_before_block {
                 writer.newline();
                 *need_newline_before_block = false;
+            }
+            // If we're at the start of a tight list item, add newline before nested list
+            if *at_tight_li_start {
+                writer.newline();
+                *at_tight_li_start = false;
             }
             // Push the tight status for this list onto the stack
             tight_list_stack.push(*tight);
