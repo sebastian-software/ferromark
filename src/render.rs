@@ -133,6 +133,33 @@ impl HtmlWriter {
         }
     }
 
+    /// Write link title with entity decoding, backslash escape processing, and HTML escaping.
+    #[inline]
+    pub fn write_link_title(&mut self, title: &[u8]) {
+        // First decode entities
+        let title_str = core::str::from_utf8(title).unwrap_or("");
+        let decoded = html_escape::decode_html_entities(title_str);
+        let decoded_bytes = decoded.as_bytes();
+
+        // Then process backslash escapes and HTML-escape
+        let mut pos = 0;
+        while pos < decoded_bytes.len() {
+            if decoded_bytes[pos] == b'\\' && pos + 1 < decoded_bytes.len() && is_link_escapable(decoded_bytes[pos + 1]) {
+                // Skip backslash, write escaped char (with HTML escaping)
+                pos += 1;
+                escape::escape_full_into(&mut self.out, &decoded_bytes[pos..pos + 1]);
+                pos += 1;
+            } else {
+                // Find next backslash or end
+                let start = pos;
+                while pos < decoded_bytes.len() && !(decoded_bytes[pos] == b'\\' && pos + 1 < decoded_bytes.len() && is_link_escapable(decoded_bytes[pos + 1])) {
+                    pos += 1;
+                }
+                escape::escape_full_into(&mut self.out, &decoded_bytes[start..pos]);
+            }
+        }
+    }
+
     /// Write autolink URL with percent-encoding and HTML escaping.
     /// Used for autolink hrefs per CommonMark spec.
     #[inline]

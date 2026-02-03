@@ -366,7 +366,7 @@ fn render_inline_event(
                 writer.write_str("\"");
                 if let Some(t) = title {
                     writer.write_str(" title=\"");
-                    writer.write_escaped_link_attr(t.slice(text));
+                    writer.write_link_title(t.slice(text));
                     writer.write_str("\"");
                 }
                 writer.write_str(">");
@@ -404,7 +404,7 @@ fn render_inline_event(
                     *image_state = None;
                     if let Some(title_range) = title {
                         writer.write_str(" title=\"");
-                        writer.write_escaped_link_attr(title_range.slice(text));
+                        writer.write_link_title(title_range.slice(text));
                         writer.write_str("\"");
                     }
                     writer.write_str(" />");
@@ -722,5 +722,19 @@ More text."#;
         // Should have alt="foo bar" (plain text, no <strong> tags)
         assert!(html.contains("alt=\"foo bar\""), "Alt text should be plain: {html}");
         assert!(!html.contains("<strong>"), "No <strong> tags in alt text");
+    }
+}
+
+#[cfg(test)]
+mod entity_tests {
+    #[test]
+    fn test_html_escape_entities() {
+        use html_escape::decode_html_entities;
+        
+        assert_eq!(decode_html_entities("&auml;").as_ref(), "ä");
+        assert_eq!(decode_html_entities("&#228;").as_ref(), "ä");
+        assert_eq!(decode_html_entities("&#xE4;").as_ref(), "ä");
+        assert_eq!(decode_html_entities("&amp;").as_ref(), "&");
+        assert_eq!(decode_html_entities("foo%20b&auml;").as_ref(), "foo%20bä");
     }
 }

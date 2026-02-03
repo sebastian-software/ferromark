@@ -188,10 +188,21 @@ fn is_ascii_punctuation(b: u8) -> bool {
     )
 }
 
-/// Process a link URL: handle backslash escapes and percent-encode special characters.
+/// Process a link URL: decode entities, handle backslash escapes, and percent-encode.
 /// This is used for link destinations in `[text](url)` syntax.
 #[inline]
 pub fn url_escape_link_destination(out: &mut Vec<u8>, input: &[u8]) {
+    // First decode HTML entities
+    let input_str = core::str::from_utf8(input).unwrap_or("");
+    let decoded = html_escape::decode_html_entities(input_str);
+    let decoded_bytes = decoded.as_bytes();
+
+    url_escape_link_destination_raw(out, decoded_bytes);
+}
+
+/// Process a link URL without entity decoding (used after entities are already decoded).
+#[inline]
+fn url_escape_link_destination_raw(out: &mut Vec<u8>, input: &[u8]) {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
 
     let mut pos = 0;
@@ -208,7 +219,7 @@ pub fn url_escape_link_destination(out: &mut Vec<u8>, input: &[u8]) {
                 b'<' => out.extend_from_slice(b"&lt;"),
                 b'>' => out.extend_from_slice(b"&gt;"),
                 b'&' => out.extend_from_slice(b"&amp;"),
-                b'"' => out.extend_from_slice(b"&quot;"),
+                b'"' => out.extend_from_slice(b"%22"),
                 b'\'' => out.extend_from_slice(b"&#39;"),
                 _ => out.push(escaped),
             }
@@ -229,6 +240,12 @@ pub fn url_escape_link_destination(out: &mut Vec<u8>, input: &[u8]) {
             b'\'' => out.extend_from_slice(b"&#39;"),
             // Control characters (0x00-0x1F except tab, LF, CR) and 0x7F
             0x00..=0x08 | 0x0B | 0x0C | 0x0E..=0x1F | 0x7F => {
+                out.push(b'%');
+                out.push(HEX[(b >> 4) as usize]);
+                out.push(HEX[(b & 0xF) as usize]);
+            }
+            // Non-ASCII bytes need percent-encoding
+            0x80..=0xFF => {
                 out.push(b'%');
                 out.push(HEX[(b >> 4) as usize]);
                 out.push(HEX[(b & 0xF) as usize]);
