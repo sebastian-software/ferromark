@@ -334,6 +334,7 @@ impl<'a> BlockParser<'a> {
             match container.typ {
                 ContainerType::BlockQuote => {
                     // Try to match `>` marker with up to 3 leading spaces
+                    let save_pos = self.cursor.offset();
                     let spaces = self.cursor.skip_spaces();
                     if spaces <= 3 && self.cursor.at(b'>') {
                         self.cursor.bump();
@@ -343,7 +344,8 @@ impl<'a> BlockParser<'a> {
                         }
                         matched += 1;
                     } else {
-                        // Can't continue blockquote, break (don't close yet)
+                        // Can't continue blockquote, reset cursor and break
+                        self.cursor = Cursor::new_at(self.input, save_pos);
                         break;
                     }
                 }
