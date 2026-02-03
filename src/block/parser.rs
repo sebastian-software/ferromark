@@ -245,8 +245,10 @@ impl<'a> BlockParser<'a> {
             }
 
             // Check for lazy continuation (paragraph continues without > marker)
+            // Note: setext underlines do NOT work via lazy continuation - they must be at
+            // the same container level as the paragraph content. So we don't check for them here.
             if self.can_lazy_continue(matched_containers, indent) {
-                // Don't close containers - just add this line to the paragraph
+                // Normal lazy continuation - add this line to the paragraph
                 let line_start = self.cursor.offset();
                 self.parse_paragraph_line(line_start, events);
                 return;
@@ -293,6 +295,24 @@ impl<'a> BlockParser<'a> {
             }
         }
 
+        // Check for setext heading underline (when in a paragraph)
+        // Must check BEFORE thematic break since `---` can be either
+        // Note: indent must be < 4 for a valid setext underline
+        if indent < 4 && self.in_paragraph {
+            if let Some(level) = self.is_setext_underline_after_indent() {
+                // Skip to end of line
+                while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
+                    self.cursor.bump();
+                }
+                if !self.cursor.is_eof() {
+                    self.cursor.bump();
+                }
+                // Convert paragraph to heading
+                self.close_paragraph_as_setext_heading(level, events);
+                return;
+            }
+        }
+
         // Check for thematic break (also when all containers matched, e.g. inside blockquote)
         if indent < 4 {
             if self.try_thematic_break(events) {
@@ -323,8 +343,8 @@ impl<'a> BlockParser<'a> {
             return;
         }
 
-        // Parse regular block content
-        self.parse_line_content(events);
+        // Parse regular block content (pass known indent to avoid re-measuring)
+        self.parse_line_content_with_indent(indent, events);
     }
 
     /// Check if line is blank after consuming whitespace.
@@ -422,9 +442,15 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Parse line content after container markers have been handled.
+    /// Measures indent from current position.
     fn parse_line_content(&mut self, events: &mut Vec<BlockEvent>) {
         let (indent, _) = self.skip_indent();
+        self.parse_line_content_with_indent(indent, events);
+    }
 
+    /// Parse line content with a known indent value.
+    /// Cursor should already be past the leading whitespace.
+    fn parse_line_content_with_indent(&mut self, indent: usize, events: &mut Vec<BlockEvent>) {
         // Check for blank line (can happen after container markers)
         if self.cursor.is_eof() || self.cursor.at(b'\n') {
             if !self.cursor.is_eof() {
@@ -436,6 +462,23 @@ impl<'a> BlockParser<'a> {
 
         // Try to parse block-level constructs (only if indent < 4)
         if indent < 4 {
+            // Check for setext heading underline (when in a paragraph)
+            // Must check BEFORE thematic break since `---` can be either
+            if self.in_paragraph {
+                if let Some(level) = self.is_setext_underline_after_indent() {
+                    // Skip to end of line
+                    while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
+                        self.cursor.bump();
+                    }
+                    if !self.cursor.is_eof() {
+                        self.cursor.bump();
+                    }
+                    // Convert paragraph to heading
+                    self.close_paragraph_as_setext_heading(level, events);
+                    return;
+                }
+            }
+
             // Check for thematic break FIRST - `* * *` is a thematic break, not a list
             if self.try_thematic_break(events) {
                 return;
@@ -710,8 +753,9 @@ impl<'a> BlockParser<'a> {
             }
             // HTML block (simplified check) - only at indent < 4
             b'<' => indent < 4,
-            // Setext heading underline - only at indent < 4
-            b'=' => indent < 4 && self.cursor.remaining_slice().iter().all(|&c| c == b'=' || c == b' ' || c == b'\n'),
+            // Note: We don't check for setext underlines (= or plain line of -) here because
+            // setext underlines can't interrupt lazy continuation. They only work when the
+            // paragraph is at the same container level as the underline.
             // Blank or other content - not a block start
             _ => false,
         }
@@ -1401,6 +1445,76 @@ impl<'a> BlockParser<'a> {
 
         pos
     }
+    /// Check if the current position (after indent has been skipped) is a setext underline.
+    /// Returns Some(level) where level is 1 for '=' and 2 for '-', or None.
+    /// Unlike peek_setext_underline, this assumes indent has already been consumed.
+    fn is_setext_underline_after_indent(&self) -> Option<u8> {
+        let slice = self.cursor.remaining_slice();
+        if slice.is_empty() {
+            return None;
+        }
+
+        // Must start with = or -
+        let underline_char = slice[0];
+        if underline_char != b'=' && underline_char != b'-' {
+            return None;
+        }
+
+        // Count the underline characters (at least 1)
+        let mut pos = 0;
+        while pos < slice.len() && slice[pos] == underline_char {
+            pos += 1;
+        }
+
+        // Skip trailing spaces/tabs
+        while pos < slice.len() && (slice[pos] == b' ' || slice[pos] == b'\t') {
+            pos += 1;
+        }
+
+        // Must end at newline or EOF
+        if pos < slice.len() && slice[pos] != b'\n' {
+            return None;
+        }
+
+        Some(if underline_char == b'=' { 1 } else { 2 })
+    }
+
+    /// Close the paragraph as a setext heading with the given level.
+    fn close_paragraph_as_setext_heading(&mut self, level: u8, events: &mut Vec<BlockEvent>) {
+        if !self.in_paragraph || self.paragraph_lines.is_empty() {
+            return;
+        }
+
+        self.in_paragraph = false;
+
+        // Mark the current container as having content
+        self.mark_container_has_content();
+
+        events.push(BlockEvent::HeadingStart { level });
+
+        // Emit text ranges for each line with soft breaks between
+        // Trim trailing spaces/tabs from the last line
+        let line_count = self.paragraph_lines.len();
+        for (i, mut range) in self.paragraph_lines.drain(..).enumerate() {
+            if i > 0 {
+                events.push(BlockEvent::SoftBreak);
+            }
+            // Trim trailing whitespace from the last line
+            if i == line_count - 1 {
+                while range.end > range.start {
+                    let b = self.input[(range.end - 1) as usize];
+                    if b == b' ' || b == b'\t' {
+                        range.end -= 1;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            events.push(BlockEvent::Text(range));
+        }
+
+        events.push(BlockEvent::HeadingEnd { level });
+    }
 
     /// Try to parse a fenced code block opening.
     /// Returns true if successful.
@@ -1884,7 +1998,9 @@ mod tests {
 
     #[test]
     fn test_thematic_break_closes_paragraph() {
-        let input = "Text\n---";
+        // `---` after paragraph text is a setext heading (h2), not a thematic break
+        // For thematic break after paragraph, need a blank line
+        let input = "Text\n\n---";
         let events = parse(input);
 
         assert_eq!(events.len(), 4);
