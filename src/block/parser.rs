@@ -596,6 +596,15 @@ impl<'a> BlockParser<'a> {
 
         // Check for unordered list marker (-, *, +)
         if let Some((marker, relative_content_indent)) = self.try_unordered_marker() {
+            // CommonMark: a blank list item cannot interrupt a paragraph
+            // A blank item has relative_content_indent == 2 (marker + 1 implicit space)
+            let is_blank_item = relative_content_indent == 2 && self.cursor.at(b'\n');
+            if self.in_paragraph && is_blank_item {
+                // Reset cursor and don't start list
+                self.cursor = Cursor::new_at(self.input, start_offset);
+                return false;
+            }
+
             // Absolute content_indent = spaces before marker + marker width + spaces after marker
             let absolute_content_indent = pre_marker_indent + relative_content_indent;
             self.start_list_item(ListKind::Unordered, marker, absolute_content_indent, events);
@@ -605,7 +614,9 @@ impl<'a> BlockParser<'a> {
         // Check for ordered list marker (1. 2. etc)
         if let Some((start_num, relative_content_indent, delimiter)) = self.try_ordered_marker() {
             // CommonMark: an ordered list can only interrupt a paragraph if it starts with 1
-            if self.in_paragraph && start_num != 1 {
+            // Also, a blank list item cannot interrupt a paragraph
+            let is_blank_item = self.cursor.at(b'\n');
+            if self.in_paragraph && (start_num != 1 || is_blank_item) {
                 // Reset cursor and don't start list
                 self.cursor = Cursor::new_at(self.input, start_offset);
                 return false;
