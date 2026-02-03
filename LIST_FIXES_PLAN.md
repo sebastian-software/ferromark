@@ -2,7 +2,7 @@
 
 ## Current Status (2026-02-03)
 
-**Overall: 94.5% (344/364 in-scope tests)**
+**Overall: 95.1% (346/364 in-scope tests)**
 
 | Section | Status | Notes |
 |---------|--------|-------|
@@ -22,55 +22,40 @@
 | Soft line breaks | 100% (2/2) | Complete |
 | Textual content | 100% (3/3) | Complete |
 | Thematic breaks | 100% (16/16) | Complete |
-| Lists | 88.2% (15/17) | 2 HTML-related |
-| List items | 85.7% (24/28) | 4 remaining |
+| List items | 92.9% (26/28) | 2 remaining |
+| Lists | 70.6% (12/17) | 5 remaining (HTML-related) |
 | Entity refs | 84.6% (11/13) | 2 remaining |
 | Links | 81.6% (40/49) | 9 remaining |
 
-## Remaining Failures (20 tests)
+## Recently Fixed
 
-### List Items (4 failures)
+### Fenced Code in List Items (Examples 263, 278) - FIXED
 
-**Example 263**: Fenced code inside list item
-```markdown
-1.  foo
+The core issue was that fenced code blocks inside list items were being handled before container matching. The fix:
+1. Move `fence_state` check AFTER `match_containers()` in `parse_line()`
+2. Add `parse_fence_line_in_container()` to handle fenced code within containers
+3. Close fenced code when containers don't match
+4. Add newlines before block elements in tight list items for proper rendering
 
-    ```
-    bar
-    ```
+## Remaining Failures (18 tests)
 
-    baz
+### List Items (2 failures)
 
-    > bam
-```
-Issue: Fenced code fence ```` ``` ```` at 4-space indent inside list item is treated as indented code content instead of fenced code start.
-
-**Example 278**: Fenced code in blank list items
-```markdown
--
-  foo
--
-  ```
-  bar
-  ```
--
-      baz
-```
-Issue: Same as 263 - fenced code fence not recognized at proper indent inside list.
-
-**Example 292**: Nested blockquote + list lazy continuation
+**Example 292, 293**: Nested blockquote + list lazy continuation
 ```markdown
 > 1. > Blockquote
 continued here.
 ```
-Issue: Lazy continuation through nested blockquote + list needs paragraph tags.
+Issue: Lazy continuation through nested blockquote + list needs paragraph tags around content in the inner blockquote.
 
-### Lists (2 failures - HTML related, out of scope)
+### Lists (5 failures - mostly HTML related)
 
 **Example 308, 309**: HTML comments `<!-- -->` not rendered correctly.
 These require HTML block parsing which is currently out of scope.
 
-**Example 315**: Minor whitespace issue (`<li>\n</li>` vs `<li></li>`)
+**Example 300**: Uses setext heading (out of scope but being counted as failure).
+
+**Example 315**: Minor whitespace issue - requires investigation.
 
 ### Links (9 failures)
 
@@ -111,57 +96,28 @@ Need investigation - likely edge cases with numeric character references.
 
 ### High Priority (In Scope, Achievable)
 
-1. **Fenced code inside list items** (Examples 263, 278)
-   - Location: `parse_line_content()` and `try_code_fence()`
-   - Issue: When inside a list item with indented content, fenced code fence at content_indent level should start a fenced code block, not be treated as indented code
-   - Fix: Check for fenced code BEFORE checking for indented code when inside list item
-
-2. **Link edge cases** (5 of 9 are likely fixable)
+1. **Link edge cases** (5 of 9 are likely fixable)
    - Multiline link destinations in angle brackets
    - Nested bracket handling
    - Whitespace handling in link syntax
 
-3. **Empty list item whitespace** (Example 315)
-   - Just a rendering fix for empty items
+2. **Entity reference edge cases**
+   - Need investigation
 
 ### Medium Priority
 
-4. **Lazy continuation in nested containers** (Example 292)
+3. **Lazy continuation in nested containers** (Examples 292, 293)
    - Complex interaction between blockquote and list item paragraphs
-
-5. **Entity reference edge cases**
-   - Need investigation
+   - Requires ensuring proper paragraph wrapping in nested blockquotes
 
 ### Out of Scope
 
 - HTML block handling (Examples 308, 309)
 - Reference link definitions
-
-## Implementation Notes
-
-### Fenced Code in List Items
-
-The core issue: when we're inside a list item and see a line with 4+ spaces, we currently:
-1. Check for indented code (indent >= 4)
-2. Start indented code block
-
-But we should:
-1. Check for fenced code fence FIRST (even with indent)
-2. Only then check for indented code
-
-The fenced code detection should work at any indent level inside a list item, as long as it's at or after the content_indent position.
-
-### Link Parsing
-
-The link parser needs updates for:
-1. Multiline destinations in angle brackets
-2. Proper bracket nesting/balancing
-3. Whitespace handling between components
+- Setext headings (Example 300)
 
 ## Success Criteria
 
 Target: 96%+ compliance (350+/364)
-- Lists: 17/17 (100%) - requires HTML blocks
-- List items: 27/28 (96%+)
-- Links: 45/49 (92%+)
-- Entity refs: 13/13 (100%)
+- Current: 346/364 (95.1%)
+- Need: 4 more tests to reach 96%
