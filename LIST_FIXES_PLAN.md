@@ -5,12 +5,14 @@ Based on analysis of md4c and pulldown-cmark reference implementations.
 ## Current Status (Updated 2026-02-03)
 
 - Lists: 12/17 (70.6%) - was 9/17 (52.9%)
-- List items: 21/28 (75.0%) - was 17/28 (60.7%)
-- Overall in-scope: 93.4% (340/364)
+- List items: 24/28 (85.7%) - was 17/28 (60.7%)
+- Block quotes: 20/20 (100%) - was 18/20 (90%)
+- Overall in-scope: 94.5% (344/364) - was 91.2% (332/364)
 
 ### Completed Phases
 - **Phase 1**: Content indent calculation using absolute column positions ✓
 - **Phase 3**: Nested list detection, closing, and tight/loose rendering ✓
+- **Phase 4**: Two-blank-line rule enforcement ✓
 - **Phase 5**: Indented code detection within list items ✓
 
 ### Additional Fixes
@@ -18,10 +20,12 @@ Based on analysis of md4c and pulldown-cmark reference implementations.
 - Detect blank lines after container matching (e.g., ">>")
 - Only apply same-list continuation when all parent containers matched
 - Blank list items cannot interrupt paragraphs
+- Blank lines without > markers close blockquotes
+- Recognize blank list items in same-list continuation
+- Enable lazy continuation for list item paragraphs
 
 ### Remaining
-- **Phase 2**: Container matching edge cases (some done)
-- **Phase 4**: Two-blank-line rule enforcement
+- **Phase 2**: Container matching edge cases (fenced code inside list items)
 
 ## Original Status
 
