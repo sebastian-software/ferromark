@@ -322,14 +322,24 @@ impl HtmlWriter {
         match lang {
             Some(l) if !l.is_empty() => {
                 self.write_str("<pre><code class=\"language-");
-                // Process backslash escapes in info string
-                self.write_escaped_link_attr(l);
+                // Decode entities and escape for attribute
+                self.write_info_string_attr(l);
                 self.write_str("\">");
             }
             _ => {
                 self.write_str("<pre><code>");
             }
         }
+    }
+
+    /// Write fenced code info string with entity decoding and attribute escaping.
+    #[inline]
+    pub fn write_info_string_attr(&mut self, info: &[u8]) {
+        // First decode HTML entities
+        let info_str = core::str::from_utf8(info).unwrap_or("");
+        let decoded = html_escape::decode_html_entities(info_str);
+        // Then HTML-escape for attribute context
+        escape::escape_full_into(&mut self.out, decoded.as_bytes());
     }
 
     /// Write code block end: `</code></pre>\n`
