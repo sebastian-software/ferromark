@@ -1085,55 +1085,6 @@ impl<'a> BlockParser<'a> {
         // Emit the content (including newline)
         events.push(BlockEvent::Text(Range::new(text_start as u32, content_end as u32)));
     }
-
-    /// Parse a line inside an indented code block.
-    fn parse_indented_code_line(&mut self, events: &mut Vec<BlockEvent>) {
-        let line_start = self.cursor.offset();
-
-        // Count leading spaces
-        let initial_spaces = self.count_leading_spaces();
-
-        // Check for blank line
-        if self.is_blank_after(initial_spaces) {
-            // Blank lines in indented code are preserved - emit just the newline
-            self.cursor = Cursor::new_at(self.input, line_start + initial_spaces);
-            let newline_pos = self.cursor.offset();
-            if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                self.cursor.bump();
-                // Emit just the newline
-                events.push(BlockEvent::Text(Range::new(newline_pos as u32, (newline_pos + 1) as u32)));
-            }
-            return;
-        }
-
-        // If indent < 4, this ends the indented code block
-        if initial_spaces < 4 {
-            // Close the code block
-            self.in_indented_code = false;
-            events.push(BlockEvent::CodeBlockEnd);
-
-            // Re-parse this line as a new block
-            self.cursor = Cursor::new_at(self.input, line_start);
-            self.parse_line(events);
-            return;
-        }
-
-        // Continue the code block - strip exactly 4 spaces
-        self.cursor = Cursor::new_at(self.input, line_start + 4);
-        let content_start = self.cursor.offset();
-        let line_end = self.find_line_end();
-
-        // Include the newline in the content
-        let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-            self.cursor.bump();
-            line_end + 1
-        } else {
-            line_end
-        };
-
-        events.push(BlockEvent::Text(Range::new(content_start as u32, content_end as u32)));
-    }
-
     /// Find end of current line (position of \n or EOF).
     fn find_line_end(&mut self) -> usize {
         while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
