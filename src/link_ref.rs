@@ -51,7 +51,7 @@ pub fn normalize_label(bytes: &[u8]) -> String {
     let mut unescaped = Vec::with_capacity(decoded_bytes.len());
     let mut i = 0;
     while i < decoded_bytes.len() {
-        if decoded_bytes[i] == b'\\' && i + 1 < decoded_bytes.len() && is_escapable(decoded_bytes[i + 1]) {
+        if decoded_bytes[i] == b'\\' && i + 1 < decoded_bytes.len() && is_label_escapable(decoded_bytes[i + 1]) {
             i += 1;
             unescaped.push(decoded_bytes[i]);
             i += 1;
@@ -92,13 +92,8 @@ pub fn normalize_label(bytes: &[u8]) -> String {
 }
 
 #[inline]
-fn is_escapable(b: u8) -> bool {
-    matches!(b,
-        b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
-        b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
-        b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
-        b'`' | b'{' | b'|' | b'}' | b'~'
-    )
+fn is_label_escapable(b: u8) -> bool {
+    matches!(b, b'[' | b']' | b'\\')
 }
 
 /// Convenience helper to create a definition from ranges in input.

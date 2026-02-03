@@ -11,7 +11,7 @@ use super::marks::{flags, Mark};
 /// Handles backslash escape rules:
 /// - A backtick preceded by backslash OUTSIDE the code span is escaped (not a delimiter)
 /// - A backslash INSIDE the code span is literal (doesn't escape the closer)
-pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8]) {
+pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8], html_spans: &[(u32, u32)]) {
     let len = marks.len();
 
     for i in 0..len {
@@ -21,6 +21,9 @@ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8]) {
 
         // Check if this opener is preceded by a backslash (would be escaped)
         let opener_pos = marks[i].pos as usize;
+        if pos_in_spans(opener_pos as u32, html_spans) {
+            continue;
+        }
         if opener_pos > 0 && text[opener_pos - 1] == b'\\' {
             // Check if that backslash is itself escaped (\\`)
             let backslash_escaped = opener_pos > 1 && text[opener_pos - 2] == b'\\';
@@ -41,7 +44,6 @@ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8]) {
 
             if marks[j].len() == opener_len {
                 let closer_pos = marks[j].pos as usize;
-
                 // Check if closer is preceded by backslash
                 if closer_pos > 0 && text[closer_pos - 1] == b'\\' {
                     // Is this backslash inside the code span content?
@@ -74,6 +76,11 @@ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8]) {
             }
         }
     }
+}
+
+#[inline]
+fn pos_in_spans(pos: u32, spans: &[(u32, u32)]) -> bool {
+    spans.iter().any(|&(start, end)| pos >= start && pos < end)
 }
 
 /// Extract code span content ranges from resolved marks.
@@ -136,7 +143,7 @@ mod tests {
         let text = b"hello `code` world";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        resolve_code_spans(buffer.marks_mut(), text);
+        resolve_code_spans(buffer.marks_mut(), text, &[]);
 
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
         assert_eq!(spans.len(), 1);
@@ -148,7 +155,7 @@ mod tests {
         let text = b"``code with ` backtick``";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        resolve_code_spans(buffer.marks_mut(), text);
+        resolve_code_spans(buffer.marks_mut(), text, &[]);
 
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
         assert_eq!(spans.len(), 1);
@@ -159,7 +166,7 @@ mod tests {
         let text = b"hello `code`` world";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        resolve_code_spans(buffer.marks_mut(), text);
+        resolve_code_spans(buffer.marks_mut(), text, &[]);
 
         // Single backtick can't match double backtick
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
@@ -171,7 +178,7 @@ mod tests {
         let text = b"`a` and `b`";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        resolve_code_spans(buffer.marks_mut(), text);
+        resolve_code_spans(buffer.marks_mut(), text, &[]);
 
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
         assert_eq!(spans.len(), 2);
@@ -182,7 +189,7 @@ mod tests {
         let text = b"`*not emphasis*`";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        resolve_code_spans(buffer.marks_mut(), text);
+        resolve_code_spans(buffer.marks_mut(), text, &[]);
 
         // Asterisks inside code should be marked as IN_CODE
         for mark in buffer.marks() {
@@ -198,7 +205,7 @@ mod tests {
         let text = b"`foo\\`bar`";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        resolve_code_spans(buffer.marks_mut(), text);
+        resolve_code_spans(buffer.marks_mut(), text, &[]);
 
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
         assert_eq!(spans.len(), 1);
@@ -213,7 +220,7 @@ mod tests {
         let text = b"\\`not code`";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        resolve_code_spans(buffer.marks_mut(), text);
+        resolve_code_spans(buffer.marks_mut(), text, &[]);
 
         let spans: Vec<_> = extract_code_spans(buffer.marks()).collect();
         // No code spans should be found

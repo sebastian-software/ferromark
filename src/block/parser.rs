@@ -93,6 +93,10 @@ pub struct BlockParser<'a> {
     pending_code_blanks: Vec<(u8, Range)>,
     /// Current HTML block kind, if inside an HTML block.
     html_block: Option<HtmlBlockKind>,
+    /// Number of bytes skipped by the last leading-indent scan for this line.
+    line_indent_bytes: usize,
+    /// Optional indent start override for the first line of an HTML block.
+    pending_html_indent_start: Option<usize>,
     /// Collected link reference definitions.
     link_refs: LinkRefStore,
     /// Stack of open containers (blockquotes, list items).
@@ -123,6 +127,8 @@ impl<'a> BlockParser<'a> {
             indented_code_extra_spaces: 0,
             pending_code_blanks: Vec::new(),
             html_block: None,
+            line_indent_bytes: 0,
+            pending_html_indent_start: None,
             link_refs: LinkRefStore::new(),
             container_stack: SmallVec::new(),
             tight_list: false,
@@ -179,6 +185,24 @@ impl<'a> BlockParser<'a> {
 
         // Check for blank line first (before any space skipping), unless we're in an HTML block
         if self.html_block.is_none() && self.is_blank_line() {
+            // If we're inside a fenced code block, ensure containers still match.
+            if self.fence_state.is_some() {
+                self.cursor = Cursor::new_at(self.input, line_start);
+                self.partial_tab_cols = 0;
+                self.current_col = 0;
+                let matched_containers = self.match_containers(events);
+                if matched_containers < self.container_stack.len() {
+                    self.fence_state = None;
+                    events.push(BlockEvent::CodeBlockEnd);
+                    let (indent, _) = self.skip_indent();
+                    self.close_containers_from(matched_containers, indent, events);
+                    self.close_paragraph(events);
+                    self.handle_blank_line_containers(events, true);
+                    return;
+                }
+                self.parse_fence_line_in_container(events);
+                return;
+            }
             // Track columns while skipping whitespace (for code block blank lines)
             let mut cols = 0usize;
             while let Some(b) = self.cursor.peek() {
@@ -197,16 +221,6 @@ impl<'a> BlockParser<'a> {
                 self.cursor.bump();
             }
             let ws_end = self.cursor.offset();
-
-            // Blank lines inside fenced code are preserved
-            if self.fence_state.is_some() {
-                // Emit the blank line as code content (just the newline)
-                events.push(BlockEvent::Code(Range::new(
-                    newline_start as u32,
-                    ws_end as u32,
-                )));
-                return;
-            }
 
             // Blank lines inside indented code are preserved (but buffered)
             // Check this BEFORE closing blockquotes, as closing will end the code block
@@ -271,7 +285,8 @@ impl<'a> BlockParser<'a> {
         }
 
         // Get current indent (in columns) after container matching
-        let (indent, _) = self.skip_indent();
+        let (indent, indent_bytes) = self.skip_indent();
+        self.line_indent_bytes = indent_bytes;
 
         // Check for blank line AFTER container matching (e.g., ">>" followed by newline)
         if self.cursor.is_eof() || self.cursor.at(b'\n') {
@@ -358,16 +373,30 @@ impl<'a> BlockParser<'a> {
         // Note: indent must be < 4 for a valid setext underline
         if indent < 4 && self.in_paragraph {
             if let Some(level) = self.is_setext_underline_after_indent() {
-                // Skip to end of line
-                while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
-                    self.cursor.bump();
+                // Strip link reference definitions before deciding on setext conversion.
+                let consumed = self.extract_link_ref_defs();
+                if consumed > 0 {
+                    let drain_count = consumed.min(self.paragraph_lines.len());
+                    self.paragraph_lines.drain(0..drain_count);
                 }
-                if !self.cursor.is_eof() {
-                    self.cursor.bump();
+                if self.paragraph_lines.is_empty() {
+                    // No paragraph content left after stripping definitions; not a setext heading.
+                    // Treat this line as normal paragraph content.
+                    let line_start = self.cursor.offset();
+                    self.parse_paragraph_line(line_start, events);
+                    return;
+                } else {
+                    // Skip to end of line
+                    while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
+                        self.cursor.bump();
+                    }
+                    if !self.cursor.is_eof() {
+                        self.cursor.bump();
+                    }
+                    // Convert paragraph to heading
+                    self.close_paragraph_as_setext_heading(level, events);
+                    return;
                 }
-                // Convert paragraph to heading
-                self.close_paragraph_as_setext_heading(level, events);
-                return;
             }
         }
 
@@ -502,7 +531,8 @@ impl<'a> BlockParser<'a> {
     /// Parse line content after container markers have been handled.
     /// Measures indent from current position.
     fn parse_line_content(&mut self, events: &mut Vec<BlockEvent>) {
-        let (indent, _) = self.skip_indent();
+        let (indent, indent_bytes) = self.skip_indent();
+        self.line_indent_bytes = indent_bytes;
         self.parse_line_content_with_indent(indent, events);
     }
 
@@ -1716,6 +1746,9 @@ impl<'a> BlockParser<'a> {
         self.mark_container_has_content();
 
         self.html_block = Some(kind);
+        self.pending_html_indent_start = Some(
+            self.cursor.offset().saturating_sub(self.line_indent_bytes),
+        );
         events.push(BlockEvent::HtmlBlockStart);
 
         // Consume the current line as HTML block content
@@ -1728,7 +1761,7 @@ impl<'a> BlockParser<'a> {
     fn parse_html_block_line(&mut self, events: &mut Vec<BlockEvent>) {
         let kind = self.html_block.unwrap();
 
-        let indent_start = self.cursor.offset();
+        let indent_start = self.pending_html_indent_start.take().unwrap_or_else(|| self.cursor.offset());
         let (_indent, _) = self.skip_indent();
         let content_start = self.cursor.offset();
 
@@ -1817,8 +1850,8 @@ impl<'a> BlockParser<'a> {
         if in_paragraph {
             return None;
         }
-        if let Some((_name, tag_end)) = self.parse_html_tag_name(line) {
-            if self.tag_boundary(line, tag_end) && self.has_gt_after(line, tag_end) {
+        if let Some((_name, tag_end)) = self.parse_html_tag(line) {
+            if line[tag_end..].iter().all(|&b| Self::is_html_whitespace(b)) {
                 return Some(HtmlBlockKind::Type7);
             }
         }
@@ -1867,6 +1900,118 @@ impl<'a> BlockParser<'a> {
         self.tag_boundary(line, name_end)
     }
 
+
+    /// Parse a valid HTML tag on a single line and return (tag_name, end_index_after_tag).
+    fn parse_html_tag<'b>(&self, line: &'b [u8]) -> Option<(&'b [u8], usize)> {
+        if line.first() != Some(&b'<') {
+            return None;
+        }
+        let mut i = 1;
+        let mut is_closing = false;
+        if i < line.len() && line[i] == b'/' {
+            is_closing = true;
+            i += 1;
+        }
+        if i >= line.len() || !line[i].is_ascii_alphabetic() {
+            return None;
+        }
+        let start = i;
+        i += 1;
+        while i < line.len() && (line[i].is_ascii_alphanumeric() || line[i] == b'-') {
+            i += 1;
+        }
+        let name = &line[start..i];
+
+        if is_closing {
+            while i < line.len() && Self::is_html_whitespace(line[i]) {
+                i += 1;
+            }
+            if i < line.len() && line[i] == b'>' {
+                return Some((name, i + 1));
+            }
+            return None;
+        }
+
+        loop {
+            if i >= line.len() {
+                return None;
+            }
+            if line[i] == b'>' {
+                return Some((name, i + 1));
+            }
+            if line[i] == b'/' {
+                i += 1;
+                return if i < line.len() && line[i] == b'>' { Some((name, i + 1)) } else { None };
+            }
+            if !Self::is_html_whitespace(line[i]) {
+                return None;
+            }
+            while i < line.len() && Self::is_html_whitespace(line[i]) {
+                i += 1;
+            }
+            if i >= line.len() {
+                return None;
+            }
+            if line[i] == b'>' {
+                return Some((name, i + 1));
+            }
+            if line[i] == b'/' {
+                i += 1;
+                return if i < line.len() && line[i] == b'>' { Some((name, i + 1)) } else { None };
+            }
+            if !Self::is_attr_name_start(line[i]) {
+                return None;
+            }
+            i += 1;
+            while i < line.len() && Self::is_attr_name_char(line[i]) {
+                i += 1;
+            }
+            let ws_start = i;
+            while i < line.len() && Self::is_html_whitespace(line[i]) {
+                i += 1;
+            }
+            if i < line.len() && line[i] == b'=' {
+                i += 1;
+                while i < line.len() && Self::is_html_whitespace(line[i]) {
+                    i += 1;
+                }
+                if i >= line.len() {
+                    return None;
+                }
+                let quote = line[i];
+                if quote == b'"' || quote == b'\'' {
+                    i += 1;
+                    let value_start = i;
+                    while i < line.len() && line[i] != quote {
+                        i += 1;
+                    }
+                    if i >= line.len() {
+                        return None;
+                    }
+                    if i > value_start && line[i - 1] == b'\\' {
+                        return None;
+                    }
+                    i += 1;
+                } else {
+                    let mut had = false;
+                    while i < line.len() && !Self::is_html_whitespace(line[i]) {
+                        let b = line[i];
+                        if b == b'"' || b == b'\'' || b == b'=' || b == b'<' || b == b'>' || b == b'`' {
+                            break;
+                        }
+                        had = true;
+                        i += 1;
+                    }
+                    if !had {
+                        return None;
+                    }
+                }
+            } else {
+                i = ws_start;
+            }
+        }
+    }
+
     /// Parse tag name from a line starting with "<" or "</".
     /// Returns (tag_name, end_index_after_name).
     fn parse_html_tag_name<'b>(&self, line: &'b [u8]) -> Option<(&'b [u8], usize)> {
@@ -1896,10 +2041,21 @@ impl<'a> BlockParser<'a> {
         matches!(line[idx], b' ' | b'\t' | b'\n' | b'>' | b'/')
     }
 
-    /// Check if there's a '>' after tag name on this line.
-    fn has_gt_after(&self, line: &[u8], idx: usize) -> bool {
-        line[idx..].iter().any(|&b| b == b'>')
+    #[inline]
+    fn is_html_whitespace(b: u8) -> bool {
+        matches!(b, b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
     }
+
+    #[inline]
+    fn is_attr_name_start(b: u8) -> bool {
+        b.is_ascii_alphabetic() || b == b'_' || b == b':'
+    }
+
+    #[inline]
+    fn is_attr_name_char(b: u8) -> bool {
+        Self::is_attr_name_start(b) || b.is_ascii_digit() || b == b'.' || b == b'-'
+    }
+
 
     /// Check if the tag name is in the CommonMark block tag list.
     fn is_block_tag(&self, name: &[u8]) -> bool {
@@ -1972,13 +2128,25 @@ impl<'a> BlockParser<'a> {
 
         let content_pos = self.cursor.offset();
 
-        // Skip up to fence_indent columns of whitespace (the fence's original indent)
-        let (_skipped_cols, _skipped_bytes) = self.skip_indent_max(fence_indent);
-
-        // Check for closing fence
-        if self.cursor.at(fence_char) {
+        // Check for closing fence (allow up to 3 spaces of indent)
+        let mut temp_cursor = self.cursor;
+        let mut cols = 0usize;
+        while cols < 3 {
+            match temp_cursor.peek() {
+                Some(b' ') => {
+                    cols += 1;
+                    temp_cursor.bump();
+                }
+                Some(b'\t') => {
+                    let next_col = Self::tab_column(cols);
+                    cols = next_col;
+                    temp_cursor.bump();
+                }
+                _ => break,
+            }
+        }
+        if temp_cursor.at(fence_char) {
             let mut closing_len = 0;
-            let mut temp_cursor = self.cursor;
 
             while temp_cursor.at(fence_char) {
                 closing_len += 1;
@@ -2139,7 +2307,12 @@ impl<'a> BlockParser<'a> {
             self.link_refs.insert(label, link_def);
 
             let newline_count = para[pos..end_pos].iter().filter(|&&b| b == b'\n').count();
-            consumed_lines += newline_count + 1;
+            let ends_with_newline = end_pos > 0 && para.get(end_pos - 1) == Some(&b'\n');
+            consumed_lines += if ends_with_newline {
+                newline_count
+            } else {
+                newline_count + 1
+            };
             pos = end_pos;
 
             if pos >= para.len() {
@@ -2259,6 +2432,10 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
         }
         let url_end = i;
         i += 1;
+        // After angle destination, must be whitespace or end of line
+        if i < len && !matches!(input[i], b' ' | b'\t' | b'\n') {
+            return None;
+        }
         (input[url_start..url_end].to_vec(), i)
     } else {
         let url_start = i;
@@ -2293,20 +2470,30 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
         (input[url_start..i].to_vec(), i)
     };
 
+    let mut line_end = i;
+    while line_end < len && input[line_end] != b'\n' {
+        line_end += 1;
+    }
+
     // Skip whitespace before title
     let mut j = i;
+    let mut had_title_sep = false;
+    let mut title_on_newline = false;
     while j < len && (input[j] == b' ' || input[j] == b'\t') {
         j += 1;
+        had_title_sep = true;
     }
     if j < len && input[j] == b'\n' {
         j += 1;
+        had_title_sep = true;
+        title_on_newline = true;
         while j < len && (input[j] == b' ' || input[j] == b'\t') {
             j += 1;
         }
     }
 
     let mut title_bytes = None;
-    if j < len {
+    if had_title_sep && j < len {
         let opener = input[j];
         let closer = match opener {
             b'"' => b'"',
@@ -2324,12 +2511,37 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                     j += 2;
                     continue;
                 }
+                if b == b'\n' && j + 1 < len && input[j + 1] == b'\n' {
+                    // Blank line not allowed in title
+                    if title_on_newline {
+                        return Some((
+                            ParsedLinkRefDef {
+                                label: input[label_start..label_end].to_vec(),
+                                url: url_bytes,
+                                title: None,
+                            },
+                            if line_end < len { line_end + 1 } else { line_end },
+                        ));
+                    }
+                    return None;
+                }
                 if b == closer {
                     break;
                 }
                 j += 1;
             }
             if j >= len || input[j] != closer {
+                // Not a valid title.
+                if title_on_newline {
+                    return Some((
+                        ParsedLinkRefDef {
+                            label: input[label_start..label_end].to_vec(),
+                            url: url_bytes,
+                            title: None,
+                        },
+                        if line_end < len { line_end + 1 } else { line_end },
+                    ));
+                }
                 return None;
             }
             let title_end = j;
@@ -2340,6 +2552,17 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                 j += 1;
             }
             if j < len && input[j] != b'\n' {
+                // Invalid title (extra text).
+                if title_on_newline {
+                    return Some((
+                        ParsedLinkRefDef {
+                            label: input[label_start..label_end].to_vec(),
+                            url: url_bytes,
+                            title: None,
+                        },
+                        if line_end < len { line_end + 1 } else { line_end },
+                    ));
+                }
                 return None;
             }
             i = j;
@@ -2348,12 +2571,8 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
 
     // If no title, ensure remaining is only whitespace
     if title_bytes.is_none() {
-        while i < len && (input[i] == b' ' || input[i] == b'\t') {
-            i += 1;
-        }
-        if i < len && input[i] != b'\n' {
-            return None;
-        }
+        // Definition ends at end of destination line.
+        i = line_end;
     }
 
     // Consume end of line

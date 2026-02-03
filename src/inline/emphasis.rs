@@ -270,7 +270,7 @@ mod tests {
     fn get_emphasis_matches(text: &[u8]) -> Vec<EmphasisMatch> {
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        resolve_code_spans(buffer.marks_mut(), text);
+        resolve_code_spans(buffer.marks_mut(), text, &[]);
         resolve_emphasis(buffer.marks_mut(), &[])  // No link boundaries in basic tests
     }
 

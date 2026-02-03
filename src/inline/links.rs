@@ -154,7 +154,11 @@ pub fn resolve_reference_links(
     let mut ref_links = Vec::new();
     let mut formed_opens: Vec<bool> = vec![false; open_brackets.len()];
     let mut used_closes: Vec<bool> = vec![false; close_brackets.len()];
-
+    let mut occupied: Vec<(u32, u32)> = inline_links
+        .iter()
+        .filter(|l| !l.is_image)
+        .map(|l| (l.start, l.end))
+        .collect();
     let mut open_pos_to_idx = std::collections::HashMap::new();
     let mut close_pos_to_idx = std::collections::HashMap::new();
     for (i, &(pos, _)) in open_brackets.iter().enumerate() {
@@ -175,8 +179,8 @@ pub fn resolve_reference_links(
         }
     }
 
-    // Process open brackets from right to left
-    for open_idx in (0..open_brackets.len()).rev() {
+    // Process open brackets from left to right
+    for open_idx in 0..open_brackets.len() {
         if formed_opens[open_idx] {
             continue;
         }
@@ -199,7 +203,8 @@ pub fn resolve_reference_links(
         let label_end = close_pos as usize;
         let mut label_bytes = &text[label_start..label_end];
 
-        if let Some((ref_start, ref_end, ref_close_pos)) = parse_ref_label(text, close_pos as usize + 1) {
+        let mut ref_label: Option<(usize, usize, usize)> = None;
+        if let Some((ref_start, ref_end, ref_close_pos)) = parse_ref_label_immediate(text, close_pos as usize + 1) {
             // Full or collapsed reference: [label][ref] or [label][]
             if ref_start == ref_end {
                 // Collapsed: use link text as label
@@ -207,14 +212,7 @@ pub fn resolve_reference_links(
                 label_bytes = &text[ref_start..ref_end];
             }
             end = (ref_close_pos + 1) as u32;
-
-            // Mark the ref label brackets as used to avoid forming links
-            if let Some(&idx) = open_pos_to_idx.get(&(ref_start as u32 - 1)) {
-                formed_opens[idx] = true;
-            }
-            if let Some(&idx) = close_pos_to_idx.get(&(ref_close_pos as u32)) {
-                used_closes[idx] = true;
-            }
+            ref_label = Some((ref_start, ref_end, ref_close_pos));
         }
 
         let norm = normalize_label(label_bytes);
@@ -223,8 +221,24 @@ pub fn resolve_reference_links(
         }
         let Some(def_index) = defs.get_index(&norm) else { continue };
 
+        // Links cannot contain links (but can contain images)
+        if contains_link(&occupied, open_pos, close_pos)
+            || contains_ref_link_candidate(text, open_brackets, close_brackets, defs, open_pos, close_pos)
+        {
+            continue;
+        }
+
         formed_opens[open_idx] = true;
         used_closes[close_idx] = true;
+
+        if let Some((ref_start, _ref_end, ref_close_pos)) = ref_label {
+            if let Some(&idx) = open_pos_to_idx.get(&((ref_start - 1) as u32)) {
+                formed_opens[idx] = true;
+            }
+            if let Some(&idx) = close_pos_to_idx.get(&(ref_close_pos as u32)) {
+                used_closes[idx] = true;
+            }
+        }
 
         ref_links.push(RefLink {
             start: if is_image { open_pos - 1 } else { open_pos },
@@ -233,10 +247,55 @@ pub fn resolve_reference_links(
             is_image,
             def_index,
         });
+
+        occupied.push((open_pos, end));
     }
 
     ref_links.sort_by_key(|l| l.start);
     ref_links
+}
+
+fn contains_link(links: &[(u32, u32)], start: u32, end: u32) -> bool {
+    links.iter().any(|&(s, e)| s >= start && e <= end)
+}
+
+fn contains_ref_link_candidate(
+    text: &[u8],
+    open_brackets: &[(u32, bool)],
+    close_brackets: &[u32],
+    defs: &LinkRefStore,
+    start: u32,
+    end: u32,
+) -> bool {
+    for &(open_pos, is_image) in open_brackets {
+        if open_pos <= start || open_pos >= end || is_image {
+            continue;
+        }
+        let close_pos = close_brackets.iter().copied().find(|&c| c > open_pos && c < end);
+        let Some(close_pos) = close_pos else { continue };
+
+        let label_start = (open_pos + 1) as usize;
+        let label_end = close_pos as usize;
+        if label_start >= label_end || label_end > text.len() {
+            continue;
+        }
+        let mut label_bytes = &text[label_start..label_end];
+
+        if let Some((ref_start, ref_end, _ref_close)) = parse_ref_label_immediate(text, close_pos as usize + 1) {
+            if ref_start != ref_end {
+                label_bytes = &text[ref_start..ref_end];
+            }
+        }
+
+        let norm = normalize_label(label_bytes);
+        if norm.is_empty() {
+            continue;
+        }
+        if defs.get_index(&norm).is_some() {
+            return true;
+        }
+    }
+    false
 }
 
 /// Find the matching close bracket for an open bracket, accounting for nesting.
@@ -286,22 +345,8 @@ fn find_matching_close(
     close_idx
 }
 
-fn parse_ref_label(text: &[u8], mut pos: usize) -> Option<(usize, usize, usize)> {
+fn parse_ref_label_immediate(text: &[u8], mut pos: usize) -> Option<(usize, usize, usize)> {
     let len = text.len();
-    let mut saw_newline = false;
-    while pos < len {
-        match text[pos] {
-            b' ' | b'\t' => pos += 1,
-            b'\n' => {
-                if saw_newline {
-                    return None;
-                }
-                saw_newline = true;
-                pos += 1;
-            }
-            _ => break,
-        }
-    }
 
     if pos >= len || text[pos] != b'[' {
         return None;

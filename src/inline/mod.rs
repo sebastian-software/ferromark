@@ -48,25 +48,29 @@ impl InlineParser {
         }
 
         // Phase 2: Resolve marks by precedence
-        // First: code spans (highest precedence)
-        resolve_code_spans(self.mark_buffer.marks_mut(), text);
+        // First: autolinks (filter out those inside code spans later)
+        let autolinks: Vec<_> = find_autolinks(text);
+
+        // Second: raw inline HTML (ignore code spans for now; we'll filter after resolving them)
+        let mut html_spans = find_html_spans(text, &[], &autolinks);
+        let html_ranges: Vec<(u32, u32)> = html_spans.iter().map(|s| (s.start, s.end)).collect();
+
+        // Third: code spans (highest precedence, but should not start inside HTML tags)
+        resolve_code_spans(self.mark_buffer.marks_mut(), text, &html_ranges);
 
         // Get code span ranges for filtering
         let code_spans: Vec<_> = extract_code_spans(self.mark_buffer.marks()).collect();
+        filter_html_spans_in_code_spans(&mut html_spans, &code_spans);
 
-        // Second: autolinks (filter out those inside code spans)
-        let autolinks: Vec<_> = find_autolinks(text)
+        // Filter autolinks that start inside code spans
+        let autolinks: Vec<_> = autolinks
             .into_iter()
             .filter(|al| {
-                // Autolink should not start inside a code span
                 !code_spans.iter().any(|cs| {
                     al.start >= cs.opener_pos && al.start < cs.closer_end
                 })
             })
             .collect();
-
-        // Third: raw inline HTML (filter out those inside code spans or autolinks)
-        let mut html_spans = find_html_spans(text, &code_spans, &autolinks);
 
         // Fourth: links and images
         let (open_brackets, close_brackets) = self.collect_brackets();
@@ -669,6 +673,17 @@ fn filter_html_spans_in_link_destinations(spans: &mut Vec<HtmlSpan>, links: &[Li
     });
 }
 
+fn filter_html_spans_in_code_spans(spans: &mut Vec<HtmlSpan>, code_spans: &[CodeSpan]) {
+    if spans.is_empty() || code_spans.is_empty() {
+        return;
+    }
+    spans.retain(|span| {
+        !code_spans.iter().any(|cs| {
+            span.start >= cs.opener_pos && span.start < cs.closer_end
+        })
+    });
+}
+
 fn pos_in_ranges(pos: usize, ranges: &[(usize, usize)], idx: &mut usize) -> bool {
     while *idx < ranges.len() && pos >= ranges[*idx].1 {
         *idx += 1;
@@ -804,6 +819,7 @@ fn parse_html_tag(text: &[u8], start: usize) -> Option<usize> {
             i += 1;
         }
 
+        let ws_start = i;
         while i < len && is_html_whitespace(text[i]) {
             i += 1;
         }
@@ -844,6 +860,8 @@ fn parse_html_tag(text: &[u8], start: usize) -> Option<usize> {
                     return None;
                 }
             }
+        } else {
+            i = ws_start;
         }
     }
 }
@@ -979,5 +997,33 @@ mod tests {
                 assert!(text != b"!", "Found standalone ! as text");
             }
         }
+    }
+
+    #[test]
+    fn test_html_tag_with_newline_in_attributes() {
+        let input = "<a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 />";
+        assert!(
+            parse_inline_html(b"<a foo=\"bar\"\n_boolean />", 0).is_some(),
+            "Expected basic multiline tag to parse"
+        );
+        assert!(
+            parse_inline_html(b"<a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean />", 0).is_some(),
+            "Expected quoted attribute with inline tags to parse"
+        );
+        let end = parse_inline_html(input.as_bytes(), 0);
+        assert!(end.is_some(), "Expected inline HTML parser to match the tag");
+        let events = parse_inline(input);
+        let mut found = false;
+        for event in events {
+            if let InlineEvent::Html(range) = event {
+                if range.start == 0 {
+                    let slice = range.slice(input.as_bytes());
+                    assert!(slice.starts_with(b"<a "), "Expected HTML span to start at <a>");
+                    found = true;
+                    break;
+                }
+            }
+        }
+        assert!(found, "Expected raw HTML tag to be parsed at start");
     }
 }
