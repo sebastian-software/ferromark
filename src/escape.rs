@@ -221,11 +221,11 @@ pub fn url_escape_link_destination(out: &mut Vec<u8>, input: &[u8]) {
             // Characters that need URL percent-encoding
             b'\\' => out.extend_from_slice(b"%5C"),
             b' ' => out.extend_from_slice(b"%20"),
-            // Characters that need HTML escaping
+            b'"' => out.extend_from_slice(b"%22"),
+            // Characters that need HTML escaping (but are valid in URLs)
             b'<' => out.extend_from_slice(b"&lt;"),
             b'>' => out.extend_from_slice(b"&gt;"),
             b'&' => out.extend_from_slice(b"&amp;"),
-            b'"' => out.extend_from_slice(b"&quot;"),
             b'\'' => out.extend_from_slice(b"&#39;"),
             // Control characters (0x00-0x1F except tab, LF, CR) and 0x7F
             0x00..=0x08 | 0x0B | 0x0C | 0x0E..=0x1F | 0x7F => {
