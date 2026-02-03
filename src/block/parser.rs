@@ -443,7 +443,12 @@ impl<'a> BlockParser<'a> {
         match kind {
             ListKind::Unordered => {
                 // Must be the SAME marker character (-, *, or +)
-                b == marker && self.cursor.peek_ahead(1) == Some(b' ')
+                // Followed by space, tab, or newline (blank list item)
+                if b != marker {
+                    return false;
+                }
+                let after = self.cursor.peek_ahead(1);
+                after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n') || after.is_none()
             }
             ListKind::Ordered { delimiter, .. } => {
                 // Must be digit(s) followed by the SAME delimiter (. or ))
@@ -456,7 +461,12 @@ impl<'a> BlockParser<'a> {
                     offset += 1;
                 }
                 // Check if delimiter matches
-                self.cursor.peek_ahead(offset) == Some(delimiter)
+                if self.cursor.peek_ahead(offset) != Some(delimiter) {
+                    return false;
+                }
+                // Must be followed by space, tab, or newline
+                let after = self.cursor.peek_ahead(offset + 1);
+                after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n') || after.is_none()
             }
         }
     }
