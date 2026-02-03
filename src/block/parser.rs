@@ -211,7 +211,8 @@ impl<'a> BlockParser<'a> {
             }
 
             // close_containers_from is smart about keeping lists open when starting new items
-            self.close_containers_from(matched_containers, events);
+            // Pass indent so it knows if a new item is actually possible (only at indent < 4)
+            self.close_containers_from(matched_containers, indent, events);
         }
 
         // If we're in an indented code block and containers matched, handle continuation
@@ -562,16 +563,19 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Close containers starting from index, being smart about lists.
-    fn close_containers_from(&mut self, from: usize, events: &mut Vec<BlockEvent>) {
+    /// `indent` is the current line's indent - used to determine if a new list item is possible.
+    fn close_containers_from(&mut self, from: usize, indent: usize, events: &mut Vec<BlockEvent>) {
         // Check if we're about to close a list item but might start a new one
         while self.container_stack.len() > from {
             let top = self.container_stack.last().unwrap();
 
-            // Only consider "same list" continuation if this is the LAST container
-            // we need to close (i.e., all parent containers matched)
+            // Only consider "same list" continuation if:
+            // 1. This is the LAST container we need to close
+            // 2. The indent is < 4 (otherwise we can't start a new item)
             let is_last_to_close = self.container_stack.len() == from + 1;
+            let can_start_new_item = indent < 4;
 
-            if is_last_to_close {
+            if is_last_to_close && can_start_new_item {
                 if let ContainerType::ListItem { kind, marker, .. } = top.typ {
                     // Check if the current position has a same-type list marker
                     let save_pos = self.cursor.offset();
