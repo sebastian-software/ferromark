@@ -471,12 +471,12 @@ impl<'a> BlockParser<'a> {
         }
     }
 
-    /// Check if we can do lazy continuation for a blockquote.
+    /// Check if we can do lazy continuation for a container (blockquote or list item).
     /// Returns true if:
     /// 1. We're in a paragraph
-    /// 2. The first unmatched container is a blockquote
+    /// 2. The first unmatched container is a blockquote or list item
     /// 3. The current line doesn't start a new block
-    fn can_lazy_continue(&self, matched: usize, indent: usize) -> bool {
+    fn can_lazy_continue(&self, matched: usize, _indent: usize) -> bool {
         // Must be in a paragraph to do lazy continuation
         if !self.in_paragraph {
             return false;
@@ -487,16 +487,20 @@ impl<'a> BlockParser<'a> {
             return false;
         }
 
-        // The first unmatched container must be a blockquote
-        // (lazy continuation doesn't apply to list items)
-        if self.container_stack[matched].typ != ContainerType::BlockQuote {
+        // The first unmatched container must be a blockquote or list item
+        // (CommonMark allows lazy continuation for paragraphs in both)
+        let container = &self.container_stack[matched];
+        let is_lazy_container = matches!(
+            container.typ,
+            ContainerType::BlockQuote | ContainerType::ListItem { .. }
+        );
+        if !is_lazy_container {
             return false;
         }
 
-        // If indent >= 4, this would be an indented code block
-        if indent >= 4 {
-            return false;
-        }
+        // Note: we don't check indent >= 4 here because we're in a paragraph.
+        // Indented code blocks can only start when NOT in a paragraph.
+        // The indent check is handled elsewhere.
 
         // Check if the current line would start a new block
         // If it would, we can't do lazy continuation
@@ -520,19 +524,24 @@ impl<'a> BlockParser<'a> {
             b'>' => true,
             // Unordered list marker or thematic break
             b'-' | b'*' | b'+' => {
-                // Check if followed by space (list item) or if it's a thematic break
-                self.cursor.peek_ahead(1) == Some(b' ') || self.peek_thematic_break()
+                // Check if followed by space/tab/newline (list item) or if it's a thematic break
+                let after = self.cursor.peek_ahead(1);
+                after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n')
+                    || after.is_none() || self.peek_thematic_break()
             }
             // Ordered list marker
             b'0'..=b'9' => {
-                // Check if digit(s) followed by . or ) then space
+                // Check if digit(s) followed by . or ) then space/tab/newline
                 let mut offset = 1;
                 while self.cursor.peek_ahead(offset).map_or(false, |c| c.is_ascii_digit()) {
                     offset += 1;
                 }
                 let delim = self.cursor.peek_ahead(offset);
-                (delim == Some(b'.') || delim == Some(b')'))
-                    && self.cursor.peek_ahead(offset + 1) == Some(b' ')
+                if delim != Some(b'.') && delim != Some(b')') {
+                    return false;
+                }
+                let after = self.cursor.peek_ahead(offset + 1);
+                after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n') || after.is_none()
             }
             // HTML block (simplified check)
             b'<' => true,
