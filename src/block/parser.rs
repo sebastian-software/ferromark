@@ -166,6 +166,16 @@ impl<'a> BlockParser<'a> {
         // Get current indent after container matching
         let indent = self.cursor.skip_spaces();
 
+        // Check for blank line AFTER container matching (e.g., ">>" followed by newline)
+        if self.cursor.is_eof() || self.cursor.at(b'\n') {
+            if !self.cursor.is_eof() {
+                self.cursor.bump();
+            }
+            self.close_paragraph(events);
+            self.handle_blank_line_containers(events);
+            return;
+        }
+
         // If we have unmatched containers, check for lazy continuation or close them
         if matched_containers < self.container_stack.len() {
             // If we're in an indented code block and containers don't match, close it
