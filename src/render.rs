@@ -99,6 +99,17 @@ impl HtmlWriter {
         escape::escape_text_into(&mut self.out, text);
     }
 
+    /// Write text with entity decoding and HTML escaping (for inline text content).
+    /// First decodes HTML entities, then escapes for output.
+    #[inline]
+    pub fn write_text_with_entities(&mut self, text: &[u8]) {
+        // First decode HTML entities
+        let text_str = core::str::from_utf8(text).unwrap_or("");
+        let decoded = html_escape::decode_html_entities(text_str);
+        // Then HTML-escape the result
+        escape::escape_text_into(&mut self.out, decoded.as_bytes());
+    }
+
     /// Write text with HTML escaping from a range.
     #[inline]
     pub fn write_escaped_range(&mut self, input: &[u8], range: Range) {

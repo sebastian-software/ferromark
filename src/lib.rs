@@ -293,7 +293,8 @@ fn render_inline_event(
             if in_image {
                 writer.write_escaped_attr(range.slice(text));
             } else {
-                writer.write_escaped_text(range.slice(text));
+                // Decode HTML entities and escape for output
+                writer.write_text_with_entities(range.slice(text));
             }
         }
         InlineEvent::Code(range) => {
