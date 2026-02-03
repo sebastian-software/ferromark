@@ -45,6 +45,26 @@ fn uses_reference_links(markdown: &str) -> bool {
                 }
             }
         }
+        // Also check for continuation lines that contain ]: followed by URL/space
+        // This catches multi-line reference labels like "[Foo\n  bar]: /url"
+        if (trimmed.contains("]: ") || trimmed.contains("]:/") || trimmed.contains("]: <"))
+            && !trimmed.starts_with('[')
+        {
+            // Could be a reference definition continuation
+            // Check if there's a [ on an earlier line that's unclosed
+            let mut found_open_bracket = false;
+            for prev_line in markdown.lines() {
+                if prev_line == line {
+                    break; // Stop at current line
+                }
+                if prev_line.trim_start().starts_with('[') && !prev_line.contains(']') {
+                    found_open_bracket = true;
+                }
+            }
+            if found_open_bracket {
+                return true;
+            }
+        }
     }
     false
 }

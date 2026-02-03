@@ -362,7 +362,7 @@ fn render_inline_event(
             // Suppress link tags inside image alt text
             if !in_image {
                 writer.write_str("<a href=\"");
-                writer.write_escaped_link_attr(url.slice(text));
+                writer.write_link_url(url.slice(text));
                 writer.write_str("\"");
                 if let Some(t) = title {
                     writer.write_str(" title=\"");
@@ -385,7 +385,7 @@ fn render_inline_event(
             } else {
                 // Outermost image - emit the img tag start
                 writer.write_str("<img src=\"");
-                writer.write_escaped_link_attr(url.slice(text));
+                writer.write_link_url(url.slice(text));
                 writer.write_str("\" alt=\"");
                 *image_state = Some(ImageState {
                     title: title.clone(),

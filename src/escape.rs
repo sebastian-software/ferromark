@@ -177,6 +177,69 @@ pub fn escape_text_to_string(input: &str) -> String {
 /// URL percent-encode special characters, then HTML-escape for href attribute.
 /// This is specifically for autolink URLs per CommonMark spec.
 ///
+/// Check if a character is ASCII punctuation (can be backslash-escaped in URLs)
+#[inline]
+fn is_ascii_punctuation(b: u8) -> bool {
+    matches!(b,
+        b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
+        b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
+        b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
+        b'`' | b'{' | b'|' | b'}' | b'~'
+    )
+}
+
+/// Process a link URL: handle backslash escapes and percent-encode special characters.
+/// This is used for link destinations in `[text](url)` syntax.
+#[inline]
+pub fn url_escape_link_destination(out: &mut Vec<u8>, input: &[u8]) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+
+    let mut pos = 0;
+    while pos < input.len() {
+        let b = input[pos];
+
+        // Handle backslash escapes: \X where X is ASCII punctuation
+        if b == b'\\' && pos + 1 < input.len() && is_ascii_punctuation(input[pos + 1]) {
+            // Skip the backslash, encode the escaped character
+            pos += 1;
+            let escaped = input[pos];
+            // The escaped character still needs HTML attribute escaping
+            match escaped {
+                b'<' => out.extend_from_slice(b"&lt;"),
+                b'>' => out.extend_from_slice(b"&gt;"),
+                b'&' => out.extend_from_slice(b"&amp;"),
+                b'"' => out.extend_from_slice(b"&quot;"),
+                b'\'' => out.extend_from_slice(b"&#39;"),
+                _ => out.push(escaped),
+            }
+            pos += 1;
+            continue;
+        }
+
+        // Handle characters that need encoding
+        match b {
+            // Characters that need URL percent-encoding
+            b'\\' => out.extend_from_slice(b"%5C"),
+            b' ' => out.extend_from_slice(b"%20"),
+            // Characters that need HTML escaping
+            b'<' => out.extend_from_slice(b"&lt;"),
+            b'>' => out.extend_from_slice(b"&gt;"),
+            b'&' => out.extend_from_slice(b"&amp;"),
+            b'"' => out.extend_from_slice(b"&quot;"),
+            b'\'' => out.extend_from_slice(b"&#39;"),
+            // Control characters (0x00-0x1F except tab, LF, CR) and 0x7F
+            0x00..=0x08 | 0x0B | 0x0C | 0x0E..=0x1F | 0x7F => {
+                out.push(b'%');
+                out.push(HEX[(b >> 4) as usize]);
+                out.push(HEX[(b & 0xF) as usize]);
+            }
+            // Everything else passes through
+            _ => out.push(b),
+        }
+        pos += 1;
+    }
+}
+
 /// Characters that need percent-encoding in URLs:
 /// - Backslash `\` → `%5C`
 /// - `[` → `%5B`

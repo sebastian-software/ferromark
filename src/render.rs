@@ -140,6 +140,13 @@ impl HtmlWriter {
         escape::url_encode_then_html_escape(&mut self.out, url);
     }
 
+    /// Write link destination with backslash escape processing and URL encoding.
+    /// Used for link destinations in `[text](url)` syntax.
+    #[inline]
+    pub fn write_link_url(&mut self, url: &[u8]) {
+        escape::url_escape_link_destination(&mut self.out, url);
+    }
+
     /// Write a newline.
     #[inline]
     pub fn newline(&mut self) {
