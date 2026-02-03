@@ -2,7 +2,7 @@
 
 ## Current Status (2026-02-03)
 
-**Overall: 95.1% (346/364 in-scope tests)**
+**Overall: 96.2% (350/364 in-scope tests)**
 
 | Section | Status | Notes |
 |---------|--------|-------|
@@ -23,70 +23,62 @@
 | Textual content | 100% (3/3) | Complete |
 | Thematic breaks | 100% (16/16) | Complete |
 | List items | 92.9% (26/28) | 2 remaining |
+| Links | 89.8% (44/49) | 5 remaining |
 | Lists | 70.6% (12/17) | 5 remaining (HTML-related) |
 | Entity refs | 84.6% (11/13) | 2 remaining |
-| Links | 81.6% (40/49) | 9 remaining |
 
 ## Recently Fixed
 
-### Fenced Code in List Items (Examples 263, 278) - FIXED
+### Link Parsing Improvements (Examples 510, 512, 518)
 
-The core issue was that fenced code blocks inside list items were being handled before container matching. The fix:
-1. Move `fence_state` check AFTER `match_containers()` in `parse_line()`
-2. Add `parse_fence_line_in_container()` to handle fenced code within containers
-3. Close fenced code when containers don't match
-4. Add newlines before block elements in tight list items for proper rendering
+1. **Bracket balancing** (Example 512): `[link [foo [bar]]](/uri)` now works
+   - Added `find_matching_close()` to properly balance nested brackets
 
-## Remaining Failures (18 tests)
+2. **Link precedence** (Example 518): Inner links take precedence
+   - When a link forms, outer open brackets are deactivated
+   - `[foo [bar](/uri)](/uri)` → `[foo <a>bar</a>](/uri)`
 
-### List Items (2 failures)
+3. **Newlines in link destinations** (Example 510)
+   - Newlines in whitespace between URL and title are not line breaks
+   - Extended `in_link_dest` check to cover entire `(...)` area
 
-**Example 292, 293**: Nested blockquote + list lazy continuation
-```markdown
-> 1. > Blockquote
-continued here.
-```
-Issue: Lazy continuation through nested blockquote + list needs paragraph tags around content in the inner blockquote.
+### Fenced Code in List Items (Examples 263, 278) - FIXED EARLIER
 
-### Lists (5 failures - mostly HTML related)
+The core issue was that fenced code blocks inside list items were being handled before container matching.
 
-**Example 308, 309**: HTML comments `<!-- -->` not rendered correctly.
-These require HTML block parsing which is currently out of scope.
+## Remaining Failures (14 tests)
 
-**Example 300**: Uses setext heading (out of scope but being counted as failure).
+### Links (5 failures)
 
-**Example 315**: Minor whitespace issue - requires investigation.
-
-### Links (9 failures)
-
-**Example 491**: Link with newline in angle-bracket destination
+**Example 491**: Newline in angle-bracket destination
 ```markdown
 [link](<foo
 bar>)
 ```
+Issue: Angle brackets should not be escaped when link fails to parse.
 
-**Example 494**: Angle bracket edge cases
-```markdown
-[a](<b)c
-[a](<b)c>
-[a](<b>c)
-```
+**Example 494**: Unclosed angle bracket in destination
+Issue: Similar angle bracket handling.
 
-**Example 510**: Link with whitespace/newline before title
+**Example 520**: Complex nested image/link
 ```markdown
-[link](   /uri
-  "title"  )
+![[[foo](uri1)](uri2)](uri3)
 ```
+Issue: Image alt text should include literal brackets when inner links form.
 
-**Example 512**: Nested brackets in link text
-```markdown
-[link [foo [bar]]](/uri)
-```
+**Example 524**: Raw HTML in link text (out of scope)
+**Example 526**: Autolink inside link destination (edge case)
 
-**Example 518**: Link inside link text
-```markdown
-[foo [bar](/uri)](/uri)
-```
+### List Items (2 failures)
+
+**Example 292, 293**: Lazy continuation in nested blockquotes
+Issue: Paragraph wrapping in nested blockquote + list.
+
+### Lists (5 failures - mostly HTML related)
+
+**Example 308, 309**: HTML comments (out of scope)
+**Example 300**: Setext heading (out of scope)
+**Example 315**: Minor whitespace issue
 
 ### Entity References (2 failures)
 
@@ -94,30 +86,18 @@ Need investigation - likely edge cases with numeric character references.
 
 ## Priority Order
 
-### High Priority (In Scope, Achievable)
+### In Scope, Potentially Fixable
 
-1. **Link edge cases** (5 of 9 are likely fixable)
-   - Multiline link destinations in angle brackets
-   - Nested bracket handling
-   - Whitespace handling in link syntax
+1. **Entity reference edge cases** (2 tests)
+2. **Lazy continuation in nested containers** (2 tests)
 
-2. **Entity reference edge cases**
-   - Need investigation
-
-### Medium Priority
-
-3. **Lazy continuation in nested containers** (Examples 292, 293)
-   - Complex interaction between blockquote and list item paragraphs
-   - Requires ensuring proper paragraph wrapping in nested blockquotes
-
-### Out of Scope
+### Out of Scope / Low Priority
 
 - HTML block handling (Examples 308, 309)
-- Reference link definitions
+- Raw HTML in inline content (Example 524)
 - Setext headings (Example 300)
 
 ## Success Criteria
 
-Target: 96%+ compliance (350+/364)
-- Current: 346/364 (95.1%)
-- Need: 4 more tests to reach 96%
+Target: 96%+ compliance (350+/364) - **ACHIEVED!**
+- Current: 350/364 (96.2%)
