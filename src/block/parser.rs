@@ -75,8 +75,9 @@ pub struct BlockParser<'a> {
     in_indented_code: bool,
     /// Extra spaces to prepend to each line of indented code (from tab expansion).
     indented_code_extra_spaces: usize,
-    /// Pending blank line ranges in indented code (only emit if code continues).
-    pending_code_blanks: Vec<Range>,
+    /// Pending blank lines in indented code (only emit if code continues).
+    /// Stores (extra_spaces_beyond_4, newline_range) for each blank line.
+    pending_code_blanks: Vec<(u8, Range)>,
     /// Stack of open containers (blockquotes, list items).
     container_stack: SmallVec<[Container; 8]>,
     /// Whether we're in a tight list context.
@@ -148,10 +149,20 @@ impl<'a> BlockParser<'a> {
 
         // Check for blank line first (before any space skipping)
         if self.is_blank_line() {
-            // Skip all whitespace and the newline
-            while self.cursor.peek().map_or(false, |b| b == b' ' || b == b'\t') {
-                self.cursor.bump();
+            // Track columns while skipping whitespace (for code block blank lines)
+            let mut cols = 0usize;
+            while let Some(b) = self.cursor.peek() {
+                if b == b' ' {
+                    cols += 1;
+                    self.cursor.bump();
+                } else if b == b'\t' {
+                    cols = (cols + 4) & !3;
+                    self.cursor.bump();
+                } else {
+                    break;
+                }
             }
+            let newline_start = self.cursor.offset();
             if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                 self.cursor.bump();
             }
@@ -160,9 +171,8 @@ impl<'a> BlockParser<'a> {
             // Blank lines inside fenced code are preserved
             if self.fence_state.is_some() {
                 // Emit the blank line as code content (just the newline)
-                let blank_start = ws_end - 1; // Just before the newline
                 events.push(BlockEvent::Code(Range::new(
-                    blank_start as u32,
+                    newline_start as u32,
                     ws_end as u32,
                 )));
                 return;
@@ -176,9 +186,9 @@ impl<'a> BlockParser<'a> {
                 let has_blockquote = self.container_stack.iter()
                     .any(|c| c.typ == ContainerType::BlockQuote);
                 if !has_blockquote {
-                    // Not inside a blockquote, just buffer the blank line
-                    let blank_start = ws_end - 1; // Just before the newline
-                    self.pending_code_blanks.push(Range::new(blank_start as u32, ws_end as u32));
+                    // Buffer the blank line with any extra whitespace beyond 4 columns
+                    let extra_spaces = cols.saturating_sub(4) as u8;
+                    self.pending_code_blanks.push((extra_spaces, Range::new(newline_start as u32, ws_end as u32)));
                     return;
                 }
                 // Fall through to close blockquotes (which will close the code block too)
@@ -263,8 +273,11 @@ impl<'a> BlockParser<'a> {
         if self.in_indented_code {
             if indent >= 4 {
                 // Continue the code block - first emit any pending blank lines
-                for blank_range in self.pending_code_blanks.drain(..) {
-                    events.push(BlockEvent::Text(blank_range));
+                for (extra_spaces, blank_range) in self.pending_code_blanks.drain(..) {
+                    if extra_spaces > 0 {
+                        events.push(BlockEvent::VirtualSpaces(extra_spaces));
+                    }
+                    events.push(BlockEvent::Code(blank_range));
                 }
 
                 // Calculate extra spaces for this line (columns beyond 4)
@@ -284,7 +297,7 @@ impl<'a> BlockParser<'a> {
                 if extra_spaces > 0 {
                     events.push(BlockEvent::VirtualSpaces(extra_spaces as u8));
                 }
-                events.push(BlockEvent::Text(Range::new(text_start as u32, content_end as u32)));
+                events.push(BlockEvent::Code(Range::new(text_start as u32, content_end as u32)));
                 return;
             } else {
                 // Close the code block - discard pending blank lines (trailing blanks)
@@ -1629,8 +1642,8 @@ impl<'a> BlockParser<'a> {
         if self.indented_code_extra_spaces > 0 {
             events.push(BlockEvent::VirtualSpaces(self.indented_code_extra_spaces as u8));
         }
-        // Emit the content (including newline)
-        events.push(BlockEvent::Text(Range::new(text_start as u32, content_end as u32)));
+        // Emit the content (including newline) - use Code event to skip inline parsing
+        events.push(BlockEvent::Code(Range::new(text_start as u32, content_end as u32)));
     }
     /// Find end of current line (position of \n or EOF).
     fn find_line_end(&mut self) -> usize {
