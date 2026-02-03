@@ -1901,7 +1901,7 @@ impl<'a> BlockParser<'a> {
             return true;
         }
 
-        const BLOCK_TAGS: [&[u8]; 52] = [
+        const BLOCK_TAGS: [&[u8]; 56] = [
             b"address", b"article", b"aside", b"base", b"basefont", b"blockquote", b"body",
             b"caption", b"center", b"col", b"colgroup", b"dd", b"details", b"dialog", b"dir",
             b"div", b"dl", b"dt", b"fieldset", b"figcaption", b"figure", b"footer", b"form",
