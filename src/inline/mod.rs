@@ -14,7 +14,7 @@ pub mod marks;
 pub use event::InlineEvent;
 
 use crate::Range;
-use code_span::{resolve_code_spans, extract_code_spans};
+use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
 use emphasis::{resolve_emphasis, EmphasisMatch};
 use links::{find_autolinks, resolve_links, Autolink, Link};
 use marks::{collect_marks, flags, MarkBuffer};
@@ -64,18 +64,26 @@ impl InlineParser {
             })
             .collect();
 
-        // Third: links and images
+        // Third: raw inline HTML (filter out those inside code spans or autolinks)
+        let html_spans = find_html_spans(text, &code_spans, &autolinks);
+
+        // Fourth: links and images
         let (open_brackets, close_brackets) = self.collect_brackets();
+        let open_brackets: Vec<_> = open_brackets
+            .into_iter()
+            .filter(|&(pos, _)| !pos_in_spans(pos, &html_spans))
+            .collect();
         // Filter out close brackets that are inside autolinks - they can't close links
         let close_brackets: Vec<_> = close_brackets
             .into_iter()
             .filter(|&pos| {
                 !autolinks.iter().any(|al| pos > al.start && pos < al.end)
+                    && !pos_in_spans(pos, &html_spans)
             })
             .collect();
         let resolved_links = resolve_links(text, &open_brackets, &close_brackets);
 
-        // Fourth: emphasis (lowest precedence)
+        // Fifth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
         let mut link_boundaries: Vec<(u32, u32)> = resolved_links
             .iter()
@@ -85,10 +93,21 @@ impl InlineParser {
         for autolink in &autolinks {
             link_boundaries.push((autolink.start, autolink.end));
         }
+        // Also include raw HTML spans
+        for span in &html_spans {
+            link_boundaries.push((span.start, span.end));
+        }
         let emphasis_matches = resolve_emphasis(self.mark_buffer.marks_mut(), &link_boundaries);
 
         // Phase 3: Emit events
-        self.emit_events(text, &emphasis_matches, &resolved_links, &autolinks, events);
+        self.emit_events(
+            text,
+            &emphasis_matches,
+            &resolved_links,
+            &autolinks,
+            &html_spans,
+            events,
+        );
     }
 
     /// Collect bracket positions for link parsing.
@@ -126,6 +145,7 @@ impl InlineParser {
         emphasis_matches: &[EmphasisMatch],
         resolved_links: &[Link],
         autolinks: &[Autolink],
+        html_spans: &[HtmlSpan],
         events: &mut Vec<InlineEvent>,
     ) {
         let marks = self.mark_buffer.marks();
@@ -224,6 +244,15 @@ impl InlineParser {
             }
         }
 
+        // Add raw HTML events
+        for span in html_spans {
+            emit_points.push(EmitPoint {
+                pos: span.start,
+                kind: EmitKind::HtmlRaw { end: span.end },
+                end: span.end,
+            });
+        }
+
         // Add emphasis events
         for m in emphasis_matches {
             let is_strong = m.count == 2;
@@ -271,17 +300,18 @@ impl InlineParser {
             let in_autolink = autolinks.iter().any(|al| {
                 mark.pos >= al.start && mark.pos < al.end
             });
+            let in_html = pos_in_spans(mark.pos, html_spans);
 
             if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
                 let escaped_char = text[(mark.pos + 1) as usize];
-                if escaped_char == b'\n' && !in_code && !in_autolink {
+                if escaped_char == b'\n' && !in_code && !in_autolink && !in_html {
                     // Backslash before newline is a hard break (but not in code or autolinks)
                     emit_points.push(EmitPoint {
                         pos: mark.pos,
                         kind: EmitKind::HardBreak,
                         end: mark.end,
                     });
-                } else if !in_code && !in_link_dest && !in_autolink {
+                } else if !in_code && !in_link_dest && !in_autolink && !in_html {
                     // Skip escapes inside link URLs/titles and autolinks (they're processed by renderer)
                     emit_points.push(EmitPoint {
                         pos: mark.pos,
@@ -289,14 +319,18 @@ impl InlineParser {
                         end: mark.end,
                     });
                 }
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0 && !in_code && !in_link_dest {
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0
+                && !in_code && !in_link_dest && !in_html
+            {
                 // Two spaces before newline is a hard break (but not in code or link destinations)
                 emit_points.push(EmitPoint {
                     pos: mark.pos,
                     kind: EmitKind::HardBreak,
                     end: mark.end,
                 });
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_CLOSER != 0 && !in_code && !in_link_dest {
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_CLOSER != 0
+                && !in_code && !in_link_dest && !in_html
+            {
                 // Soft break (newline without 2+ spaces) - also not in code or link destinations
                 emit_points.push(EmitPoint {
                     pos: mark.pos,
@@ -429,6 +463,13 @@ impl InlineParser {
                     });
                     skip_until = point.end;
                 }
+                EmitKind::HtmlRaw { end } => {
+                    events.push(InlineEvent::Html(Range::from_usize(
+                        point.pos as usize,
+                        end as usize,
+                    )));
+                    skip_until = end;
+                }
             }
 
             pos = pos.max(point.end);
@@ -478,6 +519,267 @@ enum EmitKind {
     ImageEnd,
     AutolinkUrl { content_start: u32, content_end: u32 },
     AutolinkEmail { content_start: u32, content_end: u32 },
+    HtmlRaw { end: u32 },
+}
+
+#[derive(Debug, Clone, Copy)]
+struct HtmlSpan {
+    start: u32,
+    end: u32,
+}
+
+fn pos_in_spans(pos: u32, spans: &[HtmlSpan]) -> bool {
+    let mut lo = 0usize;
+    let mut hi = spans.len();
+    while lo < hi {
+        let mid = (lo + hi) / 2;
+        let span = spans[mid];
+        if pos < span.start {
+            hi = mid;
+        } else if pos >= span.end {
+            lo = mid + 1;
+        } else {
+            return true;
+        }
+    }
+    false
+}
+
+fn find_html_spans(text: &[u8], code_spans: &[CodeSpan], autolinks: &[Autolink]) -> Vec<HtmlSpan> {
+    let mut spans = Vec::new();
+    let len = text.len();
+
+    let mut code_ranges: Vec<(usize, usize)> = code_spans
+        .iter()
+        .map(|cs| (cs.opener_pos as usize, cs.closer_end as usize))
+        .collect();
+    code_ranges.sort_by_key(|(s, _)| *s);
+
+    let mut autolink_ranges: Vec<(usize, usize)> = autolinks
+        .iter()
+        .map(|al| (al.start as usize, al.end as usize))
+        .collect();
+    autolink_ranges.sort_by_key(|(s, _)| *s);
+
+    let mut code_idx = 0usize;
+    let mut autolink_idx = 0usize;
+
+    let mut pos = 0usize;
+    while pos < len {
+        if text[pos] != b'<' {
+            pos += 1;
+            continue;
+        }
+
+        if pos_in_ranges(pos, &code_ranges, &mut code_idx)
+            || pos_in_ranges(pos, &autolink_ranges, &mut autolink_idx)
+        {
+            pos += 1;
+            continue;
+        }
+
+        if let Some(end) = parse_inline_html(text, pos) {
+            spans.push(HtmlSpan {
+                start: pos as u32,
+                end: end as u32,
+            });
+            pos = end;
+        } else {
+            pos += 1;
+        }
+    }
+
+    spans
+}
+
+fn pos_in_ranges(pos: usize, ranges: &[(usize, usize)], idx: &mut usize) -> bool {
+    while *idx < ranges.len() && pos >= ranges[*idx].1 {
+        *idx += 1;
+    }
+    *idx < ranges.len() && pos >= ranges[*idx].0
+}
+
+fn parse_inline_html(text: &[u8], start: usize) -> Option<usize> {
+    if text.get(start) != Some(&b'<') {
+        return None;
+    }
+    if text.get(start + 1) == Some(&b'!') {
+        if text[start..].starts_with(b"<!--") {
+            return parse_html_comment(text, start);
+        }
+        if text[start..].starts_with(b"<![CDATA[") {
+            return find_subsequence(text, start + 9, b"]]>").map(|end| end + 3);
+        }
+        return parse_html_declaration(text, start);
+    }
+    if text.get(start + 1) == Some(&b'?') {
+        return find_subsequence(text, start + 2, b"?>").map(|end| end + 2);
+    }
+    parse_html_tag(text, start)
+}
+
+fn parse_html_comment(text: &[u8], start: usize) -> Option<usize> {
+    let i = start + 4;
+    if i >= text.len() {
+        return None;
+    }
+    if text[i] == b'>' {
+        return None;
+    }
+    if text[i] == b'-' && text.get(i + 1) == Some(&b'>') {
+        return None;
+    }
+    find_subsequence(text, i, b"-->").map(|end| end + 3)
+}
+
+fn parse_html_declaration(text: &[u8], start: usize) -> Option<usize> {
+    if text.get(start + 2).map_or(true, |b| !b.is_ascii_alphabetic()) {
+        return None;
+    }
+    let mut i = start + 2;
+    while i < text.len() && (text[i].is_ascii_alphanumeric() || text[i] == b'-') {
+        i += 1;
+    }
+    while i < text.len() && is_html_whitespace(text[i]) {
+        i += 1;
+    }
+    find_subsequence_byte(text, i, b'>').map(|end| end + 1)
+}
+
+fn parse_html_tag(text: &[u8], start: usize) -> Option<usize> {
+    let len = text.len();
+    let mut i = start + 1;
+    if i >= len {
+        return None;
+    }
+
+    let mut is_closing = false;
+    if text[i] == b'/' {
+        is_closing = true;
+        i += 1;
+    }
+
+    if i >= len || !text[i].is_ascii_alphabetic() {
+        return None;
+    }
+    i += 1;
+    while i < len && (text[i].is_ascii_alphanumeric() || text[i] == b'-') {
+        i += 1;
+    }
+
+    if is_closing {
+        while i < len && is_html_whitespace(text[i]) {
+            i += 1;
+        }
+        if i < len && text[i] == b'>' {
+            return Some(i + 1);
+        }
+        return None;
+    }
+
+    loop {
+        while i < len && is_html_whitespace(text[i]) {
+            i += 1;
+        }
+        if i >= len {
+            return None;
+        }
+        if text[i] == b'>' {
+            return Some(i + 1);
+        }
+        if text[i] == b'/' {
+            i += 1;
+            while i < len && is_html_whitespace(text[i]) {
+                i += 1;
+            }
+            return if i < len && text[i] == b'>' { Some(i + 1) } else { None };
+        }
+
+        if !is_attr_name_start(text[i]) {
+            return None;
+        }
+        i += 1;
+        while i < len && is_attr_name_char(text[i]) {
+            i += 1;
+        }
+
+        while i < len && is_html_whitespace(text[i]) {
+            i += 1;
+        }
+
+        if i < len && text[i] == b'=' {
+            i += 1;
+            while i < len && is_html_whitespace(text[i]) {
+                i += 1;
+            }
+            if i >= len {
+                return None;
+            }
+            let quote = text[i];
+            if quote == b'"' || quote == b'\'' {
+                i += 1;
+                let value_start = i;
+                while i < len && text[i] != quote {
+                    i += 1;
+                }
+                if i >= len {
+                    return None;
+                }
+                if i > value_start && text[i - 1] == b'\\' {
+                    return None;
+                }
+                i += 1;
+            } else {
+                let mut had = false;
+                while i < len && !is_html_whitespace(text[i]) {
+                    let b = text[i];
+                    if b == b'"' || b == b'\'' || b == b'=' || b == b'<' || b == b'>' || b == b'`' {
+                        break;
+                    }
+                    had = true;
+                    i += 1;
+                }
+                if !had {
+                    return None;
+                }
+            }
+        }
+    }
+}
+
+#[inline]
+fn is_html_whitespace(b: u8) -> bool {
+    matches!(b, b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
+}
+
+#[inline]
+fn is_attr_name_start(b: u8) -> bool {
+    b.is_ascii_alphabetic() || b == b'_' || b == b':'
+}
+
+#[inline]
+fn is_attr_name_char(b: u8) -> bool {
+    is_attr_name_start(b) || b.is_ascii_digit() || b == b'.' || b == b'-'
+}
+
+fn find_subsequence(text: &[u8], start: usize, needle: &[u8]) -> Option<usize> {
+    if needle.is_empty() || start >= text.len() || text.len() < needle.len() {
+        return None;
+    }
+    text[start..]
+        .windows(needle.len())
+        .position(|w| w == needle)
+        .map(|idx| start + idx)
+}
+
+fn find_subsequence_byte(text: &[u8], start: usize, needle: u8) -> Option<usize> {
+    if start >= text.len() {
+        return None;
+    }
+    text[start..]
+        .iter()
+        .position(|&b| b == needle)
+        .map(|idx| start + idx)
 }
 
 #[cfg(test)]

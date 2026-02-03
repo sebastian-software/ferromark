@@ -22,7 +22,6 @@ fn load_spec_tests() -> Vec<SpecTest> {
 
 /// Sections that are intentionally out of scope.
 const OUT_OF_SCOPE_SECTIONS: &[&str] = &[
-    "Raw HTML",
     "Link reference definitions",
     "Setext headings",
     "Indented code blocks",
@@ -109,71 +108,6 @@ fn requires_4space_handling(test: &SpecTest) -> bool {
     false
 }
 
-/// Check if test requires raw HTML handling
-fn requires_raw_html(test: &SpecTest) -> bool {
-    if test.section == "HTML blocks" {
-        return false;
-    }
-    // Raw HTML patterns in expected output that we don't generate
-    let raw_html_patterns = [
-        "<div", "<table", "<pre>", "<script", "<style", "<iframe", "<!--", "<br>",
-    ];
-
-    // Check if expected output has HTML tags we don't generate
-    for pattern in raw_html_patterns {
-        if test.html.contains(pattern) {
-            return true;
-        }
-    }
-
-    // Check if input has raw HTML that should pass through
-    let input = &test.markdown;
-
-    // HTML tags in input (various forms)
-    if input.contains("<a ") || input.contains("<a>") || input.contains("<a\t")
-        || input.contains("<a/") || input.contains("<a\n")
-        || input.contains("<img ") || input.contains("<img>") || input.contains("<img\t")
-        || input.contains("<img/") || input.contains("<img\n")
-        || (input.contains("<a") && input.contains("href"))
-        || (input.contains("<img") && input.contains("src"))
-    {
-        return true;
-    }
-
-    // HTML comments in input
-    if input.contains("<!--") {
-        return true;
-    }
-
-    // Check for raw HTML tags in input that are NOT autolinks
-    // Pattern: <letter followed by space or attribute (not :// or @)
-    let bytes = input.as_bytes();
-    for i in 0..bytes.len().saturating_sub(2) {
-        if bytes[i] == b'<' && bytes[i + 1].is_ascii_alphabetic() {
-            // Found <letter, check if it's an autolink (has :// soon after) or raw HTML
-            let rest = &bytes[i + 1..];
-            // Skip letters to find what comes next
-            let mut j = 0;
-            while j < rest.len() && (rest[j].is_ascii_alphanumeric() || rest[j] == b'-') {
-                j += 1;
-            }
-            if j < rest.len() {
-                // Check what follows the tag name
-                let next = rest[j];
-                // If followed by space, =, >, /, it's likely raw HTML
-                if next == b' ' || next == b'=' || next == b'>' || next == b'/' || next == b'\t' || next == b'\n' {
-                    // But not if it looks like an autolink scheme (e.g., <https:)
-                    if j < rest.len() && rest.get(j) != Some(&b':') {
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-
-    false
-}
-
 /// Check if test requires setext heading (underline-style)
 fn requires_setext(test: &SpecTest) -> bool {
     // Setext: line followed by === or ---
@@ -208,10 +142,6 @@ fn is_test_in_scope(test: &SpecTest) -> bool {
     }
     // Exclude tests requiring 4-space indent handling
     if requires_4space_handling(test) {
-        return false;
-    }
-    // Exclude tests requiring raw HTML pass-through
-    if requires_raw_html(test) {
         return false;
     }
     // Exclude tests requiring setext headings

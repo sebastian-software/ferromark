@@ -49,6 +49,9 @@ pub enum InlineEvent {
         is_email: bool,
     },
 
+    /// Raw inline HTML (not escaped or parsed).
+    Html(Range),
+
     /// Soft line break (newline in source).
     SoftBreak,
 

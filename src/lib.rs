@@ -528,6 +528,13 @@ fn render_inline_event(
                 writer.write_str("</a>");
             }
         }
+        InlineEvent::Html(range) => {
+            if in_image {
+                writer.write_escaped_attr(range.slice(text));
+            } else {
+                writer.write_bytes(range.slice(text));
+            }
+        }
         InlineEvent::SoftBreak => {
             // In image alt text, use space instead of newline
             if in_image {
