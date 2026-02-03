@@ -715,10 +715,10 @@ fn parse_html_comment(text: &[u8], start: usize) -> Option<usize> {
         return None;
     }
     if text[i] == b'>' {
-        return None;
+        return Some(i + 1);
     }
     if text[i] == b'-' && text.get(i + 1) == Some(&b'>') {
-        return None;
+        return Some(i + 2);
     }
     find_subsequence(text, i, b"-->").map(|end| end + 3)
 }
@@ -769,6 +769,19 @@ fn parse_html_tag(text: &[u8], start: usize) -> Option<usize> {
     }
 
     loop {
+        if i >= len {
+            return None;
+        }
+        if text[i] == b'>' {
+            return Some(i + 1);
+        }
+        if text[i] == b'/' {
+            i += 1;
+            return if i < len && text[i] == b'>' { Some(i + 1) } else { None };
+        }
+        if !is_html_whitespace(text[i]) {
+            return None;
+        }
         while i < len && is_html_whitespace(text[i]) {
             i += 1;
         }
@@ -780,9 +793,6 @@ fn parse_html_tag(text: &[u8], start: usize) -> Option<usize> {
         }
         if text[i] == b'/' {
             i += 1;
-            while i < len && is_html_whitespace(text[i]) {
-                i += 1;
-            }
             return if i < len && text[i] == b'>' { Some(i + 1) } else { None };
         }
 
