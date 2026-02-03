@@ -1,213 +1,167 @@
-# List Handling Fixes - Detailed Plan
+# CommonMark Compliance - Remaining Work
 
-Based on analysis of md4c and pulldown-cmark reference implementations.
+## Current Status (2026-02-03)
 
-## Current Status (Updated 2026-02-03)
+**Overall: 94.5% (344/364 in-scope tests)**
 
-- Lists: 15/17 (88.2%) - was 9/17 (52.9%)
-- List items: 24/28 (85.7%) - was 17/28 (60.7%)
-- Block quotes: 20/20 (100%) - was 18/20 (90%)
-- Overall in-scope: 94.5% (344/364) - was 91.2% (332/364)
+| Section | Status | Notes |
+|---------|--------|-------|
+| ATX headings | 100% (16/16) | Complete |
+| Autolinks | 100% (19/19) | Complete |
+| Backslash escapes | 100% (8/8) | Complete |
+| Blank lines | 100% (1/1) | Complete |
+| Block quotes | 100% (20/20) | Complete |
+| Code spans | 100% (20/20) | Complete |
+| Emphasis | 100% (129/129) | Complete |
+| Fenced code blocks | 100% (3/3) | Complete |
+| Hard line breaks | 100% (11/11) | Complete |
+| Images | 100% (1/1) | Complete |
+| Inlines | 100% (1/1) | Complete |
+| Paragraphs | 100% (6/6) | Complete |
+| Precedence | 100% (1/1) | Complete |
+| Soft line breaks | 100% (2/2) | Complete |
+| Textual content | 100% (3/3) | Complete |
+| Thematic breaks | 100% (16/16) | Complete |
+| Lists | 88.2% (15/17) | 2 HTML-related |
+| List items | 85.7% (24/28) | 4 remaining |
+| Entity refs | 84.6% (11/13) | 2 remaining |
+| Links | 81.6% (40/49) | 9 remaining |
 
-### Completed Phases
-- **Phase 1**: Content indent calculation using absolute column positions ✓
-- **Phase 3**: Nested list detection, closing, and tight/loose rendering ✓
-- **Phase 4**: Two-blank-line rule enforcement ✓
-- **Phase 5**: Indented code detection within list items ✓
+## Remaining Failures (20 tests)
 
-### Additional Fixes
-- Buffer blank lines in indented code blocks (no trailing blanks)
-- Detect blank lines after container matching (e.g., ">>")
-- Only apply same-list continuation when all parent containers matched
-- Blank list items cannot interrupt paragraphs
-- Blank lines without > markers close blockquotes
-- Recognize blank list items in same-list continuation
-- Enable lazy continuation for list item paragraphs
-- Don't recognize block starts at 4+ indent in lazy continuation
-- Close lists when indent >= 4 prevents new items
-- Two-blank-line rule keeps list open for more items
+### List Items (4 failures)
 
-### Remaining
-- **Phase 2**: Container matching edge cases (fenced code inside list items)
-- HTML block handling (currently out of scope)
-
-## Original Status
-
-- Lists: 9/17 (52.9%)
-- List items: 17/28 (60.7%)
-- Total: 26/45 (~58%)
-
-## Key Insights from Reference Implementations
-
-### md4c Approach
-1. **Two-tier indentation**: `mark_indent` (marker position) + `contents_indent` (content threshold)
-2. **Retroactive loose marking**: Stores block offset to mark lists loose after detection
-3. **Two-blank-line rule**: List item can begin with at most one blank line
-4. **Compatibility check**: New markers must use same character and proper indent
-
-### pulldown-cmark Approach
-1. **ListItem(indent)**: Stores required indentation for continuation
-2. **Spine traversal**: Efficient parent/container lookups
-3. **Lazy tight/loose**: Assumes tight, converts on blank lines between items
-4. **Tab handling**: Tabs = 4-space tab stops
-
-## Identified Issues in md-fast
-
-### Issue 1: Incorrect content_indent calculation
-**Current**: We store `content_indent` but may not calculate it correctly per CommonMark.
-
-**CommonMark Rule**:
-- Content indent = position after marker + 1-4 spaces
-- If 4+ spaces after marker, only 1 counts (rest is content indentation)
-
-**Fix**: Update `try_list_item` to correctly calculate content_indent.
-
-### Issue 2: Nested list detection
-**Current**: Nested lists may not trigger correctly.
-
-**CommonMark Rule**:
-- A new list item can interrupt a paragraph only if:
-  - Same list type (ordered/unordered)
-  - Same marker character (-, *, +) for unordered
-  - Proper indentation relative to parent
-
-**Fix**: Check indentation against parent's `contents_indent`.
-
-### Issue 3: Tight/loose list detection incomplete
-**Current**: We track `blank_in_item` but may not handle all cases.
-
-**CommonMark Rules**:
-- Tight if NO blank lines between items AND no blank lines in items
-- Blank line between items → loose
-- Blank line inside item (before nested content) → loose
-
-**Fix**: Track blank lines more precisely, mark retroactively.
-
-### Issue 4: Two-blank-line rule not enforced
-**Current**: We don't enforce the "at most one blank line" rule.
-
-**CommonMark Rule**:
-- A list item can begin with at most one blank line
-- Two consecutive blank lines end the list
-
-**Fix**: Track consecutive blank lines in list items.
-
-### Issue 5: Indented code inside list items
-**Current**: May not handle indented code threshold correctly.
-
-**CommonMark Rule**:
-- Inside list item, code indent = `contents_indent + 4`
-- Not just 4 spaces from line start
-
-**Fix**: Pass `contents_indent` context to indented code detection.
-
-## Implementation Plan
-
-### Phase 1: Fix content_indent calculation
-```
-Location: src/block/parser.rs, try_list_item()
-```
-
-1. After detecting list marker, calculate content_indent:
-   - For `- item`: marker_pos + 2 (marker + 1 space)
-   - For `1. item`: marker_pos + digits + 2 (digits + marker + 1 space)
-   - Add 0-3 additional spaces if present
-
-2. Cap at 4 spaces after marker (rest becomes content indentation)
-
-### Phase 2: Fix container matching for lists
-```
-Location: src/block/parser.rs, match_containers()
-```
-
-1. For ListItem containers, check:
-   - Line indent >= content_indent → continues item
-   - Line indent < content_indent but has same marker → new item
-   - Line indent < content_indent, different content → closes item
-
-2. Properly handle blank lines in list items
-
-### Phase 3: Fix tight/loose detection
-```
-Location: src/block/parser.rs, OpenList struct
-```
-
-1. Track `had_blank_line` per list (not just per item)
-2. When closing list, check if any blank lines occurred
-3. Update ListEnd event to include correct `tight` flag
-
-### Phase 4: Enforce two-blank-line rule
-```
-Location: src/block/parser.rs, handle_blank_line_containers()
-```
-
-1. Track consecutive blank line count in list items
-2. On second blank line, close the list item
-3. Don't allow continuation after two blank lines
-
-### Phase 5: Fix indented code in list context
-```
-Location: src/block/parser.rs, parse_line_content()
-```
-
-1. Calculate effective indent based on container stack
-2. For indented code: need `contents_indent + 4` spaces
-3. Pass context to indented code detection
-
-## Test Cases to Verify
-
-### Basic nested list (Example 307)
+**Example 263**: Fenced code inside list item
 ```markdown
-- foo
-  - bar
-    - baz
+1.  foo
 
+    ```
+    bar
+    ```
 
-      bim
+    baz
+
+    > bam
 ```
-Expected: Properly nested `<ul>` structure with `bim` in innermost item.
+Issue: Fenced code fence ```` ``` ```` at 4-space indent inside list item is treated as indented code content instead of fenced code start.
 
-### List with indented code (Example 254)
+**Example 278**: Fenced code in blank list items
 ```markdown
-1.  A paragraph
-    with two lines.
-
-        indented code
-
-    > A block quote.
+-
+  foo
+-
+  ```
+  bar
+  ```
+-
+      baz
 ```
-Expected: Code block inside list item (8 spaces = 4 for item + 4 for code).
+Issue: Same as 263 - fenced code fence not recognized at proper indent inside list.
 
-### Tight vs loose (Example 308)
+**Example 292**: Nested blockquote + list lazy continuation
 ```markdown
-- foo
-- bar
-
-<!-- -->
-
-- baz
-- bim
+> 1. > Blockquote
+continued here.
 ```
-Expected: First list tight, HTML comment, second list tight.
+Issue: Lazy continuation through nested blockquote + list needs paragraph tags.
 
-### Two-blank-line rule (Example 257)
+### Lists (2 failures - HTML related, out of scope)
+
+**Example 308, 309**: HTML comments `<!-- -->` not rendered correctly.
+These require HTML block parsing which is currently out of scope.
+
+**Example 315**: Minor whitespace issue (`<li>\n</li>` vs `<li></li>`)
+
+### Links (9 failures)
+
+**Example 491**: Link with newline in angle-bracket destination
 ```markdown
- -    one
-
-     two
+[link](<foo
+bar>)
 ```
-Expected: List ends after "one", "two" becomes code block.
 
-## Order of Implementation
+**Example 494**: Angle bracket edge cases
+```markdown
+[a](<b)c
+[a](<b)c>
+[a](<b>c)
+```
 
-1. **Phase 1**: content_indent calculation (foundational)
-2. **Phase 2**: container matching (depends on Phase 1)
-3. **Phase 3**: tight/loose detection (can be parallel)
-4. **Phase 4**: two-blank-line rule (builds on Phase 2)
-5. **Phase 5**: indented code in lists (depends on Phase 1)
+**Example 510**: Link with whitespace/newline before title
+```markdown
+[link](   /uri
+  "title"  )
+```
+
+**Example 512**: Nested brackets in link text
+```markdown
+[link [foo [bar]]](/uri)
+```
+
+**Example 518**: Link inside link text
+```markdown
+[foo [bar](/uri)](/uri)
+```
+
+### Entity References (2 failures)
+
+Need investigation - likely edge cases with numeric character references.
+
+## Priority Order
+
+### High Priority (In Scope, Achievable)
+
+1. **Fenced code inside list items** (Examples 263, 278)
+   - Location: `parse_line_content()` and `try_code_fence()`
+   - Issue: When inside a list item with indented content, fenced code fence at content_indent level should start a fenced code block, not be treated as indented code
+   - Fix: Check for fenced code BEFORE checking for indented code when inside list item
+
+2. **Link edge cases** (5 of 9 are likely fixable)
+   - Multiline link destinations in angle brackets
+   - Nested bracket handling
+   - Whitespace handling in link syntax
+
+3. **Empty list item whitespace** (Example 315)
+   - Just a rendering fix for empty items
+
+### Medium Priority
+
+4. **Lazy continuation in nested containers** (Example 292)
+   - Complex interaction between blockquote and list item paragraphs
+
+5. **Entity reference edge cases**
+   - Need investigation
+
+### Out of Scope
+
+- HTML block handling (Examples 308, 309)
+- Reference link definitions
+
+## Implementation Notes
+
+### Fenced Code in List Items
+
+The core issue: when we're inside a list item and see a line with 4+ spaces, we currently:
+1. Check for indented code (indent >= 4)
+2. Start indented code block
+
+But we should:
+1. Check for fenced code fence FIRST (even with indent)
+2. Only then check for indented code
+
+The fenced code detection should work at any indent level inside a list item, as long as it's at or after the content_indent position.
+
+### Link Parsing
+
+The link parser needs updates for:
+1. Multiline destinations in angle brackets
+2. Proper bracket nesting/balancing
+3. Whitespace handling between components
 
 ## Success Criteria
 
-- Lists: 17/17 (100%)
-- List items: 28/28 (100%)
-- Overall compliance: 95%+
+Target: 96%+ compliance (350+/364)
+- Lists: 17/17 (100%) - requires HTML blocks
+- List items: 27/28 (96%+)
+- Links: 45/49 (92%+)
+- Entity refs: 13/13 (100%)
