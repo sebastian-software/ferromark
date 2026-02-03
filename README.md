@@ -77,7 +77,7 @@ Run benchmarks: `cargo bench --bench comparison`
 
 ## CommonMark Compliance
 
-**In-scope compliance: 84.2% (308/366 tests)**
+**In-scope compliance: 86.8% (316/364 tests)**
 
 We track compliance against a filtered subset of CommonMark tests, excluding features intentionally not supported (HTML blocks, setext headings, indented code blocks, reference links, tabs).
 
@@ -88,6 +88,7 @@ We track compliance against a filtered subset of CommonMark tests, excluding fea
 | Backslash escapes | 100% |
 | Blank lines | 100% |
 | Code spans | 100% |
+| Emphasis | 100% |
 | Fenced code blocks | 100% |
 | Hard line breaks | 100% |
 | Images | 100% |
@@ -96,11 +97,10 @@ We track compliance against a filtered subset of CommonMark tests, excluding fea
 | Precedence | 100% |
 | Soft line breaks | 100% |
 | Textual content | 100% |
-| Emphasis | 98% |
-| Thematic breaks | 81% |
-| Links | 69% |
+| Thematic breaks | 100% |
+| Links | 74% |
+| Block quotes | 65% |
 | List items | 61% |
-| Block quotes | 55% |
 | Lists | 53% |
 | Entity references | 31% |
 
