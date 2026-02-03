@@ -528,20 +528,26 @@ impl<'a> BlockParser<'a> {
         while self.container_stack.len() > from {
             let top = self.container_stack.last().unwrap();
 
-            if let ContainerType::ListItem { kind, marker, .. } = top.typ {
-                // Check if the current position has a same-type list marker
-                let save_pos = self.cursor.offset();
-                self.cursor.skip_spaces();
-                let is_same_list = self.peek_list_marker(kind, marker);
-                self.cursor = Cursor::new_at(self.input, save_pos);
+            // Only consider "same list" continuation if this is the LAST container
+            // we need to close (i.e., all parent containers matched)
+            let is_last_to_close = self.container_stack.len() == from + 1;
 
-                if is_same_list {
-                    // Just close the item, not the list
-                    self.container_stack.pop();
-                    self.close_paragraph(events);
-                    events.push(BlockEvent::ListItemEnd);
-                    // Don't pop from open_lists
-                    continue;
+            if is_last_to_close {
+                if let ContainerType::ListItem { kind, marker, .. } = top.typ {
+                    // Check if the current position has a same-type list marker
+                    let save_pos = self.cursor.offset();
+                    self.cursor.skip_spaces();
+                    let is_same_list = self.peek_list_marker(kind, marker);
+                    self.cursor = Cursor::new_at(self.input, save_pos);
+
+                    if is_same_list {
+                        // Just close the item, not the list
+                        self.container_stack.pop();
+                        self.close_paragraph(events);
+                        events.push(BlockEvent::ListItemEnd);
+                        // Don't pop from open_lists
+                        continue;
+                    }
                 }
             }
 
