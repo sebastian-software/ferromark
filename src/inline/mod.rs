@@ -66,7 +66,7 @@ impl InlineParser {
             .collect();
 
         // Third: raw inline HTML (filter out those inside code spans or autolinks)
-        let html_spans = find_html_spans(text, &code_spans, &autolinks);
+        let mut html_spans = find_html_spans(text, &code_spans, &autolinks);
 
         // Fourth: links and images
         let (open_brackets, close_brackets) = self.collect_brackets();
@@ -86,6 +86,7 @@ impl InlineParser {
         let resolved_ref_links = link_refs
             .map(|defs| resolve_reference_links(text, &open_brackets, &close_brackets, &resolved_links, defs))
             .unwrap_or_default();
+        filter_html_spans_in_link_destinations(&mut html_spans, &resolved_links);
 
         // Fifth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
@@ -381,10 +382,23 @@ impl InlineParser {
             EmitKind::LinkEnd | EmitKind::ImageEnd
         )));
 
+        // Build ranges to suppress (reference labels after link text)
+        let mut suppress_ranges: Vec<(u32, u32)> = Vec::new();
+        for link in resolved_ref_links {
+            if link.end > link.text_end {
+                suppress_ranges.push((link.text_end, link.end));
+            }
+        }
+
         // Emit events in order
         let mut skip_until = 0u32;
 
         for point in &emit_points {
+            // Skip events inside suppressed ranges (e.g., reference labels)
+            if suppress_ranges.iter().any(|&(s, e)| point.pos > s && point.pos < e) {
+                pos = pos.max(point.end);
+                continue;
+            }
             // Emit text before this point
             if point.pos > pos && point.pos > skip_until {
                 let text_start = pos.max(skip_until);
@@ -617,6 +631,10 @@ fn find_html_spans(text: &[u8], code_spans: &[CodeSpan], autolinks: &[Autolink])
             pos += 1;
             continue;
         }
+        if is_escaped(text, pos) {
+            pos += 1;
+            continue;
+        }
 
         if pos_in_ranges(pos, &code_ranges, &mut code_idx)
             || pos_in_ranges(pos, &autolink_ranges, &mut autolink_idx)
@@ -639,11 +657,37 @@ fn find_html_spans(text: &[u8], code_spans: &[CodeSpan], autolinks: &[Autolink])
     spans
 }
 
+fn filter_html_spans_in_link_destinations(spans: &mut Vec<HtmlSpan>, links: &[Link]) {
+    if spans.is_empty() || links.is_empty() {
+        return;
+    }
+    spans.retain(|span| {
+        !links.iter().any(|link| {
+            let dest_start = (link.text_end + 1) as u32;
+            span.start >= dest_start && span.start < link.end
+        })
+    });
+}
+
 fn pos_in_ranges(pos: usize, ranges: &[(usize, usize)], idx: &mut usize) -> bool {
     while *idx < ranges.len() && pos >= ranges[*idx].1 {
         *idx += 1;
     }
     *idx < ranges.len() && pos >= ranges[*idx].0
+}
+
+#[inline]
+fn is_escaped(text: &[u8], pos: usize) -> bool {
+    if pos == 0 {
+        return false;
+    }
+    let mut backslashes = 0usize;
+    let mut i = pos;
+    while i > 0 && text[i - 1] == b'\\' {
+        backslashes += 1;
+        i -= 1;
+    }
+    backslashes % 2 == 1
 }
 
 fn parse_inline_html(text: &[u8], start: usize) -> Option<usize> {

@@ -268,7 +268,7 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
 
             b'[' => {
                 // Check for image: ![
-                let is_image = pos > 0 && text[pos - 1] == b'!';
+                let is_image = pos > 0 && text[pos - 1] == b'!' && !is_escaped(text, pos - 1);
                 buffer.push(Mark::new(
                     pos as u32,
                     (pos + 1) as u32,
@@ -305,6 +305,20 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
             }
         }
     }
+}
+
+#[inline]
+fn is_escaped(text: &[u8], pos: usize) -> bool {
+    if pos == 0 {
+        return false;
+    }
+    let mut backslashes = 0usize;
+    let mut i = pos;
+    while i > 0 && text[i - 1] == b'\\' {
+        backslashes += 1;
+        i -= 1;
+    }
+    backslashes % 2 == 1
 }
 
 /// Compute opener/closer flags for emphasis delimiters.
