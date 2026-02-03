@@ -59,58 +59,27 @@ Three-phase approach inspired by md4c:
 
 ## Performance
 
-Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers:
+Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers (latest run: Feb 3, 2026):
 
-| Parser | Throughput (Medium) | Throughput (Large) | Relative |
+| Parser | Throughput (Medium) | Throughput (Large) | Relative (Medium) |
 |--------|--------------------:|-------------------:|----------|
-| **md-fast** | **189 MiB/s** | **191 MiB/s** | **1.0x** |
-| pulldown-cmark | 154 MiB/s | 217 MiB/s | 0.81x |
-| comrak | 49 MiB/s | 63 MiB/s | 0.26x |
-| markdown-rs | 7.2 MiB/s | 7.3 MiB/s | 0.04x |
+| **md-fast** | **82.9 MiB/s** | **90.8 MiB/s** | **1.0x** |
+| pulldown-cmark | 148 MiB/s | 214 MiB/s | 1.79x |
+| comrak | 45.0 MiB/s | 58.1 MiB/s | 0.54x |
+| markdown-rs | 6.74 MiB/s | 6.92 MiB/s | 0.08x |
 
 **Key results:**
-- **23% faster** than pulldown-cmark on typical documents
-- **3.9x faster** than comrak (full CommonMark/GFM)
-- **26x faster** than markdown-rs
+- **1.8x faster** than comrak on medium documents
+- **12x faster** than markdown-rs on medium documents
+- **~44% slower** than pulldown-cmark on medium documents
 
 Run benchmarks: `cargo bench --bench comparison`
 
 ## CommonMark Compliance
 
-**In-scope compliance: 87.1% (317/364 tests)**
+**Full compliance: 100% (652/652 tests)**
 
-We track compliance against a filtered subset of CommonMark tests, excluding features intentionally not supported (HTML blocks, setext headings, indented code blocks, reference links, tabs).
-
-| Section | Coverage |
-|---------|----------|
-| ATX headings | 100% |
-| Autolinks | 100% |
-| Backslash escapes | 100% |
-| Blank lines | 100% |
-| Code spans | 100% |
-| Emphasis | 100% |
-| Fenced code blocks | 100% |
-| Hard line breaks | 100% |
-| Images | 100% |
-| Inlines | 100% |
-| Paragraphs | 100% |
-| Precedence | 100% |
-| Soft line breaks | 100% |
-| Textual content | 100% |
-| Thematic breaks | 100% |
-| Links | 76% |
-| Block quotes | 65% |
-| List items | 61% |
-| Lists | 53% |
-| Entity references | 31% |
-
-**Intentionally out of scope:**
-- HTML blocks (security by design)
-- Reference link definitions
-- Setext headings
-- Indented code blocks
-- Tabs
-- Tables (GFM extension)
+All CommonMark spec tests pass (no filtering).
 
 ## Usage
 
