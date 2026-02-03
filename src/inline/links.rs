@@ -51,12 +51,15 @@ pub fn resolve_links(
     close_brackets: &[u32],
 ) -> Vec<Link> {
     let mut links = Vec::new();
-    let mut used_opens: Vec<bool> = vec![false; open_brackets.len()];
+    // Track opens that have formed links (consumed with their close)
+    let mut formed_opens: Vec<bool> = vec![false; open_brackets.len()];
+    // Track opens that are deactivated (can't form links, but still count for depth)
+    let mut inactive_opens: Vec<bool> = vec![false; open_brackets.len()];
     let mut used_closes: Vec<bool> = vec![false; close_brackets.len()];
 
     // Process open brackets from right to left (innermost first)
     for (open_idx, &(open_pos, is_image)) in open_brackets.iter().enumerate().rev() {
-        if used_opens[open_idx] {
+        if formed_opens[open_idx] || inactive_opens[open_idx] {
             continue;
         }
 
@@ -65,7 +68,7 @@ pub fn resolve_links(
             open_pos,
             open_brackets,
             close_brackets,
-            &used_opens,
+            &formed_opens,
             &used_closes,
         );
 
@@ -89,15 +92,17 @@ pub fn resolve_links(
                         end: end as u32,
                         is_image,
                     });
-                    used_opens[open_idx] = true;
+                    formed_opens[open_idx] = true;
                     used_closes[close_idx] = true;
 
-                    // For links (not images), deactivate any outer open brackets
-                    // that would contain this link (links cannot contain links)
+                    // For links (not images), deactivate any outer LINK open brackets
+                    // that would contain this link (links cannot contain links,
+                    // but images CAN contain links)
                     if !is_image {
-                        for (i, &(pos, _)) in open_brackets.iter().enumerate() {
-                            if pos < open_pos && !used_opens[i] {
-                                // This outer bracket would contain our link
+                        for (i, &(pos, outer_is_image)) in open_brackets.iter().enumerate() {
+                            // Only deactivate outer LINK brackets, not image brackets
+                            if pos < open_pos && !formed_opens[i] && !inactive_opens[i] && !outer_is_image {
+                                // This outer link bracket would contain our link
                                 // Check if there's a close bracket after our link
                                 // that could match the outer open
                                 let has_outer_close = close_brackets.iter()
@@ -105,8 +110,9 @@ pub fn resolve_links(
                                     .any(|(ci, &cpos)| !used_closes[ci] && cpos > close_pos);
                                 if has_outer_close {
                                     // The outer bracket could form a link containing our link
-                                    // which is not allowed, so deactivate it
-                                    used_opens[i] = true;
+                                    // which is not allowed, so mark it inactive
+                                    // (but it still contributes to bracket depth)
+                                    inactive_opens[i] = true;
                                 }
                             }
                         }
@@ -122,11 +128,13 @@ pub fn resolve_links(
 }
 
 /// Find the matching close bracket for an open bracket, accounting for nesting.
+/// `formed_opens` indicates opens that have formed links (and consumed their close).
+/// Inactive opens (deactivated but not formed) still contribute to depth.
 fn find_matching_close(
     open_pos: u32,
     open_brackets: &[(u32, bool)],
     close_brackets: &[u32],
-    used_opens: &[bool],
+    formed_opens: &[bool],
     used_closes: &[bool],
 ) -> Option<usize> {
     // Count nested brackets to find the matching close
@@ -134,10 +142,12 @@ fn find_matching_close(
     let mut close_idx = None;
 
     // Create a merged, sorted list of bracket positions for nesting calculation
+    // Only skip opens that have formed links (their closes are also consumed)
+    // Inactive opens still contribute to depth
     let mut events: Vec<(u32, bool)> = Vec::new(); // (pos, is_open)
 
     for (i, &(pos, _)) in open_brackets.iter().enumerate() {
-        if !used_opens[i] && pos > open_pos {
+        if !formed_opens[i] && pos > open_pos {
             events.push((pos, true));
         }
     }

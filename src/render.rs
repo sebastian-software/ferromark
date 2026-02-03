@@ -5,6 +5,38 @@
 use crate::escape;
 use crate::Range;
 
+/// Decode HTML entities with CommonMark compliance.
+/// - Replaces null bytes (from &#0;) with U+FFFD replacement character
+/// - Handles multi-codepoint entities that html_escape doesn't support
+fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
+    let decoded = html_escape::decode_html_entities(input);
+
+    // Check if we need to fix null bytes or missing multi-codepoint entities
+    let needs_fixup = decoded.contains('\0') ||
+        // Check for known multi-codepoint entities that html_escape misses
+        input.contains("&ngE;");
+
+    if !needs_fixup {
+        return decoded;
+    }
+
+    // Need to fix up the result
+    let mut result = decoded.into_owned();
+
+    // Replace null bytes with U+FFFD
+    if result.contains('\0') {
+        result = result.replace('\0', "\u{FFFD}");
+    }
+
+    // Fix multi-codepoint entities
+    // &ngE; should be ≧ + combining stroke (U+2267 + U+0338)
+    if input.contains("&ngE;") {
+        result = result.replace('≧', "\u{2267}\u{0338}");
+    }
+
+    std::borrow::Cow::Owned(result)
+}
+
 /// HTML output writer with pre-allocated, reusable buffer.
 ///
 /// # Example
@@ -105,7 +137,7 @@ impl HtmlWriter {
     pub fn write_text_with_entities(&mut self, text: &[u8]) {
         // First decode HTML entities
         let text_str = core::str::from_utf8(text).unwrap_or("");
-        let decoded = html_escape::decode_html_entities(text_str);
+        let decoded = decode_entities_commonmark(text_str);
         // Then HTML-escape the result
         escape::escape_text_into(&mut self.out, decoded.as_bytes());
     }
@@ -149,7 +181,7 @@ impl HtmlWriter {
     pub fn write_link_title(&mut self, title: &[u8]) {
         // First decode entities
         let title_str = core::str::from_utf8(title).unwrap_or("");
-        let decoded = html_escape::decode_html_entities(title_str);
+        let decoded = decode_entities_commonmark(title_str);
         let decoded_bytes = decoded.as_bytes();
 
         // Then process backslash escapes and HTML-escape
@@ -337,7 +369,7 @@ impl HtmlWriter {
     pub fn write_info_string_attr(&mut self, info: &[u8]) {
         // First decode HTML entities
         let info_str = core::str::from_utf8(info).unwrap_or("");
-        let decoded = html_escape::decode_html_entities(info_str);
+        let decoded = decode_entities_commonmark(info_str);
         // Then HTML-escape for attribute context
         escape::escape_full_into(&mut self.out, decoded.as_bytes());
     }

@@ -384,6 +384,9 @@ impl<'a> BlockParser<'a> {
     /// Returns number of matched containers.
     fn match_containers(&mut self, _events: &mut Vec<BlockEvent>) -> usize {
         let mut matched = 0;
+        // Track the deepest list that matched with non-blank content
+        // (this is the level where a blank line would make the list loose)
+        let mut deepest_list_match: Option<usize> = None;
 
         for i in 0..self.container_stack.len() {
             let container = &self.container_stack[i];
@@ -424,11 +427,12 @@ impl<'a> BlockParser<'a> {
                             // for indented code detection
                             self.cursor = Cursor::new_at(self.input, save_pos + content_indent);
 
-                            // If we had a blank line, list becomes loose
-                            if let Some(open_list) = self.open_lists.last_mut() {
-                                if open_list.blank_in_item {
-                                    open_list.tight = false;
-                                }
+                            // Track this list as a potential loose candidate
+                            let list_index = self.container_stack[..=i].iter()
+                                .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
+                                .count();
+                            if list_index > 0 {
+                                deepest_list_match = Some(list_index - 1);
                             }
                             matched += 1;
                         } else {
@@ -450,6 +454,20 @@ impl<'a> BlockParser<'a> {
                         }
                     }
                 }
+            }
+        }
+
+        // After matching, mark the deepest matched list as loose if it had a blank line.
+        // This ensures the blank only affects the innermost level that actually continues.
+        if let Some(list_idx) = deepest_list_match {
+            if let Some(open_list) = self.open_lists.get_mut(list_idx) {
+                if open_list.blank_in_item {
+                    open_list.tight = false;
+                }
+            }
+            // Clear blank_in_item for all outer lists - the blank was "consumed" by the deeper level
+            for outer_list in self.open_lists[..list_idx].iter_mut() {
+                outer_list.blank_in_item = false;
             }
         }
 
@@ -648,14 +666,37 @@ impl<'a> BlockParser<'a> {
                     self.container_stack.pop();
                     self.close_paragraph(events);
                     events.push(BlockEvent::ListItemEnd);
-                    // Note: we don't close the list here - it stays open for more items
-                    // Fall through to mark blank_in_item, which makes the list loose
+                    // Mark blank_in_item for the list - the blank line is between items,
+                    // which will make the list loose when the next item starts.
+                    if let Some(open_list) = self.open_lists.last_mut() {
+                        open_list.blank_in_item = true;
+                    }
+                    return; // Already handled blank marking for this case
                 }
             }
         }
 
-        // Mark any open lists as having seen a blank line in current item
-        for open_list in self.open_lists.iter_mut() {
+        // Mark all lists with an active item as having seen a blank line.
+        // We don't know yet which level the blank is at - that's determined
+        // when we see the continuation line.
+        //
+        // BUT: If close_blockquotes is false, the line had container markers (like `>`).
+        // If there's a blockquote on the stack, the blank is inside the blockquote,
+        // not directly in the list item, so don't mark the list.
+        if !close_blockquotes {
+            if let Some(container) = self.container_stack.last() {
+                if container.typ == ContainerType::BlockQuote {
+                    // The blank is inside a blockquote, not between list item blocks
+                    return;
+                }
+            }
+        }
+
+        let active_list_count = self.container_stack.iter()
+            .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
+            .count();
+        let start_idx = self.open_lists.len().saturating_sub(active_list_count);
+        for open_list in self.open_lists[start_idx..].iter_mut() {
             open_list.blank_in_item = true;
         }
     }
@@ -885,16 +926,21 @@ impl<'a> BlockParser<'a> {
         // Close paragraph if any
         self.close_paragraph(events);
 
-        // Check if we're inside a list item container (matched, not closed).
-        // If so, any new list is NESTED inside that item, not a continuation.
-        let inside_list_item = self.container_stack.last()
-            .map(|c| matches!(c.typ, ContainerType::ListItem { .. }))
-            .unwrap_or(false);
+        // Check if we have an open list waiting for more items.
+        // We're continuing a list if:
+        // 1. There's a compatible open list, AND
+        // 2. Either we're not inside a list item, OR there are more open lists
+        //    than list items in container_stack (meaning there's a nested list waiting)
+        let list_item_count = self.container_stack.iter()
+            .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
+            .count();
+        // If open_lists.len() > list_item_count, there's a "free" open list
+        // that was started but whose item was closed - we should continue it
+        let has_waiting_list = self.open_lists.len() > list_item_count;
+        let continuing_list = has_waiting_list && self.is_compatible_list(kind, marker);
 
-        // Check if we're continuing an existing list of the same type
-        // Only applies when NOT inside a matched list item (i.e., when the previous
-        // item was closed by close_containers_from due to insufficient indent)
-        let continuing_list = !inside_list_item && self.is_compatible_list(kind, marker);
+        // Check if we're inside a list item (for the nesting case)
+        let inside_list_item = list_item_count > 0;
 
         if !continuing_list {
             // Close any existing list items from incompatible lists

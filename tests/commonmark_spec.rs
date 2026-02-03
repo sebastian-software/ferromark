@@ -30,6 +30,23 @@ const OUT_OF_SCOPE_SECTIONS: &[&str] = &[
     "Tabs",
 ];
 
+/// Check if label contains unescaped brackets
+fn has_unescaped_bracket(label: &str) -> bool {
+    let bytes = label.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'\\' && i + 1 < bytes.len() {
+            // Skip escaped character
+            i += 2;
+        } else if bytes[i] == b'[' || bytes[i] == b']' {
+            return true;
+        } else {
+            i += 1;
+        }
+    }
+    false
+}
+
 /// Check if a test uses reference link definitions (pattern: [label]: url)
 fn uses_reference_links(markdown: &str) -> bool {
     // Reference definition pattern: starts with optional spaces, [label]:
@@ -40,7 +57,7 @@ fn uses_reference_links(markdown: &str) -> bool {
                 // Found a potential reference definition
                 let label = &trimmed[1..bracket_end + 1];
                 // Label should not be empty and should not contain unescaped brackets
-                if !label.is_empty() && !label.contains('[') && !label.contains(']') {
+                if !label.is_empty() && !has_unescaped_bracket(label) {
                     return true;
                 }
             }
@@ -95,31 +112,64 @@ fn requires_4space_handling(test: &SpecTest) -> bool {
 
 /// Check if test requires raw HTML handling
 fn requires_raw_html(test: &SpecTest) -> bool {
-    // Expected output contains raw HTML tags we don't generate
+    // Raw HTML patterns in expected output that we don't generate
     let raw_html_patterns = [
-        "<a href=", "<img ", "<div", "<table", "<pre>", "<script",
-        "<style", "<iframe", "<!--", "<br>",
-        // Note: <hr> and <hr /> are NOT included since we generate those
+        "<div", "<table", "<pre>", "<script", "<style", "<iframe", "<!--", "<br>",
     ];
-    // Check if expected output has tags we don't generate
+
+    // Check if expected output has HTML tags we don't generate
     for pattern in raw_html_patterns {
-        if test.html.contains(pattern) && !test.html.contains("<a href=\"") {
-            // Allow <a href="..."> since we generate those for links
-            if pattern == "<a href=" {
-                continue;
-            }
+        if test.html.contains(pattern) {
             return true;
         }
     }
-    // Also check if input has raw HTML that should pass through
-    // Check for HTML tags in input (various forms: <a href=, <a>, <img src=, etc.)
-    test.markdown.contains("<a ") || test.markdown.contains("<a>") || test.markdown.contains("<a\t")
-        || test.markdown.contains("<a/") || test.markdown.contains("<a\n")
-        || test.markdown.contains("<img ") || test.markdown.contains("<img>") || test.markdown.contains("<img\t")
-        || test.markdown.contains("<img/") || test.markdown.contains("<img\n")
-        // Also catch <a href= and <img src= patterns (no space after tag name)
-        || (test.markdown.contains("<a") && test.markdown.contains("href"))
-        || (test.markdown.contains("<img") && test.markdown.contains("src"))
+
+    // Check if input has raw HTML that should pass through
+    let input = &test.markdown;
+
+    // HTML tags in input (various forms)
+    if input.contains("<a ") || input.contains("<a>") || input.contains("<a\t")
+        || input.contains("<a/") || input.contains("<a\n")
+        || input.contains("<img ") || input.contains("<img>") || input.contains("<img\t")
+        || input.contains("<img/") || input.contains("<img\n")
+        || (input.contains("<a") && input.contains("href"))
+        || (input.contains("<img") && input.contains("src"))
+    {
+        return true;
+    }
+
+    // HTML comments in input
+    if input.contains("<!--") {
+        return true;
+    }
+
+    // Check for raw HTML tags in input that are NOT autolinks
+    // Pattern: <letter followed by space or attribute (not :// or @)
+    let bytes = input.as_bytes();
+    for i in 0..bytes.len().saturating_sub(2) {
+        if bytes[i] == b'<' && bytes[i + 1].is_ascii_alphabetic() {
+            // Found <letter, check if it's an autolink (has :// soon after) or raw HTML
+            let rest = &bytes[i + 1..];
+            // Skip letters to find what comes next
+            let mut j = 0;
+            while j < rest.len() && (rest[j].is_ascii_alphanumeric() || rest[j] == b'-') {
+                j += 1;
+            }
+            if j < rest.len() {
+                // Check what follows the tag name
+                let next = rest[j];
+                // If followed by space, =, >, /, it's likely raw HTML
+                if next == b' ' || next == b'=' || next == b'>' || next == b'/' || next == b'\t' || next == b'\n' {
+                    // But not if it looks like an autolink scheme (e.g., <https:)
+                    if j < rest.len() && rest.get(j) != Some(&b':') {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    false
 }
 
 /// Check if test requires setext heading (underline-style)
@@ -298,6 +348,26 @@ fn run_section_tests(section_name: &str) -> (u32, u32, Vec<(u32, String, String,
     (passed, failed, failures)
 }
 
+/// Test a specific section, only in-scope tests.
+fn run_section_tests_in_scope(section_name: &str) -> (u32, u32, Vec<(u32, String, String, String)>) {
+    let tests = load_spec_tests();
+    let mut passed = 0;
+    let mut failed = 0;
+    let mut failures = Vec::new();
+
+    for test in tests.iter().filter(|t| t.section == section_name && is_test_in_scope(t)) {
+        let output = to_html(&test.markdown);
+        if output == test.html {
+            passed += 1;
+        } else {
+            failed += 1;
+            failures.push((test.example, test.markdown.clone(), test.html.clone(), output));
+        }
+    }
+
+    (passed, failed, failures)
+}
+
 // === Section-specific tests ===
 // These help track progress on specific CommonMark sections.
 
@@ -443,6 +513,58 @@ fn spec_links() {
         }
     }
     eprintln!("\nLinks: {}/{} passed", passed, passed + failed);
+}
+
+#[test]
+fn spec_links_in_scope() {
+    let (passed, failed, failures) = run_section_tests_in_scope("Links");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(10)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nLinks (in-scope): {}/{} passed", passed, passed + failed);
+}
+
+#[test]
+fn spec_list_items_in_scope() {
+    let (passed, failed, failures) = run_section_tests_in_scope("List items");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(10)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nList items (in-scope): {}/{} passed", passed, passed + failed);
+}
+
+#[test]
+fn spec_lists_in_scope() {
+    let (passed, failed, failures) = run_section_tests_in_scope("Lists");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(10)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nLists (in-scope): {}/{} passed", passed, passed + failed);
+}
+
+#[test]
+fn spec_entity_refs_in_scope() {
+    let (passed, failed, failures) = run_section_tests_in_scope("Entity and numeric character references");
+    if !failures.is_empty() {
+        for (ex, md, expected, got) in &failures[..failures.len().min(10)] {
+            eprintln!("\nExample {}: {:?}", ex, md);
+            eprintln!("  Expected: {:?}", expected);
+            eprintln!("  Got:      {:?}", got);
+        }
+    }
+    eprintln!("\nEntity refs (in-scope): {}/{} passed", passed, passed + failed);
 }
 
 #[test]

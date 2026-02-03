@@ -66,6 +66,13 @@ impl InlineParser {
 
         // Third: links and images
         let (open_brackets, close_brackets) = self.collect_brackets();
+        // Filter out close brackets that are inside autolinks - they can't close links
+        let close_brackets: Vec<_> = close_brackets
+            .into_iter()
+            .filter(|&pos| {
+                !autolinks.iter().any(|al| pos > al.start && pos < al.end)
+            })
+            .collect();
         let resolved_links = resolve_links(text, &open_brackets, &close_brackets);
 
         // Fourth: emphasis (lowest precedence)

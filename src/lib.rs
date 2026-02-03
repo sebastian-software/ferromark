@@ -113,14 +113,20 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     // State for accumulating paragraph content
     let mut para_state = ParagraphState::new();
 
-    // Track tight/loose status for nested lists (stack - true means tight)
-    let mut tight_list_stack: Vec<bool> = Vec::new();
+    // Track tight/loose status for nested lists (stack - (tight, blockquote_depth_at_start))
+    let mut tight_list_stack: Vec<(bool, u32)> = Vec::new();
 
     // Track if we just started a tight list item (need newline before block content)
     let mut at_tight_li_start = false;
 
     // Track if we need newline before next block element (after paragraph in tight list)
     let mut need_newline_before_block = false;
+
+    // Track if we need a newline after <li> in loose list (deferred until content appears)
+    let mut pending_loose_li_newline = false;
+
+    // Track blockquote depth (paragraphs in blockquotes always get <p> tags)
+    let mut blockquote_depth = 0u32;
 
     // Render events to HTML
     for event in &events {
@@ -134,6 +140,8 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
             &mut tight_list_stack,
             &mut at_tight_li_start,
             &mut need_newline_before_block,
+            &mut pending_loose_li_newline,
+            &mut blockquote_depth,
         );
     }
 }
@@ -146,15 +154,25 @@ fn render_block_event(
     inline_parser: &mut InlineParser,
     inline_events: &mut Vec<InlineEvent>,
     para_state: &mut ParagraphState,
-    tight_list_stack: &mut Vec<bool>,
+    tight_list_stack: &mut Vec<(bool, u32)>,
     at_tight_li_start: &mut bool,
     need_newline_before_block: &mut bool,
+    pending_loose_li_newline: &mut bool,
+    blockquote_depth: &mut u32,
 ) {
     // Check if we're in a tight list (innermost list is tight)
-    let in_tight_list = tight_list_stack.last().copied().unwrap_or(false);
+    // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
+    let in_tight_list = tight_list_stack.last().map_or(false, |(tight, bq_depth_at_start)| {
+        *tight && *blockquote_depth <= *bq_depth_at_start
+    });
 
     match event {
         BlockEvent::ParagraphStart => {
+            // Write pending newline from loose list item start
+            if *pending_loose_li_newline {
+                writer.newline();
+                *pending_loose_li_newline = false;
+            }
             // In tight lists, don't emit <p> tags
             if !in_tight_list {
                 writer.paragraph_start();
@@ -165,7 +183,10 @@ fn render_block_event(
         }
         BlockEvent::ParagraphEnd => {
             // Check if we're in a tight list (innermost list is tight)
-            let in_tight_list = tight_list_stack.last().copied().unwrap_or(false);
+            // BUT: paragraphs inside blockquotes that started AFTER the list need </p> tags
+            let in_tight_list = tight_list_stack.last().map_or(false, |(tight, bq_depth_at_start)| {
+                *tight && *blockquote_depth <= *bq_depth_at_start
+            });
 
             // Parse all accumulated paragraph content at once
             let content = para_state.finish();
@@ -230,6 +251,11 @@ fn render_block_event(
             writer.write_escaped_text(range.slice(input));
         }
         BlockEvent::CodeBlockStart { info } => {
+            // Write pending newline from loose list item start
+            if *pending_loose_li_newline {
+                writer.newline();
+                *pending_loose_li_newline = false;
+            }
             // If we're at the start of a tight list item, add newline before block content
             if *at_tight_li_start {
                 writer.newline();
@@ -242,17 +268,34 @@ fn render_block_event(
             writer.code_block_end();
         }
         BlockEvent::BlockQuoteStart => {
+            // Write pending newline from loose list item start
+            if *pending_loose_li_newline {
+                writer.newline();
+                *pending_loose_li_newline = false;
+            }
+            // If we need newline (after paragraph in tight list), add it
+            if *need_newline_before_block {
+                writer.newline();
+                *need_newline_before_block = false;
+            }
             // If we're at the start of a tight list item, add newline before block content
             if *at_tight_li_start {
                 writer.newline();
                 *at_tight_li_start = false;
             }
+            *blockquote_depth += 1;
             writer.blockquote_start();
         }
         BlockEvent::BlockQuoteEnd => {
+            *blockquote_depth = blockquote_depth.saturating_sub(1);
             writer.blockquote_end();
         }
         BlockEvent::ListStart { kind, tight } => {
+            // Write pending newline from loose list item start
+            if *pending_loose_li_newline {
+                writer.newline();
+                *pending_loose_li_newline = false;
+            }
             // If we need newline (after paragraph in tight list), add it
             if *need_newline_before_block {
                 writer.newline();
@@ -263,8 +306,8 @@ fn render_block_event(
                 writer.newline();
                 *at_tight_li_start = false;
             }
-            // Push the tight status for this list onto the stack
-            tight_list_stack.push(*tight);
+            // Push the tight status and current blockquote depth for this list
+            tight_list_stack.push((*tight, *blockquote_depth));
             match kind {
                 block::ListKind::Unordered => writer.ul_start(),
                 block::ListKind::Ordered { start, .. } => {
@@ -282,9 +325,9 @@ fn render_block_event(
         }
         BlockEvent::ListItemStart { .. } => {
             writer.li_start();
-            // In loose lists, add newline after <li>
+            // In loose lists, defer newline until content appears (for empty items)
             if !in_tight_list {
-                writer.newline();
+                *pending_loose_li_newline = true;
             } else {
                 // In tight lists, mark that we may need newline if block content follows
                 *at_tight_li_start = true;
@@ -293,6 +336,7 @@ fn render_block_event(
         BlockEvent::ListItemEnd => {
             *at_tight_li_start = false;
             *need_newline_before_block = false;
+            *pending_loose_li_newline = false;
             writer.li_end();
         }
     }
