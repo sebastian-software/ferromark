@@ -71,6 +71,8 @@ pub struct BlockParser<'a> {
     paragraph_lines: Vec<Range>,
     /// Current fenced code block state, if inside one.
     fence_state: Option<FenceState>,
+    /// Whether we're in an indented code block.
+    in_indented_code: bool,
     /// Stack of open containers (blockquotes, list items).
     container_stack: SmallVec<[Container; 8]>,
     /// Whether we're in a tight list context.
@@ -89,6 +91,7 @@ impl<'a> BlockParser<'a> {
             in_paragraph: false,
             paragraph_lines: Vec::new(),
             fence_state: None,
+            in_indented_code: false,
             container_stack: SmallVec::new(),
             tight_list: false,
             open_lists: SmallVec::new(),
@@ -104,9 +107,15 @@ impl<'a> BlockParser<'a> {
         // Close any open paragraph at end of input
         self.close_paragraph(events);
 
-        // Close any unclosed code fence
+        // Close any unclosed fenced code block
         if self.fence_state.is_some() {
             self.fence_state = None;
+            events.push(BlockEvent::CodeBlockEnd);
+        }
+
+        // Close any unclosed indented code block
+        if self.in_indented_code {
+            self.in_indented_code = false;
             events.push(BlockEvent::CodeBlockEnd);
         }
 
@@ -131,6 +140,12 @@ impl<'a> BlockParser<'a> {
             if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                 self.cursor.bump();
             }
+            // Blank lines inside indented code are preserved
+            if self.in_indented_code {
+                // Emit just the newline
+                events.push(BlockEvent::Text(Range::new((line_start + initial_spaces) as u32, (line_start + initial_spaces + 1) as u32)));
+                return;
+            }
             self.close_paragraph(events);
             self.handle_blank_line_containers(events);
             return;
@@ -146,17 +161,53 @@ impl<'a> BlockParser<'a> {
         // Get current indent after container matching
         let indent = self.cursor.skip_spaces();
 
-        // If we have unmatched containers, close them BEFORE trying new blocks
-        // A thematic break at indent 0 should close all unmatched containers
+        // If we have unmatched containers, check for lazy continuation or close them
         if matched_containers < self.container_stack.len() {
+            // If we're in an indented code block and containers don't match, close it
+            if self.in_indented_code {
+                self.in_indented_code = false;
+                events.push(BlockEvent::CodeBlockEnd);
+            }
+
             // Check if this is a thematic break - it should close all containers first
             if indent < 4 && self.peek_thematic_break() {
                 self.close_all_containers(events);
                 self.try_thematic_break(events);
                 return;
             }
+
+            // Check for lazy continuation (paragraph continues without > marker)
+            if self.can_lazy_continue(matched_containers, indent) {
+                // Don't close containers - just add this line to the paragraph
+                let line_start = self.cursor.offset();
+                self.parse_paragraph_line(line_start, events);
+                return;
+            }
+
             // close_containers_from is smart about keeping lists open when starting new items
             self.close_containers_from(matched_containers, events);
+        }
+
+        // If we're in an indented code block and containers matched, handle continuation
+        if self.in_indented_code {
+            if indent >= 4 {
+                // Continue the code block
+                let extra_spaces = indent.saturating_sub(4);
+                let text_start = self.cursor.offset() - extra_spaces;
+                let line_end = self.find_line_end();
+                let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+                    self.cursor.bump();
+                    line_end + 1
+                } else {
+                    line_end
+                };
+                events.push(BlockEvent::Text(Range::new(text_start as u32, content_end as u32)));
+                return;
+            } else {
+                // Close the code block - not enough indent
+                self.in_indented_code = false;
+                events.push(BlockEvent::CodeBlockEnd);
+            }
         }
 
         // Check for thematic break (also when all containers matched, e.g. inside blockquote)
@@ -180,6 +231,12 @@ impl<'a> BlockParser<'a> {
                 self.parse_line_content(events);
                 return;
             }
+        }
+
+        // Check for indented code block (4+ spaces, not in paragraph)
+        if indent >= 4 && !self.in_paragraph {
+            self.start_indented_code(indent, events);
+            return;
         }
 
         // Parse regular block content
@@ -254,6 +311,12 @@ impl<'a> BlockParser<'a> {
             if self.try_atx_heading(events) {
                 return;
             }
+        }
+
+        // Check for indented code block (4+ spaces, not in paragraph)
+        if indent >= 4 && !self.in_paragraph {
+            self.start_indented_code(indent, events);
+            return;
         }
 
         // Otherwise, it's paragraph content
@@ -357,6 +420,78 @@ impl<'a> BlockParser<'a> {
                 // Check if delimiter matches
                 self.cursor.peek_ahead(offset) == Some(delimiter)
             }
+        }
+    }
+
+    /// Check if we can do lazy continuation for a blockquote.
+    /// Returns true if:
+    /// 1. We're in a paragraph
+    /// 2. The first unmatched container is a blockquote
+    /// 3. The current line doesn't start a new block
+    fn can_lazy_continue(&self, matched: usize, indent: usize) -> bool {
+        // Must be in a paragraph to do lazy continuation
+        if !self.in_paragraph {
+            return false;
+        }
+
+        // Must have unmatched containers
+        if matched >= self.container_stack.len() {
+            return false;
+        }
+
+        // The first unmatched container must be a blockquote
+        // (lazy continuation doesn't apply to list items)
+        if self.container_stack[matched].typ != ContainerType::BlockQuote {
+            return false;
+        }
+
+        // If indent >= 4, this would be an indented code block
+        if indent >= 4 {
+            return false;
+        }
+
+        // Check if the current line would start a new block
+        // If it would, we can't do lazy continuation
+        !self.would_start_block()
+    }
+
+    /// Check if the current position would start a new block.
+    /// Used for lazy continuation checks.
+    fn would_start_block(&self) -> bool {
+        let b = match self.cursor.peek() {
+            Some(b) => b,
+            None => return false,
+        };
+
+        match b {
+            // ATX heading
+            b'#' => true,
+            // Fenced code block or thematic break
+            b'`' | b'~' => self.cursor.remaining_slice().iter().take_while(|&&c| c == b).count() >= 3,
+            // Blockquote
+            b'>' => true,
+            // Unordered list marker or thematic break
+            b'-' | b'*' | b'+' => {
+                // Check if followed by space (list item) or if it's a thematic break
+                self.cursor.peek_ahead(1) == Some(b' ') || self.peek_thematic_break()
+            }
+            // Ordered list marker
+            b'0'..=b'9' => {
+                // Check if digit(s) followed by . or ) then space
+                let mut offset = 1;
+                while self.cursor.peek_ahead(offset).map_or(false, |c| c.is_ascii_digit()) {
+                    offset += 1;
+                }
+                let delim = self.cursor.peek_ahead(offset);
+                (delim == Some(b'.') || delim == Some(b')'))
+                    && self.cursor.peek_ahead(offset + 1) == Some(b' ')
+            }
+            // HTML block (simplified check)
+            b'<' => true,
+            // Setext heading underline
+            b'=' => self.cursor.remaining_slice().iter().all(|&c| c == b'=' || c == b' ' || c == b'\n'),
+            // Blank or other content - not a block start
+            _ => false,
         }
     }
 
@@ -919,6 +1054,90 @@ impl<'a> BlockParser<'a> {
         events.push(BlockEvent::CodeBlockStart { info });
 
         true
+    }
+
+    /// Start an indented code block.
+    fn start_indented_code(&mut self, indent: usize, events: &mut Vec<BlockEvent>) {
+        // Close any open paragraph first
+        self.close_paragraph(events);
+
+        // Start the code block
+        self.in_indented_code = true;
+        events.push(BlockEvent::CodeBlockStart { info: None });
+
+        // The cursor is past `indent` spaces. We want to strip exactly 4.
+        // The content starts at cursor position (we already skipped `indent` spaces).
+        // We need to "give back" (indent - 4) spaces if indent > 4.
+        let extra_spaces = indent.saturating_sub(4);
+        let text_start = self.cursor.offset() - extra_spaces;
+
+        // Find end of line (including newline for code blocks)
+        let line_end = self.find_line_end();
+        let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+            self.cursor.bump();
+            line_end + 1 // Include the newline
+        } else {
+            line_end
+        };
+
+        // Emit the content (including newline)
+        events.push(BlockEvent::Text(Range::new(text_start as u32, content_end as u32)));
+    }
+
+    /// Parse a line inside an indented code block.
+    fn parse_indented_code_line(&mut self, events: &mut Vec<BlockEvent>) {
+        let line_start = self.cursor.offset();
+
+        // Count leading spaces
+        let initial_spaces = self.count_leading_spaces();
+
+        // Check for blank line
+        if self.is_blank_after(initial_spaces) {
+            // Blank lines in indented code are preserved - emit just the newline
+            self.cursor = Cursor::new_at(self.input, line_start + initial_spaces);
+            let newline_pos = self.cursor.offset();
+            if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+                self.cursor.bump();
+                // Emit just the newline
+                events.push(BlockEvent::Text(Range::new(newline_pos as u32, (newline_pos + 1) as u32)));
+            }
+            return;
+        }
+
+        // If indent < 4, this ends the indented code block
+        if initial_spaces < 4 {
+            // Close the code block
+            self.in_indented_code = false;
+            events.push(BlockEvent::CodeBlockEnd);
+
+            // Re-parse this line as a new block
+            self.cursor = Cursor::new_at(self.input, line_start);
+            self.parse_line(events);
+            return;
+        }
+
+        // Continue the code block - strip exactly 4 spaces
+        self.cursor = Cursor::new_at(self.input, line_start + 4);
+        let content_start = self.cursor.offset();
+        let line_end = self.find_line_end();
+
+        // Include the newline in the content
+        let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+            self.cursor.bump();
+            line_end + 1
+        } else {
+            line_end
+        };
+
+        events.push(BlockEvent::Text(Range::new(content_start as u32, content_end as u32)));
+    }
+
+    /// Find end of current line (position of \n or EOF).
+    fn find_line_end(&mut self) -> usize {
+        while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
+            self.cursor.bump();
+        }
+        self.cursor.offset()
     }
 
     /// Parse a line inside a fenced code block.
