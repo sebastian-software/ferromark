@@ -40,7 +40,7 @@ struct Container {
     /// Type of container.
     typ: ContainerType,
     /// Whether this container has had any content yet.
-    #[allow(dead_code)]
+    /// For list items, this is used to implement the two-blank-line rule.
     has_content: bool,
 }
 
@@ -582,6 +582,19 @@ impl<'a> BlockParser<'a> {
             }
         }
 
+        // Two-blank-line rule: a list item can begin with at most one blank line.
+        // If the innermost list item has no content and we see a blank line, close it.
+        if let Some(container) = self.container_stack.last() {
+            if let ContainerType::ListItem { .. } = container.typ {
+                if !container.has_content {
+                    // This is the second blank line (first was the blank item itself)
+                    // Close the list item
+                    self.close_top_container(events);
+                    return; // Don't mark blank_in_item since item is closed
+                }
+            }
+        }
+
         // Mark any open lists as having seen a blank line in current item
         for open_list in self.open_lists.iter_mut() {
             open_list.blank_in_item = true;
@@ -603,6 +616,9 @@ impl<'a> BlockParser<'a> {
 
         // Close paragraph if any
         self.close_paragraph(events);
+
+        // Mark the current container as having content (before pushing new container)
+        self.mark_container_has_content();
 
         // Push blockquote container
         self.container_stack.push(Container {
@@ -847,6 +863,9 @@ impl<'a> BlockParser<'a> {
         // Note: if continuing_list is true, the previous item was already
         // closed by close_containers_from, so we just add the new item
 
+        // Mark the current container as having content (before pushing new container)
+        self.mark_container_has_content();
+
         // Push list item container
         self.container_stack.push(Container {
             typ: ContainerType::ListItem {
@@ -1033,6 +1052,9 @@ impl<'a> BlockParser<'a> {
         // Close any open paragraph
         self.close_paragraph(events);
 
+        // Mark the current container as having content
+        self.mark_container_has_content();
+
         events.push(BlockEvent::ThematicBreak);
         true
     }
@@ -1093,6 +1115,9 @@ impl<'a> BlockParser<'a> {
 
         // Close any open paragraph
         self.close_paragraph(events);
+
+        // Mark the current container as having content
+        self.mark_container_has_content();
 
         // Emit heading events
         events.push(BlockEvent::HeadingStart { level });
@@ -1208,6 +1233,9 @@ impl<'a> BlockParser<'a> {
             indent,
         });
 
+        // Mark the current container as having content
+        self.mark_container_has_content();
+
         // Emit code block start with info string
         let info = if info_end > info_content_start {
             Some(Range::from_usize(info_content_start, info_end))
@@ -1223,6 +1251,9 @@ impl<'a> BlockParser<'a> {
     fn start_indented_code(&mut self, indent: usize, events: &mut Vec<BlockEvent>) {
         // Close any open paragraph first
         self.close_paragraph(events);
+
+        // Mark the current container as having content
+        self.mark_container_has_content();
 
         // Start the code block
         self.in_indented_code = true;
@@ -1371,6 +1402,9 @@ impl<'a> BlockParser<'a> {
             return;
         }
 
+        // Mark the current container as having content
+        self.mark_container_has_content();
+
         events.push(BlockEvent::ParagraphStart);
 
         // Emit text ranges for each line with soft breaks between
@@ -1383,6 +1417,15 @@ impl<'a> BlockParser<'a> {
         }
 
         events.push(BlockEvent::ParagraphEnd);
+    }
+
+    /// Mark the innermost container as having content.
+    /// Used for the two-blank-line rule: list items that have had content
+    /// are not closed by a blank line.
+    fn mark_container_has_content(&mut self) {
+        if let Some(container) = self.container_stack.last_mut() {
+            container.has_content = true;
+        }
     }
 }
 
