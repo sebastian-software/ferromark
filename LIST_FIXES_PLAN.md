@@ -4,7 +4,7 @@ Based on analysis of md4c and pulldown-cmark reference implementations.
 
 ## Current Status (Updated 2026-02-03)
 
-- Lists: 12/17 (70.6%) - was 9/17 (52.9%)
+- Lists: 15/17 (88.2%) - was 9/17 (52.9%)
 - List items: 24/28 (85.7%) - was 17/28 (60.7%)
 - Block quotes: 20/20 (100%) - was 18/20 (90%)
 - Overall in-scope: 94.5% (344/364) - was 91.2% (332/364)
@@ -23,9 +23,13 @@ Based on analysis of md4c and pulldown-cmark reference implementations.
 - Blank lines without > markers close blockquotes
 - Recognize blank list items in same-list continuation
 - Enable lazy continuation for list item paragraphs
+- Don't recognize block starts at 4+ indent in lazy continuation
+- Close lists when indent >= 4 prevents new items
+- Two-blank-line rule keeps list open for more items
 
 ### Remaining
 - **Phase 2**: Container matching edge cases (fenced code inside list items)
+- HTML block handling (currently out of scope)
 
 ## Original Status
 

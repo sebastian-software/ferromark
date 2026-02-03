@@ -1,7 +1,7 @@
 use md_fast::{BlockParser, fixup_list_tight};
 
 fn main() {
-    let input = "-\n\n  foo\n";
+    let input = "> foo\n\n> bar\n";
     let mut parser = BlockParser::new(input.as_bytes());
     let mut events = Vec::new();
     parser.parse(&mut events);
