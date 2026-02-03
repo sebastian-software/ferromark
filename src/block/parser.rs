@@ -616,13 +616,17 @@ impl<'a> BlockParser<'a> {
 
         // Two-blank-line rule: a list item can begin with at most one blank line.
         // If the innermost list item has no content and we see a blank line, close it.
+        // But keep the list open - only close the item.
         if let Some(container) = self.container_stack.last() {
             if let ContainerType::ListItem { .. } = container.typ {
                 if !container.has_content {
                     // This is the second blank line (first was the blank item itself)
-                    // Close the list item
-                    self.close_top_container(events);
-                    return; // Don't mark blank_in_item since item is closed
+                    // Close just the list item, not the list
+                    self.container_stack.pop();
+                    self.close_paragraph(events);
+                    events.push(BlockEvent::ListItemEnd);
+                    // Note: we don't close the list here - it stays open for more items
+                    // Fall through to mark blank_in_item, which makes the list loose
                 }
             }
         }
@@ -1395,7 +1399,7 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Parse a paragraph line.
-    fn parse_paragraph_line(&mut self, _line_start: usize, _events: &mut Vec<BlockEvent>) {
+    fn parse_paragraph_line(&mut self, _line_start: usize, events: &mut Vec<BlockEvent>) {
         // Find end of line
         let content_start = self.cursor.offset();
         let line_end = match self.cursor.find_newline() {
@@ -1411,6 +1415,8 @@ impl<'a> BlockParser<'a> {
 
         // If we weren't in a paragraph, we are now
         if !self.in_paragraph {
+            // Before starting a paragraph, close any orphaned lists (lists with no active item)
+            self.close_orphaned_lists(events);
             self.in_paragraph = true;
         }
 
@@ -1457,6 +1463,25 @@ impl<'a> BlockParser<'a> {
     fn mark_container_has_content(&mut self) {
         if let Some(container) = self.container_stack.last_mut() {
             container.has_content = true;
+        }
+    }
+
+    /// Close any open lists that have no active list item.
+    /// This can happen after the two-blank-line rule closes an item.
+    fn close_orphaned_lists(&mut self, events: &mut Vec<BlockEvent>) {
+        // Count active list items in container stack
+        let active_items = self.container_stack.iter()
+            .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
+            .count();
+
+        // Close lists that have no corresponding item
+        while self.open_lists.len() > active_items {
+            if let Some(open_list) = self.open_lists.pop() {
+                events.push(BlockEvent::ListEnd {
+                    kind: open_list.kind,
+                    tight: open_list.tight,
+                });
+            }
         }
     }
 }
