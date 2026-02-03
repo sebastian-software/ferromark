@@ -365,6 +365,10 @@ impl<'a> BlockParser<'a> {
 
                         if spaces >= content_indent {
                             // Enough indent to continue the list item
+                            // Position cursor at exactly content_indent, leaving extra spaces
+                            // for indented code detection
+                            self.cursor = Cursor::new_at(self.input, save_pos + content_indent);
+
                             // If we had a blank line, list becomes loose
                             if let Some(open_list) = self.open_lists.last_mut() {
                                 if open_list.blank_in_item {
