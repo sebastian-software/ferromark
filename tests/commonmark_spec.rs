@@ -22,7 +22,6 @@ fn load_spec_tests() -> Vec<SpecTest> {
 
 /// Sections that are intentionally out of scope.
 const OUT_OF_SCOPE_SECTIONS: &[&str] = &[
-    "HTML blocks",
     "Raw HTML",
     "Link reference definitions",
     "Setext headings",
@@ -112,6 +111,9 @@ fn requires_4space_handling(test: &SpecTest) -> bool {
 
 /// Check if test requires raw HTML handling
 fn requires_raw_html(test: &SpecTest) -> bool {
+    if test.section == "HTML blocks" {
+        return false;
+    }
     // Raw HTML patterns in expected output that we don't generate
     let raw_html_patterns = [
         "<div", "<table", "<pre>", "<script", "<style", "<iframe", "<!--", "<br>",

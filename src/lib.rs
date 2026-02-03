@@ -222,6 +222,22 @@ fn render_block_event(
             }
             writer.thematic_break();
         }
+        BlockEvent::HtmlBlockStart => {
+            // Write pending newline from loose list item start
+            if *pending_loose_li_newline {
+                writer.newline();
+                *pending_loose_li_newline = false;
+            }
+            // If we're at the start of a tight list item, add newline before block content
+            if *at_tight_li_start {
+                writer.newline();
+                *at_tight_li_start = false;
+            }
+        }
+        BlockEvent::HtmlBlockText(range) => {
+            writer.write_bytes(range.slice(input));
+        }
+        BlockEvent::HtmlBlockEnd => {}
         BlockEvent::SoftBreak => {
             if para_state.in_paragraph {
                 para_state.add_soft_break();

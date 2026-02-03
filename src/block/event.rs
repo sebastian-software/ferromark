@@ -60,6 +60,13 @@ pub enum BlockEvent {
     /// A thematic break (horizontal rule).
     ThematicBreak,
 
+    /// Start of an HTML block.
+    HtmlBlockStart,
+    /// End of an HTML block.
+    HtmlBlockEnd,
+    /// Raw HTML block content (not to be inline-parsed or escaped).
+    HtmlBlockText(Range),
+
     /// Soft line break (newline within paragraph).
     SoftBreak,
 

@@ -18,6 +18,18 @@ struct FenceState {
     indent: usize,
 }
 
+/// HTML block kinds (CommonMark types 1-7).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum HtmlBlockKind {
+    Type1,
+    Type2,
+    Type3,
+    Type4,
+    Type5,
+    Type6,
+    Type7,
+}
+
 /// Type of container block.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ContainerType {
@@ -78,6 +90,8 @@ pub struct BlockParser<'a> {
     /// Pending blank lines in indented code (only emit if code continues).
     /// Stores (extra_spaces_beyond_4, newline_range) for each blank line.
     pending_code_blanks: Vec<(u8, Range)>,
+    /// Current HTML block kind, if inside an HTML block.
+    html_block: Option<HtmlBlockKind>,
     /// Stack of open containers (blockquotes, list items).
     container_stack: SmallVec<[Container; 8]>,
     /// Whether we're in a tight list context.
@@ -105,6 +119,7 @@ impl<'a> BlockParser<'a> {
             in_indented_code: false,
             indented_code_extra_spaces: 0,
             pending_code_blanks: Vec::new(),
+            html_block: None,
             container_stack: SmallVec::new(),
             tight_list: false,
             open_lists: SmallVec::new(),
@@ -135,6 +150,12 @@ impl<'a> BlockParser<'a> {
             events.push(BlockEvent::CodeBlockEnd);
         }
 
+        // Close any unclosed HTML block
+        if self.html_block.is_some() {
+            self.html_block = None;
+            events.push(BlockEvent::HtmlBlockEnd);
+        }
+
         // Close all open containers
         self.close_all_containers(events);
     }
@@ -147,8 +168,8 @@ impl<'a> BlockParser<'a> {
         self.partial_tab_cols = 0;
         self.current_col = 0;
 
-        // Check for blank line first (before any space skipping)
-        if self.is_blank_line() {
+        // Check for blank line first (before any space skipping), unless we're in an HTML block
+        if self.html_block.is_none() && self.is_blank_line() {
             // Track columns while skipping whitespace (for code block blank lines)
             let mut cols = 0usize;
             while let Some(b) = self.cursor.peek() {
@@ -206,6 +227,21 @@ impl<'a> BlockParser<'a> {
         // Try to match and continue existing containers
         // This handles the indent requirements per container type
         let matched_containers = self.match_containers(events);
+
+        // If we're inside an HTML block, handle it after container matching.
+        if self.html_block.is_some() {
+            if matched_containers < self.container_stack.len() {
+                // Containers didn't match, close the HTML block
+                self.html_block = None;
+                events.push(BlockEvent::HtmlBlockEnd);
+                let (indent, _) = self.skip_indent();
+                self.close_containers_from(matched_containers, indent, events);
+                // Fall through to continue parsing the line normally
+            } else {
+                self.parse_html_block_line(events);
+                return;
+            }
+        }
 
         // If we're inside a fenced code block, handle it after container matching
         // but BEFORE skip_spaces (since spaces may be part of code content)
@@ -506,17 +542,22 @@ impl<'a> BlockParser<'a> {
                     return;
                 }
 
-                // Check for list item (pass indent for absolute content_indent calculation)
-                if self.try_list_item(indent, events) {
-                    self.parse_line_content(events);
-                    return;
-                }
-            }
-
-            // Check for fenced code block
-            if self.try_code_fence(indent, events) {
+            // Check for list item (pass indent for absolute content_indent calculation)
+            if self.try_list_item(indent, events) {
+                self.parse_line_content(events);
                 return;
             }
+        }
+
+        // Check for HTML block
+        if self.try_html_block_start(indent, events) {
+            return;
+        }
+
+        // Check for fenced code block
+        if self.try_code_fence(indent, events) {
+            return;
+        }
 
             // Check for ATX heading
             if self.try_atx_heading(events) {
@@ -764,8 +805,8 @@ impl<'a> BlockParser<'a> {
                 let after = self.cursor.peek_ahead(offset + 1);
                 after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n') || after.is_none()
             }
-            // HTML block (simplified check) - only at indent < 4
-            b'<' => indent < 4,
+            // HTML block (only types that can interrupt paragraphs) - only at indent < 4
+            b'<' => indent < 4 && self.peek_html_block_start(true).is_some(),
             // Note: We don't check for setext underlines (= or plain line of -) here because
             // setext underlines can't interrupt lazy continuation. They only work when the
             // paragraph is at the same container level as the underline.
@@ -1644,6 +1685,264 @@ impl<'a> BlockParser<'a> {
         }
         // Emit the content (including newline) - use Code event to skip inline parsing
         events.push(BlockEvent::Code(Range::new(text_start as u32, content_end as u32)));
+    }
+
+    /// Try to start an HTML block.
+    /// Returns true if an HTML block was started and the line was consumed.
+    fn try_html_block_start(&mut self, indent: usize, events: &mut Vec<BlockEvent>) -> bool {
+        let kind = match self.peek_html_block_start(self.in_paragraph) {
+            Some(kind) => kind,
+            None => return false,
+        };
+
+        if indent >= 4 {
+            return false;
+        }
+
+        // Close any open paragraph first
+        self.close_paragraph(events);
+        // Close any orphaned lists before starting a block
+        self.close_orphaned_lists(events);
+        // Mark the current container as having content
+        self.mark_container_has_content();
+
+        self.html_block = Some(kind);
+        events.push(BlockEvent::HtmlBlockStart);
+
+        // Consume the current line as HTML block content
+        self.parse_html_block_line(events);
+        true
+    }
+
+    /// Parse a single HTML block line after container matching.
+    /// Called when we're inside an HTML block and containers matched.
+    fn parse_html_block_line(&mut self, events: &mut Vec<BlockEvent>) {
+        let kind = self.html_block.unwrap();
+
+        let indent_start = self.cursor.offset();
+        let (_indent, _) = self.skip_indent();
+        let content_start = self.cursor.offset();
+
+        // Blank line handling for types 6/7 (end on blank line)
+        if self.cursor.is_eof() || self.cursor.at(b'\n') {
+            if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7) {
+                self.html_block = None;
+                events.push(BlockEvent::HtmlBlockEnd);
+
+                if !self.cursor.is_eof() {
+                    self.cursor.bump();
+                }
+
+                self.close_paragraph(events);
+                let close_blockquotes = self.container_stack.is_empty();
+                self.handle_blank_line_containers(events, close_blockquotes);
+                return;
+            }
+        }
+
+        // Find end of line (including newline)
+        let line_end = self.find_line_end();
+        let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+            self.cursor.bump();
+            line_end + 1
+        } else {
+            line_end
+        };
+
+        // Emit the raw HTML line (including any indentation after container markers)
+        events.push(BlockEvent::HtmlBlockText(Range::from_usize(indent_start, content_end)));
+
+        // Check for HTML block end markers (types 1-5)
+        let line = &self.input[content_start..line_end];
+        if self.html_block_ends(kind, line) {
+            self.html_block = None;
+            events.push(BlockEvent::HtmlBlockEnd);
+        }
+    }
+
+    /// Check if the current line starts an HTML block.
+    /// `in_paragraph` controls whether type 7 is allowed to start (it can't interrupt).
+    fn peek_html_block_start(&self, in_paragraph: bool) -> Option<HtmlBlockKind> {
+        let line = self.current_line_slice();
+        if line.is_empty() {
+            return None;
+        }
+
+        // Type 1: <script|pre|style|textarea
+        if self.starts_with_tag(line, b"script")
+            || self.starts_with_tag(line, b"pre")
+            || self.starts_with_tag(line, b"style")
+            || self.starts_with_tag(line, b"textarea")
+        {
+            return Some(HtmlBlockKind::Type1);
+        }
+
+        // Type 2: <!--
+        if line.starts_with(b"<!--") {
+            return Some(HtmlBlockKind::Type2);
+        }
+
+        // Type 3: <?
+        if line.starts_with(b"<?") {
+            return Some(HtmlBlockKind::Type3);
+        }
+
+        // Type 4: <![CDATA[
+        if line.starts_with(b"<![CDATA[") {
+            return Some(HtmlBlockKind::Type4);
+        }
+
+        // Type 5: <! + letter
+        if line.starts_with(b"<!") && line.len() > 2 && line[2].is_ascii_alphabetic() {
+            return Some(HtmlBlockKind::Type5);
+        }
+
+        // Type 6: block tags
+        if let Some((name, tag_end)) = self.parse_html_tag_name(line) {
+            if self.is_block_tag(name) && self.tag_boundary(line, tag_end) {
+                return Some(HtmlBlockKind::Type6);
+            }
+        }
+
+        // Type 7: any other HTML tag (cannot interrupt a paragraph)
+        if in_paragraph {
+            return None;
+        }
+        if let Some((_name, tag_end)) = self.parse_html_tag_name(line) {
+            if self.tag_boundary(line, tag_end) && self.has_gt_after(line, tag_end) {
+                return Some(HtmlBlockKind::Type7);
+            }
+        }
+
+        None
+    }
+
+    /// Check if an HTML block ends on this line (types 1-5).
+    fn html_block_ends(&self, kind: HtmlBlockKind, line: &[u8]) -> bool {
+        match kind {
+            HtmlBlockKind::Type1 => {
+                self.contains_ci(line, b"</script")
+                    || self.contains_ci(line, b"</pre")
+                    || self.contains_ci(line, b"</style")
+                    || self.contains_ci(line, b"</textarea")
+            }
+            HtmlBlockKind::Type2 => self.contains_bytes(line, b"-->"),
+            HtmlBlockKind::Type3 => self.contains_bytes(line, b"?>"),
+            HtmlBlockKind::Type4 => self.contains_bytes(line, b"]]>"),
+            HtmlBlockKind::Type5 => self.contains_bytes(line, b">"),
+            HtmlBlockKind::Type6 | HtmlBlockKind::Type7 => false,
+        }
+    }
+
+    /// Get the current line slice (from cursor to before newline).
+    fn current_line_slice(&self) -> &[u8] {
+        let offset = self.cursor.offset();
+        let slice = &self.input[offset..];
+        let end = slice.iter().position(|&b| b == b'\n').unwrap_or(slice.len());
+        &slice[..end]
+    }
+
+    /// Check if line starts with "<tag" (case-insensitive) and valid boundary.
+    fn starts_with_tag(&self, line: &[u8], tag: &[u8]) -> bool {
+        if line.len() < tag.len() + 1 || line[0] != b'<' {
+            return false;
+        }
+        let name_start = 1;
+        let name_end = name_start + tag.len();
+        if name_end > line.len() {
+            return false;
+        }
+        if !self.eq_ignore_ascii_case(&line[name_start..name_end], tag) {
+            return false;
+        }
+        self.tag_boundary(line, name_end)
+    }
+
+    /// Parse tag name from a line starting with "<" or "</".
+    /// Returns (tag_name, end_index_after_name).
+    fn parse_html_tag_name<'b>(&self, line: &'b [u8]) -> Option<(&'b [u8], usize)> {
+        if line.first() != Some(&b'<') {
+            return None;
+        }
+        let mut i = 1;
+        if i < line.len() && line[i] == b'/' {
+            i += 1;
+        }
+        if i >= line.len() || !line[i].is_ascii_alphabetic() {
+            return None;
+        }
+        let start = i;
+        i += 1;
+        while i < line.len() && (line[i].is_ascii_alphanumeric() || line[i] == b'-') {
+            i += 1;
+        }
+        Some((&line[start..i], i))
+    }
+
+    /// Check if the character after tag name is a valid boundary.
+    fn tag_boundary(&self, line: &[u8], idx: usize) -> bool {
+        if idx >= line.len() {
+            return true;
+        }
+        matches!(line[idx], b' ' | b'\t' | b'\n' | b'>' | b'/')
+    }
+
+    /// Check if there's a '>' after tag name on this line.
+    fn has_gt_after(&self, line: &[u8], idx: usize) -> bool {
+        line[idx..].iter().any(|&b| b == b'>')
+    }
+
+    /// Check if the tag name is in the CommonMark block tag list.
+    fn is_block_tag(&self, name: &[u8]) -> bool {
+        if name.len() == 2
+            && (name[0] | 0x20) == b'h'
+            && (b'1'..=b'6').contains(&name[1])
+        {
+            return true;
+        }
+
+        const BLOCK_TAGS: [&[u8]; 52] = [
+            b"address", b"article", b"aside", b"base", b"basefont", b"blockquote", b"body",
+            b"caption", b"center", b"col", b"colgroup", b"dd", b"details", b"dialog", b"dir",
+            b"div", b"dl", b"dt", b"fieldset", b"figcaption", b"figure", b"footer", b"form",
+            b"frame", b"frameset", b"head", b"header", b"hr", b"html", b"iframe", b"legend",
+            b"li", b"link", b"main", b"menu", b"menuitem", b"nav", b"noframes", b"ol",
+            b"optgroup", b"option", b"p", b"param", b"section", b"source", b"summary",
+            b"table", b"tbody", b"td", b"tfoot", b"th", b"thead", b"title", b"tr", b"track",
+            b"ul",
+        ];
+
+        BLOCK_TAGS.iter().any(|&t| self.eq_ignore_ascii_case(name, t))
+    }
+
+    #[inline]
+    fn eq_ignore_ascii_case(&self, a: &[u8], b: &[u8]) -> bool {
+        if a.len() != b.len() {
+            return false;
+        }
+        a.iter()
+            .zip(b.iter())
+            .all(|(&x, &y)| x.to_ascii_lowercase() == y.to_ascii_lowercase())
+    }
+
+    #[inline]
+    fn contains_bytes(&self, haystack: &[u8], needle: &[u8]) -> bool {
+        if needle.is_empty() || haystack.len() < needle.len() {
+            return false;
+        }
+        haystack
+            .windows(needle.len())
+            .any(|w| w == needle)
+    }
+
+    #[inline]
+    fn contains_ci(&self, haystack: &[u8], needle: &[u8]) -> bool {
+        if needle.is_empty() || haystack.len() < needle.len() {
+            return false;
+        }
+        haystack
+            .windows(needle.len())
+            .any(|w| self.eq_ignore_ascii_case(w, needle))
     }
     /// Find end of current line (position of \n or EOF).
     fn find_line_end(&mut self) -> usize {
