@@ -6,6 +6,7 @@ use crate::Range;
 use smallvec::SmallVec;
 
 use super::event::{BlockEvent, ListKind, TaskState};
+use crate::link_ref::{LinkRefStore, normalize_label, LinkRefDef};
 
 /// State for an open fenced code block.
 #[derive(Debug, Clone)]
@@ -92,6 +93,8 @@ pub struct BlockParser<'a> {
     pending_code_blanks: Vec<(u8, Range)>,
     /// Current HTML block kind, if inside an HTML block.
     html_block: Option<HtmlBlockKind>,
+    /// Collected link reference definitions.
+    link_refs: LinkRefStore,
     /// Stack of open containers (blockquotes, list items).
     container_stack: SmallVec<[Container; 8]>,
     /// Whether we're in a tight list context.
@@ -120,6 +123,7 @@ impl<'a> BlockParser<'a> {
             indented_code_extra_spaces: 0,
             pending_code_blanks: Vec::new(),
             html_block: None,
+            link_refs: LinkRefStore::new(),
             container_stack: SmallVec::new(),
             tight_list: false,
             open_lists: SmallVec::new(),
@@ -158,6 +162,11 @@ impl<'a> BlockParser<'a> {
 
         // Close all open containers
         self.close_all_containers(events);
+    }
+
+    /// Take the collected link reference definitions.
+    pub fn take_link_refs(&mut self) -> LinkRefStore {
+        std::mem::take(&mut self.link_refs)
     }
 
     /// Parse a single line.
@@ -2063,6 +2072,17 @@ impl<'a> BlockParser<'a> {
             return;
         }
 
+        // Extract link reference definitions from the start of this paragraph.
+        let consumed_lines = self.extract_link_ref_defs();
+        if consumed_lines > 0 {
+            let drain_count = consumed_lines.min(self.paragraph_lines.len());
+            self.paragraph_lines.drain(0..drain_count);
+        }
+
+        if self.paragraph_lines.is_empty() {
+            return;
+        }
+
         // Mark the current container as having content
         self.mark_container_has_content();
 
@@ -2078,6 +2098,56 @@ impl<'a> BlockParser<'a> {
         }
 
         events.push(BlockEvent::ParagraphEnd);
+    }
+
+    /// Extract link reference definitions from the start of the current paragraph.
+    /// Returns the number of paragraph lines consumed by definitions.
+    fn extract_link_ref_defs(&mut self) -> usize {
+        if self.paragraph_lines.is_empty() {
+            return 0;
+        }
+
+        // Build a contiguous buffer with '\n' between lines.
+        let mut para = Vec::new();
+        for (i, range) in self.paragraph_lines.iter().enumerate() {
+            if i > 0 {
+                para.push(b'\n');
+            }
+            para.extend_from_slice(range.slice(self.input));
+        }
+
+        let mut pos = 0usize;
+        let mut consumed_lines = 0usize;
+
+        loop {
+            // Only parse at start of a line
+            if pos > 0 && para[pos - 1] != b'\n' {
+                break;
+            }
+            let Some((def, end_pos)) = parse_link_ref_def(&para, pos) else {
+                break;
+            };
+
+            let label = normalize_label(def.label.as_slice());
+            if label.is_empty() {
+                break;
+            }
+            let link_def = LinkRefDef {
+                url: def.url,
+                title: def.title,
+            };
+            self.link_refs.insert(label, link_def);
+
+            let newline_count = para[pos..end_pos].iter().filter(|&&b| b == b'\n').count();
+            consumed_lines += newline_count + 1;
+            pos = end_pos;
+
+            if pos >= para.len() {
+                break;
+            }
+        }
+
+        consumed_lines
     }
 
     /// Mark the innermost container as having content.
@@ -2107,6 +2177,203 @@ impl<'a> BlockParser<'a> {
             }
         }
     }
+}
+
+struct ParsedLinkRefDef {
+    label: Vec<u8>,
+    url: Vec<u8>,
+    title: Option<Vec<u8>>,
+}
+
+fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, usize)> {
+    let len = input.len();
+    let mut i = start;
+
+    // Up to 3 leading spaces
+    let mut spaces = 0usize;
+    while i < len && input[i] == b' ' && spaces < 3 {
+        i += 1;
+        spaces += 1;
+    }
+
+    if i >= len || input[i] != b'[' {
+        return None;
+    }
+    i += 1;
+
+    // Parse label
+    let label_start = i;
+    while i < len {
+        match input[i] {
+            b'\\' => {
+                if i + 1 < len {
+                    i += 2;
+                } else {
+                    return None;
+                }
+            }
+            b'[' => return None,
+            b']' => break,
+            _ => i += 1,
+        }
+    }
+    if i >= len || input[i] != b']' {
+        return None;
+    }
+    let label_end = i;
+    i += 1;
+
+    if i >= len || input[i] != b':' {
+        return None;
+    }
+    i += 1;
+
+    // Skip whitespace (allow a single line break)
+    let mut saw_newline = false;
+    while i < len {
+        match input[i] {
+            b' ' | b'\t' => i += 1,
+            b'\n' => {
+                if saw_newline {
+                    return None;
+                }
+                saw_newline = true;
+                i += 1;
+            }
+            _ => break,
+        }
+    }
+    if i >= len {
+        return None;
+    }
+
+    // Parse destination
+    let (url_bytes, mut i) = if input[i] == b'<' {
+        i += 1;
+        let url_start = i;
+        while i < len && input[i] != b'>' && input[i] != b'\n' {
+            i += 1;
+        }
+        if i >= len || input[i] != b'>' {
+            return None;
+        }
+        let url_end = i;
+        i += 1;
+        (input[url_start..url_end].to_vec(), i)
+    } else {
+        let url_start = i;
+        let mut parens = 0i32;
+        while i < len {
+            let b = input[i];
+            if b == b'\\' && i + 1 < len {
+                i += 2;
+                continue;
+            }
+            if b == b'(' {
+                parens += 1;
+                i += 1;
+                continue;
+            }
+            if b == b')' {
+                if parens == 0 {
+                    break;
+                }
+                parens -= 1;
+                i += 1;
+                continue;
+            }
+            if is_whitespace(b) {
+                break;
+            }
+            i += 1;
+        }
+        if url_start == i {
+            return None;
+        }
+        (input[url_start..i].to_vec(), i)
+    };
+
+    // Skip whitespace before title
+    let mut j = i;
+    while j < len && (input[j] == b' ' || input[j] == b'\t') {
+        j += 1;
+    }
+    if j < len && input[j] == b'\n' {
+        j += 1;
+        while j < len && (input[j] == b' ' || input[j] == b'\t') {
+            j += 1;
+        }
+    }
+
+    let mut title_bytes = None;
+    if j < len {
+        let opener = input[j];
+        let closer = match opener {
+            b'"' => b'"',
+            b'\'' => b'\'',
+            b'(' => b')',
+            _ => 0,
+        };
+
+        if closer != 0 {
+            j += 1;
+            let title_start = j;
+            while j < len {
+                let b = input[j];
+                if b == b'\\' && j + 1 < len {
+                    j += 2;
+                    continue;
+                }
+                if b == closer {
+                    break;
+                }
+                j += 1;
+            }
+            if j >= len || input[j] != closer {
+                return None;
+            }
+            let title_end = j;
+            j += 1;
+            title_bytes = Some(input[title_start..title_end].to_vec());
+
+            while j < len && (input[j] == b' ' || input[j] == b'\t') {
+                j += 1;
+            }
+            if j < len && input[j] != b'\n' {
+                return None;
+            }
+            i = j;
+        }
+    }
+
+    // If no title, ensure remaining is only whitespace
+    if title_bytes.is_none() {
+        while i < len && (input[i] == b' ' || input[i] == b'\t') {
+            i += 1;
+        }
+        if i < len && input[i] != b'\n' {
+            return None;
+        }
+    }
+
+    // Consume end of line
+    if i < len && input[i] == b'\n' {
+        i += 1;
+    }
+
+    Some((
+        ParsedLinkRefDef {
+            label: input[label_start..label_end].to_vec(),
+            url: url_bytes,
+            title: title_bytes,
+        },
+        i,
+    ))
+}
+
+#[inline]
+fn is_whitespace(b: u8) -> bool {
+    matches!(b, b' ' | b'\t' | b'\n')
 }
 
 #[cfg(test)]

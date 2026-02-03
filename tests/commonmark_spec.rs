@@ -247,6 +247,41 @@ fn commonmark_spec_report_in_scope() {
     println!("Tests needed for target: {}", tests_needed);
 }
 
+/// Print a prioritized list of all failing CommonMark examples, grouped by section.
+/// This is ignored by default since it's verbose.
+#[test]
+#[ignore]
+fn commonmark_failures_report() {
+    let tests = load_spec_tests();
+    let mut failures_by_section: std::collections::HashMap<String, Vec<(u32, String, String, String)>> =
+        std::collections::HashMap::new();
+
+    for test in &tests {
+        let output = to_html(&test.markdown);
+        if output != test.html {
+            failures_by_section
+                .entry(test.section.clone())
+                .or_default()
+                .push((test.example, test.markdown.clone(), test.html.clone(), output));
+        }
+    }
+
+    let mut sections: Vec<_> = failures_by_section.into_iter().collect();
+    sections.sort_by_key(|(_, failures)| std::cmp::Reverse(failures.len()));
+
+    println!("\n=== CommonMark Failure List (All Sections) ===\n");
+    for (section, failures) in sections {
+        println!("-- {} ({} failures)", section, failures.len());
+        for (ex, md, expected, got) in failures {
+            println!("Example {}:", ex);
+            println!("  Markdown: {:?}", md);
+            println!("  Expected: {:?}", expected);
+            println!("  Got:      {:?}", got);
+        }
+        println!();
+    }
+}
+
 /// Test a specific section of the CommonMark spec.
 fn run_section_tests(section_name: &str) -> (u32, u32, Vec<(u32, String, String, String)>) {
     let tests = load_spec_tests();

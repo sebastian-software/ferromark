@@ -28,6 +28,11 @@ pub enum InlineEvent {
         /// Optional title.
         title: Option<Range>,
     },
+    /// Start of a reference-style link `[text][label]`.
+    LinkStartRef {
+        /// Index into the link reference store.
+        def_index: u32,
+    },
     /// End of a link.
     LinkEnd,
 
@@ -37,6 +42,11 @@ pub enum InlineEvent {
         url: Range,
         /// Optional title.
         title: Option<Range>,
+    },
+    /// Start of a reference-style image `![alt][label]`.
+    ImageStartRef {
+        /// Index into the link reference store.
+        def_index: u32,
     },
     /// End of an image (after alt text).
     ImageEnd,

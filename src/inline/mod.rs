@@ -16,7 +16,8 @@ pub use event::InlineEvent;
 use crate::Range;
 use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
 use emphasis::{resolve_emphasis, EmphasisMatch};
-use links::{find_autolinks, resolve_links, Autolink, Link};
+use links::{find_autolinks, resolve_links, resolve_reference_links, Autolink, Link, RefLink};
+use crate::link_ref::LinkRefStore;
 use marks::{collect_marks, flags, MarkBuffer};
 
 /// Inline parser state.
@@ -34,7 +35,7 @@ impl InlineParser {
     }
 
     /// Parse inline content and emit events.
-    pub fn parse(&mut self, text: &[u8], events: &mut Vec<InlineEvent>) {
+    pub fn parse(&mut self, text: &[u8], link_refs: Option<&LinkRefStore>, events: &mut Vec<InlineEvent>) {
         // Phase 1: Collect marks
         collect_marks(text, &mut self.mark_buffer);
 
@@ -82,6 +83,9 @@ impl InlineParser {
             })
             .collect();
         let resolved_links = resolve_links(text, &open_brackets, &close_brackets);
+        let resolved_ref_links = link_refs
+            .map(|defs| resolve_reference_links(text, &open_brackets, &close_brackets, &resolved_links, defs))
+            .unwrap_or_default();
 
         // Fifth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
@@ -89,6 +93,9 @@ impl InlineParser {
             .iter()
             .map(|l| (l.start, l.text_end))
             .collect();
+        for link in &resolved_ref_links {
+            link_boundaries.push((link.start, link.text_end));
+        }
         // Also include autolinks - delimiters inside <url> should not form emphasis
         for autolink in &autolinks {
             link_boundaries.push((autolink.start, autolink.end));
@@ -104,6 +111,7 @@ impl InlineParser {
             text,
             &emphasis_matches,
             &resolved_links,
+            &resolved_ref_links,
             &autolinks,
             &html_spans,
             events,
@@ -144,6 +152,7 @@ impl InlineParser {
         text: &[u8],
         emphasis_matches: &[EmphasisMatch],
         resolved_links: &[Link],
+        resolved_ref_links: &[RefLink],
         autolinks: &[Autolink],
         html_spans: &[HtmlSpan],
         events: &mut Vec<InlineEvent>,
@@ -221,6 +230,32 @@ impl InlineParser {
             }
         }
 
+        // Add reference-style link events
+        for link in resolved_ref_links {
+            if link.is_image {
+                emit_points.push(EmitPoint {
+                    pos: link.start,
+                    kind: EmitKind::ImageStartRef { def_index: link.def_index as u32 },
+                    end: link.start + 2, // ![
+                });
+                emit_points.push(EmitPoint {
+                    pos: link.text_end,
+                    kind: EmitKind::ImageEnd,
+                    end: link.end,
+                });
+            } else {
+                emit_points.push(EmitPoint {
+                    pos: link.start,
+                    kind: EmitKind::LinkStartRef { def_index: link.def_index as u32 },
+                    end: link.start + 1, // [
+                });
+                emit_points.push(EmitPoint {
+                    pos: link.text_end,
+                    kind: EmitKind::LinkEnd,
+                    end: link.end,
+                });
+            }
+        }
         // Add autolink events
         for autolink in autolinks {
             if autolink.is_email {
@@ -433,6 +468,11 @@ impl InlineParser {
                     pos = point.end;
                     skip_until = point.end;
                 }
+                EmitKind::LinkStartRef { def_index } => {
+                    events.push(InlineEvent::LinkStartRef { def_index });
+                    pos = point.end;
+                    skip_until = point.end;
+                }
                 EmitKind::LinkEnd => {
                     events.push(InlineEvent::LinkEnd);
                     skip_until = point.end;
@@ -442,6 +482,11 @@ impl InlineParser {
                         url: Range::from_usize(url_start as usize, url_end as usize),
                         title: title_start.map(|s| Range::from_usize(s as usize, title_end.unwrap() as usize)),
                     });
+                    pos = point.end;
+                    skip_until = point.end;
+                }
+                EmitKind::ImageStartRef { def_index } => {
+                    events.push(InlineEvent::ImageStartRef { def_index });
                     pos = point.end;
                     skip_until = point.end;
                 }
@@ -514,8 +559,10 @@ enum EmitKind {
     HardBreak,
     SoftBreak,
     LinkStart { url_start: u32, url_end: u32, title_start: Option<u32>, title_end: Option<u32> },
+    LinkStartRef { def_index: u32 },
     LinkEnd,
     ImageStart { url_start: u32, url_end: u32, title_start: Option<u32>, title_end: Option<u32> },
+    ImageStartRef { def_index: u32 },
     ImageEnd,
     AutolinkUrl { content_start: u32, content_end: u32 },
     AutolinkEmail { content_start: u32, content_end: u32 },
@@ -789,7 +836,7 @@ mod tests {
     fn parse_inline(text: &str) -> Vec<InlineEvent> {
         let mut parser = InlineParser::new();
         let mut events = Vec::new();
-        parser.parse(text.as_bytes(), &mut events);
+        parser.parse(text.as_bytes(), None, &mut events);
         events
     }
 

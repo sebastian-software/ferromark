@@ -6,6 +6,7 @@
 //! - Autolinks: `<https://example.com>` and `<email@example.com>`
 
 use crate::limits;
+use crate::link_ref::{LinkRefStore, normalize_label};
 
 /// A resolved link or image.
 #[derive(Debug, Clone)]
@@ -41,6 +42,21 @@ pub struct Autolink {
     pub content_end: u32,
     /// Whether this is an email autolink.
     pub is_email: bool,
+}
+
+/// A resolved reference-style link or image.
+#[derive(Debug, Clone)]
+pub struct RefLink {
+    /// Start of the opening bracket (or `!` for images).
+    pub start: u32,
+    /// End of the link text (position of `]`).
+    pub text_end: u32,
+    /// End of the entire reference (after the closing `]` of label, or close of text for shortcut).
+    pub end: u32,
+    /// Whether this is an image.
+    pub is_image: bool,
+    /// Index into the link reference store.
+    pub def_index: usize,
 }
 
 /// Parse links from text, given bracket positions.
@@ -127,6 +143,102 @@ pub fn resolve_links(
     links
 }
 
+/// Resolve reference-style links/images using link reference definitions.
+pub fn resolve_reference_links(
+    text: &[u8],
+    open_brackets: &[(u32, bool)],
+    close_brackets: &[u32],
+    inline_links: &[Link],
+    defs: &LinkRefStore,
+) -> Vec<RefLink> {
+    let mut ref_links = Vec::new();
+    let mut formed_opens: Vec<bool> = vec![false; open_brackets.len()];
+    let mut used_closes: Vec<bool> = vec![false; close_brackets.len()];
+
+    let mut open_pos_to_idx = std::collections::HashMap::new();
+    let mut close_pos_to_idx = std::collections::HashMap::new();
+    for (i, &(pos, _)) in open_brackets.iter().enumerate() {
+        open_pos_to_idx.insert(pos, i);
+    }
+    for (i, &pos) in close_brackets.iter().enumerate() {
+        close_pos_to_idx.insert(pos, i);
+    }
+
+    // Mark opens/closes used by inline links
+    for link in inline_links {
+        let open_pos = if link.is_image { link.start + 1 } else { link.start };
+        if let Some(&idx) = open_pos_to_idx.get(&open_pos) {
+            formed_opens[idx] = true;
+        }
+        if let Some(&idx) = close_pos_to_idx.get(&link.text_end) {
+            used_closes[idx] = true;
+        }
+    }
+
+    // Process open brackets from right to left
+    for open_idx in (0..open_brackets.len()).rev() {
+        if formed_opens[open_idx] {
+            continue;
+        }
+        let (open_pos, is_image) = open_brackets[open_idx];
+
+        let close_idx = find_matching_close(
+            open_pos,
+            open_brackets,
+            close_brackets,
+            &formed_opens,
+            &used_closes,
+        );
+
+        let Some(close_idx) = close_idx else { continue };
+        let close_pos = close_brackets[close_idx];
+
+        // Determine reference label
+        let mut end = close_pos + 1;
+        let label_start = (open_pos + 1) as usize;
+        let label_end = close_pos as usize;
+        let mut label_bytes = &text[label_start..label_end];
+
+        if let Some((ref_start, ref_end, ref_close_pos)) = parse_ref_label(text, close_pos as usize + 1) {
+            // Full or collapsed reference: [label][ref] or [label][]
+            if ref_start == ref_end {
+                // Collapsed: use link text as label
+            } else {
+                label_bytes = &text[ref_start..ref_end];
+            }
+            end = (ref_close_pos + 1) as u32;
+
+            // Mark the ref label brackets as used to avoid forming links
+            if let Some(&idx) = open_pos_to_idx.get(&(ref_start as u32 - 1)) {
+                formed_opens[idx] = true;
+            }
+            if let Some(&idx) = close_pos_to_idx.get(&(ref_close_pos as u32)) {
+                used_closes[idx] = true;
+            }
+        }
+
+        let norm = normalize_label(label_bytes);
+        if norm.is_empty() {
+            continue;
+        }
+        let Some(def_index) = defs.get_index(&norm) else { continue };
+
+        formed_opens[open_idx] = true;
+        used_closes[close_idx] = true;
+
+        ref_links.push(RefLink {
+            start: if is_image { open_pos - 1 } else { open_pos },
+            text_end: close_pos,
+            end,
+            is_image,
+            def_index,
+        });
+    }
+
+    ref_links.sort_by_key(|l| l.start);
+    ref_links
+}
+
 /// Find the matching close bracket for an open bracket, accounting for nesting.
 /// `formed_opens` indicates opens that have formed links (and consumed their close).
 /// Inactive opens (deactivated but not formed) still contribute to depth.
@@ -172,6 +284,50 @@ fn find_matching_close(
     }
 
     close_idx
+}
+
+fn parse_ref_label(text: &[u8], mut pos: usize) -> Option<(usize, usize, usize)> {
+    let len = text.len();
+    let mut saw_newline = false;
+    while pos < len {
+        match text[pos] {
+            b' ' | b'\t' => pos += 1,
+            b'\n' => {
+                if saw_newline {
+                    return None;
+                }
+                saw_newline = true;
+                pos += 1;
+            }
+            _ => break,
+        }
+    }
+
+    if pos >= len || text[pos] != b'[' {
+        return None;
+    }
+    let label_start = pos + 1;
+    pos += 1;
+
+    while pos < len {
+        match text[pos] {
+            b'\\' => {
+                if pos + 1 < len {
+                    pos += 2;
+                } else {
+                    return None;
+                }
+            }
+            b'[' => return None,
+            b']' => break,
+            _ => pos += 1,
+        }
+    }
+    if pos >= len || text[pos] != b']' {
+        return None;
+    }
+    let label_end = pos;
+    Some((label_start, label_end, pos))
 }
 
 /// Parse link destination and optional title.

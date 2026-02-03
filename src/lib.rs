@@ -18,6 +18,7 @@ pub mod block;
 pub mod cursor;
 pub mod escape;
 pub mod inline;
+pub mod link_ref;
 pub mod limits;
 pub mod range;
 pub mod render;
@@ -25,6 +26,7 @@ pub mod render;
 // Re-export primary types
 pub use block::{fixup_list_tight, BlockEvent, BlockParser};
 pub use inline::{InlineEvent, InlineParser};
+pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::Range;
 pub use render::HtmlWriter;
 
@@ -102,6 +104,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     let mut parser = BlockParser::new(input);
     let mut events = Vec::new();
     parser.parse(&mut events);
+    let link_refs = parser.take_link_refs();
 
     // Fix up list tight status (ListStart gets its tight value from ListEnd)
     fixup_list_tight(&mut events);
@@ -142,6 +145,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
             &mut need_newline_before_block,
             &mut pending_loose_li_newline,
             &mut blockquote_depth,
+            &link_refs,
         );
     }
 }
@@ -159,6 +163,7 @@ fn render_block_event(
     need_newline_before_block: &mut bool,
     pending_loose_li_newline: &mut bool,
     blockquote_depth: &mut u32,
+    link_refs: &LinkRefStore,
 ) {
     // Check if we're in a tight list (innermost list is tight)
     // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
@@ -192,12 +197,12 @@ fn render_block_event(
             let content = para_state.finish();
             if !content.is_empty() {
                 inline_events.clear();
-                inline_parser.parse(content, inline_events);
+                inline_parser.parse(content, Some(link_refs), inline_events);
 
                 // Render inline events
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state);
+                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs);
                 }
             }
             // In tight lists, don't emit </p> tags
@@ -253,12 +258,12 @@ fn render_block_event(
             } else {
                 // Parse immediately (e.g., heading content)
                 inline_events.clear();
-                inline_parser.parse(text, inline_events);
+                inline_parser.parse(text, Some(link_refs), inline_events);
 
                 // Render inline events
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(text, inline_event, writer, &mut image_state);
+                    render_inline_event(text, inline_event, writer, &mut image_state, link_refs);
                 }
             }
         }
@@ -371,7 +376,8 @@ fn render_block_event(
 /// 1. The title to render at ImageEnd
 /// 2. The nesting depth (to handle nested images like ![foo ![bar](url1)](url2))
 struct ImageState {
-    title: Option<Range>,
+    title_range: Option<Range>,
+    title_bytes: Option<Vec<u8>>,
     /// Nesting depth: 1 = in outermost image, 2+ = in nested image
     depth: u32,
 }
@@ -382,6 +388,7 @@ fn render_inline_event(
     event: &InlineEvent,
     writer: &mut HtmlWriter,
     image_state: &mut Option<ImageState>,
+    link_refs: &LinkRefStore,
 ) {
     // Check if we're inside an image (for alt text rendering)
     let in_image = image_state.as_ref().map_or(false, |s| s.depth > 0);
@@ -472,6 +479,21 @@ fn render_inline_event(
                 writer.write_str(">");
             }
         }
+        InlineEvent::LinkStartRef { def_index } => {
+            if !in_image {
+                if let Some(def) = link_refs.get(*def_index as usize) {
+                    writer.write_str("<a href=\"");
+                    writer.write_link_url(&def.url);
+                    writer.write_str("\"");
+                    if let Some(title) = &def.title {
+                        writer.write_str(" title=\"");
+                        writer.write_link_title(title);
+                        writer.write_str("\"");
+                    }
+                    writer.write_str(">");
+                }
+            }
+        }
         InlineEvent::LinkEnd => {
             if !in_image {
                 writer.write_str("</a>");
@@ -488,7 +510,22 @@ fn render_inline_event(
                 writer.write_link_url(url.slice(text));
                 writer.write_str("\" alt=\"");
                 *image_state = Some(ImageState {
-                    title: title.clone(),
+                    title_range: title.clone(),
+                    title_bytes: None,
+                    depth: 1,
+                });
+            }
+        }
+        InlineEvent::ImageStartRef { def_index } => {
+            if let Some(state) = image_state.as_mut() {
+                state.depth += 1;
+            } else if let Some(def) = link_refs.get(*def_index as usize) {
+                writer.write_str("<img src=\"");
+                writer.write_link_url(&def.url);
+                writer.write_str("\" alt=\"");
+                *image_state = Some(ImageState {
+                    title_range: None,
+                    title_bytes: def.title.clone(),
                     depth: 1,
                 });
             }
@@ -500,9 +537,14 @@ fn render_inline_event(
                 if state.depth == 0 {
                     writer.write_str("\"");
                     // Add title attribute if present
-                    let title = state.title.clone();
+                    let title_range = state.title_range.clone();
+                    let title_bytes = state.title_bytes.clone();
                     *image_state = None;
-                    if let Some(title_range) = title {
+                    if let Some(bytes) = title_bytes {
+                        writer.write_str(" title=\"");
+                        writer.write_link_title(&bytes);
+                        writer.write_str("\"");
+                    } else if let Some(title_range) = title_range {
                         writer.write_str(" title=\"");
                         writer.write_link_title(title_range.slice(text));
                         writer.write_str("\"");
