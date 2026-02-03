@@ -727,16 +727,27 @@ impl<'a> BlockParser<'a> {
         // Close paragraph if any
         self.close_paragraph(events);
 
+        // Check if we're inside a list item container (matched, not closed).
+        // If so, any new list is NESTED inside that item, not a continuation.
+        let inside_list_item = self.container_stack.last()
+            .map(|c| matches!(c.typ, ContainerType::ListItem { .. }))
+            .unwrap_or(false);
+
         // Check if we're continuing an existing list of the same type
-        let continuing_list = self.is_compatible_list(kind, marker);
+        // Only applies when NOT inside a matched list item (i.e., when the previous
+        // item was closed by close_containers_from due to insufficient indent)
+        let continuing_list = !inside_list_item && self.is_compatible_list(kind, marker);
 
         if !continuing_list {
             // Close any existing list items from incompatible lists
-            while let Some(container) = self.container_stack.last() {
-                if matches!(container.typ, ContainerType::ListItem { .. }) {
-                    self.close_top_container(events);
-                } else {
-                    break;
+            // (but not if we're nesting inside a matched item)
+            if !inside_list_item {
+                while let Some(container) = self.container_stack.last() {
+                    if matches!(container.typ, ContainerType::ListItem { .. }) {
+                        self.close_top_container(events);
+                    } else {
+                        break;
+                    }
                 }
             }
 
@@ -834,13 +845,15 @@ impl<'a> BlockParser<'a> {
                 ContainerType::ListItem { kind, .. } => {
                     events.push(BlockEvent::ListItemEnd);
 
-                    // Check if this was the last item in the list
-                    let has_more_items = self.container_stack.iter().any(|c| {
-                        matches!(c.typ, ContainerType::ListItem { .. })
-                    });
+                    // Count remaining ListItem containers
+                    let remaining_items = self.container_stack.iter()
+                        .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
+                        .count();
 
-                    if !has_more_items {
-                        // Close the list and remove from open_lists
+                    // Close lists until open_lists count matches remaining items
+                    // This properly handles nested lists: each nesting level has one
+                    // ListItem container and one open list
+                    while self.open_lists.len() > remaining_items {
                         let tight = self.open_lists.last().map_or(true, |l| l.tight);
                         events.push(BlockEvent::ListEnd { kind, tight });
                         self.open_lists.pop();
