@@ -63,21 +63,21 @@ Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers:
 
 | Parser | Throughput (Medium) | Throughput (Large) | Relative |
 |--------|--------------------:|-------------------:|----------|
-| **md-fast** | **191 MiB/s** | **196 MiB/s** | **1.0x** |
-| pulldown-cmark | 153 MiB/s | 214 MiB/s | 0.80x |
-| comrak | 50 MiB/s | 65 MiB/s | 0.26x |
-| markdown-rs | 7.3 MiB/s | 7.4 MiB/s | 0.04x |
+| **md-fast** | **189 MiB/s** | **191 MiB/s** | **1.0x** |
+| pulldown-cmark | 154 MiB/s | 217 MiB/s | 0.81x |
+| comrak | 49 MiB/s | 63 MiB/s | 0.26x |
+| markdown-rs | 7.2 MiB/s | 7.3 MiB/s | 0.04x |
 
 **Key results:**
-- **25% faster** than pulldown-cmark on typical documents
-- **3.8x faster** than comrak (full CommonMark/GFM)
+- **23% faster** than pulldown-cmark on typical documents
+- **3.9x faster** than comrak (full CommonMark/GFM)
 - **26x faster** than markdown-rs
 
 Run benchmarks: `cargo bench --bench comparison`
 
 ## CommonMark Compliance
 
-**In-scope compliance: 83.1% (304/366 tests)**
+**In-scope compliance: 84.2% (308/366 tests)**
 
 We track compliance against a filtered subset of CommonMark tests, excluding features intentionally not supported (HTML blocks, setext headings, indented code blocks, reference links, tabs).
 
@@ -97,12 +97,12 @@ We track compliance against a filtered subset of CommonMark tests, excluding fea
 | Soft line breaks | 100% |
 | Textual content | 100% |
 | Emphasis | 98% |
-| Thematic breaks | 88% |
+| Thematic breaks | 81% |
 | Links | 69% |
-| Block quotes | 65% |
-| List items | 50% |
+| List items | 61% |
+| Block quotes | 55% |
+| Lists | 53% |
 | Entity references | 31% |
-| Lists | 29% |
 
 **Intentionally out of scope:**
 - HTML blocks (security by design)

@@ -48,11 +48,13 @@ struct Container {
 #[derive(Debug, Clone)]
 struct OpenList {
     kind: ListKind,
+    /// Marker character for unordered (-, *, +) or delimiter for ordered (., )).
     marker: u8,
-    /// Whether the list is still tight (no blank lines between items).
+    /// Whether the list is still tight (no blank lines in items).
     tight: bool,
     /// Whether we've seen a blank line since the last item started.
-    blank_since_item: bool,
+    /// Used to detect loose lists (blank line between items or inside items).
+    blank_in_item: bool,
     /// Number of items so far.
     item_count: u32,
 }
@@ -114,7 +116,7 @@ impl<'a> BlockParser<'a> {
 
     /// Parse a single line.
     fn parse_line(&mut self, events: &mut Vec<BlockEvent>) {
-        let _line_start = self.cursor.offset();
+        let line_start = self.cursor.offset();
 
         // If we're inside a fenced code block, handle it specially
         if self.fence_state.is_some() {
@@ -122,28 +124,42 @@ impl<'a> BlockParser<'a> {
             return;
         }
 
-        // Skip leading spaces (up to 3 for most block elements)
-        let _initial_indent = self.cursor.skip_spaces();
-
-        // Check for blank line
-        if self.cursor.is_eof() || self.cursor.at(b'\n') {
-            if !self.cursor.is_eof() {
-                self.cursor.bump(); // consume newline
+        // Check for blank line first (before any space skipping)
+        let initial_spaces = self.count_leading_spaces();
+        if self.is_blank_after(initial_spaces) {
+            self.cursor = Cursor::new_at(self.input, line_start + initial_spaces);
+            if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+                self.cursor.bump();
             }
             self.close_paragraph(events);
-            // Blank line may close lazy continuation
             self.handle_blank_line_containers(events);
             return;
         }
 
+        // Reset to line start for container matching
+        self.cursor = Cursor::new_at(self.input, line_start);
+
         // Try to match and continue existing containers
-        let _matched_containers = self.match_containers(events);
+        // This handles the indent requirements per container type
+        let matched_containers = self.match_containers(events);
 
         // Get current indent after container matching
         let indent = self.cursor.skip_spaces();
 
-        // Check for thematic break FIRST (before list items)
-        // because `- - -` is a thematic break, not a list
+        // If we have unmatched containers, close them BEFORE trying new blocks
+        // A thematic break at indent 0 should close all unmatched containers
+        if matched_containers < self.container_stack.len() {
+            // Check if this is a thematic break - it should close all containers first
+            if indent < 4 && self.peek_thematic_break() {
+                self.close_all_containers(events);
+                self.try_thematic_break(events);
+                return;
+            }
+            // close_containers_from is smart about keeping lists open when starting new items
+            self.close_containers_from(matched_containers, events);
+        }
+
+        // Check for thematic break (also when all containers matched, e.g. inside blockquote)
         if indent < 4 {
             if self.try_thematic_break(events) {
                 return;
@@ -159,7 +175,7 @@ impl<'a> BlockParser<'a> {
                 return;
             }
 
-            // Check for list item
+            // Check for list item - either continuing an existing list or starting new
             if self.try_list_item(events) {
                 self.parse_line_content(events);
                 return;
@@ -168,6 +184,29 @@ impl<'a> BlockParser<'a> {
 
         // Parse regular block content
         self.parse_line_content(events);
+    }
+
+    /// Count leading spaces without consuming them.
+    fn count_leading_spaces(&self) -> usize {
+        let slice = self.cursor.remaining_slice();
+        let mut count = 0;
+        for &b in slice {
+            if b == b' ' {
+                count += 1;
+            } else {
+                break;
+            }
+        }
+        count
+    }
+
+    /// Check if line is blank after given number of spaces.
+    fn is_blank_after(&self, spaces: usize) -> bool {
+        let slice = self.cursor.remaining_slice();
+        if spaces >= slice.len() {
+            return true;
+        }
+        slice[spaces] == b'\n'
     }
 
     /// Parse line content after container markers have been handled.
@@ -185,7 +224,12 @@ impl<'a> BlockParser<'a> {
 
         // Try to parse block-level constructs (only if indent < 4)
         if indent < 4 {
-            // Check for nested containers (blockquote, list) first
+            // Check for thematic break FIRST - `* * *` is a thematic break, not a list
+            if self.try_thematic_break(events) {
+                return;
+            }
+
+            // Check for nested containers (blockquote, list)
             if self.container_stack.len() < limits::MAX_BLOCK_NESTING {
                 // Check for blockquote
                 if self.try_blockquote(events) {
@@ -206,11 +250,6 @@ impl<'a> BlockParser<'a> {
                 return;
             }
 
-            // Check for thematic break
-            if self.try_thematic_break(events) {
-                return;
-            }
-
             // Check for ATX heading
             if self.try_atx_heading(events) {
                 return;
@@ -224,7 +263,7 @@ impl<'a> BlockParser<'a> {
 
     /// Try to match existing containers at line start.
     /// Returns number of matched containers.
-    fn match_containers(&mut self, events: &mut Vec<BlockEvent>) -> usize {
+    fn match_containers(&mut self, _events: &mut Vec<BlockEvent>) -> usize {
         let mut matched = 0;
 
         for i in 0..self.container_stack.len() {
@@ -241,40 +280,46 @@ impl<'a> BlockParser<'a> {
                         }
                         matched += 1;
                     } else {
-                        // Can't continue blockquote, close containers from here
+                        // Can't continue blockquote, break (don't close yet)
                         break;
                     }
                 }
                 ContainerType::ListItem { content_indent, kind, marker } => {
-                    // Check if line is blank
+                    // Check if line is blank (after any spaces we've consumed so far)
                     let remaining = self.cursor.remaining_slice();
-                    let is_blank = remaining.is_empty()
-                        || remaining[0] == b'\n';
+                    let is_blank = remaining.is_empty() || remaining[0] == b'\n';
 
                     if is_blank {
+                        // Blank lines always match list items
                         matched += 1;
                     } else {
-                        // Save position to check for new list item
+                        // Save position to check indent
                         let save_pos = self.cursor.offset();
                         let spaces = self.cursor.skip_spaces();
 
                         if spaces >= content_indent {
-                            // Enough indent to continue
+                            // Enough indent to continue the list item
+                            // If we had a blank line, list becomes loose
+                            if let Some(open_list) = self.open_lists.last_mut() {
+                                if open_list.blank_in_item {
+                                    open_list.tight = false;
+                                }
+                            }
                             matched += 1;
                         } else {
-                            // Check if this is a new list item of the same type
-                            // If so, we keep the list open but close the item
+                            // Not enough indent - check if it's a new list item of same type
                             self.cursor = Cursor::new_at(self.input, save_pos + spaces);
+                            let is_same_list = self.peek_list_marker(kind, marker);
 
-                            let is_same_list_item = self.peek_list_marker(kind, marker);
+                            // Reset cursor to saved position
+                            self.cursor = Cursor::new_at(self.input, save_pos);
 
-                            if is_same_list_item {
-                                // Close the item but keep list "open" conceptually
-                                // Don't match this container, but also don't close the list yet
-                                // The list item will be closed, and a new one started
+                            if is_same_list {
+                                // This will start a new item in the same list
+                                // Don't match this container
                                 break;
                             } else {
-                                // Different content, close containers
+                                // Different content, don't match
                                 break;
                             }
                         }
@@ -283,9 +328,7 @@ impl<'a> BlockParser<'a> {
             }
         }
 
-        // Close unmatched containers, but be smart about lists
-        self.close_containers_from(matched, events);
-
+        // Don't close containers here - let parse_line handle it
         matched
     }
 
@@ -301,8 +344,18 @@ impl<'a> BlockParser<'a> {
                 // Must be the SAME marker character (-, *, or +)
                 b == marker && self.cursor.peek_ahead(1) == Some(b' ')
             }
-            ListKind::Ordered { .. } => {
-                b.is_ascii_digit()
+            ListKind::Ordered { delimiter, .. } => {
+                // Must be digit(s) followed by the SAME delimiter (. or ))
+                if !b.is_ascii_digit() {
+                    return false;
+                }
+                // Find the delimiter after the digits
+                let mut offset = 1;
+                while self.cursor.peek_ahead(offset).map_or(false, |b| b.is_ascii_digit()) {
+                    offset += 1;
+                }
+                // Check if delimiter matches
+                self.cursor.peek_ahead(offset) == Some(delimiter)
             }
         }
     }
@@ -336,9 +389,9 @@ impl<'a> BlockParser<'a> {
 
     /// Handle blank line for container continuation.
     fn handle_blank_line_containers(&mut self, _events: &mut Vec<BlockEvent>) {
-        // Mark any open lists as having seen a blank line
+        // Mark any open lists as having seen a blank line in current item
         for open_list in self.open_lists.iter_mut() {
-            open_list.blank_since_item = true;
+            open_list.blank_in_item = true;
         }
     }
 
@@ -379,10 +432,16 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for ordered list marker (1. 2. etc)
-        if let Some((start_num, _marker_len)) = self.try_ordered_marker() {
+        if let Some((start_num, _marker_len, delimiter)) = self.try_ordered_marker() {
+            // CommonMark: an ordered list can only interrupt a paragraph if it starts with 1
+            if self.in_paragraph && start_num != 1 {
+                // Reset cursor and don't start list
+                self.cursor = Cursor::new_at(self.input, start_offset);
+                return false;
+            }
             self.start_list_item(
-                ListKind::Ordered { start: start_num },
-                b'.',
+                ListKind::Ordered { start: start_num, delimiter },
+                delimiter,
                 start_offset,
                 events,
             );
@@ -412,7 +471,8 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Try to parse an ordered list marker (1. 2. etc).
-    fn try_ordered_marker(&mut self) -> Option<(u32, usize)> {
+    /// Returns (number, marker_len, delimiter) where delimiter is '.' or ')'.
+    fn try_ordered_marker(&mut self) -> Option<(u32, usize, u8)> {
         let start = self.cursor.offset();
         let mut num: u32 = 0;
         let mut digits = 0;
@@ -438,10 +498,14 @@ impl<'a> BlockParser<'a> {
         }
 
         // Must be followed by . or )
-        if !self.cursor.at(b'.') && !self.cursor.at(b')') {
-            self.cursor = Cursor::new_at(self.input, start);
-            return None;
-        }
+        let delimiter = match self.cursor.peek() {
+            Some(b'.') => b'.',
+            Some(b')') => b')',
+            _ => {
+                self.cursor = Cursor::new_at(self.input, start);
+                return None;
+            }
+        };
         self.cursor.bump(); // consume . or )
 
         // Must be followed by space
@@ -451,7 +515,7 @@ impl<'a> BlockParser<'a> {
         }
         self.cursor.bump(); // consume space
 
-        Some((num, digits + 2)) // digits + delimiter + space
+        Some((num, digits + 2, delimiter)) // digits + delimiter + space
     }
 
     /// Start a new list item.
@@ -484,7 +548,7 @@ impl<'a> BlockParser<'a> {
                 kind,
                 marker,
                 tight: true,
-                blank_since_item: false,
+                blank_in_item: false,
                 item_count: 0,
             });
         }
@@ -507,11 +571,11 @@ impl<'a> BlockParser<'a> {
         // Track item count and blank line status for tight/loose detection
         if let Some(open_list) = self.open_lists.last_mut() {
             // If we've seen a blank line since the previous item, list becomes loose
-            if open_list.item_count > 0 && open_list.blank_since_item {
+            if open_list.item_count > 0 && open_list.blank_in_item {
                 open_list.tight = false;
             }
             open_list.item_count += 1;
-            open_list.blank_since_item = false;
+            open_list.blank_in_item = false;
         }
 
         // Check for task list checkbox
@@ -525,7 +589,9 @@ impl<'a> BlockParser<'a> {
         // Check open_lists for a compatible list
         if let Some(open_list) = self.open_lists.last() {
             return match (kind, open_list.kind) {
-                (ListKind::Ordered { .. }, ListKind::Ordered { .. }) => true,
+                // For ordered lists, delimiter (. vs )) must match
+                (ListKind::Ordered { delimiter: d1, .. }, ListKind::Ordered { delimiter: d2, .. }) => d1 == d2,
+                // For unordered lists, marker (-, *, +) must match
                 (ListKind::Unordered, ListKind::Unordered) => open_list.marker == marker,
                 _ => false,
             };
@@ -594,6 +660,36 @@ impl<'a> BlockParser<'a> {
         while !self.container_stack.is_empty() {
             self.close_top_container(events);
         }
+    }
+
+    /// Check if the current line is a thematic break without consuming input.
+    fn peek_thematic_break(&self) -> bool {
+        // Must start with -, *, or _
+        let marker = match self.cursor.peek() {
+            Some(b'-') | Some(b'*') | Some(b'_') => self.cursor.peek().unwrap(),
+            _ => return false,
+        };
+
+        // Count markers and spaces
+        let mut count = 0;
+        let mut temp_cursor = self.cursor;
+
+        while let Some(b) = temp_cursor.peek() {
+            if b == marker {
+                count += 1;
+                temp_cursor.bump();
+            } else if b == b' ' || b == b'\t' {
+                temp_cursor.bump();
+            } else if b == b'\n' {
+                break;
+            } else {
+                // Invalid character
+                return false;
+            }
+        }
+
+        // Need at least 3 markers
+        count >= 3
     }
 
     /// Try to parse a thematic break.
@@ -1478,7 +1574,7 @@ mod tests {
         let input = "1. first\n2. second";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 1 }, .. }));
+        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 1, .. }, .. }));
     }
 
     #[test]
@@ -1486,7 +1582,7 @@ mod tests {
         let input = "5. fifth";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 5 }, .. }));
+        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 5, .. }, .. }));
     }
 
     #[test]

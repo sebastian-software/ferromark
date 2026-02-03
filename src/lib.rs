@@ -116,6 +116,9 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     // Track tight list nesting for paragraph rendering
     let mut tight_list_depth = 0u32;
 
+    // Track if we just started a tight list item (need newline before block content)
+    let mut at_tight_li_start = false;
+
     // Render events to HTML
     for event in &events {
         render_block_event(
@@ -126,6 +129,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
             &mut inline_events,
             &mut para_state,
             &mut tight_list_depth,
+            &mut at_tight_li_start,
         );
     }
 }
@@ -139,6 +143,7 @@ fn render_block_event(
     inline_events: &mut Vec<InlineEvent>,
     para_state: &mut ParagraphState,
     tight_list_depth: &mut u32,
+    at_tight_li_start: &mut bool,
 ) {
     match event {
         BlockEvent::ParagraphStart => {
@@ -147,6 +152,8 @@ fn render_block_event(
                 writer.paragraph_start();
             }
             para_state.start();
+            // Paragraph content is inline, so we don't add newline
+            *at_tight_li_start = false;
         }
         BlockEvent::ParagraphEnd => {
             // Parse all accumulated paragraph content at once
@@ -173,6 +180,11 @@ fn render_block_event(
             writer.heading_end(*level);
         }
         BlockEvent::ThematicBreak => {
+            // If we're at the start of a tight list item, add newline before block content
+            if *at_tight_li_start {
+                writer.newline();
+                *at_tight_li_start = false;
+            }
             writer.thematic_break();
         }
         BlockEvent::SoftBreak => {
@@ -222,7 +234,7 @@ fn render_block_event(
             }
             match kind {
                 block::ListKind::Unordered => writer.ul_start(),
-                block::ListKind::Ordered { start } => {
+                block::ListKind::Ordered { start, .. } => {
                     writer.ol_start(if *start == 1 { None } else { Some(*start) })
                 }
             }
@@ -238,8 +250,16 @@ fn render_block_event(
         }
         BlockEvent::ListItemStart { .. } => {
             writer.li_start();
+            // In loose lists, add newline after <li>
+            if *tight_list_depth == 0 {
+                writer.newline();
+            } else {
+                // In tight lists, mark that we may need newline if block content follows
+                *at_tight_li_start = true;
+            }
         }
         BlockEvent::ListItemEnd => {
+            *at_tight_li_start = false;
             writer.li_end();
         }
     }
@@ -633,10 +653,10 @@ More text."#;
     #[test]
     fn test_loose_list_unordered() {
         let html = to_html("- foo\n\n- bar\n\n- baz");
-        // Loose list: <p> tags inside list items
-        assert!(html.contains("<li><p>foo</p>"));
-        assert!(html.contains("<li><p>bar</p>"));
-        assert!(html.contains("<li><p>baz</p>"));
+        // Loose list: <p> tags inside list items (with newline after <li>)
+        assert!(html.contains("<li>\n<p>foo</p>"));
+        assert!(html.contains("<li>\n<p>bar</p>"));
+        assert!(html.contains("<li>\n<p>baz</p>"));
     }
 
     #[test]
@@ -652,9 +672,9 @@ More text."#;
     #[test]
     fn test_loose_list_ordered() {
         let html = to_html("1. first\n\n2. second");
-        // Loose list: <p> tags
-        assert!(html.contains("<li><p>first</p>"));
-        assert!(html.contains("<li><p>second</p>"));
+        // Loose list: <p> tags (with newline after <li>)
+        assert!(html.contains("<li>\n<p>first</p>"));
+        assert!(html.contains("<li>\n<p>second</p>"));
     }
 
     // Image tests

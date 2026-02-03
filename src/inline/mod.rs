@@ -69,11 +69,15 @@ impl InlineParser {
         let resolved_links = resolve_links(text, &open_brackets, &close_brackets);
 
         // Fourth: emphasis (lowest precedence)
-        // Pass link boundaries so emphasis can't cross them
-        let link_boundaries: Vec<(u32, u32)> = resolved_links
+        // Pass link and autolink boundaries so emphasis can't cross them
+        let mut link_boundaries: Vec<(u32, u32)> = resolved_links
             .iter()
             .map(|l| (l.start, l.text_end))
             .collect();
+        // Also include autolinks - delimiters inside <url> should not form emphasis
+        for autolink in &autolinks {
+            link_boundaries.push((autolink.start, autolink.end));
+        }
         let emphasis_matches = resolve_emphasis(self.mark_buffer.marks_mut(), &link_boundaries);
 
         // Phase 3: Emit events

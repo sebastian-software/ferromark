@@ -75,10 +75,12 @@ pub enum BlockEvent {
 pub enum ListKind {
     /// Unordered list (bullet points).
     Unordered,
-    /// Ordered list with starting number.
+    /// Ordered list with starting number and delimiter.
     Ordered {
         /// Starting number.
         start: u32,
+        /// Delimiter character ('.' or ')').
+        delimiter: u8,
     },
 }
 
@@ -107,7 +109,7 @@ mod tests {
     #[test]
     fn test_list_kind() {
         let ul = ListKind::Unordered;
-        let ol = ListKind::Ordered { start: 1 };
+        let ol = ListKind::Ordered { start: 1, delimiter: b'.' };
         assert_ne!(ul, ol);
     }
 

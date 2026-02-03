@@ -92,7 +92,14 @@ fn requires_raw_html(test: &SpecTest) -> bool {
         }
     }
     // Also check if input has raw HTML that should pass through
-    test.markdown.contains("<a ") || test.markdown.contains("<img ")
+    // Check for HTML tags in input (various forms: <a href=, <a>, <img src=, etc.)
+    test.markdown.contains("<a ") || test.markdown.contains("<a>") || test.markdown.contains("<a\t")
+        || test.markdown.contains("<a/") || test.markdown.contains("<a\n")
+        || test.markdown.contains("<img ") || test.markdown.contains("<img>") || test.markdown.contains("<img\t")
+        || test.markdown.contains("<img/") || test.markdown.contains("<img\n")
+        // Also catch <a href= and <img src= patterns (no space after tag name)
+        || (test.markdown.contains("<a") && test.markdown.contains("href"))
+        || (test.markdown.contains("<img") && test.markdown.contains("src"))
 }
 
 /// Check if test requires setext heading (underline-style)
