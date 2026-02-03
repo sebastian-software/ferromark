@@ -250,6 +250,12 @@ fn render_block_event(
             // Code block content - no inline parsing
             writer.write_escaped_text(range.slice(input));
         }
+        BlockEvent::VirtualSpaces(count) => {
+            // Emit spaces for tab expansion in indented code blocks
+            for _ in 0..*count {
+                writer.write_byte(b' ');
+            }
+        }
         BlockEvent::CodeBlockStart { info } => {
             // Write pending newline from loose list item start
             if *pending_loose_li_newline {

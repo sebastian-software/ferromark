@@ -73,6 +73,8 @@ pub struct BlockParser<'a> {
     fence_state: Option<FenceState>,
     /// Whether we're in an indented code block.
     in_indented_code: bool,
+    /// Extra spaces to prepend to each line of indented code (from tab expansion).
+    indented_code_extra_spaces: usize,
     /// Pending blank line ranges in indented code (only emit if code continues).
     pending_code_blanks: Vec<Range>,
     /// Stack of open containers (blockquotes, list items).
@@ -82,6 +84,12 @@ pub struct BlockParser<'a> {
     tight_list: bool,
     /// Currently open lists (for tracking across item closes).
     open_lists: SmallVec<[OpenList; 4]>,
+    /// Remaining columns from a partially-consumed tab.
+    /// When a tab expands beyond what's needed for container indent, the excess
+    /// columns are stored here and added to the next indent measurement.
+    partial_tab_cols: usize,
+    /// Current absolute column position within the line (for tab expansion).
+    current_col: usize,
 }
 
 impl<'a> BlockParser<'a> {
@@ -94,10 +102,13 @@ impl<'a> BlockParser<'a> {
             paragraph_lines: Vec::new(),
             fence_state: None,
             in_indented_code: false,
+            indented_code_extra_spaces: 0,
             pending_code_blanks: Vec::new(),
             container_stack: SmallVec::new(),
             tight_list: false,
             open_lists: SmallVec::new(),
+            partial_tab_cols: 0,
+            current_col: 0,
         }
     }
 
@@ -131,20 +142,28 @@ impl<'a> BlockParser<'a> {
     fn parse_line(&mut self, events: &mut Vec<BlockEvent>) {
         let line_start = self.cursor.offset();
 
+        // Reset column tracking at the start of each line
+        self.partial_tab_cols = 0;
+        self.current_col = 0;
+
         // Check for blank line first (before any space skipping)
-        let initial_spaces = self.count_leading_spaces();
-        if self.is_blank_after(initial_spaces) {
-            self.cursor = Cursor::new_at(self.input, line_start + initial_spaces);
+        if self.is_blank_line() {
+            // Skip all whitespace and the newline
+            while self.cursor.peek().map_or(false, |b| b == b' ' || b == b'\t') {
+                self.cursor.bump();
+            }
             if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                 self.cursor.bump();
             }
+            let ws_end = self.cursor.offset();
 
             // Blank lines inside fenced code are preserved
             if self.fence_state.is_some() {
-                // Just emit the blank line as code content
+                // Emit the blank line as code content (just the newline)
+                let blank_start = ws_end - 1; // Just before the newline
                 events.push(BlockEvent::Code(Range::new(
-                    (line_start + initial_spaces) as u32,
-                    self.cursor.offset() as u32,
+                    blank_start as u32,
+                    ws_end as u32,
                 )));
                 return;
             }
@@ -158,8 +177,8 @@ impl<'a> BlockParser<'a> {
                     .any(|c| c.typ == ContainerType::BlockQuote);
                 if !has_blockquote {
                     // Not inside a blockquote, just buffer the blank line
-                    let blank_start = line_start + initial_spaces;
-                    self.pending_code_blanks.push(Range::new(blank_start as u32, (blank_start + 1) as u32));
+                    let blank_start = ws_end - 1; // Just before the newline
+                    self.pending_code_blanks.push(Range::new(blank_start as u32, ws_end as u32));
                     return;
                 }
                 // Fall through to close blockquotes (which will close the code block too)
@@ -186,7 +205,7 @@ impl<'a> BlockParser<'a> {
                 self.fence_state = None;
                 events.push(BlockEvent::CodeBlockEnd);
                 // Close unmatched containers and continue with normal parsing
-                let indent = self.cursor.skip_spaces();
+                let (indent, _) = self.skip_indent();
                 self.close_containers_from(matched_containers, indent, events);
                 // Fall through to continue parsing the line normally
             } else {
@@ -196,8 +215,8 @@ impl<'a> BlockParser<'a> {
             }
         }
 
-        // Get current indent after container matching
-        let indent = self.cursor.skip_spaces();
+        // Get current indent (in columns) after container matching
+        let (indent, _) = self.skip_indent();
 
         // Check for blank line AFTER container matching (e.g., ">>" followed by newline)
         if self.cursor.is_eof() || self.cursor.at(b'\n') {
@@ -246,8 +265,11 @@ impl<'a> BlockParser<'a> {
                     events.push(BlockEvent::Text(blank_range));
                 }
 
+                // Calculate extra spaces for this line (columns beyond 4)
                 let extra_spaces = indent.saturating_sub(4);
-                let text_start = self.cursor.offset() - extra_spaces;
+
+                // Cursor is past all whitespace. Content starts at current position.
+                let text_start = self.cursor.offset();
                 let line_end = self.find_line_end();
                 let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                     self.cursor.bump();
@@ -255,12 +277,18 @@ impl<'a> BlockParser<'a> {
                 } else {
                     line_end
                 };
+
+                // Emit virtual spaces if there are extra columns
+                if extra_spaces > 0 {
+                    events.push(BlockEvent::VirtualSpaces(extra_spaces as u8));
+                }
                 events.push(BlockEvent::Text(Range::new(text_start as u32, content_end as u32)));
                 return;
             } else {
                 // Close the code block - discard pending blank lines (trailing blanks)
                 self.pending_code_blanks.clear();
                 self.in_indented_code = false;
+                self.indented_code_extra_spaces = 0;
                 events.push(BlockEvent::CodeBlockEnd);
             }
         }
@@ -299,32 +327,103 @@ impl<'a> BlockParser<'a> {
         self.parse_line_content(events);
     }
 
-    /// Count leading spaces without consuming them.
-    fn count_leading_spaces(&self) -> usize {
+    /// Check if line is blank after consuming whitespace.
+    fn is_blank_line(&self) -> bool {
         let slice = self.cursor.remaining_slice();
-        let mut count = 0;
         for &b in slice {
+            if b == b' ' || b == b'\t' {
+                continue;
+            }
+            return b == b'\n';
+        }
+        true // EOF is treated as blank
+    }
+
+    /// Calculate the column that a tab at the given column would expand to.
+    #[inline]
+    fn tab_column(col: usize) -> usize {
+        (col + 4) & !3
+    }
+
+    /// Skip whitespace (spaces and tabs) returning (columns, bytes).
+    /// Includes any remaining columns from a partially-consumed tab.
+    /// Uses self.current_col for correct tab expansion and updates it.
+    fn skip_indent(&mut self) -> (usize, usize) {
+        // Add any remaining columns from a partially-consumed tab
+        let partial = self.partial_tab_cols;
+        self.partial_tab_cols = 0;
+
+        let start_col = self.current_col;
+        let mut bytes = 0;
+        while let Some(b) = self.cursor.peek() {
             if b == b' ' {
-                count += 1;
+                self.current_col += 1;
+                bytes += 1;
+                self.cursor.bump();
+            } else if b == b'\t' {
+                self.current_col = Self::tab_column(self.current_col);
+                bytes += 1;
+                self.cursor.bump();
             } else {
                 break;
             }
         }
-        count
+        // Return the number of columns measured PLUS any partial tab carryover
+        (self.current_col - start_col + partial, bytes)
     }
 
-    /// Check if line is blank after given number of spaces.
-    fn is_blank_after(&self, spaces: usize) -> bool {
-        let slice = self.cursor.remaining_slice();
-        if spaces >= slice.len() {
-            return true;
+    /// Skip up to `max_cols` columns of whitespace, returning (columns_skipped, bytes_skipped).
+    /// If a tab would exceed max_cols, consumes the tab and stores excess in partial_tab_cols.
+    /// Uses self.current_col for correct tab expansion and updates it.
+    fn skip_indent_max(&mut self, max_cols: usize) -> (usize, usize) {
+        // Include any carryover from previous partial tab
+        let partial = self.partial_tab_cols;
+        self.partial_tab_cols = 0;
+
+        // If we already have enough from partial tab, just return
+        if partial >= max_cols {
+            self.partial_tab_cols = partial - max_cols;
+            return (max_cols, 0);
         }
-        slice[spaces] == b'\n'
+
+        let mut bytes = 0;
+        let mut cols_counted = partial;
+
+        while cols_counted < max_cols {
+            match self.cursor.peek() {
+                Some(b' ') => {
+                    cols_counted += 1;
+                    self.current_col += 1;
+                    bytes += 1;
+                    self.cursor.bump();
+                }
+                Some(b'\t') => {
+                    let next_col = Self::tab_column(self.current_col);
+                    let tab_width = next_col - self.current_col;
+                    let cols_needed = max_cols - cols_counted;
+                    if tab_width <= cols_needed {
+                        cols_counted += tab_width;
+                        self.current_col = next_col;
+                        bytes += 1;
+                        self.cursor.bump();
+                    } else {
+                        // Tab would exceed max_cols - consume it but save excess
+                        self.partial_tab_cols = tab_width - cols_needed;
+                        self.current_col = next_col;
+                        bytes += 1;
+                        self.cursor.bump();
+                        return (max_cols, bytes);
+                    }
+                }
+                _ => break,
+            }
+        }
+        (cols_counted, bytes)
     }
 
     /// Parse line content after container markers have been handled.
     fn parse_line_content(&mut self, events: &mut Vec<BlockEvent>) {
-        let indent = self.cursor.skip_spaces();
+        let (indent, _) = self.skip_indent();
 
         // Check for blank line (can happen after container markers)
         if self.cursor.is_eof() || self.cursor.at(b'\n') {
@@ -392,40 +491,53 @@ impl<'a> BlockParser<'a> {
             let container = &self.container_stack[i];
             match container.typ {
                 ContainerType::BlockQuote => {
-                    // Try to match `>` marker with up to 3 leading spaces
+                    // Try to match `>` marker with up to 3 leading spaces/tabs
                     let save_pos = self.cursor.offset();
-                    let spaces = self.cursor.skip_spaces();
-                    if spaces <= 3 && self.cursor.at(b'>') {
+                    let save_partial = self.partial_tab_cols;
+                    let save_col = self.current_col;
+                    let (cols, _bytes) = self.skip_indent();
+                    if cols <= 3 && self.cursor.at(b'>') {
                         self.cursor.bump();
-                        // Optional space after >
-                        if self.cursor.at(b' ') {
-                            self.cursor.bump();
-                        }
+                        self.current_col += 1;
+                        // Optional space after > - use skip_indent_max(1) for proper tab handling
+                        self.skip_indent_max(1);
                         matched += 1;
                     } else {
                         // Can't continue blockquote, reset cursor and break
                         self.cursor = Cursor::new_at(self.input, save_pos);
+                        self.partial_tab_cols = save_partial;
+                        self.current_col = save_col;
                         break;
                     }
                 }
                 ContainerType::ListItem { content_indent, kind, marker } => {
                     // Check if line is blank (after any spaces we've consumed so far)
                     let remaining = self.cursor.remaining_slice();
-                    let is_blank = remaining.is_empty() || remaining[0] == b'\n';
+                    let is_blank = remaining.is_empty() || remaining[0] == b'\n' ||
+                        remaining.iter().take_while(|&&b| b == b' ' || b == b'\t')
+                            .count() == remaining.len().min(remaining.iter().position(|&b| b == b'\n').unwrap_or(remaining.len()));
 
                     if is_blank {
                         // Blank lines always match list items
                         matched += 1;
                     } else {
-                        // Save position to check indent
+                        // Save position, partial tab state, and column
                         let save_pos = self.cursor.offset();
-                        let spaces = self.cursor.skip_spaces();
+                        let save_partial = self.partial_tab_cols;
+                        let save_col = self.current_col;
+                        let (cols, _bytes) = self.skip_indent();
 
-                        if spaces >= content_indent {
+                        if cols >= content_indent {
                             // Enough indent to continue the list item
-                            // Position cursor at exactly content_indent, leaving extra spaces
-                            // for indented code detection
-                            self.cursor = Cursor::new_at(self.input, save_pos + content_indent);
+                            // We need to position the cursor so that only content_indent
+                            // columns have been consumed. This is tricky with tabs.
+                            // Rewind and skip exactly content_indent columns.
+                            self.cursor = Cursor::new_at(self.input, save_pos);
+                            self.partial_tab_cols = save_partial;
+                            self.current_col = save_col;
+                            let (_skipped_cols, _skipped_bytes) = self.skip_indent_max(content_indent);
+                            // Now cursor is past content_indent columns worth of whitespace
+                            // Any excess from partial tab consumption is in partial_tab_cols
 
                             // Track this list as a potential loose candidate
                             let list_index = self.container_stack[..=i].iter()
@@ -437,11 +549,13 @@ impl<'a> BlockParser<'a> {
                             matched += 1;
                         } else {
                             // Not enough indent - check if it's a new list item of same type
-                            self.cursor = Cursor::new_at(self.input, save_pos + spaces);
+                            // (cursor is already past the whitespace)
                             let is_same_list = self.peek_list_marker(kind, marker);
 
-                            // Reset cursor to saved position
+                            // Reset cursor, partial tab state, and column
                             self.cursor = Cursor::new_at(self.input, save_pos);
+                            self.partial_tab_cols = save_partial;
+                            self.current_col = save_col;
 
                             if is_same_list {
                                 // This will start a new item in the same list
@@ -620,9 +734,13 @@ impl<'a> BlockParser<'a> {
                 if let ContainerType::ListItem { kind, marker, .. } = top.typ {
                     // Check if the current position has a same-type list marker
                     let save_pos = self.cursor.offset();
-                    self.cursor.skip_spaces();
+                    let save_partial = self.partial_tab_cols;
+                    let save_col = self.current_col;
+                    self.skip_indent();
                     let is_same_list = self.peek_list_marker(kind, marker);
                     self.cursor = Cursor::new_at(self.input, save_pos);
+                    self.partial_tab_cols = save_partial;
+                    self.current_col = save_col;
 
                     if is_same_list {
                         // Just close the item, not the list
@@ -708,11 +826,12 @@ impl<'a> BlockParser<'a> {
         }
 
         self.cursor.bump(); // consume >
+        self.current_col += 1;
 
-        // Optional space after >
-        if self.cursor.at(b' ') {
-            self.cursor.bump();
-        }
+        // Optional space after > (consumes 1 column of whitespace)
+        // Use skip_indent_max(1) to properly handle partial tab consumption.
+        // If it's a tab, the excess columns are stored in partial_tab_cols.
+        self.skip_indent_max(1);
 
         // Close paragraph if any
         self.close_paragraph(events);
@@ -778,7 +897,7 @@ impl<'a> BlockParser<'a> {
 
     /// Try to parse an unordered list marker (-, *, +).
     /// Returns (marker_char, relative_content_indent) where relative_content_indent is
-    /// the offset from marker to where content starts.
+    /// the column offset from marker to where content starts.
     fn try_unordered_marker(&mut self) -> Option<(u8, usize)> {
         let marker = self.cursor.peek()?;
         if marker != b'-' && marker != b'*' && marker != b'+' {
@@ -792,48 +911,53 @@ impl<'a> BlockParser<'a> {
             return None;
         }
 
-        self.cursor.bump(); // consume marker
+        self.cursor.bump(); // consume marker (1 column)
+        self.current_col += 1;
 
         // Handle blank list item (marker followed by newline)
         if self.cursor.at(b'\n') {
             return Some((marker, 2)); // marker + 1 implicit space
         }
 
-        // Count spaces between marker and content (or newline)
+        // Count columns of whitespace between marker and content
         let pos_after_marker = self.cursor.offset();
-        let mut spaces_after_marker = 0;
-        while self.cursor.at(b' ') {
-            spaces_after_marker += 1;
-            self.cursor.bump();
-        }
+        let col_after_marker = self.current_col;
+        let partial_after_marker = self.partial_tab_cols;
+        let (cols_after_marker, _bytes_after_marker) = self.skip_indent();
 
         // Check if this is a blank list item (only whitespace after marker)
         if self.cursor.at(b'\n') || self.cursor.is_eof() {
             // Blank list item: content_indent = marker(1) + 1 implicit space
-            // Reset cursor to after just 1 space so parse_line_content sees the right position
-            if spaces_after_marker > 0 {
-                self.cursor = Cursor::new_at(self.input, pos_after_marker + 1);
-            }
+            // Reset cursor to after just 1 space/tab column
+            self.cursor = Cursor::new_at(self.input, pos_after_marker);
+            self.current_col = col_after_marker;
+            self.partial_tab_cols = partial_after_marker;
+            self.skip_indent_max(1);
             return Some((marker, 2));
         }
 
-        // CommonMark rule: 1-4 spaces after marker is normal
-        // 5+ spaces means blank item with indented content (only 1 space counts)
-        if spaces_after_marker >= 5 {
-            // Put cursor back to just after 1 space
-            self.cursor = Cursor::new_at(self.input, pos_after_marker + 1);
-            // content_indent = marker(1) + 1 space
+        // CommonMark rule: 1-4 columns after marker is normal
+        // 5+ columns means blank item with indented content (only 1 counts)
+        if cols_after_marker >= 5 {
+            // Put cursor back to just after 1 column of whitespace
+            self.cursor = Cursor::new_at(self.input, pos_after_marker);
+            self.current_col = col_after_marker;
+            self.partial_tab_cols = partial_after_marker;
+            self.skip_indent_max(1);
+            // content_indent = marker(1) + 1 column
             return Some((marker, 2));
         }
 
-        // content_indent = marker(1) + spaces_after_marker
-        Some((marker, 1 + spaces_after_marker))
+        // content_indent = marker(1) + cols_after_marker
+        Some((marker, 1 + cols_after_marker))
     }
 
     /// Try to parse an ordered list marker (1. 2. etc).
     /// Returns (number, relative_content_indent, delimiter) where delimiter is '.' or ')'.
+    /// relative_content_indent is in columns.
     fn try_ordered_marker(&mut self) -> Option<(u32, usize, u8)> {
         let start = self.cursor.offset();
+        let start_col = self.current_col;
         let mut num: u32 = 0;
         let mut digits = 0;
 
@@ -843,11 +967,13 @@ impl<'a> BlockParser<'a> {
                 if digits >= limits::MAX_LIST_MARKER_DIGITS {
                     // Too many digits, reset and return
                     self.cursor = Cursor::new_at(self.input, start);
+                    self.current_col = start_col;
                     return None;
                 }
                 num = num * 10 + (b - b'0') as u32;
                 digits += 1;
                 self.cursor.bump();
+                self.current_col += 1;
             } else {
                 break;
             }
@@ -863,14 +989,17 @@ impl<'a> BlockParser<'a> {
             Some(b')') => b')',
             _ => {
                 self.cursor = Cursor::new_at(self.input, start);
+                self.current_col = start_col;
                 return None;
             }
         };
         self.cursor.bump(); // consume . or )
+        self.current_col += 1;
 
         // Must be followed by space, tab, or newline
         if !self.cursor.at(b' ') && !self.cursor.at(b'\t') && !self.cursor.at(b'\n') {
             self.cursor = Cursor::new_at(self.input, start);
+            self.current_col = start_col;
             return None;
         }
 
@@ -881,37 +1010,39 @@ impl<'a> BlockParser<'a> {
             return Some((num, relative_content_indent, delimiter));
         }
 
-        // Count spaces between marker and content (or newline)
+        // Count columns of whitespace between marker and content
         let pos_after_delim = self.cursor.offset();
-        let mut spaces_after_marker = 0;
-        while self.cursor.at(b' ') {
-            spaces_after_marker += 1;
-            self.cursor.bump();
-        }
+        let col_after_delim = self.current_col;
+        let partial_after_delim = self.partial_tab_cols;
+        let (cols_after_marker, _bytes) = self.skip_indent();
 
         // Check if this is a blank list item (only whitespace after marker)
         if self.cursor.at(b'\n') || self.cursor.is_eof() {
-            // Blank list item: relative_content_indent = digits + delimiter + 1 space
-            // Reset cursor to after just 1 space
-            if spaces_after_marker > 0 {
-                self.cursor = Cursor::new_at(self.input, pos_after_delim + 1);
-            }
+            // Blank list item: relative_content_indent = digits + delimiter + 1 column
+            // Reset cursor to after just 1 column of whitespace
+            self.cursor = Cursor::new_at(self.input, pos_after_delim);
+            self.current_col = col_after_delim;
+            self.partial_tab_cols = partial_after_delim;
+            self.skip_indent_max(1);
             let relative_content_indent = digits + 2;
             return Some((num, relative_content_indent, delimiter));
         }
 
-        // CommonMark rule: 1-4 spaces after marker is normal
-        // 5+ spaces means blank item with indented content (only 1 space counts)
-        if spaces_after_marker >= 5 {
-            // Put cursor back to just after 1 space
-            self.cursor = Cursor::new_at(self.input, pos_after_delim + 1);
-            // relative_content_indent = digits + delimiter(1) + 1 space
+        // CommonMark rule: 1-4 columns after marker is normal
+        // 5+ columns means blank item with indented content (only 1 counts)
+        if cols_after_marker >= 5 {
+            // Put cursor back to just after 1 column of whitespace
+            self.cursor = Cursor::new_at(self.input, pos_after_delim);
+            self.current_col = col_after_delim;
+            self.partial_tab_cols = partial_after_delim;
+            self.skip_indent_max(1);
+            // relative_content_indent = digits + delimiter(1) + 1 column
             let relative_content_indent = digits + 2;
             return Some((num, relative_content_indent, delimiter));
         }
 
-        // relative_content_indent = digits + delimiter(1) + spaces_after_marker
-        let relative_content_indent = digits + 1 + spaces_after_marker;
+        // relative_content_indent = digits + delimiter(1) + cols_after_marker
+        let relative_content_indent = digits + 1 + cols_after_marker;
         Some((num, relative_content_indent, delimiter))
     }
 
@@ -1353,7 +1484,8 @@ impl<'a> BlockParser<'a> {
     }
 
     /// Start an indented code block.
-    fn start_indented_code(&mut self, indent: usize, events: &mut Vec<BlockEvent>) {
+    /// `indent_cols` is the number of columns of indentation measured.
+    fn start_indented_code(&mut self, indent_cols: usize, events: &mut Vec<BlockEvent>) {
         // Close any open paragraph first
         self.close_paragraph(events);
 
@@ -1362,13 +1494,13 @@ impl<'a> BlockParser<'a> {
 
         // Start the code block
         self.in_indented_code = true;
+        // Store the excess columns (indent_cols - 4) to prepend as spaces
+        self.indented_code_extra_spaces = indent_cols.saturating_sub(4);
         events.push(BlockEvent::CodeBlockStart { info: None });
 
-        // The cursor is past `indent` spaces. We want to strip exactly 4.
-        // The content starts at cursor position (we already skipped `indent` spaces).
-        // We need to "give back" (indent - 4) spaces if indent > 4.
-        let extra_spaces = indent.saturating_sub(4);
-        let text_start = self.cursor.offset() - extra_spaces;
+        // The cursor is past the whitespace bytes.
+        // The cursor is past the whitespace bytes.
+        let text_start = self.cursor.offset();
 
         // Find end of line (including newline for code blocks)
         let line_end = self.find_line_end();
@@ -1379,6 +1511,10 @@ impl<'a> BlockParser<'a> {
             line_end
         };
 
+        // Emit virtual spaces if there are extra columns beyond 4
+        if self.indented_code_extra_spaces > 0 {
+            events.push(BlockEvent::VirtualSpaces(self.indented_code_extra_spaces as u8));
+        }
         // Emit the content (including newline)
         events.push(BlockEvent::Text(Range::new(text_start as u32, content_end as u32)));
     }
@@ -1401,12 +1537,8 @@ impl<'a> BlockParser<'a> {
 
         let content_pos = self.cursor.offset();
 
-        // Skip up to fence_indent spaces (the fence's original indent within container)
-        let mut spaces = 0;
-        while spaces < fence_indent && self.cursor.at(b' ') {
-            self.cursor.bump();
-            spaces += 1;
-        }
+        // Skip up to fence_indent columns of whitespace (the fence's original indent)
+        let (_skipped_cols, _skipped_bytes) = self.skip_indent_max(fence_indent);
 
         // Check for closing fence
         if self.cursor.at(fence_char) {
@@ -1420,7 +1552,7 @@ impl<'a> BlockParser<'a> {
 
             // Closing fence must be at least as long as opening
             if closing_len >= fence_len {
-                // Check that rest of line is only spaces
+                // Check that rest of line is only spaces/tabs
                 temp_cursor.skip_whitespace();
                 if temp_cursor.is_eof() || temp_cursor.at(b'\n') {
                     // Valid closing fence
@@ -1437,13 +1569,9 @@ impl<'a> BlockParser<'a> {
         }
 
         // Not a closing fence, emit as code content
-        // Reset to content_pos and skip up to fence_indent spaces
+        // Reset to content_pos and skip up to fence_indent columns of whitespace
         self.cursor = Cursor::new_at(self.input, content_pos);
-        let mut spaces = 0;
-        while spaces < fence_indent && self.cursor.at(b' ') {
-            self.cursor.bump();
-            spaces += 1;
-        }
+        let (_skipped_cols, _skipped_bytes) = self.skip_indent_max(fence_indent);
 
         let code_start = self.cursor.offset();
 

@@ -68,6 +68,10 @@ pub enum BlockEvent {
 
     /// Raw code content (not to be inline-parsed).
     Code(Range),
+
+    /// Virtual spaces to prepend to code content (from tab expansion).
+    /// This event is followed by a Code or Text event.
+    VirtualSpaces(u8),
 }
 
 /// Type of list.
