@@ -98,6 +98,44 @@ impl ParagraphState {
     }
 }
 
+/// State for collecting heading content before inline parsing.
+struct HeadingState {
+    /// Collected text content (joined with newlines).
+    content: Vec<u8>,
+    /// Whether we're currently in a heading.
+    in_heading: bool,
+}
+
+impl HeadingState {
+    fn new() -> Self {
+        Self {
+            content: Vec::with_capacity(64),
+            in_heading: false,
+        }
+    }
+
+    fn start(&mut self) {
+        self.in_heading = true;
+        self.content.clear();
+    }
+
+    fn add_text(&mut self, text: &[u8]) {
+        self.content.extend_from_slice(text);
+    }
+
+    fn add_soft_break(&mut self) {
+        self.content.push(b'\n');
+    }
+
+    fn finish(&mut self) -> &[u8] {
+        self.in_heading = false;
+        while self.content.last().map_or(false, |&b| b == b' ' || b == b'\t') {
+            self.content.pop();
+        }
+        &self.content
+    }
+}
+
 /// Render Markdown to an HtmlWriter.
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     // Parse blocks
@@ -115,6 +153,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
 
     // State for accumulating paragraph content
     let mut para_state = ParagraphState::new();
+    let mut heading_state = HeadingState::new();
 
     // Track tight/loose status for nested lists (stack - (tight, blockquote_depth_at_start))
     let mut tight_list_stack: Vec<(bool, u32)> = Vec::new();
@@ -140,6 +179,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
             &mut inline_parser,
             &mut inline_events,
             &mut para_state,
+            &mut heading_state,
             &mut tight_list_stack,
             &mut at_tight_li_start,
             &mut need_newline_before_block,
@@ -158,6 +198,7 @@ fn render_block_event(
     inline_parser: &mut InlineParser,
     inline_events: &mut Vec<InlineEvent>,
     para_state: &mut ParagraphState,
+    heading_state: &mut HeadingState,
     tight_list_stack: &mut Vec<(bool, u32)>,
     at_tight_li_start: &mut bool,
     need_newline_before_block: &mut bool,
@@ -214,9 +255,28 @@ fn render_block_event(
             }
         }
         BlockEvent::HeadingStart { level } => {
+            if *need_newline_before_block {
+                writer.newline();
+                *need_newline_before_block = false;
+            }
+            if *at_tight_li_start {
+                writer.newline();
+                *at_tight_li_start = false;
+            }
             writer.heading_start(*level);
+            heading_state.start();
         }
         BlockEvent::HeadingEnd { level } => {
+            let content = heading_state.finish();
+            if !content.is_empty() {
+                inline_events.clear();
+                inline_parser.parse(content, Some(link_refs), inline_events);
+
+                let mut image_state = None;
+                for inline_event in inline_events.iter() {
+                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs);
+                }
+            }
             writer.heading_end(*level);
         }
         BlockEvent::ThematicBreak => {
@@ -246,6 +306,8 @@ fn render_block_event(
         BlockEvent::SoftBreak => {
             if para_state.in_paragraph {
                 para_state.add_soft_break();
+            } else if heading_state.in_heading {
+                heading_state.add_soft_break();
             } else {
                 writer.write_str("\n");
             }
@@ -255,6 +317,8 @@ fn render_block_event(
             if para_state.in_paragraph {
                 // Accumulate for later parsing
                 para_state.add_text(text);
+            } else if heading_state.in_heading {
+                heading_state.add_text(text);
             } else {
                 // Parse immediately (e.g., heading content)
                 inline_events.clear();

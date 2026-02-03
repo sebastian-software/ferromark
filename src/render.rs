@@ -353,9 +353,14 @@ impl HtmlWriter {
     pub fn code_block_start(&mut self, lang: Option<&[u8]>) {
         match lang {
             Some(l) if !l.is_empty() => {
+                let first = Self::first_word(l);
+                if first.is_empty() {
+                    self.write_str("<pre><code>");
+                    return;
+                }
                 self.write_str("<pre><code class=\"language-");
                 // Decode entities and escape for attribute
-                self.write_info_string_attr(l);
+                self.write_info_string_attr(first);
                 self.write_str("\">");
             }
             _ => {
@@ -367,11 +372,51 @@ impl HtmlWriter {
     /// Write fenced code info string with entity decoding and attribute escaping.
     #[inline]
     pub fn write_info_string_attr(&mut self, info: &[u8]) {
-        // First decode HTML entities
-        let info_str = core::str::from_utf8(info).unwrap_or("");
+        // First unescape backslash escapes
+        let unescaped = Self::unescape_backslashes(info);
+        // Then decode HTML entities
+        let info_str = core::str::from_utf8(&unescaped).unwrap_or("");
         let decoded = decode_entities_commonmark(info_str);
         // Then HTML-escape for attribute context
         escape::escape_full_into(&mut self.out, decoded.as_bytes());
+    }
+
+    fn unescape_backslashes(input: &[u8]) -> Vec<u8> {
+        let mut out = Vec::with_capacity(input.len());
+        let mut i = 0usize;
+        while i < input.len() {
+        if input[i] == b'\\' && i + 1 < input.len() && Self::is_escapable(input[i + 1]) {
+            out.push(input[i + 1]);
+            i += 2;
+        } else {
+            out.push(input[i]);
+            i += 1;
+        }
+        }
+        out
+    }
+
+    #[inline]
+    fn is_escapable(b: u8) -> bool {
+        matches!(b,
+            b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
+            b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
+            b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
+            b'`' | b'{' | b'|' | b'}' | b'~'
+        )
+    }
+
+    #[inline]
+    fn is_html_whitespace(b: u8) -> bool {
+        matches!(b, b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
+    }
+
+    fn first_word(info: &[u8]) -> &[u8] {
+        let mut end = 0usize;
+        while end < info.len() && !Self::is_html_whitespace(info[end]) {
+            end += 1;
+        }
+        &info[..end]
     }
 
     /// Write code block end: `</code></pre>\n`
