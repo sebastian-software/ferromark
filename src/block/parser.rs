@@ -476,7 +476,7 @@ impl<'a> BlockParser<'a> {
     /// 1. We're in a paragraph
     /// 2. The first unmatched container is a blockquote or list item
     /// 3. The current line doesn't start a new block
-    fn can_lazy_continue(&self, matched: usize, _indent: usize) -> bool {
+    fn can_lazy_continue(&self, matched: usize, indent: usize) -> bool {
         // Must be in a paragraph to do lazy continuation
         if !self.in_paragraph {
             return false;
@@ -498,39 +498,48 @@ impl<'a> BlockParser<'a> {
             return false;
         }
 
-        // Note: we don't check indent >= 4 here because we're in a paragraph.
-        // Indented code blocks can only start when NOT in a paragraph.
-        // The indent check is handled elsewhere.
+        // Note: we don't check indent >= 4 for indented code here because
+        // we're in a paragraph. Indented code blocks can only start when
+        // NOT in a paragraph.
 
         // Check if the current line would start a new block
-        // If it would, we can't do lazy continuation
-        !self.would_start_block()
+        // Pass indent to would_start_block so it can ignore block starts
+        // at 4+ indent (which become continuation or indented code)
+        !self.would_start_block(indent)
     }
 
     /// Check if the current position would start a new block.
     /// Used for lazy continuation checks.
-    fn would_start_block(&self) -> bool {
+    /// `indent` is the number of spaces at the start of the line (before current position).
+    fn would_start_block(&self, indent: usize) -> bool {
         let b = match self.cursor.peek() {
             Some(b) => b,
             None => return false,
         };
 
         match b {
-            // ATX heading
-            b'#' => true,
-            // Fenced code block or thematic break
-            b'`' | b'~' => self.cursor.remaining_slice().iter().take_while(|&&c| c == b).count() >= 3,
-            // Blockquote
-            b'>' => true,
-            // Unordered list marker or thematic break
+            // ATX heading - only at indent < 4
+            b'#' => indent < 4,
+            // Fenced code block - only at indent < 4
+            b'`' | b'~' => indent < 4 && self.cursor.remaining_slice().iter().take_while(|&&c| c == b).count() >= 3,
+            // Blockquote - only at indent < 4
+            b'>' => indent < 4,
+            // Unordered list marker or thematic break - only at indent < 4
             b'-' | b'*' | b'+' => {
+                if indent >= 4 {
+                    // At 4+ indent, thematic breaks are still possible
+                    return self.peek_thematic_break();
+                }
                 // Check if followed by space/tab/newline (list item) or if it's a thematic break
                 let after = self.cursor.peek_ahead(1);
                 after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n')
                     || after.is_none() || self.peek_thematic_break()
             }
-            // Ordered list marker
+            // Ordered list marker - only at indent < 4
             b'0'..=b'9' => {
+                if indent >= 4 {
+                    return false;
+                }
                 // Check if digit(s) followed by . or ) then space/tab/newline
                 let mut offset = 1;
                 while self.cursor.peek_ahead(offset).map_or(false, |c| c.is_ascii_digit()) {
@@ -543,10 +552,10 @@ impl<'a> BlockParser<'a> {
                 let after = self.cursor.peek_ahead(offset + 1);
                 after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n') || after.is_none()
             }
-            // HTML block (simplified check)
-            b'<' => true,
-            // Setext heading underline
-            b'=' => self.cursor.remaining_slice().iter().all(|&c| c == b'=' || c == b' ' || c == b'\n'),
+            // HTML block (simplified check) - only at indent < 4
+            b'<' => indent < 4,
+            // Setext heading underline - only at indent < 4
+            b'=' => indent < 4 && self.cursor.remaining_slice().iter().all(|&c| c == b'=' || c == b' ' || c == b'\n'),
             // Blank or other content - not a block start
             _ => false,
         }
