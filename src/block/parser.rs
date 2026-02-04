@@ -550,6 +550,14 @@ impl<'a> BlockParser<'a> {
 
         // Try to parse block-level constructs (only if indent < 4)
         if indent < 4 {
+            if let Some(b) = self.cursor.peek() {
+                if is_simple_line_start(b) {
+                    let line_start = self.cursor.offset();
+                    self.parse_paragraph_line(line_start, events);
+                    return;
+                }
+            }
+
             // Check for setext heading underline (when in a paragraph)
             // Must check BEFORE thematic break since `---` can be either
             if self.in_paragraph {
@@ -2623,6 +2631,25 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
         },
         i,
     ))
+}
+
+#[inline]
+fn is_simple_line_start(b: u8) -> bool {
+    !matches!(
+        b,
+        b'#'
+            | b'>'
+            | b'-'
+            | b'*'
+            | b'+'
+            | b'`'
+            | b'~'
+            | b'<'
+            | b'='
+            | b'\n'
+            | b'\r'
+            | b'0'..=b'9'
+    )
 }
 
 #[inline]
