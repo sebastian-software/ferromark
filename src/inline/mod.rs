@@ -103,7 +103,13 @@ impl InlineParser {
         });
 
         // Fourth: links and images (skip if no brackets)
-        Self::collect_brackets(self.mark_buffer.marks(), &mut self.open_brackets, &mut self.close_brackets);
+        let has_bracket_marks = self.mark_buffer.marks().iter().any(|m| m.ch == b'[' || m.ch == b']');
+        if has_bracket_marks {
+            Self::collect_brackets(self.mark_buffer.marks(), &mut self.open_brackets, &mut self.close_brackets);
+        } else {
+            self.open_brackets.clear();
+            self.close_brackets.clear();
+        }
         let has_brackets = !self.open_brackets.is_empty() && !self.close_brackets.is_empty();
         self.open_brackets
             .retain(|&(pos, _)| !pos_in_spans(pos, &self.html_spans));
