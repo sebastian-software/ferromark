@@ -4,12 +4,14 @@
 //!
 //! Parsers compared:
 //! - md-fast (this crate)
+//! - md4c (C)
 //! - pulldown-cmark (most popular, used by rustdoc)
 //! - comrak (100% CommonMark compliant, GFM support)
 //! - markdown (markdown-rs, wooorm's parser)
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use memchr::memchr;
+use std::os::raw::{c_char, c_int, c_uint, c_void};
 
 /// Sample documents for benchmarking
 mod samples {
@@ -202,6 +204,43 @@ fn parse_markdown_rs(input: &str) -> String {
     markdown::to_html(input)
 }
 
+extern "C" {
+    fn md_html(
+        input: *const c_char,
+        input_size: c_uint,
+        process_output: extern "C" fn(*const c_char, c_uint, *mut c_void),
+        userdata: *mut c_void,
+        parser_flags: c_uint,
+        renderer_flags: c_uint,
+    ) -> c_int;
+}
+
+extern "C" fn md4c_output(data: *const c_char, size: c_uint, userdata: *mut c_void) {
+    if data.is_null() || userdata.is_null() || size == 0 {
+        return;
+    }
+    let buf = unsafe { &mut *(userdata as *mut Vec<u8>) };
+    let bytes = unsafe { std::slice::from_raw_parts(data as *const u8, size as usize) };
+    buf.extend_from_slice(bytes);
+}
+
+/// Parse with md4c (C) via md_html.
+fn parse_md4c(input: &str) -> String {
+    let mut out: Vec<u8> = Vec::with_capacity(input.len() + input.len() / 4);
+    let rc = unsafe {
+        md_html(
+            input.as_ptr() as *const c_char,
+            input.len() as c_uint,
+            md4c_output,
+            &mut out as *mut Vec<u8> as *mut c_void,
+            0,
+            0,
+        )
+    };
+    debug_assert_eq!(rc, 0, "md_html returned error");
+    unsafe { String::from_utf8_unchecked(out) }
+}
+
 fn bench_tiny(c: &mut Criterion) {
     let mut group = c.benchmark_group("tiny");
     let input = samples::TINY;
@@ -209,6 +248,9 @@ fn bench_tiny(c: &mut Criterion) {
 
     group.bench_function("md-fast", |b| {
         b.iter(|| parse_md_fast(black_box(input)))
+    });
+    group.bench_function("md4c", |b| {
+        b.iter(|| parse_md4c(black_box(input)))
     });
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(input)))
@@ -231,6 +273,9 @@ fn bench_small(c: &mut Criterion) {
     group.bench_function("md-fast", |b| {
         b.iter(|| parse_md_fast(black_box(input)))
     });
+    group.bench_function("md4c", |b| {
+        b.iter(|| parse_md4c(black_box(input)))
+    });
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(input)))
     });
@@ -252,6 +297,9 @@ fn bench_medium(c: &mut Criterion) {
     group.bench_function("md-fast", |b| {
         b.iter(|| parse_md_fast(black_box(input)))
     });
+    group.bench_function("md4c", |b| {
+        b.iter(|| parse_md4c(black_box(input)))
+    });
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(input)))
     });
@@ -272,6 +320,9 @@ fn bench_large(c: &mut Criterion) {
 
     group.bench_function("md-fast", |b| {
         b.iter(|| parse_md_fast(black_box(&input)))
+    });
+    group.bench_function("md4c", |b| {
+        b.iter(|| parse_md4c(black_box(&input)))
     });
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(&input)))
@@ -305,6 +356,9 @@ fn bench_complexity(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("md-fast", name), input, |b, s| {
             b.iter(|| parse_md_fast(black_box(s)))
         });
+        group.bench_with_input(BenchmarkId::new("md4c", name), input, |b, s| {
+            b.iter(|| parse_md4c(black_box(s)))
+        });
         group.bench_with_input(BenchmarkId::new("pulldown-cmark", name), input, |b, s| {
             b.iter(|| parse_pulldown_cmark(black_box(s)))
         });
@@ -335,6 +389,9 @@ fn bench_throughput(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("md-fast", name), input, |b, s| {
             b.iter(|| parse_md_fast(black_box(s)))
+        });
+        group.bench_with_input(BenchmarkId::new("md4c", name), input, |b, s| {
+            b.iter(|| parse_md4c(black_box(s)))
         });
         group.bench_with_input(BenchmarkId::new("pulldown-cmark", name), input, |b, s| {
             b.iter(|| parse_pulldown_cmark(black_box(s)))

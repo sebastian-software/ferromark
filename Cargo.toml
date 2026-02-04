@@ -30,6 +30,9 @@ pulldown-cmark = "0.13"
 comrak = "0.50"
 markdown = "1.0"
 
+[build-dependencies]
+cc = "1.1"
+
 [features]
 default = ["std"]
 std = []
