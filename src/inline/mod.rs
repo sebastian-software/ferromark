@@ -19,6 +19,7 @@ use emphasis::{resolve_emphasis, EmphasisMatch};
 use links::{find_autolinks_into, resolve_links, resolve_reference_links, Autolink, Link, RefLink};
 use crate::link_ref::LinkRefStore;
 use marks::{collect_marks, flags, Mark, MarkBuffer};
+use memchr::memchr;
 
 /// Inline parser state.
 pub struct InlineParser {
@@ -71,7 +72,7 @@ impl InlineParser {
 
         // Phase 2: Resolve marks by precedence
         // First: autolinks + raw HTML (skip if no '<' present)
-        let has_lt = text.iter().any(|&b| b == b'<');
+        let has_lt = memchr(b'<', text).is_some();
         self.autolinks.clear();
         if has_lt {
             find_autolinks_into(text, &mut self.autolinks);
@@ -228,6 +229,7 @@ impl InlineParser {
         let mut link_dest_idx = 0usize;
         let mut autolink_idx = 0usize;
         let mut html_idx = 0usize;
+        let mut autolink_span_idx = 0usize;
 
         // Build sorted list of events to emit
         let estimated_events = marks.len()
@@ -244,9 +246,8 @@ impl InlineParser {
         // Add code span events (filter out spans whose opener is inside an autolink)
         for span in code_spans {
             // Skip code spans whose opener starts inside an autolink
-            let inside_autolink = autolinks.iter().any(|al| {
-                span.opener_pos >= al.start && span.opener_pos < al.end
-            });
+            let inside_autolink = !autolink_ranges.is_empty()
+                && pos_in_ranges_u32(span.opener_pos, autolink_ranges, &mut autolink_span_idx);
             if inside_autolink {
                 continue;
             }
@@ -400,18 +401,17 @@ impl InlineParser {
             // Skip marks inside code spans
             let in_code = mark.flags & flags::IN_CODE != 0;
 
-            // Check if mark is inside a link's destination area (the (...) part)
-            // This includes URL, title, and any whitespace between them
-            let in_link_dest = !link_dest_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, link_dest_ranges, &mut link_dest_idx);
-
-            // Check if mark is inside an autolink
-            let in_autolink = !autolink_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, autolink_ranges, &mut autolink_idx);
-            let in_html = !html_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, html_ranges, &mut html_idx);
-
             if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
+                // Check if mark is inside a link's destination area (the (...) part)
+                // This includes URL, title, and any whitespace between them
+                let in_link_dest = !link_dest_ranges.is_empty()
+                    && pos_in_ranges_u32(mark.pos, link_dest_ranges, &mut link_dest_idx);
+                // Check if mark is inside an autolink
+                let in_autolink = !autolink_ranges.is_empty()
+                    && pos_in_ranges_u32(mark.pos, autolink_ranges, &mut autolink_idx);
+                let in_html = !html_ranges.is_empty()
+                    && pos_in_ranges_u32(mark.pos, html_ranges, &mut html_idx);
+
                 let escaped_char = text[(mark.pos + 1) as usize];
                 if escaped_char == b'\n' && !in_code && !in_autolink && !in_html {
                     // Backslash before newline is a hard break (but not in code or autolinks)
@@ -428,18 +428,28 @@ impl InlineParser {
                         end: mark.end,
                     });
                 }
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0
-                && !in_code && !in_link_dest && !in_html
-            {
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0 {
+                let in_link_dest = !link_dest_ranges.is_empty()
+                    && pos_in_ranges_u32(mark.pos, link_dest_ranges, &mut link_dest_idx);
+                let in_html = !html_ranges.is_empty()
+                    && pos_in_ranges_u32(mark.pos, html_ranges, &mut html_idx);
+                if in_code || in_link_dest || in_html {
+                    continue;
+                }
                 // Two spaces before newline is a hard break (but not in code or link destinations)
                 emit_points.push(EmitPoint {
                     pos: mark.pos,
                     kind: EmitKind::HardBreak,
                     end: mark.end,
                 });
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_CLOSER != 0
-                && !in_code && !in_link_dest && !in_html
-            {
+            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_CLOSER != 0 {
+                let in_link_dest = !link_dest_ranges.is_empty()
+                    && pos_in_ranges_u32(mark.pos, link_dest_ranges, &mut link_dest_idx);
+                let in_html = !html_ranges.is_empty()
+                    && pos_in_ranges_u32(mark.pos, html_ranges, &mut html_idx);
+                if in_code || in_link_dest || in_html {
+                    continue;
+                }
                 // Soft break (newline without 2+ spaces) - also not in code or link destinations
                 emit_points.push(EmitPoint {
                     pos: mark.pos,
