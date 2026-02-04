@@ -626,6 +626,10 @@ impl<'a> BlockParser<'a> {
     /// Try to match existing containers at line start.
     /// Returns number of matched containers.
     fn match_containers(&mut self, _events: &mut Vec<BlockEvent>) -> usize {
+        if self.container_stack.is_empty() {
+            return 0;
+        }
+
         let mut matched = 0;
         // Track the deepest list that matched with non-blank content
         // (this is the level where a blank line would make the list loose)
