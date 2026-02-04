@@ -29,6 +29,8 @@ pub struct InlineParser {
     autolinks: Vec<Autolink>,
     html_spans: Vec<HtmlSpan>,
     html_ranges: Vec<(u32, u32)>,
+    link_dest_ranges: Vec<(u32, u32)>,
+    autolink_ranges: Vec<(u32, u32)>,
     code_spans: Vec<CodeSpan>,
     link_boundaries: Vec<(u32, u32)>,
     emit_points: Vec<EmitPoint>,
@@ -44,6 +46,8 @@ impl InlineParser {
             autolinks: Vec::new(),
             html_spans: Vec::new(),
             html_ranges: Vec::new(),
+            link_dest_ranges: Vec::new(),
+            autolink_ranges: Vec::new(),
             code_spans: Vec::new(),
             link_boundaries: Vec::new(),
             emit_points: Vec::new(),
@@ -118,6 +122,16 @@ impl InlineParser {
             (Vec::new(), Vec::new())
         };
 
+        self.link_dest_ranges.clear();
+        self.link_dest_ranges.extend(resolved_links.iter().filter_map(|link| {
+            let start = link.text_end + 1;
+            let end = link.end;
+            (start < end).then_some((start, end))
+        }));
+
+        self.autolink_ranges.clear();
+        self.autolink_ranges.extend(self.autolinks.iter().map(|al| (al.start, al.end)));
+
         // Fifth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
         self.link_boundaries.clear();
@@ -152,6 +166,9 @@ impl InlineParser {
             &resolved_ref_links,
             &self.autolinks,
             &self.html_spans,
+            &self.link_dest_ranges,
+            &self.autolink_ranges,
+            &self.html_ranges,
             &mut self.emit_points,
             events,
         );
@@ -195,31 +212,14 @@ impl InlineParser {
         resolved_ref_links: &[RefLink],
         autolinks: &[Autolink],
         html_spans: &[HtmlSpan],
+        link_dest_ranges: &[(u32, u32)],
+        autolink_ranges: &[(u32, u32)],
+        html_ranges: &[(u32, u32)],
         emit_points: &mut Vec<EmitPoint>,
         events: &mut Vec<InlineEvent>,
     ) {
         let mut pos = 0u32;
         let text_len = text.len() as u32;
-
-        let mut link_dest_ranges: Vec<(u32, u32)> = resolved_links
-            .iter()
-            .filter_map(|link| {
-                let start = link.text_end + 1;
-                let end = link.end;
-                (start < end).then_some((start, end))
-            })
-            .collect();
-        link_dest_ranges.sort_by_key(|(start, _)| *start);
-        let mut autolink_ranges: Vec<(u32, u32)> = autolinks
-            .iter()
-            .map(|al| (al.start, al.end))
-            .collect();
-        autolink_ranges.sort_by_key(|(start, _)| *start);
-        let mut html_ranges: Vec<(u32, u32)> = html_spans
-            .iter()
-            .map(|span| (span.start, span.end))
-            .collect();
-        html_ranges.sort_by_key(|(start, _)| *start);
 
         let mut link_dest_idx = 0usize;
         let mut autolink_idx = 0usize;
@@ -398,13 +398,13 @@ impl InlineParser {
             // Check if mark is inside a link's destination area (the (...) part)
             // This includes URL, title, and any whitespace between them
             let in_link_dest = !link_dest_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, &link_dest_ranges, &mut link_dest_idx);
+                && pos_in_ranges_u32(mark.pos, link_dest_ranges, &mut link_dest_idx);
 
             // Check if mark is inside an autolink
             let in_autolink = !autolink_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, &autolink_ranges, &mut autolink_idx);
+                && pos_in_ranges_u32(mark.pos, autolink_ranges, &mut autolink_idx);
             let in_html = !html_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, &html_ranges, &mut html_idx);
+                && pos_in_ranges_u32(mark.pos, html_ranges, &mut html_idx);
 
             if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
                 let escaped_char = text[(mark.pos + 1) as usize];
