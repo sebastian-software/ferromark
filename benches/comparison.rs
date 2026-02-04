@@ -478,7 +478,7 @@ fn hybrid_paragraph_buffer(input: &str) -> String {
         if is_blank {
             if !buf.is_empty() {
                 let para = std::str::from_utf8(&buf).unwrap_or("");
-                if has_defs || paragraph_has_ref_candidate(para) {
+                if paragraph_has_ref_candidate(para) {
                     out.push_str(&md_fast::to_html(para));
                 } else {
                     out.push_str(&md_fast::to_html(para));
@@ -503,7 +503,7 @@ fn hybrid_paragraph_buffer(input: &str) -> String {
 
     if !buf.is_empty() {
         let para = std::str::from_utf8(&buf).unwrap_or("");
-        if has_defs || paragraph_has_ref_candidate(para) {
+        if paragraph_has_ref_candidate(para) {
             out.push_str(&md_fast::to_html(para));
         } else {
             out.push_str(&md_fast::to_html(para));
