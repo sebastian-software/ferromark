@@ -62,6 +62,91 @@ The parser achieves **high throughput** on typical documents.
 Thank you for reading!
 "#;
 
+    /// Simple document: headers, lists, paragraphs, basic inline formatting
+    pub const SIMPLE: &str = r#"# Title
+
+## Section A
+
+This is a paragraph with *emphasis* and **strong**.
+
+- Item one
+- Item two
+- Item three
+
+Another paragraph.
+"#;
+
+    /// Link-heavy document: autolinks, inline links, entities, images
+    pub const LINKS: &str = r#"# Links
+
+Visit <https://example.com> or <mailto:test@example.com>.
+
+Inline [link](https://example.com/path?query=1&x=2) with &amp; entity.
+
+![Image alt](https://example.com/image.png "Title")
+
+Text with `code` and [another link](https://example.com).
+"#;
+
+    /// Reference link definitions and uses
+    pub const REFS: &str = r#"[ref-1]: https://example.com "Example"
+[ref-2]: /relative/path 'Rel'
+
+This uses [ref-1] and [ref-2].
+
+[Another ref][ref-1] and [short][ref-2].
+"#;
+
+    /// Nested lists and mixed block elements
+    pub const LISTS: &str = r#"# Lists
+
+1. Ordered
+   1. Nested ordered
+   2. Nested ordered
+2. Ordered
+   - Nested unordered
+     - Deep nested
+
+> Blockquote
+> - Quoted list item
+>   - Nested in quote
+"#;
+
+    /// HTML blocks and inline HTML
+    pub const HTML: &str = r#"<div class="note">
+<p>Inline <em>HTML</em> inside a block.</p>
+</div>
+
+Paragraph with <span class="hi">inline HTML</span> and &amp; entity.
+
+<script>
+var x = 1;
+</script>
+"#;
+
+    /// Mixed realistic document with multiple features
+    pub const MIXED: &str = r#"# Mixed Sample
+
+Intro paragraph with *emphasis*, **strong**, and `code`.
+
+[ref]: https://example.com "Title"
+
+## Section
+
+> Blockquote with [link][ref] and <https://example.com>.
+
+- List item with ![image](https://example.com/x.png)
+- List item with `<code>` and <span>HTML</span>
+
+```rust
+fn example() {
+    println!("Hello");
+}
+```
+
+Paragraph after code.
+"#;
+
     /// Generate a large document by repeating sections
     pub fn large() -> String {
         let section = r#"
@@ -200,6 +285,39 @@ fn bench_large(c: &mut Criterion) {
     group.finish();
 }
 
+/// Complexity comparison across representative feature sets
+fn bench_complexity(c: &mut Criterion) {
+    let mut group = c.benchmark_group("complexity");
+
+    let cases: Vec<(&str, &str)> = vec![
+        ("simple", samples::SIMPLE),
+        ("links", samples::LINKS),
+        ("refs", samples::REFS),
+        ("lists", samples::LISTS),
+        ("html", samples::HTML),
+        ("mixed", samples::MIXED),
+    ];
+
+    for (name, input) in &cases {
+        group.throughput(Throughput::Bytes(input.len() as u64));
+
+        group.bench_with_input(BenchmarkId::new("md-fast", name), input, |b, s| {
+            b.iter(|| parse_md_fast(black_box(s)))
+        });
+        group.bench_with_input(BenchmarkId::new("pulldown-cmark", name), input, |b, s| {
+            b.iter(|| parse_pulldown_cmark(black_box(s)))
+        });
+        group.bench_with_input(BenchmarkId::new("comrak", name), input, |b, s| {
+            b.iter(|| parse_comrak(black_box(s)))
+        });
+        group.bench_with_input(BenchmarkId::new("markdown-rs", name), input, |b, s| {
+            b.iter(|| parse_markdown_rs(black_box(s)))
+        });
+    }
+
+    group.finish();
+}
+
 /// Throughput comparison across all document sizes
 fn bench_throughput(c: &mut Criterion) {
     let mut group = c.benchmark_group("throughput");
@@ -237,6 +355,7 @@ criterion_group!(
     bench_small,
     bench_medium,
     bench_large,
+    bench_complexity,
     bench_throughput
 );
 criterion_main!(benches);
