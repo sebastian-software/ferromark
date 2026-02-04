@@ -500,23 +500,29 @@ fn parse_link_destination(text: &[u8], start: usize) -> Option<(usize, usize, Op
 }
 
 /// Find autolinks in text.
+#[cfg(test)]
 pub fn find_autolinks(text: &[u8]) -> Vec<Autolink> {
     let mut autolinks = Vec::new();
+    find_autolinks_into(text, &mut autolinks);
+    autolinks
+}
+
+/// Find autolinks in text, appending results into the provided buffer.
+pub fn find_autolinks_into(text: &[u8], out: &mut Vec<Autolink>) {
+    out.clear();
     let mut pos = 0;
     let len = text.len();
 
     while pos < len {
         if text[pos] == b'<' {
             if let Some(autolink) = try_parse_autolink(text, pos) {
-                autolinks.push(autolink);
+                out.push(autolink);
                 pos = autolink.end as usize;
                 continue;
             }
         }
         pos += 1;
     }
-
-    autolinks
 }
 
 /// Try to parse an autolink at the given position.

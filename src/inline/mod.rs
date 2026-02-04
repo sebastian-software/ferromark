@@ -16,14 +16,22 @@ pub use event::InlineEvent;
 use crate::Range;
 use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
 use emphasis::{resolve_emphasis, EmphasisMatch};
-use links::{find_autolinks, resolve_links, resolve_reference_links, Autolink, Link, RefLink};
+use links::{find_autolinks_into, resolve_links, resolve_reference_links, Autolink, Link, RefLink};
 use crate::link_ref::LinkRefStore;
-use marks::{collect_marks, flags, MarkBuffer};
+use marks::{collect_marks, flags, Mark, MarkBuffer};
 
 /// Inline parser state.
 pub struct InlineParser {
     /// Reusable mark buffer.
     mark_buffer: MarkBuffer,
+    open_brackets: Vec<(u32, bool)>,
+    close_brackets: Vec<u32>,
+    autolinks: Vec<Autolink>,
+    html_spans: Vec<HtmlSpan>,
+    html_ranges: Vec<(u32, u32)>,
+    code_spans: Vec<CodeSpan>,
+    link_boundaries: Vec<(u32, u32)>,
+    emit_points: Vec<EmitPoint>,
 }
 
 impl InlineParser {
@@ -31,6 +39,14 @@ impl InlineParser {
     pub fn new() -> Self {
         Self {
             mark_buffer: MarkBuffer::new(),
+            open_brackets: Vec::new(),
+            close_brackets: Vec::new(),
+            autolinks: Vec::new(),
+            html_spans: Vec::new(),
+            html_ranges: Vec::new(),
+            code_spans: Vec::new(),
+            link_boundaries: Vec::new(),
+            emit_points: Vec::new(),
         }
     }
 
@@ -50,60 +66,53 @@ impl InlineParser {
         // Phase 2: Resolve marks by precedence
         // First: autolinks + raw HTML (skip if no '<' present)
         let has_lt = text.iter().any(|&b| b == b'<');
-        let autolinks: Vec<_> = if has_lt {
-            find_autolinks(text)
-        } else {
-            Vec::new()
-        };
+        self.autolinks.clear();
+        if has_lt {
+            find_autolinks_into(text, &mut self.autolinks);
+        }
 
         // Second: raw inline HTML (ignore code spans for now; we'll filter after resolving them)
-        let mut html_spans = if has_lt {
-            find_html_spans(text, &[], &autolinks)
-        } else {
-            Vec::new()
-        };
-        let mut html_ranges: Vec<(u32, u32)> = Vec::with_capacity(html_spans.len());
-        html_ranges.extend(html_spans.iter().map(|s| (s.start, s.end)));
+        self.html_spans.clear();
+        if has_lt {
+            find_html_spans_into(text, &[], &self.autolinks, &mut self.html_spans);
+        }
+        self.html_ranges.clear();
+        self.html_ranges.reserve(self.html_spans.len());
+        self.html_ranges.extend(self.html_spans.iter().map(|s| (s.start, s.end)));
 
         // Third: code spans (highest precedence, but should not start inside HTML tags)
-        resolve_code_spans(self.mark_buffer.marks_mut(), text, &html_ranges);
+        resolve_code_spans(self.mark_buffer.marks_mut(), text, &self.html_ranges);
 
         // Get code span ranges for filtering
-        let code_spans: Vec<_> = extract_code_spans(self.mark_buffer.marks()).collect();
-        filter_html_spans_in_code_spans(&mut html_spans, &code_spans);
+        self.code_spans.clear();
+        self.code_spans.extend(extract_code_spans(self.mark_buffer.marks()));
+        filter_html_spans_in_code_spans(&mut self.html_spans, &self.code_spans);
 
         // Filter autolinks that start inside code spans
-        let autolinks: Vec<_> = autolinks
-            .into_iter()
-            .filter(|al| {
-                !code_spans.iter().any(|cs| {
-                    al.start >= cs.opener_pos && al.start < cs.closer_end
-                })
+        self.autolinks.retain(|al| {
+            !self.code_spans.iter().any(|cs| {
+                al.start >= cs.opener_pos && al.start < cs.closer_end
             })
-            .collect();
+        });
 
         // Fourth: links and images (skip if no brackets)
-        let (open_brackets, close_brackets) = self.collect_brackets();
-        let has_brackets = !open_brackets.is_empty() && !close_brackets.is_empty();
-        let open_brackets: Vec<_> = open_brackets
-            .into_iter()
-            .filter(|&(pos, _)| !pos_in_spans(pos, &html_spans))
-            .collect();
+        Self::collect_brackets(self.mark_buffer.marks(), &mut self.open_brackets, &mut self.close_brackets);
+        let has_brackets = !self.open_brackets.is_empty() && !self.close_brackets.is_empty();
+        self.open_brackets
+            .retain(|&(pos, _)| !pos_in_spans(pos, &self.html_spans));
         // Filter out close brackets that are inside autolinks - they can't close links
-        let close_brackets: Vec<_> = close_brackets
-            .into_iter()
-            .filter(|&pos| {
-                !autolinks.iter().any(|al| pos > al.start && pos < al.end)
-                    && !pos_in_spans(pos, &html_spans)
-            })
-            .collect();
+        self.close_brackets
+            .retain(|&pos| {
+                !self.autolinks.iter().any(|al| pos > al.start && pos < al.end)
+                    && !pos_in_spans(pos, &self.html_spans)
+            });
         let (resolved_links, resolved_ref_links) = if has_brackets {
-            let resolved_links = resolve_links(text, &open_brackets, &close_brackets);
+            let resolved_links = resolve_links(text, &self.open_brackets, &self.close_brackets);
             let resolved_ref_links = link_refs
                 .filter(|defs| !defs.is_empty())
-                .map(|defs| resolve_reference_links(text, &open_brackets, &close_brackets, &resolved_links, defs))
+                .map(|defs| resolve_reference_links(text, &self.open_brackets, &self.close_brackets, &resolved_links, defs))
                 .unwrap_or_default();
-            filter_html_spans_in_link_destinations(&mut html_spans, &resolved_links);
+            filter_html_spans_in_link_destinations(&mut self.html_spans, &resolved_links);
             (resolved_links, resolved_ref_links)
         } else {
             (Vec::new(), Vec::new())
@@ -111,45 +120,50 @@ impl InlineParser {
 
         // Fifth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
-        let mut link_boundaries: Vec<(u32, u32)> = Vec::with_capacity(
+        self.link_boundaries.clear();
+        self.link_boundaries.reserve(
             resolved_links.len()
                 + resolved_ref_links.len()
-                + autolinks.len()
-                + html_spans.len(),
+                + self.autolinks.len()
+                + self.html_spans.len(),
         );
-        link_boundaries.extend(resolved_links.iter().map(|l| (l.start, l.text_end)));
+        self.link_boundaries.extend(resolved_links.iter().map(|l| (l.start, l.text_end)));
         for link in &resolved_ref_links {
-            link_boundaries.push((link.start, link.text_end));
+            self.link_boundaries.push((link.start, link.text_end));
         }
         // Also include autolinks - delimiters inside <url> should not form emphasis
-        for autolink in &autolinks {
-            link_boundaries.push((autolink.start, autolink.end));
+        for autolink in &self.autolinks {
+            self.link_boundaries.push((autolink.start, autolink.end));
         }
         // Also include raw HTML spans
-        for span in &html_spans {
-            link_boundaries.push((span.start, span.end));
+        for span in &self.html_spans {
+            self.link_boundaries.push((span.start, span.end));
         }
-        let emphasis_matches = resolve_emphasis(self.mark_buffer.marks_mut(), &link_boundaries);
+        let emphasis_matches = resolve_emphasis(self.mark_buffer.marks_mut(), &self.link_boundaries);
 
         // Phase 3: Emit events
-        self.emit_events(
+        let marks = self.mark_buffer.marks();
+        Self::emit_events(
+            marks,
             text,
-            &code_spans,
+            &self.code_spans,
             &emphasis_matches,
             &resolved_links,
             &resolved_ref_links,
-            &autolinks,
-            &html_spans,
+            &self.autolinks,
+            &self.html_spans,
+            &mut self.emit_points,
             events,
         );
     }
 
     /// Collect bracket positions for link parsing.
-    fn collect_brackets(&self) -> (Vec<(u32, bool)>, Vec<u32>) {
-        let marks = self.mark_buffer.marks();
+    fn collect_brackets(marks: &[Mark], open_brackets: &mut Vec<(u32, bool)>, close_brackets: &mut Vec<u32>) {
         let estimated = (marks.len() / 4).max(4);
-        let mut open_brackets = Vec::with_capacity(estimated);
-        let mut close_brackets = Vec::with_capacity(estimated);
+        open_brackets.clear();
+        close_brackets.clear();
+        open_brackets.reserve(estimated);
+        close_brackets.reserve(estimated);
 
         for mark in marks {
             // Skip brackets inside code spans
@@ -169,13 +183,11 @@ impl InlineParser {
                 _ => {}
             }
         }
-
-        (open_brackets, close_brackets)
     }
 
     /// Emit events based on resolved marks.
     fn emit_events(
-        &self,
+        marks: &[Mark],
         text: &[u8],
         code_spans: &[CodeSpan],
         emphasis_matches: &[EmphasisMatch],
@@ -183,9 +195,9 @@ impl InlineParser {
         resolved_ref_links: &[RefLink],
         autolinks: &[Autolink],
         html_spans: &[HtmlSpan],
+        emit_points: &mut Vec<EmitPoint>,
         events: &mut Vec<InlineEvent>,
     ) {
-        let marks = self.mark_buffer.marks();
         let mut pos = 0u32;
         let text_len = text.len() as u32;
 
@@ -221,7 +233,8 @@ impl InlineParser {
             + autolinks.len()
             + html_spans.len()
             + (emphasis_matches.len() * 2);
-        let mut emit_points: Vec<EmitPoint> = Vec::with_capacity(estimated_events.max(8));
+        emit_points.clear();
+        emit_points.reserve(estimated_events.max(8));
 
         // Add code span events (filter out spans whose opener is inside an autolink)
         for span in code_spans {
@@ -448,7 +461,7 @@ impl InlineParser {
         // Emit events in order
         let mut skip_until = 0u32;
 
-        for point in &emit_points {
+        for point in emit_points.iter() {
             // Skip events inside suppressed ranges (e.g., reference labels)
             if suppress_ranges.iter().any(|&(s, e)| point.pos > s && point.pos < e) {
                 pos = pos.max(point.end);
@@ -661,8 +674,13 @@ fn pos_in_spans(pos: u32, spans: &[HtmlSpan]) -> bool {
     false
 }
 
-fn find_html_spans(text: &[u8], code_spans: &[CodeSpan], autolinks: &[Autolink]) -> Vec<HtmlSpan> {
-    let mut spans = Vec::new();
+fn find_html_spans_into(
+    text: &[u8],
+    code_spans: &[CodeSpan],
+    autolinks: &[Autolink],
+    spans: &mut Vec<HtmlSpan>,
+) {
+    spans.clear();
     let len = text.len();
 
     let mut code_ranges: Vec<(usize, usize)> = code_spans
@@ -708,8 +726,6 @@ fn find_html_spans(text: &[u8], code_spans: &[CodeSpan], autolinks: &[Autolink])
             pos += 1;
         }
     }
-
-    spans
 }
 
 fn filter_html_spans_in_link_destinations(spans: &mut Vec<HtmlSpan>, links: &[Link]) {
