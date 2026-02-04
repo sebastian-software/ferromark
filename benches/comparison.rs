@@ -289,6 +289,30 @@ fn bench_small(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_simple(c: &mut Criterion) {
+    let mut group = c.benchmark_group("simple");
+    let input = samples::SIMPLE;
+    group.throughput(Throughput::Bytes(input.len() as u64));
+
+    group.bench_function("md-fast", |b| {
+        b.iter(|| parse_md_fast(black_box(input)))
+    });
+    group.bench_function("md4c", |b| {
+        b.iter(|| parse_md4c(black_box(input)))
+    });
+    group.bench_function("pulldown-cmark", |b| {
+        b.iter(|| parse_pulldown_cmark(black_box(input)))
+    });
+    group.bench_function("comrak", |b| {
+        b.iter(|| parse_comrak(black_box(input)))
+    });
+    group.bench_function("markdown-rs", |b| {
+        b.iter(|| parse_markdown_rs(black_box(input)))
+    });
+
+    group.finish();
+}
+
 fn bench_medium(c: &mut Criterion) {
     let mut group = c.benchmark_group("medium");
     let input = samples::MEDIUM;
@@ -820,6 +844,7 @@ criterion_group!(
     benches,
     bench_tiny,
     bench_small,
+    bench_simple,
     bench_medium,
     bench_large,
     bench_complexity,
