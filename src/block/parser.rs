@@ -539,9 +539,11 @@ impl<'a> BlockParser<'a> {
     /// Parse line content with a known indent value.
     /// Cursor should already be past the leading whitespace.
     fn parse_line_content_with_indent(&mut self, indent: usize, events: &mut Vec<BlockEvent>) {
+        let first = self.cursor.peek_or_zero();
+
         // Check for blank line (can happen after container markers)
-        if self.cursor.is_eof() || self.cursor.at(b'\n') {
-            if !self.cursor.is_eof() {
+        if first == 0 || first == b'\n' {
+            if first == b'\n' {
                 self.cursor.bump();
             }
             self.close_paragraph(events);
@@ -550,12 +552,10 @@ impl<'a> BlockParser<'a> {
 
         // Try to parse block-level constructs (only if indent < 4)
         if indent < 4 {
-            if let Some(b) = self.cursor.peek() {
-                if is_simple_line_start(b) {
-                    let line_start = self.cursor.offset();
-                    self.parse_paragraph_line(line_start, events);
-                    return;
-                }
+            if is_simple_line_start(first) {
+                let line_start = self.cursor.offset();
+                self.parse_paragraph_line(line_start, events);
+                return;
             }
 
             // Check for setext heading underline (when in a paragraph)
@@ -812,10 +812,10 @@ impl<'a> BlockParser<'a> {
     /// Used for lazy continuation checks.
     /// `indent` is the number of spaces at the start of the line (before current position).
     fn would_start_block(&self, indent: usize) -> bool {
-        let b = match self.cursor.peek() {
-            Some(b) => b,
-            None => return false,
-        };
+        let b = self.cursor.peek_or_zero();
+        if b == 0 {
+            return false;
+        }
 
         match b {
             // ATX heading - only at indent < 4
