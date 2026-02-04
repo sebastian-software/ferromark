@@ -39,6 +39,10 @@ impl LinkRefStore {
     pub fn get(&self, idx: usize) -> Option<&LinkRefDef> {
         self.defs.get(idx)
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.defs.is_empty()
+    }
 }
 
 /// Normalize a link label per CommonMark: decode entities, process backslash escapes,

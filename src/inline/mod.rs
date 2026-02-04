@@ -48,11 +48,20 @@ impl InlineParser {
         }
 
         // Phase 2: Resolve marks by precedence
-        // First: autolinks (filter out those inside code spans later)
-        let autolinks: Vec<_> = find_autolinks(text);
+        // First: autolinks + raw HTML (skip if no '<' present)
+        let has_lt = text.iter().any(|&b| b == b'<');
+        let autolinks: Vec<_> = if has_lt {
+            find_autolinks(text)
+        } else {
+            Vec::new()
+        };
 
         // Second: raw inline HTML (ignore code spans for now; we'll filter after resolving them)
-        let mut html_spans = find_html_spans(text, &[], &autolinks);
+        let mut html_spans = if has_lt {
+            find_html_spans(text, &[], &autolinks)
+        } else {
+            Vec::new()
+        };
         let html_ranges: Vec<(u32, u32)> = html_spans.iter().map(|s| (s.start, s.end)).collect();
 
         // Third: code spans (highest precedence, but should not start inside HTML tags)
@@ -72,8 +81,9 @@ impl InlineParser {
             })
             .collect();
 
-        // Fourth: links and images
+        // Fourth: links and images (skip if no brackets)
         let (open_brackets, close_brackets) = self.collect_brackets();
+        let has_brackets = !open_brackets.is_empty() && !close_brackets.is_empty();
         let open_brackets: Vec<_> = open_brackets
             .into_iter()
             .filter(|&(pos, _)| !pos_in_spans(pos, &html_spans))
@@ -86,11 +96,17 @@ impl InlineParser {
                     && !pos_in_spans(pos, &html_spans)
             })
             .collect();
-        let resolved_links = resolve_links(text, &open_brackets, &close_brackets);
-        let resolved_ref_links = link_refs
-            .map(|defs| resolve_reference_links(text, &open_brackets, &close_brackets, &resolved_links, defs))
-            .unwrap_or_default();
-        filter_html_spans_in_link_destinations(&mut html_spans, &resolved_links);
+        let (resolved_links, resolved_ref_links) = if has_brackets {
+            let resolved_links = resolve_links(text, &open_brackets, &close_brackets);
+            let resolved_ref_links = link_refs
+                .filter(|defs| !defs.is_empty())
+                .map(|defs| resolve_reference_links(text, &open_brackets, &close_brackets, &resolved_links, defs))
+                .unwrap_or_default();
+            filter_html_spans_in_link_destinations(&mut html_spans, &resolved_links);
+            (resolved_links, resolved_ref_links)
+        } else {
+            (Vec::new(), Vec::new())
+        };
 
         // Fifth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them

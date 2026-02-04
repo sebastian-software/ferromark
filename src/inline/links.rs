@@ -159,22 +159,13 @@ pub fn resolve_reference_links(
         .filter(|l| !l.is_image)
         .map(|l| (l.start, l.end))
         .collect();
-    let mut open_pos_to_idx = std::collections::HashMap::new();
-    let mut close_pos_to_idx = std::collections::HashMap::new();
-    for (i, &(pos, _)) in open_brackets.iter().enumerate() {
-        open_pos_to_idx.insert(pos, i);
-    }
-    for (i, &pos) in close_brackets.iter().enumerate() {
-        close_pos_to_idx.insert(pos, i);
-    }
-
     // Mark opens/closes used by inline links
     for link in inline_links {
         let open_pos = if link.is_image { link.start + 1 } else { link.start };
-        if let Some(&idx) = open_pos_to_idx.get(&open_pos) {
+        if let Some(idx) = find_open_idx(open_brackets, open_pos) {
             formed_opens[idx] = true;
         }
-        if let Some(&idx) = close_pos_to_idx.get(&link.text_end) {
+        if let Some(idx) = find_close_idx(close_brackets, link.text_end) {
             used_closes[idx] = true;
         }
     }
@@ -232,10 +223,10 @@ pub fn resolve_reference_links(
         used_closes[close_idx] = true;
 
         if let Some((ref_start, _ref_end, ref_close_pos)) = ref_label {
-            if let Some(&idx) = open_pos_to_idx.get(&((ref_start - 1) as u32)) {
+            if let Some(idx) = find_open_idx(open_brackets, (ref_start - 1) as u32) {
                 formed_opens[idx] = true;
             }
-            if let Some(&idx) = close_pos_to_idx.get(&(ref_close_pos as u32)) {
+            if let Some(idx) = find_close_idx(close_brackets, ref_close_pos as u32) {
                 used_closes[idx] = true;
             }
         }
@@ -253,6 +244,20 @@ pub fn resolve_reference_links(
 
     ref_links.sort_by_key(|l| l.start);
     ref_links
+}
+
+#[inline]
+fn find_open_idx(open_brackets: &[(u32, bool)], pos: u32) -> Option<usize> {
+    open_brackets
+        .binary_search_by_key(&pos, |(p, _)| *p)
+        .ok()
+}
+
+#[inline]
+fn find_close_idx(close_brackets: &[u32], pos: u32) -> Option<usize> {
+    close_brackets
+        .binary_search(&pos)
+        .ok()
 }
 
 fn contains_link(links: &[(u32, u32)], start: u32, end: u32) -> bool {
