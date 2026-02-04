@@ -466,7 +466,7 @@ impl InlineParser {
         }
 
         // Sort by position (end events come after start events at same position)
-        emit_points.sort_by_key(|p| (p.pos, matches!(p.kind,
+        emit_points.sort_unstable_by_key(|p| (p.pos, matches!(p.kind,
             EmitKind::CodeSpanEnd | EmitKind::StrongEnd | EmitKind::EmphasisEnd |
             EmitKind::LinkEnd | EmitKind::ImageEnd
         )));
