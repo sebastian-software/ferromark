@@ -86,6 +86,15 @@ impl MarkBuffer {
         self.marks.clear();
     }
 
+    /// Reserve capacity based on input length.
+    #[inline]
+    pub fn reserve_for_text(&mut self, text_len: usize) {
+        let target = (text_len / 8).clamp(8, limits::MAX_INLINE_MARKS);
+        if self.marks.capacity() < target {
+            self.marks.reserve(target - self.marks.capacity());
+        }
+    }
+
     /// Add a mark if we haven't exceeded the limit.
     #[inline]
     pub fn push(&mut self, mark: Mark) {

@@ -67,6 +67,7 @@ impl InlineParser {
         }
 
         // Phase 1: Collect marks
+        self.mark_buffer.reserve_for_text(text.len());
         collect_marks(text, &mut self.mark_buffer);
 
         if self.mark_buffer.is_empty() {
