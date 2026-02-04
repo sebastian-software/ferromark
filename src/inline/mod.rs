@@ -34,6 +34,7 @@ pub struct InlineParser {
     code_spans: Vec<CodeSpan>,
     link_boundaries: Vec<(u32, u32)>,
     emit_points: Vec<EmitPoint>,
+    emit_suppress_ranges: Vec<(u32, u32)>,
 }
 
 impl InlineParser {
@@ -51,6 +52,7 @@ impl InlineParser {
             code_spans: Vec::new(),
             link_boundaries: Vec::new(),
             emit_points: Vec::new(),
+            emit_suppress_ranges: Vec::new(),
         }
     }
 
@@ -170,6 +172,7 @@ impl InlineParser {
             &self.autolink_ranges,
             &self.html_ranges,
             &mut self.emit_points,
+            &mut self.emit_suppress_ranges,
             events,
         );
     }
@@ -216,6 +219,7 @@ impl InlineParser {
         autolink_ranges: &[(u32, u32)],
         html_ranges: &[(u32, u32)],
         emit_points: &mut Vec<EmitPoint>,
+        suppress_ranges: &mut Vec<(u32, u32)>,
         events: &mut Vec<InlineEvent>,
     ) {
         let mut pos = 0u32;
@@ -235,6 +239,7 @@ impl InlineParser {
             + (emphasis_matches.len() * 2);
         emit_points.clear();
         emit_points.reserve(estimated_events.max(8));
+        events.reserve(estimated_events.max(8) + 4);
 
         // Add code span events (filter out spans whose opener is inside an autolink)
         for span in code_spans {
@@ -451,7 +456,8 @@ impl InlineParser {
         )));
 
         // Build ranges to suppress (reference labels after link text)
-        let mut suppress_ranges: Vec<(u32, u32)> = Vec::new();
+        suppress_ranges.clear();
+        suppress_ranges.reserve(resolved_ref_links.len());
         for link in resolved_ref_links {
             if link.end > link.text_end {
                 suppress_ranges.push((link.text_end, link.end));
@@ -460,12 +466,21 @@ impl InlineParser {
 
         // Emit events in order
         let mut skip_until = 0u32;
+        let mut suppress_idx = 0usize;
 
         for point in emit_points.iter() {
             // Skip events inside suppressed ranges (e.g., reference labels)
-            if suppress_ranges.iter().any(|&(s, e)| point.pos > s && point.pos < e) {
-                pos = pos.max(point.end);
-                continue;
+            while suppress_idx < suppress_ranges.len()
+                && point.pos >= suppress_ranges[suppress_idx].1
+            {
+                suppress_idx += 1;
+            }
+            if suppress_idx < suppress_ranges.len() {
+                let (s, e) = suppress_ranges[suppress_idx];
+                if point.pos > s && point.pos < e {
+                    pos = pos.max(point.end);
+                    continue;
+                }
             }
             // Emit text before this point
             if point.pos > pos && point.pos > skip_until {
