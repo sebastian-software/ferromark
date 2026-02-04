@@ -4,6 +4,7 @@
 
 use crate::escape;
 use crate::Range;
+use memchr::memchr;
 
 /// Decode HTML entities with CommonMark compliance.
 /// - Replaces null bytes (from &#0;) with U+FFFD replacement character
@@ -135,6 +136,10 @@ impl HtmlWriter {
     /// First decodes HTML entities, then escapes for output.
     #[inline]
     pub fn write_text_with_entities(&mut self, text: &[u8]) {
+        if memchr(b'&', text).is_none() {
+            escape::escape_text_into(&mut self.out, text);
+            return;
+        }
         // First decode HTML entities
         let text_str = core::str::from_utf8(text).unwrap_or("");
         let decoded = decode_entities_commonmark(text_str);
