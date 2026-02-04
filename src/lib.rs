@@ -140,7 +140,7 @@ impl HeadingState {
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
     // Parse blocks
     let mut parser = BlockParser::new(input);
-    let mut events = Vec::new();
+    let mut events = Vec::with_capacity((input.len() / 16).max(64));
     parser.parse(&mut events);
     let link_refs = parser.take_link_refs();
 
@@ -149,7 +149,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
 
     // Create inline parser for text content
     let mut inline_parser = InlineParser::new();
-    let mut inline_events = Vec::new();
+    let mut inline_events = Vec::with_capacity(64);
 
     // State for accumulating paragraph content
     let mut para_state = ParagraphState::new();
