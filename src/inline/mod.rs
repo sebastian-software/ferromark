@@ -33,6 +33,8 @@ pub struct InlineParser {
     autolink_ranges: Vec<(u32, u32)>,
     code_spans: Vec<CodeSpan>,
     link_boundaries: Vec<(u32, u32)>,
+    link_events: Vec<EmitPoint>,
+    emphasis_events: Vec<EmitPoint>,
 }
 
 impl InlineParser {
@@ -49,6 +51,8 @@ impl InlineParser {
             autolink_ranges: Vec::new(),
             code_spans: Vec::new(),
             link_boundaries: Vec::new(),
+            link_events: Vec::new(),
+            emphasis_events: Vec::new(),
         }
     }
 
@@ -155,6 +159,7 @@ impl InlineParser {
 
         // Phase 3: Emit events
         let marks = self.mark_buffer.marks();
+        let (link_events, emphasis_events) = (&mut self.link_events, &mut self.emphasis_events);
         Self::emit_events(
             marks,
             text,
@@ -167,6 +172,8 @@ impl InlineParser {
             &self.link_dest_ranges,
             &self.autolink_ranges,
             &self.html_ranges,
+            link_events,
+            emphasis_events,
             events,
         );
     }
@@ -212,13 +219,16 @@ impl InlineParser {
         link_dest_ranges: &[(u32, u32)],
         autolink_ranges: &[(u32, u32)],
         html_ranges: &[(u32, u32)],
+        link_events: &mut Vec<EmitPoint>,
+        emphasis_events: &mut Vec<EmitPoint>,
         events: &mut Vec<InlineEvent>,
     ) {
         let mut pos = 0u32;
         let text_len = text.len() as u32;
 
         let mut code_cursor = CodeCursor::new(code_spans, autolink_ranges);
-        let mut link_events: Vec<EmitPoint> = Vec::with_capacity(
+        link_events.clear();
+        link_events.reserve(
             (resolved_links.len() + resolved_ref_links.len()) * 2,
         );
         for link in resolved_links {
@@ -287,10 +297,11 @@ impl InlineParser {
         }
         link_events.sort_by_key(|p| (p.pos, is_end_kind(&p.kind)));
 
-        let mut link_cursor = EventCursor::new(&link_events);
+        let mut link_cursor = EventCursor::new(link_events);
         let mut autolink_cursor = AutolinkCursor::new(autolinks);
         let mut html_cursor = HtmlCursor::new(html_spans);
-        let mut emphasis_events: Vec<EmitPoint> = Vec::with_capacity(emphasis_matches.len() * 2);
+        emphasis_events.clear();
+        emphasis_events.reserve(emphasis_matches.len() * 2);
         for m in emphasis_matches {
             let is_strong = m.count == 2;
             if is_strong {
@@ -319,7 +330,7 @@ impl InlineParser {
         }
         emphasis_events.sort_by_key(|p| (p.pos, is_end_kind(&p.kind)));
 
-        let mut emphasis_cursor = EventCursor::new(&emphasis_events);
+        let mut emphasis_cursor = EventCursor::new(emphasis_events);
         let mut mark_cursor = MarkCursor::new(marks, text, link_dest_ranges, autolink_ranges, html_ranges);
 
         // Build ranges to suppress (reference labels after link text)
