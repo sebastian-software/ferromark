@@ -6,24 +6,29 @@ fn main() {
     let src_dir = md4c_dir.join("src");
     let md4c_c = src_dir.join("md4c.c");
     let md4c_html_c = src_dir.join("md4c-html.c");
+    let md4c_entity_c = src_dir.join("entity.c");
     let md4c_h = src_dir.join("md4c.h");
     let md4c_html_h = src_dir.join("md4c-html.h");
+    let md4c_entity_h = src_dir.join("entity.h");
 
-    if !md4c_c.exists() || !md4c_html_c.exists() {
+    if !md4c_c.exists() || !md4c_html_c.exists() || !md4c_entity_c.exists() {
         panic!(
-            "md4c sources not found. Set MD4C_DIR or ensure ../md4c exists with src/md4c.c and src/md4c-html.c"
+            "md4c sources not found. Set MD4C_DIR or ensure ../md4c exists with src/md4c.c, src/md4c-html.c, and src/entity.c"
         );
     }
 
     println!("cargo:rerun-if-env-changed=MD4C_DIR");
     println!("cargo:rerun-if-changed={}", md4c_c.display());
     println!("cargo:rerun-if-changed={}", md4c_html_c.display());
+    println!("cargo:rerun-if-changed={}", md4c_entity_c.display());
     println!("cargo:rerun-if-changed={}", md4c_h.display());
     println!("cargo:rerun-if-changed={}", md4c_html_h.display());
+    println!("cargo:rerun-if-changed={}", md4c_entity_h.display());
 
     cc::Build::new()
         .file(md4c_c)
         .file(md4c_html_c)
+        .file(md4c_entity_c)
         .include(&src_dir)
         .flag_if_supported("-std=c99")
         .compile("md4c");

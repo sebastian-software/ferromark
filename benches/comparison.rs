@@ -204,7 +204,7 @@ fn parse_markdown_rs(input: &str) -> String {
     markdown::to_html(input)
 }
 
-extern "C" {
+unsafe extern "C" {
     fn md_html(
         input: *const c_char,
         input_size: c_uint,
