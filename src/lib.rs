@@ -238,6 +238,7 @@ fn render_block_event(
             let content = para_state.finish();
             if !content.is_empty() {
                 inline_events.clear();
+                inline_events.reserve((content.len() / 8).max(8));
                 inline_parser.parse(content, Some(link_refs), inline_events);
 
                 // Render inline events
@@ -270,6 +271,7 @@ fn render_block_event(
             let content = heading_state.finish();
             if !content.is_empty() {
                 inline_events.clear();
+                inline_events.reserve((content.len() / 8).max(8));
                 inline_parser.parse(content, Some(link_refs), inline_events);
 
                 let mut image_state = None;
