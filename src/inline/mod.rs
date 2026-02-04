@@ -33,7 +33,6 @@ pub struct InlineParser {
     autolink_ranges: Vec<(u32, u32)>,
     code_spans: Vec<CodeSpan>,
     link_boundaries: Vec<(u32, u32)>,
-    emit_points: Vec<EmitPoint>,
 }
 
 impl InlineParser {
@@ -50,7 +49,6 @@ impl InlineParser {
             autolink_ranges: Vec::new(),
             code_spans: Vec::new(),
             link_boundaries: Vec::new(),
-            emit_points: Vec::new(),
         }
     }
 
@@ -169,7 +167,6 @@ impl InlineParser {
             &self.link_dest_ranges,
             &self.autolink_ranges,
             &self.html_ranges,
-            &mut self.emit_points,
             events,
         );
     }
@@ -215,60 +212,18 @@ impl InlineParser {
         link_dest_ranges: &[(u32, u32)],
         autolink_ranges: &[(u32, u32)],
         html_ranges: &[(u32, u32)],
-        emit_points: &mut Vec<EmitPoint>,
         events: &mut Vec<InlineEvent>,
     ) {
         let mut pos = 0u32;
         let text_len = text.len() as u32;
 
-        let mut link_dest_idx = 0usize;
-        let mut autolink_idx = 0usize;
-        let mut html_idx = 0usize;
-
-        // Build sorted list of events to emit
-        let estimated_events = marks.len()
-            + (code_spans.len() * 3)
-            + (resolved_links.len() * 4)
-            + (resolved_ref_links.len() * 4)
-            + autolinks.len()
-            + html_spans.len()
-            + (emphasis_matches.len() * 2);
-        emit_points.clear();
-        emit_points.reserve(estimated_events.max(8));
-
-        // Add code span events (filter out spans whose opener is inside an autolink)
-        for span in code_spans {
-            // Skip code spans whose opener starts inside an autolink
-            let inside_autolink = autolinks.iter().any(|al| {
-                span.opener_pos >= al.start && span.opener_pos < al.end
-            });
-            if inside_autolink {
-                continue;
-            }
-
-            emit_points.push(EmitPoint {
-                pos: span.opener_pos,
-                kind: EmitKind::CodeSpanStart,
-                end: span.opener_end,
-            });
-            emit_points.push(EmitPoint {
-                pos: span.closer_pos,
-                kind: EmitKind::CodeSpanEnd,
-                end: span.closer_end,
-            });
-            // Code content
-            let (content_start, content_end) = span.content_range();
-            emit_points.push(EmitPoint {
-                pos: content_start,
-                kind: EmitKind::CodeContent(content_end),
-                end: content_end,
-            });
-        }
-
-        // Add link events
+        let mut code_cursor = CodeCursor::new(code_spans, autolink_ranges);
+        let mut link_events: Vec<EmitPoint> = Vec::with_capacity(
+            (resolved_links.len() + resolved_ref_links.len()) * 2,
+        );
         for link in resolved_links {
             if link.is_image {
-                emit_points.push(EmitPoint {
+                link_events.push(EmitPoint {
                     pos: link.start,
                     kind: EmitKind::ImageStart {
                         url_start: link.url_start,
@@ -276,15 +231,15 @@ impl InlineParser {
                         title_start: link.title_start,
                         title_end: link.title_end,
                     },
-                    end: link.start + 2, // ![
+                    end: link.start + 2,
                 });
-                emit_points.push(EmitPoint {
+                link_events.push(EmitPoint {
                     pos: link.text_end,
                     kind: EmitKind::ImageEnd,
                     end: link.end,
                 });
             } else {
-                emit_points.push(EmitPoint {
+                link_events.push(EmitPoint {
                     pos: link.start,
                     kind: EmitKind::LinkStart {
                         url_start: link.url_start,
@@ -292,163 +247,80 @@ impl InlineParser {
                         title_start: link.title_start,
                         title_end: link.title_end,
                     },
-                    end: link.start + 1, // [
+                    end: link.start + 1,
                 });
-                emit_points.push(EmitPoint {
+                link_events.push(EmitPoint {
                     pos: link.text_end,
                     kind: EmitKind::LinkEnd,
                     end: link.end,
                 });
             }
         }
-
-        // Add reference-style link events
         for link in resolved_ref_links {
             if link.is_image {
-                emit_points.push(EmitPoint {
+                link_events.push(EmitPoint {
                     pos: link.start,
-                    kind: EmitKind::ImageStartRef { def_index: link.def_index as u32 },
-                    end: link.start + 2, // ![
+                    kind: EmitKind::ImageStartRef {
+                        def_index: link.def_index as u32,
+                    },
+                    end: link.start + 2,
                 });
-                emit_points.push(EmitPoint {
+                link_events.push(EmitPoint {
                     pos: link.text_end,
                     kind: EmitKind::ImageEnd,
                     end: link.end,
                 });
             } else {
-                emit_points.push(EmitPoint {
+                link_events.push(EmitPoint {
                     pos: link.start,
-                    kind: EmitKind::LinkStartRef { def_index: link.def_index as u32 },
-                    end: link.start + 1, // [
+                    kind: EmitKind::LinkStartRef {
+                        def_index: link.def_index as u32,
+                    },
+                    end: link.start + 1,
                 });
-                emit_points.push(EmitPoint {
+                link_events.push(EmitPoint {
                     pos: link.text_end,
                     kind: EmitKind::LinkEnd,
                     end: link.end,
                 });
             }
         }
-        // Add autolink events
-        for autolink in autolinks {
-            if autolink.is_email {
-                emit_points.push(EmitPoint {
-                    pos: autolink.start,
-                    kind: EmitKind::AutolinkEmail {
-                        content_start: autolink.content_start,
-                        content_end: autolink.content_end,
-                    },
-                    end: autolink.end,
-                });
-            } else {
-                emit_points.push(EmitPoint {
-                    pos: autolink.start,
-                    kind: EmitKind::AutolinkUrl {
-                        content_start: autolink.content_start,
-                        content_end: autolink.content_end,
-                    },
-                    end: autolink.end,
-                });
-            }
-        }
+        link_events.sort_by_key(|p| (p.pos, is_end_kind(&p.kind)));
 
-        // Add raw HTML events
-        for span in html_spans {
-            emit_points.push(EmitPoint {
-                pos: span.start,
-                kind: EmitKind::HtmlRaw { end: span.end },
-                end: span.end,
-            });
-        }
-
-        // Add emphasis events
+        let mut link_cursor = EventCursor::new(&link_events);
+        let mut autolink_cursor = AutolinkCursor::new(autolinks);
+        let mut html_cursor = HtmlCursor::new(html_spans);
+        let mut emphasis_events: Vec<EmitPoint> = Vec::with_capacity(emphasis_matches.len() * 2);
         for m in emphasis_matches {
             let is_strong = m.count == 2;
-
             if is_strong {
-                emit_points.push(EmitPoint {
+                emphasis_events.push(EmitPoint {
                     pos: m.opener_start,
                     kind: EmitKind::StrongStart,
                     end: m.opener_end,
                 });
-                emit_points.push(EmitPoint {
+                emphasis_events.push(EmitPoint {
                     pos: m.closer_start,
                     kind: EmitKind::StrongEnd,
                     end: m.closer_end,
                 });
             } else {
-                emit_points.push(EmitPoint {
+                emphasis_events.push(EmitPoint {
                     pos: m.opener_start,
                     kind: EmitKind::EmphasisStart,
                     end: m.opener_end,
                 });
-                emit_points.push(EmitPoint {
+                emphasis_events.push(EmitPoint {
                     pos: m.closer_start,
                     kind: EmitKind::EmphasisEnd,
                     end: m.closer_end,
                 });
             }
         }
+        emphasis_events.sort_by_key(|p| (p.pos, is_end_kind(&p.kind)));
 
-        // Add backslash escapes and hard breaks
-        // Note: Hard breaks inside code spans should not be processed
-        for mark in marks {
-            // Skip marks inside code spans
-            let in_code = mark.flags & flags::IN_CODE != 0;
-
-            // Check if mark is inside a link's destination area (the (...) part)
-            // This includes URL, title, and any whitespace between them
-            let in_link_dest = !link_dest_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, link_dest_ranges, &mut link_dest_idx);
-
-            // Check if mark is inside an autolink
-            let in_autolink = !autolink_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, autolink_ranges, &mut autolink_idx);
-            let in_html = !html_ranges.is_empty()
-                && pos_in_ranges_u32(mark.pos, html_ranges, &mut html_idx);
-
-            if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
-                let escaped_char = text[(mark.pos + 1) as usize];
-                if escaped_char == b'\n' && !in_code && !in_autolink && !in_html {
-                    // Backslash before newline is a hard break (but not in code or autolinks)
-                    emit_points.push(EmitPoint {
-                        pos: mark.pos,
-                        kind: EmitKind::HardBreak,
-                        end: mark.end,
-                    });
-                } else if !in_code && !in_link_dest && !in_autolink && !in_html {
-                    // Skip escapes inside link URLs/titles and autolinks (they're processed by renderer)
-                    emit_points.push(EmitPoint {
-                        pos: mark.pos,
-                        kind: EmitKind::Escape(escaped_char),
-                        end: mark.end,
-                    });
-                }
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_OPENER != 0
-                && !in_code && !in_link_dest && !in_html
-            {
-                // Two spaces before newline is a hard break (but not in code or link destinations)
-                emit_points.push(EmitPoint {
-                    pos: mark.pos,
-                    kind: EmitKind::HardBreak,
-                    end: mark.end,
-                });
-            } else if mark.ch == b'\n' && mark.flags & flags::POTENTIAL_CLOSER != 0
-                && !in_code && !in_link_dest && !in_html
-            {
-                // Soft break (newline without 2+ spaces) - also not in code or link destinations
-                emit_points.push(EmitPoint {
-                    pos: mark.pos,
-                    kind: EmitKind::SoftBreak,
-                    end: mark.end,
-                });
-            }
-        }
-
-        // Sort by position (end events come after start events at same position)
-        emit_points.sort_by_key(|p| (p.pos, matches!(p.kind,
-            EmitKind::CodeSpanEnd | EmitKind::StrongEnd | EmitKind::EmphasisEnd |
-            EmitKind::LinkEnd | EmitKind::ImageEnd
-        )));
+        let mut emphasis_cursor = EventCursor::new(&emphasis_events);
+        let mut mark_cursor = MarkCursor::new(marks, text, link_dest_ranges, autolink_ranges, html_ranges);
 
         // Build ranges to suppress (reference labels after link text)
         let mut suppress_ranges: Vec<(u32, u32)> = Vec::new();
@@ -461,7 +333,14 @@ impl InlineParser {
         // Emit events in order
         let mut skip_until = 0u32;
 
-        for point in emit_points.iter() {
+        while let Some(point) = next_event(
+            &mut code_cursor,
+            &mut link_cursor,
+            &mut autolink_cursor,
+            &mut html_cursor,
+            &mut emphasis_cursor,
+            &mut mark_cursor,
+        ) {
             // Skip events inside suppressed ranges (e.g., reference labels)
             if suppress_ranges.iter().any(|&(s, e)| point.pos > s && point.pos < e) {
                 pos = pos.max(point.end);
@@ -649,6 +528,344 @@ enum EmitKind {
     AutolinkUrl { content_start: u32, content_end: u32 },
     AutolinkEmail { content_start: u32, content_end: u32 },
     HtmlRaw { end: u32 },
+}
+
+#[inline]
+fn is_end_kind(kind: &EmitKind) -> bool {
+    matches!(
+        kind,
+        EmitKind::CodeSpanEnd
+            | EmitKind::StrongEnd
+            | EmitKind::EmphasisEnd
+            | EmitKind::LinkEnd
+            | EmitKind::ImageEnd
+    )
+}
+
+struct CodeCursor<'a> {
+    spans: &'a [CodeSpan],
+    autolink_ranges: &'a [(u32, u32)],
+    idx: usize,
+    stage: u8,
+    autolink_idx: usize,
+    current: Option<EmitPoint>,
+}
+
+impl<'a> CodeCursor<'a> {
+    fn new(spans: &'a [CodeSpan], autolink_ranges: &'a [(u32, u32)]) -> Self {
+        let mut cursor = Self {
+            spans,
+            autolink_ranges,
+            idx: 0,
+            stage: 0,
+            autolink_idx: 0,
+            current: None,
+        };
+        cursor.current = cursor.next_event();
+        cursor
+    }
+
+    fn advance(&mut self) {
+        self.current = self.next_event();
+    }
+
+    fn next_event(&mut self) -> Option<EmitPoint> {
+        while self.idx < self.spans.len() {
+            let span = self.spans[self.idx];
+            if !self.autolink_ranges.is_empty()
+                && pos_in_ranges_u32(span.opener_pos, self.autolink_ranges, &mut self.autolink_idx)
+            {
+                self.idx += 1;
+                self.stage = 0;
+                continue;
+            }
+
+            let event = match self.stage {
+                0 => EmitPoint {
+                    pos: span.opener_pos,
+                    kind: EmitKind::CodeSpanStart,
+                    end: span.opener_end,
+                },
+                1 => {
+                    let (content_start, content_end) = span.content_range();
+                    EmitPoint {
+                        pos: content_start,
+                        kind: EmitKind::CodeContent(content_end),
+                        end: content_end,
+                    }
+                }
+                _ => EmitPoint {
+                    pos: span.closer_pos,
+                    kind: EmitKind::CodeSpanEnd,
+                    end: span.closer_end,
+                },
+            };
+
+            if self.stage >= 2 {
+                self.idx += 1;
+                self.stage = 0;
+            } else {
+                self.stage += 1;
+            }
+
+            return Some(event);
+        }
+        None
+    }
+}
+
+struct EventCursor<'a> {
+    events: &'a [EmitPoint],
+    idx: usize,
+    current: Option<EmitPoint>,
+}
+
+impl<'a> EventCursor<'a> {
+    fn new(events: &'a [EmitPoint]) -> Self {
+        let mut cursor = Self {
+            events,
+            idx: 0,
+            current: None,
+        };
+        cursor.current = cursor.next_event();
+        cursor
+    }
+
+    fn advance(&mut self) {
+        self.current = self.next_event();
+    }
+
+    fn next_event(&mut self) -> Option<EmitPoint> {
+        if self.idx >= self.events.len() {
+            return None;
+        }
+        let event = self.events[self.idx];
+        self.idx += 1;
+        Some(event)
+    }
+}
+
+struct AutolinkCursor<'a> {
+    autolinks: &'a [Autolink],
+    idx: usize,
+    current: Option<EmitPoint>,
+}
+
+impl<'a> AutolinkCursor<'a> {
+    fn new(autolinks: &'a [Autolink]) -> Self {
+        let mut cursor = Self {
+            autolinks,
+            idx: 0,
+            current: None,
+        };
+        cursor.current = cursor.next_event();
+        cursor
+    }
+
+    fn advance(&mut self) {
+        self.current = self.next_event();
+    }
+
+    fn next_event(&mut self) -> Option<EmitPoint> {
+        if self.idx >= self.autolinks.len() {
+            return None;
+        }
+        let al = &self.autolinks[self.idx];
+        self.idx += 1;
+        Some(if al.is_email {
+            EmitPoint {
+                pos: al.start,
+                kind: EmitKind::AutolinkEmail {
+                    content_start: al.content_start,
+                    content_end: al.content_end,
+                },
+                end: al.end,
+            }
+        } else {
+            EmitPoint {
+                pos: al.start,
+                kind: EmitKind::AutolinkUrl {
+                    content_start: al.content_start,
+                    content_end: al.content_end,
+                },
+                end: al.end,
+            }
+        })
+    }
+}
+
+struct HtmlCursor<'a> {
+    spans: &'a [HtmlSpan],
+    idx: usize,
+    current: Option<EmitPoint>,
+}
+
+impl<'a> HtmlCursor<'a> {
+    fn new(spans: &'a [HtmlSpan]) -> Self {
+        let mut cursor = Self {
+            spans,
+            idx: 0,
+            current: None,
+        };
+        cursor.current = cursor.next_event();
+        cursor
+    }
+
+    fn advance(&mut self) {
+        self.current = self.next_event();
+    }
+
+    fn next_event(&mut self) -> Option<EmitPoint> {
+        if self.idx >= self.spans.len() {
+            return None;
+        }
+        let span = self.spans[self.idx];
+        self.idx += 1;
+        Some(EmitPoint {
+            pos: span.start,
+            kind: EmitKind::HtmlRaw { end: span.end },
+            end: span.end,
+        })
+    }
+}
+
+struct MarkCursor<'a> {
+    marks: &'a [Mark],
+    text: &'a [u8],
+    link_dest_ranges: &'a [(u32, u32)],
+    autolink_ranges: &'a [(u32, u32)],
+    html_ranges: &'a [(u32, u32)],
+    idx: usize,
+    link_dest_idx: usize,
+    autolink_idx: usize,
+    html_idx: usize,
+    current: Option<EmitPoint>,
+}
+
+impl<'a> MarkCursor<'a> {
+    fn new(
+        marks: &'a [Mark],
+        text: &'a [u8],
+        link_dest_ranges: &'a [(u32, u32)],
+        autolink_ranges: &'a [(u32, u32)],
+        html_ranges: &'a [(u32, u32)],
+    ) -> Self {
+        let mut cursor = Self {
+            marks,
+            text,
+            link_dest_ranges,
+            autolink_ranges,
+            html_ranges,
+            idx: 0,
+            link_dest_idx: 0,
+            autolink_idx: 0,
+            html_idx: 0,
+            current: None,
+        };
+        cursor.current = cursor.next_event();
+        cursor
+    }
+
+    fn advance(&mut self) {
+        self.current = self.next_event();
+    }
+
+    fn next_event(&mut self) -> Option<EmitPoint> {
+        while self.idx < self.marks.len() {
+            let mark = self.marks[self.idx];
+            self.idx += 1;
+
+            let in_code = mark.flags & flags::IN_CODE != 0;
+            let in_link_dest = !self.link_dest_ranges.is_empty()
+                && pos_in_ranges_u32(mark.pos, self.link_dest_ranges, &mut self.link_dest_idx);
+            let in_autolink = !self.autolink_ranges.is_empty()
+                && pos_in_ranges_u32(mark.pos, self.autolink_ranges, &mut self.autolink_idx);
+            let in_html = !self.html_ranges.is_empty()
+                && pos_in_ranges_u32(mark.pos, self.html_ranges, &mut self.html_idx);
+
+            if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
+                let escaped_char = self.text[(mark.pos + 1) as usize];
+                if escaped_char == b'\n' && !in_code && !in_autolink && !in_html {
+                    return Some(EmitPoint {
+                        pos: mark.pos,
+                        kind: EmitKind::HardBreak,
+                        end: mark.end,
+                    });
+                } else if !in_code && !in_link_dest && !in_autolink && !in_html {
+                    return Some(EmitPoint {
+                        pos: mark.pos,
+                        kind: EmitKind::Escape(escaped_char),
+                        end: mark.end,
+                    });
+                }
+            } else if mark.ch == b'\n'
+                && mark.flags & flags::POTENTIAL_OPENER != 0
+                && !in_code
+                && !in_link_dest
+                && !in_html
+            {
+                return Some(EmitPoint {
+                    pos: mark.pos,
+                    kind: EmitKind::HardBreak,
+                    end: mark.end,
+                });
+            } else if mark.ch == b'\n'
+                && mark.flags & flags::POTENTIAL_CLOSER != 0
+                && !in_code
+                && !in_link_dest
+                && !in_html
+            {
+                return Some(EmitPoint {
+                    pos: mark.pos,
+                    kind: EmitKind::SoftBreak,
+                    end: mark.end,
+                });
+            }
+        }
+        None
+    }
+}
+
+fn next_event(
+    code: &mut CodeCursor<'_>,
+    links: &mut EventCursor<'_>,
+    autolinks: &mut AutolinkCursor<'_>,
+    html: &mut HtmlCursor<'_>,
+    emphasis: &mut EventCursor<'_>,
+    marks: &mut MarkCursor<'_>,
+) -> Option<EmitPoint> {
+    let mut best: Option<(u8, EmitPoint)> = None;
+
+    let mut consider = |id: u8, current: Option<EmitPoint>| {
+        let Some(ev) = current else { return; };
+        let key = (ev.pos, is_end_kind(&ev.kind));
+        if let Some((_, best_ev)) = best {
+            let best_key = (best_ev.pos, is_end_kind(&best_ev.kind));
+            if key < best_key {
+                best = Some((id, ev));
+            }
+        } else {
+            best = Some((id, ev));
+        }
+    };
+
+    consider(0, code.current);
+    consider(1, links.current);
+    consider(2, autolinks.current);
+    consider(3, html.current);
+    consider(4, emphasis.current);
+    consider(5, marks.current);
+
+    let Some((id, ev)) = best else { return None; };
+    match id {
+        0 => code.advance(),
+        1 => links.advance(),
+        2 => autolinks.advance(),
+        3 => html.advance(),
+        4 => emphasis.advance(),
+        _ => marks.advance(),
+    }
+    Some(ev)
 }
 
 #[derive(Debug, Clone, Copy)]
