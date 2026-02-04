@@ -9,6 +9,7 @@
 //! - markdown (markdown-rs, wooorm's parser)
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use memchr::memchr;
 
 /// Sample documents for benchmarking
 mod samples {
@@ -349,6 +350,339 @@ fn bench_throughput(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_experiments(c: &mut Criterion) {
+    let mut group = c.benchmark_group("experiments");
+
+    let docs = [
+        ("simple", samples::SIMPLE),
+        ("links", samples::LINKS),
+        ("refs", samples::REFS),
+        ("mixed", samples::MIXED),
+    ];
+
+    for (name, input) in docs {
+        group.throughput(Throughput::Bytes(input.len() as u64));
+
+        group.bench_with_input(BenchmarkId::new("baseline_to_html", name), input, |b, text| {
+            b.iter(|| {
+                let html = md_fast::to_html(black_box(text));
+                black_box(html);
+            })
+        });
+
+        group.bench_with_input(
+            BenchmarkId::new("prescan_candidates_then_to_html", name),
+            input,
+            |b, text| {
+                b.iter(|| {
+                    let _c = prescan_candidates(black_box(text.as_bytes()));
+                    let html = md_fast::to_html(black_box(text));
+                    black_box(html);
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("prescan_full_then_to_html", name),
+            input,
+            |b, text| {
+                b.iter(|| {
+                    let _c = prescan_full(black_box(text.as_bytes()));
+                    let html = md_fast::to_html(black_box(text));
+                    black_box(html);
+                })
+            },
+        );
+    }
+
+    group.finish();
+}
+
+fn prescan_candidates(input: &[u8]) -> usize {
+    let mut count = 0usize;
+    let mut line_start = 0usize;
+    while line_start <= input.len() {
+        let line_end = match memchr(b'\n', &input[line_start..]) {
+            Some(i) => line_start + i,
+            None => input.len(),
+        };
+        let line = &input[line_start..line_end];
+        let mut i = 0usize;
+        let mut spaces = 0u8;
+        while i < line.len() {
+            match line[i] {
+                b' ' => {
+                    spaces += 1;
+                    if spaces > 3 {
+                        break;
+                    }
+                    i += 1;
+                }
+                b'\t' => break,
+                b'[' => {
+                    count += 1;
+                    break;
+                }
+                _ => break,
+            }
+        }
+        if line_end == input.len() {
+            break;
+        }
+        line_start = line_end + 1;
+    }
+    count
+}
+
+fn prescan_full(input: &[u8]) -> usize {
+    let mut count = 0usize;
+    let mut pos = 0usize;
+    while pos < input.len() {
+        if pos == 0 || input[pos - 1] == b'\n' {
+            if let Some((_def, end)) = parse_link_ref_def(input, pos) {
+                count += 1;
+                pos = end;
+                continue;
+            }
+        }
+        pos += 1;
+    }
+    count
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct ParsedLinkRefDef {
+    label: Vec<u8>,
+    url: Vec<u8>,
+    title: Option<Vec<u8>>,
+}
+
+fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, usize)> {
+    let len = input.len();
+    let mut i = start;
+
+    // Up to 3 leading spaces
+    let mut spaces = 0usize;
+    while i < len && input[i] == b' ' && spaces < 3 {
+        i += 1;
+        spaces += 1;
+    }
+
+    if i >= len || input[i] != b'[' {
+        return None;
+    }
+    i += 1;
+
+    // Parse label
+    let label_start = i;
+    while i < len {
+        match input[i] {
+            b'\\' => {
+                if i + 1 < len {
+                    i += 2;
+                } else {
+                    return None;
+                }
+            }
+            b'[' => return None,
+            b']' => break,
+            _ => i += 1,
+        }
+    }
+    if i >= len || input[i] != b']' {
+        return None;
+    }
+    let label_end = i;
+    i += 1;
+
+    if i >= len || input[i] != b':' {
+        return None;
+    }
+    i += 1;
+
+    // Skip whitespace (allow a single line break)
+    let mut saw_newline = false;
+    while i < len {
+        match input[i] {
+            b' ' | b'\t' => i += 1,
+            b'\n' => {
+                if saw_newline {
+                    return None;
+                }
+                saw_newline = true;
+                i += 1;
+            }
+            _ => break,
+        }
+    }
+    if i >= len {
+        return None;
+    }
+
+    // Parse destination
+    let (url_bytes, mut i) = if input[i] == b'<' {
+        i += 1;
+        let url_start = i;
+        while i < len && input[i] != b'>' && input[i] != b'\n' {
+            i += 1;
+        }
+        if i >= len || input[i] != b'>' {
+            return None;
+        }
+        let url_end = i;
+        i += 1;
+        if i < len && !matches!(input[i], b' ' | b'\t' | b'\n') {
+            return None;
+        }
+        (input[url_start..url_end].to_vec(), i)
+    } else {
+        let url_start = i;
+        let mut parens = 0i32;
+        while i < len {
+            let b = input[i];
+            if b == b'\\' && i + 1 < len {
+                i += 2;
+                continue;
+            }
+            if b == b'(' {
+                parens += 1;
+                i += 1;
+                continue;
+            }
+            if b == b')' {
+                if parens == 0 {
+                    break;
+                }
+                parens -= 1;
+                i += 1;
+                continue;
+            }
+            if matches!(b, b' ' | b'\t' | b'\n') {
+                break;
+            }
+            i += 1;
+        }
+        if url_start == i {
+            return None;
+        }
+        (input[url_start..i].to_vec(), i)
+    };
+
+    let mut line_end = i;
+    while line_end < len && input[line_end] != b'\n' {
+        line_end += 1;
+    }
+
+    // Skip whitespace before title
+    let mut j = i;
+    let mut had_title_sep = false;
+    let mut title_on_newline = false;
+    while j < len && (input[j] == b' ' || input[j] == b'\t') {
+        j += 1;
+        had_title_sep = true;
+    }
+    if j < len && input[j] == b'\n' {
+        j += 1;
+        had_title_sep = true;
+        title_on_newline = true;
+        while j < len && (input[j] == b' ' || input[j] == b'\t') {
+            j += 1;
+        }
+    }
+
+    let mut title_bytes = None;
+    if had_title_sep && j < len {
+        let opener = input[j];
+        let closer = match opener {
+            b'"' => b'"',
+            b'\'' => b'\'',
+            b'(' => b')',
+            _ => 0,
+        };
+
+        if closer != 0 {
+            j += 1;
+            let title_start = j;
+            while j < len {
+                let b = input[j];
+                if b == b'\\' && j + 1 < len {
+                    j += 2;
+                    continue;
+                }
+                if b == b'\n' && j + 1 < len && input[j + 1] == b'\n' {
+                    if title_on_newline {
+                        return Some((
+                            ParsedLinkRefDef {
+                                label: input[label_start..label_end].to_vec(),
+                                url: url_bytes,
+                                title: None,
+                            },
+                            if line_end < len { line_end + 1 } else { line_end },
+                        ));
+                    }
+                    return None;
+                }
+                if b == closer {
+                    break;
+                }
+                j += 1;
+            }
+            if j >= len || input[j] != closer {
+                if title_on_newline {
+                    return Some((
+                        ParsedLinkRefDef {
+                            label: input[label_start..label_end].to_vec(),
+                            url: url_bytes,
+                            title: None,
+                        },
+                        if line_end < len { line_end + 1 } else { line_end },
+                    ));
+                }
+                return None;
+            }
+            let title_end = j;
+            j += 1;
+            title_bytes = Some(input[title_start..title_end].to_vec());
+
+            while j < len && (input[j] == b' ' || input[j] == b'\t') {
+                j += 1;
+            }
+            if j < len && input[j] != b'\n' {
+                if title_on_newline {
+                    return Some((
+                        ParsedLinkRefDef {
+                            label: input[label_start..label_end].to_vec(),
+                            url: url_bytes,
+                            title: None,
+                        },
+                        if line_end < len { line_end + 1 } else { line_end },
+                    ));
+                }
+                return None;
+            }
+            i = j;
+        }
+    }
+
+    if title_bytes.is_none() {
+        i = line_end;
+    }
+
+    if i < len && input[i] == b'\n' {
+        i += 1;
+    }
+
+    Some((
+        ParsedLinkRefDef {
+            label: input[label_start..label_end].to_vec(),
+            url: url_bytes,
+            title: title_bytes,
+        },
+        i,
+    ))
+}
+
 criterion_group!(
     benches,
     bench_tiny,
@@ -356,6 +690,7 @@ criterion_group!(
     bench_medium,
     bench_large,
     bench_complexity,
-    bench_throughput
+    bench_throughput,
+    bench_experiments
 );
 criterion_main!(benches);
