@@ -189,6 +189,30 @@ impl InlineParser {
         let mut pos = 0u32;
         let text_len = text.len() as u32;
 
+        let mut link_dest_ranges: Vec<(u32, u32)> = resolved_links
+            .iter()
+            .filter_map(|link| {
+                let start = link.text_end + 1;
+                let end = link.end;
+                (start < end).then_some((start, end))
+            })
+            .collect();
+        link_dest_ranges.sort_by_key(|(start, _)| *start);
+        let mut autolink_ranges: Vec<(u32, u32)> = autolinks
+            .iter()
+            .map(|al| (al.start, al.end))
+            .collect();
+        autolink_ranges.sort_by_key(|(start, _)| *start);
+        let mut html_ranges: Vec<(u32, u32)> = html_spans
+            .iter()
+            .map(|span| (span.start, span.end))
+            .collect();
+        html_ranges.sort_by_key(|(start, _)| *start);
+
+        let mut link_dest_idx = 0usize;
+        let mut autolink_idx = 0usize;
+        let mut html_idx = 0usize;
+
         // Build sorted list of events to emit
         let estimated_events = marks.len()
             + (code_spans.len() * 3)
@@ -360,17 +384,14 @@ impl InlineParser {
 
             // Check if mark is inside a link's destination area (the (...) part)
             // This includes URL, title, and any whitespace between them
-            let in_link_dest = resolved_links.iter().any(|link| {
-                // The destination area is from text_end+1 (after ]) to end-1 (before ))
-                // But we also need to include the content: url_start to just before end
-                mark.pos >= link.text_end + 1 && mark.pos < link.end
-            });
+            let in_link_dest = !link_dest_ranges.is_empty()
+                && pos_in_ranges_u32(mark.pos, &link_dest_ranges, &mut link_dest_idx);
 
             // Check if mark is inside an autolink
-            let in_autolink = autolinks.iter().any(|al| {
-                mark.pos >= al.start && mark.pos < al.end
-            });
-            let in_html = pos_in_spans(mark.pos, html_spans);
+            let in_autolink = !autolink_ranges.is_empty()
+                && pos_in_ranges_u32(mark.pos, &autolink_ranges, &mut autolink_idx);
+            let in_html = !html_ranges.is_empty()
+                && pos_in_ranges_u32(mark.pos, &html_ranges, &mut html_idx);
 
             if mark.ch == b'\\' && mark.flags & flags::POTENTIAL_OPENER != 0 {
                 let escaped_char = text[(mark.pos + 1) as usize];
@@ -715,6 +736,13 @@ fn filter_html_spans_in_code_spans(spans: &mut Vec<HtmlSpan>, code_spans: &[Code
 }
 
 fn pos_in_ranges(pos: usize, ranges: &[(usize, usize)], idx: &mut usize) -> bool {
+    while *idx < ranges.len() && pos >= ranges[*idx].1 {
+        *idx += 1;
+    }
+    *idx < ranges.len() && pos >= ranges[*idx].0
+}
+
+fn pos_in_ranges_u32(pos: u32, ranges: &[(u32, u32)], idx: &mut usize) -> bool {
     while *idx < ranges.len() && pos >= ranges[*idx].1 {
         *idx += 1;
     }
