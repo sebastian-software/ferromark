@@ -2306,8 +2306,11 @@ impl<'a> BlockParser<'a> {
             return 0;
         }
 
-        // Build a contiguous buffer with '\n' between lines.
-        let mut para = Vec::new();
+        let mut total_len = self.paragraph_lines.len().saturating_sub(1); // newlines
+        for range in &self.paragraph_lines {
+            total_len += range.len() as usize;
+        }
+        let mut para = Vec::with_capacity(total_len);
         for (i, range) in self.paragraph_lines.iter().enumerate() {
             if i > 0 {
                 para.push(b'\n');
