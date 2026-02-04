@@ -4,6 +4,7 @@
 //! collected in a single pass before resolution.
 
 use crate::limits;
+use memchr::memchr3;
 
 /// Flags for mark state.
 pub mod flags {
@@ -149,12 +150,11 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
     let len = text.len();
 
     while pos < len {
+        let Some(next) = next_special(text, pos) else {
+            break;
+        };
+        pos = next;
         let b = text[pos];
-
-        if !SPECIAL_CHARS[b as usize] {
-            pos += 1;
-            continue;
-        }
 
         match b {
             b'`' => {
@@ -305,6 +305,24 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
             }
         }
     }
+}
+
+#[inline]
+fn next_special(text: &[u8], start: usize) -> Option<usize> {
+    let slice = &text[start..];
+    let mut best = None;
+
+    if let Some(i) = memchr3(b'`', b'*', b'_', slice) {
+        best = Some(i);
+    }
+    if let Some(i) = memchr3(b'\\', b'\n', b'[', slice) {
+        best = Some(best.map_or(i, |b| b.min(i)));
+    }
+    if let Some(i) = memchr3(b']', b'<', b'&', slice) {
+        best = Some(best.map_or(i, |b| b.min(i)));
+    }
+
+    best.map(|i| start + i)
 }
 
 #[inline]
