@@ -3,6 +3,8 @@
 //! Fast-path optimized: scans for first escapable character,
 //! then bulk-copies segments between escapes.
 
+use memchr::{memchr, memchr2, memchr3};
+
 
 
 /// Characters that need escaping in HTML text content.
@@ -73,7 +75,21 @@ pub fn escape_attr_into(out: &mut Vec<u8>, input: &[u8]) {
 /// Internal escaping with a custom lookup table.
 #[inline]
 fn escape_into_with_table(out: &mut Vec<u8>, input: &[u8], escape_table: &[bool; 256]) {
-    let mut pos = 0;
+    if input.is_empty() {
+        return;
+    }
+
+    let mut pos = match first_text_escape(input) {
+        Some(p) => p,
+        None => {
+            out.extend_from_slice(input);
+            return;
+        }
+    };
+
+    if pos > 0 {
+        out.extend_from_slice(&input[..pos]);
+    }
 
     while pos < input.len() {
         // Scan for any escapable character using lookup table
@@ -113,7 +129,21 @@ fn escape_into_with_table(out: &mut Vec<u8>, input: &[u8], escape_table: &[bool;
 /// This version handles all 5 escapable characters.
 #[inline]
 pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
-    let mut pos = 0;
+    if input.is_empty() {
+        return;
+    }
+
+    let mut pos = match first_attr_escape(input) {
+        Some(p) => p,
+        None => {
+            out.extend_from_slice(input);
+            return;
+        }
+    };
+
+    if pos > 0 {
+        out.extend_from_slice(&input[..pos]);
+    }
 
     while pos < input.len() {
         // Scan for any escapable character using lookup table
@@ -153,6 +183,30 @@ pub fn needs_text_escape(input: &[u8]) -> bool {
 #[inline]
 pub fn needs_attr_escape(input: &[u8]) -> bool {
     input.iter().any(|&b| ATTR_ESCAPE_TABLE[b as usize])
+}
+
+#[inline]
+fn first_text_escape(input: &[u8]) -> Option<usize> {
+    let a = memchr3(b'<', b'>', b'&', input);
+    let b = memchr(b'"', input);
+    min_opt(a, b)
+}
+
+#[inline]
+fn first_attr_escape(input: &[u8]) -> Option<usize> {
+    let a = memchr3(b'<', b'>', b'&', input);
+    let b = memchr2(b'"', b'\'', input);
+    min_opt(a, b)
+}
+
+#[inline]
+fn min_opt(a: Option<usize>, b: Option<usize>) -> Option<usize> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (Some(a), None) => Some(a),
+        (None, Some(b)) => Some(b),
+        (None, None) => None,
+    }
 }
 
 /// Escape and return as a new Vec.
