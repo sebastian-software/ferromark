@@ -59,6 +59,13 @@ impl InlineParser {
 
     /// Parse inline content and emit events.
     pub fn parse(&mut self, text: &[u8], link_refs: Option<&LinkRefStore>, events: &mut Vec<InlineEvent>) {
+        if !has_inline_specials(text) {
+            if !text.is_empty() {
+                events.push(InlineEvent::Text(Range::from_usize(0, text.len())));
+            }
+            return;
+        }
+
         // Phase 1: Collect marks
         collect_marks(text, &mut self.mark_buffer);
 
@@ -644,6 +651,19 @@ impl InlineParser {
             }
         }
     }
+}
+
+#[inline]
+fn has_inline_specials(input: &[u8]) -> bool {
+    for &b in input {
+        match b {
+            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'&' | b'\\' | b'!' | b'~' | b'\n' | b'\r' => {
+                return true;
+            }
+            _ => {}
+        }
+    }
+    false
 }
 
 impl Default for InlineParser {
