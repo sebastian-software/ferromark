@@ -62,7 +62,8 @@ impl InlineParser {
         } else {
             Vec::new()
         };
-        let html_ranges: Vec<(u32, u32)> = html_spans.iter().map(|s| (s.start, s.end)).collect();
+        let mut html_ranges: Vec<(u32, u32)> = Vec::with_capacity(html_spans.len());
+        html_ranges.extend(html_spans.iter().map(|s| (s.start, s.end)));
 
         // Third: code spans (highest precedence, but should not start inside HTML tags)
         resolve_code_spans(self.mark_buffer.marks_mut(), text, &html_ranges);
@@ -110,10 +111,13 @@ impl InlineParser {
 
         // Fifth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
-        let mut link_boundaries: Vec<(u32, u32)> = resolved_links
-            .iter()
-            .map(|l| (l.start, l.text_end))
-            .collect();
+        let mut link_boundaries: Vec<(u32, u32)> = Vec::with_capacity(
+            resolved_links.len()
+                + resolved_ref_links.len()
+                + autolinks.len()
+                + html_spans.len(),
+        );
+        link_boundaries.extend(resolved_links.iter().map(|l| (l.start, l.text_end)));
         for link in &resolved_ref_links {
             link_boundaries.push((link.start, link.text_end));
         }
@@ -130,6 +134,7 @@ impl InlineParser {
         // Phase 3: Emit events
         self.emit_events(
             text,
+            &code_spans,
             &emphasis_matches,
             &resolved_links,
             &resolved_ref_links,
@@ -142,8 +147,9 @@ impl InlineParser {
     /// Collect bracket positions for link parsing.
     fn collect_brackets(&self) -> (Vec<(u32, bool)>, Vec<u32>) {
         let marks = self.mark_buffer.marks();
-        let mut open_brackets = Vec::new();
-        let mut close_brackets = Vec::new();
+        let estimated = (marks.len() / 4).max(4);
+        let mut open_brackets = Vec::with_capacity(estimated);
+        let mut close_brackets = Vec::with_capacity(estimated);
 
         for mark in marks {
             // Skip brackets inside code spans
@@ -171,6 +177,7 @@ impl InlineParser {
     fn emit_events(
         &self,
         text: &[u8],
+        code_spans: &[CodeSpan],
         emphasis_matches: &[EmphasisMatch],
         resolved_links: &[Link],
         resolved_ref_links: &[RefLink],
@@ -183,10 +190,17 @@ impl InlineParser {
         let text_len = text.len() as u32;
 
         // Build sorted list of events to emit
-        let mut emit_points: Vec<EmitPoint> = Vec::new();
+        let estimated_events = marks.len()
+            + (code_spans.len() * 3)
+            + (resolved_links.len() * 4)
+            + (resolved_ref_links.len() * 4)
+            + autolinks.len()
+            + html_spans.len()
+            + (emphasis_matches.len() * 2);
+        let mut emit_points: Vec<EmitPoint> = Vec::with_capacity(estimated_events.max(8));
 
         // Add code span events (filter out spans whose opener is inside an autolink)
-        for span in extract_code_spans(marks) {
+        for span in code_spans {
             // Skip code spans whose opener starts inside an autolink
             let inside_autolink = autolinks.iter().any(|al| {
                 span.opener_pos >= al.start && span.opener_pos < al.end

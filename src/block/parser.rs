@@ -2275,6 +2275,37 @@ impl<'a> BlockParser<'a> {
             return 0;
         }
 
+        // Fast path: only attempt parsing if any line starts with up to 3 spaces then '['.
+        let mut has_candidate = false;
+        'lines: for range in &self.paragraph_lines {
+            let line = range.slice(self.input);
+            let mut i = 0usize;
+            let mut spaces = 0u8;
+            while i < line.len() {
+                match line[i] {
+                    b' ' => {
+                        spaces += 1;
+                        if spaces > 3 {
+                            break;
+                        }
+                        i += 1;
+                    }
+                    b'\t' => {
+                        // A leading tab exceeds the allowed 3-space indent for link ref defs.
+                        break;
+                    }
+                    b'[' => {
+                        has_candidate = true;
+                        break 'lines;
+                    }
+                    _ => break,
+                }
+            }
+        }
+        if !has_candidate {
+            return 0;
+        }
+
         // Build a contiguous buffer with '\n' between lines.
         let mut para = Vec::new();
         for (i, range) in self.paragraph_lines.iter().enumerate() {
