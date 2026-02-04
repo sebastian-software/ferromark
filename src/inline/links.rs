@@ -6,7 +6,7 @@
 //! - Autolinks: `<https://example.com>` and `<email@example.com>`
 
 use crate::limits;
-use crate::link_ref::{LinkRefStore, normalize_label};
+use crate::link_ref::{LinkRefStore, normalize_label_into};
 
 /// A resolved link or image.
 #[derive(Debug, Clone)]
@@ -152,6 +152,7 @@ pub fn resolve_reference_links(
     defs: &LinkRefStore,
 ) -> Vec<RefLink> {
     let mut ref_links = Vec::new();
+    let mut label_buf = String::new();
     let mut formed_opens: Vec<bool> = vec![false; open_brackets.len()];
     let mut used_closes: Vec<bool> = vec![false; close_brackets.len()];
     let mut occupied: Vec<(u32, u32)> = inline_links
@@ -206,11 +207,11 @@ pub fn resolve_reference_links(
             ref_label = Some((ref_start, ref_end, ref_close_pos));
         }
 
-        let norm = normalize_label(label_bytes);
-        if norm.is_empty() {
+        normalize_label_into(label_bytes, &mut label_buf);
+        if label_buf.is_empty() {
             continue;
         }
-        let Some(def_index) = defs.get_index(&norm) else { continue };
+        let Some(def_index) = defs.get_index(&label_buf) else { continue };
 
         // Links cannot contain links (but can contain images)
         if contains_link(&occupied, open_pos, close_pos)
@@ -272,6 +273,7 @@ fn contains_ref_link_candidate(
     start: u32,
     end: u32,
 ) -> bool {
+    let mut label_buf = String::new();
     for &(open_pos, is_image) in open_brackets {
         if open_pos <= start || open_pos >= end || is_image {
             continue;
@@ -292,11 +294,11 @@ fn contains_ref_link_candidate(
             }
         }
 
-        let norm = normalize_label(label_bytes);
-        if norm.is_empty() {
+        normalize_label_into(label_bytes, &mut label_buf);
+        if label_buf.is_empty() {
             continue;
         }
-        if defs.get_index(&norm).is_some() {
+        if defs.get_index(&label_buf).is_some() {
             return true;
         }
     }

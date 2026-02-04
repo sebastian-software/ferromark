@@ -6,7 +6,7 @@ use crate::Range;
 use smallvec::SmallVec;
 
 use super::event::{BlockEvent, ListKind, TaskState};
-use crate::link_ref::{LinkRefStore, normalize_label, LinkRefDef};
+use crate::link_ref::{LinkRefStore, normalize_label_into, LinkRefDef};
 
 /// State for an open fenced code block.
 #[derive(Debug, Clone)]
@@ -2320,6 +2320,7 @@ impl<'a> BlockParser<'a> {
 
         let mut pos = 0usize;
         let mut consumed_lines = 0usize;
+        let mut label_buf = String::new();
 
         loop {
             // Only parse at start of a line
@@ -2330,15 +2331,15 @@ impl<'a> BlockParser<'a> {
                 break;
             };
 
-            let label = normalize_label(def.label.as_slice());
-            if label.is_empty() {
+            normalize_label_into(def.label.as_slice(), &mut label_buf);
+            if label_buf.is_empty() {
                 break;
             }
             let link_def = LinkRefDef {
                 url: def.url,
                 title: def.title,
             };
-            self.link_refs.insert(label, link_def);
+            self.link_refs.insert(label_buf.clone(), link_def);
 
             let newline_count = para[pos..end_pos].iter().filter(|&&b| b == b'\n').count();
             let ends_with_newline = end_pos > 0 && para.get(end_pos - 1) == Some(&b'\n');

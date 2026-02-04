@@ -1,6 +1,8 @@
 //! Link reference definitions (CommonMark).
 
 use crate::Range;
+use memchr::memchr;
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 /// A link reference definition (URL + optional title).
@@ -48,28 +50,61 @@ impl LinkRefStore {
 /// Normalize a link label per CommonMark: decode entities, process backslash escapes,
 /// collapse internal whitespace to single spaces, trim, and case-fold.
 pub fn normalize_label(bytes: &[u8]) -> String {
-    let label_str = std::str::from_utf8(bytes).unwrap_or("");
-    let decoded = html_escape::decode_html_entities(label_str);
-    let decoded_bytes = decoded.as_bytes();
+    let mut out = String::new();
+    normalize_label_into(bytes, &mut out);
+    out
+}
 
-    let mut unescaped = Vec::with_capacity(decoded_bytes.len());
-    let mut i = 0;
-    while i < decoded_bytes.len() {
-        if decoded_bytes[i] == b'\\' && i + 1 < decoded_bytes.len() && is_label_escapable(decoded_bytes[i + 1]) {
-            i += 1;
-            unescaped.push(decoded_bytes[i]);
-            i += 1;
-        } else {
-            unescaped.push(decoded_bytes[i]);
-            i += 1;
-        }
+/// Normalize a link label into a reusable buffer.
+pub fn normalize_label_into(bytes: &[u8], out: &mut String) {
+    out.clear();
+
+    let label_str = match std::str::from_utf8(bytes) {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+    if label_str.is_empty() {
+        return;
     }
 
-    let unescaped_str = std::str::from_utf8(&unescaped).unwrap_or("");
-    let mut out = String::new();
+    let decoded: Cow<'_, str> = if memchr(b'&', bytes).is_some() {
+        html_escape::decode_html_entities(label_str)
+    } else {
+        Cow::Borrowed(label_str)
+    };
+
+    let decoded_bytes = decoded.as_bytes();
+    if memchr(b'\\', decoded_bytes).is_some() {
+        let mut unescaped = Vec::with_capacity(decoded_bytes.len());
+        let mut i = 0;
+        while i < decoded_bytes.len() {
+            if decoded_bytes[i] == b'\\'
+                && i + 1 < decoded_bytes.len()
+                && is_label_escapable(decoded_bytes[i + 1])
+            {
+                i += 1;
+                unescaped.push(decoded_bytes[i]);
+                i += 1;
+            } else {
+                unescaped.push(decoded_bytes[i]);
+                i += 1;
+            }
+        }
+
+        let Ok(unescaped_str) = std::str::from_utf8(&unescaped) else {
+            return;
+        };
+        normalize_label_text(unescaped_str, out);
+    } else {
+        normalize_label_text(decoded.as_ref(), out);
+    }
+}
+
+#[inline]
+fn normalize_label_text(input: &str, out: &mut String) {
     let mut last_was_space = true;
 
-    for ch in unescaped_str.chars() {
+    for ch in input.chars() {
         if ch.is_whitespace() {
             if !last_was_space {
                 out.push(' ');
@@ -92,7 +127,6 @@ pub fn normalize_label(bytes: &[u8]) -> String {
     if out.ends_with(' ') {
         out.pop();
     }
-    out
 }
 
 #[inline]
