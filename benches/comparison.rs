@@ -370,6 +370,13 @@ fn bench_experiments(c: &mut Criterion) {
             })
         });
 
+        group.bench_with_input(BenchmarkId::new("hybrid_paragraph_buffer", name), input, |b, text| {
+            b.iter(|| {
+                let html = hybrid_paragraph_buffer(black_box(text));
+                black_box(html);
+            })
+        });
+
         group.bench_with_input(
             BenchmarkId::new("prescan_candidates_then_to_html", name),
             input,
@@ -448,6 +455,75 @@ fn prescan_full(input: &[u8]) -> usize {
         pos += 1;
     }
     count
+}
+
+fn hybrid_paragraph_buffer(input: &str) -> String {
+    // Bench-only prototype: stream paragraph-by-paragraph with optional buffering
+    // for ref-candidate paragraphs. Not CommonMark-correct; used to estimate overheads.
+    let bytes = input.as_bytes();
+    let mut out = String::with_capacity(input.len() + input.len() / 4);
+    let mut pos = 0usize;
+    let len = bytes.len();
+
+    let mut buf = Vec::new();
+    while pos <= len {
+        let line_end = match memchr(b'\n', &bytes[pos..]) {
+            Some(i) => pos + i,
+            None => len,
+        };
+        let line = &bytes[pos..line_end];
+
+        let is_blank = line.iter().all(|&b| b == b' ' || b == b'\t');
+
+        if is_blank {
+            if !buf.is_empty() {
+                let para = std::str::from_utf8(&buf).unwrap_or("");
+                if has_defs || paragraph_has_ref_candidate(para) {
+                    out.push_str(&md_fast::to_html(para));
+                } else {
+                    out.push_str(&md_fast::to_html(para));
+                }
+                buf.clear();
+            }
+            pos = if line_end == len { len + 1 } else { line_end + 1 };
+            continue;
+        }
+
+        if !buf.is_empty() {
+            buf.push(b'\n');
+        }
+        buf.extend_from_slice(line);
+
+        if line_end == len {
+            pos = len + 1;
+        } else {
+            pos = line_end + 1;
+        }
+    }
+
+    if !buf.is_empty() {
+        let para = std::str::from_utf8(&buf).unwrap_or("");
+        if has_defs || paragraph_has_ref_candidate(para) {
+            out.push_str(&md_fast::to_html(para));
+        } else {
+            out.push_str(&md_fast::to_html(para));
+        }
+    }
+
+    out
+}
+
+fn paragraph_has_ref_candidate(input: &str) -> bool {
+    // Heuristic: any '[' without immediate ']' + '(' is a candidate
+    let bytes = input.as_bytes();
+    let mut i = 0usize;
+    while i < bytes.len() {
+        if bytes[i] == b'[' {
+            return true;
+        }
+        i += 1;
+    }
+    false
 }
 
 #[allow(dead_code)]
