@@ -63,3 +63,13 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
 - Result: 279.1-280.4 MiB/s, change within noise threshold.
 - Decision: Reverted.
+
+- Change: Avoid binary search on open brackets in `find_matching_close` by passing open index.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 281.9-283.1 MiB/s, change within noise threshold.
+- Decision: Reverted.
+
+- Change: ASCII-only label normalization path (byte-wise lowercase + whitespace collapse).
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 280.9-282.0 MiB/s, no change detected.
+- Decision: Reverted.
