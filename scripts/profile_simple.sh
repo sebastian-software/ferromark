@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build bench binary if needed
-cargo bench --bench comparison --no-run >/dev/null
+# Build bench binary with symbols (avoid stripping)
+CARGO_PROFILE_BENCH_STRIP=false cargo bench --bench comparison --no-run >/dev/null
 
-bin=$(ls -1 target/release/deps/comparison-* | grep -v '\.dSYM' | head -n 1)
+bin=$(ls -t target/release/deps/comparison-* | grep -v '\.dSYM' | head -n 1)
 if [[ -z "$bin" ]]; then
   echo "comparison bench binary not found" >&2
   exit 1
@@ -16,19 +16,33 @@ echo "Available benches:"
 "$bin" --list > /tmp/md-fast-bench.list || true
 cat /tmp/md-fast-bench.list
 
-if ! rg -q '^simple/' /tmp/md-fast-bench.list; then
+if rg -q '^simple/md-fast' /tmp/md-fast-bench.list; then
+  filter='^simple/md-fast$'
+elif rg -q '^complexity/.*/simple' /tmp/md-fast-bench.list; then
+  filter='^complexity/md-fast/simple$'
+else
   echo "No 'simple' benchmark found. Aborting." >&2
   exit 1
 fi
 
 echo "Starting benchmark (60s) and sampling for 10s..."
-"$bin" --measurement-time 60 --warm-up-time 5 --sample-size 100 "^simple/" &
+out=/tmp/md-fast-simple.bench.out
+"$bin" --bench --measurement-time 60 --warm-up-time 5 --sample-size 100 "$filter" > "$out" 2>&1 &
 pid=$!
 
-# Give it a moment to start
-sleep 0.5
+for i in $(seq 1 50); do
+  if ! kill -0 "$pid" 2>/dev/null; then
+    echo "Benchmark exited early. Output:" >&2
+    cat "$out" >&2
+    exit 1
+  fi
+  if rg -q "Benchmarking" "$out"; then
+    break
+  fi
+  sleep 0.1
+done
 
-sudo sample "$pid" 10 -file /tmp/md-fast-simple.sample.txt
+sudo sample "$pid" 10 -mayDie -fullPaths -file /tmp/md-fast-simple.sample.txt
 
 # Best-effort cleanup
 kill "$pid" 2>/dev/null || true
