@@ -172,11 +172,20 @@ impl InlineParser {
         for span in &self.html_spans {
             self.link_boundaries.push((span.start, span.end));
         }
-        let emphasis_matches = resolve_emphasis_with_stacks(
-            self.mark_buffer.marks_mut(),
-            &self.link_boundaries,
-            &mut self.emphasis_stacks,
-        );
+        let has_emphasis_marks = self
+            .mark_buffer
+            .marks()
+            .iter()
+            .any(|m| (m.ch == b'*' || m.ch == b'_') && m.flags & flags::IN_CODE == 0);
+        let emphasis_matches = if has_emphasis_marks {
+            resolve_emphasis_with_stacks(
+                self.mark_buffer.marks_mut(),
+                &self.link_boundaries,
+                &mut self.emphasis_stacks,
+            )
+        } else {
+            Vec::new()
+        };
 
         // Phase 3: Emit events
         let marks = self.mark_buffer.marks();
