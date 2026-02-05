@@ -511,17 +511,14 @@ pub fn find_autolinks(text: &[u8]) -> Vec<Autolink> {
 pub fn find_autolinks_into(text: &[u8], out: &mut Vec<Autolink>) {
     out.clear();
     let mut pos = 0;
-    let len = text.len();
-
-    while pos < len {
-        if text[pos] == b'<' {
-            if let Some(autolink) = try_parse_autolink(text, pos) {
-                out.push(autolink);
-                pos = autolink.end as usize;
-                continue;
-            }
+    while let Some(offset) = memchr::memchr(b'<', &text[pos..]) {
+        let idx = pos + offset;
+        if let Some(autolink) = try_parse_autolink(text, idx) {
+            out.push(autolink);
+            pos = autolink.end as usize;
+        } else {
+            pos = idx + 1;
         }
-        pos += 1;
     }
 }
 
