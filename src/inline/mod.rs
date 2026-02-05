@@ -15,7 +15,7 @@ pub use event::InlineEvent;
 
 use crate::Range;
 use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
-use emphasis::{resolve_emphasis, EmphasisMatch};
+use emphasis::{resolve_emphasis_with_stacks, EmphasisMatch, EmphasisStacks};
 use links::{find_autolinks_into, resolve_links, resolve_reference_links, Autolink, Link, RefLink};
 use crate::link_ref::LinkRefStore;
 use marks::{collect_marks, flags, Mark, MarkBuffer};
@@ -34,6 +34,7 @@ pub struct InlineParser {
     autolink_ranges: Vec<(u32, u32)>,
     code_spans: Vec<CodeSpan>,
     link_boundaries: Vec<(u32, u32)>,
+    emphasis_stacks: EmphasisStacks,
     emit_points: Vec<EmitPoint>,
     emit_suppress_ranges: Vec<(u32, u32)>,
 }
@@ -52,6 +53,7 @@ impl InlineParser {
             autolink_ranges: Vec::new(),
             code_spans: Vec::new(),
             link_boundaries: Vec::new(),
+            emphasis_stacks: EmphasisStacks::default(),
             emit_points: Vec::new(),
             emit_suppress_ranges: Vec::new(),
         }
@@ -170,7 +172,11 @@ impl InlineParser {
         for span in &self.html_spans {
             self.link_boundaries.push((span.start, span.end));
         }
-        let emphasis_matches = resolve_emphasis(self.mark_buffer.marks_mut(), &self.link_boundaries);
+        let emphasis_matches = resolve_emphasis_with_stacks(
+            self.mark_buffer.marks_mut(),
+            &self.link_boundaries,
+            &mut self.emphasis_stacks,
+        );
 
         // Phase 3: Emit events
         let marks = self.mark_buffer.marks();
