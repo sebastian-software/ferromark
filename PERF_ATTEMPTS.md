@@ -48,3 +48,18 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
 - Result: 276.6-279.5 MiB/s, change within noise threshold.
 - Decision: Reverted.
+
+- Change: ASCII fast-path for emphasis flag computation in mark collection.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 274.4-275.7 MiB/s, change within noise threshold (slower).
+- Decision: Reverted.
+
+- Change: Skip link resolution when no `(` is present and no reference defs exist.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 278.4-279.7 MiB/s, change within noise threshold.
+- Decision: Reverted.
+
+- Change: Precompute emit-point end-flag to simplify sorting in inline emission.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 279.1-280.4 MiB/s, change within noise threshold.
+- Decision: Reverted.
