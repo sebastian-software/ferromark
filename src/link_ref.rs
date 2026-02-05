@@ -4,6 +4,7 @@ use crate::Range;
 use memchr::memchr;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use rustc_hash::FxBuildHasher as FastHashBuilder;
 
 /// A link reference definition (URL + optional title).
 #[derive(Debug, Clone)]
@@ -16,7 +17,7 @@ pub struct LinkRefDef {
 #[derive(Debug, Default)]
 pub struct LinkRefStore {
     defs: Vec<LinkRefDef>,
-    by_label: HashMap<String, usize>,
+    by_label: HashMap<String, usize, FastHashBuilder>,
 }
 
 impl LinkRefStore {

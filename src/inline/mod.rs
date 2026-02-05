@@ -17,7 +17,7 @@ pub use event::InlineEvent;
 use crate::Range;
 use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
 use emphasis::{resolve_emphasis_with_stacks, EmphasisMatch, EmphasisStacks};
-use links::{find_autolinks_into, resolve_links, resolve_reference_links, Autolink, Link, RefLink};
+use links::{find_autolinks_into, resolve_links, resolve_reference_links_into, Autolink, Link, RefLink};
 use crate::link_ref::LinkRefStore;
 use marks::{collect_marks, flags, Mark, MarkBuffer};
 use memchr::memchr;
@@ -35,6 +35,11 @@ pub struct InlineParser {
     autolink_ranges: Vec<(u32, u32)>,
     code_spans: Vec<CodeSpan>,
     link_boundaries: Vec<(u32, u32)>,
+    ref_links: Vec<RefLink>,
+    ref_label_buf: String,
+    ref_formed_opens: Vec<bool>,
+    ref_used_closes: Vec<bool>,
+    ref_occupied: Vec<(u32, u32)>,
     emphasis_stacks: EmphasisStacks,
     emit_points: Vec<EmitPoint>,
     emit_suppress_ranges: Vec<(u32, u32)>,
@@ -54,6 +59,11 @@ impl InlineParser {
             autolink_ranges: Vec::new(),
             code_spans: Vec::new(),
             link_boundaries: Vec::new(),
+            ref_links: Vec::new(),
+            ref_label_buf: String::new(),
+            ref_formed_opens: Vec::new(),
+            ref_used_closes: Vec::new(),
+            ref_occupied: Vec::new(),
             emphasis_stacks: EmphasisStacks::default(),
             emit_points: Vec::new(),
             emit_suppress_ranges: Vec::new(),
@@ -130,17 +140,34 @@ impl InlineParser {
                 !self.autolinks.iter().any(|al| pos > al.start && pos < al.end)
                     && !pos_in_spans(pos, &self.html_spans)
             });
-        let (resolved_links, resolved_ref_links) = if has_brackets {
-            let resolved_links = resolve_links(text, &self.open_brackets, &self.close_brackets);
-            let resolved_ref_links = link_refs
-                .filter(|defs| !defs.is_empty())
-                .map(|defs| resolve_reference_links(text, &self.open_brackets, &self.close_brackets, &resolved_links, defs))
-                .unwrap_or_default();
-            filter_html_spans_in_link_destinations(&mut self.html_spans, &resolved_links);
-            (resolved_links, resolved_ref_links)
+        let resolved_links = if has_brackets {
+            resolve_links(text, &self.open_brackets, &self.close_brackets)
         } else {
-            (Vec::new(), Vec::new())
+            Vec::new()
         };
+
+        if has_brackets {
+            if let Some(defs) = link_refs.filter(|defs| !defs.is_empty()) {
+                resolve_reference_links_into(
+                    text,
+                    &self.open_brackets,
+                    &self.close_brackets,
+                    &resolved_links,
+                    defs,
+                    &mut self.ref_links,
+                    &mut self.ref_label_buf,
+                    &mut self.ref_formed_opens,
+                    &mut self.ref_used_closes,
+                    &mut self.ref_occupied,
+                );
+            } else {
+                self.ref_links.clear();
+            }
+            filter_html_spans_in_link_destinations(&mut self.html_spans, &resolved_links);
+        } else {
+            self.ref_links.clear();
+        }
+        let resolved_ref_links = &self.ref_links;
 
         self.link_dest_ranges.clear();
         self.link_dest_ranges.extend(resolved_links.iter().filter_map(|link| {
@@ -162,7 +189,7 @@ impl InlineParser {
                 + self.html_spans.len(),
         );
         self.link_boundaries.extend(resolved_links.iter().map(|l| (l.start, l.text_end)));
-        for link in &resolved_ref_links {
+        for link in resolved_ref_links {
             self.link_boundaries.push((link.start, link.text_end));
         }
         // Also include autolinks - delimiters inside <url> should not form emphasis
@@ -196,7 +223,7 @@ impl InlineParser {
             &self.code_spans,
             &emphasis_matches,
             &resolved_links,
-            &resolved_ref_links,
+            resolved_ref_links,
             &self.autolinks,
             &self.html_spans,
             &self.link_dest_ranges,

@@ -144,22 +144,32 @@ pub fn resolve_links(
 }
 
 /// Resolve reference-style links/images using link reference definitions.
-pub fn resolve_reference_links(
+pub fn resolve_reference_links_into(
     text: &[u8],
     open_brackets: &[(u32, bool)],
     close_brackets: &[u32],
     inline_links: &[Link],
     defs: &LinkRefStore,
-) -> Vec<RefLink> {
-    let mut ref_links = Vec::new();
-    let mut label_buf = String::new();
-    let mut formed_opens: Vec<bool> = vec![false; open_brackets.len()];
-    let mut used_closes: Vec<bool> = vec![false; close_brackets.len()];
-    let mut occupied: Vec<(u32, u32)> = inline_links
-        .iter()
-        .filter(|l| !l.is_image)
-        .map(|l| (l.start, l.end))
-        .collect();
+    out_links: &mut Vec<RefLink>,
+    label_buf: &mut String,
+    formed_opens: &mut Vec<bool>,
+    used_closes: &mut Vec<bool>,
+    occupied: &mut Vec<(u32, u32)>,
+) {
+    out_links.clear();
+    label_buf.clear();
+
+    formed_opens.clear();
+    formed_opens.resize(open_brackets.len(), false);
+    used_closes.clear();
+    used_closes.resize(close_brackets.len(), false);
+    occupied.clear();
+    occupied.extend(
+        inline_links
+            .iter()
+            .filter(|l| !l.is_image)
+            .map(|l| (l.start, l.end)),
+    );
     // Mark opens/closes used by inline links
     for link in inline_links {
         let open_pos = if link.is_image { link.start + 1 } else { link.start };
@@ -207,11 +217,11 @@ pub fn resolve_reference_links(
             ref_label = Some((ref_start, ref_end, ref_close_pos));
         }
 
-        normalize_label_into(label_bytes, &mut label_buf);
+        normalize_label_into(label_bytes, label_buf);
         if label_buf.is_empty() {
             continue;
         }
-        let Some(def_index) = defs.get_index(&label_buf) else { continue };
+        let Some(def_index) = defs.get_index(label_buf) else { continue };
 
         // Links cannot contain links (but can contain images)
         if contains_link(&occupied, open_pos, close_pos)
@@ -232,7 +242,7 @@ pub fn resolve_reference_links(
             }
         }
 
-        ref_links.push(RefLink {
+        out_links.push(RefLink {
             start: if is_image { open_pos - 1 } else { open_pos },
             text_end: close_pos,
             end,
@@ -243,26 +253,7 @@ pub fn resolve_reference_links(
         occupied.push((open_pos, end));
     }
 
-    ref_links.sort_by_key(|l| l.start);
-    ref_links
-}
-
-#[inline]
-fn find_open_idx(open_brackets: &[(u32, bool)], pos: u32) -> Option<usize> {
-    open_brackets
-        .binary_search_by_key(&pos, |(p, _)| *p)
-        .ok()
-}
-
-#[inline]
-fn find_close_idx(close_brackets: &[u32], pos: u32) -> Option<usize> {
-    close_brackets
-        .binary_search(&pos)
-        .ok()
-}
-
-fn contains_link(links: &[(u32, u32)], start: u32, end: u32) -> bool {
-    links.iter().any(|&(s, e)| s >= start && e <= end)
+    out_links.sort_by_key(|l| l.start);
 }
 
 fn contains_ref_link_candidate(
@@ -305,6 +296,24 @@ fn contains_ref_link_candidate(
     false
 }
 
+#[inline]
+fn find_open_idx(open_brackets: &[(u32, bool)], pos: u32) -> Option<usize> {
+    open_brackets
+        .binary_search_by_key(&pos, |(p, _)| *p)
+        .ok()
+}
+
+#[inline]
+fn find_close_idx(close_brackets: &[u32], pos: u32) -> Option<usize> {
+    close_brackets
+        .binary_search(&pos)
+        .ok()
+}
+
+fn contains_link(links: &[(u32, u32)], start: u32, end: u32) -> bool {
+    links.iter().any(|&(s, e)| s >= start && e <= end)
+}
+
 /// Find the matching close bracket for an open bracket, accounting for nesting.
 /// `formed_opens` indicates opens that have formed links (and consumed their close).
 /// Inactive opens (deactivated but not formed) still contribute to depth.
@@ -315,41 +324,64 @@ fn find_matching_close(
     formed_opens: &[bool],
     used_closes: &[bool],
 ) -> Option<usize> {
-    // Count nested brackets to find the matching close
+    // Count nested brackets to find the matching close.
+    // Only skip opens that have formed links (their closes are also consumed).
+    // Inactive opens still contribute to depth.
     let mut depth = 1i32;
-    let mut close_idx = None;
 
-    // Create a merged, sorted list of bracket positions for nesting calculation
-    // Only skip opens that have formed links (their closes are also consumed)
-    // Inactive opens still contribute to depth
-    let mut events: Vec<(u32, bool)> = Vec::new(); // (pos, is_open)
+    let mut open_idx = match open_brackets.binary_search_by_key(&open_pos, |(p, _)| *p) {
+        Ok(i) => i + 1,
+        Err(i) => i,
+    };
+    let mut close_idx = match close_brackets.binary_search(&open_pos) {
+        Ok(i) => i + 1,
+        Err(i) => i,
+    };
 
-    for (i, &(pos, _)) in open_brackets.iter().enumerate() {
-        if !formed_opens[i] && pos > open_pos {
-            events.push((pos, true));
+    loop {
+        while open_idx < open_brackets.len() {
+            let (pos, _) = open_brackets[open_idx];
+            if pos > open_pos && !formed_opens[open_idx] {
+                break;
+            }
+            open_idx += 1;
         }
-    }
-    for (i, &pos) in close_brackets.iter().enumerate() {
-        if !used_closes[i] && pos > open_pos {
-            events.push((pos, false));
+        while close_idx < close_brackets.len() {
+            let pos = close_brackets[close_idx];
+            if pos > open_pos && !used_closes[close_idx] {
+                break;
+            }
+            close_idx += 1;
         }
-    }
-    events.sort_by_key(|&(pos, _)| pos);
 
-    for (pos, is_open) in events {
-        if is_open {
+        let next_open = if open_idx < open_brackets.len() {
+            open_brackets[open_idx].0
+        } else {
+            u32::MAX
+        };
+        let next_close = if close_idx < close_brackets.len() {
+            close_brackets[close_idx]
+        } else {
+            u32::MAX
+        };
+
+        if next_open == u32::MAX && next_close == u32::MAX {
+            break;
+        }
+
+        if next_open <= next_close {
             depth += 1;
+            open_idx += 1;
         } else {
             depth -= 1;
             if depth == 0 {
-                // Found matching close, find its index in close_brackets
-                close_idx = close_brackets.iter().position(|&p| p == pos);
-                break;
+                return Some(close_idx);
             }
+            close_idx += 1;
         }
     }
 
-    close_idx
+    None
 }
 
 fn parse_ref_label_immediate(text: &[u8], mut pos: usize) -> Option<(usize, usize, usize)> {

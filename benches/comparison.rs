@@ -7,7 +7,6 @@
 //! - md4c (C)
 //! - pulldown-cmark (most popular, used by rustdoc)
 //! - comrak (100% CommonMark compliant, GFM support)
-//! - markdown (markdown-rs, wooorm's parser)
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use memchr::memchr;
@@ -217,10 +216,6 @@ fn parse_comrak(input: &str) -> String {
     comrak::markdown_to_html(input, &comrak::Options::default())
 }
 
-/// Parse with markdown-rs
-fn parse_markdown_rs(input: &str) -> String {
-    markdown::to_html(input)
-}
 
 unsafe extern "C" {
     fn md_html(
@@ -292,9 +287,6 @@ fn bench_tiny(c: &mut Criterion) {
     group.bench_function("comrak", |b| {
         b.iter(|| parse_comrak(black_box(input)))
     });
-    group.bench_function("markdown-rs", |b| {
-        b.iter(|| parse_markdown_rs(black_box(input)))
-    });
 
     group.finish();
 }
@@ -315,9 +307,6 @@ fn bench_small(c: &mut Criterion) {
     });
     group.bench_function("comrak", |b| {
         b.iter(|| parse_comrak(black_box(input)))
-    });
-    group.bench_function("markdown-rs", |b| {
-        b.iter(|| parse_markdown_rs(black_box(input)))
     });
 
     group.finish();
@@ -340,9 +329,6 @@ fn bench_simple(c: &mut Criterion) {
     group.bench_function("comrak", |b| {
         b.iter(|| parse_comrak(black_box(input)))
     });
-    group.bench_function("markdown-rs", |b| {
-        b.iter(|| parse_markdown_rs(black_box(input)))
-    });
 
     group.finish();
 }
@@ -364,9 +350,6 @@ fn bench_medium(c: &mut Criterion) {
     group.bench_function("comrak", |b| {
         b.iter(|| parse_comrak(black_box(input)))
     });
-    group.bench_function("markdown-rs", |b| {
-        b.iter(|| parse_markdown_rs(black_box(input)))
-    });
 
     group.finish();
 }
@@ -387,9 +370,6 @@ fn bench_large(c: &mut Criterion) {
     });
     group.bench_function("comrak", |b| {
         b.iter(|| parse_comrak(black_box(&input)))
-    });
-    group.bench_function("markdown-rs", |b| {
-        b.iter(|| parse_markdown_rs(black_box(&input)))
     });
 
     group.finish();
@@ -425,9 +405,6 @@ fn bench_commonmark_group(c: &mut Criterion, group_name: &str, input: &str) {
 
     group.bench_function("comrak", |b| {
         b.iter(|| parse_comrak(black_box(input)))
-    });
-    group.bench_function("markdown-rs", |b| {
-        b.iter(|| parse_markdown_rs(black_box(input)))
     });
 
     group.finish();
@@ -473,9 +450,6 @@ fn bench_complexity(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("comrak", name), input, |b, s| {
             b.iter(|| parse_comrak(black_box(s)))
         });
-        group.bench_with_input(BenchmarkId::new("markdown-rs", name), input, |b, s| {
-            b.iter(|| parse_markdown_rs(black_box(s)))
-        });
     }
 
     group.finish();
@@ -506,9 +480,6 @@ fn bench_throughput(c: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new("comrak", name), input, |b, s| {
             b.iter(|| parse_comrak(black_box(s)))
-        });
-        group.bench_with_input(BenchmarkId::new("markdown-rs", name), input, |b, s| {
-            b.iter(|| parse_markdown_rs(black_box(s)))
         });
     }
 

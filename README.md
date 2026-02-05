@@ -60,42 +60,57 @@ Three-phase approach inspired by md4c:
 ## Performance
 
 Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers (latest run: Feb 5, 2026).
-Input: synthetic wiki-style articles with text-heavy paragraphs, lists, and code blocks, plus CommonMark features used at least once (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-20k.md`, `benches/fixtures/commonmark-50k.md`).
-Output buffers are reused for md-fast, md4c, and pulldown-cmark where their APIs allow; comrak and markdown-rs allocate output internally.
+Input: synthetic wiki-style articles with text-heavy paragraphs, lists, and code blocks, plus CommonMark features used at least once (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-50k.md`).
+Output buffers are reused for md-fast, md4c, and pulldown-cmark where their APIs allow; comrak allocates output internally.
 
 **CommonMark 5KB**
 | Parser | Throughput | Relative (vs md-fast) |
 |--------|-----------:|----------------------:|
-| **md-fast** | **247.0 MiB/s** | **1.00x** |
-| md4c | 270.4 MiB/s | 1.09x |
-| pulldown-cmark | 270.4 MiB/s | 1.10x |
-| comrak | 79.8 MiB/s | 0.32x |
-| markdown-rs | 10.1 MiB/s | 0.04x |
-
-**CommonMark 20KB**
-| Parser | Throughput | Relative (vs md-fast) |
-|--------|-----------:|----------------------:|
-| **md-fast** | **246.8 MiB/s** | **1.00x** |
-| md4c | 267.4 MiB/s | 1.08x |
-| pulldown-cmark | 272.5 MiB/s | 1.10x |
-| comrak | 78.2 MiB/s | 0.32x |
-| markdown-rs | 9.4 MiB/s | 0.04x |
+| **md-fast** | **265.4 MiB/s** | **1.00x** |
+| md4c | 264.6 MiB/s | 1.00x |
+| pulldown-cmark | 242.7 MiB/s | 0.92x |
+| comrak | 78.0 MiB/s | 0.29x |
 
 **CommonMark 50KB**
 | Parser | Throughput | Relative (vs md-fast) |
 |--------|-----------:|----------------------:|
-| **md-fast** | **251.0 MiB/s** | **1.00x** |
-| md4c | 265.3 MiB/s | 1.06x |
-| pulldown-cmark | 276.8 MiB/s | 1.10x |
-| comrak | 78.6 MiB/s | 0.31x |
-| markdown-rs | 8.2 MiB/s | 0.03x |
+| **md-fast** | **276.3 MiB/s** | **1.00x** |
+| md4c | 261.0 MiB/s | 0.94x |
+| pulldown-cmark | 270.9 MiB/s | 0.98x |
+| comrak | 77.0 MiB/s | 0.28x |
+
+Other candidates like markdown-rs are far slower in this workload and are omitted from the main tables to keep the comparison focused. Happy to run them on request.
 
 **Key results:**
-- md-fast is **~9–10% slower** than pulldown-cmark across 5–50KB.
-- md-fast is **~3.1x faster** than comrak across 5–50KB.
-- md-fast is **~25–30x faster** than markdown-rs across 5–50KB.
+- md-fast is **~2% faster** than pulldown-cmark at 50KB and **~9% faster** at 5KB.
+- md-fast is **~3.4-3.6x faster** than comrak across 5-50KB.
+- md-fast is **~5-6% faster** than md4c at 50KB; essentially tied at 5KB.
 
 Run benchmarks: `cargo bench --bench comparison`
+
+## Technical Notes (Top-Tier Approaches)
+
+These are the four parsers included in the main benchmark. The ratings are about **performance-oriented architecture for end-to-end Markdown-to-HTML** (not feature depth or ergonomics).
+
+**md-fast** (Rating: 5/5)
+- Streaming, zero-copy design: `Range`-based slices into input, no AST.
+- Three-phase inline parsing (collect → resolve → emit), lookup tables, and aggressive buffer reuse.
+- HTML writer emits directly into a reusable `Vec<u8>`.
+
+**md4c** (Rating: 5/5)
+- C parser with a single entrypoint (`md_parse`) and a callback-based push model.
+- Very compact core (single C file + header), no external dependencies, fast by design.
+- HTML renderer (`md_html`) streams chunks to a callback, leaving policy decisions to the caller.
+
+**pulldown-cmark** (Rating: 4/5)
+- Pull-parser design (iterator of events) with minimal allocations and CoW text.
+- Pure Rust with optional SIMD scanning; supports source maps and clean separation of parse/render.
+- Fast and flexible, but the event model can add overhead for pure HTML throughput.
+
+**comrak** (Rating: 3/5)
+- Full AST built in an arena; optimized for transformations and rich extensions.
+- CommonMark + GFM, plus many extensions and multiple output formats.
+- The AST/arena approach trades throughput for flexibility and rich document manipulation.
 
 ## CommonMark Compliance
 
