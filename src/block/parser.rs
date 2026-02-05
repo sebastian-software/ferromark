@@ -9,6 +9,9 @@ use super::event::{BlockEvent, ListKind, TaskState};
 use crate::link_ref::{LinkRefStore, normalize_label_into, LinkRefDef};
 use crate::Options;
 
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+use std::arch::aarch64::*;
+
 /// State for an open fenced code block.
 #[derive(Debug, Clone)]
 struct FenceState {
@@ -495,6 +498,17 @@ impl<'a> BlockParser<'a> {
     /// Check if line is blank after consuming whitespace.
     fn is_blank_line(&self) -> bool {
         let slice = self.cursor.remaining_slice();
+        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        {
+            if let Some(result) = unsafe { Self::is_blank_line_simd(slice) } {
+                return result;
+            }
+        }
+        Self::is_blank_line_scalar(slice)
+    }
+
+    #[inline]
+    fn is_blank_line_scalar(slice: &[u8]) -> bool {
         for &b in slice {
             if b == b' ' || b == b'\t' {
                 continue;
@@ -502,6 +516,41 @@ impl<'a> BlockParser<'a> {
             return b == b'\n';
         }
         true // EOF is treated as blank
+    }
+
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    #[target_feature(enable = "neon")]
+    #[allow(unsafe_op_in_unsafe_fn)]
+    unsafe fn is_blank_line_simd(slice: &[u8]) -> Option<bool> {
+        if slice.len() < 16 {
+            return None;
+        }
+
+        let ptr = slice.as_ptr();
+        let mut pos = 0usize;
+        let len = slice.len();
+        while pos + 16 <= len {
+            let v = vld1q_u8(ptr.add(pos));
+            let nl_mask = vceqq_u8(v, vdupq_n_u8(b'\n'));
+            if vmaxvq_u8(nl_mask) != 0 {
+                break;
+            }
+            let space_mask = vceqq_u8(v, vdupq_n_u8(b' '));
+            let tab_mask = vceqq_u8(v, vdupq_n_u8(b'\t'));
+            let ws_mask = vorrq_u8(space_mask, tab_mask);
+            if vminvq_u8(ws_mask) != 0xFF {
+                return Some(false);
+            }
+            pos += 16;
+        }
+
+        for &b in &slice[pos..] {
+            if b == b' ' || b == b'\t' {
+                continue;
+            }
+            return Some(b == b'\n');
+        }
+        Some(true)
     }
 
     /// Calculate the column that a tab at the given column would expand to.

@@ -33,3 +33,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
 - Result: 276.0-284.9 MiB/s, change within noise threshold (slower, noisy).
 - Decision: Reverted.
+
+- Change: NEON blank-line scan in block parser (`is_blank_line`) to fast-skip whitespace.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 280.6-282.4 MiB/s, ~+4% throughput.
+- Decision: Kept.
