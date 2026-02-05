@@ -279,11 +279,11 @@ impl<'a> EmphasisResolver<'a> {
     /// Per CommonMark spec: delimiters between an opener and closer can no longer
     /// form valid matches once we've closed past them.
     fn remove_openers_between(&mut self, _marks: &[Mark], opener_idx: usize, closer_idx: usize) {
+        let _ = closer_idx;
         for stack in self.stacks.iter_mut() {
-            stack.retain(|entry| {
-                // Keep if the mark index is not between opener and closer
-                entry.mark_idx <= opener_idx || entry.mark_idx >= closer_idx
-            });
+            while matches!(stack.last(), Some(entry) if entry.mark_idx > opener_idx) {
+                stack.pop();
+            }
         }
     }
 }
