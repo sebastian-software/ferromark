@@ -59,19 +59,22 @@ Three-phase approach inspired by md4c:
 
 ## Performance
 
-Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers (latest run: Feb 3, 2026):
+Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers (latest run: Feb 5, 2026).
+Input: ~50KB synthetic wiki-style article with text-heavy paragraphs, lists, and code blocks, plus CommonMark features used at least once (`benches/fixtures/commonmark-50k.md`).
+Output buffers are reused for md-fast, md4c, and pulldown-cmark where their APIs allow; comrak and markdown-rs allocate output internally.
 
-| Parser | Throughput (Medium) | Throughput (Large) | Relative (Medium) |
-|--------|--------------------:|-------------------:|----------|
-| **md-fast** | **82.9 MiB/s** | **90.8 MiB/s** | **1.0x** |
-| pulldown-cmark | 148 MiB/s | 214 MiB/s | 1.79x |
-| comrak | 45.0 MiB/s | 58.1 MiB/s | 0.54x |
-| markdown-rs | 6.74 MiB/s | 6.92 MiB/s | 0.08x |
+| Parser | Throughput (CommonMark 50KB) | Relative (vs md-fast) |
+|--------|-----------------------------:|----------------------:|
+| **md-fast** | **967.5 MiB/s** | **1.00x** |
+| md4c | 610.6 MiB/s | 0.63x |
+| pulldown-cmark | 609.5 MiB/s | 0.63x |
+| comrak | 204.7 MiB/s | 0.21x |
+| markdown-rs | 19.7 MiB/s | 0.02x |
 
 **Key results:**
-- **1.8x faster** than comrak on medium documents
-- **12x faster** than markdown-rs on medium documents
-- **~44% slower** than pulldown-cmark on medium documents
+- **~4.7x faster** than comrak on the CommonMark 50KB sample
+- **~49x faster** than markdown-rs on the CommonMark 50KB sample
+- **~1.6x faster** than pulldown-cmark on the CommonMark 50KB sample
 
 Run benchmarks: `cargo bench --bench comparison`
 

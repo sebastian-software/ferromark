@@ -150,6 +150,9 @@ fn example() {
 Paragraph after code.
 "#;
 
+    /// CommonMark-heavy document (~50KB) built from spec examples
+    pub const COMMONMARK_50K: &str = include_str!("fixtures/commonmark-50k.md");
+
     /// Generate a large document by repeating sections
     pub fn large() -> String {
         let section = r#"
@@ -185,6 +188,12 @@ fn parse_md_fast(input: &str) -> String {
     md_fast::to_html(input)
 }
 
+/// Parse with md-fast into a reusable buffer
+fn parse_md_fast_into(input: &str, out: &mut Vec<u8>) {
+    out.clear();
+    md_fast::to_html_into(input, out);
+}
+
 /// Parse with pulldown-cmark
 fn parse_pulldown_cmark(input: &str) -> String {
     use pulldown_cmark::{html, Parser};
@@ -192,6 +201,13 @@ fn parse_pulldown_cmark(input: &str) -> String {
     let mut output = String::new();
     html::push_html(&mut output, parser);
     output
+}
+
+/// Parse with pulldown-cmark into a reusable buffer
+fn parse_pulldown_cmark_into(input: &str, out: &mut String) {
+    use pulldown_cmark::{html, Parser};
+    out.clear();
+    html::push_html(out, Parser::new(input));
 }
 
 /// Parse with comrak
@@ -239,6 +255,22 @@ fn parse_md4c(input: &str) -> String {
     };
     debug_assert_eq!(rc, 0, "md_html returned error");
     unsafe { String::from_utf8_unchecked(out) }
+}
+
+/// Parse with md4c into a reusable buffer
+fn parse_md4c_into(input: &str, out: &mut Vec<u8>) {
+    out.clear();
+    let rc = unsafe {
+        md_html(
+            input.as_ptr() as *const c_char,
+            input.len() as c_uint,
+            md4c_output,
+            out as *mut Vec<u8> as *mut c_void,
+            0,
+            0,
+        )
+    };
+    debug_assert_eq!(rc, 0, "md_html returned error");
 }
 
 fn bench_tiny(c: &mut Criterion) {
@@ -356,6 +388,45 @@ fn bench_large(c: &mut Criterion) {
     });
     group.bench_function("markdown-rs", |b| {
         b.iter(|| parse_markdown_rs(black_box(&input)))
+    });
+
+    group.finish();
+}
+
+fn bench_commonmark50k(c: &mut Criterion) {
+    let mut group = c.benchmark_group("commonmark50k");
+    let input = samples::COMMONMARK_50K;
+    group.throughput(Throughput::Bytes(input.len() as u64));
+
+    let mut md_fast_out = Vec::with_capacity(input.len() + input.len() / 4);
+    group.bench_function("md-fast", |b| {
+        b.iter(|| {
+            parse_md_fast_into(black_box(input), &mut md_fast_out);
+            black_box(&md_fast_out);
+        })
+    });
+
+    let mut md4c_out = Vec::with_capacity(input.len() + input.len() / 4);
+    group.bench_function("md4c", |b| {
+        b.iter(|| {
+            parse_md4c_into(black_box(input), &mut md4c_out);
+            black_box(&md4c_out);
+        })
+    });
+
+    let mut pd_out = String::with_capacity(input.len() + input.len() / 4);
+    group.bench_function("pulldown-cmark", |b| {
+        b.iter(|| {
+            parse_pulldown_cmark_into(black_box(input), &mut pd_out);
+            black_box(&pd_out);
+        })
+    });
+
+    group.bench_function("comrak", |b| {
+        b.iter(|| parse_comrak(black_box(input)))
+    });
+    group.bench_function("markdown-rs", |b| {
+        b.iter(|| parse_markdown_rs(black_box(input)))
     });
 
     group.finish();
@@ -847,6 +918,7 @@ criterion_group!(
     bench_simple,
     bench_medium,
     bench_large,
+    bench_commonmark50k,
     bench_complexity,
     bench_throughput,
     bench_experiments
