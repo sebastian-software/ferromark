@@ -5,6 +5,7 @@
 
 use crate::limits;
 use memchr::memchr3;
+use super::simd;
 
 /// Flags for mark state.
 pub mod flags {
@@ -318,7 +319,14 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
 
 #[inline]
 fn next_special(text: &[u8], start: usize) -> Option<usize> {
-    let slice = &text[start..];
+    let mut pos = start;
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        if let Some(found) = unsafe { simd::next_mark_special_simd(text, &mut pos) } {
+            return Some(found);
+        }
+    }
+    let slice = &text[pos..];
     let mut best = None;
 
     if let Some(i) = memchr3(b'`', b'*', b'_', slice) {
@@ -331,7 +339,7 @@ fn next_special(text: &[u8], start: usize) -> Option<usize> {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
 
-    best.map(|i| start + i)
+    best.map(|i| pos + i)
 }
 
 #[inline]

@@ -10,6 +10,7 @@ mod emphasis;
 pub mod event;
 mod links;
 pub mod marks;
+mod simd;
 
 pub use event::InlineEvent;
 
@@ -671,6 +672,12 @@ impl InlineParser {
 
 #[inline]
 fn has_inline_specials(input: &[u8]) -> bool {
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd(input) } {
+            return result;
+        }
+    }
     for &b in input {
         match b {
             b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'&' | b'\\' | b'!' | b'~' | b'\n' | b'\r' => {
