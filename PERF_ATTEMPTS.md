@@ -38,3 +38,13 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
 - Result: 280.6-282.4 MiB/s, ~+4% throughput.
 - Decision: Kept.
+
+- Change: Inline SIMD scan widened to 32-byte chunks for mark detection.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 273.8-277.2 MiB/s, regression (~-2%).
+- Decision: Reverted.
+
+- Change: SIMD ASCII fast-path for link-label normalization (no-whitespace detection + lowercasing).
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 276.6-279.5 MiB/s, change within noise threshold.
+- Decision: Reverted.
