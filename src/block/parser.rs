@@ -177,6 +177,10 @@ impl<'a> BlockParser<'a> {
 
     /// Parse a single line.
     fn parse_line(&mut self, events: &mut Vec<BlockEvent>) {
+        if self.parse_simple_paragraph_run(events) {
+            return;
+        }
+
         let line_start = self.cursor.offset();
 
         // Reset column tracking at the start of each line
@@ -432,6 +436,51 @@ impl<'a> BlockParser<'a> {
 
         // Parse regular block content (pass known indent to avoid re-measuring)
         self.parse_line_content_with_indent(indent, events);
+    }
+
+    /// Fast path: parse consecutive simple paragraph lines at top level.
+    /// Returns true if it consumed at least one line.
+    fn parse_simple_paragraph_run(&mut self, events: &mut Vec<BlockEvent>) -> bool {
+        if self.html_block.is_some()
+            || self.fence_state.is_some()
+            || self.in_indented_code
+            || !self.container_stack.is_empty()
+        {
+            return false;
+        }
+
+        let mut consumed_any = false;
+        loop {
+            let line_start = self.cursor.offset();
+
+            // Reset column tracking at the start of each line
+            self.partial_tab_cols = 0;
+            self.current_col = 0;
+
+            let (indent, indent_bytes) = self.skip_indent();
+            self.line_indent_bytes = indent_bytes;
+
+            let first = self.cursor.peek_or_zero();
+            if first == 0 || first == b'\n' {
+                if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+                    self.cursor.bump();
+                }
+                self.close_paragraph(events);
+                return true;
+            }
+
+            if indent >= 4 || !is_simple_line_start(first) {
+                self.cursor = Cursor::new_at(self.input, line_start);
+                return consumed_any;
+            }
+
+            self.parse_paragraph_line(self.cursor.offset(), events);
+            consumed_any = true;
+
+            if self.cursor.is_eof() {
+                return true;
+            }
+        }
     }
 
     /// Check if line is blank after consuming whitespace.
