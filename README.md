@@ -60,21 +60,40 @@ Three-phase approach inspired by md4c:
 ## Performance
 
 Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers (latest run: Feb 5, 2026).
-Input: ~50KB synthetic wiki-style article with text-heavy paragraphs, lists, and code blocks, plus CommonMark features used at least once (`benches/fixtures/commonmark-50k.md`).
+Input: synthetic wiki-style articles with text-heavy paragraphs, lists, and code blocks, plus CommonMark features used at least once (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-20k.md`, `benches/fixtures/commonmark-50k.md`).
 Output buffers are reused for md-fast, md4c, and pulldown-cmark where their APIs allow; comrak and markdown-rs allocate output internally.
 
-| Parser | Throughput (CommonMark 50KB) | Relative (vs md-fast) |
-|--------|-----------------------------:|----------------------:|
-| **md-fast** | **967.5 MiB/s** | **1.00x** |
-| md4c | 610.6 MiB/s | 0.63x |
-| pulldown-cmark | 609.5 MiB/s | 0.63x |
-| comrak | 204.7 MiB/s | 0.21x |
-| markdown-rs | 19.7 MiB/s | 0.02x |
+**CommonMark 5KB**
+| Parser | Throughput | Relative (vs md-fast) |
+|--------|-----------:|----------------------:|
+| **md-fast** | **247.0 MiB/s** | **1.00x** |
+| md4c | 270.4 MiB/s | 1.09x |
+| pulldown-cmark | 270.4 MiB/s | 1.10x |
+| comrak | 79.8 MiB/s | 0.32x |
+| markdown-rs | 10.1 MiB/s | 0.04x |
+
+**CommonMark 20KB**
+| Parser | Throughput | Relative (vs md-fast) |
+|--------|-----------:|----------------------:|
+| **md-fast** | **246.8 MiB/s** | **1.00x** |
+| md4c | 267.4 MiB/s | 1.08x |
+| pulldown-cmark | 272.5 MiB/s | 1.10x |
+| comrak | 78.2 MiB/s | 0.32x |
+| markdown-rs | 9.4 MiB/s | 0.04x |
+
+**CommonMark 50KB**
+| Parser | Throughput | Relative (vs md-fast) |
+|--------|-----------:|----------------------:|
+| **md-fast** | **251.0 MiB/s** | **1.00x** |
+| md4c | 265.3 MiB/s | 1.06x |
+| pulldown-cmark | 276.8 MiB/s | 1.10x |
+| comrak | 78.6 MiB/s | 0.31x |
+| markdown-rs | 8.2 MiB/s | 0.03x |
 
 **Key results:**
-- **~4.7x faster** than comrak on the CommonMark 50KB sample
-- **~49x faster** than markdown-rs on the CommonMark 50KB sample
-- **~1.6x faster** than pulldown-cmark on the CommonMark 50KB sample
+- md-fast is **~9–10% slower** than pulldown-cmark across 5–50KB.
+- md-fast is **~3.1x faster** than comrak across 5–50KB.
+- md-fast is **~25–30x faster** than markdown-rs across 5–50KB.
 
 Run benchmarks: `cargo bench --bench comparison`
 

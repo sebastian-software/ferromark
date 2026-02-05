@@ -16,15 +16,24 @@ echo "Available benches:"
 "$bin" --list > /tmp/md-fast-bench.list || true
 cat /tmp/md-fast-bench.list
 
-if rg -q '^commonmark50k/md-fast$' /tmp/md-fast-bench.list; then
-  filter='^commonmark50k/md-fast$'
+size="${1:-50k}"
+case "$size" in
+  5k|20k|50k) ;;
+  *)
+    echo "Usage: $0 [5k|20k|50k]" >&2
+    exit 1
+    ;;
+esac
+
+if rg -q "^commonmark${size}/md-fast$" /tmp/md-fast-bench.list; then
+  filter="^commonmark${size}/md-fast$"
 else
-  echo "No 'commonmark50k' benchmark found. Aborting." >&2
+  echo "No 'commonmark${size}' benchmark found. Aborting." >&2
   exit 1
 fi
 
 echo "Starting benchmark (60s) and sampling for 10s..."
-out=/tmp/md-fast-commonmark50k.bench.out
+out="/tmp/md-fast-commonmark${size}.bench.out"
 "$bin" --bench --measurement-time 60 --warm-up-time 5 --sample-size 100 "$filter" > "$out" 2>&1 &
 pid=$!
 
@@ -40,9 +49,9 @@ for i in $(seq 1 50); do
   sleep 0.1
 done
 
-sudo sample "$pid" 10 -mayDie -fullPaths -file /tmp/md-fast-commonmark50k.sample.txt
+sudo sample "$pid" 10 -mayDie -fullPaths -file "/tmp/md-fast-commonmark${size}.sample.txt"
 
 # Best-effort cleanup
 kill "$pid" 2>/dev/null || true
 
-echo "Sample saved to /tmp/md-fast-commonmark50k.sample.txt"
+echo "Sample saved to /tmp/md-fast-commonmark${size}.sample.txt"

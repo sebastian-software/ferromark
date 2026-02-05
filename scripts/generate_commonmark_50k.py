@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT_PATH = ROOT / "benches" / "fixtures" / "commonmark-50k.md"
-TARGET_BYTES = 50 * 1024
+FIXTURES_DIR = ROOT / "benches" / "fixtures"
+
+SAMPLES = [
+    ("commonmark-5k.md", 5 * 1024),
+    ("commonmark-20k.md", 20 * 1024),
+    ("commonmark-50k.md", 50 * 1024),
+]
 
 
-def build_article() -> str:
+def build_article(target_bytes: int, label: str) -> str:
     parts: list[str] = []
     current_bytes = 0
+
     header = (
         "<!-- Generated on "
-        f"{date.today().isoformat()} to ~50KB. Synthetic wiki-style article. "
+        f"{date.today().isoformat()} to ~{label}. Synthetic wiki-style article. "
         "Do not edit by hand. -->\n\n"
     )
     parts.append(header)
@@ -27,283 +34,272 @@ def build_article() -> str:
     def add_para(text: str) -> None:
         add(text.rstrip("\n") + "\n\n")
 
-    title = "# Northbridge District\n\n"
-    add(title)
-    add_para(
-        "Northbridge District is a fictional metropolitan area used in technical "
-        "documentation to describe planning, governance, and infrastructure patterns. "
-        "The district is known for its layered transit network, long-form planning "
-        "documents, and a large archive of public records."
-    )
-    add_para(
-        "The article is written in a Wikipedia-like style, with many paragraphs, "
-        "lists, and code blocks. It also demonstrates CommonMark features such as "
-        "reference links, autolinks, inline HTML, and blockquotes."
-    )
+    def compact_base_blocks() -> list[str]:
+        return [
+            (
+                "# Northbridge District\n\n"
+                "Northbridge District is a fictional metropolitan area used in technical "
+                "documentation to describe planning, governance, and infrastructure patterns.\n\n"
+                "The article is written in a Wikipedia-like style, with many paragraphs, "
+                "lists, and code blocks. It also demonstrates CommonMark features such as "
+                "reference links, autolinks, inline HTML, and blockquotes.\n\n"
+            ),
+            (
+                "Overview\n========\n\n"
+                "Northbridge sits along a river delta and connects industrial corridors to "
+                "residential zones. The local charter emphasizes long-term planning and "
+                "public access.\n\n"
+                "Key characteristics:\n\n"
+                "- Mixed-use zoning across historic corridors\n"
+                "- **High-frequency** transit loops with *steady* headways\n"
+                "- Public archives with long-term audit trails\n"
+                "  - Urban catalog revisions\n"
+                "  - Civic ledger backups\n\n"
+            ),
+            (
+                "## History\n\n"
+                "Settlement began near the riverbank warehouses, followed by rail expansion "
+                "and market squares. Records refer to the \\*operator\\* policy and "
+                "Northbridge&nbsp;District as a formal term.\n\n"
+                "> \"We planned for continuity as much as for growth.\" — Committee Minutes, 1987\n\n"
+                "### Milestones\n\n"
+                "1. 1889 — First bridge completed.\n"
+                "2. 1957 — Flood response plan adopted.\n"
+                "3. 1984 — Density plan revised.\n\n"
+            ),
+            (
+                "## Infrastructure\n\n"
+                "Operators publish schedules at <https://example.org/northbridge/transit> "
+                "and accept inquiries at <mailto:info@example.org>.\n\n"
+                "In maintenance guides, a hard line break is used to separate shift notes.  \n"
+                "This line continues on the next row with explicit formatting.\n\n"
+            ),
+            (
+                "## Notes on Formatting\n\n"
+                "Some records use character entities like &copy; and &amp; to preserve "
+                "licensing text. Backslash escapes such as \\[brackets\\] and \\_underscores\\_ "
+                "appear in transcripts.\n\n"
+                "Inline tags like <span class=\"label\">draft</span> show up in civic memos.\n\n"
+                "<div class=\"infobox\">\n"
+                "<p><strong>Northbridge Gallery</strong></p>\n"
+                "<p>Founded: 1979</p>\n"
+                "</div>\n\n"
+            ),
+            (
+                "## Education and Research\n\n"
+                "A representative data transformation is included below:\n\n"
+                "```rust\n"
+                "fn normalize_score(score: i32) -> i32 {\n"
+                "    if score < 0 { 0 } else { score }\n"
+                "}\n"
+                "```\n\n"
+                "Legacy memos still use indented code blocks for configuration samples:\n\n"
+                "    [archive]\n"
+                "    retention_years = 25\n"
+                "    checksum = true\n\n"
+            ),
+            (
+                "## See also\n\n"
+                "- [Regional planning overview](https://example.org/region)\n"
+                "- [Northbridge data portal][portal]\n"
+                "- ![District map](https://example.org/assets/map.png \"Map\")\n\n"
+                "---\n\n"
+            ),
+        ]
 
-    # Setext heading
-    add("Overview\n========\n\n")
-    add_para(
-        "Northbridge sits along a wide river delta and connects multiple industrial "
-        "corridors to residential zones. The local charter emphasizes long-term "
-        "planning, with a focus on resilience, public access, and shared utilities."
-    )
-    add_para(
-        "In planning documents the word *district* is often emphasized, while _region_ "
-        "is used for statistical reporting. The term \\*operator\\* appears in some "
-        "technical manuals, and the name is sometimes written as Northbridge&nbsp;District."
-    )
-    add("Key characteristics:\n\n")
-    add(
-        "- Mixed-use zoning across historic and modern corridors\n"
-        "- Extensive transit loops with **high-frequency** service\n"
-        "- Public archives and open data portals\n"
-        "  - An urban catalog with yearly revisions\n"
-        "  - A civic ledger with long-term audit trails\n\n"
-    )
+    def full_base_blocks() -> list[str]:
+        blocks = compact_base_blocks()
+        blocks.extend(
+            [
+                (
+                    "## Geography\n\n"
+                    "Northbridge occupies a low-lying delta bordered by tidal flats and a "
+                    "steep northern ridge. The main river splits into distributaries that "
+                    "form natural boundaries between neighborhoods.\n\n"
+                    "### Neighborhoods\n\n"
+                    "- Harbor Row\n"
+                    "- Eastbank\n"
+                    "- Civic Plateau\n"
+                    "- Archive Ward\n"
+                    "  - Old Registry\n"
+                    "  - Survey Annex\n\n"
+                ),
+                (
+                    "## Climate\n\n"
+                    "The climate is temperate with long wet seasons and mild summers. "
+                    "Annual rainfall supports an extensive greenway system along the river.\n\n"
+                ),
+                (
+                    "## Demographics\n\n"
+                    "The population is diverse, with several long-established communities "
+                    "and a steady influx of students and researchers.\n\n"
+                ),
+                (
+                    "## Economy\n\n"
+                    "The local economy centers on logistics, planning services, and archival "
+                    "technology. Small manufacturing remains present along the rail corridor.\n\n"
+                    "Several firms specialize in planning software. One dataset is described "
+                    "in the [Municipal Archive][archive].\n\n"
+                ),
+                (
+                    "## Culture\n\n"
+                    "Northbridge has a strong public arts program, with murals documenting "
+                    "planning eras and neighborhood transitions.\n\n"
+                ),
+                (
+                    "## Governance\n\n"
+                    "The governing council publishes a yearly plan outlining priorities for "
+                    "public transit, housing stability, and record preservation.\n\n"
+                    "The most cited policy is the [Civic Charter][charter].\n\n"
+                    "### Council structure\n\n"
+                    "- Chair\n"
+                    "- Planning director\n"
+                    "- Archive commissioner\n\n"
+                ),
+                (
+                    "## Media\n\n"
+                    "Local media outlets focus on infrastructure, planning decisions, and "
+                    "archival releases. A common phrase in editorials is **\"plan for today\"**.\n\n"
+                ),
+            ]
+        )
+        return blocks
 
-    add("## Etymology\n\n")
-    add_para(
-        "The name Northbridge refers to the original arched crossing built in the "
-        "late 19th century. Early records used a hyphenated form, but modern usage "
-        "standardized the compound name."
-    )
-    add_para(
-        "In printed materials, the name sometimes appears in monospace as "
-        "`NBR-01`, which was the archival code in the 1932 ledger."
-    )
+    base_blocks = compact_base_blocks() if target_bytes <= 8 * 1024 else full_base_blocks()
+    for block in base_blocks:
+        add(block)
 
-    add("## History\n\n")
-    add_para(
-        "Settlement began near the riverbank warehouses, followed by the expansion "
-        "of rail lines and market squares. The district charter was revised "
-        "multiple times to account for new transport policies."
-    )
-    add_para(
-        "Major redevelopment occurred after the 1957 flood, which prompted a "
-        "revision of building codes and a reassessment of critical infrastructure."
-    )
-    add_para(
-        "A 1984 policy report noted that population density rose faster than the "
-        "available housing stock, resulting in an emphasis on mixed-use corridors."
-    )
-    add(
-        "> \"We planned for continuity as much as for growth, and the archives show\n"
-        "> the district learning to pace itself.\" — Planning Committee Minutes, 1987\n\n"
-    )
-    add("### Milestones\n\n")
-    add(
-        "1. 1889 — First bridge completed, enabling cross-river trade.\n"
-        "2. 1932 — Central record office established.\n"
-        "3. 1957 — Flood response plan adopted.\n"
-        "4. 1984 — Density plan revised.\n\n"
-    )
+    add("## Supplementary Notes\n\n")
 
-    add("## Geography\n\n")
-    add_para(
-        "Northbridge occupies a low-lying delta bordered by tidal flats and a "
-        "steep northern ridge. The main river splits into distributaries that "
-        "form natural boundaries between neighborhoods."
-    )
-    add_para(
-        "The district is subdivided into terraces, embankments, and reclaimed land. "
-        "Maps typically highlight the levee system and the primary drainage basins."
-    )
-    add_para(
-        "Key districts include Harbor Row, Eastbank, and the Civic Plateau. "
-        "Each zone follows distinct land-use patterns and mobility priorities."
-    )
-    add("### Neighborhoods\n\n")
-    add(
-        "- Harbor Row\n"
-        "- Eastbank\n"
-        "- Civic Plateau\n"
-        "- Archive Ward\n"
-        "  - Old Registry\n"
-        "  - Survey Annex\n\n"
-    )
+    def block_transit(idx: int) -> str:
+        return (
+            f"### Transit Loop {idx}\n\n"
+            "The loop schedule is coordinated with river traffic and freight windows. "
+            "Operators track **turnaround time** and *dwell time* at major stations.\n\n"
+            "- Peak interval: 6 minutes\n"
+            "- Off-peak interval: 12 minutes\n"
+            "- Night service: 20 minutes\n"
+            "  - Limited stops at Harbor Row\n"
+            "  - Signal priority near Eastbank\n\n"
+        )
 
-    add("## Climate\n\n")
-    add_para(
-        "The climate is temperate with long wet seasons and mild summers. "
-        "Annual rainfall supports an extensive greenway system along the river."
-    )
-    add_para(
-        "Seasonal flooding is rare after the levee upgrades, but contingency "
-        "plans are maintained and updated annually."
-    )
+    def block_archives(idx: int) -> str:
+        return (
+            f"### Archive Protocol {idx}\n\n"
+            "Archival metadata is recorded with a consistent schema. A typical entry "
+            "includes `series_id`, a retention flag, and a public access marker.\n\n"
+            "> Records are validated nightly, and only then indexed for search.\n"
+            "> Use [Municipal Archive][archive] for official requests.\n\n"
+        )
 
-    add("## Demographics\n\n")
-    add_para(
-        "The population is diverse, with several long-established communities "
-        "and a steady influx of students and researchers."
-    )
-    add_para(
-        "Census summaries show a gradual increase in multi-generational housing "
-        "and a shift toward mixed residential-commercial buildings."
-    )
+    def block_lists(idx: int) -> str:
+        return (
+            f"### Field Survey {idx}\n\n"
+            "Survey teams use a shared checklist for neighborhood audits:\n\n"
+            "1. Measure sidewalk clearance.\n"
+            "2. Record lighting levels.\n"
+            "3. Note accessibility markers.\n"
+            "\n"
+            "   - ADA ramp condition\n"
+            "   - Crosswalk timing\n\n"
+        )
 
-    add("## Economy\n\n")
-    add_para(
-        "The local economy centers on logistics, planning services, and archival "
-        "technology. Small manufacturing remains present along the rail corridor."
-    )
-    add_para(
-        "A central export is documentation: policy drafts, engineering reports, "
-        "and standards used by neighboring districts."
-    )
-    add_para(
-        "Several local firms specialize in software for municipal planning. One "
-        "popular dataset is described in the [Municipal Archive][archive]."
-    )
+    def block_fenced(idx: int) -> str:
+        return (
+            f"### Routing Script {idx}\n\n"
+            "A small script is used to normalize incoming schedules:\n\n"
+            "```python\n"
+            "def normalize(minutes):\n"
+            "    return max(0, int(minutes))\n"
+            "```\n\n"
+        )
 
-    add("## Infrastructure\n\n")
-    add_para(
-        "Transit relies on a looped system that connects each neighborhood in "
-        "consistent intervals. Service frequency is described in the technical "
-        "manuals and in the `route_sync` configuration."
-    )
-    add_para(
-        "Operators publish schedules at <https://example.org/northbridge/transit> "
-        "and accept inquiries at <mailto:info@example.org>."
-    )
-    add_para(
-        "In maintenance guides, a hard line break is used to separate shift notes.  \n"
-        "This line continues on the next row with explicit formatting."
-    )
+    def block_indented(idx: int) -> str:
+        return (
+            f"### Legacy Config {idx}\n\n"
+            "Older maintenance forms embed raw configuration blocks:\n\n"
+            "    [loop]\n"
+            "    interval = 12\n"
+            "    priority = true\n\n"
+        )
 
-    add("## Culture\n\n")
-    add_para(
-        "Northbridge has a strong public arts program, with murals documenting "
-        "planning eras and neighborhood transitions."
-    )
-    add_para(
-        "The main gallery features rotating exhibits and a <span class=\"label\">"
-        "research wing</span> for archival visitors."
-    )
-    add(
-        "<div class=\"infobox\">\n"
-        "<p><strong>Northbridge Gallery</strong></p>\n"
-        "<p>Founded: 1979</p>\n"
-        "<p>Visitors: 320,000/year</p>\n"
-        "</div>\n\n"
-    )
+    def block_inline_html(idx: int) -> str:
+        return (
+            f"### Exhibit Note {idx}\n\n"
+            "Curators often mark temporary exhibits with inline tags like "
+            "<span class=\"tag\">rotating</span> to aid indexing.\n\n"
+            "<aside>\n"
+            "<p>Exhibit schedule updates are posted monthly.</p>\n"
+            "</aside>\n\n"
+        )
 
-    add("## Education and Research\n\n")
-    add_para(
-        "The district hosts a planning institute that publishes annual reviews "
-        "and a quarterly research digest."
-    )
-    add_para(
-        "A representative data transformation is included below, as used in a "
-        "local data standard:"
-    )
-    add(
-        "```rust\n"
-        "fn normalize_score(score: i32) -> i32 {\n"
-        "    if score < 0 { 0 } else { score }\n"
-        "}\n"
-        "```\n\n"
-    )
-    add_para(
-        "Legacy memos still use indented code blocks for configuration samples:"
-    )
-    add(
-        "    [archive]\n"
-        "    retention_years = 25\n"
-        "    checksum = true\n\n"
-    )
+    def block_emphasis(idx: int) -> str:
+        return (
+            f"### Planning Memo {idx}\n\n"
+            "Reports include escaped markers such as \\*priority\\* and "
+            "\\_status\\_ in transcripts. Several lines use forced breaks.  \n"
+            "The second line keeps the break visible in the output.\n\n"
+        )
 
-    add("## Governance\n\n")
-    add_para(
-        "The governing council publishes a yearly plan outlining priorities for "
-        "public transit, housing stability, and record preservation."
-    )
-    add_para(
-        "The most cited policy is the [Civic Charter][charter], a document that "
-        "balances growth with long-term sustainability."
-    )
-    add("### Council structure\n\n")
-    add(
-        "- Chair\n"
-        "- Planning director\n"
-        "- Archive commissioner\n"
-        "\n"
-        "- Committee members\n"
-        "\n"
-        "  The committee includes representatives from each neighborhood and\n"
-        "  meets quarterly to review project progress.\n\n"
-    )
+    def block_links(idx: int) -> str:
+        return (
+            f"### Public Outreach {idx}\n\n"
+            "Notices refer to the [Civic Charter][charter] and an online portal at "
+            "<https://example.org/northbridge/outreach>. A separate memo references "
+            "[Planning Office][planning].\n\n"
+        )
 
-    add("## Media\n\n")
-    add_para(
-        "Local media outlets focus on infrastructure, planning decisions, and "
-        "archival releases. A common phrase in editorials is **\"plan for today\"**."
-    )
+    def block_quote(idx: int) -> str:
+        return (
+            f"### Council Excerpt {idx}\n\n"
+            "> We will revisit the flood plan after the next cycle.\n"
+            "> - Follow-up audits\n"
+            "> - Community feedback\n\n"
+        )
 
-    add("## See also\n\n")
-    add(
-        "- [Regional planning overview](https://example.org/region)\n"
-        "- [Northbridge data portal][portal]\n"
-        "- ![District map](https://example.org/assets/map.png \"Map\")\n\n"
-    )
+    def block_separator(_: int) -> str:
+        return "---\n\n"
 
-    add("---\n\n")
-
-    add("## Notes on Formatting\n\n")
-    add_para(
-        "Some records use character entities like &copy; and &amp; to preserve "
-        "licensing text. Backslash escapes such as \\[brackets\\] and \\_underscores\\_ "
-        "appear in legacy transcripts."
-    )
-    add_para(
-        "Reference links are preferred in long documents. For example, the "
-        "[Municipal Archive][archive] maintains historical records, while the "
-        "[Planning Office][planning] publishes updated zoning maps."
-    )
-
-    # Append filler paragraphs to reach target size.
-    filler = [
-        "The district's reports emphasize readability, with long-form narrative "
-        "sections followed by concise summaries. Staff writers tend to keep "
-        "sentences short and avoid jargon where possible.",
-        "Public hearings are typically documented in verbatim transcripts, but "
-        "final summaries are edited for clarity and accessibility.",
-        "Maintenance logs include frequent references to stormwater pumps, "
-        "bridge joints, and electrical substations that keep the grid stable.",
-        "Annual surveys note that residents value reliable transit and walkable "
-        "corridors over short-term development gains.",
-        "Several study groups compare Northbridge to other river districts, "
-        "highlighting shared challenges in flood management and archival care.",
-        "Planning staff often cite the 'long view' as the main operating principle "
-        "for infrastructure decisions and public investment.",
+    blocks = [
+        block_transit,
+        block_archives,
+        block_lists,
+        block_fenced,
+        block_indented,
+        block_inline_html,
+        block_emphasis,
+        block_links,
+        block_quote,
+        block_separator,
     ]
 
-    notes_heading_added = False
-    idx = 0
-    while current_bytes < TARGET_BYTES:
-        if not notes_heading_added:
-            add("## Supplementary Notes\n\n")
-            notes_heading_added = True
-        add_para(filler[idx % len(filler)])
-        idx += 1
-
-    # Reference definitions (CommonMark feature)
-    add(
+    ref_defs = (
         "[archive]: https://example.org/archive \"Municipal Archive\"\n"
         "[planning]: https://example.org/planning 'Planning Office'\n"
         "[charter]: https://example.org/charter (Civic Charter)\n"
         "[portal]: https://example.org/data \"Data Portal\"\n"
     )
+    ref_defs_len = len(ref_defs.encode("utf-8"))
+
+    idx = 1
+    while current_bytes < target_bytes - ref_defs_len:
+        block = blocks[(idx - 1) % len(blocks)]
+        add(block(idx))
+        idx += 1
+
+    add(ref_defs)
 
     return "".join(parts)
 
 
 def main() -> None:
-    sample = build_article()
-    OUT_PATH.write_text(sample, encoding="utf-8")
-    size = OUT_PATH.stat().st_size
-    print(f"Wrote {OUT_PATH} ({size} bytes)")
+    FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
+    for filename, target in SAMPLES:
+        label = filename.split(".")[0].replace("commonmark-", "")
+        sample = build_article(target, label)
+        path = FIXTURES_DIR / filename
+        path.write_text(sample, encoding="utf-8")
+        print(f"Wrote {path} ({path.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":

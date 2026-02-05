@@ -150,7 +150,9 @@ fn example() {
 Paragraph after code.
 "#;
 
-    /// CommonMark-heavy document (~50KB) built from spec examples
+    /// CommonMark-heavy documents (wiki-style, text-heavy)
+    pub const COMMONMARK_5K: &str = include_str!("fixtures/commonmark-5k.md");
+    pub const COMMONMARK_20K: &str = include_str!("fixtures/commonmark-20k.md");
     pub const COMMONMARK_50K: &str = include_str!("fixtures/commonmark-50k.md");
 
     /// Generate a large document by repeating sections
@@ -393,9 +395,8 @@ fn bench_large(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_commonmark50k(c: &mut Criterion) {
-    let mut group = c.benchmark_group("commonmark50k");
-    let input = samples::COMMONMARK_50K;
+fn bench_commonmark_group(c: &mut Criterion, group_name: &str, input: &str) {
+    let mut group = c.benchmark_group(group_name);
     group.throughput(Throughput::Bytes(input.len() as u64));
 
     let mut md_fast_out = Vec::with_capacity(input.len() + input.len() / 4);
@@ -430,6 +431,18 @@ fn bench_commonmark50k(c: &mut Criterion) {
     });
 
     group.finish();
+}
+
+fn bench_commonmark5k(c: &mut Criterion) {
+    bench_commonmark_group(c, "commonmark5k", samples::COMMONMARK_5K);
+}
+
+fn bench_commonmark20k(c: &mut Criterion) {
+    bench_commonmark_group(c, "commonmark20k", samples::COMMONMARK_20K);
+}
+
+fn bench_commonmark50k(c: &mut Criterion) {
+    bench_commonmark_group(c, "commonmark50k", samples::COMMONMARK_50K);
 }
 
 /// Complexity comparison across representative feature sets
@@ -918,6 +931,8 @@ criterion_group!(
     bench_simple,
     bench_medium,
     bench_large,
+    bench_commonmark5k,
+    bench_commonmark20k,
     bench_commonmark50k,
     bench_complexity,
     bench_throughput,

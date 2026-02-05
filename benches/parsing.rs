@@ -53,7 +53,9 @@ The parser achieves **high throughput** on typical documents.
 Thank you for reading!
 "#;
 
-    /// CommonMark-heavy document (~50KB) built from spec examples
+    /// CommonMark-heavy documents (wiki-style, text-heavy)
+    pub const COMMONMARK_5K: &str = include_str!("fixtures/commonmark-5k.md");
+    pub const COMMONMARK_20K: &str = include_str!("fixtures/commonmark-20k.md");
     pub const COMMONMARK_50K: &str = include_str!("fixtures/commonmark-50k.md");
 
     /// Generate a large document by repeating sections
@@ -125,7 +127,19 @@ fn bench_parsing(c: &mut Criterion) {
         b.iter(|| md_fast::to_html(black_box(&large)))
     });
 
-    // CommonMark 50KB document
+    // CommonMark documents (wiki-style)
+    let commonmark_5k = samples::COMMONMARK_5K;
+    group.throughput(Throughput::Bytes(commonmark_5k.len() as u64));
+    group.bench_function("commonmark_5k", |b| {
+        b.iter(|| md_fast::to_html(black_box(commonmark_5k)))
+    });
+
+    let commonmark_20k = samples::COMMONMARK_20K;
+    group.throughput(Throughput::Bytes(commonmark_20k.len() as u64));
+    group.bench_function("commonmark_20k", |b| {
+        b.iter(|| md_fast::to_html(black_box(commonmark_20k)))
+    });
+
     let commonmark_50k = samples::COMMONMARK_50K;
     group.throughput(Throughput::Bytes(commonmark_50k.len() as u64));
     group.bench_function("commonmark_50k", |b| {
