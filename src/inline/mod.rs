@@ -71,7 +71,13 @@ impl InlineParser {
     }
 
     /// Parse inline content and emit events.
-    pub fn parse(&mut self, text: &[u8], link_refs: Option<&LinkRefStore>, events: &mut Vec<InlineEvent>) {
+    pub fn parse(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        allow_html: bool,
+        events: &mut Vec<InlineEvent>,
+    ) {
         if !has_inline_specials(text) {
             if !text.is_empty() {
                 events.push(InlineEvent::Text(Range::from_usize(0, text.len())));
@@ -101,7 +107,7 @@ impl InlineParser {
 
         // Second: raw inline HTML (ignore code spans for now; we'll filter after resolving them)
         self.html_spans.clear();
-        if has_lt {
+        if has_lt && allow_html {
             find_html_spans_into(text, &[], &self.autolinks, &mut self.html_spans);
         }
         self.html_ranges.clear();
@@ -1083,7 +1089,7 @@ mod tests {
     fn parse_inline(text: &str) -> Vec<InlineEvent> {
         let mut parser = InlineParser::new();
         let mut events = Vec::new();
-        parser.parse(text.as_bytes(), None, &mut events);
+        parser.parse(text.as_bytes(), None, true, &mut events);
         events
     }
 

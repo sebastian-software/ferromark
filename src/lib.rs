@@ -30,6 +30,24 @@ pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::Range;
 pub use render::HtmlWriter;
 
+/// Parsing/rendering options.
+#[derive(Debug, Clone, Copy)]
+pub struct Options {
+    /// Allow raw inline and block HTML.
+    pub allow_html: bool,
+    /// Resolve link reference definitions and reference-style links.
+    pub allow_link_refs: bool,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            allow_html: true,
+            allow_link_refs: true,
+        }
+    }
+}
+
 /// Convert Markdown to HTML.
 ///
 /// This is the primary API for simple use cases.
@@ -42,7 +60,7 @@ pub use render::HtmlWriter;
 /// ```
 pub fn to_html(input: &str) -> String {
     let mut writer = HtmlWriter::with_capacity_for(input.len());
-    render_to_writer(input.as_bytes(), &mut writer);
+    render_to_writer(input.as_bytes(), &mut writer, &Options::default());
     writer.into_string()
 }
 
@@ -50,12 +68,24 @@ pub fn to_html(input: &str) -> String {
 ///
 /// This avoids allocation if the buffer has sufficient capacity.
 pub fn to_html_into(input: &str, out: &mut Vec<u8>) {
+    to_html_into_with_options(input, out, &Options::default());
+}
+
+/// Convert Markdown to HTML with options.
+pub fn to_html_with_options(input: &str, options: &Options) -> String {
+    let mut writer = HtmlWriter::with_capacity_for(input.len());
+    render_to_writer(input.as_bytes(), &mut writer, options);
+    writer.into_string()
+}
+
+/// Convert Markdown to HTML into a provided buffer with options.
+pub fn to_html_into_with_options(input: &str, out: &mut Vec<u8>, options: &Options) {
     out.clear();
     out.reserve(input.len() + input.len() / 4);
     let mut writer = HtmlWriter::with_capacity(0);
     // Use the provided buffer directly
     std::mem::swap(writer.buffer_mut(), out);
-    render_to_writer(input.as_bytes(), &mut writer);
+    render_to_writer(input.as_bytes(), &mut writer, options);
     std::mem::swap(writer.buffer_mut(), out);
 }
 
@@ -137,9 +167,9 @@ impl HeadingState {
 }
 
 /// Render Markdown to an HtmlWriter.
-fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
+fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     // Parse blocks
-    let mut parser = BlockParser::new(input);
+    let mut parser = BlockParser::new_with_options(input, *options);
     let mut events = Vec::with_capacity((input.len() / 16).max(64));
     parser.parse(&mut events);
     let link_refs = parser.take_link_refs();
@@ -186,6 +216,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter) {
             &mut pending_loose_li_newline,
             &mut blockquote_depth,
             &link_refs,
+            options,
         );
     }
 }
@@ -205,6 +236,7 @@ fn render_block_event(
     pending_loose_li_newline: &mut bool,
     blockquote_depth: &mut u32,
     link_refs: &LinkRefStore,
+    options: &Options,
 ) {
     // Check if we're in a tight list (innermost list is tight)
     // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
@@ -239,7 +271,8 @@ fn render_block_event(
             if !content.is_empty() {
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
-                inline_parser.parse(content, Some(link_refs), inline_events);
+                let refs = if options.allow_link_refs { Some(link_refs) } else { None };
+                inline_parser.parse(content, refs, options.allow_html, inline_events);
 
                 // Render inline events
                 let mut image_state = None;
@@ -272,7 +305,8 @@ fn render_block_event(
             if !content.is_empty() {
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
-                inline_parser.parse(content, Some(link_refs), inline_events);
+                let refs = if options.allow_link_refs { Some(link_refs) } else { None };
+                inline_parser.parse(content, refs, options.allow_html, inline_events);
 
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
@@ -324,7 +358,8 @@ fn render_block_event(
             } else {
                 // Parse immediately (e.g., heading content)
                 inline_events.clear();
-                inline_parser.parse(text, Some(link_refs), inline_events);
+                let refs = if options.allow_link_refs { Some(link_refs) } else { None };
+                inline_parser.parse(text, refs, options.allow_html, inline_events);
 
                 // Render inline events
                 let mut image_state = None;

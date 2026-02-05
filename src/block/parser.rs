@@ -7,6 +7,7 @@ use smallvec::SmallVec;
 
 use super::event::{BlockEvent, ListKind, TaskState};
 use crate::link_ref::{LinkRefStore, normalize_label_into, LinkRefDef};
+use crate::Options;
 
 /// State for an open fenced code block.
 #[derive(Debug, Clone)]
@@ -99,6 +100,8 @@ pub struct BlockParser<'a> {
     pending_html_indent_start: Option<usize>,
     /// Collected link reference definitions.
     link_refs: LinkRefStore,
+    /// Parser options.
+    options: Options,
     /// Stack of open containers (blockquotes, list items).
     container_stack: SmallVec<[Container; 8]>,
     /// Whether we're in a tight list context.
@@ -117,6 +120,11 @@ pub struct BlockParser<'a> {
 impl<'a> BlockParser<'a> {
     /// Create a new block parser.
     pub fn new(input: &'a [u8]) -> Self {
+        Self::new_with_options(input, Options::default())
+    }
+
+    /// Create a new block parser with options.
+    pub fn new_with_options(input: &'a [u8], options: Options) -> Self {
         Self {
             input,
             cursor: Cursor::new(input),
@@ -130,6 +138,7 @@ impl<'a> BlockParser<'a> {
             line_indent_bytes: 0,
             pending_html_indent_start: None,
             link_refs: LinkRefStore::new(),
+            options,
             container_stack: SmallVec::new(),
             tight_list: false,
             open_lists: SmallVec::new(),
@@ -256,7 +265,7 @@ impl<'a> BlockParser<'a> {
         let matched_containers = self.match_containers(events);
 
         // If we're inside an HTML block, handle it after container matching.
-        if self.html_block.is_some() {
+        if self.options.allow_html && self.html_block.is_some() {
             if matched_containers < self.container_stack.len() {
                 // Containers didn't match, close the HTML block
                 self.html_block = None;
@@ -646,7 +655,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for HTML block
-        if self.try_html_block_start(indent, events) {
+        if self.options.allow_html && self.try_html_block_start(indent, events) {
             return;
         }
 
@@ -2332,6 +2341,9 @@ impl<'a> BlockParser<'a> {
     /// Extract link reference definitions from the start of the current paragraph.
     /// Returns the number of paragraph lines consumed by definitions.
     fn extract_link_ref_defs(&mut self) -> usize {
+        if !self.options.allow_link_refs {
+            return 0;
+        }
         if self.paragraph_lines.is_empty() {
             return 0;
         }
