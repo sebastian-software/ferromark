@@ -1,68 +1,51 @@
 # ferromark
 
-Ultra-high-performance Markdown to HTML compiler in Rust.
+Fast Markdown-to-HTML for Rust workloads where throughput and predictable latency matter.
 
-## Design Philosophy
+## Why ferromark
 
-**Speed through simplicity.** Every architectural decision prioritizes throughput:
+- Built for production paths, not toy inputs: docs pipelines, API rendering, and CLIs.
+- Streaming parser design avoids AST overhead on the hot path.
+- CommonMark-compliant while still tuned for raw speed.
+- Small dependency surface and straightforward integration.
 
-### Zero-Copy Parsing
-- All text references use `Range` (8-byte `u32` pair) instead of `String`
-- No allocations during parsing - ranges point into original input
-- Streaming events, no intermediate AST
+## Design goals
 
-### O(n) Guaranteed
-- No regex, no backtracking
-- Single-pass block parsing
-- Three-phase inline parsing (collect → resolve → emit)
-- DoS-resistant via hard limits on nesting depth
+- **Linear time behavior**: no regex backtracking, no parser surprises on large inputs.
+- **Low allocation pressure**: compact `Range` references into the input instead of copying text.
+- **Cache-friendly execution**: tight scanning loops, lookup tables, and reusable buffers.
+- **Operational safety**: explicit depth/limit guards against pathological nesting.
 
-### Minimal Dependencies
-- `memchr` - SIMD-accelerated byte searching
-- `smallvec` - Stack-allocated vectors for typical nesting depths
-
-## Architecture
+## Architecture at a glance
 
 ```
 Input bytes (&[u8])
        │
        ▼
-   Block Parser (line-oriented)
-       │ emits: BlockEvent stream
+   Block parser (line-oriented)
+       │ emits BlockEvent stream
        ▼
-   Inline Parser (per text range)
-       │ emits: InlineEvent stream
+   Inline parser (per text range)
+       │ emits InlineEvent stream
        ▼
-   HTML Writer (direct buffer writes)
+   HTML writer (direct buffer writes)
        │
        ▼
    Output (Vec<u8>)
 ```
 
-### Block Parser
-- Line-by-line scanning with `memchr` for newlines
-- Container stack for blockquotes/lists
-- Emits ranges for inline content
+### Why this is fast
 
-### Inline Parser
-Three-phase approach inspired by md4c:
-
-1. **Mark Collection**: Single pass collecting delimiter positions (`*`, `` ` ``, `[`, etc.)
-2. **Mark Resolution**: Process by precedence (code spans → links → emphasis)
-3. **Event Emission**: Walk resolved marks, emit events
-
-### Key Optimizations
-- 256-byte lookup tables for character classification
-- Modulo-3 stacks for emphasis matching (CommonMark "rule of three")
-- `#[inline]` on hot paths, `#[cold]` on error paths
-- Buffer reuse across parse calls
+- **Block pass stays simple**: cheap line scanning via `memchr`, container stack for quotes/lists.
+- **Inline pass is staged**: collect marks -> resolve precedence (code, links, emphasis) -> emit.
+- **Hot-path tuning**: `#[inline]` where it matters, `#[cold]` for rare paths, table-driven classification.
+- **CommonMark emphasis done right**: modulo-3 delimiter handling without expensive rescans.
 
 ## Performance
 
-Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers (latest run: Feb 6, 2026).
-Input: synthetic wiki-style articles with text-heavy paragraphs, lists, and code blocks, plus CommonMark features used at least once (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-50k.md`).
-Output buffers are reused for ferromark, md4c, and pulldown-cmark where their APIs allow; comrak allocates output internally.
-Main tables use non-PGO binaries for a fair default comparison.
+Benchmarked on Apple Silicon (M-series), latest run: February 6, 2026.
+Workload: synthetic wiki-style documents with text-heavy paragraphs, lists, code blocks, and representative CommonMark features (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-50k.md`).
+Method: output buffers are reused for ferromark, md4c, and pulldown-cmark where APIs allow; comrak allocates output internally. Main table uses non-PGO binaries for apples-to-apples defaults.
 
 **CommonMark 5KB**
 | Parser | Throughput | Relative (vs ferromark) |
