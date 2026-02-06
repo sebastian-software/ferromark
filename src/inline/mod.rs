@@ -748,7 +748,7 @@ fn has_inline_specials(input: &[u8]) -> bool {
     }
     for &b in input {
         match b {
-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'&' | b'\\' | b'!' | b'~' | b'\n' | b'\r' => {
+            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'&' | b'\\' | b'\n' => {
                 return true;
             }
             _ => {}

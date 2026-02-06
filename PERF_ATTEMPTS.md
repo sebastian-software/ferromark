@@ -180,3 +180,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: PGO candidate `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
 - Result: `130.76 us` (regression vs `129.83 us` baseline).
 - Decision: Reverted.
+
+- Change: Align inline-special precheck with actual mark collection set (remove `!`, `~`, `\r` from `has_inline_specials` fast path and SIMD equivalent) to avoid false-positive double scans.
+- Command: PGO candidate `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `129.83 us` vs candidate `127.52 us` (about `+1.8%` throughput, significant).
+- Decision: Kept.

@@ -24,10 +24,7 @@ unsafe fn mask_has_any(mask: uint8x16_t) -> bool {
 
 #[inline]
 fn is_inline_special(b: u8) -> bool {
-    matches!(
-        b,
-        b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'&' | b'\\' | b'!' | b'~' | b'\n' | b'\r'
-    )
+    matches!(b, b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'&' | b'\\' | b'\n')
 }
 
 #[inline]
@@ -45,7 +42,7 @@ pub unsafe fn has_inline_specials_simd(input: &[u8]) -> Option<bool> {
     while pos + 16 <= len {
         unsafe {
             let v = vld1q_u8(input.as_ptr().add(pos));
-            let mask = any_eq_mask(v, b"*_`[]<&\\!~\n\r");
+            let mask = any_eq_mask(v, b"*_`[]<&\\\n");
             if mask_has_any(mask) {
                 return Some(true);
             }
