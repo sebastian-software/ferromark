@@ -210,3 +210,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: PGO candidate `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'` after baseline `128.24 us`.
 - Result: candidate `129.27 us` (about `-0.8%` throughput vs baseline), significant but inside Criterion noise threshold.
 - Decision: Reverted.
+
+- Change: In `contains_ref_link_candidate`, replace linear close-bracket scan (`iter().find`) with binary position lookup (`partition_point`) for the first close bracket after each open bracket.
+- Command: PGO candidate `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'` after baseline `128.24 us`.
+- Result: candidate `130.83 us` (about `-2.0%` throughput vs baseline), significant but inside Criterion noise threshold.
+- Decision: Reverted.
