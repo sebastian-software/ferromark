@@ -77,12 +77,14 @@ Run benchmarks: `cargo bench --bench comparison`
 These are the four parsers included in the main benchmark. Ratings use a 4-level emoji heatmap focused on **end-to-end Markdown-to-HTML throughput** in typical workloads.
 
 Legend:
-- 🟩 = strongest fit for fast end-to-end HTML
-- 🟨 = strong fit
-- 🟧 = moderate fit
-- 🟥 = weaker fit for throughput-focused workloads
+- 🟩 = strongest in this row (ties allowed)
+- 🟨 = close behind the row leader
+- 🟧 = notable tradeoffs for this row
+- 🟥 = weakest for this row's goal
 
+Scoring is **relative per row** so each row has at least one 🟩.
 Each feature row is followed by a short plain-language explanation.
+Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportunities.md](docs/arch/ARCH-PLAN-001-performance-opportunities.md)
 
 <table>
   <thead>
@@ -100,7 +102,7 @@ Each feature row is followed by a short plain-language explanation.
       <td><b>Parser model (streaming, no AST)</b></td>
       <td align="center">🟩</td>
       <td align="center">🟩</td>
-      <td align="center">🟩</td>
+      <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
     <tr><td colspan="5"><small>Streaming parsers can emit output as they scan input, which avoids building an intermediate tree and keeps memory and cache pressure low. <em>Mapping:</em> ferromark and md4c stream; pulldown-cmark uses a pull iterator; comrak builds an AST.</small></td></tr>
@@ -138,10 +140,10 @@ Each feature row is followed by a short plain-language explanation.
     <tr><td colspan="5"><small>Efficient emphasis handling reduces rescans and backtracking. Stack-based algorithms tend to win on long text-heavy documents. <em>Mapping:</em> ferromark uses modulo-3 stacks; md4c and pulldown-cmark are optimized; comrak pays AST overhead.</small></td></tr>
     <tr>
       <td><b>Link reference processing cost</b></td>
+      <td align="center">🟩</td>
+      <td align="center">🟩</td>
+      <td align="center">🟩</td>
       <td align="center">🟨</td>
-      <td align="center">🟨</td>
-      <td align="center">🟨</td>
-      <td align="center">🟧</td>
     </tr>
     <tr><td colspan="5"><small>Link labels need normalization (case folding and entity handling). Optimized implementations reduce allocations and Unicode overhead. <em>Mapping:</em> All four normalize labels; ferromark, md4c, and pulldown-cmark focus on minimizing allocations; comrak handles more feature paths.</small></td></tr>
     <tr>
@@ -194,9 +196,9 @@ Each feature row is followed by a short plain-language explanation.
     <tr><td colspan="5"><small>Linear scans and contiguous buffers are usually best for CPU caches. <em>Mapping:</em> ferromark and md4c favor linear scans; pulldown-cmark is close; comrak traverses AST allocations.</small></td></tr>
     <tr>
       <td><b>SIMD availability (optional)</b></td>
+      <td align="center">🟩</td>
       <td align="center">🟨</td>
-      <td align="center">🟧</td>
-      <td align="center">🟨</td>
+      <td align="center">🟩</td>
       <td align="center">🟥</td>
     </tr>
     <tr><td colspan="5"><small>SIMD can accelerate scanning for special characters if the SIMD path is hot enough. <em>Mapping:</em> ferromark and pulldown-cmark have SIMD paths; md4c relies on C optimizations; comrak is not SIMD-focused.</small></td></tr>
@@ -292,9 +294,9 @@ Each feature row is followed by a short plain-language explanation.
     <tr>
       <td><b>Math support</b></td>
       <td align="center">🟥</td>
-      <td align="center">🟨</td>
+      <td align="center">🟩</td>
       <td align="center">🟥</td>
-      <td align="center">🟨</td>
+      <td align="center">🟩</td>
     </tr>
     <tr><td colspan="5"><small>Math support often requires custom extensions. <em>Mapping:</em> md4c includes LaTeX math flags; comrak supports math extensions; ferromark and pulldown-cmark do not target math in the core.</small></td></tr>
     <tr>
@@ -308,17 +310,17 @@ Each feature row is followed by a short plain-language explanation.
     <tr>
       <td><b>Wiki links</b></td>
       <td align="center">🟥</td>
-      <td align="center">🟨</td>
+      <td align="center">🟩</td>
       <td align="center">🟥</td>
-      <td align="center">🟨</td>
+      <td align="center">🟩</td>
     </tr>
     <tr><td colspan="5"><small>Wiki links are a non-CommonMark extension used in some ecosystems. <em>Mapping:</em> md4c and comrak support wiki links via flags/extensions; pulldown-cmark and ferromark do not.</small></td></tr>
     <tr>
       <td><b>Underline extension</b></td>
       <td align="center">🟥</td>
-      <td align="center">🟨</td>
+      <td align="center">🟩</td>
       <td align="center">🟥</td>
-      <td align="center">🟨</td>
+      <td align="center">🟩</td>
     </tr>
     <tr><td colspan="5"><small>Underline is an extension that changes emphasis semantics. <em>Mapping:</em> md4c and comrak include underline extensions; pulldown-cmark and ferromark stick closer to CommonMark emphasis rules.</small></td></tr>
     <tr>
@@ -461,14 +463,6 @@ src/
 ├── escape.rs       # HTML escaping (memchr-optimized)
 └── limits.rs       # DoS prevention constants
 ```
-
-## Future Optimizations
-
-Planned for Phase 7:
-- `simdutf8` for SIMD UTF-8 input validation
-- NEON intrinsics for ARM marker scanning
-- Profile-guided optimization (PGO)
-- Loop unrolling in hot scanning paths
 
 ## License
 
