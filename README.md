@@ -147,14 +147,6 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
     </tr>
     <tr><td colspan="5"><small>Link labels need normalization (case folding and entity handling). Optimized implementations reduce allocations and Unicode overhead. <em>Mapping:</em> All four normalize labels; ferromark, md4c, and pulldown-cmark focus on minimizing allocations; comrak handles more feature paths.</small></td></tr>
     <tr>
-      <td><b>Unicode handling configurability</b></td>
-      <td align="center">🟧</td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-      <td align="center">🟧</td>
-    </tr>
-    <tr><td colspan="5"><small>Configurable Unicode handling can simplify hot paths or support special environments. <em>Mapping:</em> md4c can be built for UTF-8, UTF-16, or ASCII-only; the Rust parsers generally assume UTF-8.</small></td></tr>
-    <tr>
       <td><b>Zero-copy text handling</b></td>
       <td align="center">🟩</td>
       <td align="center">🟨</td>
@@ -234,14 +226,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
     </tr>
     <tr><td colspan="5"><small>A compact core is easier to tune and reason about. <em>Mapping:</em> md4c is very compact; ferromark is lean; pulldown-cmark is moderate; comrak is larger by design.</small></td></tr>
-    <tr>
-      <td><b>Portability</b></td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟨</td>
-    </tr>
-    <tr><td colspan="5"><small>Portability matters for embedding and wide deployment. <em>Mapping:</em> md4c compiles almost anywhere with a C toolchain; the Rust crates are broadly portable too.</small></td></tr>
+    <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Feature Coverage and Extensibility</b></td></tr>
     <tr>
       <td><b>Extension breadth (GFM and extras)</b></td>
@@ -259,6 +244,22 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
     </tr>
     <tr><td colspan="5"><small>Full compliance adds edge-case handling. All four are strong here, but more features usually means more code on the hot path. <em>Mapping:</em> All four target CommonMark; comrak and md4c emphasize full compliance; pulldown-cmark adds extensions; ferromark is focused.</small></td></tr>
+    <tr>
+      <td><b>Unicode handling configurability</b></td>
+      <td align="center">🟧</td>
+      <td align="center">🟩</td>
+      <td align="center">🟧</td>
+      <td align="center">🟧</td>
+    </tr>
+    <tr><td colspan="5"><small>Configurable Unicode handling can simplify hot paths or support special environments. <em>Mapping:</em> md4c can be built for UTF-8, UTF-16, or ASCII-only; the Rust parsers generally assume UTF-8.</small></td></tr>
+    <tr>
+      <td><b>Portability</b></td>
+      <td align="center">🟨</td>
+      <td align="center">🟩</td>
+      <td align="center">🟨</td>
+      <td align="center">🟨</td>
+    </tr>
+    <tr><td colspan="5"><small>Portability matters for embedding and wide deployment. <em>Mapping:</em> md4c compiles almost anywhere with a C toolchain; the Rust crates are broadly portable too.</small></td></tr>
     <tr>
       <td><b>Extension configuration surface</b></td>
       <td align="center">🟧</td>
@@ -347,6 +348,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟥</td>
     </tr>
     <tr><td colspan="5"><small>no_std support matters for embedded or constrained environments. <em>Mapping:</em> pulldown-cmark supports no_std builds with features; md4c can be embedded in C environments; ferromark and comrak assume std.</small></td></tr>
+    <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Rendering and Output</b></td></tr>
     <tr>
       <td><b>Output streaming (incremental)</b></td>
