@@ -103,6 +103,8 @@ pub struct BlockParser<'a> {
     pending_html_indent_start: Option<usize>,
     /// Collected link reference definitions.
     link_refs: LinkRefStore,
+    /// Reused scratch buffer for paragraph-backed link reference parsing.
+    link_ref_parse_buf: Vec<u8>,
     /// Parser options.
     options: Options,
     /// Stack of open containers (blockquotes, list items).
@@ -141,6 +143,7 @@ impl<'a> BlockParser<'a> {
             line_indent_bytes: 0,
             pending_html_indent_start: None,
             link_refs: LinkRefStore::new(),
+            link_ref_parse_buf: Vec::new(),
             options,
             container_stack: SmallVec::new(),
             tight_list: false,
@@ -2435,13 +2438,15 @@ impl<'a> BlockParser<'a> {
         for range in &self.paragraph_lines {
             total_len += range.len() as usize;
         }
-        let mut para = Vec::with_capacity(total_len);
+        self.link_ref_parse_buf.clear();
+        self.link_ref_parse_buf.reserve(total_len);
         for (i, range) in self.paragraph_lines.iter().enumerate() {
             if i > 0 {
-                para.push(b'\n');
+                self.link_ref_parse_buf.push(b'\n');
             }
-            para.extend_from_slice(range.slice(self.input));
+            self.link_ref_parse_buf.extend_from_slice(range.slice(self.input));
         }
+        let para = self.link_ref_parse_buf.as_slice();
 
         let mut pos = 0usize;
         let mut consumed_lines = 0usize;
@@ -2452,18 +2457,18 @@ impl<'a> BlockParser<'a> {
             if pos > 0 && para[pos - 1] != b'\n' {
                 break;
             }
-            let Some((def, end_pos)) = parse_link_ref_def(&para, pos) else {
+            let Some((def, end_pos)) = parse_link_ref_def(para, pos) else {
                 break;
             };
 
-            normalize_label_into(def.label.slice(&para), &mut label_buf);
+            normalize_label_into(def.label.slice(para), &mut label_buf);
             if label_buf.is_empty() {
                 break;
             }
             if self.link_refs.get_index(&label_buf).is_none() {
                 let link_def = LinkRefDef {
-                    url: def.url.slice(&para).to_vec(),
-                    title: def.title.map(|r| r.slice(&para).to_vec()),
+                    url: def.url.slice(para).to_vec(),
+                    title: def.title.map(|r| r.slice(para).to_vec()),
                 };
                 self.link_refs.insert(std::mem::take(&mut label_buf), link_def);
             }

@@ -154,6 +154,25 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 - Result vs baseline: `refs` `+6.91%` (regression), `mixed` `+3.02%` (regression), `commonmark50k` `+3.68%` (regression).
 - Decision: **discarded**.
 
+5. Post-profile `refs` pass (Time Profiler guided)
+- Profiling evidence (`xctrace` Time Profiler on `^complexity/ferromark/refs$`):
+  - Dominant samples were allocator-heavy (`_xzm_xzone_malloc_tiny`, `_xzm_free`, `_malloc_zone_malloc`).
+  - ferromark hotspots included `extract_link_ref_defs`, `parse_link_ref_def`, and `normalize_label_into` in `/Users/sebastian/Workspace/md-new/src/block/parser.rs` and `/Users/sebastian/Workspace/md-new/src/link_ref.rs`.
+- Attempt A: parser-owned reuse of paragraph parse buffer + parser-owned label scratch buffer.
+  - Benchmark (`--sample-size 80 --measurement-time 4`) result: `refs` `-0.69%` (within noise), `mixed` `+0.48%` (within noise), `commonmark50k` no change.
+  - Decision: **discarded** (no meaningful gain).
+- Attempt B: parser-owned reuse of paragraph parse buffer only (kept label scratch local to avoid `String` clone in accepted-definition path).
+  - File: `/Users/sebastian/Workspace/md-new/src/block/parser.rs`
+  - Benchmark (`--sample-size 80 --measurement-time 4`) result:
+    - `commonmark50k/ferromark`: `153.67 us` (no significant change).
+    - `complexity/ferromark/refs`: `2.3317 us` (`-3.46%` time, significant).
+    - `complexity/ferromark/mixed`: `3.2546 us` (`-1.56%` time, significant).
+  - Focused bench confirmation (`link_refs_focus`):
+    - `refs`: `2.3595 us`
+    - `refs_escaped`: `4.2747 us`
+    - `mixed`: `3.2789 us`
+  - Decision: **kept** (clear `refs` win, no `commonmark50k` regression).
+
 ### P1 and P2 progress
 
 1. P1.1/P1.2 (normalization call-count/scratch reuse):
