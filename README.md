@@ -59,32 +59,33 @@ Three-phase approach inspired by md4c:
 
 ## Performance
 
-Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers (latest run: Feb 5, 2026).
+Benchmarked on Apple Silicon (M-series) against other Rust Markdown parsers (latest run: Feb 6, 2026).
 Input: synthetic wiki-style articles with text-heavy paragraphs, lists, and code blocks, plus CommonMark features used at least once (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-50k.md`).
 Output buffers are reused for md-fast, md4c, and pulldown-cmark where their APIs allow; comrak allocates output internally.
+Main tables use non-PGO binaries for a fair default comparison.
 
 **CommonMark 5KB**
 | Parser | Throughput | Relative (vs md-fast) |
 |--------|-----------:|----------------------:|
-| **md-fast** | **265.4 MiB/s** | **1.00x** |
-| md4c | 264.6 MiB/s | 1.00x |
-| pulldown-cmark | 242.7 MiB/s | 0.92x |
-| comrak | 78.0 MiB/s | 0.29x |
+| **md-fast** | **293.4 MiB/s** | **1.00x** |
+| md4c | 262.8 MiB/s | 0.90x |
+| pulldown-cmark | 267.3 MiB/s | 0.91x |
+| comrak | 78.7 MiB/s | 0.27x |
 
 **CommonMark 50KB**
 | Parser | Throughput | Relative (vs md-fast) |
 |--------|-----------:|----------------------:|
-| **md-fast** | **276.3 MiB/s** | **1.00x** |
-| md4c | 261.0 MiB/s | 0.94x |
-| pulldown-cmark | 270.9 MiB/s | 0.98x |
-| comrak | 77.0 MiB/s | 0.28x |
+| **md-fast** | **308.1 MiB/s** | **1.00x** |
+| md4c | 261.4 MiB/s | 0.85x |
+| pulldown-cmark | 272.5 MiB/s | 0.88x |
+| comrak | 76.7 MiB/s | 0.25x |
 
 Other candidates like markdown-rs are far slower in this workload and are omitted from the main tables to keep the comparison focused. Happy to run them on request.
 
 **Key results:**
-- md-fast is **~2% faster** than pulldown-cmark at 50KB and **~9% faster** at 5KB.
-- md-fast is **~3.4-3.6x faster** than comrak across 5-50KB.
-- md-fast is **~5-6% faster** than md4c at 50KB; essentially tied at 5KB.
+- md-fast is **~9.8% faster** than pulldown-cmark at 5KB and **~13.1% faster** at 50KB.
+- md-fast is **~3.7-4.0x faster** than comrak across 5-50KB.
+- md-fast is **~11.6% faster** than md4c at 5KB and **~17.9% faster** at 50KB.
 
 Run benchmarks: `cargo bench --bench comparison`
 

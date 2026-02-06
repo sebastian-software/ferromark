@@ -2322,15 +2322,19 @@ impl<'a> BlockParser<'a> {
         // Find end of line
         let content_start = self.cursor.offset();
         let line_end = match self.cursor.find_newline() {
-            Some(pos) => content_start + pos,
-            None => content_start + self.cursor.remaining(),
+            Some(pos) => {
+                // Advance directly instead of rebuilding the cursor at line end.
+                self.cursor.advance(pos);
+                let end = content_start + pos;
+                self.cursor.bump(); // consume newline
+                end
+            }
+            None => {
+                let remaining = self.cursor.remaining();
+                self.cursor.advance(remaining);
+                content_start + remaining
+            }
         };
-
-        // Move cursor to next line
-        self.cursor = Cursor::new_at(self.input, line_end);
-        if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-            self.cursor.bump();
-        }
 
         // If we weren't in a paragraph, we are now
         if !self.in_paragraph {

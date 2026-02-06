@@ -135,3 +135,33 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
 - Result: baseline `166.36 us` vs candidate `159.75 us` (about `+4.67%` throughput, significant).
 - Decision: Kept.
+
+- Change: Replace retain+`any()` filters in `InlineParser::parse` (autolinks/code-spans, brackets/html-spans) with linear pointer-based scans.
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `158.52 us` vs candidate `160.84 us` (about `-1.1%` throughput, significant).
+- Decision: Reverted.
+
+- Change: Add paragraph/lazy-continuation fast paths in `parse_line` + `can_lazy_continue` to bypass block-start checks on simple text starts.
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `158.24 us` vs candidate `158.52 us` (no significant improvement, `p=0.18`).
+- Decision: Reverted.
+
+- Change: Optimize `parse_paragraph_line` cursor movement (use `advance/bump` instead of rebuilding via `Cursor::new_at`).
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `157.97 us` vs candidate `157.53 us` (about `+0.68%` throughput, significant).
+- Decision: Kept.
+
+- Change: Profile-Guided Optimization (PGO) experiment for bench binary (`-Cprofile-generate` training on `commonmark50k/md-fast`, then rebuild with `-Cprofile-use`).
+- Command: non-PGO `target/release/deps/comparison-dc2365de0bc04f02 --bench --measurement-time 15 --warm-up-time 3 --sample-size 60 '^commonmark50k/md-fast$'`; PGO `target/release/deps/comparison-b3872a0f6a0e868d --bench --measurement-time 15 --warm-up-time 3 --sample-size 60 '^commonmark50k/md-fast$'`
+- Result: non-PGO `157.20 us` vs PGO `132.97 us` (about `+18.3%` throughput, significant).
+- Decision: Keep as build strategy (no source-code behavior change).
+
+- Change: Fairness check: apply same PGO workflow to `pulldown-cmark` (train on `commonmark50k/pulldown-cmark`, rebuild with `-Cprofile-use`).
+- Command: non-PGO `target/release/deps/comparison-dc2365de0bc04f02 --bench --measurement-time 15 --warm-up-time 3 --sample-size 60 '^commonmark50k/pulldown-cmark$'`; PGO `target/release/deps/comparison-539bd1b9193b9dd8 --bench --measurement-time 15 --warm-up-time 3 --sample-size 60 '^commonmark50k/pulldown-cmark$'`
+- Result: non-PGO `180.87 us` vs PGO `138.06 us` (about `+31.0%` throughput, significant).
+- Decision: Keep for tuned comparisons; report separately from non-PGO baseline.
+
+- Change: Cross-profile sanity check (use parser A's PGO profile to run parser B).
+- Command: `comparison-539bd1b9193b9dd8` on `commonmark50k/md-fast`; `comparison-b3872a0f6a0e868d` on `commonmark50k/pulldown-cmark`.
+- Result: strongly regressive (`md-fast` to `184.28 us`, `pulldown-cmark` to `234.15 us`), showing profile specialization.
+- Decision: Do not use cross-profile binaries for fair benchmarking.
