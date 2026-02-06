@@ -4,7 +4,7 @@
 //! collected in a single pass before resolution.
 
 use crate::limits;
-use memchr::memchr3;
+use memchr::{memchr2, memchr3};
 use super::simd;
 
 /// Flags for mark state.
@@ -147,7 +147,6 @@ pub static SPECIAL_CHARS: [bool; 256] = {
     table[b'[' as usize] = true;  // Link (future)
     table[b']' as usize] = true;  // Link (future)
     table[b'<' as usize] = true;  // Autolink/HTML (future)
-    table[b'&' as usize] = true;  // Entity (future)
     table
 };
 
@@ -335,7 +334,7 @@ fn next_special(text: &[u8], start: usize) -> Option<usize> {
     if let Some(i) = memchr3(b'\\', b'\n', b'[', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
-    if let Some(i) = memchr3(b']', b'<', b'&', slice) {
+    if let Some(i) = memchr2(b']', b'<', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
 
