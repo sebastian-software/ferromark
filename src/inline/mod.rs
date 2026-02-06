@@ -16,7 +16,7 @@ pub use event::InlineEvent;
 
 use crate::Range;
 use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
-use emphasis::{resolve_emphasis_with_stacks, EmphasisMatch, EmphasisStacks};
+use emphasis::{resolve_emphasis_with_stacks_into, EmphasisMatch, EmphasisStacks};
 use links::{find_autolinks_into, resolve_links_into, resolve_reference_links_into, Autolink, Link, RefLink};
 use crate::link_ref::LinkRefStore;
 use marks::{collect_marks, flags, Mark, MarkBuffer};
@@ -45,8 +45,11 @@ pub struct InlineParser {
     ref_used_closes: Vec<bool>,
     ref_occupied: Vec<(u32, u32)>,
     emphasis_stacks: EmphasisStacks,
+    emphasis_matches: Vec<EmphasisMatch>,
     emit_points: Vec<EmitPoint>,
     emit_suppress_ranges: Vec<(u32, u32)>,
+    html_code_ranges: Vec<(usize, usize)>,
+    html_autolink_ranges: Vec<(usize, usize)>,
 }
 
 impl InlineParser {
@@ -54,27 +57,30 @@ impl InlineParser {
     pub fn new() -> Self {
         Self {
             mark_buffer: MarkBuffer::new(),
-            open_brackets: Vec::new(),
-            close_brackets: Vec::new(),
-            autolinks: Vec::new(),
-            html_spans: Vec::new(),
-            html_ranges: Vec::new(),
-            link_dest_ranges: Vec::new(),
-            autolink_ranges: Vec::new(),
-            code_spans: Vec::new(),
-            link_boundaries: Vec::new(),
-            resolved_links: Vec::new(),
-            link_formed_opens: Vec::new(),
-            link_inactive_opens: Vec::new(),
-            link_used_closes: Vec::new(),
-            ref_links: Vec::new(),
-            ref_label_buf: String::new(),
-            ref_formed_opens: Vec::new(),
-            ref_used_closes: Vec::new(),
-            ref_occupied: Vec::new(),
+            open_brackets: Vec::with_capacity(32),
+            close_brackets: Vec::with_capacity(32),
+            autolinks: Vec::with_capacity(8),
+            html_spans: Vec::with_capacity(8),
+            html_ranges: Vec::with_capacity(8),
+            link_dest_ranges: Vec::with_capacity(8),
+            autolink_ranges: Vec::with_capacity(8),
+            code_spans: Vec::with_capacity(8),
+            link_boundaries: Vec::with_capacity(16),
+            resolved_links: Vec::with_capacity(8),
+            link_formed_opens: Vec::with_capacity(32),
+            link_inactive_opens: Vec::with_capacity(32),
+            link_used_closes: Vec::with_capacity(32),
+            ref_links: Vec::with_capacity(8),
+            ref_label_buf: String::with_capacity(64),
+            ref_formed_opens: Vec::with_capacity(32),
+            ref_used_closes: Vec::with_capacity(32),
+            ref_occupied: Vec::with_capacity(8),
             emphasis_stacks: EmphasisStacks::default(),
-            emit_points: Vec::new(),
-            emit_suppress_ranges: Vec::new(),
+            emphasis_matches: Vec::with_capacity(16),
+            emit_points: Vec::with_capacity(64),
+            emit_suppress_ranges: Vec::with_capacity(8),
+            html_code_ranges: Vec::with_capacity(8),
+            html_autolink_ranges: Vec::with_capacity(8),
         }
     }
 
@@ -116,7 +122,14 @@ impl InlineParser {
         // Second: raw inline HTML (ignore code spans for now; we'll filter after resolving them)
         self.html_spans.clear();
         if has_lt && allow_html {
-            find_html_spans_into(text, &[], &self.autolinks, &mut self.html_spans);
+            find_html_spans_into(
+                text,
+                &[],
+                &self.autolinks,
+                &mut self.html_code_ranges,
+                &mut self.html_autolink_ranges,
+                &mut self.html_spans,
+            );
         }
         self.html_ranges.clear();
         self.html_ranges.reserve(self.html_spans.len());
@@ -222,13 +235,16 @@ impl InlineParser {
             self.link_boundaries.push((span.start, span.end));
         }
         let emphasis_matches = if has_emphasis_marks {
-            resolve_emphasis_with_stacks(
+            resolve_emphasis_with_stacks_into(
                 self.mark_buffer.marks_mut(),
                 &self.link_boundaries,
                 &mut self.emphasis_stacks,
-            )
+                &mut self.emphasis_matches,
+            );
+            self.emphasis_matches.as_slice()
         } else {
-            Vec::new()
+            self.emphasis_matches.clear();
+            &[]
         };
 
         // Phase 3: Emit events
@@ -237,9 +253,9 @@ impl InlineParser {
             marks,
             text,
             &self.code_spans,
-                &emphasis_matches,
-                resolved_links,
-                resolved_ref_links,
+            emphasis_matches,
+            resolved_links,
+            resolved_ref_links,
             &self.autolinks,
             &self.html_spans,
             &self.link_dest_ranges,
@@ -804,21 +820,25 @@ fn find_html_spans_into(
     text: &[u8],
     code_spans: &[CodeSpan],
     autolinks: &[Autolink],
+    code_ranges: &mut Vec<(usize, usize)>,
+    autolink_ranges: &mut Vec<(usize, usize)>,
     spans: &mut Vec<HtmlSpan>,
 ) {
     spans.clear();
     let len = text.len();
 
-    let mut code_ranges: Vec<(usize, usize)> = code_spans
-        .iter()
-        .map(|cs| (cs.opener_pos as usize, cs.closer_end as usize))
-        .collect();
+    code_ranges.clear();
+    code_ranges.reserve(code_spans.len().saturating_sub(code_ranges.capacity()));
+    code_ranges.extend(
+        code_spans
+            .iter()
+            .map(|cs| (cs.opener_pos as usize, cs.closer_end as usize)),
+    );
     code_ranges.sort_by_key(|(s, _)| *s);
 
-    let mut autolink_ranges: Vec<(usize, usize)> = autolinks
-        .iter()
-        .map(|al| (al.start as usize, al.end as usize))
-        .collect();
+    autolink_ranges.clear();
+    autolink_ranges.reserve(autolinks.len().saturating_sub(autolink_ranges.capacity()));
+    autolink_ranges.extend(autolinks.iter().map(|al| (al.start as usize, al.end as usize)));
     autolink_ranges.sort_by_key(|(s, _)| *s);
 
     let mut code_idx = 0usize;
@@ -835,8 +855,8 @@ fn find_html_spans_into(
             continue;
         }
 
-        if pos_in_ranges(pos, &code_ranges, &mut code_idx)
-            || pos_in_ranges(pos, &autolink_ranges, &mut autolink_idx)
+        if pos_in_ranges(pos, code_ranges, &mut code_idx)
+            || pos_in_ranges(pos, autolink_ranges, &mut autolink_idx)
         {
             pos += 1;
             continue;

@@ -34,6 +34,15 @@ impl EmphasisStacks {
         }
         self.order = 0;
     }
+
+    pub fn reserve_for_marks(&mut self, marks_len: usize) {
+        let target_per_stack = (marks_len / 6).max(8);
+        for stack in &mut self.stacks {
+            if stack.capacity() < target_per_stack {
+                stack.reserve(target_per_stack - stack.capacity());
+            }
+        }
+    }
 }
 
 /// Resolve emphasis marks using modulo-3 stacks.
@@ -46,13 +55,30 @@ pub fn resolve_emphasis(marks: &mut [Mark], link_boundaries: &[(u32, u32)]) -> V
     resolve_emphasis_with_stacks(marks, link_boundaries, &mut stacks)
 }
 
+#[cfg(test)]
 pub fn resolve_emphasis_with_stacks(
     marks: &mut [Mark],
     link_boundaries: &[(u32, u32)],
     stacks: &mut EmphasisStacks,
 ) -> Vec<EmphasisMatch> {
-    stacks.clear();
     let mut matches = Vec::new();
+    resolve_emphasis_with_stacks_into(marks, link_boundaries, stacks, &mut matches);
+    matches
+}
+
+pub fn resolve_emphasis_with_stacks_into(
+    marks: &mut [Mark],
+    link_boundaries: &[(u32, u32)],
+    stacks: &mut EmphasisStacks,
+    matches: &mut Vec<EmphasisMatch>,
+) {
+    stacks.reserve_for_marks(marks.len());
+    stacks.clear();
+    matches.clear();
+    let target_matches = (marks.len() / 4).max(8);
+    if matches.capacity() < target_matches {
+        matches.reserve(target_matches - matches.capacity());
+    }
     let mut resolver = EmphasisResolver::new(link_boundaries, stacks);
 
     // Process marks left to right
@@ -139,7 +165,6 @@ pub fn resolve_emphasis_with_stacks(
         }
     }
 
-    matches
 }
 
 /// Entry in the opener stack with ordering info.

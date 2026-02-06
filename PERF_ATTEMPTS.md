@@ -165,3 +165,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `comparison-539bd1b9193b9dd8` on `commonmark50k/md-fast`; `comparison-b3872a0f6a0e868d` on `commonmark50k/pulldown-cmark`.
 - Result: strongly regressive (`md-fast` to `184.28 us`, `pulldown-cmark` to `234.15 us`), showing profile specialization.
 - Decision: Do not use cross-profile binaries for fair benchmarking.
+
+- Change: Reuse more inline scratch buffers (`emphasis_matches`, HTML code/autolink range vectors) and pre-size parser-owned vectors in `InlineParser::new`.
+- Command: baseline PGO build (commit `c4a4633`) `target/release/deps/comparison-5090cc332b72e3a6 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`; candidate PGO build (current) `target/release/deps/comparison-982be754c0375a28 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `132.79 us` vs candidate `129.83 us` (about `+2.3%` throughput, significant).
+- Decision: Kept.
