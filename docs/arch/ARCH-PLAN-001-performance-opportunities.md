@@ -162,6 +162,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
   - Benchmark (`--sample-size 80 --measurement-time 4`) result: `refs` `-0.69%` (within noise), `mixed` `+0.48%` (within noise), `commonmark50k` no change.
   - Decision: **discarded** (no meaningful gain).
 - Attempt B: parser-owned reuse of paragraph parse buffer only (kept label scratch local to avoid `String` clone in accepted-definition path).
+  - Change kept in commit: `90b9fb2`
   - File: `/Users/sebastian/Workspace/md-new/src/block/parser.rs`
   - Benchmark (`--sample-size 80 --measurement-time 4`) result:
     - `commonmark50k/ferromark`: `153.67 us` (no significant change).
@@ -172,6 +173,21 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `refs_escaped`: `4.2747 us`
     - `mixed`: `3.2789 us`
   - Decision: **kept** (clear `refs` win, no `commonmark50k` regression).
+- Attempt C: removed pre-sizing pass (`total_len`) and `reserve()` in `extract_link_ref_defs`.
+  - Benchmark (`--sample-size 80 --measurement-time 4`) result: `refs` `+1.15%` (regression direction), `mixed` no significant change, `commonmark50k` no significant change.
+  - Decision: **discarded**.
+
+### Current `refs` position vs other libraries (2026-02-06)
+
+- Snapshot command: `cargo bench --bench comparison -- "complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$" --sample-size 40 --measurement-time 2`
+- Median times:
+  - `ferromark`: `2.3726 us`
+  - `md4c`: `2.4468 us`
+  - `pulldown-cmark`: `1.8857 us`
+  - `comrak`: `4.6969 us`
+- Interpretation:
+  - ferromark is currently faster than `md4c` and much faster than `comrak` on `refs`.
+  - The remaining notable gap is vs `pulldown-cmark` (~`20-26%` faster depending on run), so there is still meaningful headroom.
 
 ### P1 and P2 progress
 
