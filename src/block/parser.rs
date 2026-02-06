@@ -2456,15 +2456,17 @@ impl<'a> BlockParser<'a> {
                 break;
             };
 
-            normalize_label_into(def.label.as_slice(), &mut label_buf);
+            normalize_label_into(def.label.slice(&para), &mut label_buf);
             if label_buf.is_empty() {
                 break;
             }
-            let link_def = LinkRefDef {
-                url: def.url,
-                title: def.title,
-            };
-            self.link_refs.insert(label_buf.clone(), link_def);
+            if self.link_refs.get_index(&label_buf).is_none() {
+                let link_def = LinkRefDef {
+                    url: def.url.slice(&para).to_vec(),
+                    title: def.title.map(|r| r.slice(&para).to_vec()),
+                };
+                self.link_refs.insert(std::mem::take(&mut label_buf), link_def);
+            }
 
             let newline_count = para[pos..end_pos].iter().filter(|&&b| b == b'\n').count();
             let ends_with_newline = end_pos > 0 && para.get(end_pos - 1) == Some(&b'\n');
@@ -2513,9 +2515,9 @@ impl<'a> BlockParser<'a> {
 }
 
 struct ParsedLinkRefDef {
-    label: Vec<u8>,
-    url: Vec<u8>,
-    title: Option<Vec<u8>>,
+    label: Range,
+    url: Range,
+    title: Option<Range>,
 }
 
 fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, usize)> {
@@ -2581,7 +2583,7 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
     }
 
     // Parse destination
-    let (url_bytes, mut i) = if input[i] == b'<' {
+    let (url, mut i) = if input[i] == b'<' {
         i += 1;
         let url_start = i;
         while i < len && input[i] != b'>' && input[i] != b'\n' {
@@ -2596,7 +2598,7 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
         if i < len && !matches!(input[i], b' ' | b'\t' | b'\n') {
             return None;
         }
-        (input[url_start..url_end].to_vec(), i)
+        (Range::from_usize(url_start, url_end), i)
     } else {
         let url_start = i;
         let mut parens = 0i32;
@@ -2627,7 +2629,7 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
         if url_start == i {
             return None;
         }
-        (input[url_start..i].to_vec(), i)
+        (Range::from_usize(url_start, i), i)
     };
 
     let mut line_end = i;
@@ -2652,7 +2654,7 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
         }
     }
 
-    let mut title_bytes = None;
+    let mut title = None;
     if had_title_sep && j < len {
         let opener = input[j];
         let closer = match opener {
@@ -2676,8 +2678,8 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                     if title_on_newline {
                         return Some((
                             ParsedLinkRefDef {
-                                label: input[label_start..label_end].to_vec(),
-                                url: url_bytes,
+                                label: Range::from_usize(label_start, label_end),
+                                url,
                                 title: None,
                             },
                             if line_end < len { line_end + 1 } else { line_end },
@@ -2695,8 +2697,8 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                 if title_on_newline {
                     return Some((
                         ParsedLinkRefDef {
-                            label: input[label_start..label_end].to_vec(),
-                            url: url_bytes,
+                            label: Range::from_usize(label_start, label_end),
+                            url,
                             title: None,
                         },
                         if line_end < len { line_end + 1 } else { line_end },
@@ -2706,7 +2708,7 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
             }
             let title_end = j;
             j += 1;
-            title_bytes = Some(input[title_start..title_end].to_vec());
+            title = Some(Range::from_usize(title_start, title_end));
 
             while j < len && (input[j] == b' ' || input[j] == b'\t') {
                 j += 1;
@@ -2716,8 +2718,8 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                 if title_on_newline {
                     return Some((
                         ParsedLinkRefDef {
-                            label: input[label_start..label_end].to_vec(),
-                            url: url_bytes,
+                            label: Range::from_usize(label_start, label_end),
+                            url,
                             title: None,
                         },
                         if line_end < len { line_end + 1 } else { line_end },
@@ -2730,7 +2732,7 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
     }
 
     // If no title, ensure remaining is only whitespace
-    if title_bytes.is_none() {
+    if title.is_none() {
         // Definition ends at end of destination line.
         i = line_end;
     }
@@ -2742,9 +2744,9 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
 
     Some((
         ParsedLinkRefDef {
-            label: input[label_start..label_end].to_vec(),
-            url: url_bytes,
-            title: title_bytes,
+            label: Range::from_usize(label_start, label_end),
+            url,
+            title,
         },
         i,
     ))
