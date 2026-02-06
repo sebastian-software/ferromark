@@ -195,3 +195,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: PGO candidate v1 `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`; PGO candidate v2 (correction) same command.
 - Result: v1 `131.80 us` (about `-3.3%` throughput vs `126.83 us` baseline), v2 `135.48 us` (about `-6.8%` throughput vs baseline), both significant.
 - Decision: Reverted.
+
+- Change: Reuse a scratch `String` in reference-link candidate detection (`contains_ref_link_candidate`) to remove per-call allocation in `resolve_reference_links_into`.
+- Command: PGO candidate `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`, then strict A/B rerun on restored baseline with same command/profile.
+- Result: candidate `130.55 us`; baseline `129.42 us` under identical conditions (candidate about `-0.87%` throughput).
+- Decision: Reverted.
