@@ -119,3 +119,64 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 5. P1 workstreams
 6. P2 automation
 7. P3 platform/compiler tuning
+
+## Execution results (2026-02-06)
+
+### Benchmark protocol used for all A/B decisions
+
+- Correctness gate before each decision: `cargo test` (all green in all runs).
+- Perf command: `cargo bench --bench comparison -- "(complexity/ferromark/(refs|mixed)|commonmark50k/ferromark)" --sample-size 60 --measurement-time 2`
+- Decision rule: keep only if no `COMMONMARK_50K` regression and meaningful `REFS`/`MIXED` gain.
+
+### Baseline snapshot
+
+- `commonmark50k/ferromark`: `154.33 us`
+- `complexity/ferromark/refs`: `2.4448 us`
+- `complexity/ferromark/mixed`: `3.3006 us`
+
+### P0 task-by-task outcomes
+
+1. P0.1 single-lookup insert in `LinkRefStore::insert` (`entry` API)
+- Result vs baseline: `refs` `+2.51%` (regression), `mixed` `+0.80%` (noise), `commonmark50k` `-0.75%` (noise).
+- Decision: **discarded** (regresses primary `refs` target).
+
+2. P0.3 range-based parsed definition output + deferred materialization
+- Change kept in commit: `19acffc`
+- File: `/Users/sebastian/Workspace/md-new/src/block/parser.rs`
+- Result vs baseline: `refs` `-5.72%` time (`+6.06%` throughput), `mixed` `-1.39%` time (small win), `commonmark50k` no significant change.
+- Decision: **kept + committed**.
+
+3. P0.2 remove paragraph-wide copy before parsing definitions (incremental parse buffer)
+- Result vs baseline: `refs` `+5.01%` (regression), `mixed` `+0.59%` (noise), `commonmark50k` `+1.19%` (noise/regression direction).
+- Decision: **discarded**.
+
+4. P0.4 precompute nested reference-link candidates once per inline pass
+- Result vs baseline: `refs` `+6.91%` (regression), `mixed` `+3.02%` (regression), `commonmark50k` `+3.68%` (regression).
+- Decision: **discarded**.
+
+### P1 and P2 progress
+
+1. P1.1/P1.2 (normalization call-count/scratch reuse):
+- Repeated micro-tuning was not retried because `/Users/sebastian/Workspace/md-new/PERF_ATTEMPTS.md` already records no-gain/regression variants and this run did not introduce new profiler evidence to justify revisiting them.
+
+2. P1.3 + P2.1 (new focused benchmark coverage):
+- Implemented new bench group in `/Users/sebastian/Workspace/md-new/benches/comparison.rs`: `link_refs_focus`.
+- Added cases: `refs`, `refs_escaped` (escaped/entity-heavy), `mixed`.
+- Sample measurements from `cargo bench --bench comparison -- "link_refs_focus/ferromark/(refs|refs_escaped|mixed)" --sample-size 40 --measurement-time 2`:
+  - `refs`: `2.4212 us`
+  - `refs_escaped`: `4.4347 us`
+  - `mixed`: `3.3616 us`
+- Decision: **kept** (measurement quality improvement).
+
+3. P2.2 (before/after snapshots):
+- Completed in this section (baseline and per-attempt deltas recorded).
+
+4. P2.3 (simple CI perf regression check):
+- Deferred: repository currently has no checked-in CI workflow in `.github/workflows`, so no non-speculative target pipeline was available to wire safely in this pass.
+
+### P3 status
+
+- Deferred intentionally in this pass:
+  - No new profiler evidence pointed to UTF-8 validation as a hotspot (`simdutf8` check not justified yet).
+  - Loop-unrolling/platform tuning remains behind a profile-first gate to avoid repeating prior no-gain SIMD churn.
+  - PGO/non-PGO split reporting should be done together with CI/perf harness wiring.

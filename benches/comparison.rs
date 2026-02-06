@@ -99,6 +99,16 @@ This uses [ref-1] and [ref-2].
 [Another ref][ref-1] and [short][ref-2].
 "#;
 
+    /// Reference-heavy document with escapes/entities in labels and destinations.
+    pub const REFS_ESCAPED: &str = r#"[A\[\] &amp; B]: https://example.com/a?x=1&amp;y=2 "T &amp; C"
+[Äscaped \[label\]]: /path\(x\) 'Q'
+[x&#32;y]: https://example.com/%28x%29
+
+[A\[\] &amp; B], [Äscaped \[label\]], and [x y].
+[Again][A\[\] &amp; B] with [collapsed][].
+[collapsed]: https://example.com/collapsed
+"#;
+
     /// Nested lists and mixed block elements
     pub const LISTS: &str = r#"# Lists
 
@@ -449,6 +459,26 @@ fn bench_complexity(c: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new("comrak", name), input, |b, s| {
             b.iter(|| parse_comrak(black_box(s)))
+        });
+    }
+
+    group.finish();
+}
+
+/// Focused ferromark-only benchmark for link reference extraction/resolution costs.
+fn bench_link_refs_focus(c: &mut Criterion) {
+    let mut group = c.benchmark_group("link_refs_focus");
+
+    let cases: [(&str, &str); 3] = [
+        ("refs", samples::REFS),
+        ("refs_escaped", samples::REFS_ESCAPED),
+        ("mixed", samples::MIXED),
+    ];
+
+    for (name, input) in cases {
+        group.throughput(Throughput::Bytes(input.len() as u64));
+        group.bench_with_input(BenchmarkId::new("ferromark", name), input, |b, s| {
+            b.iter(|| parse_ferromark(black_box(s)))
         });
     }
 
@@ -906,6 +936,7 @@ criterion_group!(
     bench_commonmark20k,
     bench_commonmark50k,
     bench_complexity,
+    bench_link_refs_focus,
     bench_throughput,
     bench_experiments
 );
