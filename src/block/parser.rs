@@ -2401,31 +2401,30 @@ impl<'a> BlockParser<'a> {
             return 0;
         }
 
-        // Fast path: only attempt parsing if any line starts with up to 3 spaces then '['.
+        // Fast path: reference definitions can only start at paragraph start.
+        // If the first line cannot start a definition, no extraction is possible.
+        let first_line = self.paragraph_lines[0].slice(self.input);
+        let mut i = 0usize;
+        let mut spaces = 0u8;
         let mut has_candidate = false;
-        'lines: for range in &self.paragraph_lines {
-            let line = range.slice(self.input);
-            let mut i = 0usize;
-            let mut spaces = 0u8;
-            while i < line.len() {
-                match line[i] {
-                    b' ' => {
-                        spaces += 1;
-                        if spaces > 3 {
-                            break;
-                        }
-                        i += 1;
-                    }
-                    b'\t' => {
-                        // A leading tab exceeds the allowed 3-space indent for link ref defs.
+        while i < first_line.len() {
+            match first_line[i] {
+                b' ' => {
+                    spaces += 1;
+                    if spaces > 3 {
                         break;
                     }
-                    b'[' => {
-                        has_candidate = true;
-                        break 'lines;
-                    }
-                    _ => break,
+                    i += 1;
                 }
+                b'\t' => {
+                    // A leading tab exceeds the allowed 3-space indent for link ref defs.
+                    break;
+                }
+                b'[' => {
+                    has_candidate = true;
+                    break;
+                }
+                _ => break,
             }
         }
         if !has_candidate {

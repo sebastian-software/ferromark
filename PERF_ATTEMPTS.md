@@ -200,3 +200,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: PGO candidate `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`, then strict A/B rerun on restored baseline with same command/profile.
 - Result: candidate `130.55 us`; baseline `129.42 us` under identical conditions (candidate about `-0.87%` throughput).
 - Decision: Reverted.
+
+- Change: Tighten link-ref extraction fast path in `extract_link_ref_defs` to check only the paragraph start line (where reference definitions are actually allowed), instead of scanning all paragraph lines for `[` candidates.
+- Command: PGO baseline `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'` (baseline `129.42 us`), then same command on candidate.
+- Result: candidate `128.24 us` (about `+0.9%` throughput vs baseline, significant `p < 0.05`).
+- Decision: Kept.
