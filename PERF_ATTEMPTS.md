@@ -190,3 +190,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: PGO candidate `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
 - Result: baseline `127.52 us` vs candidate `126.83 us` (about `+0.54%` throughput, significant).
 - Decision: Kept.
+
+- Change: Remove `<` from mark collection/mark-special scan (keep `<` only in inline-special precheck), then one correction round to avoid global `<`/`>` prescan by deriving angle-pair hints during mark scanning.
+- Command: PGO candidate v1 `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`; PGO candidate v2 (correction) same command.
+- Result: v1 `131.80 us` (about `-3.3%` throughput vs `126.83 us` baseline), v2 `135.48 us` (about `-6.8%` throughput vs baseline), both significant.
+- Decision: Reverted.
