@@ -184,10 +184,20 @@ impl HtmlWriter {
     /// Write link title with entity decoding, backslash escape processing, and HTML escaping.
     #[inline]
     pub fn write_link_title(&mut self, title: &[u8]) {
+        if memchr(b'&', title).is_none() {
+            self.write_escaped_link_attr(title);
+            return;
+        }
+
         // First decode entities
         let title_str = core::str::from_utf8(title).unwrap_or("");
         let decoded = decode_entities_commonmark(title_str);
         let decoded_bytes = decoded.as_bytes();
+
+        if memchr(b'\\', decoded_bytes).is_none() {
+            escape::escape_full_into(&mut self.out, decoded_bytes);
+            return;
+        }
 
         // Then process backslash escapes and HTML-escape
         let mut pos = 0;
