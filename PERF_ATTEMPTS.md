@@ -215,3 +215,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: PGO candidate `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'` after baseline `128.24 us`.
 - Result: candidate `130.83 us` (about `-2.0%` throughput vs baseline), significant but inside Criterion noise threshold.
 - Decision: Reverted.
+
+- Change: Call `contains_ref_link_candidate` only when a non-image nested `[` exists inside the current candidate link span (cheap precheck before expensive nested-ref scan).
+- Command: PGO candidate `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`, followed by strict A/B rerun on restored baseline.
+- Result: candidate `130.80 us`; baseline `130.40 us` under identical conditions (candidate about `-0.3%` throughput, no significant change).
+- Decision: Reverted.
