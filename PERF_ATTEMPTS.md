@@ -73,3 +73,18 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
 - Result: 280.9-282.0 MiB/s, no change detected.
 - Decision: Reverted.
+
+- Change: Hoist `has_outer_close` scan out of the per-open loop in inline link deactivation logic.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 282.9-284.1 MiB/s, no change detected.
+- Decision: Reverted.
+
+- Change: Reuse label buffer + binary-start close lookup in `contains_ref_link_candidate`.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 281.4-282.8 MiB/s, no change detected.
+- Decision: Reverted.
+
+- Change: Switch emit-point sorting to a custom comparator with pre-ranked end events.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 277.0-278.6 MiB/s, regression (~-1.7%).
+- Decision: Reverted.
