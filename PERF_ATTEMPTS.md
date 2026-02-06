@@ -205,3 +205,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: PGO baseline `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'` (baseline `129.42 us`), then same command on candidate.
 - Result: candidate `128.24 us` (about `+0.9%` throughput vs baseline, significant `p < 0.05`).
 - Decision: Kept.
+
+- Change: Add render-side entity decode guards (`&` + `;`) in `write_text_with_entities` and `write_link_title` to skip unnecessary decode calls on plain ampersands.
+- Command: PGO candidate `target/release/deps/comparison-43213d92bcdf4902 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'` after baseline `128.24 us`.
+- Result: candidate `129.27 us` (about `-0.8%` throughput vs baseline), significant but inside Criterion noise threshold.
+- Decision: Reverted.
