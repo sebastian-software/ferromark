@@ -175,3 +175,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: PGO candidate v1 `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`; PGO candidate v2 (hybrid correction) same command.
 - Result: v1 `130.41 us` (regression vs `129.83 us`), v2 `132.59 us` (larger regression).
 - Decision: Reverted.
+
+- Change: Increase HTML writer/output reserve heuristic from ~1.25x to ~1.5x input to reduce realloc/memmove.
+- Command: PGO candidate `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: `130.76 us` (regression vs `129.83 us` baseline).
+- Decision: Reverted.
