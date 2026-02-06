@@ -170,3 +170,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: baseline PGO build (commit `c4a4633`) `target/release/deps/comparison-5090cc332b72e3a6 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`; candidate PGO build (current) `target/release/deps/comparison-982be754c0375a28 --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
 - Result: baseline `132.79 us` vs candidate `129.83 us` (about `+2.3%` throughput, significant).
 - Decision: Kept.
+
+- Change: Precompute inline emphasis boundary membership per mark (to avoid repeated boundary scans in `find_opener`), then hybrid correction (precompute only for large boundary sets).
+- Command: PGO candidate v1 `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`; PGO candidate v2 (hybrid correction) same command.
+- Result: v1 `130.41 us` (regression vs `129.83 us`), v2 `132.59 us` (larger regression).
+- Decision: Reverted.
