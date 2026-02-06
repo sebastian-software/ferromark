@@ -94,306 +94,306 @@ Each feature row is followed by a short plain-language explanation.
     </tr>
   </thead>
   <tbody>
-    <tr><td colspan="5"><strong>Core Parsing Architecture</strong></td></tr>
-    <tr>
-      <td>Parser model (streaming, no AST)</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Streaming parsers can emit output as they scan input, which avoids building an intermediate tree and keeps memory and cache pressure low. <em>Mapping:</em> ferromark and md4c stream; pulldown-cmark uses a pull iterator; comrak builds an AST.</td></tr>
-    <tr>
-      <td>API style (push callbacks / pull iterator / AST)</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Push callbacks and pull iterators are good for streaming output; AST APIs are better for transformations but add overhead for straight HTML rendering. <em>Mapping:</em> md4c is push callbacks; pulldown-cmark is pull iterator; comrak is AST; ferromark is streaming events.</td></tr>
-    <tr>
-      <td>Parse/render separation</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">3 ***</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Clear separation lets parsers stay simple and fast, while renderers can be swapped or tuned. <em>Mapping:</em> md4c and pulldown-cmark separate parse and render clearly; ferromark is mostly separated; comrak leans on AST-based renderers.</td></tr>
-    <tr>
-      <td>Inline parsing pipeline (multi-phase, delimiter stacks)</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Multi-phase inline parsing (collect -> resolve -> emit) keeps the hot path linear and avoids backtracking. <em>Mapping:</em> ferromark uses multi-phase inline parsing; md4c and pulldown-cmark are optimized byte scanners; comrak does more AST bookkeeping.</td></tr>
-    <tr>
-      <td>Emphasis matching efficiency</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Efficient emphasis handling reduces rescans and backtracking. Stack-based algorithms tend to win on long text-heavy documents. <em>Mapping:</em> ferromark uses modulo-3 stacks; md4c and pulldown-cmark are optimized; comrak pays AST overhead.</td></tr>
-    <tr>
-      <td>Link reference processing cost</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
-      <td align="center">3 ***</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Link labels need normalization (case folding and entity handling). Optimized implementations reduce allocations and Unicode overhead. <em>Mapping:</em> All four normalize labels; ferromark, md4c, and pulldown-cmark focus on minimizing allocations; comrak handles more feature paths.</td></tr>
-    <tr>
-      <td>Unicode handling configurability</td>
-      <td align="center">3 ***</td>
-      <td align="center">5 *****</td>
-      <td align="center">3 ***</td>
-      <td align="center">3 ***</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Configurable Unicode handling can simplify hot paths or support special environments. <em>Mapping:</em> md4c can be built for UTF-8, UTF-16, or ASCII-only; the Rust parsers generally assume UTF-8.</td></tr>
-    <tr>
-      <td>Spec compliance focus (CommonMark)</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Full compliance adds edge-case handling. All four are strong here, but more features usually means more code on the hot path. <em>Mapping:</em> All four target CommonMark; comrak and md4c emphasize full compliance; pulldown-cmark adds extensions; ferromark is focused.</td></tr>
-    <tr>
-      <td>Extension configuration surface</td>
-      <td align="center">3 ***</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Fine-grained flags let you disable features to reduce work. <em>Mapping:</em> md4c has many flags; pulldown-cmark and comrak use options; ferromark keeps configuration minimal.</td></tr>
-    <tr>
-      <td>Raw HTML control (allow/deny)</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-      <td align="center">3 ***</td>
-      <td align="center">4 ****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Disabling raw HTML can simplify parsing and output. <em>Mapping:</em> md4c and comrak expose explicit switches; ferromark also exposes an explicit <code>allow_html</code> option; pulldown-cmark is more fixed in defaults.</td></tr>
-    <tr><td colspan="5"><strong>Performance-Critical Mechanics</strong></td></tr>
+    <tr><td colspan="5"><strong>Performance and Memory</strong></td></tr>
     <tr>
       <td>Zero-copy text handling</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Zero-copy means most text slices point directly into input, which reduces allocations and copy costs. <em>Mapping:</em> ferromark uses ranges; md4c and pulldown-cmark borrow slices; comrak allocates AST nodes.</td></tr>
+    <tr><td colspan="5"><small>Zero-copy means most text slices point directly into input, which reduces allocations and copy costs. <em>Mapping:</em> ferromark uses ranges; md4c and pulldown-cmark borrow slices; comrak allocates AST nodes.</small></td></tr>
     <tr>
       <td>Allocation pressure (hot path)</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Fewer allocations in tight loops improves CPU utilization and reduces allocator overhead. <em>Mapping:</em> Streaming parsers allocate less during parse/render; AST parsers allocate many nodes.</td></tr>
+    <tr><td colspan="5"><small>Fewer allocations in tight loops improves CPU utilization and reduces allocator overhead. <em>Mapping:</em> Streaming parsers allocate less during parse/render; AST parsers allocate many nodes.</small></td></tr>
     <tr>
       <td>Output buffer reuse</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Reusing output buffers avoids repeated allocations across runs and stabilizes performance. <em>Mapping:</em> ferromark, md4c, and pulldown-cmark allow reuse; comrak allocates internally.</td></tr>
+    <tr><td colspan="5"><small>Reusing output buffers avoids repeated allocations across runs and stabilizes performance. <em>Mapping:</em> ferromark, md4c, and pulldown-cmark allow reuse; comrak allocates internally.</small></td></tr>
     <tr>
       <td>Memory locality (working set size)</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> A small working set fits in cache and reduces memory traffic. <em>Mapping:</em> Streaming parsers keep the working set small; AST-based parsing expands it.</td></tr>
+    <tr><td colspan="5"><small>A small working set fits in cache and reduces memory traffic. <em>Mapping:</em> Streaming parsers keep the working set small; AST-based parsing expands it.</small></td></tr>
     <tr>
       <td>Cache friendliness</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Linear scans and contiguous buffers are usually best for CPU caches. <em>Mapping:</em> ferromark and md4c favor linear scans; pulldown-cmark is close; comrak traverses AST allocations.</td></tr>
+    <tr><td colspan="5"><small>Linear scans and contiguous buffers are usually best for CPU caches. <em>Mapping:</em> ferromark and md4c favor linear scans; pulldown-cmark is close; comrak traverses AST allocations.</small></td></tr>
     <tr>
       <td>SIMD availability (optional)</td>
-      <td align="center">4 ****</td>
-      <td align="center">3 ***</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">****</td>
+      <td align="center">***</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> SIMD can accelerate scanning for special characters if the SIMD path is hot enough. <em>Mapping:</em> ferromark and pulldown-cmark have SIMD paths; md4c relies on C optimizations; comrak is not SIMD-focused.</td></tr>
+    <tr><td colspan="5"><small>SIMD can accelerate scanning for special characters if the SIMD path is hot enough. <em>Mapping:</em> ferromark and pulldown-cmark have SIMD paths; md4c relies on C optimizations; comrak is not SIMD-focused.</small></td></tr>
     <tr>
       <td>Unsafe usage / low-level scanning</td>
-      <td align="center">3 ***</td>
-      <td align="center">2 **</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
+      <td align="center">***</td>
+      <td align="center">**</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Targeted unsafe can remove bounds checks and speed up hot loops, but increases maintenance cost. <em>Mapping:</em> md4c is C; ferromark uses targeted unsafe; pulldown-cmark and comrak are mostly safe Rust.</td></tr>
+    <tr><td colspan="5"><small>Targeted unsafe can remove bounds checks and speed up hot loops, but increases maintenance cost. <em>Mapping:</em> md4c is C; ferromark uses targeted unsafe; pulldown-cmark and comrak are mostly safe Rust.</small></td></tr>
     <tr>
       <td>Dependency footprint</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Fewer dependencies simplify builds and reduce binary bloat. <em>Mapping:</em> md4c and ferromark are minimal; pulldown-cmark is moderate; comrak is heavier.</td></tr>
+    <tr><td colspan="5"><small>Fewer dependencies simplify builds and reduce binary bloat. <em>Mapping:</em> md4c and ferromark are minimal; pulldown-cmark is moderate; comrak is heavier.</small></td></tr>
     <tr>
       <td>Throughput ceiling (architectural)</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> With fewer allocations and tighter hot loops, streaming architectures generally allow higher throughput ceilings. <em>Mapping:</em> ferromark and md4c lead here; pulldown-cmark is close; comrak trades throughput for flexibility.</td></tr>
+    <tr><td colspan="5"><small>With fewer allocations and tighter hot loops, streaming architectures generally allow higher throughput ceilings. <em>Mapping:</em> ferromark and md4c lead here; pulldown-cmark is close; comrak trades throughput for flexibility.</small></td></tr>
     <tr>
       <td>Core compactness (moving parts)</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">3 ***</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">***</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> A compact core is easier to tune and reason about. <em>Mapping:</em> md4c is very compact; ferromark is lean; pulldown-cmark is moderate; comrak is larger by design.</td></tr>
+    <tr><td colspan="5"><small>A compact core is easier to tune and reason about. <em>Mapping:</em> md4c is very compact; ferromark is lean; pulldown-cmark is moderate; comrak is larger by design.</small></td></tr>
     <tr>
       <td>Portability</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Portability matters for embedding and wide deployment. <em>Mapping:</em> md4c compiles almost anywhere with a C toolchain; the Rust crates are broadly portable too.</td></tr>
+    <tr><td colspan="5"><small>Portability matters for embedding and wide deployment. <em>Mapping:</em> md4c compiles almost anywhere with a C toolchain; the Rust crates are broadly portable too.</small></td></tr>
+    <tr><td colspan="5"><strong>Feature Coverage and Extensibility</strong></td></tr>
+    <tr>
+      <td>Extension breadth (GFM and extras)</td>
+      <td align="center">**</td>
+      <td align="center">***</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+    </tr>
+    <tr><td colspan="5"><small>More extensions increase compatibility but add parsing work. <em>Mapping:</em> comrak offers the broadest extension catalog; pulldown-cmark and md4c support common GFM features; ferromark focuses on CommonMark.</small></td></tr>
+    <tr>
+      <td>Spec compliance focus (CommonMark)</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+    </tr>
+    <tr><td colspan="5"><small>Full compliance adds edge-case handling. All four are strong here, but more features usually means more code on the hot path. <em>Mapping:</em> All four target CommonMark; comrak and md4c emphasize full compliance; pulldown-cmark adds extensions; ferromark is focused.</small></td></tr>
+    <tr>
+      <td>Extension configuration surface</td>
+      <td align="center">***</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
+    </tr>
+    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. <em>Mapping:</em> md4c has many flags; pulldown-cmark and comrak use options; ferromark keeps configuration minimal.</small></td></tr>
+    <tr>
+      <td>Raw HTML control (allow/deny)</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+      <td align="center">***</td>
+      <td align="center">****</td>
+    </tr>
+    <tr><td colspan="5"><small>Disabling raw HTML can simplify parsing and output. <em>Mapping:</em> md4c and comrak expose explicit switches; ferromark also exposes an explicit <code>allow_html</code> option; pulldown-cmark is more fixed in defaults.</small></td></tr>
+    <tr>
+      <td>Tables, task lists, strikethrough</td>
+      <td align="center">**</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+    </tr>
+    <tr><td colspan="5"><small>These GFM features are common in real-world Markdown. <em>Mapping:</em> md4c, pulldown-cmark, and comrak support them; ferromark keeps the core smaller for speed.</small></td></tr>
+    <tr>
+      <td>Footnotes</td>
+      <td align="center">*</td>
+      <td align="center">*</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+    </tr>
+    <tr><td colspan="5"><small>Footnotes add extra parsing and rendering complexity. <em>Mapping:</em> pulldown-cmark and comrak support footnotes; ferromark and md4c do not focus on them.</small></td></tr>
+    <tr>
+      <td>Math support</td>
+      <td align="center">*</td>
+      <td align="center">****</td>
+      <td align="center">*</td>
+      <td align="center">****</td>
+    </tr>
+    <tr><td colspan="5"><small>Math support often requires custom extensions. <em>Mapping:</em> md4c includes LaTeX math flags; comrak supports math extensions; ferromark and pulldown-cmark do not target math in the core.</small></td></tr>
+    <tr>
+      <td>Permissive autolinks</td>
+      <td align="center">**</td>
+      <td align="center">*****</td>
+      <td align="center">***</td>
+      <td align="center">****</td>
+    </tr>
+    <tr><td colspan="5"><small>Permissive autolinks trade strictness for convenience. <em>Mapping:</em> md4c exposes explicit flags for permissive URL/email/WWW autolinks; comrak has relaxed autolinks; pulldown-cmark focuses on spec defaults.</small></td></tr>
+    <tr>
+      <td>Wiki links</td>
+      <td align="center">*</td>
+      <td align="center">****</td>
+      <td align="center">*</td>
+      <td align="center">****</td>
+    </tr>
+    <tr><td colspan="5"><small>Wiki links are a non-CommonMark extension used in some ecosystems. <em>Mapping:</em> md4c and comrak support wiki links via flags/extensions; pulldown-cmark and ferromark do not.</small></td></tr>
+    <tr>
+      <td>Underline extension</td>
+      <td align="center">*</td>
+      <td align="center">****</td>
+      <td align="center">*</td>
+      <td align="center">****</td>
+    </tr>
+    <tr><td colspan="5"><small>Underline is an extension that changes emphasis semantics. <em>Mapping:</em> md4c and comrak include underline extensions; pulldown-cmark and ferromark stick closer to CommonMark emphasis rules.</small></td></tr>
+    <tr>
+      <td>Task list flexibility</td>
+      <td align="center">*</td>
+      <td align="center">***</td>
+      <td align="center">***</td>
+      <td align="center">*****</td>
+    </tr>
+    <tr><td colspan="5"><small>Relaxed task list parsing can improve compatibility with messy inputs. <em>Mapping:</em> comrak offers relaxed task list options; md4c and pulldown-cmark support task lists with fewer knobs.</small></td></tr>
+    <tr>
+      <td>Output safety toggles</td>
+      <td align="center">***</td>
+      <td align="center">*****</td>
+      <td align="center">***</td>
+      <td align="center">*****</td>
+    </tr>
+    <tr><td colspan="5"><small>Safety toggles control whether raw HTML is emitted or escaped. <em>Mapping:</em> md4c and comrak provide explicit unsafe/escape switches; ferromark provides a simple <code>allow_html</code> toggle (without sanitizer mode); pulldown-cmark is more fixed in defaults.</small></td></tr>
+    <tr>
+      <td>no_std viability</td>
+      <td align="center">**</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+      <td align="center">*</td>
+    </tr>
+    <tr><td colspan="5"><small>no_std support matters for embedded or constrained environments. <em>Mapping:</em> pulldown-cmark supports no_std builds with features; md4c can be embedded in C environments; ferromark and comrak assume std.</small></td></tr>
+    <tr><td colspan="5"><strong>Architecture and Parsing Model</strong></td></tr>
+    <tr>
+      <td>Parser model (streaming, no AST)</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
+    </tr>
+    <tr><td colspan="5"><small>Streaming parsers can emit output as they scan input, which avoids building an intermediate tree and keeps memory and cache pressure low. <em>Mapping:</em> ferromark and md4c stream; pulldown-cmark uses a pull iterator; comrak builds an AST.</small></td></tr>
+    <tr>
+      <td>API style (push callbacks / pull iterator / AST)</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
+    </tr>
+    <tr><td colspan="5"><small>Push callbacks and pull iterators are good for streaming output; AST APIs are better for transformations but add overhead for straight HTML rendering. <em>Mapping:</em> md4c is push callbacks; pulldown-cmark is pull iterator; comrak is AST; ferromark is streaming events.</small></td></tr>
+    <tr>
+      <td>Parse/render separation</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">***</td>
+    </tr>
+    <tr><td colspan="5"><small>Clear separation lets parsers stay simple and fast, while renderers can be swapped or tuned. <em>Mapping:</em> md4c and pulldown-cmark separate parse and render clearly; ferromark is mostly separated; comrak leans on AST-based renderers.</small></td></tr>
+    <tr>
+      <td>Inline parsing pipeline (multi-phase, delimiter stacks)</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
+    </tr>
+    <tr><td colspan="5"><small>Multi-phase inline parsing (collect -> resolve -> emit) keeps the hot path linear and avoids backtracking. <em>Mapping:</em> ferromark uses multi-phase inline parsing; md4c and pulldown-cmark are optimized byte scanners; comrak does more AST bookkeeping.</small></td></tr>
+    <tr>
+      <td>Emphasis matching efficiency</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
+    </tr>
+    <tr><td colspan="5"><small>Efficient emphasis handling reduces rescans and backtracking. Stack-based algorithms tend to win on long text-heavy documents. <em>Mapping:</em> ferromark uses modulo-3 stacks; md4c and pulldown-cmark are optimized; comrak pays AST overhead.</small></td></tr>
+    <tr>
+      <td>Link reference processing cost</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
+      <td align="center">****</td>
+      <td align="center">***</td>
+    </tr>
+    <tr><td colspan="5"><small>Link labels need normalization (case folding and entity handling). Optimized implementations reduce allocations and Unicode overhead. <em>Mapping:</em> All four normalize labels; ferromark, md4c, and pulldown-cmark focus on minimizing allocations; comrak handles more feature paths.</small></td></tr>
+    <tr>
+      <td>Unicode handling configurability</td>
+      <td align="center">***</td>
+      <td align="center">*****</td>
+      <td align="center">***</td>
+      <td align="center">***</td>
+    </tr>
+    <tr><td colspan="5"><small>Configurable Unicode handling can simplify hot paths or support special environments. <em>Mapping:</em> md4c can be built for UTF-8, UTF-16, or ASCII-only; the Rust parsers generally assume UTF-8.</small></td></tr>
     <tr><td colspan="5"><strong>Rendering and Output</strong></td></tr>
     <tr>
       <td>Output streaming (incremental)</td>
-      <td align="center">5 *****</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">2 **</td>
+      <td align="center">*****</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Output streaming lets you write HTML incrementally, which lowers peak memory and removes extra passes. <em>Mapping:</em> ferromark and md4c stream to buffers or callbacks; pulldown-cmark streams events; comrak often renders after AST work.</td></tr>
+    <tr><td colspan="5"><small>Output streaming lets you write HTML incrementally, which lowers peak memory and removes extra passes. <em>Mapping:</em> ferromark and md4c stream to buffers or callbacks; pulldown-cmark streams events; comrak often renders after AST work.</small></td></tr>
     <tr>
       <td>Output customization hooks</td>
-      <td align="center">3 ***</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
+      <td align="center">***</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Callbacks and ASTs are great for custom rendering but add indirection compared to a single tight rendering loop. <em>Mapping:</em> md4c callbacks and comrak AST are very flexible; pulldown-cmark iterators are easy to transform; ferromark is lower level.</td></tr>
+    <tr><td colspan="5"><small>Callbacks and ASTs are great for custom rendering but add indirection compared to a single tight rendering loop. <em>Mapping:</em> md4c callbacks and comrak AST are very flexible; pulldown-cmark iterators are easy to transform; ferromark is lower level.</small></td></tr>
     <tr>
       <td>Output formats</td>
-      <td align="center">2 **</td>
-      <td align="center">3 ***</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
+      <td align="center">**</td>
+      <td align="center">***</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> More output formats increase flexibility but add complexity. <em>Mapping:</em> comrak can emit HTML, XML, and CommonMark; pulldown-cmark provides HTML plus event streams; md4c has HTML renderer and callbacks; ferromark targets HTML.</td></tr>
+    <tr><td colspan="5"><small>More output formats increase flexibility but add complexity. <em>Mapping:</em> comrak can emit HTML, XML, and CommonMark; pulldown-cmark provides HTML plus event streams; md4c has HTML renderer and callbacks; ferromark targets HTML.</small></td></tr>
     <tr>
       <td>Source position support</td>
-      <td align="center">2 **</td>
-      <td align="center">2 **</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
+      <td align="center">**</td>
+      <td align="center">**</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Tracking source positions is useful for diagnostics and tooling, but adds overhead. <em>Mapping:</em> pulldown-cmark has strong source map support; comrak can emit source positions; ferromark and md4c are lighter.</td></tr>
+    <tr><td colspan="5"><small>Tracking source positions is useful for diagnostics and tooling, but adds overhead. <em>Mapping:</em> pulldown-cmark has strong source map support; comrak can emit source positions; ferromark and md4c are lighter.</small></td></tr>
     <tr>
       <td>Source map tooling (API or CLI)</td>
-      <td align="center">2 **</td>
-      <td align="center">2 **</td>
-      <td align="center">5 *****</td>
-      <td align="center">4 ****</td>
+      <td align="center">**</td>
+      <td align="center">**</td>
+      <td align="center">*****</td>
+      <td align="center">****</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Source maps improve debuggability and tooling integration. <em>Mapping:</em> pulldown-cmark exposes event ranges; comrak can emit source position attributes; ferromark and md4c keep this minimal.</td></tr>
+    <tr><td colspan="5"><small>Source maps improve debuggability and tooling integration. <em>Mapping:</em> pulldown-cmark exposes event ranges; comrak can emit source position attributes; ferromark and md4c keep this minimal.</small></td></tr>
     <tr>
       <td>IO friendliness (small writes)</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-      <td align="center">3 ***</td>
-      <td align="center">2 **</td>
+      <td align="center">****</td>
+      <td align="center">*****</td>
+      <td align="center">***</td>
+      <td align="center">**</td>
     </tr>
-    <tr><td colspan="5"><em>Detail:</em> Many small writes can be expensive without buffering. <em>Mapping:</em> md4c and ferromark stream into buffers or callbacks; pulldown-cmark recommends buffered output; comrak often builds strings after AST work.</td></tr>
-    <tr><td colspan="5"><strong>Feature Surface and Extensibility</strong></td></tr>
-    <tr>
-      <td>Extension breadth (GFM and extras)</td>
-      <td align="center">2 **</td>
-      <td align="center">3 ***</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> More extensions increase compatibility but add parsing work. <em>Mapping:</em> comrak offers the broadest extension catalog; pulldown-cmark and md4c support common GFM features; ferromark focuses on CommonMark.</td></tr>
-    <tr>
-      <td>Tables, task lists, strikethrough</td>
-      <td align="center">2 **</td>
-      <td align="center">4 ****</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> These GFM features are common in real-world Markdown. <em>Mapping:</em> md4c, pulldown-cmark, and comrak support them; ferromark keeps the core smaller for speed.</td></tr>
-    <tr>
-      <td>Footnotes</td>
-      <td align="center">1 *</td>
-      <td align="center">1 *</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Footnotes add extra parsing and rendering complexity. <em>Mapping:</em> pulldown-cmark and comrak support footnotes; ferromark and md4c do not focus on them.</td></tr>
-    <tr>
-      <td>Math support</td>
-      <td align="center">1 *</td>
-      <td align="center">4 ****</td>
-      <td align="center">1 *</td>
-      <td align="center">4 ****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Math support often requires custom extensions. <em>Mapping:</em> md4c includes LaTeX math flags; comrak supports math extensions; ferromark and pulldown-cmark do not target math in the core.</td></tr>
-    <tr>
-      <td>Permissive autolinks</td>
-      <td align="center">2 **</td>
-      <td align="center">5 *****</td>
-      <td align="center">3 ***</td>
-      <td align="center">4 ****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Permissive autolinks trade strictness for convenience. <em>Mapping:</em> md4c exposes explicit flags for permissive URL/email/WWW autolinks; comrak has relaxed autolinks; pulldown-cmark focuses on spec defaults.</td></tr>
-    <tr>
-      <td>Wiki links</td>
-      <td align="center">1 *</td>
-      <td align="center">4 ****</td>
-      <td align="center">1 *</td>
-      <td align="center">4 ****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Wiki links are a non-CommonMark extension used in some ecosystems. <em>Mapping:</em> md4c and comrak support wiki links via flags/extensions; pulldown-cmark and ferromark do not.</td></tr>
-    <tr>
-      <td>Underline extension</td>
-      <td align="center">1 *</td>
-      <td align="center">4 ****</td>
-      <td align="center">1 *</td>
-      <td align="center">4 ****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Underline is an extension that changes emphasis semantics. <em>Mapping:</em> md4c and comrak include underline extensions; pulldown-cmark and ferromark stick closer to CommonMark emphasis rules.</td></tr>
-    <tr>
-      <td>Task list flexibility</td>
-      <td align="center">1 *</td>
-      <td align="center">3 ***</td>
-      <td align="center">3 ***</td>
-      <td align="center">5 *****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Relaxed task list parsing can improve compatibility with messy inputs. <em>Mapping:</em> comrak offers relaxed task list options; md4c and pulldown-cmark support task lists with fewer knobs.</td></tr>
-    <tr>
-      <td>Output safety toggles</td>
-      <td align="center">3 ***</td>
-      <td align="center">5 *****</td>
-      <td align="center">3 ***</td>
-      <td align="center">5 *****</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> Safety toggles control whether raw HTML is emitted or escaped. <em>Mapping:</em> md4c and comrak provide explicit unsafe/escape switches; ferromark provides a simple <code>allow_html</code> toggle (without sanitizer mode); pulldown-cmark is more fixed in defaults.</td></tr>
-    <tr>
-      <td>no_std viability</td>
-      <td align="center">2 **</td>
-      <td align="center">4 ****</td>
-      <td align="center">5 *****</td>
-      <td align="center">1 *</td>
-    </tr>
-    <tr><td colspan="5"><em>Detail:</em> no_std support matters for embedded or constrained environments. <em>Mapping:</em> pulldown-cmark supports no_std builds with features; md4c can be embedded in C environments; ferromark and comrak assume std.</td></tr>
+    <tr><td colspan="5"><small>Many small writes can be expensive without buffering. <em>Mapping:</em> md4c and ferromark stream into buffers or callbacks; pulldown-cmark recommends buffered output; comrak often builds strings after AST work.</small></td></tr>
   </tbody>
 </table>
 
