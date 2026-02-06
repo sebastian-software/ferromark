@@ -1,4 +1,4 @@
-//! md-fast: Ultra-high-performance Markdown to HTML compiler
+//! ferromark: Ultra-high-performance Markdown to HTML compiler
 //!
 //! This crate provides a streaming Markdown parser optimized for speed,
 //! targeting 20-30% better throughput than existing Rust parsers.
@@ -54,7 +54,7 @@ impl Default for Options {
 ///
 /// # Example
 /// ```
-/// let html = md_fast::to_html("# Hello\n\nWorld");
+/// let html = ferromark::to_html("# Hello\n\nWorld");
 /// assert!(html.contains("<h1>Hello</h1>"));
 /// assert!(html.contains("<p>World</p>"));
 /// ```

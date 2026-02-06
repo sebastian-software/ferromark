@@ -2,7 +2,7 @@
 //!
 //! Runs tests from the CommonMark spec.json file to track compliance.
 
-use md_fast::to_html;
+use ferromark::to_html;
 use serde::Deserialize;
 use std::fs;
 

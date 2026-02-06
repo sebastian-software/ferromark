@@ -1,5 +1,5 @@
 [package]
-name = "md-fast"
+name = "ferromark"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
@@ -7,11 +7,11 @@ description = "Ultra-high-performance Markdown to HTML compiler"
 license = "MIT OR Apache-2.0"
 
 [lib]
-name = "md_fast"
+name = "ferromark"
 path = "src/lib.rs"
 
 [[bin]]
-name = "md-fast"
+name = "ferromark"
 path = "src/main.rs"
 
 [dependencies]

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 size="${1:-50k}"
-parser="${2:-md-fast}"
+parser="${2:-ferromark}"
 sample_secs="${3:-10}"
 measure_secs="${4:-60}"
 mode="${5:-pgo}"
@@ -10,7 +10,7 @@ mode="${5:-pgo}"
 case "$mode" in
   pgo|non-pgo) ;;
   *)
-    echo "Usage: $0 [5k|20k|50k] [md-fast|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
+    echo "Usage: $0 [5k|20k|50k] [ferromark|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
     exit 1
     ;;
 esac
@@ -18,15 +18,15 @@ esac
 case "$size" in
   5k|20k|50k) ;;
   *)
-    echo "Usage: $0 [5k|20k|50k] [md-fast|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
+    echo "Usage: $0 [5k|20k|50k] [ferromark|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
     exit 1
     ;;
 esac
 
 case "$parser" in
-  md-fast|md4c|pulldown-cmark|comrak) ;;
+  ferromark|md4c|pulldown-cmark|comrak) ;;
   *)
-    echo "Usage: $0 [5k|20k|50k] [md-fast|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
+    echo "Usage: $0 [5k|20k|50k] [ferromark|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
     exit 1
     ;;
 esac
@@ -64,10 +64,10 @@ fi
 echo "Using bench binary: $bin"
 
 echo "Available benches:"
-"$bin" --list > /tmp/md-fast-bench.list || true
-cat /tmp/md-fast-bench.list
+"$bin" --list > /tmp/ferromark-bench.list || true
+cat /tmp/ferromark-bench.list
 
-if rg -q "^commonmark${size}/${parser}:" /tmp/md-fast-bench.list; then
+if rg -q "^commonmark${size}/${parser}:" /tmp/ferromark-bench.list; then
   filter="^commonmark${size}/${parser}$"
 else
   echo "No 'commonmark${size}/${parser}' benchmark found. Aborting." >&2
@@ -75,7 +75,7 @@ else
 fi
 
 echo "Starting benchmark (${measure_secs}s) and sampling for ${sample_secs}s..."
-out="/tmp/md-fast-commonmark${size}-${parser}-${mode}.bench.out"
+out="/tmp/ferromark-commonmark${size}-${parser}-${mode}.bench.out"
 "$bin" --bench --measurement-time "$measure_secs" --warm-up-time 5 --sample-size 100 "$filter" > "$out" 2>&1 &
 pid=$!
 
@@ -91,7 +91,7 @@ for i in $(seq 1 50); do
   sleep 0.1
 done
 
-sample_out="/tmp/md-fast-commonmark${size}-${parser}-${mode}.sample.txt"
+sample_out="/tmp/ferromark-commonmark${size}-${parser}-${mode}.sample.txt"
 if ! sample "$pid" "$sample_secs" -mayDie -fullPaths -file "$sample_out"; then
   echo "sample failed. If this requires elevated privileges, rerun in a terminal with sudo:" >&2
   echo "  sudo sample $pid $sample_secs -mayDie -fullPaths -file $sample_out" >&2

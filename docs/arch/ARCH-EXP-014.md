@@ -2,7 +2,7 @@
 
 **Hypothesis**: A lightweight pre-scan for link ref candidates might be cheap enough to enable streaming without large regressions.
 
-**Change**: Added bench-only experiments that run `prescan_candidates` or `prescan_full` before `md_fast::to_html` (no functional change).
+**Change**: Added bench-only experiments that run `prescan_candidates` or `prescan_full` before `ferromark::to_html` (no functional change).
 
 **Result**:
 - `simple`: baseline ~86.6 MiB/s; candidates ~83.4 MiB/s; full ~82.3 MiB/s

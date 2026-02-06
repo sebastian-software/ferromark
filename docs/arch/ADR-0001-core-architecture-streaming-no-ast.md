@@ -2,7 +2,7 @@
 
 **Status**: Accepted
 
-**Context**: md-fast targets high-throughput CommonMark parsing with minimal allocations and predictable linear-time behavior.
+**Context**: ferromark targets high-throughput CommonMark parsing with minimal allocations and predictable linear-time behavior.
 
 **Decision**: Use a streaming, event-based architecture with no AST. Block parsing emits block events; inline parsing operates on ranges into the input; rendering consumes events directly.
 

@@ -12,7 +12,7 @@ use crate::Range;
 ///
 /// # Example
 /// ```
-/// use md_fast::cursor::Cursor;
+/// use ferromark::cursor::Cursor;
 ///
 /// let input = b"Hello, World!";
 /// let mut cursor = Cursor::new(input);

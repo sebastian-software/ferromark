@@ -9,7 +9,7 @@
 ///
 /// # Example
 /// ```
-/// use md_fast::Range;
+/// use ferromark::Range;
 ///
 /// let input = b"Hello, World!";
 /// let range = Range::new(0, 5);

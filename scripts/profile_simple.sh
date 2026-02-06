@@ -46,20 +46,20 @@ fi
 echo "Using bench binary: $bin"
 
 echo "Available benches:"
-"$bin" --list > /tmp/md-fast-bench.list || true
-cat /tmp/md-fast-bench.list
+"$bin" --list > /tmp/ferromark-bench.list || true
+cat /tmp/ferromark-bench.list
 
-if rg -q '^simple/md-fast' /tmp/md-fast-bench.list; then
-  filter='^simple/md-fast$'
-elif rg -q '^complexity/.*/simple' /tmp/md-fast-bench.list; then
-  filter='^complexity/md-fast/simple$'
+if rg -q '^simple/ferromark' /tmp/ferromark-bench.list; then
+  filter='^simple/ferromark$'
+elif rg -q '^complexity/.*/simple' /tmp/ferromark-bench.list; then
+  filter='^complexity/ferromark/simple$'
 else
   echo "No 'simple' benchmark found. Aborting." >&2
   exit 1
 fi
 
 echo "Starting benchmark (${measure_secs}s) and sampling for ${sample_secs}s..."
-out="/tmp/md-fast-simple-${mode}.bench.out"
+out="/tmp/ferromark-simple-${mode}.bench.out"
 "$bin" --bench --measurement-time "$measure_secs" --warm-up-time 5 --sample-size 100 "$filter" > "$out" 2>&1 &
 pid=$!
 
@@ -75,7 +75,7 @@ for i in $(seq 1 50); do
   sleep 0.1
 done
 
-sample_out="/tmp/md-fast-simple-${mode}.sample.txt"
+sample_out="/tmp/ferromark-simple-${mode}.sample.txt"
 if ! sample "$pid" "$sample_secs" -mayDie -fullPaths -file "$sample_out"; then
   echo "sample failed. If this requires elevated privileges, rerun in a terminal with sudo:" >&2
   echo "  sudo sample $pid $sample_secs -mayDie -fullPaths -file $sample_out" >&2

@@ -1,4 +1,4 @@
-use md_fast::{BlockParser, fixup_list_tight};
+use ferromark::{BlockParser, fixup_list_tight};
 
 fn main() {
     let input = "> foo\n\n> bar\n";

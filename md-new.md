@@ -212,7 +212,7 @@ Based on our implementation experience and the md4c analysis, we can now validat
 | Modulo-3 emphasis stacks | **Confirmed** | Prevents pathological O(n²) emphasis matching |
 | 1.5x buffer growth | **Implemented** | Following md4c's proven strategy |
 
-**Performance Gap Analysis** (md-fast vs pulldown-cmark):
+**Performance Gap Analysis** (ferromark vs pulldown-cmark):
 
 | Document Size | Our Advantage | Explanation |
 |---------------|---------------|-------------|
@@ -1347,7 +1347,7 @@ cargo bench --bench comparison
 # Output example:
 # pulldown-cmark:  142 MB/s
 # comrak:           89 MB/s
-# md-fast (ours):  168 MB/s  ← goal
+# ferromark (ours):  168 MB/s  ← goal
 ```
 
 ### 12.5 Continuous Benchmarking
@@ -1552,7 +1552,7 @@ cargo test --test spec -- --report-coverage
 ```toml
 # Cargo.toml
 [package]
-name = "md-fast"
+name = "ferromark"
 version = "0.1.0"
 edition = "2024"       # Rust 1.93+ required
 rust-version = "1.93"
@@ -1633,7 +1633,7 @@ RUSTFLAGS="-Cprofile-generate=/tmp/pgo-data" \
     cargo build --release
 
 # Step 2: Run with representative workload
-./target/release/md-fast bench/corpus/*.md
+./target/release/ferromark bench/corpus/*.md
 
 # Step 3: Merge profile data
 llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
@@ -1824,7 +1824,7 @@ Maintain a `PROGRESS.md` file:
 
 ## Performance vs Competitors
 
-| Corpus | pulldown-cmark | comrak | md-fast |
+| Corpus | pulldown-cmark | comrak | ferromark |
 |--------|---------------|--------|---------|
 | small  | 180 MB/s | 95 MB/s | 210 MB/s |
 | large  | 142 MB/s | 78 MB/s | 168 MB/s |

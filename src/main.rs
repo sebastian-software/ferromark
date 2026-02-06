@@ -1,4 +1,4 @@
-//! md-fast CLI - Ultra-high-performance Markdown to HTML compiler
+//! ferromark CLI - Ultra-high-performance Markdown to HTML compiler
 
 use std::io::{self, Read, Write};
 
@@ -14,7 +14,7 @@ fn main() -> io::Result<()> {
         buf
     };
 
-    let html = md_fast::to_html(&input);
+    let html = ferromark::to_html(&input);
     io::stdout().write_all(html.as_bytes())?;
 
     Ok(())

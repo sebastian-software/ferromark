@@ -42,7 +42,7 @@ fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
 ///
 /// # Example
 /// ```
-/// use md_fast::HtmlWriter;
+/// use ferromark::HtmlWriter;
 ///
 /// let mut writer = HtmlWriter::with_capacity_for(1000);
 /// writer.write_str("<p>");

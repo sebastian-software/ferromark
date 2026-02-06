@@ -1,4 +1,4 @@
-//! Performance benchmarks for md-fast
+//! Performance benchmarks for ferromark
 //!
 //! Run with: cargo bench
 
@@ -105,45 +105,45 @@ fn bench_parsing(c: &mut Criterion) {
     // Tiny document
     group.throughput(Throughput::Bytes(samples::TINY.len() as u64));
     group.bench_function("tiny", |b| {
-        b.iter(|| md_fast::to_html(black_box(samples::TINY)))
+        b.iter(|| ferromark::to_html(black_box(samples::TINY)))
     });
 
     // Small document
     group.throughput(Throughput::Bytes(samples::SMALL.len() as u64));
     group.bench_function("small", |b| {
-        b.iter(|| md_fast::to_html(black_box(samples::SMALL)))
+        b.iter(|| ferromark::to_html(black_box(samples::SMALL)))
     });
 
     // Medium document
     group.throughput(Throughput::Bytes(samples::MEDIUM.len() as u64));
     group.bench_function("medium", |b| {
-        b.iter(|| md_fast::to_html(black_box(samples::MEDIUM)))
+        b.iter(|| ferromark::to_html(black_box(samples::MEDIUM)))
     });
 
     // Large document
     let large = samples::large();
     group.throughput(Throughput::Bytes(large.len() as u64));
     group.bench_function("large", |b| {
-        b.iter(|| md_fast::to_html(black_box(&large)))
+        b.iter(|| ferromark::to_html(black_box(&large)))
     });
 
     // CommonMark documents (wiki-style)
     let commonmark_5k = samples::COMMONMARK_5K;
     group.throughput(Throughput::Bytes(commonmark_5k.len() as u64));
     group.bench_function("commonmark_5k", |b| {
-        b.iter(|| md_fast::to_html(black_box(commonmark_5k)))
+        b.iter(|| ferromark::to_html(black_box(commonmark_5k)))
     });
 
     let commonmark_20k = samples::COMMONMARK_20K;
     group.throughput(Throughput::Bytes(commonmark_20k.len() as u64));
     group.bench_function("commonmark_20k", |b| {
-        b.iter(|| md_fast::to_html(black_box(commonmark_20k)))
+        b.iter(|| ferromark::to_html(black_box(commonmark_20k)))
     });
 
     let commonmark_50k = samples::COMMONMARK_50K;
     group.throughput(Throughput::Bytes(commonmark_50k.len() as u64));
     group.bench_function("commonmark_50k", |b| {
-        b.iter(|| md_fast::to_html(black_box(commonmark_50k)))
+        b.iter(|| ferromark::to_html(black_box(commonmark_50k)))
     });
 
     group.finish();
@@ -158,7 +158,7 @@ fn bench_escaping(c: &mut Criterion) {
     group.bench_function("plain_text", |b| {
         b.iter(|| {
             let mut out = Vec::with_capacity(plain.len());
-            md_fast::escape::escape_text_into(&mut out, black_box(plain.as_bytes()));
+            ferromark::escape::escape_text_into(&mut out, black_box(plain.as_bytes()));
             out
         })
     });
@@ -169,7 +169,7 @@ fn bench_escaping(c: &mut Criterion) {
     group.bench_function("html_heavy", |b| {
         b.iter(|| {
             let mut out = Vec::with_capacity(html_heavy.len() * 2);
-            md_fast::escape::escape_text_into(&mut out, black_box(html_heavy.as_bytes()));
+            ferromark::escape::escape_text_into(&mut out, black_box(html_heavy.as_bytes()));
             out
         })
     });
@@ -184,13 +184,13 @@ fn bench_pathological(c: &mut Criterion) {
     let emphasis = samples::pathological_emphasis();
     group.throughput(Throughput::Bytes(emphasis.len() as u64));
     group.bench_function("emphasis_explosion", |b| {
-        b.iter(|| md_fast::to_html(black_box(&emphasis)))
+        b.iter(|| ferromark::to_html(black_box(&emphasis)))
     });
 
     let nested = samples::pathological_nested();
     group.throughput(Throughput::Bytes(nested.len() as u64));
     group.bench_function("deep_nesting", |b| {
-        b.iter(|| md_fast::to_html(black_box(&nested)))
+        b.iter(|| ferromark::to_html(black_box(&nested)))
     });
 
     group.finish();
@@ -204,14 +204,14 @@ fn bench_buffer_reuse(c: &mut Criterion) {
 
     // Without buffer reuse
     group.bench_function("without_reuse", |b| {
-        b.iter(|| md_fast::to_html(black_box(input)))
+        b.iter(|| ferromark::to_html(black_box(input)))
     });
 
     // With buffer reuse
     group.bench_function("with_reuse", |b| {
         let mut buffer = Vec::with_capacity(input.len() * 2);
         b.iter(|| {
-            md_fast::to_html_into(black_box(input), &mut buffer);
+            ferromark::to_html_into(black_box(input), &mut buffer);
             black_box(&buffer);
         })
     });

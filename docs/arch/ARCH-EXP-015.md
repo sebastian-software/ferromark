@@ -2,7 +2,7 @@
 
 **Hypothesis**: Buffer only paragraphs with ref-candidates; stream others to reduce overhead vs full pre-scan.
 
-**Change**: Bench-only prototype that splits input into paragraphs and calls `md_fast::to_html` per paragraph (placeholder for future streaming renderer).
+**Change**: Bench-only prototype that splits input into paragraphs and calls `ferromark::to_html` per paragraph (placeholder for future streaming renderer).
 
 **Result**:
 - `simple`: ~45.0 MiB/s (far slower than baseline)

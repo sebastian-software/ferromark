@@ -44,7 +44,7 @@ const ATTR_ESCAPE_TABLE: [bool; 256] = {
 ///
 /// # Example
 /// ```
-/// use md_fast::escape::escape_text_into;
+/// use ferromark::escape::escape_text_into;
 ///
 /// let mut out = Vec::new();
 /// escape_text_into(&mut out, b"<script>");
@@ -99,7 +99,7 @@ pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
 ///
 /// # Example
 /// ```
-/// use md_fast::escape::escape_attr_into;
+/// use ferromark::escape::escape_attr_into;
 ///
 /// let mut out = Vec::new();
 /// escape_attr_into(&mut out, b"value=\"test\"");

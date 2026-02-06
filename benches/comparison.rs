@@ -1,9 +1,9 @@
-//! Comparison benchmarks: md-fast vs other Rust Markdown parsers
+//! Comparison benchmarks: ferromark vs other Rust Markdown parsers
 //!
 //! Run with: cargo bench --bench comparison
 //!
 //! Parsers compared:
-//! - md-fast (this crate)
+//! - ferromark (this crate)
 //! - md4c (C)
 //! - pulldown-cmark (most popular, used by rustdoc)
 //! - comrak (100% CommonMark compliant, GFM support)
@@ -184,15 +184,15 @@ to handle longer documents efficiently.
     }
 }
 
-/// Parse with md-fast
-fn parse_md_fast(input: &str) -> String {
-    md_fast::to_html(input)
+/// Parse with ferromark
+fn parse_ferromark(input: &str) -> String {
+    ferromark::to_html(input)
 }
 
-/// Parse with md-fast into a reusable buffer
-fn parse_md_fast_into(input: &str, out: &mut Vec<u8>) {
+/// Parse with ferromark into a reusable buffer
+fn parse_ferromark_into(input: &str, out: &mut Vec<u8>) {
     out.clear();
-    md_fast::to_html_into(input, out);
+    ferromark::to_html_into(input, out);
 }
 
 /// Parse with pulldown-cmark
@@ -275,8 +275,8 @@ fn bench_tiny(c: &mut Criterion) {
     let input = samples::TINY;
     group.throughput(Throughput::Bytes(input.len() as u64));
 
-    group.bench_function("md-fast", |b| {
-        b.iter(|| parse_md_fast(black_box(input)))
+    group.bench_function("ferromark", |b| {
+        b.iter(|| parse_ferromark(black_box(input)))
     });
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
@@ -296,8 +296,8 @@ fn bench_small(c: &mut Criterion) {
     let input = samples::SMALL;
     group.throughput(Throughput::Bytes(input.len() as u64));
 
-    group.bench_function("md-fast", |b| {
-        b.iter(|| parse_md_fast(black_box(input)))
+    group.bench_function("ferromark", |b| {
+        b.iter(|| parse_ferromark(black_box(input)))
     });
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
@@ -317,8 +317,8 @@ fn bench_simple(c: &mut Criterion) {
     let input = samples::SIMPLE;
     group.throughput(Throughput::Bytes(input.len() as u64));
 
-    group.bench_function("md-fast", |b| {
-        b.iter(|| parse_md_fast(black_box(input)))
+    group.bench_function("ferromark", |b| {
+        b.iter(|| parse_ferromark(black_box(input)))
     });
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
@@ -338,8 +338,8 @@ fn bench_medium(c: &mut Criterion) {
     let input = samples::MEDIUM;
     group.throughput(Throughput::Bytes(input.len() as u64));
 
-    group.bench_function("md-fast", |b| {
-        b.iter(|| parse_md_fast(black_box(input)))
+    group.bench_function("ferromark", |b| {
+        b.iter(|| parse_ferromark(black_box(input)))
     });
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
@@ -359,8 +359,8 @@ fn bench_large(c: &mut Criterion) {
     let input = samples::large();
     group.throughput(Throughput::Bytes(input.len() as u64));
 
-    group.bench_function("md-fast", |b| {
-        b.iter(|| parse_md_fast(black_box(&input)))
+    group.bench_function("ferromark", |b| {
+        b.iter(|| parse_ferromark(black_box(&input)))
     });
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(&input)))
@@ -379,11 +379,11 @@ fn bench_commonmark_group(c: &mut Criterion, group_name: &str, input: &str) {
     let mut group = c.benchmark_group(group_name);
     group.throughput(Throughput::Bytes(input.len() as u64));
 
-    let mut md_fast_out = Vec::with_capacity(input.len() + input.len() / 4);
-    group.bench_function("md-fast", |b| {
+    let mut ferromark_out = Vec::with_capacity(input.len() + input.len() / 4);
+    group.bench_function("ferromark", |b| {
         b.iter(|| {
-            parse_md_fast_into(black_box(input), &mut md_fast_out);
-            black_box(&md_fast_out);
+            parse_ferromark_into(black_box(input), &mut ferromark_out);
+            black_box(&ferromark_out);
         })
     });
 
@@ -438,8 +438,8 @@ fn bench_complexity(c: &mut Criterion) {
     for (name, input) in &cases {
         group.throughput(Throughput::Bytes(input.len() as u64));
 
-        group.bench_with_input(BenchmarkId::new("md-fast", name), input, |b, s| {
-            b.iter(|| parse_md_fast(black_box(s)))
+        group.bench_with_input(BenchmarkId::new("ferromark", name), input, |b, s| {
+            b.iter(|| parse_ferromark(black_box(s)))
         });
         group.bench_with_input(BenchmarkId::new("md4c", name), input, |b, s| {
             b.iter(|| parse_md4c(black_box(s)))
@@ -469,8 +469,8 @@ fn bench_throughput(c: &mut Criterion) {
     for (name, input) in &sizes {
         group.throughput(Throughput::Bytes(input.len() as u64));
 
-        group.bench_with_input(BenchmarkId::new("md-fast", name), input, |b, s| {
-            b.iter(|| parse_md_fast(black_box(s)))
+        group.bench_with_input(BenchmarkId::new("ferromark", name), input, |b, s| {
+            b.iter(|| parse_ferromark(black_box(s)))
         });
         group.bench_with_input(BenchmarkId::new("md4c", name), input, |b, s| {
             b.iter(|| parse_md4c(black_box(s)))
@@ -501,7 +501,7 @@ fn bench_experiments(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("baseline_to_html", name), input, |b, text| {
             b.iter(|| {
-                let html = md_fast::to_html(black_box(text));
+                let html = ferromark::to_html(black_box(text));
                 black_box(html);
             })
         });
@@ -519,7 +519,7 @@ fn bench_experiments(c: &mut Criterion) {
             |b, text| {
                 b.iter(|| {
                     let _c = prescan_candidates(black_box(text.as_bytes()));
-                    let html = md_fast::to_html(black_box(text));
+                    let html = ferromark::to_html(black_box(text));
                     black_box(html);
                 })
             },
@@ -531,7 +531,7 @@ fn bench_experiments(c: &mut Criterion) {
             |b, text| {
                 b.iter(|| {
                     let _c = prescan_full(black_box(text.as_bytes()));
-                    let html = md_fast::to_html(black_box(text));
+                    let html = ferromark::to_html(black_box(text));
                     black_box(html);
                 })
             },
@@ -615,9 +615,9 @@ fn hybrid_paragraph_buffer(input: &str) -> String {
             if !buf.is_empty() {
                 let para = std::str::from_utf8(&buf).unwrap_or("");
                 if paragraph_has_ref_candidate(para) {
-                    out.push_str(&md_fast::to_html(para));
+                    out.push_str(&ferromark::to_html(para));
                 } else {
-                    out.push_str(&md_fast::to_html(para));
+                    out.push_str(&ferromark::to_html(para));
                 }
                 buf.clear();
             }
@@ -640,9 +640,9 @@ fn hybrid_paragraph_buffer(input: &str) -> String {
     if !buf.is_empty() {
         let para = std::str::from_utf8(&buf).unwrap_or("");
         if paragraph_has_ref_candidate(para) {
-            out.push_str(&md_fast::to_html(para));
+            out.push_str(&ferromark::to_html(para));
         } else {
-            out.push_str(&md_fast::to_html(para));
+            out.push_str(&ferromark::to_html(para));
         }
     }
 
