@@ -188,6 +188,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
   - Focused bench (`link_refs_focus`) result: `refs_escaped` `-3.06%` (improved) but `refs`/`mixed` remained within noise.
   - Decision: **discarded** (did not meet primary meaningful-`refs`/`mixed` criterion).
 - Attempt G: `write_link_title` fast path in `/Users/sebastian/Workspace/md-new/src/render.rs` (skip UTF-8/entity decode when no `&`; skip backslash scan when no `\\` after decode).
+  - Change kept in commit: `5caf88e`
   - Benchmark (`--sample-size 80 --measurement-time 4`) result:
     - `commonmark50k/ferromark`: `150.63 us` (no significant regression).
     - `complexity/ferromark/refs`: `2.2833 us` (`-2.95%` time, significant).
@@ -197,15 +198,26 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `refs_escaped`: `4.3146 us` (no significant change)
     - `mixed`: `3.3336 us` (no significant change)
   - Decision: **kept**.
+- Attempt H: `insert_prechecked` path for link-ref definitions (remove redundant lookup after `get_index` check in `extract_link_ref_defs`).
+  - Main benchmark (`--sample-size 80 --measurement-time 4`) result (two repeated runs): `refs` and `mixed` remained in noise in the guardrail set.
+  - Focused bench (`link_refs_focus`) showed mixed results (one run with wins, one run near-noise), without stable confirmation in guardrail cases.
+  - Decision: **discarded** (insufficiently stable gain).
+- Attempt I: URL destination safe-copy fast path in `/Users/sebastian/Workspace/md-new/src/escape.rs` (`url_escape_link_destination_raw`).
+  - Change: early return with `extend_from_slice` when URL bytes are ASCII and contain no characters requiring escaping/encoding.
+  - Benchmark (`--sample-size 80 --measurement-time 4`) repeated absolute medians:
+    - `commonmark50k/ferromark`: `147.93-150.21 us` (improved vs prior kept baseline `150.63 us`).
+    - `complexity/ferromark/refs`: `2.2568-2.2631 us` (improved vs prior kept baseline `2.2833 us`).
+    - `complexity/ferromark/mixed`: `3.2254-3.2345 us` (improved vs prior kept baseline `3.3262 us`).
+  - Decision: **kept**.
 
 ### Current `refs` position vs other libraries (2026-02-06)
 
 - Snapshot command: `cargo bench --bench comparison -- "complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$" --sample-size 40 --measurement-time 2`
 - Median times:
-  - `ferromark`: `2.2787 us`
-  - `md4c`: `2.5574 us`
-  - `pulldown-cmark`: `1.9314 us`
-  - `comrak`: `4.7529 us`
+  - `ferromark`: `2.2783 us`
+  - `md4c`: `2.4665 us`
+  - `pulldown-cmark`: `1.9311 us`
+  - `comrak`: `4.8677 us`
 - Interpretation:
   - ferromark is currently faster than `md4c` and much faster than `comrak` on `refs`.
   - The remaining notable gap is vs `pulldown-cmark` (~`15-18%` faster depending on run), so there is still meaningful headroom.

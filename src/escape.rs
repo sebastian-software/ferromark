@@ -224,6 +224,18 @@ fn push_attr_escape(out: &mut Vec<u8>, b: u8) {
 fn url_escape_link_destination_raw(out: &mut Vec<u8>, input: &[u8]) {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
 
+    if input.is_ascii()
+        && memchr2(b'\\', b' ', input).is_none()
+        && memchr3(b'"', b'<', b'>', input).is_none()
+        && memchr2(b'&', b'\'', input).is_none()
+        && !input
+            .iter()
+            .any(|&b| matches!(b, 0x00..=0x08 | 0x0B | 0x0C | 0x0E..=0x1F | 0x7F))
+    {
+        out.extend_from_slice(input);
+        return;
+    }
+
     let mut pos = 0;
     while pos < input.len() {
         let b = input[pos];
