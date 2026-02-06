@@ -719,8 +719,8 @@ mod tests {
     #[test]
     fn test_paragraph_escaping() {
         let html = to_html("<script>alert('xss')</script>");
-        assert!(html.contains("&lt;script&gt;"));
-        assert!(!html.contains("<script>"));
+        // CommonMark preserves raw HTML when HTML is enabled (default).
+        assert_eq!(html, "<script>alert('xss')</script>");
     }
 
     #[test]

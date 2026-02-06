@@ -2758,6 +2758,7 @@ fn is_simple_line_start(b: u8) -> bool {
             | b'>'
             | b'-'
             | b'*'
+            | b'_'
             | b'+'
             | b'`'
             | b'~'
