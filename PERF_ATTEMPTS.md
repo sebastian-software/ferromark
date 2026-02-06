@@ -130,3 +130,8 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
 - Result: baseline `165.50 us` vs candidate `165.09 us` (small gain, not statistically significant at `p=0.08`).
 - Decision: Reverted.
+
+- Change: Byte-dispatch guards in `parse_line_content_with_indent` to skip expensive `try_*` parser checks unless the first non-indent byte can start that construct.
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `166.36 us` vs candidate `159.75 us` (about `+4.67%` throughput, significant).
+- Decision: Kept.

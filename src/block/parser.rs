@@ -667,7 +667,7 @@ impl<'a> BlockParser<'a> {
 
             // Check for setext heading underline (when in a paragraph)
             // Must check BEFORE thematic break since `---` can be either
-            if self.in_paragraph {
+            if self.in_paragraph && matches!(first, b'=' | b'-') {
                 if let Some(level) = self.is_setext_underline_after_indent() {
                     // Skip to end of line
                     while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
@@ -683,38 +683,38 @@ impl<'a> BlockParser<'a> {
             }
 
             // Check for thematic break FIRST - `* * *` is a thematic break, not a list
-            if self.try_thematic_break(events) {
+            if matches!(first, b'-' | b'*' | b'_') && self.try_thematic_break(events) {
                 return;
             }
 
             // Check for nested containers (blockquote, list)
             if self.container_stack.len() < limits::MAX_BLOCK_NESTING {
                 // Check for blockquote
-                if self.try_blockquote(events) {
+                if first == b'>' && self.try_blockquote(events) {
                     // Recursively parse the rest of the line
                     self.parse_line_content(events);
                     return;
                 }
 
-            // Check for list item (pass indent for absolute content_indent calculation)
-            if self.try_list_item(indent, events) {
-                self.parse_line_content(events);
+                // Check for list item (pass indent for absolute content_indent calculation)
+                if is_list_marker_start(first) && self.try_list_item(indent, events) {
+                    self.parse_line_content(events);
+                    return;
+                }
+            }
+
+            // Check for HTML block
+            if self.options.allow_html && first == b'<' && self.try_html_block_start(indent, events) {
                 return;
             }
-        }
 
-        // Check for HTML block
-        if self.options.allow_html && self.try_html_block_start(indent, events) {
-            return;
-        }
-
-        // Check for fenced code block
-        if self.try_code_fence(indent, events) {
-            return;
-        }
+            // Check for fenced code block
+            if matches!(first, b'`' | b'~') && self.try_code_fence(indent, events) {
+                return;
+            }
 
             // Check for ATX heading
-            if self.try_atx_heading(events) {
+            if first == b'#' && self.try_atx_heading(events) {
                 return;
             }
         }
@@ -2764,6 +2764,11 @@ fn is_simple_line_start(b: u8) -> bool {
             | b'\r'
             | b'0'..=b'9'
     )
+}
+
+#[inline]
+fn is_list_marker_start(b: u8) -> bool {
+    matches!(b, b'-' | b'*' | b'+' | b'0'..=b'9')
 }
 
 #[inline]
