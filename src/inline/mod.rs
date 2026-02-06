@@ -17,7 +17,7 @@ pub use event::InlineEvent;
 use crate::Range;
 use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
 use emphasis::{resolve_emphasis_with_stacks, EmphasisMatch, EmphasisStacks};
-use links::{find_autolinks_into, resolve_links, resolve_reference_links_into, Autolink, Link, RefLink};
+use links::{find_autolinks_into, resolve_links_into, resolve_reference_links_into, Autolink, Link, RefLink};
 use crate::link_ref::LinkRefStore;
 use marks::{collect_marks, flags, Mark, MarkBuffer};
 use memchr::memchr;
@@ -35,6 +35,10 @@ pub struct InlineParser {
     autolink_ranges: Vec<(u32, u32)>,
     code_spans: Vec<CodeSpan>,
     link_boundaries: Vec<(u32, u32)>,
+    resolved_links: Vec<Link>,
+    link_formed_opens: Vec<bool>,
+    link_inactive_opens: Vec<bool>,
+    link_used_closes: Vec<bool>,
     ref_links: Vec<RefLink>,
     ref_label_buf: String,
     ref_formed_opens: Vec<bool>,
@@ -59,6 +63,10 @@ impl InlineParser {
             autolink_ranges: Vec::new(),
             code_spans: Vec::new(),
             link_boundaries: Vec::new(),
+            resolved_links: Vec::new(),
+            link_formed_opens: Vec::new(),
+            link_inactive_opens: Vec::new(),
+            link_used_closes: Vec::new(),
             ref_links: Vec::new(),
             ref_label_buf: String::new(),
             ref_formed_opens: Vec::new(),
@@ -129,14 +137,12 @@ impl InlineParser {
             })
         });
 
-        // Fourth: links and images (skip if no brackets)
-        let has_bracket_marks = self.mark_buffer.marks().iter().any(|m| m.ch == b'[' || m.ch == b']');
-        if has_bracket_marks {
-            Self::collect_brackets(self.mark_buffer.marks(), &mut self.open_brackets, &mut self.close_brackets);
-        } else {
-            self.open_brackets.clear();
-            self.close_brackets.clear();
-        }
+        // Fourth: collect bracket positions and detect emphasis candidates in one pass
+        let has_emphasis_marks = Self::collect_brackets_and_scan_emphasis(
+            self.mark_buffer.marks(),
+            &mut self.open_brackets,
+            &mut self.close_brackets,
+        );
         let has_brackets = !self.open_brackets.is_empty() && !self.close_brackets.is_empty();
         self.open_brackets
             .retain(|&(pos, _)| !pos_in_spans(pos, &self.html_spans));
@@ -146,11 +152,20 @@ impl InlineParser {
                 !self.autolinks.iter().any(|al| pos > al.start && pos < al.end)
                     && !pos_in_spans(pos, &self.html_spans)
             });
-        let resolved_links = if has_brackets {
-            resolve_links(text, &self.open_brackets, &self.close_brackets)
+        if has_brackets {
+            resolve_links_into(
+                text,
+                &self.open_brackets,
+                &self.close_brackets,
+                &mut self.resolved_links,
+                &mut self.link_formed_opens,
+                &mut self.link_inactive_opens,
+                &mut self.link_used_closes,
+            );
         } else {
-            Vec::new()
-        };
+            self.resolved_links.clear();
+        }
+        let resolved_links = &self.resolved_links;
 
         if has_brackets {
             if let Some(defs) = link_refs.filter(|defs| !defs.is_empty()) {
@@ -158,7 +173,7 @@ impl InlineParser {
                     text,
                     &self.open_brackets,
                     &self.close_brackets,
-                    &resolved_links,
+                    resolved_links,
                     defs,
                     &mut self.ref_links,
                     &mut self.ref_label_buf,
@@ -169,7 +184,7 @@ impl InlineParser {
             } else {
                 self.ref_links.clear();
             }
-            filter_html_spans_in_link_destinations(&mut self.html_spans, &resolved_links);
+            filter_html_spans_in_link_destinations(&mut self.html_spans, resolved_links);
         } else {
             self.ref_links.clear();
         }
@@ -206,11 +221,6 @@ impl InlineParser {
         for span in &self.html_spans {
             self.link_boundaries.push((span.start, span.end));
         }
-        let has_emphasis_marks = self
-            .mark_buffer
-            .marks()
-            .iter()
-            .any(|m| (m.ch == b'*' || m.ch == b'_') && m.flags & flags::IN_CODE == 0);
         let emphasis_matches = if has_emphasis_marks {
             resolve_emphasis_with_stacks(
                 self.mark_buffer.marks_mut(),
@@ -227,9 +237,9 @@ impl InlineParser {
             marks,
             text,
             &self.code_spans,
-            &emphasis_matches,
-            &resolved_links,
-            resolved_ref_links,
+                &emphasis_matches,
+                resolved_links,
+                resolved_ref_links,
             &self.autolinks,
             &self.html_spans,
             &self.link_dest_ranges,
@@ -242,14 +252,22 @@ impl InlineParser {
     }
 
     /// Collect bracket positions for link parsing.
-    fn collect_brackets(marks: &[Mark], open_brackets: &mut Vec<(u32, bool)>, close_brackets: &mut Vec<u32>) {
+    fn collect_brackets_and_scan_emphasis(
+        marks: &[Mark],
+        open_brackets: &mut Vec<(u32, bool)>,
+        close_brackets: &mut Vec<u32>,
+    ) -> bool {
         let estimated = (marks.len() / 4).max(4);
         open_brackets.clear();
         close_brackets.clear();
         open_brackets.reserve(estimated);
         close_brackets.reserve(estimated);
 
+        let mut has_emphasis_marks = false;
         for mark in marks {
+            if mark.flags & flags::IN_CODE == 0 && (mark.ch == b'*' || mark.ch == b'_') {
+                has_emphasis_marks = true;
+            }
             // Skip brackets inside code spans
             if mark.flags & flags::IN_CODE != 0 && mark.ch != b'[' {
                 continue;
@@ -267,6 +285,7 @@ impl InlineParser {
                 _ => {}
             }
         }
+        has_emphasis_marks
     }
 
     /// Emit events based on resolved marks.

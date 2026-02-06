@@ -61,17 +61,47 @@ pub struct RefLink {
 
 /// Parse links from text, given bracket positions.
 /// Returns list of resolved links.
+#[allow(dead_code)]
 pub fn resolve_links(
     text: &[u8],
     open_brackets: &[(u32, bool)], // (position, is_image)
     close_brackets: &[u32],
 ) -> Vec<Link> {
-    let mut links = Vec::new();
+    let mut out_links = Vec::new();
+    let mut formed_opens = Vec::new();
+    let mut inactive_opens = Vec::new();
+    let mut used_closes = Vec::new();
+    resolve_links_into(
+        text,
+        open_brackets,
+        close_brackets,
+        &mut out_links,
+        &mut formed_opens,
+        &mut inactive_opens,
+        &mut used_closes,
+    );
+    out_links
+}
+
+/// Parse links from text, given bracket positions, reusing caller-owned buffers.
+pub fn resolve_links_into(
+    text: &[u8],
+    open_brackets: &[(u32, bool)], // (position, is_image)
+    close_brackets: &[u32],
+    out_links: &mut Vec<Link>,
+    formed_opens: &mut Vec<bool>,
+    inactive_opens: &mut Vec<bool>,
+    used_closes: &mut Vec<bool>,
+) {
+    out_links.clear();
     // Track opens that have formed links (consumed with their close)
-    let mut formed_opens: Vec<bool> = vec![false; open_brackets.len()];
+    formed_opens.clear();
+    formed_opens.resize(open_brackets.len(), false);
     // Track opens that are deactivated (can't form links, but still count for depth)
-    let mut inactive_opens: Vec<bool> = vec![false; open_brackets.len()];
-    let mut used_closes: Vec<bool> = vec![false; close_brackets.len()];
+    inactive_opens.clear();
+    inactive_opens.resize(open_brackets.len(), false);
+    used_closes.clear();
+    used_closes.resize(close_brackets.len(), false);
 
     // Process open brackets from right to left (innermost first)
     for (open_idx, &(open_pos, is_image)) in open_brackets.iter().enumerate().rev() {
@@ -98,7 +128,7 @@ pub fn resolve_links(
                 if let Some((url_start, url_end, title_start, title_end, end)) =
                     parse_link_destination(text, after_close + 1)
                 {
-                    links.push(Link {
+                    out_links.push(Link {
                         start: if is_image { open_pos - 1 } else { open_pos },
                         text_end: close_pos,
                         url_start: url_start as u32,
@@ -139,8 +169,7 @@ pub fn resolve_links(
     }
 
     // Sort by start position
-    links.sort_by_key(|l| l.start);
-    links
+    out_links.sort_by_key(|l| l.start);
 }
 
 /// Resolve reference-style links/images using link reference definitions.

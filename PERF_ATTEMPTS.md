@@ -88,3 +88,45 @@ This log records performance experiments for md-fast. Each attempt is run on `co
 - Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
 - Result: 277.0-278.6 MiB/s, regression (~-1.7%).
 - Decision: Reverted.
+
+- Change: Split `render_inline_event` into dedicated image/non-image paths to reduce per-event branching.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 280.8-282.7 MiB/s, change within noise threshold.
+- Decision: Reverted.
+
+- Change: Short-input fast path in `escape_into_with_table` (avoid memchr setup for <=32 bytes).
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: 274.1-276.1 MiB/s, regression (~-2.0%).
+- Decision: Reverted.
+
+- Change: Replace expensive list-item blank-line expression with `is_blank_line_scalar` in `match_containers`.
+- Command: `cargo bench --bench comparison -- "commonmark50k/md-fast"`
+- Result: first run 284.7-286.7 MiB/s (~+3.6%), rerun 263.1-282.2 MiB/s (no clear improvement, high variance).
+- Decision: Reverted.
+
+## 2026-02-06
+
+- Change: Escape fast path rewrite with `memchr` segment scanning (`escape_text_into`, `escape_full_into`) plus skip entity decode in `url_escape_link_destination` when no `&`.
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `174.55 us` vs candidate `172.59 us` (about `+1.2%` throughput, significant).
+- Decision: Kept.
+
+- Change: Reuse buffers in inline link resolution (`resolve_links_into`) to avoid per-parse allocations.
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `172.83 us` vs candidate `167.67 us` (about `+3.1%` throughput, significant).
+- Decision: Kept.
+
+- Change: Merge bracket collection + emphasis-candidate detection into one marks pass.
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `167.25 us` vs candidate `166.71 us` (about `+0.4%` throughput, significant but small).
+- Decision: Kept.
+
+- Change: ASCII fast path for link-label normalization (`normalize_label_text_ascii`) with Unicode fallback.
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `166.90 us` vs candidate `165.94 us` (about `+0.56%` throughput, significant).
+- Decision: Kept.
+
+- Change: ASCII-neighbor fast path for emphasis flanking in `collect_marks` (`compute_emphasis_flags_with_context`).
+- Command: `target/release/deps/comparison-* --bench --measurement-time 20 --warm-up-time 3 --sample-size 80 '^commonmark50k/md-fast$'`
+- Result: baseline `165.50 us` vs candidate `165.09 us` (small gain, not statistically significant at `p=0.08`).
+- Decision: Reverted.

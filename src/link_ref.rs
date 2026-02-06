@@ -103,6 +103,11 @@ pub fn normalize_label_into(bytes: &[u8], out: &mut String) {
 
 #[inline]
 fn normalize_label_text(input: &str, out: &mut String) {
+    if input.is_ascii() {
+        normalize_label_text_ascii(input.as_bytes(), out);
+        return;
+    }
+
     let mut last_was_space = true;
 
     for ch in input.chars() {
@@ -123,6 +128,28 @@ fn normalize_label_text(input: &str, out: &mut String) {
                 out.push(lc);
             }
         }
+    }
+
+    if out.ends_with(' ') {
+        out.pop();
+    }
+}
+
+#[inline]
+fn normalize_label_text_ascii(input: &[u8], out: &mut String) {
+    let mut last_was_space = true;
+
+    for &b in input {
+        if b.is_ascii_whitespace() {
+            if !last_was_space {
+                out.push(' ');
+                last_was_space = true;
+            }
+            continue;
+        }
+
+        last_was_space = false;
+        out.push((b.to_ascii_lowercase()) as char);
     }
 
     if out.ends_with(' ') {

@@ -52,7 +52,45 @@ const ATTR_ESCAPE_TABLE: [bool; 256] = {
 /// ```
 #[inline]
 pub fn escape_text_into(out: &mut Vec<u8>, input: &[u8]) {
-    escape_into_with_table(out, input, &TEXT_ESCAPE_TABLE)
+    if input.is_empty() {
+        return;
+    }
+
+    let mut start = 0usize;
+    while let Some(rel) = first_text_escape(&input[start..]) {
+        let pos = start + rel;
+        if pos > start {
+            out.extend_from_slice(&input[start..pos]);
+        }
+        push_text_escape(out, input[pos]);
+        start = pos + 1;
+    }
+    if start < input.len() {
+        out.extend_from_slice(&input[start..]);
+    }
+}
+
+/// Escape HTML text content, checking for quotes as well (for attribute context).
+///
+/// This version handles all 5 escapable characters.
+#[inline]
+pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
+    if input.is_empty() {
+        return;
+    }
+
+    let mut start = 0usize;
+    while let Some(rel) = first_attr_escape(&input[start..]) {
+        let pos = start + rel;
+        if pos > start {
+            out.extend_from_slice(&input[start..pos]);
+        }
+        push_attr_escape(out, input[pos]);
+        start = pos + 1;
+    }
+    if start < input.len() {
+        out.extend_from_slice(&input[start..]);
+    }
 }
 
 /// Escape HTML attribute value into output buffer.
@@ -70,107 +108,6 @@ pub fn escape_text_into(out: &mut Vec<u8>, input: &[u8]) {
 #[inline]
 pub fn escape_attr_into(out: &mut Vec<u8>, input: &[u8]) {
     escape_full_into(out, input)
-}
-
-/// Internal escaping with a custom lookup table.
-#[inline]
-fn escape_into_with_table(out: &mut Vec<u8>, input: &[u8], escape_table: &[bool; 256]) {
-    if input.is_empty() {
-        return;
-    }
-
-    let mut pos = match first_text_escape(input) {
-        Some(p) => p,
-        None => {
-            out.extend_from_slice(input);
-            return;
-        }
-    };
-
-    if pos > 0 {
-        out.extend_from_slice(&input[..pos]);
-    }
-
-    while pos < input.len() {
-        // Scan for any escapable character using lookup table
-        let scan_start = pos;
-        while pos < input.len() && !escape_table[input[pos] as usize] {
-            pos += 1;
-        }
-
-        // Copy non-escaped portion
-        if pos > scan_start {
-            out.extend_from_slice(&input[scan_start..pos]);
-        }
-
-        // Handle escape if found
-        if pos < input.len() {
-            let escape_seq = match input[pos] {
-                b'<' => b"&lt;" as &[u8],
-                b'>' => b"&gt;",
-                b'&' => b"&amp;",
-                b'"' => b"&quot;",
-                b'\'' => b"&#39;",
-                _ => {
-                    // Shouldn't happen, but handle gracefully
-                    out.push(input[pos]);
-                    pos += 1;
-                    continue;
-                }
-            };
-            out.extend_from_slice(escape_seq);
-            pos += 1;
-        }
-    }
-}
-
-/// Escape HTML text content, checking for quotes as well (for attribute context).
-///
-/// This version handles all 5 escapable characters.
-#[inline]
-pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
-    if input.is_empty() {
-        return;
-    }
-
-    let mut pos = match first_attr_escape(input) {
-        Some(p) => p,
-        None => {
-            out.extend_from_slice(input);
-            return;
-        }
-    };
-
-    if pos > 0 {
-        out.extend_from_slice(&input[..pos]);
-    }
-
-    while pos < input.len() {
-        // Scan for any escapable character using lookup table
-        let scan_start = pos;
-        while pos < input.len() && !ATTR_ESCAPE_TABLE[input[pos] as usize] {
-            pos += 1;
-        }
-
-        // Copy non-escaped portion
-        if pos > scan_start {
-            out.extend_from_slice(&input[scan_start..pos]);
-        }
-
-        // Handle escape if found
-        if pos < input.len() {
-            let escape_seq = match input[pos] {
-                b'<' => b"&lt;" as &[u8],
-                b'>' => b"&gt;",
-                b'&' => b"&amp;",
-                b'"' => b"&quot;",
-                b'\'' => b"&#39;",
-                _ => unreachable!(),
-            };
-            out.extend_from_slice(escape_seq);
-            pos += 1;
-        }
-    }
 }
 
 /// Check if a byte slice needs any escaping for text content.
@@ -246,12 +183,40 @@ fn is_ascii_punctuation(b: u8) -> bool {
 /// This is used for link destinations in `[text](url)` syntax.
 #[inline]
 pub fn url_escape_link_destination(out: &mut Vec<u8>, input: &[u8]) {
+    if memchr(b'&', input).is_none() {
+        url_escape_link_destination_raw(out, input);
+        return;
+    }
+
     // First decode HTML entities
     let input_str = core::str::from_utf8(input).unwrap_or("");
     let decoded = html_escape::decode_html_entities(input_str);
     let decoded_bytes = decoded.as_bytes();
 
     url_escape_link_destination_raw(out, decoded_bytes);
+}
+
+#[inline]
+fn push_text_escape(out: &mut Vec<u8>, b: u8) {
+    match b {
+        b'<' => out.extend_from_slice(b"&lt;"),
+        b'>' => out.extend_from_slice(b"&gt;"),
+        b'&' => out.extend_from_slice(b"&amp;"),
+        b'"' => out.extend_from_slice(b"&quot;"),
+        _ => out.push(b),
+    }
+}
+
+#[inline]
+fn push_attr_escape(out: &mut Vec<u8>, b: u8) {
+    match b {
+        b'<' => out.extend_from_slice(b"&lt;"),
+        b'>' => out.extend_from_slice(b"&gt;"),
+        b'&' => out.extend_from_slice(b"&amp;"),
+        b'"' => out.extend_from_slice(b"&quot;"),
+        b'\'' => out.extend_from_slice(b"&#39;"),
+        _ => out.push(b),
+    }
 }
 
 /// Process a link URL without entity decoding (used after entities are already decoded).
