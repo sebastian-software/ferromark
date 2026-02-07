@@ -333,6 +333,24 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `link_refs_focus/ferromark/refs`: `2.2521 us`
     - `link_refs_focus/ferromark/refs_escaped`: `4.3945 us`
   - Decision: **discarded** (unstable and not reproducibly better).
+- Attempt V: delimiter-stack first-pass reference resolution in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` (resolve refs directly while sweeping closes left-to-right with an open-bracket stack, remove `contains_ref_link_candidate` from the hot path, and consume `[label]` suffix brackets in the same pass).
+  - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
+    - `commonmark50k/ferromark`: `146.48 us` (no significant regression).
+    - `complexity/ferromark/refs`: `2.1965 us` (improved vs immediate previous run baseline, significant).
+    - `complexity/ferromark/mixed`: `3.3067 us` (noise-threshold change).
+  - Focused run (`link_refs_focus`) result:
+    - `refs`: `2.1717 us` (improved),
+    - `refs_escaped`: `4.1468 us` (improved),
+    - `mixed`: `3.2534 us` (noise-threshold change).
+  - Cross-lib refs snapshot with this variant (`complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$`):
+    - `ferromark`: `2.1901 us`
+    - `pulldown-cmark`: `1.9175 us`
+    - Gap: `~14.22%` in favor of `pulldown-cmark` (worse than kept baseline `~11.94%`).
+  - A/B cross-check against kept baseline commit `a0e5a2a` in detached worktree (`/tmp/md-new-baseline-a0`) with identical bench parameters:
+    - Baseline `complexity/ferromark/refs`: `2.1649 us`
+    - Baseline `complexity/ferromark/mixed`: `3.2406 us`
+    - Variant remained slower on refs/mixed in this direct comparison despite passing tests.
+  - Decision: **discarded**.
 
 ### Current `refs` position vs other libraries (2026-02-07)
 
