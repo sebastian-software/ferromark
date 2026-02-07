@@ -165,7 +165,8 @@ impl InlineParser {
                 !self.autolinks.iter().any(|al| pos > al.start && pos < al.end)
                     && !pos_in_spans(pos, &self.html_spans)
             });
-        if has_brackets {
+        let has_inline_link_candidate = has_brackets && has_inline_link_opener(text);
+        if has_inline_link_candidate {
             resolve_links_into(
                 text,
                 &self.open_brackets,
@@ -753,6 +754,19 @@ fn has_inline_specials(input: &[u8]) -> bool {
             }
             _ => {}
         }
+    }
+    false
+}
+
+#[inline]
+fn has_inline_link_opener(input: &[u8]) -> bool {
+    let mut pos = 0usize;
+    while let Some(offset) = memchr(b']', &input[pos..]) {
+        let idx = pos + offset;
+        if idx + 1 < input.len() && input[idx + 1] == b'(' {
+            return true;
+        }
+        pos = idx + 1;
     }
     false
 }

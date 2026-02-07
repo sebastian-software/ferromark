@@ -267,18 +267,32 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `pulldown-cmark`: `1.8928 us`
     - Gap: `~18.89%` in favor of `pulldown-cmark` (worse than the kept baseline path).
   - Decision: **discarded** (failed refs objective and widened pulldown gap).
+- Attempt P: skip inline-link resolver pass when no immediate `](` candidate exists (new `has_inline_link_opener` guard in `/Users/sebastian/Workspace/md-new/src/inline/mod.rs`), so refs-heavy docs avoid unnecessary `resolve_links_into` bracket matching work.
+  - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
+    - `commonmark50k/ferromark`: `146.98 us` (no significant regression; within noise threshold).
+    - `complexity/ferromark/refs`: `2.1284 us` (`-4.37%` time, significant).
+    - `complexity/ferromark/mixed`: `3.2022 us` (no significant change).
+  - Focused run (`link_refs_focus`, `--sample-size 40 --measurement-time 2`) result:
+    - `refs`: `2.1660 us` (improved, significant),
+    - `refs_escaped`: `4.1565 us` (improved, significant),
+    - `mixed`: `3.2155 us` (no significant change).
+  - Cross-lib refs snapshot (`complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$`):
+    - `ferromark`: `2.1598 us`
+    - `pulldown-cmark`: `1.9294 us`
+    - Gap: `~11.94%` in favor of `pulldown-cmark` (improved vs prior `~15.29%` baseline snapshot).
+  - Decision: **kept**.
 
 ### Current `refs` position vs other libraries (2026-02-07)
 
 - Snapshot command: `cargo bench --bench comparison -- "complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$" --sample-size 40 --measurement-time 2`
 - Median times:
-  - `ferromark`: `2.2087 us`
-  - `md4c`: `2.4403 us`
-  - `pulldown-cmark`: `1.9158 us`
-  - `comrak`: `4.8307 us`
+  - `ferromark`: `2.1598 us`
+  - `md4c`: `2.4712 us`
+  - `pulldown-cmark`: `1.9294 us`
+  - `comrak`: `4.7482 us`
 - Interpretation:
   - ferromark is currently faster than `md4c` and much faster than `comrak` on `refs`.
-  - The remaining notable gap is vs `pulldown-cmark` (~`15.29%` faster on this run), so there is still meaningful headroom.
+  - The remaining notable gap is vs `pulldown-cmark` (~`11.94%` faster on this run), so there is still meaningful headroom.
 
 ### Cross-check against `pulldown-cmark` approach (2026-02-07)
 
