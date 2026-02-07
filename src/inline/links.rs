@@ -211,6 +211,7 @@ pub fn resolve_reference_links_into(
     }
 
     // Process open brackets from left to right
+    let mut nested_label_buf = String::new();
     for open_idx in 0..open_brackets.len() {
         if formed_opens[open_idx] {
             continue;
@@ -254,7 +255,15 @@ pub fn resolve_reference_links_into(
 
         // Links cannot contain links (but can contain images)
         if contains_link(&occupied, open_pos, close_pos)
-            || contains_ref_link_candidate(text, open_brackets, close_brackets, defs, open_pos, close_pos)
+            || contains_ref_link_candidate(
+                text,
+                open_brackets,
+                close_brackets,
+                defs,
+                open_pos,
+                close_pos,
+                &mut nested_label_buf,
+            )
         {
             continue;
         }
@@ -292,8 +301,9 @@ fn contains_ref_link_candidate(
     defs: &LinkRefStore,
     start: u32,
     end: u32,
+    label_buf: &mut String,
 ) -> bool {
-    let mut label_buf = String::new();
+    label_buf.clear();
     for &(open_pos, is_image) in open_brackets {
         if open_pos <= start || open_pos >= end || is_image {
             continue;
@@ -314,11 +324,11 @@ fn contains_ref_link_candidate(
             }
         }
 
-        normalize_label_into(label_bytes, &mut label_buf);
+        normalize_label_into(label_bytes, label_buf);
         if label_buf.is_empty() {
             continue;
         }
-        if defs.get_index(&label_buf).is_some() {
+        if defs.get_index(label_buf).is_some() {
             return true;
         }
     }
