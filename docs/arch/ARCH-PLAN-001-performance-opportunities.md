@@ -253,6 +253,20 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `pulldown-cmark`: `1.9158 us`
     - Remaining gap: `~15.29%` in favor of `pulldown-cmark` (improved vs prior ~`17.44%` snapshot).
   - Decision: **kept**.
+- Attempt O: stronger stack-/delimiter-based link-reference resolution in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` with parser-owned stack/scratch state in `/Users/sebastian/Workspace/md-new/src/inline/mod.rs` (closer to pulldown-cmark pass-1 shape, including outer-link disable during inner non-image ref-link formation).
+  - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
+    - `commonmark50k/ferromark`: `147.53 us` (`+2.06%` time, significant regression).
+    - `complexity/ferromark/refs`: `2.2363 us` (`+2.88%` time, significant regression).
+    - `complexity/ferromark/mixed`: `3.3090 us` (`+1.68%` time, significant regression).
+  - Focused run (`link_refs_focus`, `--sample-size 40 --measurement-time 2`) result:
+    - `refs`: `2.2425 us` (no significant change),
+    - `refs_escaped`: `4.1595 us` (no significant change),
+    - `mixed`: `3.2730 us` (no significant change).
+  - Cross-lib refs snapshot with this variant (`complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$`):
+    - `ferromark`: `2.2503 us`
+    - `pulldown-cmark`: `1.8928 us`
+    - Gap: `~18.89%` in favor of `pulldown-cmark` (worse than the kept baseline path).
+  - Decision: **discarded** (failed refs objective and widened pulldown gap).
 
 ### Current `refs` position vs other libraries (2026-02-07)
 
