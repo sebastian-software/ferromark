@@ -225,18 +225,69 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `complexity/ferromark/mixed`: `3.2322-3.2667 us` (within noise band across runs).
   - Focused bench (`link_refs_focus`) had mixed significance run-to-run, but absolute medians remained in the same or better range for `refs` and `mixed`, with no stable escaped-case regression on re-run.
   - Decision: **kept**.
+- Attempt M: structural refs pass (stack-based bracket pairing in `src/inline/links.rs`, centralized ref-label parse+normalize helper, contiguous no-copy fast-path + in-parser normalization in `src/block/parser.rs`).
+  - Main guardrail run (`--sample-size 40 --measurement-time 2`) after tuning:
+    - `commonmark50k/ferromark`: `147.31 us` (no significant change).
+    - `complexity/ferromark/refs`: `2.2701 us` (no significant change).
+    - `complexity/ferromark/mixed`: `3.2328 us` (improved, but classified as noise-threshold change in this run).
+  - Focused run (`link_refs_focus`) result:
+    - `refs`: `2.2514 us` (within noise threshold vs local baseline),
+    - `refs_escaped`: `4.2325 us` (no significant change),
+    - `mixed`: `3.2414 us` (improved, still within noise threshold classification).
+  - Cross-lib refs snapshot (`complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$`):
+    - `ferromark`: `2.2508 us`
+    - `pulldown-cmark`: `1.8894 us`
+    - Remaining gap: `~19.13%` in favor of `pulldown-cmark` (worse than earlier ~`17.44%` snapshot).
+  - Decision: **discarded** (did not close the pulldown gap and failed the primary refs objective despite acceptable guardrails).
+- Attempt N: streaming-oriented block refdef extraction in `/Users/sebastian/Workspace/md-new/src/block/parser.rs` (contiguous no-copy paragraph fast path + reused label scratch buffer; fallback to existing joined-buffer path when lines are not contiguous in source).
+  - Main guardrail run (`--sample-size 80 --measurement-time 4`) result:
+    - `commonmark50k/ferromark`: `146.69 us` (improved, significant).
+    - `complexity/ferromark/refs`: `2.1786 us` (improved direction; within configured noise-threshold classification).
+    - `complexity/ferromark/mixed`: `3.2650 us` (no significant change).
+  - Focused run (`link_refs_focus`, `--sample-size 40 --measurement-time 2`) result:
+    - `refs`: `2.2271 us` (improved direction),
+    - `refs_escaped`: `4.2221 us` (no significant change),
+    - `mixed`: `3.3678 us` (run was noisy; guardrail set remains neutral on `mixed`).
+  - Cross-lib refs snapshot (`complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$`):
+    - `ferromark`: `2.2087 us`
+    - `pulldown-cmark`: `1.9158 us`
+    - Remaining gap: `~15.29%` in favor of `pulldown-cmark` (improved vs prior ~`17.44%` snapshot).
+  - Decision: **kept**.
 
-### Current `refs` position vs other libraries (2026-02-06)
+### Current `refs` position vs other libraries (2026-02-07)
 
 - Snapshot command: `cargo bench --bench comparison -- "complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$" --sample-size 40 --measurement-time 2`
 - Median times:
-  - `ferromark`: `2.2625 us`
-  - `md4c`: `2.4834 us`
-  - `pulldown-cmark`: `1.9385 us`
-  - `comrak`: `4.8137 us`
+  - `ferromark`: `2.2087 us`
+  - `md4c`: `2.4403 us`
+  - `pulldown-cmark`: `1.9158 us`
+  - `comrak`: `4.8307 us`
 - Interpretation:
   - ferromark is currently faster than `md4c` and much faster than `comrak` on `refs`.
-  - The remaining notable gap is vs `pulldown-cmark` (~`15-18%` faster depending on run), so there is still meaningful headroom.
+  - The remaining notable gap is vs `pulldown-cmark` (~`15.29%` faster on this run), so there is still meaningful headroom.
+
+### Cross-check against `pulldown-cmark` approach (2026-02-07)
+
+- Profile artifacts used:
+  - ferromark refs Time Profiler: `/Users/sebastian/Workspace/md-new/target/profiles/refs-next-gap.trace` + `/Users/sebastian/Workspace/md-new/target/profiles/refs-next-gap.xml`
+  - pulldown refs Time Profiler (release-debug): `/Users/sebastian/Workspace/md-new/target/profiles/pulldown-refs-release-debug.trace` + `/Users/sebastian/Workspace/md-new/target/profiles/pulldown-refs-release-debug.xml`
+- Observed ferromark leaf hotspots in refs-focused trace (weighted sample counts):
+  - `parse_link_ref_def`: `226`
+  - `find_matching_close`: `103`
+  - `contains_ref_link_candidate`: `33`
+  - `normalize_label_into`: `34`
+  - `extract_link_ref_defs` (+ iterator fold around it): `38` + `36`
+- Observed pulldown refs hotspots (same extraction method):
+  - `linklabel::scan_link_label_rest`: `327`
+  - `Parser::handle_inline_pass1`: `230`
+  - `FirstPass::scan_refdef`: `196`
+  - `FirstPass::parse_refdef_total`: `56`
+- Structural differences that still likely explain most of the remaining gap:
+  - pulldown drives reference matching through a link stack in `handle_inline_pass1`, while ferromark still pays extra nested scans in `find_matching_close` / `contains_ref_link_candidate`.
+  - pulldown centralizes label scanning/normalization in `scan_link_label_rest`; ferromark still normalizes the same conceptual labels in multiple places (`parse_link_ref_def`, inline ref scan, nested candidate checks).
+  - pulldown first-pass refdef handling avoids some of the repeated paragraph-slice recomputation patterns still present in ferromark extraction flow.
+- Decision:
+  - We are **not** at the end; there is still a material refs opportunity, but the next gain is more likely from a targeted structural pass than from additional micro-tuning.
 
 ### P1 and P2 progress
 

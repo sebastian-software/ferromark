@@ -105,6 +105,8 @@ pub struct BlockParser<'a> {
     link_refs: LinkRefStore,
     /// Reused scratch buffer for paragraph-backed link reference parsing.
     link_ref_parse_buf: Vec<u8>,
+    /// Reused normalized-label buffer for paragraph-backed link reference parsing.
+    link_ref_label_buf: String,
     /// Parser options.
     options: Options,
     /// Stack of open containers (blockquotes, list items).
@@ -144,6 +146,7 @@ impl<'a> BlockParser<'a> {
             pending_html_indent_start: None,
             link_refs: LinkRefStore::new(),
             link_ref_parse_buf: Vec::new(),
+            link_ref_label_buf: String::with_capacity(64),
             options,
             container_stack: SmallVec::new(),
             tight_list: false,
@@ -2434,6 +2437,11 @@ impl<'a> BlockParser<'a> {
             return 0;
         }
 
+        let input = self.input;
+        if let Some((start, end)) = self.try_contiguous_paragraph_ref_span() {
+            return self.extract_link_ref_defs_from_bytes(&input[start..end]);
+        }
+
         let mut total_len = self.paragraph_lines.len().saturating_sub(1); // newlines
         for range in &self.paragraph_lines {
             total_len += range.len() as usize;
@@ -2446,11 +2454,16 @@ impl<'a> BlockParser<'a> {
             }
             self.link_ref_parse_buf.extend_from_slice(range.slice(self.input));
         }
-        let para = self.link_ref_parse_buf.as_slice();
+        let para_buf = std::mem::take(&mut self.link_ref_parse_buf);
+        let consumed_lines = self.extract_link_ref_defs_from_bytes(para_buf.as_slice());
+        self.link_ref_parse_buf = para_buf;
+        consumed_lines
+    }
 
+    fn extract_link_ref_defs_from_bytes(&mut self, para: &[u8]) -> usize {
         let mut pos = 0usize;
         let mut consumed_lines = 0usize;
-        let mut label_buf = String::new();
+        self.link_ref_label_buf.clear();
 
         loop {
             // Only parse at start of a line
@@ -2461,16 +2474,19 @@ impl<'a> BlockParser<'a> {
                 break;
             };
 
-            normalize_label_into(def.label.slice(para), &mut label_buf);
-            if label_buf.is_empty() {
+            normalize_label_into(def.label.slice(para), &mut self.link_ref_label_buf);
+            if self.link_ref_label_buf.is_empty() {
                 break;
             }
-            if self.link_refs.get_index(&label_buf).is_none() {
+            if self.link_refs.get_index(&self.link_ref_label_buf).is_none() {
                 let link_def = LinkRefDef {
                     url: def.url.slice(para).to_vec(),
                     title: def.title.map(|r| r.slice(para).to_vec()),
                 };
-                self.link_refs.insert(std::mem::take(&mut label_buf), link_def);
+                self.link_refs
+                    .insert(std::mem::take(&mut self.link_ref_label_buf), link_def);
+            } else {
+                self.link_ref_label_buf.clear();
             }
 
             let newline_count = para[pos..end_pos].iter().filter(|&&b| b == b'\n').count();
@@ -2488,6 +2504,28 @@ impl<'a> BlockParser<'a> {
         }
 
         consumed_lines
+    }
+
+    /// Returns a contiguous paragraph byte span if lines are directly adjacent in input
+    /// with plain `\n` separators and no stripped container prefix.
+    fn try_contiguous_paragraph_ref_span(&self) -> Option<(usize, usize)> {
+        let first = self.paragraph_lines.first()?;
+        let last = self.paragraph_lines.last()?;
+        let mut prev_end = first.end_usize();
+
+        for range in self.paragraph_lines.iter().skip(1) {
+            let start = range.start_usize();
+            if start <= prev_end || start > self.input.len() {
+                return None;
+            }
+            let gap = &self.input[prev_end..start];
+            if gap != b"\n" {
+                return None;
+            }
+            prev_end = range.end_usize();
+        }
+
+        Some((first.start_usize(), last.end_usize()))
     }
 
     /// Mark the innermost container as having content.
