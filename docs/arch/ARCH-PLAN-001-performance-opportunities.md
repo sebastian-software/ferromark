@@ -281,6 +281,58 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `pulldown-cmark`: `1.9294 us`
     - Gap: `~11.94%` in favor of `pulldown-cmark` (improved vs prior `~15.29%` baseline snapshot).
   - Decision: **kept**.
+- Attempt Q: precompute valid nested ref-link candidates once per parse in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` (candidate open/close vectors + precomputed candidate check replacing repeated ad-hoc scan in `contains_ref_link_candidate`).
+  - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
+    - `commonmark50k/ferromark`: `153.09 us` (regression).
+    - `complexity/ferromark/refs`: `2.4072 us` (regression).
+    - `complexity/ferromark/mixed`: `3.3743 us` (regression).
+  - Focused run (`link_refs_focus`) result:
+    - `refs`: `2.4225 us` (regression),
+    - `refs_escaped`: `5.0374 us` (regression),
+    - `mixed`: `3.3645 us` (regression).
+  - Decision: **discarded**.
+- Attempt R: lazy-cached nested-candidate evaluation in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` (cache first close per open + cache whether open can normalize to known ref label; cache initialized only if nested-candidate check is reached).
+  - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
+    - `commonmark50k/ferromark`: `147.12 us` (noise-level change).
+    - `complexity/ferromark/refs`: `2.2307 us`.
+    - `complexity/ferromark/mixed`: `3.2902 us`.
+  - Baseline cross-check run on detached worktree at `a0e5a2a` (same command parameters) produced:
+    - `commonmark50k/ferromark`: `149.17 us`
+    - `complexity/ferromark/refs`: `2.1325 us`
+    - `complexity/ferromark/mixed`: `3.2122 us`
+  - Interpretation: refs/mixed worse than current kept baseline despite no correctness failures.
+  - Decision: **discarded**.
+- Attempt S: remove per-call binary-search setup in `find_matching_close` by precomputing first close index per open and passing open index directly (changes in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` and `/Users/sebastian/Workspace/md-new/src/inline/mod.rs`).
+  - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
+    - `commonmark50k/ferromark`: `149.11 us` (noise-level change/regression direction).
+    - `complexity/ferromark/refs`: `2.2303 us` (no meaningful win vs baseline).
+    - `complexity/ferromark/mixed`: `3.2617 us` (no meaningful win).
+  - Focused run (`link_refs_focus`) result:
+    - `refs`: `2.2414 us` (regression direction),
+    - `refs_escaped`: `4.2280 us` (neutral),
+    - `mixed`: `3.2938 us` (neutral/regression direction).
+  - Decision: **discarded**.
+- Attempt T: parser-owned nested-label scratch reuse for `contains_ref_link_candidate` (add reusable `ref_nested_label_buf` in `/Users/sebastian/Workspace/md-new/src/inline/mod.rs`; remove per-call `String::new()` in `/Users/sebastian/Workspace/md-new/src/inline/links.rs`).
+  - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
+    - `commonmark50k/ferromark`: `145.99 us` (noise-level change).
+    - `complexity/ferromark/refs`: `2.2172 us` (regression direction vs kept baseline).
+    - `complexity/ferromark/mixed`: `3.1839 us` (no clear guardrail issue).
+  - Focused run (`link_refs_focus`) result:
+    - `refs`: `2.1616 us`,
+    - `refs_escaped`: `4.1651 us`,
+    - `mixed`: `3.2142 us`.
+  - Interpretation: local improvements were not robust enough versus current kept baseline and did not clearly close the refs gap in repeat checks.
+  - Decision: **discarded**.
+- Attempt U: reduce nested-candidate scan range in `contains_ref_link_candidate` via `partition_point` (scan only opens inside `(start, end)` rather than full open list each call).
+  - Run 1 (`--sample-size 40 --measurement-time 2`) looked positive:
+    - `commonmark50k/ferromark`: `146.44 us`
+    - `complexity/ferromark/refs`: `2.1559 us`
+    - `link_refs_focus/ferromark/refs`: `2.1370 us`
+  - Immediate rerun on unchanged code regressed:
+    - `complexity/ferromark/refs`: `2.2587 us`
+    - `link_refs_focus/ferromark/refs`: `2.2521 us`
+    - `link_refs_focus/ferromark/refs_escaped`: `4.3945 us`
+  - Decision: **discarded** (unstable and not reproducibly better).
 
 ### Current `refs` position vs other libraries (2026-02-07)
 
