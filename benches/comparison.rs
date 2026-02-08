@@ -208,25 +208,37 @@ fn parse_ferromark_into(input: &str, out: &mut Vec<u8>) {
     ferromark::to_html_into(input, out);
 }
 
-/// Parse with pulldown-cmark
+/// Parse with pulldown-cmark (tables enabled)
 fn parse_pulldown_cmark(input: &str) -> String {
-    use pulldown_cmark::{html, Parser};
-    let parser = Parser::new(input);
+    use pulldown_cmark::{html, Options as PdOptions, Parser};
+    let mut opts = PdOptions::empty();
+    opts.insert(PdOptions::ENABLE_TABLES);
+    opts.insert(PdOptions::ENABLE_STRIKETHROUGH);
+    opts.insert(PdOptions::ENABLE_TASKLISTS);
+    let parser = Parser::new_ext(input, opts);
     let mut output = String::new();
     html::push_html(&mut output, parser);
     output
 }
 
-/// Parse with pulldown-cmark into a reusable buffer
+/// Parse with pulldown-cmark into a reusable buffer (tables enabled)
 fn parse_pulldown_cmark_into(input: &str, out: &mut String) {
-    use pulldown_cmark::{html, Parser};
+    use pulldown_cmark::{html, Options as PdOptions, Parser};
+    let mut opts = PdOptions::empty();
+    opts.insert(PdOptions::ENABLE_TABLES);
+    opts.insert(PdOptions::ENABLE_STRIKETHROUGH);
+    opts.insert(PdOptions::ENABLE_TASKLISTS);
     out.clear();
-    html::push_html(out, Parser::new(input));
+    html::push_html(out, Parser::new_ext(input, opts));
 }
 
-/// Parse with comrak
+/// Parse with comrak (GFM extensions enabled)
 fn parse_comrak(input: &str) -> String {
-    comrak::markdown_to_html(input, &comrak::Options::default())
+    let mut opts = comrak::Options::default();
+    opts.extension.table = true;
+    opts.extension.strikethrough = true;
+    opts.extension.tasklist = true;
+    comrak::markdown_to_html(input, &opts)
 }
 
 
@@ -250,7 +262,12 @@ extern "C" fn md4c_output(data: *const c_char, size: c_uint, userdata: *mut c_vo
     buf.extend_from_slice(bytes);
 }
 
-/// Parse with md4c (C) via md_html.
+// md4c parser flags for GFM extensions
+const MD4C_GFM_FLAGS: c_uint = 0x0100  // MD_FLAG_TABLES
+                              | 0x0200  // MD_FLAG_STRIKETHROUGH
+                              | 0x2000; // MD_FLAG_TASKLISTS
+
+/// Parse with md4c (C) via md_html (GFM extensions enabled).
 fn parse_md4c(input: &str) -> String {
     let mut out: Vec<u8> = Vec::with_capacity(input.len() + input.len() / 4);
     let rc = unsafe {
@@ -259,7 +276,7 @@ fn parse_md4c(input: &str) -> String {
             input.len() as c_uint,
             md4c_output,
             &mut out as *mut Vec<u8> as *mut c_void,
-            0,
+            MD4C_GFM_FLAGS,
             0,
         )
     };
@@ -267,7 +284,7 @@ fn parse_md4c(input: &str) -> String {
     unsafe { String::from_utf8_unchecked(out) }
 }
 
-/// Parse with md4c into a reusable buffer
+/// Parse with md4c into a reusable buffer (GFM extensions enabled)
 fn parse_md4c_into(input: &str, out: &mut Vec<u8>) {
     out.clear();
     let rc = unsafe {
@@ -276,7 +293,7 @@ fn parse_md4c_into(input: &str, out: &mut Vec<u8>) {
             input.len() as c_uint,
             md4c_output,
             out as *mut Vec<u8> as *mut c_void,
-            0,
+            MD4C_GFM_FLAGS,
             0,
         )
     };
@@ -435,7 +452,7 @@ fn bench_commonmark50k(c: &mut Criterion) {
     bench_commonmark_group(c, "commonmark50k", samples::COMMONMARK_50K);
 }
 
-/// Table-heavy document comparison (all parsers with tables enabled)
+/// Table-heavy document comparison (all parsers with GFM extensions)
 fn bench_tables(c: &mut Criterion) {
     let mut group = c.benchmark_group("tables");
     let input = samples::TABLES_5K;
@@ -444,43 +461,14 @@ fn bench_tables(c: &mut Criterion) {
     group.bench_function("ferromark", |b| {
         b.iter(|| parse_ferromark(black_box(input)))
     });
-
-    // md4c with MD_FLAG_TABLES (0x0100)
     group.bench_function("md4c", |b| {
-        b.iter(|| {
-            let mut out: Vec<u8> = Vec::with_capacity(input.len() + input.len() / 4);
-            unsafe {
-                md_html(
-                    input.as_ptr() as *const c_char,
-                    input.len() as c_uint,
-                    md4c_output,
-                    &mut out as *mut Vec<u8> as *mut c_void,
-                    0x0100, // MD_FLAG_TABLES
-                    0,
-                );
-            }
-            black_box(out);
-        })
+        b.iter(|| parse_md4c(black_box(input)))
     });
-
-    // pulldown-cmark with tables enabled
     group.bench_function("pulldown-cmark", |b| {
-        b.iter(|| {
-            use pulldown_cmark::{html, Options as PdOptions, Parser};
-            let mut opts = PdOptions::empty();
-            opts.insert(PdOptions::ENABLE_TABLES);
-            let parser = Parser::new_ext(black_box(input), opts);
-            let mut output = String::new();
-            html::push_html(&mut output, parser);
-            output
-        })
+        b.iter(|| parse_pulldown_cmark(black_box(input)))
     });
-
-    // comrak with tables enabled (default in comrak)
     group.bench_function("comrak", |b| {
-        let mut opts = comrak::Options::default();
-        opts.extension.table = true;
-        b.iter(|| comrak::markdown_to_html(black_box(input), &opts))
+        b.iter(|| parse_comrak(black_box(input)))
     });
 
     group.finish();
