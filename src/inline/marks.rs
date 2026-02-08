@@ -4,7 +4,7 @@
 //! collected in a single pass before resolution.
 
 use crate::limits;
-use memchr::{memchr2, memchr3};
+use memchr::memchr3;
 use super::simd;
 
 /// Flags for mark state.
@@ -142,11 +142,12 @@ pub static SPECIAL_CHARS: [bool; 256] = {
     table[b'`' as usize] = true;  // Code span
     table[b'*' as usize] = true;  // Emphasis
     table[b'_' as usize] = true;  // Emphasis
+    table[b'~' as usize] = true;  // Strikethrough
     table[b'\\' as usize] = true; // Escape
     table[b'\n' as usize] = true; // Line break
-    table[b'[' as usize] = true;  // Link (future)
-    table[b']' as usize] = true;  // Link (future)
-    table[b'<' as usize] = true;  // Autolink/HTML (future)
+    table[b'[' as usize] = true;  // Link
+    table[b']' as usize] = true;  // Link
+    table[b'<' as usize] = true;  // Autolink/HTML
     table
 };
 
@@ -185,8 +186,8 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                 }
             }
 
-            b'*' | b'_' => {
-                // Count consecutive asterisks/underscores
+            b'*' | b'_' | b'~' => {
+                // Count consecutive asterisks/underscores/tildes
                 let start = pos;
                 let ch = b;
                 while pos < len && text[pos] == ch {
@@ -194,7 +195,13 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                 }
 
                 // Determine opener/closer status based on surrounding Unicode chars
-                let flags = compute_emphasis_flags_with_context(ch, text, start, pos);
+                // Tildes use *-style rules (not underscore-style)
+                let flags = compute_emphasis_flags_with_context(
+                    if ch == b'~' { b'*' } else { ch },
+                    text,
+                    start,
+                    pos,
+                );
 
                 if flags != 0 {
                     buffer.push(Mark::new(start as u32, pos as u32, ch, flags));
@@ -334,7 +341,7 @@ fn next_special(text: &[u8], start: usize) -> Option<usize> {
     if let Some(i) = memchr3(b'\\', b'\n', b'[', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
-    if let Some(i) = memchr2(b']', b'<', slice) {
+    if let Some(i) = memchr3(b']', b'<', b'~', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
 

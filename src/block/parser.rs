@@ -5,7 +5,7 @@ use crate::limits;
 use crate::Range;
 use smallvec::SmallVec;
 
-use super::event::{BlockEvent, ListKind, TaskState};
+use super::event::{Alignment, BlockEvent, ListKind, TaskState};
 use crate::link_ref::{LinkRefStore, normalize_label_into, LinkRefDef};
 use crate::Options;
 
@@ -122,6 +122,12 @@ pub struct BlockParser<'a> {
     partial_tab_cols: usize,
     /// Current absolute column position within the line (for tab expansion).
     current_col: usize,
+    /// Whether we're currently inside a table.
+    in_table: bool,
+    /// Column alignments for the current table.
+    table_alignments: SmallVec<[Alignment; 8]>,
+    /// Whether the current table has a body (at least one data row).
+    table_has_body: bool,
 }
 
 impl<'a> BlockParser<'a> {
@@ -153,6 +159,9 @@ impl<'a> BlockParser<'a> {
             open_lists: SmallVec::new(),
             partial_tab_cols: 0,
             current_col: 0,
+            in_table: false,
+            table_alignments: SmallVec::new(),
+            table_has_body: false,
         }
     }
 
@@ -161,6 +170,9 @@ impl<'a> BlockParser<'a> {
         while !self.cursor.is_eof() {
             self.parse_line(events);
         }
+
+        // Close any open table at end of input
+        self.close_table(events);
 
         // Close any open paragraph at end of input
         self.close_paragraph(events);
@@ -260,6 +272,7 @@ impl<'a> BlockParser<'a> {
                 // Fall through to close blockquotes (which will close the code block too)
             }
 
+            self.close_table(events);
             self.close_paragraph(events);
             // This is a truly blank line (no container markers) - close blockquotes
             self.handle_blank_line_containers(events, true);
@@ -315,6 +328,7 @@ impl<'a> BlockParser<'a> {
             if !self.cursor.is_eof() {
                 self.cursor.bump();
             }
+            self.close_table(events);
             self.close_paragraph(events);
             // Container markers were present, so don't close blockquotes
             self.handle_blank_line_containers(events, false);
@@ -390,6 +404,28 @@ impl<'a> BlockParser<'a> {
             }
         }
 
+        // If we're in a table, check for continuation or termination
+        if self.in_table {
+            let first = self.cursor.peek_or_zero();
+            if first == 0 || first == b'\n' {
+                if first == b'\n' {
+                    self.cursor.bump();
+                }
+                self.close_table(events);
+                self.close_paragraph(events);
+                self.handle_blank_line_containers(events, false);
+                return;
+            }
+            if indent < 4 && self.would_start_block_for_table(first, indent) {
+                self.close_table(events);
+                // Fall through to normal block parsing
+            } else {
+                self.mark_container_has_content();
+                self.emit_table_row(events);
+                return;
+            }
+        }
+
         // Check for setext heading underline (when in a paragraph)
         // Must check BEFORE thematic break since `---` can be either
         // Note: indent must be < 4 for a valid setext underline
@@ -420,6 +456,43 @@ impl<'a> BlockParser<'a> {
                     return;
                 }
             }
+        }
+
+        // Check for GFM table delimiter row at top level (when in a paragraph)
+        if self.options.tables && indent < 4 && self.in_paragraph {
+            let save_pos = self.cursor.offset();
+            let save_partial = self.partial_tab_cols;
+            let save_col = self.current_col;
+
+            let line_end = {
+                let mut p = save_pos;
+                while p < self.input.len() && self.input[p] != b'\n' {
+                    p += 1;
+                }
+                p
+            };
+            let line = &self.input[save_pos..line_end];
+
+            if let Some(alignments) = Self::is_delimiter_row(line) {
+                if !self.paragraph_lines.is_empty() {
+                    let last_para_line = self.paragraph_lines.last().unwrap();
+                    let header_line = last_para_line.slice(self.input);
+                    let header_cells = Self::split_table_cells(header_line);
+
+                    if header_cells.len() == alignments.len() {
+                        self.cursor = Cursor::new_at(self.input, line_end);
+                        if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+                            self.cursor.bump();
+                        }
+                        self.start_table(header_cells, alignments, events);
+                        return;
+                    }
+                }
+            }
+
+            self.cursor = Cursor::new_at(self.input, save_pos);
+            self.partial_tab_cols = save_partial;
+            self.current_col = save_col;
         }
 
         // Check for thematic break (also when all containers matched, e.g. inside blockquote)
@@ -462,6 +535,7 @@ impl<'a> BlockParser<'a> {
         if self.html_block.is_some()
             || self.fence_state.is_some()
             || self.in_indented_code
+            || self.in_table
             || !self.container_stack.is_empty()
         {
             return false;
@@ -488,6 +562,14 @@ impl<'a> BlockParser<'a> {
             }
 
             if indent >= 4 || !is_simple_line_start(first) {
+                self.cursor = Cursor::new_at(self.input, line_start);
+                return consumed_any;
+            }
+
+            // When tables are enabled and we're in a paragraph, bail on lines
+            // that could be delimiter rows (starting with ':' or '-')
+            // '-' is already caught by is_simple_line_start above.
+            if self.options.tables && self.in_paragraph && first == b':' {
                 self.cursor = Cursor::new_at(self.input, line_start);
                 return consumed_any;
             }
@@ -659,13 +741,28 @@ impl<'a> BlockParser<'a> {
             if first == b'\n' {
                 self.cursor.bump();
             }
+            self.close_table(events);
             self.close_paragraph(events);
             return;
         }
 
+        // If we're in a table, check for continuation or termination
+        if self.in_table {
+            // Check if the line starts a block construct that would terminate the table
+            if indent < 4 && self.would_start_block_for_table(first, indent) {
+                self.close_table(events);
+                // Fall through to normal block parsing
+            } else {
+                // Parse as table data row
+                self.mark_container_has_content();
+                self.emit_table_row(events);
+                return;
+            }
+        }
+
         // Try to parse block-level constructs (only if indent < 4)
         if indent < 4 {
-            if is_simple_line_start(first) {
+            if is_simple_line_start(first) && !(self.options.tables && (first == b'|' || (first == b':' && self.in_paragraph))) {
                 let line_start = self.cursor.offset();
                 self.parse_paragraph_line(line_start, events);
                 return;
@@ -686,6 +783,50 @@ impl<'a> BlockParser<'a> {
                     self.close_paragraph_as_setext_heading(level, events);
                     return;
                 }
+            }
+
+            // Check for GFM table delimiter row (when in a paragraph)
+            // Must check BEFORE thematic break since `---` lines can be delimiter rows
+            if self.options.tables && self.in_paragraph {
+                let save_pos = self.cursor.offset();
+                let save_partial = self.partial_tab_cols;
+                let save_col = self.current_col;
+
+                // Read the current line to check if it's a delimiter row
+                let line_end = {
+                    let mut p = save_pos;
+                    while p < self.input.len() && self.input[p] != b'\n' {
+                        p += 1;
+                    }
+                    p
+                };
+                let line = &self.input[save_pos..line_end];
+
+                if let Some(alignments) = Self::is_delimiter_row(line) {
+                    // Check cell count of the last paragraph line matches
+                    if !self.paragraph_lines.is_empty() {
+                        let last_para_line = self.paragraph_lines.last().unwrap();
+                        let header_line = last_para_line.slice(self.input);
+                        let header_cells = Self::split_table_cells(header_line);
+
+                        if header_cells.len() == alignments.len() {
+                            // We have a table! Convert the paragraph.
+                            // Skip the delimiter row
+                            self.cursor = Cursor::new_at(self.input, line_end);
+                            if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+                                self.cursor.bump();
+                            }
+
+                            self.start_table(header_cells, alignments, events);
+                            return;
+                        }
+                    }
+                }
+
+                // Not a delimiter row, restore cursor
+                self.cursor = Cursor::new_at(self.input, save_pos);
+                self.partial_tab_cols = save_partial;
+                self.current_col = save_col;
             }
 
             // Check for thematic break FIRST - `* * *` is a thematic break, not a list
@@ -982,6 +1123,8 @@ impl<'a> BlockParser<'a> {
     /// Close containers starting from index, being smart about lists.
     /// `indent` is the current line's indent - used to determine if a new list item is possible.
     fn close_containers_from(&mut self, from: usize, indent: usize, events: &mut Vec<BlockEvent>) {
+        self.close_table(events);
+
         // Check if we're about to close a list item but might start a new one
         while self.container_stack.len() > from {
             let top = self.container_stack.last().unwrap();
@@ -1384,8 +1527,12 @@ impl<'a> BlockParser<'a> {
             open_list.blank_in_item = false;
         }
 
-        // Check for task list checkbox
-        let task = self.try_task_checkbox();
+        // Check for task list checkbox (only if enabled)
+        let task = if self.options.task_lists {
+            self.try_task_checkbox()
+        } else {
+            TaskState::None
+        };
 
         events.push(BlockEvent::ListItemStart { task });
     }
@@ -1435,6 +1582,9 @@ impl<'a> BlockParser<'a> {
     /// Close the topmost container.
     fn close_top_container(&mut self, events: &mut Vec<BlockEvent>) {
         if let Some(container) = self.container_stack.pop() {
+            // Close table first
+            self.close_table(events);
+
             // Close paragraph first
             self.close_paragraph(events);
 
@@ -2357,6 +2507,314 @@ impl<'a> BlockParser<'a> {
         }
     }
 
+    // --- Table parsing ---
+
+    /// Split a table line by unescaped `|` outside backtick code spans.
+    /// Returns byte offset pairs (start, end) for each cell, trimmed of whitespace.
+    /// Leading and trailing pipe are stripped.
+    fn split_table_cells(line: &[u8]) -> SmallVec<[(usize, usize); 8]> {
+        let mut cells = SmallVec::new();
+        let len = line.len();
+        if len == 0 {
+            return cells;
+        }
+
+        // Strip trailing whitespace from the line
+        let mut line_end = len;
+        while line_end > 0 && matches!(line[line_end - 1], b' ' | b'\t') {
+            line_end -= 1;
+        }
+
+        // Determine start/end after stripping leading/trailing pipes
+        let mut pos = 0;
+        // Skip leading whitespace before leading pipe
+        while pos < line_end && matches!(line[pos], b' ' | b'\t') {
+            pos += 1;
+        }
+        let has_leading_pipe = pos < line_end && line[pos] == b'|';
+        if has_leading_pipe {
+            pos += 1;
+        }
+        let has_trailing_pipe = line_end > pos && line[line_end - 1] == b'|'
+            && !(line_end >= 2 && line[line_end - 2] == b'\\');
+        let scan_end = if has_trailing_pipe { line_end - 1 } else { line_end };
+
+        // A line that is just a bare pipe (e.g., "|") has no content between leading/trailing
+        // pipes and should not produce any cells.
+        if pos >= scan_end {
+            return cells;
+        }
+
+        let mut cell_start = pos;
+        while pos <= scan_end {
+            if pos == scan_end {
+                // End of line - emit last cell
+                let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
+                cells.push((s, e));
+                break;
+            }
+
+            let b = line[pos];
+            if b == b'\\' && pos + 1 < scan_end {
+                // Escaped character - skip next
+                pos += 2;
+            } else if b == b'`' {
+                // Code span - skip until matching backticks
+                let bt_len = {
+                    let mut n = 0;
+                    while pos + n < scan_end && line[pos + n] == b'`' {
+                        n += 1;
+                    }
+                    n
+                };
+                pos += bt_len;
+                // Find closing backtick sequence of same length
+                let mut found = false;
+                while pos < scan_end {
+                    if line[pos] == b'`' {
+                        let close_len = {
+                            let mut n = 0;
+                            while pos + n < scan_end && line[pos + n] == b'`' {
+                                n += 1;
+                            }
+                            n
+                        };
+                        pos += close_len;
+                        if close_len == bt_len {
+                            found = true;
+                            break;
+                        }
+                    } else {
+                        pos += 1;
+                    }
+                }
+                if !found {
+                    // Unclosed code span - just continue
+                }
+            } else if b == b'|' {
+                // Cell boundary
+                let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
+                cells.push((s, e));
+                pos += 1;
+                cell_start = pos;
+                if cells.len() >= limits::MAX_TABLE_COLUMNS {
+                    break;
+                }
+            } else {
+                pos += 1;
+            }
+        }
+
+        cells
+    }
+
+    /// Trim whitespace from a cell slice, returning absolute byte offsets.
+    #[inline]
+    fn trim_cell(cell: &[u8], base: usize) -> (usize, usize) {
+        let mut s = 0;
+        while s < cell.len() && matches!(cell[s], b' ' | b'\t') {
+            s += 1;
+        }
+        let mut e = cell.len();
+        while e > s && matches!(cell[e - 1], b' ' | b'\t') {
+            e -= 1;
+        }
+        (base + s, base + e)
+    }
+
+    /// Check if a line is a valid GFM table delimiter row.
+    /// Returns column alignments if valid.
+    fn is_delimiter_row(line: &[u8]) -> Option<SmallVec<[Alignment; 8]>> {
+        let cells = Self::split_table_cells(line);
+        if cells.is_empty() {
+            return None;
+        }
+
+        let mut alignments = SmallVec::new();
+        for &(start, end) in &cells {
+            let cell = &line[start..end];
+            if cell.is_empty() {
+                return None;
+            }
+
+            let mut i = 0;
+            let left_colon = cell[i] == b':';
+            if left_colon {
+                i += 1;
+            }
+
+            // Must have at least one dash
+            let dash_start = i;
+            while i < cell.len() && cell[i] == b'-' {
+                i += 1;
+            }
+            if i == dash_start {
+                return None; // No dashes
+            }
+
+            let right_colon = i < cell.len() && cell[i] == b':';
+            if right_colon {
+                i += 1;
+            }
+
+            // Must consume entire cell (after trimming)
+            if i != cell.len() {
+                return None;
+            }
+
+            let alignment = match (left_colon, right_colon) {
+                (true, true) => Alignment::Center,
+                (true, false) => Alignment::Left,
+                (false, true) => Alignment::Right,
+                (false, false) => Alignment::None,
+            };
+            alignments.push(alignment);
+
+            if alignments.len() >= limits::MAX_TABLE_COLUMNS {
+                break;
+            }
+        }
+
+        Some(alignments)
+    }
+
+    /// Check if the current line would start a block construct that terminates a table.
+    fn would_start_block_for_table(&self, first: u8, indent: usize) -> bool {
+        if indent >= 4 {
+            return false;
+        }
+        match first {
+            b'#' => true, // ATX heading
+            b'>' => true, // Blockquote
+            b'`' | b'~' => {
+                // Fenced code block (need at least 3)
+                self.cursor.remaining_slice().iter().take_while(|&&c| c == first).count() >= 3
+            }
+            b'-' | b'*' | b'_' => {
+                // Thematic break check
+                self.peek_thematic_break()
+            }
+            b'<' => {
+                // HTML block
+                self.options.allow_html && self.peek_html_block_start(false).is_some()
+            }
+            _ => false,
+        }
+    }
+
+    /// Start a table from the last paragraph line (header) and delimiter row.
+    fn start_table(
+        &mut self,
+        header_cells: SmallVec<[(usize, usize); 8]>,
+        alignments: SmallVec<[Alignment; 8]>,
+        events: &mut Vec<BlockEvent>,
+    ) {
+        // Extract the last paragraph line for use as header
+        let header_range = self.paragraph_lines.pop().unwrap();
+
+        // Close any remaining paragraph content (lines before the header line)
+        // These stay as a normal paragraph
+        if !self.paragraph_lines.is_empty() {
+            // Emit those lines as a paragraph
+            self.mark_container_has_content();
+            events.push(BlockEvent::ParagraphStart);
+            for (i, range) in self.paragraph_lines.drain(..).enumerate() {
+                if i > 0 {
+                    events.push(BlockEvent::SoftBreak);
+                }
+                events.push(BlockEvent::Text(range));
+            }
+            events.push(BlockEvent::ParagraphEnd);
+        }
+        self.in_paragraph = false;
+
+        // Now emit the table structure
+        self.mark_container_has_content();
+
+        events.push(BlockEvent::TableStart);
+        events.push(BlockEvent::TableHeadStart);
+        events.push(BlockEvent::TableRowStart);
+
+        let header_base = header_range.start as usize;
+
+        for (i, &alignment) in alignments.iter().enumerate() {
+            events.push(BlockEvent::TableCellStart { alignment });
+            if i < header_cells.len() {
+                let (s, e) = header_cells[i];
+                if e > s {
+                    events.push(BlockEvent::Text(Range::from_usize(header_base + s, header_base + e)));
+                }
+            }
+            events.push(BlockEvent::TableCellEnd);
+        }
+
+        events.push(BlockEvent::TableRowEnd);
+        events.push(BlockEvent::TableHeadEnd);
+
+        // Set table state
+        self.in_table = true;
+        self.table_alignments = alignments;
+        self.table_has_body = false;
+    }
+
+    /// Close an open table, emitting appropriate end events.
+    fn close_table(&mut self, events: &mut Vec<BlockEvent>) {
+        if !self.in_table {
+            return;
+        }
+        if self.table_has_body {
+            events.push(BlockEvent::TableBodyEnd);
+        }
+        events.push(BlockEvent::TableEnd);
+        self.in_table = false;
+        self.table_alignments.clear();
+        self.table_has_body = false;
+    }
+
+    /// Emit a table data row from a line.
+    fn emit_table_row(&mut self, events: &mut Vec<BlockEvent>) {
+        let line_start = self.cursor.offset();
+        let line_end = match self.cursor.find_newline() {
+            Some(pos) => {
+                self.cursor.advance(pos);
+                let end = line_start + pos;
+                self.cursor.bump();
+                end
+            }
+            None => {
+                let remaining = self.cursor.remaining();
+                self.cursor.advance(remaining);
+                line_start + remaining
+            }
+        };
+
+        let line = &self.input[line_start..line_end];
+        let cells = Self::split_table_cells(line);
+        let col_count = self.table_alignments.len();
+
+        if !self.table_has_body {
+            self.table_has_body = true;
+            events.push(BlockEvent::TableBodyStart);
+        }
+
+        events.push(BlockEvent::TableRowStart);
+
+        for i in 0..col_count {
+            let alignment = self.table_alignments[i];
+            events.push(BlockEvent::TableCellStart { alignment });
+            if i < cells.len() {
+                let (s, e) = cells[i];
+                if e > s {
+                    events.push(BlockEvent::Text(Range::from_usize(line_start + s, line_start + e)));
+                }
+            }
+            // If i >= cells.len(), emit an empty cell (no Text event)
+            events.push(BlockEvent::TableCellEnd);
+        }
+
+        events.push(BlockEvent::TableRowEnd);
+    }
+
     /// Close an open paragraph.
     fn close_paragraph(&mut self, events: &mut Vec<BlockEvent>) {
         if !self.in_paragraph {
@@ -2809,6 +3267,7 @@ fn is_simple_line_start(b: u8) -> bool {
             | b'~'
             | b'<'
             | b'='
+            | b'|'
             | b'\n'
             | b'\r'
             | b'0'..=b'9'

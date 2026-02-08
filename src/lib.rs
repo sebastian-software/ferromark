@@ -24,7 +24,7 @@ pub mod range;
 pub mod render;
 
 // Re-export primary types
-pub use block::{fixup_list_tight, BlockEvent, BlockParser};
+pub use block::{fixup_list_tight, Alignment, BlockEvent, BlockParser};
 pub use inline::{InlineEvent, InlineParser};
 pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::Range;
@@ -37,6 +37,16 @@ pub struct Options {
     pub allow_html: bool,
     /// Resolve link reference definitions and reference-style links.
     pub allow_link_refs: bool,
+    /// Enable GFM table extension.
+    pub tables: bool,
+    /// Enable GFM strikethrough extension (`~~text~~`).
+    pub strikethrough: bool,
+    /// Enable GFM task list extension (`[ ]` / `[x]`).
+    pub task_lists: bool,
+    /// Enable GFM autolink literals extension (bare URLs, www, emails).
+    pub autolink_literals: bool,
+    /// Enable GFM disallowed raw HTML extension (filter dangerous tags).
+    pub disallowed_raw_html: bool,
 }
 
 impl Default for Options {
@@ -44,6 +54,11 @@ impl Default for Options {
         Self {
             allow_html: true,
             allow_link_refs: true,
+            tables: true,
+            strikethrough: true,
+            task_lists: true,
+            autolink_literals: true,
+            disallowed_raw_html: true,
         }
     }
 }
@@ -166,6 +181,52 @@ impl HeadingState {
     }
 }
 
+/// State for collecting table cell content before inline parsing.
+struct CellState {
+    /// Collected text content.
+    content: Vec<u8>,
+    /// Whether we're currently in a cell.
+    in_cell: bool,
+}
+
+impl CellState {
+    fn new() -> Self {
+        Self {
+            content: Vec::with_capacity(64),
+            in_cell: false,
+        }
+    }
+
+    fn start(&mut self) {
+        self.in_cell = true;
+        self.content.clear();
+    }
+
+    fn add_text(&mut self, text: &[u8]) {
+        // In table cells, \| is a table-level escape meaning literal |
+        // Replace \| with | before inline parsing
+        let mut i = 0;
+        while i < text.len() {
+            if text[i] == b'\\' && i + 1 < text.len() && text[i + 1] == b'|' {
+                self.content.push(b'|');
+                i += 2;
+            } else {
+                self.content.push(text[i]);
+                i += 1;
+            }
+        }
+    }
+
+    fn finish(&mut self) -> &[u8] {
+        self.in_cell = false;
+        // Trim trailing whitespace
+        while self.content.last().map_or(false, |&b| b == b' ' || b == b'\t') {
+            self.content.pop();
+        }
+        &self.content
+    }
+}
+
 /// Render Markdown to an HtmlWriter.
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     // Parse blocks
@@ -184,6 +245,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     // State for accumulating paragraph content
     let mut para_state = ParagraphState::new();
     let mut heading_state = HeadingState::new();
+    let mut cell_state = CellState::new();
 
     // Track tight/loose status for nested lists (stack - (tight, blockquote_depth_at_start))
     let mut tight_list_stack: Vec<(bool, u32)> = Vec::new();
@@ -200,6 +262,12 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     // Track blockquote depth (paragraphs in blockquotes always get <p> tags)
     let mut blockquote_depth = 0u32;
 
+    // Track whether we're in a table header
+    let mut in_table_head = false;
+
+    // Pending task checkbox (emitted at start of first paragraph in list item)
+    let mut pending_task = block::TaskState::None;
+
     // Render events to HTML
     for event in &events {
         render_block_event(
@@ -210,11 +278,14 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
             &mut inline_events,
             &mut para_state,
             &mut heading_state,
+            &mut cell_state,
             &mut tight_list_stack,
             &mut at_tight_li_start,
             &mut need_newline_before_block,
             &mut pending_loose_li_newline,
             &mut blockquote_depth,
+            &mut in_table_head,
+            &mut pending_task,
             &link_refs,
             options,
         );
@@ -230,11 +301,14 @@ fn render_block_event(
     inline_events: &mut Vec<InlineEvent>,
     para_state: &mut ParagraphState,
     heading_state: &mut HeadingState,
+    cell_state: &mut CellState,
     tight_list_stack: &mut Vec<(bool, u32)>,
     at_tight_li_start: &mut bool,
     need_newline_before_block: &mut bool,
     pending_loose_li_newline: &mut bool,
     blockquote_depth: &mut u32,
+    in_table_head: &mut bool,
+    pending_task: &mut block::TaskState,
     link_refs: &LinkRefStore,
     options: &Options,
 ) {
@@ -268,16 +342,20 @@ fn render_block_event(
 
             // Parse all accumulated paragraph content at once
             let content = para_state.finish();
+
+            // Emit pending task checkbox before paragraph content
+            emit_pending_task_checkbox(pending_task, writer);
+
             if !content.is_empty() {
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse(content, refs, options.allow_html, inline_events);
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, inline_events);
 
                 // Render inline events
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs);
+                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html);
                 }
             }
             // In tight lists, don't emit </p> tags
@@ -306,11 +384,11 @@ fn render_block_event(
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse(content, refs, options.allow_html, inline_events);
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, inline_events);
 
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs);
+                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html);
                 }
             }
             writer.heading_end(*level);
@@ -336,7 +414,11 @@ fn render_block_event(
             }
         }
         BlockEvent::HtmlBlockText(range) => {
-            writer.write_bytes(range.slice(input));
+            if options.disallowed_raw_html {
+                writer.write_html_filtered(range.slice(input));
+            } else {
+                writer.write_bytes(range.slice(input));
+            }
         }
         BlockEvent::HtmlBlockEnd => {}
         BlockEvent::SoftBreak => {
@@ -355,16 +437,18 @@ fn render_block_event(
                 para_state.add_text(text);
             } else if heading_state.in_heading {
                 heading_state.add_text(text);
+            } else if cell_state.in_cell {
+                cell_state.add_text(text);
             } else {
                 // Parse immediately (e.g., heading content)
                 inline_events.clear();
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse(text, refs, options.allow_html, inline_events);
+                inline_parser.parse_with_options(text, refs, options.allow_html, options.strikethrough, options.autolink_literals, inline_events);
 
                 // Render inline events
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(text, inline_event, writer, &mut image_state, link_refs);
+                    render_inline_event(text, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html);
                 }
             }
         }
@@ -451,7 +535,7 @@ fn render_block_event(
             // Pop the tight status for this list
             tight_list_stack.pop();
         }
-        BlockEvent::ListItemStart { .. } => {
+        BlockEvent::ListItemStart { task } => {
             writer.li_start();
             // In loose lists, defer newline until content appears (for empty items)
             if !in_tight_list {
@@ -460,14 +544,101 @@ fn render_block_event(
                 // In tight lists, mark that we may need newline if block content follows
                 *at_tight_li_start = true;
             }
+            // Store task state for rendering at the start of paragraph content
+            if options.task_lists {
+                *pending_task = *task;
+            }
         }
         BlockEvent::ListItemEnd => {
             *at_tight_li_start = false;
             *need_newline_before_block = false;
             *pending_loose_li_newline = false;
+            *pending_task = block::TaskState::None;
             writer.li_end();
         }
+
+        // --- Table events ---
+        BlockEvent::TableStart => {
+            if *pending_loose_li_newline {
+                writer.newline();
+                *pending_loose_li_newline = false;
+            }
+            if *need_newline_before_block {
+                writer.newline();
+                *need_newline_before_block = false;
+            }
+            if *at_tight_li_start {
+                writer.newline();
+                *at_tight_li_start = false;
+            }
+            writer.table_start();
+        }
+        BlockEvent::TableEnd => {
+            writer.table_end();
+        }
+        BlockEvent::TableHeadStart => {
+            *in_table_head = true;
+            writer.thead_start();
+        }
+        BlockEvent::TableHeadEnd => {
+            *in_table_head = false;
+            writer.thead_end();
+        }
+        BlockEvent::TableBodyStart => {
+            writer.tbody_start();
+        }
+        BlockEvent::TableBodyEnd => {
+            writer.tbody_end();
+        }
+        BlockEvent::TableRowStart => {
+            writer.tr_start();
+        }
+        BlockEvent::TableRowEnd => {
+            writer.tr_end();
+        }
+        BlockEvent::TableCellStart { alignment } => {
+            if *in_table_head {
+                writer.th_start(*alignment);
+            } else {
+                writer.td_start(*alignment);
+            }
+            cell_state.start();
+        }
+        BlockEvent::TableCellEnd => {
+            let content = cell_state.finish();
+            if !content.is_empty() {
+                inline_events.clear();
+                inline_events.reserve((content.len() / 8).max(8));
+                let refs = if options.allow_link_refs { Some(link_refs) } else { None };
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, inline_events);
+
+                let mut image_state = None;
+                for inline_event in inline_events.iter() {
+                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html);
+                }
+            }
+            if *in_table_head {
+                writer.th_end();
+            } else {
+                writer.td_end();
+            }
+        }
     }
+}
+
+/// Emit a pending task checkbox and reset the state.
+#[inline]
+fn emit_pending_task_checkbox(pending_task: &mut block::TaskState, writer: &mut HtmlWriter) {
+    match *pending_task {
+        block::TaskState::Unchecked => {
+            writer.write_bytes(b"<input type=\"checkbox\" disabled=\"\" /> ");
+        }
+        block::TaskState::Checked => {
+            writer.write_bytes(b"<input type=\"checkbox\" checked=\"\" disabled=\"\" /> ");
+        }
+        block::TaskState::None => {}
+    }
+    *pending_task = block::TaskState::None;
 }
 
 /// State for tracking image rendering.
@@ -490,6 +661,7 @@ fn render_inline_event(
     writer: &mut HtmlWriter,
     image_state: &mut Option<ImageState>,
     link_refs: &LinkRefStore,
+    filter_html: bool,
 ) {
     // Check if we're inside an image (for alt text rendering)
     let in_image = image_state.as_ref().map_or(false, |s| s.depth > 0);
@@ -564,6 +736,16 @@ fn render_inline_event(
         InlineEvent::StrongEnd => {
             if !in_image {
                 writer.write_str("</strong>");
+            }
+        }
+        InlineEvent::StrikethroughStart => {
+            if !in_image {
+                writer.write_str("<del>");
+            }
+        }
+        InlineEvent::StrikethroughEnd => {
+            if !in_image {
+                writer.write_str("</del>");
             }
         }
         InlineEvent::LinkStart { url, title } => {
@@ -654,6 +836,30 @@ fn render_inline_event(
                 }
             }
         }
+        InlineEvent::AutolinkLiteral { url, kind } => {
+            use crate::inline::AutolinkLiteralKind;
+            if in_image {
+                writer.write_escaped_attr(url.slice(text));
+            } else {
+                writer.write_str("<a href=\"");
+                match kind {
+                    AutolinkLiteralKind::Url => {
+                        writer.write_link_url(url.slice(text));
+                    }
+                    AutolinkLiteralKind::Www => {
+                        writer.write_str("http://");
+                        writer.write_link_url(url.slice(text));
+                    }
+                    AutolinkLiteralKind::Email => {
+                        writer.write_str("mailto:");
+                        writer.write_link_url(url.slice(text));
+                    }
+                }
+                writer.write_str("\">");
+                writer.write_escaped_text(url.slice(text));
+                writer.write_str("</a>");
+            }
+        }
         InlineEvent::Autolink { url, is_email } => {
             // In image alt text, just output the URL as plain text
             if in_image {
@@ -674,6 +880,8 @@ fn render_inline_event(
         InlineEvent::Html(range) => {
             if in_image {
                 writer.write_escaped_attr(range.slice(text));
+            } else if filter_html {
+                writer.write_html_filtered(range.slice(text));
             } else {
                 writer.write_bytes(range.slice(text));
             }
@@ -719,8 +927,8 @@ mod tests {
     #[test]
     fn test_paragraph_escaping() {
         let html = to_html("<script>alert('xss')</script>");
-        // CommonMark preserves raw HTML when HTML is enabled (default).
-        assert_eq!(html, "<script>alert('xss')</script>");
+        // GFM disallowed raw HTML: <script> is filtered by default.
+        assert_eq!(html, "&lt;script>alert('xss')&lt;/script>");
     }
 
     #[test]

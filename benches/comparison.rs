@@ -164,6 +164,9 @@ Paragraph after code.
     pub const COMMONMARK_20K: &str = include_str!("fixtures/commonmark-20k.md");
     pub const COMMONMARK_50K: &str = include_str!("fixtures/commonmark-50k.md");
 
+    /// Table-heavy document (~5KB)
+    pub const TABLES_5K: &str = include_str!("fixtures/tables-5k.md");
+
     /// Generate a large document by repeating sections
     pub fn large() -> String {
         let section = r#"
@@ -430,6 +433,57 @@ fn bench_commonmark20k(c: &mut Criterion) {
 
 fn bench_commonmark50k(c: &mut Criterion) {
     bench_commonmark_group(c, "commonmark50k", samples::COMMONMARK_50K);
+}
+
+/// Table-heavy document comparison (all parsers with tables enabled)
+fn bench_tables(c: &mut Criterion) {
+    let mut group = c.benchmark_group("tables");
+    let input = samples::TABLES_5K;
+    group.throughput(Throughput::Bytes(input.len() as u64));
+
+    group.bench_function("ferromark", |b| {
+        b.iter(|| parse_ferromark(black_box(input)))
+    });
+
+    // md4c with MD_FLAG_TABLES (0x0100)
+    group.bench_function("md4c", |b| {
+        b.iter(|| {
+            let mut out: Vec<u8> = Vec::with_capacity(input.len() + input.len() / 4);
+            unsafe {
+                md_html(
+                    input.as_ptr() as *const c_char,
+                    input.len() as c_uint,
+                    md4c_output,
+                    &mut out as *mut Vec<u8> as *mut c_void,
+                    0x0100, // MD_FLAG_TABLES
+                    0,
+                );
+            }
+            black_box(out);
+        })
+    });
+
+    // pulldown-cmark with tables enabled
+    group.bench_function("pulldown-cmark", |b| {
+        b.iter(|| {
+            use pulldown_cmark::{html, Options as PdOptions, Parser};
+            let mut opts = PdOptions::empty();
+            opts.insert(PdOptions::ENABLE_TABLES);
+            let parser = Parser::new_ext(black_box(input), opts);
+            let mut output = String::new();
+            html::push_html(&mut output, parser);
+            output
+        })
+    });
+
+    // comrak with tables enabled (default in comrak)
+    group.bench_function("comrak", |b| {
+        let mut opts = comrak::Options::default();
+        opts.extension.table = true;
+        b.iter(|| comrak::markdown_to_html(black_box(input), &opts))
+    });
+
+    group.finish();
 }
 
 /// Complexity comparison across representative feature sets
@@ -935,6 +989,7 @@ criterion_group!(
     bench_commonmark5k,
     bench_commonmark20k,
     bench_commonmark50k,
+    bench_tables,
     bench_complexity,
     bench_link_refs_focus,
     bench_throughput,

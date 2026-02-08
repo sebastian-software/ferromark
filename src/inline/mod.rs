@@ -11,13 +11,16 @@ pub mod event;
 mod links;
 pub mod marks;
 mod simd;
+mod strikethrough;
 
 pub use event::InlineEvent;
+pub use links::AutolinkLiteralKind;
 
 use crate::Range;
 use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
 use emphasis::{resolve_emphasis_with_stacks_into, EmphasisMatch, EmphasisStacks};
-use links::{find_autolinks_into, resolve_links_into, resolve_reference_links_into, Autolink, Link, RefLink};
+use strikethrough::{resolve_strikethrough_into, StrikethroughMatch};
+use links::{find_autolinks_into, find_autolink_literals_into, resolve_links_into, resolve_reference_links_into, Autolink, AutolinkLiteral, Link, RefLink};
 use crate::link_ref::LinkRefStore;
 use marks::{collect_marks, flags, Mark, MarkBuffer};
 use memchr::memchr;
@@ -44,8 +47,10 @@ pub struct InlineParser {
     ref_formed_opens: Vec<bool>,
     ref_used_closes: Vec<bool>,
     ref_occupied: Vec<(u32, u32)>,
+    autolink_literals: Vec<AutolinkLiteral>,
     emphasis_stacks: EmphasisStacks,
     emphasis_matches: Vec<EmphasisMatch>,
+    strikethrough_matches: Vec<StrikethroughMatch>,
     emit_points: Vec<EmitPoint>,
     emit_suppress_ranges: Vec<(u32, u32)>,
     html_code_ranges: Vec<(usize, usize)>,
@@ -75,8 +80,10 @@ impl InlineParser {
             ref_formed_opens: Vec::with_capacity(32),
             ref_used_closes: Vec::with_capacity(32),
             ref_occupied: Vec::with_capacity(8),
+            autolink_literals: Vec::with_capacity(8),
             emphasis_stacks: EmphasisStacks::default(),
             emphasis_matches: Vec::with_capacity(16),
+            strikethrough_matches: Vec::with_capacity(8),
             emit_points: Vec::with_capacity(64),
             emit_suppress_ranges: Vec::with_capacity(8),
             html_code_ranges: Vec::with_capacity(8),
@@ -92,7 +99,25 @@ impl InlineParser {
         allow_html: bool,
         events: &mut Vec<InlineEvent>,
     ) {
-        if !has_inline_specials(text) {
+        self.parse_with_options(text, link_refs, allow_html, true, true, events);
+    }
+
+    /// Parse inline content with full GFM options.
+    pub fn parse_with_options(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        allow_html: bool,
+        strikethrough: bool,
+        autolink_literals: bool,
+        events: &mut Vec<InlineEvent>,
+    ) {
+        let has_specials = has_inline_specials(text);
+
+        // Check for potential autolink literal triggers when enabled
+        let may_have_autolinks = autolink_literals && has_autolink_chars(text);
+
+        if !has_specials && !may_have_autolinks {
             if !text.is_empty() {
                 events.push(InlineEvent::Text(Range::from_usize(0, text.len())));
             }
@@ -101,10 +126,14 @@ impl InlineParser {
 
         // Phase 1: Collect marks
         self.mark_buffer.reserve_for_text(text.len());
-        collect_marks(text, &mut self.mark_buffer);
+        if has_specials {
+            collect_marks(text, &mut self.mark_buffer);
+        } else {
+            self.mark_buffer.clear();
+        }
 
-        if self.mark_buffer.is_empty() {
-            // No special characters, emit as plain text
+        if self.mark_buffer.is_empty() && !may_have_autolinks {
+            // No special characters and no autolink candidates, emit as plain text
             if !text.is_empty() {
                 events.push(InlineEvent::Text(Range::from_usize(0, text.len())));
             }
@@ -150,8 +179,8 @@ impl InlineParser {
             })
         });
 
-        // Fourth: collect bracket positions and detect emphasis candidates in one pass
-        let has_emphasis_marks = Self::collect_brackets_and_scan_emphasis(
+        // Fourth: collect bracket positions and detect emphasis/strikethrough candidates in one pass
+        let (has_emphasis_marks, has_strikethrough_marks) = Self::collect_brackets_and_scan_emphasis(
             self.mark_buffer.marks(),
             &mut self.open_brackets,
             &mut self.close_brackets,
@@ -248,6 +277,46 @@ impl InlineParser {
             &[]
         };
 
+        // Sixth: strikethrough (after emphasis, since they share the mark buffer)
+        if has_strikethrough_marks && strikethrough {
+            resolve_strikethrough_into(
+                self.mark_buffer.marks_mut(),
+                &self.link_boundaries,
+                &mut self.strikethrough_matches,
+            );
+        } else {
+            self.strikethrough_matches.clear();
+        }
+        let strikethrough_matches = self.strikethrough_matches.as_slice();
+
+        // Seventh: autolink literals (bare URLs, www, emails)
+        if autolink_literals {
+            // Build code span ranges for overlap checking
+            let code_span_ranges: Vec<(u32, u32)> = self.code_spans.iter()
+                .map(|cs| (cs.opener_pos, cs.closer_end))
+                .collect();
+            // Build link ranges (inline links + ref links)
+            let mut link_ranges: Vec<(u32, u32)> = Vec::with_capacity(
+                resolved_links.len() + resolved_ref_links.len()
+            );
+            for link in resolved_links {
+                link_ranges.push((link.start, link.end));
+            }
+            for link in resolved_ref_links {
+                link_ranges.push((link.start, link.end));
+            }
+            find_autolink_literals_into(
+                text,
+                &code_span_ranges,
+                &self.html_ranges,
+                &self.autolink_ranges,
+                &link_ranges,
+                &mut self.autolink_literals,
+            );
+        } else {
+            self.autolink_literals.clear();
+        }
+
         // Phase 3: Emit events
         let marks = self.mark_buffer.marks();
         Self::emit_events(
@@ -255,6 +324,8 @@ impl InlineParser {
             text,
             &self.code_spans,
             emphasis_matches,
+            strikethrough_matches,
+            &self.autolink_literals,
             resolved_links,
             resolved_ref_links,
             &self.autolinks,
@@ -269,11 +340,12 @@ impl InlineParser {
     }
 
     /// Collect bracket positions for link parsing.
+    /// Returns (has_emphasis_marks, has_strikethrough_marks).
     fn collect_brackets_and_scan_emphasis(
         marks: &[Mark],
         open_brackets: &mut Vec<(u32, bool)>,
         close_brackets: &mut Vec<u32>,
-    ) -> bool {
+    ) -> (bool, bool) {
         let estimated = (marks.len() / 4).max(4);
         open_brackets.clear();
         close_brackets.clear();
@@ -281,9 +353,14 @@ impl InlineParser {
         close_brackets.reserve(estimated);
 
         let mut has_emphasis_marks = false;
+        let mut has_strikethrough_marks = false;
         for mark in marks {
-            if mark.flags & flags::IN_CODE == 0 && (mark.ch == b'*' || mark.ch == b'_') {
-                has_emphasis_marks = true;
+            if mark.flags & flags::IN_CODE == 0 {
+                if mark.ch == b'*' || mark.ch == b'_' {
+                    has_emphasis_marks = true;
+                } else if mark.ch == b'~' {
+                    has_strikethrough_marks = true;
+                }
             }
             // Skip brackets inside code spans
             if mark.flags & flags::IN_CODE != 0 && mark.ch != b'[' {
@@ -302,7 +379,7 @@ impl InlineParser {
                 _ => {}
             }
         }
-        has_emphasis_marks
+        (has_emphasis_marks, has_strikethrough_marks)
     }
 
     /// Emit events based on resolved marks.
@@ -311,6 +388,8 @@ impl InlineParser {
         text: &[u8],
         code_spans: &[CodeSpan],
         emphasis_matches: &[EmphasisMatch],
+        strikethrough_matches: &[StrikethroughMatch],
+        autolink_literals: &[AutolinkLiteral],
         resolved_links: &[Link],
         resolved_ref_links: &[RefLink],
         autolinks: &[Autolink],
@@ -336,8 +415,10 @@ impl InlineParser {
             + (resolved_links.len() * 4)
             + (resolved_ref_links.len() * 4)
             + autolinks.len()
+            + autolink_literals.len()
             + html_spans.len()
-            + (emphasis_matches.len() * 2);
+            + (emphasis_matches.len() * 2)
+            + (strikethrough_matches.len() * 2);
         emit_points.clear();
         emit_points.reserve(estimated_events.max(8));
         events.reserve(estimated_events.max(8) + 4);
@@ -465,6 +546,15 @@ impl InlineParser {
             });
         }
 
+        // Add autolink literal events
+        for al in autolink_literals {
+            emit_points.push(EmitPoint {
+                pos: al.start,
+                kind: EmitKind::AutolinkLiteral { end: al.end, kind: al.kind },
+                end: al.end,
+            });
+        }
+
         // Add emphasis events
         for m in emphasis_matches {
             let is_strong = m.count == 2;
@@ -492,6 +582,20 @@ impl InlineParser {
                     end: m.closer_end,
                 });
             }
+        }
+
+        // Add strikethrough events
+        for m in strikethrough_matches {
+            emit_points.push(EmitPoint {
+                pos: m.opener_start,
+                kind: EmitKind::StrikethroughStart,
+                end: m.opener_end,
+            });
+            emit_points.push(EmitPoint {
+                pos: m.closer_start,
+                kind: EmitKind::StrikethroughEnd,
+                end: m.closer_end,
+            });
         }
 
         // Add backslash escapes and hard breaks
@@ -561,7 +665,7 @@ impl InlineParser {
         // Sort by position (end events come after start events at same position)
         emit_points.sort_unstable_by_key(|p| (p.pos, matches!(p.kind,
             EmitKind::CodeSpanEnd | EmitKind::StrongEnd | EmitKind::EmphasisEnd |
-            EmitKind::LinkEnd | EmitKind::ImageEnd
+            EmitKind::StrikethroughEnd | EmitKind::LinkEnd | EmitKind::ImageEnd
         )));
 
         // Build ranges to suppress (reference labels after link text)
@@ -654,6 +758,15 @@ impl InlineParser {
                     events.push(InlineEvent::StrongEnd);
                     skip_until = point.end;
                 }
+                EmitKind::StrikethroughStart => {
+                    events.push(InlineEvent::StrikethroughStart);
+                    pos = point.end;
+                    skip_until = point.end;
+                }
+                EmitKind::StrikethroughEnd => {
+                    events.push(InlineEvent::StrikethroughEnd);
+                    skip_until = point.end;
+                }
                 EmitKind::Escape(ch) => {
                     events.push(InlineEvent::EscapedChar(ch));
                     skip_until = point.end;
@@ -699,6 +812,13 @@ impl InlineParser {
                 EmitKind::ImageEnd => {
                     events.push(InlineEvent::ImageEnd);
                     skip_until = point.end;
+                }
+                EmitKind::AutolinkLiteral { end, kind } => {
+                    events.push(InlineEvent::AutolinkLiteral {
+                        url: Range::from_usize(point.pos as usize, end as usize),
+                        kind,
+                    });
+                    skip_until = end;
                 }
                 EmitKind::AutolinkUrl { content_start, content_end } => {
                     events.push(InlineEvent::Autolink {
@@ -749,13 +869,19 @@ fn has_inline_specials(input: &[u8]) -> bool {
     }
     for &b in input {
         match b {
-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' => {
+            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' => {
                 return true;
             }
             _ => {}
         }
     }
     false
+}
+
+/// Check if text might contain autolink literal triggers.
+#[inline]
+fn has_autolink_chars(input: &[u8]) -> bool {
+    input.iter().any(|&b| matches!(b, b'h' | b'H' | b'f' | b'F' | b'w' | b'W' | b'@'))
 }
 
 #[inline]
@@ -793,6 +919,8 @@ enum EmitKind {
     EmphasisEnd,
     StrongStart,
     StrongEnd,
+    StrikethroughStart,
+    StrikethroughEnd,
     Escape(u8),
     HardBreak,
     SoftBreak,
@@ -804,6 +932,7 @@ enum EmitKind {
     ImageEnd,
     AutolinkUrl { content_start: u32, content_end: u32 },
     AutolinkEmail { content_start: u32, content_end: u32 },
+    AutolinkLiteral { end: u32, kind: links::AutolinkLiteralKind },
     HtmlRaw { end: u32 },
 }
 

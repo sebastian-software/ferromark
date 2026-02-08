@@ -700,6 +700,421 @@ fn is_email_autolink(content: &[u8]) -> bool {
     false
 }
 
+// ─── Autolink Literals (GFM extension) ───────────────────────────────────────
+
+/// Kind of autolink literal.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AutolinkLiteralKind {
+    /// `http://` or `https://` or `ftp://` URL.
+    Url,
+    /// `www.` link (needs `http://` prepended in href).
+    Www,
+    /// Email address.
+    Email,
+}
+
+/// A detected autolink literal (bare URL, www link, or email).
+#[derive(Debug, Clone, Copy)]
+pub struct AutolinkLiteral {
+    pub start: u32,
+    pub end: u32,
+    pub kind: AutolinkLiteralKind,
+}
+
+/// Find autolink literals in text, avoiding code spans, HTML ranges, existing autolinks, and link ranges.
+pub fn find_autolink_literals_into(
+    text: &[u8],
+    code_spans: &[(u32, u32)],
+    html_ranges: &[(u32, u32)],
+    autolink_ranges: &[(u32, u32)],
+    link_ranges: &[(u32, u32)],
+    out: &mut Vec<AutolinkLiteral>,
+) {
+    out.clear();
+    let len = text.len();
+    if len < 4 {
+        return;
+    }
+
+    let mut pos = 0usize;
+    while pos < len {
+        // Check if pos is inside a protected range (code span, HTML, autolink, link)
+        if in_any_range(pos as u32, code_spans)
+            || in_any_range(pos as u32, html_ranges)
+            || in_any_range(pos as u32, autolink_ranges)
+            || in_any_range(pos as u32, link_ranges)
+        {
+            pos += 1;
+            continue;
+        }
+
+        // Try URL autolink: http://, https://, ftp://
+        if (text[pos] == b'h' || text[pos] == b'H' || text[pos] == b'f' || text[pos] == b'F')
+            && is_valid_autolink_preceding(text, pos)
+        {
+            if let Some(al) = try_url_autolink(text, pos) {
+                // Verify it doesn't overlap with protected ranges
+                if !overlaps_any_range(al.start, al.end, code_spans)
+                    && !overlaps_any_range(al.start, al.end, html_ranges)
+                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                    && !overlaps_any_range(al.start, al.end, link_ranges)
+                {
+                    pos = al.end as usize;
+                    out.push(al);
+                    continue;
+                }
+            }
+        }
+
+        // Try WWW autolink: www.
+        if (text[pos] == b'w' || text[pos] == b'W')
+            && is_valid_autolink_preceding(text, pos)
+        {
+            if let Some(al) = try_www_autolink(text, pos) {
+                if !overlaps_any_range(al.start, al.end, code_spans)
+                    && !overlaps_any_range(al.start, al.end, html_ranges)
+                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                    && !overlaps_any_range(al.start, al.end, link_ranges)
+                {
+                    pos = al.end as usize;
+                    out.push(al);
+                    continue;
+                }
+            }
+        }
+
+        // Try email autolink: check for @
+        if text[pos] == b'@' && pos > 0 {
+            if let Some(al) = try_email_autolink(text, pos) {
+                if !overlaps_any_range(al.start, al.end, code_spans)
+                    && !overlaps_any_range(al.start, al.end, html_ranges)
+                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                    && !overlaps_any_range(al.start, al.end, link_ranges)
+                {
+                    pos = al.end as usize;
+                    out.push(al);
+                    continue;
+                }
+            }
+        }
+
+        pos += 1;
+    }
+}
+
+/// Check if the character preceding `pos` is valid for an autolink literal start.
+/// Must be: start of text, whitespace, or one of `*`, `_`, `~`, `(`
+fn is_valid_autolink_preceding(text: &[u8], pos: usize) -> bool {
+    if pos == 0 {
+        return true;
+    }
+    let prev = text[pos - 1];
+    matches!(prev, b' ' | b'\t' | b'\n' | b'\r' | b'*' | b'_' | b'~' | b'(' | b'"' | b'\'' | b';')
+        || prev == b'\x0c'
+}
+
+/// Try to parse a URL autolink (http://, https://, ftp://).
+fn try_url_autolink(text: &[u8], start: usize) -> Option<AutolinkLiteral> {
+    let len = text.len();
+    let rest = &text[start..];
+
+    // Match protocol
+    let protocol_len = if rest.len() >= 8 && rest[..8].eq_ignore_ascii_case(b"https://") {
+        8
+    } else if rest.len() >= 7 && rest[..7].eq_ignore_ascii_case(b"http://") {
+        7
+    } else if rest.len() >= 6 && rest[..6].eq_ignore_ascii_case(b"ftp://") {
+        6
+    } else {
+        return None;
+    };
+
+    // Must have valid domain after protocol
+    let domain_start = start + protocol_len;
+    if domain_start >= len {
+        return None;
+    }
+
+    // Validate domain: at least one valid char
+    if !text[domain_start].is_ascii_alphanumeric() {
+        return None;
+    }
+
+    // Extend URL until whitespace or < or control char
+    let mut end = domain_start;
+    while end < len {
+        let b = text[end];
+        if b == b'<' || b <= b' ' {
+            break;
+        }
+        end += 1;
+    }
+
+    // Apply trailing trimming
+    let end = trim_autolink_trailing(text, start, end);
+
+    // Must have something after protocol
+    if end <= domain_start {
+        return None;
+    }
+
+    Some(AutolinkLiteral {
+        start: start as u32,
+        end: end as u32,
+        kind: AutolinkLiteralKind::Url,
+    })
+}
+
+/// Try to parse a WWW autolink (www.).
+fn try_www_autolink(text: &[u8], start: usize) -> Option<AutolinkLiteral> {
+    let len = text.len();
+    let rest = &text[start..];
+
+    // Must start with "www."
+    if rest.len() < 4 || !rest[..4].eq_ignore_ascii_case(b"www.") {
+        return None;
+    }
+
+    // Must have valid domain char after www.
+    if start + 4 >= len || !text[start + 4].is_ascii_alphanumeric() {
+        return None;
+    }
+
+    // Check domain validity: need at least one more dot
+    let mut dot_count = 0u32;
+    let mut pos = start + 4;
+    while pos < len {
+        let b = text[pos];
+        if b == b'<' || b <= b' ' {
+            break;
+        }
+        if b == b'.' {
+            dot_count += 1;
+        }
+        pos += 1;
+    }
+
+    if dot_count == 0 {
+        return None;
+    }
+
+    // Validate no underscores in last two domain segments
+    let url_end = pos;
+    let domain_text = &text[start..url_end];
+    // Find where path starts (first / after domain)
+    let path_start = domain_text.iter().position(|&b| b == b'/').unwrap_or(domain_text.len());
+    let domain_part = &domain_text[..path_start];
+    if has_underscore_in_last_two_segments(domain_part) {
+        return None;
+    }
+
+    // Apply trailing trimming
+    let end = trim_autolink_trailing(text, start, url_end);
+
+    if end <= start + 4 {
+        return None;
+    }
+
+    Some(AutolinkLiteral {
+        start: start as u32,
+        end: end as u32,
+        kind: AutolinkLiteralKind::Www,
+    })
+}
+
+/// Try to parse an email autolink at the `@` position.
+fn try_email_autolink(text: &[u8], at_pos: usize) -> Option<AutolinkLiteral> {
+    // Find local part (backwards from @)
+    let mut local_start = at_pos;
+    while local_start > 0 {
+        let b = text[local_start - 1];
+        if b.is_ascii_alphanumeric() || matches!(b, b'.' | b'+' | b'-' | b'_') {
+            local_start -= 1;
+        } else {
+            break;
+        }
+    }
+
+    // Must have at least one char in local part
+    if local_start == at_pos {
+        return None;
+    }
+
+    // Context: character before local part must not be alphanumeric
+    // (it must be a word boundary)
+    if local_start > 0 {
+        let prev = text[local_start - 1];
+        if prev.is_ascii_alphanumeric() {
+            return None; // Not a word boundary
+        }
+    }
+
+    // Find domain part (forward from @)
+    let len = text.len();
+    let mut domain_end = at_pos + 1;
+    let mut dot_count = 0u32;
+
+    while domain_end < len {
+        let b = text[domain_end];
+        if b.is_ascii_alphanumeric() || b == b'-' || b == b'.' {
+            if b == b'.' {
+                dot_count += 1;
+            }
+            domain_end += 1;
+        } else {
+            break;
+        }
+    }
+
+    // Must have at least one dot in domain
+    if dot_count == 0 {
+        return None;
+    }
+
+    // Must have at least one char after @
+    if domain_end <= at_pos + 1 {
+        return None;
+    }
+
+    // Domain must not end with hyphen or dot
+    let last = text[domain_end - 1];
+    if last == b'-' || last == b'.' {
+        // Trim trailing dots/hyphens
+        while domain_end > at_pos + 1 && matches!(text[domain_end - 1], b'-' | b'.') {
+            domain_end -= 1;
+        }
+    }
+
+    // Recount dots after trimming
+    let domain_slice = &text[at_pos + 1..domain_end];
+    let has_dot = domain_slice.iter().any(|&b| b == b'.');
+    if !has_dot {
+        return None;
+    }
+
+    // Last char of domain must be alphanumeric
+    if domain_end <= at_pos + 1 || !text[domain_end - 1].is_ascii_alphanumeric() {
+        return None;
+    }
+
+    // Check no underscores in last two domain segments
+    if has_underscore_in_last_two_segments(domain_slice) {
+        return None;
+    }
+
+    Some(AutolinkLiteral {
+        start: local_start as u32,
+        end: domain_end as u32,
+        kind: AutolinkLiteralKind::Email,
+    })
+}
+
+/// Trim trailing punctuation from an autolink per GFM rules.
+fn trim_autolink_trailing(text: &[u8], start: usize, mut end: usize) -> usize {
+    loop {
+        if end <= start {
+            return end;
+        }
+        let last = text[end - 1];
+
+        // Rule 1: Strip trailing punctuation chars
+        if matches!(last, b'?' | b'!' | b'.' | b',' | b':' | b'*' | b'_' | b'~' | b'\'' | b'"') {
+            end -= 1;
+            continue;
+        }
+
+        // Rule 2: Parenthesis balancing
+        if last == b')' {
+            let url = &text[start..end];
+            let open_count = url.iter().filter(|&&b| b == b'(').count();
+            let close_count = url.iter().filter(|&&b| b == b')').count();
+            if close_count > open_count {
+                end -= 1;
+                continue;
+            }
+        }
+
+        // Rule 3: Entity check - if ends with `;` preceded by `&<alphanum>+`
+        if last == b';' {
+            if let Some(new_end) = trim_trailing_entity(text, start, end) {
+                end = new_end;
+                continue;
+            }
+        }
+
+        break;
+    }
+    end
+}
+
+/// If the URL ends with `&<alphanum>+;`, trim the entity reference.
+fn trim_trailing_entity(text: &[u8], start: usize, end: usize) -> Option<usize> {
+    // Look backwards from end-1 (the ';') to find '&'
+    let mut i = end - 2; // skip the ';'
+    while i > start {
+        let b = text[i];
+        if b == b'&' {
+            // Found entity: &...;
+            // Verify chars between & and ; are alphanumeric
+            let entity_body = &text[i + 1..end - 1];
+            if !entity_body.is_empty() && entity_body.iter().all(|b| b.is_ascii_alphanumeric()) {
+                return Some(i);
+            }
+            return None;
+        }
+        if !b.is_ascii_alphanumeric() {
+            return None;
+        }
+        i -= 1;
+    }
+    None
+}
+
+/// Check if underscores appear in the last two domain segments.
+fn has_underscore_in_last_two_segments(domain: &[u8]) -> bool {
+    // Split by dots, check last two segments
+    let mut segments: [&[u8]; 2] = [&[], &[]];
+    let mut seg_start = 0usize;
+    let mut seg_idx = 0usize;
+
+    for (i, &b) in domain.iter().enumerate() {
+        if b == b'.' {
+            if seg_idx >= 2 {
+                segments[0] = segments[1];
+                segments[1] = &domain[seg_start..i];
+            } else {
+                segments[seg_idx] = &domain[seg_start..i];
+                seg_idx += 1;
+            }
+            seg_start = i + 1;
+        }
+    }
+    // Last segment
+    let last_seg = &domain[seg_start..];
+    if seg_idx >= 2 {
+        segments[0] = segments[1];
+        segments[1] = last_seg;
+    } else if seg_idx == 1 {
+        segments[0] = segments[0]; // keep first
+        segments[1] = last_seg;
+    } else {
+        segments[0] = last_seg;
+    }
+
+    // Check both segments for underscore
+    segments.iter().any(|seg| seg.contains(&b'_'))
+}
+
+#[inline]
+fn in_any_range(pos: u32, ranges: &[(u32, u32)]) -> bool {
+    ranges.iter().any(|&(s, e)| pos >= s && pos < e)
+}
+
+#[inline]
+fn overlaps_any_range(start: u32, end: u32, ranges: &[(u32, u32)]) -> bool {
+    ranges.iter().any(|&(s, e)| start < e && end > s)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

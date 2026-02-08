@@ -58,6 +58,9 @@ Thank you for reading!
     pub const COMMONMARK_20K: &str = include_str!("fixtures/commonmark-20k.md");
     pub const COMMONMARK_50K: &str = include_str!("fixtures/commonmark-50k.md");
 
+    /// Table-heavy document (~5KB)
+    pub const TABLES_5K: &str = include_str!("fixtures/tables-5k.md");
+
     /// Generate a large document by repeating sections
     pub fn large() -> String {
         let section = r#"
@@ -144,6 +147,13 @@ fn bench_parsing(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(commonmark_50k.len() as u64));
     group.bench_function("commonmark_50k", |b| {
         b.iter(|| ferromark::to_html(black_box(commonmark_50k)))
+    });
+
+    // Table-heavy document
+    let tables_5k = samples::TABLES_5K;
+    group.throughput(Throughput::Bytes(tables_5k.len() as u64));
+    group.bench_function("tables_5k", |b| {
+        b.iter(|| ferromark::to_html(black_box(tables_5k)))
     });
 
     group.finish();

@@ -21,6 +21,11 @@ pub enum InlineEvent {
     /// End of strong emphasis.
     StrongEnd,
 
+    /// Start of strikethrough (`~~text~~` or `~text~`).
+    StrikethroughStart,
+    /// End of strikethrough.
+    StrikethroughEnd,
+
     /// Start of a link `[text](url)`.
     LinkStart {
         /// URL destination.
@@ -57,6 +62,14 @@ pub enum InlineEvent {
         url: Range,
         /// Whether this is an email autolink.
         is_email: bool,
+    },
+
+    /// Autolink literal (bare URL, www link, or email without angle brackets).
+    AutolinkLiteral {
+        /// The matched text range.
+        url: Range,
+        /// Kind of autolink literal.
+        kind: crate::inline::links::AutolinkLiteralKind,
     },
 
     /// Raw inline HTML (not escaped or parsed).

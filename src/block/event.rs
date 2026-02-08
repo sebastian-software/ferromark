@@ -2,6 +2,20 @@
 
 use crate::Range;
 
+/// Column alignment for table cells.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Alignment {
+    /// No alignment specified.
+    #[default]
+    None,
+    /// Left-aligned (`:---`).
+    Left,
+    /// Center-aligned (`:---:`).
+    Center,
+    /// Right-aligned (`---:`).
+    Right,
+}
+
 /// Events emitted by the block parser.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BlockEvent {
@@ -79,6 +93,30 @@ pub enum BlockEvent {
     /// Virtual spaces to prepend to code content (from tab expansion).
     /// This event is followed by a Code or Text event.
     VirtualSpaces(u8),
+
+    /// Start of a table.
+    TableStart,
+    /// End of a table.
+    TableEnd,
+    /// Start of a table header section.
+    TableHeadStart,
+    /// End of a table header section.
+    TableHeadEnd,
+    /// Start of a table body section.
+    TableBodyStart,
+    /// End of a table body section.
+    TableBodyEnd,
+    /// Start of a table row.
+    TableRowStart,
+    /// End of a table row.
+    TableRowEnd,
+    /// Start of a table cell with alignment.
+    TableCellStart {
+        /// Column alignment for this cell.
+        alignment: Alignment,
+    },
+    /// End of a table cell.
+    TableCellEnd,
 }
 
 /// Type of list.

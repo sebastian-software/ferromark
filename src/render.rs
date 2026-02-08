@@ -503,6 +503,90 @@ impl HtmlWriter {
         self.write_str("</li>\n");
     }
 
+    // --- Table Elements ---
+
+    /// Write table start: `<table>\n`
+    #[inline]
+    pub fn table_start(&mut self) {
+        self.write_str("<table>\n");
+    }
+
+    /// Write table end: `</table>\n`
+    #[inline]
+    pub fn table_end(&mut self) {
+        self.write_str("</table>\n");
+    }
+
+    /// Write thead start: `<thead>\n`
+    #[inline]
+    pub fn thead_start(&mut self) {
+        self.write_str("<thead>\n");
+    }
+
+    /// Write thead end: `</thead>\n`
+    #[inline]
+    pub fn thead_end(&mut self) {
+        self.write_str("</thead>\n");
+    }
+
+    /// Write tbody start: `<tbody>\n`
+    #[inline]
+    pub fn tbody_start(&mut self) {
+        self.write_str("<tbody>\n");
+    }
+
+    /// Write tbody end: `</tbody>\n`
+    #[inline]
+    pub fn tbody_end(&mut self) {
+        self.write_str("</tbody>\n");
+    }
+
+    /// Write tr start: `<tr>\n`
+    #[inline]
+    pub fn tr_start(&mut self) {
+        self.write_str("<tr>\n");
+    }
+
+    /// Write tr end: `</tr>\n`
+    #[inline]
+    pub fn tr_end(&mut self) {
+        self.write_str("</tr>\n");
+    }
+
+    /// Write th start with optional alignment: `<th>` or `<th align="...">`
+    #[inline]
+    pub fn th_start(&mut self, align: crate::block::Alignment) {
+        match align {
+            crate::block::Alignment::None => self.write_str("<th>"),
+            crate::block::Alignment::Left => self.write_str("<th align=\"left\">"),
+            crate::block::Alignment::Center => self.write_str("<th align=\"center\">"),
+            crate::block::Alignment::Right => self.write_str("<th align=\"right\">"),
+        }
+    }
+
+    /// Write th end: `</th>\n`
+    #[inline]
+    pub fn th_end(&mut self) {
+        self.write_str("</th>\n");
+    }
+
+    /// Write td start with optional alignment: `<td>` or `<td align="...">`
+    #[inline]
+    pub fn td_start(&mut self, align: crate::block::Alignment) {
+        match align {
+            crate::block::Alignment::None => self.write_str("<td>"),
+            crate::block::Alignment::Left => self.write_str("<td align=\"left\">"),
+            crate::block::Alignment::Center => self.write_str("<td align=\"center\">"),
+            crate::block::Alignment::Right => self.write_str("<td align=\"right\">"),
+        }
+    }
+
+    /// Write td end: `</td>\n`
+    #[inline]
+    pub fn td_end(&mut self) {
+        self.write_str("</td>\n");
+    }
+
     /// Write inline code: `<code>escaped_content</code>`
     #[inline]
     pub fn inline_code(&mut self, content: &[u8]) {
@@ -571,6 +655,29 @@ impl HtmlWriter {
         self.write_str("<br />\n");
     }
 
+    /// Write raw HTML with GFM disallowed-tag filtering.
+    /// Replaces `<` with `&lt;` before disallowed tag names.
+    pub fn write_html_filtered(&mut self, html: &[u8]) {
+        let mut pos = 0;
+        while pos < html.len() {
+            if let Some(offset) = memchr(b'<', &html[pos..]) {
+                let abs = pos + offset;
+                if abs + 1 < html.len() && is_disallowed_tag_at(html, abs) {
+                    self.out.extend_from_slice(&html[pos..abs]);
+                    self.out.extend_from_slice(b"&lt;");
+                    pos = abs + 1;
+                } else {
+                    // Include the '<' and advance past it
+                    self.out.extend_from_slice(&html[pos..abs + 1]);
+                    pos = abs + 1;
+                }
+            } else {
+                self.out.extend_from_slice(&html[pos..]);
+                break;
+            }
+        }
+    }
+
     /// Write a u32 as decimal.
     fn write_u32(&mut self, mut n: u32) {
         if n == 0 {
@@ -589,6 +696,34 @@ impl HtmlWriter {
 
         self.write_bytes(&buf[i..]);
     }
+}
+
+/// GFM disallowed raw HTML tag names (lowercase).
+const DISALLOWED_HTML_TAGS: [&[u8]; 9] = [
+    b"title", b"textarea", b"style", b"xmp",
+    b"iframe", b"noembed", b"noframes", b"script", b"plaintext",
+];
+
+/// Check whether `html[pos]` (which must be `b'<'`) starts a disallowed tag.
+#[inline]
+fn is_disallowed_tag_at(html: &[u8], pos: usize) -> bool {
+    let rest = &html[pos + 1..];
+    let rest = if rest.first() == Some(&b'/') { &rest[1..] } else { rest };
+    for tag in &DISALLOWED_HTML_TAGS {
+        if rest.len() >= tag.len()
+            && rest[..tag.len()].eq_ignore_ascii_case(tag)
+        {
+            // Character after tag name must be whitespace, >, /, or end of input
+            if rest.len() == tag.len() {
+                return true;
+            }
+            match rest[tag.len()] {
+                b' ' | b'\t' | b'\n' | b'\r' | b'>' | b'/' => return true,
+                _ => {}
+            }
+        }
+    }
+    false
 }
 
 /// Characters that can be escaped with backslash in CommonMark links.
