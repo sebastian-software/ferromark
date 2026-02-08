@@ -7,6 +7,7 @@
 
 use crate::limits;
 use crate::link_ref::{LinkRefStore, normalize_label_into};
+use memchr::memchr;
 
 /// A resolved link or image.
 #[derive(Debug, Clone)]
@@ -736,70 +737,136 @@ pub fn find_autolink_literals_into(
         return;
     }
 
-    let mut pos = 0usize;
-    while pos < len {
-        // Check if pos is inside a protected range (code span, HTML, autolink, link)
-        if in_any_range(pos as u32, code_spans)
-            || in_any_range(pos as u32, html_ranges)
-            || in_any_range(pos as u32, autolink_ranges)
-            || in_any_range(pos as u32, link_ranges)
-        {
-            pos += 1;
-            continue;
-        }
+    // Scan for @ (email), : (URL protocol), and w/W (www) using memchr jumps
+    // instead of checking every byte position.
 
-        // Try URL autolink: http://, https://, ftp://
-        if (text[pos] == b'h' || text[pos] == b'H' || text[pos] == b'f' || text[pos] == b'F')
-            && is_valid_autolink_preceding(text, pos)
-        {
-            if let Some(al) = try_url_autolink(text, pos) {
-                // Verify it doesn't overlap with protected ranges
-                if !overlaps_any_range(al.start, al.end, code_spans)
-                    && !overlaps_any_range(al.start, al.end, html_ranges)
-                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                    && !overlaps_any_range(al.start, al.end, link_ranges)
+    // Pass 1: Email autolinks — scan for '@'
+    {
+        let mut pos = 1; // @ at pos 0 can't have a local part
+        while pos < len {
+            if let Some(offset) = memchr(b'@', &text[pos..]) {
+                let at_pos = pos + offset;
+                if !in_any_range(at_pos as u32, code_spans)
+                    && !in_any_range(at_pos as u32, html_ranges)
+                    && !in_any_range(at_pos as u32, autolink_ranges)
+                    && !in_any_range(at_pos as u32, link_ranges)
                 {
-                    pos = al.end as usize;
-                    out.push(al);
-                    continue;
+                    if let Some(al) = try_email_autolink(text, at_pos) {
+                        if !overlaps_any_range(al.start, al.end, code_spans)
+                            && !overlaps_any_range(al.start, al.end, html_ranges)
+                            && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                            && !overlaps_any_range(al.start, al.end, link_ranges)
+                        {
+                            pos = al.end as usize;
+                            out.push(al);
+                            continue;
+                        }
+                    }
                 }
+                pos = at_pos + 1;
+            } else {
+                break;
             }
         }
-
-        // Try WWW autolink: www.
-        if (text[pos] == b'w' || text[pos] == b'W')
-            && is_valid_autolink_preceding(text, pos)
-        {
-            if let Some(al) = try_www_autolink(text, pos) {
-                if !overlaps_any_range(al.start, al.end, code_spans)
-                    && !overlaps_any_range(al.start, al.end, html_ranges)
-                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                    && !overlaps_any_range(al.start, al.end, link_ranges)
-                {
-                    pos = al.end as usize;
-                    out.push(al);
-                    continue;
-                }
-            }
-        }
-
-        // Try email autolink: check for @
-        if text[pos] == b'@' && pos > 0 {
-            if let Some(al) = try_email_autolink(text, pos) {
-                if !overlaps_any_range(al.start, al.end, code_spans)
-                    && !overlaps_any_range(al.start, al.end, html_ranges)
-                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                    && !overlaps_any_range(al.start, al.end, link_ranges)
-                {
-                    pos = al.end as usize;
-                    out.push(al);
-                    continue;
-                }
-            }
-        }
-
-        pos += 1;
     }
+
+    // Pass 2: URL autolinks — scan for ':'
+    {
+        let mut pos = 0;
+        while pos < len {
+            if let Some(offset) = memchr(b':', &text[pos..]) {
+                let colon = pos + offset;
+                // Need at least "X://" where X is the protocol prefix
+                if colon >= 1 && colon + 2 < len && text[colon + 1] == b'/' && text[colon + 2] == b'/' {
+                    // Walk backwards to find protocol start (http, https, ftp)
+                    let proto_start = find_protocol_start(text, colon);
+                    if let Some(start) = proto_start {
+                        if !in_any_range(start as u32, code_spans)
+                            && !in_any_range(start as u32, html_ranges)
+                            && !in_any_range(start as u32, autolink_ranges)
+                            && !in_any_range(start as u32, link_ranges)
+                            && is_valid_autolink_preceding(text, start)
+                        {
+                            if let Some(al) = try_url_autolink(text, start) {
+                                if !overlaps_any_range(al.start, al.end, code_spans)
+                                    && !overlaps_any_range(al.start, al.end, html_ranges)
+                                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                                    && !overlaps_any_range(al.start, al.end, link_ranges)
+                                {
+                                    pos = al.end as usize;
+                                    out.push(al);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                }
+                pos = colon + 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Pass 3: WWW autolinks — scan for '.'
+    {
+        let mut pos = 3; // Need at least "www" before the dot
+        while pos < len {
+            if let Some(offset) = memchr(b'.', &text[pos..]) {
+                let dot = pos + offset;
+                if dot >= 3
+                    && (text[dot - 3] | 0x20) == b'w'
+                    && (text[dot - 2] | 0x20) == b'w'
+                    && (text[dot - 1] | 0x20) == b'w'
+                    && is_valid_autolink_preceding(text, dot - 3)
+                {
+                    let start = dot - 3;
+                    if !in_any_range(start as u32, code_spans)
+                        && !in_any_range(start as u32, html_ranges)
+                        && !in_any_range(start as u32, autolink_ranges)
+                        && !in_any_range(start as u32, link_ranges)
+                    {
+                        if let Some(al) = try_www_autolink(text, start) {
+                            if !overlaps_any_range(al.start, al.end, code_spans)
+                                && !overlaps_any_range(al.start, al.end, html_ranges)
+                                && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                                && !overlaps_any_range(al.start, al.end, link_ranges)
+                            {
+                                pos = al.end as usize;
+                                out.push(al);
+                                continue;
+                            }
+                        }
+                    }
+                }
+                pos = dot + 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Sort by start position since we found them in separate passes
+    if out.len() > 1 {
+        out.sort_unstable_by_key(|al| al.start);
+    }
+}
+
+/// Find the start of a URL protocol (http, https, ftp) ending at the colon position.
+fn find_protocol_start(text: &[u8], colon: usize) -> Option<usize> {
+    // Check for https:// (most common)
+    if colon >= 5 && text[colon - 5..colon].eq_ignore_ascii_case(b"https") {
+        return Some(colon - 5);
+    }
+    // Check for http://
+    if colon >= 4 && text[colon - 4..colon].eq_ignore_ascii_case(b"http") {
+        return Some(colon - 4);
+    }
+    // Check for ftp://
+    if colon >= 3 && text[colon - 3..colon].eq_ignore_ascii_case(b"ftp") {
+        return Some(colon - 3);
+    }
+    None
 }
 
 /// Check if the character preceding `pos` is valid for an autolink literal start.

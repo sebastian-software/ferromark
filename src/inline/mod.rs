@@ -51,6 +51,8 @@ pub struct InlineParser {
     emphasis_stacks: EmphasisStacks,
     emphasis_matches: Vec<EmphasisMatch>,
     strikethrough_matches: Vec<StrikethroughMatch>,
+    al_code_span_ranges: Vec<(u32, u32)>,
+    al_link_ranges: Vec<(u32, u32)>,
     emit_points: Vec<EmitPoint>,
     emit_suppress_ranges: Vec<(u32, u32)>,
     html_code_ranges: Vec<(usize, usize)>,
@@ -84,6 +86,8 @@ impl InlineParser {
             emphasis_stacks: EmphasisStacks::default(),
             emphasis_matches: Vec::with_capacity(16),
             strikethrough_matches: Vec::with_capacity(8),
+            al_code_span_ranges: Vec::with_capacity(8),
+            al_link_ranges: Vec::with_capacity(8),
             emit_points: Vec::with_capacity(64),
             emit_suppress_ranges: Vec::with_capacity(8),
             html_code_ranges: Vec::with_capacity(8),
@@ -115,7 +119,7 @@ impl InlineParser {
         let has_specials = has_inline_specials(text);
 
         // Check for potential autolink literal triggers when enabled
-        let may_have_autolinks = autolink_literals && has_autolink_chars(text);
+        let may_have_autolinks = autolink_literals && has_autolink_candidates(text);
 
         if !has_specials && !may_have_autolinks {
             if !text.is_empty() {
@@ -290,27 +294,27 @@ impl InlineParser {
         let strikethrough_matches = self.strikethrough_matches.as_slice();
 
         // Seventh: autolink literals (bare URLs, www, emails)
-        if autolink_literals {
-            // Build code span ranges for overlap checking
-            let code_span_ranges: Vec<(u32, u32)> = self.code_spans.iter()
-                .map(|cs| (cs.opener_pos, cs.closer_end))
-                .collect();
-            // Build link ranges (inline links + ref links)
-            let mut link_ranges: Vec<(u32, u32)> = Vec::with_capacity(
-                resolved_links.len() + resolved_ref_links.len()
+        if may_have_autolinks {
+            // Build code span ranges for overlap checking (reuse Vec)
+            self.al_code_span_ranges.clear();
+            self.al_code_span_ranges.extend(
+                self.code_spans.iter().map(|cs| (cs.opener_pos, cs.closer_end))
             );
+            // Build link ranges (inline links + ref links) (reuse Vec)
+            self.al_link_ranges.clear();
+            self.al_link_ranges.reserve(resolved_links.len() + resolved_ref_links.len());
             for link in resolved_links {
-                link_ranges.push((link.start, link.end));
+                self.al_link_ranges.push((link.start, link.end));
             }
             for link in resolved_ref_links {
-                link_ranges.push((link.start, link.end));
+                self.al_link_ranges.push((link.start, link.end));
             }
             find_autolink_literals_into(
                 text,
-                &code_span_ranges,
+                &self.al_code_span_ranges,
                 &self.html_ranges,
                 &self.autolink_ranges,
-                &link_ranges,
+                &self.al_link_ranges,
                 &mut self.autolink_literals,
             );
         } else {
@@ -879,9 +883,43 @@ fn has_inline_specials(input: &[u8]) -> bool {
 }
 
 /// Check if text might contain autolink literal triggers.
+/// Uses memchr for SIMD-accelerated scanning of rare byte patterns
+/// instead of matching common letters like 'h' and 'w'.
 #[inline]
-fn has_autolink_chars(input: &[u8]) -> bool {
-    input.iter().any(|&b| matches!(b, b'h' | b'H' | b'f' | b'F' | b'w' | b'W' | b'@'))
+fn has_autolink_candidates(input: &[u8]) -> bool {
+    // Check for @ (email autolinks) — rare in normal prose
+    if memchr(b'@', input).is_some() {
+        return true;
+    }
+    // Check for :// (URL autolinks: http://, https://, ftp://) — colon is rare
+    let mut pos = 0;
+    while let Some(offset) = memchr(b':', &input[pos..]) {
+        let idx = pos + offset;
+        if idx + 2 < input.len() && input[idx + 1] == b'/' && input[idx + 2] == b'/' {
+            return true;
+        }
+        pos = idx + 1;
+    }
+    // Check for www. / WWW. (www autolinks)
+    pos = 0;
+    while pos + 3 < input.len() {
+        if let Some(offset) = memchr(b'.', &input[pos + 1..]) {
+            let dot = pos + 1 + offset;
+            if dot >= 3 {
+                let s = dot - 3;
+                if (input[s] | 0x20) == b'w'
+                    && (input[s + 1] | 0x20) == b'w'
+                    && (input[s + 2] | 0x20) == b'w'
+                {
+                    return true;
+                }
+            }
+            pos = dot + 1;
+        } else {
+            break;
+        }
+    }
+    false
 }
 
 #[inline]
