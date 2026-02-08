@@ -459,7 +459,10 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for GFM table delimiter row at top level (when in a paragraph)
-        if self.options.tables && indent < 4 && self.in_paragraph {
+        // Quick guard: delimiter rows start with |, -, or :
+        if self.options.tables && indent < 4 && self.in_paragraph
+            && matches!(self.cursor.peek_or_zero(), b'|' | b'-' | b':')
+        {
             let save_pos = self.cursor.offset();
             let save_partial = self.partial_tab_cols;
             let save_col = self.current_col;
@@ -787,7 +790,10 @@ impl<'a> BlockParser<'a> {
 
             // Check for GFM table delimiter row (when in a paragraph)
             // Must check BEFORE thematic break since `---` lines can be delimiter rows
-            if self.options.tables && self.in_paragraph {
+            // Quick guard: delimiter rows start with |, -, or :
+            if self.options.tables && self.in_paragraph
+                && matches!(first, b'|' | b'-' | b':')
+            {
                 let save_pos = self.cursor.offset();
                 let save_partial = self.partial_tab_cols;
                 let save_col = self.current_col;
@@ -2622,9 +2628,27 @@ impl<'a> BlockParser<'a> {
         (base + s, base + e)
     }
 
+    /// Quick pre-filter: a valid delimiter row contains only `-`, `:`, `|`, spaces, and tabs,
+    /// and must have at least one `-`.
+    #[inline]
+    fn could_be_delimiter_row(line: &[u8]) -> bool {
+        let mut has_dash = false;
+        for &b in line {
+            match b {
+                b'-' => has_dash = true,
+                b':' | b'|' | b' ' | b'\t' => {}
+                _ => return false,
+            }
+        }
+        has_dash
+    }
+
     /// Check if a line is a valid GFM table delimiter row.
     /// Returns column alignments if valid.
     fn is_delimiter_row(line: &[u8]) -> Option<SmallVec<[Alignment; 8]>> {
+        if !Self::could_be_delimiter_row(line) {
+            return None;
+        }
         let cells = Self::split_table_cells(line);
         if cells.is_empty() {
             return None;

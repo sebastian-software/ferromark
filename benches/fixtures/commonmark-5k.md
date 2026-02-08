@@ -35,6 +35,13 @@ Settlement began near the riverbank warehouses, followed by rail expansion and m
 
 Operators publish schedules at <https://example.org/northbridge/transit> and accept inquiries at <mailto:info@example.org>.
 
+| Zone | Service | Headway | Coverage |
+|------|---------|--------:|----------|
+| Harbor Row | Loop 1 | 6 min | Full |
+| Eastbank | Loop 1 | 6 min | Full |
+| Civic Plateau | Loop 2 | 12 min | Partial |
+| Archive Ward | Shuttle | 20 min | Limited |
+
 In maintenance guides, a hard line break is used to separate shift notes.  
 This line continues on the next row with explicit formatting.
 
@@ -79,11 +86,11 @@ Legacy memos still use indented code blocks for configuration samples:
 
 The loop schedule is coordinated with river traffic and freight windows. Operators track **turnaround time** and *dwell time* at major stations.
 
-- Peak interval: 6 minutes
-- Off-peak interval: 12 minutes
-- Night service: 20 minutes
-  - Limited stops at Harbor Row
-  - Signal priority near Eastbank
+| Period | Interval | Stops | Notes |
+|--------|:--------:|------:|-------|
+| Peak | 6 min | 12 | All stops served |
+| Off-peak | 12 min | 12 | All stops served |
+| Night | 20 min | 5 | Limited stops at Harbor Row |
 
 ### Archive Protocol 2
 

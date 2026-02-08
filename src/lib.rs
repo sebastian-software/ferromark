@@ -57,7 +57,7 @@ impl Default for Options {
             tables: true,
             strikethrough: true,
             task_lists: true,
-            autolink_literals: true,
+            autolink_literals: false,
             disallowed_raw_html: true,
         }
     }

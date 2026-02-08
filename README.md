@@ -45,30 +45,30 @@ Input bytes (&[u8])
 
 Benchmarked on Apple Silicon (M-series), latest run: February 8, 2026.
 Workload: synthetic wiki-style documents with text-heavy paragraphs, lists, code blocks, and representative CommonMark features (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-50k.md`).
-Method: output buffers are reused for ferromark, md4c, and pulldown-cmark where APIs allow; comrak allocates output internally. All GFM extensions enabled for ferromark. Main table uses non-PGO binaries for apples-to-apples defaults.
+Method: output buffers are reused for ferromark, md4c, and pulldown-cmark where APIs allow; comrak allocates output internally. Default GFM extensions enabled for ferromark (tables, strikethrough, task lists, disallowed raw HTML; autolink literals is opt-in). Main table uses non-PGO binaries for apples-to-apples defaults.
 
-**CommonMark 5KB** (all GFM extensions enabled)
+**CommonMark 5KB** (default GFM extensions, includes tables)
 | Parser | Throughput | Relative (vs ferromark) |
 |--------|-----------:|----------------------:|
-| **ferromark** | **291.3 MiB/s** | **1.00x** |
-| pulldown-cmark | 276.2 MiB/s | 0.95x |
-| md4c | 275.2 MiB/s | 0.94x |
-| comrak | 87.9 MiB/s | 0.30x |
+| **ferromark** | **293.3 MiB/s** | **1.00x** |
+| md4c | 277.7 MiB/s | 0.95x |
+| pulldown-cmark | 268.0 MiB/s | 0.91x |
+| comrak | 89.0 MiB/s | 0.30x |
 
-**CommonMark 50KB** (all GFM extensions enabled)
+**CommonMark 50KB** (default GFM extensions, includes tables)
 | Parser | Throughput | Relative (vs ferromark) |
 |--------|-----------:|----------------------:|
-| **ferromark** | **298.1 MiB/s** | **1.00x** |
-| pulldown-cmark | 282.7 MiB/s | 0.95x |
-| md4c | 267.5 MiB/s | 0.90x |
-| comrak | 84.7 MiB/s | 0.28x |
+| **ferromark** | **310.8 MiB/s** | **1.00x** |
+| pulldown-cmark | 288.3 MiB/s | 0.93x |
+| md4c | 270.0 MiB/s | 0.87x |
+| comrak | 85.8 MiB/s | 0.28x |
 
 Other candidates like markdown-rs are far slower in this workload and are omitted from the main tables to keep the comparison focused. Happy to run them on request.
 
 **Key results:**
-- ferromark is **~5.5% faster** than pulldown-cmark at both 5KB and 50KB.
-- ferromark is **~5.9% faster** than md4c at 5KB and **~11.5% faster** at 50KB.
-- ferromark is **~3.3-3.5x faster** than comrak across 5-50KB.
+- ferromark is **~6% faster** than md4c at 5KB and **~15% faster** at 50KB.
+- ferromark is **~9% faster** than pulldown-cmark at 5KB and **~8% faster** at 50KB.
+- ferromark is **~3.3-3.6x faster** than comrak across 5-50KB.
 
 Run benchmarks: `cargo bench --bench comparison`
 
