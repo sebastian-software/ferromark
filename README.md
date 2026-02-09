@@ -45,7 +45,7 @@ Input bytes (&[u8])
 
 Benchmarked on Apple Silicon (M-series), latest run: February 8, 2026.
 Workload: synthetic wiki-style documents with text-heavy paragraphs, lists, code blocks, and representative CommonMark features (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-50k.md`).
-Method: output buffers are reused for ferromark, md4c, and pulldown-cmark where APIs allow; comrak allocates output internally. Default GFM extensions enabled for ferromark (tables, strikethrough, task lists, disallowed raw HTML; autolink literals is opt-in). Main table uses non-PGO binaries for apples-to-apples defaults.
+Method: output buffers are reused for ferromark, md4c, and pulldown-cmark where APIs allow; comrak allocates output internally. Default GFM extensions enabled for ferromark (tables, strikethrough, task lists, disallowed raw HTML; autolink literals and footnotes are opt-in). Main table uses non-PGO binaries for apples-to-apples defaults.
 
 **CommonMark 5KB** (GFM extensions enabled, includes tables)
 | Parser | Throughput | Relative (vs ferromark) |
@@ -228,7 +228,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>More extensions increase compatibility but add parsing work. <em>Mapping:</em> comrak offers the broadest extension catalog; ferromark implements all 5 GFM extensions (tables, strikethrough, task lists, autolink literals, disallowed raw HTML); pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
+    <tr><td colspan="5"><small>More extensions increase compatibility but add parsing work. <em>Mapping:</em> comrak offers the broadest extension catalog; ferromark implements all 5 GFM extensions (tables, strikethrough, task lists, autolink literals, disallowed raw HTML) plus footnotes; pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
     <tr>
       <td><b>Spec compliance focus (CommonMark)</b></td>
       <td align="center">🟩</td>
@@ -236,7 +236,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>Full compliance adds edge-case handling. All four are strong here, but more features usually means more code on the hot path. <em>Mapping:</em> All four target CommonMark; comrak and md4c emphasize full compliance; pulldown-cmark adds extensions; ferromark is focused.</small></td></tr>
+    <tr><td colspan="5"><small>Full compliance adds edge-case handling. All four are strong here, but more features usually means more code on the hot path. <em>Mapping:</em> All four target CommonMark; comrak and md4c emphasize full compliance; pulldown-cmark adds extensions; ferromark is focused. Beyond CommonMark and GFM, ferromark, pulldown-cmark, and comrak also support footnotes (a widely used GitHub extension not part of the GFM spec).</small></td></tr>
     <tr>
       <td><b>Extension configuration surface</b></td>
       <td align="center">🟨</td>
@@ -244,7 +244,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. <em>Mapping:</em> md4c has many flags; pulldown-cmark and comrak use options; ferromark has 7 options covering all GFM extensions (<code>allow_html</code>, <code>allow_link_refs</code>, <code>tables</code>, <code>strikethrough</code>, <code>task_lists</code>, <code>autolink_literals</code>, <code>disallowed_raw_html</code>).</small></td></tr>
+    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. <em>Mapping:</em> md4c has many flags; pulldown-cmark and comrak use options; ferromark has 8 options covering all GFM extensions (<code>allow_html</code>, <code>allow_link_refs</code>, <code>tables</code>, <code>strikethrough</code>, <code>task_lists</code>, <code>autolink_literals</code>, <code>disallowed_raw_html</code>, <code>footnotes</code>).</small></td></tr>
     <tr>
       <td><b>Raw HTML control (allow/deny)</b></td>
       <td align="center">🟩</td>
@@ -271,12 +271,12 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
     <tr><td colspan="5"><small>These GFM features are common in real-world Markdown. <em>Mapping:</em> All four parsers support task lists and strikethrough.</small></td></tr>
     <tr>
       <td><b>Footnotes</b></td>
-      <td align="center">🟥</td>
+      <td align="center">🟩</td>
       <td align="center">🟥</td>
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>Footnotes add extra parsing and rendering complexity. <em>Mapping:</em> pulldown-cmark and comrak support footnotes; ferromark and md4c do not focus on them.</small></td></tr>
+    <tr><td colspan="5"><small>Footnotes add extra parsing and rendering complexity. <em>Mapping:</em> ferromark, pulldown-cmark, and comrak support footnotes; md4c does not.</small></td></tr>
     <tr>
       <td><b>Permissive autolinks</b></td>
       <td align="center">🟩</td>
