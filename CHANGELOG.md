@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.1...ferromark-v0.1.2) (2026-02-09)
+
+
+### Bug Fixes
+
+* correct license to MIT and update copyright holder ([c3de5ae](https://github.com/sebastian-software/ferromark/commit/c3de5ae7242999bf000bd299e86cdb81da815593))
+* resolve all clippy warnings and enable strict linting ([b4ec8e0](https://github.com/sebastian-software/ferromark/commit/b4ec8e04501574f6bbb067b145f1e8560e4cc5f2))
+
 ## [0.1.1](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.0...ferromark-v0.1.1) (2026-02-09)
 
 
