@@ -21,6 +21,8 @@ pub mod footnote;
 pub mod inline;
 pub mod limits;
 pub mod link_ref;
+#[cfg(feature = "mdx")]
+pub mod mdx;
 pub mod range;
 pub mod render;
 

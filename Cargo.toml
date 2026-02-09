@@ -43,6 +43,11 @@ default = ["std"]
 std = []
 neon = []
 trace = []
+mdx = []
+
+[[example]]
+name = "mdx_segment"
+required-features = ["mdx"]
 
 [[bench]]
 name = "parsing"

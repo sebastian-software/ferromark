@@ -55,6 +55,8 @@ The fixtures are synthetic wiki-style documents with paragraphs, lists, code blo
 
 **Beyond GFM**: Footnotes, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
 
+**MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
+
 12 feature flags to turn on exactly what you need:
 
 ```
@@ -72,6 +74,95 @@ ferromark is built for one job: turning Markdown into HTML as fast as possible. 
 - **HTML only.** No XML, no CommonMark round-tripping, no alternative output formats.
 
 These aren't planned. They'd compromise the streaming architecture that makes ferromark fast.
+
+## MDX support
+
+MDX is the standard for component-driven docs in Next.js, Docusaurus, and Astro. Processing it usually requires a full JavaScript toolchain — Node.js, acorn, babel, the works.
+
+ferromark takes a different approach: segment `.mdx` files into typed blocks and render them at native speed. No JS runtime. No AST.
+
+```toml
+ferromark = { version = "0.1", features = ["mdx"] }
+```
+
+### Render — one call, full output
+
+`render()` assembles the final output automatically: Markdown segments become HTML, JSX and expressions pass through unchanged, ESM and front matter are extracted separately.
+
+```rust
+use ferromark::mdx::render;
+
+let input = r#"import { Card } from './card'
+
+---
+title: Hello
+---
+
+# Hello World
+
+<Card title="Example">
+
+Markdown **inside** a component.
+
+</Card>
+
+{new Date().getFullYear()}
+"#;
+
+let output = render(input);
+// output.body        — HTML with JSX/expressions passed through
+// output.esm         — vec!["import { Card } from './card'\n"]
+// output.front_matter — Some("title: Hello\n")
+```
+
+The body is valid HTML *and* valid JSX — use it directly for web components, or wrap it in a React component with the ESM statements prepended. Use `render_with_options()` for custom Markdown settings (heading IDs, math, footnotes, etc.).
+
+### Segment — low-level control
+
+When you need full control over each block, use `segment()` directly:
+
+```rust
+use ferromark::mdx::{segment, Segment};
+
+for seg in segment(input) {
+    match seg {
+        Segment::Esm(s)              => { /* import/export — pass through */ }
+        Segment::Markdown(s)         => { /* parse with ferromark::to_html(s) */ }
+        Segment::JsxBlockOpen(s)     => { /* <Component> */ }
+        Segment::JsxBlockClose(s)    => { /* </Component> */ }
+        Segment::JsxBlockSelfClose(s)=> { /* <Component /> */ }
+        Segment::Expression(s)       => { /* {expression} */ }
+    }
+}
+```
+
+The segmenter handles JSX attribute parsing (strings, expressions, spreads), brace-depth tracking (with string/comment/template-literal awareness), fragment syntax, member expressions (`<Foo.Bar>`), and multiline tags. Invalid constructs fall back to Markdown — no panics, always valid output.
+
+Full example: `cargo run --features mdx --example mdx_segment`
+
+<details>
+<summary><strong>Scope and coverage</strong></summary>
+
+<br>
+
+The segmenter covers the block-level MDX patterns that make up 90%+ of real-world `.mdx` files: imports at the top, components wrapping content, expressions between paragraphs. This is what a typical Docusaurus, Next.js, or Astro page looks like — and it works out of the box.
+
+What the segmenter deliberately skips — and why that's fine for most use cases:
+
+| What | Our approach | When it matters |
+|---|---|---|
+| **Inline JSX** (`text <em>here</em>`) | Stays inside Markdown segments | Only if you mix JSX and prose on the same line inside a paragraph — rare in practice |
+| **JS validation** | Heuristic detection (keyword + brace counting) instead of acorn/swc | Only if you need to report syntax errors in user-authored MDX at parse time |
+| **Markdown grammar** | Standard CommonMark/GFM rules | Official mdxjs disables indented code and HTML syntax — relevant if your content relies on `<div>` being JSX, not HTML |
+| **Container nesting** | `> <Component>` stays Markdown | Only if you put JSX inside blockquotes or list items — uncommon |
+| **TypeScript generics** | `<Component<T>>` not parsed | Only relevant for TSX-heavy content pages — very rare in docs |
+| **Error reporting** | Silent fallback to Markdown | Means broken JSX renders as text instead of failing — arguably safer for content pipelines |
+
+The full `@mdx-js/mdx` compiler exists to produce a React component tree from MDX. It needs a JavaScript parser because it compiles to JSX. ferromark's segmenter exists to answer a simpler question: *where does the Markdown stop and the JSX start?* That question doesn't need a JS runtime.
+
+For the detailed technical spec, see `src/mdx/mod.rs`.
+
+</details>
 
 ## How it works
 
@@ -411,6 +502,12 @@ src/
 │   ├── strikethrough.rs # GFM strikethrough resolution
 │   ├── math.rs          # Math span resolution ($/$$ delimiters)
 │   └── links.rs         # Link/image/autolink parsing
+├── mdx/            # MDX segmenter + renderer (feature = "mdx")
+│   ├── mod.rs      # Public API — Segment enum, segment(), render()
+│   ├── render.rs   # Assembly layer: segments → HTML body + ESM + front matter
+│   ├── splitter.rs # Line-based state machine
+│   ├── jsx_tag.rs  # JSX tag boundary parser
+│   └── expr.rs     # Expression boundary parser (brace/string/comment tracking)
 ├── footnote.rs     # Footnote store and rendering
 ├── link_ref.rs     # Link reference definitions
 ├── cursor.rs       # Pointer-based byte cursor
