@@ -4,7 +4,12 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Ultra-high-performance Markdown to HTML compiler"
-license = "MIT OR Apache-2.0"
+license = "MIT"
+repository = "https://github.com/sebastian-software/ferromark"
+homepage = "https://github.com/sebastian-software/ferromark"
+readme = "README.md"
+keywords = ["markdown", "html", "parser", "commonmark", "gfm"]
+categories = ["parsing", "text-processing", "web-programming"]
 
 [lib]
 name = "ferromark"

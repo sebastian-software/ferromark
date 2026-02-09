@@ -10,6 +10,7 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use memchr::memchr;
+#[cfg(md4c)]
 use std::os::raw::{c_char, c_int, c_uint, c_void};
 
 /// Sample documents for benchmarking
@@ -242,6 +243,7 @@ fn parse_comrak(input: &str) -> String {
 }
 
 
+#[cfg(md4c)]
 unsafe extern "C" {
     fn md_html(
         input: *const c_char,
@@ -253,6 +255,7 @@ unsafe extern "C" {
     ) -> c_int;
 }
 
+#[cfg(md4c)]
 extern "C" fn md4c_output(data: *const c_char, size: c_uint, userdata: *mut c_void) {
     if data.is_null() || userdata.is_null() || size == 0 {
         return;
@@ -263,11 +266,13 @@ extern "C" fn md4c_output(data: *const c_char, size: c_uint, userdata: *mut c_vo
 }
 
 // md4c parser flags for GFM extensions
+#[cfg(md4c)]
 const MD4C_GFM_FLAGS: c_uint = 0x0100  // MD_FLAG_TABLES
                               | 0x0200  // MD_FLAG_STRIKETHROUGH
                               | 0x2000; // MD_FLAG_TASKLISTS
 
 /// Parse with md4c (C) via md_html (GFM extensions enabled).
+#[cfg(md4c)]
 fn parse_md4c(input: &str) -> String {
     let mut out: Vec<u8> = Vec::with_capacity(input.len() + input.len() / 4);
     let rc = unsafe {
@@ -285,6 +290,7 @@ fn parse_md4c(input: &str) -> String {
 }
 
 /// Parse with md4c into a reusable buffer (GFM extensions enabled)
+#[cfg(md4c)]
 fn parse_md4c_into(input: &str, out: &mut Vec<u8>) {
     out.clear();
     let rc = unsafe {
@@ -308,6 +314,7 @@ fn bench_tiny(c: &mut Criterion) {
     group.bench_function("ferromark", |b| {
         b.iter(|| parse_ferromark(black_box(input)))
     });
+    #[cfg(md4c)]
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
     });
@@ -329,6 +336,7 @@ fn bench_small(c: &mut Criterion) {
     group.bench_function("ferromark", |b| {
         b.iter(|| parse_ferromark(black_box(input)))
     });
+    #[cfg(md4c)]
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
     });
@@ -350,6 +358,7 @@ fn bench_simple(c: &mut Criterion) {
     group.bench_function("ferromark", |b| {
         b.iter(|| parse_ferromark(black_box(input)))
     });
+    #[cfg(md4c)]
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
     });
@@ -371,6 +380,7 @@ fn bench_medium(c: &mut Criterion) {
     group.bench_function("ferromark", |b| {
         b.iter(|| parse_ferromark(black_box(input)))
     });
+    #[cfg(md4c)]
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
     });
@@ -392,6 +402,7 @@ fn bench_large(c: &mut Criterion) {
     group.bench_function("ferromark", |b| {
         b.iter(|| parse_ferromark(black_box(&input)))
     });
+    #[cfg(md4c)]
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(&input)))
     });
@@ -417,13 +428,16 @@ fn bench_commonmark_group(c: &mut Criterion, group_name: &str, input: &str) {
         })
     });
 
-    let mut md4c_out = Vec::with_capacity(input.len() + input.len() / 4);
-    group.bench_function("md4c", |b| {
-        b.iter(|| {
-            parse_md4c_into(black_box(input), &mut md4c_out);
-            black_box(&md4c_out);
-        })
-    });
+    #[cfg(md4c)]
+    {
+        let mut md4c_out = Vec::with_capacity(input.len() + input.len() / 4);
+        group.bench_function("md4c", |b| {
+            b.iter(|| {
+                parse_md4c_into(black_box(input), &mut md4c_out);
+                black_box(&md4c_out);
+            })
+        });
+    }
 
     let mut pd_out = String::with_capacity(input.len() + input.len() / 4);
     group.bench_function("pulldown-cmark", |b| {
@@ -461,6 +475,7 @@ fn bench_tables(c: &mut Criterion) {
     group.bench_function("ferromark", |b| {
         b.iter(|| parse_ferromark(black_box(input)))
     });
+    #[cfg(md4c)]
     group.bench_function("md4c", |b| {
         b.iter(|| parse_md4c(black_box(input)))
     });
@@ -493,6 +508,7 @@ fn bench_complexity(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("ferromark", name), input, |b, s| {
             b.iter(|| parse_ferromark(black_box(s)))
         });
+        #[cfg(md4c)]
         group.bench_with_input(BenchmarkId::new("md4c", name), input, |b, s| {
             b.iter(|| parse_md4c(black_box(s)))
         });
@@ -544,6 +560,7 @@ fn bench_throughput(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("ferromark", name), input, |b, s| {
             b.iter(|| parse_ferromark(black_box(s)))
         });
+        #[cfg(md4c)]
         group.bench_with_input(BenchmarkId::new("md4c", name), input, |b, s| {
             b.iter(|| parse_md4c(black_box(s)))
         });

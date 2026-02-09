@@ -1162,7 +1162,6 @@ fn has_underscore_in_last_two_segments(domain: &[u8]) -> bool {
         segments[0] = segments[1];
         segments[1] = last_seg;
     } else if seg_idx == 1 {
-        segments[0] = segments[0]; // keep first
         segments[1] = last_seg;
     } else {
         segments[0] = last_seg;
