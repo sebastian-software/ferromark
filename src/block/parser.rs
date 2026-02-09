@@ -5,7 +5,7 @@ use crate::limits;
 use crate::Range;
 use smallvec::SmallVec;
 
-use super::event::{Alignment, BlockEvent, ListKind, TaskState};
+use super::event::{Alignment, BlockEvent, CalloutType, ListKind, TaskState};
 use crate::footnote::{FootnoteStore, normalize_footnote_label};
 use crate::link_ref::{LinkRefStore, normalize_label_into, LinkRefDef};
 use crate::Options;
@@ -1312,6 +1312,13 @@ impl<'a> BlockParser<'a> {
         // If it's a tab, the excess columns are stored in partial_tab_cols.
         self.skip_indent_max(1);
 
+        // Try to detect callout marker [!TYPE] on first line
+        let callout = if self.options.callouts {
+            self.try_callout_type()
+        } else {
+            None
+        };
+
         // Close paragraph if any
         self.close_paragraph(events);
 
@@ -1324,8 +1331,76 @@ impl<'a> BlockParser<'a> {
             has_content: false,
         });
 
-        events.push(BlockEvent::BlockQuoteStart);
+        events.push(BlockEvent::BlockQuoteStart { callout });
         true
+    }
+
+    /// Try to detect a callout type marker `[!TYPE]` at the current cursor position.
+    /// If found, consumes the marker and trailing whitespace/newline. Returns the type.
+    /// If not found, cursor is unchanged.
+    fn try_callout_type(&mut self) -> Option<CalloutType> {
+        let saved_offset = self.cursor.offset();
+
+        // Check for `[!`
+        if !self.cursor.at(b'[') {
+            return None;
+        }
+        self.cursor.bump();
+        if !self.cursor.at(b'!') {
+            self.cursor = Cursor::new_at(self.input, saved_offset);
+            return None;
+        }
+        self.cursor.bump();
+
+        // Read ASCII alpha type name
+        let type_start = self.cursor.offset();
+        while self.cursor.peek().map_or(false, |b| b.is_ascii_alphabetic()) {
+            self.cursor.bump();
+        }
+        let type_end = self.cursor.offset();
+
+        if type_end == type_start {
+            // Empty type name
+            self.cursor = Cursor::new_at(self.input, saved_offset);
+            return None;
+        }
+
+        // Must close with `]`
+        if !self.cursor.at(b']') {
+            self.cursor = Cursor::new_at(self.input, saved_offset);
+            return None;
+        }
+        self.cursor.bump();
+
+        // After `]`, only optional whitespace allowed before newline/EOF
+        while self.cursor.peek().map_or(false, |b| b == b' ' || b == b'\t') {
+            self.cursor.bump();
+        }
+        if !self.cursor.is_eof() && !self.cursor.at(b'\n') && !self.cursor.at(b'\r') {
+            // Non-whitespace after `]` — not a callout
+            self.cursor = Cursor::new_at(self.input, saved_offset);
+            return None;
+        }
+
+        // Match type name case-insensitively
+        let type_bytes = &self.input[type_start..type_end];
+        let callout_type = match type_bytes.len() {
+            3 if type_bytes.eq_ignore_ascii_case(b"TIP") => CalloutType::Tip,
+            4 if type_bytes.eq_ignore_ascii_case(b"NOTE") => CalloutType::Note,
+            7 if type_bytes.eq_ignore_ascii_case(b"WARNING") => CalloutType::Warning,
+            7 if type_bytes.eq_ignore_ascii_case(b"CAUTION") => CalloutType::Caution,
+            9 if type_bytes.eq_ignore_ascii_case(b"IMPORTANT") => CalloutType::Important,
+            _ => {
+                // Unknown type — revert to regular blockquote
+                self.cursor = Cursor::new_at(self.input, saved_offset);
+                return None;
+            }
+        };
+
+        // Don't consume the trailing newline — let parse_line_content handle
+        // it as a blank line so the next line is processed through match_containers.
+
+        Some(callout_type)
     }
 
     /// Try to start a list item.
@@ -3904,7 +3979,7 @@ mod tests {
         let input = "> quote";
         let events = parse(input);
 
-        assert_eq!(events[0], BlockEvent::BlockQuoteStart);
+        assert_eq!(events[0], BlockEvent::BlockQuoteStart { callout: None });
         assert_eq!(events[1], BlockEvent::ParagraphStart);
         assert_eq!(get_text(input, &events[2]), "quote");
         assert_eq!(events[3], BlockEvent::ParagraphEnd);
@@ -3916,7 +3991,7 @@ mod tests {
         let input = "> line1\n> line2";
         let events = parse(input);
 
-        assert_eq!(events[0], BlockEvent::BlockQuoteStart);
+        assert_eq!(events[0], BlockEvent::BlockQuoteStart { callout: None });
         assert_eq!(events[1], BlockEvent::ParagraphStart);
         assert_eq!(get_text(input, &events[2]), "line1");
         assert_eq!(events[3], BlockEvent::SoftBreak);
@@ -3929,7 +4004,7 @@ mod tests {
         let events = parse(input);
 
         // > without space is still valid
-        assert_eq!(events[0], BlockEvent::BlockQuoteStart);
+        assert_eq!(events[0], BlockEvent::BlockQuoteStart { callout: None });
     }
 
     #[test]
@@ -3937,8 +4012,8 @@ mod tests {
         let input = "> > nested";
         let events = parse(input);
 
-        assert_eq!(events[0], BlockEvent::BlockQuoteStart);
-        assert_eq!(events[1], BlockEvent::BlockQuoteStart);
+        assert_eq!(events[0], BlockEvent::BlockQuoteStart { callout: None });
+        assert_eq!(events[1], BlockEvent::BlockQuoteStart { callout: None });
         assert!(matches!(events[2], BlockEvent::ParagraphStart));
     }
 
@@ -4071,7 +4146,7 @@ mod tests {
         let input = "> - item";
         let events = parse(input);
 
-        assert_eq!(events[0], BlockEvent::BlockQuoteStart);
+        assert_eq!(events[0], BlockEvent::BlockQuoteStart { callout: None });
         assert!(matches!(events[1], BlockEvent::ListStart { .. }));
     }
 }

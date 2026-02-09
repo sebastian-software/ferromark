@@ -2,9 +2,17 @@
 //!
 //! Runs tests from the CommonMark spec.json file to track compliance.
 
-use ferromark::to_html;
+use ferromark::{to_html_with_options, Options};
 use serde::Deserialize;
 use std::fs;
+
+/// CommonMark spec tests use default options with heading_ids disabled,
+/// since heading IDs are not part of the CommonMark spec.
+fn spec_to_html(input: &str) -> String {
+    let mut options = Options::default();
+    options.heading_ids = false;
+    to_html_with_options(input, &options)
+}
 
 #[derive(Debug, Deserialize)]
 struct SpecTest {
@@ -150,7 +158,7 @@ fn commonmark_spec_report() {
         std::collections::HashMap::new();
 
     for test in &tests {
-        let output = to_html(&test.markdown);
+        let output = spec_to_html(&test.markdown);
         let is_pass = output == test.html;
 
         let entry = by_section.entry(test.section.clone()).or_insert((0, 0));
@@ -203,7 +211,7 @@ fn commonmark_spec_report_in_scope() {
             continue;
         }
 
-        let output = to_html(&test.markdown);
+        let output = spec_to_html(&test.markdown);
         let is_pass = output == test.html;
 
         let entry = by_section.entry(test.section.clone()).or_insert((0, 0));
@@ -257,7 +265,7 @@ fn commonmark_failures_report() {
         std::collections::HashMap::new();
 
     for test in &tests {
-        let output = to_html(&test.markdown);
+        let output = spec_to_html(&test.markdown);
         if output != test.html {
             failures_by_section
                 .entry(test.section.clone())
@@ -290,7 +298,7 @@ fn run_section_tests(section_name: &str) -> (u32, u32, Vec<(u32, String, String,
     let mut failures = Vec::new();
 
     for test in tests.iter().filter(|t| t.section == section_name) {
-        let output = to_html(&test.markdown);
+        let output = spec_to_html(&test.markdown);
         if output == test.html {
             passed += 1;
         } else {
@@ -310,7 +318,7 @@ fn run_section_tests_in_scope(section_name: &str) -> (u32, u32, Vec<(u32, String
     let mut failures = Vec::new();
 
     for test in tests.iter().filter(|t| t.section == section_name && is_test_in_scope(t)) {
-        let output = to_html(&test.markdown);
+        let output = spec_to_html(&test.markdown);
         if output == test.html {
             passed += 1;
         } else {

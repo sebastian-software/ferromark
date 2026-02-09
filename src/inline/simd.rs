@@ -24,12 +24,12 @@ unsafe fn mask_has_any(mask: uint8x16_t) -> bool {
 
 #[inline]
 fn is_inline_special(b: u8) -> bool {
-    matches!(b, b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~')
+    matches!(b, b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$')
 }
 
 #[inline]
 fn is_mark_special(b: u8) -> bool {
-    matches!(b, b'`' | b'*' | b'_' | b'\\' | b'\n' | b'[' | b']' | b'<' | b'~')
+    matches!(b, b'`' | b'*' | b'_' | b'\\' | b'\n' | b'[' | b']' | b'<' | b'~' | b'$')
 }
 
 /// SIMD-accelerated check for inline specials.
@@ -42,7 +42,7 @@ pub unsafe fn has_inline_specials_simd(input: &[u8]) -> Option<bool> {
     while pos + 16 <= len {
         unsafe {
             let v = vld1q_u8(input.as_ptr().add(pos));
-            let mask = any_eq_mask(v, b"*_`[]<\\\n~");
+            let mask = any_eq_mask(v, b"*_`[]<\\\n~$");
             if mask_has_any(mask) {
                 return Some(true);
             }
@@ -68,7 +68,7 @@ pub unsafe fn next_mark_special_simd(text: &[u8], pos: &mut usize) -> Option<usi
     while p + 16 <= len {
         unsafe {
             let v = vld1q_u8(text.as_ptr().add(p));
-            let mask = any_eq_mask(v, b"`*_\\\n[]<~");
+            let mask = any_eq_mask(v, b"`*_\\\n[]<~$");
             if mask_has_any(mask) {
                 // Find first match within the chunk.
                 for i in 0..16 {

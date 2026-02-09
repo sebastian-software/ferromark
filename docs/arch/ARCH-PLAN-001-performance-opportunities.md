@@ -6,7 +6,7 @@ Increase end-to-end Markdown-to-HTML throughput while preserving full CommonMark
 
 ## Evidence source
 
-This plan is calibrated against `/Users/sebastian/Workspace/md-new/PERF_ATTEMPTS.md` so we avoid re-running low-yield micro-optimizations.
+This plan is calibrated against `PERF_ATTEMPTS.md` so we avoid re-running low-yield micro-optimizations.
 
 ## Baseline and guardrails
 
@@ -26,16 +26,16 @@ Context:
 
 Tasks:
 1. Remove double hash lookup in `LinkRefStore::insert`.
-   - Current path in `/Users/sebastian/Workspace/md-new/src/link_ref.rs` does `contains_key` followed by `insert`.
+   - Current path in `src/link_ref.rs` does `contains_key` followed by `insert`.
    - Use single-lookup `entry` flow.
 2. Avoid paragraph-wide copy before definition parsing.
-   - Current extraction path builds a temporary paragraph buffer in `/Users/sebastian/Workspace/md-new/src/block/parser.rs`.
+   - Current extraction path builds a temporary paragraph buffer in `src/block/parser.rs`.
    - Parse directly from existing ranges or through a lightweight paragraph cursor.
 3. Replace early `Vec<u8>` copies in link reference parser with ranges.
-   - Current `ParsedLinkRefDef` owns `Vec<u8>` fields in `/Users/sebastian/Workspace/md-new/src/block/parser.rs`.
+   - Current `ParsedLinkRefDef` owns `Vec<u8>` fields in `src/block/parser.rs`.
    - Return ranges and materialize bytes only when definition is accepted.
 4. Remove repeated nested scanning in reference candidate checks.
-   - `contains_ref_link_candidate` in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` currently re-scans opens/closes and re-normalizes labels.
+   - `contains_ref_link_candidate` in `src/inline/links.rs` currently re-scans opens/closes and re-normalizes labels.
    - Precompute candidate ranges once per inline parse pass.
 
 Success criteria:
@@ -70,7 +70,7 @@ Tasks:
 3. Keep occupied range checks sorted and measurable with profile-driven validation.
 
 Success criteria:
-- Reduced CPU samples in `/Users/sebastian/Workspace/md-new/src/inline/links.rs`.
+- Reduced CPU samples in `src/inline/links.rs`.
 - Improved worst-case bracket-heavy benchmark behavior.
 
 ### P2: Measurement and regression automation
@@ -101,7 +101,7 @@ Success criteria:
 
 ## Already attempted: do not prioritize again (unless new evidence)
 
-From `/Users/sebastian/Workspace/md-new/PERF_ATTEMPTS.md`:
+From `PERF_ATTEMPTS.md`:
 
 - NEON escape scans and NEON URL-escape scans: no clear improvement (reverted).
 - Multiple SIMD/ASCII label-normalization micro variants: mostly no gain or regression.
@@ -142,7 +142,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 
 2. P0.3 range-based parsed definition output + deferred materialization
 - Change kept in commit: `19acffc`
-- File: `/Users/sebastian/Workspace/md-new/src/block/parser.rs`
+- File: `src/block/parser.rs`
 - Result vs baseline: `refs` `-5.72%` time (`+6.06%` throughput), `mixed` `-1.39%` time (small win), `commonmark50k` no significant change.
 - Decision: **kept + committed**.
 
@@ -157,13 +157,13 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 5. Post-profile `refs` pass (Time Profiler guided)
 - Profiling evidence (`xctrace` Time Profiler on `^complexity/ferromark/refs$`):
   - Dominant samples were allocator-heavy (`_xzm_xzone_malloc_tiny`, `_xzm_free`, `_malloc_zone_malloc`).
-  - ferromark hotspots included `extract_link_ref_defs`, `parse_link_ref_def`, and `normalize_label_into` in `/Users/sebastian/Workspace/md-new/src/block/parser.rs` and `/Users/sebastian/Workspace/md-new/src/link_ref.rs`.
+  - ferromark hotspots included `extract_link_ref_defs`, `parse_link_ref_def`, and `normalize_label_into` in `src/block/parser.rs` and `src/link_ref.rs`.
 - Attempt A: parser-owned reuse of paragraph parse buffer + parser-owned label scratch buffer.
   - Benchmark (`--sample-size 80 --measurement-time 4`) result: `refs` `-0.69%` (within noise), `mixed` `+0.48%` (within noise), `commonmark50k` no change.
   - Decision: **discarded** (no meaningful gain).
 - Attempt B: parser-owned reuse of paragraph parse buffer only (kept label scratch local to avoid `String` clone in accepted-definition path).
   - Change kept in commit: `90b9fb2`
-  - File: `/Users/sebastian/Workspace/md-new/src/block/parser.rs`
+  - File: `src/block/parser.rs`
   - Benchmark (`--sample-size 80 --measurement-time 4`) result:
     - `commonmark50k/ferromark`: `153.67 us` (no significant change).
     - `complexity/ferromark/refs`: `2.3317 us` (`-3.46%` time, significant).
@@ -187,7 +187,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
   - Benchmark (`--sample-size 80 --measurement-time 4`) result: `refs` `-1.07%` (noise), `mixed` `-0.85%` (noise), `commonmark50k` no significant change.
   - Focused bench (`link_refs_focus`) result: `refs_escaped` `-3.06%` (improved) but `refs`/`mixed` remained within noise.
   - Decision: **discarded** (did not meet primary meaningful-`refs`/`mixed` criterion).
-- Attempt G: `write_link_title` fast path in `/Users/sebastian/Workspace/md-new/src/render.rs` (skip UTF-8/entity decode when no `&`; skip backslash scan when no `\\` after decode).
+- Attempt G: `write_link_title` fast path in `src/render.rs` (skip UTF-8/entity decode when no `&`; skip backslash scan when no `\\` after decode).
   - Change kept in commit: `5caf88e`
   - Benchmark (`--sample-size 80 --measurement-time 4`) result:
     - `commonmark50k/ferromark`: `150.63 us` (no significant regression).
@@ -202,7 +202,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
   - Main benchmark (`--sample-size 80 --measurement-time 4`) result (two repeated runs): `refs` and `mixed` remained in noise in the guardrail set.
   - Focused bench (`link_refs_focus`) showed mixed results (one run with wins, one run near-noise), without stable confirmation in guardrail cases.
   - Decision: **discarded** (insufficiently stable gain).
-- Attempt I: URL destination safe-copy fast path in `/Users/sebastian/Workspace/md-new/src/escape.rs` (`url_escape_link_destination_raw`).
+- Attempt I: URL destination safe-copy fast path in `src/escape.rs` (`url_escape_link_destination_raw`).
   - Change kept in commit: `6a6ed26`
   - Change: early return with `extend_from_slice` when URL bytes are ASCII and contain no characters requiring escaping/encoding.
   - Benchmark (`--sample-size 80 --measurement-time 4`) repeated absolute medians:
@@ -210,15 +210,15 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `complexity/ferromark/refs`: `2.2568-2.2631 us` (improved vs prior kept baseline `2.2833 us`).
     - `complexity/ferromark/mixed`: `3.2254-3.2345 us` (improved vs prior kept baseline `3.3262 us`).
   - Decision: **kept**.
-- Attempt J: `parse_link_ref_def` memchr-based scanner path in `/Users/sebastian/Workspace/md-new/src/block/parser.rs` (label delimiter scan + angle-URL delimiter scan + line-end scan).
+- Attempt J: `parse_link_ref_def` memchr-based scanner path in `src/block/parser.rs` (label delimiter scan + angle-URL delimiter scan + line-end scan).
   - Main benchmark (`--sample-size 80 --measurement-time 4`) result: `commonmark50k` `149.23 us`, `refs` `2.2757 us`, `mixed` `3.2666 us` (all no significant change vs local baseline).
   - Focused bench (`link_refs_focus`) result: `refs_escaped` and `mixed` improved, but primary guardrail metrics were not meaningfully improved and absolute `refs`/`mixed` medians trended worse than Attempt I keep baseline.
   - Decision: **discarded**.
-- Attempt K: ASCII escaped-label fast path in `/Users/sebastian/Workspace/md-new/src/link_ref.rs` (`normalize_label_into` without temporary `Vec` for ASCII + `\\`).
+- Attempt K: ASCII escaped-label fast path in `src/link_ref.rs` (`normalize_label_into` without temporary `Vec` for ASCII + `\\`).
   - Main benchmark (`--sample-size 80 --measurement-time 4`) result: no significant change on `commonmark50k`, `refs`, `mixed`.
   - Focused bench (`link_refs_focus`) result: `refs` and `mixed` regressed significantly (`+2.23%` and `+2.93%` time).
   - Decision: **discarded**.
-- Attempt L: reuse candidate-label scratch buffer in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` (`contains_ref_link_candidate` no longer allocates a new `String` per call).
+- Attempt L: reuse candidate-label scratch buffer in `src/inline/links.rs` (`contains_ref_link_candidate` no longer allocates a new `String` per call).
   - Main benchmark (`--sample-size 80 --measurement-time 4`) repeated medians:
     - `commonmark50k/ferromark`: `148.63-148.69 us` (no significant regression).
     - `complexity/ferromark/refs`: `2.2351-2.2435 us` (improved vs Attempt I keep baseline `2.2568-2.2631 us`).
@@ -239,7 +239,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `pulldown-cmark`: `1.8894 us`
     - Remaining gap: `~19.13%` in favor of `pulldown-cmark` (worse than earlier ~`17.44%` snapshot).
   - Decision: **discarded** (did not close the pulldown gap and failed the primary refs objective despite acceptable guardrails).
-- Attempt N: streaming-oriented block refdef extraction in `/Users/sebastian/Workspace/md-new/src/block/parser.rs` (contiguous no-copy paragraph fast path + reused label scratch buffer; fallback to existing joined-buffer path when lines are not contiguous in source).
+- Attempt N: streaming-oriented block refdef extraction in `src/block/parser.rs` (contiguous no-copy paragraph fast path + reused label scratch buffer; fallback to existing joined-buffer path when lines are not contiguous in source).
   - Main guardrail run (`--sample-size 80 --measurement-time 4`) result:
     - `commonmark50k/ferromark`: `146.69 us` (improved, significant).
     - `complexity/ferromark/refs`: `2.1786 us` (improved direction; within configured noise-threshold classification).
@@ -253,7 +253,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `pulldown-cmark`: `1.9158 us`
     - Remaining gap: `~15.29%` in favor of `pulldown-cmark` (improved vs prior ~`17.44%` snapshot).
   - Decision: **kept**.
-- Attempt O: stronger stack-/delimiter-based link-reference resolution in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` with parser-owned stack/scratch state in `/Users/sebastian/Workspace/md-new/src/inline/mod.rs` (closer to pulldown-cmark pass-1 shape, including outer-link disable during inner non-image ref-link formation).
+- Attempt O: stronger stack-/delimiter-based link-reference resolution in `src/inline/links.rs` with parser-owned stack/scratch state in `src/inline/mod.rs` (closer to pulldown-cmark pass-1 shape, including outer-link disable during inner non-image ref-link formation).
   - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
     - `commonmark50k/ferromark`: `147.53 us` (`+2.06%` time, significant regression).
     - `complexity/ferromark/refs`: `2.2363 us` (`+2.88%` time, significant regression).
@@ -267,7 +267,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `pulldown-cmark`: `1.8928 us`
     - Gap: `~18.89%` in favor of `pulldown-cmark` (worse than the kept baseline path).
   - Decision: **discarded** (failed refs objective and widened pulldown gap).
-- Attempt P: skip inline-link resolver pass when no immediate `](` candidate exists (new `has_inline_link_opener` guard in `/Users/sebastian/Workspace/md-new/src/inline/mod.rs`), so refs-heavy docs avoid unnecessary `resolve_links_into` bracket matching work.
+- Attempt P: skip inline-link resolver pass when no immediate `](` candidate exists (new `has_inline_link_opener` guard in `src/inline/mod.rs`), so refs-heavy docs avoid unnecessary `resolve_links_into` bracket matching work.
   - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
     - `commonmark50k/ferromark`: `146.98 us` (no significant regression; within noise threshold).
     - `complexity/ferromark/refs`: `2.1284 us` (`-4.37%` time, significant).
@@ -281,7 +281,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `pulldown-cmark`: `1.9294 us`
     - Gap: `~11.94%` in favor of `pulldown-cmark` (improved vs prior `~15.29%` baseline snapshot).
   - Decision: **kept**.
-- Attempt Q: precompute valid nested ref-link candidates once per parse in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` (candidate open/close vectors + precomputed candidate check replacing repeated ad-hoc scan in `contains_ref_link_candidate`).
+- Attempt Q: precompute valid nested ref-link candidates once per parse in `src/inline/links.rs` (candidate open/close vectors + precomputed candidate check replacing repeated ad-hoc scan in `contains_ref_link_candidate`).
   - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
     - `commonmark50k/ferromark`: `153.09 us` (regression).
     - `complexity/ferromark/refs`: `2.4072 us` (regression).
@@ -291,7 +291,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `refs_escaped`: `5.0374 us` (regression),
     - `mixed`: `3.3645 us` (regression).
   - Decision: **discarded**.
-- Attempt R: lazy-cached nested-candidate evaluation in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` (cache first close per open + cache whether open can normalize to known ref label; cache initialized only if nested-candidate check is reached).
+- Attempt R: lazy-cached nested-candidate evaluation in `src/inline/links.rs` (cache first close per open + cache whether open can normalize to known ref label; cache initialized only if nested-candidate check is reached).
   - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
     - `commonmark50k/ferromark`: `147.12 us` (noise-level change).
     - `complexity/ferromark/refs`: `2.2307 us`.
@@ -302,7 +302,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `complexity/ferromark/mixed`: `3.2122 us`
   - Interpretation: refs/mixed worse than current kept baseline despite no correctness failures.
   - Decision: **discarded**.
-- Attempt S: remove per-call binary-search setup in `find_matching_close` by precomputing first close index per open and passing open index directly (changes in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` and `/Users/sebastian/Workspace/md-new/src/inline/mod.rs`).
+- Attempt S: remove per-call binary-search setup in `find_matching_close` by precomputing first close index per open and passing open index directly (changes in `src/inline/links.rs` and `src/inline/mod.rs`).
   - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
     - `commonmark50k/ferromark`: `149.11 us` (noise-level change/regression direction).
     - `complexity/ferromark/refs`: `2.2303 us` (no meaningful win vs baseline).
@@ -312,7 +312,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `refs_escaped`: `4.2280 us` (neutral),
     - `mixed`: `3.2938 us` (neutral/regression direction).
   - Decision: **discarded**.
-- Attempt T: parser-owned nested-label scratch reuse for `contains_ref_link_candidate` (add reusable `ref_nested_label_buf` in `/Users/sebastian/Workspace/md-new/src/inline/mod.rs`; remove per-call `String::new()` in `/Users/sebastian/Workspace/md-new/src/inline/links.rs`).
+- Attempt T: parser-owned nested-label scratch reuse for `contains_ref_link_candidate` (add reusable `ref_nested_label_buf` in `src/inline/mod.rs`; remove per-call `String::new()` in `src/inline/links.rs`).
   - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
     - `commonmark50k/ferromark`: `145.99 us` (noise-level change).
     - `complexity/ferromark/refs`: `2.2172 us` (regression direction vs kept baseline).
@@ -333,7 +333,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
     - `link_refs_focus/ferromark/refs`: `2.2521 us`
     - `link_refs_focus/ferromark/refs_escaped`: `4.3945 us`
   - Decision: **discarded** (unstable and not reproducibly better).
-- Attempt V: delimiter-stack first-pass reference resolution in `/Users/sebastian/Workspace/md-new/src/inline/links.rs` (resolve refs directly while sweeping closes left-to-right with an open-bracket stack, remove `contains_ref_link_candidate` from the hot path, and consume `[label]` suffix brackets in the same pass).
+- Attempt V: delimiter-stack first-pass reference resolution in `src/inline/links.rs` (resolve refs directly while sweeping closes left-to-right with an open-bracket stack, remove `contains_ref_link_candidate` from the hot path, and consume `[label]` suffix brackets in the same pass).
   - Main guardrail run (`--sample-size 40 --measurement-time 2`) result:
     - `commonmark50k/ferromark`: `146.48 us` (no significant regression).
     - `complexity/ferromark/refs`: `2.1965 us` (improved vs immediate previous run baseline, significant).
@@ -367,8 +367,8 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 ### Cross-check against `pulldown-cmark` approach (2026-02-07)
 
 - Profile artifacts used:
-  - ferromark refs Time Profiler: `/Users/sebastian/Workspace/md-new/target/profiles/refs-next-gap.trace` + `/Users/sebastian/Workspace/md-new/target/profiles/refs-next-gap.xml`
-  - pulldown refs Time Profiler (release-debug): `/Users/sebastian/Workspace/md-new/target/profiles/pulldown-refs-release-debug.trace` + `/Users/sebastian/Workspace/md-new/target/profiles/pulldown-refs-release-debug.xml`
+  - ferromark refs Time Profiler: `target/profiles/refs-next-gap.trace` + `target/profiles/refs-next-gap.xml`
+  - pulldown refs Time Profiler (release-debug): `target/profiles/pulldown-refs-release-debug.trace` + `target/profiles/pulldown-refs-release-debug.xml`
 - Observed ferromark leaf hotspots in refs-focused trace (weighted sample counts):
   - `parse_link_ref_def`: `226`
   - `find_matching_close`: `103`
@@ -390,10 +390,10 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 ### P1 and P2 progress
 
 1. P1.1/P1.2 (normalization call-count/scratch reuse):
-- Repeated micro-tuning was not retried because `/Users/sebastian/Workspace/md-new/PERF_ATTEMPTS.md` already records no-gain/regression variants and this run did not introduce new profiler evidence to justify revisiting them.
+- Repeated micro-tuning was not retried because `PERF_ATTEMPTS.md` already records no-gain/regression variants and this run did not introduce new profiler evidence to justify revisiting them.
 
 2. P1.3 + P2.1 (new focused benchmark coverage):
-- Implemented new bench group in `/Users/sebastian/Workspace/md-new/benches/comparison.rs`: `link_refs_focus`.
+- Implemented new bench group in `benches/comparison.rs`: `link_refs_focus`.
 - Added cases: `refs`, `refs_escaped` (escaped/entity-heavy), `mixed`.
 - Sample measurements from `cargo bench --bench comparison -- "link_refs_focus/ferromark/(refs|refs_escaped|mixed)" --sample-size 40 --measurement-time 2`:
   - `refs`: `2.4212 us`

@@ -11,7 +11,7 @@
 mod event;
 mod parser;
 
-pub use event::{Alignment, BlockEvent, ListKind, TaskState};
+pub use event::{Alignment, BlockEvent, CalloutType, ListKind, TaskState};
 pub use parser::BlockParser;
 
 /// Post-process events to fix up list tight status.

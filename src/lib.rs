@@ -25,7 +25,7 @@ pub mod range;
 pub mod render;
 
 // Re-export primary types
-pub use block::{fixup_list_tight, Alignment, BlockEvent, BlockParser};
+pub use block::{fixup_list_tight, Alignment, BlockEvent, BlockParser, CalloutType};
 pub use footnote::FootnoteStore;
 pub use inline::{InlineEvent, InlineParser};
 pub use link_ref::{LinkRefDef, LinkRefStore};
@@ -51,6 +51,14 @@ pub struct Options {
     pub disallowed_raw_html: bool,
     /// Enable footnotes extension (`[^label]` references and `[^label]:` definitions).
     pub footnotes: bool,
+    /// Enable front matter detection (`---`/`+++` delimited metadata at document start).
+    pub front_matter: bool,
+    /// Generate GitHub-compatible heading IDs (`<h1 id="slug">`).
+    pub heading_ids: bool,
+    /// Enable math spans (`$inline$` and `$$display$$`).
+    pub math: bool,
+    /// Enable GitHub-style callouts/admonitions (`> [!NOTE]`, `> [!WARNING]`, etc.).
+    pub callouts: bool,
 }
 
 impl Default for Options {
@@ -64,8 +72,167 @@ impl Default for Options {
             autolink_literals: false,
             disallowed_raw_html: true,
             footnotes: false,
+            front_matter: false,
+            heading_ids: true,
+            math: false,
+            callouts: true,
         }
     }
+}
+
+/// Result of parsing Markdown with front matter extraction.
+pub struct ParseResult<'a> {
+    /// Rendered HTML output.
+    pub html: String,
+    /// Raw front matter content (between delimiters), if detected.
+    pub front_matter: Option<&'a str>,
+}
+
+/// Extract front matter from the start of a document.
+///
+/// Returns `Some((content, rest_offset))` where `content` is the raw text between
+/// delimiters and `rest_offset` is the byte offset where the remaining markdown begins.
+/// Returns `None` if no valid front matter is found.
+fn extract_front_matter(input: &str) -> Option<(&str, usize)> {
+    let bytes = input.as_bytes();
+    if bytes.len() < 3 {
+        return None;
+    }
+
+    // Determine delimiter character: must be exactly 3 of `-` or `+` at byte 0
+    let delim_char = match bytes[0] {
+        b'-' | b'+' => bytes[0],
+        _ => return None,
+    };
+
+    // Verify exactly 3 delimiter chars (not 4+)
+    if bytes.len() < 3 || bytes[1] != delim_char || bytes[2] != delim_char {
+        return None;
+    }
+
+    // After the 3 delimiter chars, only whitespace allowed before newline
+    let mut pos = 3;
+    if pos < bytes.len() && bytes[pos] == delim_char {
+        // 4+ delimiter chars — not front matter
+        return None;
+    }
+    while pos < bytes.len() && (bytes[pos] == b' ' || bytes[pos] == b'\t') {
+        pos += 1;
+    }
+
+    // Must hit newline (or end of input for degenerate case, but that means no closing)
+    if pos >= bytes.len() {
+        return None;
+    }
+    if bytes[pos] == b'\r' {
+        pos += 1;
+    }
+    if pos >= bytes.len() || bytes[pos] != b'\n' {
+        return None;
+    }
+    pos += 1;
+
+    let content_start = pos;
+
+    // Search for closing delimiter
+    loop {
+        if pos >= bytes.len() {
+            // No closing delimiter found
+            return None;
+        }
+
+        // Check if current line is a closing delimiter
+        let line_start = pos;
+        if pos + 2 < bytes.len()
+            && bytes[pos] == delim_char
+            && bytes[pos + 1] == delim_char
+            && bytes[pos + 2] == delim_char
+        {
+            let mut p = pos + 3;
+            // Must not have 4+ delimiter chars
+            if p < bytes.len() && bytes[p] == delim_char {
+                // Not a closing delimiter, skip this line
+            } else {
+                // Optional trailing whitespace
+                while p < bytes.len() && (bytes[p] == b' ' || bytes[p] == b'\t') {
+                    p += 1;
+                }
+                // Must be at newline or EOF
+                let at_end = if p >= bytes.len() {
+                    true
+                } else if bytes[p] == b'\n' {
+                    true
+                } else if bytes[p] == b'\r' && p + 1 < bytes.len() && bytes[p + 1] == b'\n' {
+                    true
+                } else {
+                    false
+                };
+
+                if at_end {
+                    let content = &input[content_start..line_start];
+                    // Advance past the closing delimiter line
+                    let mut rest = p;
+                    if rest < bytes.len() {
+                        if bytes[rest] == b'\r' {
+                            rest += 1;
+                        }
+                        if rest < bytes.len() && bytes[rest] == b'\n' {
+                            rest += 1;
+                        }
+                    }
+                    return Some((content, rest));
+                }
+            }
+        }
+
+        // Skip to next line
+        while pos < bytes.len() && bytes[pos] != b'\n' {
+            pos += 1;
+        }
+        if pos < bytes.len() {
+            pos += 1; // skip \n
+        }
+
+        // Safety: if we haven't advanced past line_start, force progress
+        if pos <= line_start {
+            break;
+        }
+    }
+
+    None
+}
+
+/// Parse Markdown and return both HTML and front matter (if present).
+///
+/// Uses default options with `front_matter: true`.
+///
+/// # Example
+/// ```
+/// let result = ferromark::parse("---\ntitle: Hello\n---\n# Content");
+/// assert_eq!(result.front_matter, Some("title: Hello\n"));
+/// assert!(result.html.contains("Content</h1>"));
+/// ```
+pub fn parse(input: &str) -> ParseResult<'_> {
+    let mut options = Options::default();
+    options.front_matter = true;
+    parse_with_options(input, &options)
+}
+
+/// Parse Markdown with options and return both HTML and front matter.
+///
+/// Front matter is only extracted when `options.front_matter` is `true`.
+pub fn parse_with_options<'a>(input: &'a str, options: &Options) -> ParseResult<'a> {
+    let (front_matter, markdown) = if options.front_matter {
+        match extract_front_matter(input) {
+            Some((fm, offset)) => (Some(fm), &input[offset..]),
+            None => (None, input),
+        }
+    } else {
+        (None, input)
+    };
+
+    let html = to_html_with_options(markdown, options);
+    ParseResult { html, front_matter }
 }
 
 /// Convert Markdown to HTML.
@@ -75,7 +242,7 @@ impl Default for Options {
 /// # Example
 /// ```
 /// let html = ferromark::to_html("# Hello\n\nWorld");
-/// assert!(html.contains("<h1>Hello</h1>"));
+/// assert!(html.contains("Hello</h1>"));
 /// assert!(html.contains("<p>World</p>"));
 /// ```
 pub fn to_html(input: &str) -> String {
@@ -92,20 +259,42 @@ pub fn to_html_into(input: &str, out: &mut Vec<u8>) {
 }
 
 /// Convert Markdown to HTML with options.
+///
+/// When `options.front_matter` is `true`, any front matter at the start of the
+/// document is silently stripped before parsing.
 pub fn to_html_with_options(input: &str, options: &Options) -> String {
-    let mut writer = HtmlWriter::with_capacity_for(input.len());
-    render_to_writer(input.as_bytes(), &mut writer, options);
+    let markdown = if options.front_matter {
+        match extract_front_matter(input) {
+            Some((_, offset)) => &input[offset..],
+            None => input,
+        }
+    } else {
+        input
+    };
+    let mut writer = HtmlWriter::with_capacity_for(markdown.len());
+    render_to_writer(markdown.as_bytes(), &mut writer, options);
     writer.into_string()
 }
 
 /// Convert Markdown to HTML into a provided buffer with options.
+///
+/// When `options.front_matter` is `true`, any front matter at the start of the
+/// document is silently stripped before parsing.
 pub fn to_html_into_with_options(input: &str, out: &mut Vec<u8>, options: &Options) {
+    let markdown = if options.front_matter {
+        match extract_front_matter(input) {
+            Some((_, offset)) => &input[offset..],
+            None => input,
+        }
+    } else {
+        input
+    };
     out.clear();
-    out.reserve(input.len() + input.len() / 4);
+    out.reserve(markdown.len() + markdown.len() / 4);
     let mut writer = HtmlWriter::with_capacity(0);
     // Use the provided buffer directly
     std::mem::swap(writer.buffer_mut(), out);
-    render_to_writer(input.as_bytes(), &mut writer, options);
+    render_to_writer(markdown.as_bytes(), &mut writer, options);
     std::mem::swap(writer.buffer_mut(), out);
 }
 
@@ -154,6 +343,8 @@ struct HeadingState {
     content: Vec<u8>,
     /// Whether we're currently in a heading.
     in_heading: bool,
+    /// Current heading level (stored for deferred tag emission).
+    level: u8,
 }
 
 impl HeadingState {
@@ -161,6 +352,7 @@ impl HeadingState {
         Self {
             content: Vec::with_capacity(64),
             in_heading: false,
+            level: 0,
         }
     }
 
@@ -184,6 +376,79 @@ impl HeadingState {
         }
         &self.content
     }
+}
+
+/// Tracker for deduplicating heading IDs.
+struct HeadingIdTracker {
+    used: Vec<String>,
+}
+
+impl HeadingIdTracker {
+    fn new() -> Self {
+        Self { used: Vec::new() }
+    }
+
+    /// Generate a unique slug, appending `-1`, `-2`, etc. on collision.
+    fn unique_slug(&mut self, base: String) -> String {
+        let slug = if base.is_empty() { "heading".to_string() } else { base };
+        let count = self.used.iter().filter(|s| **s == slug).count();
+        let result = if count == 0 {
+            slug.clone()
+        } else {
+            format!("{}-{}", slug, count)
+        };
+        self.used.push(slug);
+        result
+    }
+}
+
+/// Generate a GitHub-compatible slug from raw heading text.
+///
+/// Steps:
+/// 1. Strip inline markup delimiters (`*`, `_`, `~`, `` ` ``, `[`, `]`, `!`, `#`)
+/// 2. Lowercase
+/// 3. Replace whitespace runs with `-`
+/// 4. Remove chars that are not alphanumeric, `-`, `_`, or space
+/// 5. Strip leading/trailing `-`
+fn generate_slug(raw: &[u8]) -> String {
+    let mut slug = Vec::with_capacity(raw.len());
+    let mut prev_was_space = false;
+
+    for &b in raw {
+        // Strip inline markup delimiters (keep _ since it's valid in slugs)
+        if matches!(b, b'*' | b'~' | b'`' | b'[' | b']' | b'!' | b'#') {
+            continue;
+        }
+
+        if b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' {
+            if !prev_was_space && !slug.is_empty() {
+                slug.push(b'-');
+                prev_was_space = true;
+            }
+            continue;
+        }
+
+        prev_was_space = false;
+
+        // Lowercase ASCII
+        let ch = if b.is_ascii_uppercase() { b + 32 } else { b };
+
+        // Keep alphanumeric, hyphen, underscore, and multibyte UTF-8
+        if ch.is_ascii_alphanumeric() || ch == b'-' || ch == b'_' || ch >= 0x80 {
+            slug.push(ch);
+        }
+    }
+
+    // Strip trailing hyphen
+    while slug.last() == Some(&b'-') {
+        slug.pop();
+    }
+    // Strip leading hyphen
+    while slug.first() == Some(&b'-') {
+        slug.remove(0);
+    }
+
+    String::from_utf8(slug).unwrap_or_default()
 }
 
 /// State for collecting table cell content before inline parsing.
@@ -282,6 +547,12 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     let mut footnote_order: Vec<usize> = Vec::new();
     let fn_store_ref = footnote_store.as_ref();
 
+    // Heading ID tracker for deduplication
+    let mut heading_id_tracker = HeadingIdTracker::new();
+
+    // Track callout type for each open blockquote (None = regular blockquote)
+    let mut callout_stack: Vec<Option<block::CalloutType>> = Vec::new();
+
     // Render events to HTML
     for event in &events {
         render_block_event(
@@ -303,6 +574,8 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
             &link_refs,
             fn_store_ref,
             &mut footnote_order,
+            &mut heading_id_tracker,
+            &mut callout_stack,
             options,
         );
     }
@@ -344,6 +617,8 @@ fn render_block_event(
     link_refs: &LinkRefStore,
     footnote_store: Option<&FootnoteStore>,
     footnote_order: &mut Vec<usize>,
+    heading_id_tracker: &mut HeadingIdTracker,
+    callout_stack: &mut Vec<Option<block::CalloutType>>,
     options: &Options,
 ) {
     // Check if we're in a tight list (innermost list is tight)
@@ -384,7 +659,7 @@ fn render_block_event(
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, footnote_store, inline_events);
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, options.math, footnote_store, inline_events);
 
                 // Render inline events
                 let mut image_state = None;
@@ -409,16 +684,28 @@ fn render_block_event(
                 writer.newline();
                 *at_tight_li_start = false;
             }
-            writer.heading_start(*level);
+            // Defer heading open tag to HeadingEnd so we can generate the slug
+            // from collected content before emitting the tag.
             heading_state.start();
+            heading_state.level = *level;
         }
         BlockEvent::HeadingEnd { level } => {
             let content = heading_state.finish();
+
+            // Emit heading open tag (deferred from HeadingStart)
+            if options.heading_ids {
+                let slug = generate_slug(content);
+                let id = heading_id_tracker.unique_slug(slug);
+                writer.heading_start_with_id(*level, &id);
+            } else {
+                writer.heading_start(*level);
+            }
+
             if !content.is_empty() {
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, footnote_store, inline_events);
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, options.math, footnote_store, inline_events);
 
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
@@ -477,7 +764,7 @@ fn render_block_event(
                 // Parse immediately (e.g., heading content)
                 inline_events.clear();
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(text, refs, options.allow_html, options.strikethrough, options.autolink_literals, footnote_store, inline_events);
+                inline_parser.parse_with_options(text, refs, options.allow_html, options.strikethrough, options.autolink_literals, options.math, footnote_store, inline_events);
 
                 // Render inline events
                 let mut image_state = None;
@@ -513,7 +800,7 @@ fn render_block_event(
         BlockEvent::CodeBlockEnd => {
             writer.code_block_end();
         }
-        BlockEvent::BlockQuoteStart => {
+        BlockEvent::BlockQuoteStart { callout } => {
             // Write pending newline from loose list item start
             if *pending_loose_li_newline {
                 writer.newline();
@@ -530,11 +817,19 @@ fn render_block_event(
                 *at_tight_li_start = false;
             }
             *blockquote_depth += 1;
-            writer.blockquote_start();
+            callout_stack.push(*callout);
+            if let Some(ct) = callout {
+                writer.callout_start(*ct);
+            } else {
+                writer.blockquote_start();
+            }
         }
         BlockEvent::BlockQuoteEnd => {
             *blockquote_depth = blockquote_depth.saturating_sub(1);
-            writer.blockquote_end();
+            match callout_stack.pop() {
+                Some(Some(_)) => writer.callout_end(),
+                _ => writer.blockquote_end(),
+            }
         }
         BlockEvent::ListStart { kind, tight } => {
             // Write pending newline from loose list item start
@@ -644,7 +939,7 @@ fn render_block_event(
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, footnote_store, inline_events);
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, options.math, footnote_store, inline_events);
 
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
@@ -971,6 +1266,54 @@ fn render_inline_event(
                 }
             }
         }
+        InlineEvent::MathInline(range) => {
+            if in_image {
+                writer.write_escaped_attr(range.slice(text));
+            } else {
+                writer.write_str("<code class=\"language-math math-inline\">");
+                let content = range.slice(text);
+                for &b in content {
+                    if b == b'\n' {
+                        writer.write_str(" ");
+                    } else if b == b'<' {
+                        writer.write_str("&lt;");
+                    } else if b == b'>' {
+                        writer.write_str("&gt;");
+                    } else if b == b'&' {
+                        writer.write_str("&amp;");
+                    } else if b == b'"' {
+                        writer.write_str("&quot;");
+                    } else {
+                        writer.buffer_mut().push(b);
+                    }
+                }
+                writer.write_str("</code>");
+            }
+        }
+        InlineEvent::MathDisplay(range) => {
+            if in_image {
+                writer.write_escaped_attr(range.slice(text));
+            } else {
+                writer.write_str("<code class=\"language-math math-display\">");
+                let content = range.slice(text);
+                for &b in content {
+                    if b == b'\n' {
+                        writer.write_str(" ");
+                    } else if b == b'<' {
+                        writer.write_str("&lt;");
+                    } else if b == b'>' {
+                        writer.write_str("&gt;");
+                    } else if b == b'&' {
+                        writer.write_str("&amp;");
+                    } else if b == b'"' {
+                        writer.write_str("&quot;");
+                    } else {
+                        writer.buffer_mut().push(b);
+                    }
+                }
+                writer.write_str("</code>");
+            }
+        }
     }
 }
 
@@ -1015,6 +1358,8 @@ fn render_footnote_section(
         let mut blockquote_depth = 0u32;
         let mut in_table_head = false;
         let mut pending_task = block::TaskState::None;
+        let mut fn_heading_id_tracker = HeadingIdTracker::new();
+        let mut fn_callout_stack: Vec<Option<block::CalloutType>> = Vec::new();
 
         // Track if the last event was ParagraphEnd (to insert backref)
         let last_para_end_idx = fn_events.iter().rposition(|e| matches!(e, BlockEvent::ParagraphEnd));
@@ -1048,6 +1393,8 @@ fn render_footnote_section(
                     link_refs,
                     fn_store_ref,
                     &mut fn_footnote_order,
+                    &mut fn_heading_id_tracker,
+                    &mut fn_callout_stack,
                     options,
                 );
 
@@ -1087,6 +1434,8 @@ fn render_footnote_section(
                 link_refs,
                 fn_store_ref,
                 &mut fn_footnote_order,
+                &mut fn_heading_id_tracker,
+                &mut fn_callout_stack,
                 options,
             );
         }
@@ -1117,13 +1466,13 @@ mod tests {
     #[test]
     fn test_heading_h1() {
         let html = to_html("# Hello");
-        assert!(html.contains("<h1>Hello</h1>"));
+        assert!(html.contains("Hello</h1>"));
     }
 
     #[test]
     fn test_heading_h2() {
         let html = to_html("## World");
-        assert!(html.contains("<h2>World</h2>"));
+        assert!(html.contains("World</h2>"));
     }
 
     #[test]
@@ -1132,7 +1481,7 @@ mod tests {
             let input = format!("{} Heading", "#".repeat(level));
             let html = to_html(&input);
             assert!(
-                html.contains(&format!("<h{level}>Heading</h{level}>")),
+                html.contains(&format!("Heading</h{level}>")),
                 "Failed for level {level}: {html}"
             );
         }
@@ -1163,14 +1512,14 @@ mod tests {
     #[test]
     fn test_heading_and_paragraph() {
         let html = to_html("# Title\n\nContent here.");
-        assert!(html.contains("<h1>Title</h1>"));
+        assert!(html.contains("Title</h1>"));
         assert!(html.contains("<p>Content here.</p>"));
     }
 
     #[test]
     fn test_heading_with_closing_hashes() {
         let html = to_html("# Hello #");
-        assert!(html.contains("<h1>Hello</h1>"));
+        assert!(html.contains("Hello</h1>"));
     }
 
     #[test]
@@ -1191,9 +1540,9 @@ Final paragraph."#;
 
         let html = to_html(input);
 
-        assert!(html.contains("<h1>Main Title</h1>"));
-        assert!(html.contains("<h2>Section 1</h2>"));
-        assert!(html.contains("<h2>Section 2</h2>"));
+        assert!(html.contains("Main Title</h1>"));
+        assert!(html.contains("Section 1</h2>"));
+        assert!(html.contains("Section 2</h2>"));
         assert!(html.contains("<hr />"));
         assert!(html.contains("<p>This is the first paragraph.</p>"));
     }
@@ -1226,7 +1575,7 @@ Final paragraph."#;
         let mut buffer = Vec::new();
         to_html_into("# Test", &mut buffer);
         let html = String::from_utf8(buffer).unwrap();
-        assert!(html.contains("<h1>Test</h1>"));
+        assert!(html.contains("Test</h1>"));
     }
 
     // Code block tests
@@ -1272,7 +1621,7 @@ print("hello")
 
 More text."#;
         let html = to_html(input);
-        assert!(html.contains("<h1>Title</h1>"));
+        assert!(html.contains("Title</h1>"));
         assert!(html.contains("<p>Some text.</p>"));
         assert!(html.contains("<pre><code class=\"language-python\">"));
         assert!(html.contains("print"));

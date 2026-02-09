@@ -353,6 +353,17 @@ impl HtmlWriter {
         self.write_byte(b'>');
     }
 
+    /// Write heading start with ID: `<hN id="slug">`
+    #[inline]
+    pub fn heading_start_with_id(&mut self, level: u8, id: &str) {
+        debug_assert!(level >= 1 && level <= 6);
+        self.write_str("<h");
+        self.write_byte(b'0' + level);
+        self.write_str(" id=\"");
+        self.write_string(id);
+        self.write_str("\">");
+    }
+
     /// Write heading end: `</hN>\n`
     #[inline]
     pub fn heading_end(&mut self, level: u8) {
@@ -456,6 +467,22 @@ impl HtmlWriter {
     #[inline]
     pub fn blockquote_end(&mut self) {
         self.write_str("</blockquote>\n");
+    }
+
+    /// Write callout/admonition start.
+    #[inline]
+    pub fn callout_start(&mut self, callout: crate::block::CalloutType) {
+        self.write_str("<div class=\"markdown-alert markdown-alert-");
+        self.write_str(callout.css_suffix());
+        self.write_str("\">\n<p class=\"markdown-alert-title\">");
+        self.write_str(callout.title());
+        self.write_str("</p>\n");
+    }
+
+    /// Write callout/admonition end.
+    #[inline]
+    pub fn callout_end(&mut self) {
+        self.write_str("</div>\n");
     }
 
     /// Write list start (unordered): `<ul>\n`

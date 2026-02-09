@@ -89,6 +89,12 @@ pub enum InlineEvent {
         /// Index into the footnote store.
         def_index: u32,
     },
+
+    /// Inline math span (`$...$`).
+    MathInline(Range),
+
+    /// Display math span (`$$...$$`).
+    MathDisplay(Range),
 }
 
 #[cfg(test)]

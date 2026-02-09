@@ -9,6 +9,7 @@ mod code_span;
 mod emphasis;
 pub mod event;
 mod links;
+mod math;
 pub mod marks;
 mod simd;
 mod strikethrough;
@@ -19,6 +20,7 @@ pub use links::AutolinkLiteralKind;
 use crate::Range;
 use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
 use emphasis::{resolve_emphasis_with_stacks_into, EmphasisMatch, EmphasisStacks};
+use math::{resolve_math_spans, MathSpan};
 use strikethrough::{resolve_strikethrough_into, StrikethroughMatch};
 use links::{find_autolinks_into, find_autolink_literals_into, resolve_links_into, resolve_reference_links_into, Autolink, AutolinkLiteral, Link, RefLink};
 use crate::footnote::{FootnoteStore, normalize_footnote_label};
@@ -59,6 +61,7 @@ pub struct InlineParser {
     html_code_ranges: Vec<(usize, usize)>,
     html_autolink_ranges: Vec<(usize, usize)>,
     footnote_refs: Vec<FootnoteRef>,
+    math_spans: Vec<MathSpan>,
 }
 
 impl InlineParser {
@@ -95,6 +98,7 @@ impl InlineParser {
             html_code_ranges: Vec::with_capacity(8),
             html_autolink_ranges: Vec::with_capacity(8),
             footnote_refs: Vec::with_capacity(4),
+            math_spans: Vec::with_capacity(4),
         }
     }
 
@@ -106,7 +110,7 @@ impl InlineParser {
         allow_html: bool,
         events: &mut Vec<InlineEvent>,
     ) {
-        self.parse_with_options(text, link_refs, allow_html, true, true, None, events);
+        self.parse_with_options(text, link_refs, allow_html, true, true, false, None, events);
     }
 
     /// Parse inline content with full GFM options.
@@ -117,6 +121,7 @@ impl InlineParser {
         allow_html: bool,
         strikethrough: bool,
         autolink_literals: bool,
+        math: bool,
         footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
@@ -179,6 +184,13 @@ impl InlineParser {
         self.code_spans.clear();
         self.code_spans.extend(extract_code_spans(self.mark_buffer.marks()));
         filter_html_spans_in_code_spans(&mut self.html_spans, &self.code_spans);
+
+        // Math spans (after code spans, before links; gated on math option)
+        if math {
+            self.math_spans = resolve_math_spans(self.mark_buffer.marks_mut(), text);
+        } else {
+            self.math_spans.clear();
+        }
 
         // Filter autolinks that start inside code spans
         self.autolinks.retain(|al| {
@@ -346,6 +358,7 @@ impl InlineParser {
             marks,
             text,
             &self.code_spans,
+            &self.math_spans,
             emphasis_matches,
             strikethrough_matches,
             &self.autolink_literals,
@@ -491,6 +504,7 @@ impl InlineParser {
         marks: &[Mark],
         text: &[u8],
         code_spans: &[CodeSpan],
+        math_spans: &[MathSpan],
         emphasis_matches: &[EmphasisMatch],
         strikethrough_matches: &[StrikethroughMatch],
         autolink_literals: &[AutolinkLiteral],
@@ -554,6 +568,43 @@ impl InlineParser {
                 kind: EmitKind::CodeContent(content_end),
                 end: content_end,
             });
+        }
+
+        // Add math span events
+        for span in math_spans {
+            let (content_start, content_end) = span.content_range();
+            // Strip leading/trailing space like code spans
+            let mut cs = content_start as usize;
+            let mut ce = content_end as usize;
+            if ce > cs + 1 {
+                let content = &text[cs..ce];
+                let first_is_space = content[0] == b' ' || content[0] == b'\n';
+                let last_is_space = content[content.len() - 1] == b' ' || content[content.len() - 1] == b'\n';
+                let not_all_space = content.iter().any(|&b| b != b' ' && b != b'\n');
+                if first_is_space && last_is_space && not_all_space {
+                    cs += 1;
+                    ce -= 1;
+                }
+            }
+            if span.is_display {
+                emit_points.push(EmitPoint {
+                    pos: span.opener_pos,
+                    kind: EmitKind::MathDisplay {
+                        content_start: cs as u32,
+                        content_end: ce as u32,
+                    },
+                    end: span.closer_end,
+                });
+            } else {
+                emit_points.push(EmitPoint {
+                    pos: span.opener_pos,
+                    kind: EmitKind::MathInline {
+                        content_start: cs as u32,
+                        content_end: ce as u32,
+                    },
+                    end: span.closer_end,
+                });
+            }
         }
 
         // Add link events
@@ -959,6 +1010,20 @@ impl InlineParser {
                     events.push(InlineEvent::FootnoteRef { def_index });
                     skip_until = point.end;
                 }
+                EmitKind::MathInline { content_start, content_end } => {
+                    events.push(InlineEvent::MathInline(Range::from_usize(
+                        content_start as usize,
+                        content_end as usize,
+                    )));
+                    skip_until = point.end;
+                }
+                EmitKind::MathDisplay { content_start, content_end } => {
+                    events.push(InlineEvent::MathDisplay(Range::from_usize(
+                        content_start as usize,
+                        content_end as usize,
+                    )));
+                    skip_until = point.end;
+                }
             }
 
             pos = pos.max(point.end);
@@ -987,7 +1052,7 @@ fn has_inline_specials(input: &[u8]) -> bool {
     }
     for &b in input {
         match b {
-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' => {
+            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' => {
                 return true;
             }
             _ => {}
@@ -1098,6 +1163,8 @@ enum EmitKind {
     AutolinkLiteral { end: u32, kind: links::AutolinkLiteralKind },
     HtmlRaw { end: u32 },
     FootnoteRef { def_index: u32 },
+    MathInline { content_start: u32, content_end: u32 },
+    MathDisplay { content_start: u32, content_end: u32 },
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -127,7 +127,7 @@ fn all_alignment_types() {
 #[test]
 fn table_terminated_by_heading() {
     let input = "| a | b |\n| - | - |\n| c | d |\n# Heading\n";
-    let expected = "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<h1>Heading</h1>\n";
+    let expected = "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<h1 id=\"heading\">Heading</h1>\n";
     assert_eq!(to_html(input), expected);
 }
 

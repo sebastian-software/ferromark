@@ -37,7 +37,7 @@ Input bytes (&[u8])
 ### Why this is fast
 
 - **Block pass stays simple**: cheap line scanning via `memchr`, container stack for quotes/lists.
-- **Inline pass is staged**: collect marks -> resolve precedence (code, links, emphasis) -> emit.
+- **Inline pass is staged**: collect marks -> resolve precedence (code, math, links, emphasis, strikethrough) -> emit.
 - **Hot-path tuning**: `#[inline]` where it matters, `#[cold]` for rare paths, table-driven classification.
 - **CommonMark emphasis done right**: modulo-3 delimiter handling without expensive rescans.
 
@@ -45,7 +45,7 @@ Input bytes (&[u8])
 
 Benchmarked on Apple Silicon (M-series), latest run: February 8, 2026.
 Workload: synthetic wiki-style documents with text-heavy paragraphs, lists, code blocks, and representative CommonMark features (`benches/fixtures/commonmark-5k.md`, `benches/fixtures/commonmark-50k.md`).
-Method: output buffers are reused for ferromark, md4c, and pulldown-cmark where APIs allow; comrak allocates output internally. Default GFM extensions enabled for ferromark (tables, strikethrough, task lists, disallowed raw HTML; autolink literals and footnotes are opt-in). Main table uses non-PGO binaries for apples-to-apples defaults.
+Method: output buffers are reused for ferromark, md4c, and pulldown-cmark where APIs allow; comrak allocates output internally. Default extensions enabled for ferromark (tables, strikethrough, task lists, disallowed raw HTML, heading IDs, callouts; autolink literals, footnotes, front matter, and math are opt-in). Main table uses non-PGO binaries for apples-to-apples defaults.
 
 **CommonMark 5KB** (GFM extensions enabled, includes tables)
 | Parser | Throughput | Relative (vs ferromark) |
@@ -227,7 +227,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>More extensions increase compatibility but add parsing work. <em>Mapping:</em> comrak offers the broadest extension catalog; ferromark implements all 5 GFM extensions (tables, strikethrough, task lists, autolink literals, disallowed raw HTML) plus footnotes; pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
+    <tr><td colspan="5"><small>More extensions increase compatibility but add parsing work. <em>Mapping:</em> comrak offers the broadest extension catalog; ferromark implements all 5 GFM extensions (tables, strikethrough, task lists, autolink literals, disallowed raw HTML) plus footnotes, front matter, heading IDs, math spans, and callouts; pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
     <tr>
       <td><b>Spec compliance focus (CommonMark)</b></td>
       <td align="center">🟩</td>
@@ -235,7 +235,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>Full compliance adds edge-case handling. All four are strong here, but more features usually means more code on the hot path. <em>Mapping:</em> All four target CommonMark; comrak and md4c emphasize full compliance; pulldown-cmark adds extensions; ferromark is focused. Beyond CommonMark and GFM, ferromark, pulldown-cmark, and comrak also support footnotes (a widely used GitHub extension not part of the GFM spec).</small></td></tr>
+    <tr><td colspan="5"><small>Full compliance adds edge-case handling. All four are strong here, but more features usually means more code on the hot path. <em>Mapping:</em> All four target CommonMark; comrak and md4c emphasize full compliance; pulldown-cmark adds extensions; ferromark is focused. Beyond CommonMark and GFM, ferromark, pulldown-cmark, and comrak also support footnotes, heading IDs, math spans, and callouts (widely used GitHub extensions not part of the GFM spec).</small></td></tr>
     <tr>
       <td><b>Extension configuration surface</b></td>
       <td align="center">🟨</td>
@@ -243,7 +243,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. <em>Mapping:</em> md4c has many flags; pulldown-cmark and comrak use options; ferromark has 8 options covering all GFM extensions (<code>allow_html</code>, <code>allow_link_refs</code>, <code>tables</code>, <code>strikethrough</code>, <code>task_lists</code>, <code>autolink_literals</code>, <code>disallowed_raw_html</code>, <code>footnotes</code>).</small></td></tr>
+    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. <em>Mapping:</em> md4c has many flags; pulldown-cmark and comrak use options; ferromark has 12 options covering all extensions (<code>allow_html</code>, <code>allow_link_refs</code>, <code>tables</code>, <code>strikethrough</code>, <code>task_lists</code>, <code>autolink_literals</code>, <code>disallowed_raw_html</code>, <code>footnotes</code>, <code>front_matter</code>, <code>heading_ids</code>, <code>math</code>, <code>callouts</code>).</small></td></tr>
     <tr>
       <td><b>Raw HTML control (allow/deny)</b></td>
       <td align="center">🟩</td>
@@ -284,14 +284,6 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
     </tr>
     <tr><td colspan="5"><small>Permissive autolinks trade strictness for convenience. <em>Mapping:</em> ferromark and md4c support GFM autolink literals (URL, www, email); comrak has relaxed autolinks; pulldown-cmark focuses on spec defaults.</small></td></tr>
-    <tr>
-      <td><b>Wiki links</b></td>
-      <td align="center">🟥</td>
-      <td align="center">🟩</td>
-      <td align="center">🟥</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>Underline is an extension that changes emphasis semantics. <em>Mapping:</em> md4c and comrak include underline extensions; pulldown-cmark and ferromark stick closer to CommonMark emphasis rules.</small></td></tr>
     <tr>
       <td><b>Output safety toggles</b></td>
       <td align="center">🟨</td>
@@ -363,13 +355,21 @@ All CommonMark spec tests pass (no filtering).
 
 Tables, strikethrough, task lists, autolink literals, and disallowed raw HTML.
 
+**Additional extensions:**
+
+- Footnotes (`[^label]` references and definitions, GitHub-compatible rendering)
+- Front matter (`---`/`+++` delimited YAML/TOML metadata extraction)
+- Heading IDs (GitHub-compatible slug generation, enabled by default)
+- Math spans (`$inline$` and `$$display$$`, renders as `<code class="language-math">`)
+- Callouts / admonitions (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`)
+
 ## Usage
 
 ```rust
 use ferromark::to_html;
 
 let html = ferromark::to_html("# Hello\n\n**World**");
-assert!(html.contains("<h1>Hello</h1>"));
+assert!(html.contains("<h1 id=\"hello\">Hello</h1>"));
 assert!(html.contains("<strong>World</strong>"));
 ```
 
@@ -404,17 +404,23 @@ cargo bench
 
 ```
 src/
-├── lib.rs          # Public API (to_html, to_html_into)
+├── lib.rs          # Public API (to_html, to_html_into, parse, Options)
+├── main.rs         # CLI binary
 ├── block/          # Block-level parser
 │   ├── parser.rs   # Line-oriented block parsing
 │   └── event.rs    # BlockEvent types
 ├── inline/         # Inline-level parser
 │   ├── mod.rs      # Three-phase inline parsing
-│   ├── marks.rs    # Mark collection
+│   ├── marks.rs    # Mark collection + SIMD integration
+│   ├── simd.rs     # NEON SIMD character scanning
+│   ├── event.rs    # InlineEvent types
 │   ├── code_span.rs
 │   ├── emphasis.rs      # Modulo-3 stack optimization
 │   ├── strikethrough.rs # GFM strikethrough resolution
+│   ├── math.rs          # Math span resolution ($/$$ delimiters)
 │   └── links.rs         # Link/image/autolink parsing
+├── footnote.rs     # Footnote store and rendering
+├── link_ref.rs     # Link reference definitions
 ├── cursor.rs       # Pointer-based byte cursor
 ├── range.rs        # Compact u32 range type
 ├── render.rs       # HTML writer

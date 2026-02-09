@@ -2,6 +2,45 @@
 
 use crate::Range;
 
+/// GitHub-style callout/admonition type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CalloutType {
+    /// Informational note.
+    Note,
+    /// Helpful tip.
+    Tip,
+    /// Important information.
+    Important,
+    /// Warning about potential issues.
+    Warning,
+    /// Critical caution about dangerous actions.
+    Caution,
+}
+
+impl CalloutType {
+    /// CSS class suffix (lowercase).
+    pub fn css_suffix(self) -> &'static str {
+        match self {
+            Self::Note => "note",
+            Self::Tip => "tip",
+            Self::Important => "important",
+            Self::Warning => "warning",
+            Self::Caution => "caution",
+        }
+    }
+
+    /// Display title for the callout.
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::Note => "Note",
+            Self::Tip => "Tip",
+            Self::Important => "Important",
+            Self::Warning => "Warning",
+            Self::Caution => "Caution",
+        }
+    }
+}
+
 /// Column alignment for table cells.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Alignment {
@@ -43,8 +82,11 @@ pub enum BlockEvent {
     /// End of a fenced code block.
     CodeBlockEnd,
 
-    /// Start of a blockquote.
-    BlockQuoteStart,
+    /// Start of a blockquote (possibly a callout/admonition).
+    BlockQuoteStart {
+        /// Callout type, if this blockquote starts with `[!TYPE]`.
+        callout: Option<CalloutType>,
+    },
     /// End of a blockquote.
     BlockQuoteEnd,
 

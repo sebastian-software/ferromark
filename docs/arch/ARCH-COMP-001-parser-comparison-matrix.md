@@ -31,16 +31,16 @@
 | DoS limits | Hard limits for nesting, parsing guards. `4/5` | Several limits (link parens, etc). `4/5` | Central `limits.rs` with sane caps. `4/5` | All good; verify limits align with CommonMark allowance. |
 
 **Primary references**
-- md4c ref-def dictionary and Unicode folding: `/Users/sebastian/Workspace/md4c/src/md4c.c:1560`.
-- md4c ref-def consumption at paragraph/setext start: `/Users/sebastian/Workspace/md4c/src/md4c.c:5060`.
-- md4c two-phase flow: `/Users/sebastian/Workspace/md4c/src/md4c.c:6386`.
-- pulldown-cmark two-pass parser note: `/Users/sebastian/Workspace/pulldown-cmark/pulldown-cmark/src/parse.rs:1`.
-- pulldown-cmark refdef parsing loop: `/Users/sebastian/Workspace/pulldown-cmark/pulldown-cmark/src/firstpass.rs:456`.
-- pulldown-cmark label normalization: `/Users/sebastian/Workspace/pulldown-cmark/pulldown-cmark/src/linklabel.rs:33`.
-- pulldown-cmark link dest nesting limit: `/Users/sebastian/Workspace/pulldown-cmark/pulldown-cmark/src/parse.rs:55`.
-- ferromark refdef extraction at paragraph close: `/Users/sebastian/Workspace/md-new/src/block/parser.rs:2228`.
-- ferromark label normalization: `/Users/sebastian/Workspace/md-new/src/link_ref.rs:32`.
-- ferromark DoS limits: `/Users/sebastian/Workspace/md-new/src/limits.rs:5`.
+- md4c ref-def dictionary and Unicode folding: `../md4c/src/md4c.c:1560`.
+- md4c ref-def consumption at paragraph/setext start: `../md4c/src/md4c.c:5060`.
+- md4c two-phase flow: `../md4c/src/md4c.c:6386`.
+- pulldown-cmark two-pass parser note: `../pulldown-cmark/pulldown-cmark/src/parse.rs:1`.
+- pulldown-cmark refdef parsing loop: `../pulldown-cmark/pulldown-cmark/src/firstpass.rs:456`.
+- pulldown-cmark label normalization: `../pulldown-cmark/pulldown-cmark/src/linklabel.rs:33`.
+- pulldown-cmark link dest nesting limit: `../pulldown-cmark/pulldown-cmark/src/parse.rs:55`.
+- ferromark refdef extraction at paragraph close: `src/block/parser.rs:2228`.
+- ferromark label normalization: `src/link_ref.rs:32`.
+- ferromark DoS limits: `src/limits.rs:5`.
 
 **NEEDS WORK summary (ferromark)**
 - HTML block parsing: verify all 7 CommonMark HTML block types and termination rules.

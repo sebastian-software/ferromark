@@ -143,6 +143,7 @@ pub static SPECIAL_CHARS: [bool; 256] = {
     table[b'*' as usize] = true;  // Emphasis
     table[b'_' as usize] = true;  // Emphasis
     table[b'~' as usize] = true;  // Strikethrough
+    table[b'$' as usize] = true;  // Math span
     table[b'\\' as usize] = true; // Escape
     table[b'\n' as usize] = true; // Line break
     table[b'[' as usize] = true;  // Link
@@ -181,6 +182,24 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                         start as u32,
                         pos as u32,
                         b'`',
+                        flags::POTENTIAL_OPENER | flags::POTENTIAL_CLOSER,
+                    ));
+                }
+            }
+
+            b'$' => {
+                // Count consecutive dollar signs (1 or 2 for math)
+                let start = pos;
+                while pos < len && text[pos] == b'$' {
+                    pos += 1;
+                }
+                let run_len = pos - start;
+                // Only collect runs of 1 or 2
+                if run_len <= 2 {
+                    buffer.push(Mark::new(
+                        start as u32,
+                        pos as u32,
+                        b'$',
                         flags::POTENTIAL_OPENER | flags::POTENTIAL_CLOSER,
                     ));
                 }
@@ -342,6 +361,9 @@ fn next_special(text: &[u8], start: usize) -> Option<usize> {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
     if let Some(i) = memchr3(b']', b'<', b'~', slice) {
+        best = Some(best.map_or(i, |b| b.min(i)));
+    }
+    if let Some(i) = memchr::memchr(b'$', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
 
