@@ -77,4 +77,8 @@ cargo add ferromark
     for line in output.body.lines() {
         println!("  {line}");
     }
+
+    // --- Component demo ---
+    println!("\n=== JSX Component ===\n");
+    print!("{}", output.to_component("GettingStarted"));
 }

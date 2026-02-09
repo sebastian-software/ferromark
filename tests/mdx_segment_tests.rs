@@ -1115,3 +1115,92 @@ fn render_empty_input() {
     assert!(out.esm.is_empty());
     assert!(out.front_matter.is_none());
 }
+
+// ── to_component() integration tests ─────────────────────────────────
+
+#[test]
+fn component_complete_document() {
+    let input = "\
+import { Card } from './card'
+export const meta = { title: 'Test' }
+
+# About
+
+Welcome to **about**.
+
+<Card>
+
+## Details
+
+</Card>
+
+{new Date().getFullYear()}
+";
+    let out = render(input);
+    let comp = out.to_component("About");
+
+    // Starts with ESM
+    assert!(comp.starts_with("import { Card } from './card'\n"));
+    assert!(comp.contains("export const meta = { title: 'Test' }\n"));
+
+    // Named export function
+    assert!(comp.contains("export function About() {"));
+    assert!(!comp.contains("default"));
+
+    // Fragment wrapper
+    assert!(comp.contains("    <>"));
+    assert!(comp.contains("    </>"));
+
+    // Body content indented
+    assert!(comp.contains("      <h1"));
+    assert!(comp.contains("      <Card>"));
+    assert!(comp.contains("      </Card>"));
+    assert!(comp.contains("      {new Date().getFullYear()}"));
+
+    // Ends cleanly
+    assert!(comp.ends_with("  );\n}\n"));
+}
+
+#[test]
+fn component_pure_markdown() {
+    let input = "# Hello\n\nWorld\n";
+    let out = render(input);
+    let comp = out.to_component("Page");
+
+    // No ESM, starts with export
+    assert!(comp.starts_with("export function Page() {"));
+    assert!(comp.contains("      <h1"));
+    assert!(comp.contains("      <p>World</p>"));
+}
+
+#[test]
+fn component_docusaurus_style() {
+    let input = "\
+import Tabs from '@theme/Tabs'
+import TabItem from '@theme/TabItem'
+
+# Install
+
+<Tabs>
+
+<TabItem value=\"npm\">
+
+```bash
+npm install ferromark
+```
+
+</TabItem>
+
+</Tabs>
+";
+    let out = render(input);
+    let comp = out.to_component("Install");
+
+    assert!(comp.contains("import Tabs from '@theme/Tabs'"));
+    assert!(comp.contains("import TabItem from '@theme/TabItem'"));
+    assert!(comp.contains("export function Install() {"));
+    assert!(comp.contains("      <Tabs>"));
+    assert!(comp.contains("      <TabItem value=\"npm\">"));
+    assert!(comp.contains("      </TabItem>"));
+    assert!(comp.contains("      </Tabs>"));
+}

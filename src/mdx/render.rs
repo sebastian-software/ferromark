@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use crate::Options;
 
 use super::{Segment, segment};
@@ -10,6 +12,57 @@ pub struct MdxOutput<'a> {
     pub esm: Vec<&'a str>,
     /// Front matter content (if present in first Markdown segment).
     pub front_matter: Option<&'a str>,
+}
+
+impl MdxOutput<'_> {
+    /// Wrap the rendered output as a JSX/TSX component module.
+    ///
+    /// Produces a complete module with ESM statements at the top and a named
+    /// export function that returns the body wrapped in a fragment.
+    ///
+    /// ```text
+    /// import { Card } from './card'
+    /// export const meta = { title: 'About' }
+    ///
+    /// export function About() {
+    ///   return (
+    ///     <>
+    ///       <h1 id="about">About</h1>
+    ///       ...
+    ///     </>
+    ///   );
+    /// }
+    /// ```
+    pub fn to_component(&self, name: &str) -> String {
+        let mut out = String::with_capacity(self.body.len() + self.esm.len() * 40 + 80);
+
+        for esm in &self.esm {
+            out.push_str(esm.trim_end());
+            out.push('\n');
+        }
+        if !self.esm.is_empty() {
+            out.push('\n');
+        }
+
+        let _ = writeln!(out, "export function {name}() {{");
+        out.push_str("  return (\n    <>\n");
+
+        let body = self.body.trim();
+        if !body.is_empty() {
+            for line in body.lines() {
+                if line.is_empty() {
+                    out.push('\n');
+                } else {
+                    out.push_str("      ");
+                    out.push_str(line);
+                    out.push('\n');
+                }
+            }
+        }
+
+        out.push_str("    </>\n  );\n}\n");
+        out
+    }
 }
 
 /// Render MDX to HTML body with default options.
@@ -174,5 +227,57 @@ Paragraph.
         assert!(out.body.contains("<del>struck</del>"));
         // No id attribute since heading_ids is false
         assert!(!out.body.contains("id="));
+    }
+
+    #[test]
+    fn to_component_full() {
+        let input = "\
+import { Card } from './card'
+export const meta = { title: 'Test' }
+
+# Title
+
+<Card>
+
+Content
+
+</Card>
+";
+        let out = render(input);
+        let comp = out.to_component("About");
+
+        // ESM at top
+        assert!(comp.starts_with("import { Card } from './card'\n"));
+        assert!(comp.contains("export const meta = { title: 'Test' }\n"));
+
+        // Named export, not default
+        assert!(comp.contains("export function About() {"));
+        assert!(!comp.contains("default"));
+
+        // Fragment wrapper
+        assert!(comp.contains("<>"));
+        assert!(comp.contains("</>"));
+
+        // Body indented inside fragment
+        assert!(comp.contains("      <h1"));
+        assert!(comp.contains("      <Card>"));
+    }
+
+    #[test]
+    fn to_component_no_esm() {
+        let out = render("# Hello\n");
+        let comp = out.to_component("Page");
+
+        // Starts directly with export, no blank line
+        assert!(comp.starts_with("export function Page() {"));
+    }
+
+    #[test]
+    fn to_component_empty_body() {
+        let out = render("import A from 'a'\n");
+        let comp = out.to_component("Empty");
+
+        assert!(comp.contains("import A from 'a'"));
+        assert!(comp.contains("<>\n    </>"));
     }
 }
