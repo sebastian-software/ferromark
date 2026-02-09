@@ -17,6 +17,7 @@
 pub mod block;
 pub mod cursor;
 pub mod escape;
+pub mod footnote;
 pub mod inline;
 pub mod link_ref;
 pub mod limits;
@@ -25,6 +26,7 @@ pub mod render;
 
 // Re-export primary types
 pub use block::{fixup_list_tight, Alignment, BlockEvent, BlockParser};
+pub use footnote::FootnoteStore;
 pub use inline::{InlineEvent, InlineParser};
 pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::Range;
@@ -47,6 +49,8 @@ pub struct Options {
     pub autolink_literals: bool,
     /// Enable GFM disallowed raw HTML extension (filter dangerous tags).
     pub disallowed_raw_html: bool,
+    /// Enable footnotes extension (`[^label]` references and `[^label]:` definitions).
+    pub footnotes: bool,
 }
 
 impl Default for Options {
@@ -59,6 +63,7 @@ impl Default for Options {
             task_lists: true,
             autolink_literals: false,
             disallowed_raw_html: true,
+            footnotes: false,
         }
     }
 }
@@ -234,6 +239,11 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     let mut events = Vec::with_capacity((input.len() / 16).max(64));
     parser.parse(&mut events);
     let link_refs = parser.take_link_refs();
+    let footnote_store = if options.footnotes {
+        Some(parser.take_footnote_store())
+    } else {
+        None
+    };
 
     // Fix up list tight status (ListStart gets its tight value from ListEnd)
     fixup_list_tight(&mut events);
@@ -268,6 +278,10 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     // Pending task checkbox (emitted at start of first paragraph in list item)
     let mut pending_task = block::TaskState::None;
 
+    // Track footnote reference order (def_index -> sequential number)
+    let mut footnote_order: Vec<usize> = Vec::new();
+    let fn_store_ref = footnote_store.as_ref();
+
     // Render events to HTML
     for event in &events {
         render_block_event(
@@ -287,8 +301,26 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
             &mut in_table_head,
             &mut pending_task,
             &link_refs,
+            fn_store_ref,
+            &mut footnote_order,
             options,
         );
+    }
+
+    // Render footnote section at document end
+    if let Some(fn_store) = &footnote_store {
+        if !footnote_order.is_empty() {
+            render_footnote_section(
+                input,
+                fn_store,
+                &footnote_order,
+                writer,
+                &mut inline_parser,
+                &mut inline_events,
+                &link_refs,
+                options,
+            );
+        }
     }
 }
 
@@ -310,6 +342,8 @@ fn render_block_event(
     in_table_head: &mut bool,
     pending_task: &mut block::TaskState,
     link_refs: &LinkRefStore,
+    footnote_store: Option<&FootnoteStore>,
+    footnote_order: &mut Vec<usize>,
     options: &Options,
 ) {
     // Check if we're in a tight list (innermost list is tight)
@@ -350,12 +384,12 @@ fn render_block_event(
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, inline_events);
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, footnote_store, inline_events);
 
                 // Render inline events
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html);
+                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html, footnote_store, footnote_order);
                 }
             }
             // In tight lists, don't emit </p> tags
@@ -384,11 +418,11 @@ fn render_block_event(
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, inline_events);
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, footnote_store, inline_events);
 
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html);
+                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html, footnote_store, footnote_order);
                 }
             }
             writer.heading_end(*level);
@@ -443,12 +477,12 @@ fn render_block_event(
                 // Parse immediately (e.g., heading content)
                 inline_events.clear();
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(text, refs, options.allow_html, options.strikethrough, options.autolink_literals, inline_events);
+                inline_parser.parse_with_options(text, refs, options.allow_html, options.strikethrough, options.autolink_literals, footnote_store, inline_events);
 
                 // Render inline events
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(text, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html);
+                    render_inline_event(text, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html, footnote_store, footnote_order);
                 }
             }
         }
@@ -610,11 +644,11 @@ fn render_block_event(
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
                 let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, inline_events);
+                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, footnote_store, inline_events);
 
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html);
+                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html, footnote_store, footnote_order);
                 }
             }
             if *in_table_head {
@@ -662,6 +696,8 @@ fn render_inline_event(
     image_state: &mut Option<ImageState>,
     link_refs: &LinkRefStore,
     filter_html: bool,
+    footnote_store: Option<&FootnoteStore>,
+    footnote_order: &mut Vec<usize>,
 ) {
     // Check if we're inside an image (for alt text rendering)
     let in_image = image_state.as_ref().map_or(false, |s| s.depth > 0);
@@ -911,7 +947,154 @@ fn render_inline_event(
                 writer.write_escaped_text(&bytes);
             }
         }
+        InlineEvent::FootnoteRef { def_index } => {
+            if !in_image {
+                if let Some(fn_store) = footnote_store {
+                    let def_idx = *def_index as usize;
+                    // Assign sequential number based on first-appearance order
+                    let number = if let Some(pos) = footnote_order.iter().position(|&i| i == def_idx) {
+                        pos + 1
+                    } else {
+                        footnote_order.push(def_idx);
+                        footnote_order.len()
+                    };
+                    if let Some(def) = fn_store.get(def_idx) {
+                        writer.write_str("<sup><a href=\"#user-content-fn-");
+                        writer.write_string(&def.label);
+                        writer.write_str("\" id=\"user-content-fnref-");
+                        writer.write_string(&def.label);
+                        writer.write_str("\" data-footnote-ref>");
+                        let num_str = number.to_string();
+                        writer.write_string(&num_str);
+                        writer.write_str("</a></sup>");
+                    }
+                }
+            }
+        }
     }
+}
+
+/// Render the footnote section at document end.
+fn render_footnote_section(
+    input: &[u8],
+    footnote_store: &FootnoteStore,
+    footnote_order: &[usize],
+    writer: &mut HtmlWriter,
+    inline_parser: &mut InlineParser,
+    inline_events: &mut Vec<InlineEvent>,
+    link_refs: &LinkRefStore,
+    options: &Options,
+) {
+    writer.write_str("<section data-footnotes class=\"footnotes\">\n<ol>\n");
+
+    for (seq_num, &def_idx) in footnote_order.iter().enumerate() {
+        let def = match footnote_store.get(def_idx) {
+            Some(d) => d,
+            None => continue,
+        };
+        let number = seq_num + 1;
+
+        writer.write_str("<li id=\"user-content-fn-");
+        writer.write_string(&def.label);
+        writer.write_str("\">\n");
+
+        // Render the footnote's block events
+        let fn_events = &def.events;
+        let fn_store_ref = Some(footnote_store);
+        // We need a separate footnote_order for nested footnote refs inside footnotes
+        // but for simplicity, we'll share the same order (GitHub does this too)
+        let mut fn_footnote_order: Vec<usize> = Vec::new();
+
+        let mut para_state = ParagraphState::new();
+        let mut heading_state = HeadingState::new();
+        let mut cell_state = CellState::new();
+        let mut tight_list_stack: Vec<(bool, u32)> = Vec::new();
+        let mut at_tight_li_start = false;
+        let mut need_newline_before_block = false;
+        let mut pending_loose_li_newline = false;
+        let mut blockquote_depth = 0u32;
+        let mut in_table_head = false;
+        let mut pending_task = block::TaskState::None;
+
+        // Track if the last event was ParagraphEnd (to insert backref)
+        let last_para_end_idx = fn_events.iter().rposition(|e| matches!(e, BlockEvent::ParagraphEnd));
+
+        for (i, event) in fn_events.iter().enumerate() {
+            // If this is the last ParagraphEnd, we need to inject the backref before closing
+            if Some(i) == last_para_end_idx {
+                // Flush paragraph content first but don't close the tag yet
+                // Actually, we need to render the paragraph content, inject backref, then close
+                // The cleanest approach: render normally, then strip the closing </p>\n and re-add with backref
+
+                // Capture writer position before this event
+                let pos_before = writer.buffer_mut().len();
+
+                render_block_event(
+                    input,
+                    event,
+                    writer,
+                    inline_parser,
+                    inline_events,
+                    &mut para_state,
+                    &mut heading_state,
+                    &mut cell_state,
+                    &mut tight_list_stack,
+                    &mut at_tight_li_start,
+                    &mut need_newline_before_block,
+                    &mut pending_loose_li_newline,
+                    &mut blockquote_depth,
+                    &mut in_table_head,
+                    &mut pending_task,
+                    link_refs,
+                    fn_store_ref,
+                    &mut fn_footnote_order,
+                    options,
+                );
+
+                // Check if the output ends with </p>\n and inject backref before it
+                let buf = writer.buffer_mut();
+                if buf.len() >= pos_before + 5 && buf.ends_with(b"</p>\n") {
+                    let insert_pos = buf.len() - 5; // before </p>\n
+                    let backref = format!(
+                        " <a href=\"#user-content-fnref-{}\" class=\"data-footnote-backref\" aria-label=\"Back to reference {}\">\u{21a9}</a>",
+                        def.label, number
+                    );
+                    let backref_bytes = backref.as_bytes();
+                    let suffix = buf[insert_pos..].to_vec();
+                    buf.truncate(insert_pos);
+                    buf.extend_from_slice(backref_bytes);
+                    buf.extend_from_slice(&suffix);
+                }
+                continue;
+            }
+
+            render_block_event(
+                input,
+                event,
+                writer,
+                inline_parser,
+                inline_events,
+                &mut para_state,
+                &mut heading_state,
+                &mut cell_state,
+                &mut tight_list_stack,
+                &mut at_tight_li_start,
+                &mut need_newline_before_block,
+                &mut pending_loose_li_newline,
+                &mut blockquote_depth,
+                &mut in_table_head,
+                &mut pending_task,
+                link_refs,
+                fn_store_ref,
+                &mut fn_footnote_order,
+                options,
+            );
+        }
+
+        writer.write_str("</li>\n");
+    }
+
+    writer.write_str("</ol>\n</section>\n");
 }
 
 #[cfg(test)]

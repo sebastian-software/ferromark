@@ -83,6 +83,12 @@ pub enum InlineEvent {
 
     /// Backslash escape - the escaped character.
     EscapedChar(u8),
+
+    /// Footnote reference `[^label]`.
+    FootnoteRef {
+        /// Index into the footnote store.
+        def_index: u32,
+    },
 }
 
 #[cfg(test)]

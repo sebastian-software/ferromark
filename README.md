@@ -218,14 +218,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟥</td>
     </tr>
     <tr><td colspan="5"><small>With fewer allocations and tighter hot loops, streaming architectures generally allow higher throughput ceilings. <em>Mapping:</em> ferromark and md4c lead here; pulldown-cmark is close; comrak trades throughput for flexibility.</small></td></tr>
-    <tr>
-      <td><b>Core compactness (moving parts)</b></td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟧</td>
-    </tr>
-    <tr><td colspan="5"><small>A compact core is easier to tune and reason about. <em>Mapping:</em> md4c is very compact; ferromark is lean; pulldown-cmark is moderate; comrak is larger by design.</small></td></tr>
+
     <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Feature Coverage and Extensibility</b></td></tr>
     <tr>
@@ -244,22 +237,6 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
     </tr>
     <tr><td colspan="5"><small>Full compliance adds edge-case handling. All four are strong here, but more features usually means more code on the hot path. <em>Mapping:</em> All four target CommonMark; comrak and md4c emphasize full compliance; pulldown-cmark adds extensions; ferromark is focused.</small></td></tr>
-    <tr>
-      <td><b>Unicode handling configurability</b></td>
-      <td align="center">🟧</td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-      <td align="center">🟧</td>
-    </tr>
-    <tr><td colspan="5"><small>Configurable Unicode handling can simplify hot paths or support special environments. <em>Mapping:</em> md4c can be built for UTF-8, UTF-16, or ASCII-only; the Rust parsers generally assume UTF-8.</small></td></tr>
-    <tr>
-      <td><b>Portability</b></td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟨</td>
-    </tr>
-    <tr><td colspan="5"><small>Portability matters for embedding and wide deployment. <em>Mapping:</em> md4c compiles almost anywhere with a C toolchain; the Rust crates are broadly portable too.</small></td></tr>
     <tr>
       <td><b>Extension configuration surface</b></td>
       <td align="center">🟨</td>
@@ -301,14 +278,6 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
     </tr>
     <tr><td colspan="5"><small>Footnotes add extra parsing and rendering complexity. <em>Mapping:</em> pulldown-cmark and comrak support footnotes; ferromark and md4c do not focus on them.</small></td></tr>
     <tr>
-      <td><b>Math support</b></td>
-      <td align="center">🟥</td>
-      <td align="center">🟩</td>
-      <td align="center">🟥</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>Math support often requires custom extensions. <em>Mapping:</em> md4c includes LaTeX math flags; comrak supports math extensions; ferromark and pulldown-cmark do not target math in the core.</small></td></tr>
-    <tr>
       <td><b>Permissive autolinks</b></td>
       <td align="center">🟩</td>
       <td align="center">🟩</td>
@@ -323,23 +292,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟥</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>Wiki links are a non-CommonMark extension used in some ecosystems. <em>Mapping:</em> md4c and comrak support wiki links via flags/extensions; pulldown-cmark and ferromark do not.</small></td></tr>
-    <tr>
-      <td><b>Underline extension</b></td>
-      <td align="center">🟥</td>
-      <td align="center">🟩</td>
-      <td align="center">🟥</td>
-      <td align="center">🟩</td>
-    </tr>
     <tr><td colspan="5"><small>Underline is an extension that changes emphasis semantics. <em>Mapping:</em> md4c and comrak include underline extensions; pulldown-cmark and ferromark stick closer to CommonMark emphasis rules.</small></td></tr>
-    <tr>
-      <td><b>Task list flexibility</b></td>
-      <td align="center">🟧</td>
-      <td align="center">🟧</td>
-      <td align="center">🟧</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>Relaxed task list parsing can improve compatibility with messy inputs. <em>Mapping:</em> comrak offers relaxed task list options; ferromark, md4c, and pulldown-cmark support task lists with fewer knobs.</small></td></tr>
     <tr>
       <td><b>Output safety toggles</b></td>
       <td align="center">🟨</td>
@@ -348,14 +301,6 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
     </tr>
     <tr><td colspan="5"><small>Safety toggles control whether raw HTML is emitted or escaped. <em>Mapping:</em> md4c and comrak provide explicit unsafe/escape switches; ferromark provides <code>allow_html</code> and <code>disallowed_raw_html</code> toggles; pulldown-cmark is more fixed in defaults.</small></td></tr>
-    <tr>
-      <td><b>no_std viability</b></td>
-      <td align="center">🟥</td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>no_std support matters for embedded or constrained environments. <em>Mapping:</em> pulldown-cmark supports no_std builds with features; md4c can be embedded in C environments; ferromark and comrak assume std.</small></td></tr>
     <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Rendering and Output</b></td></tr>
     <tr>

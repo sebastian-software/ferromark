@@ -6,6 +6,7 @@ use crate::Range;
 use smallvec::SmallVec;
 
 use super::event::{Alignment, BlockEvent, ListKind, TaskState};
+use crate::footnote::{FootnoteStore, normalize_footnote_label};
 use crate::link_ref::{LinkRefStore, normalize_label_into, LinkRefDef};
 use crate::Options;
 
@@ -47,6 +48,11 @@ enum ContainerType {
         /// Marker character for unordered, or 0 for ordered
         marker: u8,
         /// Column where content starts (after marker + space)
+        content_indent: usize,
+    },
+    /// Footnote definition (`[^label]: content`)
+    FootnoteDefinition {
+        /// Column where content starts (after `[^label]: `)
         content_indent: usize,
     },
 }
@@ -128,6 +134,12 @@ pub struct BlockParser<'a> {
     table_alignments: SmallVec<[Alignment; 8]>,
     /// Whether the current table has a body (at least one data row).
     table_has_body: bool,
+    /// Collected footnote definitions.
+    footnote_store: FootnoteStore,
+    /// Index in the event buffer where the current footnote definition's content starts.
+    footnote_event_start: Option<usize>,
+    /// Pending label for the current footnote definition (normalized, original).
+    pending_footnote_label: Option<(String, String)>,
 }
 
 impl<'a> BlockParser<'a> {
@@ -162,6 +174,9 @@ impl<'a> BlockParser<'a> {
             in_table: false,
             table_alignments: SmallVec::new(),
             table_has_body: false,
+            footnote_store: FootnoteStore::new(),
+            footnote_event_start: None,
+            pending_footnote_label: None,
         }
     }
 
@@ -203,6 +218,11 @@ impl<'a> BlockParser<'a> {
     /// Take the collected link reference definitions.
     pub fn take_link_refs(&mut self) -> LinkRefStore {
         std::mem::take(&mut self.link_refs)
+    }
+
+    /// Take the collected footnote definitions.
+    pub fn take_footnote_store(&mut self) -> FootnoteStore {
+        std::mem::take(&mut self.footnote_store)
     }
 
     /// Parse a single line.
@@ -577,6 +597,13 @@ impl<'a> BlockParser<'a> {
                 return consumed_any;
             }
 
+            // When footnotes are enabled, bail on lines starting with `[`
+            // since they could be footnote definitions `[^label]:`
+            if self.options.footnotes && first == b'[' {
+                self.cursor = Cursor::new_at(self.input, line_start);
+                return consumed_any;
+            }
+
             self.parse_paragraph_line(self.cursor.offset(), events);
             consumed_any = true;
 
@@ -765,7 +792,10 @@ impl<'a> BlockParser<'a> {
 
         // Try to parse block-level constructs (only if indent < 4)
         if indent < 4 {
-            if is_simple_line_start(first) && !(self.options.tables && (first == b'|' || (first == b':' && self.in_paragraph))) {
+            if is_simple_line_start(first)
+                && !(self.options.tables && (first == b'|' || (first == b':' && self.in_paragraph)))
+                && !(self.options.footnotes && first == b'[')
+            {
                 let line_start = self.cursor.offset();
                 self.parse_paragraph_line(line_start, events);
                 return;
@@ -838,6 +868,15 @@ impl<'a> BlockParser<'a> {
             // Check for thematic break FIRST - `* * *` is a thematic break, not a list
             if matches!(first, b'-' | b'*' | b'_') && self.try_thematic_break(events) {
                 return;
+            }
+
+            // Check for footnote definition (`[^label]:`)
+            if self.options.footnotes && first == b'[' && !self.in_paragraph {
+                if self.try_footnote_definition(indent, events) {
+                    // Parse the rest of the first line as content inside the footnote
+                    self.parse_line_content(events);
+                    return;
+                }
             }
 
             // Check for nested containers (blockquote, list)
@@ -973,6 +1012,35 @@ impl<'a> BlockParser<'a> {
                                 // Different content, don't match
                                 break;
                             }
+                        }
+                    }
+                }
+                ContainerType::FootnoteDefinition { content_indent } => {
+                    // Similar to list items: blank lines match, content needs enough indent
+                    let remaining = self.cursor.remaining_slice();
+                    let is_blank = remaining.is_empty() || remaining[0] == b'\n' ||
+                        remaining.iter().take_while(|&&b| b == b' ' || b == b'\t')
+                            .count() == remaining.len().min(remaining.iter().position(|&b| b == b'\n').unwrap_or(remaining.len()));
+
+                    if is_blank {
+                        matched += 1;
+                    } else {
+                        let save_pos = self.cursor.offset();
+                        let save_partial = self.partial_tab_cols;
+                        let save_col = self.current_col;
+                        let (cols, _bytes) = self.skip_indent();
+
+                        if cols >= content_indent {
+                            self.cursor = Cursor::new_at(self.input, save_pos);
+                            self.partial_tab_cols = save_partial;
+                            self.current_col = save_col;
+                            let (_skipped_cols, _skipped_bytes) = self.skip_indent_max(content_indent);
+                            matched += 1;
+                        } else {
+                            self.cursor = Cursor::new_at(self.input, save_pos);
+                            self.partial_tab_cols = save_partial;
+                            self.current_col = save_col;
+                            break;
                         }
                     }
                 }
@@ -1621,6 +1689,9 @@ impl<'a> BlockParser<'a> {
                         events.push(BlockEvent::ListEnd { kind, tight });
                         self.open_lists.pop();
                     }
+                }
+                ContainerType::FootnoteDefinition { .. } => {
+                    self.close_footnote_definition(events);
                 }
             }
         }
@@ -2877,6 +2948,118 @@ impl<'a> BlockParser<'a> {
         }
 
         events.push(BlockEvent::ParagraphEnd);
+    }
+
+    /// Close the current footnote definition, draining captured events into the store.
+    fn close_footnote_definition(&mut self, events: &mut Vec<BlockEvent>) {
+        if let Some(start) = self.footnote_event_start.take() {
+            // Find the footnote container to get the label
+            // We need to find the label from the footnote container that was just popped.
+            // We stored it when we opened the definition — extract from the drained events.
+            let footnote_events: Vec<BlockEvent> = events.drain(start..).collect();
+
+            // The label was stored as a Text event right at the start marker position.
+            // Actually, we need to store the label separately. Let's use a field.
+            if let Some((normalized, label)) = self.pending_footnote_label.take() {
+                self.footnote_store.insert(normalized, label, footnote_events);
+            }
+        }
+    }
+
+    /// Try to parse a footnote definition start: `[^label]: content`
+    /// Returns true if a footnote definition was started.
+    fn try_footnote_definition(&mut self, indent: usize, events: &mut Vec<BlockEvent>) -> bool {
+        // Must start with `[^`
+        let save_pos = self.cursor.offset();
+        let save_partial = self.partial_tab_cols;
+        let save_col = self.current_col;
+
+        if !self.cursor.at(b'[') {
+            return false;
+        }
+        self.cursor.bump();
+        if self.cursor.is_eof() || !self.cursor.at(b'^') {
+            self.cursor = Cursor::new_at(self.input, save_pos);
+            self.partial_tab_cols = save_partial;
+            self.current_col = save_col;
+            return false;
+        }
+        self.cursor.bump();
+
+        // Read label: alphanumeric, dash, underscore
+        let label_start = self.cursor.offset();
+        while !self.cursor.is_eof() {
+            let b = self.cursor.peek_or_zero();
+            if b.is_ascii_alphanumeric() || b == b'-' || b == b'_' {
+                self.cursor.bump();
+            } else {
+                break;
+            }
+        }
+        let label_end = self.cursor.offset();
+
+        if label_end == label_start {
+            // Empty label
+            self.cursor = Cursor::new_at(self.input, save_pos);
+            self.partial_tab_cols = save_partial;
+            self.current_col = save_col;
+            return false;
+        }
+
+        // Must be followed by `]:`
+        if self.cursor.is_eof() || !self.cursor.at(b']') {
+            self.cursor = Cursor::new_at(self.input, save_pos);
+            self.partial_tab_cols = save_partial;
+            self.current_col = save_col;
+            return false;
+        }
+        self.cursor.bump();
+        if self.cursor.is_eof() || !self.cursor.at(b':') {
+            self.cursor = Cursor::new_at(self.input, save_pos);
+            self.partial_tab_cols = save_partial;
+            self.current_col = save_col;
+            return false;
+        }
+        self.cursor.bump();
+
+        let label_bytes = &self.input[label_start..label_end];
+        let normalized = match normalize_footnote_label(label_bytes) {
+            Some(n) => n,
+            None => {
+                self.cursor = Cursor::new_at(self.input, save_pos);
+                self.partial_tab_cols = save_partial;
+                self.current_col = save_col;
+                return false;
+            }
+        };
+        let label = String::from_utf8_lossy(label_bytes).into_owned();
+
+        // Skip optional space/tab after colon
+        if !self.cursor.is_eof() && (self.cursor.at(b' ') || self.cursor.at(b'\t')) {
+            self.cursor.bump();
+        }
+
+        // Calculate content indent: columns from line start to current position
+        // content_indent = indent (leading spaces) + bytes consumed for [^label]: + optional space
+        let content_indent = indent + (self.cursor.offset() - save_pos);
+
+        // Close current paragraph and containers that don't match
+        self.close_table(events);
+        self.close_paragraph(events);
+
+        // Store the label for when we close the definition
+        self.pending_footnote_label = Some((normalized, label));
+
+        // Mark event start position
+        self.footnote_event_start = Some(events.len());
+
+        // Push footnote container
+        self.container_stack.push(Container {
+            typ: ContainerType::FootnoteDefinition { content_indent },
+            has_content: false,
+        });
+
+        true
     }
 
     /// Extract link reference definitions from the start of the current paragraph.

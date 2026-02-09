@@ -21,6 +21,7 @@ use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
 use emphasis::{resolve_emphasis_with_stacks_into, EmphasisMatch, EmphasisStacks};
 use strikethrough::{resolve_strikethrough_into, StrikethroughMatch};
 use links::{find_autolinks_into, find_autolink_literals_into, resolve_links_into, resolve_reference_links_into, Autolink, AutolinkLiteral, Link, RefLink};
+use crate::footnote::{FootnoteStore, normalize_footnote_label};
 use crate::link_ref::LinkRefStore;
 use marks::{collect_marks, flags, Mark, MarkBuffer};
 use memchr::memchr;
@@ -57,6 +58,7 @@ pub struct InlineParser {
     emit_suppress_ranges: Vec<(u32, u32)>,
     html_code_ranges: Vec<(usize, usize)>,
     html_autolink_ranges: Vec<(usize, usize)>,
+    footnote_refs: Vec<FootnoteRef>,
 }
 
 impl InlineParser {
@@ -92,6 +94,7 @@ impl InlineParser {
             emit_suppress_ranges: Vec::with_capacity(8),
             html_code_ranges: Vec::with_capacity(8),
             html_autolink_ranges: Vec::with_capacity(8),
+            footnote_refs: Vec::with_capacity(4),
         }
     }
 
@@ -103,7 +106,7 @@ impl InlineParser {
         allow_html: bool,
         events: &mut Vec<InlineEvent>,
     ) {
-        self.parse_with_options(text, link_refs, allow_html, true, true, events);
+        self.parse_with_options(text, link_refs, allow_html, true, true, None, events);
     }
 
     /// Parse inline content with full GFM options.
@@ -114,6 +117,7 @@ impl InlineParser {
         allow_html: bool,
         strikethrough: bool,
         autolink_literals: bool,
+        footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
         let has_specials = has_inline_specials(text);
@@ -321,6 +325,21 @@ impl InlineParser {
             self.autolink_literals.clear();
         }
 
+        // Eighth: footnote references (`[^label]`)
+        self.footnote_refs.clear();
+        if let Some(fn_store) = footnote_store {
+            Self::resolve_footnote_refs(
+                text,
+                &self.open_brackets,
+                &self.close_brackets,
+                resolved_links,
+                resolved_ref_links,
+                &self.code_spans,
+                fn_store,
+                &mut self.footnote_refs,
+            );
+        }
+
         // Phase 3: Emit events
         let marks = self.mark_buffer.marks();
         Self::emit_events(
@@ -337,10 +356,91 @@ impl InlineParser {
             &self.link_dest_ranges,
             &self.autolink_ranges,
             &self.html_ranges,
+            &self.footnote_refs,
             &mut self.emit_points,
             &mut self.emit_suppress_ranges,
             events,
         );
+    }
+
+    /// Resolve footnote references: `[^label]` patterns not consumed by links/images.
+    fn resolve_footnote_refs(
+        text: &[u8],
+        open_brackets: &[(u32, bool)],
+        close_brackets: &[u32],
+        resolved_links: &[Link],
+        resolved_ref_links: &[RefLink],
+        code_spans: &[CodeSpan],
+        footnote_store: &FootnoteStore,
+        out: &mut Vec<FootnoteRef>,
+    ) {
+        out.clear();
+
+        // For each open bracket, check if it's followed by `^label]`
+        for &(open_pos, is_image) in open_brackets {
+            if is_image {
+                continue; // `![^` is an image, not a footnote
+            }
+
+            // Check if this bracket is inside a code span
+            let in_code = code_spans.iter().any(|cs| {
+                open_pos >= cs.opener_pos && open_pos < cs.closer_end
+            });
+            if in_code {
+                continue;
+            }
+
+            // Check if this bracket is already consumed by a link/image
+            let in_link = resolved_links.iter().any(|l| l.start == open_pos)
+                || resolved_ref_links.iter().any(|l| l.start == open_pos);
+            if in_link {
+                continue;
+            }
+
+            // Check for `^` after `[`
+            let caret_pos = (open_pos + 1) as usize;
+            if caret_pos >= text.len() || text[caret_pos] != b'^' {
+                continue;
+            }
+
+            // Read label: alphanumeric, dash, underscore
+            let label_start = caret_pos + 1;
+            let mut label_end = label_start;
+            while label_end < text.len() {
+                let b = text[label_end];
+                if b.is_ascii_alphanumeric() || b == b'-' || b == b'_' {
+                    label_end += 1;
+                } else {
+                    break;
+                }
+            }
+
+            if label_end == label_start {
+                continue; // Empty label
+            }
+
+            // Must be followed by `]`
+            if label_end >= text.len() || text[label_end] != b']' {
+                continue;
+            }
+
+            // Check that this `]` is in the close_brackets list (validates it's not escaped)
+            let close_pos = label_end as u32;
+            if !close_brackets.contains(&close_pos) {
+                continue;
+            }
+
+            let label_bytes = &text[label_start..label_end];
+            if let Some(normalized) = normalize_footnote_label(label_bytes) {
+                if let Some(idx) = footnote_store.get_index(&normalized) {
+                    out.push(FootnoteRef {
+                        start: open_pos,
+                        end: close_pos + 1,
+                        def_index: idx as u32,
+                    });
+                }
+            }
+        }
     }
 
     /// Collect bracket positions for link parsing.
@@ -401,6 +501,7 @@ impl InlineParser {
         link_dest_ranges: &[(u32, u32)],
         autolink_ranges: &[(u32, u32)],
         html_ranges: &[(u32, u32)],
+        footnote_refs: &[FootnoteRef],
         emit_points: &mut Vec<EmitPoint>,
         suppress_ranges: &mut Vec<(u32, u32)>,
         events: &mut Vec<InlineEvent>,
@@ -599,6 +700,15 @@ impl InlineParser {
                 pos: m.closer_start,
                 kind: EmitKind::StrikethroughEnd,
                 end: m.closer_end,
+            });
+        }
+
+        // Add footnote reference events
+        for fref in footnote_refs {
+            emit_points.push(EmitPoint {
+                pos: fref.start,
+                kind: EmitKind::FootnoteRef { def_index: fref.def_index },
+                end: fref.end,
             });
         }
 
@@ -845,6 +955,10 @@ impl InlineParser {
                     )));
                     skip_until = end;
                 }
+                EmitKind::FootnoteRef { def_index } => {
+                    events.push(InlineEvent::FootnoteRef { def_index });
+                    skip_until = point.end;
+                }
             }
 
             pos = pos.max(point.end);
@@ -941,6 +1055,17 @@ impl Default for InlineParser {
     }
 }
 
+/// A resolved footnote reference.
+#[derive(Debug, Clone, Copy)]
+struct FootnoteRef {
+    /// Start position (the `[`).
+    start: u32,
+    /// End position (after `]`).
+    end: u32,
+    /// Index into the footnote store.
+    def_index: u32,
+}
+
 #[derive(Debug, Clone, Copy)]
 struct EmitPoint {
     pos: u32,
@@ -972,6 +1097,7 @@ enum EmitKind {
     AutolinkEmail { content_start: u32, content_end: u32 },
     AutolinkLiteral { end: u32, kind: links::AutolinkLiteralKind },
     HtmlRaw { end: u32 },
+    FootnoteRef { def_index: u32 },
 }
 
 #[derive(Debug, Clone, Copy)]
