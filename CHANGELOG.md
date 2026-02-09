@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.2...ferromark-v0.1.3) (2026-02-09)
+
+
+### Features
+
+* **mdx:** add assembly layer with render() API ([2f9042a](https://github.com/sebastian-software/ferromark/commit/2f9042a9c92f21850af0ae7b193ae9b72f0aa4d9))
+* **mdx:** add to_component() for JSX/TSX module output ([580463c](https://github.com/sebastian-software/ferromark/commit/580463cce7389fc956c42c5dfbc57434fa219b4b))
+
 ## [0.1.2](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.1...ferromark-v0.1.2) (2026-02-09)
 
 
