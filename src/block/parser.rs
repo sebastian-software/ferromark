@@ -1,14 +1,14 @@
 //! Block parser implementation.
 
+use crate::Range;
 use crate::cursor::Cursor;
 use crate::limits;
-use crate::Range;
 use smallvec::SmallVec;
 
 use super::event::{Alignment, BlockEvent, CalloutType, ListKind, TaskState};
-use crate::footnote::{FootnoteStore, normalize_footnote_label};
-use crate::link_ref::{LinkRefStore, normalize_label_into, LinkRefDef};
 use crate::Options;
+use crate::footnote::{FootnoteStore, normalize_footnote_label};
+use crate::link_ref::{LinkRefDef, LinkRefStore, normalize_label_into};
 
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use std::arch::aarch64::*;
@@ -281,12 +281,17 @@ impl<'a> BlockParser<'a> {
             if self.in_indented_code {
                 // Check if we're inside a blockquote - if so, the blank line closes it
                 // which also closes the indented code block
-                let has_blockquote = self.container_stack.iter()
+                let has_blockquote = self
+                    .container_stack
+                    .iter()
                     .any(|c| c.typ == ContainerType::BlockQuote);
                 if !has_blockquote {
                     // Buffer the blank line with any extra whitespace beyond 4 columns
                     let extra_spaces = cols.saturating_sub(4) as u8;
-                    self.pending_code_blanks.push((extra_spaces, Range::new(newline_start as u32, ws_end as u32)));
+                    self.pending_code_blanks.push((
+                        extra_spaces,
+                        Range::new(newline_start as u32, ws_end as u32),
+                    ));
                     return;
                 }
                 // Fall through to close blockquotes (which will close the code block too)
@@ -413,7 +418,10 @@ impl<'a> BlockParser<'a> {
                 if extra_spaces > 0 {
                     events.push(BlockEvent::VirtualSpaces(extra_spaces as u8));
                 }
-                events.push(BlockEvent::Code(Range::new(text_start as u32, content_end as u32)));
+                events.push(BlockEvent::Code(Range::new(
+                    text_start as u32,
+                    content_end as u32,
+                )));
                 return;
             } else {
                 // Close the code block - discard pending blank lines (trailing blanks)
@@ -480,7 +488,9 @@ impl<'a> BlockParser<'a> {
 
         // Check for GFM table delimiter row at top level (when in a paragraph)
         // Quick guard: delimiter rows start with |, -, or :
-        if self.options.tables && indent < 4 && self.in_paragraph
+        if self.options.tables
+            && indent < 4
+            && self.in_paragraph
             && matches!(self.cursor.peek_or_zero(), b'|' | b'-' | b':')
         {
             let save_pos = self.cursor.offset();
@@ -821,9 +831,7 @@ impl<'a> BlockParser<'a> {
             // Check for GFM table delimiter row (when in a paragraph)
             // Must check BEFORE thematic break since `---` lines can be delimiter rows
             // Quick guard: delimiter rows start with |, -, or :
-            if self.options.tables && self.in_paragraph
-                && matches!(first, b'|' | b'-' | b':')
-            {
+            if self.options.tables && self.in_paragraph && matches!(first, b'|' | b'-' | b':') {
                 let save_pos = self.cursor.offset();
                 let save_partial = self.partial_tab_cols;
                 let save_col = self.current_col;
@@ -896,7 +904,8 @@ impl<'a> BlockParser<'a> {
             }
 
             // Check for HTML block
-            if self.options.allow_html && first == b'<' && self.try_html_block_start(indent, events) {
+            if self.options.allow_html && first == b'<' && self.try_html_block_start(indent, events)
+            {
                 return;
             }
 
@@ -957,12 +966,25 @@ impl<'a> BlockParser<'a> {
                         break;
                     }
                 }
-                ContainerType::ListItem { content_indent, kind, marker } => {
+                ContainerType::ListItem {
+                    content_indent,
+                    kind,
+                    marker,
+                } => {
                     // Check if line is blank (after any spaces we've consumed so far)
                     let remaining = self.cursor.remaining_slice();
-                    let is_blank = remaining.is_empty() || remaining[0] == b'\n' ||
-                        remaining.iter().take_while(|&&b| b == b' ' || b == b'\t')
-                            .count() == remaining.len().min(remaining.iter().position(|&b| b == b'\n').unwrap_or(remaining.len()));
+                    let is_blank = remaining.is_empty()
+                        || remaining[0] == b'\n'
+                        || remaining
+                            .iter()
+                            .take_while(|&&b| b == b' ' || b == b'\t')
+                            .count()
+                            == remaining.len().min(
+                                remaining
+                                    .iter()
+                                    .position(|&b| b == b'\n')
+                                    .unwrap_or(remaining.len()),
+                            );
 
                     if is_blank {
                         // Blank lines always match list items
@@ -982,12 +1004,14 @@ impl<'a> BlockParser<'a> {
                             self.cursor = Cursor::new_at(self.input, save_pos);
                             self.partial_tab_cols = save_partial;
                             self.current_col = save_col;
-                            let (_skipped_cols, _skipped_bytes) = self.skip_indent_max(content_indent);
+                            let (_skipped_cols, _skipped_bytes) =
+                                self.skip_indent_max(content_indent);
                             // Now cursor is past content_indent columns worth of whitespace
                             // Any excess from partial tab consumption is in partial_tab_cols
 
                             // Track this list as a potential loose candidate
-                            let list_index = self.container_stack[..=i].iter()
+                            let list_index = self.container_stack[..=i]
+                                .iter()
                                 .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
                                 .count();
                             if list_index > 0 {
@@ -1018,9 +1042,18 @@ impl<'a> BlockParser<'a> {
                 ContainerType::FootnoteDefinition { content_indent } => {
                     // Similar to list items: blank lines match, content needs enough indent
                     let remaining = self.cursor.remaining_slice();
-                    let is_blank = remaining.is_empty() || remaining[0] == b'\n' ||
-                        remaining.iter().take_while(|&&b| b == b' ' || b == b'\t')
-                            .count() == remaining.len().min(remaining.iter().position(|&b| b == b'\n').unwrap_or(remaining.len()));
+                    let is_blank = remaining.is_empty()
+                        || remaining[0] == b'\n'
+                        || remaining
+                            .iter()
+                            .take_while(|&&b| b == b' ' || b == b'\t')
+                            .count()
+                            == remaining.len().min(
+                                remaining
+                                    .iter()
+                                    .position(|&b| b == b'\n')
+                                    .unwrap_or(remaining.len()),
+                            );
 
                     if is_blank {
                         matched += 1;
@@ -1034,7 +1067,8 @@ impl<'a> BlockParser<'a> {
                             self.cursor = Cursor::new_at(self.input, save_pos);
                             self.partial_tab_cols = save_partial;
                             self.current_col = save_col;
-                            let (_skipped_cols, _skipped_bytes) = self.skip_indent_max(content_indent);
+                            let (_skipped_cols, _skipped_bytes) =
+                                self.skip_indent_max(content_indent);
                             matched += 1;
                         } else {
                             self.cursor = Cursor::new_at(self.input, save_pos);
@@ -1080,7 +1114,10 @@ impl<'a> BlockParser<'a> {
                     return false;
                 }
                 let after = self.cursor.peek_ahead(1);
-                after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n') || after.is_none()
+                after == Some(b' ')
+                    || after == Some(b'\t')
+                    || after == Some(b'\n')
+                    || after.is_none()
             }
             ListKind::Ordered { delimiter, .. } => {
                 // Must be digit(s) followed by the SAME delimiter (. or ))
@@ -1089,7 +1126,11 @@ impl<'a> BlockParser<'a> {
                 }
                 // Find the delimiter after the digits
                 let mut offset = 1;
-                while self.cursor.peek_ahead(offset).map_or(false, |b| b.is_ascii_digit()) {
+                while self
+                    .cursor
+                    .peek_ahead(offset)
+                    .map_or(false, |b| b.is_ascii_digit())
+                {
                     offset += 1;
                 }
                 // Check if delimiter matches
@@ -1098,7 +1139,10 @@ impl<'a> BlockParser<'a> {
                 }
                 // Must be followed by space, tab, or newline
                 let after = self.cursor.peek_ahead(offset + 1);
-                after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n') || after.is_none()
+                after == Some(b' ')
+                    || after == Some(b'\t')
+                    || after == Some(b'\n')
+                    || after.is_none()
             }
         }
     }
@@ -1153,7 +1197,16 @@ impl<'a> BlockParser<'a> {
             // ATX heading - only at indent < 4
             b'#' => indent < 4,
             // Fenced code block - only at indent < 4
-            b'`' | b'~' => indent < 4 && self.cursor.remaining_slice().iter().take_while(|&&c| c == b).count() >= 3,
+            b'`' | b'~' => {
+                indent < 4
+                    && self
+                        .cursor
+                        .remaining_slice()
+                        .iter()
+                        .take_while(|&&c| c == b)
+                        .count()
+                        >= 3
+            }
             // Blockquote - only at indent < 4
             b'>' => indent < 4,
             // Unordered list marker or thematic break - only at indent < 4
@@ -1164,8 +1217,11 @@ impl<'a> BlockParser<'a> {
                 }
                 // Check if followed by space/tab/newline (list item) or if it's a thematic break
                 let after = self.cursor.peek_ahead(1);
-                after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n')
-                    || after.is_none() || self.peek_thematic_break()
+                after == Some(b' ')
+                    || after == Some(b'\t')
+                    || after == Some(b'\n')
+                    || after.is_none()
+                    || self.peek_thematic_break()
             }
             // Ordered list marker - only at indent < 4
             b'0'..=b'9' => {
@@ -1174,7 +1230,11 @@ impl<'a> BlockParser<'a> {
                 }
                 // Check if digit(s) followed by . or ) then space/tab/newline
                 let mut offset = 1;
-                while self.cursor.peek_ahead(offset).map_or(false, |c| c.is_ascii_digit()) {
+                while self
+                    .cursor
+                    .peek_ahead(offset)
+                    .map_or(false, |c| c.is_ascii_digit())
+                {
                     offset += 1;
                 }
                 let delim = self.cursor.peek_ahead(offset);
@@ -1182,7 +1242,10 @@ impl<'a> BlockParser<'a> {
                     return false;
                 }
                 let after = self.cursor.peek_ahead(offset + 1);
-                after == Some(b' ') || after == Some(b'\t') || after == Some(b'\n') || after.is_none()
+                after == Some(b' ')
+                    || after == Some(b'\t')
+                    || after == Some(b'\n')
+                    || after.is_none()
             }
             // HTML block (only types that can interrupt paragraphs) - only at indent < 4
             b'<' => indent < 4 && self.peek_html_block_start(true).is_some(),
@@ -1239,7 +1302,11 @@ impl<'a> BlockParser<'a> {
     /// Handle blank line for container continuation.
     /// `close_blockquotes`: true if this is a truly blank line (no `>` markers),
     /// false if the line had container markers but blank content.
-    fn handle_blank_line_containers(&mut self, events: &mut Vec<BlockEvent>, close_blockquotes: bool) {
+    fn handle_blank_line_containers(
+        &mut self,
+        events: &mut Vec<BlockEvent>,
+        close_blockquotes: bool,
+    ) {
         // A blank line (without > marker) closes blockquotes
         if close_blockquotes {
             // Close all blockquote containers from the top
@@ -1289,7 +1356,9 @@ impl<'a> BlockParser<'a> {
             }
         }
 
-        let active_list_count = self.container_stack.iter()
+        let active_list_count = self
+            .container_stack
+            .iter()
             .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
             .count();
         let start_idx = self.open_lists.len().saturating_sub(active_list_count);
@@ -1354,7 +1423,11 @@ impl<'a> BlockParser<'a> {
 
         // Read ASCII alpha type name
         let type_start = self.cursor.offset();
-        while self.cursor.peek().map_or(false, |b| b.is_ascii_alphabetic()) {
+        while self
+            .cursor
+            .peek()
+            .map_or(false, |b| b.is_ascii_alphabetic())
+        {
             self.cursor.bump();
         }
         let type_end = self.cursor.offset();
@@ -1373,7 +1446,11 @@ impl<'a> BlockParser<'a> {
         self.cursor.bump();
 
         // After `]`, only optional whitespace allowed before newline/EOF
-        while self.cursor.peek().map_or(false, |b| b == b' ' || b == b'\t') {
+        while self
+            .cursor
+            .peek()
+            .map_or(false, |b| b == b' ' || b == b'\t')
+        {
             self.cursor.bump();
         }
         if !self.cursor.is_eof() && !self.cursor.at(b'\n') && !self.cursor.at(b'\r') {
@@ -1438,7 +1515,10 @@ impl<'a> BlockParser<'a> {
             // Absolute content_indent = spaces before marker + marker width + spaces after marker
             let absolute_content_indent = pre_marker_indent + relative_content_indent;
             self.start_list_item(
-                ListKind::Ordered { start: start_num, delimiter },
+                ListKind::Ordered {
+                    start: start_num,
+                    delimiter,
+                },
                 delimiter,
                 absolute_content_indent,
                 events,
@@ -1460,7 +1540,8 @@ impl<'a> BlockParser<'a> {
 
         // Must be followed by space or tab or newline
         let after_marker = self.cursor.peek_ahead(1);
-        if after_marker != Some(b' ') && after_marker != Some(b'\t') && after_marker != Some(b'\n') {
+        if after_marker != Some(b' ') && after_marker != Some(b'\t') && after_marker != Some(b'\n')
+        {
             // Could be thematic break for - and *
             return None;
         }
@@ -1616,7 +1697,9 @@ impl<'a> BlockParser<'a> {
         // 1. There's a compatible open list, AND
         // 2. Either we're not inside a list item, OR there are more open lists
         //    than list items in container_stack (meaning there's a nested list waiting)
-        let list_item_count = self.container_stack.iter()
+        let list_item_count = self
+            .container_stack
+            .iter()
             .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
             .count();
         // If open_lists.len() > list_item_count, there's a "free" open list
@@ -1692,7 +1775,10 @@ impl<'a> BlockParser<'a> {
         if let Some(open_list) = self.open_lists.last() {
             return match (kind, open_list.kind) {
                 // For ordered lists, delimiter (. vs )) must match
-                (ListKind::Ordered { delimiter: d1, .. }, ListKind::Ordered { delimiter: d2, .. }) => d1 == d2,
+                (
+                    ListKind::Ordered { delimiter: d1, .. },
+                    ListKind::Ordered { delimiter: d2, .. },
+                ) => d1 == d2,
                 // For unordered lists, marker (-, *, +) must match
                 (ListKind::Unordered, ListKind::Unordered) => open_list.marker == marker,
                 _ => false,
@@ -1752,7 +1838,9 @@ impl<'a> BlockParser<'a> {
                     events.push(BlockEvent::ListItemEnd);
 
                     // Count remaining ListItem containers
-                    let remaining_items = self.container_stack.iter()
+                    let remaining_items = self
+                        .container_stack
+                        .iter()
                         .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
                         .count();
 
@@ -1923,7 +2011,10 @@ impl<'a> BlockParser<'a> {
         events.push(BlockEvent::HeadingStart { level });
 
         if content_end > content_start {
-            events.push(BlockEvent::Text(Range::from_usize(content_start, content_end)));
+            events.push(BlockEvent::Text(Range::from_usize(
+                content_start,
+                content_end,
+            )));
         }
 
         events.push(BlockEvent::HeadingEnd { level });
@@ -2147,10 +2238,15 @@ impl<'a> BlockParser<'a> {
 
         // Emit virtual spaces if there are extra columns beyond 4
         if self.indented_code_extra_spaces > 0 {
-            events.push(BlockEvent::VirtualSpaces(self.indented_code_extra_spaces as u8));
+            events.push(BlockEvent::VirtualSpaces(
+                self.indented_code_extra_spaces as u8,
+            ));
         }
         // Emit the content (including newline) - use Code event to skip inline parsing
-        events.push(BlockEvent::Code(Range::new(text_start as u32, content_end as u32)));
+        events.push(BlockEvent::Code(Range::new(
+            text_start as u32,
+            content_end as u32,
+        )));
     }
 
     /// Try to start an HTML block.
@@ -2173,9 +2269,8 @@ impl<'a> BlockParser<'a> {
         self.mark_container_has_content();
 
         self.html_block = Some(kind);
-        self.pending_html_indent_start = Some(
-            self.cursor.offset().saturating_sub(self.line_indent_bytes),
-        );
+        self.pending_html_indent_start =
+            Some(self.cursor.offset().saturating_sub(self.line_indent_bytes));
         events.push(BlockEvent::HtmlBlockStart);
 
         // Consume the current line as HTML block content
@@ -2188,7 +2283,10 @@ impl<'a> BlockParser<'a> {
     fn parse_html_block_line(&mut self, events: &mut Vec<BlockEvent>) {
         let kind = self.html_block.unwrap();
 
-        let indent_start = self.pending_html_indent_start.take().unwrap_or_else(|| self.cursor.offset());
+        let indent_start = self
+            .pending_html_indent_start
+            .take()
+            .unwrap_or_else(|| self.cursor.offset());
         let (_indent, _) = self.skip_indent();
         let content_start = self.cursor.offset();
 
@@ -2219,7 +2317,10 @@ impl<'a> BlockParser<'a> {
         };
 
         // Emit the raw HTML line (including any indentation after container markers)
-        events.push(BlockEvent::HtmlBlockText(Range::from_usize(indent_start, content_end)));
+        events.push(BlockEvent::HtmlBlockText(Range::from_usize(
+            indent_start,
+            content_end,
+        )));
 
         // Check for HTML block end markers (types 1-5)
         let line = &self.input[content_start..line_end];
@@ -2307,7 +2408,10 @@ impl<'a> BlockParser<'a> {
     fn current_line_slice(&self) -> &[u8] {
         let offset = self.cursor.offset();
         let slice = &self.input[offset..];
-        let end = slice.iter().position(|&b| b == b'\n').unwrap_or(slice.len());
+        let end = slice
+            .iter()
+            .position(|&b| b == b'\n')
+            .unwrap_or(slice.len());
         &slice[..end]
     }
 
@@ -2326,7 +2430,6 @@ impl<'a> BlockParser<'a> {
         }
         self.tag_boundary(line, name_end)
     }
-
 
     /// Parse a valid HTML tag on a single line and return (tag_name, end_index_after_tag).
     fn parse_html_tag<'b>(&self, line: &'b [u8]) -> Option<(&'b [u8], usize)> {
@@ -2368,7 +2471,11 @@ impl<'a> BlockParser<'a> {
             }
             if line[i] == b'/' {
                 i += 1;
-                return if i < line.len() && line[i] == b'>' { Some((name, i + 1)) } else { None };
+                return if i < line.len() && line[i] == b'>' {
+                    Some((name, i + 1))
+                } else {
+                    None
+                };
             }
             if !Self::is_html_whitespace(line[i]) {
                 return None;
@@ -2384,7 +2491,11 @@ impl<'a> BlockParser<'a> {
             }
             if line[i] == b'/' {
                 i += 1;
-                return if i < line.len() && line[i] == b'>' { Some((name, i + 1)) } else { None };
+                return if i < line.len() && line[i] == b'>' {
+                    Some((name, i + 1))
+                } else {
+                    None
+                };
             }
             if !Self::is_attr_name_start(line[i]) {
                 return None;
@@ -2423,7 +2534,13 @@ impl<'a> BlockParser<'a> {
                     let mut had = false;
                     while i < line.len() && !Self::is_html_whitespace(line[i]) {
                         let b = line[i];
-                        if b == b'"' || b == b'\'' || b == b'=' || b == b'<' || b == b'>' || b == b'`' {
+                        if b == b'"'
+                            || b == b'\''
+                            || b == b'='
+                            || b == b'<'
+                            || b == b'>'
+                            || b == b'`'
+                        {
                             break;
                         }
                         had = true;
@@ -2483,28 +2600,74 @@ impl<'a> BlockParser<'a> {
         Self::is_attr_name_start(b) || b.is_ascii_digit() || b == b'.' || b == b'-'
     }
 
-
     /// Check if the tag name is in the CommonMark block tag list.
     fn is_block_tag(&self, name: &[u8]) -> bool {
-        if name.len() == 2
-            && (name[0] | 0x20) == b'h'
-            && (b'1'..=b'6').contains(&name[1])
-        {
+        if name.len() == 2 && (name[0] | 0x20) == b'h' && (b'1'..=b'6').contains(&name[1]) {
             return true;
         }
 
         const BLOCK_TAGS: [&[u8]; 56] = [
-            b"address", b"article", b"aside", b"base", b"basefont", b"blockquote", b"body",
-            b"caption", b"center", b"col", b"colgroup", b"dd", b"details", b"dialog", b"dir",
-            b"div", b"dl", b"dt", b"fieldset", b"figcaption", b"figure", b"footer", b"form",
-            b"frame", b"frameset", b"head", b"header", b"hr", b"html", b"iframe", b"legend",
-            b"li", b"link", b"main", b"menu", b"menuitem", b"nav", b"noframes", b"ol",
-            b"optgroup", b"option", b"p", b"param", b"section", b"source", b"summary",
-            b"table", b"tbody", b"td", b"tfoot", b"th", b"thead", b"title", b"tr", b"track",
+            b"address",
+            b"article",
+            b"aside",
+            b"base",
+            b"basefont",
+            b"blockquote",
+            b"body",
+            b"caption",
+            b"center",
+            b"col",
+            b"colgroup",
+            b"dd",
+            b"details",
+            b"dialog",
+            b"dir",
+            b"div",
+            b"dl",
+            b"dt",
+            b"fieldset",
+            b"figcaption",
+            b"figure",
+            b"footer",
+            b"form",
+            b"frame",
+            b"frameset",
+            b"head",
+            b"header",
+            b"hr",
+            b"html",
+            b"iframe",
+            b"legend",
+            b"li",
+            b"link",
+            b"main",
+            b"menu",
+            b"menuitem",
+            b"nav",
+            b"noframes",
+            b"ol",
+            b"optgroup",
+            b"option",
+            b"p",
+            b"param",
+            b"section",
+            b"source",
+            b"summary",
+            b"table",
+            b"tbody",
+            b"td",
+            b"tfoot",
+            b"th",
+            b"thead",
+            b"title",
+            b"tr",
+            b"track",
             b"ul",
         ];
 
-        BLOCK_TAGS.iter().any(|&t| self.eq_ignore_ascii_case(name, t))
+        BLOCK_TAGS
+            .iter()
+            .any(|&t| self.eq_ignore_ascii_case(name, t))
     }
 
     #[inline]
@@ -2522,9 +2685,7 @@ impl<'a> BlockParser<'a> {
         if needle.is_empty() || haystack.len() < needle.len() {
             return false;
         }
-        haystack
-            .windows(needle.len())
-            .any(|w| w == needle)
+        haystack.windows(needle.len()).any(|w| w == needle)
     }
 
     #[inline]
@@ -2655,7 +2816,8 @@ impl<'a> BlockParser<'a> {
         // We include from original line_start to capture any leading spaces we skipped
         // Actually, use content_start which is after indent
         if line_end > content_start {
-            self.paragraph_lines.push(Range::from_usize(content_start, line_end));
+            self.paragraph_lines
+                .push(Range::from_usize(content_start, line_end));
         }
     }
 
@@ -2687,9 +2849,14 @@ impl<'a> BlockParser<'a> {
         if has_leading_pipe {
             pos += 1;
         }
-        let has_trailing_pipe = line_end > pos && line[line_end - 1] == b'|'
+        let has_trailing_pipe = line_end > pos
+            && line[line_end - 1] == b'|'
             && !(line_end >= 2 && line[line_end - 2] == b'\\');
-        let scan_end = if has_trailing_pipe { line_end - 1 } else { line_end };
+        let scan_end = if has_trailing_pipe {
+            line_end - 1
+        } else {
+            line_end
+        };
 
         // A line that is just a bare pipe (e.g., "|") has no content between leading/trailing
         // pipes and should not produce any cells.
@@ -2858,7 +3025,12 @@ impl<'a> BlockParser<'a> {
             b'>' => true, // Blockquote
             b'`' | b'~' => {
                 // Fenced code block (need at least 3)
-                self.cursor.remaining_slice().iter().take_while(|&&c| c == first).count() >= 3
+                self.cursor
+                    .remaining_slice()
+                    .iter()
+                    .take_while(|&&c| c == first)
+                    .count()
+                    >= 3
             }
             b'-' | b'*' | b'_' => {
                 // Thematic break check
@@ -2912,7 +3084,10 @@ impl<'a> BlockParser<'a> {
             if i < header_cells.len() {
                 let (s, e) = header_cells[i];
                 if e > s {
-                    events.push(BlockEvent::Text(Range::from_usize(header_base + s, header_base + e)));
+                    events.push(BlockEvent::Text(Range::from_usize(
+                        header_base + s,
+                        header_base + e,
+                    )));
                 }
             }
             events.push(BlockEvent::TableCellEnd);
@@ -2975,7 +3150,10 @@ impl<'a> BlockParser<'a> {
             if i < cells.len() {
                 let (s, e) = cells[i];
                 if e > s {
-                    events.push(BlockEvent::Text(Range::from_usize(line_start + s, line_start + e)));
+                    events.push(BlockEvent::Text(Range::from_usize(
+                        line_start + s,
+                        line_start + e,
+                    )));
                 }
             }
             // If i >= cells.len(), emit an empty cell (no Text event)
@@ -3036,7 +3214,8 @@ impl<'a> BlockParser<'a> {
             // The label was stored as a Text event right at the start marker position.
             // Actually, we need to store the label separately. Let's use a field.
             if let Some((normalized, label)) = self.pending_footnote_label.take() {
-                self.footnote_store.insert(normalized, label, footnote_events);
+                self.footnote_store
+                    .insert(normalized, label, footnote_events);
             }
         }
     }
@@ -3192,7 +3371,8 @@ impl<'a> BlockParser<'a> {
             if i > 0 {
                 self.link_ref_parse_buf.push(b'\n');
             }
-            self.link_ref_parse_buf.extend_from_slice(range.slice(self.input));
+            self.link_ref_parse_buf
+                .extend_from_slice(range.slice(self.input));
         }
         let para_buf = std::mem::take(&mut self.link_ref_parse_buf);
         let consumed_lines = self.extract_link_ref_defs_from_bytes(para_buf.as_slice());
@@ -3281,7 +3461,9 @@ impl<'a> BlockParser<'a> {
     /// This can happen after the two-blank-line rule closes an item.
     fn close_orphaned_lists(&mut self, events: &mut Vec<BlockEvent>) {
         // Count active list items in container stack
-        let active_items = self.container_stack.iter()
+        let active_items = self
+            .container_stack
+            .iter()
             .filter(|c| matches!(c.typ, ContainerType::ListItem { .. }))
             .count();
 
@@ -3465,7 +3647,11 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                                 url,
                                 title: None,
                             },
-                            if line_end < len { line_end + 1 } else { line_end },
+                            if line_end < len {
+                                line_end + 1
+                            } else {
+                                line_end
+                            },
                         ));
                     }
                     return None;
@@ -3484,7 +3670,11 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                             url,
                             title: None,
                         },
-                        if line_end < len { line_end + 1 } else { line_end },
+                        if line_end < len {
+                            line_end + 1
+                        } else {
+                            line_end
+                        },
                     ));
                 }
                 return None;
@@ -3505,7 +3695,11 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                             url,
                             title: None,
                         },
-                        if line_end < len { line_end + 1 } else { line_end },
+                        if line_end < len {
+                            line_end + 1
+                        } else {
+                            line_end
+                        },
                     ));
                 }
                 return None;
@@ -3539,8 +3733,7 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
 fn is_simple_line_start(b: u8) -> bool {
     !matches!(
         b,
-        b'#'
-            | b'>'
+        b'#' | b'>'
             | b'-'
             | b'*'
             | b'_'
@@ -3579,9 +3772,7 @@ mod tests {
 
     fn get_text<'a>(input: &'a str, event: &BlockEvent) -> &'a str {
         match event {
-            BlockEvent::Text(range) => {
-                std::str::from_utf8(range.slice(input.as_bytes())).unwrap()
-            }
+            BlockEvent::Text(range) => std::str::from_utf8(range.slice(input.as_bytes())).unwrap(),
             _ => panic!("Expected Text event"),
         }
     }
@@ -3808,18 +3999,16 @@ mod tests {
 
     fn get_code<'a>(input: &'a str, event: &BlockEvent) -> &'a str {
         match event {
-            BlockEvent::Code(range) => {
-                std::str::from_utf8(range.slice(input.as_bytes())).unwrap()
-            }
+            BlockEvent::Code(range) => std::str::from_utf8(range.slice(input.as_bytes())).unwrap(),
             _ => panic!("Expected Code event"),
         }
     }
 
     fn get_info<'a>(input: &'a str, event: &BlockEvent) -> Option<&'a str> {
         match event {
-            BlockEvent::CodeBlockStart { info } => {
-                info.as_ref().map(|r| std::str::from_utf8(r.slice(input.as_bytes())).unwrap())
-            }
+            BlockEvent::CodeBlockStart { info } => info
+                .as_ref()
+                .map(|r| std::str::from_utf8(r.slice(input.as_bytes())).unwrap()),
             _ => panic!("Expected CodeBlockStart event"),
         }
     }
@@ -3911,7 +4100,7 @@ mod tests {
         // Code block should be closed at EOF (no trailing newline)
         assert_eq!(events.len(), 3);
         assert!(matches!(events[0], BlockEvent::CodeBlockStart { .. }));
-        assert_eq!(get_code(input, &events[1]), "code");  // No newline at EOF
+        assert_eq!(get_code(input, &events[1]), "code"); // No newline at EOF
         assert_eq!(events[2], BlockEvent::CodeBlockEnd);
     }
 
@@ -4044,7 +4233,13 @@ mod tests {
         let input = "- item";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered, .. }));
+        assert!(matches!(
+            events[0],
+            BlockEvent::ListStart {
+                kind: ListKind::Unordered,
+                ..
+            }
+        ));
         assert!(matches!(events[1], BlockEvent::ListItemStart { .. }));
         assert_eq!(events[2], BlockEvent::ParagraphStart);
         assert_eq!(get_text(input, &events[3]), "item");
@@ -4055,7 +4250,13 @@ mod tests {
         let input = "* item";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered, .. }));
+        assert!(matches!(
+            events[0],
+            BlockEvent::ListStart {
+                kind: ListKind::Unordered,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -4063,7 +4264,13 @@ mod tests {
         let input = "+ item";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Unordered, .. }));
+        assert!(matches!(
+            events[0],
+            BlockEvent::ListStart {
+                kind: ListKind::Unordered,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -4072,13 +4279,15 @@ mod tests {
         let events = parse(input);
 
         // Count list item starts
-        let item_count = events.iter()
+        let item_count = events
+            .iter()
             .filter(|e| matches!(e, BlockEvent::ListItemStart { .. }))
             .count();
         assert_eq!(item_count, 3);
 
         // Should have exactly one list
-        let list_count = events.iter()
+        let list_count = events
+            .iter()
             .filter(|e| matches!(e, BlockEvent::ListStart { .. }))
             .count();
         assert_eq!(list_count, 1);
@@ -4089,7 +4298,13 @@ mod tests {
         let input = "1. first\n2. second";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 1, .. }, .. }));
+        assert!(matches!(
+            events[0],
+            BlockEvent::ListStart {
+                kind: ListKind::Ordered { start: 1, .. },
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -4097,7 +4312,13 @@ mod tests {
         let input = "5. fifth";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { start: 5, .. }, .. }));
+        assert!(matches!(
+            events[0],
+            BlockEvent::ListStart {
+                kind: ListKind::Ordered { start: 5, .. },
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -4105,7 +4326,13 @@ mod tests {
         let input = "1) item";
         let events = parse(input);
 
-        assert!(matches!(events[0], BlockEvent::ListStart { kind: ListKind::Ordered { .. }, .. }));
+        assert!(matches!(
+            events[0],
+            BlockEvent::ListStart {
+                kind: ListKind::Ordered { .. },
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -4113,7 +4340,12 @@ mod tests {
         let input = "- [ ] task";
         let events = parse(input);
 
-        assert!(matches!(events[1], BlockEvent::ListItemStart { task: TaskState::Unchecked }));
+        assert!(matches!(
+            events[1],
+            BlockEvent::ListItemStart {
+                task: TaskState::Unchecked
+            }
+        ));
     }
 
     #[test]
@@ -4121,7 +4353,12 @@ mod tests {
         let input = "- [x] done";
         let events = parse(input);
 
-        assert!(matches!(events[1], BlockEvent::ListItemStart { task: TaskState::Checked }));
+        assert!(matches!(
+            events[1],
+            BlockEvent::ListItemStart {
+                task: TaskState::Checked
+            }
+        ));
     }
 
     #[test]
@@ -4129,7 +4366,12 @@ mod tests {
         let input = "- [X] done";
         let events = parse(input);
 
-        assert!(matches!(events[1], BlockEvent::ListItemStart { task: TaskState::Checked }));
+        assert!(matches!(
+            events[1],
+            BlockEvent::ListItemStart {
+                task: TaskState::Checked
+            }
+        ));
     }
 
     #[test]
@@ -4137,7 +4379,9 @@ mod tests {
         let input = "- item\n\nparagraph";
         let events = parse(input);
 
-        let has_list_end = events.iter().any(|e| matches!(e, BlockEvent::ListEnd { .. }));
+        let has_list_end = events
+            .iter()
+            .any(|e| matches!(e, BlockEvent::ListEnd { .. }));
         assert!(has_list_end);
     }
 

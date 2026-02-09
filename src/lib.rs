@@ -19,13 +19,13 @@ pub mod cursor;
 pub mod escape;
 pub mod footnote;
 pub mod inline;
-pub mod link_ref;
 pub mod limits;
+pub mod link_ref;
 pub mod range;
 pub mod render;
 
 // Re-export primary types
-pub use block::{fixup_list_tight, Alignment, BlockEvent, BlockParser, CalloutType};
+pub use block::{Alignment, BlockEvent, BlockParser, CalloutType, fixup_list_tight};
 pub use footnote::FootnoteStore;
 pub use inline::{InlineEvent, InlineParser};
 pub use link_ref::{LinkRefDef, LinkRefStore};
@@ -330,7 +330,11 @@ impl ParagraphState {
     fn finish(&mut self) -> &[u8] {
         self.in_paragraph = false;
         // CommonMark: strip trailing spaces/tabs from paragraph content
-        while self.content.last().map_or(false, |&b| b == b' ' || b == b'\t') {
+        while self
+            .content
+            .last()
+            .map_or(false, |&b| b == b' ' || b == b'\t')
+        {
             self.content.pop();
         }
         &self.content
@@ -371,7 +375,11 @@ impl HeadingState {
 
     fn finish(&mut self) -> &[u8] {
         self.in_heading = false;
-        while self.content.last().map_or(false, |&b| b == b' ' || b == b'\t') {
+        while self
+            .content
+            .last()
+            .map_or(false, |&b| b == b' ' || b == b'\t')
+        {
             self.content.pop();
         }
         &self.content
@@ -390,7 +398,11 @@ impl HeadingIdTracker {
 
     /// Generate a unique slug, appending `-1`, `-2`, etc. on collision.
     fn unique_slug(&mut self, base: String) -> String {
-        let slug = if base.is_empty() { "heading".to_string() } else { base };
+        let slug = if base.is_empty() {
+            "heading".to_string()
+        } else {
+            base
+        };
         let count = self.used.iter().filter(|s| **s == slug).count();
         let result = if count == 0 {
             slug.clone()
@@ -490,7 +502,11 @@ impl CellState {
     fn finish(&mut self) -> &[u8] {
         self.in_cell = false;
         // Trim trailing whitespace
-        while self.content.last().map_or(false, |&b| b == b' ' || b == b'\t') {
+        while self
+            .content
+            .last()
+            .map_or(false, |&b| b == b' ' || b == b'\t')
+        {
             self.content.pop();
         }
         &self.content
@@ -623,9 +639,11 @@ fn render_block_event(
 ) {
     // Check if we're in a tight list (innermost list is tight)
     // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
-    let in_tight_list = tight_list_stack.last().map_or(false, |(tight, bq_depth_at_start)| {
-        *tight && *blockquote_depth <= *bq_depth_at_start
-    });
+    let in_tight_list = tight_list_stack
+        .last()
+        .map_or(false, |(tight, bq_depth_at_start)| {
+            *tight && *blockquote_depth <= *bq_depth_at_start
+        });
 
     match event {
         BlockEvent::ParagraphStart => {
@@ -645,9 +663,11 @@ fn render_block_event(
         BlockEvent::ParagraphEnd => {
             // Check if we're in a tight list (innermost list is tight)
             // BUT: paragraphs inside blockquotes that started AFTER the list need </p> tags
-            let in_tight_list = tight_list_stack.last().map_or(false, |(tight, bq_depth_at_start)| {
-                *tight && *blockquote_depth <= *bq_depth_at_start
-            });
+            let in_tight_list = tight_list_stack
+                .last()
+                .map_or(false, |(tight, bq_depth_at_start)| {
+                    *tight && *blockquote_depth <= *bq_depth_at_start
+                });
 
             // Parse all accumulated paragraph content at once
             let content = para_state.finish();
@@ -658,13 +678,35 @@ fn render_block_event(
             if !content.is_empty() {
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
-                let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, options.math, footnote_store, inline_events);
+                let refs = if options.allow_link_refs {
+                    Some(link_refs)
+                } else {
+                    None
+                };
+                inline_parser.parse_with_options(
+                    content,
+                    refs,
+                    options.allow_html,
+                    options.strikethrough,
+                    options.autolink_literals,
+                    options.math,
+                    footnote_store,
+                    inline_events,
+                );
 
                 // Render inline events
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html, footnote_store, footnote_order);
+                    render_inline_event(
+                        content,
+                        inline_event,
+                        writer,
+                        &mut image_state,
+                        link_refs,
+                        options.disallowed_raw_html,
+                        footnote_store,
+                        footnote_order,
+                    );
                 }
             }
             // In tight lists, don't emit </p> tags
@@ -704,12 +746,34 @@ fn render_block_event(
             if !content.is_empty() {
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
-                let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, options.math, footnote_store, inline_events);
+                let refs = if options.allow_link_refs {
+                    Some(link_refs)
+                } else {
+                    None
+                };
+                inline_parser.parse_with_options(
+                    content,
+                    refs,
+                    options.allow_html,
+                    options.strikethrough,
+                    options.autolink_literals,
+                    options.math,
+                    footnote_store,
+                    inline_events,
+                );
 
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html, footnote_store, footnote_order);
+                    render_inline_event(
+                        content,
+                        inline_event,
+                        writer,
+                        &mut image_state,
+                        link_refs,
+                        options.disallowed_raw_html,
+                        footnote_store,
+                        footnote_order,
+                    );
                 }
             }
             writer.heading_end(*level);
@@ -763,13 +827,35 @@ fn render_block_event(
             } else {
                 // Parse immediately (e.g., heading content)
                 inline_events.clear();
-                let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(text, refs, options.allow_html, options.strikethrough, options.autolink_literals, options.math, footnote_store, inline_events);
+                let refs = if options.allow_link_refs {
+                    Some(link_refs)
+                } else {
+                    None
+                };
+                inline_parser.parse_with_options(
+                    text,
+                    refs,
+                    options.allow_html,
+                    options.strikethrough,
+                    options.autolink_literals,
+                    options.math,
+                    footnote_store,
+                    inline_events,
+                );
 
                 // Render inline events
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(text, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html, footnote_store, footnote_order);
+                    render_inline_event(
+                        text,
+                        inline_event,
+                        writer,
+                        &mut image_state,
+                        link_refs,
+                        options.disallowed_raw_html,
+                        footnote_store,
+                        footnote_order,
+                    );
                 }
             }
         }
@@ -938,12 +1024,34 @@ fn render_block_event(
             if !content.is_empty() {
                 inline_events.clear();
                 inline_events.reserve((content.len() / 8).max(8));
-                let refs = if options.allow_link_refs { Some(link_refs) } else { None };
-                inline_parser.parse_with_options(content, refs, options.allow_html, options.strikethrough, options.autolink_literals, options.math, footnote_store, inline_events);
+                let refs = if options.allow_link_refs {
+                    Some(link_refs)
+                } else {
+                    None
+                };
+                inline_parser.parse_with_options(
+                    content,
+                    refs,
+                    options.allow_html,
+                    options.strikethrough,
+                    options.autolink_literals,
+                    options.math,
+                    footnote_store,
+                    inline_events,
+                );
 
                 let mut image_state = None;
                 for inline_event in inline_events.iter() {
-                    render_inline_event(content, inline_event, writer, &mut image_state, link_refs, options.disallowed_raw_html, footnote_store, footnote_order);
+                    render_inline_event(
+                        content,
+                        inline_event,
+                        writer,
+                        &mut image_state,
+                        link_refs,
+                        options.disallowed_raw_html,
+                        footnote_store,
+                        footnote_order,
+                    );
                 }
             }
             if *in_table_head {
@@ -1247,12 +1355,13 @@ fn render_inline_event(
                 if let Some(fn_store) = footnote_store {
                     let def_idx = *def_index as usize;
                     // Assign sequential number based on first-appearance order
-                    let number = if let Some(pos) = footnote_order.iter().position(|&i| i == def_idx) {
-                        pos + 1
-                    } else {
-                        footnote_order.push(def_idx);
-                        footnote_order.len()
-                    };
+                    let number =
+                        if let Some(pos) = footnote_order.iter().position(|&i| i == def_idx) {
+                            pos + 1
+                        } else {
+                            footnote_order.push(def_idx);
+                            footnote_order.len()
+                        };
                     if let Some(def) = fn_store.get(def_idx) {
                         writer.write_str("<sup><a href=\"#user-content-fn-");
                         writer.write_string(&def.label);
@@ -1362,7 +1471,9 @@ fn render_footnote_section(
         let mut fn_callout_stack: Vec<Option<block::CalloutType>> = Vec::new();
 
         // Track if the last event was ParagraphEnd (to insert backref)
-        let last_para_end_idx = fn_events.iter().rposition(|e| matches!(e, BlockEvent::ParagraphEnd));
+        let last_para_end_idx = fn_events
+            .iter()
+            .rposition(|e| matches!(e, BlockEvent::ParagraphEnd));
 
         for (i, event) in fn_events.iter().enumerate() {
             // If this is the last ParagraphEnd, we need to inject the backref before closing
@@ -1702,7 +1813,10 @@ More text."#;
         // CommonMark: alt text should be plain text, not HTML
         let html = to_html("![foo *bar*](/url)");
         // Should have alt="foo bar" (plain text, no <em> tags)
-        assert!(html.contains("alt=\"foo bar\""), "Alt text should be plain: {html}");
+        assert!(
+            html.contains("alt=\"foo bar\""),
+            "Alt text should be plain: {html}"
+        );
         assert!(!html.contains("<em>"), "No <em> tags in alt text");
     }
 
@@ -1710,7 +1824,10 @@ More text."#;
     fn test_image_with_nested_strong() {
         let html = to_html("![foo **bar**](/url)");
         // Should have alt="foo bar" (plain text, no <strong> tags)
-        assert!(html.contains("alt=\"foo bar\""), "Alt text should be plain: {html}");
+        assert!(
+            html.contains("alt=\"foo bar\""),
+            "Alt text should be plain: {html}"
+        );
         assert!(!html.contains("<strong>"), "No <strong> tags in alt text");
     }
 }
@@ -1720,7 +1837,7 @@ mod entity_tests {
     #[test]
     fn test_html_escape_entities() {
         use html_escape::decode_html_entities;
-        
+
         assert_eq!(decode_html_entities("&auml;").as_ref(), "ä");
         assert_eq!(decode_html_entities("&#228;").as_ref(), "ä");
         assert_eq!(decode_html_entities("&#xE4;").as_ref(), "ä");

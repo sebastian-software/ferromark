@@ -1,4 +1,4 @@
-use ferromark::{to_html, to_html_with_options, Options};
+use ferromark::{Options, to_html, to_html_with_options};
 
 // cmark-gfm extension spec tests
 
@@ -23,10 +23,7 @@ fn unmatched_single_tilde_closing() {
 #[test]
 fn nested_tilde_in_strikethrough() {
     let result = to_html("This ~is ~ legit~ isn't ~ legit.");
-    assert_eq!(
-        result,
-        "<p>This <del>is ~ legit</del> isn't ~ legit.</p>\n"
-    );
+    assert_eq!(result, "<p>This <del>is ~ legit</del> isn't ~ legit.</p>\n");
 }
 
 #[test]

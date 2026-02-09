@@ -5,8 +5,6 @@
 
 use memchr::{memchr, memchr2, memchr3};
 
-
-
 /// Characters that need escaping in HTML text content.
 #[allow(dead_code)]
 const TEXT_ESCAPE_CHARS: &[u8] = b"<>&";
@@ -171,11 +169,39 @@ pub fn escape_text_to_string(input: &str) -> String {
 /// Check if a character is ASCII punctuation (can be backslash-escaped in URLs)
 #[inline]
 fn is_ascii_punctuation(b: u8) -> bool {
-    matches!(b,
-        b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
-        b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
-        b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
-        b'`' | b'{' | b'|' | b'}' | b'~'
+    matches!(
+        b,
+        b'!' | b'"'
+            | b'#'
+            | b'$'
+            | b'%'
+            | b'&'
+            | b'\''
+            | b'('
+            | b')'
+            | b'*'
+            | b'+'
+            | b','
+            | b'-'
+            | b'.'
+            | b'/'
+            | b':'
+            | b';'
+            | b'<'
+            | b'='
+            | b'>'
+            | b'?'
+            | b'@'
+            | b'['
+            | b'\\'
+            | b']'
+            | b'^'
+            | b'_'
+            | b'`'
+            | b'{'
+            | b'|'
+            | b'}'
+            | b'~'
     )
 }
 
@@ -361,7 +387,10 @@ mod tests {
     fn test_escape_text_mixed() {
         let mut out = Vec::new();
         escape_text_into(&mut out, b"<a href=\"test\">link & stuff</a>");
-        assert_eq!(out, b"&lt;a href=&quot;test&quot;&gt;link &amp; stuff&lt;/a&gt;");
+        assert_eq!(
+            out,
+            b"&lt;a href=&quot;test&quot;&gt;link &amp; stuff&lt;/a&gt;"
+        );
     }
 
     #[test]

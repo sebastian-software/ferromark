@@ -1,4 +1,4 @@
-use ferromark::{to_html_with_options, Options};
+use ferromark::{Options, to_html_with_options};
 
 fn math_html(input: &str) -> String {
     let mut options = Options::default();
@@ -35,8 +35,14 @@ fn test_display_math() {
 #[test]
 fn test_multiple_inline_math() {
     let html = math_html("$a$ and $b$");
-    assert!(html.contains("<code class=\"language-math math-inline\">a</code>"), "Got: {html}");
-    assert!(html.contains("<code class=\"language-math math-inline\">b</code>"), "Got: {html}");
+    assert!(
+        html.contains("<code class=\"language-math math-inline\">a</code>"),
+        "Got: {html}"
+    );
+    assert!(
+        html.contains("<code class=\"language-math math-inline\">b</code>"),
+        "Got: {html}"
+    );
 }
 
 #[test]
@@ -95,7 +101,10 @@ fn test_display_math_with_newlines() {
 #[test]
 fn test_math_in_paragraph() {
     let html = math_html("The equation $x = y$ is simple.");
-    assert!(html.contains("<code class=\"language-math math-inline\">x = y</code>"), "Got: {html}");
+    assert!(
+        html.contains("<code class=\"language-math math-inline\">x = y</code>"),
+        "Got: {html}"
+    );
     assert!(html.contains("The equation "), "Got: {html}");
     assert!(html.contains(" is simple."), "Got: {html}");
 }

@@ -3,9 +3,9 @@
 //! Tests based on the GFM spec (https://github.github.com/gfm/#tables-extension-)
 //! Examples 198-205, plus additional edge cases.
 
+use ferromark::Options;
 use ferromark::to_html;
 use ferromark::to_html_with_options;
-use ferromark::Options;
 
 // === GFM Spec Examples ===
 
@@ -69,7 +69,8 @@ fn gfm_example_204_variable_row_lengths() {
 #[test]
 fn gfm_example_205_empty_body() {
     let input = "| abc | def |\n| --- | --- |\n";
-    let expected = "<table>\n<thead>\n<tr>\n<th>abc</th>\n<th>def</th>\n</tr>\n</thead>\n</table>\n";
+    let expected =
+        "<table>\n<thead>\n<tr>\n<th>abc</th>\n<th>def</th>\n</tr>\n</thead>\n</table>\n";
     assert_eq!(to_html(input), expected);
 }
 
@@ -94,7 +95,8 @@ fn table_in_list_item() {
 /// Inline content in cells (emphasis, code, links).
 #[test]
 fn table_with_inline_content() {
-    let input = "| *em* | **strong** | `code` |\n| --- | --- | --- |\n| [link](url) | ![img](src) | a |\n";
+    let input =
+        "| *em* | **strong** | `code` |\n| --- | --- | --- |\n| [link](url) | ![img](src) | a |\n";
     let expected = "<table>\n<thead>\n<tr>\n<th><em>em</em></th>\n<th><strong>strong</strong></th>\n<th><code>code</code></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><a href=\"url\">link</a></td>\n<td><img src=\"src\" alt=\"img\" /></td>\n<td>a</td>\n</tr>\n</tbody>\n</table>\n";
     assert_eq!(to_html(input), expected);
 }
@@ -157,7 +159,10 @@ fn table_disabled_via_options() {
     };
     let result = to_html_with_options(input, &options);
     // Without tables, this should be a paragraph (with thematic break from ---)
-    assert!(!result.contains("<table>"), "Should not contain table: {result}");
+    assert!(
+        !result.contains("<table>"),
+        "Should not contain table: {result}"
+    );
 }
 
 /// Escaped pipe at end of cell.
@@ -234,7 +239,9 @@ fn cmark_ext_table_recognition_edge_cases() {
 
     // Two lines without delimiter is not a table
     assert_eq!(
-        to_html("| Not enough table | to be considered table |\n| Not enough table | to be considered table |\n"),
+        to_html(
+            "| Not enough table | to be considered table |\n| Not enough table | to be considered table |\n"
+        ),
         "<p>| Not enough table | to be considered table |\n| Not enough table | to be considered table |</p>\n"
     );
 
@@ -249,7 +256,10 @@ fn cmark_ext_table_recognition_edge_cases() {
 fn cmark_ext_delimiter_row_alone() {
     let input = "| ---- | --- |\n";
     let result = to_html(input);
-    assert!(!result.contains("<table>"), "Delimiter row alone should not be a table: {result}");
+    assert!(
+        !result.contains("<table>"),
+        "Delimiter row alone should not be a table: {result}"
+    );
 }
 
 /// cmark-gfm ext: Minimal single-cell table.
@@ -271,7 +281,8 @@ fn cmark_ext_no_leading_pipes() {
 /// cmark-gfm ext: 5-column alignment.
 #[test]
 fn cmark_ext_five_column_alignment() {
-    let input = "aaa | bbb | ccc | ddd | eee\n:-- | --- | :-: | --- | --:\nfff | ggg | hhh | iii | jjj\n";
+    let input =
+        "aaa | bbb | ccc | ddd | eee\n:-- | --- | :-: | --- | --:\nfff | ggg | hhh | iii | jjj\n";
     let expected = "<table>\n<thead>\n<tr>\n<th align=\"left\">aaa</th>\n<th>bbb</th>\n<th align=\"center\">ccc</th>\n<th>ddd</th>\n<th align=\"right\">eee</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"left\">fff</td>\n<td>ggg</td>\n<td align=\"center\">hhh</td>\n<td>iii</td>\n<td align=\"right\">jjj</td>\n</tr>\n</tbody>\n</table>\n";
     assert_eq!(to_html(input), expected);
 }
@@ -361,5 +372,8 @@ fn cmark_ext_table_after_multiline_paragraph() {
 fn cmark_regression_bare_pipe_dash() {
     let input = "|\n-|\n";
     let result = to_html(input);
-    assert!(!result.contains("<table>"), "Bare pipe+dash should not be table: {result}");
+    assert!(
+        !result.contains("<table>"),
+        "Bare pipe+dash should not be table: {result}"
+    );
 }

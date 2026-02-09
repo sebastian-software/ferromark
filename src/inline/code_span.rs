@@ -3,7 +3,7 @@
 //! Code spans have highest precedence among inline elements.
 //! Backtick runs must match exactly.
 
-use super::marks::{flags, Mark};
+use super::marks::{Mark, flags};
 
 /// Resolve code spans in mark buffer.
 /// Marks matching backtick openers with their closers.
@@ -55,7 +55,8 @@ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8], html_spans: &[(u32, u
                     } else {
                         // Backslash is outside (before content), so it escapes the closer
                         // Check if the backslash itself is escaped
-                        let backslash_escaped = backslash_pos > 0 && text[backslash_pos - 1] == b'\\';
+                        let backslash_escaped =
+                            backslash_pos > 0 && text[backslash_pos - 1] == b'\\';
                         if !backslash_escaped {
                             // This closer is escaped, skip it
                             continue;
@@ -94,7 +95,8 @@ pub fn extract_code_spans(marks: &[Mark]) -> impl Iterator<Item = CodeSpan> + '_
                 // This is an opener, find the closer
                 let opener_end = mark.end;
                 for j in (i + 1)..marks.len() {
-                    if marks[j].ch == b'`' && marks[j].is_resolved() && marks[j].len() == mark.len() {
+                    if marks[j].ch == b'`' && marks[j].is_resolved() && marks[j].len() == mark.len()
+                    {
                         let closer_pos = marks[j].pos;
                         let result = CodeSpan {
                             opener_pos: mark.pos,
@@ -136,7 +138,7 @@ impl CodeSpan {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::inline::marks::{collect_marks, MarkBuffer};
+    use crate::inline::marks::{MarkBuffer, collect_marks};
 
     #[test]
     fn test_simple_code_span() {

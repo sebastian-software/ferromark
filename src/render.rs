@@ -2,8 +2,8 @@
 //!
 //! Uses md4c's growth strategy: 1.5x + 128-byte alignment.
 
-use crate::escape;
 use crate::Range;
+use crate::escape;
 use memchr::memchr;
 
 /// Decode HTML entities with CommonMark compliance.
@@ -90,7 +90,8 @@ impl HtmlWriter {
     #[allow(dead_code)]
     fn grow(&mut self, needed: usize) {
         let new_cap = ((self.out.len() + needed) * 3 / 2 + 128) & !127;
-        self.out.reserve(new_cap.saturating_sub(self.out.capacity()));
+        self.out
+            .reserve(new_cap.saturating_sub(self.out.capacity()));
     }
 
     /// Ensure capacity for additional bytes.
@@ -173,7 +174,11 @@ impl HtmlWriter {
             } else {
                 // Find next backslash or end
                 let start = pos;
-                while pos < attr.len() && !(attr[pos] == b'\\' && pos + 1 < attr.len() && is_link_escapable(attr[pos + 1])) {
+                while pos < attr.len()
+                    && !(attr[pos] == b'\\'
+                        && pos + 1 < attr.len()
+                        && is_link_escapable(attr[pos + 1]))
+                {
                     pos += 1;
                 }
                 escape::escape_full_into(&mut self.out, &attr[start..pos]);
@@ -202,7 +207,10 @@ impl HtmlWriter {
         // Then process backslash escapes and HTML-escape
         let mut pos = 0;
         while pos < decoded_bytes.len() {
-            if decoded_bytes[pos] == b'\\' && pos + 1 < decoded_bytes.len() && is_link_escapable(decoded_bytes[pos + 1]) {
+            if decoded_bytes[pos] == b'\\'
+                && pos + 1 < decoded_bytes.len()
+                && is_link_escapable(decoded_bytes[pos + 1])
+            {
                 // Skip backslash, write escaped char (with HTML escaping)
                 pos += 1;
                 escape::escape_full_into(&mut self.out, &decoded_bytes[pos..pos + 1]);
@@ -210,7 +218,11 @@ impl HtmlWriter {
             } else {
                 // Find next backslash or end
                 let start = pos;
-                while pos < decoded_bytes.len() && !(decoded_bytes[pos] == b'\\' && pos + 1 < decoded_bytes.len() && is_link_escapable(decoded_bytes[pos + 1])) {
+                while pos < decoded_bytes.len()
+                    && !(decoded_bytes[pos] == b'\\'
+                        && pos + 1 < decoded_bytes.len()
+                        && is_link_escapable(decoded_bytes[pos + 1]))
+                {
                     pos += 1;
                 }
                 escape::escape_full_into(&mut self.out, &decoded_bytes[start..pos]);
@@ -411,24 +423,52 @@ impl HtmlWriter {
         let mut out = Vec::with_capacity(input.len());
         let mut i = 0usize;
         while i < input.len() {
-        if input[i] == b'\\' && i + 1 < input.len() && Self::is_escapable(input[i + 1]) {
-            out.push(input[i + 1]);
-            i += 2;
-        } else {
-            out.push(input[i]);
-            i += 1;
-        }
+            if input[i] == b'\\' && i + 1 < input.len() && Self::is_escapable(input[i + 1]) {
+                out.push(input[i + 1]);
+                i += 2;
+            } else {
+                out.push(input[i]);
+                i += 1;
+            }
         }
         out
     }
 
     #[inline]
     fn is_escapable(b: u8) -> bool {
-        matches!(b,
-            b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
-            b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
-            b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
-            b'`' | b'{' | b'|' | b'}' | b'~'
+        matches!(
+            b,
+            b'!' | b'"'
+                | b'#'
+                | b'$'
+                | b'%'
+                | b'&'
+                | b'\''
+                | b'('
+                | b')'
+                | b'*'
+                | b'+'
+                | b','
+                | b'-'
+                | b'.'
+                | b'/'
+                | b':'
+                | b';'
+                | b'<'
+                | b'='
+                | b'>'
+                | b'?'
+                | b'@'
+                | b'['
+                | b'\\'
+                | b']'
+                | b'^'
+                | b'_'
+                | b'`'
+                | b'{'
+                | b'|'
+                | b'}'
+                | b'~'
         )
     }
 
@@ -727,19 +767,28 @@ impl HtmlWriter {
 
 /// GFM disallowed raw HTML tag names (lowercase).
 const DISALLOWED_HTML_TAGS: [&[u8]; 9] = [
-    b"title", b"textarea", b"style", b"xmp",
-    b"iframe", b"noembed", b"noframes", b"script", b"plaintext",
+    b"title",
+    b"textarea",
+    b"style",
+    b"xmp",
+    b"iframe",
+    b"noembed",
+    b"noframes",
+    b"script",
+    b"plaintext",
 ];
 
 /// Check whether `html[pos]` (which must be `b'<'`) starts a disallowed tag.
 #[inline]
 fn is_disallowed_tag_at(html: &[u8], pos: usize) -> bool {
     let rest = &html[pos + 1..];
-    let rest = if rest.first() == Some(&b'/') { &rest[1..] } else { rest };
+    let rest = if rest.first() == Some(&b'/') {
+        &rest[1..]
+    } else {
+        rest
+    };
     for tag in &DISALLOWED_HTML_TAGS {
-        if rest.len() >= tag.len()
-            && rest[..tag.len()].eq_ignore_ascii_case(tag)
-        {
+        if rest.len() >= tag.len() && rest[..tag.len()].eq_ignore_ascii_case(tag) {
             // Character after tag name must be whitespace, >, /, or end of input
             if rest.len() == tag.len() {
                 return true;
@@ -756,11 +805,39 @@ fn is_disallowed_tag_at(html: &[u8], pos: usize) -> bool {
 /// Characters that can be escaped with backslash in CommonMark links.
 #[inline]
 fn is_link_escapable(b: u8) -> bool {
-    matches!(b,
-        b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
-        b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
-        b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
-        b'`' | b'{' | b'|' | b'}' | b'~'
+    matches!(
+        b,
+        b'!' | b'"'
+            | b'#'
+            | b'$'
+            | b'%'
+            | b'&'
+            | b'\''
+            | b'('
+            | b')'
+            | b'*'
+            | b'+'
+            | b','
+            | b'-'
+            | b'.'
+            | b'/'
+            | b':'
+            | b';'
+            | b'<'
+            | b'='
+            | b'>'
+            | b'?'
+            | b'@'
+            | b'['
+            | b'\\'
+            | b']'
+            | b'^'
+            | b'_'
+            | b'`'
+            | b'{'
+            | b'|'
+            | b'}'
+            | b'~'
     )
 }
 

@@ -1,4 +1,4 @@
-use ferromark::{to_html, to_html_with_options, Options};
+use ferromark::{Options, to_html, to_html_with_options};
 
 fn html_with_ids(input: &str) -> String {
     let mut options = Options::default();

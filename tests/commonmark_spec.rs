@@ -2,7 +2,7 @@
 //!
 //! Runs tests from the CommonMark spec.json file to track compliance.
 
-use ferromark::{to_html_with_options, Options};
+use ferromark::{Options, to_html_with_options};
 use serde::Deserialize;
 use std::fs;
 
@@ -23,8 +23,7 @@ struct SpecTest {
 }
 
 fn load_spec_tests() -> Vec<SpecTest> {
-    let spec_json = fs::read_to_string("tests/spec.json")
-        .expect("Failed to read tests/spec.json");
+    let spec_json = fs::read_to_string("tests/spec.json").expect("Failed to read tests/spec.json");
     serde_json::from_str(&spec_json).expect("Failed to parse spec.json")
 }
 
@@ -172,8 +171,16 @@ fn commonmark_spec_report() {
     }
 
     println!("\n=== CommonMark Spec Compliance Report ===\n");
-    println!("Total: {} passed, {} failed out of {}", passed, failed, tests.len());
-    println!("Pass rate: {:.1}%\n", (passed as f64 / tests.len() as f64) * 100.0);
+    println!(
+        "Total: {} passed, {} failed out of {}",
+        passed,
+        failed,
+        tests.len()
+    );
+    println!(
+        "Pass rate: {:.1}%\n",
+        (passed as f64 / tests.len() as f64) * 100.0
+    );
 
     println!("By section:");
     let mut sections: Vec<_> = by_section.iter().collect();
@@ -183,7 +190,10 @@ fn commonmark_spec_report() {
         let total = p + f;
         let pct = (*p as f64 / total as f64) * 100.0;
         let status = if *f == 0 { "✓" } else { " " };
-        println!("  {} {:40} {:3}/{:3} ({:5.1}%)", status, section, p, total, pct);
+        println!(
+            "  {} {:40} {:3}/{:3} ({:5.1}%)",
+            status, section, p, total, pct
+        );
     }
 }
 
@@ -227,11 +237,22 @@ fn commonmark_spec_report_in_scope() {
     let total_in_scope = passed + failed;
 
     println!("\n=== CommonMark Spec Compliance Report (IN-SCOPE ONLY) ===\n");
-    println!("Out-of-scope sections excluded: {:?}", OUT_OF_SCOPE_SECTIONS);
-    println!("Out-of-scope tests skipped: {} (sections) + {} (reference links)",
-             out_of_scope_count, ref_link_count);
-    println!("In-scope: {} passed, {} failed out of {}", passed, failed, total_in_scope);
-    println!("In-scope pass rate: {:.1}%\n", (passed as f64 / total_in_scope as f64) * 100.0);
+    println!(
+        "Out-of-scope sections excluded: {:?}",
+        OUT_OF_SCOPE_SECTIONS
+    );
+    println!(
+        "Out-of-scope tests skipped: {} (sections) + {} (reference links)",
+        out_of_scope_count, ref_link_count
+    );
+    println!(
+        "In-scope: {} passed, {} failed out of {}",
+        passed, failed, total_in_scope
+    );
+    println!(
+        "In-scope pass rate: {:.1}%\n",
+        (passed as f64 / total_in_scope as f64) * 100.0
+    );
 
     println!("By section:");
     let mut sections: Vec<_> = by_section.iter().collect();
@@ -241,7 +262,10 @@ fn commonmark_spec_report_in_scope() {
         let total = p + f;
         let pct = (*p as f64 / total as f64) * 100.0;
         let status = if *f == 0 { "✓" } else { " " };
-        println!("  {} {:40} {:3}/{:3} ({:5.1}%)", status, section, p, total, pct);
+        println!(
+            "  {} {:40} {:3}/{:3} ({:5.1}%)",
+            status, section, p, total, pct
+        );
     }
 
     // Summary
@@ -249,9 +273,19 @@ fn commonmark_spec_report_in_scope() {
     let target_pct = 70.0;
     let current_pct = (passed as f64 / total_in_scope as f64) * 100.0;
     let target_tests = (total_in_scope as f64 * target_pct / 100.0).ceil() as u32;
-    let tests_needed = if passed >= target_tests { 0 } else { target_tests - passed };
-    println!("Current: {:.1}% ({}/{})", current_pct, passed, total_in_scope);
-    println!("Target:  {:.1}% ({}/{})", target_pct, target_tests, total_in_scope);
+    let tests_needed = if passed >= target_tests {
+        0
+    } else {
+        target_tests - passed
+    };
+    println!(
+        "Current: {:.1}% ({}/{})",
+        current_pct, passed, total_in_scope
+    );
+    println!(
+        "Target:  {:.1}% ({}/{})",
+        target_pct, target_tests, total_in_scope
+    );
     println!("Tests needed for target: {}", tests_needed);
 }
 
@@ -261,8 +295,10 @@ fn commonmark_spec_report_in_scope() {
 #[ignore]
 fn commonmark_failures_report() {
     let tests = load_spec_tests();
-    let mut failures_by_section: std::collections::HashMap<String, Vec<(u32, String, String, String)>> =
-        std::collections::HashMap::new();
+    let mut failures_by_section: std::collections::HashMap<
+        String,
+        Vec<(u32, String, String, String)>,
+    > = std::collections::HashMap::new();
 
     for test in &tests {
         let output = spec_to_html(&test.markdown);
@@ -270,7 +306,12 @@ fn commonmark_failures_report() {
             failures_by_section
                 .entry(test.section.clone())
                 .or_default()
-                .push((test.example, test.markdown.clone(), test.html.clone(), output));
+                .push((
+                    test.example,
+                    test.markdown.clone(),
+                    test.html.clone(),
+                    output,
+                ));
         }
     }
 
@@ -303,7 +344,12 @@ fn run_section_tests(section_name: &str) -> (u32, u32, Vec<(u32, String, String,
             passed += 1;
         } else {
             failed += 1;
-            failures.push((test.example, test.markdown.clone(), test.html.clone(), output));
+            failures.push((
+                test.example,
+                test.markdown.clone(),
+                test.html.clone(),
+                output,
+            ));
         }
     }
 
@@ -311,19 +357,29 @@ fn run_section_tests(section_name: &str) -> (u32, u32, Vec<(u32, String, String,
 }
 
 /// Test a specific section, only in-scope tests.
-fn run_section_tests_in_scope(section_name: &str) -> (u32, u32, Vec<(u32, String, String, String)>) {
+fn run_section_tests_in_scope(
+    section_name: &str,
+) -> (u32, u32, Vec<(u32, String, String, String)>) {
     let tests = load_spec_tests();
     let mut passed = 0;
     let mut failed = 0;
     let mut failures = Vec::new();
 
-    for test in tests.iter().filter(|t| t.section == section_name && is_test_in_scope(t)) {
+    for test in tests
+        .iter()
+        .filter(|t| t.section == section_name && is_test_in_scope(t))
+    {
         let output = spec_to_html(&test.markdown);
         if output == test.html {
             passed += 1;
         } else {
             failed += 1;
-            failures.push((test.example, test.markdown.clone(), test.html.clone(), output));
+            failures.push((
+                test.example,
+                test.markdown.clone(),
+                test.html.clone(),
+                output,
+            ));
         }
     }
 
@@ -370,7 +426,11 @@ fn spec_fenced_code_blocks() {
             eprintln!("  Got:      {:?}", got);
         }
     }
-    eprintln!("\nFenced code blocks: {}/{} passed", passed, passed + failed);
+    eprintln!(
+        "\nFenced code blocks: {}/{} passed",
+        passed,
+        passed + failed
+    );
 }
 
 #[test]
@@ -500,7 +560,11 @@ fn spec_list_items_in_scope() {
             eprintln!("  Got:      {:?}", got);
         }
     }
-    eprintln!("\nList items (in-scope): {}/{} passed", passed, passed + failed);
+    eprintln!(
+        "\nList items (in-scope): {}/{} passed",
+        passed,
+        passed + failed
+    );
 }
 
 #[test]
@@ -518,7 +582,8 @@ fn spec_lists_in_scope() {
 
 #[test]
 fn spec_entity_refs_in_scope() {
-    let (passed, failed, failures) = run_section_tests_in_scope("Entity and numeric character references");
+    let (passed, failed, failures) =
+        run_section_tests_in_scope("Entity and numeric character references");
     if !failures.is_empty() {
         for (ex, md, expected, got) in &failures[..failures.len().min(10)] {
             eprintln!("\nExample {}: {:?}", ex, md);
@@ -526,7 +591,11 @@ fn spec_entity_refs_in_scope() {
             eprintln!("  Got:      {:?}", got);
         }
     }
-    eprintln!("\nEntity refs (in-scope): {}/{} passed", passed, passed + failed);
+    eprintln!(
+        "\nEntity refs (in-scope): {}/{} passed",
+        passed,
+        passed + failed
+    );
 }
 
 #[test]

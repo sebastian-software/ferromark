@@ -1,4 +1,4 @@
-use ferromark::{to_html_with_options, Options};
+use ferromark::{Options, to_html_with_options};
 
 fn autolink_html(input: &str) -> String {
     let options = Options {
@@ -74,7 +74,8 @@ fn www_underscore_in_second_to_last() {
 #[test]
 fn autolink_with_emphasis() {
     let input = "**Autolink and http://inlines**";
-    let expected = "<p><strong>Autolink and <a href=\"http://inlines\">http://inlines</a></strong></p>\n";
+    let expected =
+        "<p><strong>Autolink and <a href=\"http://inlines\">http://inlines</a></strong></p>\n";
     assert_eq!(autolink_html(input), expected);
 }
 

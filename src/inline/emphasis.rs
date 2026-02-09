@@ -3,7 +3,7 @@
 //! Uses the "modulo-3" stack optimization from md4c to efficiently
 //! match emphasis openers and closers according to CommonMark rules.
 
-use super::marks::{flags, Mark};
+use super::marks::{Mark, flags};
 
 /// Result of emphasis resolution for a mark pair.
 #[derive(Debug, Clone, Copy)]
@@ -164,7 +164,6 @@ pub fn resolve_emphasis_with_stacks_into(
             resolver.push_opener(marks, i);
         }
     }
-
 }
 
 /// Entry in the opener stack with ordering info.
@@ -316,14 +315,14 @@ impl<'a> EmphasisResolver<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::inline::marks::{collect_marks, MarkBuffer};
     use crate::inline::code_span::resolve_code_spans;
+    use crate::inline::marks::{MarkBuffer, collect_marks};
 
     fn get_emphasis_matches(text: &[u8]) -> Vec<EmphasisMatch> {
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
         resolve_code_spans(buffer.marks_mut(), text, &[]);
-        resolve_emphasis(buffer.marks_mut(), &[])  // No link boundaries in basic tests
+        resolve_emphasis(buffer.marks_mut(), &[]) // No link boundaries in basic tests
     }
 
     #[test]
@@ -378,7 +377,10 @@ mod tests {
         eprintln!("Matches:");
         for m in &matches {
             let kind = if m.count == 2 { "strong" } else { "em" };
-            eprintln!("  {}: opener {}-{}, closer {}-{}", kind, m.opener_start, m.opener_end, m.closer_start, m.closer_end);
+            eprintln!(
+                "  {}: opener {}-{}, closer {}-{}",
+                kind, m.opener_start, m.opener_end, m.closer_start, m.closer_end
+            );
         }
 
         // Should have 2 matches: one strong, one em
@@ -391,7 +393,13 @@ mod tests {
 
         // The strong opener should be at position 5
         let strong_match = matches.iter().find(|m| m.count == 2).expect("strong match");
-        assert_eq!(strong_match.opener_start, 5, "strong opener should start at 5");
-        assert_eq!(strong_match.closer_start, 10, "strong closer should start at 10");
+        assert_eq!(
+            strong_match.opener_start, 5,
+            "strong opener should start at 5"
+        );
+        assert_eq!(
+            strong_match.closer_start, 10,
+            "strong closer should start at 10"
+        );
     }
 }

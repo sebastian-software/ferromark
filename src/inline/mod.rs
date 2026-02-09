@@ -9,8 +9,8 @@ mod code_span;
 mod emphasis;
 pub mod event;
 mod links;
-mod math;
 pub mod marks;
+mod math;
 mod simd;
 mod strikethrough;
 
@@ -18,15 +18,18 @@ pub use event::InlineEvent;
 pub use links::AutolinkLiteralKind;
 
 use crate::Range;
-use code_span::{resolve_code_spans, extract_code_spans, CodeSpan};
-use emphasis::{resolve_emphasis_with_stacks_into, EmphasisMatch, EmphasisStacks};
-use math::{resolve_math_spans, MathSpan};
-use strikethrough::{resolve_strikethrough_into, StrikethroughMatch};
-use links::{find_autolinks_into, find_autolink_literals_into, resolve_links_into, resolve_reference_links_into, Autolink, AutolinkLiteral, Link, RefLink};
 use crate::footnote::{FootnoteStore, normalize_footnote_label};
 use crate::link_ref::LinkRefStore;
-use marks::{collect_marks, flags, Mark, MarkBuffer};
+use code_span::{CodeSpan, extract_code_spans, resolve_code_spans};
+use emphasis::{EmphasisMatch, EmphasisStacks, resolve_emphasis_with_stacks_into};
+use links::{
+    Autolink, AutolinkLiteral, Link, RefLink, find_autolink_literals_into, find_autolinks_into,
+    resolve_links_into, resolve_reference_links_into,
+};
+use marks::{Mark, MarkBuffer, collect_marks, flags};
+use math::{MathSpan, resolve_math_spans};
 use memchr::memchr;
+use strikethrough::{StrikethroughMatch, resolve_strikethrough_into};
 
 /// Inline parser state.
 pub struct InlineParser {
@@ -175,14 +178,16 @@ impl InlineParser {
         }
         self.html_ranges.clear();
         self.html_ranges.reserve(self.html_spans.len());
-        self.html_ranges.extend(self.html_spans.iter().map(|s| (s.start, s.end)));
+        self.html_ranges
+            .extend(self.html_spans.iter().map(|s| (s.start, s.end)));
 
         // Third: code spans (highest precedence, but should not start inside HTML tags)
         resolve_code_spans(self.mark_buffer.marks_mut(), text, &self.html_ranges);
 
         // Get code span ranges for filtering
         self.code_spans.clear();
-        self.code_spans.extend(extract_code_spans(self.mark_buffer.marks()));
+        self.code_spans
+            .extend(extract_code_spans(self.mark_buffer.marks()));
         filter_html_spans_in_code_spans(&mut self.html_spans, &self.code_spans);
 
         // Math spans (after code spans, before links; gated on math option)
@@ -194,26 +199,30 @@ impl InlineParser {
 
         // Filter autolinks that start inside code spans
         self.autolinks.retain(|al| {
-            !self.code_spans.iter().any(|cs| {
-                al.start >= cs.opener_pos && al.start < cs.closer_end
-            })
+            !self
+                .code_spans
+                .iter()
+                .any(|cs| al.start >= cs.opener_pos && al.start < cs.closer_end)
         });
 
         // Fourth: collect bracket positions and detect emphasis/strikethrough candidates in one pass
-        let (has_emphasis_marks, has_strikethrough_marks) = Self::collect_brackets_and_scan_emphasis(
-            self.mark_buffer.marks(),
-            &mut self.open_brackets,
-            &mut self.close_brackets,
-        );
+        let (has_emphasis_marks, has_strikethrough_marks) =
+            Self::collect_brackets_and_scan_emphasis(
+                self.mark_buffer.marks(),
+                &mut self.open_brackets,
+                &mut self.close_brackets,
+            );
         let has_brackets = !self.open_brackets.is_empty() && !self.close_brackets.is_empty();
         self.open_brackets
             .retain(|&(pos, _)| !pos_in_spans(pos, &self.html_spans));
         // Filter out close brackets that are inside autolinks - they can't close links
-        self.close_brackets
-            .retain(|&pos| {
-                !self.autolinks.iter().any(|al| pos > al.start && pos < al.end)
-                    && !pos_in_spans(pos, &self.html_spans)
-            });
+        self.close_brackets.retain(|&pos| {
+            !self
+                .autolinks
+                .iter()
+                .any(|al| pos > al.start && pos < al.end)
+                && !pos_in_spans(pos, &self.html_spans)
+        });
         let has_inline_link_candidate = has_brackets && has_inline_link_opener(text);
         if has_inline_link_candidate {
             resolve_links_into(
@@ -254,14 +263,16 @@ impl InlineParser {
         let resolved_ref_links = &self.ref_links;
 
         self.link_dest_ranges.clear();
-        self.link_dest_ranges.extend(resolved_links.iter().filter_map(|link| {
-            let start = link.text_end + 1;
-            let end = link.end;
-            (start < end).then_some((start, end))
-        }));
+        self.link_dest_ranges
+            .extend(resolved_links.iter().filter_map(|link| {
+                let start = link.text_end + 1;
+                let end = link.end;
+                (start < end).then_some((start, end))
+            }));
 
         self.autolink_ranges.clear();
-        self.autolink_ranges.extend(self.autolinks.iter().map(|al| (al.start, al.end)));
+        self.autolink_ranges
+            .extend(self.autolinks.iter().map(|al| (al.start, al.end)));
 
         // Fifth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
@@ -272,7 +283,8 @@ impl InlineParser {
                 + self.autolinks.len()
                 + self.html_spans.len(),
         );
-        self.link_boundaries.extend(resolved_links.iter().map(|l| (l.start, l.text_end)));
+        self.link_boundaries
+            .extend(resolved_links.iter().map(|l| (l.start, l.text_end)));
         for link in resolved_ref_links {
             self.link_boundaries.push((link.start, link.text_end));
         }
@@ -314,11 +326,14 @@ impl InlineParser {
             // Build code span ranges for overlap checking (reuse Vec)
             self.al_code_span_ranges.clear();
             self.al_code_span_ranges.extend(
-                self.code_spans.iter().map(|cs| (cs.opener_pos, cs.closer_end))
+                self.code_spans
+                    .iter()
+                    .map(|cs| (cs.opener_pos, cs.closer_end)),
             );
             // Build link ranges (inline links + ref links) (reuse Vec)
             self.al_link_ranges.clear();
-            self.al_link_ranges.reserve(resolved_links.len() + resolved_ref_links.len());
+            self.al_link_ranges
+                .reserve(resolved_links.len() + resolved_ref_links.len());
             for link in resolved_links {
                 self.al_link_ranges.push((link.start, link.end));
             }
@@ -396,9 +411,9 @@ impl InlineParser {
             }
 
             // Check if this bracket is inside a code span
-            let in_code = code_spans.iter().any(|cs| {
-                open_pos >= cs.opener_pos && open_pos < cs.closer_end
-            });
+            let in_code = code_spans
+                .iter()
+                .any(|cs| open_pos >= cs.opener_pos && open_pos < cs.closer_end);
             if in_code {
                 continue;
             }
@@ -579,7 +594,8 @@ impl InlineParser {
             if ce > cs + 1 {
                 let content = &text[cs..ce];
                 let first_is_space = content[0] == b' ' || content[0] == b'\n';
-                let last_is_space = content[content.len() - 1] == b' ' || content[content.len() - 1] == b'\n';
+                let last_is_space =
+                    content[content.len() - 1] == b' ' || content[content.len() - 1] == b'\n';
                 let not_all_space = content.iter().any(|&b| b != b' ' && b != b'\n');
                 if first_is_space && last_is_space && not_all_space {
                     cs += 1;
@@ -649,7 +665,9 @@ impl InlineParser {
             if link.is_image {
                 emit_points.push(EmitPoint {
                     pos: link.start,
-                    kind: EmitKind::ImageStartRef { def_index: link.def_index as u32 },
+                    kind: EmitKind::ImageStartRef {
+                        def_index: link.def_index as u32,
+                    },
                     end: link.start + 2, // ![
                 });
                 emit_points.push(EmitPoint {
@@ -660,7 +678,9 @@ impl InlineParser {
             } else {
                 emit_points.push(EmitPoint {
                     pos: link.start,
-                    kind: EmitKind::LinkStartRef { def_index: link.def_index as u32 },
+                    kind: EmitKind::LinkStartRef {
+                        def_index: link.def_index as u32,
+                    },
                     end: link.start + 1, // [
                 });
                 emit_points.push(EmitPoint {
@@ -706,7 +726,10 @@ impl InlineParser {
         for al in autolink_literals {
             emit_points.push(EmitPoint {
                 pos: al.start,
-                kind: EmitKind::AutolinkLiteral { end: al.end, kind: al.kind },
+                kind: EmitKind::AutolinkLiteral {
+                    end: al.end,
+                    kind: al.kind,
+                },
                 end: al.end,
             });
         }
@@ -758,7 +781,9 @@ impl InlineParser {
         for fref in footnote_refs {
             emit_points.push(EmitPoint {
                 pos: fref.start,
-                kind: EmitKind::FootnoteRef { def_index: fref.def_index },
+                kind: EmitKind::FootnoteRef {
+                    def_index: fref.def_index,
+                },
                 end: fref.end,
             });
         }
@@ -828,10 +853,20 @@ impl InlineParser {
         }
 
         // Sort by position (end events come after start events at same position)
-        emit_points.sort_unstable_by_key(|p| (p.pos, matches!(p.kind,
-            EmitKind::CodeSpanEnd | EmitKind::StrongEnd | EmitKind::EmphasisEnd |
-            EmitKind::StrikethroughEnd | EmitKind::LinkEnd | EmitKind::ImageEnd
-        )));
+        emit_points.sort_unstable_by_key(|p| {
+            (
+                p.pos,
+                matches!(
+                    p.kind,
+                    EmitKind::CodeSpanEnd
+                        | EmitKind::StrongEnd
+                        | EmitKind::EmphasisEnd
+                        | EmitKind::StrikethroughEnd
+                        | EmitKind::LinkEnd
+                        | EmitKind::ImageEnd
+                ),
+            )
+        });
 
         // Build ranges to suppress (reference labels after link text)
         suppress_ranges.clear();
@@ -892,7 +927,8 @@ impl InlineParser {
                     if end > start + 1 {
                         let content = &text[start..end];
                         let first_is_space = content[0] == b' ' || content[0] == b'\n';
-                        let last_is_space = content[content.len() - 1] == b' ' || content[content.len() - 1] == b'\n';
+                        let last_is_space = content[content.len() - 1] == b' '
+                            || content[content.len() - 1] == b'\n';
                         let not_all_space = content.iter().any(|&b| b != b' ' && b != b'\n');
 
                         if first_is_space && last_is_space && not_all_space {
@@ -944,10 +980,16 @@ impl InlineParser {
                     events.push(InlineEvent::SoftBreak);
                     skip_until = point.end;
                 }
-                EmitKind::LinkStart { url_start, url_end, title_start, title_end } => {
+                EmitKind::LinkStart {
+                    url_start,
+                    url_end,
+                    title_start,
+                    title_end,
+                } => {
                     events.push(InlineEvent::LinkStart {
                         url: Range::from_usize(url_start as usize, url_end as usize),
-                        title: title_start.map(|s| Range::from_usize(s as usize, title_end.unwrap() as usize)),
+                        title: title_start
+                            .map(|s| Range::from_usize(s as usize, title_end.unwrap() as usize)),
                     });
                     pos = point.end;
                     skip_until = point.end;
@@ -961,10 +1003,16 @@ impl InlineParser {
                     events.push(InlineEvent::LinkEnd);
                     skip_until = point.end;
                 }
-                EmitKind::ImageStart { url_start, url_end, title_start, title_end } => {
+                EmitKind::ImageStart {
+                    url_start,
+                    url_end,
+                    title_start,
+                    title_end,
+                } => {
                     events.push(InlineEvent::ImageStart {
                         url: Range::from_usize(url_start as usize, url_end as usize),
-                        title: title_start.map(|s| Range::from_usize(s as usize, title_end.unwrap() as usize)),
+                        title: title_start
+                            .map(|s| Range::from_usize(s as usize, title_end.unwrap() as usize)),
                     });
                     pos = point.end;
                     skip_until = point.end;
@@ -985,14 +1033,20 @@ impl InlineParser {
                     });
                     skip_until = end;
                 }
-                EmitKind::AutolinkUrl { content_start, content_end } => {
+                EmitKind::AutolinkUrl {
+                    content_start,
+                    content_end,
+                } => {
                     events.push(InlineEvent::Autolink {
                         url: Range::from_usize(content_start as usize, content_end as usize),
                         is_email: false,
                     });
                     skip_until = point.end;
                 }
-                EmitKind::AutolinkEmail { content_start, content_end } => {
+                EmitKind::AutolinkEmail {
+                    content_start,
+                    content_end,
+                } => {
                     events.push(InlineEvent::Autolink {
                         url: Range::from_usize(content_start as usize, content_end as usize),
                         is_email: true,
@@ -1010,14 +1064,20 @@ impl InlineParser {
                     events.push(InlineEvent::FootnoteRef { def_index });
                     skip_until = point.end;
                 }
-                EmitKind::MathInline { content_start, content_end } => {
+                EmitKind::MathInline {
+                    content_start,
+                    content_end,
+                } => {
                     events.push(InlineEvent::MathInline(Range::from_usize(
                         content_start as usize,
                         content_end as usize,
                     )));
                     skip_until = point.end;
                 }
-                EmitKind::MathDisplay { content_start, content_end } => {
+                EmitKind::MathDisplay {
+                    content_start,
+                    content_end,
+                } => {
                     events.push(InlineEvent::MathDisplay(Range::from_usize(
                         content_start as usize,
                         content_end as usize,
@@ -1152,19 +1212,52 @@ enum EmitKind {
     Escape(u8),
     HardBreak,
     SoftBreak,
-    LinkStart { url_start: u32, url_end: u32, title_start: Option<u32>, title_end: Option<u32> },
-    LinkStartRef { def_index: u32 },
+    LinkStart {
+        url_start: u32,
+        url_end: u32,
+        title_start: Option<u32>,
+        title_end: Option<u32>,
+    },
+    LinkStartRef {
+        def_index: u32,
+    },
     LinkEnd,
-    ImageStart { url_start: u32, url_end: u32, title_start: Option<u32>, title_end: Option<u32> },
-    ImageStartRef { def_index: u32 },
+    ImageStart {
+        url_start: u32,
+        url_end: u32,
+        title_start: Option<u32>,
+        title_end: Option<u32>,
+    },
+    ImageStartRef {
+        def_index: u32,
+    },
     ImageEnd,
-    AutolinkUrl { content_start: u32, content_end: u32 },
-    AutolinkEmail { content_start: u32, content_end: u32 },
-    AutolinkLiteral { end: u32, kind: links::AutolinkLiteralKind },
-    HtmlRaw { end: u32 },
-    FootnoteRef { def_index: u32 },
-    MathInline { content_start: u32, content_end: u32 },
-    MathDisplay { content_start: u32, content_end: u32 },
+    AutolinkUrl {
+        content_start: u32,
+        content_end: u32,
+    },
+    AutolinkEmail {
+        content_start: u32,
+        content_end: u32,
+    },
+    AutolinkLiteral {
+        end: u32,
+        kind: links::AutolinkLiteralKind,
+    },
+    HtmlRaw {
+        end: u32,
+    },
+    FootnoteRef {
+        def_index: u32,
+    },
+    MathInline {
+        content_start: u32,
+        content_end: u32,
+    },
+    MathDisplay {
+        content_start: u32,
+        content_end: u32,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1212,7 +1305,11 @@ fn find_html_spans_into(
 
     autolink_ranges.clear();
     autolink_ranges.reserve(autolinks.len().saturating_sub(autolink_ranges.capacity()));
-    autolink_ranges.extend(autolinks.iter().map(|al| (al.start as usize, al.end as usize)));
+    autolink_ranges.extend(
+        autolinks
+            .iter()
+            .map(|al| (al.start as usize, al.end as usize)),
+    );
     autolink_ranges.sort_by_key(|(s, _)| *s);
 
     let mut code_idx = 0usize;
@@ -1265,9 +1362,9 @@ fn filter_html_spans_in_code_spans(spans: &mut Vec<HtmlSpan>, code_spans: &[Code
         return;
     }
     spans.retain(|span| {
-        !code_spans.iter().any(|cs| {
-            span.start >= cs.opener_pos && span.start < cs.closer_end
-        })
+        !code_spans
+            .iter()
+            .any(|cs| span.start >= cs.opener_pos && span.start < cs.closer_end)
     });
 }
 
@@ -1333,7 +1430,10 @@ fn parse_html_comment(text: &[u8], start: usize) -> Option<usize> {
 }
 
 fn parse_html_declaration(text: &[u8], start: usize) -> Option<usize> {
-    if text.get(start + 2).map_or(true, |b| !b.is_ascii_alphabetic()) {
+    if text
+        .get(start + 2)
+        .map_or(true, |b| !b.is_ascii_alphabetic())
+    {
         return None;
     }
     let mut i = start + 2;
@@ -1386,7 +1486,11 @@ fn parse_html_tag(text: &[u8], start: usize) -> Option<usize> {
         }
         if text[i] == b'/' {
             i += 1;
-            return if i < len && text[i] == b'>' { Some(i + 1) } else { None };
+            return if i < len && text[i] == b'>' {
+                Some(i + 1)
+            } else {
+                None
+            };
         }
         if !is_html_whitespace(text[i]) {
             return None;
@@ -1402,7 +1506,11 @@ fn parse_html_tag(text: &[u8], start: usize) -> Option<usize> {
         }
         if text[i] == b'/' {
             i += 1;
-            return if i < len && text[i] == b'>' { Some(i + 1) } else { None };
+            return if i < len && text[i] == b'>' {
+                Some(i + 1)
+            } else {
+                None
+            };
         }
 
         if !is_attr_name_start(text[i]) {
@@ -1532,7 +1640,11 @@ mod tests {
     fn test_emphasis() {
         let events = parse_inline("hello *world*");
 
-        assert!(events.iter().any(|e| matches!(e, InlineEvent::EmphasisStart)));
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, InlineEvent::EmphasisStart))
+        );
         assert!(events.iter().any(|e| matches!(e, InlineEvent::EmphasisEnd)));
     }
 
@@ -1549,7 +1661,10 @@ mod tests {
         let events = parse_inline("hello \\*world\\*");
 
         // Should have escaped characters instead of emphasis
-        let escaped_count = events.iter().filter(|e| matches!(e, InlineEvent::EscapedChar(_))).count();
+        let escaped_count = events
+            .iter()
+            .filter(|e| matches!(e, InlineEvent::EscapedChar(_)))
+            .count();
         assert_eq!(escaped_count, 2);
     }
 
@@ -1572,7 +1687,11 @@ mod tests {
         let events = parse_inline("`*not emphasis*`");
 
         // Should not have emphasis events
-        assert!(!events.iter().any(|e| matches!(e, InlineEvent::EmphasisStart)));
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, InlineEvent::EmphasisStart))
+        );
     }
 
     #[test]
@@ -1581,8 +1700,16 @@ mod tests {
         let events = parse_inline(input);
 
         // Should have ImageStart and ImageEnd
-        assert!(events.iter().any(|e| matches!(e, InlineEvent::ImageStart { .. })), "No ImageStart found");
-        assert!(events.iter().any(|e| matches!(e, InlineEvent::ImageEnd)), "No ImageEnd found");
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, InlineEvent::ImageStart { .. })),
+            "No ImageStart found"
+        );
+        assert!(
+            events.iter().any(|e| matches!(e, InlineEvent::ImageEnd)),
+            "No ImageEnd found"
+        );
 
         // Should NOT have a text event with just "!"
         for event in &events {
@@ -1605,14 +1732,20 @@ mod tests {
             "Expected quoted attribute with inline tags to parse"
         );
         let end = parse_inline_html(input.as_bytes(), 0);
-        assert!(end.is_some(), "Expected inline HTML parser to match the tag");
+        assert!(
+            end.is_some(),
+            "Expected inline HTML parser to match the tag"
+        );
         let events = parse_inline(input);
         let mut found = false;
         for event in events {
             if let InlineEvent::Html(range) = event {
                 if range.start == 0 {
                     let slice = range.slice(input.as_bytes());
-                    assert!(slice.starts_with(b"<a "), "Expected HTML span to start at <a>");
+                    assert!(
+                        slice.starts_with(b"<a "),
+                        "Expected HTML span to start at <a>"
+                    );
                     found = true;
                     break;
                 }

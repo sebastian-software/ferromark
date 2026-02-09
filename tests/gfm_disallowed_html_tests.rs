@@ -1,4 +1,4 @@
-use ferromark::{to_html, to_html_with_options, Options};
+use ferromark::{Options, to_html, to_html_with_options};
 
 // GFM extension: Disallowed raw HTML
 // https://github.github.com/gfm/#disallowed-raw-html-extension-
@@ -17,73 +17,49 @@ fn inline_script_tag_filtered() {
 #[test]
 fn inline_title_tag_filtered() {
     let result = to_html("foo <title>bad</title> bar");
-    assert_eq!(
-        result,
-        "<p>foo &lt;title>bad&lt;/title> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo &lt;title>bad&lt;/title> bar</p>\n");
 }
 
 #[test]
 fn inline_textarea_tag_filtered() {
     let result = to_html("foo <textarea>bad</textarea> bar");
-    assert_eq!(
-        result,
-        "<p>foo &lt;textarea>bad&lt;/textarea> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo &lt;textarea>bad&lt;/textarea> bar</p>\n");
 }
 
 #[test]
 fn inline_style_tag_filtered() {
     let result = to_html("foo <style>body{}</style> bar");
-    assert_eq!(
-        result,
-        "<p>foo &lt;style>body{}&lt;/style> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo &lt;style>body{}&lt;/style> bar</p>\n");
 }
 
 #[test]
 fn inline_xmp_tag_filtered() {
     let result = to_html("foo <xmp>bad</xmp> bar");
-    assert_eq!(
-        result,
-        "<p>foo &lt;xmp>bad&lt;/xmp> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo &lt;xmp>bad&lt;/xmp> bar</p>\n");
 }
 
 #[test]
 fn inline_iframe_tag_filtered() {
     let result = to_html("foo <iframe src=\"x\"> bar");
-    assert_eq!(
-        result,
-        "<p>foo &lt;iframe src=\"x\"> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo &lt;iframe src=\"x\"> bar</p>\n");
 }
 
 #[test]
 fn inline_noembed_tag_filtered() {
     let result = to_html("foo <noembed>bad</noembed> bar");
-    assert_eq!(
-        result,
-        "<p>foo &lt;noembed>bad&lt;/noembed> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo &lt;noembed>bad&lt;/noembed> bar</p>\n");
 }
 
 #[test]
 fn inline_noframes_tag_filtered() {
     let result = to_html("foo <noframes>bad</noframes> bar");
-    assert_eq!(
-        result,
-        "<p>foo &lt;noframes>bad&lt;/noframes> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo &lt;noframes>bad&lt;/noframes> bar</p>\n");
 }
 
 #[test]
 fn inline_plaintext_tag_filtered() {
     let result = to_html("foo <plaintext> bar");
-    assert_eq!(
-        result,
-        "<p>foo &lt;plaintext> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo &lt;plaintext> bar</p>\n");
 }
 
 // Case insensitive
@@ -148,10 +124,7 @@ fn disallowed_html_disabled() {
             ..Options::default()
         },
     );
-    assert_eq!(
-        result,
-        "<p>foo <script>alert('xss')</script> bar</p>\n"
-    );
+    assert_eq!(result, "<p>foo <script>alert('xss')</script> bar</p>\n");
 }
 
 // Non-tag uses of < are not affected

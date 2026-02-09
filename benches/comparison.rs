@@ -8,7 +8,7 @@
 //! - pulldown-cmark (most popular, used by rustdoc)
 //! - comrak (100% CommonMark compliant, GFM support)
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
 use memchr::memchr;
 #[cfg(md4c)]
 use std::os::raw::{c_char, c_int, c_uint, c_void};
@@ -211,7 +211,7 @@ fn parse_ferromark_into(input: &str, out: &mut Vec<u8>) {
 
 /// Parse with pulldown-cmark (tables enabled)
 fn parse_pulldown_cmark(input: &str) -> String {
-    use pulldown_cmark::{html, Options as PdOptions, Parser};
+    use pulldown_cmark::{Options as PdOptions, Parser, html};
     let mut opts = PdOptions::empty();
     opts.insert(PdOptions::ENABLE_TABLES);
     opts.insert(PdOptions::ENABLE_STRIKETHROUGH);
@@ -224,7 +224,7 @@ fn parse_pulldown_cmark(input: &str) -> String {
 
 /// Parse with pulldown-cmark into a reusable buffer (tables enabled)
 fn parse_pulldown_cmark_into(input: &str, out: &mut String) {
-    use pulldown_cmark::{html, Options as PdOptions, Parser};
+    use pulldown_cmark::{Options as PdOptions, Parser, html};
     let mut opts = PdOptions::empty();
     opts.insert(PdOptions::ENABLE_TABLES);
     opts.insert(PdOptions::ENABLE_STRIKETHROUGH);
@@ -241,7 +241,6 @@ fn parse_comrak(input: &str) -> String {
     opts.extension.tasklist = true;
     comrak::markdown_to_html(input, &opts)
 }
-
 
 #[cfg(md4c)]
 unsafe extern "C" {
@@ -315,15 +314,11 @@ fn bench_tiny(c: &mut Criterion) {
         b.iter(|| parse_ferromark(black_box(input)))
     });
     #[cfg(md4c)]
-    group.bench_function("md4c", |b| {
-        b.iter(|| parse_md4c(black_box(input)))
-    });
+    group.bench_function("md4c", |b| b.iter(|| parse_md4c(black_box(input))));
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(input)))
     });
-    group.bench_function("comrak", |b| {
-        b.iter(|| parse_comrak(black_box(input)))
-    });
+    group.bench_function("comrak", |b| b.iter(|| parse_comrak(black_box(input))));
 
     group.finish();
 }
@@ -337,15 +332,11 @@ fn bench_small(c: &mut Criterion) {
         b.iter(|| parse_ferromark(black_box(input)))
     });
     #[cfg(md4c)]
-    group.bench_function("md4c", |b| {
-        b.iter(|| parse_md4c(black_box(input)))
-    });
+    group.bench_function("md4c", |b| b.iter(|| parse_md4c(black_box(input))));
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(input)))
     });
-    group.bench_function("comrak", |b| {
-        b.iter(|| parse_comrak(black_box(input)))
-    });
+    group.bench_function("comrak", |b| b.iter(|| parse_comrak(black_box(input))));
 
     group.finish();
 }
@@ -359,15 +350,11 @@ fn bench_simple(c: &mut Criterion) {
         b.iter(|| parse_ferromark(black_box(input)))
     });
     #[cfg(md4c)]
-    group.bench_function("md4c", |b| {
-        b.iter(|| parse_md4c(black_box(input)))
-    });
+    group.bench_function("md4c", |b| b.iter(|| parse_md4c(black_box(input))));
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(input)))
     });
-    group.bench_function("comrak", |b| {
-        b.iter(|| parse_comrak(black_box(input)))
-    });
+    group.bench_function("comrak", |b| b.iter(|| parse_comrak(black_box(input))));
 
     group.finish();
 }
@@ -381,15 +368,11 @@ fn bench_medium(c: &mut Criterion) {
         b.iter(|| parse_ferromark(black_box(input)))
     });
     #[cfg(md4c)]
-    group.bench_function("md4c", |b| {
-        b.iter(|| parse_md4c(black_box(input)))
-    });
+    group.bench_function("md4c", |b| b.iter(|| parse_md4c(black_box(input))));
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(input)))
     });
-    group.bench_function("comrak", |b| {
-        b.iter(|| parse_comrak(black_box(input)))
-    });
+    group.bench_function("comrak", |b| b.iter(|| parse_comrak(black_box(input))));
 
     group.finish();
 }
@@ -403,15 +386,11 @@ fn bench_large(c: &mut Criterion) {
         b.iter(|| parse_ferromark(black_box(&input)))
     });
     #[cfg(md4c)]
-    group.bench_function("md4c", |b| {
-        b.iter(|| parse_md4c(black_box(&input)))
-    });
+    group.bench_function("md4c", |b| b.iter(|| parse_md4c(black_box(&input))));
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(&input)))
     });
-    group.bench_function("comrak", |b| {
-        b.iter(|| parse_comrak(black_box(&input)))
-    });
+    group.bench_function("comrak", |b| b.iter(|| parse_comrak(black_box(&input))));
 
     group.finish();
 }
@@ -447,9 +426,7 @@ fn bench_commonmark_group(c: &mut Criterion, group_name: &str, input: &str) {
         })
     });
 
-    group.bench_function("comrak", |b| {
-        b.iter(|| parse_comrak(black_box(input)))
-    });
+    group.bench_function("comrak", |b| b.iter(|| parse_comrak(black_box(input))));
 
     group.finish();
 }
@@ -476,15 +453,11 @@ fn bench_tables(c: &mut Criterion) {
         b.iter(|| parse_ferromark(black_box(input)))
     });
     #[cfg(md4c)]
-    group.bench_function("md4c", |b| {
-        b.iter(|| parse_md4c(black_box(input)))
-    });
+    group.bench_function("md4c", |b| b.iter(|| parse_md4c(black_box(input))));
     group.bench_function("pulldown-cmark", |b| {
         b.iter(|| parse_pulldown_cmark(black_box(input)))
     });
-    group.bench_function("comrak", |b| {
-        b.iter(|| parse_comrak(black_box(input)))
-    });
+    group.bench_function("comrak", |b| b.iter(|| parse_comrak(black_box(input))));
 
     group.finish();
 }
@@ -588,19 +561,27 @@ fn bench_experiments(c: &mut Criterion) {
     for (name, input) in docs {
         group.throughput(Throughput::Bytes(input.len() as u64));
 
-        group.bench_with_input(BenchmarkId::new("baseline_to_html", name), input, |b, text| {
-            b.iter(|| {
-                let html = ferromark::to_html(black_box(text));
-                black_box(html);
-            })
-        });
+        group.bench_with_input(
+            BenchmarkId::new("baseline_to_html", name),
+            input,
+            |b, text| {
+                b.iter(|| {
+                    let html = ferromark::to_html(black_box(text));
+                    black_box(html);
+                })
+            },
+        );
 
-        group.bench_with_input(BenchmarkId::new("hybrid_paragraph_buffer", name), input, |b, text| {
-            b.iter(|| {
-                let html = hybrid_paragraph_buffer(black_box(text));
-                black_box(html);
-            })
-        });
+        group.bench_with_input(
+            BenchmarkId::new("hybrid_paragraph_buffer", name),
+            input,
+            |b, text| {
+                b.iter(|| {
+                    let html = hybrid_paragraph_buffer(black_box(text));
+                    black_box(html);
+                })
+            },
+        );
 
         group.bench_with_input(
             BenchmarkId::new("prescan_candidates_then_to_html", name),
@@ -710,7 +691,11 @@ fn hybrid_paragraph_buffer(input: &str) -> String {
                 }
                 buf.clear();
             }
-            pos = if line_end == len { len + 1 } else { line_end + 1 };
+            pos = if line_end == len {
+                len + 1
+            } else {
+                line_end + 1
+            };
             continue;
         }
 
@@ -919,7 +904,11 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                                 url: url_bytes,
                                 title: None,
                             },
-                            if line_end < len { line_end + 1 } else { line_end },
+                            if line_end < len {
+                                line_end + 1
+                            } else {
+                                line_end
+                            },
                         ));
                     }
                     return None;
@@ -937,7 +926,11 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                             url: url_bytes,
                             title: None,
                         },
-                        if line_end < len { line_end + 1 } else { line_end },
+                        if line_end < len {
+                            line_end + 1
+                        } else {
+                            line_end
+                        },
                     ));
                 }
                 return None;
@@ -957,7 +950,11 @@ fn parse_link_ref_def(input: &[u8], start: usize) -> Option<(ParsedLinkRefDef, u
                             url: url_bytes,
                             title: None,
                         },
-                        if line_end < len { line_end + 1 } else { line_end },
+                        if line_end < len {
+                            line_end + 1
+                        } else {
+                            line_end
+                        },
                     ));
                 }
                 return None;

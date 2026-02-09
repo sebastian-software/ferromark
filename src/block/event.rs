@@ -200,7 +200,10 @@ mod tests {
     #[test]
     fn test_list_kind() {
         let ul = ListKind::Unordered;
-        let ol = ListKind::Ordered { start: 1, delimiter: b'.' };
+        let ol = ListKind::Ordered {
+            start: 1,
+            delimiter: b'.',
+        };
         assert_ne!(ul, ol);
     }
 

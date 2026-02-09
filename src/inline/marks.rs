@@ -3,9 +3,9 @@
 //! Marks represent potential delimiter positions (backticks, asterisks, etc.)
 //! collected in a single pass before resolution.
 
+use super::simd;
 use crate::limits;
 use memchr::memchr3;
-use super::simd;
 
 /// Flags for mark state.
 pub mod flags {
@@ -33,7 +33,12 @@ impl Mark {
     /// Create a new mark.
     #[inline]
     pub fn new(pos: u32, end: u32, ch: u8, flags: u8) -> Self {
-        Self { pos, end, ch, flags }
+        Self {
+            pos,
+            end,
+            ch,
+            flags,
+        }
     }
 
     /// Length of the delimiter run.
@@ -139,16 +144,16 @@ impl Default for MarkBuffer {
 /// Returns true if the character might be a delimiter.
 pub static SPECIAL_CHARS: [bool; 256] = {
     let mut table = [false; 256];
-    table[b'`' as usize] = true;  // Code span
-    table[b'*' as usize] = true;  // Emphasis
-    table[b'_' as usize] = true;  // Emphasis
-    table[b'~' as usize] = true;  // Strikethrough
-    table[b'$' as usize] = true;  // Math span
+    table[b'`' as usize] = true; // Code span
+    table[b'*' as usize] = true; // Emphasis
+    table[b'_' as usize] = true; // Emphasis
+    table[b'~' as usize] = true; // Strikethrough
+    table[b'$' as usize] = true; // Math span
     table[b'\\' as usize] = true; // Escape
     table[b'\n' as usize] = true; // Line break
-    table[b'[' as usize] = true;  // Link
-    table[b']' as usize] = true;  // Link
-    table[b'<' as usize] = true;  // Autolink/HTML
+    table[b'[' as usize] = true; // Link
+    table[b']' as usize] = true; // Link
+    table[b'<' as usize] = true; // Autolink/HTML
     table
 };
 
@@ -262,9 +267,7 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
 
             b'\n' => {
                 // Check for hard break (two or more spaces before newline)
-                let has_hard_break = pos >= 2
-                    && text[pos - 1] == b' '
-                    && text[pos - 2] == b' ';
+                let has_hard_break = pos >= 2 && text[pos - 1] == b' ' && text[pos - 2] == b' ';
 
                 if has_hard_break {
                     // Find the start of ALL trailing spaces, not just 2
@@ -308,7 +311,11 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                     pos as u32,
                     (pos + 1) as u32,
                     b'[',
-                    if is_image { flags::POTENTIAL_OPENER | flags::IN_CODE } else { flags::POTENTIAL_OPENER },
+                    if is_image {
+                        flags::POTENTIAL_OPENER | flags::IN_CODE
+                    } else {
+                        flags::POTENTIAL_OPENER
+                    },
                 ));
                 pos += 1;
             }
@@ -396,13 +403,11 @@ fn compute_emphasis_flags_with_context(ch: u8, text: &[u8], start: usize, end: u
 
     // Left-flanking: not followed by whitespace, and either
     // not followed by punctuation or preceded by whitespace/punctuation
-    let left_flanking = !after_space
-        && (!after_punct || before_space || before_punct);
+    let left_flanking = !after_space && (!after_punct || before_space || before_punct);
 
     // Right-flanking: not preceded by whitespace, and either
     // not preceded by punctuation or followed by whitespace/punctuation
-    let right_flanking = !before_space
-        && (!before_punct || after_space || after_punct);
+    let right_flanking = !before_space && (!before_punct || after_space || after_punct);
 
     let mut flags = 0;
 
@@ -551,7 +556,8 @@ fn is_preceded_by_punctuation(text: &[u8], pos: usize) -> bool {
         if pos >= 2 && text[pos - 2] == 0xC3 {
             // U+00C0-U+00FF - mostly letters, but check for ×(D7) and ÷(F7)
             let cp_low = text[pos - 1];
-            if cp_low == 0x97 || cp_low == 0xB7 { // × and ÷
+            if cp_low == 0x97 || cp_low == 0xB7 {
+                // × and ÷
                 return true;
             }
         }
@@ -611,7 +617,8 @@ fn is_followed_by_punctuation(text: &[u8], pos: usize) -> bool {
         }
         if next == 0xC3 && pos + 1 < text.len() {
             let cp_low = text[pos + 1];
-            if cp_low == 0x97 || cp_low == 0xB7 { // × and ÷
+            if cp_low == 0x97 || cp_low == 0xB7 {
+                // × and ÷
                 return true;
             }
         }
@@ -645,22 +652,78 @@ fn is_followed_by_punctuation(text: &[u8], pos: usize) -> bool {
 /// Check if a byte is ASCII punctuation.
 #[inline]
 fn is_ascii_punctuation(b: u8) -> bool {
-    matches!(b,
-        b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
-        b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
-        b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
-        b'`' | b'{' | b'|' | b'}' | b'~'
+    matches!(
+        b,
+        b'!' | b'"'
+            | b'#'
+            | b'$'
+            | b'%'
+            | b'&'
+            | b'\''
+            | b'('
+            | b')'
+            | b'*'
+            | b'+'
+            | b','
+            | b'-'
+            | b'.'
+            | b'/'
+            | b':'
+            | b';'
+            | b'<'
+            | b'='
+            | b'>'
+            | b'?'
+            | b'@'
+            | b'['
+            | b'\\'
+            | b']'
+            | b'^'
+            | b'_'
+            | b'`'
+            | b'{'
+            | b'|'
+            | b'}'
+            | b'~'
     )
 }
 
 /// Characters that can be escaped with backslash.
 #[inline]
 fn is_escapable(b: u8) -> bool {
-    matches!(b,
-        b'!' | b'"' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' |
-        b'*' | b'+' | b',' | b'-' | b'.' | b'/' | b':' | b';' | b'<' |
-        b'=' | b'>' | b'?' | b'@' | b'[' | b'\\' | b']' | b'^' | b'_' |
-        b'`' | b'{' | b'|' | b'}' | b'~'
+    matches!(
+        b,
+        b'!' | b'"'
+            | b'#'
+            | b'$'
+            | b'%'
+            | b'&'
+            | b'\''
+            | b'('
+            | b')'
+            | b'*'
+            | b'+'
+            | b','
+            | b'-'
+            | b'.'
+            | b'/'
+            | b':'
+            | b';'
+            | b'<'
+            | b'='
+            | b'>'
+            | b'?'
+            | b'@'
+            | b'['
+            | b'\\'
+            | b']'
+            | b'^'
+            | b'_'
+            | b'`'
+            | b'{'
+            | b'|'
+            | b'}'
+            | b'~'
     )
 }
 
@@ -714,8 +777,10 @@ mod tests {
             if mark.ch == b'_' {
                 // Intraword underscores: right-flanking AND left-flanking
                 // So they can't open or close
-                assert!(!mark.can_open() || !mark.can_close(),
-                    "Intraword underscore should not be both opener and closer");
+                assert!(
+                    !mark.can_open() || !mark.can_close(),
+                    "Intraword underscore should not be both opener and closer"
+                );
             }
         }
     }
@@ -733,7 +798,11 @@ mod tests {
         // Last * is preceded by NBSP (whitespace) - not right-flanking, so can't close
         // Since neither can open nor close, they won't be added as marks at all
         // This is correct - they shouldn't form emphasis
-        assert_eq!(buffer.len(), 0, "No marks should be collected when asterisks are surrounded by whitespace");
+        assert_eq!(
+            buffer.len(),
+            0,
+            "No marks should be collected when asterisks are surrounded by whitespace"
+        );
     }
 
     #[test]
@@ -756,7 +825,10 @@ mod tests {
         //              = true && (!true || false || false)
         //              = true && false = false
         // So first * is NOT left-flanking, can't open
-        assert!(!first.can_open(), "First * should not open: preceded by letter, followed by punct");
+        assert!(
+            !first.can_open(),
+            "First * should not open: preceded by letter, followed by punct"
+        );
 
         // Last *: preceded by '"' (punct), followed by end (space)
         // right_flanking = !before_space && (!before_punct || after_space || after_punct)
@@ -766,6 +838,9 @@ mod tests {
         // left_flanking = !after_space && (!after_punct || before_space || before_punct)
         //              = false (followed by end which is space)
         // So it IS right-flanking but NOT left-flanking
-        assert!(last.can_close(), "Last * should close: preceded by punct, followed by end");
+        assert!(
+            last.can_close(),
+            "Last * should close: preceded by punct, followed by end"
+        );
     }
 }

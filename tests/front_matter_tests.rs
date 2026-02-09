@@ -1,4 +1,4 @@
-use ferromark::{parse, parse_with_options, to_html_with_options, Options};
+use ferromark::{Options, parse, parse_with_options, to_html_with_options};
 
 #[test]
 fn yaml_basic() {

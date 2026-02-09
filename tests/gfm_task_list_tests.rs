@@ -31,7 +31,8 @@ fn non_task_list_items() {
 #[test]
 fn mixed_task_and_regular() {
     let input = "- [ ] task\n- regular";
-    let expected = "<ul>\n<li><input type=\"checkbox\" disabled=\"\" /> task</li>\n<li>regular</li>\n</ul>\n";
+    let expected =
+        "<ul>\n<li><input type=\"checkbox\" disabled=\"\" /> task</li>\n<li>regular</li>\n</ul>\n";
     assert_eq!(to_html(input), expected);
 }
 
@@ -44,7 +45,7 @@ fn task_list_ordered() {
 
 #[test]
 fn task_list_disabled() {
-    use ferromark::{to_html_with_options, Options};
+    use ferromark::{Options, to_html_with_options};
 
     let input = "- [ ] foo\n- [x] bar";
     let expected = "<ul>\n<li>[ ] foo</li>\n<li>[x] bar</li>\n</ul>\n";

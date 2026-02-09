@@ -3,7 +3,7 @@
 //! Matches tilde runs of length 1 or 2 as opener/closer pairs.
 //! Uses same flanking rules as `*` emphasis (already computed in mark collection).
 
-use super::marks::{flags, Mark};
+use super::marks::{Mark, flags};
 
 /// A matched strikethrough pair.
 #[derive(Debug, Clone, Copy)]

@@ -49,7 +49,10 @@ impl Range {
     /// Create an empty range at a position.
     #[inline]
     pub const fn empty_at(pos: u32) -> Self {
-        Self { start: pos, end: pos }
+        Self {
+            start: pos,
+            end: pos,
+        }
     }
 
     /// Get the slice this range refers to.

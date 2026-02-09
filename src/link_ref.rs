@@ -2,9 +2,9 @@
 
 use crate::Range;
 use memchr::memchr;
+use rustc_hash::FxBuildHasher as FastHashBuilder;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use rustc_hash::FxBuildHasher as FastHashBuilder;
 
 /// A link reference definition (URL + optional title).
 #[derive(Debug, Clone)]

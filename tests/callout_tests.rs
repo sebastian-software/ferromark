@@ -1,4 +1,4 @@
-use ferromark::{to_html, to_html_with_options, Options};
+use ferromark::{Options, to_html, to_html_with_options};
 
 fn html(input: &str) -> String {
     to_html(input)

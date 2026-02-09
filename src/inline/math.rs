@@ -3,7 +3,7 @@
 //! Follows code span pattern: `$` for inline math, `$$` for display math.
 //! Content inside is not parsed for inline markup.
 
-use super::marks::{flags, Mark};
+use super::marks::{Mark, flags};
 
 /// A resolved math span.
 #[derive(Debug, Clone, Copy)]
@@ -101,7 +101,7 @@ pub fn resolve_math_spans(marks: &mut [Mark], text: &[u8]) -> Vec<MathSpan> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::inline::marks::{collect_marks, MarkBuffer};
+    use crate::inline::marks::{MarkBuffer, collect_marks};
 
     #[test]
     fn test_simple_inline_math() {

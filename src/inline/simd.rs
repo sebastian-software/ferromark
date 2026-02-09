@@ -24,12 +24,18 @@ unsafe fn mask_has_any(mask: uint8x16_t) -> bool {
 
 #[inline]
 fn is_inline_special(b: u8) -> bool {
-    matches!(b, b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$')
+    matches!(
+        b,
+        b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$'
+    )
 }
 
 #[inline]
 fn is_mark_special(b: u8) -> bool {
-    matches!(b, b'`' | b'*' | b'_' | b'\\' | b'\n' | b'[' | b']' | b'<' | b'~' | b'$')
+    matches!(
+        b,
+        b'`' | b'*' | b'_' | b'\\' | b'\n' | b'[' | b']' | b'<' | b'~' | b'$'
+    )
 }
 
 /// SIMD-accelerated check for inline specials.

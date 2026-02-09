@@ -148,11 +148,16 @@ pub fn resolve_links_into(
                     if !is_image {
                         for (i, &(pos, outer_is_image)) in open_brackets.iter().enumerate() {
                             // Only deactivate outer LINK brackets, not image brackets
-                            if pos < open_pos && !formed_opens[i] && !inactive_opens[i] && !outer_is_image {
+                            if pos < open_pos
+                                && !formed_opens[i]
+                                && !inactive_opens[i]
+                                && !outer_is_image
+                            {
                                 // This outer link bracket would contain our link
                                 // Check if there's a close bracket after our link
                                 // that could match the outer open
-                                let has_outer_close = close_brackets.iter()
+                                let has_outer_close = close_brackets
+                                    .iter()
                                     .enumerate()
                                     .any(|(ci, &cpos)| !used_closes[ci] && cpos > close_pos);
                                 if has_outer_close {
@@ -202,7 +207,11 @@ pub fn resolve_reference_links_into(
     );
     // Mark opens/closes used by inline links
     for link in inline_links {
-        let open_pos = if link.is_image { link.start + 1 } else { link.start };
+        let open_pos = if link.is_image {
+            link.start + 1
+        } else {
+            link.start
+        };
         if let Some(idx) = find_open_idx(open_brackets, open_pos) {
             formed_opens[idx] = true;
         }
@@ -237,7 +246,9 @@ pub fn resolve_reference_links_into(
         let mut label_bytes = &text[label_start..label_end];
 
         let mut ref_label: Option<(usize, usize, usize)> = None;
-        if let Some((ref_start, ref_end, ref_close_pos)) = parse_ref_label_immediate(text, close_pos as usize + 1) {
+        if let Some((ref_start, ref_end, ref_close_pos)) =
+            parse_ref_label_immediate(text, close_pos as usize + 1)
+        {
             // Full or collapsed reference: [label][ref] or [label][]
             if ref_start == ref_end {
                 // Collapsed: use link text as label
@@ -252,7 +263,9 @@ pub fn resolve_reference_links_into(
         if label_buf.is_empty() {
             continue;
         }
-        let Some(def_index) = defs.get_index(label_buf) else { continue };
+        let Some(def_index) = defs.get_index(label_buf) else {
+            continue;
+        };
 
         // Links cannot contain links (but can contain images)
         if contains_link(&occupied, open_pos, close_pos)
@@ -309,7 +322,10 @@ fn contains_ref_link_candidate(
         if open_pos <= start || open_pos >= end || is_image {
             continue;
         }
-        let close_pos = close_brackets.iter().copied().find(|&c| c > open_pos && c < end);
+        let close_pos = close_brackets
+            .iter()
+            .copied()
+            .find(|&c| c > open_pos && c < end);
         let Some(close_pos) = close_pos else { continue };
 
         let label_start = (open_pos + 1) as usize;
@@ -319,7 +335,9 @@ fn contains_ref_link_candidate(
         }
         let mut label_bytes = &text[label_start..label_end];
 
-        if let Some((ref_start, ref_end, _ref_close)) = parse_ref_label_immediate(text, close_pos as usize + 1) {
+        if let Some((ref_start, ref_end, _ref_close)) =
+            parse_ref_label_immediate(text, close_pos as usize + 1)
+        {
             if ref_start != ref_end {
                 label_bytes = &text[ref_start..ref_end];
             }
@@ -338,16 +356,12 @@ fn contains_ref_link_candidate(
 
 #[inline]
 fn find_open_idx(open_brackets: &[(u32, bool)], pos: u32) -> Option<usize> {
-    open_brackets
-        .binary_search_by_key(&pos, |(p, _)| *p)
-        .ok()
+    open_brackets.binary_search_by_key(&pos, |(p, _)| *p).ok()
 }
 
 #[inline]
 fn find_close_idx(close_brackets: &[u32], pos: u32) -> Option<usize> {
-    close_brackets
-        .binary_search(&pos)
-        .ok()
+    close_brackets.binary_search(&pos).ok()
 }
 
 fn contains_link(links: &[(u32, u32)], start: u32, end: u32) -> bool {
@@ -456,7 +470,10 @@ fn parse_ref_label_immediate(text: &[u8], mut pos: usize) -> Option<(usize, usiz
 
 /// Parse link destination and optional title.
 /// Returns (url_start, url_end, title_start, title_end, end) or None.
-fn parse_link_destination(text: &[u8], start: usize) -> Option<(usize, usize, Option<usize>, Option<usize>, usize)> {
+fn parse_link_destination(
+    text: &[u8],
+    start: usize,
+) -> Option<(usize, usize, Option<usize>, Option<usize>, usize)> {
     let mut pos = start;
     let len = text.len();
 
@@ -691,9 +708,10 @@ fn is_email_autolink(content: &[u8]) -> bool {
             });
 
             // Domain: alphanumeric, dots, hyphens
-            let domain_valid = domain.iter().all(|&b| {
-                b.is_ascii_alphanumeric() || b == b'.' || b == b'-'
-            }) && domain.contains(&b'.');
+            let domain_valid = domain
+                .iter()
+                .all(|&b| b.is_ascii_alphanumeric() || b == b'.' || b == b'-')
+                && domain.contains(&b'.');
 
             return local_valid && domain_valid;
         }
@@ -777,7 +795,11 @@ pub fn find_autolink_literals_into(
             if let Some(offset) = memchr(b':', &text[pos..]) {
                 let colon = pos + offset;
                 // Need at least "X://" where X is the protocol prefix
-                if colon >= 1 && colon + 2 < len && text[colon + 1] == b'/' && text[colon + 2] == b'/' {
+                if colon >= 1
+                    && colon + 2 < len
+                    && text[colon + 1] == b'/'
+                    && text[colon + 2] == b'/'
+                {
                     // Walk backwards to find protocol start (http, https, ftp)
                     let proto_start = find_protocol_start(text, colon);
                     if let Some(start) = proto_start {
@@ -876,8 +898,10 @@ fn is_valid_autolink_preceding(text: &[u8], pos: usize) -> bool {
         return true;
     }
     let prev = text[pos - 1];
-    matches!(prev, b' ' | b'\t' | b'\n' | b'\r' | b'*' | b'_' | b'~' | b'(' | b'"' | b'\'' | b';')
-        || prev == b'\x0c'
+    matches!(
+        prev,
+        b' ' | b'\t' | b'\n' | b'\r' | b'*' | b'_' | b'~' | b'(' | b'"' | b'\'' | b';'
+    ) || prev == b'\x0c'
 }
 
 /// Try to parse a URL autolink (http://, https://, ftp://).
@@ -969,7 +993,10 @@ fn try_www_autolink(text: &[u8], start: usize) -> Option<AutolinkLiteral> {
     let url_end = pos;
     let domain_text = &text[start..url_end];
     // Find where path starts (first / after domain)
-    let path_start = domain_text.iter().position(|&b| b == b'/').unwrap_or(domain_text.len());
+    let path_start = domain_text
+        .iter()
+        .position(|&b| b == b'/')
+        .unwrap_or(domain_text.len());
     let domain_part = &domain_text[..path_start];
     if has_underscore_in_last_two_segments(domain_part) {
         return None;
@@ -1085,7 +1112,10 @@ fn trim_autolink_trailing(text: &[u8], start: usize, mut end: usize) -> usize {
         let last = text[end - 1];
 
         // Rule 1: Strip trailing punctuation chars
-        if matches!(last, b'?' | b'!' | b'.' | b',' | b':' | b'*' | b'_' | b'~' | b'\'' | b'"') {
+        if matches!(
+            last,
+            b'?' | b'!' | b'.' | b',' | b':' | b'*' | b'_' | b'~' | b'\'' | b'"'
+        ) {
             end -= 1;
             continue;
         }
