@@ -41,9 +41,9 @@ mod tests {
     #[test]
     fn limits_are_reasonable() {
         // Ensure limits are within expected ranges
-        assert!(MAX_BLOCK_NESTING >= 16);
-        assert!(MAX_BLOCK_NESTING <= 64);
-        assert!(MAX_INLINE_NESTING >= 16);
-        assert!(MAX_CODE_SPAN_BACKTICKS >= 16);
+        const { assert!(MAX_BLOCK_NESTING >= 16) };
+        const { assert!(MAX_BLOCK_NESTING <= 64) };
+        const { assert!(MAX_INLINE_NESTING >= 16) };
+        const { assert!(MAX_CODE_SPAN_BACKTICKS >= 16) };
     }
 }

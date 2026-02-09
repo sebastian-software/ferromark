@@ -115,8 +115,8 @@ pub fn resolve_links_into(
             open_pos,
             open_brackets,
             close_brackets,
-            &formed_opens,
-            &used_closes,
+            formed_opens,
+            used_closes,
         );
 
         if let Some(close_idx) = close_idx {
@@ -179,6 +179,7 @@ pub fn resolve_links_into(
 }
 
 /// Resolve reference-style links/images using link reference definitions.
+#[allow(clippy::too_many_arguments)]
 pub fn resolve_reference_links_into(
     text: &[u8],
     open_brackets: &[(u32, bool)],
@@ -232,8 +233,8 @@ pub fn resolve_reference_links_into(
             open_pos,
             open_brackets,
             close_brackets,
-            &formed_opens,
-            &used_closes,
+            formed_opens,
+            used_closes,
         );
 
         let Some(close_idx) = close_idx else { continue };
@@ -268,7 +269,7 @@ pub fn resolve_reference_links_into(
         };
 
         // Links cannot contain links (but can contain images)
-        if contains_link(&occupied, open_pos, close_pos)
+        if contains_link(occupied, open_pos, close_pos)
             || contains_ref_link_candidate(
                 text,
                 open_brackets,
@@ -470,6 +471,7 @@ fn parse_ref_label_immediate(text: &[u8], mut pos: usize) -> Option<(usize, usiz
 
 /// Parse link destination and optional title.
 /// Returns (url_start, url_end, title_start, title_end, end) or None.
+#[allow(clippy::type_complexity)]
 fn parse_link_destination(
     text: &[u8],
     start: usize,
@@ -741,6 +743,7 @@ pub struct AutolinkLiteral {
 }
 
 /// Find autolink literals in text, avoiding code spans, HTML ranges, existing autolinks, and link ranges.
+#[allow(clippy::too_many_arguments)]
 pub fn find_autolink_literals_into(
     text: &[u8],
     code_spans: &[(u32, u32)],
@@ -1081,7 +1084,7 @@ fn try_email_autolink(text: &[u8], at_pos: usize) -> Option<AutolinkLiteral> {
 
     // Recount dots after trimming
     let domain_slice = &text[at_pos + 1..domain_end];
-    let has_dot = domain_slice.iter().any(|&b| b == b'.');
+    let has_dot = domain_slice.contains(&b'.');
     if !has_dot {
         return None;
     }

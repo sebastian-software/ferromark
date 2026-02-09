@@ -85,8 +85,10 @@ fn crlf_line_endings() {
 
 #[test]
 fn to_html_with_front_matter_strips() {
-    let mut options = Options::default();
-    options.front_matter = true;
+    let options = Options {
+        front_matter: true,
+        ..Options::default()
+    };
     let html = to_html_with_options("---\ntitle: Hello\n---\n# Content", &options);
     assert!(html.contains("Content</h1>"));
     assert!(!html.contains("title"));

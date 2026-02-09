@@ -359,7 +359,7 @@ impl HtmlWriter {
     /// Write heading start: `<hN>`
     #[inline]
     pub fn heading_start(&mut self, level: u8) {
-        debug_assert!(level >= 1 && level <= 6);
+        debug_assert!((1..=6).contains(&level));
         self.write_str("<h");
         self.write_byte(b'0' + level);
         self.write_byte(b'>');
@@ -368,7 +368,7 @@ impl HtmlWriter {
     /// Write heading start with ID: `<hN id="slug">`
     #[inline]
     pub fn heading_start_with_id(&mut self, level: u8, id: &str) {
-        debug_assert!(level >= 1 && level <= 6);
+        debug_assert!((1..=6).contains(&level));
         self.write_str("<h");
         self.write_byte(b'0' + level);
         self.write_str(" id=\"");
@@ -379,7 +379,7 @@ impl HtmlWriter {
     /// Write heading end: `</hN>\n`
     #[inline]
     pub fn heading_end(&mut self, level: u8) {
-        debug_assert!(level >= 1 && level <= 6);
+        debug_assert!((1..=6).contains(&level));
         self.write_str("</h");
         self.write_byte(b'0' + level);
         self.write_str(">\n");

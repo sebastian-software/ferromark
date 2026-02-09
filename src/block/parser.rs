@@ -529,10 +529,8 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for thematic break (also when all containers matched, e.g. inside blockquote)
-        if indent < 4 {
-            if self.try_thematic_break(events) {
-                return;
-            }
+        if indent < 4 && self.try_thematic_break(events) {
+            return;
         }
 
         // Check for new container starts (blockquote, list)
@@ -879,12 +877,12 @@ impl<'a> BlockParser<'a> {
             }
 
             // Check for footnote definition (`[^label]:`)
-            if self.options.footnotes && first == b'[' && !self.in_paragraph {
-                if self.try_footnote_definition(indent, events) {
-                    // Parse the rest of the first line as content inside the footnote
-                    self.parse_line_content(events);
-                    return;
-                }
+            if self.options.footnotes && first == b'[' && !self.in_paragraph
+                && self.try_footnote_definition(indent, events)
+            {
+                // Parse the rest of the first line as content inside the footnote
+                self.parse_line_content(events);
+                return;
             }
 
             // Check for nested containers (blockquote, list)
@@ -1129,7 +1127,7 @@ impl<'a> BlockParser<'a> {
                 while self
                     .cursor
                     .peek_ahead(offset)
-                    .map_or(false, |b| b.is_ascii_digit())
+                    .is_some_and(|b| b.is_ascii_digit())
                 {
                     offset += 1;
                 }
@@ -1233,7 +1231,7 @@ impl<'a> BlockParser<'a> {
                 while self
                     .cursor
                     .peek_ahead(offset)
-                    .map_or(false, |c| c.is_ascii_digit())
+                    .is_some_and(|c| c.is_ascii_digit())
                 {
                     offset += 1;
                 }
@@ -1426,7 +1424,7 @@ impl<'a> BlockParser<'a> {
         while self
             .cursor
             .peek()
-            .map_or(false, |b| b.is_ascii_alphabetic())
+            .is_some_and(|b| b.is_ascii_alphabetic())
         {
             self.cursor.bump();
         }
@@ -1449,7 +1447,7 @@ impl<'a> BlockParser<'a> {
         while self
             .cursor
             .peek()
-            .map_or(false, |b| b == b' ' || b == b'\t')
+            .is_some_and(|b| b == b' ' || b == b'\t')
         {
             self.cursor.bump();
         }
@@ -1848,7 +1846,7 @@ impl<'a> BlockParser<'a> {
                     // This properly handles nested lists: each nesting level has one
                     // ListItem container and one open list
                     while self.open_lists.len() > remaining_items {
-                        let tight = self.open_lists.last().map_or(true, |l| l.tight);
+                        let tight = self.open_lists.last().is_none_or(|l| l.tight);
                         events.push(BlockEvent::ListEnd { kind, tight });
                         self.open_lists.pop();
                     }
@@ -2291,20 +2289,20 @@ impl<'a> BlockParser<'a> {
         let content_start = self.cursor.offset();
 
         // Blank line handling for types 6/7 (end on blank line)
-        if self.cursor.is_eof() || self.cursor.at(b'\n') {
-            if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7) {
-                self.html_block = None;
-                events.push(BlockEvent::HtmlBlockEnd);
+        if (self.cursor.is_eof() || self.cursor.at(b'\n'))
+            && matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
+        {
+            self.html_block = None;
+            events.push(BlockEvent::HtmlBlockEnd);
 
-                if !self.cursor.is_eof() {
-                    self.cursor.bump();
-                }
-
-                self.close_paragraph(events);
-                let close_blockquotes = self.container_stack.is_empty();
-                self.handle_blank_line_containers(events, close_blockquotes);
-                return;
+            if !self.cursor.is_eof() {
+                self.cursor.bump();
             }
+
+            self.close_paragraph(events);
+            let close_blockquotes = self.container_stack.is_empty();
+            self.handle_blank_line_containers(events, close_blockquotes);
+            return;
         }
 
         // Find end of line (including newline)
@@ -2677,7 +2675,7 @@ impl<'a> BlockParser<'a> {
         }
         a.iter()
             .zip(b.iter())
-            .all(|(&x, &y)| x.to_ascii_lowercase() == y.to_ascii_lowercase())
+            .all(|(&x, &y)| x.eq_ignore_ascii_case(&y))
     }
 
     #[inline]

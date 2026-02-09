@@ -78,8 +78,8 @@ pub fn resolve_math_spans(marks: &mut [Mark], text: &[u8]) -> Vec<MathSpan> {
                 marks[j].resolve();
 
                 // Mark everything in between as IN_CODE
-                for k in (i + 1)..j {
-                    marks[k].flags |= flags::IN_CODE;
+                for mark in &mut marks[(i + 1)..j] {
+                    mark.flags |= flags::IN_CODE;
                 }
 
                 spans.push(MathSpan {

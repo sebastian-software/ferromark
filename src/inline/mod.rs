@@ -117,6 +117,7 @@ impl InlineParser {
     }
 
     /// Parse inline content with full GFM options.
+    #[allow(clippy::too_many_arguments)]
     pub fn parse_with_options(
         &mut self,
         text: &[u8],
@@ -392,6 +393,7 @@ impl InlineParser {
     }
 
     /// Resolve footnote references: `[^label]` patterns not consumed by links/images.
+    #[allow(clippy::too_many_arguments)]
     fn resolve_footnote_refs(
         text: &[u8],
         open_brackets: &[(u32, bool)],
@@ -515,6 +517,7 @@ impl InlineParser {
     }
 
     /// Emit events based on resolved marks.
+    #[allow(clippy::too_many_arguments)]
     fn emit_events(
         marks: &[Mark],
         text: &[u8],
@@ -1283,6 +1286,7 @@ fn pos_in_spans(pos: u32, spans: &[HtmlSpan]) -> bool {
     false
 }
 
+#[allow(clippy::too_many_arguments)]
 fn find_html_spans_into(
     text: &[u8],
     code_spans: &[CodeSpan],
@@ -1351,7 +1355,7 @@ fn filter_html_spans_in_link_destinations(spans: &mut Vec<HtmlSpan>, links: &[Li
     }
     spans.retain(|span| {
         !links.iter().any(|link| {
-            let dest_start = (link.text_end + 1) as u32;
+            let dest_start = link.text_end + 1;
             span.start >= dest_start && span.start < link.end
         })
     });
@@ -1432,7 +1436,7 @@ fn parse_html_comment(text: &[u8], start: usize) -> Option<usize> {
 fn parse_html_declaration(text: &[u8], start: usize) -> Option<usize> {
     if text
         .get(start + 2)
-        .map_or(true, |b| !b.is_ascii_alphabetic())
+        .is_none_or(|b| !b.is_ascii_alphabetic())
     {
         return None;
     }

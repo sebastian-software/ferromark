@@ -29,6 +29,7 @@ pub struct Mark {
     pub flags: u8,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl Mark {
     /// Create a new mark.
     #[inline]

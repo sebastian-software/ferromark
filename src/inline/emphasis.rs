@@ -350,7 +350,7 @@ mod tests {
     fn test_nested_emphasis() {
         let matches = get_emphasis_matches(b"***bold and italic***");
         // Should produce multiple matches
-        assert!(matches.len() >= 1);
+        assert!(!matches.is_empty());
     }
 
     #[test]

@@ -5,8 +5,10 @@ fn html(input: &str) -> String {
 }
 
 fn html_no_callouts(input: &str) -> String {
-    let mut opts = Options::default();
-    opts.callouts = false;
+    let opts = Options {
+        callouts: false,
+        ..Options::default()
+    };
     to_html_with_options(input, &opts)
 }
 

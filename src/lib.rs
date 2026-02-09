@@ -158,15 +158,9 @@ fn extract_front_matter(input: &str) -> Option<(&str, usize)> {
                     p += 1;
                 }
                 // Must be at newline or EOF
-                let at_end = if p >= bytes.len() {
-                    true
-                } else if bytes[p] == b'\n' {
-                    true
-                } else if bytes[p] == b'\r' && p + 1 < bytes.len() && bytes[p + 1] == b'\n' {
-                    true
-                } else {
-                    false
-                };
+                let at_end = p >= bytes.len()
+                    || bytes[p] == b'\n'
+                    || (bytes[p] == b'\r' && p + 1 < bytes.len() && bytes[p + 1] == b'\n');
 
                 if at_end {
                     let content = &input[content_start..line_start];
@@ -213,8 +207,10 @@ fn extract_front_matter(input: &str) -> Option<(&str, usize)> {
 /// assert!(result.html.contains("Content</h1>"));
 /// ```
 pub fn parse(input: &str) -> ParseResult<'_> {
-    let mut options = Options::default();
-    options.front_matter = true;
+    let options = Options {
+        front_matter: true,
+        ..Options::default()
+    };
     parse_with_options(input, &options)
 }
 
@@ -333,7 +329,7 @@ impl ParagraphState {
         while self
             .content
             .last()
-            .map_or(false, |&b| b == b' ' || b == b'\t')
+            .is_some_and(|&b| b == b' ' || b == b'\t')
         {
             self.content.pop();
         }
@@ -378,7 +374,7 @@ impl HeadingState {
         while self
             .content
             .last()
-            .map_or(false, |&b| b == b' ' || b == b'\t')
+            .is_some_and(|&b| b == b' ' || b == b'\t')
         {
             self.content.pop();
         }
@@ -505,7 +501,7 @@ impl CellState {
         while self
             .content
             .last()
-            .map_or(false, |&b| b == b' ' || b == b'\t')
+            .is_some_and(|&b| b == b' ' || b == b'\t')
         {
             self.content.pop();
         }
@@ -614,6 +610,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
 }
 
 /// Render a single block event to HTML.
+#[allow(clippy::too_many_arguments)]
 fn render_block_event(
     input: &[u8],
     event: &BlockEvent,
@@ -641,7 +638,7 @@ fn render_block_event(
     // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
     let in_tight_list = tight_list_stack
         .last()
-        .map_or(false, |(tight, bq_depth_at_start)| {
+        .is_some_and(|(tight, bq_depth_at_start)| {
             *tight && *blockquote_depth <= *bq_depth_at_start
         });
 
@@ -665,7 +662,7 @@ fn render_block_event(
             // BUT: paragraphs inside blockquotes that started AFTER the list need </p> tags
             let in_tight_list = tight_list_stack
                 .last()
-                .map_or(false, |(tight, bq_depth_at_start)| {
+                .is_some_and(|(tight, bq_depth_at_start)| {
                     *tight && *blockquote_depth <= *bq_depth_at_start
                 });
 
@@ -1092,6 +1089,7 @@ struct ImageState {
 }
 
 /// Render a single inline event to HTML.
+#[allow(clippy::too_many_arguments)]
 fn render_inline_event(
     text: &[u8],
     event: &InlineEvent,
@@ -1103,7 +1101,7 @@ fn render_inline_event(
     footnote_order: &mut Vec<usize>,
 ) {
     // Check if we're inside an image (for alt text rendering)
-    let in_image = image_state.as_ref().map_or(false, |s| s.depth > 0);
+    let in_image = image_state.as_ref().is_some_and(|s| s.depth > 0);
 
     match event {
         InlineEvent::Text(range) => {
@@ -1232,7 +1230,7 @@ fn render_inline_event(
                 writer.write_link_url(url.slice(text));
                 writer.write_str("\" alt=\"");
                 *image_state = Some(ImageState {
-                    title_range: title.clone(),
+                    title_range: *title,
                     title_bytes: None,
                     depth: 1,
                 });
@@ -1259,7 +1257,7 @@ fn render_inline_event(
                 if state.depth == 0 {
                     writer.write_str("\"");
                     // Add title attribute if present
-                    let title_range = state.title_range.clone();
+                    let title_range = state.title_range;
                     let title_bytes = state.title_bytes.clone();
                     *image_state = None;
                     if let Some(bytes) = title_bytes {
@@ -1427,6 +1425,7 @@ fn render_inline_event(
 }
 
 /// Render the footnote section at document end.
+#[allow(clippy::too_many_arguments)]
 fn render_footnote_section(
     input: &[u8],
     footnote_store: &FootnoteStore,

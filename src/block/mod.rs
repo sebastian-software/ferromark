@@ -23,8 +23,8 @@ pub fn fixup_list_tight(events: &mut [BlockEvent]) {
     let mut list_starts: Vec<usize> = Vec::new();
     let mut patches: Vec<(usize, bool)> = Vec::new();
 
-    for i in 0..events.len() {
-        match &events[i] {
+    for (i, event) in events.iter().enumerate() {
+        match event {
             BlockEvent::ListStart { .. } => {
                 list_starts.push(i);
             }

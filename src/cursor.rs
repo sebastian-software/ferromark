@@ -140,6 +140,7 @@ impl<'a> Cursor<'a> {
 
     /// Consume and return current byte.
     #[inline]
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<u8> {
         if self.is_eof() {
             None

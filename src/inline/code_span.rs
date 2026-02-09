@@ -69,8 +69,8 @@ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8], html_spans: &[(u32, u
                 marks[j].resolve();
 
                 // Mark everything in between as being inside code
-                for k in (i + 1)..j {
-                    marks[k].flags |= flags::IN_CODE;
+                for mark in &mut marks[(i + 1)..j] {
+                    mark.flags |= flags::IN_CODE;
                 }
 
                 break;
@@ -94,15 +94,15 @@ pub fn extract_code_spans(marks: &[Mark]) -> impl Iterator<Item = CodeSpan> + '_
             if mark.ch == b'`' && mark.is_resolved() {
                 // This is an opener, find the closer
                 let opener_end = mark.end;
-                for j in (i + 1)..marks.len() {
-                    if marks[j].ch == b'`' && marks[j].is_resolved() && marks[j].len() == mark.len()
+                for (j, mark_j) in marks.iter().enumerate().skip(i + 1) {
+                    if mark_j.ch == b'`' && mark_j.is_resolved() && mark_j.len() == mark.len()
                     {
-                        let closer_pos = marks[j].pos;
+                        let closer_pos = mark_j.pos;
                         let result = CodeSpan {
                             opener_pos: mark.pos,
                             opener_end,
                             closer_pos,
-                            closer_end: marks[j].end,
+                            closer_end: mark_j.end,
                         };
                         i = j + 1;
                         return Some(result);

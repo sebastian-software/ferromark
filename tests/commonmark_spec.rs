@@ -9,8 +9,10 @@ use std::fs;
 /// CommonMark spec tests use default options with heading_ids disabled,
 /// since heading IDs are not part of the CommonMark spec.
 fn spec_to_html(input: &str) -> String {
-    let mut options = Options::default();
-    options.heading_ids = false;
+    let options = Options {
+        heading_ids: false,
+        ..Options::default()
+    };
     to_html_with_options(input, &options)
 }
 
@@ -55,10 +57,10 @@ fn uses_reference_links(markdown: &str) -> bool {
     // Reference definition pattern: starts with optional spaces, [label]:
     for line in markdown.lines() {
         let trimmed = line.trim_start();
-        if trimmed.starts_with('[') {
-            if let Some(bracket_end) = trimmed[1..].find("]:") {
+        if let Some(stripped) = trimmed.strip_prefix('[') {
+            if let Some(bracket_end) = stripped.find("]:") {
                 // Found a potential reference definition
-                let label = &trimmed[1..bracket_end + 1];
+                let label = &stripped[..bracket_end];
                 // Label should not be empty and should not contain unescaped brackets
                 if !label.is_empty() && !has_unescaped_bracket(label) {
                     return true;
@@ -273,11 +275,7 @@ fn commonmark_spec_report_in_scope() {
     let target_pct = 70.0;
     let current_pct = (passed as f64 / total_in_scope as f64) * 100.0;
     let target_tests = (total_in_scope as f64 * target_pct / 100.0).ceil() as u32;
-    let tests_needed = if passed >= target_tests {
-        0
-    } else {
-        target_tests - passed
-    };
+    let tests_needed = target_tests.saturating_sub(passed);
     println!(
         "Current: {:.1}% ({}/{})",
         current_pct, passed, total_in_scope
@@ -332,6 +330,7 @@ fn commonmark_failures_report() {
 }
 
 /// Test a specific section of the CommonMark spec.
+#[allow(clippy::type_complexity)]
 fn run_section_tests(section_name: &str) -> (u32, u32, Vec<(u32, String, String, String)>) {
     let tests = load_spec_tests();
     let mut passed = 0;
@@ -357,6 +356,7 @@ fn run_section_tests(section_name: &str) -> (u32, u32, Vec<(u32, String, String,
 }
 
 /// Test a specific section, only in-scope tests.
+#[allow(clippy::type_complexity)]
 fn run_section_tests_in_scope(
     section_name: &str,
 ) -> (u32, u32, Vec<(u32, String, String, String)>) {

@@ -1,16 +1,20 @@
 use ferromark::{Options, to_html_with_options};
 
 fn math_html(input: &str) -> String {
-    let mut options = Options::default();
-    options.math = true;
-    options.heading_ids = false;
+    let options = Options {
+        math: true,
+        heading_ids: false,
+        ..Options::default()
+    };
     to_html_with_options(input, &options)
 }
 
 fn no_math_html(input: &str) -> String {
-    let mut options = Options::default();
-    options.math = false;
-    options.heading_ids = false;
+    let options = Options {
+        math: false,
+        heading_ids: false,
+        ..Options::default()
+    };
     to_html_with_options(input, &options)
 }
 

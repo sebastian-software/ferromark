@@ -684,11 +684,7 @@ fn hybrid_paragraph_buffer(input: &str) -> String {
         if is_blank {
             if !buf.is_empty() {
                 let para = std::str::from_utf8(&buf).unwrap_or("");
-                if paragraph_has_ref_candidate(para) {
-                    out.push_str(&ferromark::to_html(para));
-                } else {
-                    out.push_str(&ferromark::to_html(para));
-                }
+                out.push_str(&ferromark::to_html(para));
                 buf.clear();
             }
             pos = if line_end == len {
@@ -713,16 +709,13 @@ fn hybrid_paragraph_buffer(input: &str) -> String {
 
     if !buf.is_empty() {
         let para = std::str::from_utf8(&buf).unwrap_or("");
-        if paragraph_has_ref_candidate(para) {
-            out.push_str(&ferromark::to_html(para));
-        } else {
-            out.push_str(&ferromark::to_html(para));
-        }
+        out.push_str(&ferromark::to_html(para));
     }
 
     out
 }
 
+#[allow(dead_code)]
 fn paragraph_has_ref_candidate(input: &str) -> bool {
     // Heuristic: any '[' without immediate ']' + '(' is a candidate
     let bytes = input.as_bytes();
