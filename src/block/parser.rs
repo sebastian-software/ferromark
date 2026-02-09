@@ -877,7 +877,9 @@ impl<'a> BlockParser<'a> {
             }
 
             // Check for footnote definition (`[^label]:`)
-            if self.options.footnotes && first == b'[' && !self.in_paragraph
+            if self.options.footnotes
+                && first == b'['
+                && !self.in_paragraph
                 && self.try_footnote_definition(indent, events)
             {
                 // Parse the rest of the first line as content inside the footnote
@@ -1421,11 +1423,7 @@ impl<'a> BlockParser<'a> {
 
         // Read ASCII alpha type name
         let type_start = self.cursor.offset();
-        while self
-            .cursor
-            .peek()
-            .is_some_and(|b| b.is_ascii_alphabetic())
-        {
+        while self.cursor.peek().is_some_and(|b| b.is_ascii_alphabetic()) {
             self.cursor.bump();
         }
         let type_end = self.cursor.offset();
@@ -1444,11 +1442,7 @@ impl<'a> BlockParser<'a> {
         self.cursor.bump();
 
         // After `]`, only optional whitespace allowed before newline/EOF
-        while self
-            .cursor
-            .peek()
-            .is_some_and(|b| b == b' ' || b == b'\t')
-        {
+        while self.cursor.peek().is_some_and(|b| b == b' ' || b == b'\t') {
             self.cursor.bump();
         }
         if !self.cursor.is_eof() && !self.cursor.at(b'\n') && !self.cursor.at(b'\r') {

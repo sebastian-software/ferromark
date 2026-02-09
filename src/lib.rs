@@ -660,11 +660,12 @@ fn render_block_event(
         BlockEvent::ParagraphEnd => {
             // Check if we're in a tight list (innermost list is tight)
             // BUT: paragraphs inside blockquotes that started AFTER the list need </p> tags
-            let in_tight_list = tight_list_stack
-                .last()
-                .is_some_and(|(tight, bq_depth_at_start)| {
-                    *tight && *blockquote_depth <= *bq_depth_at_start
-                });
+            let in_tight_list =
+                tight_list_stack
+                    .last()
+                    .is_some_and(|(tight, bq_depth_at_start)| {
+                        *tight && *blockquote_depth <= *bq_depth_at_start
+                    });
 
             // Parse all accumulated paragraph content at once
             let content = para_state.finish();

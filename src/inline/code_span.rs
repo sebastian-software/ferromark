@@ -95,8 +95,7 @@ pub fn extract_code_spans(marks: &[Mark]) -> impl Iterator<Item = CodeSpan> + '_
                 // This is an opener, find the closer
                 let opener_end = mark.end;
                 for (j, mark_j) in marks.iter().enumerate().skip(i + 1) {
-                    if mark_j.ch == b'`' && mark_j.is_resolved() && mark_j.len() == mark.len()
-                    {
+                    if mark_j.ch == b'`' && mark_j.is_resolved() && mark_j.len() == mark.len() {
                         let closer_pos = mark_j.pos;
                         let result = CodeSpan {
                             opener_pos: mark.pos,

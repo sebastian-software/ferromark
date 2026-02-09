@@ -1434,10 +1434,7 @@ fn parse_html_comment(text: &[u8], start: usize) -> Option<usize> {
 }
 
 fn parse_html_declaration(text: &[u8], start: usize) -> Option<usize> {
-    if text
-        .get(start + 2)
-        .is_none_or(|b| !b.is_ascii_alphabetic())
-    {
+    if text.get(start + 2).is_none_or(|b| !b.is_ascii_alphabetic()) {
         return None;
     }
     let mut i = start + 2;
