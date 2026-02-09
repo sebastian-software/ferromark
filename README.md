@@ -5,6 +5,7 @@
 [![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
+[![clippy](https://img.shields.io/badge/clippy--strict-passing-brightgreen.svg)](https://doc.rust-lang.org/clippy/)
 
 Markdown to HTML at 309 MiB/s. Faster than pulldown-cmark, md4c (C), and comrak. Passes all 652 CommonMark spec tests. Every GFM extension included.
 
