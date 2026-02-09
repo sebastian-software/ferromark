@@ -218,7 +218,6 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟥</td>
     </tr>
     <tr><td colspan="5"><small>With fewer allocations and tighter hot loops, streaming architectures generally allow higher throughput ceilings. <em>Mapping:</em> ferromark and md4c lead here; pulldown-cmark is close; comrak trades throughput for flexibility.</small></td></tr>
-
     <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Feature Coverage and Extensibility</b></td></tr>
     <tr>
