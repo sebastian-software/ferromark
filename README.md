@@ -115,7 +115,32 @@ let output = render(input);
 // output.front_matter — Some("title: Hello\n")
 ```
 
-The body is valid HTML *and* valid JSX — use it directly for web components, or wrap it in a React component with the ESM statements prepended. Use `render_with_options()` for custom Markdown settings (heading IDs, math, footnotes, etc.).
+Use `render_with_options()` for custom Markdown settings (heading IDs, math, footnotes, etc.).
+
+### Component — ready-to-use JSX module
+
+`to_component()` wraps the output as a complete JSX/TSX module with a named export. Works with React 19, Preact, Solid, and any JSX framework.
+
+```rust
+let output = render(input);
+let tsx = output.to_component("HelloWorld");
+```
+
+```tsx
+import { Card } from './card'
+
+export function HelloWorld() {
+  return (
+    <>
+      <h1 id="hello-world">Hello World</h1>
+      <Card title="Example">
+        <p>Markdown <strong>inside</strong> a component.</p>
+      </Card>
+      {new Date().getFullYear()}
+    </>
+  );
+}
+```
 
 ### Segment — low-level control
 
