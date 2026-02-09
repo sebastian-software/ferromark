@@ -1,5 +1,11 @@
 # ferromark
 
+[![CI](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/ferromark.svg)](https://crates.io/crates/ferromark)
+[![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
+
 Markdown to HTML at 309 MiB/s. Faster than pulldown-cmark, md4c (C), and comrak. Passes all 652 CommonMark spec tests. Every GFM extension included.
 
 ## Quick start
