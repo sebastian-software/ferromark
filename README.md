@@ -421,4 +421,4 @@ src/
 
 ## License
 
-MIT OR Apache-2.0
+MIT -- Copyright 2026 Sebastian Software GmbH, Mainz, Germany
