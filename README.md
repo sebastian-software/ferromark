@@ -53,14 +53,14 @@ The fixtures are synthetic wiki-style documents with paragraphs, lists, code blo
 
 **All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
 
-**Beyond GFM**: Footnotes, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
+**Beyond GFM**: Footnotes, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
 
 **MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
 
-12 feature flags to turn on exactly what you need:
+13 feature flags to turn on exactly what you need:
 
 ```
-allow_html · allow_link_refs · tables · strikethrough · task_lists
+allow_html · allow_link_refs · tables · strikethrough · highlight · task_lists
 autolink_literals · disallowed_raw_html · footnotes · front_matter
 heading_ids · math · callouts
 ```

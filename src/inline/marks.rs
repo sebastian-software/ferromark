@@ -149,6 +149,7 @@ pub static SPECIAL_CHARS: [bool; 256] = {
     table[b'*' as usize] = true; // Emphasis
     table[b'_' as usize] = true; // Emphasis
     table[b'~' as usize] = true; // Strikethrough
+    table[b'=' as usize] = true; // Highlight
     table[b'$' as usize] = true; // Math span
     table[b'\\' as usize] = true; // Escape
     table[b'\n' as usize] = true; // Line break
@@ -211,8 +212,8 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                 }
             }
 
-            b'*' | b'_' | b'~' => {
-                // Count consecutive asterisks/underscores/tildes
+            b'*' | b'_' | b'~' | b'=' => {
+                // Count consecutive delimiter runs for emphasis-like constructs
                 let start = pos;
                 let ch = b;
                 while pos < len && text[pos] == ch {
@@ -220,9 +221,9 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                 }
 
                 // Determine opener/closer status based on surrounding Unicode chars
-                // Tildes use *-style rules (not underscore-style)
+                // Tildes and equals use *-style rules (not underscore-style)
                 let flags = compute_emphasis_flags_with_context(
-                    if ch == b'~' { b'*' } else { ch },
+                    if ch == b'~' || ch == b'=' { b'*' } else { ch },
                     text,
                     start,
                     pos,
@@ -372,6 +373,9 @@ fn next_special(text: &[u8], start: usize) -> Option<usize> {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
     if let Some(i) = memchr::memchr(b'$', slice) {
+        best = Some(best.map_or(i, |b| b.min(i)));
+    }
+    if let Some(i) = memchr::memchr(b'=', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
 
