@@ -22,6 +22,7 @@ unsafe fn mask_has_any(mask: uint8x16_t) -> bool {
     vmaxvq_u8(mask) != 0
 }
 
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 #[inline]
 fn is_inline_special(b: u8, highlight: bool) -> bool {
     matches!(
@@ -30,6 +31,7 @@ fn is_inline_special(b: u8, highlight: bool) -> bool {
     ) || (highlight && b == b'=')
 }
 
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 #[inline]
 fn is_mark_special(b: u8, highlight: bool) -> bool {
     matches!(
@@ -104,11 +106,13 @@ pub unsafe fn next_mark_special_simd(
 }
 
 #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
+#[allow(dead_code)]
 pub fn has_inline_specials_simd(_input: &[u8], _highlight: bool) -> Option<bool> {
     None
 }
 
 #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
+#[allow(dead_code)]
 pub fn next_mark_special_simd(_text: &[u8], _pos: &mut usize, _highlight: bool) -> Option<usize> {
     None
 }

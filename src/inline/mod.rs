@@ -335,6 +335,7 @@ impl InlineParser {
                 self.mark_buffer.marks_mut(),
                 text,
                 &self.link_boundaries,
+                &self.link_dest_ranges,
                 &mut self.highlight_matches,
             );
         } else {

@@ -20,6 +20,7 @@ pub fn resolve_highlight_into(
     marks: &mut [Mark],
     text: &[u8],
     link_boundaries: &[(u32, u32)],
+    link_dest_ranges: &[(u32, u32)],
     matches: &mut Vec<HighlightMatch>,
 ) {
     matches.clear();
@@ -29,6 +30,9 @@ pub fn resolve_highlight_into(
     for i in 0..marks.len() {
         let mark = &marks[i];
         if mark.ch != b'=' || mark.flags & flags::IN_CODE != 0 || mark.len() != 2 {
+            continue;
+        }
+        if pos_in_ranges(mark.pos, link_dest_ranges) {
             continue;
         }
 
@@ -41,6 +45,9 @@ pub fn resolve_highlight_into(
                     continue;
                 }
                 if !same_link_boundary(opener.pos, mark.pos, link_boundaries) {
+                    continue;
+                }
+                if pos_in_ranges(opener.pos, link_dest_ranges) {
                     continue;
                 }
 
@@ -81,4 +88,8 @@ fn same_link_boundary(a: u32, b: u32, boundaries: &[(u32, u32)]) -> bool {
     let a_boundary = boundaries.iter().position(|&(s, e)| a >= s && a < e);
     let b_boundary = boundaries.iter().position(|&(s, e)| b >= s && b < e);
     a_boundary == b_boundary
+}
+
+fn pos_in_ranges(pos: u32, ranges: &[(u32, u32)]) -> bool {
+    ranges.iter().any(|&(start, end)| pos >= start && pos < end)
 }

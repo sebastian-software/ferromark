@@ -54,9 +54,8 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
                         let seg_end = consume_trailing_newline(bytes, end);
                         segments.push(Segment::JsxBlockClose(&input[line_start..seg_end]));
                         if !tag_info.name.is_empty() {
-                            if let Some(top_pos) = tag_stack
-                                .iter()
-                                .rposition(|n| n == tag_info.name)
+                            if let Some(top_pos) =
+                                tag_stack.iter().rposition(|n| n == tag_info.name)
                             {
                                 tag_stack.remove(top_pos);
                             }
@@ -102,8 +101,7 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
         // 4. JSX opening/self-closing tag: `<` followed by letter or `>`
         if first == b'<'
             && first_non_ws + 1 < len
-            && (bytes[first_non_ws + 1].is_ascii_alphabetic()
-                || bytes[first_non_ws + 1] == b'>')
+            && (bytes[first_non_ws + 1].is_ascii_alphabetic() || bytes[first_non_ws + 1] == b'>')
         {
             if let Some(tag_info) = parse_jsx_tag(&bytes[first_non_ws..]) {
                 let end = first_non_ws + tag_info.end_offset;

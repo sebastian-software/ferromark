@@ -99,7 +99,10 @@ pub fn parse_jsx_tag(input: &[u8]) -> Option<TagInfo<'_>> {
 
     // Parse attributes until `>` or `/>`
     pos = skip_whitespace(input, pos);
-    while pos < len && input[pos] != b'>' && !(input[pos] == b'/' && pos + 1 < len && input[pos + 1] == b'>') {
+    while pos < len
+        && input[pos] != b'>'
+        && !(input[pos] == b'/' && pos + 1 < len && input[pos + 1] == b'>')
+    {
         // Attribute: either `{...spread}` or `name` or `name=value`
         if input[pos] == b'{' {
             // Spread attribute or expression

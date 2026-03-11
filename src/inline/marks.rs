@@ -3,6 +3,7 @@
 //! Marks represent potential delimiter positions (backticks, asterisks, etc.)
 //! collected in a single pass before resolution.
 
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use super::simd;
 use crate::limits;
 use memchr::memchr3;
@@ -356,13 +357,21 @@ pub fn collect_marks(text: &[u8], highlight: bool, buffer: &mut MarkBuffer) {
 
 #[inline]
 fn next_special(text: &[u8], start: usize, highlight: bool) -> Option<usize> {
-    let mut pos = start;
-    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-    {
-        if let Some(found) = unsafe { simd::next_mark_special_simd(text, &mut pos, highlight) } {
-            return Some(found);
+    let pos = {
+        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        {
+            let mut pos = start;
+            if let Some(found) = unsafe { simd::next_mark_special_simd(text, &mut pos, highlight) }
+            {
+                return Some(found);
+            }
+            pos
         }
-    }
+        #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
+        {
+            start
+        }
+    };
     let slice = &text[pos..];
     let mut best = None;
 

@@ -81,6 +81,26 @@ fn links_work_inside_highlight() {
 }
 
 #[test]
+fn highlight_works_inside_link_text() {
+    assert_eq!(
+        highlight_html("[==text==](https://example.com)"),
+        "<p><a href=\"https://example.com\"><mark>text</mark></a></p>\n"
+    );
+}
+
+#[test]
+fn highlight_does_not_parse_in_link_destinations() {
+    assert_eq!(
+        highlight_html("[link](https://example.com/?a==b==c)"),
+        "<p><a href=\"https://example.com/?a==b==c\">link</a></p>\n"
+    );
+    assert_eq!(
+        highlight_html("[==text==](https://example.com/?a==b==c==d)"),
+        "<p><a href=\"https://example.com/?a==b==c==d\"><mark>text</mark></a></p>\n"
+    );
+}
+
+#[test]
 fn long_equal_runs_are_literal() {
     assert_eq!(
         highlight_html("===not highlighted==="),
