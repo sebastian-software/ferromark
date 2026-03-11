@@ -25,6 +25,10 @@ pub enum InlineEvent {
     StrikethroughStart,
     /// End of strikethrough.
     StrikethroughEnd,
+    /// Start of highlight/mark (`==text==`).
+    HighlightStart,
+    /// End of highlight/mark.
+    HighlightEnd,
 
     /// Start of a link `[text](url)`.
     LinkStart {

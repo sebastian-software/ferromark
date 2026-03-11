@@ -8,6 +8,7 @@
 mod code_span;
 mod emphasis;
 pub mod event;
+mod highlight;
 mod links;
 pub mod marks;
 mod math;
@@ -22,11 +23,12 @@ use crate::footnote::{FootnoteStore, normalize_footnote_label};
 use crate::link_ref::LinkRefStore;
 use code_span::{CodeSpan, extract_code_spans, resolve_code_spans};
 use emphasis::{EmphasisMatch, EmphasisStacks, resolve_emphasis_with_stacks_into};
+use highlight::{HighlightMatch, resolve_highlight_into};
 use links::{
     Autolink, AutolinkLiteral, Link, RefLink, find_autolink_literals_into, find_autolinks_into,
     resolve_links_into, resolve_reference_links_into,
 };
-use marks::{Mark, MarkBuffer, collect_marks, flags};
+use marks::{Mark, MarkBuffer, collect_marks, collect_marks_highlight, flags};
 use math::{MathSpan, resolve_math_spans};
 use memchr::memchr;
 use strikethrough::{StrikethroughMatch, resolve_strikethrough_into};
@@ -57,6 +59,7 @@ pub struct InlineParser {
     emphasis_stacks: EmphasisStacks,
     emphasis_matches: Vec<EmphasisMatch>,
     strikethrough_matches: Vec<StrikethroughMatch>,
+    highlight_matches: Vec<HighlightMatch>,
     al_code_span_ranges: Vec<(u32, u32)>,
     al_link_ranges: Vec<(u32, u32)>,
     emit_points: Vec<EmitPoint>,
@@ -94,6 +97,7 @@ impl InlineParser {
             emphasis_stacks: EmphasisStacks::default(),
             emphasis_matches: Vec::with_capacity(16),
             strikethrough_matches: Vec::with_capacity(8),
+            highlight_matches: Vec::with_capacity(8),
             al_code_span_ranges: Vec::with_capacity(8),
             al_link_ranges: Vec::with_capacity(8),
             emit_points: Vec::with_capacity(64),
@@ -113,7 +117,9 @@ impl InlineParser {
         allow_html: bool,
         events: &mut Vec<InlineEvent>,
     ) {
-        self.parse_with_options(text, link_refs, allow_html, true, true, false, None, events);
+        self.parse_with_options(
+            text, link_refs, allow_html, true, false, true, false, None, events,
+        );
     }
 
     /// Parse inline content with full GFM options.
@@ -124,12 +130,17 @@ impl InlineParser {
         link_refs: Option<&LinkRefStore>,
         allow_html: bool,
         strikethrough: bool,
+        highlight: bool,
         autolink_literals: bool,
         math: bool,
         footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
-        let has_specials = has_inline_specials(text);
+        let has_specials = if highlight {
+            has_inline_specials_highlight(text)
+        } else {
+            has_inline_specials(text)
+        };
 
         // Check for potential autolink literal triggers when enabled
         let may_have_autolinks = autolink_literals && has_autolink_candidates(text);
@@ -144,7 +155,11 @@ impl InlineParser {
         // Phase 1: Collect marks
         self.mark_buffer.reserve_for_text(text.len());
         if has_specials {
-            collect_marks(text, &mut self.mark_buffer);
+            if highlight {
+                collect_marks_highlight(text, &mut self.mark_buffer);
+            } else {
+                collect_marks(text, &mut self.mark_buffer);
+            }
         } else {
             self.mark_buffer.clear();
         }
@@ -206,8 +221,8 @@ impl InlineParser {
                 .any(|cs| al.start >= cs.opener_pos && al.start < cs.closer_end)
         });
 
-        // Fourth: collect bracket positions and detect emphasis/strikethrough candidates in one pass
-        let (has_emphasis_marks, has_strikethrough_marks) =
+        // Fourth: collect bracket positions and detect inline delimiter candidates in one pass
+        let (has_emphasis_marks, has_strikethrough_marks, has_highlight_marks) =
             Self::collect_brackets_and_scan_emphasis(
                 self.mark_buffer.marks(),
                 &mut self.open_brackets,
@@ -322,7 +337,21 @@ impl InlineParser {
         }
         let strikethrough_matches = self.strikethrough_matches.as_slice();
 
-        // Seventh: autolink literals (bare URLs, www, emails)
+        // Seventh: highlight/mark (after emphasis/strikethrough)
+        if has_highlight_marks && highlight {
+            resolve_highlight_into(
+                self.mark_buffer.marks_mut(),
+                text,
+                &self.link_boundaries,
+                &self.link_dest_ranges,
+                &mut self.highlight_matches,
+            );
+        } else {
+            self.highlight_matches.clear();
+        }
+        let highlight_matches = self.highlight_matches.as_slice();
+
+        // Eighth: autolink literals (bare URLs, www, emails)
         if may_have_autolinks {
             // Build code span ranges for overlap checking (reuse Vec)
             self.al_code_span_ranges.clear();
@@ -353,7 +382,7 @@ impl InlineParser {
             self.autolink_literals.clear();
         }
 
-        // Eighth: footnote references (`[^label]`)
+        // Ninth: footnote references (`[^label]`)
         self.footnote_refs.clear();
         if let Some(fn_store) = footnote_store {
             Self::resolve_footnote_refs(
@@ -377,6 +406,7 @@ impl InlineParser {
             &self.math_spans,
             emphasis_matches,
             strikethrough_matches,
+            highlight_matches,
             &self.autolink_literals,
             resolved_links,
             resolved_ref_links,
@@ -474,12 +504,12 @@ impl InlineParser {
     }
 
     /// Collect bracket positions for link parsing.
-    /// Returns (has_emphasis_marks, has_strikethrough_marks).
+    /// Returns (has_emphasis_marks, has_strikethrough_marks, has_highlight_marks).
     fn collect_brackets_and_scan_emphasis(
         marks: &[Mark],
         open_brackets: &mut Vec<(u32, bool)>,
         close_brackets: &mut Vec<u32>,
-    ) -> (bool, bool) {
+    ) -> (bool, bool, bool) {
         let estimated = (marks.len() / 4).max(4);
         open_brackets.clear();
         close_brackets.clear();
@@ -488,12 +518,15 @@ impl InlineParser {
 
         let mut has_emphasis_marks = false;
         let mut has_strikethrough_marks = false;
+        let mut has_highlight_marks = false;
         for mark in marks {
             if mark.flags & flags::IN_CODE == 0 {
                 if mark.ch == b'*' || mark.ch == b'_' {
                     has_emphasis_marks = true;
                 } else if mark.ch == b'~' {
                     has_strikethrough_marks = true;
+                } else if mark.ch == b'=' {
+                    has_highlight_marks = true;
                 }
             }
             // Skip brackets inside code spans
@@ -513,7 +546,11 @@ impl InlineParser {
                 _ => {}
             }
         }
-        (has_emphasis_marks, has_strikethrough_marks)
+        (
+            has_emphasis_marks,
+            has_strikethrough_marks,
+            has_highlight_marks,
+        )
     }
 
     /// Emit events based on resolved marks.
@@ -525,6 +562,7 @@ impl InlineParser {
         math_spans: &[MathSpan],
         emphasis_matches: &[EmphasisMatch],
         strikethrough_matches: &[StrikethroughMatch],
+        highlight_matches: &[HighlightMatch],
         autolink_literals: &[AutolinkLiteral],
         resolved_links: &[Link],
         resolved_ref_links: &[RefLink],
@@ -555,7 +593,8 @@ impl InlineParser {
             + autolink_literals.len()
             + html_spans.len()
             + (emphasis_matches.len() * 2)
-            + (strikethrough_matches.len() * 2);
+            + (strikethrough_matches.len() * 2)
+            + (highlight_matches.len() * 2);
         emit_points.clear();
         emit_points.reserve(estimated_events.max(8));
         events.reserve(estimated_events.max(8) + 4);
@@ -780,6 +819,20 @@ impl InlineParser {
             });
         }
 
+        // Add highlight events
+        for m in highlight_matches {
+            emit_points.push(EmitPoint {
+                pos: m.opener_start,
+                kind: EmitKind::HighlightStart,
+                end: m.opener_end,
+            });
+            emit_points.push(EmitPoint {
+                pos: m.closer_start,
+                kind: EmitKind::HighlightEnd,
+                end: m.closer_end,
+            });
+        }
+
         // Add footnote reference events
         for fref in footnote_refs {
             emit_points.push(EmitPoint {
@@ -865,6 +918,7 @@ impl InlineParser {
                         | EmitKind::StrongEnd
                         | EmitKind::EmphasisEnd
                         | EmitKind::StrikethroughEnd
+                        | EmitKind::HighlightEnd
                         | EmitKind::LinkEnd
                         | EmitKind::ImageEnd
                 ),
@@ -969,6 +1023,15 @@ impl InlineParser {
                 }
                 EmitKind::StrikethroughEnd => {
                     events.push(InlineEvent::StrikethroughEnd);
+                    skip_until = point.end;
+                }
+                EmitKind::HighlightStart => {
+                    events.push(InlineEvent::HighlightStart);
+                    pos = point.end;
+                    skip_until = point.end;
+                }
+                EmitKind::HighlightEnd => {
+                    events.push(InlineEvent::HighlightEnd);
                     skip_until = point.end;
                 }
                 EmitKind::Escape(ch) => {
@@ -1109,13 +1172,32 @@ impl InlineParser {
 fn has_inline_specials(input: &[u8]) -> bool {
     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     {
-        if let Some(result) = unsafe { simd::has_inline_specials_simd(input) } {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false>(input) } {
             return result;
         }
     }
     for &b in input {
         match b {
             b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' => {
+                return true;
+            }
+            _ => {}
+        }
+    }
+    false
+}
+
+#[inline]
+fn has_inline_specials_highlight(input: &[u8]) -> bool {
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true>(input) } {
+            return result;
+        }
+    }
+    for &b in input {
+        match b {
+            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' => {
                 return true;
             }
             _ => {}
@@ -1212,6 +1294,8 @@ enum EmitKind {
     StrongEnd,
     StrikethroughStart,
     StrikethroughEnd,
+    HighlightStart,
+    HighlightEnd,
     Escape(u8),
     HardBreak,
     SoftBreak,

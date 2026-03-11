@@ -1,7 +1,7 @@
 #![cfg(feature = "mdx")]
 
-use ferromark::mdx::{Segment, render, render_with_options, segment};
 use ferromark::Options;
+use ferromark::mdx::{Segment, render, render_with_options, segment};
 
 // ── Helper ───────────────────────────────────────────────────────────
 
@@ -88,14 +88,11 @@ fn export_const() {
 
 #[test]
 fn export_default() {
-    let input =
-        "export default function Layout({ children }) {\n  return children\n}\n\n# Page\n";
+    let input = "export default function Layout({ children }) {\n  return children\n}\n\n# Page\n";
     let segs = segment(input);
     assert_eq!(
         segs[0],
-        Segment::Esm(
-            "export default function Layout({ children }) {\n  return children\n}\n"
-        )
+        Segment::Esm("export default function Layout({ children }) {\n  return children\n}\n")
     );
     assert_eq!(segs[1], Segment::Markdown("\n# Page\n"));
 }
@@ -197,9 +194,7 @@ fn jsx_with_multiple_attributes() {
     let segs = segment(input);
     assert_eq!(
         segs[0],
-        Segment::JsxBlockOpen(
-            "<Card variant=\"outlined\" size=\"lg\" onClick={handler}>\n"
-        )
+        Segment::JsxBlockOpen("<Card variant=\"outlined\" size=\"lg\" onClick={handler}>\n")
     );
 }
 
@@ -431,8 +426,14 @@ Paragraph with **bold**.
         combined.contains("<strong>bold</strong>"),
         "should render bold"
     );
-    assert!(combined.contains("<h2"), "should contain h2 from inside Box");
-    assert!(combined.contains("<li>one</li>"), "should render list items");
+    assert!(
+        combined.contains("<h2"),
+        "should contain h2 from inside Box"
+    );
+    assert!(
+        combined.contains("<li>one</li>"),
+        "should render list items"
+    );
 }
 
 // ── Ported from mdxjs: ESM edge cases ────────────────────────────────
@@ -534,10 +535,7 @@ fn esm_export_star_as_from() {
 #[test]
 fn esm_export_multiline() {
     let segs = segment("export {\n  a\n} from \"b\"\n\nc\n");
-    assert_eq!(
-        segs[0],
-        Segment::Esm("export {\n  a\n} from \"b\"\n")
-    );
+    assert_eq!(segs[0], Segment::Esm("export {\n  a\n} from \"b\"\n"));
 }
 
 #[test]
@@ -603,10 +601,7 @@ fn not_esm_interrupts_paragraph() {
     // ESM cannot interrupt a paragraph — requires blank line
     let segs = segment("a\nimport a from \"b\"\n");
     assert_eq!(segs.len(), 1);
-    assert_eq!(
-        segs[0],
-        Segment::Markdown("a\nimport a from \"b\"\n")
-    );
+    assert_eq!(segs[0], Segment::Markdown("a\nimport a from \"b\"\n"));
 }
 
 #[test]
@@ -791,10 +786,7 @@ fn interleave_markdown_esm_markdown() {
 fn interleave_esm_then_jsx_with_expression() {
     let input = "import {Pill} from \"./comp.js\"\n\n<Pill>\n{1}\n</Pill>\n";
     let segs = segment(input);
-    assert_eq!(
-        segs[0],
-        Segment::Esm("import {Pill} from \"./comp.js\"\n")
-    );
+    assert_eq!(segs[0], Segment::Esm("import {Pill} from \"./comp.js\"\n"));
     assert!(matches!(segs[1], Segment::Markdown(_))); // blank line
     assert!(matches!(segs[2], Segment::JsxBlockOpen(_)));
     assert_eq!(segs[3], Segment::Expression("{1}\n"));
@@ -933,7 +925,10 @@ fn consecutive_jsx_blocks() {
     let input = "<A />\n<B />\n<C />\n";
     let segs = segment(input);
     assert_eq!(segs.len(), 3);
-    assert!(segs.iter().all(|s| matches!(s, Segment::JsxBlockSelfClose(_))));
+    assert!(
+        segs.iter()
+            .all(|s| matches!(s, Segment::JsxBlockSelfClose(_)))
+    );
 }
 
 #[test]
@@ -994,7 +989,10 @@ Paragraph with **bold**.
 
     // Body contains JSX passthrough
     assert!(out.body.contains("<Card>"), "should pass through JSX open");
-    assert!(out.body.contains("</Card>"), "should pass through JSX close");
+    assert!(
+        out.body.contains("</Card>"),
+        "should pass through JSX close"
+    );
 
     // Body contains expression passthrough
     assert!(
@@ -1081,10 +1079,7 @@ yarn add ferromark
 
     // Rendered markdown
     assert!(out.body.contains("<h1"), "should have h1");
-    assert!(
-        out.body.contains("<code"),
-        "should have code blocks"
-    );
+    assert!(out.body.contains("<code"), "should have code blocks");
 
     // JSX passthrough
     assert!(out.body.contains("<Tabs>"));

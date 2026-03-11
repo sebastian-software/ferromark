@@ -3,6 +3,7 @@
 //! Marks represent potential delimiter positions (backticks, asterisks, etc.)
 //! collected in a single pass before resolution.
 
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use super::simd;
 use crate::limits;
 use memchr::memchr3;
@@ -149,6 +150,7 @@ pub static SPECIAL_CHARS: [bool; 256] = {
     table[b'*' as usize] = true; // Emphasis
     table[b'_' as usize] = true; // Emphasis
     table[b'~' as usize] = true; // Strikethrough
+    table[b'=' as usize] = true; // Highlight
     table[b'$' as usize] = true; // Math span
     table[b'\\' as usize] = true; // Escape
     table[b'\n' as usize] = true; // Line break
@@ -158,16 +160,24 @@ pub static SPECIAL_CHARS: [bool; 256] = {
     table
 };
 
-/// Scan text and collect marks.
-/// Returns the collected marks.
+/// Scan text and collect marks for the default inline syntax set.
 pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
+    collect_marks_impl::<false>(text, buffer);
+}
+
+/// Scan text and collect marks with highlight support enabled.
+pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) {
+    collect_marks_impl::<true>(text, buffer);
+}
+
+fn collect_marks_impl<const HIGHLIGHT: bool>(text: &[u8], buffer: &mut MarkBuffer) {
     buffer.clear();
 
     let mut pos = 0;
     let len = text.len();
 
     while pos < len {
-        let Some(next) = next_special(text, pos) else {
+        let Some(next) = next_special::<HIGHLIGHT>(text, pos) else {
             break;
         };
         pos = next;
@@ -211,8 +221,12 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                 }
             }
 
-            b'*' | b'_' | b'~' => {
-                // Count consecutive asterisks/underscores/tildes
+            b'*' | b'_' | b'~' | b'=' => {
+                if b == b'=' && !HIGHLIGHT {
+                    pos += 1;
+                    continue;
+                }
+                // Count consecutive delimiter runs for emphasis-like constructs
                 let start = pos;
                 let ch = b;
                 while pos < len && text[pos] == ch {
@@ -220,9 +234,9 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
                 }
 
                 // Determine opener/closer status based on surrounding Unicode chars
-                // Tildes use *-style rules (not underscore-style)
+                // Tildes and equals use *-style rules (not underscore-style)
                 let flags = compute_emphasis_flags_with_context(
-                    if ch == b'~' { b'*' } else { ch },
+                    if ch == b'~' || ch == b'=' { b'*' } else { ch },
                     text,
                     start,
                     pos,
@@ -351,14 +365,23 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
 }
 
 #[inline]
-fn next_special(text: &[u8], start: usize) -> Option<usize> {
-    let mut pos = start;
-    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-    {
-        if let Some(found) = unsafe { simd::next_mark_special_simd(text, &mut pos) } {
-            return Some(found);
+fn next_special<const HIGHLIGHT: bool>(text: &[u8], start: usize) -> Option<usize> {
+    let pos = {
+        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        {
+            let mut pos = start;
+            if let Some(found) =
+                unsafe { simd::next_mark_special_simd::<HIGHLIGHT>(text, &mut pos) }
+            {
+                return Some(found);
+            }
+            pos
         }
-    }
+        #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
+        {
+            start
+        }
+    };
     let slice = &text[pos..];
     let mut best = None;
 
@@ -373,6 +396,11 @@ fn next_special(text: &[u8], start: usize) -> Option<usize> {
     }
     if let Some(i) = memchr::memchr(b'$', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
+    }
+    if HIGHLIGHT {
+        if let Some(i) = memchr::memchr(b'=', slice) {
+            best = Some(best.map_or(i, |b| b.min(i)));
+        }
     }
 
     best.map(|i| pos + i)

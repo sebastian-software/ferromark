@@ -45,6 +45,8 @@ pub struct Options {
     pub tables: bool,
     /// Enable GFM strikethrough extension (`~~text~~`).
     pub strikethrough: bool,
+    /// Enable highlight/mark extension (`==text==`).
+    pub highlight: bool,
     /// Enable GFM task list extension (`[ ]` / `[x]`).
     pub task_lists: bool,
     /// Enable GFM autolink literals extension (bare URLs, www, emails).
@@ -70,6 +72,7 @@ impl Default for Options {
             allow_link_refs: true,
             tables: true,
             strikethrough: true,
+            highlight: false,
             task_lists: true,
             autolink_literals: false,
             disallowed_raw_html: true,
@@ -688,6 +691,7 @@ fn render_block_event(
                     refs,
                     options.allow_html,
                     options.strikethrough,
+                    options.highlight,
                     options.autolink_literals,
                     options.math,
                     footnote_store,
@@ -756,6 +760,7 @@ fn render_block_event(
                     refs,
                     options.allow_html,
                     options.strikethrough,
+                    options.highlight,
                     options.autolink_literals,
                     options.math,
                     footnote_store,
@@ -837,6 +842,7 @@ fn render_block_event(
                     refs,
                     options.allow_html,
                     options.strikethrough,
+                    options.highlight,
                     options.autolink_literals,
                     options.math,
                     footnote_store,
@@ -1034,6 +1040,7 @@ fn render_block_event(
                     refs,
                     options.allow_html,
                     options.strikethrough,
+                    options.highlight,
                     options.autolink_literals,
                     options.math,
                     footnote_store,
@@ -1186,6 +1193,16 @@ fn render_inline_event(
         InlineEvent::StrikethroughEnd => {
             if !in_image {
                 writer.write_str("</del>");
+            }
+        }
+        InlineEvent::HighlightStart => {
+            if !in_image {
+                writer.write_str("<mark>");
+            }
+        }
+        InlineEvent::HighlightEnd => {
+            if !in_image {
+                writer.write_str("</mark>");
             }
         }
         InlineEvent::LinkStart { url, title } => {
