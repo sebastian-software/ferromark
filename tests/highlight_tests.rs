@@ -73,6 +73,11 @@ fn code_span_wins_over_highlight() {
 }
 
 #[test]
+fn escaped_highlight_is_literal() {
+    assert_eq!(highlight_html("\\==text=="), "<p>==text==</p>\n");
+}
+
+#[test]
 fn links_work_inside_highlight() {
     assert_eq!(
         highlight_html("==[link](https://example.com)=="),

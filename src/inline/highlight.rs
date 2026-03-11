@@ -41,7 +41,7 @@ pub fn resolve_highlight_into(
             for j in (0..openers.len()).rev() {
                 let opener_idx = openers[j];
                 let opener = &marks[opener_idx];
-                if opener.is_resolved() || opener.len() != 2 {
+                if opener.is_resolved() {
                     continue;
                 }
                 if !same_link_boundary(opener.pos, mark.pos, link_boundaries) {
