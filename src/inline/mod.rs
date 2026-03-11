@@ -28,7 +28,7 @@ use links::{
     Autolink, AutolinkLiteral, Link, RefLink, find_autolink_literals_into, find_autolinks_into,
     resolve_links_into, resolve_reference_links_into,
 };
-use marks::{Mark, MarkBuffer, collect_marks, flags};
+use marks::{Mark, MarkBuffer, collect_marks, collect_marks_highlight, flags};
 use math::{MathSpan, resolve_math_spans};
 use memchr::memchr;
 use strikethrough::{StrikethroughMatch, resolve_strikethrough_into};
@@ -136,7 +136,11 @@ impl InlineParser {
         footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
-        let has_specials = has_inline_specials(text, highlight);
+        let has_specials = if highlight {
+            has_inline_specials_highlight(text)
+        } else {
+            has_inline_specials(text)
+        };
 
         // Check for potential autolink literal triggers when enabled
         let may_have_autolinks = autolink_literals && has_autolink_candidates(text);
@@ -151,7 +155,11 @@ impl InlineParser {
         // Phase 1: Collect marks
         self.mark_buffer.reserve_for_text(text.len());
         if has_specials {
-            collect_marks(text, highlight, &mut self.mark_buffer);
+            if highlight {
+                collect_marks_highlight(text, &mut self.mark_buffer);
+            } else {
+                collect_marks(text, &mut self.mark_buffer);
+            }
         } else {
             self.mark_buffer.clear();
         }
@@ -1161,10 +1169,10 @@ impl InlineParser {
 }
 
 #[inline]
-fn has_inline_specials(input: &[u8], highlight: bool) -> bool {
+fn has_inline_specials(input: &[u8]) -> bool {
     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     {
-        if let Some(result) = unsafe { simd::has_inline_specials_simd(input, highlight) } {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false>(input) } {
             return result;
         }
     }
@@ -1173,7 +1181,25 @@ fn has_inline_specials(input: &[u8], highlight: bool) -> bool {
             b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' => {
                 return true;
             }
-            b'=' if highlight => return true,
+            _ => {}
+        }
+    }
+    false
+}
+
+#[inline]
+fn has_inline_specials_highlight(input: &[u8]) -> bool {
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true>(input) } {
+            return result;
+        }
+    }
+    for &b in input {
+        match b {
+            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' => {
+                return true;
+            }
             _ => {}
         }
     }

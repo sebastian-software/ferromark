@@ -107,7 +107,7 @@ mod tests {
     fn test_simple_inline_math() {
         let text = b"hello $x^2$ world";
         let mut buffer = MarkBuffer::new();
-        collect_marks(text, false, &mut buffer);
+        collect_marks(text, &mut buffer);
         let spans = resolve_math_spans(buffer.marks_mut(), text);
         assert_eq!(spans.len(), 1);
         assert!(!spans[0].is_display);
@@ -119,7 +119,7 @@ mod tests {
     fn test_display_math() {
         let text = b"hello $$E=mc^2$$ world";
         let mut buffer = MarkBuffer::new();
-        collect_marks(text, false, &mut buffer);
+        collect_marks(text, &mut buffer);
         let spans = resolve_math_spans(buffer.marks_mut(), text);
         assert_eq!(spans.len(), 1);
         assert!(spans[0].is_display);
@@ -131,7 +131,7 @@ mod tests {
     fn test_unmatched_dollar() {
         let text = b"hello $ world";
         let mut buffer = MarkBuffer::new();
-        collect_marks(text, false, &mut buffer);
+        collect_marks(text, &mut buffer);
         let spans = resolve_math_spans(buffer.marks_mut(), text);
         assert_eq!(spans.len(), 0);
     }
@@ -140,7 +140,7 @@ mod tests {
     fn test_escaped_dollar() {
         let text = b"hello \\$x\\$ world";
         let mut buffer = MarkBuffer::new();
-        collect_marks(text, false, &mut buffer);
+        collect_marks(text, &mut buffer);
         let spans = resolve_math_spans(buffer.marks_mut(), text);
         assert_eq!(spans.len(), 0);
     }
@@ -149,7 +149,7 @@ mod tests {
     fn test_multiple_math_spans() {
         let text = b"$a$ and $b$";
         let mut buffer = MarkBuffer::new();
-        collect_marks(text, false, &mut buffer);
+        collect_marks(text, &mut buffer);
         let spans = resolve_math_spans(buffer.marks_mut(), text);
         assert_eq!(spans.len(), 2);
     }
