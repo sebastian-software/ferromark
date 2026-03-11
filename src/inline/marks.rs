@@ -160,15 +160,14 @@ pub static SPECIAL_CHARS: [bool; 256] = {
 };
 
 /// Scan text and collect marks.
-/// Returns the collected marks.
-pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
+pub fn collect_marks(text: &[u8], highlight: bool, buffer: &mut MarkBuffer) {
     buffer.clear();
 
     let mut pos = 0;
     let len = text.len();
 
     while pos < len {
-        let Some(next) = next_special(text, pos) else {
+        let Some(next) = next_special(text, pos, highlight) else {
             break;
         };
         pos = next;
@@ -213,6 +212,10 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
             }
 
             b'*' | b'_' | b'~' | b'=' => {
+                if b == b'=' && !highlight {
+                    pos += 1;
+                    continue;
+                }
                 // Count consecutive delimiter runs for emphasis-like constructs
                 let start = pos;
                 let ch = b;
@@ -352,11 +355,11 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
 }
 
 #[inline]
-fn next_special(text: &[u8], start: usize) -> Option<usize> {
+fn next_special(text: &[u8], start: usize, highlight: bool) -> Option<usize> {
     let mut pos = start;
     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     {
-        if let Some(found) = unsafe { simd::next_mark_special_simd(text, &mut pos) } {
+        if let Some(found) = unsafe { simd::next_mark_special_simd(text, &mut pos, highlight) } {
             return Some(found);
         }
     }
@@ -375,8 +378,10 @@ fn next_special(text: &[u8], start: usize) -> Option<usize> {
     if let Some(i) = memchr::memchr(b'$', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
-    if let Some(i) = memchr::memchr(b'=', slice) {
-        best = Some(best.map_or(i, |b| b.min(i)));
+    if highlight {
+        if let Some(i) = memchr::memchr(b'=', slice) {
+            best = Some(best.map_or(i, |b| b.min(i)));
+        }
     }
 
     best.map(|i| pos + i)
@@ -744,7 +749,7 @@ mod tests {
     #[test]
     fn test_collect_backticks() {
         let mut buffer = MarkBuffer::new();
-        collect_marks(b"hello `code` world", &mut buffer);
+        collect_marks(b"hello `code` world", false, &mut buffer);
 
         assert_eq!(buffer.len(), 2);
         assert_eq!(buffer.marks()[0].ch, b'`');
@@ -755,7 +760,7 @@ mod tests {
     #[test]
     fn test_collect_emphasis() {
         let mut buffer = MarkBuffer::new();
-        collect_marks(b"hello *world*", &mut buffer);
+        collect_marks(b"hello *world*", false, &mut buffer);
 
         assert_eq!(buffer.len(), 2);
         assert!(buffer.marks()[0].can_open());
@@ -765,7 +770,7 @@ mod tests {
     #[test]
     fn test_collect_escape() {
         let mut buffer = MarkBuffer::new();
-        collect_marks(b"hello \\* world", &mut buffer);
+        collect_marks(b"hello \\* world", false, &mut buffer);
 
         assert_eq!(buffer.len(), 1);
         assert_eq!(buffer.marks()[0].ch, b'\\');
@@ -775,7 +780,7 @@ mod tests {
     fn test_underscore_intraword() {
         let mut buffer = MarkBuffer::new();
         // Underscores within words should not be openers/closers
-        collect_marks(b"foo_bar_baz", &mut buffer);
+        collect_marks(b"foo_bar_baz", false, &mut buffer);
 
         // Both underscores are intraword - they shouldn't work
         for mark in buffer.marks() {
@@ -796,7 +801,7 @@ mod tests {
         // "*\u{a0}a\u{a0}*" should NOT be emphasis because it's surrounded by whitespace
         let text = "*\u{a0}a\u{a0}*".as_bytes();
         let mut buffer = MarkBuffer::new();
-        collect_marks(text, &mut buffer);
+        collect_marks(text, false, &mut buffer);
 
         // Both asterisks should be considered adjacent to whitespace
         // First * is followed by NBSP (whitespace) - not left-flanking, so can't open
@@ -818,7 +823,7 @@ mod tests {
         // Since it's followed by punct and NOT preceded by space/punct, it's NOT left-flanking
         let text = b"a*\"foo\"*";
         let mut buffer = MarkBuffer::new();
-        collect_marks(text, &mut buffer);
+        collect_marks(text, false, &mut buffer);
 
         // Should have 2 marks for the asterisks
         assert_eq!(buffer.len(), 2);
