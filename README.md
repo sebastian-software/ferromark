@@ -59,7 +59,7 @@ The fixtures are synthetic wiki-style documents with paragraphs, lists, code blo
 
 13 feature flags to turn on exactly what you need:
 
-```
+```text
 allow_html · allow_link_refs · tables · strikethrough · highlight · task_lists
 autolink_literals · disallowed_raw_html · footnotes · front_matter
 heading_ids · math · callouts
@@ -394,7 +394,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark has 12 options; pulldown-cmark and comrak use option structs.</small></td></tr>
+    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark has 13 options; pulldown-cmark and comrak use option structs.</small></td></tr>
     <tr>
       <td><b>Raw HTML control</b></td>
       <td align="center">🟩</td>
