@@ -14,6 +14,8 @@ pub mod marks;
 mod math;
 mod simd;
 mod strikethrough;
+mod subscript;
+mod superscript;
 
 pub use event::InlineEvent;
 pub use links::AutolinkLiteralKind;
@@ -28,10 +30,15 @@ use links::{
     Autolink, AutolinkLiteral, Link, RefLink, find_autolink_literals_into, find_autolinks_into,
     resolve_links_into, resolve_reference_links_into,
 };
-use marks::{Mark, MarkBuffer, collect_marks, collect_marks_highlight, flags};
+use marks::{
+    Mark, MarkBuffer, collect_marks, collect_marks_highlight, collect_marks_highlight_superscript,
+    collect_marks_superscript, flags,
+};
 use math::{MathSpan, resolve_math_spans};
 use memchr::memchr;
 use strikethrough::{StrikethroughMatch, resolve_strikethrough_into};
+use subscript::{SubscriptMatch, resolve_subscript_into};
+use superscript::{SuperscriptMatch, resolve_superscript_into};
 
 /// Inline parser state.
 pub struct InlineParser {
@@ -59,6 +66,8 @@ pub struct InlineParser {
     emphasis_stacks: EmphasisStacks,
     emphasis_matches: Vec<EmphasisMatch>,
     strikethrough_matches: Vec<StrikethroughMatch>,
+    subscript_matches: Vec<SubscriptMatch>,
+    superscript_matches: Vec<SuperscriptMatch>,
     highlight_matches: Vec<HighlightMatch>,
     al_code_span_ranges: Vec<(u32, u32)>,
     al_link_ranges: Vec<(u32, u32)>,
@@ -97,6 +106,8 @@ impl InlineParser {
             emphasis_stacks: EmphasisStacks::default(),
             emphasis_matches: Vec::with_capacity(16),
             strikethrough_matches: Vec::with_capacity(8),
+            subscript_matches: Vec::with_capacity(8),
+            superscript_matches: Vec::with_capacity(8),
             highlight_matches: Vec::with_capacity(8),
             al_code_span_ranges: Vec::with_capacity(8),
             al_link_ranges: Vec::with_capacity(8),
@@ -118,11 +129,11 @@ impl InlineParser {
         events: &mut Vec<InlineEvent>,
     ) {
         self.parse_with_options(
-            text, link_refs, allow_html, true, false, true, false, None, events,
+            text, link_refs, allow_html, true, false, false, false, true, false, None, events,
         );
     }
 
-    /// Parse inline content with full GFM options.
+    /// Parse inline content with configurable inline extensions.
     #[allow(clippy::too_many_arguments)]
     pub fn parse_with_options(
         &mut self,
@@ -131,13 +142,19 @@ impl InlineParser {
         allow_html: bool,
         strikethrough: bool,
         highlight: bool,
+        superscript: bool,
+        subscript: bool,
         autolink_literals: bool,
         math: bool,
         footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
-        let has_specials = if highlight {
+        let has_specials = if highlight && superscript {
+            has_inline_specials_highlight_superscript(text)
+        } else if highlight {
             has_inline_specials_highlight(text)
+        } else if superscript {
+            has_inline_specials_superscript(text)
         } else {
             has_inline_specials(text)
         };
@@ -155,8 +172,12 @@ impl InlineParser {
         // Phase 1: Collect marks
         self.mark_buffer.reserve_for_text(text.len());
         if has_specials {
-            if highlight {
+            if highlight && superscript {
+                collect_marks_highlight_superscript(text, &mut self.mark_buffer);
+            } else if highlight {
                 collect_marks_highlight(text, &mut self.mark_buffer);
+            } else if superscript {
+                collect_marks_superscript(text, &mut self.mark_buffer);
             } else {
                 collect_marks(text, &mut self.mark_buffer);
             }
@@ -222,7 +243,7 @@ impl InlineParser {
         });
 
         // Fourth: collect bracket positions and detect inline delimiter candidates in one pass
-        let (has_emphasis_marks, has_strikethrough_marks, has_highlight_marks) =
+        let (has_emphasis_marks, has_tilde_marks, has_highlight_marks, has_superscript_marks) =
             Self::collect_brackets_and_scan_emphasis(
                 self.mark_buffer.marks(),
                 &mut self.open_brackets,
@@ -326,7 +347,7 @@ impl InlineParser {
         };
 
         // Sixth: strikethrough (after emphasis, since they share the mark buffer)
-        if has_strikethrough_marks && strikethrough {
+        if has_tilde_marks && strikethrough {
             resolve_strikethrough_into(
                 self.mark_buffer.marks_mut(),
                 &self.link_boundaries,
@@ -337,7 +358,35 @@ impl InlineParser {
         }
         let strikethrough_matches = self.strikethrough_matches.as_slice();
 
-        // Seventh: highlight/mark (after emphasis/strikethrough)
+        // Seventh: subscript (after strikethrough, since they share `~`)
+        if has_tilde_marks && subscript {
+            resolve_subscript_into(
+                self.mark_buffer.marks_mut(),
+                text,
+                &self.link_boundaries,
+                &self.link_dest_ranges,
+                &mut self.subscript_matches,
+            );
+        } else {
+            self.subscript_matches.clear();
+        }
+        let subscript_matches = self.subscript_matches.as_slice();
+
+        // Eighth: superscript
+        if has_superscript_marks && superscript {
+            resolve_superscript_into(
+                self.mark_buffer.marks_mut(),
+                text,
+                &self.link_boundaries,
+                &self.link_dest_ranges,
+                &mut self.superscript_matches,
+            );
+        } else {
+            self.superscript_matches.clear();
+        }
+        let superscript_matches = self.superscript_matches.as_slice();
+
+        // Ninth: highlight/mark
         if has_highlight_marks && highlight {
             resolve_highlight_into(
                 self.mark_buffer.marks_mut(),
@@ -351,7 +400,7 @@ impl InlineParser {
         }
         let highlight_matches = self.highlight_matches.as_slice();
 
-        // Eighth: autolink literals (bare URLs, www, emails)
+        // Tenth: autolink literals (bare URLs, www, emails)
         if may_have_autolinks {
             // Build code span ranges for overlap checking (reuse Vec)
             self.al_code_span_ranges.clear();
@@ -382,7 +431,7 @@ impl InlineParser {
             self.autolink_literals.clear();
         }
 
-        // Ninth: footnote references (`[^label]`)
+        // Eleventh: footnote references (`[^label]`)
         self.footnote_refs.clear();
         if let Some(fn_store) = footnote_store {
             Self::resolve_footnote_refs(
@@ -406,6 +455,8 @@ impl InlineParser {
             &self.math_spans,
             emphasis_matches,
             strikethrough_matches,
+            subscript_matches,
+            superscript_matches,
             highlight_matches,
             &self.autolink_literals,
             resolved_links,
@@ -504,12 +555,12 @@ impl InlineParser {
     }
 
     /// Collect bracket positions for link parsing.
-    /// Returns (has_emphasis_marks, has_strikethrough_marks, has_highlight_marks).
+    /// Returns (has_emphasis_marks, has_tilde_marks, has_highlight_marks, has_superscript_marks).
     fn collect_brackets_and_scan_emphasis(
         marks: &[Mark],
         open_brackets: &mut Vec<(u32, bool)>,
         close_brackets: &mut Vec<u32>,
-    ) -> (bool, bool, bool) {
+    ) -> (bool, bool, bool, bool) {
         let estimated = (marks.len() / 4).max(4);
         open_brackets.clear();
         close_brackets.clear();
@@ -517,16 +568,19 @@ impl InlineParser {
         close_brackets.reserve(estimated);
 
         let mut has_emphasis_marks = false;
-        let mut has_strikethrough_marks = false;
+        let mut has_tilde_marks = false;
         let mut has_highlight_marks = false;
+        let mut has_superscript_marks = false;
         for mark in marks {
             if mark.flags & flags::IN_CODE == 0 {
                 if mark.ch == b'*' || mark.ch == b'_' {
                     has_emphasis_marks = true;
                 } else if mark.ch == b'~' {
-                    has_strikethrough_marks = true;
+                    has_tilde_marks = true;
                 } else if mark.ch == b'=' {
                     has_highlight_marks = true;
+                } else if mark.ch == b'^' {
+                    has_superscript_marks = true;
                 }
             }
             // Skip brackets inside code spans
@@ -548,8 +602,9 @@ impl InlineParser {
         }
         (
             has_emphasis_marks,
-            has_strikethrough_marks,
+            has_tilde_marks,
             has_highlight_marks,
+            has_superscript_marks,
         )
     }
 
@@ -562,6 +617,8 @@ impl InlineParser {
         math_spans: &[MathSpan],
         emphasis_matches: &[EmphasisMatch],
         strikethrough_matches: &[StrikethroughMatch],
+        subscript_matches: &[SubscriptMatch],
+        superscript_matches: &[SuperscriptMatch],
         highlight_matches: &[HighlightMatch],
         autolink_literals: &[AutolinkLiteral],
         resolved_links: &[Link],
@@ -594,6 +651,8 @@ impl InlineParser {
             + html_spans.len()
             + (emphasis_matches.len() * 2)
             + (strikethrough_matches.len() * 2)
+            + (subscript_matches.len() * 2)
+            + (superscript_matches.len() * 2)
             + (highlight_matches.len() * 2);
         emit_points.clear();
         emit_points.reserve(estimated_events.max(8));
@@ -819,6 +878,34 @@ impl InlineParser {
             });
         }
 
+        // Add subscript events
+        for m in subscript_matches {
+            emit_points.push(EmitPoint {
+                pos: m.opener_start,
+                kind: EmitKind::SubscriptStart,
+                end: m.opener_end,
+            });
+            emit_points.push(EmitPoint {
+                pos: m.closer_start,
+                kind: EmitKind::SubscriptEnd,
+                end: m.closer_end,
+            });
+        }
+
+        // Add superscript events
+        for m in superscript_matches {
+            emit_points.push(EmitPoint {
+                pos: m.opener_start,
+                kind: EmitKind::SuperscriptStart,
+                end: m.opener_end,
+            });
+            emit_points.push(EmitPoint {
+                pos: m.closer_start,
+                kind: EmitKind::SuperscriptEnd,
+                end: m.closer_end,
+            });
+        }
+
         // Add highlight events
         for m in highlight_matches {
             emit_points.push(EmitPoint {
@@ -918,6 +1005,8 @@ impl InlineParser {
                         | EmitKind::StrongEnd
                         | EmitKind::EmphasisEnd
                         | EmitKind::StrikethroughEnd
+                        | EmitKind::SubscriptEnd
+                        | EmitKind::SuperscriptEnd
                         | EmitKind::HighlightEnd
                         | EmitKind::LinkEnd
                         | EmitKind::ImageEnd
@@ -1023,6 +1112,24 @@ impl InlineParser {
                 }
                 EmitKind::StrikethroughEnd => {
                     events.push(InlineEvent::StrikethroughEnd);
+                    skip_until = point.end;
+                }
+                EmitKind::SubscriptStart => {
+                    events.push(InlineEvent::SubscriptStart);
+                    pos = point.end;
+                    skip_until = point.end;
+                }
+                EmitKind::SubscriptEnd => {
+                    events.push(InlineEvent::SubscriptEnd);
+                    skip_until = point.end;
+                }
+                EmitKind::SuperscriptStart => {
+                    events.push(InlineEvent::SuperscriptStart);
+                    pos = point.end;
+                    skip_until = point.end;
+                }
+                EmitKind::SuperscriptEnd => {
+                    events.push(InlineEvent::SuperscriptEnd);
                     skip_until = point.end;
                 }
                 EmitKind::HighlightStart => {
@@ -1172,7 +1279,7 @@ impl InlineParser {
 fn has_inline_specials(input: &[u8]) -> bool {
     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     {
-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false>(input) } {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false, false>(input) } {
             return result;
         }
     }
@@ -1191,13 +1298,51 @@ fn has_inline_specials(input: &[u8]) -> bool {
 fn has_inline_specials_highlight(input: &[u8]) -> bool {
     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     {
-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true>(input) } {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true, false>(input) } {
             return result;
         }
     }
     for &b in input {
         match b {
             b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' => {
+                return true;
+            }
+            _ => {}
+        }
+    }
+    false
+}
+
+#[inline]
+fn has_inline_specials_superscript(input: &[u8]) -> bool {
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false, true>(input) } {
+            return result;
+        }
+    }
+    for &b in input {
+        match b {
+            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'^' => {
+                return true;
+            }
+            _ => {}
+        }
+    }
+    false
+}
+
+#[inline]
+fn has_inline_specials_highlight_superscript(input: &[u8]) -> bool {
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true, true>(input) } {
+            return result;
+        }
+    }
+    for &b in input {
+        match b {
+            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' | b'^' => {
                 return true;
             }
             _ => {}
@@ -1294,6 +1439,10 @@ enum EmitKind {
     StrongEnd,
     StrikethroughStart,
     StrikethroughEnd,
+    SubscriptStart,
+    SubscriptEnd,
+    SuperscriptStart,
+    SuperscriptEnd,
     HighlightStart,
     HighlightEnd,
     Escape(u8),

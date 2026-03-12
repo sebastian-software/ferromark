@@ -151,6 +151,7 @@ pub static SPECIAL_CHARS: [bool; 256] = {
     table[b'_' as usize] = true; // Emphasis
     table[b'~' as usize] = true; // Strikethrough
     table[b'=' as usize] = true; // Highlight
+    table[b'^' as usize] = true; // Superscript
     table[b'$' as usize] = true; // Math span
     table[b'\\' as usize] = true; // Escape
     table[b'\n' as usize] = true; // Line break
@@ -162,22 +163,35 @@ pub static SPECIAL_CHARS: [bool; 256] = {
 
 /// Scan text and collect marks for the default inline syntax set.
 pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
-    collect_marks_impl::<false>(text, buffer);
+    collect_marks_impl::<false, false>(text, buffer);
 }
 
 /// Scan text and collect marks with highlight support enabled.
 pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) {
-    collect_marks_impl::<true>(text, buffer);
+    collect_marks_impl::<true, false>(text, buffer);
 }
 
-fn collect_marks_impl<const HIGHLIGHT: bool>(text: &[u8], buffer: &mut MarkBuffer) {
+/// Scan text and collect marks with superscript support enabled.
+pub fn collect_marks_superscript(text: &[u8], buffer: &mut MarkBuffer) {
+    collect_marks_impl::<false, true>(text, buffer);
+}
+
+/// Scan text and collect marks with highlight and superscript enabled.
+pub fn collect_marks_highlight_superscript(text: &[u8], buffer: &mut MarkBuffer) {
+    collect_marks_impl::<true, true>(text, buffer);
+}
+
+fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+    text: &[u8],
+    buffer: &mut MarkBuffer,
+) {
     buffer.clear();
 
     let mut pos = 0;
     let len = text.len();
 
     while pos < len {
-        let Some(next) = next_special::<HIGHLIGHT>(text, pos) else {
+        let Some(next) = next_special::<HIGHLIGHT, SUPERSCRIPT>(text, pos) else {
             break;
         };
         pos = next;
@@ -221,8 +235,12 @@ fn collect_marks_impl<const HIGHLIGHT: bool>(text: &[u8], buffer: &mut MarkBuffe
                 }
             }
 
-            b'*' | b'_' | b'~' | b'=' => {
+            b'*' | b'_' | b'~' | b'=' | b'^' => {
                 if b == b'=' && !HIGHLIGHT {
+                    pos += 1;
+                    continue;
+                }
+                if b == b'^' && !SUPERSCRIPT {
                     pos += 1;
                     continue;
                 }
@@ -234,9 +252,13 @@ fn collect_marks_impl<const HIGHLIGHT: bool>(text: &[u8], buffer: &mut MarkBuffe
                 }
 
                 // Determine opener/closer status based on surrounding Unicode chars
-                // Tildes and equals use *-style rules (not underscore-style)
+                // Tildes, carets, and equals use *-style rules (not underscore-style)
                 let flags = compute_emphasis_flags_with_context(
-                    if ch == b'~' || ch == b'=' { b'*' } else { ch },
+                    if ch == b'~' || ch == b'=' || ch == b'^' {
+                        b'*'
+                    } else {
+                        ch
+                    },
                     text,
                     start,
                     pos,
@@ -365,13 +387,16 @@ fn collect_marks_impl<const HIGHLIGHT: bool>(text: &[u8], buffer: &mut MarkBuffe
 }
 
 #[inline]
-fn next_special<const HIGHLIGHT: bool>(text: &[u8], start: usize) -> Option<usize> {
+fn next_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+    text: &[u8],
+    start: usize,
+) -> Option<usize> {
     let pos = {
         #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
         {
             let mut pos = start;
             if let Some(found) =
-                unsafe { simd::next_mark_special_simd::<HIGHLIGHT>(text, &mut pos) }
+                unsafe { simd::next_mark_special_simd::<HIGHLIGHT, SUPERSCRIPT>(text, &mut pos) }
             {
                 return Some(found);
             }
@@ -396,6 +421,11 @@ fn next_special<const HIGHLIGHT: bool>(text: &[u8], start: usize) -> Option<usiz
     }
     if let Some(i) = memchr::memchr(b'$', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
+    }
+    if SUPERSCRIPT {
+        if let Some(i) = memchr::memchr(b'^', slice) {
+            best = Some(best.map_or(i, |b| b.min(i)));
+        }
     }
     if HIGHLIGHT {
         if let Some(i) = memchr::memchr(b'=', slice) {

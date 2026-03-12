@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+* add optional superscript (`^text^`) and subscript (`~text~`) inline extensions
+* tighten strikethrough syntax to `~~text~~` only
+
+### Notes
+
+* single-tilde strikethrough is no longer supported; `~text~` is reserved for subscript when the feature is enabled
+
 ## [0.1.2](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.1...ferromark-v0.1.2) (2026-02-09)
 
 

@@ -53,17 +53,19 @@ The fixtures are synthetic wiki-style documents with paragraphs, lists, code blo
 
 **All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
 
-**Beyond GFM**: Footnotes, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
+**Beyond GFM**: Footnotes, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), superscript (`^text^`), subscript (`~text~`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
 
 **MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
 
-13 feature flags to turn on exactly what you need:
+15 feature flags to turn on exactly what you need:
 
 ```text
-allow_html · allow_link_refs · tables · strikethrough · highlight · task_lists
+allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
 autolink_literals · disallowed_raw_html · footnotes · front_matter
 heading_ids · math · callouts
 ```
+
+Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
 
 ## Trade-offs
 
@@ -212,7 +214,7 @@ Input bytes (&[u8])
 What makes this fast in practice:
 
 - **Block scanning** runs on `memchr` for line boundaries. Container state is a compact stack, not a tree.
-- **Inline parsing** has three phases: collect delimiter marks, resolve precedence (code spans, math, links, emphasis, strikethrough), emit. No backtracking.
+- **Inline parsing** has three phases: collect delimiter marks, resolve precedence (code spans, math, links, emphasis, strikethrough, subscript, superscript, highlight), emit. No backtracking.
 - **Emphasis resolution** uses the CommonMark modulo-3 rule with a delimiter stack instead of expensive rescans.
 - **SIMD scanning** (NEON on ARM) detects special characters in inline content.
 - **Zero-copy references**: events carry `Range` pointers into the input, not copied strings.
@@ -378,7 +380,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>comrak has the broadest catalog; ferromark implements all 5 GFM extensions plus footnotes, front matter, heading IDs, math, and callouts; pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
+    <tr><td colspan="5"><small>comrak has the broadest catalog; ferromark implements all 5 GFM extensions plus footnotes, front matter, heading IDs, math, highlight, subscript, superscript, and callouts; pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
     <tr>
       <td><b>Spec compliance (CommonMark)</b></td>
       <td align="center">🟩</td>
@@ -394,7 +396,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark has 13 options; pulldown-cmark and comrak use option structs.</small></td></tr>
+    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark has 15 options; pulldown-cmark and comrak use option structs.</small></td></tr>
     <tr>
       <td><b>Raw HTML control</b></td>
       <td align="center">🟩</td>
@@ -525,6 +527,8 @@ src/
 │   ├── code_span.rs
 │   ├── emphasis.rs      # Modulo-3 stack optimization
 │   ├── strikethrough.rs # GFM strikethrough resolution
+│   ├── subscript.rs     # Subscript resolution (~text~)
+│   ├── superscript.rs   # Superscript resolution (^text^)
 │   ├── math.rs          # Math span resolution ($/$$ delimiters)
 │   └── links.rs         # Link/image/autolink parsing
 ├── mdx/            # MDX segmenter + renderer (feature = "mdx")

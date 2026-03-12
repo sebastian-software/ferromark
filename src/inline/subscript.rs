@@ -1,44 +1,42 @@
-//! Strikethrough resolution (`~~text~~`).
+//! Subscript resolution (`~text~`).
 //!
-//! Matches double-tilde runs as opener/closer pairs.
-//! Uses same flanking rules as `*` emphasis (already computed in mark collection).
+//! Matches single-tilde runs as opener/closer pairs.
+//! Uses the same flanking rules as `*` emphasis (already computed in mark collection).
 
 use super::marks::{Mark, flags};
 
-/// A matched strikethrough pair.
+/// A matched subscript pair.
 #[derive(Debug, Clone, Copy)]
-pub struct StrikethroughMatch {
+pub struct SubscriptMatch {
     pub opener_start: u32,
     pub opener_end: u32,
     pub closer_start: u32,
     pub closer_end: u32,
 }
 
-/// Resolve strikethrough marks. Matches double-tilde opener/closer runs greedily
+/// Resolve subscript marks. Matches single-tilde pairs greedily
 /// (innermost first, left to right).
-pub fn resolve_strikethrough_into(
+pub fn resolve_subscript_into(
     marks: &mut [Mark],
+    text: &[u8],
     link_boundaries: &[(u32, u32)],
-    matches: &mut Vec<StrikethroughMatch>,
+    link_dest_ranges: &[(u32, u32)],
+    matches: &mut Vec<SubscriptMatch>,
 ) {
     matches.clear();
 
-    // Collect indices of tilde marks that can open
     let mut openers: Vec<usize> = Vec::new();
 
     for i in 0..marks.len() {
         let mark = &marks[i];
-        if mark.ch != b'~' || mark.flags & flags::IN_CODE != 0 {
+        if mark.ch != b'~' || mark.flags & flags::IN_CODE != 0 || mark.len() != 1 {
             continue;
         }
-
-        let run_len = mark.len();
-        if run_len != 2 {
+        if pos_in_ranges(mark.pos, link_dest_ranges) {
             continue;
         }
 
         if mark.can_close() {
-            // Try to find a matching opener (most recent with same run length)
             let mut found = None;
             for j in (0..openers.len()).rev() {
                 let opener_idx = openers[j];
@@ -46,13 +44,18 @@ pub fn resolve_strikethrough_into(
                 if opener.is_resolved() {
                     continue;
                 }
-                if opener.len() != run_len {
-                    continue;
-                }
-                // Must be in same link boundary
                 if !same_link_boundary(opener.pos, mark.pos, link_boundaries) {
                     continue;
                 }
+                if pos_in_ranges(opener.pos, link_dest_ranges) {
+                    continue;
+                }
+
+                let content = &text[opener.end as usize..mark.pos as usize];
+                if content.is_empty() || content.iter().all(|b| matches!(b, b' ' | b'\t' | b'\n')) {
+                    continue;
+                }
+
                 found = Some(j);
                 break;
             }
@@ -62,18 +65,15 @@ pub fn resolve_strikethrough_into(
                 let opener = &marks[opener_idx];
                 let closer = &marks[i];
 
-                matches.push(StrikethroughMatch {
+                matches.push(SubscriptMatch {
                     opener_start: opener.pos,
                     opener_end: opener.end,
                     closer_start: closer.pos,
                     closer_end: closer.end,
                 });
 
-                // Remove openers between opener and closer (they can't match anymore)
-                // and remove the matched opener
                 marks[opener_idx].resolve();
                 marks[i].resolve();
-                // Remove the matched opener and any openers between it and closer
                 openers.truncate(opener_stack_idx);
             } else if mark.can_open() {
                 openers.push(i);
@@ -85,8 +85,11 @@ pub fn resolve_strikethrough_into(
 }
 
 fn same_link_boundary(a: u32, b: u32, boundaries: &[(u32, u32)]) -> bool {
-    // Both must be in the same link boundary (or both outside any)
     let a_boundary = boundaries.iter().position(|&(s, e)| a >= s && a < e);
     let b_boundary = boundaries.iter().position(|&(s, e)| b >= s && b < e);
     a_boundary == b_boundary
+}
+
+fn pos_in_ranges(pos: u32, ranges: &[(u32, u32)]) -> bool {
+    ranges.iter().any(|&(start, end)| pos >= start && pos < end)
 }
