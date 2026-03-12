@@ -47,6 +47,10 @@ pub struct Options {
     pub strikethrough: bool,
     /// Enable highlight/mark extension (`==text==`).
     pub highlight: bool,
+    /// Enable superscript extension (`^text^`).
+    pub superscript: bool,
+    /// Enable subscript extension (`~text~`).
+    pub subscript: bool,
     /// Enable GFM task list extension (`[ ]` / `[x]`).
     pub task_lists: bool,
     /// Enable GFM autolink literals extension (bare URLs, www, emails).
@@ -73,6 +77,8 @@ impl Default for Options {
             tables: true,
             strikethrough: true,
             highlight: false,
+            superscript: false,
+            subscript: false,
             task_lists: true,
             autolink_literals: false,
             disallowed_raw_html: true,
@@ -692,6 +698,8 @@ fn render_block_event(
                     options.allow_html,
                     options.strikethrough,
                     options.highlight,
+                    options.superscript,
+                    options.subscript,
                     options.autolink_literals,
                     options.math,
                     footnote_store,
@@ -761,6 +769,8 @@ fn render_block_event(
                     options.allow_html,
                     options.strikethrough,
                     options.highlight,
+                    options.superscript,
+                    options.subscript,
                     options.autolink_literals,
                     options.math,
                     footnote_store,
@@ -843,6 +853,8 @@ fn render_block_event(
                     options.allow_html,
                     options.strikethrough,
                     options.highlight,
+                    options.superscript,
+                    options.subscript,
                     options.autolink_literals,
                     options.math,
                     footnote_store,
@@ -1041,6 +1053,8 @@ fn render_block_event(
                     options.allow_html,
                     options.strikethrough,
                     options.highlight,
+                    options.superscript,
+                    options.subscript,
                     options.autolink_literals,
                     options.math,
                     footnote_store,
@@ -1193,6 +1207,26 @@ fn render_inline_event(
         InlineEvent::StrikethroughEnd => {
             if !in_image {
                 writer.write_str("</del>");
+            }
+        }
+        InlineEvent::SubscriptStart => {
+            if !in_image {
+                writer.write_str("<sub>");
+            }
+        }
+        InlineEvent::SubscriptEnd => {
+            if !in_image {
+                writer.write_str("</sub>");
+            }
+        }
+        InlineEvent::SuperscriptStart => {
+            if !in_image {
+                writer.write_str("<sup>");
+            }
+        }
+        InlineEvent::SuperscriptEnd => {
+            if !in_image {
+                writer.write_str("</sup>");
             }
         }
         InlineEvent::HighlightStart => {

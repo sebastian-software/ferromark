@@ -21,10 +21,18 @@ pub enum InlineEvent {
     /// End of strong emphasis.
     StrongEnd,
 
-    /// Start of strikethrough (`~~text~~` or `~text~`).
+    /// Start of strikethrough (`~~text~~`).
     StrikethroughStart,
     /// End of strikethrough.
     StrikethroughEnd,
+    /// Start of subscript (`~text~`).
+    SubscriptStart,
+    /// End of subscript.
+    SubscriptEnd,
+    /// Start of superscript (`^text^`).
+    SuperscriptStart,
+    /// End of superscript.
+    SuperscriptEnd,
     /// Start of highlight/mark (`==text==`).
     HighlightStart,
     /// End of highlight/mark.

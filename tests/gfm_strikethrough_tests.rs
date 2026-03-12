@@ -1,11 +1,11 @@
 use ferromark::{Options, to_html, to_html_with_options};
 
-// cmark-gfm extension spec tests
+// ferromark strikethrough syntax tests
 
 #[test]
-fn single_tilde_strikethrough() {
+fn single_tilde_is_literal() {
     let result = to_html("A proper ~strikethrough~.");
-    assert_eq!(result, "<p>A proper <del>strikethrough</del>.</p>\n");
+    assert_eq!(result, "<p>A proper ~strikethrough~.</p>\n");
 }
 
 #[test]
@@ -23,7 +23,7 @@ fn unmatched_single_tilde_closing() {
 #[test]
 fn nested_tilde_in_strikethrough() {
     let result = to_html("This ~is ~ legit~ isn't ~ legit.");
-    assert_eq!(result, "<p>This <del>is ~ legit</del> isn't ~ legit.</p>\n");
+    assert_eq!(result, "<p>This ~is ~ legit~ isn't ~ legit.</p>\n");
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn five_tildes_not_strikethrough() {
 #[test]
 fn one_and_two_tildes() {
     let result = to_html("~one~ ~~two~~ ~~~three~~~");
-    assert_eq!(result, "<p><del>one</del> <del>two</del> ~~~three~~~</p>\n");
+    assert_eq!(result, "<p>~one~ <del>two</del> ~~~three~~~</p>\n");
 }
 
 #[test]
