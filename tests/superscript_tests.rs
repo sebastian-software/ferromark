@@ -92,3 +92,19 @@ fn superscript_does_not_parse_in_link_destinations() {
         "<p><a href=\"https://example.com/^x^\">link</a></p>\n"
     );
 }
+
+#[test]
+fn superscript_does_not_break_footnote_refs() {
+    let result = to_html_with_options(
+        "[^fn] and 2^2^\n\n[^fn]: Footnote",
+        &Options {
+            superscript: true,
+            footnotes: true,
+            heading_ids: false,
+            ..Options::default()
+        },
+    );
+
+    assert!(result.contains("<sup>2</sup>"), "{result}");
+    assert!(result.contains("data-footnote-ref>1</a></sup>"), "{result}");
+}

@@ -311,14 +311,30 @@ impl InlineParser {
         self.autolink_ranges
             .extend(self.autolinks.iter().map(|al| (al.start, al.end)));
 
-        // Fifth: emphasis (lowest precedence)
+        // Fifth: footnote references (`[^label]`)
+        self.footnote_refs.clear();
+        if let Some(fn_store) = footnote_store {
+            Self::resolve_footnote_refs(
+                text,
+                &self.open_brackets,
+                &self.close_brackets,
+                resolved_links,
+                resolved_ref_links,
+                &self.code_spans,
+                fn_store,
+                &mut self.footnote_refs,
+            );
+        }
+
+        // Sixth: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
         self.link_boundaries.clear();
         self.link_boundaries.reserve(
             resolved_links.len()
                 + resolved_ref_links.len()
                 + self.autolinks.len()
-                + self.html_spans.len(),
+                + self.html_spans.len()
+                + self.footnote_refs.len(),
         );
         self.link_boundaries
             .extend(resolved_links.iter().map(|l| (l.start, l.text_end)));
@@ -333,6 +349,10 @@ impl InlineParser {
         for span in &self.html_spans {
             self.link_boundaries.push((span.start, span.end));
         }
+        // Also include resolved footnote references
+        for fref in &self.footnote_refs {
+            self.link_boundaries.push((fref.start, fref.end));
+        }
         let emphasis_matches = if has_emphasis_marks {
             resolve_emphasis_with_stacks_into(
                 self.mark_buffer.marks_mut(),
@@ -346,7 +366,7 @@ impl InlineParser {
             &[]
         };
 
-        // Sixth: strikethrough (after emphasis, since they share the mark buffer)
+        // Seventh: strikethrough (after emphasis, since they share the mark buffer)
         if has_tilde_marks && strikethrough {
             resolve_strikethrough_into(
                 self.mark_buffer.marks_mut(),
@@ -358,7 +378,7 @@ impl InlineParser {
         }
         let strikethrough_matches = self.strikethrough_matches.as_slice();
 
-        // Seventh: subscript (after strikethrough, since they share `~`)
+        // Eighth: subscript (after strikethrough, since they share `~`)
         if has_tilde_marks && subscript {
             resolve_subscript_into(
                 self.mark_buffer.marks_mut(),
@@ -372,7 +392,7 @@ impl InlineParser {
         }
         let subscript_matches = self.subscript_matches.as_slice();
 
-        // Eighth: superscript
+        // Ninth: superscript
         if has_superscript_marks && superscript {
             resolve_superscript_into(
                 self.mark_buffer.marks_mut(),
@@ -386,7 +406,7 @@ impl InlineParser {
         }
         let superscript_matches = self.superscript_matches.as_slice();
 
-        // Ninth: highlight/mark
+        // Tenth: highlight/mark
         if has_highlight_marks && highlight {
             resolve_highlight_into(
                 self.mark_buffer.marks_mut(),
@@ -400,7 +420,7 @@ impl InlineParser {
         }
         let highlight_matches = self.highlight_matches.as_slice();
 
-        // Tenth: autolink literals (bare URLs, www, emails)
+        // Eleventh: autolink literals (bare URLs, www, emails)
         if may_have_autolinks {
             // Build code span ranges for overlap checking (reuse Vec)
             self.al_code_span_ranges.clear();
@@ -429,21 +449,6 @@ impl InlineParser {
             );
         } else {
             self.autolink_literals.clear();
-        }
-
-        // Eleventh: footnote references (`[^label]`)
-        self.footnote_refs.clear();
-        if let Some(fn_store) = footnote_store {
-            Self::resolve_footnote_refs(
-                text,
-                &self.open_brackets,
-                &self.close_brackets,
-                resolved_links,
-                resolved_ref_links,
-                &self.code_spans,
-                fn_store,
-                &mut self.footnote_refs,
-            );
         }
 
         // Phase 3: Emit events

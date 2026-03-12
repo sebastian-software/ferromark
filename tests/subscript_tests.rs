@@ -97,3 +97,11 @@ fn subscript_does_not_parse_in_link_destinations() {
         "<p><a href=\"https://example.com/~x~\">link</a></p>\n"
     );
 }
+
+#[test]
+fn subscript_and_strikethrough_coexist() {
+    assert_eq!(
+        subscript_html("H~2~O and ~~deleted~~"),
+        "<p>H<sub>2</sub>O and <del>deleted</del></p>\n"
+    );
+}

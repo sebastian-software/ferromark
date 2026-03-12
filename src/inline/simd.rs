@@ -104,7 +104,6 @@ pub unsafe fn next_mark_special_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: b
                 // Find first match within the chunk.
                 for i in 0..16 {
                     if is_mark_special::<HIGHLIGHT, SUPERSCRIPT>(text[p + i]) {
-                        *pos = p + 16;
                         return Some(p + i);
                     }
                 }
