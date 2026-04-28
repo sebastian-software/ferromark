@@ -1,5 +1,6 @@
 # ferromark
 
+[![Powered by Sebastian Software](https://img.shields.io/badge/Powered%20by-Sebastian%20Software-00718d?style=flat-square)](https://oss.sebastian-software.com)
 [![CI](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/ferromark.svg)](https://crates.io/crates/ferromark)
 [![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)
@@ -548,4 +549,19 @@ src/
 
 ## License
 
-MIT -- Copyright 2026 Sebastian Software GmbH, Mainz, Germany
+MIT
+
+---
+
+<!-- sebastian-software-branding:start -->
+<p align="center">
+  <a href="https://oss.sebastian-software.com">
+    <img src="https://sebastian-brand.vercel.app/sebastian-software/logo-software.svg" alt="Sebastian Software" width="240" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://oss.sebastian-software.com">Open Source at Sebastian Software</a><br />
+  Copyright &copy; 2026 Sebastian Software GmbH
+</p>
+<!-- sebastian-software-branding:end -->
