@@ -1,0 +1,47 @@
+---
+title: Features and Flags
+---
+
+# Features and Flags
+
+## Standards coverage
+
+- Full CommonMark compliance: 652/652 spec tests pass.
+- All five GFM extensions:
+  - Tables
+  - Strikethrough
+  - Task lists
+  - Autolink literals
+  - Disallowed raw HTML
+
+## Beyond GFM
+
+- Footnotes
+- Front matter extraction (`---` and `+++`)
+- Heading IDs (GitHub-compatible slugs)
+- Math spans (`$` and `$$`)
+- Callouts (`> [!NOTE]`, `> [!WARNING]`, etc.)
+- Highlight (`==text==` renders `<mark>`)
+- Superscript (`^text^` renders `<sup>`)
+- Subscript (`~text~` renders `<sub>`)
+
+## Configuration flags
+
+Enable only what your workload needs:
+
+```text
+allow_html · allow_link_refs · tables · strikethrough · highlight
+superscript · subscript · task_lists · autolink_literals
+disallowed_raw_html · footnotes · front_matter · heading_ids
+math · callouts
+```
+
+## Design trade-offs
+
+ferromark optimizes for streaming Markdown-to-HTML throughput:
+
+- No AST access
+- No source map offsets
+- HTML output only
+
+If you need AST traversal or alternate output formats, choose a parser built for that model.
