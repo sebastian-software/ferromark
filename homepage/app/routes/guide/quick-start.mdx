@@ -1,0 +1,35 @@
+---
+title: Quick Start
+---
+
+# Quick Start
+
+Install the crate and render Markdown to HTML in one call.
+
+```toml
+[dependencies]
+ferromark = "0.1"
+```
+
+```rust
+let html = ferromark::to_html("# Hello\n\n**World**");
+```
+
+## Reuse output buffers
+
+When allocation pressure matters, reuse a `Vec<u8>`:
+
+```rust
+let mut buffer = Vec::new();
+ferromark::to_html_into("# Reuse me", &mut buffer);
+```
+
+## Enable MDX support
+
+MDX support is opt-in via feature flag:
+
+```toml
+ferromark = { version = "0.1", features = ["mdx"] }
+```
+
+See [MDX Examples](/guide/mdx-examples) for full code paths.

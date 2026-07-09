@@ -1,0 +1,71 @@
+---
+title: MDX Examples
+---
+
+# MDX Examples
+
+ferromark can process `.mdx` input without a JavaScript toolchain. Enable the `mdx` feature and choose the integration level that fits your pipeline.
+
+## render()
+
+`render()` returns a structured object with HTML body output plus extracted metadata.
+
+```rust
+use ferromark::mdx::render;
+
+let input = r#"import { Card } from './card'
+
+---
+title: Hello
+---
+
+# Hello World
+
+<Card title="Example">
+
+Markdown **inside** a component.
+
+</Card>
+
+{new Date().getFullYear()}
+"#;
+
+let output = render(input);
+// output.body
+// output.esm
+// output.front_matter
+```
+
+## to_component()
+
+Use `to_component()` to package rendered MDX as a JSX/TSX module.
+
+```rust
+let output = render(input);
+let tsx = output.to_component("HelloWorld");
+```
+
+## segment()
+
+Use `segment()` when you need full control over each block:
+
+```rust
+use ferromark::mdx::{segment, Segment};
+
+for seg in segment(input) {
+    match seg {
+        Segment::Esm(s)               => { /* import/export */ }
+        Segment::Markdown(s)          => { /* parse with to_html */ }
+        Segment::JsxBlockOpen(s)      => { /* <Component> */ }
+        Segment::JsxBlockClose(s)     => { /* </Component> */ }
+        Segment::JsxBlockSelfClose(s) => { /* <Component /> */ }
+        Segment::Expression(s)        => { /* {expression} */ }
+    }
+}
+```
+
+Run the full sample:
+
+```bash
+cargo run --features mdx --example mdx_segment
+```

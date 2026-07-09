@@ -1,0 +1,39 @@
+---
+title: Getting Started
+---
+
+# Getting Started with ferromark
+
+ferromark is a Rust Markdown parser built for high-throughput HTML rendering with full CommonMark compliance.
+
+## What this guide covers
+
+- [Quick Start](/guide/quick-start): install and run the core APIs fast.
+- [Benchmarks](/guide/benchmarks): throughput data and comparison setup.
+- [Features and Flags](/guide/features): everything included in the parser.
+- [MDX Examples](/guide/mdx-examples): how to render and segment `.mdx` input.
+
+## Why teams use ferromark
+
+- 652/652 CommonMark tests pass.
+- All five GFM extensions are available.
+- Additional extensions include footnotes, heading IDs, front matter extraction, math spans, callouts, highlight, superscript, and subscript.
+- Throughput exceeds 200 MiB/s on CommonMark fixtures.
+
+## Core API
+
+```rust
+let html = ferromark::to_html("# Hello\n\n**World**");
+```
+
+Use `to_html_into` to reuse a buffer across calls:
+
+```rust
+let mut buffer = Vec::new();
+ferromark::to_html_into("# Reuse me", &mut buffer);
+```
+
+## Learn more
+
+- [Ardo Documentation](https://sebastian-software.github.io/ardo/)
+- [ferromark GitHub Repository](https://github.com/sebastian-software/ferromark)
