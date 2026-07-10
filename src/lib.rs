@@ -255,7 +255,9 @@ pub fn parse_with_options<'a>(input: &'a str, options: &Options) -> ParseResult<
 pub fn to_html(input: &str) -> String {
     let mut writer = HtmlWriter::with_capacity_for(input.len());
     render_to_writer(input.as_bytes(), &mut writer, &Options::default());
-    writer.into_string()
+    writer
+        .into_string()
+        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
 }
 
 /// Convert Markdown to HTML, writing into a provided buffer.
@@ -280,7 +282,9 @@ pub fn to_html_with_options(input: &str, options: &Options) -> String {
     };
     let mut writer = HtmlWriter::with_capacity_for(markdown.len());
     render_to_writer(markdown.as_bytes(), &mut writer, options);
-    writer.into_string()
+    writer
+        .into_string()
+        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
 }
 
 /// Convert Markdown to HTML into a provided buffer with options.

@@ -49,7 +49,7 @@ fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
 /// writer.write_escaped_text(b"Hello <World>");
 /// writer.write_str("</p>");
 ///
-/// let html = writer.into_string();
+/// let html = writer.into_string().expect("writer output is valid UTF-8");
 /// assert_eq!(html, "<p>Hello &lt;World&gt;</p>");
 /// ```
 pub struct HtmlWriter {
@@ -274,11 +274,10 @@ impl HtmlWriter {
         &self.out
     }
 
-    /// Get output as str (assumes valid UTF-8).
+    /// Get output as a string slice, validating its UTF-8 encoding.
     #[inline]
-    pub fn as_str(&self) -> &str {
-        // SAFETY: We only write valid UTF-8 (ASCII tags + escaped content)
-        unsafe { std::str::from_utf8_unchecked(&self.out) }
+    pub fn as_str(&self) -> Result<&str, std::str::Utf8Error> {
+        std::str::from_utf8(&self.out)
     }
 
     /// Take ownership of output buffer.
@@ -287,18 +286,15 @@ impl HtmlWriter {
         self.out
     }
 
-    /// Take ownership as String.
+    /// Take ownership as a string, validating its UTF-8 encoding.
     #[inline]
-    pub fn into_string(self) -> String {
-        // SAFETY: We only write valid UTF-8
-        unsafe { String::from_utf8_unchecked(self.out) }
+    pub fn into_string(self) -> Result<String, std::string::FromUtf8Error> {
+        String::from_utf8(self.out)
     }
 
-    /// Get mutable reference to internal buffer.
-    ///
-    /// Use with caution - allows bypassing escaping.
+    /// Get mutable access for crate-internal zero-copy rendering operations.
     #[inline]
-    pub fn buffer_mut(&mut self) -> &mut Vec<u8> {
+    pub(crate) fn buffer_mut(&mut self) -> &mut Vec<u8> {
         &mut self.out
     }
 
@@ -874,14 +870,14 @@ mod tests {
     fn test_writer_write_str() {
         let mut writer = HtmlWriter::new();
         writer.write_str("<p>");
-        assert_eq!(writer.as_str(), "<p>");
+        assert_eq!(writer.as_str().unwrap(), "<p>");
     }
 
     #[test]
     fn test_writer_escaped_text() {
         let mut writer = HtmlWriter::new();
         writer.write_escaped_text(b"<script>");
-        assert_eq!(writer.as_str(), "&lt;script&gt;");
+        assert_eq!(writer.as_str().unwrap(), "&lt;script&gt;");
     }
 
     #[test]
@@ -890,7 +886,7 @@ mod tests {
         writer.paragraph_start();
         writer.write_escaped_text(b"Hello");
         writer.paragraph_end();
-        assert_eq!(writer.as_str(), "<p>Hello</p>\n");
+        assert_eq!(writer.as_str().unwrap(), "<p>Hello</p>\n");
     }
 
     #[test]
@@ -899,7 +895,7 @@ mod tests {
         writer.heading_start(1);
         writer.write_escaped_text(b"Title");
         writer.heading_end(1);
-        assert_eq!(writer.as_str(), "<h1>Title</h1>\n");
+        assert_eq!(writer.as_str().unwrap(), "<h1>Title</h1>\n");
     }
 
     #[test]
@@ -909,7 +905,7 @@ mod tests {
             writer.heading_start(level);
             writer.heading_end(level);
             let expected = format!("<h{level}></h{level}>\n");
-            assert_eq!(writer.as_str(), expected);
+            assert_eq!(writer.as_str().unwrap(), expected);
         }
     }
 
@@ -920,7 +916,7 @@ mod tests {
         writer.write_escaped_text(b"fn main() {}");
         writer.code_block_end();
         assert_eq!(
-            writer.as_str(),
+            writer.as_str().unwrap(),
             "<pre><code class=\"language-rust\">fn main() {}</code></pre>\n"
         );
     }
@@ -931,14 +927,14 @@ mod tests {
         writer.code_block_start(None);
         writer.write_escaped_text(b"code");
         writer.code_block_end();
-        assert_eq!(writer.as_str(), "<pre><code>code</code></pre>\n");
+        assert_eq!(writer.as_str().unwrap(), "<pre><code>code</code></pre>\n");
     }
 
     #[test]
     fn test_writer_thematic_break() {
         let mut writer = HtmlWriter::new();
         writer.thematic_break();
-        assert_eq!(writer.as_str(), "<hr />\n");
+        assert_eq!(writer.as_str().unwrap(), "<hr />\n");
     }
 
     #[test]
@@ -947,7 +943,10 @@ mod tests {
         writer.link_start(b"https://example.com", None);
         writer.write_escaped_text(b"link");
         writer.link_end();
-        assert_eq!(writer.as_str(), "<a href=\"https://example.com\">link</a>");
+        assert_eq!(
+            writer.as_str().unwrap(),
+            "<a href=\"https://example.com\">link</a>"
+        );
     }
 
     #[test]
@@ -957,7 +956,7 @@ mod tests {
         writer.write_escaped_text(b"link");
         writer.link_end();
         assert_eq!(
-            writer.as_str(),
+            writer.as_str().unwrap(),
             "<a href=\"https://example.com\" title=\"My Title\">link</a>"
         );
     }
@@ -968,7 +967,7 @@ mod tests {
         writer.link_start(b"https://example.com?a=1&b=2", None);
         writer.link_end();
         assert_eq!(
-            writer.as_str(),
+            writer.as_str().unwrap(),
             "<a href=\"https://example.com?a=1&amp;b=2\"></a>"
         );
     }
@@ -984,15 +983,24 @@ mod tests {
         assert_eq!(writer.out.capacity(), cap1);
 
         writer.write_str("second");
-        assert_eq!(writer.as_str(), "second");
+        assert_eq!(writer.as_str().unwrap(), "second");
     }
 
     #[test]
     fn test_writer_into_string() {
         let mut writer = HtmlWriter::new();
         writer.write_str("<p>Hello</p>");
-        let s = writer.into_string();
+        let s = writer.into_string().unwrap();
         assert_eq!(s, "<p>Hello</p>");
+    }
+
+    #[test]
+    fn writer_string_views_reject_invalid_utf8() {
+        let mut writer = HtmlWriter::new();
+        writer.write_bytes(&[0xff]);
+
+        assert!(writer.as_str().is_err());
+        assert!(writer.into_string().is_err());
     }
 
     #[test]
@@ -1000,7 +1008,7 @@ mod tests {
         let mut writer = HtmlWriter::new();
         writer.ol_start(Some(5));
         writer.ol_end();
-        assert_eq!(writer.as_str(), "<ol start=\"5\">\n</ol>\n");
+        assert_eq!(writer.as_str().unwrap(), "<ol start=\"5\">\n</ol>\n");
     }
 
     #[test]
@@ -1008,21 +1016,21 @@ mod tests {
         let mut writer = HtmlWriter::new();
         writer.ol_start(Some(1));
         writer.ol_end();
-        assert_eq!(writer.as_str(), "<ol>\n</ol>\n");
+        assert_eq!(writer.as_str().unwrap(), "<ol>\n</ol>\n");
     }
 
     #[test]
     fn test_write_u32() {
         let mut writer = HtmlWriter::new();
         writer.write_u32(0);
-        assert_eq!(writer.as_str(), "0");
+        assert_eq!(writer.as_str().unwrap(), "0");
 
         writer.clear();
         writer.write_u32(42);
-        assert_eq!(writer.as_str(), "42");
+        assert_eq!(writer.as_str().unwrap(), "42");
 
         writer.clear();
         writer.write_u32(1234567890);
-        assert_eq!(writer.as_str(), "1234567890");
+        assert_eq!(writer.as_str().unwrap(), "1234567890");
     }
 }
