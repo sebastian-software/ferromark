@@ -49,6 +49,10 @@ harness = false
 name = "footnotes"
 harness = false
 
+[[bench]]
+name = "fenced_code_renderer"
+harness = false
+
 [profile.release]
 lto = "fat"
 codegen-units = 1
