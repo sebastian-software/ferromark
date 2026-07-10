@@ -1,0 +1,68 @@
+{
+  "name": "ferromark",
+  "version": "0.2.0",
+  "description": "Ultra-high-performance Markdown to HTML compiler with a native Rust core",
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://github.com/sebastian-software/ferromark#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferromark.git",
+    "directory": "node/ferromark"
+  },
+  "bugs": {
+    "url": "https://github.com/sebastian-software/ferromark/issues"
+  },
+  "keywords": [
+    "markdown",
+    "html",
+    "commonmark",
+    "gfm",
+    "rust",
+    "napi"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "default": "./index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./index.mjs",
+  "module": "./index.mjs",
+  "types": "./index.d.mts",
+  "files": [
+    "ferromark.*.node",
+    "index.d.mts",
+    "index.mjs",
+    "LICENSE",
+    "native.d.ts",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "node ./scripts/build-native.mjs && node ./scripts/verify-package.mjs",
+    "build:native": "node ./scripts/build-native.mjs",
+    "lint": "node --check index.mjs && node --check scripts/build-native.mjs && node --check scripts/verify-package.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "napi": {
+    "binaryName": "ferromark",
+    "packageName": "ferromark",
+    "targets": [
+      "aarch64-apple-darwin",
+      "aarch64-pc-windows-msvc",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "x86_64-unknown-linux-gnu"
+    ]
+  }
+}

@@ -8,7 +8,7 @@ Install the crate and render Markdown to HTML in one call.
 
 ```toml
 [dependencies]
-ferromark = "0.1"
+ferromark = "0.3"
 ```
 
 ```rust
@@ -29,7 +29,43 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 MDX support is opt-in via feature flag:
 
 ```toml
-ferromark = { version = "0.1", features = ["mdx"] }
+ferromark = { version = "0.3", features = ["mdx"] }
 ```
 
 See [MDX Examples](/guide/mdx-examples) for full code paths.
+
+## Use the Node.js package
+
+Install the native ESM package on Node.js 20 or newer:
+
+```sh
+npm install ferromark
+```
+
+```js
+import { toHtml } from 'ferromark'
+
+const html = toHtml('# Hello', { tables: true })
+```
+
+## Highlight fenced code with Ferriki
+
+An initialized Ferriki highlighter plugs into the Node API without coupling the two Rust cores:
+
+```js
+import { createHighlighter } from 'ferriki'
+import { toHtmlWithHighlighter } from 'ferromark'
+
+const highlighter = await createHighlighter({
+  langs: ['rust'],
+  themes: ['github-dark'],
+})
+
+const html = toHtmlWithHighlighter(
+  '```rust\nfn main() {}\n```',
+  highlighter,
+  { theme: 'github-dark' },
+)
+```
+
+Highlighter errors fall back to escaped code-block output.

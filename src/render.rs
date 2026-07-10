@@ -495,6 +495,14 @@ impl HtmlWriter {
         escape::escape_full_into(&mut self.out, decoded.as_bytes());
     }
 
+    /// Decode the language word from a CommonMark fenced-code info string.
+    pub(crate) fn decode_info_word(info: &[u8]) -> String {
+        let first = Self::first_word(info);
+        let unescaped = Self::unescape_backslashes(first);
+        let info_str = core::str::from_utf8(&unescaped).unwrap_or("");
+        decode_entities_commonmark(info_str).into_owned()
+    }
+
     fn unescape_backslashes(input: &[u8]) -> Vec<u8> {
         let mut out = Vec::with_capacity(input.len());
         let mut i = 0usize;

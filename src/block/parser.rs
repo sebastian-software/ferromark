@@ -27,7 +27,7 @@ macro_rules! parser_cursor_advance {
     }};
 }
 
-use super::event::{Alignment, BlockEvent, CalloutType, ListKind, TaskState};
+use super::event::{Alignment, BlockEvent, CalloutType, CodeBlockKind, ListKind, TaskState};
 use crate::Options;
 use crate::footnote::{FootnoteStore, normalize_footnote_label};
 use crate::link_ref::{LinkRefDef, LinkRefStore, normalize_label_into};
@@ -2217,7 +2217,9 @@ impl<'a> BlockParser<'a> {
         } else {
             None
         };
-        events.push(BlockEvent::CodeBlockStart { info });
+        events.push(BlockEvent::CodeBlockStart {
+            kind: CodeBlockKind::Fenced { info },
+        });
 
         true
     }
@@ -2235,7 +2237,9 @@ impl<'a> BlockParser<'a> {
         self.in_indented_code = true;
         // Store the excess columns (indent_cols - 4) to prepend as spaces
         self.indented_code_extra_spaces = indent_cols.saturating_sub(4);
-        events.push(BlockEvent::CodeBlockStart { info: None });
+        events.push(BlockEvent::CodeBlockStart {
+            kind: CodeBlockKind::Indented,
+        });
 
         // The cursor is past the whitespace bytes.
         // The cursor is past the whitespace bytes.
@@ -4020,7 +4024,9 @@ mod tests {
 
     fn get_info<'a>(input: &'a str, event: &BlockEvent) -> Option<&'a str> {
         match event {
-            BlockEvent::CodeBlockStart { info } => info
+            BlockEvent::CodeBlockStart {
+                kind: CodeBlockKind::Fenced { info },
+            } => info
                 .as_ref()
                 .map(|r| std::str::from_utf8(r.slice(input.as_bytes())).unwrap()),
             _ => panic!("Expected CodeBlockStart event"),
