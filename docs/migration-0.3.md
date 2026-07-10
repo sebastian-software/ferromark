@@ -47,3 +47,21 @@ impl FencedCodeRenderer for Highlighter {
 The renderer receives the decoded language word and raw code only for fenced blocks. `TrustedHtml` is emitted verbatim even under `RenderPolicy::Untrusted`; the renderer must escape every untrusted value it embeds. Indented code and a renderer that returns `None` keep the existing safe output.
 
 `BlockEvent::CodeBlockStart` now contains a `CodeBlockKind`, allowing event consumers to distinguish fenced blocks without languages from indented code blocks.
+
+## Use ferromark from Node.js
+
+ferromark 0.3 ships an ESM-first native Node package for Node.js 20 and newer:
+
+```sh
+npm install ferromark
+```
+
+```js
+import { toHtml } from 'ferromark'
+
+const html = toHtml('# Hello', { tables: true })
+```
+
+The npm package follows the Rust crate version and exposes the supported Rust options in generated TypeScript declarations. It currently supports x64 and arm64 on macOS, Windows, and glibc Linux. There is no WASM or musl fallback in 0.3.
+
+For fenced-code highlighting, pass an initialized Ferriki-compatible highlighter to `toHtmlWithHighlighter`. The complete Ferriki example lives in `node/ferromark/README.md`.
