@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.4](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.3...ferromark-v0.1.4) (2026-07-10)
+
+
+### Features
+
+* add highlight mark extension ([a7cda59](https://github.com/sebastian-software/ferromark/commit/a7cda59ae7a1c9c73c746562db78c41240cfe20d))
+* add highlight mark extension ([a52f632](https://github.com/sebastian-software/ferromark/commit/a52f63281b89bcd598655e2f45ea47a555925d28))
+* add homepage with GitHub Pages deploy ([a34d23b](https://github.com/sebastian-software/ferromark/commit/a34d23b68144b98549ccdc1c48e8d93f92e5ce36))
+* add subscript and superscript syntax ([d4e92dc](https://github.com/sebastian-software/ferromark/commit/d4e92dc9148b43b5ac8fc3292eb31feb8c58c1f5))
+* add subscript and superscript syntax ([739b96a](https://github.com/sebastian-software/ferromark/commit/739b96a5f35aebaaef1aa09b70cbbef242738b2b))
+
+
+### Bug Fixes
+
+* address highlight review follow-ups ([3637a21](https://github.com/sebastian-software/ferromark/commit/3637a213f44f607c1195d7b74b6c72a179604fe6))
+* replace O(n^2) heading ID dedup scan with hash map lookup ([301d493](https://github.com/sebastian-software/ferromark/commit/301d493af12a2a61112f25c980640a9fa41460ad))
+* resolve heading ID perf regression, restore benchmark lead ([cbe7adf](https://github.com/sebastian-software/ferromark/commit/cbe7adf093d755331edac6ed0bf823b32a43172c))
+
+
+### Performance Improvements
+
+* gate highlight scanning behind option ([d9a8cea](https://github.com/sebastian-software/ferromark/commit/d9a8cea89fe10ecd999a4bdc0b09ad82f6456dfc))
+* make heading ID generation allocation-free per heading ([057fcda](https://github.com/sebastian-software/ferromark/commit/057fcda974e9f836db53ef775312ac05ce37121b))
+* specialize highlight scanner fast paths ([5b49bdb](https://github.com/sebastian-software/ferromark/commit/5b49bdb47fd355eebda331e4338e78b2e39ac564))
+
 ## [0.1.3](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.2...ferromark-v0.1.3) (2026-02-09)
 
 
