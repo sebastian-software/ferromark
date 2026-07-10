@@ -198,15 +198,26 @@ to handle longer documents efficiently.
     }
 }
 
+/// Options for the cross-parser comparison: GFM extensions on, but non-GFM
+/// extras (heading IDs, callouts) off so every parser performs the same work.
+/// pulldown-cmark, md4c, and comrak generate no heading IDs in this setup.
+fn ferromark_comparison_options() -> ferromark::Options {
+    ferromark::Options {
+        heading_ids: false,
+        callouts: false,
+        ..Default::default()
+    }
+}
+
 /// Parse with ferromark
 fn parse_ferromark(input: &str) -> String {
-    ferromark::to_html(input)
+    ferromark::to_html_with_options(input, &ferromark_comparison_options())
 }
 
 /// Parse with ferromark into a reusable buffer
 fn parse_ferromark_into(input: &str, out: &mut Vec<u8>) {
     out.clear();
-    ferromark::to_html_into(input, out);
+    ferromark::to_html_into_with_options(input, out, &ferromark_comparison_options());
 }
 
 /// Parse with pulldown-cmark (tables enabled)

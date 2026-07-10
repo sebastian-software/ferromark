@@ -4,27 +4,27 @@ title: Benchmarks
 
 # Benchmarks
 
-Apple Silicon (M-series), July 2026. All parsers run with GFM tables, strikethrough, and task lists enabled. Output buffers are reused where APIs allow. Binaries are non-PGO for a fair comparison.
+Apple Silicon (M-series), July 2026. All parsers run with GFM tables, strikethrough, and task lists enabled; ferromark's non-GFM extras (heading IDs, callouts) are disabled so every parser performs the same work. Output buffers are reused where APIs allow. Binaries are non-PGO for a fair comparison.
 
 ## CommonMark 5 KB
 
 | Parser | Throughput | vs ferromark |
 | --- | ---: | ---: |
-| **ferromark** | **222.7 MiB/s** | **baseline** |
-| pulldown-cmark | 249.0 MiB/s | 1.12x |
-| md4c (C) | 235.4 MiB/s | 1.06x |
-| comrak | 67.9 MiB/s | 0.31x |
+| **ferromark** | **259.6 MiB/s** | **baseline** |
+| pulldown-cmark | 254.5 MiB/s | 0.98x |
+| md4c (C) | 243.1 MiB/s | 0.94x |
+| comrak | 67.9 MiB/s | 0.26x |
 
 ## CommonMark 50 KB
 
 | Parser | Throughput | vs ferromark |
 | --- | ---: | ---: |
-| **ferromark** | **208.7 MiB/s** | **baseline** |
-| pulldown-cmark | 264.9 MiB/s | 1.27x |
-| md4c (C) | 243.5 MiB/s | 1.17x |
-| comrak | 69.2 MiB/s | 0.33x |
+| **ferromark** | **280.5 MiB/s** | **baseline** |
+| pulldown-cmark | 275.2 MiB/s | 0.98x |
+| md4c (C) | 253.3 MiB/s | 0.90x |
+| comrak | 71.8 MiB/s | 0.26x |
 
-Summary: ferromark plays in the same league as pulldown-cmark and md4c on these fixtures and is roughly 3x faster than comrak.
+Summary: 2% faster than pulldown-cmark, 11% faster than md4c, and roughly 4x faster than comrak on this fixture set. Competitor versions: pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
 
 ## Reproduce locally
 
