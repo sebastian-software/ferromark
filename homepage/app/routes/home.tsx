@@ -3,10 +3,10 @@ import "../styles/home.css"
 
 export default function HomePage() {
   const benchmarks = [
-    { parser: "ferromark", throughput: "273.2 MiB/s", ratio: "baseline" },
-    { parser: "pulldown-cmark", throughput: "260.8 MiB/s", ratio: "0.95x" },
-    { parser: "md4c (C)", throughput: "243.3 MiB/s", ratio: "0.89x" },
-    { parser: "comrak", throughput: "69.8 MiB/s", ratio: "0.26x" },
+    { parser: "ferromark", throughput: "280.5 MiB/s", ratio: "baseline" },
+    { parser: "pulldown-cmark", throughput: "275.2 MiB/s", ratio: "0.98x" },
+    { parser: "md4c (C)", throughput: "253.3 MiB/s", ratio: "0.90x" },
+    { parser: "comrak", throughput: "71.8 MiB/s", ratio: "0.26x" },
   ]
 
   const featureColumns = [
@@ -59,7 +59,7 @@ export default function HomePage() {
     <main className="landing">
       <section className="hero">
         <p className="eyebrow">Rust Markdown Engine</p>
-        <h1>Markdown to HTML at 273 MiB/s</h1>
+        <h1>Markdown to HTML at 280 MiB/s</h1>
         <p className="lead">
           ferromark is a streaming parser focused on one job: turning Markdown into HTML faster than
           pulldown-cmark, md4c, and comrak while staying fully CommonMark compliant.

@@ -393,51 +393,13 @@ impl HeadingState {
     }
 }
 
-/// Fast non-cryptographic string hasher (FxHash algorithm, as used by rustc).
-/// Heading slugs are short and not a hash-DoS surface, so SipHash's cost is
-/// not warranted; HashMap key equality keeps collisions correct regardless.
-#[derive(Default)]
-struct FxHasher {
-    hash: u64,
-}
-
-impl FxHasher {
-    const SEED: u64 = 0x51_7c_c1_b7_27_22_0a_95;
-
-    #[inline]
-    fn add(&mut self, v: u64) {
-        self.hash = (self.hash.rotate_left(5) ^ v).wrapping_mul(Self::SEED);
-    }
-}
-
-impl std::hash::Hasher for FxHasher {
-    #[inline]
-    fn write(&mut self, bytes: &[u8]) {
-        let mut chunks = bytes.chunks_exact(8);
-        for chunk in &mut chunks {
-            self.add(u64::from_le_bytes(chunk.try_into().unwrap()));
-        }
-        let rem = chunks.remainder();
-        if !rem.is_empty() {
-            let mut buf = [0u8; 8];
-            buf[..rem.len()].copy_from_slice(rem);
-            self.add(u64::from_le_bytes(buf));
-            self.add(rem.len() as u64);
-        }
-    }
-
-    #[inline]
-    fn finish(&self) -> u64 {
-        self.hash
-    }
-}
-
-type FxBuildHasher = std::hash::BuildHasherDefault<FxHasher>;
-
 /// Tracker for deduplicating heading IDs.
+///
+/// Uses the crate's fast non-cryptographic hasher: heading slugs are short
+/// and not a hash-DoS surface, so SipHash's cost is not warranted.
 struct HeadingIdTracker {
     /// Maps a base slug to how many times it has been seen so far.
-    used: std::collections::HashMap<String, usize, FxBuildHasher>,
+    used: std::collections::HashMap<String, usize, rustc_hash::FxBuildHasher>,
     /// Reusable buffer holding the id returned by `make_id`.
     slug_buf: Vec<u8>,
 }
@@ -447,7 +409,7 @@ impl HeadingIdTracker {
         Self {
             used: std::collections::HashMap::with_capacity_and_hasher(
                 32,
-                FxBuildHasher::default(),
+                rustc_hash::FxBuildHasher,
             ),
             slug_buf: Vec::with_capacity(64),
         }

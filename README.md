@@ -8,7 +8,7 @@
 [![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
 [![clippy](https://img.shields.io/badge/clippy--strict-passing-brightgreen.svg)](https://doc.rust-lang.org/clippy/)
 
-Markdown to HTML at 273 MiB/s. Faster than pulldown-cmark, md4c (C), and comrak. Passes all 652 CommonMark spec tests. Every GFM extension included.
+Markdown to HTML at 280 MiB/s. Faster than pulldown-cmark, md4c (C), and comrak. Passes all 652 CommonMark spec tests. Every GFM extension included.
 
 ## Quick start
 
@@ -31,20 +31,20 @@ Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run wi
 **CommonMark 5 KB** (wiki-style, mixed content with tables)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
-| **ferromark** | **250.9 MiB/s** | **baseline** |
-| pulldown-cmark | 244.5 MiB/s | 0.97x |
-| md4c (C) | 235.4 MiB/s | 0.94x |
-| comrak | 66.8 MiB/s | 0.27x |
+| **ferromark** | **259.6 MiB/s** | **baseline** |
+| pulldown-cmark | 254.5 MiB/s | 0.98x |
+| md4c (C) | 243.1 MiB/s | 0.94x |
+| comrak | 67.9 MiB/s | 0.26x |
 
 **CommonMark 50 KB** (same style, scaled)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
-| **ferromark** | **273.2 MiB/s** | **baseline** |
-| pulldown-cmark | 260.8 MiB/s | 0.95x |
-| md4c (C) | 243.3 MiB/s | 0.89x |
-| comrak | 69.8 MiB/s | 0.26x |
+| **ferromark** | **280.5 MiB/s** | **baseline** |
+| pulldown-cmark | 275.2 MiB/s | 0.98x |
+| md4c (C) | 253.3 MiB/s | 0.90x |
+| comrak | 71.8 MiB/s | 0.26x |
 
-5% faster than pulldown-cmark. 12% faster than md4c. 4x faster than comrak.
+2% faster than pulldown-cmark. 11% faster than md4c. 4x faster than comrak. Competitor versions: pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
 
 The fixtures are synthetic wiki-style documents with paragraphs, lists, code blocks, and tables. Nothing cherry-picked. Run them yourself: `cargo bench --bench comparison`
 
