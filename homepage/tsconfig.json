@@ -11,7 +11,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["vite/client", "ardo/virtual"]
   },
   "include": ["app/**/*", "*.ts", "*.config.ts"],
   "exclude": ["node_modules", "build"]

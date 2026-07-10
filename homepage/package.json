@@ -6,22 +6,25 @@
   "packageManager": "pnpm@11.10.0",
   "scripts": {
     "dev": "react-router dev",
-    "build": "react-router build",
+    "build": "react-router build && node scripts/verify-build.mjs",
     "preview": "vite preview",
     "audit": "pnpm audit --prod --audit-level high"
   },
   "dependencies": {
-    "ardo": "^2.8.0",
+    "@ferramenta/ardo-config": "git+https://github.com/sebastian-software/ferramenta.git#557b21484a2e58a33a61763a4871c5c8e1575cc0&path:packages/ardo-config",
+    "ardo": "^4.1.0",
     "isbot": "*",
-    "react": "*",
-    "react-dom": "*",
-    "react-router": "^7.18.1"
+    "lucide-react": "^1.24.0",
+    "mermaid": "^11.16.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router": "^8.2.0"
   },
   "devDependencies": {
-    "@react-router/dev": "^7.18.1",
+    "@react-router/dev": "^8.2.0",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.9.3",
-    "vite": "^7.3.5"
+    "vite": "^8.1.4"
   }
 }
