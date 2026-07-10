@@ -15,9 +15,9 @@
 | Inline parsing timing | Inline processing occurs after refdefs are known (no streaming). `3/5` | Inline passes run in second pass when needed. `4/5` | Inline parsing is streaming per paragraph after refdef extraction. `4/5` | ferromark has best streaming potential. |
 | Inline emphasis algorithm | Delimiter stack with marks + backtracking. `4/5` | Delimiter stack with multi-pass inline resolution. `4/5` | Delimiter + mark stack; multi-phase inline emit. `4/5` | Comparable approaches; perf tuning is key. |
 | Link destination paren limit | 32-level nesting limit. `5/5` | `LINK_MAX_NESTED_PARENS = 32`. `5/5` | `MAX_LINK_PAREN_DEPTH = 32`. `5/5` | All align with CommonMark safety allowance. |
-| Ref-def expansion limit | Limits total refdef expansion output size. `4/5` | `link_ref_expansion_limit` default `max(text.len(), 100_000)`. `4/5` | `MAX_LINK_REF_EXPANSIONS = 100 * 1024`. `4/5` | Prevents recursive expansion DoS. |
+| Ref-def expansion limit | Limits total refdef expansion output size. `4/5` | `link_ref_expansion_limit` default `max(text.len(), 100_000)`. `4/5` | Reference definitions resolve by index without recursive output expansion. `4/5` | ferromark does not expose a recursive expansion path that needs a count limit. |
 | HTML block parsing | Dedicated HTML block types; early termination by tag/end conditions. `4/5` | HTML block types with scanner-driven detection. `4/5` | HTML block parsing exists but must match all CommonMark block types precisely. `3/5` | NEEDS WORK: verify all 7 HTML block types + termination rules. |
-| Raw HTML passthrough | Preserves HTML block/inline by default. `4/5` | Preserves HTML block/inline by default. `4/5` | Preserves HTML block/inline by default. `4/5` | Rendering should align; ensure escaping rules for HTML blocks vs inline are spec-accurate. |
+| Raw HTML passthrough | Preserves HTML block/inline by default. `4/5` | Preserves HTML block/inline by default. `4/5` | Escapes raw HTML by default; `RenderPolicy::Trusted` enables explicit passthrough. `4/5` | CommonMark passthrough tests use the trusted policy; browser-facing defaults use the untrusted boundary. |
 | List tightness | Computes tight/loose lists from blank line adjacency. `4/5` | Tightness computed in first pass with list metadata. `4/5` | Tightness computed during block parse with container state. `4/5` | Ensure behavior matches CommonMark edge cases (blank lines in list items). |
 | Setext handling | Special-case underline line; supports refdef stripping before setext conversion. `4/5` | Setext handling in first pass with refdef interruption rules. `4/5` | Strips refdefs before setext conversion. `4/5` | All align with spec approach. |
 | Autolinks | Dedicated scan for `<...>` and email autolinks. `4/5` | Scanner-based autolink parsing. `4/5` | Inline autolinks implemented. `4/5` | Verify edge cases (punct, unicode, angle constraints). |
@@ -28,7 +28,7 @@
 | Memory layout | Central block buffer; refdefs array; hashtable built after. `4/5` | Tree + pooled allocations for strings. `4/5` | Streaming buffers; event vectors preallocated. `4/5` | All efficient; ferromark benefits from event preallocation. |
 | Streaming output latency | Lower (needs post-pass). `3/5` | Medium (two-pass). `3/5` | Higher streaming potential (single pass + buffered refdef extraction). `4/5` | ferromark best aligned with streaming output. |
 | SIMD / CPU tuning | C baseline; easy SIMD spots in scanners. `3/5` | Rust baseline; some hotspots in scanners. `3/5` | Rust baseline; hotspots identified by profiling. `3/5` | NEEDS WORK: add SIMD or memchr-heavy paths where safe. |
-| DoS limits | Hard limits for nesting, parsing guards. `4/5` | Several limits (link parens, etc). `4/5` | Central `limits.rs` with sane caps. `4/5` | All good; verify limits align with CommonMark allowance. |
+| DoS limits | Hard limits for nesting, parsing guards. `4/5` | Several limits (link parens, etc). `4/5` | Enforced caps for block nesting, inline marks, code-span runs, link parentheses, list digits, and table columns. `4/5` | Each ferromark constant maps to a parser path and a black-box boundary test. Footnote numbering is uncapped and linear. |
 
 **Primary references**
 - md4c ref-def dictionary and Unicode folding: `../md4c/src/md4c.c:1560`.
@@ -47,4 +47,3 @@
 - SIMD or scanner-level acceleration on hot paths.
 - Re-evaluate label normalization vs full Unicode folding rules.
 - Autolink and HTML edge cases in CommonMark conformance tests.
-

@@ -248,7 +248,7 @@ What makes this fast in practice:
 
 - **Linear time.** No regex, no backtracking, no quadratic blowup on adversarial input.
 - **Low allocation pressure.** Compact events, range references, reusable output buffers.
-- **Operational safety.** Depth and size limits guard against pathological nesting.
+- **Operational safety.** Enforced limits cap block nesting (32), inline marks (4,096), code-span backtick runs (32), link-destination parenthesis depth (32), ordered-list marker digits (9), and table columns (128). Footnote numbering has no arbitrary count cap; its definition-index lookup stays O(1) per reference.
 - **Small dependency surface.** Minimal crates, straightforward integration.
 
 <details>
