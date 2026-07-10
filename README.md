@@ -8,7 +8,7 @@
 [![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
 [![clippy](https://img.shields.io/badge/clippy--strict-passing-brightgreen.svg)](https://doc.rust-lang.org/clippy/)
 
-Markdown to HTML at 309 MiB/s. Faster than pulldown-cmark, md4c (C), and comrak. Passes all 652 CommonMark spec tests. Every GFM extension included.
+Markdown to HTML at 273 MiB/s. Faster than pulldown-cmark, md4c (C), and comrak. Passes all 652 CommonMark spec tests. Every GFM extension included.
 
 ## Quick start
 
@@ -26,25 +26,25 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 
 ## Benchmarks
 
-Numbers, not adjectives. Apple Silicon (M-series), February 2026. All parsers run with GFM tables, strikethrough, and task lists enabled. Output buffers reused where APIs allow. Non-PGO binaries for a fair comparison.
+Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run with GFM tables, strikethrough, and task lists enabled; ferromark's non-GFM extras (heading IDs, callouts) are disabled so every parser performs the same work. Output buffers reused where APIs allow. Non-PGO binaries for a fair comparison.
 
 **CommonMark 5 KB** (wiki-style, mixed content with tables)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
-| **ferromark** | **289.9 MiB/s** | **baseline** |
-| pulldown-cmark | 247.7 MiB/s | 0.85x |
-| md4c (C) | 242.3 MiB/s | 0.84x |
-| comrak | 73.7 MiB/s | 0.25x |
+| **ferromark** | **250.9 MiB/s** | **baseline** |
+| pulldown-cmark | 244.5 MiB/s | 0.97x |
+| md4c (C) | 235.4 MiB/s | 0.94x |
+| comrak | 66.8 MiB/s | 0.27x |
 
 **CommonMark 50 KB** (same style, scaled)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
-| **ferromark** | **309.3 MiB/s** | **baseline** |
-| pulldown-cmark | 271.7 MiB/s | 0.88x |
-| md4c (C) | 247.4 MiB/s | 0.80x |
-| comrak | 76.0 MiB/s | 0.25x |
+| **ferromark** | **273.2 MiB/s** | **baseline** |
+| pulldown-cmark | 260.8 MiB/s | 0.95x |
+| md4c (C) | 243.3 MiB/s | 0.89x |
+| comrak | 69.8 MiB/s | 0.26x |
 
-17% faster than pulldown-cmark. 25% faster than md4c. 4x faster than comrak.
+5% faster than pulldown-cmark. 12% faster than md4c. 4x faster than comrak.
 
 The fixtures are synthetic wiki-style documents with paragraphs, lists, code blocks, and tables. Nothing cherry-picked. Run them yourself: `cargo bench --bench comparison`
 
