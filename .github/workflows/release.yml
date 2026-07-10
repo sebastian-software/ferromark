@@ -26,7 +26,9 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
   publish-crate:
-    needs: release-please
+    needs:
+      - release-please
+      - publish-npm
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -165,7 +167,7 @@ jobs:
           pnpm test
           pnpm typecheck
           pnpm lint
-          pnpm pack:check
+          pnpm pack:check -- --all-targets
           pnpm smoke:clean
 
       - name: Publish to npm with trusted publishing

@@ -8,6 +8,11 @@ import { fileURLToPath } from 'node:url'
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const packageDir = path.join(workspace, 'ferromark')
 const artifacts = path.join(workspace, 'artifacts')
+const args = process.argv.slice(2)
+
+if (args.length > 1 || (args.length === 1 && args[0] !== '--all-targets')) {
+  throw new Error(`Usage: node ${path.basename(fileURLToPath(import.meta.url))} [--all-targets]`)
+}
 
 await rm(artifacts, { force: true, recursive: true })
 await mkdir(artifacts, { recursive: true })
@@ -41,8 +46,24 @@ const unexpected = files.filter(file => !allowed.some(pattern => pattern.test(fi
 if (unexpected.length > 0) {
   throw new Error(`Packed package contains unexpected files:\n${unexpected.join('\n')}`)
 }
-if (!files.some(file => /^ferromark\.[a-z0-9-]+\.node$/.test(file))) {
+const nativeFiles = files.filter(file => /^ferromark\.[a-z0-9-]+\.node$/.test(file))
+if (nativeFiles.length === 0) {
   throw new Error('Packed package does not contain a native binary')
+}
+
+if (args[0] === '--all-targets') {
+  const expectedNativeFiles = [
+    'ferromark.darwin-arm64.node',
+    'ferromark.darwin-x64.node',
+    'ferromark.linux-arm64-gnu.node',
+    'ferromark.linux-x64-gnu.node',
+    'ferromark.win32-arm64-msvc.node',
+    'ferromark.win32-x64-msvc.node',
+  ]
+  const missingNativeFiles = expectedNativeFiles.filter(file => !nativeFiles.includes(file))
+  if (missingNativeFiles.length > 0) {
+    throw new Error(`Packed package is missing native binaries:\n${missingNativeFiles.join('\n')}`)
+  }
 }
 
 console.log(JSON.stringify({ filename: result.filename, files }, null, 2))
