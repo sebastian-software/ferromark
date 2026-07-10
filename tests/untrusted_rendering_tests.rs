@@ -19,6 +19,7 @@ fn default_policy_blocks_dangerous_link_and_image_schemes() {
         "[click](JaVaScRiPt:alert(1))",
         "[click](java&#9;script:alert(1))",
         "[click](javas&#99;ript:alert(1))",
+        "[click](averylongunknownscheme:payload)",
     ] {
         let html = to_html(markdown);
         assert!(html.contains("href=\"\""), "unsafe link survived: {html}");
@@ -42,6 +43,19 @@ fn default_policy_keeps_safe_and_relative_urls() {
     assert!(
         to_html("[mail](mailto:team@example.com)").contains("href=\"mailto:team@example.com\"")
     );
+}
+
+#[test]
+fn literal_autolinks_use_the_untrusted_policy_path() {
+    let html = to_html_with_options(
+        "https://example.com",
+        &Options {
+            autolink_literals: true,
+            ..Options::default()
+        },
+    );
+
+    assert!(html.contains("href=\"https://example.com\""));
 }
 
 #[test]

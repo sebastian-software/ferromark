@@ -71,7 +71,7 @@ fn is_safe_normalized_url(url: &str) -> bool {
                         .iter()
                         .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-' | b'.'))
                 {
-                    return true;
+                    return !scheme_overflow;
                 }
                 return scheme == b"ftp"
                     || scheme == b"geo"
@@ -1060,6 +1060,7 @@ mod tests {
             b"java\tscript:alert(1)",
             b"javas&#99;ript:alert(1)",
             b"data:text/html,<script>alert(1)</script>",
+            b"averylongunknownscheme:payload",
         ] {
             let mut writer = HtmlWriter::new();
             writer.write_link_url_with_policy(url, RenderPolicy::Untrusted);

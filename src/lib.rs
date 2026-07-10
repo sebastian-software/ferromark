@@ -1363,7 +1363,7 @@ fn render_inline_event(
                 writer.write_str("<a href=\"");
                 match kind {
                     AutolinkLiteralKind::Url => {
-                        writer.write_link_url(url.slice(text));
+                        writer.write_link_url_with_policy(url.slice(text), render_policy);
                     }
                     AutolinkLiteralKind::Www => {
                         writer.write_str("http://");
