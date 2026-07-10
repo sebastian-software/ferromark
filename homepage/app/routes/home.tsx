@@ -82,7 +82,7 @@ export default function HomePage() {
           </article>
           <article>
             <strong>15</strong>
-            <span>Feature flags for precise control</span>
+            <span>Rendering controls for precise output</span>
           </article>
           <article>
             <strong>90%+</strong>
