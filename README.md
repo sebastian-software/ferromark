@@ -65,7 +65,7 @@ MD4C_DIR=/path/to/md4c cargo bench --bench comparison
 
 **MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
 
-15 feature flags to turn on exactly what you need:
+Fine-grained options let you turn on exactly what you need:
 
 ```text
 allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
@@ -106,6 +106,9 @@ let html = ferromark::to_html_with_options(trusted_markdown, &options);
 ```
 
 `disallowed_raw_html` implements the narrower GFM tag filter in trusted mode. It is not a general-purpose HTML sanitizer and does not make arbitrary raw HTML safe by itself.
+
+Upgrading from 0.1? See the [0.2 migration guide](docs/migration-0.2.md) for the
+new rendering default and fallible UTF-8 and MDX APIs.
 
 ## MDX support
 
@@ -426,7 +429,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark has 15 options; pulldown-cmark and comrak use option structs.</small></td></tr>
+    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark, pulldown-cmark, and comrak use option structs.</small></td></tr>
     <tr>
       <td><b>Raw HTML control</b></td>
       <td align="center">🟩</td>
@@ -434,7 +437,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>md4c and comrak expose explicit switches; ferromark provides <code>allow_html</code> and <code>disallowed_raw_html</code>; pulldown-cmark is more fixed.</small></td></tr>
+    <tr><td colspan="5"><small>md4c and comrak expose explicit switches; ferromark defaults to <code>RenderPolicy::Untrusted</code> and requires an explicit trusted policy for raw HTML passthrough; pulldown-cmark is more fixed.</small></td></tr>
     <tr>
       <td><b>GFM tables</b></td>
       <td align="center">🟩</td>
@@ -474,7 +477,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>md4c and comrak provide explicit unsafe/escape switches; ferromark provides <code>allow_html</code> and <code>disallowed_raw_html</code>; pulldown-cmark is more fixed.</small></td></tr>
+    <tr><td colspan="5"><small>md4c and comrak provide explicit unsafe/escape switches; ferromark uses an untrusted-by-default rendering policy with URL scheme checks; pulldown-cmark is more fixed.</small></td></tr>
     <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Rendering and output</b></td></tr>
     <tr>
