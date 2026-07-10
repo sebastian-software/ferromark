@@ -27,12 +27,60 @@ pub mod range;
 pub mod render;
 
 // Re-export primary types
-pub use block::{Alignment, BlockEvent, BlockParser, CalloutType, fixup_list_tight};
+pub use block::{Alignment, BlockEvent, BlockParser, CalloutType, CodeBlockKind, fixup_list_tight};
 pub use footnote::FootnoteStore;
 pub use inline::{InlineEvent, InlineParser};
 pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::Range;
 pub use render::HtmlWriter;
+
+/// A complete fenced code block passed to a custom renderer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FencedCodeBlock<'a> {
+    /// Decoded first word of the CommonMark info string, when present.
+    pub language: Option<&'a str>,
+    /// Raw code content before HTML escaping.
+    pub code: &'a str,
+}
+
+/// HTML that a [`FencedCodeRenderer`] has explicitly marked as trusted.
+///
+/// ferromark writes this value verbatim, including under
+/// [`RenderPolicy::Untrusted`]. Constructing it asserts that every untrusted
+/// value embedded in the markup has already been escaped. This type does not
+/// sanitize HTML and a renderer that violates the contract can introduce XSS.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrustedHtml(String);
+
+impl TrustedHtml {
+    /// Mark an owned HTML fragment as safe to write verbatim.
+    #[must_use]
+    pub fn from_trusted(html: impl Into<String>) -> Self {
+        Self(html.into())
+    }
+
+    /// Borrow the trusted HTML fragment.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Consume the wrapper and return its HTML fragment.
+    #[must_use]
+    pub fn into_string(self) -> String {
+        self.0
+    }
+}
+
+/// Opt-in renderer for complete fenced code blocks.
+///
+/// Returning `None` asks ferromark to emit its normal escaped
+/// `<pre><code>...</code></pre>` output. Indented code blocks never invoke this
+/// interface.
+pub trait FencedCodeRenderer {
+    /// Render one fenced code block, or return `None` to use the safe fallback.
+    fn render(&mut self, block: FencedCodeBlock<'_>) -> Option<TrustedHtml>;
+}
 
 /// Trust boundary applied while rendering links, images, and raw HTML.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -303,6 +351,31 @@ pub fn to_html_with_options(input: &str, options: &Options) -> String {
         .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
 }
 
+/// Convert Markdown to HTML with an opt-in fenced-code renderer.
+///
+/// The renderer sees only fenced code blocks. Returning `None` preserves the
+/// normal escaped code-block output. Installing a renderer is an explicit HTML
+/// trust boundary; see [`TrustedHtml`].
+pub fn to_html_with_renderer(
+    input: &str,
+    options: &Options,
+    renderer: &mut dyn FencedCodeRenderer,
+) -> String {
+    let markdown = if options.front_matter {
+        match extract_front_matter(input) {
+            Some((_, offset)) => &input[offset..],
+            None => input,
+        }
+    } else {
+        input
+    };
+    let mut writer = HtmlWriter::with_capacity_for(markdown.len());
+    render_to_writer_with_renderer(markdown.as_bytes(), &mut writer, options, Some(renderer));
+    writer
+        .into_string()
+        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
+}
+
 /// Convert Markdown to HTML into a provided buffer with options.
 ///
 /// When `options.front_matter` is `true`, any front matter at the start of the
@@ -322,6 +395,29 @@ pub fn to_html_into_with_options(input: &str, out: &mut Vec<u8>, options: &Optio
     // Use the provided buffer directly
     std::mem::swap(writer.buffer_mut(), out);
     render_to_writer(markdown.as_bytes(), &mut writer, options);
+    std::mem::swap(writer.buffer_mut(), out);
+}
+
+/// Convert Markdown into a reusable buffer with an opt-in fenced-code renderer.
+pub fn to_html_into_with_renderer(
+    input: &str,
+    out: &mut Vec<u8>,
+    options: &Options,
+    renderer: &mut dyn FencedCodeRenderer,
+) {
+    let markdown = if options.front_matter {
+        match extract_front_matter(input) {
+            Some((_, offset)) => &input[offset..],
+            None => input,
+        }
+    } else {
+        input
+    };
+    out.clear();
+    out.reserve(markdown.len() + markdown.len() / 4);
+    let mut writer = HtmlWriter::with_capacity(0);
+    std::mem::swap(writer.buffer_mut(), out);
+    render_to_writer_with_renderer(markdown.as_bytes(), &mut writer, options, Some(renderer));
     std::mem::swap(writer.buffer_mut(), out);
 }
 
@@ -574,8 +670,19 @@ impl CellState {
     }
 }
 
+/// Buffered state used only while a custom renderer handles a fenced block.
+struct FencedCodeState {
+    info: Option<Range>,
+}
+
+impl FencedCodeState {
+    fn new(info: Option<Range>) -> Self {
+        Self { info }
+    }
+}
+
 /// Mutable state and shared inputs for one HTML rendering pass.
-struct RenderContext<'a> {
+struct RenderContext<'a, 'r, R: FencedCodeRenderer + ?Sized> {
     writer: &'a mut HtmlWriter,
     inline_parser: InlineParser,
     inline_events: Vec<InlineEvent>,
@@ -596,14 +703,18 @@ struct RenderContext<'a> {
     callout_stack: Vec<Option<block::CalloutType>>,
     pending_footnote_backref: Option<(String, usize)>,
     options: &'a Options,
+    fenced_code_renderer: Option<&'r mut R>,
+    fenced_code_state: Option<FencedCodeState>,
+    fenced_code_buffer: Vec<u8>,
 }
 
-impl<'a> RenderContext<'a> {
+impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
     fn new(
         writer: &'a mut HtmlWriter,
         link_refs: &'a LinkRefStore,
         footnote_store: Option<&'a FootnoteStore>,
         options: &'a Options,
+        fenced_code_renderer: Option<&'r mut R>,
     ) -> Self {
         Self {
             writer,
@@ -626,12 +737,41 @@ impl<'a> RenderContext<'a> {
             callout_stack: Vec::new(),
             pending_footnote_backref: None,
             options,
+            fenced_code_renderer,
+            fenced_code_state: None,
+            fenced_code_buffer: Vec::new(),
         }
     }
 }
 
 /// Render Markdown to an HtmlWriter.
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
+    render_to_writer_impl::<DisabledFencedCodeRenderer>(input, writer, options, None);
+}
+
+fn render_to_writer_with_renderer(
+    input: &[u8],
+    writer: &mut HtmlWriter,
+    options: &Options,
+    fenced_code_renderer: Option<&mut dyn FencedCodeRenderer>,
+) {
+    render_to_writer_impl(input, writer, options, fenced_code_renderer);
+}
+
+struct DisabledFencedCodeRenderer;
+
+impl FencedCodeRenderer for DisabledFencedCodeRenderer {
+    fn render(&mut self, _: FencedCodeBlock<'_>) -> Option<TrustedHtml> {
+        unreachable!("the default render path never installs a fenced-code renderer")
+    }
+}
+
+fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
+    input: &[u8],
+    writer: &mut HtmlWriter,
+    options: &Options,
+    fenced_code_renderer: Option<&mut R>,
+) {
     // Parse blocks
     let mut parser = BlockParser::new_with_options(input, *options);
     let mut events = Vec::with_capacity((input.len() / 16).max(64));
@@ -647,7 +787,13 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     fixup_list_tight(&mut events);
 
     let fn_store_ref = footnote_store.as_ref();
-    let mut context = RenderContext::new(writer, &link_refs, fn_store_ref, options);
+    let mut context = RenderContext::new(
+        writer,
+        &link_refs,
+        fn_store_ref,
+        options,
+        fenced_code_renderer,
+    );
 
     // Render events to HTML
     for event in &events {
@@ -660,7 +806,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     }
 }
 
-impl RenderContext<'_> {
+impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
     /// Render a single block event using the context's explicit state boundary.
     fn render_block_event(&mut self, input: &[u8], event: &BlockEvent) {
         let writer = &mut *self.writer;
@@ -683,6 +829,9 @@ impl RenderContext<'_> {
         let callout_stack = &mut self.callout_stack;
         let pending_footnote_backref = &mut self.pending_footnote_backref;
         let options = self.options;
+        let fenced_code_renderer = &mut self.fenced_code_renderer;
+        let fenced_code_state = &mut self.fenced_code_state;
+        let fenced_code_buffer = &mut self.fenced_code_buffer;
 
         // Check if we're in a tight list (innermost list is tight)
         // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
@@ -848,15 +997,23 @@ impl RenderContext<'_> {
             }
             BlockEvent::Code(range) => {
                 // Code block content - no inline parsing
-                writer.write_escaped_text(range.slice(input));
+                if fenced_code_state.is_some() {
+                    fenced_code_buffer.extend_from_slice(range.slice(input));
+                } else {
+                    writer.write_escaped_text(range.slice(input));
+                }
             }
             BlockEvent::VirtualSpaces(count) => {
                 // Emit spaces for tab expansion in indented code blocks
-                for _ in 0..*count {
-                    writer.write_byte(b' ');
+                if fenced_code_state.is_some() {
+                    fenced_code_buffer.extend(std::iter::repeat_n(b' ', *count as usize));
+                } else {
+                    for _ in 0..*count {
+                        writer.write_byte(b' ');
+                    }
                 }
             }
-            BlockEvent::CodeBlockStart { info } => {
+            BlockEvent::CodeBlockStart { kind } => {
                 // Write pending newline from loose list item start
                 if *pending_loose_li_newline {
                     writer.newline();
@@ -867,11 +1024,43 @@ impl RenderContext<'_> {
                     writer.newline();
                     *at_tight_li_start = false;
                 }
-                let lang = info.as_ref().map(|r| r.slice(input));
-                writer.code_block_start(lang);
+                match kind {
+                    CodeBlockKind::Fenced { info } if fenced_code_renderer.is_some() => {
+                        fenced_code_buffer.clear();
+                        *fenced_code_state = Some(FencedCodeState::new(*info));
+                    }
+                    CodeBlockKind::Fenced { info } => {
+                        writer.code_block_start(info.as_ref().map(|range| range.slice(input)));
+                    }
+                    CodeBlockKind::Indented => writer.code_block_start(None),
+                }
             }
             BlockEvent::CodeBlockEnd => {
-                writer.code_block_end();
+                if let Some(state) = fenced_code_state.take() {
+                    let language = state
+                        .info
+                        .map(|range| HtmlWriter::decode_info_word(range.slice(input)));
+                    let code = std::str::from_utf8(fenced_code_buffer)
+                        .expect("fenced code originates from UTF-8 Markdown input");
+                    let rendered = fenced_code_renderer.as_deref_mut().and_then(|renderer| {
+                        renderer.render(FencedCodeBlock {
+                            language: language.as_deref().filter(|value| !value.is_empty()),
+                            code,
+                        })
+                    });
+
+                    if let Some(html) = rendered {
+                        writer.write_string(html.as_str());
+                    } else {
+                        writer
+                            .code_block_start(state.info.as_ref().map(|range| range.slice(input)));
+                        writer.write_escaped_text(fenced_code_buffer);
+                        writer.code_block_end();
+                    }
+                    fenced_code_buffer.clear();
+                } else {
+                    writer.code_block_end();
+                }
             }
             BlockEvent::BlockQuoteStart { callout } => {
                 // Write pending newline from loose list item start
@@ -1503,7 +1692,7 @@ fn render_inline_event(
     }
 }
 
-impl RenderContext<'_> {
+impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
     /// Render collected footnotes with a fresh block state per definition.
     fn render_footnote_section(&mut self, input: &[u8]) {
         let Some(footnote_store) = self.footnote_store else {
@@ -1526,11 +1715,13 @@ impl RenderContext<'_> {
                 .events
                 .iter()
                 .rposition(|event| matches!(event, BlockEvent::ParagraphEnd));
+            let renderer = self.fenced_code_renderer.as_deref_mut();
             let mut nested = RenderContext::new(
                 &mut *self.writer,
                 self.link_refs,
                 Some(footnote_store),
                 self.options,
+                renderer,
             );
             for (index, event) in def.events.iter().enumerate() {
                 if Some(index) == last_paragraph_end {

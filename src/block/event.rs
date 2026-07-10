@@ -55,6 +55,18 @@ pub enum Alignment {
     Right,
 }
 
+/// The source form of a code block.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CodeBlockKind {
+    /// A backtick- or tilde-fenced code block.
+    Fenced {
+        /// Optional CommonMark info string.
+        info: Option<Range>,
+    },
+    /// A code block introduced by four columns of indentation.
+    Indented,
+}
+
 /// Events emitted by the block parser.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BlockEvent {
@@ -74,12 +86,12 @@ pub enum BlockEvent {
         level: u8,
     },
 
-    /// Start of a fenced code block.
+    /// Start of a code block.
     CodeBlockStart {
-        /// Info string (language identifier).
-        info: Option<Range>,
+        /// Whether the block is fenced or indented.
+        kind: CodeBlockKind,
     },
-    /// End of a fenced code block.
+    /// End of a code block.
     CodeBlockEnd,
 
     /// Start of a blockquote (possibly a callout/admonition).
