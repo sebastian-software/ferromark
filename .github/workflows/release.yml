@@ -5,25 +5,13 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-    steps:
-      - uses: googleapis/release-please-action@v4
-        id: release
-
-  publish:
-    needs: release-please
-    if: needs.release-please.outputs.release_created
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo publish
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  release:
+    uses: sebastian-software/ferramenta/.github/workflows/release-rust.yml@main
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    secrets: inherit
