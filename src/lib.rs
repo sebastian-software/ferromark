@@ -395,12 +395,15 @@ impl HeadingState {
 
 /// Tracker for deduplicating heading IDs.
 struct HeadingIdTracker {
-    used: Vec<String>,
+    /// Maps a base slug to how many times it has been seen so far.
+    used: std::collections::HashMap<String, usize>,
 }
 
 impl HeadingIdTracker {
     fn new() -> Self {
-        Self { used: Vec::new() }
+        Self {
+            used: std::collections::HashMap::new(),
+        }
     }
 
     /// Generate a unique slug, appending `-1`, `-2`, etc. on collision.
@@ -410,14 +413,16 @@ impl HeadingIdTracker {
         } else {
             base
         };
-        let count = self.used.iter().filter(|s| **s == slug).count();
-        let result = if count == 0 {
-            slug.clone()
-        } else {
-            format!("{}-{}", slug, count)
-        };
-        self.used.push(slug);
-        result
+        match self.used.get_mut(&slug) {
+            Some(count) => {
+                *count += 1;
+                format!("{}-{}", slug, count)
+            }
+            None => {
+                self.used.insert(slug.clone(), 0);
+                slug
+            }
+        }
     }
 }
 
