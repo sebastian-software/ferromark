@@ -78,6 +78,28 @@ ferromark is built for one job: turning Markdown into HTML as fast as possible. 
 
 These aren't planned. They'd compromise the streaming architecture that makes ferromark fast.
 
+## Rendering untrusted Markdown
+
+The default `RenderPolicy::Untrusted` is the browser-facing safety boundary. It escapes all raw HTML and allows relative URLs plus a small set of non-script schemes (`http`, `https`, `mailto`, `tel`, and similar). URL schemes are checked after entity and control-character normalization, so spellings such as `javas&#99;ript:` are blocked too.
+
+```rust
+let html = ferromark::to_html(user_supplied_markdown);
+```
+
+Trusted documents and MDX can opt into passthrough explicitly:
+
+```rust
+use ferromark::{Options, RenderPolicy};
+
+let options = Options {
+    render_policy: RenderPolicy::Trusted,
+    ..Options::default()
+};
+let html = ferromark::to_html_with_options(trusted_markdown, &options);
+```
+
+`disallowed_raw_html` implements the narrower GFM tag filter in trusted mode. It is not a general-purpose HTML sanitizer and does not make arbitrary raw HTML safe by itself.
+
 ## MDX support
 
 MDX is the standard for component-driven docs in Next.js, Docusaurus, and Astro. Processing it usually requires a full JavaScript toolchain — Node.js, acorn, babel, the works.

@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use crate::Options;
+use crate::{Options, RenderPolicy};
 
 use super::{Segment, segment};
 
@@ -226,6 +226,7 @@ pub fn render_with_options<'a>(input: &'a str, options: &Options) -> MdxOutput<'
 
 fn mdx_default_options() -> Options {
     Options {
+        render_policy: RenderPolicy::Trusted,
         allow_html: true,
         disallowed_raw_html: false,
         front_matter: true,

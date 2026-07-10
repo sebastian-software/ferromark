@@ -34,10 +34,22 @@ pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::Range;
 pub use render::HtmlWriter;
 
+/// Trust boundary applied while rendering links, images, and raw HTML.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RenderPolicy {
+    /// Escape all raw HTML and allow only browser-safe URL schemes.
+    #[default]
+    Untrusted,
+    /// Preserve raw HTML and arbitrary URL schemes for trusted Markdown and MDX.
+    Trusted,
+}
+
 /// Parsing/rendering options.
 #[derive(Debug, Clone, Copy)]
 pub struct Options {
-    /// Allow raw inline and block HTML.
+    /// Select the output trust boundary. Defaults to [`RenderPolicy::Untrusted`].
+    pub render_policy: RenderPolicy,
+    /// Parse raw inline and block HTML. Untrusted rendering still escapes it.
     pub allow_html: bool,
     /// Resolve link reference definitions and reference-style links.
     pub allow_link_refs: bool,
@@ -55,7 +67,10 @@ pub struct Options {
     pub task_lists: bool,
     /// Enable GFM autolink literals extension (bare URLs, www, emails).
     pub autolink_literals: bool,
-    /// Enable GFM disallowed raw HTML extension (filter dangerous tags).
+    /// Enable the GFM disallowed raw HTML extension in trusted mode.
+    ///
+    /// This is not an HTML sanitizer. [`RenderPolicy::Untrusted`] escapes all
+    /// raw HTML regardless of this setting.
     pub disallowed_raw_html: bool,
     /// Enable footnotes extension (`[^label]` references and `[^label]:` definitions).
     pub footnotes: bool,
@@ -72,6 +87,7 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
+            render_policy: RenderPolicy::Untrusted,
             allow_html: true,
             allow_link_refs: true,
             tables: true,
@@ -754,6 +770,7 @@ fn render_block_event(
                         &mut image_state,
                         link_refs,
                         options.disallowed_raw_html,
+                        options.render_policy,
                         footnote_store,
                         footnote_order,
                     );
@@ -823,6 +840,7 @@ fn render_block_event(
                         &mut image_state,
                         link_refs,
                         options.disallowed_raw_html,
+                        options.render_policy,
                         footnote_store,
                         footnote_order,
                     );
@@ -851,7 +869,9 @@ fn render_block_event(
             }
         }
         BlockEvent::HtmlBlockText(range) => {
-            if options.disallowed_raw_html {
+            if options.render_policy == RenderPolicy::Untrusted {
+                writer.write_escaped_text(range.slice(input));
+            } else if options.disallowed_raw_html {
                 writer.write_html_filtered(range.slice(input));
             } else {
                 writer.write_bytes(range.slice(input));
@@ -908,6 +928,7 @@ fn render_block_event(
                         &mut image_state,
                         link_refs,
                         options.disallowed_raw_html,
+                        options.render_policy,
                         footnote_store,
                         footnote_order,
                     );
@@ -1107,6 +1128,7 @@ fn render_block_event(
                         &mut image_state,
                         link_refs,
                         options.disallowed_raw_html,
+                        options.render_policy,
                         footnote_store,
                         footnote_order,
                     );
@@ -1158,6 +1180,7 @@ fn render_inline_event(
     image_state: &mut Option<ImageState>,
     link_refs: &LinkRefStore,
     filter_html: bool,
+    render_policy: RenderPolicy,
     footnote_store: Option<&FootnoteStore>,
     footnote_order: &mut Vec<usize>,
 ) {
@@ -1280,7 +1303,7 @@ fn render_inline_event(
             // Suppress link tags inside image alt text
             if !in_image {
                 writer.write_str("<a href=\"");
-                writer.write_link_url(url.slice(text));
+                writer.write_link_url_with_policy(url.slice(text), render_policy);
                 writer.write_str("\"");
                 if let Some(t) = title {
                     writer.write_str(" title=\"");
@@ -1294,7 +1317,7 @@ fn render_inline_event(
             if !in_image {
                 if let Some(def) = link_refs.get(*def_index as usize) {
                     writer.write_str("<a href=\"");
-                    writer.write_link_url(&def.url);
+                    writer.write_link_url_with_policy(&def.url, render_policy);
                     writer.write_str("\"");
                     if let Some(title) = &def.title {
                         writer.write_str(" title=\"");
@@ -1318,7 +1341,7 @@ fn render_inline_event(
             } else {
                 // Outermost image - emit the img tag start
                 writer.write_str("<img src=\"");
-                writer.write_link_url(url.slice(text));
+                writer.write_link_url_with_policy(url.slice(text), render_policy);
                 writer.write_str("\" alt=\"");
                 *image_state = Some(ImageState {
                     title_range: *title,
@@ -1332,7 +1355,7 @@ fn render_inline_event(
                 state.depth += 1;
             } else if let Some(def) = link_refs.get(*def_index as usize) {
                 writer.write_str("<img src=\"");
-                writer.write_link_url(&def.url);
+                writer.write_link_url_with_policy(&def.url, render_policy);
                 writer.write_str("\" alt=\"");
                 *image_state = Some(ImageState {
                     title_range: None,
@@ -1396,9 +1419,10 @@ fn render_inline_event(
                 writer.write_str("<a href=\"");
                 if *is_email {
                     writer.write_str("mailto:");
+                    writer.write_url_encoded(url.slice(text));
+                } else {
+                    writer.write_url_encoded_with_policy(url.slice(text), render_policy);
                 }
-                // URL-encode special chars then HTML-escape
-                writer.write_url_encoded(url.slice(text));
                 writer.write_str("\">");
                 // Display text is shown as-is (with HTML escaping)
                 writer.write_escaped_text(url.slice(text));
@@ -1408,6 +1432,8 @@ fn render_inline_event(
         InlineEvent::Html(range) => {
             if in_image {
                 writer.write_escaped_attr(range.slice(text));
+            } else if render_policy == RenderPolicy::Untrusted {
+                writer.write_escaped_text(range.slice(text));
             } else if filter_html {
                 writer.write_html_filtered(range.slice(text));
             } else {
@@ -1660,8 +1686,7 @@ mod tests {
     #[test]
     fn test_paragraph_escaping() {
         let html = to_html("<script>alert('xss')</script>");
-        // GFM disallowed raw HTML: <script> is filtered by default.
-        assert_eq!(html, "&lt;script>alert('xss')&lt;/script>");
+        assert_eq!(html, "&lt;script&gt;alert('xss')&lt;/script&gt;");
     }
 
     #[test]

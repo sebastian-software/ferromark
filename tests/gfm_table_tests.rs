@@ -3,9 +3,9 @@
 //! Tests based on the GFM spec (https://github.github.com/gfm/#tables-extension-)
 //! Examples 198-205, plus additional edge cases.
 
-use ferromark::Options;
 use ferromark::to_html;
 use ferromark::to_html_with_options;
+use ferromark::{Options, RenderPolicy};
 
 // === GFM Spec Examples ===
 
@@ -332,7 +332,16 @@ fn cmark_ext_escaping_behavior() {
 fn cmark_ext_embedded_html_in_cells() {
     let input = "| a |\n| --- |\n| <strong>hello</strong> |\n| ok <br> sure |\n";
     let expected = "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><strong>hello</strong></td>\n</tr>\n<tr>\n<td>ok <br> sure</td>\n</tr>\n</tbody>\n</table>\n";
-    assert_eq!(to_html(input), expected);
+    assert_eq!(
+        to_html_with_options(
+            input,
+            &Options {
+                render_policy: RenderPolicy::Trusted,
+                ..Options::default()
+            }
+        ),
+        expected
+    );
 }
 
 /// cmark-gfm ext: Reference-style links in table cells.

@@ -2,8 +2,8 @@
 //!
 //! Uses md4c's growth strategy: 1.5x + 128-byte alignment.
 
-use crate::Range;
 use crate::escape;
+use crate::{Range, RenderPolicy};
 use memchr::memchr;
 
 /// Decode HTML entities with CommonMark compliance.
@@ -36,6 +36,70 @@ fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
     }
 
     std::borrow::Cow::Owned(result)
+}
+
+/// Return whether a URL is safe to place in an untrusted HTML attribute.
+///
+/// Relative URLs and a small allowlist of non-script schemes are accepted.
+/// Entity references and embedded ASCII whitespace/control characters are
+/// normalized before checking the scheme so browser-equivalent spellings of
+/// `javascript:` and similar schemes cannot bypass the boundary.
+fn is_safe_url(url: &[u8]) -> bool {
+    let Ok(url) = std::str::from_utf8(url) else {
+        return false;
+    };
+    if memchr(b'&', url.as_bytes()).is_none() {
+        return is_safe_normalized_url(url);
+    }
+    let decoded = decode_entities_commonmark(url);
+    is_safe_normalized_url(&decoded)
+}
+
+fn is_safe_normalized_url(url: &str) -> bool {
+    let mut scheme = [0u8; 16];
+    let mut scheme_len = 0usize;
+    let mut scheme_overflow = false;
+
+    for ch in url.chars() {
+        match ch {
+            ':' => {
+                let scheme = &scheme[..scheme_len];
+                if scheme_overflow
+                    || scheme.is_empty()
+                    || !scheme[0].is_ascii_alphabetic()
+                    || !scheme
+                        .iter()
+                        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-' | b'.'))
+                {
+                    return true;
+                }
+                return scheme == b"ftp"
+                    || scheme == b"geo"
+                    || scheme == b"http"
+                    || scheme == b"https"
+                    || scheme == b"irc"
+                    || scheme == b"ircs"
+                    || scheme == b"mailto"
+                    || scheme == b"matrix"
+                    || scheme == b"sms"
+                    || scheme == b"tel"
+                    || scheme == b"xmpp";
+            }
+            '/' | '?' | '#' => return true,
+            ch if ch.is_ascii_whitespace() || ch.is_ascii_control() => {}
+            ch if ch.is_ascii() => {
+                if scheme_len < scheme.len() {
+                    scheme[scheme_len] = ch.to_ascii_lowercase() as u8;
+                    scheme_len += 1;
+                } else {
+                    scheme_overflow = true;
+                }
+            }
+            _ => return true,
+        }
+    }
+
+    true
 }
 
 /// HTML output writer with pre-allocated, reusable buffer.
@@ -237,11 +301,27 @@ impl HtmlWriter {
         escape::url_encode_then_html_escape(&mut self.out, url);
     }
 
+    /// Write an autolink URL after applying the selected trust policy.
+    #[inline]
+    pub fn write_url_encoded_with_policy(&mut self, url: &[u8], policy: RenderPolicy) {
+        if policy == RenderPolicy::Trusted || is_safe_url(url) {
+            self.write_url_encoded(url);
+        }
+    }
+
     /// Write link destination with backslash escape processing and URL encoding.
     /// Used for link destinations in `[text](url)` syntax.
     #[inline]
     pub fn write_link_url(&mut self, url: &[u8]) {
         escape::url_escape_link_destination(&mut self.out, url);
+    }
+
+    /// Write a link destination after applying the selected trust policy.
+    #[inline]
+    pub fn write_link_url_with_policy(&mut self, url: &[u8], policy: RenderPolicy) {
+        if policy == RenderPolicy::Trusted || is_safe_url(url) {
+            self.write_link_url(url);
+        }
     }
 
     /// Write a newline.
@@ -970,6 +1050,35 @@ mod tests {
             writer.as_str().unwrap(),
             "<a href=\"https://example.com?a=1&amp;b=2\"></a>"
         );
+    }
+
+    #[test]
+    fn untrusted_url_policy_blocks_script_schemes_after_normalization() {
+        for url in [
+            b"javascript:alert(1)".as_slice(),
+            b"JaVaScRiPt:alert(1)",
+            b"java\tscript:alert(1)",
+            b"javas&#99;ript:alert(1)",
+            b"data:text/html,<script>alert(1)</script>",
+        ] {
+            let mut writer = HtmlWriter::new();
+            writer.write_link_url_with_policy(url, RenderPolicy::Untrusted);
+            assert_eq!(writer.as_bytes(), b"", "URL should be blocked: {url:?}");
+        }
+    }
+
+    #[test]
+    fn untrusted_url_policy_allows_relative_and_safe_schemes() {
+        for url in [
+            b"/guide/getting-started".as_slice(),
+            b"#section",
+            b"https://example.com",
+            b"mailto:team@example.com",
+        ] {
+            let mut writer = HtmlWriter::new();
+            writer.write_link_url_with_policy(url, RenderPolicy::Untrusted);
+            assert!(!writer.is_empty(), "URL should be allowed: {url:?}");
+        }
     }
 
     #[test]
