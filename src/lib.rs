@@ -620,9 +620,9 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     // Pending task checkbox (emitted at start of first paragraph in list item)
     let mut pending_task = block::TaskState::None;
 
-    // Track footnote reference order (def_index -> sequential number)
-    let mut footnote_order: Vec<usize> = Vec::new();
     let fn_store_ref = footnote_store.as_ref();
+    // Track first-reference order and assigned ordinals in O(1) per reference.
+    let mut footnote_numbers = FootnoteNumbers::new(fn_store_ref.map_or(0, FootnoteStore::len));
 
     // Heading ID tracker for deduplication
     let mut heading_id_tracker = HeadingIdTracker::new();
@@ -650,7 +650,7 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
             &mut pending_task,
             &link_refs,
             fn_store_ref,
-            &mut footnote_order,
+            &mut footnote_numbers,
             &mut heading_id_tracker,
             &mut callout_stack,
             options,
@@ -659,11 +659,11 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
 
     // Render footnote section at document end
     if let Some(fn_store) = &footnote_store {
-        if !footnote_order.is_empty() {
+        if !footnote_numbers.is_empty() {
             render_footnote_section(
                 input,
                 fn_store,
-                &footnote_order,
+                &footnote_numbers,
                 writer,
                 &mut inline_parser,
                 &mut inline_events,
@@ -694,7 +694,7 @@ fn render_block_event(
     pending_task: &mut block::TaskState,
     link_refs: &LinkRefStore,
     footnote_store: Option<&FootnoteStore>,
-    footnote_order: &mut Vec<usize>,
+    footnote_numbers: &mut FootnoteNumbers,
     heading_id_tracker: &mut HeadingIdTracker,
     callout_stack: &mut Vec<Option<block::CalloutType>>,
     options: &Options,
@@ -772,7 +772,7 @@ fn render_block_event(
                         options.disallowed_raw_html,
                         options.render_policy,
                         footnote_store,
-                        footnote_order,
+                        footnote_numbers,
                     );
                 }
             }
@@ -842,7 +842,7 @@ fn render_block_event(
                         options.disallowed_raw_html,
                         options.render_policy,
                         footnote_store,
-                        footnote_order,
+                        footnote_numbers,
                     );
                 }
             }
@@ -930,7 +930,7 @@ fn render_block_event(
                         options.disallowed_raw_html,
                         options.render_policy,
                         footnote_store,
-                        footnote_order,
+                        footnote_numbers,
                     );
                 }
             }
@@ -1130,7 +1130,7 @@ fn render_block_event(
                         options.disallowed_raw_html,
                         options.render_policy,
                         footnote_store,
-                        footnote_order,
+                        footnote_numbers,
                     );
                 }
             }
@@ -1171,6 +1171,35 @@ struct ImageState {
     depth: u32,
 }
 
+/// First-reference ordering plus constant-time definition-to-ordinal lookup.
+struct FootnoteNumbers {
+    order: Vec<usize>,
+    /// Zero means unassigned; stored ordinals are one-based.
+    ordinals: Vec<usize>,
+}
+
+impl FootnoteNumbers {
+    fn new(definition_count: usize) -> Self {
+        Self {
+            order: Vec::new(),
+            ordinals: vec![0; definition_count],
+        }
+    }
+
+    fn number(&mut self, definition_index: usize) -> Option<usize> {
+        let ordinal = self.ordinals.get_mut(definition_index)?;
+        if *ordinal == 0 {
+            self.order.push(definition_index);
+            *ordinal = self.order.len();
+        }
+        Some(*ordinal)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.order.is_empty()
+    }
+}
+
 /// Render a single inline event to HTML.
 #[allow(clippy::too_many_arguments)]
 fn render_inline_event(
@@ -1182,7 +1211,7 @@ fn render_inline_event(
     filter_html: bool,
     render_policy: RenderPolicy,
     footnote_store: Option<&FootnoteStore>,
-    footnote_order: &mut Vec<usize>,
+    footnote_numbers: &mut FootnoteNumbers,
 ) {
     // Check if we're inside an image (for alt text rendering)
     let in_image = image_state.as_ref().is_some_and(|s| s.depth > 0);
@@ -1469,15 +1498,9 @@ fn render_inline_event(
             if !in_image {
                 if let Some(fn_store) = footnote_store {
                     let def_idx = *def_index as usize;
-                    // Assign sequential number based on first-appearance order
-                    let number =
-                        if let Some(pos) = footnote_order.iter().position(|&i| i == def_idx) {
-                            pos + 1
-                        } else {
-                            footnote_order.push(def_idx);
-                            footnote_order.len()
-                        };
-                    if let Some(def) = fn_store.get(def_idx) {
+                    if let (Some(number), Some(def)) =
+                        (footnote_numbers.number(def_idx), fn_store.get(def_idx))
+                    {
                         writer.write_str("<sup><a href=\"#user-content-fn-");
                         writer.write_string(&def.label);
                         writer.write_str("\" id=\"user-content-fnref-");
@@ -1546,7 +1569,7 @@ fn render_inline_event(
 fn render_footnote_section(
     input: &[u8],
     footnote_store: &FootnoteStore,
-    footnote_order: &[usize],
+    footnote_numbers: &FootnoteNumbers,
     writer: &mut HtmlWriter,
     inline_parser: &mut InlineParser,
     inline_events: &mut Vec<InlineEvent>,
@@ -1555,7 +1578,7 @@ fn render_footnote_section(
 ) {
     writer.write_str("<section data-footnotes class=\"footnotes\">\n<ol>\n");
 
-    for (seq_num, &def_idx) in footnote_order.iter().enumerate() {
+    for (seq_num, &def_idx) in footnote_numbers.order.iter().enumerate() {
         let def = match footnote_store.get(def_idx) {
             Some(d) => d,
             None => continue,
@@ -1569,9 +1592,8 @@ fn render_footnote_section(
         // Render the footnote's block events
         let fn_events = &def.events;
         let fn_store_ref = Some(footnote_store);
-        // We need a separate footnote_order for nested footnote refs inside footnotes
-        // but for simplicity, we'll share the same order (GitHub does this too)
-        let mut fn_footnote_order: Vec<usize> = Vec::new();
+        // Nested references keep local numbering state, matching the previous behavior.
+        let mut fn_footnote_numbers = FootnoteNumbers::new(footnote_store.len());
 
         let mut para_state = ParagraphState::new();
         let mut heading_state = HeadingState::new();
@@ -1619,7 +1641,7 @@ fn render_footnote_section(
                     &mut pending_task,
                     link_refs,
                     fn_store_ref,
-                    &mut fn_footnote_order,
+                    &mut fn_footnote_numbers,
                     &mut fn_heading_id_tracker,
                     &mut fn_callout_stack,
                     options,
@@ -1660,7 +1682,7 @@ fn render_footnote_section(
                 &mut pending_task,
                 link_refs,
                 fn_store_ref,
-                &mut fn_footnote_order,
+                &mut fn_footnote_numbers,
                 &mut fn_heading_id_tracker,
                 &mut fn_callout_stack,
                 options,
@@ -1676,6 +1698,18 @@ fn render_footnote_section(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn footnote_numbers_assign_constant_time_stable_ordinals() {
+        let mut numbers = FootnoteNumbers::new(4);
+
+        assert_eq!(numbers.number(2), Some(1));
+        assert_eq!(numbers.number(0), Some(2));
+        assert_eq!(numbers.number(2), Some(1));
+        assert_eq!(numbers.number(3), Some(3));
+        assert_eq!(numbers.number(4), None);
+        assert_eq!(numbers.order, vec![2, 0, 3]);
+    }
 
     #[test]
     fn test_basic_paragraph() {

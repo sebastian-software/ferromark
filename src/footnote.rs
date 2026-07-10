@@ -46,6 +46,10 @@ impl FootnoteStore {
     pub fn is_empty(&self) -> bool {
         self.defs.is_empty()
     }
+
+    pub fn len(&self) -> usize {
+        self.defs.len()
+    }
 }
 
 /// Normalize a footnote label: trim, lowercase ASCII.
