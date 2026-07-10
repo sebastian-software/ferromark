@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.2.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.4...ferromark-v0.2.0) (2026-07-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **render:** Options now defaults to RenderPolicy::Untrusted, which escapes raw HTML and blocks unsafe URL schemes. Use RenderPolicy::Trusted for explicit passthrough rendering.
+* **mdx:** MdxOutput::to_component now returns Result<String, ComponentNameError>.
+* **api:** Range::slice_str, HtmlWriter::as_str, and HtmlWriter::into_string now return UTF-8 validation results. HtmlWriter::buffer_mut is no longer public.
+
+### Bug Fixes
+
+* **api:** validate UTF-8 string conversions ([b91acb6](https://github.com/sebastian-software/ferromark/commit/b91acb65c001a21b576c6baf685c80d6c81df0aa))
+* **ci:** select stable for lint jobs ([11a4329](https://github.com/sebastian-software/ferromark/commit/11a4329588eada622e1e7b361805b5b4c7452aa8))
+* **cursor:** enforce bounds in safe movement APIs ([70e018d](https://github.com/sebastian-software/ferromark/commit/70e018da2485b4cf8ec763f85c9e1319d82d6b63))
+* **homepage:** clear high severity advisories ([f669bf2](https://github.com/sebastian-software/ferromark/commit/f669bf209e4974c9730a29af84cae04a9cd7f59b))
+* **mdx:** validate component identifiers ([099ef33](https://github.com/sebastian-software/ferromark/commit/099ef3331913765f3b133e749427bb2f0e138191))
+* **range:** reject oversized offsets ([5e08b88](https://github.com/sebastian-software/ferromark/commit/5e08b88fc12ec0bbd6e92ed25a51463c3cbe1249))
+* **render:** close untrusted URL bypasses ([6092773](https://github.com/sebastian-software/ferromark/commit/6092773f768f694dd93da4af0b677498ce09a5a8))
+* **render:** make untrusted output the default ([2a85fba](https://github.com/sebastian-software/ferromark/commit/2a85fba96624992a46a64da6bf9d61abdfcc7482))
+
+
+### Performance Improvements
+
+* **footnotes:** assign ordinals in constant time ([7ef0299](https://github.com/sebastian-software/ferromark/commit/7ef0299af2690427d8f4a7d9aa65ec8427a2ab75))
+
 ## [0.1.4](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.3...ferromark-v0.1.4) (2026-07-10)
 
 
