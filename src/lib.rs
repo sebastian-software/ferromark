@@ -133,6 +133,11 @@ pub struct Options {
     pub math: bool,
     /// Enable GitHub-style callouts/admonitions (`> [!NOTE]`, `> [!WARNING]`, etc.).
     pub callouts: bool,
+    /// Enable CommonMark indented code blocks (4+ leading spaces outside paragraphs).
+    ///
+    /// Disable this for presentation-oriented dialects that require fenced code blocks
+    /// and use indentation for their own block semantics.
+    pub indented_code_blocks: bool,
 }
 
 /// A curated Markdown feature set for common usage levels.
@@ -186,6 +191,7 @@ impl Default for Options {
             heading_ids: true,
             math: false,
             callouts: true,
+            indented_code_blocks: true,
         }
     }
 }
@@ -210,6 +216,7 @@ impl From<Profile> for Options {
                 heading_ids: false,
                 math: false,
                 callouts: false,
+                indented_code_blocks: true,
             },
             Profile::Extended => Self::default(),
             Profile::Full => Self {
@@ -229,6 +236,7 @@ impl From<Profile> for Options {
                 heading_ids: true,
                 math: true,
                 callouts: true,
+                indented_code_blocks: true,
             },
         }
     }

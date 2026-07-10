@@ -90,15 +90,17 @@ CommonMark parity. Run `cargo test --test commonmark_spec -- --ignored
 
 **MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
 
-Fine-grained options let you turn on exactly what you need:
+Fine-grained parser options let you turn on exactly what you need:
 
 ```text
 allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
 autolink_literals · disallowed_raw_html · footnotes · front_matter
-heading_ids · math · callouts
+heading_ids · math · callouts · indented_code_blocks
 ```
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
+
+Set `indented_code_blocks: false` for presentation-oriented dialects that require fenced code blocks. Would-be indented code falls back to normal paragraph content, including inside list items, block quotes, and footnote definitions; fenced code blocks remain enabled.
 
 ## Markdown profiles
 
@@ -211,7 +213,7 @@ let output = render(input);
 // output.front_matter — Some("title: Hello\n")
 ```
 
-Use `render_with_options()` for custom Markdown settings (heading IDs, math, footnotes, etc.).
+Use `render_with_options()` for custom Markdown settings (heading IDs, math, footnotes, indented code block handling, etc.).
 
 ### Component — ready-to-use JSX module
 
