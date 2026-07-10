@@ -4,6 +4,123 @@ use crate::Options;
 
 use super::{Segment, segment};
 
+/// Error returned when a component name cannot be used as a JavaScript binding.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ComponentNameError {
+    /// The name is empty.
+    Empty,
+    /// The first character cannot start a JavaScript identifier.
+    InvalidStart(char),
+    /// A later character cannot continue a JavaScript identifier.
+    InvalidContinue(char),
+    /// The name is reserved in JavaScript module code.
+    ReservedWord,
+}
+
+impl std::fmt::Display for ComponentNameError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty => f.write_str("component name cannot be empty"),
+            Self::InvalidStart(ch) => write!(
+                f,
+                "component name starts with {ch:?}, which is not valid in a JavaScript identifier"
+            ),
+            Self::InvalidContinue(ch) => write!(
+                f,
+                "component name contains {ch:?}, which is not valid in a JavaScript identifier"
+            ),
+            Self::ReservedWord => f.write_str("component name is reserved by JavaScript"),
+        }
+    }
+}
+
+impl std::error::Error for ComponentNameError {}
+
+fn validate_component_name(name: &str) -> Result<(), ComponentNameError> {
+    let mut chars = name.chars();
+    let first = chars.next().ok_or(ComponentNameError::Empty)?;
+    if !is_identifier_start(first) {
+        return Err(ComponentNameError::InvalidStart(first));
+    }
+    for ch in chars {
+        if !is_identifier_continue(ch) {
+            return Err(ComponentNameError::InvalidContinue(ch));
+        }
+    }
+    if is_reserved_word(name) {
+        return Err(ComponentNameError::ReservedWord);
+    }
+    Ok(())
+}
+
+#[inline]
+fn is_identifier_start(ch: char) -> bool {
+    ch == '$' || ch == '_' || unicode_ident::is_xid_start(ch)
+}
+
+#[inline]
+fn is_identifier_continue(ch: char) -> bool {
+    ch == '$'
+        || ch == '_'
+        || ch == '\u{200c}'
+        || ch == '\u{200d}'
+        || unicode_ident::is_xid_continue(ch)
+}
+
+fn is_reserved_word(name: &str) -> bool {
+    matches!(
+        name,
+        "arguments"
+            | "await"
+            | "break"
+            | "case"
+            | "catch"
+            | "class"
+            | "const"
+            | "continue"
+            | "debugger"
+            | "default"
+            | "delete"
+            | "do"
+            | "else"
+            | "enum"
+            | "eval"
+            | "export"
+            | "extends"
+            | "false"
+            | "finally"
+            | "for"
+            | "function"
+            | "if"
+            | "implements"
+            | "import"
+            | "in"
+            | "instanceof"
+            | "interface"
+            | "let"
+            | "new"
+            | "null"
+            | "package"
+            | "private"
+            | "protected"
+            | "public"
+            | "return"
+            | "static"
+            | "super"
+            | "switch"
+            | "this"
+            | "throw"
+            | "true"
+            | "try"
+            | "typeof"
+            | "var"
+            | "void"
+            | "while"
+            | "with"
+            | "yield"
+    )
+}
+
 /// Rendered MDX output with extracted metadata.
 pub struct MdxOutput<'a> {
     /// Rendered body: Markdown→HTML, JSX/expressions passed through.
@@ -33,7 +150,8 @@ impl MdxOutput<'_> {
     ///   );
     /// }
     /// ```
-    pub fn to_component(&self, name: &str) -> String {
+    pub fn to_component(&self, name: &str) -> Result<String, ComponentNameError> {
+        validate_component_name(name)?;
         let mut out = String::with_capacity(self.body.len() + self.esm.len() * 40 + 80);
 
         for esm in &self.esm {
@@ -61,7 +179,7 @@ impl MdxOutput<'_> {
         }
 
         out.push_str("    </>\n  );\n}\n");
-        out
+        Ok(out)
     }
 }
 
@@ -244,7 +362,7 @@ Content
 </Card>
 ";
         let out = render(input);
-        let comp = out.to_component("About");
+        let comp = out.to_component("About").unwrap();
 
         // ESM at top
         assert!(comp.starts_with("import { Card } from './card'\n"));
@@ -266,7 +384,7 @@ Content
     #[test]
     fn to_component_no_esm() {
         let out = render("# Hello\n");
-        let comp = out.to_component("Page");
+        let comp = out.to_component("Page").unwrap();
 
         // Starts directly with export, no blank line
         assert!(comp.starts_with("export function Page() {"));
@@ -275,9 +393,39 @@ Content
     #[test]
     fn to_component_empty_body() {
         let out = render("import A from 'a'\n");
-        let comp = out.to_component("Empty");
+        let comp = out.to_component("Empty").unwrap();
 
         assert!(comp.contains("import A from 'a'"));
         assert!(comp.contains("<>\n    </>"));
+    }
+
+    #[test]
+    fn to_component_accepts_unicode_identifier() {
+        let out = render("# Hello\n");
+        let component = out.to_component("Überblick").unwrap();
+
+        assert!(component.contains("export function Überblick()"));
+    }
+
+    #[test]
+    fn to_component_rejects_invalid_or_reserved_names() {
+        let out = render("# Hello\n");
+
+        assert_eq!(
+            out.to_component("getting-started"),
+            Err(ComponentNameError::InvalidContinue('-'))
+        );
+        assert_eq!(
+            out.to_component("2026Report"),
+            Err(ComponentNameError::InvalidStart('2'))
+        );
+        assert_eq!(
+            out.to_component("default"),
+            Err(ComponentNameError::ReservedWord)
+        );
+        assert_eq!(
+            out.to_component("Page() {}\nexport const injected = true; //"),
+            Err(ComponentNameError::InvalidContinue('('))
+        );
     }
 }

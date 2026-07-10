@@ -1132,7 +1132,7 @@ Welcome to **about**.
 {new Date().getFullYear()}
 ";
     let out = render(input);
-    let comp = out.to_component("About");
+    let comp = out.to_component("About").unwrap();
 
     // Starts with ESM
     assert!(comp.starts_with("import { Card } from './card'\n"));
@@ -1160,7 +1160,7 @@ Welcome to **about**.
 fn component_pure_markdown() {
     let input = "# Hello\n\nWorld\n";
     let out = render(input);
-    let comp = out.to_component("Page");
+    let comp = out.to_component("Page").unwrap();
 
     // No ESM, starts with export
     assert!(comp.starts_with("export function Page() {"));
@@ -1189,7 +1189,7 @@ npm install ferromark
 </Tabs>
 ";
     let out = render(input);
-    let comp = out.to_component("Install");
+    let comp = out.to_component("Install").unwrap();
 
     assert!(comp.contains("import Tabs from '@theme/Tabs'"));
     assert!(comp.contains("import TabItem from '@theme/TabItem'"));

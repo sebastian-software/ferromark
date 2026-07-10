@@ -80,5 +80,5 @@ cargo add ferromark
 
     // --- Component demo ---
     println!("\n=== JSX Component ===\n");
-    print!("{}", output.to_component("GettingStarted"));
+    print!("{}", output.to_component("GettingStarted").unwrap());
 }

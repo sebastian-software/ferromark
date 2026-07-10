@@ -126,7 +126,7 @@ Use `render_with_options()` for custom Markdown settings (heading IDs, math, foo
 
 ```rust
 let output = render(input);
-let tsx = output.to_component("HelloWorld");
+let tsx = output.to_component("HelloWorld")?;
 ```
 
 ```tsx
