@@ -25,3 +25,25 @@ ferromark = "0.3"
 ```toml
 ferromark = { version = "0.3", features = ["mdx"] }
 ```
+
+## Render fenced code with an integration hook
+
+Use `to_html_with_renderer` or `to_html_into_with_renderer` when a downstream syntax highlighter should replace fenced-code output:
+
+```rust
+use ferromark::{FencedCodeBlock, FencedCodeRenderer, TrustedHtml};
+
+struct Highlighter;
+
+impl FencedCodeRenderer for Highlighter {
+    fn render(&mut self, block: FencedCodeBlock<'_>) -> Option<TrustedHtml> {
+        // Return None for unsupported languages to keep ferromark's escaped fallback.
+        let _ = block;
+        None
+    }
+}
+```
+
+The renderer receives the decoded language word and raw code only for fenced blocks. `TrustedHtml` is emitted verbatim even under `RenderPolicy::Untrusted`; the renderer must escape every untrusted value it embeds. Indented code and a renderer that returns `None` keep the existing safe output.
+
+`BlockEvent::CodeBlockStart` now contains a `CodeBlockKind`, allowing event consumers to distinguish fenced blocks without languages from indented code blocks.
