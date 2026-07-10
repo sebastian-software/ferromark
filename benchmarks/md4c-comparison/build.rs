@@ -1,5 +1,5 @@
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 fn main() {
     println!("cargo:rustc-check-cfg=cfg(md4c)");
@@ -10,13 +10,10 @@ fn main() {
     let md4c_html_c = src_dir.join("md4c-html.c");
     let md4c_entity_c = src_dir.join("entity.c");
 
-    if !md4c_c.exists() || !md4c_html_c.exists() || !md4c_entity_c.exists() {
-        println!(
-            "cargo:warning=md4c sources not found, comparison benchmarks will exclude md4c. \
-             Set MD4C_DIR or clone md4c into ../md4c"
-        );
-        return;
-    }
+    assert!(
+        md4c_c.exists() && md4c_html_c.exists() && md4c_entity_c.exists(),
+        "MD4C_DIR must point to an md4c checkout containing src/md4c.c, src/md4c-html.c, and src/entity.c"
+    );
 
     let md4c_h = src_dir.join("md4c.h");
     let md4c_html_h = src_dir.join("md4c-html.h");
@@ -42,8 +39,7 @@ fn main() {
 }
 
 fn md4c_dir() -> PathBuf {
-    if let Ok(dir) = env::var("MD4C_DIR") {
-        return PathBuf::from(dir);
-    }
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../md4c")
+    env::var_os("MD4C_DIR")
+        .map(PathBuf::from)
+        .expect("set MD4C_DIR to the explicit md4c checkout used for comparison")
 }

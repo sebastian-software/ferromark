@@ -46,7 +46,14 @@ Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run wi
 
 2% faster than pulldown-cmark. 11% faster than md4c. 4x faster than comrak. Competitor versions: pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
 
-The fixtures are synthetic wiki-style documents with paragraphs, lists, code blocks, and tables. Nothing cherry-picked. Run them yourself: `cargo bench --bench comparison`
+The fixtures are synthetic wiki-style documents with paragraphs, lists, code blocks, and tables. Nothing cherry-picked. The cross-parser harness is isolated from the library build and pins md4c at `65c6c9d` for the published numbers:
+
+```bash
+cd benchmarks/md4c-comparison
+MD4C_DIR=/path/to/md4c cargo bench --bench comparison
+```
+
+`MD4C_DIR` is required deliberately; normal `cargo build`, `cargo test`, and package consumers never inspect or compile a sibling C checkout.
 
 ## What you get
 

@@ -1,0 +1,24 @@
+[package]
+name = "ferromark-md4c-comparison"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[dependencies]
+ferromark = { path = "../.." }
+memchr = "2.7"
+
+[dev-dependencies]
+comrak = "0.53"
+criterion = { version = "0.5", features = ["html_reports"] }
+pulldown-cmark = "0.13"
+
+[build-dependencies]
+cc = "1.1"
+
+[[bench]]
+name = "comparison"
+harness = false
+
+[workspace]
