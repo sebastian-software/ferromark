@@ -1,6 +1,6 @@
-/// MDX Segmenter — split MDX into typed blocks, render only the Markdown.
-///
-/// Run with: `cargo run --features mdx --example mdx_segment`
+//! MDX Segmenter — split MDX into typed blocks, render only the Markdown.
+//!
+//! Run with: `cargo run --features mdx --example mdx_segment`
 
 fn main() {
     let input = r#"import { Card, Button } from './components'
