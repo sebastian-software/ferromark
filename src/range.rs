@@ -35,11 +35,11 @@ impl Range {
     /// Create a range from usize values.
     ///
     /// # Panics
-    /// Panics in debug mode if values exceed u32::MAX.
+    /// Panics if either value exceeds `u32::MAX`.
     #[inline]
     pub fn from_usize(start: usize, end: usize) -> Self {
-        debug_assert!(start <= u32::MAX as usize);
-        debug_assert!(end <= u32::MAX as usize);
+        assert!(start <= u32::MAX as usize, "range start exceeds u32::MAX");
+        assert!(end <= u32::MAX as usize, "range end exceeds u32::MAX");
         Self {
             start: start as u32,
             end: end as u32,
@@ -201,6 +201,13 @@ mod tests {
         let r = Range::from_usize(100, 200);
         assert_eq!(r.start, 100);
         assert_eq!(r.end, 200);
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    #[should_panic(expected = "range start exceeds u32::MAX")]
+    fn range_from_usize_rejects_truncation() {
+        let _ = Range::from_usize(u32::MAX as usize + 1, u32::MAX as usize + 1);
     }
 
     #[test]
