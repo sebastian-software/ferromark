@@ -553,6 +553,22 @@ MIT
 
 ---
 
+<!-- ferramenta-family:start -->
+## The Ferramenta family
+
+This project is part of [Ferramenta](https://ferramenta.dev) — the family of Rust-native developer tools by [Sebastian Software](https://oss.sebastian-software.com) that keep the APIs the ecosystem already knows:
+
+| Tool | Job |
+| --- | --- |
+| [ferroni](https://github.com/sebastian-software/ferroni) | Oniguruma-compatible regex engine |
+| [ferriki](https://github.com/sebastian-software/ferriki) | Shiki-compatible syntax highlighting |
+| **[ferromark](https://github.com/sebastian-software/ferromark)** | CommonMark/GFM Markdown to HTML |
+| [ferrovia](https://github.com/sebastian-software/ferrovia) | SVGO-compatible SVG optimizer |
+| [ferrocat](https://github.com/sebastian-software/ferrocat) | Translation catalog engine |
+| [ferrolex](https://github.com/sebastian-software/ferrolex) | Spell, dictionary, and brand validation |
+| [ferrugo](https://github.com/sebastian-software/ferrugo) | Rust-native PDF previews |
+<!-- ferramenta-family:end -->
+
 <!-- sebastian-software-branding:start -->
 <p align="center">
   <a href="https://oss.sebastian-software.com">
