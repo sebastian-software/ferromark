@@ -44,9 +44,17 @@ impl<'a> Cursor<'a> {
     }
 
     /// Create a cursor starting at an offset.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `offset` is past the end of `input`.
     #[inline]
     pub fn new_at(input: &'a [u8], offset: usize) -> Self {
-        debug_assert!(offset <= input.len());
+        assert!(
+            offset <= input.len(),
+            "cursor offset {offset} exceeds input length {}",
+            input.len()
+        );
         let base = input.as_ptr();
         let ptr = unsafe { base.add(offset) };
         let end = unsafe { base.add(input.len()) };
@@ -124,17 +132,59 @@ impl<'a> Cursor<'a> {
     }
 
     /// Advance by n bytes.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `n` exceeds the number of remaining bytes.
     #[inline]
     pub fn advance(&mut self, n: usize) {
+        let remaining = self.remaining();
+        assert!(
+            n <= remaining,
+            "cannot advance cursor by {n} bytes with only {remaining} remaining"
+        );
+        // SAFETY: The assertion above keeps the pointer within the allocation
+        // or exactly one byte past its end.
+        self.ptr = unsafe { self.ptr.add(n) };
+    }
+
+    /// Advance without checking the remaining length.
+    ///
+    /// This is crate-private so parser hot paths can avoid duplicate checks
+    /// after their grammar logic has already established the bound.
+    ///
+    /// # Safety
+    ///
+    /// `n` must not exceed [`Self::remaining`].
+    #[inline]
+    pub(crate) unsafe fn advance_unchecked(&mut self, n: usize) {
         debug_assert!(n <= self.remaining());
-        // SAFETY: n <= remaining checked in debug
+        // SAFETY: The caller guarantees the resulting pointer stays within
+        // the allocation or exactly one byte past its end.
         self.ptr = unsafe { self.ptr.add(n) };
     }
 
     /// Advance by 1 byte.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the cursor is already at EOF.
     #[inline]
     pub fn bump(&mut self) {
+        assert!(!self.is_eof(), "cannot bump cursor past EOF");
+        // SAFETY: The assertion above guarantees one byte remains.
+        self.ptr = unsafe { self.ptr.add(1) };
+    }
+
+    /// Advance by one byte without checking for EOF.
+    ///
+    /// # Safety
+    ///
+    /// The cursor must not be at EOF.
+    #[inline]
+    pub(crate) unsafe fn bump_unchecked(&mut self) {
         debug_assert!(!self.is_eof());
+        // SAFETY: The caller guarantees one byte remains.
         self.ptr = unsafe { self.ptr.add(1) };
     }
 
@@ -178,7 +228,8 @@ impl<'a> Cursor<'a> {
             if !predicate(b) {
                 break;
             }
-            self.bump();
+            // SAFETY: `peek` returned a byte, so the cursor is not at EOF.
+            unsafe { self.bump_unchecked() };
         }
         self.offset() - start
     }
@@ -199,7 +250,8 @@ impl<'a> Cursor<'a> {
     #[inline]
     pub fn eat(&mut self, b: u8) -> bool {
         if self.at(b) {
-            self.bump();
+            // SAFETY: `at` can only succeed when a byte remains.
+            unsafe { self.bump_unchecked() };
             true
         } else {
             false
@@ -215,7 +267,8 @@ impl<'a> Cursor<'a> {
         // SAFETY: remaining >= bytes.len()
         let slice = unsafe { std::slice::from_raw_parts(self.ptr, bytes.len()) };
         if slice == bytes {
-            self.advance(bytes.len());
+            // SAFETY: The remaining-length check above covers `bytes.len()`.
+            unsafe { self.advance_unchecked(bytes.len()) };
             true
         } else {
             false
@@ -254,13 +307,16 @@ impl<'a> Cursor<'a> {
         match self.find_newline() {
             Some(pos) => {
                 let end = start + pos;
-                self.advance(pos + 1); // Skip past newline
+                // SAFETY: `pos` identifies a newline in the remaining slice.
+                unsafe { self.advance_unchecked(pos + 1) }; // Skip past newline
                 Range::from_usize(start, end)
             }
             None => {
                 // No newline found, consume rest of input
                 let end = start + self.remaining();
-                self.advance(self.remaining());
+                let remaining = self.remaining();
+                // SAFETY: Advancing by the exact remaining length reaches EOF.
+                unsafe { self.advance_unchecked(remaining) };
                 Range::from_usize(start, end)
             }
         }
@@ -420,5 +476,25 @@ mod tests {
         let cursor = Cursor::new_at(input, 6);
         assert_eq!(cursor.offset(), 6);
         assert_eq!(cursor.peek(), Some(b'w'));
+    }
+
+    #[test]
+    #[should_panic(expected = "cursor offset 2 exceeds input length 1")]
+    fn new_at_panics_when_offset_exceeds_input() {
+        let _ = Cursor::new_at(b"x", 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot advance cursor by 2 bytes with only 1 remaining")]
+    fn advance_panics_when_distance_exceeds_remaining_input() {
+        let mut cursor = Cursor::new(b"x");
+        cursor.advance(2);
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot bump cursor past EOF")]
+    fn bump_panics_at_eof() {
+        let mut cursor = Cursor::new(b"");
+        cursor.bump();
     }
 }
