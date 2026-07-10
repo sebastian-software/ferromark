@@ -1,0 +1,24 @@
+{
+  "name": "ferromark-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter ferromark build",
+    "build:native": "pnpm --filter ferromark build:native",
+    "lint": "node --check scripts/clean-install-smoke.mjs && node --check scripts/verify-pack.mjs && node --check scripts/verify-release.mjs && pnpm --filter ferromark lint",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "pnpm --filter ferromark test",
+    "pack:check": "node ./scripts/verify-pack.mjs",
+    "smoke:clean": "node ./scripts/clean-install-smoke.mjs",
+    "publish:ci": "pnpm --filter ferromark publish --access public --no-git-checks"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "3.7.2",
+    "@types/node": "24.10.1",
+    "typescript": "5.9.3"
+  }
+}
