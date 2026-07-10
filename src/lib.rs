@@ -393,37 +393,105 @@ impl HeadingState {
     }
 }
 
+/// Fast non-cryptographic string hasher (FxHash algorithm, as used by rustc).
+/// Heading slugs are short and not a hash-DoS surface, so SipHash's cost is
+/// not warranted; HashMap key equality keeps collisions correct regardless.
+#[derive(Default)]
+struct FxHasher {
+    hash: u64,
+}
+
+impl FxHasher {
+    const SEED: u64 = 0x51_7c_c1_b7_27_22_0a_95;
+
+    #[inline]
+    fn add(&mut self, v: u64) {
+        self.hash = (self.hash.rotate_left(5) ^ v).wrapping_mul(Self::SEED);
+    }
+}
+
+impl std::hash::Hasher for FxHasher {
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) {
+        let mut chunks = bytes.chunks_exact(8);
+        for chunk in &mut chunks {
+            self.add(u64::from_le_bytes(chunk.try_into().unwrap()));
+        }
+        let rem = chunks.remainder();
+        if !rem.is_empty() {
+            let mut buf = [0u8; 8];
+            buf[..rem.len()].copy_from_slice(rem);
+            self.add(u64::from_le_bytes(buf));
+            self.add(rem.len() as u64);
+        }
+    }
+
+    #[inline]
+    fn finish(&self) -> u64 {
+        self.hash
+    }
+}
+
+type FxBuildHasher = std::hash::BuildHasherDefault<FxHasher>;
+
 /// Tracker for deduplicating heading IDs.
 struct HeadingIdTracker {
     /// Maps a base slug to how many times it has been seen so far.
-    used: std::collections::HashMap<String, usize>,
+    used: std::collections::HashMap<String, usize, FxBuildHasher>,
+    /// Reusable buffer holding the id returned by `make_id`.
+    slug_buf: Vec<u8>,
 }
 
 impl HeadingIdTracker {
     fn new() -> Self {
         Self {
-            used: std::collections::HashMap::new(),
+            used: std::collections::HashMap::with_capacity_and_hasher(
+                32,
+                FxBuildHasher::default(),
+            ),
+            slug_buf: Vec::with_capacity(64),
         }
     }
 
-    /// Generate a unique slug, appending `-1`, `-2`, etc. on collision.
-    fn unique_slug(&mut self, base: String) -> String {
-        let slug = if base.is_empty() {
-            "heading".to_string()
-        } else {
-            base
-        };
-        match self.used.get_mut(&slug) {
+    /// Build a unique heading id from raw heading content, appending `-1`,
+    /// `-2`, etc. on collision. The returned slice borrows the internal
+    /// buffer and is valid until the next call. Allocates only when a new
+    /// base slug is recorded.
+    fn make_id(&mut self, raw: &[u8]) -> &str {
+        generate_slug_into(raw, &mut self.slug_buf);
+        if self.slug_buf.is_empty() || std::str::from_utf8(&self.slug_buf).is_err() {
+            self.slug_buf.clear();
+            self.slug_buf.extend_from_slice(b"heading");
+        }
+        let slug = std::str::from_utf8(&self.slug_buf).unwrap_or("heading");
+        match self.used.get_mut(slug) {
             Some(count) => {
                 *count += 1;
-                format!("{}-{}", slug, count)
+                let n = *count;
+                self.slug_buf.push(b'-');
+                push_decimal(&mut self.slug_buf, n);
             }
             None => {
-                self.used.insert(slug.clone(), 0);
-                slug
+                self.used.insert(slug.to_string(), 0);
             }
         }
+        std::str::from_utf8(&self.slug_buf).unwrap_or("heading")
     }
+}
+
+/// Append the decimal representation of `n` to `buf`.
+fn push_decimal(buf: &mut Vec<u8>, mut n: usize) {
+    let mut digits = [0u8; 20];
+    let mut i = digits.len();
+    loop {
+        i -= 1;
+        digits[i] = b'0' + (n % 10) as u8;
+        n /= 10;
+        if n == 0 {
+            break;
+        }
+    }
+    buf.extend_from_slice(&digits[i..]);
 }
 
 /// Generate a GitHub-compatible slug from raw heading text.
@@ -434,8 +502,8 @@ impl HeadingIdTracker {
 /// 3. Replace whitespace runs with `-`
 /// 4. Remove chars that are not alphanumeric, `-`, `_`, or space
 /// 5. Strip leading/trailing `-`
-fn generate_slug(raw: &[u8]) -> String {
-    let mut slug = Vec::with_capacity(raw.len());
+fn generate_slug_into(raw: &[u8], slug: &mut Vec<u8>) {
+    slug.clear();
     let mut prev_was_space = false;
 
     for &b in raw {
@@ -468,11 +536,10 @@ fn generate_slug(raw: &[u8]) -> String {
         slug.pop();
     }
     // Strip leading hyphen
-    while slug.first() == Some(&b'-') {
-        slug.remove(0);
+    let leading = slug.iter().take_while(|&&b| b == b'-').count();
+    if leading > 0 {
+        slug.drain(..leading);
     }
-
-    String::from_utf8(slug).unwrap_or_default()
 }
 
 /// State for collecting table cell content before inline parsing.
@@ -753,9 +820,8 @@ fn render_block_event(
 
             // Emit heading open tag (deferred from HeadingStart)
             if options.heading_ids {
-                let slug = generate_slug(content);
-                let id = heading_id_tracker.unique_slug(slug);
-                writer.heading_start_with_id(*level, &id);
+                let id = heading_id_tracker.make_id(content);
+                writer.heading_start_with_id(*level, id);
             } else {
                 writer.heading_start(*level);
             }
