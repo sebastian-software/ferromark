@@ -1,4 +1,14 @@
-use ferromark::{Options, to_html, to_html_with_options};
+use ferromark::{Options, RenderPolicy, to_html_with_options};
+
+fn to_html(input: &str) -> String {
+    to_html_with_options(
+        input,
+        &Options {
+            render_policy: RenderPolicy::Trusted,
+            ..Options::default()
+        },
+    )
+}
 
 // GFM extension: Disallowed raw HTML
 // https://github.github.com/gfm/#disallowed-raw-html-extension-
@@ -120,6 +130,7 @@ fn disallowed_html_disabled() {
     let result = to_html_with_options(
         "foo <script>alert('xss')</script> bar",
         &Options {
+            render_policy: RenderPolicy::Trusted,
             disallowed_raw_html: false,
             ..Options::default()
         },

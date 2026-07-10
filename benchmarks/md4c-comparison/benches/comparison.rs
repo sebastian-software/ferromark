@@ -1,6 +1,6 @@
 //! Comparison benchmarks: ferromark vs other Rust Markdown parsers
 //!
-//! Run with: cargo bench --bench comparison
+//! Run with: MD4C_DIR=/path/to/md4c cargo bench --bench comparison
 //!
 //! Parsers compared:
 //! - ferromark (this crate)
@@ -161,12 +161,14 @@ Paragraph after code.
 "#;
 
     /// CommonMark-heavy documents (wiki-style, text-heavy)
-    pub const COMMONMARK_5K: &str = include_str!("fixtures/commonmark-5k.md");
-    pub const COMMONMARK_20K: &str = include_str!("fixtures/commonmark-20k.md");
-    pub const COMMONMARK_50K: &str = include_str!("fixtures/commonmark-50k.md");
+    pub const COMMONMARK_5K: &str = include_str!("../../../benches/fixtures/commonmark-5k.md");
+    pub const COMMONMARK_20K: &str =
+        include_str!("../../../benches/fixtures/commonmark-20k.md");
+    pub const COMMONMARK_50K: &str =
+        include_str!("../../../benches/fixtures/commonmark-50k.md");
 
     /// Table-heavy document (~5KB)
-    pub const TABLES_5K: &str = include_str!("fixtures/tables-5k.md");
+    pub const TABLES_5K: &str = include_str!("../../../benches/fixtures/tables-5k.md");
 
     /// Generate a large document by repeating sections
     pub fn large() -> String {

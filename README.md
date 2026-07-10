@@ -46,7 +46,14 @@ Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run wi
 
 2% faster than pulldown-cmark. 11% faster than md4c. 4x faster than comrak. Competitor versions: pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
 
-The fixtures are synthetic wiki-style documents with paragraphs, lists, code blocks, and tables. Nothing cherry-picked. Run them yourself: `cargo bench --bench comparison`
+The fixtures are synthetic wiki-style documents with paragraphs, lists, code blocks, and tables. Nothing cherry-picked. The cross-parser harness is isolated from the library build and pins md4c at `65c6c9d` for the published numbers:
+
+```bash
+cd benchmarks/md4c-comparison
+MD4C_DIR=/path/to/md4c cargo bench --bench comparison
+```
+
+`MD4C_DIR` is required deliberately; normal `cargo build`, `cargo test`, and package consumers never inspect or compile a sibling C checkout.
 
 ## What you get
 
@@ -58,7 +65,7 @@ The fixtures are synthetic wiki-style documents with paragraphs, lists, code blo
 
 **MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
 
-15 feature flags to turn on exactly what you need:
+Fine-grained options let you turn on exactly what you need:
 
 ```text
 allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
@@ -77,6 +84,31 @@ ferromark is built for one job: turning Markdown into HTML as fast as possible. 
 - **HTML only.** No XML, no CommonMark round-tripping, no alternative output formats.
 
 These aren't planned. They'd compromise the streaming architecture that makes ferromark fast.
+
+## Rendering untrusted Markdown
+
+The default `RenderPolicy::Untrusted` is the browser-facing safety boundary. It escapes all raw HTML and allows relative URLs plus a small set of non-script schemes (`http`, `https`, `mailto`, `tel`, and similar). URL schemes are checked after entity and control-character normalization, so spellings such as `javas&#99;ript:` are blocked too.
+
+```rust
+let html = ferromark::to_html(user_supplied_markdown);
+```
+
+Trusted documents and MDX can opt into passthrough explicitly:
+
+```rust
+use ferromark::{Options, RenderPolicy};
+
+let options = Options {
+    render_policy: RenderPolicy::Trusted,
+    ..Options::default()
+};
+let html = ferromark::to_html_with_options(trusted_markdown, &options);
+```
+
+`disallowed_raw_html` implements the narrower GFM tag filter in trusted mode. It is not a general-purpose HTML sanitizer and does not make arbitrary raw HTML safe by itself.
+
+Upgrading from 0.1? See the [0.2 migration guide](docs/migration-0.2.md) for the
+new rendering default and fallible UTF-8 and MDX APIs.
 
 ## MDX support
 
@@ -126,7 +158,7 @@ Use `render_with_options()` for custom Markdown settings (heading IDs, math, foo
 
 ```rust
 let output = render(input);
-let tsx = output.to_component("HelloWorld");
+let tsx = output.to_component("HelloWorld")?;
 ```
 
 ```tsx
@@ -226,7 +258,7 @@ What makes this fast in practice:
 
 - **Linear time.** No regex, no backtracking, no quadratic blowup on adversarial input.
 - **Low allocation pressure.** Compact events, range references, reusable output buffers.
-- **Operational safety.** Depth and size limits guard against pathological nesting.
+- **Operational safety.** Enforced limits cap block nesting (32), inline marks (4,096), code-span backtick runs (32), link-destination parenthesis depth (32), ordered-list marker digits (9), and table columns (128). Footnote numbering has no arbitrary count cap; its definition-index lookup stays O(1) per reference.
 - **Small dependency surface.** Minimal crates, straightforward integration.
 
 <details>
@@ -397,7 +429,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark has 15 options; pulldown-cmark and comrak use option structs.</small></td></tr>
+    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark, pulldown-cmark, and comrak use option structs.</small></td></tr>
     <tr>
       <td><b>Raw HTML control</b></td>
       <td align="center">🟩</td>
@@ -405,7 +437,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>md4c and comrak expose explicit switches; ferromark provides <code>allow_html</code> and <code>disallowed_raw_html</code>; pulldown-cmark is more fixed.</small></td></tr>
+    <tr><td colspan="5"><small>md4c and comrak expose explicit switches; ferromark defaults to <code>RenderPolicy::Untrusted</code> and requires an explicit trusted policy for raw HTML passthrough; pulldown-cmark is more fixed.</small></td></tr>
     <tr>
       <td><b>GFM tables</b></td>
       <td align="center">🟩</td>
@@ -445,7 +477,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>md4c and comrak provide explicit unsafe/escape switches; ferromark provides <code>allow_html</code> and <code>disallowed_raw_html</code>; pulldown-cmark is more fixed.</small></td></tr>
+    <tr><td colspan="5"><small>md4c and comrak provide explicit unsafe/escape switches; ferromark uses an untrusted-by-default rendering policy with URL scheme checks; pulldown-cmark is more fixed.</small></td></tr>
     <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Rendering and output</b></td></tr>
     <tr>

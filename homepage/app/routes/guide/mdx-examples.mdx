@@ -42,7 +42,7 @@ Use `to_component()` to package rendered MDX as a JSX/TSX module.
 
 ```rust
 let output = render(input);
-let tsx = output.to_component("HelloWorld");
+let tsx = output.to_component("HelloWorld")?;
 ```
 
 ## segment()

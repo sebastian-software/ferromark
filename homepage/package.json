@@ -7,20 +7,21 @@
   "scripts": {
     "dev": "react-router dev",
     "build": "react-router build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "audit": "pnpm audit --prod --audit-level high"
   },
   "dependencies": {
-    "ardo": "^2.1.1",
+    "ardo": "^2.8.0",
     "isbot": "*",
     "react": "*",
     "react-dom": "*",
-    "react-router": "*"
+    "react-router": "^7.18.1"
   },
   "devDependencies": {
-    "@react-router/dev": "*",
+    "@react-router/dev": "^7.18.1",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.9.3",
-    "vite": "^8.0.0-beta.0"
+    "vite": "^7.3.5"
   }
 }

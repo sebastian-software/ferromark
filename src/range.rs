@@ -35,11 +35,11 @@ impl Range {
     /// Create a range from usize values.
     ///
     /// # Panics
-    /// Panics in debug mode if values exceed u32::MAX.
+    /// Panics if either value exceeds `u32::MAX`.
     #[inline]
     pub fn from_usize(start: usize, end: usize) -> Self {
-        debug_assert!(start <= u32::MAX as usize);
-        debug_assert!(end <= u32::MAX as usize);
+        assert!(start <= u32::MAX as usize, "range start exceeds u32::MAX");
+        assert!(end <= u32::MAX as usize, "range end exceeds u32::MAX");
         Self {
             start: start as u32,
             end: end as u32,
@@ -61,20 +61,18 @@ impl Range {
         &input[self.start as usize..self.end as usize]
     }
 
-    /// Get the slice as a str (assumes valid UTF-8).
-    ///
-    /// # Safety
-    /// The caller must ensure the slice contains valid UTF-8.
+    /// Get the slice as a string, validating its UTF-8 encoding.
     #[inline]
-    pub fn slice_str<'a>(&self, input: &'a [u8]) -> &'a str {
-        // SAFETY: Caller guarantees valid UTF-8
-        unsafe { std::str::from_utf8_unchecked(self.slice(input)) }
+    pub fn slice_str<'a>(&self, input: &'a [u8]) -> Result<&'a str, std::str::Utf8Error> {
+        std::str::from_utf8(self.slice(input))
     }
 
-    /// Try to get the slice as a str.
+    /// Get the slice as a string, validating its UTF-8 encoding.
+    ///
+    /// This compatibility alias is equivalent to [`Self::slice_str`].
     #[inline]
     pub fn try_slice_str<'a>(&self, input: &'a [u8]) -> Result<&'a str, std::str::Utf8Error> {
-        std::str::from_utf8(self.slice(input))
+        self.slice_str(input)
     }
 
     /// Length of the range in bytes.
@@ -190,10 +188,26 @@ mod tests {
     }
 
     #[test]
+    fn slice_str_rejects_invalid_utf8() {
+        let input = [0xff];
+        let range = Range::new(0, 1);
+
+        assert!(range.slice_str(&input).is_err());
+        assert!(range.try_slice_str(&input).is_err());
+    }
+
+    #[test]
     fn test_range_from_usize() {
         let r = Range::from_usize(100, 200);
         assert_eq!(r.start, 100);
         assert_eq!(r.end, 200);
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    #[should_panic(expected = "range start exceeds u32::MAX")]
+    fn range_from_usize_rejects_truncation() {
+        let _ = Range::from_usize(u32::MAX as usize + 1, u32::MAX as usize + 1);
     }
 
     #[test]

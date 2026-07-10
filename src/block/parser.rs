@@ -5,6 +5,28 @@ use crate::cursor::Cursor;
 use crate::limits;
 use smallvec::SmallVec;
 
+// Parser branches establish these bounds through `peek`, `at`, `remaining`,
+// or a delimiter scan before advancing. Keep the unchecked operation here so
+// the public `Cursor` API remains safe without adding duplicate hot-path checks.
+macro_rules! parser_cursor_bump {
+    ($cursor:expr) => {{
+        debug_assert!(!$cursor.is_eof());
+        // SAFETY: The parser branch invoking this macro has established that
+        // the cursor is not at EOF.
+        unsafe { $cursor.bump_unchecked() }
+    }};
+}
+
+macro_rules! parser_cursor_advance {
+    ($cursor:expr, $distance:expr) => {{
+        let distance = $distance;
+        debug_assert!(distance <= $cursor.remaining());
+        // SAFETY: The parser branch invoking this macro has established that
+        // `distance` does not exceed the remaining input.
+        unsafe { $cursor.advance_unchecked(distance) }
+    }};
+}
+
 use super::event::{Alignment, BlockEvent, CalloutType, ListKind, TaskState};
 use crate::Options;
 use crate::footnote::{FootnoteStore, normalize_footnote_label};
@@ -262,17 +284,17 @@ impl<'a> BlockParser<'a> {
             while let Some(b) = self.cursor.peek() {
                 if b == b' ' {
                     cols += 1;
-                    self.cursor.bump();
+                    parser_cursor_bump!(self.cursor);
                 } else if b == b'\t' {
                     cols = (cols + 4) & !3;
-                    self.cursor.bump();
+                    parser_cursor_bump!(self.cursor);
                 } else {
                     break;
                 }
             }
             let newline_start = self.cursor.offset();
             if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
             }
             let ws_end = self.cursor.offset();
 
@@ -351,7 +373,7 @@ impl<'a> BlockParser<'a> {
         // Check for blank line AFTER container matching (e.g., ">>" followed by newline)
         if self.cursor.is_eof() || self.cursor.at(b'\n') {
             if !self.cursor.is_eof() {
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
             }
             self.close_table(events);
             self.close_paragraph(events);
@@ -408,7 +430,7 @@ impl<'a> BlockParser<'a> {
                 let text_start = self.cursor.offset();
                 let line_end = self.find_line_end();
                 let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                    self.cursor.bump();
+                    parser_cursor_bump!(self.cursor);
                     line_end + 1
                 } else {
                     line_end
@@ -437,7 +459,7 @@ impl<'a> BlockParser<'a> {
             let first = self.cursor.peek_or_zero();
             if first == 0 || first == b'\n' {
                 if first == b'\n' {
-                    self.cursor.bump();
+                    parser_cursor_bump!(self.cursor);
                 }
                 self.close_table(events);
                 self.close_paragraph(events);
@@ -474,10 +496,10 @@ impl<'a> BlockParser<'a> {
                 } else {
                     // Skip to end of line
                     while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
-                        self.cursor.bump();
+                        parser_cursor_bump!(self.cursor);
                     }
                     if !self.cursor.is_eof() {
-                        self.cursor.bump();
+                        parser_cursor_bump!(self.cursor);
                     }
                     // Convert paragraph to heading
                     self.close_paragraph_as_setext_heading(level, events);
@@ -515,7 +537,7 @@ impl<'a> BlockParser<'a> {
                     if header_cells.len() == alignments.len() {
                         self.cursor = Cursor::new_at(self.input, line_end);
                         if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                            self.cursor.bump();
+                            parser_cursor_bump!(self.cursor);
                         }
                         self.start_table(header_cells, alignments, events);
                         return;
@@ -586,7 +608,7 @@ impl<'a> BlockParser<'a> {
             let first = self.cursor.peek_or_zero();
             if first == 0 || first == b'\n' {
                 if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                    self.cursor.bump();
+                    parser_cursor_bump!(self.cursor);
                 }
                 self.close_paragraph(events);
                 return true;
@@ -699,11 +721,11 @@ impl<'a> BlockParser<'a> {
             if b == b' ' {
                 self.current_col += 1;
                 bytes += 1;
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
             } else if b == b'\t' {
                 self.current_col = Self::tab_column(self.current_col);
                 bytes += 1;
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
             } else {
                 break;
             }
@@ -735,7 +757,7 @@ impl<'a> BlockParser<'a> {
                     cols_counted += 1;
                     self.current_col += 1;
                     bytes += 1;
-                    self.cursor.bump();
+                    parser_cursor_bump!(self.cursor);
                 }
                 Some(b'\t') => {
                     let next_col = Self::tab_column(self.current_col);
@@ -745,13 +767,13 @@ impl<'a> BlockParser<'a> {
                         cols_counted += tab_width;
                         self.current_col = next_col;
                         bytes += 1;
-                        self.cursor.bump();
+                        parser_cursor_bump!(self.cursor);
                     } else {
                         // Tab would exceed max_cols - consume it but save excess
                         self.partial_tab_cols = tab_width - cols_needed;
                         self.current_col = next_col;
                         bytes += 1;
-                        self.cursor.bump();
+                        parser_cursor_bump!(self.cursor);
                         return (max_cols, bytes);
                     }
                 }
@@ -777,7 +799,7 @@ impl<'a> BlockParser<'a> {
         // Check for blank line (can happen after container markers)
         if first == 0 || first == b'\n' {
             if first == b'\n' {
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
             }
             self.close_table(events);
             self.close_paragraph(events);
@@ -815,10 +837,10 @@ impl<'a> BlockParser<'a> {
                 if let Some(level) = self.is_setext_underline_after_indent() {
                     // Skip to end of line
                     while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
-                        self.cursor.bump();
+                        parser_cursor_bump!(self.cursor);
                     }
                     if !self.cursor.is_eof() {
-                        self.cursor.bump();
+                        parser_cursor_bump!(self.cursor);
                     }
                     // Convert paragraph to heading
                     self.close_paragraph_as_setext_heading(level, events);
@@ -856,7 +878,7 @@ impl<'a> BlockParser<'a> {
                             // Skip the delimiter row
                             self.cursor = Cursor::new_at(self.input, line_end);
                             if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                                self.cursor.bump();
+                                parser_cursor_bump!(self.cursor);
                             }
 
                             self.start_table(header_cells, alignments, events);
@@ -953,7 +975,7 @@ impl<'a> BlockParser<'a> {
                     let save_col = self.current_col;
                     let (cols, _bytes) = self.skip_indent();
                     if cols <= 3 && self.cursor.at(b'>') {
-                        self.cursor.bump();
+                        parser_cursor_bump!(self.cursor);
                         self.current_col += 1;
                         // Optional space after > - use skip_indent_max(1) for proper tab handling
                         self.skip_indent_max(1);
@@ -1373,7 +1395,7 @@ impl<'a> BlockParser<'a> {
             return false;
         }
 
-        self.cursor.bump(); // consume >
+        parser_cursor_bump!(self.cursor); // consume >
         self.current_col += 1;
 
         // Optional space after > (consumes 1 column of whitespace)
@@ -1414,17 +1436,17 @@ impl<'a> BlockParser<'a> {
         if !self.cursor.at(b'[') {
             return None;
         }
-        self.cursor.bump();
+        parser_cursor_bump!(self.cursor);
         if !self.cursor.at(b'!') {
             self.cursor = Cursor::new_at(self.input, saved_offset);
             return None;
         }
-        self.cursor.bump();
+        parser_cursor_bump!(self.cursor);
 
         // Read ASCII alpha type name
         let type_start = self.cursor.offset();
         while self.cursor.peek().is_some_and(|b| b.is_ascii_alphabetic()) {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
         }
         let type_end = self.cursor.offset();
 
@@ -1439,11 +1461,11 @@ impl<'a> BlockParser<'a> {
             self.cursor = Cursor::new_at(self.input, saved_offset);
             return None;
         }
-        self.cursor.bump();
+        parser_cursor_bump!(self.cursor);
 
         // After `]`, only optional whitespace allowed before newline/EOF
         while self.cursor.peek().is_some_and(|b| b == b' ' || b == b'\t') {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
         }
         if !self.cursor.is_eof() && !self.cursor.at(b'\n') && !self.cursor.at(b'\r') {
             // Non-whitespace after `]` — not a callout
@@ -1538,7 +1560,7 @@ impl<'a> BlockParser<'a> {
             return None;
         }
 
-        self.cursor.bump(); // consume marker (1 column)
+        parser_cursor_bump!(self.cursor); // consume marker (1 column)
         self.current_col += 1;
 
         // Handle blank list item (marker followed by newline)
@@ -1599,7 +1621,7 @@ impl<'a> BlockParser<'a> {
                 }
                 num = num * 10 + (b - b'0') as u32;
                 digits += 1;
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
                 self.current_col += 1;
             } else {
                 break;
@@ -1620,7 +1642,7 @@ impl<'a> BlockParser<'a> {
                 return None;
             }
         };
-        self.cursor.bump(); // consume . or )
+        parser_cursor_bump!(self.cursor); // consume . or )
         self.current_col += 1;
 
         // Must be followed by space, tab, or newline
@@ -1802,7 +1824,7 @@ impl<'a> BlockParser<'a> {
         };
 
         // Consume checkbox
-        self.cursor.advance(4);
+        parser_cursor_advance!(self.cursor, 4);
         state
     }
 
@@ -1874,9 +1896,9 @@ impl<'a> BlockParser<'a> {
         while let Some(b) = temp_cursor.peek() {
             if b == marker {
                 count += 1;
-                temp_cursor.bump();
+                parser_cursor_bump!(temp_cursor);
             } else if b == b' ' || b == b'\t' {
-                temp_cursor.bump();
+                parser_cursor_bump!(temp_cursor);
             } else if b == b'\n' {
                 break;
             } else {
@@ -1907,9 +1929,9 @@ impl<'a> BlockParser<'a> {
         while let Some(b) = temp_cursor.peek() {
             if b == marker {
                 count += 1;
-                temp_cursor.bump();
+                parser_cursor_bump!(temp_cursor);
             } else if b == b' ' || b == b'\t' {
-                temp_cursor.bump();
+                parser_cursor_bump!(temp_cursor);
             } else if b == b'\n' {
                 break;
             } else {
@@ -1926,7 +1948,7 @@ impl<'a> BlockParser<'a> {
         // Consume the line
         self.cursor = temp_cursor;
         if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
         }
 
         // Close any open paragraph
@@ -1955,7 +1977,7 @@ impl<'a> BlockParser<'a> {
 
         while temp_cursor.at(b'#') && level < 7 {
             level += 1;
-            temp_cursor.bump();
+            parser_cursor_bump!(temp_cursor);
         }
 
         // Level must be 1-6
@@ -1990,7 +2012,7 @@ impl<'a> BlockParser<'a> {
         // Update cursor to end of line
         self.cursor = Cursor::new_at(self.input, line_end);
         if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
         }
 
         // Close any open paragraph
@@ -2134,7 +2156,7 @@ impl<'a> BlockParser<'a> {
 
         while temp_cursor.at(fence_char) {
             fence_len += 1;
-            temp_cursor.bump();
+            parser_cursor_bump!(temp_cursor);
         }
 
         if fence_len < 3 {
@@ -2173,7 +2195,7 @@ impl<'a> BlockParser<'a> {
         // Move cursor past the line
         self.cursor = Cursor::new_at(self.input, line_end);
         if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
         }
 
         // Close any open paragraph
@@ -2222,7 +2244,7 @@ impl<'a> BlockParser<'a> {
         // Find end of line (including newline for code blocks)
         let line_end = self.find_line_end();
         let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
             line_end + 1 // Include the newline
         } else {
             line_end
@@ -2290,7 +2312,7 @@ impl<'a> BlockParser<'a> {
             events.push(BlockEvent::HtmlBlockEnd);
 
             if !self.cursor.is_eof() {
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
             }
 
             self.close_paragraph(events);
@@ -2302,7 +2324,7 @@ impl<'a> BlockParser<'a> {
         // Find end of line (including newline)
         let line_end = self.find_line_end();
         let content_end = if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
             line_end + 1
         } else {
             line_end
@@ -2692,7 +2714,7 @@ impl<'a> BlockParser<'a> {
     /// Find end of current line (position of \n or EOF).
     fn find_line_end(&mut self) -> usize {
         while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
         }
         self.cursor.offset()
     }
@@ -2715,12 +2737,12 @@ impl<'a> BlockParser<'a> {
             match temp_cursor.peek() {
                 Some(b' ') => {
                     cols += 1;
-                    temp_cursor.bump();
+                    parser_cursor_bump!(temp_cursor);
                 }
                 Some(b'\t') => {
                     let next_col = Self::tab_column(cols);
                     cols = next_col;
-                    temp_cursor.bump();
+                    parser_cursor_bump!(temp_cursor);
                 }
                 _ => break,
             }
@@ -2730,7 +2752,7 @@ impl<'a> BlockParser<'a> {
 
             while temp_cursor.at(fence_char) {
                 closing_len += 1;
-                temp_cursor.bump();
+                parser_cursor_bump!(temp_cursor);
             }
 
             // Closing fence must be at least as long as opening
@@ -2741,7 +2763,7 @@ impl<'a> BlockParser<'a> {
                     // Valid closing fence
                     self.cursor = temp_cursor;
                     if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                        self.cursor.bump();
+                        parser_cursor_bump!(self.cursor);
                     }
 
                     self.fence_state = None;
@@ -2785,14 +2807,14 @@ impl<'a> BlockParser<'a> {
         let line_end = match self.cursor.find_newline() {
             Some(pos) => {
                 // Advance directly instead of rebuilding the cursor at line end.
-                self.cursor.advance(pos);
+                parser_cursor_advance!(self.cursor, pos);
                 let end = content_start + pos;
-                self.cursor.bump(); // consume newline
+                parser_cursor_bump!(self.cursor); // consume newline
                 end
             }
             None => {
                 let remaining = self.cursor.remaining();
-                self.cursor.advance(remaining);
+                parser_cursor_advance!(self.cursor, remaining);
                 content_start + remaining
             }
         };
@@ -3113,14 +3135,14 @@ impl<'a> BlockParser<'a> {
         let line_start = self.cursor.offset();
         let line_end = match self.cursor.find_newline() {
             Some(pos) => {
-                self.cursor.advance(pos);
+                parser_cursor_advance!(self.cursor, pos);
                 let end = line_start + pos;
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
                 end
             }
             None => {
                 let remaining = self.cursor.remaining();
-                self.cursor.advance(remaining);
+                parser_cursor_advance!(self.cursor, remaining);
                 line_start + remaining
             }
         };
@@ -3223,21 +3245,21 @@ impl<'a> BlockParser<'a> {
         if !self.cursor.at(b'[') {
             return false;
         }
-        self.cursor.bump();
+        parser_cursor_bump!(self.cursor);
         if self.cursor.is_eof() || !self.cursor.at(b'^') {
             self.cursor = Cursor::new_at(self.input, save_pos);
             self.partial_tab_cols = save_partial;
             self.current_col = save_col;
             return false;
         }
-        self.cursor.bump();
+        parser_cursor_bump!(self.cursor);
 
         // Read label: alphanumeric, dash, underscore
         let label_start = self.cursor.offset();
         while !self.cursor.is_eof() {
             let b = self.cursor.peek_or_zero();
             if b.is_ascii_alphanumeric() || b == b'-' || b == b'_' {
-                self.cursor.bump();
+                parser_cursor_bump!(self.cursor);
             } else {
                 break;
             }
@@ -3259,14 +3281,14 @@ impl<'a> BlockParser<'a> {
             self.current_col = save_col;
             return false;
         }
-        self.cursor.bump();
+        parser_cursor_bump!(self.cursor);
         if self.cursor.is_eof() || !self.cursor.at(b':') {
             self.cursor = Cursor::new_at(self.input, save_pos);
             self.partial_tab_cols = save_partial;
             self.current_col = save_col;
             return false;
         }
-        self.cursor.bump();
+        parser_cursor_bump!(self.cursor);
 
         let label_bytes = &self.input[label_start..label_end];
         let normalized = match normalize_footnote_label(label_bytes) {
@@ -3282,7 +3304,7 @@ impl<'a> BlockParser<'a> {
 
         // Skip optional space/tab after colon
         if !self.cursor.is_eof() && (self.cursor.at(b' ') || self.cursor.at(b'\t')) {
-            self.cursor.bump();
+            parser_cursor_bump!(self.cursor);
         }
 
         // Calculate content indent: columns from line start to current position

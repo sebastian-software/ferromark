@@ -8,10 +8,37 @@ permissions:
   contents: read
 
 jobs:
-  release:
-    uses: sebastian-software/ferramenta/.github/workflows/release-rust.yml@main
+  release-please:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
       pull-requests: write
-    secrets: inherit
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+  publish-crate:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set Rust
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88 # master
+        with:
+          toolchain: stable
+
+      - name: Publish to crates.io
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

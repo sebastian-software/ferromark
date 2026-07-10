@@ -2,8 +2,8 @@
 //!
 //! Uses md4c's growth strategy: 1.5x + 128-byte alignment.
 
-use crate::Range;
 use crate::escape;
+use crate::{Range, RenderPolicy};
 use memchr::memchr;
 
 /// Decode HTML entities with CommonMark compliance.
@@ -38,6 +38,70 @@ fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
     std::borrow::Cow::Owned(result)
 }
 
+/// Return whether a URL is safe to place in an untrusted HTML attribute.
+///
+/// Relative URLs and a small allowlist of non-script schemes are accepted.
+/// Entity references and embedded ASCII whitespace/control characters are
+/// normalized before checking the scheme so browser-equivalent spellings of
+/// `javascript:` and similar schemes cannot bypass the boundary.
+fn is_safe_url(url: &[u8]) -> bool {
+    let Ok(url) = std::str::from_utf8(url) else {
+        return false;
+    };
+    if memchr(b'&', url.as_bytes()).is_none() {
+        return is_safe_normalized_url(url);
+    }
+    let decoded = decode_entities_commonmark(url);
+    is_safe_normalized_url(&decoded)
+}
+
+fn is_safe_normalized_url(url: &str) -> bool {
+    let mut scheme = [0u8; 16];
+    let mut scheme_len = 0usize;
+    let mut scheme_overflow = false;
+
+    for ch in url.chars() {
+        match ch {
+            ':' => {
+                let scheme = &scheme[..scheme_len];
+                if scheme_overflow
+                    || scheme.is_empty()
+                    || !scheme[0].is_ascii_alphabetic()
+                    || !scheme
+                        .iter()
+                        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-' | b'.'))
+                {
+                    return !scheme_overflow;
+                }
+                return scheme == b"ftp"
+                    || scheme == b"geo"
+                    || scheme == b"http"
+                    || scheme == b"https"
+                    || scheme == b"irc"
+                    || scheme == b"ircs"
+                    || scheme == b"mailto"
+                    || scheme == b"matrix"
+                    || scheme == b"sms"
+                    || scheme == b"tel"
+                    || scheme == b"xmpp";
+            }
+            '/' | '?' | '#' => return true,
+            ch if ch.is_ascii_whitespace() || ch.is_ascii_control() => {}
+            ch if ch.is_ascii() => {
+                if scheme_len < scheme.len() {
+                    scheme[scheme_len] = ch.to_ascii_lowercase() as u8;
+                    scheme_len += 1;
+                } else {
+                    scheme_overflow = true;
+                }
+            }
+            _ => return true,
+        }
+    }
+
+    true
+}
+
 /// HTML output writer with pre-allocated, reusable buffer.
 ///
 /// # Example
@@ -49,7 +113,7 @@ fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
 /// writer.write_escaped_text(b"Hello <World>");
 /// writer.write_str("</p>");
 ///
-/// let html = writer.into_string();
+/// let html = writer.into_string().expect("writer output is valid UTF-8");
 /// assert_eq!(html, "<p>Hello &lt;World&gt;</p>");
 /// ```
 pub struct HtmlWriter {
@@ -237,11 +301,27 @@ impl HtmlWriter {
         escape::url_encode_then_html_escape(&mut self.out, url);
     }
 
+    /// Write an autolink URL after applying the selected trust policy.
+    #[inline]
+    pub fn write_url_encoded_with_policy(&mut self, url: &[u8], policy: RenderPolicy) {
+        if policy == RenderPolicy::Trusted || is_safe_url(url) {
+            self.write_url_encoded(url);
+        }
+    }
+
     /// Write link destination with backslash escape processing and URL encoding.
     /// Used for link destinations in `[text](url)` syntax.
     #[inline]
     pub fn write_link_url(&mut self, url: &[u8]) {
         escape::url_escape_link_destination(&mut self.out, url);
+    }
+
+    /// Write a link destination after applying the selected trust policy.
+    #[inline]
+    pub fn write_link_url_with_policy(&mut self, url: &[u8], policy: RenderPolicy) {
+        if policy == RenderPolicy::Trusted || is_safe_url(url) {
+            self.write_link_url(url);
+        }
     }
 
     /// Write a newline.
@@ -274,11 +354,10 @@ impl HtmlWriter {
         &self.out
     }
 
-    /// Get output as str (assumes valid UTF-8).
+    /// Get output as a string slice, validating its UTF-8 encoding.
     #[inline]
-    pub fn as_str(&self) -> &str {
-        // SAFETY: We only write valid UTF-8 (ASCII tags + escaped content)
-        unsafe { std::str::from_utf8_unchecked(&self.out) }
+    pub fn as_str(&self) -> Result<&str, std::str::Utf8Error> {
+        std::str::from_utf8(&self.out)
     }
 
     /// Take ownership of output buffer.
@@ -287,18 +366,15 @@ impl HtmlWriter {
         self.out
     }
 
-    /// Take ownership as String.
+    /// Take ownership as a string, validating its UTF-8 encoding.
     #[inline]
-    pub fn into_string(self) -> String {
-        // SAFETY: We only write valid UTF-8
-        unsafe { String::from_utf8_unchecked(self.out) }
+    pub fn into_string(self) -> Result<String, std::string::FromUtf8Error> {
+        String::from_utf8(self.out)
     }
 
-    /// Get mutable reference to internal buffer.
-    ///
-    /// Use with caution - allows bypassing escaping.
+    /// Get mutable access for crate-internal zero-copy rendering operations.
     #[inline]
-    pub fn buffer_mut(&mut self) -> &mut Vec<u8> {
+    pub(crate) fn buffer_mut(&mut self) -> &mut Vec<u8> {
         &mut self.out
     }
 
@@ -874,14 +950,14 @@ mod tests {
     fn test_writer_write_str() {
         let mut writer = HtmlWriter::new();
         writer.write_str("<p>");
-        assert_eq!(writer.as_str(), "<p>");
+        assert_eq!(writer.as_str().unwrap(), "<p>");
     }
 
     #[test]
     fn test_writer_escaped_text() {
         let mut writer = HtmlWriter::new();
         writer.write_escaped_text(b"<script>");
-        assert_eq!(writer.as_str(), "&lt;script&gt;");
+        assert_eq!(writer.as_str().unwrap(), "&lt;script&gt;");
     }
 
     #[test]
@@ -890,7 +966,7 @@ mod tests {
         writer.paragraph_start();
         writer.write_escaped_text(b"Hello");
         writer.paragraph_end();
-        assert_eq!(writer.as_str(), "<p>Hello</p>\n");
+        assert_eq!(writer.as_str().unwrap(), "<p>Hello</p>\n");
     }
 
     #[test]
@@ -899,7 +975,7 @@ mod tests {
         writer.heading_start(1);
         writer.write_escaped_text(b"Title");
         writer.heading_end(1);
-        assert_eq!(writer.as_str(), "<h1>Title</h1>\n");
+        assert_eq!(writer.as_str().unwrap(), "<h1>Title</h1>\n");
     }
 
     #[test]
@@ -909,7 +985,7 @@ mod tests {
             writer.heading_start(level);
             writer.heading_end(level);
             let expected = format!("<h{level}></h{level}>\n");
-            assert_eq!(writer.as_str(), expected);
+            assert_eq!(writer.as_str().unwrap(), expected);
         }
     }
 
@@ -920,7 +996,7 @@ mod tests {
         writer.write_escaped_text(b"fn main() {}");
         writer.code_block_end();
         assert_eq!(
-            writer.as_str(),
+            writer.as_str().unwrap(),
             "<pre><code class=\"language-rust\">fn main() {}</code></pre>\n"
         );
     }
@@ -931,14 +1007,14 @@ mod tests {
         writer.code_block_start(None);
         writer.write_escaped_text(b"code");
         writer.code_block_end();
-        assert_eq!(writer.as_str(), "<pre><code>code</code></pre>\n");
+        assert_eq!(writer.as_str().unwrap(), "<pre><code>code</code></pre>\n");
     }
 
     #[test]
     fn test_writer_thematic_break() {
         let mut writer = HtmlWriter::new();
         writer.thematic_break();
-        assert_eq!(writer.as_str(), "<hr />\n");
+        assert_eq!(writer.as_str().unwrap(), "<hr />\n");
     }
 
     #[test]
@@ -947,7 +1023,10 @@ mod tests {
         writer.link_start(b"https://example.com", None);
         writer.write_escaped_text(b"link");
         writer.link_end();
-        assert_eq!(writer.as_str(), "<a href=\"https://example.com\">link</a>");
+        assert_eq!(
+            writer.as_str().unwrap(),
+            "<a href=\"https://example.com\">link</a>"
+        );
     }
 
     #[test]
@@ -957,7 +1036,7 @@ mod tests {
         writer.write_escaped_text(b"link");
         writer.link_end();
         assert_eq!(
-            writer.as_str(),
+            writer.as_str().unwrap(),
             "<a href=\"https://example.com\" title=\"My Title\">link</a>"
         );
     }
@@ -968,9 +1047,39 @@ mod tests {
         writer.link_start(b"https://example.com?a=1&b=2", None);
         writer.link_end();
         assert_eq!(
-            writer.as_str(),
+            writer.as_str().unwrap(),
             "<a href=\"https://example.com?a=1&amp;b=2\"></a>"
         );
+    }
+
+    #[test]
+    fn untrusted_url_policy_blocks_script_schemes_after_normalization() {
+        for url in [
+            b"javascript:alert(1)".as_slice(),
+            b"JaVaScRiPt:alert(1)",
+            b"java\tscript:alert(1)",
+            b"javas&#99;ript:alert(1)",
+            b"data:text/html,<script>alert(1)</script>",
+            b"averylongunknownscheme:payload",
+        ] {
+            let mut writer = HtmlWriter::new();
+            writer.write_link_url_with_policy(url, RenderPolicy::Untrusted);
+            assert_eq!(writer.as_bytes(), b"", "URL should be blocked: {url:?}");
+        }
+    }
+
+    #[test]
+    fn untrusted_url_policy_allows_relative_and_safe_schemes() {
+        for url in [
+            b"/guide/getting-started".as_slice(),
+            b"#section",
+            b"https://example.com",
+            b"mailto:team@example.com",
+        ] {
+            let mut writer = HtmlWriter::new();
+            writer.write_link_url_with_policy(url, RenderPolicy::Untrusted);
+            assert!(!writer.is_empty(), "URL should be allowed: {url:?}");
+        }
     }
 
     #[test]
@@ -984,15 +1093,24 @@ mod tests {
         assert_eq!(writer.out.capacity(), cap1);
 
         writer.write_str("second");
-        assert_eq!(writer.as_str(), "second");
+        assert_eq!(writer.as_str().unwrap(), "second");
     }
 
     #[test]
     fn test_writer_into_string() {
         let mut writer = HtmlWriter::new();
         writer.write_str("<p>Hello</p>");
-        let s = writer.into_string();
+        let s = writer.into_string().unwrap();
         assert_eq!(s, "<p>Hello</p>");
+    }
+
+    #[test]
+    fn writer_string_views_reject_invalid_utf8() {
+        let mut writer = HtmlWriter::new();
+        writer.write_bytes(&[0xff]);
+
+        assert!(writer.as_str().is_err());
+        assert!(writer.into_string().is_err());
     }
 
     #[test]
@@ -1000,7 +1118,7 @@ mod tests {
         let mut writer = HtmlWriter::new();
         writer.ol_start(Some(5));
         writer.ol_end();
-        assert_eq!(writer.as_str(), "<ol start=\"5\">\n</ol>\n");
+        assert_eq!(writer.as_str().unwrap(), "<ol start=\"5\">\n</ol>\n");
     }
 
     #[test]
@@ -1008,21 +1126,21 @@ mod tests {
         let mut writer = HtmlWriter::new();
         writer.ol_start(Some(1));
         writer.ol_end();
-        assert_eq!(writer.as_str(), "<ol>\n</ol>\n");
+        assert_eq!(writer.as_str().unwrap(), "<ol>\n</ol>\n");
     }
 
     #[test]
     fn test_write_u32() {
         let mut writer = HtmlWriter::new();
         writer.write_u32(0);
-        assert_eq!(writer.as_str(), "0");
+        assert_eq!(writer.as_str().unwrap(), "0");
 
         writer.clear();
         writer.write_u32(42);
-        assert_eq!(writer.as_str(), "42");
+        assert_eq!(writer.as_str().unwrap(), "42");
 
         writer.clear();
         writer.write_u32(1234567890);
-        assert_eq!(writer.as_str(), "1234567890");
+        assert_eq!(writer.as_str().unwrap(), "1234567890");
     }
 }

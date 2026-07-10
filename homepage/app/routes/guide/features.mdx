@@ -36,6 +36,17 @@ disallowed_raw_html · footnotes · front_matter · heading_ids
 math · callouts
 ```
 
+## Rendering policy
+
+`RenderPolicy::Untrusted` is the default. It escapes raw HTML and rejects unsafe
+URL schemes after entity and control-character normalization. Use
+`RenderPolicy::Trusted` only for content you control. The
+`disallowed_raw_html` option is the narrower GFM tag filter, not a general HTML
+sanitizer.
+
+See the [0.2 migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-0.2.md)
+for the related API changes.
+
 ## Design trade-offs
 
 ferromark optimizes for streaming Markdown-to-HTML throughput:

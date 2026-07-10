@@ -1,6 +1,6 @@
-/// MDX Segmenter — split MDX into typed blocks, render only the Markdown.
-///
-/// Run with: `cargo run --features mdx --example mdx_segment`
+//! MDX Segmenter — split MDX into typed blocks, render only the Markdown.
+//!
+//! Run with: `cargo run --features mdx --example mdx_segment`
 
 fn main() {
     let input = r#"import { Card, Button } from './components'
@@ -80,5 +80,5 @@ cargo add ferromark
 
     // --- Component demo ---
     println!("\n=== JSX Component ===\n");
-    print!("{}", output.to_component("GettingStarted"));
+    print!("{}", output.to_component("GettingStarted").unwrap());
 }

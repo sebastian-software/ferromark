@@ -34,10 +34,22 @@ pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::Range;
 pub use render::HtmlWriter;
 
+/// Trust boundary applied while rendering links, images, and raw HTML.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RenderPolicy {
+    /// Escape all raw HTML and allow only browser-safe URL schemes.
+    #[default]
+    Untrusted,
+    /// Preserve raw HTML and arbitrary URL schemes for trusted Markdown and MDX.
+    Trusted,
+}
+
 /// Parsing/rendering options.
 #[derive(Debug, Clone, Copy)]
 pub struct Options {
-    /// Allow raw inline and block HTML.
+    /// Select the output trust boundary. Defaults to [`RenderPolicy::Untrusted`].
+    pub render_policy: RenderPolicy,
+    /// Parse raw inline and block HTML. Untrusted rendering still escapes it.
     pub allow_html: bool,
     /// Resolve link reference definitions and reference-style links.
     pub allow_link_refs: bool,
@@ -55,7 +67,10 @@ pub struct Options {
     pub task_lists: bool,
     /// Enable GFM autolink literals extension (bare URLs, www, emails).
     pub autolink_literals: bool,
-    /// Enable GFM disallowed raw HTML extension (filter dangerous tags).
+    /// Enable the GFM disallowed raw HTML extension in trusted mode.
+    ///
+    /// This is not an HTML sanitizer. [`RenderPolicy::Untrusted`] escapes all
+    /// raw HTML regardless of this setting.
     pub disallowed_raw_html: bool,
     /// Enable footnotes extension (`[^label]` references and `[^label]:` definitions).
     pub footnotes: bool,
@@ -72,6 +87,7 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
+            render_policy: RenderPolicy::Untrusted,
             allow_html: true,
             allow_link_refs: true,
             tables: true,
@@ -255,7 +271,9 @@ pub fn parse_with_options<'a>(input: &'a str, options: &Options) -> ParseResult<
 pub fn to_html(input: &str) -> String {
     let mut writer = HtmlWriter::with_capacity_for(input.len());
     render_to_writer(input.as_bytes(), &mut writer, &Options::default());
-    writer.into_string()
+    writer
+        .into_string()
+        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
 }
 
 /// Convert Markdown to HTML, writing into a provided buffer.
@@ -280,7 +298,9 @@ pub fn to_html_with_options(input: &str, options: &Options) -> String {
     };
     let mut writer = HtmlWriter::with_capacity_for(markdown.len());
     render_to_writer(markdown.as_bytes(), &mut writer, options);
-    writer.into_string()
+    writer
+        .into_string()
+        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
 }
 
 /// Convert Markdown to HTML into a provided buffer with options.
@@ -554,6 +574,62 @@ impl CellState {
     }
 }
 
+/// Mutable state and shared inputs for one HTML rendering pass.
+struct RenderContext<'a> {
+    writer: &'a mut HtmlWriter,
+    inline_parser: InlineParser,
+    inline_events: Vec<InlineEvent>,
+    para_state: ParagraphState,
+    heading_state: HeadingState,
+    cell_state: CellState,
+    tight_list_stack: Vec<(bool, u32)>,
+    at_tight_li_start: bool,
+    need_newline_before_block: bool,
+    pending_loose_li_newline: bool,
+    blockquote_depth: u32,
+    in_table_head: bool,
+    pending_task: block::TaskState,
+    link_refs: &'a LinkRefStore,
+    footnote_store: Option<&'a FootnoteStore>,
+    footnote_numbers: FootnoteNumbers,
+    heading_id_tracker: HeadingIdTracker,
+    callout_stack: Vec<Option<block::CalloutType>>,
+    pending_footnote_backref: Option<(String, usize)>,
+    options: &'a Options,
+}
+
+impl<'a> RenderContext<'a> {
+    fn new(
+        writer: &'a mut HtmlWriter,
+        link_refs: &'a LinkRefStore,
+        footnote_store: Option<&'a FootnoteStore>,
+        options: &'a Options,
+    ) -> Self {
+        Self {
+            writer,
+            inline_parser: InlineParser::new(),
+            inline_events: Vec::with_capacity(64),
+            para_state: ParagraphState::new(),
+            heading_state: HeadingState::new(),
+            cell_state: CellState::new(),
+            tight_list_stack: Vec::new(),
+            at_tight_li_start: false,
+            need_newline_before_block: false,
+            pending_loose_li_newline: false,
+            blockquote_depth: 0,
+            in_table_head: false,
+            pending_task: block::TaskState::None,
+            link_refs,
+            footnote_store,
+            footnote_numbers: FootnoteNumbers::new(footnote_store.map_or(0, FootnoteStore::len)),
+            heading_id_tracker: HeadingIdTracker::new(),
+            callout_stack: Vec::new(),
+            pending_footnote_backref: None,
+            options,
+        }
+    }
+}
+
 /// Render Markdown to an HtmlWriter.
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     // Parse blocks
@@ -570,548 +646,385 @@ fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
     // Fix up list tight status (ListStart gets its tight value from ListEnd)
     fixup_list_tight(&mut events);
 
-    // Create inline parser for text content
-    let mut inline_parser = InlineParser::new();
-    let mut inline_events = Vec::with_capacity(64);
-
-    // State for accumulating paragraph content
-    let mut para_state = ParagraphState::new();
-    let mut heading_state = HeadingState::new();
-    let mut cell_state = CellState::new();
-
-    // Track tight/loose status for nested lists (stack - (tight, blockquote_depth_at_start))
-    let mut tight_list_stack: Vec<(bool, u32)> = Vec::new();
-
-    // Track if we just started a tight list item (need newline before block content)
-    let mut at_tight_li_start = false;
-
-    // Track if we need newline before next block element (after paragraph in tight list)
-    let mut need_newline_before_block = false;
-
-    // Track if we need a newline after <li> in loose list (deferred until content appears)
-    let mut pending_loose_li_newline = false;
-
-    // Track blockquote depth (paragraphs in blockquotes always get <p> tags)
-    let mut blockquote_depth = 0u32;
-
-    // Track whether we're in a table header
-    let mut in_table_head = false;
-
-    // Pending task checkbox (emitted at start of first paragraph in list item)
-    let mut pending_task = block::TaskState::None;
-
-    // Track footnote reference order (def_index -> sequential number)
-    let mut footnote_order: Vec<usize> = Vec::new();
     let fn_store_ref = footnote_store.as_ref();
-
-    // Heading ID tracker for deduplication
-    let mut heading_id_tracker = HeadingIdTracker::new();
-
-    // Track callout type for each open blockquote (None = regular blockquote)
-    let mut callout_stack: Vec<Option<block::CalloutType>> = Vec::new();
+    let mut context = RenderContext::new(writer, &link_refs, fn_store_ref, options);
 
     // Render events to HTML
     for event in &events {
-        render_block_event(
-            input,
-            event,
-            writer,
-            &mut inline_parser,
-            &mut inline_events,
-            &mut para_state,
-            &mut heading_state,
-            &mut cell_state,
-            &mut tight_list_stack,
-            &mut at_tight_li_start,
-            &mut need_newline_before_block,
-            &mut pending_loose_li_newline,
-            &mut blockquote_depth,
-            &mut in_table_head,
-            &mut pending_task,
-            &link_refs,
-            fn_store_ref,
-            &mut footnote_order,
-            &mut heading_id_tracker,
-            &mut callout_stack,
-            options,
-        );
+        context.render_block_event(input, event);
     }
 
     // Render footnote section at document end
-    if let Some(fn_store) = &footnote_store {
-        if !footnote_order.is_empty() {
-            render_footnote_section(
-                input,
-                fn_store,
-                &footnote_order,
-                writer,
-                &mut inline_parser,
-                &mut inline_events,
-                &link_refs,
-                options,
-            );
-        }
+    if !context.footnote_numbers.is_empty() {
+        context.render_footnote_section(input);
     }
 }
 
-/// Render a single block event to HTML.
-#[allow(clippy::too_many_arguments)]
-fn render_block_event(
-    input: &[u8],
-    event: &BlockEvent,
-    writer: &mut HtmlWriter,
-    inline_parser: &mut InlineParser,
-    inline_events: &mut Vec<InlineEvent>,
-    para_state: &mut ParagraphState,
-    heading_state: &mut HeadingState,
-    cell_state: &mut CellState,
-    tight_list_stack: &mut Vec<(bool, u32)>,
-    at_tight_li_start: &mut bool,
-    need_newline_before_block: &mut bool,
-    pending_loose_li_newline: &mut bool,
-    blockquote_depth: &mut u32,
-    in_table_head: &mut bool,
-    pending_task: &mut block::TaskState,
-    link_refs: &LinkRefStore,
-    footnote_store: Option<&FootnoteStore>,
-    footnote_order: &mut Vec<usize>,
-    heading_id_tracker: &mut HeadingIdTracker,
-    callout_stack: &mut Vec<Option<block::CalloutType>>,
-    options: &Options,
-) {
-    // Check if we're in a tight list (innermost list is tight)
-    // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
-    let in_tight_list = tight_list_stack
-        .last()
-        .is_some_and(|(tight, bq_depth_at_start)| {
-            *tight && *blockquote_depth <= *bq_depth_at_start
-        });
+impl RenderContext<'_> {
+    /// Render a single block event using the context's explicit state boundary.
+    fn render_block_event(&mut self, input: &[u8], event: &BlockEvent) {
+        let writer = &mut *self.writer;
+        let inline_parser = &mut self.inline_parser;
+        let inline_events = &mut self.inline_events;
+        let para_state = &mut self.para_state;
+        let heading_state = &mut self.heading_state;
+        let cell_state = &mut self.cell_state;
+        let tight_list_stack = &mut self.tight_list_stack;
+        let at_tight_li_start = &mut self.at_tight_li_start;
+        let need_newline_before_block = &mut self.need_newline_before_block;
+        let pending_loose_li_newline = &mut self.pending_loose_li_newline;
+        let blockquote_depth = &mut self.blockquote_depth;
+        let in_table_head = &mut self.in_table_head;
+        let pending_task = &mut self.pending_task;
+        let link_refs = self.link_refs;
+        let footnote_store = self.footnote_store;
+        let footnote_numbers = &mut self.footnote_numbers;
+        let heading_id_tracker = &mut self.heading_id_tracker;
+        let callout_stack = &mut self.callout_stack;
+        let pending_footnote_backref = &mut self.pending_footnote_backref;
+        let options = self.options;
 
-    match event {
-        BlockEvent::ParagraphStart => {
-            // Write pending newline from loose list item start
-            if *pending_loose_li_newline {
-                writer.newline();
-                *pending_loose_li_newline = false;
+        // Check if we're in a tight list (innermost list is tight)
+        // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
+        let in_tight_list = tight_list_stack
+            .last()
+            .is_some_and(|(tight, bq_depth_at_start)| {
+                *tight && *blockquote_depth <= *bq_depth_at_start
+            });
+
+        match event {
+            BlockEvent::ParagraphStart => {
+                // Write pending newline from loose list item start
+                if *pending_loose_li_newline {
+                    writer.newline();
+                    *pending_loose_li_newline = false;
+                }
+                // In tight lists, don't emit <p> tags
+                if !in_tight_list {
+                    writer.paragraph_start();
+                }
+                para_state.start();
+                // Paragraph content is inline, so we don't add newline
+                *at_tight_li_start = false;
             }
-            // In tight lists, don't emit <p> tags
-            if !in_tight_list {
-                writer.paragraph_start();
-            }
-            para_state.start();
-            // Paragraph content is inline, so we don't add newline
-            *at_tight_li_start = false;
-        }
-        BlockEvent::ParagraphEnd => {
-            // Check if we're in a tight list (innermost list is tight)
-            // BUT: paragraphs inside blockquotes that started AFTER the list need </p> tags
-            let in_tight_list =
-                tight_list_stack
-                    .last()
-                    .is_some_and(|(tight, bq_depth_at_start)| {
-                        *tight && *blockquote_depth <= *bq_depth_at_start
-                    });
+            BlockEvent::ParagraphEnd => {
+                // Check if we're in a tight list (innermost list is tight)
+                // BUT: paragraphs inside blockquotes that started AFTER the list need </p> tags
+                let in_tight_list =
+                    tight_list_stack
+                        .last()
+                        .is_some_and(|(tight, bq_depth_at_start)| {
+                            *tight && *blockquote_depth <= *bq_depth_at_start
+                        });
 
-            // Parse all accumulated paragraph content at once
-            let content = para_state.finish();
+                // Parse all accumulated paragraph content at once
+                let content = para_state.finish();
 
-            // Emit pending task checkbox before paragraph content
-            emit_pending_task_checkbox(pending_task, writer);
+                // Emit pending task checkbox before paragraph content
+                emit_pending_task_checkbox(pending_task, writer);
 
-            if !content.is_empty() {
-                inline_events.clear();
-                inline_events.reserve((content.len() / 8).max(8));
-                let refs = if options.allow_link_refs {
-                    Some(link_refs)
-                } else {
-                    None
-                };
-                inline_parser.parse_with_options(
-                    content,
-                    refs,
-                    options.allow_html,
-                    options.strikethrough,
-                    options.highlight,
-                    options.superscript,
-                    options.subscript,
-                    options.autolink_literals,
-                    options.math,
-                    footnote_store,
-                    inline_events,
-                );
-
-                // Render inline events
-                let mut image_state = None;
-                for inline_event in inline_events.iter() {
-                    render_inline_event(
+                if !content.is_empty() {
+                    render_inline_content(
                         content,
-                        inline_event,
                         writer,
-                        &mut image_state,
+                        inline_parser,
+                        inline_events,
                         link_refs,
-                        options.disallowed_raw_html,
                         footnote_store,
-                        footnote_order,
+                        footnote_numbers,
+                        options,
                     );
                 }
-            }
-            // In tight lists, don't emit </p> tags
-            if !in_tight_list {
-                writer.paragraph_end();
-            } else {
-                // Mark that we need newline before next block element
-                *need_newline_before_block = true;
-            }
-        }
-        BlockEvent::HeadingStart { level } => {
-            if *need_newline_before_block {
-                writer.newline();
-                *need_newline_before_block = false;
-            }
-            if *at_tight_li_start {
-                writer.newline();
-                *at_tight_li_start = false;
-            }
-            // Defer heading open tag to HeadingEnd so we can generate the slug
-            // from collected content before emitting the tag.
-            heading_state.start();
-            heading_state.level = *level;
-        }
-        BlockEvent::HeadingEnd { level } => {
-            let content = heading_state.finish();
-
-            // Emit heading open tag (deferred from HeadingStart)
-            if options.heading_ids {
-                let id = heading_id_tracker.make_id(content);
-                writer.heading_start_with_id(*level, id);
-            } else {
-                writer.heading_start(*level);
-            }
-
-            if !content.is_empty() {
-                inline_events.clear();
-                inline_events.reserve((content.len() / 8).max(8));
-                let refs = if options.allow_link_refs {
-                    Some(link_refs)
+                if let Some((label, number)) = pending_footnote_backref.take() {
+                    write_footnote_backref(writer, &label, number);
+                }
+                // In tight lists, don't emit </p> tags
+                if !in_tight_list {
+                    writer.paragraph_end();
                 } else {
-                    None
-                };
-                inline_parser.parse_with_options(
-                    content,
-                    refs,
-                    options.allow_html,
-                    options.strikethrough,
-                    options.highlight,
-                    options.superscript,
-                    options.subscript,
-                    options.autolink_literals,
-                    options.math,
-                    footnote_store,
-                    inline_events,
-                );
-
-                let mut image_state = None;
-                for inline_event in inline_events.iter() {
-                    render_inline_event(
-                        content,
-                        inline_event,
-                        writer,
-                        &mut image_state,
-                        link_refs,
-                        options.disallowed_raw_html,
-                        footnote_store,
-                        footnote_order,
-                    );
+                    // Mark that we need newline before next block element
+                    *need_newline_before_block = true;
                 }
             }
-            writer.heading_end(*level);
-        }
-        BlockEvent::ThematicBreak => {
-            // If we're at the start of a tight list item, add newline before block content
-            if *at_tight_li_start {
-                writer.newline();
-                *at_tight_li_start = false;
+            BlockEvent::HeadingStart { level } => {
+                if *need_newline_before_block {
+                    writer.newline();
+                    *need_newline_before_block = false;
+                }
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
+                // Defer heading open tag to HeadingEnd so we can generate the slug
+                // from collected content before emitting the tag.
+                heading_state.start();
+                heading_state.level = *level;
             }
-            writer.thematic_break();
-        }
-        BlockEvent::HtmlBlockStart => {
-            // Write pending newline from loose list item start
-            if *pending_loose_li_newline {
-                writer.newline();
-                *pending_loose_li_newline = false;
-            }
-            // If we're at the start of a tight list item, add newline before block content
-            if *at_tight_li_start {
-                writer.newline();
-                *at_tight_li_start = false;
-            }
-        }
-        BlockEvent::HtmlBlockText(range) => {
-            if options.disallowed_raw_html {
-                writer.write_html_filtered(range.slice(input));
-            } else {
-                writer.write_bytes(range.slice(input));
-            }
-        }
-        BlockEvent::HtmlBlockEnd => {}
-        BlockEvent::SoftBreak => {
-            if para_state.in_paragraph {
-                para_state.add_soft_break();
-            } else if heading_state.in_heading {
-                heading_state.add_soft_break();
-            } else {
-                writer.write_str("\n");
-            }
-        }
-        BlockEvent::Text(range) => {
-            let text = range.slice(input);
-            if para_state.in_paragraph {
-                // Accumulate for later parsing
-                para_state.add_text(text);
-            } else if heading_state.in_heading {
-                heading_state.add_text(text);
-            } else if cell_state.in_cell {
-                cell_state.add_text(text);
-            } else {
-                // Parse immediately (e.g., heading content)
-                inline_events.clear();
-                let refs = if options.allow_link_refs {
-                    Some(link_refs)
-                } else {
-                    None
-                };
-                inline_parser.parse_with_options(
-                    text,
-                    refs,
-                    options.allow_html,
-                    options.strikethrough,
-                    options.highlight,
-                    options.superscript,
-                    options.subscript,
-                    options.autolink_literals,
-                    options.math,
-                    footnote_store,
-                    inline_events,
-                );
+            BlockEvent::HeadingEnd { level } => {
+                let content = heading_state.finish();
 
-                // Render inline events
-                let mut image_state = None;
-                for inline_event in inline_events.iter() {
-                    render_inline_event(
+                // Emit heading open tag (deferred from HeadingStart)
+                if options.heading_ids {
+                    let id = heading_id_tracker.make_id(content);
+                    writer.heading_start_with_id(*level, id);
+                } else {
+                    writer.heading_start(*level);
+                }
+
+                if !content.is_empty() {
+                    render_inline_content(
+                        content,
+                        writer,
+                        inline_parser,
+                        inline_events,
+                        link_refs,
+                        footnote_store,
+                        footnote_numbers,
+                        options,
+                    );
+                }
+                writer.heading_end(*level);
+            }
+            BlockEvent::ThematicBreak => {
+                // If we're at the start of a tight list item, add newline before block content
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
+                writer.thematic_break();
+            }
+            BlockEvent::HtmlBlockStart => {
+                // Write pending newline from loose list item start
+                if *pending_loose_li_newline {
+                    writer.newline();
+                    *pending_loose_li_newline = false;
+                }
+                // If we're at the start of a tight list item, add newline before block content
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
+            }
+            BlockEvent::HtmlBlockText(range) => {
+                if options.render_policy == RenderPolicy::Untrusted {
+                    writer.write_escaped_text(range.slice(input));
+                } else if options.disallowed_raw_html {
+                    writer.write_html_filtered(range.slice(input));
+                } else {
+                    writer.write_bytes(range.slice(input));
+                }
+            }
+            BlockEvent::HtmlBlockEnd => {}
+            BlockEvent::SoftBreak => {
+                if para_state.in_paragraph {
+                    para_state.add_soft_break();
+                } else if heading_state.in_heading {
+                    heading_state.add_soft_break();
+                } else {
+                    writer.write_str("\n");
+                }
+            }
+            BlockEvent::Text(range) => {
+                let text = range.slice(input);
+                if para_state.in_paragraph {
+                    // Accumulate for later parsing
+                    para_state.add_text(text);
+                } else if heading_state.in_heading {
+                    heading_state.add_text(text);
+                } else if cell_state.in_cell {
+                    cell_state.add_text(text);
+                } else {
+                    render_inline_content(
                         text,
-                        inline_event,
                         writer,
-                        &mut image_state,
+                        inline_parser,
+                        inline_events,
                         link_refs,
-                        options.disallowed_raw_html,
                         footnote_store,
-                        footnote_order,
+                        footnote_numbers,
+                        options,
                     );
                 }
             }
-        }
-        BlockEvent::Code(range) => {
-            // Code block content - no inline parsing
-            writer.write_escaped_text(range.slice(input));
-        }
-        BlockEvent::VirtualSpaces(count) => {
-            // Emit spaces for tab expansion in indented code blocks
-            for _ in 0..*count {
-                writer.write_byte(b' ');
+            BlockEvent::Code(range) => {
+                // Code block content - no inline parsing
+                writer.write_escaped_text(range.slice(input));
             }
-        }
-        BlockEvent::CodeBlockStart { info } => {
-            // Write pending newline from loose list item start
-            if *pending_loose_li_newline {
-                writer.newline();
-                *pending_loose_li_newline = false;
-            }
-            // If we're at the start of a tight list item, add newline before block content
-            if *at_tight_li_start {
-                writer.newline();
-                *at_tight_li_start = false;
-            }
-            let lang = info.as_ref().map(|r| r.slice(input));
-            writer.code_block_start(lang);
-        }
-        BlockEvent::CodeBlockEnd => {
-            writer.code_block_end();
-        }
-        BlockEvent::BlockQuoteStart { callout } => {
-            // Write pending newline from loose list item start
-            if *pending_loose_li_newline {
-                writer.newline();
-                *pending_loose_li_newline = false;
-            }
-            // If we need newline (after paragraph in tight list), add it
-            if *need_newline_before_block {
-                writer.newline();
-                *need_newline_before_block = false;
-            }
-            // If we're at the start of a tight list item, add newline before block content
-            if *at_tight_li_start {
-                writer.newline();
-                *at_tight_li_start = false;
-            }
-            *blockquote_depth += 1;
-            callout_stack.push(*callout);
-            if let Some(ct) = callout {
-                writer.callout_start(*ct);
-            } else {
-                writer.blockquote_start();
-            }
-        }
-        BlockEvent::BlockQuoteEnd => {
-            *blockquote_depth = blockquote_depth.saturating_sub(1);
-            match callout_stack.pop() {
-                Some(Some(_)) => writer.callout_end(),
-                _ => writer.blockquote_end(),
-            }
-        }
-        BlockEvent::ListStart { kind, tight } => {
-            // Write pending newline from loose list item start
-            if *pending_loose_li_newline {
-                writer.newline();
-                *pending_loose_li_newline = false;
-            }
-            // If we need newline (after paragraph in tight list), add it
-            if *need_newline_before_block {
-                writer.newline();
-                *need_newline_before_block = false;
-            }
-            // If we're at the start of a tight list item, add newline before nested list
-            if *at_tight_li_start {
-                writer.newline();
-                *at_tight_li_start = false;
-            }
-            // Push the tight status and current blockquote depth for this list
-            tight_list_stack.push((*tight, *blockquote_depth));
-            match kind {
-                block::ListKind::Unordered => writer.ul_start(),
-                block::ListKind::Ordered { start, .. } => {
-                    writer.ol_start(if *start == 1 { None } else { Some(*start) })
+            BlockEvent::VirtualSpaces(count) => {
+                // Emit spaces for tab expansion in indented code blocks
+                for _ in 0..*count {
+                    writer.write_byte(b' ');
                 }
             }
-        }
-        BlockEvent::ListEnd { kind, .. } => {
-            match kind {
-                block::ListKind::Unordered => writer.ul_end(),
-                block::ListKind::Ordered { .. } => writer.ol_end(),
+            BlockEvent::CodeBlockStart { info } => {
+                // Write pending newline from loose list item start
+                if *pending_loose_li_newline {
+                    writer.newline();
+                    *pending_loose_li_newline = false;
+                }
+                // If we're at the start of a tight list item, add newline before block content
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
+                let lang = info.as_ref().map(|r| r.slice(input));
+                writer.code_block_start(lang);
             }
-            // Pop the tight status for this list
-            tight_list_stack.pop();
-        }
-        BlockEvent::ListItemStart { task } => {
-            writer.li_start();
-            // In loose lists, defer newline until content appears (for empty items)
-            if !in_tight_list {
-                *pending_loose_li_newline = true;
-            } else {
-                // In tight lists, mark that we may need newline if block content follows
-                *at_tight_li_start = true;
+            BlockEvent::CodeBlockEnd => {
+                writer.code_block_end();
             }
-            // Store task state for rendering at the start of paragraph content
-            if options.task_lists {
-                *pending_task = *task;
-            }
-        }
-        BlockEvent::ListItemEnd => {
-            *at_tight_li_start = false;
-            *need_newline_before_block = false;
-            *pending_loose_li_newline = false;
-            *pending_task = block::TaskState::None;
-            writer.li_end();
-        }
-
-        // --- Table events ---
-        BlockEvent::TableStart => {
-            if *pending_loose_li_newline {
-                writer.newline();
-                *pending_loose_li_newline = false;
-            }
-            if *need_newline_before_block {
-                writer.newline();
-                *need_newline_before_block = false;
-            }
-            if *at_tight_li_start {
-                writer.newline();
-                *at_tight_li_start = false;
-            }
-            writer.table_start();
-        }
-        BlockEvent::TableEnd => {
-            writer.table_end();
-        }
-        BlockEvent::TableHeadStart => {
-            *in_table_head = true;
-            writer.thead_start();
-        }
-        BlockEvent::TableHeadEnd => {
-            *in_table_head = false;
-            writer.thead_end();
-        }
-        BlockEvent::TableBodyStart => {
-            writer.tbody_start();
-        }
-        BlockEvent::TableBodyEnd => {
-            writer.tbody_end();
-        }
-        BlockEvent::TableRowStart => {
-            writer.tr_start();
-        }
-        BlockEvent::TableRowEnd => {
-            writer.tr_end();
-        }
-        BlockEvent::TableCellStart { alignment } => {
-            if *in_table_head {
-                writer.th_start(*alignment);
-            } else {
-                writer.td_start(*alignment);
-            }
-            cell_state.start();
-        }
-        BlockEvent::TableCellEnd => {
-            let content = cell_state.finish();
-            if !content.is_empty() {
-                inline_events.clear();
-                inline_events.reserve((content.len() / 8).max(8));
-                let refs = if options.allow_link_refs {
-                    Some(link_refs)
+            BlockEvent::BlockQuoteStart { callout } => {
+                // Write pending newline from loose list item start
+                if *pending_loose_li_newline {
+                    writer.newline();
+                    *pending_loose_li_newline = false;
+                }
+                // If we need newline (after paragraph in tight list), add it
+                if *need_newline_before_block {
+                    writer.newline();
+                    *need_newline_before_block = false;
+                }
+                // If we're at the start of a tight list item, add newline before block content
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
+                *blockquote_depth += 1;
+                callout_stack.push(*callout);
+                if let Some(ct) = callout {
+                    writer.callout_start(*ct);
                 } else {
-                    None
-                };
-                inline_parser.parse_with_options(
-                    content,
-                    refs,
-                    options.allow_html,
-                    options.strikethrough,
-                    options.highlight,
-                    options.superscript,
-                    options.subscript,
-                    options.autolink_literals,
-                    options.math,
-                    footnote_store,
-                    inline_events,
-                );
-
-                let mut image_state = None;
-                for inline_event in inline_events.iter() {
-                    render_inline_event(
-                        content,
-                        inline_event,
-                        writer,
-                        &mut image_state,
-                        link_refs,
-                        options.disallowed_raw_html,
-                        footnote_store,
-                        footnote_order,
-                    );
+                    writer.blockquote_start();
                 }
             }
-            if *in_table_head {
-                writer.th_end();
-            } else {
-                writer.td_end();
+            BlockEvent::BlockQuoteEnd => {
+                *blockquote_depth = blockquote_depth.saturating_sub(1);
+                match callout_stack.pop() {
+                    Some(Some(_)) => writer.callout_end(),
+                    _ => writer.blockquote_end(),
+                }
+            }
+            BlockEvent::ListStart { kind, tight } => {
+                // Write pending newline from loose list item start
+                if *pending_loose_li_newline {
+                    writer.newline();
+                    *pending_loose_li_newline = false;
+                }
+                // If we need newline (after paragraph in tight list), add it
+                if *need_newline_before_block {
+                    writer.newline();
+                    *need_newline_before_block = false;
+                }
+                // If we're at the start of a tight list item, add newline before nested list
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
+                // Push the tight status and current blockquote depth for this list
+                tight_list_stack.push((*tight, *blockquote_depth));
+                match kind {
+                    block::ListKind::Unordered => writer.ul_start(),
+                    block::ListKind::Ordered { start, .. } => {
+                        writer.ol_start(if *start == 1 { None } else { Some(*start) })
+                    }
+                }
+            }
+            BlockEvent::ListEnd { kind, .. } => {
+                match kind {
+                    block::ListKind::Unordered => writer.ul_end(),
+                    block::ListKind::Ordered { .. } => writer.ol_end(),
+                }
+                // Pop the tight status for this list
+                tight_list_stack.pop();
+            }
+            BlockEvent::ListItemStart { task } => {
+                writer.li_start();
+                // In loose lists, defer newline until content appears (for empty items)
+                if !in_tight_list {
+                    *pending_loose_li_newline = true;
+                } else {
+                    // In tight lists, mark that we may need newline if block content follows
+                    *at_tight_li_start = true;
+                }
+                // Store task state for rendering at the start of paragraph content
+                if options.task_lists {
+                    *pending_task = *task;
+                }
+            }
+            BlockEvent::ListItemEnd => {
+                *at_tight_li_start = false;
+                *need_newline_before_block = false;
+                *pending_loose_li_newline = false;
+                *pending_task = block::TaskState::None;
+                writer.li_end();
+            }
+
+            // --- Table events ---
+            BlockEvent::TableStart => {
+                if *pending_loose_li_newline {
+                    writer.newline();
+                    *pending_loose_li_newline = false;
+                }
+                if *need_newline_before_block {
+                    writer.newline();
+                    *need_newline_before_block = false;
+                }
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
+                writer.table_start();
+            }
+            BlockEvent::TableEnd => {
+                writer.table_end();
+            }
+            BlockEvent::TableHeadStart => {
+                *in_table_head = true;
+                writer.thead_start();
+            }
+            BlockEvent::TableHeadEnd => {
+                *in_table_head = false;
+                writer.thead_end();
+            }
+            BlockEvent::TableBodyStart => {
+                writer.tbody_start();
+            }
+            BlockEvent::TableBodyEnd => {
+                writer.tbody_end();
+            }
+            BlockEvent::TableRowStart => {
+                writer.tr_start();
+            }
+            BlockEvent::TableRowEnd => {
+                writer.tr_end();
+            }
+            BlockEvent::TableCellStart { alignment } => {
+                if *in_table_head {
+                    writer.th_start(*alignment);
+                } else {
+                    writer.td_start(*alignment);
+                }
+                cell_state.start();
+            }
+            BlockEvent::TableCellEnd => {
+                let content = cell_state.finish();
+                if !content.is_empty() {
+                    render_inline_content(
+                        content,
+                        writer,
+                        inline_parser,
+                        inline_events,
+                        link_refs,
+                        footnote_store,
+                        footnote_numbers,
+                        options,
+                    );
+                }
+                if *in_table_head {
+                    writer.th_end();
+                } else {
+                    writer.td_end();
+                }
             }
         }
     }
@@ -1132,6 +1045,14 @@ fn emit_pending_task_checkbox(pending_task: &mut block::TaskState, writer: &mut 
     *pending_task = block::TaskState::None;
 }
 
+fn write_footnote_backref(writer: &mut HtmlWriter, label: &str, number: usize) {
+    writer.write_str(" <a href=\"#user-content-fnref-");
+    writer.write_string(label);
+    writer.write_str("\" class=\"data-footnote-backref\" aria-label=\"Back to reference ");
+    writer.write_string(&number.to_string());
+    writer.write_str("\">↩</a>");
+}
+
 /// State for tracking image rendering.
 /// Since we need to render: <img src="..." alt="ALT_TEXT_HERE" title="..." />
 /// But alt text comes as Text events between ImageStart and ImageEnd,
@@ -1145,6 +1066,79 @@ struct ImageState {
     depth: u32,
 }
 
+/// First-reference ordering plus constant-time definition-to-ordinal lookup.
+struct FootnoteNumbers {
+    order: Vec<usize>,
+    /// Zero means unassigned; stored ordinals are one-based.
+    ordinals: Vec<usize>,
+}
+
+impl FootnoteNumbers {
+    fn new(definition_count: usize) -> Self {
+        Self {
+            order: Vec::new(),
+            ordinals: vec![0; definition_count],
+        }
+    }
+
+    fn number(&mut self, definition_index: usize) -> Option<usize> {
+        let ordinal = self.ordinals.get_mut(definition_index)?;
+        if *ordinal == 0 {
+            self.order.push(definition_index);
+            *ordinal = self.order.len();
+        }
+        Some(*ordinal)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.order.is_empty()
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_inline_content(
+    text: &[u8],
+    writer: &mut HtmlWriter,
+    inline_parser: &mut InlineParser,
+    inline_events: &mut Vec<InlineEvent>,
+    link_refs: &LinkRefStore,
+    footnote_store: Option<&FootnoteStore>,
+    footnote_numbers: &mut FootnoteNumbers,
+    options: &Options,
+) {
+    inline_events.clear();
+    inline_events.reserve((text.len() / 8).max(8));
+    let refs = options.allow_link_refs.then_some(link_refs);
+    inline_parser.parse_with_options(
+        text,
+        refs,
+        options.allow_html,
+        options.strikethrough,
+        options.highlight,
+        options.superscript,
+        options.subscript,
+        options.autolink_literals,
+        options.math,
+        footnote_store,
+        inline_events,
+    );
+
+    let mut image_state = None;
+    for event in inline_events.iter() {
+        render_inline_event(
+            text,
+            event,
+            writer,
+            &mut image_state,
+            link_refs,
+            options.disallowed_raw_html,
+            options.render_policy,
+            footnote_store,
+            footnote_numbers,
+        );
+    }
+}
+
 /// Render a single inline event to HTML.
 #[allow(clippy::too_many_arguments)]
 fn render_inline_event(
@@ -1154,8 +1148,9 @@ fn render_inline_event(
     image_state: &mut Option<ImageState>,
     link_refs: &LinkRefStore,
     filter_html: bool,
+    render_policy: RenderPolicy,
     footnote_store: Option<&FootnoteStore>,
-    footnote_order: &mut Vec<usize>,
+    footnote_numbers: &mut FootnoteNumbers,
 ) {
     // Check if we're inside an image (for alt text rendering)
     let in_image = image_state.as_ref().is_some_and(|s| s.depth > 0);
@@ -1276,7 +1271,7 @@ fn render_inline_event(
             // Suppress link tags inside image alt text
             if !in_image {
                 writer.write_str("<a href=\"");
-                writer.write_link_url(url.slice(text));
+                writer.write_link_url_with_policy(url.slice(text), render_policy);
                 writer.write_str("\"");
                 if let Some(t) = title {
                     writer.write_str(" title=\"");
@@ -1290,7 +1285,7 @@ fn render_inline_event(
             if !in_image {
                 if let Some(def) = link_refs.get(*def_index as usize) {
                     writer.write_str("<a href=\"");
-                    writer.write_link_url(&def.url);
+                    writer.write_link_url_with_policy(&def.url, render_policy);
                     writer.write_str("\"");
                     if let Some(title) = &def.title {
                         writer.write_str(" title=\"");
@@ -1314,7 +1309,7 @@ fn render_inline_event(
             } else {
                 // Outermost image - emit the img tag start
                 writer.write_str("<img src=\"");
-                writer.write_link_url(url.slice(text));
+                writer.write_link_url_with_policy(url.slice(text), render_policy);
                 writer.write_str("\" alt=\"");
                 *image_state = Some(ImageState {
                     title_range: *title,
@@ -1328,7 +1323,7 @@ fn render_inline_event(
                 state.depth += 1;
             } else if let Some(def) = link_refs.get(*def_index as usize) {
                 writer.write_str("<img src=\"");
-                writer.write_link_url(&def.url);
+                writer.write_link_url_with_policy(&def.url, render_policy);
                 writer.write_str("\" alt=\"");
                 *image_state = Some(ImageState {
                     title_range: None,
@@ -1368,7 +1363,7 @@ fn render_inline_event(
                 writer.write_str("<a href=\"");
                 match kind {
                     AutolinkLiteralKind::Url => {
-                        writer.write_link_url(url.slice(text));
+                        writer.write_link_url_with_policy(url.slice(text), render_policy);
                     }
                     AutolinkLiteralKind::Www => {
                         writer.write_str("http://");
@@ -1392,9 +1387,10 @@ fn render_inline_event(
                 writer.write_str("<a href=\"");
                 if *is_email {
                     writer.write_str("mailto:");
+                    writer.write_url_encoded(url.slice(text));
+                } else {
+                    writer.write_url_encoded_with_policy(url.slice(text), render_policy);
                 }
-                // URL-encode special chars then HTML-escape
-                writer.write_url_encoded(url.slice(text));
                 writer.write_str("\">");
                 // Display text is shown as-is (with HTML escaping)
                 writer.write_escaped_text(url.slice(text));
@@ -1404,6 +1400,8 @@ fn render_inline_event(
         InlineEvent::Html(range) => {
             if in_image {
                 writer.write_escaped_attr(range.slice(text));
+            } else if render_policy == RenderPolicy::Untrusted {
+                writer.write_escaped_text(range.slice(text));
             } else if filter_html {
                 writer.write_html_filtered(range.slice(text));
             } else {
@@ -1439,15 +1437,9 @@ fn render_inline_event(
             if !in_image {
                 if let Some(fn_store) = footnote_store {
                     let def_idx = *def_index as usize;
-                    // Assign sequential number based on first-appearance order
-                    let number =
-                        if let Some(pos) = footnote_order.iter().position(|&i| i == def_idx) {
-                            pos + 1
-                        } else {
-                            footnote_order.push(def_idx);
-                            footnote_order.len()
-                        };
-                    if let Some(def) = fn_store.get(def_idx) {
+                    if let (Some(number), Some(def)) =
+                        (footnote_numbers.number(def_idx), fn_store.get(def_idx))
+                    {
                         writer.write_str("<sup><a href=\"#user-content-fn-");
                         writer.write_string(&def.label);
                         writer.write_str("\" id=\"user-content-fnref-");
@@ -1511,141 +1503,64 @@ fn render_inline_event(
     }
 }
 
-/// Render the footnote section at document end.
-#[allow(clippy::too_many_arguments)]
-fn render_footnote_section(
-    input: &[u8],
-    footnote_store: &FootnoteStore,
-    footnote_order: &[usize],
-    writer: &mut HtmlWriter,
-    inline_parser: &mut InlineParser,
-    inline_events: &mut Vec<InlineEvent>,
-    link_refs: &LinkRefStore,
-    options: &Options,
-) {
-    writer.write_str("<section data-footnotes class=\"footnotes\">\n<ol>\n");
-
-    for (seq_num, &def_idx) in footnote_order.iter().enumerate() {
-        let def = match footnote_store.get(def_idx) {
-            Some(d) => d,
-            None => continue,
+impl RenderContext<'_> {
+    /// Render collected footnotes with a fresh block state per definition.
+    fn render_footnote_section(&mut self, input: &[u8]) {
+        let Some(footnote_store) = self.footnote_store else {
+            return;
         };
-        let number = seq_num + 1;
+        let order = self.footnote_numbers.order.clone();
+        self.writer
+            .write_str("<section data-footnotes class=\"footnotes\">\n<ol>\n");
 
-        writer.write_str("<li id=\"user-content-fn-");
-        writer.write_string(&def.label);
-        writer.write_str("\">\n");
-
-        // Render the footnote's block events
-        let fn_events = &def.events;
-        let fn_store_ref = Some(footnote_store);
-        // We need a separate footnote_order for nested footnote refs inside footnotes
-        // but for simplicity, we'll share the same order (GitHub does this too)
-        let mut fn_footnote_order: Vec<usize> = Vec::new();
-
-        let mut para_state = ParagraphState::new();
-        let mut heading_state = HeadingState::new();
-        let mut cell_state = CellState::new();
-        let mut tight_list_stack: Vec<(bool, u32)> = Vec::new();
-        let mut at_tight_li_start = false;
-        let mut need_newline_before_block = false;
-        let mut pending_loose_li_newline = false;
-        let mut blockquote_depth = 0u32;
-        let mut in_table_head = false;
-        let mut pending_task = block::TaskState::None;
-        let mut fn_heading_id_tracker = HeadingIdTracker::new();
-        let mut fn_callout_stack: Vec<Option<block::CalloutType>> = Vec::new();
-
-        // Track if the last event was ParagraphEnd (to insert backref)
-        let last_para_end_idx = fn_events
-            .iter()
-            .rposition(|e| matches!(e, BlockEvent::ParagraphEnd));
-
-        for (i, event) in fn_events.iter().enumerate() {
-            // If this is the last ParagraphEnd, we need to inject the backref before closing
-            if Some(i) == last_para_end_idx {
-                // Flush paragraph content first but don't close the tag yet
-                // Actually, we need to render the paragraph content, inject backref, then close
-                // The cleanest approach: render normally, then strip the closing </p>\n and re-add with backref
-
-                // Capture writer position before this event
-                let pos_before = writer.buffer_mut().len();
-
-                render_block_event(
-                    input,
-                    event,
-                    writer,
-                    inline_parser,
-                    inline_events,
-                    &mut para_state,
-                    &mut heading_state,
-                    &mut cell_state,
-                    &mut tight_list_stack,
-                    &mut at_tight_li_start,
-                    &mut need_newline_before_block,
-                    &mut pending_loose_li_newline,
-                    &mut blockquote_depth,
-                    &mut in_table_head,
-                    &mut pending_task,
-                    link_refs,
-                    fn_store_ref,
-                    &mut fn_footnote_order,
-                    &mut fn_heading_id_tracker,
-                    &mut fn_callout_stack,
-                    options,
-                );
-
-                // Check if the output ends with </p>\n and inject backref before it
-                let buf = writer.buffer_mut();
-                if buf.len() >= pos_before + 5 && buf.ends_with(b"</p>\n") {
-                    let insert_pos = buf.len() - 5; // before </p>\n
-                    let backref = format!(
-                        " <a href=\"#user-content-fnref-{}\" class=\"data-footnote-backref\" aria-label=\"Back to reference {}\">\u{21a9}</a>",
-                        def.label, number
-                    );
-                    let backref_bytes = backref.as_bytes();
-                    let suffix = buf[insert_pos..].to_vec();
-                    buf.truncate(insert_pos);
-                    buf.extend_from_slice(backref_bytes);
-                    buf.extend_from_slice(&suffix);
-                }
+        for (seq_num, def_idx) in order.into_iter().enumerate() {
+            let Some(def) = footnote_store.get(def_idx) else {
                 continue;
+            };
+            let number = seq_num + 1;
+            self.writer.write_str("<li id=\"user-content-fn-");
+            self.writer.write_string(&def.label);
+            self.writer.write_str("\">\n");
+
+            let last_paragraph_end = def
+                .events
+                .iter()
+                .rposition(|event| matches!(event, BlockEvent::ParagraphEnd));
+            let mut nested = RenderContext::new(
+                &mut *self.writer,
+                self.link_refs,
+                Some(footnote_store),
+                self.options,
+            );
+            for (index, event) in def.events.iter().enumerate() {
+                if Some(index) == last_paragraph_end {
+                    nested.pending_footnote_backref = Some((def.label.clone(), number));
+                }
+                nested.render_block_event(input, event);
             }
 
-            render_block_event(
-                input,
-                event,
-                writer,
-                inline_parser,
-                inline_events,
-                &mut para_state,
-                &mut heading_state,
-                &mut cell_state,
-                &mut tight_list_stack,
-                &mut at_tight_li_start,
-                &mut need_newline_before_block,
-                &mut pending_loose_li_newline,
-                &mut blockquote_depth,
-                &mut in_table_head,
-                &mut pending_task,
-                link_refs,
-                fn_store_ref,
-                &mut fn_footnote_order,
-                &mut fn_heading_id_tracker,
-                &mut fn_callout_stack,
-                options,
-            );
+            self.writer.write_str("</li>\n");
         }
 
-        writer.write_str("</li>\n");
+        self.writer.write_str("</ol>\n</section>\n");
     }
-
-    writer.write_str("</ol>\n</section>\n");
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn footnote_numbers_assign_constant_time_stable_ordinals() {
+        let mut numbers = FootnoteNumbers::new(4);
+
+        assert_eq!(numbers.number(2), Some(1));
+        assert_eq!(numbers.number(0), Some(2));
+        assert_eq!(numbers.number(2), Some(1));
+        assert_eq!(numbers.number(3), Some(3));
+        assert_eq!(numbers.number(4), None);
+        assert_eq!(numbers.order, vec![2, 0, 3]);
+    }
 
     #[test]
     fn test_basic_paragraph() {
@@ -1656,8 +1571,7 @@ mod tests {
     #[test]
     fn test_paragraph_escaping() {
         let html = to_html("<script>alert('xss')</script>");
-        // GFM disallowed raw HTML: <script> is filtered by default.
-        assert_eq!(html, "&lt;script>alert('xss')&lt;/script>");
+        assert_eq!(html, "&lt;script&gt;alert('xss')&lt;/script&gt;");
     }
 
     #[test]

@@ -9,7 +9,7 @@ import {
   SidebarLink,
   Footer,
 } from "ardo/ui"
-import { PressProvider } from "ardo/runtime"
+import { ArdoProvider } from "ardo/runtime"
 import config from "virtual:ardo/config"
 import sidebar from "virtual:ardo/sidebar"
 import "ardo/ui/styles.css"
@@ -37,7 +37,7 @@ export default function Root() {
   const isHomePage = location.pathname === "/"
 
   return (
-    <PressProvider config={config} sidebar={sidebar}>
+    <ArdoProvider config={config} sidebar={sidebar}>
       <ArdoLayout
         className={isHomePage ? "ardo-layout ardo-home" : "ardo-layout"}
         header={
@@ -84,6 +84,6 @@ export default function Root() {
       >
         <Outlet />
       </ArdoLayout>
-    </PressProvider>
+    </ArdoProvider>
   )
 }
