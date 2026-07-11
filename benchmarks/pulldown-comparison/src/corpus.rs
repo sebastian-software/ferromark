@@ -34,6 +34,10 @@ pub enum Corpus {
     Tables,
     /// Nested lists and blockquotes.
     Containers,
+    /// Nested unordered and ordered lists.
+    Lists,
+    /// Nested blockquotes with ordinary paragraph content.
+    Blockquotes,
     /// Inline delimiter-heavy input.
     Delimiters,
     /// Raw HTML-heavy input.
@@ -46,7 +50,7 @@ pub enum Corpus {
 
 impl Corpus {
     /// All corpus selectors accepted by the diagnostic runner.
-    pub const ALL: [Self; 16] = [
+    pub const ALL: [Self; 18] = [
         Self::CommonMark5K,
         Self::CommonMark20K,
         Self::CommonMark50K,
@@ -60,6 +64,8 @@ impl Corpus {
         Self::References,
         Self::Tables,
         Self::Containers,
+        Self::Lists,
+        Self::Blockquotes,
         Self::Delimiters,
         Self::Html,
         Self::UnicodeEntities,
@@ -81,6 +87,8 @@ impl Corpus {
             Self::References => "references",
             Self::Tables => "tables",
             Self::Containers => "containers",
+            Self::Lists => "lists",
+            Self::Blockquotes => "blockquotes",
             Self::Delimiters => "delimiters",
             Self::Html => "html",
             Self::UnicodeEntities => "unicode-entities",
@@ -120,6 +128,14 @@ impl Corpus {
             Self::Tables => Cow::Borrowed(TABLES_5K),
             Self::Containers => Cow::Owned(repeat_to_at_least(
                 "> - first item\n>   - nested item\n>     1. ordered child\n>     2. second child\n>\n> continuation\n\n",
+                20_000,
+            )),
+            Self::Lists => Cow::Owned(repeat_to_at_least(
+                "- first item\n  - nested item\n    1. ordered child\n    2. second child\n  - another nested item\n- second top-level item\n\n",
+                20_000,
+            )),
+            Self::Blockquotes => Cow::Owned(repeat_to_at_least(
+                "> outer quote\n> > nested quote\n> > continued nested content\n>\n> continued outer content\n\n",
                 20_000,
             )),
             Self::Delimiters => Cow::Owned(repeat_to_at_least(

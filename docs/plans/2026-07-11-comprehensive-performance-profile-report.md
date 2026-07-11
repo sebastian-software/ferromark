@@ -338,3 +338,18 @@ most of the visible ceiling. PGO remains unmeasured because no representative
 6. Re-profile before considering an optional direct-render sink.
 7. Build representative PGO training data only after portable source changes
    stabilize.
+
+## Accepted experiment: early-exit container blank checks (issue #68)
+
+Focused CPU samples separated two different costs. Table parsing spends visible
+time splitting cells, but table rows remain dominated by required block events
+and inline rendering. The container profile instead exposed redundant
+line-length scans while matching nonblank list and footnote continuations.
+
+The accepted change replaces that two-pass predicate with one early-exit scan
+and adds independent list-heavy and blockquote-heavy benchmark lanes. Across
+three alternating 80-sample portable runs, list-heavy input improved by
+10.614%, 10.406%, and 10.424%. The mixed container control improved 9.613%;
+CommonMark 20/50 KB improved 3.927% and 2.250%; tables (+0.386%) and
+blockquotes (+0.026%) stayed within the guardrail. Existing block events and
+rendering boundaries are unchanged.
