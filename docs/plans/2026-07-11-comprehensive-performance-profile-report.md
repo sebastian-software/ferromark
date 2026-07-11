@@ -353,3 +353,14 @@ three alternating 80-sample portable runs, list-heavy input improved by
 CommonMark 20/50 KB improved 3.927% and 2.250%; tables (+0.386%) and
 blockquotes (+0.026%) stayed within the guardrail. Existing block events and
 rendering boundaries are unchanged.
+
+## Rejected RFC: direct resolved-inline HTML sink (issue #69)
+
+The event stream is material but not isolated as the universal bottleneck:
+CommonMark 50 KB produced 2,081 inline events and mixed 250 KB produced 10,405.
+A direct sink would need the renderer's image-alt state, reference resolution,
+URL and raw-HTML policies, and footnote-number state. Duplicating those rules
+would risk divergence; moving them into the parser would weaken the only
+credible transform boundary. No source prototype is merged. The event path
+remains canonical until a profile proves event materialization dominates and
+one shared resolved-operation model can serve HTML and transforms.

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "issue": 69,
+  "baseline_commit": "227e3ebc268a28380a50703372dc796b16fed0a8",
+  "environment": {
+    "machine": "Apple Silicon Mac Studio (ARM64_T6000)",
+    "rustc": "1.95.0-nightly (842bd5be2 2026-01-29)",
+    "pgo": false
+  },
+  "pipeline": {
+    "commonmark_50k": { "inline_parses": 1018, "inline_events": 2081, "inline_emit_points": 587, "allocations": 341, "allocated_bytes": 206813 },
+    "mixed_250k": { "inline_parses": 5090, "inline_events": 10405, "inline_emit_points": 2935, "allocations": 458, "allocated_bytes": 864881 }
+  },
+  "decision": {
+    "status": "rejected",
+    "reason": "A direct HTML sink would either duplicate image, link, HTML-policy, and footnote rendering semantics or move those semantics into the parser. Current counters show material event volume but do not prove event storage dominates throughput. The existing resolved InlineEvent boundary remains the credible transform/plugin path."
+  }
+}
