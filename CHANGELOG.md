@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.1](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.0...ferromark-v0.3.1) (2026-07-11)
+
+
+### Features
+
+* **options:** add curated markdown profiles ([e991eeb](https://github.com/sebastian-software/ferromark/commit/e991eebdf73e96130ebbed68aaa549664627b0dc))
+
+
+### Bug Fixes
+
+* **bench:** isolate publication baseline artifacts ([4317f14](https://github.com/sebastian-software/ferromark/commit/4317f14cd6789cf48084b73819b19eaa81228e92))
+* **bench:** keep publication lanes unique ([95aedd5](https://github.com/sebastian-software/ferromark/commit/95aedd52f1c1d4cf984de04bbc4254bd6caa58ea))
+
+
+### Performance Improvements
+
+* lazily allocate rare inline buffers ([5adc0d2](https://github.com/sebastian-software/ferromark/commit/5adc0d2b543e48c9e5cc0322ecb9bec3b3eadb7c))
+* short-circuit container blank checks ([979de8b](https://github.com/sebastian-software/ferromark/commit/979de8b3aa4e0fabbaa4d0553ed53f387dcfafc2))
+* skip absent inline resolver stages ([a52c3af](https://github.com/sebastian-software/ferromark/commit/a52c3af567924eefa57def419ce2e3cb4eaa5339))
+* skip heading id state when disabled ([430be85](https://github.com/sebastian-software/ferromark/commit/430be85bc2e417c1537f460c895b897c94e1b200))
+
 ## [0.3.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.2.0...ferromark-v0.3.0) (2026-07-10)
 
 
