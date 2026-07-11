@@ -26,7 +26,12 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 
 ## Benchmarks
 
-Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run with GFM tables, strikethrough, and task lists enabled; ferromark's non-GFM extras (heading IDs, callouts) are disabled so every parser performs the same work. Output buffers reused where APIs allow. Non-PGO binaries for a fair comparison.
+Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run
+with GFM tables, strikethrough, and task lists enabled; ferromark's non-GFM
+extras (heading IDs, callouts) are disabled. Output buffers are reused where
+APIs allow and binaries are non-PGO. Ferromark also keeps its secure default
+rendering in this published product lane, so it performs URL and raw-HTML safety
+work that pulldown-cmark does not.
 
 **CommonMark 5 KB** (wiki-style, mixed content with tables)
 | Parser | Throughput | vs ferromark |
@@ -55,6 +60,20 @@ MD4C_DIR=/path/to/md4c cargo bench --bench comparison
 
 `MD4C_DIR` is required deliberately; normal `cargo build`, `cargo test`, and package consumers never inspect or compile a sibling C checkout.
 
+For strict, named feature intersections between the two closest Rust parsers,
+use the md4c-independent harness:
+
+```bash
+cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
+cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
+```
+
+It provides CommonMark, GFM-overlap, and extended-overlap lanes with trusted
+raw-HTML semantics in both parsers. See the
+[parity benchmark README](benchmarks/pulldown-comparison/README.md) for the exact
+feature matrix. Secure-default numbers remain separate because pulldown-cmark
+does not expose an equivalent trust boundary.
+
 ## What you get
 
 **Full CommonMark**: 652/652 spec tests pass. No filtering, no exceptions.
@@ -74,6 +93,42 @@ heading_ids · math · callouts
 ```
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
+
+## Markdown profiles
+
+Profiles provide three curated, monotone feature sets without replacing the
+fine-grained options:
+
+| Feature | Essentials | Extended | Full |
+| --- | :---: | :---: | :---: |
+| Tables, strikethrough, task lists | ✓ | ✓ | ✓ |
+| Raw HTML parsing, reference links | — | ✓ | ✓ |
+| Heading IDs, callouts | — | ✓ | ✓ |
+| Autolink literals, footnotes, front matter | — | — | ✓ |
+| Math, highlight, subscript, superscript | — | — | ✓ |
+
+- **Essentials** covers common READMEs, product documentation, and simple
+  content with the three everyday GFM extensions.
+- **Extended** adds the current default feature mix, including references, raw
+  HTML parsing, heading IDs, and callouts.
+- **Full** enables every Markdown feature supported by this Ferromark version.
+
+```rust
+use ferromark::{Options, Profile, RenderPolicy};
+
+let options = Options {
+    heading_ids: true,
+    render_policy: RenderPolicy::Trusted,
+    ..Options::from(Profile::Essentials)
+};
+
+let html = ferromark::to_html_with_options(markdown, &options);
+```
+
+`Options::default()` remains backward-compatible and currently matches the
+Extended feature mix. Profiles never opt into trusted HTML: `RenderPolicy` is a
+separate security decision. The profile names describe syntax contracts, not a
+fixed speed promise. Measure your corpus with `cargo bench --bench profiles`.
 
 ## Trade-offs
 

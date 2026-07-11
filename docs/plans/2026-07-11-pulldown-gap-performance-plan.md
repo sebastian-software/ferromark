@@ -152,13 +152,14 @@ ferromark and pulldown-cmark. On this machine it failed at link time with an
 undefined `_md_html` symbol. That makes the most important comparison depend on
 an unrelated C checkout.
 
-- [ ] Add a ferromark-versus-pulldown harness that does not build md4c or comrak.
-- [ ] Reuse output buffers with equivalent starting capacity in both lanes.
-- [ ] Keep dependency versions locked, especially `pulldown-cmark`.
-- [ ] Add secure-default and trusted-semantics benchmark groups.
+- [x] Add a ferromark-versus-pulldown harness that does not build md4c or comrak.
+- [x] Reuse output buffers with equivalent starting capacity in both lanes.
+- [x] Keep dependency versions locked, especially `pulldown-cmark`.
+- [x] Add named CommonMark, GFM-overlap, and extended-overlap trusted-parity
+      groups while keeping secure-default measurements separate.
 - [ ] Print or store input size, output size, option set, compiler version, and
       git commit with the result artifact.
-- [ ] Keep the four-parser harness for published broad comparisons.
+- [x] Keep the four-parser harness for published broad comparisons.
 - [ ] Separately fix or document the md4c `_md_html` link failure and validate
       the checkout SHA against the published `65c6c9d` pin.
 
@@ -167,13 +168,13 @@ reproduces the current relative ordering within 1 percentage point.
 
 #### 0.2 Split benchmark claims by semantics
 
-- [ ] Name the current secure lane explicitly; do not call it identical work.
-- [ ] Add a trusted raw-HTML lane for closer output semantics.
-- [ ] Compare outputs fixture by fixture and document intentional differences.
-- [ ] Add semantic assertions for links, unsafe schemes, raw HTML, tables, task
+- [x] Name the current secure lane explicitly; do not call it identical work.
+- [x] Add trusted raw-HTML lanes for closer output semantics.
+- [x] Compare representative outputs and document intentional differences.
+- [x] Add semantic assertions for links, raw HTML, tables, task
       lists, and reference links rather than relying only on output length.
-- [ ] Update README/homepage wording only after the new lanes have three stable
-      runs on the publication machine.
+- [ ] Publish replacement parity numbers only after the new lanes have three
+      stable runs on the publication machine.
 
 Acceptance: every published percentage states which security/rendering lane it
 measures.
@@ -436,25 +437,25 @@ It adds a bounded product/DX workstream without changing `Options::default()`.
 
 ### Public profiles
 
-- [ ] Add the monotone `Profile::{Essentials, Extended, Full}` API.
-- [ ] Keep security orthogonal through `RenderPolicy`.
-- [ ] Make Essentials cover everyday Markdown plus tables, strikethrough, and
+- [x] Add the monotone `Profile::{Essentials, Extended, Full}` API.
+- [x] Keep security orthogonal through `RenderPolicy`.
+- [x] Make Essentials cover everyday Markdown plus tables, strikethrough, and
       task lists.
-- [ ] Make Extended add reference links, raw HTML parsing, heading IDs, and
+- [x] Make Extended add reference links, raw HTML parsing, heading IDs, and
       callouts, matching the current default feature mix.
-- [ ] Make Full add all remaining supported syntax features.
-- [ ] Add exact mapping, behavior-boundary, default-compatibility, and Full
+- [x] Make Full add all remaining supported syntax features.
+- [x] Add exact mapping, behavior-boundary, default-compatibility, and Full
       completeness tests.
-- [ ] Benchmark all profiles on the same Essentials-compatible corpus before
+- [x] Benchmark all profiles on the same Essentials-compatible corpus before
       making a speed claim.
 
 ### Cross-parser parity configurations
 
-- [ ] Add an explicit CommonMark-only parity lane.
-- [ ] Add a GFM-overlap lane with tables, strikethrough, and task lists.
-- [ ] Add an extended-overlap lane with only semantically verified shared
+- [x] Add an explicit CommonMark-only parity lane.
+- [x] Add a GFM-overlap lane with tables, strikethrough, and task lists.
+- [x] Add an extended-overlap lane with only semantically verified shared
       features.
-- [ ] Keep Ferromark secure-default results separate from trusted rendering
+- [x] Keep Ferromark secure-default results separate from trusted rendering
       parity.
-- [ ] Document every parser flag and semantic exception per lane.
-- [ ] Validate representative output semantics before timing each lane.
+- [x] Document every parser flag and semantic exception per lane.
+- [x] Validate representative output semantics before timing each lane.
