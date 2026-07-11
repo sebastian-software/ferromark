@@ -10,7 +10,11 @@ homepage = "https://github.com/sebastian-software/ferromark"
 readme = "README.md"
 keywords = ["markdown", "html", "parser", "commonmark", "gfm"]
 categories = ["parsing", "text-processing", "web-programming"]
-exclude = ["benchmarks/md4c-comparison", "node"]
+exclude = [
+    "benchmarks/md4c-comparison",
+    "benchmarks/pulldown-comparison",
+    "node",
+]
 
 [workspace]
 members = ["node/native"]
