@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "issue": 65,
+  "purpose": "Measure the cost of constructing heading-ID state when heading IDs are disabled.",
+  "baseline_commit": "7da2f8006ae428784bd36faf153c1e5529efc5e8",
+  "candidate_commit": "dc7edc19daec1476f9a83a7f680cbaa3b2299927",
+  "environment": {
+    "machine": "Apple Silicon Mac Studio (ARM64_T6000)",
+    "operating_system": "macOS 26.5.2",
+    "rustc": "1.95.0-nightly (842bd5be2 2026-01-29)",
+    "rustflags": "",
+    "cpu_mode": "unspecified",
+    "pgo": false
+  },
+  "protocol": {
+    "repetitions": 3,
+    "sample_size": 80,
+    "measurement_seconds": 5,
+    "warmup_seconds": 3,
+    "order": ["candidate", "baseline", "candidate", "baseline", "candidate", "baseline"],
+    "command": "cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bench profiling -- <lane> --sample-size 80 --measurement-time 5 --warm-up-time 3"
+  },
+  "criterion_mean_nanoseconds": {
+    "unique_headings_with_ids": {
+      "candidate": [186988.325, 187818.975, 187465.014],
+      "baseline": [187347.523, 187362.513, 188037.646],
+      "candidate_improvement_percent": [0.192, -0.244, 0.305]
+    },
+    "repeated_headings_with_ids": {
+      "candidate": [65320.572, 65281.684, 65454.381],
+      "baseline": [65393.318, 65451.182, 65393.012],
+      "candidate_improvement_percent": [0.111, 0.259, -0.094]
+    },
+    "unique_headings_without_ids": {
+      "candidate": [117816.428, 117766.32, 117716.375],
+      "baseline": [117812.56, 117899.305, 117737.203],
+      "candidate_improvement_percent": [-0.003, 0.113, 0.018]
+    },
+    "repeated_headings_without_ids": {
+      "candidate": [46084.206, 45995.964, 46028.993],
+      "baseline": [46605.499, 46681.163, 46614.14],
+      "candidate_improvement_percent": [1.119, 1.468, 1.255]
+    },
+    "ordinary_prose_without_ids": {
+      "candidate": [13447.763, 13445.269, 13458.097],
+      "baseline": [13440.537, 13407.731, 13410.309],
+      "candidate_improvement_percent": [-0.054, -0.28, -0.356]
+    }
+  },
+  "allocation_control": {
+    "lane": "repeated-headings / extended-secure-no-heading-ids",
+    "baseline": {
+      "allocations": 42,
+      "deallocations": 42,
+      "allocated_bytes": 30712
+    },
+    "candidate": {
+      "allocations": 40,
+      "deallocations": 40,
+      "allocated_bytes": 28528
+    }
+  },
+  "decision": {
+    "status": "accepted",
+    "reason": "The disabled-ID repeated-heading lane improved in all three alternating comparisons by more than one percent, with two fewer allocations and 2184 fewer allocated bytes per rendered document. Active-ID lanes remained within noise, and the ordinary-prose control changed by less than 0.36 percent."
+  }
+}
