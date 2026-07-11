@@ -84,6 +84,7 @@ fn profiling_benches(c: &mut Criterion) {
         Corpus::CommonMark5K,
         Corpus::CommonMark20K,
         Corpus::CommonMark50K,
+        Corpus::Mixed250K,
     ] {
         bench_lane(
             c,
