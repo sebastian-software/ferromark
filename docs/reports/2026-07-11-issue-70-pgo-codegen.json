@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "issue": 70,
+  "baseline_commit": "227e3ebc268a28380a50703372dc796b16fed0a8",
+  "toolchain": "rustc 1.93.0 (LLVM 21.1.8)",
+  "training": {
+    "profile_data_bytes": 2621440,
+    "corpora": ["commonmark-5k", "commonmark-20k", "commonmark-50k", "mixed-250k", "simple", "safe-urls", "delimiters", "references", "tables", "containers"],
+    "profiles": ["commonmark", "essentials-secure", "extended-secure"]
+  },
+  "commonmark_50k_extended_secure_throughput_change_percent": {
+    "apple_m1_vs_portable": 1.196,
+    "native_vs_portable": 0.475,
+    "pgo_vs_portable": 4.893
+  },
+  "pgo_cross_corpus_throughput_change_percent": {
+    "simple": 18.824,
+    "safe_urls": 17.914,
+    "delimiters": 8.758,
+    "references": 5.873,
+    "tables": 16.448,
+    "containers": 47.53,
+    "mixed_250k": 25.513
+  },
+  "binary_size_bytes": { "portable": 1377072, "pgo": 1447296 },
+  "decision": {
+    "status": "accepted_documentation",
+    "reason": "Balanced PGO improves every checked corpus and the primary 50 KB lane by 4.893%, with a 5.1% binary-size increase. Recommend an optional, separately built PGO deployment artifact; keep portable source claims and the default distribution non-PGO. Apple M1 and native flags do not justify a separate default artifact."
+  }
+}
