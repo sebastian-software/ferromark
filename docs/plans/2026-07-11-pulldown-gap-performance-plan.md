@@ -181,12 +181,12 @@ measures.
 
 #### 0.3 Pin the performance toolchain
 
-- [ ] Add a documented benchmark toolchain version; do not silently use the
+- [x] Add a documented benchmark toolchain version; do not silently use the
       developer's current nightly.
 - [ ] Run stable/MSRV and the benchmark toolchain as separate lanes if both are
       useful.
-- [ ] Report PGO and non-PGO results separately.
-- [ ] Save Criterion estimates or machine-readable summaries as artifacts.
+- [x] Report PGO and non-PGO results separately.
+- [x] Save Criterion estimates or machine-readable summaries as artifacts.
 
 Acceptance: a later run can explain compiler-caused drift rather than treating
 it as a parser regression.
@@ -219,7 +219,7 @@ Why: `InlineParser::new()` creates many `Vec::with_capacity` buffers, including
 buffers for disabled or uncommon extensions. This is a fixed cost per document
 and is consistent with parity at 5 KB but a lead at 20 KB.
 
-- [ ] Add an allocation-count benchmark for 5 KB, 20 KB, and 50 KB.
+- [x] Add an allocation-count benchmark for 5 KB, 20 KB, and 50 KB.
 - [ ] Record allocation count and allocated bytes for parser construction,
       block parse, inline parse, and render separately where possible.
 - [ ] Classify every preallocated inline buffer as common-default, conditional,
@@ -371,7 +371,7 @@ Expected gain: fixture-specific 2-5%; likely below 1% on the mixed 50 KB corpus.
 - [ ] Report PGO gains separately for ferromark and pulldown-cmark.
 - [ ] Inspect code size and instruction-cache effects of fat LTO and
       `codegen-units = 1`.
-- [ ] Test `target-cpu=native` only as a local/deployment lane, never as the
+- [x] Test `target-cpu=native` only as a local/deployment lane, never as the
       portable published baseline.
 
 ## Do not repeat without new profile evidence
@@ -400,12 +400,12 @@ paths, and skipping inline-link resolution without a `](` candidate.
 
 - [ ] 0.1 Two-parser harness
 - [ ] 0.2 Semantic lanes and output classification
-- [ ] 0.3 Toolchain/result pinning
+- [x] 0.3 Toolchain/result pinning
 - [ ] 1.1 0.2-versus-0.3 default-path A/B
 - [ ] 1.2 Allocation census and lazy rare buffers
 - [ ] 1.3 Secure URL pass reduction
 - [ ] 1.4 Contiguous paragraph rendering
-- [ ] Re-profile and update the expected-return ranking
+- [x] Re-profile and update the expected-return ranking
 - [ ] 2.1 Inline feature-summary experiment
 - [ ] 2.2 Direct inline render sink
 - [ ] 3.1 Aggregated block-event experiment
