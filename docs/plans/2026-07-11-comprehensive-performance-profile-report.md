@@ -154,6 +154,23 @@ Heading ID generation is the most surprising newly visible feature cost. Its
 profile includes hash-map insertion and rehashing. It needs a focused heading
 corpus before changing its state model.
 
+## Issue #65: disabled heading-ID state
+
+The focused experiment retained one small change: create the heading-ID tracker
+only when `Options::heading_ids` is enabled. It does not alter ID generation,
+deduplication, or output when IDs are enabled.
+
+On a clean `7da2f80` harness baseline, three alternating 80-sample Criterion
+comparisons (five-second measurement, three-second warmup) improved the
+repeated-heading lane with IDs disabled by 1.119%, 1.468%, and 1.255%. The
+allocation control fell from 42 allocations / 30,712 bytes to 40 allocations /
+28,528 bytes per render. Active-ID lanes remained within noise, and the
+ordinary-prose disabled-ID control varied by at most 0.356%, so the result does
+not support a broader heading-rendering speed claim.
+
+The complete measurements and environment are recorded in
+[`2026-07-11-issue-65-heading-id-state.json`](../reports/2026-07-11-issue-65-heading-id-state.json).
+
 ### Delimiter-heavy lane
 
 The dominant buckets were mark collection (1,162), the inline parser (1,038),
