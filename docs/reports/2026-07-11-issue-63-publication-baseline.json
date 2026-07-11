@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "issue": 63,
+  "purpose": "Portable non-PGO performance baseline for evidence-gated experiments.",
+  "commit": "9102db4bf642a9aa8a53fcd1bb45b6f8a99a5c84",
+  "environment": {
+    "machine": "Apple Silicon Mac Studio (ARM64_T6000)",
+    "operating_system": "macOS 26.5.2",
+    "rustc": "1.93.0 (LLVM 21.1.8)",
+    "rustflags": "-C target-cpu=generic",
+    "cpu_mode": "portable",
+    "pgo": false
+  },
+  "protocol": {
+    "repetitions": 3,
+    "sample_size": 80,
+    "measurement_seconds": 5,
+    "warmup_seconds": 3,
+    "parity_order": ["ferromark-first", "pulldown-first", "ferromark-first"],
+    "raw_artifacts": "benchmarks/pulldown-comparison/results/publication-20260711T141443Z"
+  },
+  "trusted_commonmark_parity": [
+    {
+      "corpus": "commonmark-5k",
+      "ferromark_mib_per_sec": [272.02, 271.67, 271.59],
+      "pulldown_cmark_mib_per_sec": [268.37, 268.01, 267.31],
+      "ferromark_lead_percent": [1.36, 1.37, 1.6]
+    },
+    {
+      "corpus": "commonmark-20k",
+      "ferromark_mib_per_sec": [276.2, 277.16, 276.8],
+      "pulldown_cmark_mib_per_sec": [265.7, 264.05, 264.97],
+      "ferromark_lead_percent": [3.95, 4.97, 4.46]
+    },
+    {
+      "corpus": "commonmark-50k",
+      "ferromark_mib_per_sec": [290.41, 289.96, 289.36],
+      "pulldown_cmark_mib_per_sec": [277.35, 276.84, 276.83],
+      "ferromark_lead_percent": [4.71, 4.74, 4.53]
+    },
+    {
+      "corpus": "mixed-250k",
+      "ferromark_mib_per_sec": [292.86, 293.41, 293.49],
+      "pulldown_cmark_mib_per_sec": [275.13, 273.85, 276.59],
+      "ferromark_lead_percent": [6.44, 7.14, 6.11]
+    }
+  ],
+  "secure_default_extended_mib_per_sec": {
+    "commonmark-5k": [219.4, 218.84, 218.63],
+    "commonmark-20k": [234.86, 235.19, 234.72],
+    "commonmark-50k": [220.85, 225.41, 224.98]
+  },
+  "secure_profile_50k_mib_per_sec": {
+    "essentials": [283.71, 284.02, 284.03],
+    "extended": [220.85, 225.41, 224.98],
+    "full": [212.03, 211.51, 212.01]
+  },
+  "commonmark_default_policy_report": {
+    "passed": 577,
+    "failed": 75,
+    "total": 652,
+    "pass_rate_percent": 88.5
+  }
+}

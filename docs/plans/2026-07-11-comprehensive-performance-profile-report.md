@@ -1,6 +1,6 @@
 # Comprehensive performance profile report
 
-Status: first evidence pass complete
+Status: Issue #63 portable baseline accepted; first evidence pass retained
 Date: 2026-07-11
 Design: [`2026-07-11-comprehensive-performance-profiling-design.md`](./2026-07-11-comprehensive-performance-profiling-design.md)
 
@@ -26,6 +26,45 @@ find strong signals. Treat every throughput delta as directional until the same
 lane passes three alternating-order Criterion runs with the documented sample
 and measurement settings. The working tree was dirty with the profiling
 implementation, so these results are development evidence only.
+
+## Issue #63 publication baseline
+
+The publication baseline was collected from clean commit `9102db4` on an Apple
+Silicon Mac Studio (`ARM64_T6000`) with macOS 26.5.2, pinned `rustc 1.93.0`
+(LLVM 21.1.8), `-C target-cpu=generic`, and non-PGO release builds. The runner
+used three repetitions, 80 Criterion samples, a five-second measurement window,
+and a three-second warmup. It ran Ferromark first in repetitions one and three
+and pulldown-cmark first in repetition two. The checked-in machine-readable
+summary is [`2026-07-11-issue-63-publication-baseline.json`](../reports/2026-07-11-issue-63-publication-baseline.json).
+
+Trusted CommonMark parity remains a deliberately separate comparison lane. It
+uses trusted raw HTML in Ferromark because pulldown-cmark does not expose the
+same untrusted-rendering boundary. Secure-default measurements are product-lane
+numbers, not direct pulldown-cmark comparisons.
+
+| Trusted CommonMark corpus | Ferromark MiB/s (three medians) | pulldown-cmark MiB/s (three medians) | Ferromark lead |
+| --- | ---: | ---: | ---: |
+| 5 KB | 272.02 / 271.67 / 271.59 | 268.37 / 268.01 / 267.31 | 1.36% / 1.37% / 1.60% |
+| 20 KB | 276.20 / 277.16 / 276.80 | 265.70 / 264.05 / 264.97 | 3.95% / 4.97% / 4.46% |
+| 50 KB | 290.41 / 289.96 / 289.36 | 277.35 / 276.84 / 276.83 | 4.71% / 4.74% / 4.53% |
+| 250 KB | 292.86 / 293.41 / 293.49 | 275.13 / 273.85 / 276.59 | 6.44% / 7.14% / 6.11% |
+
+The ordering is stable in all twelve parity comparisons. The 20 KB lead spans
+1.01 percentage points, effectively the one-point screening boundary, so it is
+evidence of a stable ordering rather than a precise marketing claim. The
+publication protocol therefore unblocks source experiments but does not change
+the README benchmark headline.
+
+The secure-default Extended lane recorded 219.40 / 218.84 / 218.63 MiB/s at
+5 KB, 234.86 / 235.19 / 234.72 MiB/s at 20 KB, and 220.85 / 225.41 / 224.98
+MiB/s at 50 KB. At 50 KB, the Essentials, Extended, and Full profile medians
+were 283.71–284.03, 220.85–225.41, and 211.51–212.03 MiB/s respectively. These
+are controls for later experiments, not cross-parser claims.
+
+The complete CommonMark report run as part of this gate currently reports 577
+passing examples and 75 failures out of 652 under the default safety policy.
+That result corrects the former README claim; it does not turn this performance
+baseline into a claim of full CommonMark or raw-HTML parity.
 
 ## Primary parity smoke
 
