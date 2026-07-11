@@ -31,8 +31,8 @@ use links::{
     resolve_links_into, resolve_reference_links_into,
 };
 use marks::{
-    Mark, MarkBuffer, collect_marks, collect_marks_highlight, collect_marks_highlight_superscript,
-    collect_marks_superscript, flags,
+    Mark, MarkBuffer, MarkSummary, collect_marks, collect_marks_highlight,
+    collect_marks_highlight_superscript, collect_marks_superscript, flags,
 };
 use math::{MathSpan, resolve_math_spans};
 use memchr::memchr;
@@ -183,19 +183,20 @@ impl InlineParser {
 
         // Phase 1: Collect marks
         self.mark_buffer.reserve_for_text(text.len());
-        if has_specials {
+        let summary = if has_specials {
             if highlight && superscript {
-                collect_marks_highlight_superscript(text, &mut self.mark_buffer);
+                collect_marks_highlight_superscript(text, &mut self.mark_buffer)
             } else if highlight {
-                collect_marks_highlight(text, &mut self.mark_buffer);
+                collect_marks_highlight(text, &mut self.mark_buffer)
             } else if superscript {
-                collect_marks_superscript(text, &mut self.mark_buffer);
+                collect_marks_superscript(text, &mut self.mark_buffer)
             } else {
-                collect_marks(text, &mut self.mark_buffer);
+                collect_marks(text, &mut self.mark_buffer)
             }
         } else {
             self.mark_buffer.clear();
-        }
+            MarkSummary::default()
+        };
 
         if self.mark_buffer.is_empty() && !may_have_autolinks {
             // No special characters and no autolink candidates, emit as plain text
@@ -217,7 +218,7 @@ impl InlineParser {
 
         // Phase 2: Resolve marks by precedence
         // First: autolinks + raw HTML (skip if no '<' present)
-        let has_lt = memchr(b'<', text).is_some();
+        let has_lt = summary.has_less_than();
         self.autolinks.clear();
         if has_lt {
             find_autolinks_into(text, &mut self.autolinks);
@@ -241,16 +242,20 @@ impl InlineParser {
             .extend(self.html_spans.iter().map(|s| (s.start, s.end)));
 
         // Third: code spans (highest precedence, but should not start inside HTML tags)
-        resolve_code_spans(self.mark_buffer.marks_mut(), text, &self.html_ranges);
+        if summary.has_code() {
+            resolve_code_spans(self.mark_buffer.marks_mut(), text, &self.html_ranges);
+        }
 
         // Get code span ranges for filtering
         self.code_spans.clear();
-        self.code_spans
-            .extend(extract_code_spans(self.mark_buffer.marks()));
+        if summary.has_code() {
+            self.code_spans
+                .extend(extract_code_spans(self.mark_buffer.marks()));
+        }
         filter_html_spans_in_code_spans(&mut self.html_spans, &self.code_spans);
 
         // Math spans (after code spans, before links; gated on math option)
-        if math {
+        if math && summary.has_math() {
             self.math_spans = resolve_math_spans(self.mark_buffer.marks_mut(), text);
         } else {
             self.math_spans.clear();
@@ -265,12 +270,11 @@ impl InlineParser {
         });
 
         // Fourth: collect bracket positions and detect inline delimiter candidates in one pass
-        let (has_emphasis_marks, has_tilde_marks, has_highlight_marks, has_superscript_marks) =
-            Self::collect_brackets_and_scan_emphasis(
-                self.mark_buffer.marks(),
-                &mut self.open_brackets,
-                &mut self.close_brackets,
-            );
+        Self::collect_brackets(
+            self.mark_buffer.marks(),
+            &mut self.open_brackets,
+            &mut self.close_brackets,
+        );
         let has_brackets = !self.open_brackets.is_empty() && !self.close_brackets.is_empty();
         self.open_brackets
             .retain(|&(pos, _)| !pos_in_spans(pos, &self.html_spans));
@@ -375,7 +379,7 @@ impl InlineParser {
         for fref in &self.footnote_refs {
             self.link_boundaries.push((fref.start, fref.end));
         }
-        let emphasis_matches = if has_emphasis_marks {
+        let emphasis_matches = if summary.has_emphasis() {
             resolve_emphasis_with_stacks_into(
                 self.mark_buffer.marks_mut(),
                 &self.link_boundaries,
@@ -389,7 +393,7 @@ impl InlineParser {
         };
 
         // Seventh: strikethrough (after emphasis, since they share the mark buffer)
-        if has_tilde_marks && strikethrough {
+        if summary.has_tilde() && strikethrough {
             resolve_strikethrough_into(
                 self.mark_buffer.marks_mut(),
                 &self.link_boundaries,
@@ -401,7 +405,7 @@ impl InlineParser {
         let strikethrough_matches = self.strikethrough_matches.as_slice();
 
         // Eighth: subscript (after strikethrough, since they share `~`)
-        if has_tilde_marks && subscript {
+        if summary.has_tilde() && subscript {
             resolve_subscript_into(
                 self.mark_buffer.marks_mut(),
                 text,
@@ -415,7 +419,7 @@ impl InlineParser {
         let subscript_matches = self.subscript_matches.as_slice();
 
         // Ninth: superscript
-        if has_superscript_marks && superscript {
+        if summary.has_superscript() && superscript {
             resolve_superscript_into(
                 self.mark_buffer.marks_mut(),
                 text,
@@ -429,7 +433,7 @@ impl InlineParser {
         let superscript_matches = self.superscript_matches.as_slice();
 
         // Tenth: highlight/mark
-        if has_highlight_marks && highlight {
+        if summary.has_highlight() && highlight {
             resolve_highlight_into(
                 self.mark_buffer.marks_mut(),
                 text,
@@ -591,35 +595,19 @@ impl InlineParser {
         }
     }
 
-    /// Collect bracket positions for link parsing.
-    /// Returns (has_emphasis_marks, has_tilde_marks, has_highlight_marks, has_superscript_marks).
-    fn collect_brackets_and_scan_emphasis(
+    /// Collect bracket positions for link parsing after code-span resolution.
+    fn collect_brackets(
         marks: &[Mark],
         open_brackets: &mut Vec<(u32, bool)>,
         close_brackets: &mut Vec<u32>,
-    ) -> (bool, bool, bool, bool) {
+    ) {
         let estimated = (marks.len() / 4).max(4);
         open_brackets.clear();
         close_brackets.clear();
         open_brackets.reserve(estimated);
         close_brackets.reserve(estimated);
 
-        let mut has_emphasis_marks = false;
-        let mut has_tilde_marks = false;
-        let mut has_highlight_marks = false;
-        let mut has_superscript_marks = false;
         for mark in marks {
-            if mark.flags & flags::IN_CODE == 0 {
-                if mark.ch == b'*' || mark.ch == b'_' {
-                    has_emphasis_marks = true;
-                } else if mark.ch == b'~' {
-                    has_tilde_marks = true;
-                } else if mark.ch == b'=' {
-                    has_highlight_marks = true;
-                } else if mark.ch == b'^' {
-                    has_superscript_marks = true;
-                }
-            }
             // Skip brackets inside code spans
             if mark.flags & flags::IN_CODE != 0 && mark.ch != b'[' {
                 continue;
@@ -637,12 +625,6 @@ impl InlineParser {
                 _ => {}
             }
         }
-        (
-            has_emphasis_marks,
-            has_tilde_marks,
-            has_highlight_marks,
-            has_superscript_marks,
-        )
     }
 
     /// Emit events based on resolved marks.
