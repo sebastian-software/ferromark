@@ -5,6 +5,13 @@
   "toolchain": "rustc 1.93.0 (LLVM 21.1.8)",
   "training": {
     "profile_data_bytes": 2621440,
+    "profile_data_sha256": "not-retained-local-artifact",
+    "machine": "Apple Silicon Mac Studio (ARM64_T6000), macOS 26.5.2",
+    "rustflags_generate": "-Cprofile-generate=/private/tmp/ferromark-issue-70-profraw-stable",
+    "rustflags_use": "-C profile-use=/private/tmp/ferromark-issue-70-stable.profdata -C llvm-args=-pgo-warn-missing-function",
+    "generate_command": "CARGO_TARGET_DIR=/private/tmp/ferromark-pgo-instrumented-stable RUSTFLAGS='-Cprofile-generate=/private/tmp/ferromark-issue-70-profraw-stable' cargo build --locked --release --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bin profile_driver",
+    "merge_command": "$(rustup run 1.93.0 rustc --print sysroot)/lib/rustlib/aarch64-apple-darwin/bin/llvm-profdata merge -o /private/tmp/ferromark-issue-70-stable.profdata /private/tmp/ferromark-issue-70-profraw-stable/*.profraw",
+    "benchmark_command": "profile_driver --config extended-secure --corpus <corpus> --seconds 5 --warmup-iterations 3",
     "corpora": ["commonmark-5k", "commonmark-20k", "commonmark-50k", "mixed-250k", "simple", "safe-urls", "delimiters", "references", "tables", "containers"],
     "profiles": ["commonmark", "essentials-secure", "extended-secure"]
   },

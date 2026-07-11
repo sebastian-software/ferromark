@@ -17,9 +17,13 @@ gates passed; rejected experiments remain available through closed draft PRs.
 
 ## Rejected directions
 
-- The shared secure-URL scan did not meet its mixed/50 KB gate.
+- The shared secure-URL scan did not meet its mixed/50 KB gate; its exact
+  [rejection report](https://github.com/sebastian-software/ferromark/blob/codex/issue-62-secure-url-scan/docs/reports/2026-07-11-issue-62-secure-url-scan.json)
+  remains on closed draft PR #73.
 - Borrowed contiguous paragraphs cut copies by 79-82% but repeatedly regressed
-  20/50 KB and simple prose throughput.
+  20/50 KB and simple prose throughput; see the
+  [exact report](https://github.com/sebastian-software/ferromark/blob/codex/issue-66-contiguous-paragraphs/docs/reports/2026-07-11-issue-66-contiguous-paragraphs.json)
+  preserved by closed draft PR #77.
 - A direct resolved-inline HTML sink would duplicate renderer policy/state or
   weaken the transform boundary; event materialization was not isolated as the
   dominant universal bottleneck.
