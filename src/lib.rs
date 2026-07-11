@@ -782,7 +782,7 @@ struct RenderContext<'a, 'r, R: FencedCodeRenderer + ?Sized> {
     link_refs: &'a LinkRefStore,
     footnote_store: Option<&'a FootnoteStore>,
     footnote_numbers: FootnoteNumbers,
-    heading_id_tracker: HeadingIdTracker,
+    heading_id_tracker: Option<HeadingIdTracker>,
     callout_stack: Vec<Option<block::CalloutType>>,
     pending_footnote_backref: Option<(String, usize)>,
     options: &'a Options,
@@ -816,7 +816,7 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
             link_refs,
             footnote_store,
             footnote_numbers: FootnoteNumbers::new(footnote_store.map_or(0, FootnoteStore::len)),
-            heading_id_tracker: HeadingIdTracker::new(),
+            heading_id_tracker: options.heading_ids.then(HeadingIdTracker::new),
             callout_stack: Vec::new(),
             pending_footnote_backref: None,
             options,
@@ -998,8 +998,8 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 let content = heading_state.finish();
 
                 // Emit heading open tag (deferred from HeadingStart)
-                if options.heading_ids {
-                    let id = heading_id_tracker.make_id(content);
+                if let Some(tracker) = heading_id_tracker.as_mut() {
+                    let id = tracker.make_id(content);
                     writer.heading_start_with_id(*level, id);
                 } else {
                     writer.heading_start(*level);
