@@ -1,7 +1,16 @@
 //! Focused, md4c-independent ferromark versus pulldown-cmark harness.
 
+mod allocation;
+mod corpus;
+mod metadata;
+mod model;
+
 use ferromark::{Options as FerromarkOptions, RenderPolicy};
 use pulldown_cmark::{Options as PulldownOptions, Parser, html};
+
+pub use corpus::{Corpus, CorpusData};
+pub use metadata::{EnvironmentMetadata, RunMeasurement, RunMetadata};
+pub use model::{ParserKind, RunConfig};
 
 /// Exact shared feature configurations used by comparison benchmarks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,3 +83,28 @@ pub fn render_pulldown_into(input: &str, config: ParityConfig, output: &mut Stri
     output.clear();
     html::push_html(output, Parser::new_ext(input, pulldown_options(config)));
 }
+
+/// Render one diagnostic configuration with Ferromark.
+pub fn render_ferromark_config_into(input: &str, config: RunConfig, output: &mut Vec<u8>) {
+    output.clear();
+    ferromark::to_html_into_with_options(input, output, &config.ferromark_options());
+}
+
+/// Render one diagnostic parity configuration with pulldown-cmark.
+///
+/// # Errors
+///
+/// Returns an error when a Ferromark-only product profile is selected.
+pub fn render_pulldown_config_into(
+    input: &str,
+    config: RunConfig,
+    output: &mut String,
+) -> Result<(), &'static str> {
+    let Some(options) = config.pulldown_options() else {
+        return Err("pulldown-cmark only supports parity configurations");
+    };
+    output.clear();
+    html::push_html(output, Parser::new_ext(input, options));
+    Ok(())
+}
+pub use allocation::{AllocationSnapshot, CountingAllocator, MeasurementWindow};

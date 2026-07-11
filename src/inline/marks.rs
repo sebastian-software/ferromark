@@ -129,6 +129,11 @@ impl MarkBuffer {
         self.marks.len()
     }
 
+    #[cfg(feature = "profiling")]
+    pub(crate) fn capacity(&self) -> usize {
+        self.marks.capacity()
+    }
+
     /// Check if empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
