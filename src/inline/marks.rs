@@ -17,6 +17,64 @@ pub mod flags {
     pub const IN_CODE: u8 = 0b1000;
 }
 
+/// Compact summary of delimiter groups collected for one inline parse.
+///
+/// A missing bit proves that the corresponding resolver has no work to do.
+/// Set bits are deliberately conservative: a resolver may still find no
+/// semantic match after precedence and escape handling.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct MarkSummary(u8);
+
+impl MarkSummary {
+    const CODE: u8 = 1 << 0;
+    const MATH: u8 = 1 << 1;
+    const EMPHASIS: u8 = 1 << 2;
+    const TILDE: u8 = 1 << 3;
+    const HIGHLIGHT: u8 = 1 << 4;
+    const SUPERSCRIPT: u8 = 1 << 5;
+    const LESS_THAN: u8 = 1 << 6;
+
+    #[inline]
+    fn record(&mut self, bit: u8) {
+        self.0 |= bit;
+    }
+
+    #[inline]
+    pub const fn has_code(self) -> bool {
+        self.0 & Self::CODE != 0
+    }
+
+    #[inline]
+    pub const fn has_math(self) -> bool {
+        self.0 & Self::MATH != 0
+    }
+
+    #[inline]
+    pub const fn has_emphasis(self) -> bool {
+        self.0 & Self::EMPHASIS != 0
+    }
+
+    #[inline]
+    pub const fn has_tilde(self) -> bool {
+        self.0 & Self::TILDE != 0
+    }
+
+    #[inline]
+    pub const fn has_highlight(self) -> bool {
+        self.0 & Self::HIGHLIGHT != 0
+    }
+
+    #[inline]
+    pub const fn has_superscript(self) -> bool {
+        self.0 & Self::SUPERSCRIPT != 0
+    }
+
+    #[inline]
+    pub const fn has_less_than(self) -> bool {
+        self.0 & Self::LESS_THAN != 0
+    }
+}
+
 /// A potential delimiter mark.
 #[derive(Debug, Clone, Copy)]
 pub struct Mark {
@@ -167,30 +225,31 @@ pub static SPECIAL_CHARS: [bool; 256] = {
 };
 
 /// Scan text and collect marks for the default inline syntax set.
-pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) {
-    collect_marks_impl::<false, false>(text, buffer);
+pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    collect_marks_impl::<false, false>(text, buffer)
 }
 
 /// Scan text and collect marks with highlight support enabled.
-pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) {
-    collect_marks_impl::<true, false>(text, buffer);
+pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    collect_marks_impl::<true, false>(text, buffer)
 }
 
 /// Scan text and collect marks with superscript support enabled.
-pub fn collect_marks_superscript(text: &[u8], buffer: &mut MarkBuffer) {
-    collect_marks_impl::<false, true>(text, buffer);
+pub fn collect_marks_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    collect_marks_impl::<false, true>(text, buffer)
 }
 
 /// Scan text and collect marks with highlight and superscript enabled.
-pub fn collect_marks_highlight_superscript(text: &[u8], buffer: &mut MarkBuffer) {
-    collect_marks_impl::<true, true>(text, buffer);
+pub fn collect_marks_highlight_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    collect_marks_impl::<true, true>(text, buffer)
 }
 
 fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
     text: &[u8],
     buffer: &mut MarkBuffer,
-) {
+) -> MarkSummary {
     buffer.clear();
+    let mut summary = MarkSummary::default();
 
     let mut pos = 0;
     let len = text.len();
@@ -204,6 +263,7 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
 
         match b {
             b'`' => {
+                summary.record(MarkSummary::CODE);
                 // Count consecutive backticks
                 let start = pos;
                 while pos < len && text[pos] == b'`' {
@@ -223,6 +283,7 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
             }
 
             b'$' => {
+                summary.record(MarkSummary::MATH);
                 // Count consecutive dollar signs (1 or 2 for math)
                 let start = pos;
                 while pos < len && text[pos] == b'$' {
@@ -248,6 +309,13 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                 if b == b'^' && !SUPERSCRIPT {
                     pos += 1;
                     continue;
+                }
+                match b {
+                    b'*' | b'_' => summary.record(MarkSummary::EMPHASIS),
+                    b'~' => summary.record(MarkSummary::TILDE),
+                    b'=' => summary.record(MarkSummary::HIGHLIGHT),
+                    b'^' => summary.record(MarkSummary::SUPERSCRIPT),
+                    _ => {}
                 }
                 // Count consecutive delimiter runs for emphasis-like constructs
                 let start = pos;
@@ -291,6 +359,7 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                         // For backticks, also collect them separately for code span matching
                         // The code_span resolver will handle the backslash-escape logic
                         if next == b'`' {
+                            summary.record(MarkSummary::CODE);
                             buffer.push(Mark::new(
                                 (pos + 1) as u32,
                                 (pos + 2) as u32,
@@ -373,6 +442,7 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
             }
 
             b'<' => {
+                summary.record(MarkSummary::LESS_THAN);
                 // Potential autolink
                 buffer.push(Mark::new(
                     pos as u32,
@@ -389,6 +459,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
             }
         }
     }
+
+    summary
 }
 
 #[inline]
