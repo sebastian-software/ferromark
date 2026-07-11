@@ -58,11 +58,9 @@ fn profiling_benches(c: &mut Criterion) {
         bench_lane(c, corpus, RunConfig::CommonMark, &both);
     }
 
-    for configuration in [
-        RunConfig::EssentialsSecure,
-        RunConfig::ExtendedSecure,
-        RunConfig::FullSecure,
-    ] {
+    // Extended is covered by the secure-default size matrix below. Keeping it
+    // out of this loop ensures one stable Criterion identifier per lane.
+    for configuration in [RunConfig::EssentialsSecure, RunConfig::FullSecure] {
         bench_lane(
             c,
             Corpus::CommonMark50K,
