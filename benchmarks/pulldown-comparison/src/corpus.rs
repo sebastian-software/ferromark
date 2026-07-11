@@ -22,6 +22,14 @@ pub enum Corpus {
     Code,
     /// Safe absolute and relative links.
     SafeUrls,
+    /// Safe ASCII absolute URLs without entities.
+    SafeAsciiUrls,
+    /// Safe URLs with entities in the destination.
+    EntityUrls,
+    /// Safe URLs with Unicode bytes in the destination.
+    UnicodeUrls,
+    /// Safe relative URLs.
+    RelativeUrls,
     /// Unsafe and obfuscated URL schemes.
     UnsafeUrls,
     /// Reference definitions and reference links.
@@ -42,7 +50,7 @@ pub enum Corpus {
 
 impl Corpus {
     /// All corpus selectors accepted by the diagnostic runner.
-    pub const ALL: [Self; 14] = [
+    pub const ALL: [Self; 18] = [
         Self::CommonMark5K,
         Self::CommonMark20K,
         Self::CommonMark50K,
@@ -50,6 +58,10 @@ impl Corpus {
         Self::Simple,
         Self::Code,
         Self::SafeUrls,
+        Self::SafeAsciiUrls,
+        Self::EntityUrls,
+        Self::UnicodeUrls,
+        Self::RelativeUrls,
         Self::UnsafeUrls,
         Self::References,
         Self::Tables,
@@ -69,6 +81,10 @@ impl Corpus {
             Self::Simple => "simple",
             Self::Code => "code",
             Self::SafeUrls => "safe-urls",
+            Self::SafeAsciiUrls => "safe-ascii-urls",
+            Self::EntityUrls => "entity-urls",
+            Self::UnicodeUrls => "unicode-urls",
+            Self::RelativeUrls => "relative-urls",
             Self::UnsafeUrls => "unsafe-urls",
             Self::References => "references",
             Self::Tables => "tables",
@@ -97,6 +113,22 @@ impl Corpus {
             )),
             Self::SafeUrls => Cow::Owned(repeat_to_at_least(
                 "[absolute](https://example.com/a%20path?q=one&v=two) [relative](/docs/start) <mailto:team@example.com>\n\n",
+                20_000,
+            )),
+            Self::SafeAsciiUrls => Cow::Owned(repeat_to_at_least(
+                "[safe](https://example.com/docs/getting-started?chapter=one#next)\n\n",
+                20_000,
+            )),
+            Self::EntityUrls => Cow::Owned(repeat_to_at_least(
+                "[entity](https://example.com/?one=1&amp;two=2)\n\n",
+                20_000,
+            )),
+            Self::UnicodeUrls => Cow::Owned(repeat_to_at_least(
+                "[unicode](https://example.com/über-uns/東京)\n\n",
+                20_000,
+            )),
+            Self::RelativeUrls => Cow::Owned(repeat_to_at_least(
+                "[relative](/docs/getting-started?chapter=one#next)\n\n",
                 20_000,
             )),
             Self::UnsafeUrls => Cow::Owned(repeat_to_at_least(

@@ -44,15 +44,37 @@ fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
 /// Entity references and embedded ASCII whitespace/control characters are
 /// normalized before checking the scheme so browser-equivalent spellings of
 /// `javascript:` and similar schemes cannot bypass the boundary.
-fn is_safe_url(url: &[u8]) -> bool {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum UrlSafety {
+    SafeAscii,
+    SafeFallback,
+    Unsafe,
+}
+
+fn classify_url_safety(url: &[u8]) -> UrlSafety {
     let Ok(url) = std::str::from_utf8(url) else {
-        return false;
+        return UrlSafety::Unsafe;
     };
-    if memchr(b'&', url.as_bytes()).is_none() {
-        return is_safe_normalized_url(url);
+    let contains_entities = memchr(b'&', url.as_bytes()).is_some();
+    let normalized = if contains_entities {
+        decode_entities_commonmark(url)
+    } else {
+        std::borrow::Cow::Borrowed(url)
+    };
+
+    if !is_safe_normalized_url(&normalized) {
+        return UrlSafety::Unsafe;
     }
-    let decoded = decode_entities_commonmark(url);
-    is_safe_normalized_url(&decoded)
+
+    if !contains_entities && url.is_ascii() {
+        UrlSafety::SafeAscii
+    } else {
+        UrlSafety::SafeFallback
+    }
+}
+
+fn is_safe_url(url: &[u8]) -> bool {
+    !matches!(classify_url_safety(url), UrlSafety::Unsafe)
 }
 
 fn is_safe_normalized_url(url: &str) -> bool {
@@ -319,8 +341,15 @@ impl HtmlWriter {
     /// Write a link destination after applying the selected trust policy.
     #[inline]
     pub fn write_link_url_with_policy(&mut self, url: &[u8], policy: RenderPolicy) {
-        if policy == RenderPolicy::Trusted || is_safe_url(url) {
+        if policy == RenderPolicy::Trusted {
             self.write_link_url(url);
+            return;
+        }
+
+        match classify_url_safety(url) {
+            UrlSafety::SafeAscii => escape::url_escape_link_destination_ascii(&mut self.out, url),
+            UrlSafety::SafeFallback => self.write_link_url(url),
+            UrlSafety::Unsafe => {}
         }
     }
 
@@ -941,6 +970,24 @@ impl std::fmt::Write for HtmlWriter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
+
+    fn write_link_url_with_legacy_policy(writer: &mut HtmlWriter, url: &[u8]) {
+        if is_safe_url_legacy(url) {
+            writer.write_link_url(url);
+        }
+    }
+
+    fn is_safe_url_legacy(url: &[u8]) -> bool {
+        let Ok(url) = std::str::from_utf8(url) else {
+            return false;
+        };
+        if memchr(b'&', url.as_bytes()).is_none() {
+            return is_safe_normalized_url(url);
+        }
+        let decoded = decode_entities_commonmark(url);
+        is_safe_normalized_url(&decoded)
+    }
 
     #[test]
     fn test_writer_new() {
@@ -1087,6 +1134,19 @@ mod tests {
             let mut writer = HtmlWriter::new();
             writer.write_link_url_with_policy(url, RenderPolicy::Untrusted);
             assert!(!writer.is_empty(), "URL should be allowed: {url:?}");
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn shared_ascii_url_path_should_match_legacy_rendering(url in proptest::collection::vec(any::<u8>(), 0..160)) {
+            let mut optimized = HtmlWriter::new();
+            optimized.write_link_url_with_policy(&url, RenderPolicy::Untrusted);
+
+            let mut legacy = HtmlWriter::new();
+            write_link_url_with_legacy_policy(&mut legacy, &url);
+
+            prop_assert_eq!(optimized.as_bytes(), legacy.as_bytes());
         }
     }
 
