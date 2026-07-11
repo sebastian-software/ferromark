@@ -43,12 +43,27 @@ criterion_groups=(
   'profiling_commonmark-50k_full-secure'
 )
 
+criterion_functions=(
+  'ferromark pulldown-cmark'
+  'ferromark pulldown-cmark'
+  'ferromark pulldown-cmark'
+  'ferromark pulldown-cmark'
+  'ferromark'
+  'ferromark'
+  'ferromark'
+  'ferromark'
+  'ferromark'
+)
+
+orders=(ferromark-first pulldown-first ferromark-first)
+
 for repetition in $(seq 1 "$repetitions"); do
   run_dir="$results_dir/run-$repetition"
   mkdir -p "$run_dir/criterion"
 
   for target in "${targets[@]}"; do
-    FERROMARK_CPU_MODE=portable RUSTFLAGS='-C target-cpu=generic' \
+    FERROMARK_CPU_MODE=portable FERROMARK_PARITY_ORDER="${orders[$((repetition - 1))]}" \
+      RUSTFLAGS='-C target-cpu=generic' \
       cargo bench --locked --bench profiling -- \
       "$target" --sample-size 80 --measurement-time 5 --warm-up-time 3 --noplot
   done
@@ -61,13 +76,22 @@ for repetition in $(seq 1 "$repetitions"); do
     --iterations 1 \
     --json "$run_dir/environment-probe.json" >/dev/null
 
-  for criterion_group in "${criterion_groups[@]}"; do
+  for index in "${!criterion_groups[@]}"; do
+    criterion_group=${criterion_groups[$index]}
     target_path="$crate_dir/target/criterion/$criterion_group"
     if [[ ! -d "$target_path" ]]; then
       echo "Criterion result missing for $criterion_group" >&2
       exit 1
     fi
-    cp -R "$target_path" "$run_dir/criterion/$criterion_group"
+    for criterion_function in ${criterion_functions[$index]}; do
+      result_path="$target_path/$criterion_function"
+      if [[ ! -d "$result_path" ]]; then
+        echo "Criterion result missing for $criterion_group/$criterion_function" >&2
+        exit 1
+      fi
+      mkdir -p "$run_dir/criterion/$criterion_group"
+      cp -R "$result_path" "$run_dir/criterion/$criterion_group/$criterion_function"
+    done
   done
 done
 
