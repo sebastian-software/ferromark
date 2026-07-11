@@ -56,6 +56,8 @@ pub enum RunConfig {
     EssentialsTrusted,
     /// Secure Ferromark Extended profile.
     ExtendedSecure,
+    /// Secure Extended profile with heading IDs explicitly disabled.
+    ExtendedSecureNoHeadingIds,
     /// Trusted Ferromark Extended profile.
     ExtendedTrusted,
     /// Secure Ferromark Full profile.
@@ -66,13 +68,14 @@ pub enum RunConfig {
 
 impl RunConfig {
     /// All configurations accepted by the diagnostic runner.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::CommonMark,
         Self::GfmOverlap,
         Self::ExtendedOverlap,
         Self::EssentialsSecure,
         Self::EssentialsTrusted,
         Self::ExtendedSecure,
+        Self::ExtendedSecureNoHeadingIds,
         Self::ExtendedTrusted,
         Self::FullSecure,
         Self::FullTrusted,
@@ -87,6 +90,7 @@ impl RunConfig {
             Self::EssentialsSecure => "essentials-secure",
             Self::EssentialsTrusted => "essentials-trusted",
             Self::ExtendedSecure => "extended-secure",
+            Self::ExtendedSecureNoHeadingIds => "extended-secure-no-heading-ids",
             Self::ExtendedTrusted => "extended-trusted",
             Self::FullSecure => "full-secure",
             Self::FullTrusted => "full-trusted",
@@ -97,7 +101,10 @@ impl RunConfig {
     pub const fn is_secure(self) -> bool {
         matches!(
             self,
-            Self::EssentialsSecure | Self::ExtendedSecure | Self::FullSecure
+            Self::EssentialsSecure
+                | Self::ExtendedSecure
+                | Self::ExtendedSecureNoHeadingIds
+                | Self::FullSecure
         )
     }
 
@@ -121,6 +128,10 @@ impl RunConfig {
             Self::EssentialsSecure => Options::from(Profile::Essentials),
             Self::EssentialsTrusted => trusted(Profile::Essentials),
             Self::ExtendedSecure => Options::from(Profile::Extended),
+            Self::ExtendedSecureNoHeadingIds => Options {
+                heading_ids: false,
+                ..Options::from(Profile::Extended)
+            },
             Self::ExtendedTrusted => trusted(Profile::Extended),
             Self::FullSecure => Options::from(Profile::Full),
             Self::FullTrusted => trusted(Profile::Full),
@@ -189,6 +200,22 @@ mod tests {
                 .ferromark_options()
                 .render_policy,
             RenderPolicy::Trusted
+        );
+    }
+
+    #[test]
+    fn heading_id_control_should_change_only_heading_ids() {
+        let enabled = RunConfig::ExtendedSecure.ferromark_options();
+        let disabled = RunConfig::ExtendedSecureNoHeadingIds.ferromark_options();
+
+        assert!(enabled.heading_ids);
+        assert!(!disabled.heading_ids);
+        assert_eq!(
+            Options {
+                heading_ids: false,
+                ..enabled
+            },
+            disabled
         );
     }
 }
