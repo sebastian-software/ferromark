@@ -171,6 +171,24 @@ not support a broader heading-rendering speed claim.
 The complete measurements and environment are recorded in
 [`2026-07-11-issue-65-heading-id-state.json`](../reports/2026-07-11-issue-65-heading-id-state.json).
 
+## Issue #67: rare inline buffers
+
+The next focused experiment kept six scratch buffers lazy until their optional
+feature is enabled: autolink literals, highlight, subscript, superscript,
+footnotes, and math. It deliberately retains the preallocation of mark,
+bracket, link, reference, emphasis, strikethrough, and emit-point storage.
+
+For a 5 KB CommonMark render, Essentials fell from 55 to 49 allocations and
+26,857 to 26,249 requested bytes. Extended fell from 92 to 86 allocations and
+30,147 to 29,539 bytes. Across three alternating Criterion repetitions, the
+5 KB parity, Essentials, and Extended lanes were neutral or faster; the
+20/50/250 KB, simple, delimiter-heavy, and reference-heavy controls had no
+regression above 0.268%. Full remains correct and grows these buffers only
+when the input materializes the corresponding feature.
+
+The complete measurements and environment are recorded in
+[`2026-07-11-issue-67-rare-inline-buffers.json`](../reports/2026-07-11-issue-67-rare-inline-buffers.json).
+
 ### Delimiter-heavy lane
 
 The dominant buckets were mark collection (1,162), the inline parser (1,038),

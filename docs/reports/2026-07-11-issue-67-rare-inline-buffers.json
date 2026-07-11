@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "issue": 67,
+  "purpose": "Measure lazy initialization of inline scratch buffers used only by optional features.",
+  "baseline_commit": "81013623ec308d270988088f15f3a36432df5a2a",
+  "candidate_commit": "08462285323d7edc749139c7f57ac9f1127d0e58",
+  "measurement_harness_commit": "9cc6dcc4fe3f4469a28a270b0268f9da6fbeff4f",
+  "environment": {
+    "machine": "Apple Silicon Mac Studio (ARM64_T6000)",
+    "operating_system": "macOS 26.5.2",
+    "rustc": "1.95.0-nightly (842bd5be2 2026-01-29)",
+    "rustflags": "",
+    "cpu_mode": "unspecified",
+    "pgo": false
+  },
+  "candidate": {
+    "changed_buffers": [
+      "autolink_literals",
+      "highlight_matches",
+      "subscript_matches",
+      "superscript_matches",
+      "footnote_refs",
+      "math_spans"
+    ],
+    "unchanged_buffers": [
+      "mark_buffer",
+      "open_brackets",
+      "close_brackets",
+      "link and reference buffers",
+      "emphasis and strikethrough buffers",
+      "emit_points"
+    ]
+  },
+  "allocation_control_commonmark_5k": {
+    "essentials_secure": {
+      "baseline": { "allocations": 55, "reallocations": 3, "allocated_bytes": 26857 },
+      "candidate": { "allocations": 49, "reallocations": 3, "allocated_bytes": 26249 }
+    },
+    "extended_secure": {
+      "baseline": { "allocations": 92, "reallocations": 3, "allocated_bytes": 30147 },
+      "candidate": { "allocations": 86, "reallocations": 3, "allocated_bytes": 29539 }
+    },
+    "full_secure_commonmark_5k": {
+      "baseline": { "allocations": 92, "reallocations": 3, "allocated_bytes": 30147 },
+      "candidate": { "allocations": 86, "reallocations": 3, "allocated_bytes": 29539 }
+    },
+    "full_secure_extended_corpus": {
+      "baseline": { "allocations": 1329, "reallocations": 1, "allocated_bytes": 110594 },
+      "candidate": { "allocations": 1319, "reallocations": 1, "allocated_bytes": 109490 },
+      "note": "The buffers grow on demand for features materialized by the corpus; unmatched optional features do not reserve capacity."
+    }
+  },
+  "protocol": {
+    "sample_size": 80,
+    "measurement_seconds": 5,
+    "warmup_seconds": 3,
+    "target_order": ["candidate", "baseline", "candidate", "baseline", "candidate", "baseline"],
+    "command": "cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bench profiling -- <lane> --sample-size 80 --measurement-time 5 --warm-up-time 3"
+  },
+  "target_mean_nanoseconds": {
+    "commonmark_parity_5k": {
+      "candidate": [18874.685, 18717.043, 18744.178],
+      "baseline": [18931.075, 18887.436, 18970.825],
+      "candidate_improvement_percent": [0.298, 0.902, 1.195]
+    },
+    "essentials_secure_5k": {
+      "candidate": [20110.97, 20080.826, 20068.35],
+      "baseline": [20254.729, 20284.707, 20246.329],
+      "candidate_improvement_percent": [0.71, 1.005, 0.879]
+    },
+    "extended_secure_5k": {
+      "candidate": [23686.817, 23597.885, 23635.235],
+      "baseline": [23744.777, 23735.061, 23692.669],
+      "candidate_improvement_percent": [0.244, 0.578, 0.242]
+    }
+  },
+  "single_run_controls_candidate_improvement_percent": {
+    "commonmark_parity_20k": 0.192,
+    "extended_secure_20k": -0.268,
+    "commonmark_parity_50k": 0.124,
+    "extended_secure_50k": -0.183,
+    "commonmark_parity_250k": 0.077,
+    "simple_extended_secure": 1.567,
+    "delimiters_extended_secure": 0.015,
+    "references_extended_secure": -0.013
+  },
+  "decision": {
+    "status": "accepted",
+    "reason": "Essentials and Extended remove six allocations and 608 requested bytes per 5 KB render, while all repeated target runs are neutral or faster and no control regresses by one percent. Full also remains correct and uses on-demand capacity only for features the input materializes."
+  }
+}
