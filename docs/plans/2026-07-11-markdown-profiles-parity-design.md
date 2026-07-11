@@ -1,6 +1,6 @@
 # Markdown profiles and feature-parity benchmark design
 
-Status: approved for implementation  
+Status: approved for implementation
 Date: 2026-07-11
 
 ## Context

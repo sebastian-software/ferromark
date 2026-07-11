@@ -1,7 +1,7 @@
 # Performance plan: widen the `pulldown-cmark` gap
 
-Status: ready to execute  
-Baseline commit: `d5f32d8` (`ferromark` 0.3.0)  
+Status: ready to execute
+Baseline commit: `d5f32d8` (`ferromark` 0.3.0)
 Date: 2026-07-11
 
 ## Verdict
@@ -209,7 +209,7 @@ yet been demonstrated against the 0.2 baseline under one protocol.
       state fields one at a time.
 - [ ] Preserve zero-cost default rendering as an explicit benchmark guardrail.
 
-Expected gain: 0-2%.  
+Expected gain: 0-2%.
 Stop condition: no reproducible regression; do not refactor generic code based
 on appearance alone.
 
@@ -231,7 +231,7 @@ and is consistent with parity at 5 KB but a lead at 20 KB.
 - [ ] Keep previous successful preallocation for common event/mark buffers unless
       allocation evidence proves a better threshold.
 
-Expected gain: 1-4% at 5 KB, 0-1.5% at 50 KB.  
+Expected gain: 1-4% at 5 KB, 0-1.5% at 50 KB.
 Acceptance: fewer allocations and a reproducible 5 KB win without losing more
 than 1% at 20/50 KB.
 
@@ -254,7 +254,7 @@ security-path opportunity at roughly 1.9% on this fixture.
 - [ ] Fuzz or property-test the optimized classifier against the current
       implementation before replacement.
 
-Expected gain: 0.5-1.5% on secure-default 50 KB; larger on link-heavy input.  
+Expected gain: 0.5-1.5% on secure-default 50 KB; larger on link-heavy input.
 Acceptance: byte-for-byte identical output for the security corpus and no unsafe
 scheme bypass.
 
@@ -276,7 +276,7 @@ shows paragraph parsing, paragraph close, `ParagraphState::add_text`, and
 - [ ] Extend the same mechanism to headings only after paragraph results are
       stable.
 
-Expected gain: 1-3% on 20/50 KB, plus fewer copies/allocations.  
+Expected gain: 1-3% on 20/50 KB, plus fewer copies/allocations.
 Acceptance: at least 1% repeatable 50 KB improvement, neutral reference-heavy
 and table-heavy results, full CommonMark correctness.
 
@@ -295,7 +295,7 @@ and extension candidates.
 - [ ] Remove only scans proven redundant by the instrumentation.
 - [ ] Benchmark simple, mixed, HTML-heavy, refs-heavy, and delimiter-heavy input.
 
-Expected gain: 1-3% on mixed 50 KB.  
+Expected gain: 1-3% on mixed 50 KB.
 Stop condition: discard if the summary adds work to the plain-text fast path or
 repeats the failed "extra pre-check" pattern.
 
@@ -316,7 +316,7 @@ than tuning capacity again.
 - [ ] Compare instruction/profile share, event count, allocation count, and
       throughput.
 
-Expected gain: 2-5%, medium implementation risk.  
+Expected gain: 2-5%, medium implementation risk.
 Acceptance: at least 2% on 50 KB or a substantial allocation reduction with no
 5 KB regression. Otherwise revert.
 
@@ -329,7 +329,7 @@ Acceptance: at least 2% on 50 KB or a substantial allocation reduction with no
 - [ ] Keep one implementation of parsing rules; specialization must select
       phases, not fork grammar logic.
 
-Expected gain: unknown.  
+Expected gain: unknown.
 Stop condition: no specialization without generated-code or profile evidence.
 
 ### P3 — Block-path experiments after P1/P2
