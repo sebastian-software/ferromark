@@ -1,0 +1,25 @@
+[package]
+name = "ferromark-pulldown-comparison"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[dependencies]
+ferromark = { path = "../.." }
+pulldown-cmark = "=0.13.4"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "comparison"
+harness = false
+
+[profile.bench]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = true
+
+[workspace]

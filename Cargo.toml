@@ -57,6 +57,10 @@ harness = false
 name = "fenced_code_renderer"
 harness = false
 
+[[bench]]
+name = "profiles"
+harness = false
+
 [profile.release]
 lto = "fat"
 codegen-units = 1
