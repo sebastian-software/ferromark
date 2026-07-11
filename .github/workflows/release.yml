@@ -167,7 +167,7 @@ jobs:
           pnpm test
           pnpm typecheck
           pnpm lint
-          pnpm pack:check -- --all-targets
+          node ./scripts/verify-pack.mjs --all-targets
           pnpm smoke:clean
 
       - name: Publish to npm with trusted publishing
