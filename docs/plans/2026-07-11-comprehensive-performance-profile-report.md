@@ -189,6 +189,24 @@ when the input materializes the corresponding feature.
 The complete measurements and environment are recorded in
 [`2026-07-11-issue-67-rare-inline-buffers.json`](../reports/2026-07-11-issue-67-rare-inline-buffers.json).
 
+## Issue #64: mark-collection feature summary
+
+The inline parser now returns a compact summary from the existing mark
+collection. An absent marker proves that the related resolver cannot do work,
+so the parser can skip a second `<` scan and absent code, math, emphasis,
+tilde, highlight, superscript, and subscript stages. Set bits are conservative:
+they preserve the existing resolver path and may still produce no semantic
+match. The resolved inline-event boundary remains unchanged.
+
+Across three alternating Criterion comparisons, the Extended mixed 50 KB lane
+improved by 4.805%, 1.508%, and 1.572%. Delimiter-heavy input improved by
+0.642%, 4.138%, and 3.348%; mixed 20 KB improved by 1.736%, 0.819%, and
+1.231%. Simple prose, HTML, references, code, and the Essentials/Full controls
+did not regress.
+
+The complete measurements and environment are recorded in
+[`2026-07-11-issue-64-inline-summary.json`](../reports/2026-07-11-issue-64-inline-summary.json).
+
 ### Delimiter-heavy lane
 
 The dominant buckets were mark collection (1,162), the inline parser (1,038),
