@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.2...ferromark-v0.3.3) (2026-07-11)
+
+
+### Bug Fixes
+
+* **release:** pass all-targets directly to package check ([d82c4a8](https://github.com/sebastian-software/ferromark/commit/d82c4a8e6f56f3e4bd4a5c264a8fb38fccb17ae3))
+
 ## [0.3.2](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.1...ferromark-v0.3.2) (2026-07-11)
 
 
