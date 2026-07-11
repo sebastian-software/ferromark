@@ -93,7 +93,7 @@ pub enum RenderPolicy {
 }
 
 /// Parsing/rendering options.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Options {
     /// Select the output trust boundary. Defaults to [`RenderPolicy::Untrusted`].
     pub render_policy: RenderPolicy,
@@ -132,6 +132,38 @@ pub struct Options {
     pub callouts: bool,
 }
 
+/// A curated Markdown feature set for common usage levels.
+///
+/// Profiles only select syntax and rendering features. They never opt into
+/// trusted HTML; override [`Options::render_policy`] explicitly when the input
+/// is trusted.
+///
+/// # Examples
+///
+/// ```
+/// use ferromark::{Options, Profile, RenderPolicy};
+///
+/// let options = Options {
+///     heading_ids: true,
+///     render_policy: RenderPolicy::Trusted,
+///     ..Options::from(Profile::Essentials)
+/// };
+///
+/// assert!(options.tables);
+/// assert!(options.heading_ids);
+/// assert_eq!(options.render_policy, RenderPolicy::Trusted);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Profile {
+    /// Everyday Markdown plus tables, strikethrough, and task lists.
+    Essentials,
+    /// The current default feature mix, including references, HTML, heading
+    /// IDs, and callouts.
+    Extended,
+    /// Every Markdown feature supported by this version of ferromark.
+    Full,
+}
+
 impl Default for Options {
     fn default() -> Self {
         Self {
@@ -151,6 +183,50 @@ impl Default for Options {
             heading_ids: true,
             math: false,
             callouts: true,
+        }
+    }
+}
+
+impl From<Profile> for Options {
+    fn from(profile: Profile) -> Self {
+        match profile {
+            Profile::Essentials => Self {
+                render_policy: RenderPolicy::Untrusted,
+                allow_html: false,
+                allow_link_refs: false,
+                tables: true,
+                strikethrough: true,
+                highlight: false,
+                superscript: false,
+                subscript: false,
+                task_lists: true,
+                autolink_literals: false,
+                disallowed_raw_html: false,
+                footnotes: false,
+                front_matter: false,
+                heading_ids: false,
+                math: false,
+                callouts: false,
+            },
+            Profile::Extended => Self::default(),
+            Profile::Full => Self {
+                render_policy: RenderPolicy::Untrusted,
+                allow_html: true,
+                allow_link_refs: true,
+                tables: true,
+                strikethrough: true,
+                highlight: true,
+                superscript: true,
+                subscript: true,
+                task_lists: true,
+                autolink_literals: true,
+                disallowed_raw_html: true,
+                footnotes: true,
+                front_matter: true,
+                heading_ids: true,
+                math: true,
+                callouts: true,
+            },
         }
     }
 }
