@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "issue": 64,
+  "purpose": "Measure a conservative mark-collection summary that skips resolver stages with no possible marker.",
+  "baseline_commit": "7a5f3c629450e712a169ed0c519c9155df9e6c9d",
+  "candidate_commit": "e5066ea74af91abb024e95fe89f67f9b550b7c5f",
+  "environment": {
+    "machine": "Apple Silicon Mac Studio (ARM64_T6000)",
+    "operating_system": "macOS 26.5.2",
+    "rustc": "1.95.0-nightly (842bd5be2 2026-01-29)",
+    "rustflags": "",
+    "cpu_mode": "unspecified",
+    "pgo": false
+  },
+  "summary": {
+    "source": "existing mark collection",
+    "bits": ["code", "math", "emphasis", "tilde", "highlight", "superscript", "less-than"],
+    "safety": "An unset bit proves the resolver cannot find work. A set bit is conservative and may still run a resolver that finds no semantic match.",
+    "skipped_when_absent": ["second less-than scan", "code-span resolution and extraction", "math resolution", "emphasis", "strikethrough", "subscript", "superscript", "highlight"]
+  },
+  "protocol": {
+    "repetitions": 3,
+    "sample_size": 80,
+    "measurement_seconds": 5,
+    "warmup_seconds": 3,
+    "order": ["candidate", "baseline", "candidate", "baseline", "candidate", "baseline"],
+    "command": "cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bench profiling -- <lane> --sample-size 80 --measurement-time 5 --warm-up-time 3"
+  },
+  "target_mean_nanoseconds": {
+    "delimiter_heavy_extended": {
+      "candidate": [177974.312, 173631.928, 173996.734],
+      "baseline": [179124.906, 181127.264, 180023.884],
+      "candidate_improvement_percent": [0.642, 4.138, 3.348]
+    },
+    "mixed_20k_extended": {
+      "candidate": [78984.219, 77810.278, 77768.746],
+      "baseline": [80379.667, 78452.707, 78738.256],
+      "candidate_improvement_percent": [1.736, 0.819, 1.231]
+    },
+    "mixed_50k_extended": {
+      "candidate": [202756.287, 206856.285, 206550.376],
+      "baseline": [212991.565, 210023.025, 209848.822],
+      "candidate_improvement_percent": [4.805, 1.508, 1.572]
+    }
+  },
+  "single_run_controls_candidate_improvement_percent": {
+    "simple_extended": 0.568,
+    "html_extended": 0.146,
+    "references_extended": 1.969,
+    "code_extended": 2.641,
+    "essentials_50k": 0.585,
+    "full_50k": 3.92
+  },
+  "decision": {
+    "status": "accepted",
+    "reason": "Mixed 50 KB improved by more than one percent in all three alternating comparisons. Delimiter-heavy input improved materially in two repetitions, while simple prose and feature controls did not regress. The summary preserves the resolved inline-event boundary and only skips provably absent work."
+  }
+}
