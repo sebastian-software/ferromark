@@ -995,18 +995,7 @@ impl<'a> BlockParser<'a> {
                 } => {
                     // Check if line is blank (after any spaces we've consumed so far)
                     let remaining = self.cursor.remaining_slice();
-                    let is_blank = remaining.is_empty()
-                        || remaining[0] == b'\n'
-                        || remaining
-                            .iter()
-                            .take_while(|&&b| b == b' ' || b == b'\t')
-                            .count()
-                            == remaining.len().min(
-                                remaining
-                                    .iter()
-                                    .position(|&b| b == b'\n')
-                                    .unwrap_or(remaining.len()),
-                            );
+                    let is_blank = Self::is_blank_remaining_line(remaining);
 
                     if is_blank {
                         // Blank lines always match list items
@@ -1064,18 +1053,7 @@ impl<'a> BlockParser<'a> {
                 ContainerType::FootnoteDefinition { content_indent } => {
                     // Similar to list items: blank lines match, content needs enough indent
                     let remaining = self.cursor.remaining_slice();
-                    let is_blank = remaining.is_empty()
-                        || remaining[0] == b'\n'
-                        || remaining
-                            .iter()
-                            .take_while(|&&b| b == b' ' || b == b'\t')
-                            .count()
-                            == remaining.len().min(
-                                remaining
-                                    .iter()
-                                    .position(|&b| b == b'\n')
-                                    .unwrap_or(remaining.len()),
-                            );
+                    let is_blank = Self::is_blank_remaining_line(remaining);
 
                     if is_blank {
                         matched += 1;
@@ -1119,6 +1097,20 @@ impl<'a> BlockParser<'a> {
 
         // Don't close containers here - let parse_line handle it
         matched
+    }
+
+    /// Return whether the remaining source contains only horizontal whitespace
+    /// before its next newline or end of input.
+    #[inline]
+    fn is_blank_remaining_line(remaining: &[u8]) -> bool {
+        for &byte in remaining {
+            match byte {
+                b' ' | b'\t' => {}
+                b'\n' => return true,
+                _ => return false,
+            }
+        }
+        true
     }
 
     /// Peek ahead to see if there's a list marker of the same type.
@@ -4403,6 +4395,15 @@ mod tests {
             .iter()
             .any(|e| matches!(e, BlockEvent::ListEnd { .. }));
         assert!(has_list_end);
+    }
+
+    #[test]
+    fn blank_remaining_line_stops_at_first_non_whitespace_byte() {
+        assert!(BlockParser::is_blank_remaining_line(b""));
+        assert!(BlockParser::is_blank_remaining_line(b" \t\nnext"));
+        assert!(BlockParser::is_blank_remaining_line(b" \t"));
+        assert!(!BlockParser::is_blank_remaining_line(b"  content\n"));
+        assert!(!BlockParser::is_blank_remaining_line(b"content\n"));
     }
 
     #[test]
