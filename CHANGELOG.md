@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.3.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.2.0...ferromark-v0.3.0) (2026-07-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **render:** add a fenced-code rendering hook
+* **features:** remove unused cargo features
+
+### Features
+
+* **homepage:** adopt Ardo 4 and shared config ([7000a71](https://github.com/sebastian-software/ferromark/commit/7000a714cd0beaa73a58d54a2baaf4c3c9fa5c55))
+* **node:** add napi-rs distribution ([949d0ab](https://github.com/sebastian-software/ferromark/commit/949d0ab799352014f51dbc8c909f42ff87a5e366))
+* **render:** add a fenced-code rendering hook ([d0aed38](https://github.com/sebastian-software/ferromark/commit/d0aed384c1473b1f5add97d400ca4ebf2547d320))
+* ship the v0.3 integration release ([80c23e3](https://github.com/sebastian-software/ferromark/commit/80c23e360ee426113fd2a4815a4576dc995c095e))
+
+
+### Bug Fixes
+
+* **features:** remove unused cargo features ([97ea349](https://github.com/sebastian-software/ferromark/commit/97ea349a112229d0a25e6f32d09e9b88f4d72f6a))
+* **release:** gate aligned registry publishes ([58d798b](https://github.com/sebastian-software/ferromark/commit/58d798b251ac3fc05a23be4004960718d00b8f89))
+
+
+### Performance Improvements
+
+* **render:** add fenced-code benchmark guardrails ([8a0407f](https://github.com/sebastian-software/ferromark/commit/8a0407f27a8ba49dad1f55bf3d3027b650241bfe))
+
 ## [0.2.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.1.4...ferromark-v0.2.0) (2026-07-10)
 
 
