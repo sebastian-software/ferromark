@@ -34,3 +34,56 @@ cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml -- \
 
 The dependency is pinned to pulldown-cmark 0.13.4. Published runs must also
 record the Ferromark commit, Rust/LLVM version, machine, and Criterion settings.
+
+## Comprehensive profiling
+
+This crate also owns the profiling harness so parity options have one source of
+truth. It pins Rust 1.93.0 locally and keeps generated results under the ignored
+`results/` directory.
+
+List every parser, configuration, and corpus selector:
+
+```bash
+cd benchmarks/pulldown-comparison
+cargo run --release --bin profile_driver -- --list
+```
+
+Run one allocation-counted release diagnostic:
+
+```bash
+scripts/run-diagnostic.sh \
+  ferromark extended-secure commonmark-50k 10 portable release
+```
+
+Use `counters` instead of `release` to include feature-gated block, inline,
+event, mark, capacity, and paragraph-copy counters. Counter builds are diagnostic
+only and must not be compared to normal release throughput.
+
+Allocation counters cover parser-internal work inside the measured render loop.
+Corpus construction, warmup, environment discovery, and JSON serialization run
+outside the counter window.
+
+Run the bounded primary matrix:
+
+```bash
+scripts/run-primary-matrix.sh 5 portable
+```
+
+The CPU mode must be named explicitly:
+
+- `portable`: `target-cpu=generic`, used for portable source comparisons;
+- `apple-m1`: the repository's existing Apple Silicon baseline plus NEON;
+- `native`: a local hardware ceiling, never a portable claim;
+- `pgo`: requires `PGO_PROFDATA` and remains separate from non-PGO results.
+
+Capture a long-running CPU profile with one of the locally available tools:
+
+```bash
+scripts/capture-cpu-profile.sh sample extended-secure commonmark-50k 30 portable
+scripts/capture-cpu-profile.sh samply extended-secure commonmark-50k 30 portable
+scripts/capture-cpu-profile.sh xctrace extended-secure commonmark-50k 30 portable
+```
+
+Use AC power and stable machine conditions. Screening runs use at least 80
+Criterion samples, a 5-second measurement window, and a 3-second warmup.
+Promising or surprising results require three alternating-order repetitions.

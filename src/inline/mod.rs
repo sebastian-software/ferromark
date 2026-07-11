@@ -149,6 +149,8 @@ impl InlineParser {
         footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
+        #[cfg(feature = "profiling")]
+        let event_start = events.len();
         let has_specials = if highlight && superscript {
             has_inline_specials_highlight_superscript(text)
         } else if highlight {
@@ -166,6 +168,16 @@ impl InlineParser {
             if !text.is_empty() {
                 events.push(InlineEvent::Text(Range::from_usize(0, text.len())));
             }
+            #[cfg(feature = "profiling")]
+            crate::profiling::record_inline_parse(
+                text.len(),
+                events.len() - event_start,
+                0,
+                self.mark_buffer.capacity(),
+                0,
+                self.emit_points.capacity(),
+                true,
+            );
             return;
         }
 
@@ -190,6 +202,16 @@ impl InlineParser {
             if !text.is_empty() {
                 events.push(InlineEvent::Text(Range::from_usize(0, text.len())));
             }
+            #[cfg(feature = "profiling")]
+            crate::profiling::record_inline_parse(
+                text.len(),
+                events.len() - event_start,
+                self.mark_buffer.len(),
+                self.mark_buffer.capacity(),
+                0,
+                self.emit_points.capacity(),
+                true,
+            );
             return;
         }
 
@@ -475,6 +497,16 @@ impl InlineParser {
             &mut self.emit_points,
             &mut self.emit_suppress_ranges,
             events,
+        );
+        #[cfg(feature = "profiling")]
+        crate::profiling::record_inline_parse(
+            text.len(),
+            events.len() - event_start,
+            self.mark_buffer.len(),
+            self.mark_buffer.capacity(),
+            self.emit_points.len(),
+            self.emit_points.capacity(),
+            false,
         );
     }
 

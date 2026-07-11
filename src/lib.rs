@@ -23,6 +23,9 @@ pub mod limits;
 pub mod link_ref;
 #[cfg(feature = "mdx")]
 pub mod mdx;
+#[cfg(feature = "profiling")]
+#[doc(hidden)]
+pub mod profiling;
 pub mod range;
 pub mod render;
 
@@ -519,10 +522,14 @@ impl ParagraphState {
     }
 
     fn add_text(&mut self, text: &[u8]) {
+        #[cfg(feature = "profiling")]
+        profiling::record_paragraph_copy(text.len());
         self.content.extend_from_slice(text);
     }
 
     fn add_soft_break(&mut self) {
+        #[cfg(feature = "profiling")]
+        profiling::record_paragraph_copy(1);
         self.content.push(b'\n');
     }
 
@@ -852,6 +859,8 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     let mut parser = BlockParser::new_with_options(input, *options);
     let mut events = Vec::with_capacity((input.len() / 16).max(64));
     parser.parse(&mut events);
+    #[cfg(feature = "profiling")]
+    profiling::record_block_events(&events, events.capacity());
     let link_refs = parser.take_link_refs();
     let footnote_store = if options.footnotes {
         Some(parser.take_footnote_store())
@@ -1387,6 +1396,8 @@ fn render_inline_content(
         footnote_store,
         inline_events,
     );
+    #[cfg(feature = "profiling")]
+    profiling::record_inline_events(inline_events, inline_events.capacity());
 
     let mut image_state = None;
     for event in inline_events.iter() {
