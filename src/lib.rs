@@ -504,6 +504,8 @@ pub fn to_html_into_with_renderer(
 struct ParagraphState {
     /// Collected text content (joined with newlines).
     content: Vec<u8>,
+    /// A single source-contiguous paragraph that has not needed buffering yet.
+    borrowed: Option<Range>,
     /// Whether we're currently in a paragraph.
     in_paragraph: bool,
 }
@@ -512,6 +514,7 @@ impl ParagraphState {
     fn new() -> Self {
         Self {
             content: Vec::with_capacity(256),
+            borrowed: None,
             in_paragraph: false,
         }
     }
@@ -519,22 +522,38 @@ impl ParagraphState {
     fn start(&mut self) {
         self.in_paragraph = true;
         self.content.clear();
+        self.borrowed = None;
     }
 
-    fn add_text(&mut self, text: &[u8]) {
+    fn add_text(&mut self, input: &[u8], range: Range) {
+        if self.content.is_empty() && self.borrowed.is_none() {
+            self.borrowed = Some(range);
+            return;
+        }
+        self.promote_to_buffer(input);
         #[cfg(feature = "profiling")]
-        profiling::record_paragraph_copy(text.len());
-        self.content.extend_from_slice(text);
+        profiling::record_paragraph_copy(range.len() as usize);
+        self.content.extend_from_slice(range.slice(input));
     }
 
-    fn add_soft_break(&mut self) {
+    fn add_soft_break(&mut self, input: &[u8]) {
+        self.promote_to_buffer(input);
         #[cfg(feature = "profiling")]
         profiling::record_paragraph_copy(1);
         self.content.push(b'\n');
     }
 
-    fn finish(&mut self) -> &[u8] {
+    fn finish<'a>(&'a mut self, input: &'a [u8]) -> ParagraphContent<'a> {
         self.in_paragraph = false;
+        if let Some(range) = self.borrowed.take() {
+            let content = range.slice(input);
+            if !content.last().is_some_and(|&b| b == b' ' || b == b'\t') {
+                return ParagraphContent::Borrowed(content);
+            }
+            self.content.extend_from_slice(content);
+            #[cfg(feature = "profiling")]
+            profiling::record_paragraph_copy(content.len());
+        }
         // CommonMark: strip trailing spaces/tabs from paragraph content
         while self
             .content
@@ -543,7 +562,30 @@ impl ParagraphState {
         {
             self.content.pop();
         }
-        &self.content
+        ParagraphContent::Buffered(&self.content)
+    }
+
+    fn promote_to_buffer(&mut self, input: &[u8]) {
+        if let Some(range) = self.borrowed.take() {
+            let content = range.slice(input);
+            #[cfg(feature = "profiling")]
+            profiling::record_paragraph_copy(content.len());
+            self.content.extend_from_slice(content);
+        }
+    }
+}
+
+/// Paragraph bytes supplied to the common inline rendering boundary.
+enum ParagraphContent<'a> {
+    Borrowed(&'a [u8]),
+    Buffered(&'a [u8]),
+}
+
+impl ParagraphContent<'_> {
+    fn as_bytes(&self) -> &[u8] {
+        match self {
+            Self::Borrowed(content) | Self::Buffered(content) => content,
+        }
     }
 }
 
@@ -952,14 +994,14 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         });
 
                 // Parse all accumulated paragraph content at once
-                let content = para_state.finish();
+                let content = para_state.finish(input);
 
                 // Emit pending task checkbox before paragraph content
                 emit_pending_task_checkbox(pending_task, writer);
 
-                if !content.is_empty() {
+                if !content.as_bytes().is_empty() {
                     render_inline_content(
-                        content,
+                        content.as_bytes(),
                         writer,
                         inline_parser,
                         inline_events,
@@ -1051,7 +1093,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
             BlockEvent::HtmlBlockEnd => {}
             BlockEvent::SoftBreak => {
                 if para_state.in_paragraph {
-                    para_state.add_soft_break();
+                    para_state.add_soft_break(input);
                 } else if heading_state.in_heading {
                     heading_state.add_soft_break();
                 } else {
@@ -1062,7 +1104,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 let text = range.slice(input);
                 if para_state.in_paragraph {
                     // Accumulate for later parsing
-                    para_state.add_text(text);
+                    para_state.add_text(input, *range);
                 } else if heading_state.in_heading {
                     heading_state.add_text(text);
                 } else if cell_state.in_cell {
