@@ -22,6 +22,10 @@ pub enum Corpus {
     Code,
     /// Safe absolute and relative links.
     SafeUrls,
+    /// Many headings whose generated IDs all have distinct base slugs.
+    UniqueHeadings,
+    /// Many headings that intentionally collide on one generated base slug.
+    RepeatedHeadings,
     /// Unsafe and obfuscated URL schemes.
     UnsafeUrls,
     /// Reference definitions and reference links.
@@ -42,7 +46,7 @@ pub enum Corpus {
 
 impl Corpus {
     /// All corpus selectors accepted by the diagnostic runner.
-    pub const ALL: [Self; 14] = [
+    pub const ALL: [Self; 16] = [
         Self::CommonMark5K,
         Self::CommonMark20K,
         Self::CommonMark50K,
@@ -50,6 +54,8 @@ impl Corpus {
         Self::Simple,
         Self::Code,
         Self::SafeUrls,
+        Self::UniqueHeadings,
+        Self::RepeatedHeadings,
         Self::UnsafeUrls,
         Self::References,
         Self::Tables,
@@ -69,6 +75,8 @@ impl Corpus {
             Self::Simple => "simple",
             Self::Code => "code",
             Self::SafeUrls => "safe-urls",
+            Self::UniqueHeadings => "unique-headings",
+            Self::RepeatedHeadings => "repeated-headings",
             Self::UnsafeUrls => "unsafe-urls",
             Self::References => "references",
             Self::Tables => "tables",
@@ -97,6 +105,11 @@ impl Corpus {
             )),
             Self::SafeUrls => Cow::Owned(repeat_to_at_least(
                 "[absolute](https://example.com/a%20path?q=one&v=two) [relative](/docs/start) <mailto:team@example.com>\n\n",
+                20_000,
+            )),
+            Self::UniqueHeadings => Cow::Owned(unique_headings_corpus()),
+            Self::RepeatedHeadings => Cow::Owned(repeat_to_at_least(
+                "# Shared heading title with inline `code`\n\nParagraph content keeps ordinary block rendering present.\n\n",
                 20_000,
             )),
             Self::UnsafeUrls => Cow::Owned(repeat_to_at_least(
@@ -193,6 +206,16 @@ fn reference_corpus() -> String {
     output
 }
 
+fn unique_headings_corpus() -> String {
+    let mut output = String::with_capacity(24_000);
+    for index in 0..512 {
+        output.push_str("# Unique heading ");
+        output.push_str(&index.to_string());
+        output.push_str(" with inline `code`\n\nParagraph content keeps ordinary block rendering present.\n\n");
+    }
+    output
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -210,5 +233,15 @@ mod tests {
                 .chain([Corpus::Extended])
                 .all(|corpus| !corpus.materialize().input().is_empty())
         );
+    }
+
+    #[test]
+    fn heading_corpora_should_exercise_their_collision_modes() {
+        let unique = Corpus::UniqueHeadings.materialize();
+        let repeated = Corpus::RepeatedHeadings.materialize();
+
+        assert!(unique.input().contains("Unique heading 0"));
+        assert!(unique.input().contains("Unique heading 511"));
+        assert!(repeated.input().matches("# Shared heading title").count() > 100);
     }
 }
