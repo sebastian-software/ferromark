@@ -421,7 +421,8 @@ scorecard:
 - secure default 50 KB: **at least 4% ahead** over three publication runs;
 - trusted-semantics 50 KB: **at least 6% ahead** over three publication runs;
 - no primary fixture regression above 1%;
-- 652/652 CommonMark examples and the full test suite remain green;
+- the complete CommonMark report and full test suite run for every kept change,
+  with no supported conformance regression;
 - every kept/rejected experiment has reproducible evidence.
 
 Reaching 4% on the secure 50 KB lane appears realistic from the combined

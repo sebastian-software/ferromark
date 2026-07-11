@@ -8,7 +8,9 @@
 [![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
 [![clippy](https://img.shields.io/badge/clippy--strict-passing-brightgreen.svg)](https://doc.rust-lang.org/clippy/)
 
-Markdown to HTML at 280 MiB/s. Faster than pulldown-cmark, md4c (C), and comrak. Passes all 652 CommonMark spec tests. Every GFM extension included.
+Markdown to HTML with a secure default and every GFM extension included. The
+reproducible benchmark protocol and current CommonMark conformance result are
+documented below.
 
 ## Quick start
 
@@ -76,7 +78,11 @@ does not expose an equivalent trust boundary.
 
 ## What you get
 
-**Full CommonMark**: 652/652 spec tests pass. No filtering, no exceptions.
+**CommonMark conformance**: The current default-policy report passes 577 of 652
+spec examples (88.5%). Raw HTML is escaped by default as part of Ferromark's
+browser-facing safety boundary, so this is not a claim of full raw-HTML
+CommonMark parity. Run `cargo test --test commonmark_spec -- --ignored
+--nocapture` for the complete, current report.
 
 **All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
 
