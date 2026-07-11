@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "issue": 68,
+  "purpose": "Profile focused container and table block paths, then reduce only a measured container-matching cost.",
+  "baseline_commit": "193aace448d3e2e15797ee950fe980d3a7d04478",
+  "environment": {
+    "machine": "Apple Silicon Mac Studio (ARM64_T6000)",
+    "operating_system": "macOS 26.5.2",
+    "rustc": "1.95.0-nightly (842bd5be2 2026-01-29)",
+    "rustflags": "-C target-cpu=generic",
+    "cpu_mode": "portable",
+    "pgo": false
+  },
+  "evidence": {
+    "container_pipeline": {
+      "input_bytes": 20064,
+      "block_events": 6479,
+      "container_events": 3344,
+      "inline_parses": 1045,
+      "paragraph_copied_bytes": 12122
+    },
+    "table_pipeline": {
+      "input_bytes": 4552,
+      "block_events": 1430,
+      "table_events": 986,
+      "inline_parses": 402,
+      "paragraph_copied_bytes": 457
+    },
+    "cpu_samples": {
+      "containers": "match_containers, list-item recognition, and container closing were prominent in a 14-second portable sample.",
+      "tables": "split_table_cells was the largest block-parser leaf in two 14-second portable samples, but table rendering remained inline- and event-heavy."
+    }
+  },
+  "implementation": {
+    "candidate": "Replace the two-pass blank-line predicate used for list and footnote continuations with a single early-exit scan.",
+    "why": "Nonblank container continuations commonly begin with content. The former predicate still searched to the next newline to compare two counts.",
+    "semantic_boundary": "The helper returns the same result for empty input, horizontal whitespace, a newline, and the first non-whitespace byte. Block events and rendering remain unchanged.",
+    "harness": "Add independent list-heavy and blockquote-heavy profiling lanes."
+  },
+  "protocol": {
+    "repetitions": 3,
+    "sample_size": 80,
+    "measurement_seconds": 5,
+    "warmup_seconds": 3,
+    "order": ["candidate", "baseline", "candidate", "baseline", "candidate", "baseline"],
+    "command": "RUSTFLAGS='-C target-cpu=generic' cargo bench --locked --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bench profiling -- <lane> --sample-size 80 --measurement-time 5 --warm-up-time 3"
+  },
+  "target_mean_nanoseconds": {
+    "lists_extended_secure": {
+      "candidate": [140198.260, 139704.754, 139737.740],
+      "baseline": [156846.026, 155931.090, 155998.851],
+      "candidate_improvement_percent": [10.614, 10.406, 10.424]
+    }
+  },
+  "single_run_controls_candidate_improvement_percent": {
+    "containers_extended_secure": 9.613,
+    "blockquotes_extended_secure": 0.026,
+    "tables_extended_secure": 0.386,
+    "commonmark_20k_extended_secure": 3.927,
+    "commonmark_50k_extended_secure": 2.25
+  },
+  "validation": {
+    "cargo_fmt": "passed",
+    "cargo_test_all_targets_all_features_locked": "passed",
+    "cargo_clippy_all_targets_all_features_locked": "passed with -D warnings",
+    "commonmark": "577/652 in-scope (88.5%); the existing security-policy failures are unchanged"
+  },
+  "decision": {
+    "status": "accepted",
+    "reason": "The list-heavy target improved by more than 10% in all three alternating comparisons. The mixed container corpus and CommonMark controls improved, while table and blockquote controls remained within the 1% guardrail. The change only avoids redundant scanning and preserves existing block events."
+  }
+}

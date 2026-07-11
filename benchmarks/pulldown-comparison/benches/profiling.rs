@@ -101,6 +101,8 @@ fn profiling_benches(c: &mut Criterion) {
         Corpus::References,
         Corpus::Tables,
         Corpus::Containers,
+        Corpus::Lists,
+        Corpus::Blockquotes,
         Corpus::Delimiters,
         Corpus::Html,
         Corpus::UnicodeEntities,
