@@ -25,6 +25,8 @@ args.push('--', '--locked')
 
 const result = spawnSync(pnpm, args, {
   cwd: new URL('..', import.meta.url),
+  // Windows command shims such as pnpm.cmd require cmd.exe for spawning.
+  shell: process.platform === 'win32',
   stdio: 'inherit',
 })
 
