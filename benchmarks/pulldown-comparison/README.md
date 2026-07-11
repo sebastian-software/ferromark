@@ -78,9 +78,10 @@ experiment may begin or when a performance claim needs an auditable baseline:
 scripts/run-publication-baseline.sh
 ```
 
-It refuses a dirty checkout, uses portable non-PGO code generation, and runs
-three repetitions of the required Criterion lanes with 80 samples, a five-second
-measurement window, and a three-second warmup. Each run retains its
+It refuses a dirty checkout, uses portable non-PGO code generation, alternates
+the parity parser order across its three repetitions, and runs every Criterion
+lane with 80 samples, a five-second measurement window, and a three-second
+warmup. Each run retains its
 `estimates.json` files plus an environment probe under the ignored
 `results/publication-<timestamp>/` directory.
 

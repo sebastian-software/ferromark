@@ -3,6 +3,13 @@ use ferromark_pulldown_comparison::{
     Corpus, ParserKind, RunConfig, render_ferromark_config_into, render_pulldown_config_into,
 };
 
+fn parity_parsers() -> [ParserKind; 2] {
+    match std::env::var("FERROMARK_PARITY_ORDER").as_deref() {
+        Ok("pulldown-first") => [ParserKind::PulldownCmark, ParserKind::Ferromark],
+        _ => [ParserKind::Ferromark, ParserKind::PulldownCmark],
+    }
+}
+
 fn bench_lane(c: &mut Criterion, corpus: Corpus, configuration: RunConfig, parsers: &[ParserKind]) {
     let data = corpus.materialize();
     let input = data.input();
@@ -48,7 +55,7 @@ fn bench_lane(c: &mut Criterion, corpus: Corpus, configuration: RunConfig, parse
 }
 
 fn profiling_benches(c: &mut Criterion) {
-    let both = [ParserKind::Ferromark, ParserKind::PulldownCmark];
+    let both = parity_parsers();
     for corpus in [
         Corpus::CommonMark5K,
         Corpus::CommonMark20K,
