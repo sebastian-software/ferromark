@@ -4,7 +4,12 @@ title: Benchmarks
 
 # Benchmarks
 
-Apple Silicon (M-series), July 2026. All parsers run with GFM tables, strikethrough, and task lists enabled; ferromark's non-GFM extras (heading IDs, callouts) are disabled so every parser performs the same work. Output buffers are reused where APIs allow. Binaries are non-PGO for a fair comparison.
+Apple Silicon (M-series), July 2026. All parsers run with GFM tables,
+strikethrough, and task lists enabled; ferromark's non-GFM extras (heading IDs,
+callouts) are disabled. Output buffers are reused where APIs allow and binaries
+are non-PGO. Ferromark keeps its secure default rendering in this published
+product lane, so it also performs URL and raw-HTML safety work that
+pulldown-cmark does not.
 
 ## CommonMark 5 KB
 
@@ -28,6 +33,36 @@ Summary: 2% faster than pulldown-cmark, 11% faster than md4c, and roughly 4x fas
 
 ## Reproduce locally
 
+The published four-parser lane requires the pinned md4c checkout:
+
 ```bash
-cargo bench --bench comparison
+cd benchmarks/md4c-comparison
+MD4C_DIR=/path/to/md4c cargo bench --bench comparison
 ```
+
+## Feature-parity lanes
+
+The focused two-parser harness separates three explicit shared surfaces:
+
+| Lane | Shared features | Raw HTML |
+| --- | --- | --- |
+| CommonMark | CommonMark only | trusted/preserved |
+| GFM overlap | CommonMark, tables, strikethrough, task lists | trusted/preserved |
+| Extended overlap | GFM overlap, footnotes, math, superscript, callouts | trusted/preserved |
+
+Run semantic guardrails before measuring:
+
+```bash
+cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
+cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
+```
+
+These lanes are designed for like-for-like parser comparison. Ferromark's
+secure-default result stays separate because pulldown-cmark has no equivalent
+URL/raw-HTML trust boundary.
+
+## Profile costs
+
+`cargo bench --bench profiles` runs Essentials, Extended, and Full over the
+same Essentials-compatible corpus. This isolates the overhead of enabled but
+unused feature paths; it is not a comparison of three different documents.

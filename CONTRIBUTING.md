@@ -14,13 +14,22 @@ Comparison benchmarks need the md4c C sources:
 
 ```bash
 git clone --depth 1 https://github.com/mity/md4c.git ../md4c
-cargo bench --bench comparison
+cd benchmarks/md4c-comparison
+MD4C_DIR=../../../md4c cargo bench --bench comparison
 ```
 
-ferromark-only benchmarks work without md4c:
+The focused ferromark/pulldown-cmark parity harness does not need md4c:
+
+```bash
+cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
+cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
+```
+
+Ferromark-only and profile-cost benchmarks also work without md4c:
 
 ```bash
 cargo bench --bench parsing
+cargo bench --bench profiles
 ```
 
 ## Commit messages

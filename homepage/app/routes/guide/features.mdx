@@ -36,6 +36,33 @@ disallowed_raw_html · footnotes · front_matter · heading_ids
 math · callouts
 ```
 
+## Curated profiles
+
+Use a profile when a stable feature bundle communicates intent better than a
+long option list:
+
+| Feature | Essentials | Extended | Full |
+| --- | :---: | :---: | :---: |
+| Tables, strikethrough, task lists | ✓ | ✓ | ✓ |
+| Raw HTML parsing, reference links | — | ✓ | ✓ |
+| Heading IDs, callouts | — | ✓ | ✓ |
+| Autolink literals, footnotes, front matter | — | — | ✓ |
+| Math, highlight, subscript, superscript | — | — | ✓ |
+
+```rust
+use ferromark::{Options, Profile};
+
+let options = Options::from(Profile::Essentials);
+let html = ferromark::to_html_with_options(markdown, &options);
+```
+
+`Essentials` targets common documentation syntax, `Extended` matches the
+current default feature mix, and `Full` enables everything. Individual fields
+can still be overridden with Rust's struct update syntax.
+
+Profiles never change the rendering trust boundary. Every profile starts with
+`RenderPolicy::Untrusted`; trusted raw HTML remains an explicit caller choice.
+
 ## Rendering policy
 
 `RenderPolicy::Untrusted` is the default. It escapes raw HTML and rejects unsafe

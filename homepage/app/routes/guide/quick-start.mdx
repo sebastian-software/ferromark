@@ -15,6 +15,17 @@ ferromark = "0.3"
 let html = ferromark::to_html("# Hello\n\n**World**");
 ```
 
+For common documentation syntax with tables, strikethrough, and task lists—but
+without costlier reference, raw-HTML, or specialized extension paths—select the
+Essentials profile:
+
+```rust
+use ferromark::{Options, Profile};
+
+let options = Options::from(Profile::Essentials);
+let html = ferromark::to_html_with_options(markdown, &options);
+```
+
 ## Reuse output buffers
 
 When allocation pressure matters, reuse a `Vec<u8>`:
