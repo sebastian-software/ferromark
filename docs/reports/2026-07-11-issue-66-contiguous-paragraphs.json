@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "issue": 66,
+  "purpose": "Measure whether source-contiguous paragraphs can bypass ParagraphState copying while preserving the buffered normalization fallback.",
+  "baseline_commit": "193aace448d3e2e15797ee950fe980d3a7d04478",
+  "candidate_commit": "c21fd9307fe82084c056bb8701606ceb1f88825c",
+  "harness_commit": "71f4cf5",
+  "environment": {
+    "machine": "Apple Silicon Mac Studio (ARM64_T6000)",
+    "operating_system": "macOS 26.5.2",
+    "rustc": "1.95.0-nightly (842bd5be2 2026-01-29)",
+    "rustflags": "",
+    "pgo": false
+  },
+  "implementation": {
+    "fast_path": "A paragraph with one source-contiguous text range is passed directly to the unchanged inline/event pipeline.",
+    "fallback": "A second text range, soft break, indentation, tab normalization, or trailing whitespace promotes the content into the existing buffer.",
+    "semantic_boundary": "Both paths call the same render_inline_content function."
+  },
+  "pipeline_copied_bytes": {
+    "commonmark_20k": { "baseline": 15206, "candidate": 2774 },
+    "commonmark_50k": { "baseline": 36080, "candidate": 7582 },
+    "mixed_250k": { "baseline": 180400, "candidate": 37910 }
+  },
+  "protocol": {
+    "repetitions": 3,
+    "sample_size": 80,
+    "measurement_seconds": 5,
+    "warmup_seconds": 3,
+    "order": ["candidate", "baseline", "candidate", "baseline", "candidate", "baseline"],
+    "command": "cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bench profiling -- <lane> --sample-size 80 --measurement-time 5 --warm-up-time 3"
+  },
+  "target_mean_nanoseconds": {
+    "commonmark_20k_extended": {
+      "candidate": [79819.370, 79984.310, 80055.225],
+      "baseline": [77578.748, 78506.914, 78027.172],
+      "candidate_improvement_percent": [-2.888, -1.882, -2.599]
+    },
+    "commonmark_50k_extended": {
+      "candidate": [211223.274, 210883.679, 212213.223],
+      "baseline": [207088.951, 207537.711, 207243.438],
+      "candidate_improvement_percent": [-1.996, -1.612, -2.398]
+    },
+    "simple_extended": {
+      "candidate": [13536.230, 13568.392, 13548.406],
+      "baseline": [13077.149, 13103.656, 13102.007],
+      "candidate_improvement_percent": [-3.511, -3.547, -3.407]
+    }
+  },
+  "single_run_controls_candidate_improvement_percent": {
+    "mixed_250k_extended": -2.051,
+    "containers_extended": 1.881,
+    "tables_extended": -2.263,
+    "code_extended": 1.292
+  },
+  "decision": {
+    "status": "rejected",
+    "reason": "The candidate reduces copied bytes by 79-82%, but all three alternating comparisons regress on CommonMark 20 KB, CommonMark 50 KB, and simple prose. It fails the required repeatable 20/50 KB throughput gain and the no-simple-regression guard, so no parser change is merged."
+  }
+}

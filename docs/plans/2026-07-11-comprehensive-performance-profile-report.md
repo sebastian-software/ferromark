@@ -327,6 +327,16 @@ most of the visible ceiling. PGO remains unmeasured because no representative
   opportunity not already covered by `memchr` or NEON.
 - **Extensibility:** neutral, but portability risk is high.
 
+## Rejected experiment: contiguous paragraph borrowing (issue #66)
+
+The source-contiguous fast path passed its semantic tests and reduced copied
+paragraph bytes substantially: 15,206 to 2,774 bytes at CommonMark 20 KB,
+36,080 to 7,582 bytes at 50 KB, and 180,400 to 37,910 bytes at mixed 250 KB.
+It did not meet the performance gate. Across three alternating 80-sample runs,
+the candidate regressed by 1.882-2.888% at 20 KB, 1.612-2.398% at 50 KB, and
+3.407-3.547% on simple prose. The prototype is therefore retained only as a
+documented negative result; no parser change is merged.
+
 ## Recommended execution order
 
 1. Run publication-quality CommonMark parity repetitions with the pinned
