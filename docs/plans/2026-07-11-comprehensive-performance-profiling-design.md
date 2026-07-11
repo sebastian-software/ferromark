@@ -1,6 +1,6 @@
 # Comprehensive performance profiling design
 
-Status: proposed for review
+Status: approved for implementation
 Date: 2026-07-11
 
 ## Context
