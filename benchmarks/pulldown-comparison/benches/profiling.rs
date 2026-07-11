@@ -117,6 +117,13 @@ fn profiling_benches(c: &mut Criterion) {
             bench_lane(c, corpus, configuration, &[ParserKind::Ferromark]);
         }
     }
+
+    bench_lane(
+        c,
+        Corpus::Simple,
+        RunConfig::ExtendedSecureNoHeadingIds,
+        &[ParserKind::Ferromark],
+    );
 }
 
 criterion_group!(benches, profiling_benches);
