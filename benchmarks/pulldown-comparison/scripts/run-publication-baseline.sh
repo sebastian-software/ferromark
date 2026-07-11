@@ -9,14 +9,21 @@ fi
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 crate_dir=$(cd -- "$script_dir/.." && pwd)
-results_dir="$crate_dir/results/publication-$(date -u +%Y%m%dT%H%M%SZ)"
+lock_dir="$crate_dir/.publication-baseline.lock"
 
 if [[ -n "$(git -C "$crate_dir/../.." status --porcelain)" ]]; then
   echo "publication baseline requires a clean checkout" >&2
   exit 1
 fi
 
-mkdir -p "$results_dir"
+mkdir -p "$crate_dir/results"
+if ! mkdir "$lock_dir" 2>/dev/null; then
+  echo "another publication baseline is already running" >&2
+  exit 1
+fi
+trap 'rmdir "$lock_dir"' EXIT
+
+results_dir=$(mktemp -d "$crate_dir/results/publication-XXXXXXXX")
 cd "$crate_dir"
 
 targets=(

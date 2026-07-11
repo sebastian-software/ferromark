@@ -35,7 +35,9 @@ Silicon Mac Studio (`ARM64_T6000`) with macOS 26.5.2, pinned `rustc 1.93.0`
 used three repetitions, 80 Criterion samples, a five-second measurement window,
 and a three-second warmup. It ran Ferromark first in repetitions one and three
 and pulldown-cmark first in repetition two. The checked-in machine-readable
-summary is [`2026-07-11-issue-63-publication-baseline.json`](../reports/2026-07-11-issue-63-publication-baseline.json).
+summary is [`2026-07-11-issue-63-publication-baseline.json`](../reports/2026-07-11-issue-63-publication-baseline.json), with its
+per-run median confidence intervals in
+[`2026-07-11-issue-63-publication-baseline-criterion-estimates.json`](../reports/2026-07-11-issue-63-publication-baseline-criterion-estimates.json).
 
 Trusted CommonMark parity remains a deliberately separate comparison lane. It
 uses trusted raw HTML in Ferromark because pulldown-cmark does not expose the
