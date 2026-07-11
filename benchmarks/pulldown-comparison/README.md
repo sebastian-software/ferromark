@@ -69,6 +69,31 @@ Run the bounded primary matrix:
 scripts/run-primary-matrix.sh 5 portable
 ```
 
+## Publication baseline
+
+Use the publication runner when a result will decide whether a production
+experiment may begin or when a performance claim needs an auditable baseline:
+
+```bash
+scripts/run-publication-baseline.sh
+```
+
+It refuses a dirty checkout, uses portable non-PGO code generation, and runs
+three repetitions of the required Criterion lanes with 80 samples, a five-second
+measurement window, and a three-second warmup. Each run retains its
+`estimates.json` files plus an environment probe under the ignored
+`results/publication-<timestamp>/` directory.
+
+The run covers trusted CommonMark parity at 5, 20, 50, and 250 KB; secure-default
+Extended rendering at 5, 20, and 50 KB; and the Essentials, Extended, and Full
+profile-cost lanes at 50 KB. Trusted parity and secure-default results answer
+different questions and must never be merged into one comparative claim.
+
+Copy the exact result directory into durable CI or release storage before
+cleaning the worktree. Summarize only the three-run result in the performance
+report; do not update the README benchmark headline until the publication
+protocol has passed.
+
 The CPU mode must be named explicitly:
 
 - `portable`: `target-cpu=generic`, used for portable source comparisons;

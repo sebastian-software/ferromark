@@ -72,6 +72,19 @@ fn profiling_benches(c: &mut Criterion) {
     }
 
     for corpus in [
+        Corpus::CommonMark5K,
+        Corpus::CommonMark20K,
+        Corpus::CommonMark50K,
+    ] {
+        bench_lane(
+            c,
+            corpus,
+            RunConfig::ExtendedSecure,
+            &[ParserKind::Ferromark],
+        );
+    }
+
+    for corpus in [
         Corpus::Simple,
         Corpus::Code,
         Corpus::SafeUrls,
