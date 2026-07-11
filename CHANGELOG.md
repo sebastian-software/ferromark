@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.1...ferromark-v0.3.2) (2026-07-11)
+
+
+### Bug Fixes
+
+* **release:** run pnpm shim through Windows shell ([cf21fdd](https://github.com/sebastian-software/ferromark/commit/cf21fdd5f441a6af3ecac0aec93a746ee9ec0b30))
+
 ## [0.3.1](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.0...ferromark-v0.3.1) (2026-07-11)
 
 
