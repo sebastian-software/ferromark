@@ -82,18 +82,20 @@ It refuses a dirty checkout, uses portable non-PGO code generation, alternates
 the parity parser order across its three repetitions, and runs every Criterion
 lane with 80 samples, a five-second measurement window, and a three-second
 warmup. Each run retains its
-`estimates.json` files plus an environment probe under the ignored
-`results/publication-<timestamp>/` directory.
+`estimates.json` files plus an environment probe under a unique ignored
+`results/publication-<random>/` directory. A process-wide lock prevents a
+second runner in the same harness checkout from sharing Criterion output.
 
 The run covers trusted CommonMark parity at 5, 20, 50, and 250 KB; secure-default
 Extended rendering at 5, 20, and 50 KB; and the Essentials, Extended, and Full
 profile-cost lanes at 50 KB. Trusted parity and secure-default results answer
 different questions and must never be merged into one comparative claim.
 
-Copy the exact result directory into durable CI or release storage before
-cleaning the worktree. Summarize only the three-run result in the performance
-report; do not update the README benchmark headline until the publication
-protocol has passed.
+Publish the exact result directory as durable CI or release storage before
+cleaning the worktree. Commit or link an audit-ready estimate artifact alongside
+any publication summary; an ignored local path alone is not evidence another
+checkout can inspect. Do not update the README benchmark headline until the
+publication protocol has passed.
 
 The CPU mode must be named explicitly:
 
