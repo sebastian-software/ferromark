@@ -78,13 +78,17 @@
 //!
 //! ## Silent fallback instead of errors
 //!
-//! Invalid JSX or unterminated expressions are silently treated as Markdown.
-//! The official compiler reports parse errors with source positions.
+//! [`segment`] and [`segment_spanned`] preserve the original permissive
+//! behavior: invalid JSX or unterminated expressions are treated as Markdown.
+//! [`segment_strict`] is an opt-in validation pass that returns structural MDX
+//! diagnostics with source ranges instead. It does not validate JavaScript or
+//! TypeScript syntax inside otherwise well-delimited ESM and expressions.
 
 pub mod expr;
 pub mod jsx_tag;
 pub mod render;
 mod splitter;
+mod strict;
 
 /// A typed segment of an MDX document.
 ///
@@ -119,6 +123,51 @@ pub struct SpannedSegment<'a> {
     pub segment: Segment<'a>,
     /// Exact UTF-8 byte range of [`Self::segment`] in the original input.
     pub range: crate::Range,
+}
+
+/// A stable category for a structural MDX diagnostic.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MdxDiagnosticCode {
+    /// A flow expression has no closing `}`.
+    UnterminatedExpression,
+    /// A JSX tag has no closing `>`.
+    UnterminatedJsxTag,
+    /// A JSX tag has an invalid name, attribute, or closing-tag structure.
+    InvalidJsxTag,
+    /// A closing JSX tag does not have a matching opening tag.
+    UnexpectedJsxClosingTag,
+    /// A closing JSX tag does not match the innermost opening tag.
+    MismatchedJsxClosingTag,
+    /// An opening JSX tag is not closed before the end of the document.
+    UnclosedJsxTag,
+    /// An ESM block is indented or interrupts a Markdown paragraph.
+    InvalidEsmPosition,
+}
+
+/// A structural MDX diagnostic returned by [`segment_strict`].
+///
+/// `primary_range` is always a valid UTF-8 byte range into the original input.
+/// For a mismatched JSX closing tag, `related_range` identifies the innermost
+/// opening tag that the closing tag cannot close past.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MdxDiagnostic {
+    /// Stable machine-readable diagnostic category.
+    pub code: MdxDiagnosticCode,
+    /// Concise human-readable explanation.
+    pub message: &'static str,
+    /// Primary source range for this diagnostic.
+    pub primary_range: crate::Range,
+    /// Related source range for a mismatched JSX closing tag's blocking opening tag.
+    pub related_range: Option<crate::Range>,
+}
+
+/// A one-based source location derived from a UTF-8 byte offset.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceLocation {
+    /// One-based line number.
+    pub line: u32,
+    /// One-based Unicode scalar column number.
+    pub column: u32,
 }
 
 /// Segment an MDX document into typed blocks.
@@ -158,6 +207,57 @@ pub fn segment_spanned(input: &str) -> Vec<SpannedSegment<'_>> {
             SpannedSegment { segment, range }
         })
         .collect()
+}
+
+/// Validate structural MDX and return source-spanned segments on success.
+///
+/// This opt-in API adds diagnostics for malformed flow expressions, malformed
+/// JSX tags, JSX tag nesting, and ESM blocks at invalid boundaries. The
+/// permissive [`segment`] APIs deliberately retain their silent Markdown
+/// fallback. JavaScript and TypeScript inside a correctly delimited expression
+/// or ESM block are not parsed or type-checked.
+///
+/// When a malformed construct makes later segmentation ambiguous, validation
+/// stops at that construct. Otherwise, independent diagnostics are collected.
+///
+/// # Panics
+///
+/// Panics when `input` is larger than [`u32::MAX`] bytes, matching the size
+/// limit of [`crate::Range`].
+pub fn segment_strict(input: &str) -> Result<Vec<SpannedSegment<'_>>, Vec<MdxDiagnostic>> {
+    strict::segment_strict(input)
+}
+
+/// Translate a UTF-8 byte offset into a one-based line and Unicode scalar column.
+///
+/// `byte_offset` must be at a UTF-8 character boundary and may equal
+/// `input.len()`. Diagnostic range boundaries returned by [`segment_strict`]
+/// always meet that requirement.
+///
+/// # Panics
+///
+/// Panics when `byte_offset` is greater than `input.len()` or is not a UTF-8
+/// character boundary.
+#[must_use]
+pub fn source_location(input: &str, byte_offset: usize) -> SourceLocation {
+    assert!(
+        byte_offset <= input.len(),
+        "byte offset is outside the input"
+    );
+    assert!(
+        input.is_char_boundary(byte_offset),
+        "byte offset is not a UTF-8 character boundary"
+    );
+
+    let before = &input[..byte_offset];
+    let line = before.bytes().filter(|byte| *byte == b'\n').count() + 1;
+    let line_start = before.rfind('\n').map_or(0, |offset| offset + 1);
+    let column = input[line_start..byte_offset].chars().count() + 1;
+
+    SourceLocation {
+        line: u32::try_from(line).expect("line number exceeds u32::MAX"),
+        column: u32::try_from(column).expect("column number exceeds u32::MAX"),
+    }
 }
 
 impl<'a> Segment<'a> {
