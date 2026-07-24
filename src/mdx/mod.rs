@@ -105,12 +105,69 @@ pub enum Segment<'a> {
     Expression(&'a str),
 }
 
+/// A typed MDX segment together with its exact byte range in the input.
+///
+/// The range covers precisely the bytes in [`Self::segment`], including
+/// delimiters, indentation, and a trailing line ending when the segmenter
+/// includes one. The returned ranges are ordered, contiguous, and cover the
+/// complete input without gaps or overlap.
+///
+/// Like [`Segment`], this type borrows from the input and performs no copying.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpannedSegment<'a> {
+    /// The zero-copy MDX segment.
+    pub segment: Segment<'a>,
+    /// Exact UTF-8 byte range of [`Self::segment`] in the original input.
+    pub range: crate::Range,
+}
+
 /// Segment an MDX document into typed blocks.
 ///
 /// This is the primary entry point. The returned segments cover the entire
 /// input — no bytes are dropped.
 pub fn segment(input: &str) -> Vec<Segment<'_>> {
     splitter::split(input)
+}
+
+/// Segment an MDX document and retain exact byte ranges for each segment.
+///
+/// This is the source-location-aware counterpart to [`segment`]. It has the
+/// same segmentation semantics, while each result records its position in the
+/// original UTF-8 input. The range includes every byte represented by the
+/// segment, including MDX delimiters and any trailing newline owned by that
+/// segment.
+///
+/// # Panics
+///
+/// Panics when `input` is larger than [`u32::MAX`] bytes, matching the size
+/// limit of [`crate::Range`].
+pub fn segment_spanned(input: &str) -> Vec<SpannedSegment<'_>> {
+    let mut start = 0;
+
+    segment(input)
+        .into_iter()
+        .map(|segment| {
+            let end = start + segment.as_str().len();
+            let range = crate::Range::from_usize(start, end);
+            start = end;
+            SpannedSegment { segment, range }
+        })
+        .collect()
+}
+
+impl<'a> Segment<'a> {
+    /// Return the source text represented by this segment.
+    #[must_use]
+    pub fn as_str(&self) -> &'a str {
+        match self {
+            Self::Esm(text)
+            | Self::Markdown(text)
+            | Self::JsxBlockOpen(text)
+            | Self::JsxBlockClose(text)
+            | Self::JsxBlockSelfClose(text)
+            | Self::Expression(text) => text,
+        }
+    }
 }
 
 pub use render::{MdxOutput, render, render_with_options};
