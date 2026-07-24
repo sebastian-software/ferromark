@@ -102,6 +102,11 @@ to handle longer documents efficiently.
     pub fn pathological_nested() -> String {
         "> ".repeat(100) + "deep\n"
     }
+
+    /// Presentation-like input that exercises semantic slide boundaries.
+    pub fn thematic_breaks() -> String {
+        "Slide content with **formatting**.\n\n---\n\n".repeat(500)
+    }
 }
 
 fn bench_parsing(c: &mut Criterion) {
@@ -156,6 +161,12 @@ fn bench_parsing(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(tables_5k.len() as u64));
     group.bench_function("tables_5k", |b| {
         b.iter(|| ferromark::to_html(black_box(tables_5k)))
+    });
+
+    let thematic_breaks = samples::thematic_breaks();
+    group.throughput(Throughput::Bytes(thematic_breaks.len() as u64));
+    group.bench_function("thematic_breaks", |b| {
+        b.iter(|| ferromark::to_html(black_box(&thematic_breaks)))
     });
 
     group.finish();

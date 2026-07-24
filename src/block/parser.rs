@@ -1908,7 +1908,7 @@ impl<'a> BlockParser<'a> {
     /// Try to parse a thematic break.
     /// Returns true if successful.
     fn try_thematic_break(&mut self, events: &mut Vec<BlockEvent>) -> bool {
-        let _start_pos = self.cursor.offset();
+        let start_pos = self.cursor.offset();
 
         // Must start with -, *, or _
         let marker = match self.cursor.peek() {
@@ -1951,7 +1951,10 @@ impl<'a> BlockParser<'a> {
         // Mark the current container as having content
         self.mark_container_has_content();
 
-        events.push(BlockEvent::ThematicBreak);
+        events.push(BlockEvent::ThematicBreak(Range::from_usize(
+            start_pos,
+            temp_cursor.offset(),
+        )));
         true
     }
 
@@ -3852,31 +3855,46 @@ mod tests {
     #[test]
     fn test_thematic_break_dashes() {
         let events = parse("---");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_asterisks() {
         let events = parse("***");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_underscores() {
         let events = parse("___");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_with_spaces() {
         let events = parse("- - -");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 5))]
+        );
     }
 
     #[test]
     fn test_thematic_break_many() {
         let events = parse("----------");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 10))]
+        );
     }
 
     #[test]
@@ -3985,7 +4003,10 @@ mod tests {
         assert_eq!(events.len(), 4);
         assert_eq!(events[0], BlockEvent::ParagraphStart);
         assert_eq!(events[2], BlockEvent::ParagraphEnd);
-        assert_eq!(events[3], BlockEvent::ThematicBreak);
+        assert_eq!(
+            events[3],
+            BlockEvent::ThematicBreak(Range::from_usize(6, 9))
+        );
     }
 
     #[test]
@@ -4011,7 +4032,19 @@ mod tests {
     #[test]
     fn test_thematic_break_with_leading_spaces() {
         let events = parse("   ---");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(3, 6))]
+        );
+    }
+
+    #[test]
+    fn test_thematic_break_range_includes_trailing_horizontal_whitespace() {
+        let events = parse("  - - - \t\n");
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(2, 9))]
+        );
     }
 
     // Fenced code block tests

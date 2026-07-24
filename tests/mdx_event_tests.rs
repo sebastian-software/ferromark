@@ -190,6 +190,33 @@ fn markdown_block_boundaries_remain_ordered_and_balanced() {
 }
 
 #[test]
+fn thematic_breaks_expose_exact_absolute_source_ranges() {
+    let input = concat!(
+        "# Intro\n\n",
+        "  - - - \t\n\n",
+        "> ***\n\n",
+        "Setext heading\n",
+        "---\n\n",
+        "<Panel>\n\n",
+        "___\n\n",
+        "</Panel>\n",
+    );
+    let stream = parse_events(input);
+    let breaks = stream
+        .events
+        .iter()
+        .filter_map(|event| match event {
+            MdxEvent::Block(BlockEvent::ThematicBreak(range)) => {
+                Some(range.slice_str(input.as_bytes()).unwrap())
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(breaks, vec!["- - - \t", "***", "___"]);
+}
+
+#[test]
 fn contiguous_multiline_paragraphs_share_one_inline_parse() {
     let input = "Paragraph with *emphasis\ncontinued* and {name}.\n";
     let stream = parse_events(input);

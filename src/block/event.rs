@@ -125,8 +125,8 @@ pub enum BlockEvent {
     /// End of a list item.
     ListItemEnd,
 
-    /// A thematic break (horizontal rule).
-    ThematicBreak,
+    /// A thematic break (horizontal rule) and its exact marker range.
+    ThematicBreak(Range),
 
     /// Start of an HTML block.
     HtmlBlockStart,
