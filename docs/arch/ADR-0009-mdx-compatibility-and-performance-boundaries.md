@@ -1,6 +1,6 @@
 # ADR-0009: MDX Compatibility and Performance Boundaries
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-07-24
 
 ## Context
@@ -25,35 +25,35 @@ implementation requires more state and must be measured separately.
 
 ## Decision
 
-Ferromark will retain the current lightweight `mdx::segment` and `mdx::render`
-path as the performance-oriented default. We will **not** add an unconditional
-container-aware pre-scan to that path.
+Ferromark will provide one correct MDX parsing model rather than separate
+"fast" and "compatible" modes. The existing `mdx` Cargo feature and `mdx::*`
+API are the opt-in boundary: callers that use the normal Markdown API do not
+pay for MDX recognition, while callers that select MDX get container-aware MDX
+semantics without another public mode choice.
 
-Full `@mdx-js/mdx`-style compatibility, if offered, will be a distinct,
-explicitly selected compatibility path rather than an undocumented behaviour
-change to the fast renderer. The exact public API is intentionally deferred
-until a correct prototype exists; plausible forms include an MDX rendering
-options type or a separately named compatibility entry point. The existing
-semantic-event API remains opt-in and is not represented as full MDX compiler
-compatibility.
+The MDX implementation must not add the universal second pass measured by
+ARCH-EXP-016. Container recognition will instead be fused into the opt-in MDX
+path or selectively invoked from proven candidates. The implementation must be
+validated against reference MDX fixtures and benchmarked end to end before its
+rendering semantics change.
 
-No compatibility API is accepted by this ADR yet. It must first meet the
-follow-up gate in ARCH-EXP-016, including reference-implementation fixtures and
-end-to-end benchmarks. Its API and default must then be reviewed in a follow-up
-ADR update or successor.
+"MDX compatibility" here means parsing MDX syntax and preserving its semantic
+structure within Ferromark's renderer and event APIs. Ferromark does not execute
+components or replace the JavaScript compiler provided by `@mdx-js/mdx`.
 
 ## Consequences
 
-- Current renderer throughput and its simple, zero-copy segmentation contract
-  remain stable for existing callers.
-- Ferromark documents the deliberate gap instead of implying complete MDX
-  support.
-- Users needing container-aware or complete MDX behaviour have a clear path to
-  a future opt-in mode instead of an accidental performance regression.
-- A future compatibility implementation must preserve the default renderer's
-  benchmark baseline and publish both correctness and performance evidence.
-- Complete MDX parity is treated as a compiler/product direction, not as a
-  small extension to the Markdown hot path.
+- Normal Markdown parsing remains independent of MDX recognition and retains
+  its existing hot path.
+- MDX callers do not need to understand or choose between two subtly different
+  MDX dialects.
+- The current line-based segmenter must evolve or be replaced inside the MDX
+  module to support container-local flow constructs correctly.
+- MDX rendering may become measurably more expensive as compatibility improves;
+  that cost is accepted only in the already opt-in MDX path and must be
+  published with correctness evidence.
+- Full `@mdx-js/mdx` compiler parity remains out of scope unless a later
+  decision expands Ferromark from parsing/rendering into JavaScript compilation.
 
 ## References
 

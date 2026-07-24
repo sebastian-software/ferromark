@@ -73,10 +73,11 @@ implementation could do better, but its cost cannot be inferred from this probe
 alone.
 
 The data does **not** say that container-flow compatibility is infeasible. It
-says that it should not be added as an unconditional second pass to the current
-fast renderer. A future implementation needs to be either fused into a proven
-block-aware path or exposed as an explicit compatibility mode, then benchmarked
-against this baseline with official-MDX conformance fixtures.
+says that it should not be added as an unconditional second pass. ADR-0009
+selects a single correct MDX parsing model behind the existing opt-in `mdx`
+feature/API boundary, so a production implementation needs to be fused into a
+proven block-aware MDX path or selectively invoked from strong candidates, then
+benchmarked against this baseline with official-MDX conformance fixtures.
 
 ## Follow-up gate
 
@@ -86,4 +87,5 @@ Before changing public MDX rendering semantics:
    unordered list continuation lines, multiline tags/expressions, and recovery;
 2. validate those fixtures against `@mdx-js/mdx`;
 3. compare its end-to-end output and throughput with the fast renderer; and
-4. decide the public compatibility-mode API in ADR-0009.
+4. confirm that normal Markdown benchmarks remain unchanged and publish the
+   measured cost within the opt-in MDX path.
