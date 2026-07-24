@@ -573,7 +573,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for indented code block (4+ spaces, not in paragraph)
-        if indent >= 4 && !self.in_paragraph {
+        if self.options.indented_code_blocks && indent >= 4 && !self.in_paragraph {
             self.start_indented_code(indent, events);
             return;
         }
@@ -943,7 +943,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for indented code block (4+ spaces, not in paragraph)
-        if indent >= 4 && !self.in_paragraph {
+        if self.options.indented_code_blocks && indent >= 4 && !self.in_paragraph {
             self.start_indented_code(indent, events);
             return;
         }
