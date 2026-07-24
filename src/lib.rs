@@ -1441,6 +1441,19 @@ fn render_inline_event(
                 writer.write_text_with_entities(range.slice(text));
             }
         }
+        #[cfg(feature = "mdx")]
+        InlineEvent::MdxExpression(range)
+        | InlineEvent::MdxJsxOpen(range)
+        | InlineEvent::MdxJsxClose(range)
+        | InlineEvent::MdxJsxSelfClose(range) => {
+            if in_image {
+                writer.write_escaped_attr(range.slice(text));
+            } else if render_policy == RenderPolicy::Trusted {
+                writer.write_bytes(range.slice(text));
+            } else {
+                writer.write_escaped_text(range.slice(text));
+            }
+        }
         InlineEvent::Code(range) => {
             // In image alt text, just write the code content as plain text
             if in_image {

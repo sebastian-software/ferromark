@@ -297,7 +297,7 @@ What the segmenter deliberately skips — and why that's fine for most use cases
 
 | What | Our approach | When it matters |
 |---|---|---|
-| **Inline JSX** (`text <em>here</em>`) | Stays inside Markdown segments | Only if you mix JSX and prose on the same line inside a paragraph — rare in practice |
+| **Inline JSX** (`text <em>here</em>`) | Stays in `segment()` Markdown blocks; `InlineParser::parse_mdx()` exposes typed MDX inline events | Use the opt-in inline event stream when a downstream consumer must distinguish prose and components |
 | **JS validation** | Heuristic detection (keyword + brace counting) instead of acorn/swc | Only if you need to report syntax errors in user-authored MDX at parse time |
 | **Markdown grammar** | Standard CommonMark/GFM rules | Official mdxjs disables indented code and HTML syntax — relevant if your content relies on `<div>` being JSX, not HTML |
 | **Container nesting** | `> <Component>` stays Markdown | Only if you put JSX inside blockquotes or list items — uncommon |

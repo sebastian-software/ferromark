@@ -107,6 +107,22 @@ pub enum InlineEvent {
 
     /// Display math span (`$$...$$`).
     MathDisplay(Range),
+
+    /// An inline MDX JavaScript expression, including its `{` and `}` delimiters.
+    #[cfg(feature = "mdx")]
+    MdxExpression(Range),
+
+    /// An inline MDX JSX opening tag, including its delimiters.
+    #[cfg(feature = "mdx")]
+    MdxJsxOpen(Range),
+
+    /// An inline MDX JSX closing tag, including its delimiters.
+    #[cfg(feature = "mdx")]
+    MdxJsxClose(Range),
+
+    /// An inline MDX JSX self-closing tag, including its delimiters.
+    #[cfg(feature = "mdx")]
+    MdxJsxSelfClose(Range),
 }
 
 #[cfg(test)]
