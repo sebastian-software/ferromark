@@ -125,6 +125,7 @@ pub struct SpannedSegment<'a> {
 ///
 /// This is the primary entry point. The returned segments cover the entire
 /// input — no bytes are dropped.
+#[must_use]
 pub fn segment(input: &str) -> Vec<Segment<'_>> {
     splitter::split(input)
 }
@@ -141,15 +142,19 @@ pub fn segment(input: &str) -> Vec<Segment<'_>> {
 ///
 /// Panics when `input` is larger than [`u32::MAX`] bytes, matching the size
 /// limit of [`crate::Range`].
+#[must_use]
 pub fn segment_spanned(input: &str) -> Vec<SpannedSegment<'_>> {
-    let mut start = 0;
+    let input_start = input.as_ptr() as usize;
 
     segment(input)
         .into_iter()
         .map(|segment| {
-            let end = start + segment.as_str().len();
+            let text = segment.as_str();
+            let start = (text.as_ptr() as usize)
+                .checked_sub(input_start)
+                .expect("MDX segment must borrow from its input");
+            let end = start + text.len();
             let range = crate::Range::from_usize(start, end);
-            start = end;
             SpannedSegment { segment, range }
         })
         .collect()
