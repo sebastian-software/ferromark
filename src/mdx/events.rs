@@ -252,6 +252,7 @@ fn promote_container_flow_events(source: &[u8], events: &mut Vec<MdxEvent>) {
                 output.push(event);
             }
             MdxEvent::Block(BlockEvent::ParagraphStart) if container_depth > 0 => {
+                // Successful promotion borrows rather than drains this reusable buffer.
                 paragraph.clear();
                 let mut found_end = false;
                 for paragraph_event in input.by_ref() {
