@@ -290,3 +290,213 @@ fn fenced_code_info_exposes_its_absolute_source_range() {
 
     assert_eq!(source(input, event), Some("rust,ignore"));
 }
+
+#[test]
+fn tag_only_blockquote_paragraphs_promote_around_markdown_blocks() {
+    let input = "\
+> <Card>
+>
+> Hello *world*.
+>
+> </Card>
+";
+    let stream = parse_events(input);
+    let open = stream
+        .events
+        .iter()
+        .position(|event| matches!(event, MdxEvent::FlowJsxOpen(_)))
+        .unwrap();
+    let paragraph = stream
+        .events
+        .iter()
+        .position(|event| matches!(event, MdxEvent::Block(BlockEvent::ParagraphStart)))
+        .unwrap();
+    let close = stream
+        .events
+        .iter()
+        .position(|event| matches!(event, MdxEvent::FlowJsxClose(_)))
+        .unwrap();
+
+    assert!(matches!(
+        stream.events.first(),
+        Some(MdxEvent::Block(BlockEvent::BlockQuoteStart { .. }))
+    ));
+    assert!(matches!(
+        stream.events.last(),
+        Some(MdxEvent::Block(BlockEvent::BlockQuoteEnd))
+    ));
+    assert!(open < paragraph && paragraph < close);
+    assert_eq!(source(input, &stream.events[open]), Some("<Card>"));
+    assert_eq!(source(input, &stream.events[close]), Some("</Card>"));
+    assert!(!stream.events.iter().any(|event| {
+        matches!(
+            event,
+            MdxEvent::Inline(InlineEvent::MdxJsxOpen(_))
+                | MdxEvent::Inline(InlineEvent::MdxJsxClose(_))
+        )
+    }));
+}
+
+#[test]
+fn list_and_nested_container_units_promote_with_exact_ranges() {
+    let input = concat!(
+        "Intro ä.\n\n",
+        "-   <Badge />   \n\n",
+        "1. {value}\n\n",
+        "- <Open>\n",
+        "- </Open>\n\n",
+        "> - <Nested />\n",
+    );
+    let stream = parse_events(input);
+    let promoted = stream
+        .events
+        .iter()
+        .filter(|event| {
+            matches!(
+                event,
+                MdxEvent::FlowJsxOpen(_)
+                    | MdxEvent::FlowJsxClose(_)
+                    | MdxEvent::FlowJsxSelfClose(_)
+                    | MdxEvent::FlowExpression(_)
+            )
+        })
+        .filter_map(|event| source(input, event))
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        promoted,
+        vec!["<Badge />", "{value}", "<Open>", "</Open>", "<Nested />"]
+    );
+    assert_eq!(
+        stream
+            .events
+            .iter()
+            .filter(|event| matches!(event, MdxEvent::Block(BlockEvent::ListItemStart { .. })))
+            .count(),
+        5
+    );
+    assert!(
+        stream
+            .events
+            .iter()
+            .filter_map(|event| match event {
+                MdxEvent::Block(BlockEvent::ListStart { tight, .. }) => Some(*tight),
+                _ => None,
+            })
+            .all(|tight| tight)
+    );
+}
+
+#[test]
+fn list_item_component_wrappers_promote_around_multiple_blocks() {
+    let input = "\
+> 1. <Panel>
+>
+>    Body
+>
+>    </Panel>
+";
+    let stream = parse_events(input);
+    let open = stream
+        .events
+        .iter()
+        .position(|event| matches!(event, MdxEvent::FlowJsxOpen(_)))
+        .unwrap();
+    let body = stream
+        .events
+        .iter()
+        .position(|event| {
+            matches!(event, MdxEvent::Inline(InlineEvent::Text(range))
+                if range.slice_str(input.as_bytes()).unwrap() == "Body")
+        })
+        .unwrap();
+    let close = stream
+        .events
+        .iter()
+        .position(|event| matches!(event, MdxEvent::FlowJsxClose(_)))
+        .unwrap();
+
+    assert!(open < body && body < close);
+    assert_eq!(source(input, &stream.events[open]), Some("<Panel>"));
+    assert_eq!(source(input, &stream.events[close]), Some("</Panel>"));
+    assert!(matches!(
+        stream.events.first(),
+        Some(MdxEvent::Block(BlockEvent::BlockQuoteStart { .. }))
+    ));
+    assert!(stream.events.iter().any(|event| {
+        matches!(
+            event,
+            MdxEvent::Block(BlockEvent::ListStart { tight: false, .. })
+        )
+    }));
+}
+
+#[test]
+fn mixed_prose_code_and_multiline_container_mdx_are_not_promoted() {
+    let input = "\
+> Read <Badge>new</Badge> today.
+>
+> `<Card />`
+>
+> \\<Escaped />
+>
+> ```mdx
+> <Code />
+> ```
+>
+>     <Indented />
+>
+> <Multiline
+>   prop={value}
+> />
+";
+    let stream = parse_events(input);
+
+    assert!(!stream.events.iter().any(|event| {
+        matches!(
+            event,
+            MdxEvent::FlowJsxOpen(_)
+                | MdxEvent::FlowJsxClose(_)
+                | MdxEvent::FlowJsxSelfClose(_)
+                | MdxEvent::FlowExpression(_)
+        )
+    }));
+    assert!(stream.events.iter().any(|event| {
+        matches!(event, MdxEvent::Inline(InlineEvent::MdxJsxOpen(range))
+            if range.slice_str(input.as_bytes()).unwrap() == "<Badge>")
+    }));
+    assert!(stream.events.iter().any(|event| {
+        matches!(event, MdxEvent::Inline(InlineEvent::Code(range))
+            if range.slice_str(input.as_bytes()).unwrap() == "<Card />")
+    }));
+    assert!(
+        stream
+            .events
+            .iter()
+            .any(|event| { matches!(event, MdxEvent::Block(BlockEvent::CodeBlockStart { .. })) })
+    );
+    assert!(stream.events.iter().any(|event| {
+        matches!(event, MdxEvent::Block(BlockEvent::Code(range))
+            if range.slice_str(input.as_bytes()).unwrap().contains("<Indented />"))
+    }));
+}
+
+#[test]
+fn semantic_normalization_does_not_change_mdx_rendering() {
+    let input = "> <Card />\n";
+    let event_stream = parse_events(input);
+    let rendered = ferromark::mdx::render::render(input);
+
+    assert!(
+        event_stream
+            .events
+            .iter()
+            .any(|event| matches!(event, MdxEvent::FlowJsxSelfClose(_)))
+    );
+    assert!(rendered.body.contains("<blockquote>"));
+    assert!(
+        rendered.body.contains("<Card />"),
+        "container JSX must remain in rendered output: {}",
+        rendered.body
+    );
+}

@@ -20,10 +20,12 @@ pub const MDX_EVENT_STREAM_VERSION: u16 = 1;
 
 /// A semantic event in an MDX document.
 ///
-/// Flow-level MDX and ESM events appear between balanced Markdown block
-/// streams. Within a Markdown block, [`BlockEvent::Text`] placeholders are
-/// replaced by their resolved [`InlineEvent`] sequence so source text is not
-/// emitted twice.
+/// Root-level MDX and ESM events appear between balanced Markdown block
+/// streams. A tag-only or expression-only paragraph inside a blockquote or
+/// list item is normalized to the corresponding flow event while its
+/// surrounding container events remain balanced. Within other Markdown
+/// blocks, [`BlockEvent::Text`] placeholders are replaced by their resolved
+/// [`InlineEvent`] sequence so source text is not emitted twice.
 ///
 /// Ranges embedded in any event are absolute byte ranges into the original
 /// input passed to [`parse_events`](super::parse_events).
@@ -38,13 +40,13 @@ pub enum MdxEvent {
     },
     /// Root-level ESM statement.
     Esm(Range),
-    /// Flow-level JavaScript expression.
+    /// Root-level or promoted container-local JavaScript expression.
     FlowExpression(Range),
-    /// Flow-level JSX opening tag.
+    /// Root-level or promoted container-local JSX opening tag.
     FlowJsxOpen(Range),
-    /// Flow-level JSX closing tag.
+    /// Root-level or promoted container-local JSX closing tag.
     FlowJsxClose(Range),
-    /// Flow-level self-closing JSX tag.
+    /// Root-level or promoted container-local self-closing JSX tag.
     FlowJsxSelfClose(Range),
     /// Markdown block structure or block-owned source.
     Block(BlockEvent),
@@ -79,8 +81,10 @@ impl MdxEvent {
 ///
 /// Events are ordered in source order. Markdown block start/end events and
 /// inline formatting start/end events retain the balancing guarantees of the
-/// existing parsers. Each Markdown segment is closed before the following
-/// flow-level MDX or ESM event.
+/// existing parsers. Each Markdown segment is closed before a root-level MDX
+/// or ESM event. Inside blockquotes and list items, a paragraph whose only
+/// significant inline event is one JSX tag or expression is replaced by the
+/// corresponding flow event. The surrounding container events stay in place.
 ///
 /// A paragraph whose physical source is contiguous is inline-parsed as one
 /// unit, including line endings. When Markdown container prefixes make its
@@ -222,7 +226,89 @@ fn build_event_stream(
     }
     debug_assert!(markdown_block_events.next().is_none());
 
+    promote_container_flow_events(input.as_bytes(), &mut stream.events);
     stream
+}
+
+fn promote_container_flow_events(source: &[u8], events: &mut Vec<MdxEvent>) {
+    let input = std::mem::take(events);
+    let mut output = Vec::with_capacity(input.len());
+    let mut paragraph = Vec::new();
+    let mut input = input.into_iter();
+    let mut container_depth = 0usize;
+
+    while let Some(event) = input.next() {
+        match event {
+            MdxEvent::Block(BlockEvent::BlockQuoteStart { .. })
+            | MdxEvent::Block(BlockEvent::ListItemStart { .. }) => {
+                container_depth += 1;
+                output.push(event);
+            }
+            MdxEvent::Block(BlockEvent::BlockQuoteEnd)
+            | MdxEvent::Block(BlockEvent::ListItemEnd) => {
+                container_depth = container_depth
+                    .checked_sub(1)
+                    .expect("Markdown container events must be balanced");
+                output.push(event);
+            }
+            MdxEvent::Block(BlockEvent::ParagraphStart) if container_depth > 0 => {
+                paragraph.clear();
+                let mut found_end = false;
+                for paragraph_event in input.by_ref() {
+                    if paragraph_event == MdxEvent::Block(BlockEvent::ParagraphEnd) {
+                        found_end = true;
+                        break;
+                    }
+                    paragraph.push(paragraph_event);
+                }
+
+                if found_end {
+                    if let Some(promoted) = promotable_paragraph(source, &paragraph) {
+                        output.push(promoted);
+                    } else {
+                        output.push(MdxEvent::Block(BlockEvent::ParagraphStart));
+                        output.append(&mut paragraph);
+                        output.push(MdxEvent::Block(BlockEvent::ParagraphEnd));
+                    }
+                } else {
+                    output.push(MdxEvent::Block(BlockEvent::ParagraphStart));
+                    output.append(&mut paragraph);
+                }
+            }
+            event => output.push(event),
+        }
+    }
+
+    debug_assert_eq!(container_depth, 0);
+    *events = output;
+}
+
+fn promotable_paragraph(source: &[u8], events: &[MdxEvent]) -> Option<MdxEvent> {
+    let mut promoted = None;
+
+    for event in events {
+        let candidate = match event {
+            MdxEvent::Inline(InlineEvent::Text(range))
+                if range.slice(source).iter().all(u8::is_ascii_whitespace) =>
+            {
+                continue;
+            }
+            MdxEvent::Inline(InlineEvent::SoftBreak) => continue,
+            MdxEvent::Inline(InlineEvent::MdxExpression(range)) => MdxEvent::FlowExpression(*range),
+            MdxEvent::Inline(InlineEvent::MdxJsxOpen(range)) => MdxEvent::FlowJsxOpen(*range),
+            MdxEvent::Inline(InlineEvent::MdxJsxClose(range)) => MdxEvent::FlowJsxClose(*range),
+            MdxEvent::Inline(InlineEvent::MdxJsxSelfClose(range)) => {
+                MdxEvent::FlowJsxSelfClose(*range)
+            }
+            _ => return None,
+        };
+
+        if promoted.replace(candidate).is_some() {
+            return None;
+        }
+    }
+
+    promoted
 }
 
 fn front_matter_event(input: &str) -> (usize, Option<MdxEvent>) {
