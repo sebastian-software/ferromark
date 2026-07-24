@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.4.0...ferromark-v0.4.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **deps:** harden md4c benchmark dependencies ([#102](https://github.com/sebastian-software/ferromark/issues/102)) ([70120c8](https://github.com/sebastian-software/ferromark/commit/70120c8b9527089abbc334c2d245b5002f71d18b))
+* **deps:** patch homepage security advisories ([#101](https://github.com/sebastian-software/ferromark/issues/101)) ([2face32](https://github.com/sebastian-software/ferromark/commit/2face32665bb153a46c110efc9671972c86cccc2))
+
 ## [0.4.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.3...ferromark-v0.4.0) (2026-07-24)
 
 
