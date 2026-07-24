@@ -6,14 +6,10 @@ use ferromark::{Options, to_html_with_options};
 use serde::Deserialize;
 use std::fs;
 
-/// CommonMark spec tests use default options with heading_ids disabled,
-/// since heading IDs are not part of the CommonMark spec.
+/// CommonMark specification tests use the dedicated syntax configuration.
+/// Raw HTML remains escaped under its safe default rendering policy.
 fn spec_to_html(input: &str) -> String {
-    let options = Options {
-        heading_ids: false,
-        ..Options::default()
-    };
-    to_html_with_options(input, &options)
+    to_html_with_options(input, &Options::commonmark())
 }
 
 #[derive(Debug, Deserialize)]

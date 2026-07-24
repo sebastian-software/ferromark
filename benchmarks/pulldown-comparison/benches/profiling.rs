@@ -65,19 +65,14 @@ fn profiling_benches(c: &mut Criterion) {
         bench_lane(c, corpus, RunConfig::CommonMark, &both);
     }
 
-    // Extended is covered by the secure-default size matrix below. Keeping it
+    // Default is covered by the secure-default size matrix below. Keeping it
     // out of this loop ensures one stable Criterion identifier per lane.
     for (corpus, configuration) in [
-        (Corpus::CommonMark5K, RunConfig::EssentialsSecure),
-        (Corpus::CommonMark50K, RunConfig::EssentialsSecure),
-        (Corpus::CommonMark50K, RunConfig::FullSecure),
+        (Corpus::CommonMark5K, RunConfig::MinimalSecure),
+        (Corpus::CommonMark50K, RunConfig::MinimalSecure),
+        (Corpus::CommonMark50K, RunConfig::AllExtensionsSecure),
     ] {
-        bench_lane(
-            c,
-            corpus,
-            configuration,
-            &[ParserKind::Ferromark],
-        );
+        bench_lane(c, corpus, configuration, &[ParserKind::Ferromark]);
     }
 
     for corpus in [
@@ -88,7 +83,7 @@ fn profiling_benches(c: &mut Criterion) {
         bench_lane(
             c,
             corpus,
-            RunConfig::ExtendedSecure,
+            RunConfig::DefaultSecure,
             &[ParserKind::Ferromark],
         );
     }
@@ -110,15 +105,15 @@ fn profiling_benches(c: &mut Criterion) {
         bench_lane(
             c,
             corpus,
-            RunConfig::ExtendedSecure,
+            RunConfig::DefaultSecure,
             &[ParserKind::Ferromark],
         );
     }
 
     for corpus in [Corpus::UniqueHeadings, Corpus::RepeatedHeadings] {
         for configuration in [
-            RunConfig::ExtendedSecure,
-            RunConfig::ExtendedSecureNoHeadingIds,
+            RunConfig::DefaultSecure,
+            RunConfig::DefaultSecureNoHeadingIds,
         ] {
             bench_lane(c, corpus, configuration, &[ParserKind::Ferromark]);
         }
@@ -127,7 +122,7 @@ fn profiling_benches(c: &mut Criterion) {
     bench_lane(
         c,
         Corpus::Simple,
-        RunConfig::ExtendedSecureNoHeadingIds,
+        RunConfig::DefaultSecureNoHeadingIds,
         &[ParserKind::Ferromark],
     );
 }

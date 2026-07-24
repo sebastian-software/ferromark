@@ -2,7 +2,7 @@
 set -euo pipefail
 
 tool="${1:-sample}"
-config="${2:-extended-secure}"
+config="${2:-default-secure}"
 corpus="${3:-commonmark-50k}"
 seconds="${4:-30}"
 cpu_mode="${5:-portable}"

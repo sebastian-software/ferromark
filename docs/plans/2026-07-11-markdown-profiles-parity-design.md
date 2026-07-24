@@ -1,7 +1,10 @@
 # Markdown profiles and feature-parity benchmark design
 
-Status: approved for implementation
+Status: superseded by ADR-0010
 Date: 2026-07-11
+
+> Superseded on 2026-07-24. This file remains as the historical design record
+> for the removed alpha API.
 
 ## Context
 

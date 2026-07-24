@@ -94,7 +94,7 @@ pub fn render_ferromark_config_into(input: &str, config: RunConfig, output: &mut
 ///
 /// # Errors
 ///
-/// Returns an error when a Ferromark-only product profile is selected.
+/// Returns an error when a Ferromark-only option configuration is selected.
 pub fn render_pulldown_config_into(
     input: &str,
     config: RunConfig,

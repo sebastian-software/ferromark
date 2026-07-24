@@ -25,11 +25,11 @@ cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 ```
 
-Ferromark-only and profile-cost benchmarks also work without md4c:
+Ferromark-only and options-cost benchmarks also work without md4c:
 
 ```bash
 cargo bench --bench parsing
-cargo bench --bench profiles
+cargo bench --bench options
 ```
 
 ## Commit messages

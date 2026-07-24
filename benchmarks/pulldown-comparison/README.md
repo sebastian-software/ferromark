@@ -9,7 +9,7 @@ building md4c or comrak. It uses three explicit feature intersections:
 | `gfm_overlap` | CommonMark, tables, strikethrough, task lists | preserved |
 | `extended_overlap` | GFM overlap, footnotes, math, superscript, callouts | preserved |
 
-These are benchmark configurations, not Ferromark user profiles. Ferromark's
+These are benchmark configurations, not Ferromark syntax presets. Ferromark's
 secure default performs additional URL and raw-HTML safety work and is measured
 separately in the main benchmark suite.
 
@@ -52,7 +52,7 @@ Run one allocation-counted release diagnostic:
 
 ```bash
 scripts/run-diagnostic.sh \
-  ferromark extended-secure commonmark-50k 10 portable release
+  ferromark default-secure commonmark-50k 10 portable release
 ```
 
 Use `counters` instead of `release` to include feature-gated block, inline,
@@ -86,10 +86,11 @@ warmup. Each run retains its
 `results/publication-<random>/` directory. A process-wide lock prevents a
 second runner in the same harness checkout from sharing Criterion output.
 
-The run covers trusted CommonMark parity at 5, 20, 50, and 250 KB; secure-default
-Extended rendering at 5, 20, and 50 KB; and the Essentials, Extended, and Full
-profile-cost lanes at 50 KB. Trusted parity and secure-default results answer
-different questions and must never be merged into one comparative claim.
+The run covers trusted CommonMark parity at 5, 20, 50, and 250 KB;
+secure-default rendering at 5, 20, and 50 KB; and the minimal, default, and
+all-extension option-cost lanes at 50 KB. Trusted parity and secure-default
+results answer different questions and must never be merged into one
+comparative claim.
 
 Publish the exact result directory as durable CI or release storage before
 cleaning the worktree. Commit or link an audit-ready estimate artifact alongside
@@ -107,9 +108,9 @@ The CPU mode must be named explicitly:
 Capture a long-running CPU profile with one of the locally available tools:
 
 ```bash
-scripts/capture-cpu-profile.sh sample extended-secure commonmark-50k 30 portable
-scripts/capture-cpu-profile.sh samply extended-secure commonmark-50k 30 portable
-scripts/capture-cpu-profile.sh xctrace extended-secure commonmark-50k 30 portable
+scripts/capture-cpu-profile.sh sample default-secure commonmark-50k 30 portable
+scripts/capture-cpu-profile.sh samply default-secure commonmark-50k 30 portable
+scripts/capture-cpu-profile.sh xctrace default-secure commonmark-50k 30 portable
 ```
 
 Use AC power and stable machine conditions. Screening runs use at least 80
