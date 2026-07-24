@@ -1,4 +1,4 @@
-//! MDX segmenter: splits MDX input into typed segments.
+//! MDX segmentation, rendering, diagnostics, and semantic events.
 //!
 //! MDX combines Markdown with JSX/JavaScript. Instead of parsing the full MDX
 //! syntax, this module splits the input into typed blocks. Only the Markdown
@@ -24,6 +24,28 @@
 //!     }
 //! }
 //! ```
+//!
+//! Compiler consumers that need Markdown block boundaries and resolved inline
+//! semantics can use the separate, collected event stream:
+//!
+//! ```
+//! use ferromark::InlineEvent;
+//! use ferromark::mdx::{MdxEvent, parse_events};
+//!
+//! let input = "# Hello {name}\n";
+//! let stream = parse_events(input);
+//! let translatable = stream.events.iter().filter_map(|event| match event {
+//!     MdxEvent::Inline(InlineEvent::Text(range)) => {
+//!         Some(range.slice_str(input.as_bytes()).unwrap())
+//!     }
+//!     _ => None,
+//! }).collect::<Vec<_>>();
+//! assert_eq!(translatable, vec!["Hello "]);
+//! ```
+//!
+//! [`parse_events`] is opt-in and does not participate in the default HTML
+//! rendering path. Its flat ordering and balancing contract is versioned by
+//! [`MDX_EVENT_STREAM_VERSION`].
 //!
 //! # Differences from the official mdxjs compiler
 //!
@@ -64,14 +86,17 @@
 //!
 //! ## No container awareness
 //!
-//! JSX/ESM inside block containers is not detected:
+//! Flow JSX/ESM inside block containers is not detected:
 //! ```text
 //! > <Component>   ← treated as blockquote + markdown, not JSX
 //! - import x      ← treated as list item, not ESM
 //! ```
 //!
 //! The official compiler tracks container context (blockquote markers, list
-//! indentation) and can detect JSX/ESM inside them.
+//! indentation) and can detect JSX/ESM inside them. [`parse_events`] still
+//! exposes well-delimited tags and expressions in container prose as inline
+//! MDX events, which is sufficient for consumers that need to separate
+//! translatable text from syntax without changing Markdown flow semantics.
 //!
 //! ## No TypeScript generics in JSX
 //!
@@ -87,11 +112,16 @@
 //! diagnostics with source ranges instead. It does not validate JavaScript or
 //! TypeScript syntax inside otherwise well-delimited ESM and expressions.
 
+mod events;
 pub mod expr;
 pub mod jsx_tag;
 pub mod render;
 mod splitter;
 mod strict;
+
+pub use events::{
+    MDX_EVENT_STREAM_VERSION, MdxEvent, MdxEventStream, parse_events, parse_events_strict,
+};
 
 /// A typed segment of an MDX document.
 ///

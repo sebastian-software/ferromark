@@ -284,6 +284,32 @@ nesting, and ESM placement). It intentionally does not parse or type-check
 JavaScript or TypeScript inside an otherwise well-delimited ESM block or
 expression.
 
+Compiler and localization consumers can opt into a flat semantic event buffer
+without going through HTML. `parse_events()` composes the existing MDX
+segmenter, block parser, and MDX-aware inline parser; ranges in the returned
+events point into the original input.
+
+```rust
+use ferromark::InlineEvent;
+use ferromark::mdx::{MdxEvent, parse_events};
+
+let input = "# Hello {name}\n";
+let stream = parse_events(input);
+let prose = stream.events.iter().filter_map(|event| match event {
+    MdxEvent::Inline(InlineEvent::Text(range)) => {
+        Some(range.slice_str(input.as_bytes()).unwrap())
+    }
+    _ => None,
+}).collect::<Vec<_>>();
+
+assert_eq!(prose, vec!["Hello "]);
+```
+
+The event path is fully opt-in and does not alter the normal Markdown or MDX
+HTML renderer. `parse_events_strict()` applies the same structural diagnostics
+as `segment_strict()` before producing events. Its strict validation covers
+flow constructs; malformed inline MDX retains the documented text fallback.
+
 Full example: `cargo run --features mdx --example mdx_segment`
 
 <details>
@@ -297,10 +323,10 @@ What the segmenter deliberately skips — and why that's fine for most use cases
 
 | What | Our approach | When it matters |
 |---|---|---|
-| **Inline JSX** (`text <em>here</em>`) | Stays in `segment()` Markdown blocks; `InlineParser::parse_mdx()` exposes typed MDX inline events | Use the opt-in inline event stream when a downstream consumer must distinguish prose and components |
+| **Inline JSX** (`text <em>here</em>`) | Stays in `segment()` Markdown blocks; `parse_events()` and `InlineParser::parse_mdx()` expose typed MDX inline events | Use the opt-in event APIs when a downstream consumer must distinguish prose and components |
 | **JS validation** | Heuristic detection (keyword + brace counting) instead of acorn/swc | Only if you need to report syntax errors in user-authored MDX at parse time |
 | **Markdown grammar** | Standard CommonMark/GFM rules | Official mdxjs disables indented code and HTML syntax — relevant if your content relies on `<div>` being JSX, not HTML |
-| **Container nesting** | `> <Component>` stays Markdown | Only if you put JSX inside blockquotes or list items — uncommon |
+| **Container nesting** | `> <Component>` stays Markdown flow; `parse_events()` still exposes the tag as inline MDX | Full flow semantics matter only when JSX inside blockquotes or list items must alter rendering |
 | **TypeScript generics** | `<Component<T>>` not parsed | Only relevant for TSX-heavy content pages — very rare in docs |
 | **Error reporting** | Permissive fallback by default; opt-in structural diagnostics with `segment_strict()` | Use strict mode when broken MDX must fail a content pipeline |
 

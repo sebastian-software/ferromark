@@ -46,6 +46,26 @@ impl LinkRefStore {
     pub fn is_empty(&self) -> bool {
         self.defs.is_empty()
     }
+
+    #[cfg(feature = "mdx")]
+    pub(crate) fn merge_first_wins(&mut self, other: Self) {
+        let mut labels = vec![None; other.defs.len()];
+        for (label, index) in other.by_label {
+            labels[index] = Some(label);
+        }
+
+        for (index, definition) in other.defs.into_iter().enumerate() {
+            let label = labels[index]
+                .take()
+                .expect("every link reference definition must have a label");
+            self.insert(label, definition);
+        }
+    }
+
+    #[cfg(feature = "mdx")]
+    pub(crate) fn append_definitions_to(&self, definitions: &mut Vec<LinkRefDef>) {
+        definitions.extend(self.defs.iter().cloned());
+    }
 }
 
 /// Normalize a link label per CommonMark: decode entities, process backslash escapes,
