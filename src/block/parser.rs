@@ -1262,7 +1262,9 @@ impl<'a> BlockParser<'a> {
                     || after.is_none()
             }
             // HTML block (only types that can interrupt paragraphs) - only at indent < 4
-            b'<' => indent < 4 && self.peek_html_block_start(true).is_some(),
+            b'<' => {
+                self.options.allow_html && indent < 4 && self.peek_html_block_start(true).is_some()
+            }
             // Note: We don't check for setext underlines (= or plain line of -) here because
             // setext underlines can't interrupt lazy continuation. They only work when the
             // paragraph is at the same container level as the underline.
@@ -3780,6 +3782,13 @@ mod tests {
         events
     }
 
+    fn parse_with_options(input: &str, options: Options) -> Vec<BlockEvent> {
+        let mut parser = BlockParser::new_with_options(input.as_bytes(), options);
+        let mut events = Vec::new();
+        parser.parse(&mut events);
+        events
+    }
+
     fn get_text<'a>(input: &'a str, event: &BlockEvent) -> &'a str {
         match event {
             BlockEvent::Text(range) => std::str::from_utf8(range.slice(input.as_bytes())).unwrap(),
@@ -4236,6 +4245,53 @@ mod tests {
         }
         assert!(found_quote_end);
         assert!(found_para_after);
+    }
+
+    #[test]
+    fn test_disabled_html_does_not_interrupt_lazy_blockquote_continuation() {
+        let input = "> paragraph\n<div>";
+        let events = parse_with_options(
+            input,
+            Options {
+                allow_html: false,
+                ..Options::default()
+            },
+        );
+
+        assert_eq!(
+            events,
+            vec![
+                BlockEvent::BlockQuoteStart { callout: None },
+                BlockEvent::ParagraphStart,
+                BlockEvent::Text(Range::new(2, 11)),
+                BlockEvent::SoftBreak,
+                BlockEvent::Text(Range::new(12, 17)),
+                BlockEvent::ParagraphEnd,
+                BlockEvent::BlockQuoteEnd,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_disabled_html_does_not_interrupt_lazy_list_continuation() {
+        let input = "- paragraph\n<div>";
+        let events = parse_with_options(
+            input,
+            Options {
+                allow_html: false,
+                ..Options::default()
+            },
+        );
+
+        assert!(matches!(events[0], BlockEvent::ListStart { .. }));
+        assert!(matches!(events[1], BlockEvent::ListItemStart { .. }));
+        assert_eq!(events[2], BlockEvent::ParagraphStart);
+        assert_eq!(get_text(input, &events[3]), "paragraph");
+        assert_eq!(events[4], BlockEvent::SoftBreak);
+        assert_eq!(get_text(input, &events[5]), "<div>");
+        assert_eq!(events[6], BlockEvent::ParagraphEnd);
+        assert_eq!(events[7], BlockEvent::ListItemEnd);
+        assert!(matches!(events[8], BlockEvent::ListEnd { .. }));
     }
 
     // List tests
