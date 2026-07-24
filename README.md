@@ -93,12 +93,33 @@ raw-HTML CommonMark output parity. Run `cargo test --test commonmark_spec --
 Fine-grained options let you turn on exactly what you need:
 
 ```text
-allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
+allow_html · allow_link_refs · tables · merged_table_cells · strikethrough · highlight · superscript · subscript · task_lists
 autolink_literals · disallowed_raw_html · footnotes · front_matter
 heading_ids · math · callouts
 ```
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
+
+### Merged table cells
+
+`merged_table_cells` adds MultiMarkdown/iA-style horizontal spans to GFM pipe
+tables. The number of directly adjacent pipes after a cell is its column span:
+
+```markdown
+| Name | Price | Tax |
+| --- | ---: | ---: |
+| Widget | 10$ | 1$ |
+| Gift | 0$ ||
+```
+
+The last cell renders as `<td colspan="2">0$</td>`. `|||` spans three
+columns, and multiple cells in one row may be merged. Whitespace between pipes
+preserves an explicit empty cell (`| value | | next |`). A merged cell uses
+the alignment of its first covered column; body spans are clamped to the table
+width and ragged rows are padded after the final span.
+
+The flag requires `tables` and is disabled by default. With the flag off,
+consecutive pipes retain standard GFM behavior and create empty cells.
 
 ## Markdown configuration
 

@@ -30,6 +30,7 @@ fn all_extensions() -> Options {
         allow_html: true,
         allow_link_refs: true,
         tables: true,
+        merged_table_cells: true,
         strikethrough: true,
         highlight: true,
         superscript: true,
@@ -50,11 +51,17 @@ fn options_cost_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("options/shared_corpus");
     group.throughput(Throughput::Bytes(input.len() as u64));
 
+    let merged_table_cells = Options {
+        merged_table_cells: true,
+        ..Options::default()
+    };
+
     for (name, options) in [
         ("minimal", Options::minimal()),
         ("commonmark", Options::commonmark()),
         ("gfm", Options::gfm()),
         ("default", Options::default()),
+        ("default_merged_table_cells", merged_table_cells),
         ("all_extensions", all_extensions()),
     ] {
         let mut output = Vec::with_capacity(input.len() + input.len() / 4);

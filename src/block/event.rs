@@ -168,6 +168,8 @@ pub enum BlockEvent {
     TableCellStart {
         /// Column alignment for this cell.
         alignment: Alignment,
+        /// Number of source columns covered by this cell.
+        colspan: u16,
     },
     /// End of a table cell.
     TableCellEnd,

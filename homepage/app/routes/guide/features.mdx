@@ -16,6 +16,7 @@ title: Features and Flags
 
 ## Beyond GFM
 
+- Optional horizontal table-cell spans (`||`, `|||`)
 - Footnotes
 - Front matter extraction (`---` and `+++`)
 - Heading IDs (GitHub-compatible slugs)
@@ -30,11 +31,26 @@ title: Features and Flags
 Enable only what your workload needs:
 
 ```text
-allow_html · allow_link_refs · tables · strikethrough · highlight
+allow_html · allow_link_refs · tables · merged_table_cells · strikethrough · highlight
 superscript · subscript · task_lists · autolink_literals
 disallowed_raw_html · footnotes · front_matter · heading_ids
 math · callouts
 ```
+
+## Merged table cells
+
+Enable `merged_table_cells` together with `tables` for MultiMarkdown/iA-style
+horizontal spans. The number of adjacent pipes after a cell is its `colspan`:
+
+```markdown
+| Name | Price | Tax |
+| --- | ---: | ---: |
+| Gift | 0$ ||
+```
+
+Here `0$` spans two columns. Whitespace between pipes keeps an explicit empty
+cell. When the flag is disabled, consecutive pipes use normal GFM empty-cell
+semantics.
 
 ## Curated profiles
 

@@ -704,15 +704,22 @@ impl HtmlWriter {
         self.write_str("</tr>\n");
     }
 
-    /// Write th start with optional alignment: `<th>` or `<th align="...">`
+    /// Write a table-header cell start with optional alignment and colspan.
     #[inline]
-    pub fn th_start(&mut self, align: crate::block::Alignment) {
+    pub fn th_start(&mut self, align: crate::block::Alignment, colspan: u16) {
+        self.write_str("<th");
         match align {
-            crate::block::Alignment::None => self.write_str("<th>"),
-            crate::block::Alignment::Left => self.write_str("<th align=\"left\">"),
-            crate::block::Alignment::Center => self.write_str("<th align=\"center\">"),
-            crate::block::Alignment::Right => self.write_str("<th align=\"right\">"),
+            crate::block::Alignment::None => {}
+            crate::block::Alignment::Left => self.write_str(" align=\"left\""),
+            crate::block::Alignment::Center => self.write_str(" align=\"center\""),
+            crate::block::Alignment::Right => self.write_str(" align=\"right\""),
         }
+        if colspan > 1 {
+            self.write_str(" colspan=\"");
+            self.write_u32(colspan as u32);
+            self.write_str("\"");
+        }
+        self.write_str(">");
     }
 
     /// Write th end: `</th>\n`
@@ -721,15 +728,22 @@ impl HtmlWriter {
         self.write_str("</th>\n");
     }
 
-    /// Write td start with optional alignment: `<td>` or `<td align="...">`
+    /// Write a table-data cell start with optional alignment and colspan.
     #[inline]
-    pub fn td_start(&mut self, align: crate::block::Alignment) {
+    pub fn td_start(&mut self, align: crate::block::Alignment, colspan: u16) {
+        self.write_str("<td");
         match align {
-            crate::block::Alignment::None => self.write_str("<td>"),
-            crate::block::Alignment::Left => self.write_str("<td align=\"left\">"),
-            crate::block::Alignment::Center => self.write_str("<td align=\"center\">"),
-            crate::block::Alignment::Right => self.write_str("<td align=\"right\">"),
+            crate::block::Alignment::None => {}
+            crate::block::Alignment::Left => self.write_str(" align=\"left\""),
+            crate::block::Alignment::Center => self.write_str(" align=\"center\""),
+            crate::block::Alignment::Right => self.write_str(" align=\"right\""),
         }
+        if colspan > 1 {
+            self.write_str(" colspan=\"");
+            self.write_u32(colspan as u32);
+            self.write_str("\"");
+        }
+        self.write_str(">");
     }
 
     /// Write td end: `</td>\n`

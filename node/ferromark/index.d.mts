@@ -5,6 +5,7 @@ export interface Options {
   allowHtml?: boolean
   allowLinkRefs?: boolean
   tables?: boolean
+  mergedTableCells?: boolean
   strikethrough?: boolean
   highlight?: boolean
   superscript?: boolean

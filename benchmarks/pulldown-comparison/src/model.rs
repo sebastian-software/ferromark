@@ -180,6 +180,7 @@ fn all_extensions() -> Options {
         allow_html: true,
         allow_link_refs: true,
         tables: true,
+        merged_table_cells: true,
         strikethrough: true,
         highlight: true,
         superscript: true,

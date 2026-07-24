@@ -106,6 +106,8 @@ pub struct Options {
     pub allow_link_refs: bool,
     /// Enable GFM table extension.
     pub tables: bool,
+    /// Enable MultiMarkdown/iA-style column spans in pipe tables.
+    pub merged_table_cells: bool,
     /// Enable GFM strikethrough extension (`~~text~~`).
     pub strikethrough: bool,
     /// Enable highlight/mark extension (`==text==`).
@@ -148,6 +150,7 @@ impl Options {
             allow_html: false,
             allow_link_refs: false,
             tables: false,
+            merged_table_cells: false,
             strikethrough: false,
             highlight: false,
             superscript: false,
@@ -175,6 +178,7 @@ impl Options {
             allow_html: true,
             allow_link_refs: true,
             tables: false,
+            merged_table_cells: false,
             strikethrough: false,
             highlight: false,
             superscript: false,
@@ -202,6 +206,7 @@ impl Options {
             allow_html: true,
             allow_link_refs: true,
             tables: true,
+            merged_table_cells: false,
             strikethrough: true,
             highlight: false,
             superscript: false,
@@ -225,6 +230,7 @@ impl Default for Options {
             allow_html: true,
             allow_link_refs: true,
             tables: true,
+            merged_table_cells: false,
             strikethrough: true,
             highlight: false,
             superscript: false,
@@ -1279,11 +1285,11 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
             BlockEvent::TableRowEnd => {
                 writer.tr_end();
             }
-            BlockEvent::TableCellStart { alignment } => {
+            BlockEvent::TableCellStart { alignment, colspan } => {
                 if *in_table_head {
-                    writer.th_start(*alignment);
+                    writer.th_start(*alignment, *colspan);
                 } else {
-                    writer.td_start(*alignment);
+                    writer.td_start(*alignment, *colspan);
                 }
                 cell_state.start();
             }
