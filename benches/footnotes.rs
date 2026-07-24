@@ -2,7 +2,9 @@
 //!
 //! Run with: `cargo bench --bench footnotes`
 
-use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use ferromark::{Options, to_html_with_options};
 
 fn document_with_distinct_footnotes(count: usize) -> String {

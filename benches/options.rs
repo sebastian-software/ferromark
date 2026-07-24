@@ -1,4 +1,6 @@
-use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use ferromark::{Options, RenderPolicy};
 
 const SHARED_SECTION: &str = r#"
