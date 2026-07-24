@@ -192,6 +192,7 @@ fn all_extensions() -> Options {
         heading_ids: true,
         math: true,
         callouts: true,
+        definition_lists: true,
     }
 }
 

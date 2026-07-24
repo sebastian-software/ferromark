@@ -42,6 +42,7 @@ fn all_extensions() -> Options {
         heading_ids: true,
         math: true,
         callouts: true,
+        definition_lists: true,
     }
 }
 
@@ -55,6 +56,13 @@ fn options_cost_benches(c: &mut Criterion) {
         ("commonmark", Options::commonmark()),
         ("gfm", Options::gfm()),
         ("default", Options::default()),
+        (
+            "default_definition_lists",
+            Options {
+                definition_lists: true,
+                ..Options::default()
+            },
+        ),
         ("all_extensions", all_extensions()),
     ] {
         let mut output = Vec::with_capacity(input.len() + input.len() / 4);

@@ -125,6 +125,22 @@ pub enum BlockEvent {
     /// End of a list item.
     ListItemEnd,
 
+    /// Start of a definition list.
+    DefinitionListStart,
+    /// End of a definition list.
+    DefinitionListEnd,
+    /// Start of a definition term.
+    DefinitionTermStart,
+    /// End of a definition term.
+    DefinitionTermEnd,
+    /// Start of a definition description.
+    DefinitionDescriptionStart {
+        /// Whether the first paragraph should omit its `<p>` wrapper.
+        tight: bool,
+    },
+    /// End of a definition description.
+    DefinitionDescriptionEnd,
+
     /// A thematic break (horizontal rule).
     ThematicBreak,
 
