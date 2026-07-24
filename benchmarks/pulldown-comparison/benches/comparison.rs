@@ -1,4 +1,6 @@
-use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use ferromark_pulldown_comparison::{ParityConfig, render_ferromark_into, render_pulldown_into};
 
 const COMMONMARK_5K: &str = include_str!("../../../benches/fixtures/commonmark-5k.md");

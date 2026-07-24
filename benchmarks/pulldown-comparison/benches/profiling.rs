@@ -1,4 +1,6 @@
-use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use ferromark_pulldown_comparison::{
     Corpus, ParserKind, RunConfig, render_ferromark_config_into, render_pulldown_config_into,
 };
