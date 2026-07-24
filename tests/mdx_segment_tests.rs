@@ -1,7 +1,10 @@
 #![cfg(feature = "mdx")]
 
 use ferromark::Options;
-use ferromark::mdx::{Segment, render, render_with_options, segment, segment_spanned};
+use ferromark::mdx::{
+    MdxDiagnosticCode, Segment, render, render_with_options, segment, segment_spanned,
+    segment_strict, source_location,
+};
 
 // ── Helper ───────────────────────────────────────────────────────────
 
@@ -76,6 +79,168 @@ fn spanned_segments_match_existing_segment_api() {
             .map(|segment| segment.segment)
             .collect::<Vec<_>>(),
         existing
+    );
+}
+
+// ── Strict diagnostics ──────────────────────────────────────────────
+
+#[test]
+fn strict_mode_returns_the_existing_spanned_segments_for_valid_mdx() {
+    let input = "import A from 'a'\n\n<Card>\n{user.name}\n</Card>\n";
+
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
+fn strict_mode_keeps_permissive_segmentation_unchanged() {
+    let input = "<Card bad=>\n";
+
+    assert_eq!(segment(input), vec![Segment::JsxBlockOpen(input)]);
+    assert_eq!(
+        segment_strict(input).unwrap_err()[0].code,
+        MdxDiagnosticCode::InvalidJsxTag
+    );
+}
+
+#[test]
+fn strict_mode_reports_unterminated_expression_with_its_source_range() {
+    let input = "# Heading\n\n{user.name\n";
+    let diagnostics = segment_strict(input).unwrap_err();
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        diagnostics[0].code,
+        MdxDiagnosticCode::UnterminatedExpression
+    );
+    assert_eq!(
+        diagnostics[0]
+            .primary_range
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        "{user.name\n"
+    );
+    assert!(diagnostics[0].message.contains("expected `}`"));
+}
+
+#[test]
+fn strict_mode_reports_unterminated_jsx_tag_with_its_source_range() {
+    let input = "<Card title=\"example\"";
+    let diagnostics = segment_strict(input).unwrap_err();
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, MdxDiagnosticCode::UnterminatedJsxTag);
+    assert_eq!(
+        diagnostics[0]
+            .primary_range
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        input
+    );
+    assert!(diagnostics[0].message.contains("expected `>`"));
+}
+
+#[test]
+fn strict_mode_accumulates_independent_diagnostics() {
+    let input = "<Card bad=>\n\n{user.name\n";
+    let diagnostics = segment_strict(input).unwrap_err();
+
+    assert_eq!(
+        diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.code)
+            .collect::<Vec<_>>(),
+        vec![
+            MdxDiagnosticCode::InvalidJsxTag,
+            MdxDiagnosticCode::UnterminatedExpression,
+        ]
+    );
+}
+
+#[test]
+fn strict_mode_reports_mismatched_jsx_tags_with_related_opening_range() {
+    let input = "<Outer>\n<Inner>\n</Outer>\n";
+    let diagnostics = segment_strict(input).unwrap_err();
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        diagnostics[0].code,
+        MdxDiagnosticCode::MismatchedJsxClosingTag
+    );
+    assert_eq!(
+        diagnostics[0]
+            .primary_range
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        "</Outer>"
+    );
+    assert_eq!(
+        diagnostics[0]
+            .related_range
+            .unwrap()
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        "<Inner>"
+    );
+}
+
+#[test]
+fn strict_mode_reports_an_unmatched_jsx_closing_tag() {
+    let input = "</Card>\n";
+    let diagnostics = segment_strict(input).unwrap_err();
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        diagnostics[0].code,
+        MdxDiagnosticCode::UnexpectedJsxClosingTag
+    );
+    assert_eq!(
+        diagnostics[0]
+            .primary_range
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        "</Card>"
+    );
+}
+
+#[test]
+fn strict_mode_reports_invalid_esm_boundaries() {
+    let input = "Paragraph\nimport A from 'a'\n";
+    let diagnostics = segment_strict(input).unwrap_err();
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InvalidEsmPosition);
+    assert_eq!(
+        diagnostics[0]
+            .primary_range
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        "import"
+    );
+}
+
+#[test]
+fn strict_mode_does_not_validate_javascript_inside_esm() {
+    let input = "export const = ;\n";
+
+    assert!(segment_strict(input).is_ok());
+}
+
+#[test]
+fn strict_mode_diagnostics_use_utf8_byte_ranges_and_crlf_locations() {
+    let input = "Grüß\r\n\r\n<Card bad=>\r\n";
+    let diagnostics = segment_strict(input).unwrap_err();
+    let diagnostic = &diagnostics[0];
+
+    assert_eq!(
+        diagnostic
+            .primary_range
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        "<Card bad=>"
+    );
+    assert_eq!(
+        source_location(input, diagnostic.primary_range.start_usize()),
+        ferromark::mdx::SourceLocation { line: 3, column: 1 }
     );
 }
 

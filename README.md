@@ -264,6 +264,26 @@ with contiguous [`Range`](https://docs.rs/ferromark/latest/ferromark/struct.Rang
 values into the original UTF-8 input. A range covers the exact segment text,
 including delimiters and a trailing newline when it belongs to that segment.
 
+`segment()` remains deliberately permissive: malformed MDX falls back to a
+Markdown segment. For content pipelines that must reject malformed structure,
+use `segment_strict()`. It reports typed diagnostics with byte ranges; convert
+an offset to a one-based line and Unicode column only when presenting it to a
+user with `source_location()`.
+
+```rust
+use ferromark::mdx::{segment_strict, source_location};
+
+let input = "<Card bad=>\n";
+let diagnostics = segment_strict(input).unwrap_err();
+let location = source_location(input, diagnostics[0].primary_range.start_usize());
+assert_eq!((location.line, location.column), (1, 1));
+```
+
+Strict mode checks MDX structure (flow-expression delimiters, JSX tag shape and
+nesting, and ESM placement). It intentionally does not parse or type-check
+JavaScript or TypeScript inside an otherwise well-delimited ESM block or
+expression.
+
 Full example: `cargo run --features mdx --example mdx_segment`
 
 <details>
@@ -282,7 +302,7 @@ What the segmenter deliberately skips — and why that's fine for most use cases
 | **Markdown grammar** | Standard CommonMark/GFM rules | Official mdxjs disables indented code and HTML syntax — relevant if your content relies on `<div>` being JSX, not HTML |
 | **Container nesting** | `> <Component>` stays Markdown | Only if you put JSX inside blockquotes or list items — uncommon |
 | **TypeScript generics** | `<Component<T>>` not parsed | Only relevant for TSX-heavy content pages — very rare in docs |
-| **Error reporting** | Silent fallback to Markdown | Means broken JSX renders as text instead of failing — arguably safer for content pipelines |
+| **Error reporting** | Permissive fallback by default; opt-in structural diagnostics with `segment_strict()` | Use strict mode when broken MDX must fail a content pipeline |
 
 The full `@mdx-js/mdx` compiler exists to produce a React component tree from MDX. It needs a JavaScript parser because it compiles to JSX. ferromark's segmenter exists to answer a simpler question: *where does the Markdown stop and the JSX start?* That question doesn't need a JS runtime.
 

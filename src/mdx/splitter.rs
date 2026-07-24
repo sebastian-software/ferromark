@@ -222,22 +222,15 @@ fn consume_trailing_newline(bytes: &[u8], mut pos: usize) -> usize {
 /// look like a continuation.
 ///
 /// Returns the byte offset after the ESM block, or `None` if not ESM.
-fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
+pub(crate) fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
     let len = bytes.len();
     let rest = &bytes[pos..];
 
-    let is_import = rest.starts_with(b"import ")
-        || rest.starts_with(b"import\t")
-        || rest.starts_with(b"import{")
-        || (rest.len() >= 7 && rest.starts_with(b"import\""))
-        || (rest.len() >= 7 && rest.starts_with(b"import'"));
-    let is_export = rest.starts_with(b"export ")
-        || rest.starts_with(b"export\t")
-        || rest.starts_with(b"export{");
-
-    if !is_import && !is_export {
+    if !is_esm_start(rest) {
         return None;
     }
+
+    let is_import = rest.starts_with(b"import");
 
     // Reject dynamic imports: `import(`, `import (`, `import.`
     if is_import {
@@ -296,6 +289,33 @@ fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
     }
 
     Some(end)
+}
+
+/// Check whether bytes start with a static `import` or `export` declaration.
+///
+/// This recognises the same declaration prefixes as [`try_esm`] and excludes
+/// dynamic imports and `import.meta` access.
+pub(crate) fn is_esm_start(rest: &[u8]) -> bool {
+    let is_import = rest.starts_with(b"import ")
+        || rest.starts_with(b"import\t")
+        || rest.starts_with(b"import{")
+        || (rest.len() >= 7 && rest.starts_with(b"import\""))
+        || (rest.len() >= 7 && rest.starts_with(b"import'"));
+    let is_export = rest.starts_with(b"export ")
+        || rest.starts_with(b"export\t")
+        || rest.starts_with(b"export{");
+
+    if !is_import && !is_export {
+        return false;
+    }
+
+    if is_import {
+        let after_import = skip_whitespace_offset(rest, 6); // "import".len() == 6
+        return after_import >= rest.len()
+            || (rest[after_import] != b'(' && rest[after_import] != b'.');
+    }
+
+    true
 }
 
 #[cfg(test)]
