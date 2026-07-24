@@ -149,10 +149,11 @@ impl InlineParser {
         link_refs: Option<&LinkRefStore>,
         events: &mut Vec<InlineEvent>,
     ) {
+        let new_events_start = events.len();
         self.parse_with_options(
             text, link_refs, false, true, false, false, false, true, false, None, events,
         );
-        split_mdx_text_events(text, events);
+        split_mdx_text_events(text, events, new_events_start);
     }
 
     /// Parse inline content with configurable inline extensions.
@@ -1452,9 +1453,8 @@ impl Default for InlineParser {
 }
 
 #[cfg(feature = "mdx")]
-fn split_mdx_text_events(text: &[u8], events: &mut Vec<InlineEvent>) {
-    let original_events = std::mem::take(events);
-    events.reserve(original_events.len());
+fn split_mdx_text_events(text: &[u8], events: &mut Vec<InlineEvent>, new_events_start: usize) {
+    let original_events = events.split_off(new_events_start);
 
     for event in original_events {
         match event {

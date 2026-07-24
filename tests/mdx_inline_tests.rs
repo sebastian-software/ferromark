@@ -155,3 +155,19 @@ fn malformed_inline_mdx_falls_back_to_text() {
     assert_eq!(events.len(), 1);
     assert_eq!(event_source(input, &events[0]), Some(input));
 }
+
+#[test]
+fn inline_mdx_only_splits_events_added_by_this_call() {
+    let mut parser = InlineParser::new();
+    let mut events = Vec::new();
+
+    parser.parse_mdx(b"First {value}", None, &mut events);
+    let first_events = events.clone();
+    parser.parse_mdx(b"Second <Icon />", None, &mut events);
+
+    assert_eq!(&events[..first_events.len()], first_events);
+    assert!(matches!(
+        events.last(),
+        Some(InlineEvent::MdxJsxSelfClose(_))
+    ));
+}
