@@ -126,6 +126,11 @@ pub(crate) fn record_inline_events(events: &[InlineEvent], capacity: usize) {
         for event in events {
             match event {
                 InlineEvent::Text(_) | InlineEvent::Code(_) => counters.inline_text_events += 1,
+                #[cfg(feature = "mdx")]
+                InlineEvent::MdxExpression(_)
+                | InlineEvent::MdxJsxOpen(_)
+                | InlineEvent::MdxJsxClose(_)
+                | InlineEvent::MdxJsxSelfClose(_) => counters.inline_text_events += 1,
                 InlineEvent::LinkStart { .. }
                 | InlineEvent::LinkStartRef { .. }
                 | InlineEvent::LinkEnd

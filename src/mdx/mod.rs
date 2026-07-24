@@ -31,12 +31,15 @@
 //! documentation (Next.js, Docusaurus, Astro). It intentionally does **not**
 //! replicate the full `@mdx-js/mdx` compiler. The differences:
 //!
-//! ## Block-level only
+//! ## Block-level segmentation
 //!
-//! The segmenter detects JSX and expressions at block level (start of a line).
+//! [`segment`] detects JSX and expressions at block level (start of a line).
 //! Inline JSX (`paragraph with <em>JSX</em> inside`) and inline expressions
-//! (`text {variable} here`) stay inside Markdown segments and are **not**
-//! split out. The official mdxjs compiler handles both flow and text positions.
+//! (`text {variable} here`) stay inside Markdown segments and are **not** split
+//! out. For consumers that need typed inline constructs, the opt-in
+//! [`crate::InlineParser::parse_mdx`] method emits source-ranged MDX inline
+//! events while preserving the surrounding Markdown events. The official mdxjs
+//! compiler handles both flow and text positions in a single parse.
 //!
 //! ## No JavaScript validation
 //!

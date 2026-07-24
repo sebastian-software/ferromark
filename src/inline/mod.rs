@@ -133,6 +133,28 @@ impl InlineParser {
         );
     }
 
+    /// Parse inline Markdown with opt-in MDX expressions and JSX tags.
+    ///
+    /// This keeps the normal Markdown inline grammar intact while exposing
+    /// well-delimited inline MDX constructs as source-ranged [`InlineEvent`]
+    /// variants. Code spans and backslash escapes retain their normal
+    /// precedence, and malformed MDX remains plain text.
+    ///
+    /// Inline HTML is intentionally disabled for this mode so valid JSX tags
+    /// are not consumed as raw HTML before MDX recognition.
+    #[cfg(feature = "mdx")]
+    pub fn parse_mdx(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        events: &mut Vec<InlineEvent>,
+    ) {
+        self.parse_with_options(
+            text, link_refs, false, true, false, false, false, true, false, None, events,
+        );
+        split_mdx_text_events(text, events);
+    }
+
     /// Parse inline content with configurable inline extensions.
     #[allow(clippy::too_many_arguments)]
     pub fn parse_with_options(
@@ -1426,6 +1448,65 @@ fn has_inline_link_opener(input: &[u8]) -> bool {
 impl Default for InlineParser {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(feature = "mdx")]
+fn split_mdx_text_events(text: &[u8], events: &mut Vec<InlineEvent>) {
+    let original_events = std::mem::take(events);
+    events.reserve(original_events.len());
+
+    for event in original_events {
+        match event {
+            InlineEvent::Text(range) => split_mdx_text_range(text, range, events),
+            event => events.push(event),
+        }
+    }
+}
+
+#[cfg(feature = "mdx")]
+fn split_mdx_text_range(text: &[u8], range: Range, events: &mut Vec<InlineEvent>) {
+    let start = range.start_usize();
+    let end = range.end_usize();
+    let mut pos = start;
+    let mut text_start = start;
+
+    while pos < end {
+        let event = match text[pos] {
+            b'{' => crate::mdx::expr::find_expression_end(&text[pos..end]).map(|length| {
+                (
+                    InlineEvent::MdxExpression(Range::from_usize(pos, pos + length)),
+                    pos + length,
+                )
+            }),
+            b'<' => crate::mdx::jsx_tag::parse_jsx_tag(&text[pos..end]).map(|tag| {
+                let tag_end = pos + tag.end_offset;
+                let event = if tag.is_closing {
+                    InlineEvent::MdxJsxClose(Range::from_usize(pos, tag_end))
+                } else if tag.is_self_closing {
+                    InlineEvent::MdxJsxSelfClose(Range::from_usize(pos, tag_end))
+                } else {
+                    InlineEvent::MdxJsxOpen(Range::from_usize(pos, tag_end))
+                };
+                (event, tag_end)
+            }),
+            _ => None,
+        };
+
+        if let Some((event, event_end)) = event {
+            if text_start < pos {
+                events.push(InlineEvent::Text(Range::from_usize(text_start, pos)));
+            }
+            events.push(event);
+            pos = event_end;
+            text_start = event_end;
+        } else {
+            pos += 1;
+        }
+    }
+
+    if text_start < end {
+        events.push(InlineEvent::Text(Range::from_usize(text_start, end)));
     }
 }
 
