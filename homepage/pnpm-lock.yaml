@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  brace-expansion@<=5.0.7: 5.0.8
   esbuild@>=0.27.3 <0.28.1: 0.28.1
   js-yaml@<3.15.0: 3.15.0
   lodash@<=4.17.23: 4.18.1
@@ -405,7 +406,7 @@ packages:
     os: [win32]
 
   '@ferramenta/ardo-config@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/557b21484a2e58a33a61763a4871c5c8e1575cc0#path:packages/ardo-config':
-    resolution: {gitHosted: true, path: packages/ardo-config, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/557b21484a2e58a33a61763a4871c5c8e1575cc0}
+    resolution: {gitHosted: true, integrity: sha512-SW2GUOjfwATrGKCGdlcp6CRFfjGgbA0auik36IODceIlnk07IPv6NjcP5ZXdk0iWUK84WNu4QDEgClCPtFlpBw==, path: packages/ardo-config, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/557b21484a2e58a33a61763a4871c5c8e1575cc0}
     version: 0.1.0
     peerDependencies:
       react: '>=19.0.0 <20.0.0'
@@ -1131,9 +1132,9 @@ packages:
     resolution: {integrity: sha512-ipDqC8FrAl/76p2SSWKSI+H9tFwm7vYqXQrItCuiVPt26Km0jS+NzSsBWAaBusvSbQcfJG+JitdMm+wZAgTYqg==}
     hasBin: true
 
-  brace-expansion@5.0.7:
-    resolution: {integrity: sha512-7oFy703dxfY3/NLxC1fh2SUCQ0H9rmAY+5EpDVfXjUTTs+HEwR2nYaqLv+GWcTsumwxPfiz6CzCNkwXwBUwqCA==}
-    engines: {node: 18 || 20 || >=22}
+  brace-expansion@5.0.8:
+    resolution: {integrity: sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg==}
+    engines: {node: 20 || >=22}
 
   browserslist@4.28.1:
     resolution: {integrity: sha512-ZC5Bd0LgJXgwGqUknZY/vkUQ04r8NXnJZ3yYi4vDmSiZmC/pdSN0NbNRPxZpbtO4uAfDUAFffO8IZoM3Gj8IkA==}
@@ -1413,8 +1414,8 @@ packages:
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
 
-  dompurify@3.4.11:
-    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
+  dompurify@3.4.12:
+    resolution: {integrity: sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==}
 
   electron-to-chromium@1.5.286:
     resolution: {integrity: sha512-9tfDXhJ4RKFNerfjdCcZfufu49vg620741MNs26a9+bhLThdB+plgMeou98CAaHu/WATj2iHOOHTp1hWtABj2A==}
@@ -1987,8 +1988,8 @@ packages:
     resolution: {integrity: sha512-tkAQEw8ysMzmkhgw8k+1U/iPhWNhykKnSk4Rd5zLoPJCuJaGRPo6YposrZgaxHKzDHdDWWZvE/Sk7hsL2X/CpQ==}
     engines: {node: '>=18'}
 
-  package-manager-detector@1.7.0:
-    resolution: {integrity: sha512-xg1eHpwYL/D/HEdWw2goFZP6vV0FH7W+PZ5rFkGjdIDLtxq7EkzBUeT3m+lndYCt8wKbmofUu1MUdMCXkCk9ZQ==}
+  package-manager-detector@1.8.0:
+    resolution: {integrity: sha512-yQA4H19AmPEoMUeavPMDIe1higySl/gH/yaQrkT/s07Qp+7pp2hYz30N3z2l5BkjVkF9Ow6o0wjJamm2y7Sn0A==}
 
   parse-entities@4.0.2:
     resolution: {integrity: sha512-GG2AQYWoLgL877gQIKeRPGO1xF9+eG1ujIb5soS5gPvLQ1y2o8FL90w2QWNdf9I361Mpp7726c+lj3U0qK1uGw==}
@@ -2446,7 +2447,7 @@ snapshots:
 
   '@antfu/install-pkg@1.1.0':
     dependencies:
-      package-manager-detector: 1.7.0
+      package-manager-detector: 1.8.0
       tinyexec: 1.2.4
 
   '@babel/code-frame@7.29.7':
@@ -3530,7 +3531,7 @@ snapshots:
 
   baseline-browser-mapping@2.9.19: {}
 
-  brace-expansion@5.0.7:
+  brace-expansion@5.0.8:
     dependencies:
       balanced-match: 4.0.4
 
@@ -3802,7 +3803,7 @@ snapshots:
     dependencies:
       dequal: 2.0.3
 
-  dompurify@3.4.11:
+  dompurify@3.4.12:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -4363,7 +4364,7 @@ snapshots:
       d3-sankey: 0.12.3
       dagre-d3-es: 7.0.14
       dayjs: 1.11.21
-      dompurify: 3.4.11
+      dompurify: 3.4.12
       es-toolkit: 1.49.0
       katex: 0.16.47
       khroma: 2.1.0
@@ -4646,7 +4647,7 @@ snapshots:
 
   minimatch@10.2.5:
     dependencies:
-      brace-expansion: 5.0.7
+      brace-expansion: 5.0.8
 
   minisearch@7.2.0: {}
 
@@ -4689,7 +4690,7 @@ snapshots:
 
   p-map@7.0.4: {}
 
-  package-manager-detector@1.7.0: {}
+  package-manager-detector@1.8.0: {}
 
   parse-entities@4.0.2:
     dependencies:
