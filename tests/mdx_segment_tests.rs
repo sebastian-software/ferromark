@@ -1,20 +1,13 @@
 #![cfg(feature = "mdx")]
 
 use ferromark::Options;
-use ferromark::mdx::{Segment, render, render_with_options, segment};
+use ferromark::mdx::{Segment, render, render_with_options, segment, segment_spanned};
 
 // ── Helper ───────────────────────────────────────────────────────────
 
 /// Extract the inner &str from any Segment variant.
 fn seg_str<'a>(seg: &Segment<'a>) -> &'a str {
-    match seg {
-        Segment::Esm(s)
-        | Segment::Markdown(s)
-        | Segment::JsxBlockOpen(s)
-        | Segment::JsxBlockClose(s)
-        | Segment::JsxBlockSelfClose(s)
-        | Segment::Expression(s) => s,
-    }
+    seg.as_str()
 }
 
 // ── Basic segmentation ───────────────────────────────────────────────
@@ -37,6 +30,53 @@ fn whitespace_only() {
     let input = "   \n\n   \n";
     let segs = segment(input);
     assert_eq!(segs, vec![Segment::Markdown(input)]);
+}
+
+#[test]
+fn spanned_segments_cover_input_with_exact_byte_ranges() {
+    let input = "import A from 'a'\r\n\r\n# Grüß\r\n\r\n<Card />\r\n\r\n{user.name}\r\n";
+    let segments = segment_spanned(input);
+
+    assert_eq!(segments.len(), 5);
+    assert!(matches!(segments[0].segment, Segment::Esm(_)));
+    assert!(matches!(segments[1].segment, Segment::Markdown(_)));
+    assert!(matches!(segments[2].segment, Segment::JsxBlockSelfClose(_)));
+    assert!(matches!(segments[3].segment, Segment::Markdown(_)));
+    assert!(matches!(segments[4].segment, Segment::Expression(_)));
+
+    let mut expected_start = 0;
+    let mut reconstructed = String::new();
+    for spanned in &segments {
+        assert_eq!(spanned.range.start_usize(), expected_start);
+        assert_eq!(
+            spanned.range.slice_str(input.as_bytes()).unwrap(),
+            spanned.segment.as_str()
+        );
+        assert_eq!(
+            spanned.range.end_usize() - spanned.range.start_usize(),
+            spanned.segment.as_str().len()
+        );
+        expected_start = spanned.range.end_usize();
+        reconstructed.push_str(spanned.segment.as_str());
+    }
+
+    assert_eq!(expected_start, input.len());
+    assert_eq!(reconstructed, input);
+}
+
+#[test]
+fn spanned_segments_match_existing_segment_api() {
+    let input = "---\ntitle: Hello\n---\n\n<Layout>\n\n# Heading\n\n</Layout>\n";
+    let existing = segment(input);
+    let spanned = segment_spanned(input);
+
+    assert_eq!(
+        spanned
+            .into_iter()
+            .map(|segment| segment.segment)
+            .collect::<Vec<_>>(),
+        existing
+    );
 }
 
 // ── ESM ──────────────────────────────────────────────────────────────

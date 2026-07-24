@@ -259,6 +259,11 @@ for seg in segment(input) {
 
 The segmenter handles JSX attribute parsing (strings, expressions, spreads), brace-depth tracking (with string/comment/template-literal awareness), fragment syntax, member expressions (`<Foo.Bar>`), and multiline tags. Invalid constructs fall back to Markdown — no panics, always valid output.
 
+For source locations, `segment_spanned()` returns the same zero-copy segments
+with contiguous [`Range`](https://docs.rs/ferromark/latest/ferromark/struct.Range.html)
+values into the original UTF-8 input. A range covers the exact segment text,
+including delimiters and a trailing newline when it belongs to that segment.
+
 Full example: `cargo run --features mdx --example mdx_segment`
 
 <details>
