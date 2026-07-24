@@ -17,6 +17,7 @@ export interface Options {
   headingIds?: boolean
   math?: boolean
   callouts?: boolean
+  lineComments?: boolean
 }
 
 export declare function toHtml(markdown: string, options?: Options | undefined | null): string

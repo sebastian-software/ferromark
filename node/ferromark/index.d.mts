@@ -17,6 +17,7 @@ export interface Options {
   headingIds?: boolean
   math?: boolean
   callouts?: boolean
+  lineComments?: boolean
 }
 
 export interface CodeHighlighter {

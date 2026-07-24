@@ -22,6 +22,7 @@ pub struct Options {
     pub heading_ids: Option<bool>,
     pub math: Option<bool>,
     pub callouts: Option<bool>,
+    pub line_comments: Option<bool>,
 }
 
 impl Options {
@@ -56,6 +57,7 @@ impl Options {
         apply(&mut options.heading_ids, self.heading_ids);
         apply(&mut options.math, self.math);
         apply(&mut options.callouts, self.callouts);
+        apply(&mut options.line_comments, self.line_comments);
 
         Ok(options)
     }
