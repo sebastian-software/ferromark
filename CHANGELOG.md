@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.4.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.3...ferromark-v0.4.0) (2026-07-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **options:** remove Profile and Options::from(Profile); use Options::minimal(), Options::commonmark(), Options::gfm(), or explicit flags.
+
+### Features
+
+* **mdx:** add inline JSX events ([#94](https://github.com/sebastian-software/ferromark/issues/94)) ([654459f](https://github.com/sebastian-software/ferromark/commit/654459f39c67d75b56dca8a71ef5d9dee9e8119b))
+* **mdx:** add semantic event stream ([#95](https://github.com/sebastian-software/ferromark/issues/95)) ([f87f3a7](https://github.com/sebastian-software/ferromark/commit/f87f3a7f35d37fdf21570a5065d1b112aadc159d))
+* **mdx:** add source-spanned segments ([c750c80](https://github.com/sebastian-software/ferromark/commit/c750c806587174d9f554860984ca1187b4e7f602))
+* **mdx:** add strict diagnostics ([#93](https://github.com/sebastian-software/ferromark/issues/93)) ([8154348](https://github.com/sebastian-software/ferromark/commit/8154348496bc621381b6a1c8b6fc978a7cbfccb8))
+* **mdx:** promote container-local flow events ([#96](https://github.com/sebastian-software/ferromark/issues/96)) ([b841ec7](https://github.com/sebastian-software/ferromark/commit/b841ec726d3518d01935f4febd6941e30819ad49))
+* **options:** replace profiles with dialect presets ([#99](https://github.com/sebastian-software/ferromark/issues/99)) ([9249776](https://github.com/sebastian-software/ferromark/commit/9249776692da7e5f9462993fcefb70a81126eaea))
+
+
+### Bug Fixes
+
+* **ci:** use portable Linux CPU target ([f797c6a](https://github.com/sebastian-software/ferromark/commit/f797c6a2c16bf634b07705a5a8a2f7800d58d0ff))
+* **homepage:** update audited dependencies ([#100](https://github.com/sebastian-software/ferromark/issues/100)) ([7f54712](https://github.com/sebastian-software/ferromark/commit/7f5471202100e3b0a7512720ef6d6899ece605b7))
+* **mdx:** harden source segment ranges ([2d2e712](https://github.com/sebastian-software/ferromark/commit/2d2e712150b6b4c568c4fb604614cfc0e17aeba6))
+* **parser:** honor disabled HTML in lazy containers ([#98](https://github.com/sebastian-software/ferromark/issues/98)) ([6b6dbf6](https://github.com/sebastian-software/ferromark/commit/6b6dbf606f7e09488e76af7d7655440c26867600))
+
 ## [0.3.3](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.2...ferromark-v0.3.3) (2026-07-11)
 
 
