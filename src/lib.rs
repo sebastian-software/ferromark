@@ -133,6 +133,11 @@ pub struct Options {
     pub math: bool,
     /// Enable GitHub-style callouts/admonitions (`> [!NOTE]`, `> [!WARNING]`, etc.).
     pub callouts: bool,
+    /// Enable CommonMark indented code blocks (four or more leading spaces).
+    ///
+    /// Disable this for dialects that reserve indentation for other block
+    /// semantics and require fenced code blocks instead.
+    pub indented_code_blocks: bool,
 }
 
 impl Options {
@@ -160,6 +165,7 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            indented_code_blocks: true,
         }
     }
 
@@ -187,6 +193,7 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            indented_code_blocks: true,
         }
     }
 
@@ -214,6 +221,7 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            indented_code_blocks: true,
         }
     }
 }
@@ -237,6 +245,7 @@ impl Default for Options {
             heading_ids: true,
             math: false,
             callouts: true,
+            indented_code_blocks: true,
         }
     }
 }

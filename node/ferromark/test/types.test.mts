@@ -4,6 +4,7 @@ import { toHtml, toHtmlWithHighlighter } from '../index.mjs'
 const options: Options = {
   renderPolicy: 'untrusted',
   tables: true,
+  indentedCodeBlocks: false,
 }
 const highlighter: CodeHighlighter = {
   codeToHtml: (code, { lang, theme }) => `${lang}:${theme}:${code}`,

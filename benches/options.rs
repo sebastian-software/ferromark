@@ -40,6 +40,7 @@ fn all_extensions() -> Options {
         heading_ids: true,
         math: true,
         callouts: true,
+        indented_code_blocks: true,
     }
 }
 
@@ -53,6 +54,13 @@ fn options_cost_benches(c: &mut Criterion) {
         ("commonmark", Options::commonmark()),
         ("gfm", Options::gfm()),
         ("default", Options::default()),
+        (
+            "default_no_indented_code",
+            Options {
+                indented_code_blocks: false,
+                ..Options::default()
+            },
+        ),
         ("all_extensions", all_extensions()),
     ] {
         let mut output = Vec::with_capacity(input.len() + input.len() / 4);
