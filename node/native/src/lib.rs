@@ -18,6 +18,7 @@ pub struct Options {
     pub autolink_literals: Option<bool>,
     pub disallowed_raw_html: Option<bool>,
     pub footnotes: Option<bool>,
+    pub inline_footnotes: Option<bool>,
     pub front_matter: Option<bool>,
     pub heading_ids: Option<bool>,
     pub math: Option<bool>,
@@ -52,6 +53,7 @@ impl Options {
         apply(&mut options.autolink_literals, self.autolink_literals);
         apply(&mut options.disallowed_raw_html, self.disallowed_raw_html);
         apply(&mut options.footnotes, self.footnotes);
+        apply(&mut options.inline_footnotes, self.inline_footnotes);
         apply(&mut options.front_matter, self.front_matter);
         apply(&mut options.heading_ids, self.heading_ids);
         apply(&mut options.math, self.math);

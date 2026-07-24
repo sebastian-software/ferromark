@@ -38,6 +38,7 @@ fn all_extensions() -> Options {
         autolink_literals: true,
         disallowed_raw_html: true,
         footnotes: true,
+        inline_footnotes: true,
         front_matter: true,
         heading_ids: true,
         math: true,
@@ -50,11 +51,17 @@ fn options_cost_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("options/shared_corpus");
     group.throughput(Throughput::Bytes(input.len() as u64));
 
+    let inline_footnotes = Options {
+        inline_footnotes: true,
+        ..Options::default()
+    };
+
     for (name, options) in [
         ("minimal", Options::minimal()),
         ("commonmark", Options::commonmark()),
         ("gfm", Options::gfm()),
         ("default", Options::default()),
+        ("default_inline_footnotes", inline_footnotes),
         ("all_extensions", all_extensions()),
     ] {
         let mut output = Vec::with_capacity(input.len() + input.len() / 4);

@@ -76,6 +76,8 @@ pub struct InlineParser {
     html_code_ranges: Vec<(usize, usize)>,
     html_autolink_ranges: Vec<(usize, usize)>,
     footnote_refs: Vec<FootnoteRef>,
+    inline_footnotes: Vec<InlineFootnote>,
+    inline_footnote_brackets: Vec<(u32, Option<u32>)>,
     math_spans: Vec<MathSpan>,
 }
 
@@ -116,6 +118,8 @@ impl InlineParser {
             html_code_ranges: Vec::with_capacity(8),
             html_autolink_ranges: Vec::with_capacity(8),
             footnote_refs: Vec::new(),
+            inline_footnotes: Vec::new(),
+            inline_footnote_brackets: Vec::new(),
             math_spans: Vec::new(),
         }
     }
@@ -129,7 +133,8 @@ impl InlineParser {
         events: &mut Vec<InlineEvent>,
     ) {
         self.parse_with_options(
-            text, link_refs, allow_html, true, false, false, false, true, false, None, events,
+            text, link_refs, allow_html, true, false, false, false, true, false, false, None,
+            events,
         );
     }
 
@@ -151,7 +156,7 @@ impl InlineParser {
     ) {
         let new_events_start = events.len();
         self.parse_with_options(
-            text, link_refs, false, true, false, false, false, true, false, None, events,
+            text, link_refs, false, true, false, false, false, true, false, false, None, events,
         );
         split_mdx_text_events(text, events, new_events_start);
     }
@@ -169,16 +174,19 @@ impl InlineParser {
         subscript: bool,
         autolink_literals: bool,
         math: bool,
+        inline_footnotes: bool,
         footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
         #[cfg(feature = "profiling")]
         let event_start = events.len();
-        let has_specials = if highlight && superscript {
+        let may_have_inline_footnotes = inline_footnotes && has_inline_footnote_candidate(text);
+        let caret_syntax = superscript || may_have_inline_footnotes;
+        let has_specials = if highlight && caret_syntax {
             has_inline_specials_highlight_superscript(text)
         } else if highlight {
             has_inline_specials_highlight(text)
-        } else if superscript {
+        } else if caret_syntax {
             has_inline_specials_superscript(text)
         } else {
             has_inline_specials(text)
@@ -207,11 +215,11 @@ impl InlineParser {
         // Phase 1: Collect marks
         self.mark_buffer.reserve_for_text(text.len());
         let summary = if has_specials {
-            if highlight && superscript {
+            if highlight && caret_syntax {
                 collect_marks_highlight_superscript(text, &mut self.mark_buffer)
             } else if highlight {
                 collect_marks_highlight(text, &mut self.mark_buffer)
-            } else if superscript {
+            } else if caret_syntax {
                 collect_marks_superscript(text, &mut self.mark_buffer)
             } else {
                 collect_marks(text, &mut self.mark_buffer)
@@ -375,7 +383,26 @@ impl InlineParser {
             );
         }
 
-        // Sixth: emphasis (lowest precedence)
+        // Sixth: Pandoc-style inline footnotes (`^[...]`). They deliberately
+        // precede superscript so the opening caret cannot be consumed by
+        // `^text^`.
+        self.inline_footnotes.clear();
+        if may_have_inline_footnotes {
+            Self::resolve_inline_footnotes(
+                text,
+                self.mark_buffer.marks_mut(),
+                resolved_links,
+                resolved_ref_links,
+                &self.code_spans,
+                &self.html_spans,
+                &self.autolinks,
+                &self.link_dest_ranges,
+                &mut self.inline_footnotes,
+                &mut self.inline_footnote_brackets,
+            );
+        }
+
+        // Seventh: emphasis (lowest precedence)
         // Pass link and autolink boundaries so emphasis can't cross them
         self.link_boundaries.clear();
         self.link_boundaries.reserve(
@@ -383,7 +410,8 @@ impl InlineParser {
                 + resolved_ref_links.len()
                 + self.autolinks.len()
                 + self.html_spans.len()
-                + self.footnote_refs.len(),
+                + self.footnote_refs.len()
+                + self.inline_footnotes.len(),
         );
         self.link_boundaries
             .extend(resolved_links.iter().map(|l| (l.start, l.text_end)));
@@ -401,6 +429,10 @@ impl InlineParser {
         // Also include resolved footnote references
         for fref in &self.footnote_refs {
             self.link_boundaries.push((fref.start, fref.end));
+        }
+        for inline_note in &self.inline_footnotes {
+            self.link_boundaries
+                .push((inline_note.start, inline_note.end));
         }
         let emphasis_matches = if summary.has_emphasis() {
             resolve_emphasis_with_stacks_into(
@@ -521,6 +553,7 @@ impl InlineParser {
             &self.autolink_ranges,
             &self.html_ranges,
             &self.footnote_refs,
+            &self.inline_footnotes,
             &mut self.emit_points,
             &mut self.emit_suppress_ranges,
             events,
@@ -618,6 +651,101 @@ impl InlineParser {
         }
     }
 
+    /// Resolve Pandoc-style inline notes: `^[single paragraph content]`.
+    #[allow(clippy::too_many_arguments)]
+    fn resolve_inline_footnotes(
+        text: &[u8],
+        marks: &mut [Mark],
+        resolved_links: &[Link],
+        resolved_ref_links: &[RefLink],
+        code_spans: &[CodeSpan],
+        html_spans: &[HtmlSpan],
+        autolinks: &[Autolink],
+        link_dest_ranges: &[(u32, u32)],
+        out: &mut Vec<InlineFootnote>,
+        bracket_stack: &mut Vec<(u32, Option<u32>)>,
+    ) {
+        out.clear();
+        bracket_stack.clear();
+
+        let mut pos = 0usize;
+        let mut code_span_index = 0usize;
+        while pos < text.len() {
+            while code_span_index < code_spans.len()
+                && pos as u32 >= code_spans[code_span_index].closer_end
+            {
+                code_span_index += 1;
+            }
+            if let Some(span) = code_spans.get(code_span_index) {
+                if pos as u32 >= span.opener_pos && (pos as u32) < span.closer_end {
+                    pos = span.closer_end as usize;
+                    continue;
+                }
+            }
+
+            let bracket_mark = matches!(text[pos], b'[' | b']')
+                .then(|| {
+                    marks
+                        .binary_search_by_key(&(pos as u32), |mark| mark.pos)
+                        .ok()
+                })
+                .flatten();
+            if bracket_mark.is_some() {
+                if text[pos] == b'[' {
+                    let start = pos.checked_sub(1).and_then(|caret_pos| {
+                        let mark_index = marks
+                            .binary_search_by_key(&(caret_pos as u32), |mark| mark.pos)
+                            .ok()?;
+                        let candidate = marks[mark_index];
+                        if candidate.ch != b'^'
+                            || candidate.len() != 1
+                            || candidate.flags & (flags::IN_CODE | flags::RESOLVED) != 0
+                            || resolved_links
+                                .iter()
+                                .any(|link| candidate.pos >= link.start && candidate.pos < link.end)
+                            || resolved_ref_links
+                                .iter()
+                                .any(|link| candidate.pos >= link.start && candidate.pos < link.end)
+                            || html_spans
+                                .iter()
+                                .any(|span| candidate.pos >= span.start && candidate.pos < span.end)
+                            || autolinks.iter().any(|autolink| {
+                                candidate.pos >= autolink.start && candidate.pos < autolink.end
+                            })
+                            || link_dest_ranges.iter().any(|&(range_start, range_end)| {
+                                candidate.pos >= range_start && candidate.pos < range_end
+                            })
+                        {
+                            None
+                        } else {
+                            Some(candidate.pos)
+                        }
+                    });
+                    bracket_stack.push((pos as u32, start));
+                } else if let Some((open_bracket, Some(start))) = bracket_stack.pop() {
+                    let content_start = open_bracket + 1;
+                    let content_end = pos as u32;
+                    if !text[content_start as usize..content_end as usize]
+                        .iter()
+                        .all(|byte| byte.is_ascii_whitespace())
+                    {
+                        out.push(InlineFootnote {
+                            start,
+                            end: content_end + 1,
+                            content_start,
+                            content_end,
+                        });
+                        if let Ok(mark_index) = marks.binary_search_by_key(&start, |mark| mark.pos)
+                        {
+                            marks[mark_index].resolve();
+                        }
+                    }
+                }
+            }
+            pos += 1;
+        }
+    }
+
     /// Collect bracket positions for link parsing after code-span resolution.
     fn collect_brackets(
         marks: &[Mark],
@@ -671,6 +799,7 @@ impl InlineParser {
         autolink_ranges: &[(u32, u32)],
         html_ranges: &[(u32, u32)],
         footnote_refs: &[FootnoteRef],
+        inline_footnotes: &[InlineFootnote],
         emit_points: &mut Vec<EmitPoint>,
         suppress_ranges: &mut Vec<(u32, u32)>,
         events: &mut Vec<InlineEvent>,
@@ -970,6 +1099,17 @@ impl InlineParser {
                     def_index: fref.def_index,
                 },
                 end: fref.end,
+            });
+        }
+
+        for inline_note in inline_footnotes {
+            emit_points.push(EmitPoint {
+                pos: inline_note.start,
+                kind: EmitKind::InlineFootnote {
+                    content_start: inline_note.content_start,
+                    content_end: inline_note.content_end,
+                },
+                end: inline_note.end,
             });
         }
 
@@ -1279,6 +1419,16 @@ impl InlineParser {
                     events.push(InlineEvent::FootnoteRef { def_index });
                     skip_until = point.end;
                 }
+                EmitKind::InlineFootnote {
+                    content_start,
+                    content_end,
+                } => {
+                    events.push(InlineEvent::InlineFootnote(Range::from_usize(
+                        content_start as usize,
+                        content_end as usize,
+                    )));
+                    skip_until = point.end;
+                }
                 EmitKind::MathInline {
                     content_start,
                     content_end,
@@ -1446,6 +1596,19 @@ fn has_inline_link_opener(input: &[u8]) -> bool {
     false
 }
 
+#[inline]
+fn has_inline_footnote_candidate(input: &[u8]) -> bool {
+    let mut pos = 0usize;
+    while let Some(offset) = memchr(b'^', &input[pos..]) {
+        let caret = pos + offset;
+        if input.get(caret + 1) == Some(&b'[') {
+            return true;
+        }
+        pos = caret + 1;
+    }
+    false
+}
+
 impl Default for InlineParser {
     fn default() -> Self {
         Self::new()
@@ -1522,6 +1685,18 @@ struct FootnoteRef {
 }
 
 #[derive(Debug, Clone, Copy)]
+struct InlineFootnote {
+    /// Start position (the `^`).
+    start: u32,
+    /// End position (after `]`).
+    end: u32,
+    /// Start of note content.
+    content_start: u32,
+    /// End of note content.
+    content_end: u32,
+}
+
+#[derive(Debug, Clone, Copy)]
 struct EmitPoint {
     pos: u32,
     kind: EmitKind,
@@ -1585,6 +1760,10 @@ enum EmitKind {
     },
     FootnoteRef {
         def_index: u32,
+    },
+    InlineFootnote {
+        content_start: u32,
+        content_end: u32,
     },
     MathInline {
         content_start: u32,

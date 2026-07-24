@@ -13,6 +13,7 @@ export interface Options {
   autolinkLiterals?: boolean
   disallowedRawHtml?: boolean
   footnotes?: boolean
+  inlineFootnotes?: boolean
   frontMatter?: boolean
   headingIds?: boolean
   math?: boolean

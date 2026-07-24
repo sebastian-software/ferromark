@@ -125,6 +125,8 @@ pub struct Options {
     pub disallowed_raw_html: bool,
     /// Enable footnotes extension (`[^label]` references and `[^label]:` definitions).
     pub footnotes: bool,
+    /// Enable Pandoc-style inline footnotes (`^[single paragraph note]`).
+    pub inline_footnotes: bool,
     /// Enable front matter detection (`---`/`+++` delimited metadata at document start).
     pub front_matter: bool,
     /// Generate GitHub-compatible heading IDs (`<h1 id="slug">`).
@@ -156,6 +158,7 @@ impl Options {
             autolink_literals: false,
             disallowed_raw_html: false,
             footnotes: false,
+            inline_footnotes: false,
             front_matter: false,
             heading_ids: false,
             math: false,
@@ -183,6 +186,7 @@ impl Options {
             autolink_literals: false,
             disallowed_raw_html: false,
             footnotes: false,
+            inline_footnotes: false,
             front_matter: false,
             heading_ids: false,
             math: false,
@@ -210,6 +214,7 @@ impl Options {
             autolink_literals: true,
             disallowed_raw_html: true,
             footnotes: false,
+            inline_footnotes: false,
             front_matter: false,
             heading_ids: false,
             math: false,
@@ -233,6 +238,7 @@ impl Default for Options {
             autolink_literals: false,
             disallowed_raw_html: true,
             footnotes: false,
+            inline_footnotes: false,
             front_matter: false,
             heading_ids: true,
             math: false,
@@ -1334,6 +1340,14 @@ fn write_footnote_backref(writer: &mut HtmlWriter, label: &str, number: usize) {
     writer.write_str("\">↩</a>");
 }
 
+fn write_inline_footnote_backref(writer: &mut HtmlWriter, definition_index: usize, number: usize) {
+    writer.write_str(" <a href=\"#user-content-inline-fnref-");
+    writer.write_string(&(definition_index + 1).to_string());
+    writer.write_str("\" class=\"data-footnote-backref\" aria-label=\"Back to reference ");
+    writer.write_string(&number.to_string());
+    writer.write_str("\">↩</a>");
+}
+
 /// State for tracking image rendering.
 /// Since we need to render: <img src="..." alt="ALT_TEXT_HERE" title="..." />
 /// But alt text comes as Text events between ImageStart and ImageEnd,
@@ -1349,26 +1363,41 @@ struct ImageState {
 
 /// First-reference ordering plus constant-time definition-to-ordinal lookup.
 struct FootnoteNumbers {
-    order: Vec<usize>,
+    order: Vec<FootnoteTarget>,
     /// Zero means unassigned; stored ordinals are one-based.
-    ordinals: Vec<usize>,
+    reference_ordinals: Vec<usize>,
+    inline_definitions: Vec<Vec<u8>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FootnoteTarget {
+    Reference(usize),
+    Inline(usize),
 }
 
 impl FootnoteNumbers {
     fn new(definition_count: usize) -> Self {
         Self {
             order: Vec::new(),
-            ordinals: vec![0; definition_count],
+            reference_ordinals: vec![0; definition_count],
+            inline_definitions: Vec::new(),
         }
     }
 
-    fn number(&mut self, definition_index: usize) -> Option<usize> {
-        let ordinal = self.ordinals.get_mut(definition_index)?;
+    fn number_reference(&mut self, definition_index: usize) -> Option<usize> {
+        let ordinal = self.reference_ordinals.get_mut(definition_index)?;
         if *ordinal == 0 {
-            self.order.push(definition_index);
+            self.order.push(FootnoteTarget::Reference(definition_index));
             *ordinal = self.order.len();
         }
         Some(*ordinal)
+    }
+
+    fn register_inline(&mut self, content: &[u8]) -> (usize, usize) {
+        let definition_index = self.inline_definitions.len();
+        self.inline_definitions.push(content.to_vec());
+        self.order.push(FootnoteTarget::Inline(definition_index));
+        (self.order.len(), definition_index)
     }
 
     fn is_empty(&self) -> bool {
@@ -1400,6 +1429,7 @@ fn render_inline_content(
         options.subscript,
         options.autolink_literals,
         options.math,
+        options.inline_footnotes,
         footnote_store,
         inline_events,
     );
@@ -1733,9 +1763,10 @@ fn render_inline_event(
             if !in_image {
                 if let Some(fn_store) = footnote_store {
                     let def_idx = *def_index as usize;
-                    if let (Some(number), Some(def)) =
-                        (footnote_numbers.number(def_idx), fn_store.get(def_idx))
-                    {
+                    if let (Some(number), Some(def)) = (
+                        footnote_numbers.number_reference(def_idx),
+                        fn_store.get(def_idx),
+                    ) {
                         writer.write_str("<sup><a href=\"#user-content-fn-");
                         writer.write_string(&def.label);
                         writer.write_str("\" id=\"user-content-fnref-");
@@ -1746,6 +1777,19 @@ fn render_inline_event(
                         writer.write_str("</a></sup>");
                     }
                 }
+            }
+        }
+        InlineEvent::InlineFootnote(range) => {
+            if !in_image {
+                let (number, definition_index) =
+                    footnote_numbers.register_inline(range.slice(text));
+                writer.write_str("<sup><a href=\"#user-content-inline-fn-");
+                writer.write_string(&(definition_index + 1).to_string());
+                writer.write_str("\" id=\"user-content-inline-fnref-");
+                writer.write_string(&(definition_index + 1).to_string());
+                writer.write_str("\" data-footnote-ref>");
+                writer.write_string(&number.to_string());
+                writer.write_str("</a></sup>");
             }
         }
         InlineEvent::MathInline(range) => {
@@ -1802,39 +1846,83 @@ fn render_inline_event(
 impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
     /// Render collected footnotes with a fresh block state per definition.
     fn render_footnote_section(&mut self, input: &[u8]) {
-        let Some(footnote_store) = self.footnote_store else {
-            return;
-        };
+        let footnote_store = self.footnote_store;
         let order = self.footnote_numbers.order.clone();
         self.writer
             .write_str("<section data-footnotes class=\"footnotes\">\n<ol>\n");
 
-        for (seq_num, def_idx) in order.into_iter().enumerate() {
-            let Some(def) = footnote_store.get(def_idx) else {
-                continue;
-            };
+        for (seq_num, target) in order.into_iter().enumerate() {
             let number = seq_num + 1;
-            self.writer.write_str("<li id=\"user-content-fn-");
-            self.writer.write_string(&def.label);
-            self.writer.write_str("\">\n");
+            match target {
+                FootnoteTarget::Reference(def_idx) => {
+                    let Some(footnote_store) = footnote_store else {
+                        continue;
+                    };
+                    let Some(def) = footnote_store.get(def_idx) else {
+                        continue;
+                    };
+                    self.writer.write_str("<li id=\"user-content-fn-");
+                    self.writer.write_string(&def.label);
+                    self.writer.write_str("\">\n");
 
-            let last_paragraph_end = def
-                .events
-                .iter()
-                .rposition(|event| matches!(event, BlockEvent::ParagraphEnd));
-            let renderer = self.fenced_code_renderer.as_deref_mut();
-            let mut nested = RenderContext::new(
-                &mut *self.writer,
-                self.link_refs,
-                Some(footnote_store),
-                self.options,
-                renderer,
-            );
-            for (index, event) in def.events.iter().enumerate() {
-                if Some(index) == last_paragraph_end {
-                    nested.pending_footnote_backref = Some((def.label.clone(), number));
+                    let last_paragraph_end = def
+                        .events
+                        .iter()
+                        .rposition(|event| matches!(event, BlockEvent::ParagraphEnd));
+                    let renderer = self.fenced_code_renderer.as_deref_mut();
+                    let nested_options = Options {
+                        inline_footnotes: false,
+                        ..*self.options
+                    };
+                    let mut nested = RenderContext::new(
+                        &mut *self.writer,
+                        self.link_refs,
+                        Some(footnote_store),
+                        &nested_options,
+                        renderer,
+                    );
+                    for (index, event) in def.events.iter().enumerate() {
+                        if Some(index) == last_paragraph_end {
+                            nested.pending_footnote_backref = Some((def.label.clone(), number));
+                        }
+                        nested.render_block_event(input, event);
+                    }
                 }
-                nested.render_block_event(input, event);
+                FootnoteTarget::Inline(definition_index) => {
+                    let Some(content) = self
+                        .footnote_numbers
+                        .inline_definitions
+                        .get(definition_index)
+                        .cloned()
+                    else {
+                        continue;
+                    };
+                    self.writer.write_str("<li id=\"user-content-inline-fn-");
+                    self.writer
+                        .write_string(&(definition_index + 1).to_string());
+                    self.writer.write_str("\">\n<p>");
+
+                    let mut inline_parser = InlineParser::new();
+                    let mut inline_events = Vec::with_capacity(16);
+                    let mut nested_numbers = FootnoteNumbers::new(0);
+                    let nested_options = Options {
+                        footnotes: false,
+                        inline_footnotes: false,
+                        ..*self.options
+                    };
+                    render_inline_content(
+                        &content,
+                        &mut *self.writer,
+                        &mut inline_parser,
+                        &mut inline_events,
+                        self.link_refs,
+                        None,
+                        &mut nested_numbers,
+                        &nested_options,
+                    );
+                    write_inline_footnote_backref(&mut *self.writer, definition_index, number);
+                    self.writer.write_str("</p>\n");
+                }
             }
 
             self.writer.write_str("</li>\n");
@@ -1852,12 +1940,19 @@ mod tests {
     fn footnote_numbers_assign_constant_time_stable_ordinals() {
         let mut numbers = FootnoteNumbers::new(4);
 
-        assert_eq!(numbers.number(2), Some(1));
-        assert_eq!(numbers.number(0), Some(2));
-        assert_eq!(numbers.number(2), Some(1));
-        assert_eq!(numbers.number(3), Some(3));
-        assert_eq!(numbers.number(4), None);
-        assert_eq!(numbers.order, vec![2, 0, 3]);
+        assert_eq!(numbers.number_reference(2), Some(1));
+        assert_eq!(numbers.number_reference(0), Some(2));
+        assert_eq!(numbers.number_reference(2), Some(1));
+        assert_eq!(numbers.number_reference(3), Some(3));
+        assert_eq!(numbers.number_reference(4), None);
+        assert_eq!(
+            numbers.order,
+            vec![
+                FootnoteTarget::Reference(2),
+                FootnoteTarget::Reference(0),
+                FootnoteTarget::Reference(3)
+            ]
+        );
     }
 
     #[test]
