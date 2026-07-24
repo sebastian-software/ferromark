@@ -10,7 +10,7 @@ ferromark = { path = "../.." }
 memchr = "2.7"
 
 [dev-dependencies]
-comrak = "0.53"
+comrak = { version = "0.54", default-features = false }
 criterion = { version = "0.5", features = ["html_reports"] }
 pulldown-cmark = "0.13"
 
