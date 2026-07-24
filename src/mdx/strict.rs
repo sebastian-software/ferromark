@@ -11,6 +11,8 @@ const UNEXPECTED_JSX_CLOSING_TAG: &str = "closing JSX tag has no matching openin
 const MISMATCHED_JSX_CLOSING_TAG: &str = "closing JSX tag does not match the innermost opening tag";
 const UNCLOSED_JSX_TAG: &str = "expected a matching closing JSX tag";
 const INVALID_ESM_POSITION: &str = "ESM blocks must begin at column 1 after a blank Markdown line";
+// Both `import` and `export` are six bytes; diagnostics highlight just the keyword.
+const ESM_KEYWORD_LEN: usize = 6;
 
 #[derive(Debug)]
 struct OpenTag {
@@ -63,7 +65,7 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
                 MdxDiagnosticCode::InvalidEsmPosition,
                 INVALID_ESM_POSITION,
                 first_non_ws,
-                first_non_ws + "import".len(),
+                first_non_ws + ESM_KEYWORD_LEN,
                 None,
             ));
             in_paragraph = true;

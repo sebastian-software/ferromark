@@ -230,16 +230,6 @@ pub(crate) fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
         return None;
     }
 
-    let is_import = rest.starts_with(b"import");
-
-    // Reject dynamic imports: `import(`, `import (`, `import.`
-    if is_import {
-        let after_import = skip_whitespace_offset(rest, 6); // "import".len() == 6
-        if after_import < rest.len() && (rest[after_import] == b'(' || rest[after_import] == b'.') {
-            return None;
-        }
-    }
-
     // Find the end of the ESM statement.
     // Simple heuristic: accumulate lines until we see a blank line,
     // or the first line ends with a semicolon/newline.

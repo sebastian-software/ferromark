@@ -147,8 +147,8 @@ pub enum MdxDiagnosticCode {
 /// A structural MDX diagnostic returned by [`segment_strict`].
 ///
 /// `primary_range` is always a valid UTF-8 byte range into the original input.
-/// `related_range` identifies the corresponding opening tag for a mismatched
-/// JSX closing tag.
+/// For a mismatched JSX closing tag, `related_range` identifies the innermost
+/// opening tag that the closing tag cannot close past.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MdxDiagnostic {
     /// Stable machine-readable diagnostic category.
@@ -157,7 +157,7 @@ pub struct MdxDiagnostic {
     pub message: &'static str,
     /// Primary source range for this diagnostic.
     pub primary_range: crate::Range,
-    /// Related source range when a second location helps explain the error.
+    /// Related source range for a mismatched JSX closing tag's blocking opening tag.
     pub related_range: Option<crate::Range>,
 }
 
