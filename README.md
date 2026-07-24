@@ -309,6 +309,9 @@ The event path is fully opt-in and does not alter the normal Markdown or MDX
 HTML renderer. `parse_events_strict()` applies the same structural diagnostics
 as `segment_strict()` before producing events. Its strict validation covers
 flow constructs; malformed inline MDX retains the documented text fallback.
+Inside blockquotes and list items, a paragraph containing only one JSX tag or
+expression is promoted to the corresponding flow event. Mixed prose remains
+inline MDX, and the surrounding Markdown container events stay balanced.
 
 Full example: `cargo run --features mdx --example mdx_segment`
 
@@ -326,7 +329,7 @@ What the segmenter deliberately skips — and why that's fine for most use cases
 | **Inline JSX** (`text <em>here</em>`) | Stays in `segment()` Markdown blocks; `parse_events()` and `InlineParser::parse_mdx()` expose typed MDX inline events | Use the opt-in event APIs when a downstream consumer must distinguish prose and components |
 | **JS validation** | Heuristic detection (keyword + brace counting) instead of acorn/swc | Only if you need to report syntax errors in user-authored MDX at parse time |
 | **Markdown grammar** | Standard CommonMark/GFM rules | Official mdxjs disables indented code and HTML syntax — relevant if your content relies on `<div>` being JSX, not HTML |
-| **Container nesting** | `> <Component>` stays Markdown flow; `parse_events()` still exposes the tag as inline MDX | Full flow semantics matter only when JSX inside blockquotes or list items must alter rendering |
+| **Container nesting** | `> <Component>` stays Markdown to the renderer; `parse_events()` promotes tag-only or expression-only container paragraphs to semantic flow events | Rendering-level container MDX, multiline constructs across prefixes, and container-local ESM remain out of scope |
 | **TypeScript generics** | `<Component<T>>` not parsed | Only relevant for TSX-heavy content pages — very rare in docs |
 | **Error reporting** | Permissive fallback by default; opt-in structural diagnostics with `segment_strict()` | Use strict mode when broken MDX must fail a content pipeline |
 

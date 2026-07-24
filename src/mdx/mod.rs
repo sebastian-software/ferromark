@@ -93,10 +93,12 @@
 //! ```
 //!
 //! The official compiler tracks container context (blockquote markers, list
-//! indentation) and can detect JSX/ESM inside them. [`parse_events`] still
-//! exposes well-delimited tags and expressions in container prose as inline
-//! MDX events, which is sufficient for consumers that need to separate
-//! translatable text from syntax without changing Markdown flow semantics.
+//! indentation) and can detect JSX/ESM inside them. [`parse_events`] promotes a
+//! container paragraph containing only one well-delimited tag or expression to
+//! a flow event while preserving the surrounding Markdown container events.
+//! Mixed prose keeps its inline MDX events. Multiline constructs split across
+//! repeated container prefixes and container-local ESM remain Markdown
+//! recovery.
 //!
 //! ## No TypeScript generics in JSX
 //!
