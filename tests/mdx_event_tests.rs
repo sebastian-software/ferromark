@@ -277,3 +277,16 @@ fn strict_stream_preserves_inline_mdx_text_recovery() {
                 == "Paragraph with {unterminated inline expression.")
     }));
 }
+
+#[test]
+fn fenced_code_info_exposes_its_absolute_source_range() {
+    let input = "<Divider />\n\n```rust,ignore\nlet value = 1;\n```\n";
+    let stream = parse_events(input);
+    let event = stream
+        .events
+        .iter()
+        .find(|event| matches!(event, MdxEvent::Block(BlockEvent::CodeBlockStart { .. })))
+        .unwrap();
+
+    assert_eq!(source(input, event), Some("rust,ignore"));
+}

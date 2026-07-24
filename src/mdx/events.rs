@@ -57,8 +57,9 @@ impl MdxEvent {
     ///
     /// For container and formatting boundary events the compact underlying
     /// parser representation intentionally carries no delimiter range, so this
-    /// method returns `None`. For links, images, autolinks, and math, the
-    /// primary range has the same meaning as on the embedded [`InlineEvent`].
+    /// method returns `None`. For a fenced code-block start it returns the info
+    /// string, when present. For links, images, autolinks, and math, the primary
+    /// range has the same meaning as on the embedded [`InlineEvent`].
     #[must_use]
     pub fn source_range(&self) -> Option<Range> {
         match self {
@@ -120,46 +121,10 @@ pub fn parse_events(input: &str) -> MdxEventStream {
         "MDX input exceeds the supported u32 source range"
     );
 
-    let mut stream = MdxEventStream {
-        version: MDX_EVENT_STREAM_VERSION,
-        events: Vec::with_capacity((input.len() / 12).max(32)),
-        link_references: Vec::new(),
-    };
-
-    let content_start = emit_front_matter(input, &mut stream.events);
+    let (content_start, front_matter) = front_matter_event(input);
     let content = &input[content_start..];
     let segments = segment_spanned(content);
-    let link_refs = collect_link_references(&segments);
-    link_refs.append_definitions_to(&mut stream.link_references);
-
-    for spanned in segments {
-        let segment_start = content_start + spanned.range.start_usize();
-        match spanned.segment {
-            Segment::Esm(_) => stream
-                .events
-                .push(MdxEvent::Esm(offset_range(spanned.range, content_start))),
-            Segment::Markdown(markdown) => {
-                emit_markdown_events(markdown, segment_start, &link_refs, &mut stream.events);
-            }
-            Segment::JsxBlockOpen(_) => stream.events.push(MdxEvent::FlowJsxOpen(offset_range(
-                spanned.range,
-                content_start,
-            ))),
-            Segment::JsxBlockClose(_) => stream.events.push(MdxEvent::FlowJsxClose(offset_range(
-                spanned.range,
-                content_start,
-            ))),
-            Segment::JsxBlockSelfClose(_) => stream.events.push(MdxEvent::FlowJsxSelfClose(
-                offset_range(spanned.range, content_start),
-            )),
-            Segment::Expression(_) => stream.events.push(MdxEvent::FlowExpression(offset_range(
-                spanned.range,
-                content_start,
-            ))),
-        }
-    }
-
-    stream
+    build_event_stream(input, content_start, front_matter, segments)
 }
 
 /// Build a strict semantic MDX event stream.
@@ -180,10 +145,14 @@ pub fn parse_events_strict(input: &str) -> Result<MdxEventStream, Vec<MdxDiagnos
         "MDX input exceeds the supported u32 source range"
     );
 
-    let content_start =
-        crate::extract_front_matter(input).map_or(0, |(_, rest_offset)| rest_offset);
+    let (content_start, front_matter) = front_matter_event(input);
     match super::segment_strict(&input[content_start..]) {
-        Ok(_) => Ok(parse_events(input)),
+        Ok(segments) => Ok(build_event_stream(
+            input,
+            content_start,
+            front_matter,
+            segments,
+        )),
         Err(mut diagnostics) => {
             for diagnostic in &mut diagnostics {
                 diagnostic.primary_range = offset_range(diagnostic.primary_range, content_start);
@@ -196,9 +165,69 @@ pub fn parse_events_strict(input: &str) -> Result<MdxEventStream, Vec<MdxDiagnos
     }
 }
 
-fn emit_front_matter(input: &str, events: &mut Vec<MdxEvent>) -> usize {
+fn build_event_stream(
+    input: &str,
+    content_start: usize,
+    front_matter: Option<MdxEvent>,
+    segments: Vec<super::SpannedSegment<'_>>,
+) -> MdxEventStream {
+    let mut stream = MdxEventStream {
+        version: MDX_EVENT_STREAM_VERSION,
+        events: Vec::with_capacity((input.len() / 12).max(32)),
+        link_references: Vec::new(),
+    };
+
+    if let Some(event) = front_matter {
+        stream.events.push(event);
+    }
+
+    let (link_refs, markdown_block_events) = parse_markdown_segments(&segments);
+    link_refs.append_definitions_to(&mut stream.link_references);
+    let mut markdown_block_events = markdown_block_events.into_iter();
+
+    for spanned in segments {
+        let segment_start = content_start + spanned.range.start_usize();
+        match spanned.segment {
+            Segment::Esm(_) => stream
+                .events
+                .push(MdxEvent::Esm(offset_range(spanned.range, content_start))),
+            Segment::Markdown(markdown) => {
+                let block_events = markdown_block_events
+                    .next()
+                    .expect("every Markdown segment must have parsed block events");
+                emit_markdown_events(
+                    markdown,
+                    segment_start,
+                    &link_refs,
+                    block_events,
+                    &mut stream.events,
+                );
+            }
+            Segment::JsxBlockOpen(_) => stream.events.push(MdxEvent::FlowJsxOpen(offset_range(
+                spanned.range,
+                content_start,
+            ))),
+            Segment::JsxBlockClose(_) => stream.events.push(MdxEvent::FlowJsxClose(offset_range(
+                spanned.range,
+                content_start,
+            ))),
+            Segment::JsxBlockSelfClose(_) => stream.events.push(MdxEvent::FlowJsxSelfClose(
+                offset_range(spanned.range, content_start),
+            )),
+            Segment::Expression(_) => stream.events.push(MdxEvent::FlowExpression(offset_range(
+                spanned.range,
+                content_start,
+            ))),
+        }
+    }
+    debug_assert!(markdown_block_events.next().is_none());
+
+    stream
+}
+
+fn front_matter_event(input: &str) -> (usize, Option<MdxEvent>) {
     let Some((content, rest_offset)) = crate::extract_front_matter(input) else {
-        return 0;
+        return (0, None);
     };
 
     let input_start = input.as_ptr() as usize;
@@ -207,11 +236,13 @@ fn emit_front_matter(input: &str, events: &mut Vec<MdxEvent>) -> usize {
         .expect("front matter must borrow from its input");
     let content_end = content_start + content.len();
 
-    events.push(MdxEvent::FrontMatter {
-        range: Range::from_usize(0, rest_offset),
-        content: Range::from_usize(content_start, content_end),
-    });
-    rest_offset
+    (
+        rest_offset,
+        Some(MdxEvent::FrontMatter {
+            range: Range::from_usize(0, rest_offset),
+            content: Range::from_usize(content_start, content_end),
+        }),
+    )
 }
 
 fn semantic_options() -> Options {
@@ -222,8 +253,11 @@ fn semantic_options() -> Options {
     }
 }
 
-fn collect_link_references(segments: &[super::SpannedSegment<'_>]) -> LinkRefStore {
+fn parse_markdown_segments(
+    segments: &[super::SpannedSegment<'_>],
+) -> (LinkRefStore, Vec<Vec<BlockEvent>>) {
     let mut link_refs = LinkRefStore::new();
+    let mut parsed = Vec::new();
 
     for segment in segments {
         let Segment::Markdown(markdown) = segment.segment else {
@@ -233,23 +267,21 @@ fn collect_link_references(segments: &[super::SpannedSegment<'_>]) -> LinkRefSto
         let mut parser = BlockParser::new_with_options(markdown.as_bytes(), semantic_options());
         let mut events = Vec::new();
         parser.parse(&mut events);
+        fixup_list_tight(&mut events);
         link_refs.merge_first_wins(parser.take_link_refs());
+        parsed.push(events);
     }
 
-    link_refs
+    (link_refs, parsed)
 }
 
 fn emit_markdown_events(
     markdown: &str,
     source_offset: usize,
     link_refs: &LinkRefStore,
+    block_events: Vec<BlockEvent>,
     events: &mut Vec<MdxEvent>,
 ) {
-    let mut block_parser = BlockParser::new_with_options(markdown.as_bytes(), semantic_options());
-    let mut block_events = Vec::with_capacity((markdown.len() / 16).max(16));
-    block_parser.parse(&mut block_events);
-    fixup_list_tight(&mut block_events);
-
     let mut inline_parser = InlineParser::new();
     let mut inline_events = Vec::new();
     let mut inline_group = Vec::new();
@@ -398,7 +430,6 @@ fn offset_block_event(mut event: BlockEvent, offset: usize) -> BlockEvent {
             kind: CodeBlockKind::Fenced { info: Some(range) },
         }
         | BlockEvent::HtmlBlockText(range)
-        | BlockEvent::Text(range)
         | BlockEvent::Code(range) => *range = offset_range(*range, offset),
         _ => {}
     }
@@ -432,9 +463,12 @@ fn offset_inline_event(mut event: InlineEvent, offset: usize) -> InlineEvent {
 
 fn block_event_range(event: &BlockEvent) -> Option<Range> {
     match event {
-        BlockEvent::HtmlBlockText(range) | BlockEvent::Text(range) | BlockEvent::Code(range) => {
-            Some(*range)
+        BlockEvent::CodeBlockStart {
+            kind: CodeBlockKind::Fenced { info: Some(range) },
         }
+        | BlockEvent::HtmlBlockText(range)
+        | BlockEvent::Text(range)
+        | BlockEvent::Code(range) => Some(*range),
         _ => None,
     }
 }
