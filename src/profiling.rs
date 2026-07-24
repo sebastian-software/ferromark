@@ -91,7 +91,10 @@ pub(crate) fn record_block_events(events: &[BlockEvent], capacity: usize) {
         counters.max_block_event_capacity = counters.max_block_event_capacity.max(capacity as u64);
         for event in events {
             match event {
-                BlockEvent::Text(_) | BlockEvent::SoftBreak | BlockEvent::HtmlBlockText(_) => {
+                BlockEvent::Text(_)
+                | BlockEvent::SoftBreak
+                | BlockEvent::Comment(_)
+                | BlockEvent::HtmlBlockText(_) => {
                     counters.block_text_events += 1;
                 }
                 BlockEvent::BlockQuoteStart { .. }

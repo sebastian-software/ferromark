@@ -128,6 +128,9 @@ pub enum BlockEvent {
     /// A thematic break (horizontal rule).
     ThematicBreak,
 
+    /// A source-only line comment omitted by the HTML renderer.
+    Comment(Range),
+
     /// Start of an HTML block.
     HtmlBlockStart,
     /// End of an HTML block.

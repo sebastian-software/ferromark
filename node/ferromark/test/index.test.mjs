@@ -9,6 +9,7 @@ test('renders Markdown through the native binding', () => {
 
 test('maps typed options to the Rust surface', () => {
   assert.equal(toHtml('==mark==', { highlight: true }), '<p><mark>mark</mark></p>\n')
+  assert.equal(toHtml('// private note', { lineComments: true }), '')
   assert.throws(
     () => toHtml('text', { renderPolicy: 'invalid' }),
     /renderPolicy must be either 'untrusted' or 'trusted'/,
