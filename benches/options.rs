@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
-use ferromark::Options;
+use ferromark::{Options, RenderPolicy};
 
 const SHARED_SECTION: &str = r#"
 ## Release notes
@@ -24,6 +24,7 @@ fn throughput(bytes: usize, seconds: f64) -> f64 { bytes as f64 / seconds }
 
 fn all_extensions() -> Options {
     Options {
+        render_policy: RenderPolicy::Untrusted,
         allow_html: true,
         allow_link_refs: true,
         tables: true,
@@ -39,7 +40,6 @@ fn all_extensions() -> Options {
         heading_ids: true,
         math: true,
         callouts: true,
-        ..Options::minimal()
     }
 }
 

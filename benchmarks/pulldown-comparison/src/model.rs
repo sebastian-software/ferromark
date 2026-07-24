@@ -176,6 +176,7 @@ fn trusted(options: Options) -> Options {
 
 fn all_extensions() -> Options {
     Options {
+        render_policy: RenderPolicy::Untrusted,
         allow_html: true,
         allow_link_refs: true,
         tables: true,
@@ -191,7 +192,6 @@ fn all_extensions() -> Options {
         heading_ids: true,
         math: true,
         callouts: true,
-        ..Options::minimal()
     }
 }
 
