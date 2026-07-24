@@ -432,6 +432,9 @@ land successfully.
 
 ## Profile and feature-parity extension
 
+> The public-profile portion was superseded by ADR-0010 on 2026-07-24.
+> Benchmark-only parity configurations and historical results remain valid.
+
 The approved design is documented in
 [`2026-07-11-markdown-profiles-parity-design.md`](./2026-07-11-markdown-profiles-parity-design.md).
 It adds a bounded product/DX workstream without changing `Options::default()`.

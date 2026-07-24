@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use ferromark::{Options, Profile, RenderPolicy};
+use ferromark::{Options, RenderPolicy};
 
 use crate::{ParityConfig, ferromark_options, pulldown_options};
 
@@ -50,20 +50,20 @@ pub enum RunConfig {
     GfmOverlap,
     /// Trusted extended-overlap parity configuration.
     ExtendedOverlap,
-    /// Secure Ferromark Essentials profile.
-    EssentialsSecure,
-    /// Trusted Ferromark Essentials profile.
-    EssentialsTrusted,
-    /// Secure Ferromark Extended profile.
-    ExtendedSecure,
-    /// Secure Extended profile with heading IDs explicitly disabled.
-    ExtendedSecureNoHeadingIds,
-    /// Trusted Ferromark Extended profile.
-    ExtendedTrusted,
-    /// Secure Ferromark Full profile.
-    FullSecure,
-    /// Trusted Ferromark Full profile.
-    FullTrusted,
+    /// Secure Ferromark minimal configuration.
+    MinimalSecure,
+    /// Trusted Ferromark minimal configuration.
+    MinimalTrusted,
+    /// Secure Ferromark default configuration.
+    DefaultSecure,
+    /// Secure default configuration with heading IDs explicitly disabled.
+    DefaultSecureNoHeadingIds,
+    /// Trusted Ferromark default configuration.
+    DefaultTrusted,
+    /// Secure Ferromark configuration with every extension enabled.
+    AllExtensionsSecure,
+    /// Trusted Ferromark configuration with every extension enabled.
+    AllExtensionsTrusted,
 }
 
 impl RunConfig {
@@ -72,13 +72,13 @@ impl RunConfig {
         Self::CommonMark,
         Self::GfmOverlap,
         Self::ExtendedOverlap,
-        Self::EssentialsSecure,
-        Self::EssentialsTrusted,
-        Self::ExtendedSecure,
-        Self::ExtendedSecureNoHeadingIds,
-        Self::ExtendedTrusted,
-        Self::FullSecure,
-        Self::FullTrusted,
+        Self::MinimalSecure,
+        Self::MinimalTrusted,
+        Self::DefaultSecure,
+        Self::DefaultSecureNoHeadingIds,
+        Self::DefaultTrusted,
+        Self::AllExtensionsSecure,
+        Self::AllExtensionsTrusted,
     ];
 
     /// Stable command-line and metadata name.
@@ -87,13 +87,13 @@ impl RunConfig {
             Self::CommonMark => "commonmark",
             Self::GfmOverlap => "gfm-overlap",
             Self::ExtendedOverlap => "extended-overlap",
-            Self::EssentialsSecure => "essentials-secure",
-            Self::EssentialsTrusted => "essentials-trusted",
-            Self::ExtendedSecure => "extended-secure",
-            Self::ExtendedSecureNoHeadingIds => "extended-secure-no-heading-ids",
-            Self::ExtendedTrusted => "extended-trusted",
-            Self::FullSecure => "full-secure",
-            Self::FullTrusted => "full-trusted",
+            Self::MinimalSecure => "minimal-secure",
+            Self::MinimalTrusted => "minimal-trusted",
+            Self::DefaultSecure => "default-secure",
+            Self::DefaultSecureNoHeadingIds => "default-secure-no-heading-ids",
+            Self::DefaultTrusted => "default-trusted",
+            Self::AllExtensionsSecure => "all-extensions-secure",
+            Self::AllExtensionsTrusted => "all-extensions-trusted",
         }
     }
 
@@ -101,10 +101,10 @@ impl RunConfig {
     pub const fn is_secure(self) -> bool {
         matches!(
             self,
-            Self::EssentialsSecure
-                | Self::ExtendedSecure
-                | Self::ExtendedSecureNoHeadingIds
-                | Self::FullSecure
+            Self::MinimalSecure
+                | Self::DefaultSecure
+                | Self::DefaultSecureNoHeadingIds
+                | Self::AllExtensionsSecure
         )
     }
 
@@ -125,16 +125,16 @@ impl RunConfig {
             Self::CommonMark => ferromark_options(ParityConfig::CommonMark),
             Self::GfmOverlap => ferromark_options(ParityConfig::GfmOverlap),
             Self::ExtendedOverlap => ferromark_options(ParityConfig::ExtendedOverlap),
-            Self::EssentialsSecure => Options::from(Profile::Essentials),
-            Self::EssentialsTrusted => trusted(Profile::Essentials),
-            Self::ExtendedSecure => Options::from(Profile::Extended),
-            Self::ExtendedSecureNoHeadingIds => Options {
+            Self::MinimalSecure => Options::minimal(),
+            Self::MinimalTrusted => trusted(Options::minimal()),
+            Self::DefaultSecure => Options::default(),
+            Self::DefaultSecureNoHeadingIds => Options {
                 heading_ids: false,
-                ..Options::from(Profile::Extended)
+                ..Options::default()
             },
-            Self::ExtendedTrusted => trusted(Profile::Extended),
-            Self::FullSecure => Options::from(Profile::Full),
-            Self::FullTrusted => trusted(Profile::Full),
+            Self::DefaultTrusted => trusted(Options::default()),
+            Self::AllExtensionsSecure => all_extensions(),
+            Self::AllExtensionsTrusted => trusted(all_extensions()),
         }
     }
 
@@ -167,10 +167,31 @@ impl FromStr for RunConfig {
     }
 }
 
-fn trusted(profile: Profile) -> Options {
+fn trusted(options: Options) -> Options {
     Options {
         render_policy: RenderPolicy::Trusted,
-        ..Options::from(profile)
+        ..options
+    }
+}
+
+fn all_extensions() -> Options {
+    Options {
+        render_policy: RenderPolicy::Untrusted,
+        allow_html: true,
+        allow_link_refs: true,
+        tables: true,
+        strikethrough: true,
+        highlight: true,
+        superscript: true,
+        subscript: true,
+        task_lists: true,
+        autolink_literals: true,
+        disallowed_raw_html: true,
+        footnotes: true,
+        front_matter: true,
+        heading_ids: true,
+        math: true,
+        callouts: true,
     }
 }
 
@@ -179,16 +200,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pulldown_should_reject_product_profiles() {
-        assert!(!RunConfig::FullSecure.supports(ParserKind::PulldownCmark));
+    fn pulldown_should_reject_ferromark_only_configurations() {
+        assert!(!RunConfig::AllExtensionsSecure.supports(ParserKind::PulldownCmark));
     }
 
     #[test]
     fn secure_configuration_should_keep_untrusted_policy() {
         assert_eq!(
-            RunConfig::EssentialsSecure
-                .ferromark_options()
-                .render_policy,
+            RunConfig::MinimalSecure.ferromark_options().render_policy,
             RenderPolicy::Untrusted
         );
     }
@@ -196,17 +215,15 @@ mod tests {
     #[test]
     fn trusted_configuration_should_select_trusted_policy() {
         assert_eq!(
-            RunConfig::EssentialsTrusted
-                .ferromark_options()
-                .render_policy,
+            RunConfig::MinimalTrusted.ferromark_options().render_policy,
             RenderPolicy::Trusted
         );
     }
 
     #[test]
     fn heading_id_control_should_change_only_heading_ids() {
-        let enabled = RunConfig::ExtendedSecure.ferromark_options();
-        let disabled = RunConfig::ExtendedSecureNoHeadingIds.ferromark_options();
+        let enabled = RunConfig::DefaultSecure.ferromark_options();
+        let disabled = RunConfig::DefaultSecureNoHeadingIds.ferromark_options();
 
         assert!(enabled.heading_ids);
         assert!(!disabled.heading_ids);

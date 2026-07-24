@@ -43,11 +43,11 @@ fn every_pulldown_configuration_should_render() {
 }
 
 #[test]
-fn every_corpus_should_render_with_extended_secure() {
+fn every_corpus_should_render_with_secure_defaults() {
     for corpus in Corpus::ALL.into_iter().chain([Corpus::Extended]) {
         let data = corpus.materialize();
         let mut output = Vec::new();
-        render_ferromark_config_into(data.input(), RunConfig::ExtendedSecure, &mut output);
+        render_ferromark_config_into(data.input(), RunConfig::DefaultSecure, &mut output);
         assert!(!output.is_empty(), "corpus `{corpus}` produced no output");
     }
 }

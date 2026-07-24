@@ -31,11 +31,11 @@ targets=(
   '^profiling/commonmark-20k/commonmark/'
   '^profiling/commonmark-50k/commonmark/'
   '^profiling/mixed-250k/commonmark/'
-  '^profiling/commonmark-5k/extended-secure/ferromark$'
-  '^profiling/commonmark-20k/extended-secure/ferromark$'
-  '^profiling/commonmark-50k/extended-secure/ferromark$'
-  '^profiling/commonmark-50k/essentials-secure/ferromark$'
-  '^profiling/commonmark-50k/full-secure/ferromark$'
+  '^profiling/commonmark-5k/default-secure/ferromark$'
+  '^profiling/commonmark-20k/default-secure/ferromark$'
+  '^profiling/commonmark-50k/default-secure/ferromark$'
+  '^profiling/commonmark-50k/minimal-secure/ferromark$'
+  '^profiling/commonmark-50k/all-extensions-secure/ferromark$'
 )
 
 criterion_groups=(
@@ -43,11 +43,11 @@ criterion_groups=(
   'profiling_commonmark-20k_commonmark'
   'profiling_commonmark-50k_commonmark'
   'profiling_mixed-250k_commonmark'
-  'profiling_commonmark-5k_extended-secure'
-  'profiling_commonmark-20k_extended-secure'
-  'profiling_commonmark-50k_extended-secure'
-  'profiling_commonmark-50k_essentials-secure'
-  'profiling_commonmark-50k_full-secure'
+  'profiling_commonmark-5k_default-secure'
+  'profiling_commonmark-20k_default-secure'
+  'profiling_commonmark-50k_default-secure'
+  'profiling_commonmark-50k_minimal-secure'
+  'profiling_commonmark-50k_all-extensions-secure'
 )
 
 criterion_functions=(
@@ -78,7 +78,7 @@ for repetition in $(seq 1 "$repetitions"); do
   FERROMARK_CPU_MODE=portable RUSTFLAGS='-C target-cpu=generic' \
     cargo run --locked --release --bin profile_driver -- \
     --parser ferromark \
-    --config extended-secure \
+    --config default-secure \
     --corpus commonmark-50k \
     --iterations 1 \
     --json "$run_dir/environment-probe.json" >/dev/null

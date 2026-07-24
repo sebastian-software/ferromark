@@ -78,11 +78,11 @@ does not expose an equivalent trust boundary.
 
 ## What you get
 
-**CommonMark conformance**: The current default-policy report passes 577 of 652
-spec examples (88.5%). Raw HTML is escaped by default as part of Ferromark's
-browser-facing safety boundary, so this is not a claim of full raw-HTML
-CommonMark parity. Run `cargo test --test commonmark_spec -- --ignored
---nocapture` for the complete, current report.
+**CommonMark conformance**: The `Options::commonmark()` report passes 577 of 652
+spec examples (88.5%). Raw HTML remains escaped by its default
+`RenderPolicy::Untrusted` safety boundary, so this is not a claim of full
+raw-HTML CommonMark output parity. Run `cargo test --test commonmark_spec --
+--ignored --nocapture` for the complete, current report.
 
 **All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
 
@@ -100,41 +100,34 @@ heading_ids · math · callouts
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
 
-## Markdown profiles
+## Markdown configuration
 
-Profiles provide three curated, monotone feature sets without replacing the
-fine-grained options:
+Start from the syntax contract you need, then enable individual extensions:
 
-| Feature | Essentials | Extended | Full |
-| --- | :---: | :---: | :---: |
-| Tables, strikethrough, task lists | ✓ | ✓ | ✓ |
-| Raw HTML parsing, reference links | — | ✓ | ✓ |
-| Heading IDs, callouts | — | ✓ | ✓ |
-| Autolink literals, footnotes, front matter | — | — | ✓ |
-| Math, highlight, subscript, superscript | — | — | ✓ |
-
-- **Essentials** covers common READMEs, product documentation, and simple
-  content with the three everyday GFM extensions.
-- **Extended** adds the current default feature mix, including references, raw
-  HTML parsing, heading IDs, and callouts.
-- **Full** enables every Markdown feature supported by this Ferromark version.
+- `Options::minimal()` keeps the smallest Markdown surface and disables raw
+  HTML parsing, reference links, and every optional extension.
+- `Options::commonmark()` enables CommonMark syntax, including reference links
+  and raw HTML recognition.
+- `Options::gfm()` adds the five GitHub Flavored Markdown extensions: tables,
+  strikethrough, task lists, autolink literals, and disallowed raw HTML.
 
 ```rust
-use ferromark::{Options, Profile, RenderPolicy};
+use ferromark::Options;
 
 let options = Options {
-    heading_ids: true,
-    render_policy: RenderPolicy::Trusted,
-    ..Options::from(Profile::Essentials)
+    front_matter: true,
+    allow_html: false,
+    ..Options::gfm()
 };
 
 let html = ferromark::to_html_with_options(markdown, &options);
 ```
 
-`Options::default()` remains backward-compatible and currently matches the
-Extended feature mix. Profiles never opt into trusted HTML: `RenderPolicy` is a
-separate security decision. The profile names describe syntax contracts, not a
-fixed speed promise. Measure your corpus with `cargo bench --bench profiles`.
+All constructors keep `RenderPolicy::Untrusted`. `allow_html` controls whether
+raw HTML syntax is parsed; `RenderPolicy` independently controls whether parsed
+HTML is preserved or escaped. `Options::default()` retains Ferromark's
+backward-compatible feature mix. Measure the configurations on your corpus with
+`cargo bench --bench options`.
 
 ## Trade-offs
 
