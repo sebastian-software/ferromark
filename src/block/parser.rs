@@ -535,11 +535,15 @@ impl<'a> BlockParser<'a> {
                     let header_cells = Self::split_table_cells(header_line);
 
                     if header_cells.len() == alignments.len() {
+                        let dash_counts = self
+                            .options
+                            .table_column_widths
+                            .then(|| Self::delimiter_dash_counts(line));
                         self.cursor = Cursor::new_at(self.input, line_end);
                         if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                             parser_cursor_bump!(self.cursor);
                         }
-                        self.start_table(header_cells, alignments, events);
+                        self.start_table(header_cells, alignments, dash_counts, events);
                         return;
                     }
                 }
@@ -874,6 +878,10 @@ impl<'a> BlockParser<'a> {
                         let header_cells = Self::split_table_cells(header_line);
 
                         if header_cells.len() == alignments.len() {
+                            let dash_counts = self
+                                .options
+                                .table_column_widths
+                                .then(|| Self::delimiter_dash_counts(line));
                             // We have a table! Convert the paragraph.
                             // Skip the delimiter row
                             self.cursor = Cursor::new_at(self.input, line_end);
@@ -881,7 +889,7 @@ impl<'a> BlockParser<'a> {
                                 parser_cursor_bump!(self.cursor);
                             }
 
-                            self.start_table(header_cells, alignments, events);
+                            self.start_table(header_cells, alignments, dash_counts, events);
                             return;
                         }
                     }
@@ -3000,7 +3008,6 @@ impl<'a> BlockParser<'a> {
             if i == dash_start {
                 return None; // No dashes
             }
-
             let right_colon = i < cell.len() && cell[i] == b':';
             if right_colon {
                 i += 1;
@@ -3025,6 +3032,27 @@ impl<'a> BlockParser<'a> {
         }
 
         Some(alignments)
+    }
+
+    /// Collect dash counts from a delimiter row already validated by
+    /// `is_delimiter_row`.
+    fn delimiter_dash_counts(line: &[u8]) -> SmallVec<[u16; 8]> {
+        let cells = Self::split_table_cells(line);
+        let mut dash_counts = SmallVec::new();
+        for &(start, end) in &cells {
+            let cell = &line[start..end];
+            let dash_start = usize::from(cell[0] == b':');
+            let mut i = dash_start;
+            while i < cell.len() && cell[i] == b'-' {
+                i += 1;
+            }
+            dash_counts.push(u16::try_from(i - dash_start).unwrap_or(u16::MAX));
+
+            if dash_counts.len() >= limits::MAX_TABLE_COLUMNS {
+                break;
+            }
+        }
+        dash_counts
     }
 
     /// Check if the current line would start a block construct that terminates a table.
@@ -3061,6 +3089,7 @@ impl<'a> BlockParser<'a> {
         &mut self,
         header_cells: SmallVec<[(usize, usize); 8]>,
         alignments: SmallVec<[Alignment; 8]>,
+        dash_counts: Option<SmallVec<[u16; 8]>>,
         events: &mut Vec<BlockEvent>,
     ) {
         // Extract the last paragraph line for use as header
@@ -3086,6 +3115,9 @@ impl<'a> BlockParser<'a> {
         self.mark_container_has_content();
 
         events.push(BlockEvent::TableStart);
+        if let Some(dash_counts) = dash_counts {
+            Self::emit_table_column_widths(&dash_counts, events);
+        }
         events.push(BlockEvent::TableHeadStart);
         events.push(BlockEvent::TableRowStart);
 
@@ -3112,6 +3144,29 @@ impl<'a> BlockParser<'a> {
         self.in_table = true;
         self.table_alignments = alignments;
         self.table_has_body = false;
+    }
+
+    /// Emit normalized numeric width hints whose cumulative total is exactly 100%.
+    fn emit_table_column_widths(dash_counts: &[u16], events: &mut Vec<BlockEvent>) {
+        let total_weight: u64 = dash_counts.iter().map(|&count| u64::from(count)).sum();
+        if total_weight == 0 {
+            return;
+        }
+
+        events.push(BlockEvent::TableColumnWidthsStart);
+        let mut cumulative_weight = 0u64;
+        let mut allocated = 0u64;
+        for &dash_count in dash_counts {
+            cumulative_weight += u64::from(dash_count);
+            let cumulative_basis_points =
+                (cumulative_weight * 10_000 + total_weight / 2) / total_weight;
+            let basis_points = cumulative_basis_points - allocated;
+            allocated = cumulative_basis_points;
+            events.push(BlockEvent::TableColumnWidth {
+                basis_points: basis_points as u16,
+            });
+        }
+        events.push(BlockEvent::TableColumnWidthsEnd);
     }
 
     /// Close an open table, emitting appropriate end events.

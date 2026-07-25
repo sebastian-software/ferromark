@@ -668,6 +668,34 @@ impl HtmlWriter {
         self.write_str("</table>\n");
     }
 
+    /// Write a table column group start.
+    #[inline]
+    pub fn colgroup_start(&mut self) {
+        self.write_str("<colgroup>\n");
+    }
+
+    /// Write a numeric column-width hint.
+    #[inline]
+    pub fn col_width(&mut self, basis_points: u16) {
+        self.write_str("<col style=\"width: ");
+        self.write_u32(u32::from(basis_points / 100));
+        let fraction = basis_points % 100;
+        if fraction != 0 {
+            self.write_byte(b'.');
+            self.write_byte(b'0' + (fraction / 10) as u8);
+            if fraction % 10 != 0 {
+                self.write_byte(b'0' + (fraction % 10) as u8);
+            }
+        }
+        self.write_str("%\">\n");
+    }
+
+    /// Write a table column group end.
+    #[inline]
+    pub fn colgroup_end(&mut self) {
+        self.write_str("</colgroup>\n");
+    }
+
     /// Write thead start: `<thead>\n`
     #[inline]
     pub fn thead_start(&mut self) {

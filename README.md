@@ -95,7 +95,7 @@ Fine-grained options let you turn on exactly what you need:
 ```text
 allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
 autolink_literals · disallowed_raw_html · footnotes · front_matter
-heading_ids · math · callouts
+heading_ids · math · callouts · table_column_widths
 ```
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
@@ -122,6 +122,20 @@ let options = Options {
 
 let html = ferromark::to_html_with_options(markdown, &options);
 ```
+
+`table_column_widths` is a separate, opt-in extension to GFM pipe tables. When
+enabled, the relative number of dashes in each delimiter cell becomes a numeric
+HTML column-width hint:
+
+```markdown
+| Short | Long |
+| -- | ------ |
+```
+
+The example renders 25% and 75% `<col>` hints. Alignment colons are not counted.
+No preset enables this interpretation because GFM otherwise treats delimiter
+dash counts as formatting only. The extension accepts neither CSS nor arbitrary
+HTML attributes.
 
 All constructors keep `RenderPolicy::Untrusted`. `allow_html` controls whether
 raw HTML syntax is parsed; `RenderPolicy` independently controls whether parsed

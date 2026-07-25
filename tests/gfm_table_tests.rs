@@ -5,7 +5,7 @@
 
 use ferromark::to_html;
 use ferromark::to_html_with_options;
-use ferromark::{Options, RenderPolicy};
+use ferromark::{BlockEvent, BlockParser, Options, RenderPolicy};
 
 // === GFM Spec Examples ===
 
@@ -207,6 +207,103 @@ fn delimiter_left_alignment() {
     let result = to_html(input);
     assert!(result.contains("<th align=\"left\">a</th>"));
     assert!(result.contains("<td align=\"left\">b</td>"));
+}
+
+// === Opt-in relative column-width hints ===
+
+fn table_width_options() -> Options {
+    Options {
+        table_column_widths: true,
+        ..Options::default()
+    }
+}
+
+#[test]
+fn column_width_hints_are_disabled_by_default() {
+    let input = "| Short | Long |\n| -- | ------ |\n| a | b |\n";
+    let result = to_html(input);
+
+    assert!(!result.contains("<colgroup>"));
+    assert!(!result.contains("style="));
+}
+
+#[test]
+fn column_width_hints_use_delimiter_dash_ratios() {
+    let input = "| Short | Long |\n| -- | ------ |\n| a | b |\n";
+    let expected = "<table>\n<colgroup>\n<col style=\"width: 25%\">\n<col style=\"width: 75%\">\n</colgroup>\n<thead>\n<tr>\n<th>Short</th>\n<th>Long</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>a</td>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n";
+
+    assert_eq!(
+        to_html_with_options(input, &table_width_options()),
+        expected
+    );
+}
+
+#[test]
+fn column_width_hints_are_exposed_as_typed_block_events() {
+    let input = b"| Short | Long |\n| -- | ------ |\n";
+    let mut parser = BlockParser::new_with_options(input, table_width_options());
+    let mut events = Vec::new();
+    parser.parse(&mut events);
+
+    let widths = events
+        .iter()
+        .filter_map(|event| match event {
+            BlockEvent::TableColumnWidth { basis_points } => Some(*basis_points),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(widths, [2_500, 7_500]);
+}
+
+#[test]
+fn alignment_markers_do_not_contribute_to_column_widths() {
+    let input = "| Left | Center | Right |\n| :-- | :----: | ------: |\n";
+    let result = to_html_with_options(input, &table_width_options());
+
+    assert!(result.contains("<col style=\"width: 16.67%\">"));
+    assert!(result.contains("<col style=\"width: 33.33%\">"));
+    assert!(result.contains("<col style=\"width: 50%\">"));
+    assert!(result.contains("<th align=\"left\">Left</th>"));
+    assert!(result.contains("<th align=\"center\">Center</th>"));
+    assert!(result.contains("<th align=\"right\">Right</th>"));
+}
+
+#[test]
+fn rounded_column_widths_still_total_one_hundred_percent() {
+    let input = "| A | B | C |\n| - | - | - |\n";
+    let result = to_html_with_options(input, &table_width_options());
+
+    assert!(result.contains("<col style=\"width: 33.33%\">"));
+    assert!(result.contains("<col style=\"width: 33.34%\">"));
+    assert_eq!(result.matches("<col style=").count(), 3);
+}
+
+#[test]
+fn column_width_option_does_not_enable_tables() {
+    let input = "| A | B |\n| -- | ---- |\n";
+    let options = Options {
+        tables: false,
+        table_column_widths: true,
+        ..Options::default()
+    };
+    let result = to_html_with_options(input, &options);
+
+    assert!(!result.contains("<table>"));
+    assert!(!result.contains("<colgroup>"));
+}
+
+#[test]
+fn very_long_delimiters_keep_width_normalization_bounded() {
+    let headers = std::iter::repeat_n("H", 7).collect::<Vec<_>>().join(" | ");
+    let delimiter = std::iter::repeat_n("-".repeat(70_000), 7)
+        .collect::<Vec<_>>()
+        .join(" | ");
+    let input = format!("{headers}\n{delimiter}\n");
+    let result = to_html_with_options(&input, &table_width_options());
+
+    assert_eq!(result.matches("<col style=").count(), 7);
+    assert!(result.contains("<col style=\"width: 14.29%\">"));
 }
 
 // === Official cmark-gfm extensions.txt tests ===
