@@ -41,9 +41,14 @@ pub use render::HtmlWriter;
 
 /// A complete fenced code block passed to a custom renderer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct FencedCodeBlock<'a> {
     /// Decoded first word of the CommonMark info string, when present.
     pub language: Option<&'a str>,
+    /// Decoded info-string text after the language word, when present —
+    /// the "meta" text tooling conventions use for line highlighting,
+    /// titles, and similar (e.g. `{1-3} title="…"`).
+    pub meta: Option<&'a str>,
     /// Raw code content before HTML escaping.
     pub code: &'a str,
 }
@@ -98,7 +103,7 @@ pub enum RenderPolicy {
 }
 
 /// Parsing/rendering options.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     /// Select the output trust boundary. Defaults to [`RenderPolicy::Untrusted`].
     pub render_policy: RenderPolicy,
@@ -155,6 +160,14 @@ pub struct Options {
     /// Disable this for dialects that reserve indentation for other block
     /// semantics and require fenced code blocks instead.
     pub indented_code_blocks: bool,
+    /// Prefix internal absolute link destinations with this base path.
+    ///
+    /// When set, `<a>` destinations that start with `/` (but not `//`, and
+    /// not already with the base) are prefixed — for sites deployed under a
+    /// subpath, e.g. GitHub Pages. Trailing slashes on the base are ignored
+    /// and a bare `"/"` is a no-op. Image sources and autolinks are not
+    /// rewritten.
+    pub link_base_path: Option<Box<str>>,
 }
 
 impl Options {
@@ -188,6 +201,7 @@ impl Options {
             definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
+            link_base_path: None,
         }
     }
 
@@ -221,6 +235,7 @@ impl Options {
             definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
+            link_base_path: None,
         }
     }
 
@@ -254,6 +269,7 @@ impl Options {
             definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
+            link_base_path: None,
         }
     }
 }
@@ -283,6 +299,7 @@ impl Default for Options {
             definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
+            link_base_path: None,
         }
     }
 }
@@ -293,6 +310,19 @@ pub struct ParseResult<'a> {
     pub html: String,
     /// Raw front matter content (between delimiters), if detected.
     pub front_matter: Option<&'a str>,
+    /// Document headings in source order, for table-of-contents rendering.
+    pub headings: Vec<Heading>,
+}
+
+/// One document heading collected during rendering.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Heading {
+    /// Heading level, 1–6.
+    pub level: u8,
+    /// The generated slug, present when [`Options::heading_ids`] is enabled.
+    pub id: Option<String>,
+    /// Plain heading text with inline markup and HTML tags removed.
+    pub text: String,
 }
 
 /// Extract front matter from the start of a document.
@@ -403,7 +433,7 @@ fn extract_front_matter(input: &str) -> Option<(&str, usize)> {
     None
 }
 
-/// Parse Markdown and return both HTML and front matter (if present).
+/// Parse Markdown and return HTML, front matter, and headings.
 ///
 /// Uses default options with `front_matter: true`.
 ///
@@ -412,6 +442,8 @@ fn extract_front_matter(input: &str) -> Option<(&str, usize)> {
 /// let result = ferromark::parse("---\ntitle: Hello\n---\n# Content");
 /// assert_eq!(result.front_matter, Some("title: Hello\n"));
 /// assert!(result.html.contains("Content</h1>"));
+/// assert_eq!(result.headings[0].id.as_deref(), Some("content"));
+/// assert_eq!(result.headings[0].text, "Content");
 /// ```
 pub fn parse(input: &str) -> ParseResult<'_> {
     let options = Options {
@@ -421,10 +453,32 @@ pub fn parse(input: &str) -> ParseResult<'_> {
     parse_with_options(input, &options)
 }
 
-/// Parse Markdown with options and return both HTML and front matter.
+/// Parse Markdown with options and return HTML, front matter, and headings.
 ///
 /// Front matter is only extracted when `options.front_matter` is `true`.
+/// Heading IDs are only present when `options.heading_ids` is enabled.
 pub fn parse_with_options<'a>(input: &'a str, options: &Options) -> ParseResult<'a> {
+    parse_impl(input, options, None)
+}
+
+/// Parse Markdown with options and an opt-in fenced-code renderer, returning
+/// HTML, front matter, and headings.
+///
+/// See [`FencedCodeRenderer`] for the escaping contract the renderer must
+/// uphold.
+pub fn parse_with_renderer<'a>(
+    input: &'a str,
+    options: &Options,
+    renderer: &mut dyn FencedCodeRenderer,
+) -> ParseResult<'a> {
+    parse_impl(input, options, Some(renderer))
+}
+
+fn parse_impl<'a>(
+    input: &'a str,
+    options: &Options,
+    renderer: Option<&mut dyn FencedCodeRenderer>,
+) -> ParseResult<'a> {
     let (front_matter, markdown) = if options.front_matter {
         match extract_front_matter(input) {
             Some((fm, offset)) => (Some(fm), &input[offset..]),
@@ -434,8 +488,23 @@ pub fn parse_with_options<'a>(input: &'a str, options: &Options) -> ParseResult<
         (None, input)
     };
 
-    let html = to_html_with_options(markdown, options);
-    ParseResult { html, front_matter }
+    let mut headings = Vec::new();
+    let mut writer = HtmlWriter::with_capacity_for(markdown.len());
+    render_to_writer_impl(
+        markdown.as_bytes(),
+        &mut writer,
+        options,
+        renderer,
+        Some(&mut headings),
+    );
+    let html = writer
+        .into_string()
+        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML");
+    ParseResult {
+        html,
+        front_matter,
+        headings,
+    }
 }
 
 /// Convert Markdown to HTML.
@@ -931,6 +1000,7 @@ struct RenderContext<'a, 'r, R: FencedCodeRenderer + ?Sized> {
     fenced_code_renderer: Option<&'r mut R>,
     fenced_code_state: Option<FencedCodeState>,
     fenced_code_buffer: Vec<u8>,
+    headings: Option<&'a mut Vec<Heading>>,
 }
 
 impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
@@ -940,6 +1010,7 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
         footnote_store: Option<&'a FootnoteStore>,
         options: &'a Options,
         fenced_code_renderer: Option<&'r mut R>,
+        headings: Option<&'a mut Vec<Heading>>,
     ) -> Self {
         Self {
             writer,
@@ -967,13 +1038,14 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
             fenced_code_renderer,
             fenced_code_state: None,
             fenced_code_buffer: Vec::new(),
+            headings,
         }
     }
 }
 
 /// Render Markdown to an HtmlWriter.
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
-    render_to_writer_impl::<DisabledFencedCodeRenderer>(input, writer, options, None);
+    render_to_writer_impl::<DisabledFencedCodeRenderer>(input, writer, options, None, None);
 }
 
 fn render_to_writer_with_renderer(
@@ -982,7 +1054,7 @@ fn render_to_writer_with_renderer(
     options: &Options,
     fenced_code_renderer: Option<&mut dyn FencedCodeRenderer>,
 ) {
-    render_to_writer_impl(input, writer, options, fenced_code_renderer);
+    render_to_writer_impl(input, writer, options, fenced_code_renderer, None);
 }
 
 struct DisabledFencedCodeRenderer;
@@ -998,9 +1070,10 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     writer: &mut HtmlWriter,
     options: &Options,
     fenced_code_renderer: Option<&mut R>,
+    headings: Option<&mut Vec<Heading>>,
 ) {
     // Parse blocks
-    let mut parser = BlockParser::new_with_options(input, *options);
+    let mut parser = BlockParser::new_with_options(input, options.clone());
     let mut events = Vec::with_capacity((input.len() / 16).max(64));
     parser.parse(&mut events);
     #[cfg(feature = "profiling")]
@@ -1022,6 +1095,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
         fn_store_ref,
         options,
         fenced_code_renderer,
+        headings,
     );
 
     // Render events to HTML
@@ -1063,6 +1137,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
         let fenced_code_renderer = &mut self.fenced_code_renderer;
         let fenced_code_state = &mut self.fenced_code_state;
         let fenced_code_buffer = &mut self.fenced_code_buffer;
+        let headings = &mut self.headings;
 
         // Check if we're in a tight list (innermost list is tight)
         // BUT: paragraphs inside blockquotes that started AFTER the list need <p> tags
@@ -1142,13 +1217,18 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 let content = heading_state.finish();
 
                 // Emit heading open tag (deferred from HeadingStart)
+                let mut collected_id = None;
                 if let Some(tracker) = heading_id_tracker.as_mut() {
                     let id = tracker.make_id(content);
                     writer.heading_start_with_id(*level, id);
+                    if headings.is_some() {
+                        collected_id = Some(id.to_owned());
+                    }
                 } else {
                     writer.heading_start(*level);
                 }
 
+                let text_start = writer.len();
                 if !content.is_empty() {
                     render_inline_content(
                         content,
@@ -1160,6 +1240,13 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         footnote_numbers,
                         options,
                     );
+                }
+                if let Some(collector) = headings.as_deref_mut() {
+                    collector.push(Heading {
+                        level: *level,
+                        id: collected_id,
+                        text: heading_plain_text(&writer.as_bytes()[text_start..]),
+                    });
                 }
                 writer.heading_end(*level);
             }
@@ -1270,11 +1357,15 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     let language = state
                         .info
                         .map(|range| HtmlWriter::decode_info_word(range.slice(input)));
+                    let meta = state
+                        .info
+                        .and_then(|range| HtmlWriter::decode_info_meta(range.slice(input)));
                     let code = std::str::from_utf8(fenced_code_buffer)
                         .expect("fenced code originates from UTF-8 Markdown input");
                     let rendered = fenced_code_renderer.as_deref_mut().and_then(|renderer| {
                         renderer.render(FencedCodeBlock {
                             language: language.as_deref().filter(|value| !value.is_empty()),
+                            meta: meta.as_deref(),
                             code,
                         })
                     });
@@ -1612,6 +1703,7 @@ fn render_inline_content(
     profiling::record_inline_events(inline_events, inline_events.capacity());
 
     let mut image_state = None;
+    let link_base = normalized_link_base(options);
     for event in inline_events.iter() {
         render_inline_event(
             text,
@@ -1621,10 +1713,40 @@ fn render_inline_content(
             link_refs,
             options.disallowed_raw_html,
             options.render_policy,
+            link_base,
             footnote_store,
             footnote_numbers,
         );
     }
+}
+
+/// Extract plain text from rendered heading HTML: tags are dropped and
+/// entities decoded. ferromark-emitted tags never contain a raw `>` inside
+/// attribute values (attributes are entity-escaped), so scanning to the next
+/// `>` is exact for generated markup.
+fn heading_plain_text(html: &[u8]) -> String {
+    let mut text = Vec::with_capacity(html.len());
+    let mut i = 0;
+    while i < html.len() {
+        if html[i] == b'<' {
+            while i < html.len() && html[i] != b'>' {
+                i += 1;
+            }
+            i += 1;
+        } else {
+            text.push(html[i]);
+            i += 1;
+        }
+    }
+    let text = String::from_utf8(text).unwrap_or_default();
+    html_escape::decode_html_entities(&text).into_owned()
+}
+
+/// Normalize the configured link base path: trailing slashes are stripped
+/// and an empty result (including a bare `"/"`) disables rewriting.
+fn normalized_link_base(options: &Options) -> Option<&str> {
+    let base = options.link_base_path.as_deref()?.trim_end_matches('/');
+    (!base.is_empty()).then_some(base)
 }
 
 /// Render a single inline event to HTML.
@@ -1637,6 +1759,7 @@ fn render_inline_event(
     link_refs: &LinkRefStore,
     filter_html: bool,
     render_policy: RenderPolicy,
+    link_base: Option<&str>,
     footnote_store: Option<&FootnoteStore>,
     footnote_numbers: &mut FootnoteNumbers,
 ) {
@@ -1772,7 +1895,11 @@ fn render_inline_event(
             // Suppress link tags inside image alt text
             if !in_image {
                 writer.write_str("<a href=\"");
-                writer.write_link_url_with_policy(url.slice(text), render_policy);
+                writer.write_link_url_with_policy_and_base(
+                    url.slice(text),
+                    render_policy,
+                    link_base,
+                );
                 writer.write_str("\"");
                 if let Some(t) = title {
                     writer.write_str(" title=\"");
@@ -1786,7 +1913,7 @@ fn render_inline_event(
             if !in_image {
                 if let Some(def) = link_refs.get(*def_index as usize) {
                     writer.write_str("<a href=\"");
-                    writer.write_link_url_with_policy(&def.url, render_policy);
+                    writer.write_link_url_with_policy_and_base(&def.url, render_policy, link_base);
                     writer.write_str("\"");
                     if let Some(title) = &def.title {
                         writer.write_str(" title=\"");
@@ -2047,7 +2174,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     let renderer = self.fenced_code_renderer.as_deref_mut();
                     let nested_options = Options {
                         inline_footnotes: false,
-                        ..*self.options
+                        ..self.options.clone()
                     };
                     let mut nested = RenderContext::new(
                         &mut *self.writer,
@@ -2055,6 +2182,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         Some(footnote_store),
                         &nested_options,
                         renderer,
+                        None,
                     );
                     // Reuse the parent's inline parser (idle by now) so each
                     // footnote does not pay for a fresh set of scratch buffers.
@@ -2085,7 +2213,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     let nested_options = Options {
                         footnotes: false,
                         inline_footnotes: false,
-                        ..*self.options
+                        ..self.options.clone()
                     };
                     // Reuse the parent's idle inline parser and event buffer
                     // instead of allocating fresh ones per inline footnote.

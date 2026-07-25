@@ -105,7 +105,7 @@ Fine-grained options let you turn on exactly what you need:
 ```text
 allow_html · allow_link_refs · tables · merged_table_cells · table_column_widths · strikethrough · highlight · superscript · subscript · task_lists
 autolink_literals · disallowed_raw_html · footnotes · inline_footnotes · front_matter
-heading_ids · math · callouts · definition_lists · line_comments · indented_code_blocks
+heading_ids · math · callouts · definition_lists · line_comments · indented_code_blocks · link_base_path
 ```
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
@@ -224,6 +224,13 @@ No preset enables this interpretation because GFM otherwise treats delimiter
 dash counts as formatting only. The extension accepts neither CSS nor arbitrary
 HTML attributes. It composes with `merged_table_cells`: widths describe the
 underlying table columns, while a merged cell spans those columns.
+
+For documentation pipelines, `parse()` / `parse_with_options()` return the
+rendered HTML together with the raw front matter block and a list of headings
+(level, id, plain text) for table-of-contents rendering;
+`parse_with_renderer()` adds the opt-in fenced-code renderer to the same pass.
+`link_base_path` prefixes internal absolute link destinations (`/…`) for sites
+deployed under a subpath; image sources and autolinks are not rewritten.
 
 All constructors keep `RenderPolicy::Untrusted`. `allow_html` controls whether
 raw HTML syntax is parsed; `RenderPolicy` independently controls whether parsed

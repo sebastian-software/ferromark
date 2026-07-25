@@ -14,11 +14,17 @@ export function toHtml(markdown, options) {
 
 /**
  * @param {string} markdown
- * @param {import('./index.mjs').CodeHighlighter} highlighter
- * @param {import('./index.mjs').HighlightOptions} highlightOptions
  * @param {import('./index.mjs').Options} [options]
  */
-export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, options) {
+export function transform(markdown, options) {
+  return loadNative().transform(markdown, options)
+}
+
+/**
+ * @param {import('./index.mjs').CodeHighlighter} highlighter
+ * @param {import('./index.mjs').HighlightOptions} highlightOptions
+ */
+function highlighterRenderer(highlighter, highlightOptions) {
   if (!highlighter || typeof highlighter.codeToHtml !== 'function') {
     throw new TypeError('highlighter must provide a synchronous codeToHtml method')
   }
@@ -27,30 +33,65 @@ export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, o
   }
 
   const fallbackLanguage = highlightOptions.fallbackLanguage ?? 'text'
-  /** @param {string} code @param {string | null | undefined} language */
-  const render = (code, language) => {
+  /**
+   * @param {string} code
+   * @param {string | null | undefined} language
+   * @param {string | null | undefined} meta
+   */
+  return (code, language, meta) => {
     try {
       return highlighter.codeToHtml(code, {
         lang: language ?? fallbackLanguage,
         theme: highlightOptions.theme,
+        ...(meta ? { meta: { __raw: meta } } : {}),
       })
     }
     catch {
       return null
     }
   }
+}
 
+/**
+ * @param {string} markdown
+ * @param {import('./index.mjs').CodeHighlighter} highlighter
+ * @param {import('./index.mjs').HighlightOptions} highlightOptions
+ * @param {import('./index.mjs').Options} [options]
+ */
+export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, options) {
+  const render = highlighterRenderer(highlighter, highlightOptions)
   return loadNative().toHtmlWithRenderer(markdown, options, render)
 }
 
 /**
+ * @param {string} markdown
+ * @param {import('./index.mjs').CodeHighlighter} highlighter
+ * @param {import('./index.mjs').HighlightOptions} highlightOptions
+ * @param {import('./index.mjs').Options} [options]
+ */
+export function transformWithHighlighter(markdown, highlighter, highlightOptions, options) {
+  const render = highlighterRenderer(highlighter, highlightOptions)
+  return loadNative().transformWithRenderer(markdown, options, render)
+}
+
+/**
+ * @typedef {(code: string, language?: string | null, meta?: string | null) => string | null} NativeRenderer
  * @typedef {{
  *   toHtml(markdown: string, options?: import('./index.mjs').Options): string
  *   toHtmlWithRenderer(
  *     markdown: string,
  *     options: import('./index.mjs').Options | undefined,
- *     renderer: (code: string, language?: string | null) => string | null,
+ *     renderer: NativeRenderer,
  *   ): string
+ *   transform(
+ *     markdown: string,
+ *     options?: import('./index.mjs').Options,
+ *   ): import('./index.mjs').TransformResult
+ *   transformWithRenderer(
+ *     markdown: string,
+ *     options: import('./index.mjs').Options | undefined,
+ *     renderer: NativeRenderer,
+ *   ): import('./index.mjs').TransformResult
  * }} NativeBindings
  */
 

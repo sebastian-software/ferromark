@@ -29,6 +29,7 @@ fn minimal_should_disable_every_optional_syntax_feature() {
             definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
+            link_base_path: None,
         }
     );
 }
@@ -99,6 +100,7 @@ fn default_should_retain_the_existing_feature_mix() {
             definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
+            link_base_path: None,
         }
     );
 }
