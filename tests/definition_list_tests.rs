@@ -107,7 +107,15 @@ fn definition_lists_work_inside_blockquotes_and_list_items() {
     );
     assert_eq!(
         render("- Term\n  : Definition"),
-        "<ul>\n<li><dl>\n<dt>Term</dt>\n<dd>Definition</dd>\n</dl>\n</li>\n</ul>\n"
+        "<ul>\n<li>\n<dl>\n<dt>Term</dt>\n<dd>Definition</dd>\n</dl>\n</li>\n</ul>\n"
+    );
+}
+
+#[test]
+fn definition_lists_consume_tight_list_item_block_spacing() {
+    assert_eq!(
+        render("- Term\n  : # Heading"),
+        "<ul>\n<li>\n<dl>\n<dt>Term</dt>\n<dd><h1 id=\"heading\">Heading</h1>\n</dd>\n</dl>\n</li>\n</ul>\n"
     );
 }
 

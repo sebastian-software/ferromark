@@ -1259,6 +1259,10 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     writer.newline();
                     *need_newline_before_block = false;
                 }
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
                 writer.dl_start();
             }
             BlockEvent::DefinitionListEnd => {
