@@ -48,6 +48,7 @@ fn all_extensions() -> Options {
         definition_lists: true,
         line_comments: true,
         indented_code_blocks: true,
+        link_base_path: None,
     }
 }
 

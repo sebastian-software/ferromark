@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { toHtml, toHtmlWithHighlighter } from '../index.mjs'
+import { toHtml, toHtmlWithHighlighter, transform, transformWithHighlighter } from '../index.mjs'
 
 test('renders Markdown through the native binding', () => {
   assert.equal(toHtml('# Hello'), '<h1 id="hello">Hello</h1>\n')
@@ -75,4 +75,55 @@ test('falls back to escaped code when highlighting fails', () => {
     html,
     '<pre><code class="language-unknown">&lt;tag&gt;\n</code></pre>\n',
   )
+})
+
+test('transform returns html, headings, and front matter', () => {
+  const result = transform('---\ntitle: X\n---\n# Top\n\n## Sub `code`\n', { frontMatter: true })
+
+  assert.equal(result.frontMatter, 'title: X\n')
+  assert.match(result.html, /<h1 id="top">Top<\/h1>/)
+  assert.deepEqual(result.headings, [
+    { level: 1, id: 'top', text: 'Top' },
+    { level: 2, id: 'sub-code', text: 'Sub code' },
+  ])
+})
+
+test('transform omits ids when headingIds is disabled', () => {
+  const result = transform('# Top', { headingIds: false })
+
+  assert.equal(result.headings.length, 1)
+  assert.equal(result.headings[0].id, undefined)
+  assert.equal(result.headings[0].text, 'Top')
+})
+
+test('linkBasePath prefixes internal links only', () => {
+  const html = toHtml('[in](/guide) [out](https://e.com/) ![img](/i.png)', {
+    linkBasePath: '/docs',
+  })
+
+  assert.match(html, /<a href="\/docs\/guide">/)
+  assert.match(html, /<a href="https:\/\/e.com\/">/)
+  assert.match(html, /<img src="\/i.png"/)
+})
+
+test('highlighter receives fence meta as Shiki-style __raw', () => {
+  const calls = []
+  const highlighter = {
+    codeToHtml(code, options) {
+      calls.push(options)
+      return '<pre class="hl">x</pre>\n'
+    },
+  }
+
+  const result = transformWithHighlighter(
+    '```ts {1-3} title="Example"\ncode\n```\n\n```ts\ncode\n```',
+    highlighter,
+    { theme: 'github-dark' },
+  )
+
+  assert.match(result.html, /class="hl"/)
+  assert.deepEqual(calls, [
+    { lang: 'ts', theme: 'github-dark', meta: { __raw: '{1-3} title="Example"' } },
+    { lang: 'ts', theme: 'github-dark' },
+  ])
 })

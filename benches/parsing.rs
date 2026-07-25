@@ -233,6 +233,7 @@ fn bench_extensions(c: &mut Criterion) {
         definition_lists: true,
         line_comments: true,
         indented_code_blocks: true,
+        link_base_path: None,
     };
     group.throughput(Throughput::Bytes(samples::MIXED_EXTENDED_5K.len() as u64));
     group.bench_function("mixed_extended_5k", |b| {

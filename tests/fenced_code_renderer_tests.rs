@@ -121,3 +121,73 @@ fn buffer_api_reuses_the_caller_buffer() {
         "<pre><code class=\"language-txt\">hello\n</code></pre>\n"
     );
 }
+
+#[derive(Default)]
+struct MetaRecordingRenderer {
+    calls: Vec<(Option<String>, Option<String>)>,
+}
+
+impl FencedCodeRenderer for MetaRecordingRenderer {
+    fn render(&mut self, block: FencedCodeBlock<'_>) -> Option<TrustedHtml> {
+        self.calls.push((
+            block.language.map(str::to_owned),
+            block.meta.map(str::to_owned),
+        ));
+        None
+    }
+}
+
+#[test]
+fn renderer_receives_info_string_meta_after_the_language() {
+    let mut renderer = MetaRecordingRenderer::default();
+
+    to_html_with_renderer(
+        "```ts {1-3} title=\"Example\"\ncode\n```",
+        &Options::default(),
+        &mut renderer,
+    );
+
+    assert_eq!(
+        renderer.calls,
+        vec![(
+            Some("ts".to_owned()),
+            Some("{1-3} title=\"Example\"".to_owned())
+        )]
+    );
+}
+
+#[test]
+fn renderer_meta_is_none_without_trailing_info_text() {
+    let mut renderer = MetaRecordingRenderer::default();
+
+    to_html_with_renderer(
+        "```rust\ncode\n```\n\n```rust   \ncode\n```\n\n```\ncode\n```",
+        &Options::default(),
+        &mut renderer,
+    );
+
+    assert_eq!(
+        renderer.calls,
+        vec![
+            (Some("rust".to_owned()), None),
+            (Some("rust".to_owned()), None),
+            (None, None),
+        ]
+    );
+}
+
+#[test]
+fn renderer_meta_decodes_escapes_and_entities() {
+    let mut renderer = MetaRecordingRenderer::default();
+
+    to_html_with_renderer(
+        "```rust a\\+b &amp;c\ncode\n```",
+        &Options::default(),
+        &mut renderer,
+    );
+
+    assert_eq!(
+        renderer.calls,
+        vec![(Some("rust".to_owned()), Some("a+b &c".to_owned()))]
+    );
+}

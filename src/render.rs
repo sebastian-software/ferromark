@@ -324,6 +324,36 @@ impl HtmlWriter {
         }
     }
 
+    /// Write a link destination with the trust policy, prefixing internal
+    /// absolute paths (`/…` but not `//…` and not already prefixed) with
+    /// `base`. `base` must be normalized: non-empty, no trailing slash.
+    pub fn write_link_url_with_policy_and_base(
+        &mut self,
+        url: &[u8],
+        policy: RenderPolicy,
+        base: Option<&str>,
+    ) {
+        if let Some(base) = base {
+            if url.first() == Some(&b'/')
+                && url.get(1) != Some(&b'/')
+                && !Self::has_base_prefix(url, base.as_bytes())
+            {
+                // The base is configuration, not authored URL text, but it
+                // still lands inside an attribute value: escape it.
+                escape::escape_full_into(&mut self.out, base.as_bytes());
+            }
+        }
+        self.write_link_url_with_policy(url, policy);
+    }
+
+    /// Whether `url` already lives under `base` as a whole path segment:
+    /// `/docs` and `/docs/page` match a `/docs` base, `/docs-old/page` does
+    /// not.
+    fn has_base_prefix(url: &[u8], base: &[u8]) -> bool {
+        url.strip_prefix(base)
+            .is_some_and(|rest| matches!(rest.first(), None | Some(b'/' | b'?' | b'#')))
+    }
+
     /// Write a newline.
     #[inline]
     pub fn newline(&mut self) {
@@ -501,6 +531,22 @@ impl HtmlWriter {
         let unescaped = Self::unescape_backslashes(first);
         let info_str = core::str::from_utf8(&unescaped).unwrap_or("");
         decode_entities_commonmark(info_str).into_owned()
+    }
+
+    /// Decode the info-string remainder after the first word — the "meta"
+    /// text tooling conventions put after the language (e.g. `{1-3}` or
+    /// `title="…"`). Returns `None` when nothing but whitespace follows.
+    pub(crate) fn decode_info_meta(info: &[u8]) -> Option<String> {
+        let rest = &info[Self::first_word(info).len()..];
+        let start = rest.iter().position(|&b| !Self::is_html_whitespace(b))?;
+        let end = rest
+            .iter()
+            .rposition(|&b| !Self::is_html_whitespace(b))
+            .map_or(start, |i| i + 1);
+        let rest = &rest[start..end];
+        let unescaped = Self::unescape_backslashes(rest);
+        let meta_str = core::str::from_utf8(&unescaped).unwrap_or("");
+        Some(decode_entities_commonmark(meta_str).into_owned())
     }
 
     fn unescape_backslashes(input: &[u8]) -> Vec<u8> {

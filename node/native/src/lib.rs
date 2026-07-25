@@ -28,6 +28,7 @@ pub struct Options {
     pub definition_lists: Option<bool>,
     pub line_comments: Option<bool>,
     pub indented_code_blocks: Option<bool>,
+    pub link_base_path: Option<String>,
 }
 
 impl Options {
@@ -68,6 +69,7 @@ impl Options {
         apply(&mut options.definition_lists, self.definition_lists);
         apply(&mut options.line_comments, self.line_comments);
         apply(&mut options.indented_code_blocks, self.indented_code_blocks);
+        options.link_base_path = self.link_base_path.map(String::into_boxed_str);
 
         Ok(options)
     }
@@ -91,8 +93,55 @@ pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
     ))
 }
 
+/// One document heading, in source order.
+#[napi(object)]
+pub struct Heading {
+    /// Heading level, 1-6.
+    pub level: u32,
+    /// The generated slug; present when the headingIds option is enabled.
+    pub id: Option<String>,
+    /// Plain heading text with inline markup and HTML tags removed.
+    pub text: String,
+}
+
+/// Result of `transform`: HTML plus document metadata.
+#[napi(object)]
+pub struct TransformResult {
+    pub html: String,
+    /// Document headings for table-of-contents rendering.
+    pub headings: Vec<Heading>,
+    /// Raw front matter text (between the delimiters); present when the
+    /// frontMatter option is enabled and the document starts with a block.
+    pub front_matter: Option<String>,
+}
+
+fn transform_result(result: ferromark::ParseResult<'_>) -> TransformResult {
+    TransformResult {
+        html: result.html,
+        headings: result
+            .headings
+            .into_iter()
+            .map(|heading| Heading {
+                level: u32::from(heading.level),
+                id: heading.id,
+                text: heading.text,
+            })
+            .collect(),
+        front_matter: result.front_matter.map(str::to_owned),
+    }
+}
+
+/// Render Markdown and return HTML together with headings and front matter.
+#[napi]
+pub fn transform(markdown: String, options: Option<Options>) -> Result<TransformResult> {
+    let options = core_options(options)?;
+    Ok(transform_result(ferromark::parse_with_options(
+        &markdown, &options,
+    )))
+}
+
 struct CallbackRenderer<'scope> {
-    callback: Function<'scope, FnArgs<(String, Option<String>)>, Option<String>>,
+    callback: Function<'scope, FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 }
 
 impl FencedCodeRenderer for CallbackRenderer<'_> {
@@ -101,6 +150,7 @@ impl FencedCodeRenderer for CallbackRenderer<'_> {
             .call(FnArgs::from((
                 block.code.to_owned(),
                 block.language.map(str::to_owned),
+                block.meta.map(str::to_owned),
             )))
             .ok()
             .flatten()
@@ -112,7 +162,7 @@ impl FencedCodeRenderer for CallbackRenderer<'_> {
 pub fn to_html_with_renderer(
     markdown: String,
     options: Option<Options>,
-    renderer: Function<FnArgs<(String, Option<String>)>, Option<String>>,
+    renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
     let options = core_options(options)?;
     let mut renderer = CallbackRenderer { callback: renderer };
@@ -121,4 +171,24 @@ pub fn to_html_with_renderer(
         &options,
         &mut renderer,
     ))
+}
+
+/// `transform` with an opt-in fenced-code renderer callback.
+///
+/// The callback receives `(code, language, meta)` and must return trusted,
+/// fully escaped HTML — or null/undefined to fall back to the default
+/// escaped `<pre><code>` output.
+#[napi]
+pub fn transform_with_renderer(
+    markdown: String,
+    options: Option<Options>,
+    renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
+) -> Result<TransformResult> {
+    let options = core_options(options)?;
+    let mut renderer = CallbackRenderer { callback: renderer };
+    Ok(transform_result(ferromark::parse_with_renderer(
+        &markdown,
+        &options,
+        &mut renderer,
+    )))
 }
