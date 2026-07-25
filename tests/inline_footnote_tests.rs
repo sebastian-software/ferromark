@@ -79,6 +79,21 @@ fn inline_notes_take_precedence_over_superscript() {
 }
 
 #[test]
+fn whitespace_only_notes_do_not_capture_later_superscript_delimiters() {
+    let html = to_html_with_options(
+        "some text^[  ]^word^",
+        &Options {
+            superscript: true,
+            inline_footnotes: true,
+            ..Options::default()
+        },
+    );
+
+    assert_eq!(html, "<p>some text^[  ]<sup>word</sup></p>\n");
+    assert!(!html.contains("data-footnote-ref>"), "{html}");
+}
+
+#[test]
 fn escaped_empty_unclosed_and_code_syntax_stays_literal() {
     let html = render(r"\^[escaped] ^[] ^[   ] ^[unclosed `^[code]`");
 

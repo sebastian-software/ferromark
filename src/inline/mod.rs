@@ -725,6 +725,9 @@ impl InlineParser {
                 } else if let Some((open_bracket, Some(start))) = bracket_stack.pop() {
                     let content_start = open_bracket + 1;
                     let content_end = pos as u32;
+                    if let Ok(mark_index) = marks.binary_search_by_key(&start, |mark| mark.pos) {
+                        marks[mark_index].resolve();
+                    }
                     if !text[content_start as usize..content_end as usize]
                         .iter()
                         .all(|byte| byte.is_ascii_whitespace())
@@ -735,10 +738,6 @@ impl InlineParser {
                             content_start,
                             content_end,
                         });
-                        if let Ok(mark_index) = marks.binary_search_by_key(&start, |mark| mark.pos)
-                        {
-                            marks[mark_index].resolve();
-                        }
                     }
                 }
             }

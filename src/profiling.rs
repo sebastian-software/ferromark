@@ -125,9 +125,7 @@ pub(crate) fn record_inline_events(events: &[InlineEvent], capacity: usize) {
             counters.max_inline_event_capacity.max(capacity as u64);
         for event in events {
             match event {
-                InlineEvent::Text(_) | InlineEvent::Code(_) | InlineEvent::InlineFootnote(_) => {
-                    counters.inline_text_events += 1
-                }
+                InlineEvent::Text(_) | InlineEvent::Code(_) => counters.inline_text_events += 1,
                 #[cfg(feature = "mdx")]
                 InlineEvent::MdxExpression(_)
                 | InlineEvent::MdxJsxOpen(_)
@@ -197,5 +195,15 @@ mod tests {
         reset();
 
         assert_eq!(snapshot().paragraph_copied_bytes, 0);
+    }
+
+    #[test]
+    fn inline_footnotes_should_not_count_as_inline_text_work() {
+        reset();
+        record_inline_events(&[InlineEvent::InlineFootnote(crate::Range::new(2, 6))], 1);
+
+        let counters = snapshot();
+        assert_eq!(counters.max_inline_event_capacity, 1);
+        assert_eq!(counters.inline_text_events, 0);
     }
 }
