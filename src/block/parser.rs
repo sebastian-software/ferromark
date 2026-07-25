@@ -3100,17 +3100,20 @@ impl<'a> BlockParser<'a> {
         }
 
         let mut cell_start = pos;
-        while pos <= scan_end {
-            if pos == scan_end {
+        loop {
+            // Jump straight to the next byte that can affect cell structure;
+            // everything in between is plain cell content.
+            let Some(offset) = memchr::memchr3(b'|', b'\\', b'`', &line[pos..scan_end]) else {
                 // End of line - emit last cell
-                let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
+                let (s, e) = Self::trim_cell(&line[cell_start..scan_end], cell_start);
                 cells.push(TableCell {
                     start: s as u32,
                     end: e as u32,
                     colspan: 1,
                 });
                 break;
-            }
+            };
+            pos += offset;
 
             if line[pos] == b'|' {
                 // Cell boundary
@@ -3164,6 +3167,10 @@ impl<'a> BlockParser<'a> {
 
         let mut cell_start = pos;
         while pos < line_end {
+            let Some(offset) = memchr::memchr3(b'|', b'\\', b'`', &line[pos..line_end]) else {
+                break;
+            };
+            pos += offset;
             if line[pos] == b'|' {
                 let mut pipe_count = 0usize;
                 while pos < line_end && line[pos] == b'|' {

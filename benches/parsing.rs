@@ -63,6 +63,15 @@ Thank you for reading!
     /// Table-heavy document (~5KB)
     pub const TABLES_5K: &str = include_str!("fixtures/tables-5k.md");
 
+    /// Definition-list-heavy document (~5KB)
+    pub const DEFLISTS_5K: &str = include_str!("fixtures/deflists-5k.md");
+
+    /// Tables with merged cells and column-width delimiter hints (~5KB)
+    pub const TABLES_MERGED_5K: &str = include_str!("fixtures/tables-merged-5k.md");
+
+    /// Mixed document exercising every extension at once (~5KB)
+    pub const MIXED_EXTENDED_5K: &str = include_str!("fixtures/mixed-extended-5k.md");
+
     /// Generate a large document by repeating sections
     pub fn large() -> String {
         let section = r#"
@@ -172,6 +181,69 @@ fn bench_parsing(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmarks for extension-heavy inputs under the options they require.
+fn bench_extensions(c: &mut Criterion) {
+    use ferromark::{Options, RenderPolicy};
+
+    let mut group = c.benchmark_group("extensions");
+
+    let deflist_options = Options {
+        definition_lists: true,
+        ..Options::gfm()
+    };
+    group.throughput(Throughput::Bytes(samples::DEFLISTS_5K.len() as u64));
+    group.bench_function("deflists_5k", |b| {
+        b.iter(|| {
+            ferromark::to_html_with_options(black_box(samples::DEFLISTS_5K), &deflist_options)
+        })
+    });
+
+    let merged_options = Options {
+        merged_table_cells: true,
+        table_column_widths: true,
+        ..Options::gfm()
+    };
+    group.throughput(Throughput::Bytes(samples::TABLES_MERGED_5K.len() as u64));
+    group.bench_function("tables_merged_5k", |b| {
+        b.iter(|| {
+            ferromark::to_html_with_options(black_box(samples::TABLES_MERGED_5K), &merged_options)
+        })
+    });
+
+    let all_options = Options {
+        render_policy: RenderPolicy::Untrusted,
+        allow_html: true,
+        allow_link_refs: true,
+        tables: true,
+        merged_table_cells: true,
+        table_column_widths: true,
+        strikethrough: true,
+        highlight: true,
+        superscript: true,
+        subscript: true,
+        task_lists: true,
+        autolink_literals: true,
+        disallowed_raw_html: true,
+        footnotes: true,
+        inline_footnotes: true,
+        front_matter: true,
+        heading_ids: true,
+        math: true,
+        callouts: true,
+        definition_lists: true,
+        line_comments: true,
+        indented_code_blocks: true,
+    };
+    group.throughput(Throughput::Bytes(samples::MIXED_EXTENDED_5K.len() as u64));
+    group.bench_function("mixed_extended_5k", |b| {
+        b.iter(|| {
+            ferromark::to_html_with_options(black_box(samples::MIXED_EXTENDED_5K), &all_options)
+        })
+    });
+
+    group.finish();
+}
+
 fn bench_escaping(c: &mut Criterion) {
     let mut group = c.benchmark_group("escaping");
 
@@ -245,6 +317,7 @@ fn bench_buffer_reuse(c: &mut Criterion) {
 criterion_group!(
     benches,
     bench_parsing,
+    bench_extensions,
     bench_escaping,
     bench_pathological,
     bench_buffer_reuse
