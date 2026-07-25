@@ -146,6 +146,23 @@ Two of the follow-up candidates were implemented after the first pass merged:
    Silicon (the published benchmark platform), where relative memchr pass
    costs differ.
 
+3. **Heading-ID dedup arena** (third pass, same day) — the remaining
+   allocation source flagged in finding 1 is gone: `HeadingIdTracker` no
+   longer clones each new base slug into a `HashMap<Vec<u8>, usize>` key.
+   Base slugs are appended to a single arena buffer and the dedup map is
+   keyed by the slug's 64-bit Fx hash, storing arena ranges; hash collisions
+   (astronomically rare, but handled) share a map entry and are resolved by
+   comparing arena bytes. On `commonmark-50k` (247 headings) with default
+   options: allocations drop from 363 to 121 blocks per document (−67%),
+   instructions drop 2.6%, and the `heading_ids` flag overhead falls from
+   +8.6% to +5.6% over `Options::commonmark()`. Criterion medians on the
+   container: `parsing/commonmark_5k` −5.4%, `parsing/commonmark_50k` −8.4%
+   (allocator round-trips cost disproportionately more wall-clock than
+   instructions). Rendered HTML is byte-identical across the fixture ×
+   preset matrix including slug-collision edge cases. The flag's remaining
+   cost is the slug scan and heading-content buffering itself, which is
+   proportional to heading text and has no obvious fat left.
+
 ## Reproducing
 
 ```bash
