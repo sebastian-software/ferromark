@@ -10,6 +10,10 @@ test('renders Markdown through the native binding', () => {
 test('maps typed options to the Rust surface', () => {
   assert.equal(toHtml('==mark==', { highlight: true }), '<p><mark>mark</mark></p>\n')
   assert.match(
+    toHtml('| A | B |\n| --- | --- |\n| merged ||', { mergedTableCells: true }),
+    /colspan="2"/,
+  )
+  assert.match(
     toHtml('Text.^[Node note.]', { inlineFootnotes: true }),
     /user-content-inline-fn-1/,
   )

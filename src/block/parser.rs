@@ -109,6 +109,14 @@ struct OpenList {
     item_count: u32,
 }
 
+/// A source cell and its semantic table-column span.
+#[derive(Debug, Clone, Copy)]
+struct TableCell {
+    start: u32,
+    end: u32,
+    colspan: u16,
+}
+
 /// A definition list that may accept another term or description.
 #[derive(Debug, Clone, Copy)]
 struct OpenDefinitionList {
@@ -620,9 +628,9 @@ impl<'a> BlockParser<'a> {
                 if !self.paragraph_lines.is_empty() {
                     let last_para_line = self.paragraph_lines.last().unwrap();
                     let header_line = last_para_line.slice(self.input);
-                    let header_cells = Self::split_table_cells(header_line);
+                    let header_cells = self.table_cells(header_line);
 
-                    if header_cells.len() == alignments.len() {
+                    if Self::table_width(&header_cells) == alignments.len() {
                         self.cursor = Cursor::new_at(self.input, line_end);
                         if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                             parser_cursor_bump!(self.cursor);
@@ -994,9 +1002,9 @@ impl<'a> BlockParser<'a> {
                     if !self.paragraph_lines.is_empty() {
                         let last_para_line = self.paragraph_lines.last().unwrap();
                         let header_line = last_para_line.slice(self.input);
-                        let header_cells = Self::split_table_cells(header_line);
+                        let header_cells = self.table_cells(header_line);
 
-                        if header_cells.len() == alignments.len() {
+                        if Self::table_width(&header_cells) == alignments.len() {
                             // We have a table! Convert the paragraph.
                             // Skip the delimiter row
                             self.cursor = Cursor::new_at(self.input, line_end);
@@ -3043,9 +3051,9 @@ impl<'a> BlockParser<'a> {
     // --- Table parsing ---
 
     /// Split a table line by unescaped `|` outside backtick code spans.
-    /// Returns byte offset pairs (start, end) for each cell, trimmed of whitespace.
-    /// Leading and trailing pipe are stripped.
-    fn split_table_cells(line: &[u8]) -> SmallVec<[(usize, usize); 8]> {
+    /// Returns source-relative cells trimmed of whitespace. Leading and
+    /// trailing pipes are stripped and every cell has a span of one.
+    fn split_table_cells(line: &[u8]) -> SmallVec<[TableCell; 8]> {
         let mut cells = SmallVec::new();
         let len = line.len();
         if len == 0 {
@@ -3088,62 +3096,145 @@ impl<'a> BlockParser<'a> {
             if pos == scan_end {
                 // End of line - emit last cell
                 let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
-                cells.push((s, e));
+                cells.push(TableCell {
+                    start: s as u32,
+                    end: e as u32,
+                    colspan: 1,
+                });
                 break;
             }
 
-            let b = line[pos];
-            if b == b'\\' && pos + 1 < scan_end {
-                // Escaped character - skip next
-                pos += 2;
-            } else if b == b'`' {
-                // Code span - skip until matching backticks
-                let bt_len = {
-                    let mut n = 0;
-                    while pos + n < scan_end && line[pos + n] == b'`' {
-                        n += 1;
-                    }
-                    n
-                };
-                pos += bt_len;
-                // Find closing backtick sequence of same length
-                let mut found = false;
-                while pos < scan_end {
-                    if line[pos] == b'`' {
-                        let close_len = {
-                            let mut n = 0;
-                            while pos + n < scan_end && line[pos + n] == b'`' {
-                                n += 1;
-                            }
-                            n
-                        };
-                        pos += close_len;
-                        if close_len == bt_len {
-                            found = true;
-                            break;
-                        }
-                    } else {
-                        pos += 1;
-                    }
-                }
-                if !found {
-                    // Unclosed code span - just continue
-                }
-            } else if b == b'|' {
+            if line[pos] == b'|' {
                 // Cell boundary
                 let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
-                cells.push((s, e));
+                cells.push(TableCell {
+                    start: s as u32,
+                    end: e as u32,
+                    colspan: 1,
+                });
                 pos += 1;
                 cell_start = pos;
                 if cells.len() >= limits::MAX_TABLE_COLUMNS {
                     break;
                 }
             } else {
-                pos += 1;
+                pos = Self::advance_table_cell_scan(line, pos, scan_end);
             }
         }
 
         cells
+    }
+
+    /// Split a table row into semantic cells, interpreting consecutive pipes
+    /// after a cell as its column span.
+    ///
+    /// Unlike ordinary GFM splitting, the final pipe is significant here:
+    /// one pipe closes a one-column cell, `||` closes a two-column cell, and
+    /// so on. Whitespace between pipes preserves an explicit empty cell.
+    fn split_merged_table_cells(line: &[u8]) -> SmallVec<[TableCell; 8]> {
+        let mut cells = SmallVec::new();
+        let len = line.len();
+        if len == 0 {
+            return cells;
+        }
+
+        let mut line_end = len;
+        while line_end > 0 && matches!(line[line_end - 1], b' ' | b'\t') {
+            line_end -= 1;
+        }
+
+        let mut pos = 0;
+        while pos < line_end && matches!(line[pos], b' ' | b'\t') {
+            pos += 1;
+        }
+        if pos < line_end && line[pos] == b'|' {
+            pos += 1;
+        }
+        if pos >= line_end {
+            return cells;
+        }
+
+        let mut cell_start = pos;
+        while pos < line_end {
+            if line[pos] == b'|' {
+                let mut pipe_count = 0usize;
+                while pos < line_end && line[pos] == b'|' {
+                    pipe_count += 1;
+                    pos += 1;
+                }
+                let (start, end) = Self::trim_cell(&line[cell_start..pos - pipe_count], cell_start);
+                cells.push(TableCell {
+                    start: start as u32,
+                    end: end as u32,
+                    colspan: pipe_count.min(u16::MAX as usize) as u16,
+                });
+                if cells.len() >= limits::MAX_TABLE_COLUMNS || pos == line_end {
+                    return cells;
+                }
+                cell_start = pos;
+            } else {
+                pos = Self::advance_table_cell_scan(line, pos, line_end);
+            }
+        }
+
+        let (start, end) = Self::trim_cell(&line[cell_start..line_end], cell_start);
+        cells.push(TableCell {
+            start: start as u32,
+            end: end as u32,
+            colspan: 1,
+        });
+        cells
+    }
+
+    /// Advance past one table-cell token, treating escapes and matching
+    /// backtick runs as opaque so their pipes cannot become cell boundaries.
+    #[inline]
+    fn advance_table_cell_scan(line: &[u8], pos: usize, scan_end: usize) -> usize {
+        debug_assert!(pos < scan_end);
+        debug_assert!(scan_end <= line.len());
+
+        if line[pos] == b'\\' && pos + 1 < scan_end {
+            return pos + 2;
+        }
+        if line[pos] != b'`' {
+            return pos + 1;
+        }
+
+        let mut opener_len = 1usize;
+        while pos + opener_len < scan_end && line[pos + opener_len] == b'`' {
+            opener_len += 1;
+        }
+
+        let mut next = pos + opener_len;
+        while next < scan_end {
+            if line[next] != b'`' {
+                next += 1;
+                continue;
+            }
+
+            let mut closer_len = 1usize;
+            while next + closer_len < scan_end && line[next + closer_len] == b'`' {
+                closer_len += 1;
+            }
+            next += closer_len;
+            if closer_len == opener_len {
+                break;
+            }
+        }
+        next
+    }
+
+    fn table_cells(&self, line: &[u8]) -> SmallVec<[TableCell; 8]> {
+        if self.options.merged_table_cells {
+            Self::split_merged_table_cells(line)
+        } else {
+            Self::split_table_cells(line)
+        }
+    }
+
+    #[inline]
+    fn table_width(cells: &[TableCell]) -> usize {
+        cells.iter().map(|cell| cell.colspan as usize).sum()
     }
 
     /// Trim whitespace from a cell slice, returning absolute byte offsets.
@@ -3187,8 +3278,8 @@ impl<'a> BlockParser<'a> {
         }
 
         let mut alignments = SmallVec::new();
-        for &(start, end) in &cells {
-            let cell = &line[start..end];
+        for cell_range in &cells {
+            let cell = &line[cell_range.start as usize..cell_range.end as usize];
             if cell.is_empty() {
                 return None;
             }
@@ -3266,7 +3357,7 @@ impl<'a> BlockParser<'a> {
     /// Start a table from the last paragraph line (header) and delimiter row.
     fn start_table(
         &mut self,
-        header_cells: SmallVec<[(usize, usize); 8]>,
+        header_cells: SmallVec<[TableCell; 8]>,
         alignments: SmallVec<[Alignment; 8]>,
         events: &mut Vec<BlockEvent>,
     ) {
@@ -3299,18 +3390,26 @@ impl<'a> BlockParser<'a> {
 
         let header_base = header_range.start as usize;
 
-        for (i, &alignment) in alignments.iter().enumerate() {
-            events.push(BlockEvent::TableCellStart { alignment });
-            if i < header_cells.len() {
-                let (s, e) = header_cells[i];
-                if e > s {
-                    events.push(BlockEvent::Text(Range::from_usize(
-                        header_base + s,
-                        header_base + e,
-                    )));
-                }
+        let mut column = 0usize;
+        for cell in &header_cells {
+            if column >= alignments.len() {
+                break;
+            }
+            let colspan = (cell.colspan as usize)
+                .min(alignments.len() - column)
+                .max(1);
+            events.push(BlockEvent::TableCellStart {
+                alignment: alignments[column],
+                colspan: colspan as u16,
+            });
+            if cell.end > cell.start {
+                events.push(BlockEvent::Text(Range::from_usize(
+                    header_base + cell.start as usize,
+                    header_base + cell.end as usize,
+                )));
             }
             events.push(BlockEvent::TableCellEnd);
+            column += colspan;
         }
 
         events.push(BlockEvent::TableRowEnd);
@@ -3355,7 +3454,7 @@ impl<'a> BlockParser<'a> {
         };
 
         let line = &self.input[line_start..line_end];
-        let cells = Self::split_table_cells(line);
+        let cells = self.table_cells(line);
         let col_count = self.table_alignments.len();
 
         if !self.table_has_body {
@@ -3365,20 +3464,35 @@ impl<'a> BlockParser<'a> {
 
         events.push(BlockEvent::TableRowStart);
 
-        for i in 0..col_count {
-            let alignment = self.table_alignments[i];
-            events.push(BlockEvent::TableCellStart { alignment });
-            if i < cells.len() {
-                let (s, e) = cells[i];
-                if e > s {
-                    events.push(BlockEvent::Text(Range::from_usize(
-                        line_start + s,
-                        line_start + e,
-                    )));
-                }
+        let mut column = 0usize;
+        for cell in &cells {
+            if column >= col_count {
+                break;
             }
-            // If i >= cells.len(), emit an empty cell (no Text event)
+            let colspan = (cell.colspan as usize).min(col_count - column).max(1);
+            events.push(BlockEvent::TableCellStart {
+                alignment: self.table_alignments[column],
+                colspan: colspan as u16,
+            });
+            if cell.end > cell.start {
+                events.push(BlockEvent::Text(Range::from_usize(
+                    line_start + cell.start as usize,
+                    line_start + cell.end as usize,
+                )));
+            }
             events.push(BlockEvent::TableCellEnd);
+            column += colspan;
+        }
+
+        // GFM pads ragged rows with empty cells. A merged cell consumes every
+        // source column it spans, so padding resumes at the next free column.
+        while column < col_count {
+            events.push(BlockEvent::TableCellStart {
+                alignment: self.table_alignments[column],
+                colspan: 1,
+            });
+            events.push(BlockEvent::TableCellEnd);
+            column += 1;
         }
 
         events.push(BlockEvent::TableRowEnd);

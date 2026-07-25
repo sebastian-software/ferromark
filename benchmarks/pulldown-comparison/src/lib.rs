@@ -36,6 +36,7 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
         allow_html: true,
         allow_link_refs: true,
         tables,
+        merged_table_cells: false,
         strikethrough,
         highlight: false,
         superscript,
