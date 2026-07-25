@@ -163,6 +163,24 @@ Two of the follow-up candidates were implemented after the first pass merged:
    cost is the slug scan and heading-content buffering itself, which is
    proportional to heading text and has no obvious fat left.
 
+4. **HTML escaping scanned every text segment twice via SIMD dispatch**
+   (fourth pass, same day) — `first_text_escape` ran two full memchr passes
+   per text segment (`memchr3(<,>,&)` plus `memchr(")`), and segments
+   between escapes are short: median 17 bytes, >95% under 64 bytes on the
+   prose fixtures. At those lengths memchr's per-call cost is dominated by
+   its ifunc trampoline (indirect call through an `AtomicPtr`) and SIMD
+   setup, paid twice per segment — measured ~60 instructions per call
+   against a ~20-instruction payload. Both escape scanners now use a
+   table-driven scalar scan for segments ≤64 bytes (reusing the existing
+   escape LUTs) and, on the rare long segment, bound the second pass by the
+   first `memchr3` hit so it never scans past the earliest match.
+   Instructions: −3.7% (commonmark-50k/gfm), −4.2% (commonmark-5k/default),
+   −6.6% (tables-5k/gfm). Wall-clock across the whole parsing suite: −6.5%
+   to −12.6% with no regressions — the win exceeds the instruction delta
+   because the removed indirect calls also cost branch-prediction and
+   pipeline stalls that callgrind does not model. Output byte-identical
+   across the fixture × preset matrix.
+
 ## Reproducing
 
 ```bash
