@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.5.0...ferromark-v0.6.0) (2026-07-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* Options no longer implements Copy (the new link_base_path field is heap-allocated) — clone it where a copy was relied upon. FencedCodeBlock gained the meta field and is now non_exhaustive.
+
+### Features
+
+* document metadata APIs and link base path for docs-tooling adoption ([#129](https://github.com/sebastian-software/ferromark/issues/129)) ([bbe3e2f](https://github.com/sebastian-software/ferromark/commit/bbe3e2fbae3b59fdc30e2dfbae40ff34dfaa5e1c))
+
+
+### Performance Improvements
+
+* **escape:** scan short text segments with the escape LUT instead of dual memchr passes ([#126](https://github.com/sebastian-software/ferromark/issues/126)) ([b8fb947](https://github.com/sebastian-software/ferromark/commit/b8fb94751562b452a7a7f40902b274635314f2a0))
+* **escape:** vectorize the short escape scan with baseline SIMD ([#127](https://github.com/sebastian-software/ferromark/issues/127)) ([493b6d1](https://github.com/sebastian-software/ferromark/commit/493b6d123040a57e6836f5aca6c8a6a5819a91cb))
+* **footnotes:** reuse parsers and avoid per-reference label allocation ([#119](https://github.com/sebastian-software/ferromark/issues/119)) ([2c13e10](https://github.com/sebastian-software/ferromark/commit/2c13e103bbb8be46378995de4a37a9426fde6191))
+* **heading-ids:** store dedup slugs in an arena instead of per-heading map keys ([#125](https://github.com/sebastian-software/ferromark/issues/125)) ([32e23c4](https://github.com/sebastian-software/ferromark/commit/32e23c47a2dd0031ea57a67f5ae82d249e5cdf57))
+* optimize table cell scanning and heading id generation ([#117](https://github.com/sebastian-software/ferromark/issues/117)) ([f97fc68](https://github.com/sebastian-software/ferromark/commit/f97fc68a8135f0b9e8e95a94ddee1db5ec8c9e77))
+
 ## [0.5.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.4.0...ferromark-v0.5.0) (2026-07-25)
 
 
