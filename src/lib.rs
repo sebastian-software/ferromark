@@ -133,6 +133,8 @@ pub struct Options {
     pub math: bool,
     /// Enable GitHub-style callouts/admonitions (`> [!NOTE]`, `> [!WARNING]`, etc.).
     pub callouts: bool,
+    /// Enable source-only line comments beginning with `//`.
+    pub line_comments: bool,
     /// Enable CommonMark indented code blocks (four or more leading spaces).
     ///
     /// Disable this for dialects that reserve indentation for other block
@@ -165,6 +167,7 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            line_comments: false,
             indented_code_blocks: true,
         }
     }
@@ -193,6 +196,7 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            line_comments: false,
             indented_code_blocks: true,
         }
     }
@@ -221,6 +225,7 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            line_comments: false,
             indented_code_blocks: true,
         }
     }
@@ -245,6 +250,7 @@ impl Default for Options {
             heading_ids: true,
             math: false,
             callouts: true,
+            line_comments: false,
             indented_code_blocks: true,
         }
     }
@@ -1043,6 +1049,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 }
                 writer.thematic_break();
             }
+            BlockEvent::Comment(_) => {}
             BlockEvent::HtmlBlockStart => {
                 // Write pending newline from loose list item start
                 if *pending_loose_li_newline {
