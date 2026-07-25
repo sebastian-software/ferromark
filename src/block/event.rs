@@ -125,7 +125,12 @@ pub enum BlockEvent {
     /// End of a list item.
     ListItemEnd,
 
-    /// A thematic break (horizontal rule) and its exact marker range.
+    /// A thematic break (horizontal rule).
+    ///
+    /// The `Range` covers the marker run and any intervening or trailing
+    /// horizontal whitespace on the same line. It excludes container
+    /// indentation (leading spaces already consumed by the block loop) and
+    /// the line ending character.
     ThematicBreak(Range),
 
     /// Start of an HTML block.
