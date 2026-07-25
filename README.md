@@ -14,11 +14,19 @@ documented below.
 
 ## Quick start
 
+```bash
+cargo add ferromark
+```
+
 ```rust
 let html = ferromark::to_html("# Hello\n\n**World**");
 ```
 
-One function call, no setup. When allocation pressure matters:
+One function call, no setup. Using Node.js instead? The same engine ships as a
+native npm package: `npm install ferromark` — see the
+[Node.js package README](node/ferromark/README.md).
+
+When allocation pressure matters:
 
 ```rust
 let mut buffer = Vec::new();
@@ -31,7 +39,7 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run
 with GFM tables, strikethrough, and task lists enabled; ferromark's non-GFM
 extras (heading IDs, callouts) are disabled. Output buffers are reused where
-APIs allow and binaries are non-PGO. Ferromark also keeps its secure default
+APIs allow and binaries are non-PGO. ferromark also keeps its secure default
 rendering in this published product lane, so it performs URL and raw-HTML safety
 work that pulldown-cmark does not.
 
@@ -78,11 +86,13 @@ does not expose an equivalent trust boundary.
 
 ## What you get
 
-**CommonMark conformance**: The `Options::commonmark()` report passes 577 of 652
-spec examples (88.5%). Raw HTML remains escaped by its default
-`RenderPolicy::Untrusted` safety boundary, so this is not a claim of full
-raw-HTML CommonMark output parity. Run `cargo test --test commonmark_spec --
---ignored --nocapture` for the complete, current report.
+**CommonMark conformance**: With `RenderPolicy::Trusted`, `Options::commonmark()`
+passes all 652 of 652 spec examples — enforced in CI by
+`commonmark_spec_trusted_full_conformance`. The secure default
+(`RenderPolicy::Untrusted`) intentionally escapes raw HTML and passes 577 of 652
+(88.5%) — every failure is the safety boundary doing its job, not a parsing
+gap. Run `cargo test --test commonmark_spec -- --ignored --nocapture` for the
+per-section report of the secure default.
 
 **All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
 
@@ -156,6 +166,8 @@ colon. Continuation paragraphs and nested blocks must be indented to the
 description content; lazy continuation is supported only for paragraph text.
 The option is disabled by default and in every dialect constructor.
 
+### Line comments
+
 Enable `line_comments` to omit source-only note lines from HTML:
 
 ```markdown
@@ -168,6 +180,8 @@ Only `//` at the physical line start (after at most three spaces) is a
 comment. URLs, trailing `//`, code blocks, raw HTML blocks, and explicit
 container-prefixed lines remain ordinary Markdown. Comment text remains in the
 source and is not suitable for secrets.
+
+### Indented code blocks
 
 Set `indented_code_blocks: false` for dialects that require fenced code blocks
 and interpret four-space indentation as ordinary paragraph content. Fenced code
@@ -213,7 +227,7 @@ underlying table columns, while a merged cell spans those columns.
 
 All constructors keep `RenderPolicy::Untrusted`. `allow_html` controls whether
 raw HTML syntax is parsed; `RenderPolicy` independently controls whether parsed
-HTML is preserved or escaped. `Options::default()` retains Ferromark's
+HTML is preserved or escaped. `Options::default()` retains ferromark's
 backward-compatible feature mix. Measure the configurations on your corpus with
 `cargo bench --bench options`.
 
@@ -249,8 +263,11 @@ let html = ferromark::to_html_with_options(trusted_markdown, &options);
 
 `disallowed_raw_html` implements the narrower GFM tag filter in trusted mode. It is not a general-purpose HTML sanitizer and does not make arbitrary raw HTML safe by itself.
 
-Upgrading from 0.1? See the [0.2 migration guide](docs/migration-0.2.md) for the
-new rendering default and fallible UTF-8 and MDX APIs.
+Upgrading from an older release? See the
+[0.2 migration guide](docs/migration-0.2.md) for the rendering default and the
+fallible UTF-8 and MDX APIs, and the
+[0.3 migration guide](docs/migration-0.3.md) for removed Cargo features and the
+integration APIs.
 
 ## MDX support
 
@@ -258,8 +275,8 @@ MDX is the standard for component-driven docs in Next.js, Docusaurus, and Astro.
 
 ferromark takes a different approach: segment `.mdx` files into typed blocks and render them at native speed. No JS runtime. No AST.
 
-```toml
-ferromark = { version = "0.1", features = ["mdx"] }
+```bash
+cargo add ferromark --features mdx
 ```
 
 ### Render — one call, full output
@@ -445,7 +462,7 @@ What makes this fast in practice:
 - **Block scanning** runs on `memchr` for line boundaries. Container state is a compact stack, not a tree.
 - **Inline parsing** has three phases: collect delimiter marks, resolve precedence (code spans, math, links, emphasis, strikethrough, subscript, superscript, highlight), emit. No backtracking.
 - **Emphasis resolution** uses the CommonMark modulo-3 rule with a delimiter stack instead of expensive rescans.
-- **SIMD scanning** (NEON on ARM) detects special characters in inline content.
+- **SIMD scanning**: NEON (AArch64) drives the inline specials scan; the HTML escaper uses SSE2 (x86-64) and NEON short scans; memchr covers the remaining byte searches on every architecture.
 - **Zero-copy references**: events carry `Range` pointers into the input, not copied strings.
 - **Compact events**: 24 bytes each, cache-line friendly.
 - **Hot/cold annotation**: `#[inline]` on tight loops, `#[cold]` on error paths, table-driven byte classification.
@@ -751,7 +768,7 @@ src/
 ├── inline/         # Inline-level parser
 │   ├── mod.rs      # Three-phase inline parsing
 │   ├── marks.rs    # Mark collection + SIMD integration
-│   ├── simd.rs     # NEON SIMD character scanning
+│   ├── simd.rs     # SIMD character scanning (NEON)
 │   ├── event.rs    # InlineEvent types
 │   ├── code_span.rs
 │   ├── emphasis.rs      # Modulo-3 stack optimization
@@ -771,7 +788,7 @@ src/
 ├── cursor.rs       # Pointer-based byte cursor
 ├── range.rs        # Compact u32 range type
 ├── render.rs       # HTML writer
-├── escape.rs       # HTML escaping (memchr-optimized)
+├── escape.rs       # HTML escaping (SSE2/NEON + memchr)
 └── limits.rs       # DoS prevention constants
 ```
 

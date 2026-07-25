@@ -7,7 +7,7 @@ title: Benchmarks
 Apple Silicon (M-series), July 2026. All parsers run with GFM tables,
 strikethrough, and task lists enabled; ferromark's non-GFM extras (heading IDs,
 callouts) are disabled. Output buffers are reused where APIs allow and binaries
-are non-PGO. Ferromark keeps its secure default rendering in this published
+are non-PGO. ferromark keeps its secure default rendering in this published
 product lane, so it also performs URL and raw-HTML safety work that
 pulldown-cmark does not.
 
@@ -57,12 +57,15 @@ cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 ```
 
-These lanes are designed for like-for-like parser comparison. Ferromark's
+These lanes are designed for like-for-like parser comparison. ferromark's
 secure-default result stays separate because pulldown-cmark has no equivalent
 URL/raw-HTML trust boundary.
 
-## Profile costs
+## Option costs
 
-`cargo bench --bench profiles` runs Essentials, Extended, and Full over the
-same Essentials-compatible corpus. This isolates the overhead of enabled but
-unused feature paths; it is not a comparison of three different documents.
+`cargo bench --bench options` renders one shared corpus under the dialect
+presets (`minimal`, `commonmark`, `gfm`, `default`) and under individual
+extension flags. Because the document stays constant, differences between
+lanes show what each configuration costs on identical input — a mix of
+features the corpus actually uses (tables, task lists, strikethrough) and
+enabled-but-unused paths. It is not a comparison of different documents.

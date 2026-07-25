@@ -2,7 +2,7 @@
 //!
 //! Runs tests from the CommonMark spec.json file to track compliance.
 
-use ferromark::{Options, to_html_with_options};
+use ferromark::{Options, RenderPolicy, to_html_with_options};
 use serde::Deserialize;
 use std::fs;
 
@@ -10,6 +10,16 @@ use std::fs;
 /// Raw HTML remains escaped under its safe default rendering policy.
 fn spec_to_html(input: &str) -> String {
     to_html_with_options(input, &Options::commonmark())
+}
+
+/// Full spec conformance requires raw-HTML passthrough, which only the
+/// trusted rendering policy provides.
+fn spec_to_html_trusted(input: &str) -> String {
+    let options = Options {
+        render_policy: RenderPolicy::Trusted,
+        ..Options::commonmark()
+    };
+    to_html_with_options(input, &options)
 }
 
 #[derive(Debug, Deserialize)]
@@ -141,6 +151,25 @@ fn is_in_scope(section: &str) -> bool {
 fn is_test_in_scope(test: &SpecTest) -> bool {
     let _ = test;
     true
+}
+
+/// With `RenderPolicy::Trusted`, every CommonMark spec example must pass.
+/// This locks the documented full-conformance claim in CI: any failure under
+/// the untrusted default is the safety boundary, never a parsing gap.
+#[test]
+fn commonmark_spec_trusted_full_conformance() {
+    let tests = load_spec_tests();
+    let failures: Vec<u32> = tests
+        .iter()
+        .filter(|test| spec_to_html_trusted(&test.markdown) != test.html)
+        .map(|test| test.example)
+        .collect();
+    assert!(
+        failures.is_empty(),
+        "{} of {} spec examples failed in trusted mode: {failures:?}",
+        failures.len(),
+        tests.len(),
+    );
 }
 
 /// Run all spec tests and report results.
