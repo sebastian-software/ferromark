@@ -39,6 +39,26 @@ impl FootnoteStore {
         self.by_label.get(label).copied()
     }
 
+    /// Look up a definition by raw (unnormalized) label bytes.
+    ///
+    /// Normalizes into a stack buffer, so reference-resolution lookups do not
+    /// allocate. Returns `None` for labels with invalid characters.
+    pub fn get_index_bytes(&self, label_bytes: &[u8]) -> Option<usize> {
+        if label_bytes.is_empty() {
+            return None;
+        }
+        let mut buf = smallvec::SmallVec::<[u8; 32]>::with_capacity(label_bytes.len());
+        for &b in label_bytes {
+            if !b.is_ascii_alphanumeric() && b != b'-' && b != b'_' {
+                return None;
+            }
+            buf.push(b.to_ascii_lowercase());
+        }
+        // Labels are validated ASCII above, so this cannot fail.
+        let normalized = std::str::from_utf8(&buf).ok()?;
+        self.by_label.get(normalized).copied()
+    }
+
     pub fn get(&self, idx: usize) -> Option<&FootnoteDef> {
         self.defs.get(idx)
     }
