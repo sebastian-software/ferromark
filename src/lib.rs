@@ -29,6 +29,8 @@ pub mod profiling;
 pub mod range;
 pub mod render;
 
+use smallvec::SmallVec;
+
 // Re-export primary types
 pub use block::{Alignment, BlockEvent, BlockParser, CalloutType, CodeBlockKind, fixup_list_tight};
 pub use footnote::FootnoteStore;
@@ -647,16 +649,34 @@ impl HeadingState {
 ///
 /// Uses the crate's fast non-cryptographic hasher: heading slugs are short
 /// and not a hash-DoS surface, so SipHash's cost is not warranted.
+///
+/// Base slugs live in a single append-only arena; the dedup map is keyed by
+/// the slug's hash and stores arena ranges, so recording a new slug never
+/// allocates a dedicated key. Distinct slugs that collide on the 64-bit hash
+/// share a map entry and are told apart by comparing arena bytes.
 struct HeadingIdTracker {
-    /// Maps a base slug to how many times it has been seen so far.
-    used: std::collections::HashMap<Vec<u8>, usize, rustc_hash::FxBuildHasher>,
+    /// All base slugs seen so far, concatenated.
+    arena: Vec<u8>,
+    /// Maps a slug hash to the entries whose slug has that hash.
+    used: std::collections::HashMap<u64, SmallVec<[SlugEntry; 1]>, rustc_hash::FxBuildHasher>,
     /// Reusable buffer holding the id returned by `make_id`.
     slug_buf: Vec<u8>,
+}
+
+/// One recorded base slug: its bytes in the arena and how often it repeated.
+struct SlugEntry {
+    /// Start offset of the slug in the arena.
+    start: usize,
+    /// Length of the slug in bytes.
+    len: usize,
+    /// How many times this base slug has been seen after the first.
+    seen: usize,
 }
 
 impl HeadingIdTracker {
     fn new() -> Self {
         Self {
+            arena: Vec::with_capacity(256),
             used: std::collections::HashMap::with_capacity_and_hasher(
                 32,
                 rustc_hash::FxBuildHasher,
@@ -667,8 +687,8 @@ impl HeadingIdTracker {
 
     /// Build a unique heading id from raw heading content, appending `-1`,
     /// `-2`, etc. on collision. The returned slice borrows the internal
-    /// buffer and is valid until the next call. Allocates only when a new
-    /// base slug is recorded.
+    /// buffer and is valid until the next call. Recording a slug appends to
+    /// the arena instead of allocating a per-heading map key.
     fn make_id(&mut self, raw: &[u8]) -> &str {
         generate_slug_into(raw, &mut self.slug_buf);
         if self.slug_buf.is_empty() {
@@ -678,15 +698,32 @@ impl HeadingIdTracker {
         // The slug is valid UTF-8 by construction: `generate_slug_into` only
         // removes whole ASCII bytes and lowercases ASCII, which cannot split
         // multibyte sequences in UTF-8 heading text.
-        match self.used.get_mut(self.slug_buf.as_slice()) {
-            Some(count) => {
-                *count += 1;
-                let n = *count;
+        let hash = {
+            use std::hash::{BuildHasher, Hasher};
+            let mut hasher = rustc_hash::FxBuildHasher.build_hasher();
+            hasher.write(&self.slug_buf);
+            hasher.finish()
+        };
+        let entries = self.used.entry(hash).or_default();
+        let arena = &self.arena;
+        let slug = self.slug_buf.as_slice();
+        match entries
+            .iter_mut()
+            .find(|e| &arena[e.start..e.start + e.len] == slug)
+        {
+            Some(entry) => {
+                entry.seen += 1;
+                let n = entry.seen;
                 self.slug_buf.push(b'-');
                 push_decimal(&mut self.slug_buf, n);
             }
             None => {
-                self.used.insert(self.slug_buf.clone(), 0);
+                entries.push(SlugEntry {
+                    start: self.arena.len(),
+                    len: self.slug_buf.len(),
+                    seen: 0,
+                });
+                self.arena.extend_from_slice(&self.slug_buf);
             }
         }
         std::str::from_utf8(&self.slug_buf).unwrap_or("heading")
