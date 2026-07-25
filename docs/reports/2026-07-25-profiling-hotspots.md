@@ -116,6 +116,36 @@ across the fixture × preset matrix.
    Splitting hot state (text/cell paths) from cold state would shrink this,
    but the payoff is small relative to the churn.
 
+## Addendum: follow-up pass (same day)
+
+Two of the follow-up candidates were implemented after the first pass merged:
+
+1. **Footnote allocation pressure** — footnote *reference* resolution no
+   longer allocates: `FootnoteStore::get_index_bytes` normalizes the label
+   into a stack buffer instead of building a `String` per `[^…]` candidate.
+   The footnote section renderer now reuses the parent context's idle
+   `InlineParser` (via `mem::swap`) for reference footnotes and the parent's
+   parser + event buffer for inline footnotes, instead of allocating a fresh
+   parser (10+ vectors) per footnote. On `mixed-extended-5k` with every
+   extension on: allocations drop from 483 to 251 per document (108 → 60
+   KiB), instructions drop 5.5%, and wall-clock on footnote-heavy input
+   improves ~6% (paired-ratio median vs merged main).
+
+2. **Autolink candidate scan: attempted, reverted.** Folding the three
+   single-needle passes of `has_autolink_candidates` into one
+   `memchr3(b'@', b':', b'.')` pass (or a `memchr2` + dot-loop hybrid) cuts
+   the flag's instruction cost from +6.7% to +4.4% — but measured
+   consistently *slower* in paired wall-clock runs on x86-64 AVX2. Multi-
+   needle memchr runs at a lower per-byte rate than single-needle, and `.`
+   is frequent in prose, so the combined scan stops constantly while the
+   `@`/`:` passes it replaces run essentially stop-free. The three-pass
+   structure is now documented in the code as deliberate. The remaining
+   real opportunity is folding the candidate check into the SIMD specials
+   scan itself (one shared pass over the text), which is a larger refactor
+   of `collect_marks` — and any such change should be validated on Apple
+   Silicon (the published benchmark platform), where relative memchr pass
+   costs differ.
+
 ## Reproducing
 
 ```bash

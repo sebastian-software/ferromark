@@ -21,7 +21,7 @@ pub use event::InlineEvent;
 pub use links::AutolinkLiteralKind;
 
 use crate::Range;
-use crate::footnote::{FootnoteStore, normalize_footnote_label};
+use crate::footnote::FootnoteStore;
 use crate::link_ref::LinkRefStore;
 use code_span::{CodeSpan, extract_code_spans, resolve_code_spans};
 use emphasis::{EmphasisMatch, EmphasisStacks, resolve_emphasis_with_stacks_into};
@@ -639,14 +639,12 @@ impl InlineParser {
             }
 
             let label_bytes = &text[label_start..label_end];
-            if let Some(normalized) = normalize_footnote_label(label_bytes) {
-                if let Some(idx) = footnote_store.get_index(&normalized) {
-                    out.push(FootnoteRef {
-                        start: open_pos,
-                        end: close_pos + 1,
-                        def_index: idx as u32,
-                    });
-                }
+            if let Some(idx) = footnote_store.get_index_bytes(label_bytes) {
+                out.push(FootnoteRef {
+                    start: open_pos,
+                    end: close_pos + 1,
+                    def_index: idx as u32,
+                });
             }
         }
     }
@@ -1547,6 +1545,11 @@ fn has_inline_specials_highlight_superscript(input: &[u8]) -> bool {
 /// instead of matching common letters like 'h' and 'w'.
 #[inline]
 fn has_autolink_candidates(input: &[u8]) -> bool {
+    // Deliberately three separate single-byte passes: `@` and `:` are rare,
+    // so their passes run at full single-needle SIMD speed. Folding the
+    // needles into one memchr2/memchr3 pass executes fewer instructions but
+    // measured slower on x86-64 AVX2 (frequent `.` stops throttle the
+    // combined scan); see docs/reports/2026-07-25-profiling-hotspots.md.
     // Check for @ (email autolinks) — rare in normal prose
     if memchr(b'@', input).is_some() {
         return true;

@@ -2019,12 +2019,16 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         &nested_options,
                         renderer,
                     );
+                    // Reuse the parent's inline parser (idle by now) so each
+                    // footnote does not pay for a fresh set of scratch buffers.
+                    std::mem::swap(&mut nested.inline_parser, &mut self.inline_parser);
                     for (index, event) in def.events.iter().enumerate() {
                         if Some(index) == last_paragraph_end {
                             nested.pending_footnote_backref = Some((def.label.clone(), number));
                         }
                         nested.render_block_event(input, event);
                     }
+                    std::mem::swap(&mut nested.inline_parser, &mut self.inline_parser);
                 }
                 FootnoteTarget::Inline(definition_index) => {
                     let Some(content) = self
@@ -2040,19 +2044,19 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         .write_string(&(definition_index + 1).to_string());
                     self.writer.write_str("\">\n<p>");
 
-                    let mut inline_parser = InlineParser::new();
-                    let mut inline_events = Vec::with_capacity(16);
                     let mut nested_numbers = FootnoteNumbers::new(0);
                     let nested_options = Options {
                         footnotes: false,
                         inline_footnotes: false,
                         ..*self.options
                     };
+                    // Reuse the parent's idle inline parser and event buffer
+                    // instead of allocating fresh ones per inline footnote.
                     render_inline_content(
                         &content,
                         &mut *self.writer,
-                        &mut inline_parser,
-                        &mut inline_events,
+                        &mut self.inline_parser,
+                        &mut self.inline_events,
                         self.link_refs,
                         None,
                         &mut nested_numbers,
