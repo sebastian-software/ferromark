@@ -99,7 +99,13 @@ pub(crate) fn record_block_events(events: &[BlockEvent], capacity: usize) {
                 | BlockEvent::ListStart { .. }
                 | BlockEvent::ListEnd { .. }
                 | BlockEvent::ListItemStart { .. }
-                | BlockEvent::ListItemEnd => counters.block_container_events += 1,
+                | BlockEvent::ListItemEnd
+                | BlockEvent::DefinitionListStart
+                | BlockEvent::DefinitionListEnd
+                | BlockEvent::DefinitionTermStart
+                | BlockEvent::DefinitionTermEnd
+                | BlockEvent::DefinitionDescriptionStart { .. }
+                | BlockEvent::DefinitionDescriptionEnd => counters.block_container_events += 1,
                 BlockEvent::TableStart
                 | BlockEvent::TableEnd
                 | BlockEvent::TableHeadStart
@@ -205,5 +211,15 @@ mod tests {
         let counters = snapshot();
         assert_eq!(counters.max_inline_event_capacity, 1);
         assert_eq!(counters.inline_text_events, 0);
+    }
+
+    #[test]
+    fn comments_should_not_count_as_block_text_work() {
+        reset();
+        record_block_events(&[BlockEvent::Comment(crate::Range::new(0, 4))], 1);
+
+        let counters = snapshot();
+        assert_eq!(counters.block_events, 1);
+        assert_eq!(counters.block_text_events, 0);
     }
 }

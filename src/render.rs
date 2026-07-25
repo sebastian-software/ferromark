@@ -654,6 +654,45 @@ impl HtmlWriter {
         self.write_str("</li>\n");
     }
 
+    /// Write definition list start: `<dl>\n`
+    #[inline]
+    pub fn dl_start(&mut self) {
+        self.write_str("<dl>\n");
+    }
+
+    /// Write definition list end: `</dl>\n`
+    #[inline]
+    pub fn dl_end(&mut self) {
+        self.write_str("</dl>\n");
+    }
+
+    /// Write definition term start: `<dt>`
+    #[inline]
+    pub fn dt_start(&mut self) {
+        self.write_str("<dt>");
+    }
+
+    /// Write definition term end: `</dt>\n`
+    #[inline]
+    pub fn dt_end(&mut self) {
+        self.write_str("</dt>\n");
+    }
+
+    /// Write definition description start.
+    #[inline]
+    pub fn dd_start(&mut self, tight: bool) {
+        self.write_str("<dd>");
+        if !tight {
+            self.newline();
+        }
+    }
+
+    /// Write definition description end: `</dd>\n`
+    #[inline]
+    pub fn dd_end(&mut self) {
+        self.write_str("</dd>\n");
+    }
+
     // --- Table Elements ---
 
     /// Write table start: `<table>\n`

@@ -24,6 +24,7 @@ title: Features and Flags
 - Highlight (`==text==` renders `<mark>`)
 - Superscript (`^text^` renders `<sup>`)
 - Subscript (`~text~` renders `<sub>`)
+- Definition lists (`Term` followed by `: Definition`)
 
 ## Configuration flags
 
@@ -33,7 +34,7 @@ Enable only what your workload needs:
 allow_html · allow_link_refs · tables · strikethrough · highlight
 superscript · subscript · task_lists · autolink_literals
 disallowed_raw_html · footnotes · inline_footnotes · front_matter · heading_ids
-math · callouts
+math · callouts · definition_lists · line_comments · indented_code_blocks
 ```
 
 ## Inline footnotes
@@ -51,32 +52,23 @@ notes share first-appearance numbering in HTML. The iA Presenter
 Event-based presentation adapters can use `InlineEvent::InlineFootnote` to
 collect notes and place them at slide boundaries.
 
-## Curated profiles
+## Definition lists
 
-Use a profile when a stable feature bundle communicates intent better than a
-long option list:
-
-| Feature | Essentials | Extended | Full |
-| --- | :---: | :---: | :---: |
-| Tables, strikethrough, task lists | ✓ | ✓ | ✓ |
-| Raw HTML parsing, reference links | — | ✓ | ✓ |
-| Heading IDs, callouts | — | ✓ | ✓ |
-| Autolink literals, footnotes, front matter | — | — | ✓ |
-| Math, highlight, subscript, superscript | — | — | ✓ |
+Definition lists are an independent opt-in extension:
 
 ```rust
-use ferromark::{Options, Profile};
+use ferromark::Options;
 
-let options = Options::from(Profile::Essentials);
+let options = Options {
+    definition_lists: true,
+    ..Options::commonmark()
+};
 let html = ferromark::to_html_with_options(markdown, &options);
 ```
 
-`Essentials` targets common documentation syntax, `Extended` matches the
-current default feature mix, and `Full` enables everything. Individual fields
-can still be overridden with Rust's struct update syntax.
-
-Profiles never change the rendering trust boundary. Every profile starts with
-`RenderPolicy::Untrusted`; trusted raw HTML remains an explicit caller choice.
+Start from `Options::minimal()`, `Options::commonmark()`, or `Options::gfm()`
+and override only the syntax flags your documents use. These are dialect
+constructors, not performance profiles.
 
 ## Rendering policy
 

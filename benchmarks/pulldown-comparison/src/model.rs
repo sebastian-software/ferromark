@@ -193,6 +193,9 @@ fn all_extensions() -> Options {
         heading_ids: true,
         math: true,
         callouts: true,
+        definition_lists: true,
+        line_comments: true,
+        indented_code_blocks: true,
     }
 }
 

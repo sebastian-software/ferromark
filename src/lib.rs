@@ -135,6 +135,15 @@ pub struct Options {
     pub math: bool,
     /// Enable GitHub-style callouts/admonitions (`> [!NOTE]`, `> [!WARNING]`, etc.).
     pub callouts: bool,
+    /// Enable PHP Markdown Extra-style definition lists.
+    pub definition_lists: bool,
+    /// Enable source-only line comments beginning with `//`.
+    pub line_comments: bool,
+    /// Enable CommonMark indented code blocks (four or more leading spaces).
+    ///
+    /// Disable this for dialects that reserve indentation for other block
+    /// semantics and require fenced code blocks instead.
+    pub indented_code_blocks: bool,
 }
 
 impl Options {
@@ -163,6 +172,9 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     }
 
@@ -191,6 +203,9 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     }
 
@@ -219,6 +234,9 @@ impl Options {
             heading_ids: false,
             math: false,
             callouts: false,
+            definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     }
 }
@@ -243,6 +261,9 @@ impl Default for Options {
             heading_ids: true,
             math: false,
             callouts: true,
+            definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     }
 }
@@ -798,6 +819,8 @@ struct RenderContext<'a, 'r, R: FencedCodeRenderer + ?Sized> {
     heading_id_tracker: Option<HeadingIdTracker>,
     callout_stack: Vec<Option<block::CalloutType>>,
     pending_footnote_backref: Option<(String, usize)>,
+    definition_description_stack: Vec<bool>,
+    paragraph_tags_suppressed: bool,
     options: &'a Options,
     fenced_code_renderer: Option<&'r mut R>,
     fenced_code_state: Option<FencedCodeState>,
@@ -832,6 +855,8 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
             heading_id_tracker: options.heading_ids.then(HeadingIdTracker::new),
             callout_stack: Vec::new(),
             pending_footnote_backref: None,
+            definition_description_stack: Vec::new(),
+            paragraph_tags_suppressed: false,
             options,
             fenced_code_renderer,
             fenced_code_state: None,
@@ -926,6 +951,8 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
         let heading_id_tracker = &mut self.heading_id_tracker;
         let callout_stack = &mut self.callout_stack;
         let pending_footnote_backref = &mut self.pending_footnote_backref;
+        let definition_description_stack = &mut self.definition_description_stack;
+        let paragraph_tags_suppressed = &mut self.paragraph_tags_suppressed;
         let options = self.options;
         let fenced_code_renderer = &mut self.fenced_code_renderer;
         let fenced_code_state = &mut self.fenced_code_state;
@@ -946,8 +973,15 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     writer.newline();
                     *pending_loose_li_newline = false;
                 }
-                // In tight lists, don't emit <p> tags
-                if !in_tight_list {
+                let in_tight_definition = definition_description_stack.last_mut().is_some_and(
+                    |suppress_first_paragraph| {
+                        let suppress = *suppress_first_paragraph;
+                        *suppress_first_paragraph = false;
+                        suppress
+                    },
+                );
+                *paragraph_tags_suppressed = in_tight_list || in_tight_definition;
+                if !*paragraph_tags_suppressed {
                     writer.paragraph_start();
                 }
                 para_state.start();
@@ -955,15 +989,6 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 *at_tight_li_start = false;
             }
             BlockEvent::ParagraphEnd => {
-                // Check if we're in a tight list (innermost list is tight)
-                // BUT: paragraphs inside blockquotes that started AFTER the list need </p> tags
-                let in_tight_list =
-                    tight_list_stack
-                        .last()
-                        .is_some_and(|(tight, bq_depth_at_start)| {
-                            *tight && *blockquote_depth <= *bq_depth_at_start
-                        });
-
                 // Parse all accumulated paragraph content at once
                 let content = para_state.finish();
 
@@ -985,13 +1010,13 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 if let Some((label, number)) = pending_footnote_backref.take() {
                     write_footnote_backref(writer, &label, number);
                 }
-                // In tight lists, don't emit </p> tags
-                if !in_tight_list {
+                if !*paragraph_tags_suppressed {
                     writer.paragraph_end();
                 } else {
                     // Mark that we need newline before next block element
                     *need_newline_before_block = true;
                 }
+                *paragraph_tags_suppressed = false;
             }
             BlockEvent::HeadingStart { level } => {
                 if *need_newline_before_block {
@@ -1032,7 +1057,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 }
                 writer.heading_end(*level);
             }
-            BlockEvent::ThematicBreak => {
+            BlockEvent::ThematicBreak(_) => {
                 // If we're at the start of a tight list item, add newline before block content
                 if *at_tight_li_start {
                     writer.newline();
@@ -1040,6 +1065,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 }
                 writer.thematic_break();
             }
+            BlockEvent::Comment(_) => {}
             BlockEvent::HtmlBlockStart => {
                 // Write pending newline from loose list item start
                 if *pending_loose_li_newline {
@@ -1244,6 +1270,40 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 *pending_loose_li_newline = false;
                 *pending_task = block::TaskState::None;
                 writer.li_end();
+            }
+
+            BlockEvent::DefinitionListStart => {
+                if *pending_loose_li_newline {
+                    writer.newline();
+                    *pending_loose_li_newline = false;
+                }
+                if *need_newline_before_block {
+                    writer.newline();
+                    *need_newline_before_block = false;
+                }
+                if *at_tight_li_start {
+                    writer.newline();
+                    *at_tight_li_start = false;
+                }
+                writer.dl_start();
+            }
+            BlockEvent::DefinitionListEnd => {
+                writer.dl_end();
+            }
+            BlockEvent::DefinitionTermStart => {
+                writer.dt_start();
+            }
+            BlockEvent::DefinitionTermEnd => {
+                writer.dt_end();
+            }
+            BlockEvent::DefinitionDescriptionStart { tight } => {
+                writer.dd_start(*tight);
+                definition_description_stack.push(*tight);
+            }
+            BlockEvent::DefinitionDescriptionEnd => {
+                definition_description_stack.pop();
+                *need_newline_before_block = false;
+                writer.dd_end();
             }
 
             // --- Table events ---

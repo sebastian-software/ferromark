@@ -16,7 +16,7 @@ use super::{MdxDiagnostic, Segment, segment_spanned};
 ///
 /// Consumers that persist or exchange event data can record this value
 /// alongside their derived representation.
-pub const MDX_EVENT_STREAM_VERSION: u16 = 1;
+pub const MDX_EVENT_STREAM_VERSION: u16 = 2;
 
 /// A semantic event in an MDX document.
 ///
@@ -517,7 +517,9 @@ fn offset_block_event(mut event: BlockEvent, offset: usize) -> BlockEvent {
             kind: CodeBlockKind::Fenced { info: Some(range) },
         }
         | BlockEvent::HtmlBlockText(range)
-        | BlockEvent::Code(range) => *range = offset_range(*range, offset),
+        | BlockEvent::Comment(range)
+        | BlockEvent::Code(range)
+        | BlockEvent::ThematicBreak(range) => *range = offset_range(*range, offset),
         _ => {}
     }
     event
@@ -554,8 +556,10 @@ fn block_event_range(event: &BlockEvent) -> Option<Range> {
             kind: CodeBlockKind::Fenced { info: Some(range) },
         }
         | BlockEvent::HtmlBlockText(range)
+        | BlockEvent::Comment(range)
         | BlockEvent::Text(range)
-        | BlockEvent::Code(range) => Some(*range),
+        | BlockEvent::Code(range)
+        | BlockEvent::ThematicBreak(range) => Some(*range),
         _ => None,
     }
 }
