@@ -649,7 +649,7 @@ impl HeadingState {
 /// and not a hash-DoS surface, so SipHash's cost is not warranted.
 struct HeadingIdTracker {
     /// Maps a base slug to how many times it has been seen so far.
-    used: std::collections::HashMap<String, usize, rustc_hash::FxBuildHasher>,
+    used: std::collections::HashMap<Vec<u8>, usize, rustc_hash::FxBuildHasher>,
     /// Reusable buffer holding the id returned by `make_id`.
     slug_buf: Vec<u8>,
 }
@@ -671,12 +671,14 @@ impl HeadingIdTracker {
     /// base slug is recorded.
     fn make_id(&mut self, raw: &[u8]) -> &str {
         generate_slug_into(raw, &mut self.slug_buf);
-        if self.slug_buf.is_empty() || std::str::from_utf8(&self.slug_buf).is_err() {
-            self.slug_buf.clear();
+        if self.slug_buf.is_empty() {
             self.slug_buf.extend_from_slice(b"heading");
         }
-        let slug = std::str::from_utf8(&self.slug_buf).unwrap_or("heading");
-        match self.used.get_mut(slug) {
+        // Dedup on raw slug bytes; UTF-8 validity is checked once on return.
+        // The slug is valid UTF-8 by construction: `generate_slug_into` only
+        // removes whole ASCII bytes and lowercases ASCII, which cannot split
+        // multibyte sequences in UTF-8 heading text.
+        match self.used.get_mut(self.slug_buf.as_slice()) {
             Some(count) => {
                 *count += 1;
                 let n = *count;
@@ -684,7 +686,7 @@ impl HeadingIdTracker {
                 push_decimal(&mut self.slug_buf, n);
             }
             None => {
-                self.used.insert(slug.to_string(), 0);
+                self.used.insert(self.slug_buf.clone(), 0);
             }
         }
         std::str::from_utf8(&self.slug_buf).unwrap_or("heading")
@@ -715,31 +717,51 @@ fn push_decimal(buf: &mut Vec<u8>, mut n: usize) {
 /// 4. Remove chars that are not alphanumeric, `-`, `_`, or space
 /// 5. Strip leading/trailing `-`
 fn generate_slug_into(raw: &[u8], slug: &mut Vec<u8>) {
+    /// Skip the byte without touching whitespace state (markup delimiters).
+    const SLUG_MARKUP: u8 = 0;
+    /// Fold a whitespace run into a single `-`.
+    const SLUG_SPACE: u8 = 1;
+    /// Drop the byte but end any pending whitespace run (other punctuation).
+    const SLUG_DROP: u8 = 2;
+    /// Any other value is the (lowercased) byte to append.
+    static SLUG_LUT: [u8; 256] = {
+        let mut table = [SLUG_DROP; 256];
+        let mut i = 0usize;
+        while i < 256 {
+            let b = i as u8;
+            table[i] = match b {
+                // Strip inline markup delimiters (keep _ since it's valid in slugs)
+                b'*' | b'~' | b'`' | b'[' | b']' | b'!' | b'#' => SLUG_MARKUP,
+                b' ' | b'\t' | b'\n' | b'\r' => SLUG_SPACE,
+                // Lowercase ASCII
+                b'A'..=b'Z' => b + 32,
+                // Keep alphanumeric, hyphen, underscore, and multibyte UTF-8
+                b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' => b,
+                0x80..=0xFF => b,
+                _ => SLUG_DROP,
+            };
+            i += 1;
+        }
+        table
+    };
+
     slug.clear();
     let mut prev_was_space = false;
 
     for &b in raw {
-        // Strip inline markup delimiters (keep _ since it's valid in slugs)
-        if matches!(b, b'*' | b'~' | b'`' | b'[' | b']' | b'!' | b'#') {
-            continue;
-        }
-
-        if b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' {
-            if !prev_was_space && !slug.is_empty() {
-                slug.push(b'-');
-                prev_was_space = true;
+        match SLUG_LUT[b as usize] {
+            SLUG_MARKUP => {}
+            SLUG_SPACE => {
+                if !prev_was_space && !slug.is_empty() {
+                    slug.push(b'-');
+                    prev_was_space = true;
+                }
             }
-            continue;
-        }
-
-        prev_was_space = false;
-
-        // Lowercase ASCII
-        let ch = if b.is_ascii_uppercase() { b + 32 } else { b };
-
-        // Keep alphanumeric, hyphen, underscore, and multibyte UTF-8
-        if ch.is_ascii_alphanumeric() || ch == b'-' || ch == b'_' || ch >= 0x80 {
-            slug.push(ch);
+            SLUG_DROP => prev_was_space = false,
+            ch => {
+                prev_was_space = false;
+                slug.push(ch);
+            }
         }
     }
 
@@ -756,8 +778,10 @@ fn generate_slug_into(raw: &[u8], slug: &mut Vec<u8>) {
 
 /// State for collecting table cell content before inline parsing.
 struct CellState {
-    /// Collected text content.
+    /// Collected text content (only used when escapes force a copy).
     content: Vec<u8>,
+    /// Borrowed input range for the common single-text, no-escape cell.
+    pending: Option<Range>,
     /// Whether we're currently in a cell.
     in_cell: bool,
 }
@@ -766,6 +790,7 @@ impl CellState {
     fn new() -> Self {
         Self {
             content: Vec::with_capacity(64),
+            pending: None,
             in_cell: false,
         }
     }
@@ -773,34 +798,61 @@ impl CellState {
     fn start(&mut self) {
         self.in_cell = true;
         self.content.clear();
+        self.pending = None;
     }
 
-    fn add_text(&mut self, text: &[u8]) {
+    fn add_text(&mut self, range: Range, input: &[u8]) {
+        let text = range.slice(input);
+        // Fast path: a cell is almost always a single text range without a
+        // backslash escape, which can be rendered straight from the input.
+        if self.content.is_empty()
+            && self.pending.is_none()
+            && memchr::memchr(b'\\', text).is_none()
+        {
+            self.pending = Some(range);
+            return;
+        }
+        if let Some(prev) = self.pending.take() {
+            self.content.extend_from_slice(prev.slice(input));
+        }
         // In table cells, \| is a table-level escape meaning literal |
-        // Replace \| with | before inline parsing
+        // Replace \| with | before inline parsing. Bytes between escapes are
+        // copied in bulk.
         let mut i = 0;
-        while i < text.len() {
-            if text[i] == b'\\' && i + 1 < text.len() && text[i + 1] == b'|' {
+        while let Some(offset) = memchr::memchr(b'\\', &text[i..]) {
+            let idx = i + offset;
+            if idx + 1 < text.len() && text[idx + 1] == b'|' {
+                self.content.extend_from_slice(&text[i..idx]);
                 self.content.push(b'|');
-                i += 2;
+                i = idx + 2;
             } else {
-                self.content.push(text[i]);
-                i += 1;
+                self.content.extend_from_slice(&text[i..=idx]);
+                i = idx + 1;
             }
         }
+        self.content.extend_from_slice(&text[i..]);
     }
 
-    fn finish(&mut self) -> &[u8] {
+    fn finish<'a>(&'a mut self, input: &'a [u8]) -> &'a [u8] {
         self.in_cell = false;
-        // Trim trailing whitespace
-        while self
-            .content
-            .last()
-            .is_some_and(|&b| b == b' ' || b == b'\t')
-        {
-            self.content.pop();
+        let mut slice: &[u8] = match self.pending.take() {
+            Some(range) => range.slice(input),
+            None => {
+                // Trim trailing whitespace
+                while self
+                    .content
+                    .last()
+                    .is_some_and(|&b| b == b' ' || b == b'\t')
+                {
+                    self.content.pop();
+                }
+                return &self.content;
+            }
+        };
+        while slice.last().is_some_and(|&b| b == b' ' || b == b'\t') {
+            slice = &slice[..slice.len() - 1];
         }
-        &self.content
+        slice
     }
 }
 
@@ -1122,7 +1174,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 } else if heading_state.in_heading {
                     heading_state.add_text(text);
                 } else if cell_state.in_cell {
-                    cell_state.add_text(text);
+                    cell_state.add_text(*range, input);
                 } else {
                     render_inline_content(
                         text,
@@ -1380,7 +1432,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 cell_state.start();
             }
             BlockEvent::TableCellEnd => {
-                let content = cell_state.finish();
+                let content = cell_state.finish(input);
                 if !content.is_empty() {
                     render_inline_content(
                         content,
