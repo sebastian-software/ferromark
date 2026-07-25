@@ -174,6 +174,15 @@ pub enum BlockEvent {
 
     /// Start of a table.
     TableStart,
+    /// Start of relative column-width hints for a table.
+    TableColumnWidthsStart,
+    /// A numeric table column-width hint in hundredths of one percent.
+    TableColumnWidth {
+        /// Width in basis points (`2500` means `25%`).
+        basis_points: u16,
+    },
+    /// End of relative column-width hints for a table.
+    TableColumnWidthsEnd,
     /// End of a table.
     TableEnd,
     /// Start of a table header section.

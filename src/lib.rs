@@ -110,6 +110,11 @@ pub struct Options {
     ///
     /// Requires [`Self::tables`] to be enabled.
     pub merged_table_cells: bool,
+    /// Interpret table delimiter dash counts as relative column-width hints.
+    ///
+    /// This opt-in extension emits numeric `<col>` widths and does not accept
+    /// arbitrary CSS or HTML attributes.
+    pub table_column_widths: bool,
     /// Enable GFM strikethrough extension (`~~text~~`).
     pub strikethrough: bool,
     /// Enable highlight/mark extension (`==text==`).
@@ -164,6 +169,7 @@ impl Options {
             allow_link_refs: false,
             tables: false,
             merged_table_cells: false,
+            table_column_widths: false,
             strikethrough: false,
             highlight: false,
             superscript: false,
@@ -196,6 +202,7 @@ impl Options {
             allow_link_refs: true,
             tables: false,
             merged_table_cells: false,
+            table_column_widths: false,
             strikethrough: false,
             highlight: false,
             superscript: false,
@@ -228,6 +235,7 @@ impl Options {
             allow_link_refs: true,
             tables: true,
             merged_table_cells: false,
+            table_column_widths: false,
             strikethrough: true,
             highlight: false,
             superscript: false,
@@ -256,6 +264,7 @@ impl Default for Options {
             allow_link_refs: true,
             tables: true,
             merged_table_cells: false,
+            table_column_widths: false,
             strikethrough: true,
             highlight: false,
             superscript: false,
@@ -1329,6 +1338,15 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     *at_tight_li_start = false;
                 }
                 writer.table_start();
+            }
+            BlockEvent::TableColumnWidthsStart => {
+                writer.colgroup_start();
+            }
+            BlockEvent::TableColumnWidth { basis_points } => {
+                writer.col_width(*basis_points);
+            }
+            BlockEvent::TableColumnWidthsEnd => {
+                writer.colgroup_end();
             }
             BlockEvent::TableEnd => {
                 writer.table_end();

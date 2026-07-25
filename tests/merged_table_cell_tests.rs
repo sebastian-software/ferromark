@@ -81,6 +81,28 @@ fn merged_header_cells_participate_in_table_recognition() {
 }
 
 #[test]
+fn merged_cells_compose_with_underlying_column_width_hints() {
+    let options = Options {
+        tables: true,
+        merged_table_cells: true,
+        table_column_widths: true,
+        ..Options::default()
+    };
+    let html = to_html_with_options(
+        "\
+| Group ||
+| -- | ------ |
+| all ||",
+        &options,
+    );
+
+    assert!(html.contains("<col style=\"width: 25%\">"), "{html}");
+    assert!(html.contains("<col style=\"width: 75%\">"), "{html}");
+    assert!(html.contains("<th colspan=\"2\">Group</th>"), "{html}");
+    assert!(html.contains("<td colspan=\"2\">all</td>"), "{html}");
+}
+
+#[test]
 fn whitespace_between_pipes_preserves_an_explicit_empty_cell() {
     let html = render(
         "\

@@ -6,6 +6,7 @@ export interface Options {
   allowLinkRefs?: boolean
   tables?: boolean
   mergedTableCells?: boolean
+  tableColumnWidths?: boolean
   strikethrough?: boolean
   highlight?: boolean
   superscript?: boolean

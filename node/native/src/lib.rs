@@ -11,6 +11,7 @@ pub struct Options {
     pub allow_link_refs: Option<bool>,
     pub tables: Option<bool>,
     pub merged_table_cells: Option<bool>,
+    pub table_column_widths: Option<bool>,
     pub strikethrough: Option<bool>,
     pub highlight: Option<bool>,
     pub superscript: Option<bool>,
@@ -50,6 +51,7 @@ impl Options {
         apply(&mut options.allow_link_refs, self.allow_link_refs);
         apply(&mut options.tables, self.tables);
         apply(&mut options.merged_table_cells, self.merged_table_cells);
+        apply(&mut options.table_column_widths, self.table_column_widths);
         apply(&mut options.strikethrough, self.strikethrough);
         apply(&mut options.highlight, self.highlight);
         apply(&mut options.superscript, self.superscript);

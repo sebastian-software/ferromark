@@ -17,6 +17,7 @@ title: Features and Flags
 ## Beyond GFM
 
 - Optional horizontal table-cell spans (`||`, `|||`)
+- Optional relative table-column width hints
 - Reference and inline footnotes
 - Front matter extraction (`---` and `+++`)
 - Heading IDs (GitHub-compatible slugs)
@@ -32,7 +33,7 @@ title: Features and Flags
 Enable only what your workload needs:
 
 ```text
-allow_html · allow_link_refs · tables · merged_table_cells · strikethrough · highlight
+allow_html · allow_link_refs · tables · merged_table_cells · table_column_widths · strikethrough · highlight
 superscript · subscript · task_lists · autolink_literals
 disallowed_raw_html · footnotes · inline_footnotes · front_matter · heading_ids
 math · callouts · definition_lists · line_comments · indented_code_blocks
@@ -52,6 +53,18 @@ horizontal spans. The number of adjacent pipes after a cell is its `colspan`:
 Here `0$` spans two columns. Whitespace between pipes keeps an explicit empty
 cell. When the flag is disabled, consecutive pipes use normal GFM empty-cell
 semantics.
+
+Enable `table_column_widths` to interpret the relative number of dashes in each
+delimiter cell as a numeric HTML `<col>` width hint:
+
+```markdown
+| Short | Long |
+| -- | ------ |
+```
+
+This produces 25% and 75% hints. Alignment colons do not contribute to the
+ratio. The option composes with `merged_table_cells`: widths still describe the
+underlying table columns, while a merged cell spans those columns.
 
 ## Inline footnotes
 

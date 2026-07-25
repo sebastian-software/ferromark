@@ -5,6 +5,7 @@ const options: Options = {
   renderPolicy: 'untrusted',
   tables: true,
   mergedTableCells: true,
+  tableColumnWidths: true,
   inlineFootnotes: true,
   definitionLists: true,
   lineComments: true,
