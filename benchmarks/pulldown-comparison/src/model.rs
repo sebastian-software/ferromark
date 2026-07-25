@@ -189,10 +189,14 @@ fn all_extensions() -> Options {
         autolink_literals: true,
         disallowed_raw_html: true,
         footnotes: true,
+        inline_footnotes: true,
         front_matter: true,
         heading_ids: true,
         math: true,
         callouts: true,
+        definition_lists: true,
+        line_comments: true,
+        indented_code_blocks: true,
     }
 }
 

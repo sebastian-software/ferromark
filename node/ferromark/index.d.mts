@@ -14,10 +14,14 @@ export interface Options {
   autolinkLiterals?: boolean
   disallowedRawHtml?: boolean
   footnotes?: boolean
+  inlineFootnotes?: boolean
   frontMatter?: boolean
   headingIds?: boolean
   math?: boolean
   callouts?: boolean
+  definitionLists?: boolean
+  lineComments?: boolean
+  indentedCodeBlocks?: boolean
 }
 
 export interface CodeHighlighter {

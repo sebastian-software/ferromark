@@ -102,6 +102,11 @@ pub enum InlineEvent {
         def_index: u32,
     },
 
+    /// Pandoc-style inline footnote content from `^[...]`.
+    ///
+    /// The range covers only the note content, without `^[` and `]`.
+    InlineFootnote(Range),
+
     /// Inline math span (`$...$`).
     MathInline(Range),
 

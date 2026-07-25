@@ -36,6 +36,7 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
         allow_html: true,
         allow_link_refs: true,
         tables,
+        merged_table_cells: false,
         strikethrough,
         highlight: false,
         superscript,
@@ -44,10 +45,14 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
         autolink_literals: false,
         disallowed_raw_html: false,
         footnotes,
+        inline_footnotes: false,
         front_matter: false,
         heading_ids: false,
         math,
         callouts,
+        definition_lists: false,
+        line_comments: false,
+        indented_code_blocks: true,
     }
 }
 

@@ -125,8 +125,32 @@ pub enum BlockEvent {
     /// End of a list item.
     ListItemEnd,
 
+    /// Start of a definition list.
+    DefinitionListStart,
+    /// End of a definition list.
+    DefinitionListEnd,
+    /// Start of a definition term.
+    DefinitionTermStart,
+    /// End of a definition term.
+    DefinitionTermEnd,
+    /// Start of a definition description.
+    DefinitionDescriptionStart {
+        /// Whether the first paragraph should omit its `<p>` wrapper.
+        tight: bool,
+    },
+    /// End of a definition description.
+    DefinitionDescriptionEnd,
+
     /// A thematic break (horizontal rule).
-    ThematicBreak,
+    ///
+    /// The `Range` covers the marker run and any intervening or trailing
+    /// horizontal whitespace on the same line. It excludes container
+    /// indentation (leading spaces already consumed by the block loop) and
+    /// the line ending character.
+    ThematicBreak(Range),
+
+    /// A source-only line comment omitted by the HTML renderer.
+    Comment(Range),
 
     /// Start of an HTML block.
     HtmlBlockStart,

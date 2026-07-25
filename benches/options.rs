@@ -39,10 +39,14 @@ fn all_extensions() -> Options {
         autolink_literals: true,
         disallowed_raw_html: true,
         footnotes: true,
+        inline_footnotes: true,
         front_matter: true,
         heading_ids: true,
         math: true,
         callouts: true,
+        definition_lists: true,
+        line_comments: true,
+        indented_code_blocks: true,
     }
 }
 
@@ -55,6 +59,10 @@ fn options_cost_benches(c: &mut Criterion) {
         merged_table_cells: true,
         ..Options::default()
     };
+    let inline_footnotes = Options {
+        inline_footnotes: true,
+        ..Options::default()
+    };
 
     for (name, options) in [
         ("minimal", Options::minimal()),
@@ -62,6 +70,28 @@ fn options_cost_benches(c: &mut Criterion) {
         ("gfm", Options::gfm()),
         ("default", Options::default()),
         ("default_merged_table_cells", merged_table_cells),
+        ("default_inline_footnotes", inline_footnotes),
+        (
+            "default_definition_lists",
+            Options {
+                definition_lists: true,
+                ..Options::default()
+            },
+        ),
+        (
+            "default_line_comments",
+            Options {
+                line_comments: true,
+                ..Options::default()
+            },
+        ),
+        (
+            "default_no_indented_code",
+            Options {
+                indented_code_blocks: false,
+                ..Options::default()
+            },
+        ),
         ("all_extensions", all_extensions()),
     ] {
         let mut output = Vec::with_capacity(input.len() + input.len() / 4);

@@ -20,10 +20,14 @@ fn minimal_should_disable_every_optional_syntax_feature() {
             autolink_literals: false,
             disallowed_raw_html: false,
             footnotes: false,
+            inline_footnotes: false,
             front_matter: false,
             heading_ids: false,
             math: false,
             callouts: false,
+            definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     );
 }
@@ -85,10 +89,14 @@ fn default_should_retain_the_existing_feature_mix() {
             autolink_literals: false,
             disallowed_raw_html: true,
             footnotes: false,
+            inline_footnotes: false,
             front_matter: false,
             heading_ids: true,
             math: false,
             callouts: true,
+            definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     );
 }
