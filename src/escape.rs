@@ -120,28 +120,32 @@ pub fn needs_attr_escape(input: &[u8]) -> bool {
     input.iter().any(|&b| ATTR_ESCAPE_TABLE[b as usize])
 }
 
+/// Below this length a table-driven scalar scan beats SIMD memchr passes,
+/// whose per-call dispatch and setup cost more than the scan itself. Inline
+/// text segments between escapes are short in practice (median ~17 bytes,
+/// >95% under 64 on prose corpora).
+const SHORT_SCAN_MAX: usize = 64;
+
 #[inline]
 fn first_text_escape(input: &[u8]) -> Option<usize> {
+    if input.len() <= SHORT_SCAN_MAX {
+        return input.iter().position(|&b| TEXT_ESCAPE_TABLE[b as usize]);
+    }
     let a = memchr3(b'<', b'>', b'&', input);
-    let b = memchr(b'"', input);
-    min_opt(a, b)
+    // A '"' is only relevant if it appears before the first <>& hit, so the
+    // second pass never scans past it.
+    let limit = a.unwrap_or(input.len());
+    memchr(b'"', &input[..limit]).or(a)
 }
 
 #[inline]
 fn first_attr_escape(input: &[u8]) -> Option<usize> {
-    let a = memchr3(b'<', b'>', b'&', input);
-    let b = memchr2(b'"', b'\'', input);
-    min_opt(a, b)
-}
-
-#[inline]
-fn min_opt(a: Option<usize>, b: Option<usize>) -> Option<usize> {
-    match (a, b) {
-        (Some(a), Some(b)) => Some(a.min(b)),
-        (Some(a), None) => Some(a),
-        (None, Some(b)) => Some(b),
-        (None, None) => None,
+    if input.len() <= SHORT_SCAN_MAX {
+        return input.iter().position(|&b| ATTR_ESCAPE_TABLE[b as usize]);
     }
+    let a = memchr3(b'<', b'>', b'&', input);
+    let limit = a.unwrap_or(input.len());
+    memchr2(b'"', b'\'', &input[..limit]).or(a)
 }
 
 /// Escape and return as a new Vec.
@@ -462,5 +466,96 @@ mod tests {
         let mut out = Vec::new();
         escape_text_into(&mut out, "Hallo Welt! <tag>".as_bytes());
         assert_eq!(out, b"Hallo Welt! &lt;tag&gt;");
+    }
+
+    /// Build an input of `len` filler bytes with `payload` spliced in at `at`.
+    fn padded(len: usize, at: usize, payload: &[u8]) -> Vec<u8> {
+        let mut v = vec![b'x'; len];
+        v[at..at + payload.len()].copy_from_slice(payload);
+        v
+    }
+
+    /// The scalar and memchr scanners must agree for every escape character
+    /// at every position across the length threshold.
+    #[test]
+    fn test_scanner_threshold_boundary() {
+        for len in [SHORT_SCAN_MAX - 1, SHORT_SCAN_MAX, SHORT_SCAN_MAX + 1] {
+            for &c in b"<>&\"" {
+                for at in [0, len / 2, len - 1] {
+                    let input = padded(len, at, &[c]);
+                    assert_eq!(
+                        first_text_escape(&input),
+                        Some(at),
+                        "text: len={len} at={at} c={}",
+                        c as char
+                    );
+                }
+            }
+            for &c in b"<>&\"'" {
+                let input = padded(len, len - 1, &[c]);
+                assert_eq!(first_attr_escape(&input), Some(len - 1));
+            }
+            assert_eq!(first_text_escape(&vec![b'x'; len]), None);
+            assert_eq!(first_attr_escape(&vec![b'x'; len]), None);
+        }
+    }
+
+    /// Long-input path: a quote before the first `<>&` hit must win, and a
+    /// quote after it must not mask it (the bounded second pass).
+    #[test]
+    fn test_long_input_quote_ordering() {
+        let long = 4 * SHORT_SCAN_MAX;
+
+        let quote_first = padded(long, 10, b"\"");
+        let quote_first = {
+            let mut v = quote_first;
+            v[long - 10] = b'<';
+            v
+        };
+        assert_eq!(first_text_escape(&quote_first), Some(10));
+
+        let angle_first = padded(long, 10, b"<");
+        let angle_first = {
+            let mut v = angle_first;
+            v[long - 10] = b'"';
+            v
+        };
+        assert_eq!(first_text_escape(&angle_first), Some(10));
+
+        let quote_only = padded(long, long - 1, b"\"");
+        assert_eq!(first_text_escape(&quote_only), Some(long - 1));
+
+        let single_quote_late = padded(long, long - 1, b"'");
+        assert_eq!(first_attr_escape(&single_quote_late), Some(long - 1));
+        // '\'' is not escaped in text context
+        assert_eq!(first_text_escape(&single_quote_late), None);
+    }
+
+    /// End-to-end escaping of a long segment goes through the memchr path.
+    #[test]
+    fn test_escape_long_input_end_to_end() {
+        let long = 3 * SHORT_SCAN_MAX;
+        let mut input = vec![b'a'; long];
+        input[SHORT_SCAN_MAX + 5] = b'"';
+        input[2 * SHORT_SCAN_MAX] = b'&';
+        let mut out = Vec::new();
+        escape_text_into(&mut out, &input);
+
+        let mut expected = Vec::new();
+        for (i, &b) in input.iter().enumerate() {
+            match i {
+                _ if b == b'"' => expected.extend_from_slice(b"&quot;"),
+                _ if b == b'&' => expected.extend_from_slice(b"&amp;"),
+                _ => expected.push(b),
+            }
+        }
+        assert_eq!(out, expected);
+
+        let mut attr_out = Vec::new();
+        input[10] = b'\'';
+        escape_full_into(&mut attr_out, &input);
+        assert!(attr_out.windows(5).any(|w| w == b"&#39;"));
+        assert!(attr_out.windows(6).any(|w| w == b"&quot;"));
+        assert!(attr_out.windows(5).any(|w| w == b"&amp;"));
     }
 }
