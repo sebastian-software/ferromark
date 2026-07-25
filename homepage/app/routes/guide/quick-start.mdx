@@ -8,21 +8,24 @@ Install the crate and render Markdown to HTML in one call.
 
 ```toml
 [dependencies]
-ferromark = "0.3"
+ferromark = "0.5"
 ```
 
 ```rust
 let html = ferromark::to_html("# Hello\n\n**World**");
 ```
 
-For common documentation syntax with tables, strikethrough, and task lists—but
-without costlier reference, raw-HTML, or specialized extension paths—select the
-Essentials profile:
+Start from the dialect constructor that matches your content —
+`Options::minimal()`, `Options::commonmark()`, or `Options::gfm()` — and
+override individual flags:
 
 ```rust
-use ferromark::{Options, Profile};
+use ferromark::Options;
 
-let options = Options::from(Profile::Essentials);
+let options = Options {
+    front_matter: true,
+    ..Options::gfm()
+};
 let html = ferromark::to_html_with_options(markdown, &options);
 ```
 
@@ -40,7 +43,7 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 MDX support is opt-in via feature flag:
 
 ```toml
-ferromark = { version = "0.3", features = ["mdx"] }
+ferromark = { version = "0.5", features = ["mdx"] }
 ```
 
 See [MDX Examples](/guide/mdx-examples) for full code paths.
