@@ -43,6 +43,8 @@ fn all_extensions() -> Options {
         math: true,
         callouts: true,
         definition_lists: true,
+        line_comments: true,
+        indented_code_blocks: true,
     }
 }
 
@@ -60,6 +62,20 @@ fn options_cost_benches(c: &mut Criterion) {
             "default_definition_lists",
             Options {
                 definition_lists: true,
+                ..Options::default()
+            },
+        ),
+        (
+            "default_line_comments",
+            Options {
+                line_comments: true,
+                ..Options::default()
+            },
+        ),
+        (
+            "default_no_indented_code",
+            Options {
+                indented_code_blocks: false,
                 ..Options::default()
             },
         ),

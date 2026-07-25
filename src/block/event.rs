@@ -142,7 +142,15 @@ pub enum BlockEvent {
     DefinitionDescriptionEnd,
 
     /// A thematic break (horizontal rule).
-    ThematicBreak,
+    ///
+    /// The `Range` covers the marker run and any intervening or trailing
+    /// horizontal whitespace on the same line. It excludes container
+    /// indentation (leading spaces already consumed by the block loop) and
+    /// the line ending character.
+    ThematicBreak(Range),
+
+    /// A source-only line comment omitted by the HTML renderer.
+    Comment(Range),
 
     /// Start of an HTML block.
     HtmlBlockStart,

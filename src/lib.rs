@@ -135,6 +135,13 @@ pub struct Options {
     pub callouts: bool,
     /// Enable PHP Markdown Extra-style definition lists.
     pub definition_lists: bool,
+    /// Enable source-only line comments beginning with `//`.
+    pub line_comments: bool,
+    /// Enable CommonMark indented code blocks (four or more leading spaces).
+    ///
+    /// Disable this for dialects that reserve indentation for other block
+    /// semantics and require fenced code blocks instead.
+    pub indented_code_blocks: bool,
 }
 
 impl Options {
@@ -163,6 +170,8 @@ impl Options {
             math: false,
             callouts: false,
             definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     }
 
@@ -191,6 +200,8 @@ impl Options {
             math: false,
             callouts: false,
             definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     }
 
@@ -219,6 +230,8 @@ impl Options {
             math: false,
             callouts: false,
             definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     }
 }
@@ -243,6 +256,8 @@ impl Default for Options {
             math: false,
             callouts: true,
             definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     }
 }
@@ -1036,7 +1051,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 }
                 writer.heading_end(*level);
             }
-            BlockEvent::ThematicBreak => {
+            BlockEvent::ThematicBreak(_) => {
                 // If we're at the start of a tight list item, add newline before block content
                 if *at_tight_li_start {
                     writer.newline();
@@ -1044,6 +1059,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 }
                 writer.thematic_break();
             }
+            BlockEvent::Comment(_) => {}
             BlockEvent::HtmlBlockStart => {
                 // Write pending newline from loose list item start
                 if *pending_loose_li_newline {

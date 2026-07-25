@@ -135,6 +135,8 @@ pub struct BlockParser<'a> {
     in_paragraph: bool,
     /// Accumulated paragraph text ranges.
     paragraph_lines: Vec<Range>,
+    /// Source-only comments encountered while paragraph text is buffered.
+    paragraph_comments: Vec<Range>,
     /// Current fenced code block state, if inside one.
     fence_state: Option<FenceState>,
     /// Whether we're in an indented code block.
@@ -206,6 +208,7 @@ impl<'a> BlockParser<'a> {
             cursor: Cursor::new(input),
             in_paragraph: false,
             paragraph_lines: Vec::new(),
+            paragraph_comments: Vec::new(),
             fence_state: None,
             in_indented_code: false,
             indented_code_extra_spaces: 0,
@@ -304,6 +307,12 @@ impl<'a> BlockParser<'a> {
         // Reset column tracking at the start of each line
         self.partial_tab_cols = 0;
         self.current_col = 0;
+
+        // Source-only comments are removed before block/container matching so
+        // they do not alter the surrounding Markdown structure.
+        if self.try_line_comment(line_start, events) {
+            return;
+        }
 
         // Check for blank line first (before any space skipping), unless we're in an HTML block
         if self.html_block.is_none() && self.is_blank_line() {
@@ -652,7 +661,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for indented code block (4+ spaces, not in paragraph)
-        if indent >= 4 && !self.in_paragraph {
+        if self.options.indented_code_blocks && indent >= 4 && !self.in_paragraph {
             self.start_indented_code(indent, events);
             return;
         }
@@ -704,7 +713,16 @@ impl<'a> BlockParser<'a> {
                 return true;
             }
 
-            if indent >= 4 || !is_simple_line_start(first) {
+            if self.options.line_comments
+                && indent < 4
+                && first == b'/'
+                && self.cursor.remaining_slice().starts_with(b"//")
+            {
+                self.cursor = Cursor::new_at(self.input, line_start);
+                return consumed_any;
+            }
+
+            if (indent >= 4 && self.options.indented_code_blocks) || !is_simple_line_start(first) {
                 self.cursor = Cursor::new_at(self.input, line_start);
                 return consumed_any;
             }
@@ -1048,7 +1066,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for indented code block (4+ spaces, not in paragraph)
-        if indent >= 4 && !self.in_paragraph {
+        if self.options.indented_code_blocks && indent >= 4 && !self.in_paragraph {
             self.start_indented_code(indent, events);
             return;
         }
@@ -2058,7 +2076,7 @@ impl<'a> BlockParser<'a> {
     /// Try to parse a thematic break.
     /// Returns true if successful.
     fn try_thematic_break(&mut self, events: &mut Vec<BlockEvent>) -> bool {
-        let _start_pos = self.cursor.offset();
+        let start_pos = self.cursor.offset();
 
         // Must start with -, *, or _
         let marker = match self.cursor.peek() {
@@ -2101,7 +2119,10 @@ impl<'a> BlockParser<'a> {
         // Mark the current container as having content
         self.mark_container_has_content();
 
-        events.push(BlockEvent::ThematicBreak);
+        events.push(BlockEvent::ThematicBreak(Range::from_usize(
+            start_pos,
+            temp_cursor.offset(),
+        )));
         true
     }
 
@@ -2261,26 +2282,7 @@ impl<'a> BlockParser<'a> {
 
         events.push(BlockEvent::HeadingStart { level });
 
-        // Emit text ranges for each line with soft breaks between
-        // Trim trailing spaces/tabs from the last line
-        let line_count = self.paragraph_lines.len();
-        for (i, mut range) in self.paragraph_lines.drain(..).enumerate() {
-            if i > 0 {
-                events.push(BlockEvent::SoftBreak);
-            }
-            // Trim trailing whitespace from the last line
-            if i == line_count - 1 {
-                while range.end > range.start {
-                    let b = self.input[(range.end - 1) as usize];
-                    if b == b' ' || b == b'\t' {
-                        range.end -= 1;
-                    } else {
-                        break;
-                    }
-                }
-            }
-            events.push(BlockEvent::Text(range));
-        }
+        self.emit_paragraph_items(events, true);
 
         events.push(BlockEvent::HeadingEnd { level });
     }
@@ -2966,6 +2968,8 @@ impl<'a> BlockParser<'a> {
                 content_start + remaining
             }
         };
+        let content_end = line_end
+            - usize::from(line_end > content_start && self.input.get(line_end - 1) == Some(&b'\r'));
 
         // If we weren't in a paragraph, we are now
         if !self.in_paragraph {
@@ -2977,10 +2981,63 @@ impl<'a> BlockParser<'a> {
         // Add this line to paragraph content
         // We include from original line_start to capture any leading spaces we skipped
         // Actually, use content_start which is after indent
-        if line_end > content_start {
+        if content_end > content_start {
             self.paragraph_lines
-                .push(Range::from_usize(content_start, line_end));
+                .push(Range::from_usize(content_start, content_end));
         }
+    }
+
+    /// Consume an enabled source-only line comment.
+    ///
+    /// Recognition is deliberately physical-line based: up to three leading
+    /// spaces are accepted, while tabs, four-space indentation, and explicit
+    /// block container markers remain ordinary Markdown syntax.
+    fn try_line_comment(&mut self, line_start: usize, events: &mut Vec<BlockEvent>) -> bool {
+        if !self.options.line_comments
+            || self.fence_state.is_some()
+            || self.in_indented_code
+            || self.html_block.is_some()
+        {
+            return false;
+        }
+
+        let mut marker_start = line_start;
+        let mut spaces = 0usize;
+        while marker_start < self.input.len() && self.input[marker_start] == b' ' && spaces < 4 {
+            marker_start += 1;
+            spaces += 1;
+        }
+        if spaces > 3
+            || !self
+                .input
+                .get(marker_start..)
+                .is_some_and(|rest| rest.starts_with(b"//"))
+        {
+            return false;
+        }
+
+        let mut line_end = marker_start + 2;
+        while line_end < self.input.len() && self.input[line_end] != b'\n' {
+            line_end += 1;
+        }
+        let comment_end = if line_end > marker_start + 2 && self.input[line_end - 1] == b'\r' {
+            line_end - 1
+        } else {
+            line_end
+        };
+        let range = Range::from_usize(marker_start, comment_end);
+
+        if line_end < self.input.len() {
+            line_end += 1;
+        }
+        self.cursor = Cursor::new_at(self.input, line_end);
+
+        if self.in_paragraph {
+            self.paragraph_comments.push(range);
+        } else {
+            events.push(BlockEvent::Comment(range));
+        }
+        true
     }
 
     // --- Table parsing ---
@@ -3215,6 +3272,10 @@ impl<'a> BlockParser<'a> {
     ) {
         // Extract the last paragraph line for use as header
         let header_range = self.paragraph_lines.pop().unwrap();
+        let table_comment_start = self
+            .paragraph_comments
+            .partition_point(|range| range.start < header_range.start);
+        let table_comments = self.paragraph_comments.split_off(table_comment_start);
 
         // Close any remaining paragraph content (lines before the header line)
         // These stay as a normal paragraph
@@ -3222,13 +3283,10 @@ impl<'a> BlockParser<'a> {
             // Emit those lines as a paragraph
             self.mark_container_has_content();
             events.push(BlockEvent::ParagraphStart);
-            for (i, range) in self.paragraph_lines.drain(..).enumerate() {
-                if i > 0 {
-                    events.push(BlockEvent::SoftBreak);
-                }
-                events.push(BlockEvent::Text(range));
-            }
+            self.emit_paragraph_items(events, false);
             events.push(BlockEvent::ParagraphEnd);
+        } else {
+            events.extend(self.paragraph_comments.drain(..).map(BlockEvent::Comment));
         }
         self.in_paragraph = false;
 
@@ -3256,6 +3314,7 @@ impl<'a> BlockParser<'a> {
         }
 
         events.push(BlockEvent::TableRowEnd);
+        events.extend(table_comments.into_iter().map(BlockEvent::Comment));
         events.push(BlockEvent::TableHeadEnd);
 
         // Set table state
@@ -3334,6 +3393,7 @@ impl<'a> BlockParser<'a> {
         self.in_paragraph = false;
 
         if self.paragraph_lines.is_empty() {
+            events.extend(self.paragraph_comments.drain(..).map(BlockEvent::Comment));
             return;
         }
 
@@ -3345,6 +3405,7 @@ impl<'a> BlockParser<'a> {
         }
 
         if self.paragraph_lines.is_empty() {
+            events.extend(self.paragraph_comments.drain(..).map(BlockEvent::Comment));
             return;
         }
 
@@ -3353,16 +3414,44 @@ impl<'a> BlockParser<'a> {
 
         events.push(BlockEvent::ParagraphStart);
 
-        // Emit text ranges for each line with soft breaks between
-        for (i, range) in self.paragraph_lines.drain(..).enumerate() {
-            if i > 0 {
-                // Add soft break between lines
+        self.emit_paragraph_items(events, false);
+
+        events.push(BlockEvent::ParagraphEnd);
+    }
+
+    /// Emit buffered paragraph text and comments in source order.
+    fn emit_paragraph_items(&mut self, events: &mut Vec<BlockEvent>, trim_last_line: bool) {
+        let mut comments = std::mem::take(&mut self.paragraph_comments)
+            .into_iter()
+            .peekable();
+        let line_count = self.paragraph_lines.len();
+
+        for (index, mut range) in self.paragraph_lines.drain(..).enumerate() {
+            while comments
+                .peek()
+                .is_some_and(|comment| comment.start < range.start)
+            {
+                events.push(BlockEvent::Comment(comments.next().unwrap()));
+            }
+
+            if index > 0 {
                 events.push(BlockEvent::SoftBreak);
+            }
+
+            if trim_last_line && index == line_count - 1 {
+                while range.end > range.start {
+                    let byte = self.input[(range.end - 1) as usize];
+                    if byte == b' ' || byte == b'\t' {
+                        range.end -= 1;
+                    } else {
+                        break;
+                    }
+                }
             }
             events.push(BlockEvent::Text(range));
         }
 
-        events.push(BlockEvent::ParagraphEnd);
+        events.extend(comments.map(BlockEvent::Comment));
     }
 
     /// Return whether `:` at the current cursor is a definition marker.
@@ -4216,31 +4305,46 @@ mod tests {
     #[test]
     fn test_thematic_break_dashes() {
         let events = parse("---");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_asterisks() {
         let events = parse("***");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_underscores() {
         let events = parse("___");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_with_spaces() {
         let events = parse("- - -");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 5))]
+        );
     }
 
     #[test]
     fn test_thematic_break_many() {
         let events = parse("----------");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 10))]
+        );
     }
 
     #[test]
@@ -4349,7 +4453,10 @@ mod tests {
         assert_eq!(events.len(), 4);
         assert_eq!(events[0], BlockEvent::ParagraphStart);
         assert_eq!(events[2], BlockEvent::ParagraphEnd);
-        assert_eq!(events[3], BlockEvent::ThematicBreak);
+        assert_eq!(
+            events[3],
+            BlockEvent::ThematicBreak(Range::from_usize(6, 9))
+        );
     }
 
     #[test]
@@ -4375,7 +4482,19 @@ mod tests {
     #[test]
     fn test_thematic_break_with_leading_spaces() {
         let events = parse("   ---");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(3, 6))]
+        );
+    }
+
+    #[test]
+    fn test_thematic_break_range_includes_trailing_horizontal_whitespace() {
+        let events = parse("  - - - \t\n");
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(2, 9))]
+        );
     }
 
     // Fenced code block tests

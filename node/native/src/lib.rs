@@ -23,6 +23,8 @@ pub struct Options {
     pub math: Option<bool>,
     pub callouts: Option<bool>,
     pub definition_lists: Option<bool>,
+    pub line_comments: Option<bool>,
+    pub indented_code_blocks: Option<bool>,
 }
 
 impl Options {
@@ -58,6 +60,8 @@ impl Options {
         apply(&mut options.math, self.math);
         apply(&mut options.callouts, self.callouts);
         apply(&mut options.definition_lists, self.definition_lists);
+        apply(&mut options.line_comments, self.line_comments);
+        apply(&mut options.indented_code_blocks, self.indented_code_blocks);
 
         Ok(options)
     }
