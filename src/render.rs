@@ -336,12 +336,22 @@ impl HtmlWriter {
         if let Some(base) = base {
             if url.first() == Some(&b'/')
                 && url.get(1) != Some(&b'/')
-                && !url.starts_with(base.as_bytes())
+                && !Self::has_base_prefix(url, base.as_bytes())
             {
-                self.write_string(base);
+                // The base is configuration, not authored URL text, but it
+                // still lands inside an attribute value: escape it.
+                escape::escape_full_into(&mut self.out, base.as_bytes());
             }
         }
         self.write_link_url_with_policy(url, policy);
+    }
+
+    /// Whether `url` already lives under `base` as a whole path segment:
+    /// `/docs` and `/docs/page` match a `/docs` base, `/docs-old/page` does
+    /// not.
+    fn has_base_prefix(url: &[u8], base: &[u8]) -> bool {
+        url.strip_prefix(base)
+            .is_some_and(|rest| matches!(rest.first(), None | Some(b'/' | b'?' | b'#')))
     }
 
     /// Write a newline.

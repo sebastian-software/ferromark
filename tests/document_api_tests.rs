@@ -117,3 +117,36 @@ fn link_base_path_does_not_rewrite_images() {
     let html = to_html_with_options("![alt](/img.png)", &base_options("/docs"));
     assert!(html.contains("<img src=\"/img.png\""), "{html}");
 }
+
+#[test]
+fn link_base_path_respects_path_segment_boundaries() {
+    let options = base_options("/docs");
+    let html = to_html_with_options(
+        "[x](/docs-old/page) [y](/docs?q=1) [z](/docs#frag)",
+        &options,
+    );
+    // "/docs-old" is NOT under "/docs" and must be prefixed.
+    assert!(html.contains("<a href=\"/docs/docs-old/page\">"), "{html}");
+    // "/docs?q=1" and "/docs#frag" are already under the base.
+    assert!(html.contains("<a href=\"/docs?q=1\">"), "{html}");
+    assert!(html.contains("<a href=\"/docs#frag\">"), "{html}");
+}
+
+#[test]
+fn link_base_path_is_attribute_escaped() {
+    let html = to_html_with_options("[x](/page)", &base_options("/d\"ocs"));
+    assert!(html.contains("<a href=\"/d&quot;ocs/page\">"), "{html}");
+    assert!(!html.contains("/d\"ocs"), "{html}");
+}
+
+#[test]
+fn parse_heading_text_survives_trusted_raw_html_with_quoted_gt() {
+    use ferromark::RenderPolicy;
+    let options = Options {
+        render_policy: RenderPolicy::Trusted,
+        ..Options::default()
+    };
+    let result = ferromark::parse_with_options("# <span title=\"a>b\">Text</span>\n", &options);
+
+    assert_eq!(result.headings[0].text, "Text");
+}

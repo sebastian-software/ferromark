@@ -1729,7 +1729,19 @@ fn heading_plain_text(html: &[u8]) -> String {
     let mut i = 0;
     while i < html.len() {
         if html[i] == b'<' {
-            while i < html.len() && html[i] != b'>' {
+            // Skip the tag; a `>` inside a quoted attribute value (possible
+            // in trusted raw HTML) does not close it.
+            let mut quote: Option<u8> = None;
+            i += 1;
+            while i < html.len() {
+                let b = html[i];
+                match quote {
+                    Some(q) if b == q => quote = None,
+                    Some(_) => {}
+                    None if b == b'"' || b == b'\'' => quote = Some(b),
+                    None if b == b'>' => break,
+                    None => {}
+                }
                 i += 1;
             }
             i += 1;
