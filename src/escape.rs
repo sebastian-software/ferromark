@@ -120,16 +120,17 @@ pub fn needs_attr_escape(input: &[u8]) -> bool {
     input.iter().any(|&b| ATTR_ESCAPE_TABLE[b as usize])
 }
 
-/// Below this length a table-driven scalar scan beats SIMD memchr passes,
-/// whose per-call dispatch and setup cost more than the scan itself. Inline
-/// text segments between escapes are short in practice (median ~17 bytes,
-/// >95% under 64 on prose corpora).
-const SHORT_SCAN_MAX: usize = 64;
+/// Below this length the local short scan beats SIMD memchr passes, whose
+/// per-call dispatch and setup cost more than the scan itself. Inline text
+/// segments between escapes are short in practice (median ~17 bytes, >95%
+/// under 64 on prose corpora); long inputs (code block content) still go
+/// through memchr, which scans wider per iteration.
+const SHORT_SCAN_MAX: usize = 128;
 
 #[inline]
 fn first_text_escape(input: &[u8]) -> Option<usize> {
     if input.len() <= SHORT_SCAN_MAX {
-        return input.iter().position(|&b| TEXT_ESCAPE_TABLE[b as usize]);
+        return first_escape_short::<false>(input);
     }
     let a = memchr3(b'<', b'>', b'&', input);
     // A '"' is only relevant if it appears before the first <>& hit, so the
@@ -141,11 +142,156 @@ fn first_text_escape(input: &[u8]) -> Option<usize> {
 #[inline]
 fn first_attr_escape(input: &[u8]) -> Option<usize> {
     if input.len() <= SHORT_SCAN_MAX {
-        return input.iter().position(|&b| ATTR_ESCAPE_TABLE[b as usize]);
+        return first_escape_short::<true>(input);
     }
     let a = memchr3(b'<', b'>', b'&', input);
     let limit = a.unwrap_or(input.len());
     memchr2(b'"', b'\'', &input[..limit]).or(a)
+}
+
+/// Find the first escapable byte (`<>&"`, plus `'` when `ATTR`) in a short
+/// input, without memchr's per-call runtime dispatch: SSE2 is baseline on
+/// x86_64 and NEON on AArch64, so both compile to direct SIMD with no
+/// feature detection. Other architectures fall back to a table scan.
+#[inline]
+fn first_escape_short<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+    #[cfg(target_arch = "x86_64")]
+    return first_escape_sse2::<ATTR>(input);
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    return unsafe { first_escape_neon::<ATTR>(input) };
+    #[cfg(not(any(
+        target_arch = "x86_64",
+        all(target_arch = "aarch64", target_feature = "neon")
+    )))]
+    {
+        let table = if ATTR {
+            &ATTR_ESCAPE_TABLE
+        } else {
+            &TEXT_ESCAPE_TABLE
+        };
+        input.iter().position(|&b| table[b as usize])
+    }
+}
+
+/// Bitmask of lanes equal to any escapable byte in a 16-byte SSE2 vector.
+#[cfg(target_arch = "x86_64")]
+#[inline]
+fn escape_mask_sse2<const ATTR: bool>(v: std::arch::x86_64::__m128i) -> u32 {
+    use std::arch::x86_64::*;
+    // SAFETY: SSE2 is part of the x86_64 baseline.
+    unsafe {
+        let lt = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'<' as i8));
+        let gt = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'>' as i8));
+        let amp = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'&' as i8));
+        let quot = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'"' as i8));
+        let mut m = _mm_or_si128(_mm_or_si128(lt, gt), _mm_or_si128(amp, quot));
+        if ATTR {
+            m = _mm_or_si128(m, _mm_cmpeq_epi8(v, _mm_set1_epi8(b'\'' as i8)));
+        }
+        _mm_movemask_epi8(m) as u32
+    }
+}
+
+#[cfg(target_arch = "x86_64")]
+#[inline]
+fn first_escape_sse2<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+    use std::arch::x86_64::*;
+    let len = input.len();
+    if len < 16 {
+        // Pad into a stack buffer; NUL is never an escape byte, so the
+        // padding cannot produce a hit.
+        let mut buf = [0u8; 16];
+        buf[..len].copy_from_slice(input);
+        // SAFETY: `buf` is 16 bytes; unaligned load is allowed.
+        let v = unsafe { _mm_loadu_si128(buf.as_ptr().cast()) };
+        let m = escape_mask_sse2::<ATTR>(v);
+        return (m != 0).then(|| m.trailing_zeros() as usize);
+    }
+    let mut pos = 0;
+    while pos + 16 <= len {
+        // SAFETY: `pos + 16 <= len` bounds the unaligned 16-byte load.
+        let v = unsafe { _mm_loadu_si128(input.as_ptr().add(pos).cast()) };
+        let m = escape_mask_sse2::<ATTR>(v);
+        if m != 0 {
+            return Some(pos + m.trailing_zeros() as usize);
+        }
+        pos += 16;
+    }
+    if pos < len {
+        // Overlapping final chunk; lanes before `pos` were already scanned
+        // clean, so any set bit belongs to the unscanned tail.
+        // SAFETY: `len >= 16` in this branch, so `len - 16` is in bounds.
+        let v = unsafe { _mm_loadu_si128(input.as_ptr().add(len - 16).cast()) };
+        let m = escape_mask_sse2::<ATTR>(v);
+        if m != 0 {
+            return Some(len - 16 + m.trailing_zeros() as usize);
+        }
+    }
+    None
+}
+
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[inline]
+fn is_escape_byte<const ATTR: bool>(b: u8) -> bool {
+    matches!(b, b'<' | b'>' | b'&' | b'"') || (ATTR && b == b'\'')
+}
+
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[target_feature(enable = "neon")]
+#[allow(unsafe_op_in_unsafe_fn)]
+unsafe fn first_escape_neon<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+    use std::arch::aarch64::*;
+
+    #[inline]
+    #[target_feature(enable = "neon")]
+    unsafe fn chunk_hits<const ATTR: bool>(v: uint8x16_t) -> bool {
+        let lt = vceqq_u8(v, vdupq_n_u8(b'<'));
+        let gt = vceqq_u8(v, vdupq_n_u8(b'>'));
+        let amp = vceqq_u8(v, vdupq_n_u8(b'&'));
+        let quot = vceqq_u8(v, vdupq_n_u8(b'"'));
+        let mut m = vorrq_u8(vorrq_u8(lt, gt), vorrq_u8(amp, quot));
+        if ATTR {
+            m = vorrq_u8(m, vceqq_u8(v, vdupq_n_u8(b'\'')));
+        }
+        vmaxvq_u8(m) != 0
+    }
+
+    let len = input.len();
+    if len < 16 {
+        // Pad into a stack buffer; NUL is never an escape byte.
+        let mut buf = [0u8; 16];
+        buf[..len].copy_from_slice(input);
+        let v = vld1q_u8(buf.as_ptr());
+        if chunk_hits::<ATTR>(v) {
+            return input.iter().position(|&b| is_escape_byte::<ATTR>(b));
+        }
+        return None;
+    }
+    let mut pos = 0;
+    while pos + 16 <= len {
+        let v = vld1q_u8(input.as_ptr().add(pos));
+        if chunk_hits::<ATTR>(v) {
+            for (i, &b) in input[pos..pos + 16].iter().enumerate() {
+                if is_escape_byte::<ATTR>(b) {
+                    return Some(pos + i);
+                }
+            }
+        }
+        pos += 16;
+    }
+    if pos < len {
+        // Overlapping final chunk; lanes before `pos` were already scanned
+        // clean, so the first scalar hit is the overall first.
+        let v = vld1q_u8(input.as_ptr().add(len - 16));
+        if chunk_hits::<ATTR>(v) {
+            for (i, &b) in input[pos..].iter().enumerate() {
+                if is_escape_byte::<ATTR>(b) {
+                    return Some(pos + i);
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Escape and return as a new Vec.
@@ -475,11 +621,23 @@ mod tests {
         v
     }
 
-    /// The scalar and memchr scanners must agree for every escape character
-    /// at every position across the length threshold.
+    /// The short-scan and memchr scanners must agree for every escape
+    /// character at every position across chunk and length thresholds.
     #[test]
     fn test_scanner_threshold_boundary() {
-        for len in [SHORT_SCAN_MAX - 1, SHORT_SCAN_MAX, SHORT_SCAN_MAX + 1] {
+        for len in [
+            1,
+            2,
+            15,
+            16,
+            17,
+            31,
+            32,
+            33,
+            SHORT_SCAN_MAX - 1,
+            SHORT_SCAN_MAX,
+            SHORT_SCAN_MAX + 1,
+        ] {
             for &c in b"<>&\"" {
                 for at in [0, len / 2, len - 1] {
                     let input = padded(len, at, &[c]);
@@ -497,6 +655,24 @@ mod tests {
             }
             assert_eq!(first_text_escape(&vec![b'x'; len]), None);
             assert_eq!(first_attr_escape(&vec![b'x'; len]), None);
+        }
+    }
+
+    /// Exhaustive position sweep around the SIMD chunk boundary, including
+    /// two escape bytes where the earlier one must win.
+    #[test]
+    fn test_scanner_every_position() {
+        for len in 1..=40usize {
+            for at in 0..len {
+                let input = padded(len, at, b"&");
+                assert_eq!(first_text_escape(&input), Some(at), "len={len} at={at}");
+                assert_eq!(first_attr_escape(&input), Some(at), "len={len} at={at}");
+                if at + 1 < len {
+                    let mut two = input.clone();
+                    two[len - 1] = b'<';
+                    assert_eq!(first_text_escape(&two), Some(at), "two: len={len} at={at}");
+                }
+            }
         }
     }
 
