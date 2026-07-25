@@ -2897,44 +2897,7 @@ impl<'a> BlockParser<'a> {
                 break;
             }
 
-            let b = line[pos];
-            if b == b'\\' && pos + 1 < scan_end {
-                // Escaped character - skip next
-                pos += 2;
-            } else if b == b'`' {
-                // Code span - skip until matching backticks
-                let bt_len = {
-                    let mut n = 0;
-                    while pos + n < scan_end && line[pos + n] == b'`' {
-                        n += 1;
-                    }
-                    n
-                };
-                pos += bt_len;
-                // Find closing backtick sequence of same length
-                let mut found = false;
-                while pos < scan_end {
-                    if line[pos] == b'`' {
-                        let close_len = {
-                            let mut n = 0;
-                            while pos + n < scan_end && line[pos + n] == b'`' {
-                                n += 1;
-                            }
-                            n
-                        };
-                        pos += close_len;
-                        if close_len == bt_len {
-                            found = true;
-                            break;
-                        }
-                    } else {
-                        pos += 1;
-                    }
-                }
-                if !found {
-                    // Unclosed code span - just continue
-                }
-            } else if b == b'|' {
+            if line[pos] == b'|' {
                 // Cell boundary
                 let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
                 cells.push(TableCell {
@@ -2948,7 +2911,7 @@ impl<'a> BlockParser<'a> {
                     break;
                 }
             } else {
-                pos += 1;
+                pos = Self::advance_table_cell_scan(line, pos, scan_end);
             }
         }
 
@@ -2986,36 +2949,7 @@ impl<'a> BlockParser<'a> {
 
         let mut cell_start = pos;
         while pos < line_end {
-            let byte = line[pos];
-            if byte == b'\\' && pos + 1 < line_end {
-                pos += 2;
-            } else if byte == b'`' {
-                let backtick_len = {
-                    let mut count = 0;
-                    while pos + count < line_end && line[pos + count] == b'`' {
-                        count += 1;
-                    }
-                    count
-                };
-                pos += backtick_len;
-                while pos < line_end {
-                    if line[pos] == b'`' {
-                        let close_len = {
-                            let mut count = 0;
-                            while pos + count < line_end && line[pos + count] == b'`' {
-                                count += 1;
-                            }
-                            count
-                        };
-                        pos += close_len;
-                        if close_len == backtick_len {
-                            break;
-                        }
-                    } else {
-                        pos += 1;
-                    }
-                }
-            } else if byte == b'|' {
+            if line[pos] == b'|' {
                 let mut pipe_count = 0usize;
                 while pos < line_end && line[pos] == b'|' {
                     pipe_count += 1;
@@ -3032,7 +2966,7 @@ impl<'a> BlockParser<'a> {
                 }
                 cell_start = pos;
             } else {
-                pos += 1;
+                pos = Self::advance_table_cell_scan(line, pos, line_end);
             }
         }
 
@@ -3043,6 +2977,44 @@ impl<'a> BlockParser<'a> {
             colspan: 1,
         });
         cells
+    }
+
+    /// Advance past one table-cell token, treating escapes and matching
+    /// backtick runs as opaque so their pipes cannot become cell boundaries.
+    #[inline]
+    fn advance_table_cell_scan(line: &[u8], pos: usize, scan_end: usize) -> usize {
+        debug_assert!(pos < scan_end);
+        debug_assert!(scan_end <= line.len());
+
+        if line[pos] == b'\\' && pos + 1 < scan_end {
+            return pos + 2;
+        }
+        if line[pos] != b'`' {
+            return pos + 1;
+        }
+
+        let mut opener_len = 1usize;
+        while pos + opener_len < scan_end && line[pos + opener_len] == b'`' {
+            opener_len += 1;
+        }
+
+        let mut next = pos + opener_len;
+        while next < scan_end {
+            if line[next] != b'`' {
+                next += 1;
+                continue;
+            }
+
+            let mut closer_len = 1usize;
+            while next + closer_len < scan_end && line[next + closer_len] == b'`' {
+                closer_len += 1;
+            }
+            next += closer_len;
+            if closer_len == opener_len {
+                break;
+            }
+        }
+        next
     }
 
     fn table_cells(&self, line: &[u8]) -> SmallVec<[TableCell; 8]> {

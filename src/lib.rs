@@ -107,6 +107,8 @@ pub struct Options {
     /// Enable GFM table extension.
     pub tables: bool,
     /// Enable MultiMarkdown/iA-style column spans in pipe tables.
+    ///
+    /// Requires [`Self::tables`] to be enabled.
     pub merged_table_cells: bool,
     /// Enable GFM strikethrough extension (`~~text~~`).
     pub strikethrough: bool,
