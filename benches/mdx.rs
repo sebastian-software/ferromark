@@ -18,7 +18,9 @@
 //! implementation may fuse this work with `mdx::segment`, or gate it behind an
 //! opt-in API, and must be measured independently.
 
-use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use ferromark::mdx::{self, jsx_tag::parse_jsx_tag};
 
 const PLAIN_MARKDOWN: &str = include_str!("fixtures/commonmark-20k.md");

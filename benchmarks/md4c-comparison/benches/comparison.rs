@@ -8,7 +8,9 @@
 //! - pulldown-cmark (most popular, used by rustdoc)
 //! - comrak (100% CommonMark compliant, GFM support)
 
-use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use memchr::memchr;
 #[cfg(md4c)]
 use std::os::raw::{c_char, c_int, c_uint, c_void};

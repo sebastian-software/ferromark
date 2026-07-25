@@ -1,4 +1,6 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{Criterion, criterion_group, criterion_main};
 use ferromark::{
     FencedCodeBlock, FencedCodeRenderer, Options, TrustedHtml, to_html, to_html_with_renderer,
 };

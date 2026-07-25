@@ -135,6 +135,11 @@ pub struct Options {
     pub callouts: bool,
     /// Enable source-only line comments beginning with `//`.
     pub line_comments: bool,
+    /// Enable CommonMark indented code blocks (four or more leading spaces).
+    ///
+    /// Disable this for dialects that reserve indentation for other block
+    /// semantics and require fenced code blocks instead.
+    pub indented_code_blocks: bool,
 }
 
 impl Options {
@@ -163,6 +168,7 @@ impl Options {
             math: false,
             callouts: false,
             line_comments: false,
+            indented_code_blocks: true,
         }
     }
 
@@ -191,6 +197,7 @@ impl Options {
             math: false,
             callouts: false,
             line_comments: false,
+            indented_code_blocks: true,
         }
     }
 
@@ -219,6 +226,7 @@ impl Options {
             math: false,
             callouts: false,
             line_comments: false,
+            indented_code_blocks: true,
         }
     }
 }
@@ -243,6 +251,7 @@ impl Default for Options {
             math: false,
             callouts: true,
             line_comments: false,
+            indented_code_blocks: true,
         }
     }
 }

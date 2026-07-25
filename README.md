@@ -95,7 +95,7 @@ Fine-grained options let you turn on exactly what you need:
 ```text
 allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
 autolink_literals · disallowed_raw_html · footnotes · front_matter
-heading_ids · math · callouts · line_comments
+heading_ids · math · callouts · line_comments · indented_code_blocks
 ```
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
@@ -112,6 +112,10 @@ Only `//` at the physical line start (after at most three spaces) is a
 comment. URLs, trailing `//`, code blocks, raw HTML blocks, and explicit
 container-prefixed lines remain ordinary Markdown. Comment text remains in the
 source and is not suitable for secrets.
+
+Set `indented_code_blocks: false` for dialects that require fenced code blocks
+and interpret four-space indentation as ordinary paragraph content. Fenced code
+blocks remain available.
 
 ## Markdown configuration
 

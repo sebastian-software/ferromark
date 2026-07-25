@@ -582,7 +582,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for indented code block (4+ spaces, not in paragraph)
-        if indent >= 4 && !self.in_paragraph {
+        if self.options.indented_code_blocks && indent >= 4 && !self.in_paragraph {
             self.start_indented_code(indent, events);
             return;
         }
@@ -632,7 +632,7 @@ impl<'a> BlockParser<'a> {
                 return consumed_any;
             }
 
-            if indent >= 4 || !is_simple_line_start(first) {
+            if (indent >= 4 && self.options.indented_code_blocks) || !is_simple_line_start(first) {
                 self.cursor = Cursor::new_at(self.input, line_start);
                 return consumed_any;
             }
@@ -961,7 +961,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for indented code block (4+ spaces, not in paragraph)
-        if indent >= 4 && !self.in_paragraph {
+        if self.options.indented_code_blocks && indent >= 4 && !self.in_paragraph {
             self.start_indented_code(indent, events);
             return;
         }

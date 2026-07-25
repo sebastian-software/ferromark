@@ -11,7 +11,7 @@ memchr = "2.7"
 
 [dev-dependencies]
 comrak = { version = "0.54", default-features = false }
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 pulldown-cmark = "0.13"
 
 [build-dependencies]

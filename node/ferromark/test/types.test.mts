@@ -5,6 +5,7 @@ const options: Options = {
   renderPolicy: 'untrusted',
   tables: true,
   lineComments: true,
+  indentedCodeBlocks: false,
 }
 const highlighter: CodeHighlighter = {
   codeToHtml: (code, { lang, theme }) => `${lang}:${theme}:${code}`,

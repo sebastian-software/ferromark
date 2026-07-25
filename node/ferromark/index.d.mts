@@ -18,6 +18,7 @@ export interface Options {
   math?: boolean
   callouts?: boolean
   lineComments?: boolean
+  indentedCodeBlocks?: boolean
 }
 
 export interface CodeHighlighter {
