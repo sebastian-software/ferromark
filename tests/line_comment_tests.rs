@@ -149,5 +149,30 @@ fn crlf_comment_ranges_exclude_the_line_ending() {
     parser.parse(&mut events);
 
     assert!(events.contains(&BlockEvent::Comment(Range::new(0, 10))));
-    assert_eq!(with_line_comments(input), "<p>visible\r</p>\n");
+    assert_eq!(with_line_comments(input), "<p>visible</p>\n");
+}
+
+#[test]
+fn comments_before_link_reference_definitions_do_not_leak() {
+    let input = "// private\n[target]: /url\n\nvisible\n";
+    let mut parser = BlockParser::new_with_options(
+        input.as_bytes(),
+        Options {
+            line_comments: true,
+            ..Options::default()
+        },
+    );
+    let mut events = Vec::new();
+    parser.parse(&mut events);
+
+    assert_eq!(
+        events,
+        vec![
+            BlockEvent::Comment(Range::new(0, 10)),
+            BlockEvent::ParagraphStart,
+            BlockEvent::Text(Range::new(27, 34)),
+            BlockEvent::ParagraphEnd,
+        ]
+    );
+    assert_eq!(with_line_comments(input), "<p>visible</p>\n");
 }

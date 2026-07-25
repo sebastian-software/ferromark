@@ -2815,6 +2815,8 @@ impl<'a> BlockParser<'a> {
                 content_start + remaining
             }
         };
+        let content_end = line_end
+            - usize::from(line_end > content_start && self.input.get(line_end - 1) == Some(&b'\r'));
 
         // If we weren't in a paragraph, we are now
         if !self.in_paragraph {
@@ -2826,9 +2828,9 @@ impl<'a> BlockParser<'a> {
         // Add this line to paragraph content
         // We include from original line_start to capture any leading spaces we skipped
         // Actually, use content_start which is after indent
-        if line_end > content_start {
+        if content_end > content_start {
             self.paragraph_lines
-                .push(Range::from_usize(content_start, line_end));
+                .push(Range::from_usize(content_start, content_end));
         }
     }
 
@@ -3250,6 +3252,7 @@ impl<'a> BlockParser<'a> {
         }
 
         if self.paragraph_lines.is_empty() {
+            events.extend(self.paragraph_comments.drain(..).map(BlockEvent::Comment));
             return;
         }
 

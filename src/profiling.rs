@@ -91,10 +91,7 @@ pub(crate) fn record_block_events(events: &[BlockEvent], capacity: usize) {
         counters.max_block_event_capacity = counters.max_block_event_capacity.max(capacity as u64);
         for event in events {
             match event {
-                BlockEvent::Text(_)
-                | BlockEvent::SoftBreak
-                | BlockEvent::Comment(_)
-                | BlockEvent::HtmlBlockText(_) => {
+                BlockEvent::Text(_) | BlockEvent::SoftBreak | BlockEvent::HtmlBlockText(_) => {
                     counters.block_text_events += 1;
                 }
                 BlockEvent::BlockQuoteStart { .. }
@@ -198,5 +195,15 @@ mod tests {
         reset();
 
         assert_eq!(snapshot().paragraph_copied_bytes, 0);
+    }
+
+    #[test]
+    fn comments_should_not_count_as_block_text_work() {
+        reset();
+        record_block_events(&[BlockEvent::Comment(crate::Range::new(0, 4))], 1);
+
+        let counters = snapshot();
+        assert_eq!(counters.block_events, 1);
+        assert_eq!(counters.block_text_events, 0);
     }
 }
