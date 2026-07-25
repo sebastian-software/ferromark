@@ -1041,7 +1041,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 }
                 writer.heading_end(*level);
             }
-            BlockEvent::ThematicBreak => {
+            BlockEvent::ThematicBreak(_) => {
                 // If we're at the start of a tight list item, add newline before block content
                 if *at_tight_li_start {
                     writer.newline();
