@@ -3041,7 +3041,11 @@ impl<'a> BlockParser<'a> {
         let mut dash_counts = SmallVec::new();
         for &(start, end) in &cells {
             let cell = &line[start..end];
-            let dash_start = usize::from(cell[0] == b':');
+            debug_assert!(
+                !cell.is_empty(),
+                "validated table delimiter cells must not be empty"
+            );
+            let dash_start = usize::from(cell.first() == Some(&b':'));
             let mut i = dash_start;
             while i < cell.len() && cell[i] == b'-' {
                 i += 1;
@@ -3162,6 +3166,10 @@ impl<'a> BlockParser<'a> {
                 (cumulative_weight * 10_000 + total_weight / 2) / total_weight;
             let basis_points = cumulative_basis_points - allocated;
             allocated = cumulative_basis_points;
+            debug_assert!(
+                basis_points <= 10_000,
+                "basis_points {basis_points} exceeds maximum 10_000"
+            );
             events.push(BlockEvent::TableColumnWidth {
                 basis_points: basis_points as u16,
             });
