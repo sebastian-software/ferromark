@@ -1439,6 +1439,8 @@ impl<'a> BlockParser<'a> {
 
                     if is_same_list {
                         // Just close the item, not the list
+                        let enclosing_depth = self.container_stack.len() - 1;
+                        self.close_definition_lists_deeper_than(enclosing_depth, events);
                         self.container_stack.pop();
                         self.close_paragraph(events);
                         events.push(BlockEvent::ListItemEnd);

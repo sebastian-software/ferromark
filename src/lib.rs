@@ -1251,6 +1251,10 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
             }
 
             BlockEvent::DefinitionListStart => {
+                if *pending_loose_li_newline {
+                    writer.newline();
+                    *pending_loose_li_newline = false;
+                }
                 if *need_newline_before_block {
                     writer.newline();
                     *need_newline_before_block = false;

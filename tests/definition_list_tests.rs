@@ -112,6 +112,14 @@ fn definition_lists_work_inside_blockquotes_and_list_items() {
 }
 
 #[test]
+fn definition_lists_start_on_a_new_line_inside_loose_list_items() {
+    assert_eq!(
+        render("- Term\n  : Definition\n\n- Other"),
+        "<ul>\n<li>\n<dl>\n<dt>Term</dt>\n<dd>Definition</dd>\n</dl>\n</li>\n<li>\n<p>Other</p>\n</li>\n</ul>\n"
+    );
+}
+
+#[test]
 fn descriptions_can_contain_nested_definition_lists() {
     let html = render("Outer\n: Outer definition\n\n    Inner\n    : Inner definition");
 
