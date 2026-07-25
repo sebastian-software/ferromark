@@ -196,4 +196,14 @@ mod tests {
 
         assert_eq!(snapshot().paragraph_copied_bytes, 0);
     }
+
+    #[test]
+    fn comments_should_not_count_as_block_text_work() {
+        reset();
+        record_block_events(&[BlockEvent::Comment(crate::Range::new(0, 4))], 1);
+
+        let counters = snapshot();
+        assert_eq!(counters.block_events, 1);
+        assert_eq!(counters.block_text_events, 0);
+    }
 }

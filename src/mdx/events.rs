@@ -517,6 +517,7 @@ fn offset_block_event(mut event: BlockEvent, offset: usize) -> BlockEvent {
             kind: CodeBlockKind::Fenced { info: Some(range) },
         }
         | BlockEvent::HtmlBlockText(range)
+        | BlockEvent::Comment(range)
         | BlockEvent::Code(range)
         | BlockEvent::ThematicBreak(range) => *range = offset_range(*range, offset),
         _ => {}
@@ -555,6 +556,7 @@ fn block_event_range(event: &BlockEvent) -> Option<Range> {
             kind: CodeBlockKind::Fenced { info: Some(range) },
         }
         | BlockEvent::HtmlBlockText(range)
+        | BlockEvent::Comment(range)
         | BlockEvent::Text(range)
         | BlockEvent::Code(range)
         | BlockEvent::ThematicBreak(range) => Some(*range),
