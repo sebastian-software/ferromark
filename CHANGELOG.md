@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.4.0...ferromark-v0.5.0) (2026-07-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **inline-footnotes:** The inline-footnotes feature adds the inline_footnotes option, the InlineFootnote event, and a positional parse_with_options argument.
+
+### Features
+
+* add indented code block option ([#110](https://github.com/sebastian-software/ferromark/issues/110)) ([a63f684](https://github.com/sebastian-software/ferromark/commit/a63f68479b744752b69b421ccf9513e4f66679ee))
+* add opt-in definition lists ([#113](https://github.com/sebastian-software/ferromark/issues/113)) ([baac345](https://github.com/sebastian-software/ferromark/commit/baac345cfe211fee3aaacd1074e604246abf714e))
+* add opt-in merged table cells ([#115](https://github.com/sebastian-software/ferromark/issues/115)) ([1bf9576](https://github.com/sebastian-software/ferromark/commit/1bf9576d652c2da3cf0ba7da74af9cdca9c21194))
+* add opt-in source-only line comments ([#111](https://github.com/sebastian-software/ferromark/issues/111)) ([fd10345](https://github.com/sebastian-software/ferromark/commit/fd10345b01c7f0fdc0fd1888e681c6e51e77e604))
+* **inline-footnotes:** add opt-in inline footnotes ([#114](https://github.com/sebastian-software/ferromark/issues/114)) ([f2b9ad1](https://github.com/sebastian-software/ferromark/commit/f2b9ad16ee1ac28acd52c6b3550b84bf2bf4d964))
+* **tables:** prototype relative column width hints ([#116](https://github.com/sebastian-software/ferromark/issues/116)) ([71590bd](https://github.com/sebastian-software/ferromark/commit/71590bd322801b2440f3cd51b3383df4116a2daf))
+
+
+### Bug Fixes
+
+* **deps:** harden md4c benchmark dependencies ([#102](https://github.com/sebastian-software/ferromark/issues/102)) ([70120c8](https://github.com/sebastian-software/ferromark/commit/70120c8b9527089abbc334c2d245b5002f71d18b))
+* **deps:** patch homepage security advisories ([#101](https://github.com/sebastian-software/ferromark/issues/101)) ([2face32](https://github.com/sebastian-software/ferromark/commit/2face32665bb153a46c110efc9671972c86cccc2))
+
 ## [0.4.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.3.3...ferromark-v0.4.0) (2026-07-24)
 
 
