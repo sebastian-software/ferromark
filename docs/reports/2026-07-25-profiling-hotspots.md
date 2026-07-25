@@ -181,6 +181,23 @@ Two of the follow-up candidates were implemented after the first pass merged:
    pipeline stalls that callgrind does not model. Output byte-identical
    across the fixture × preset matrix.
 
+5. **Escape short-scan vectorized without dispatch** (fifth pass, same
+   day) — after finding 4 the scalar LUT loop itself became the #2 cost on
+   the pure `commonmark` preset (~9% of instructions at ~4.6 per byte). The
+   short scan now uses compile-time SIMD: SSE2 on x86-64 and NEON on
+   AArch64 are baseline features, so a 16-byte-chunk comparison loop needs
+   no runtime feature detection — the exact overhead that made per-call
+   memchr expensive here. Sub-16-byte inputs go through a NUL-padded stack
+   buffer (NUL is never an escape byte); longer inputs end with one
+   overlapping chunk. The threshold to the memchr path rose from 64 to 128
+   bytes; the LUT loop remains as the portable fallback. On this
+   container (x86-64): instructions −5.2% (commonmark-50k/commonmark),
+   −4.2% (gfm), −3.5% (commonmark-5k/default); wall-clock −6.3%
+   (commonmark_50k) and −4.9% (commonmark_20k), smaller fixtures within
+   noise, no regressions. The NEON variant follows the crate's existing
+   `is_blank_line_simd` pattern and is exercised by the macOS CI runners;
+   its wall-clock effect on Apple Silicon was not measured here.
+
 ## Reproducing
 
 ```bash
