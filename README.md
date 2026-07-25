@@ -86,7 +86,7 @@ raw-HTML CommonMark output parity. Run `cargo test --test commonmark_spec --
 
 **All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
 
-**Beyond GFM**: Footnotes, definition lists, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), superscript (`^text^`), subscript (`~text~`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
+**Beyond GFM**: Reference and inline footnotes, definition lists, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), superscript (`^text^`), subscript (`~text~`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
 
 **MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
 
@@ -94,11 +94,34 @@ Fine-grained options let you turn on exactly what you need:
 
 ```text
 allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
-autolink_literals · disallowed_raw_html · footnotes · front_matter
+autolink_literals · disallowed_raw_html · footnotes · inline_footnotes · front_matter
 heading_ids · math · callouts · definition_lists · line_comments · indented_code_blocks
 ```
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
+
+### Inline footnotes
+
+`inline_footnotes` enables Pandoc-style `^[note text]` independently of
+reference footnotes:
+
+```markdown
+The result needs context.^[This note can contain *inline Markdown*.]
+```
+
+The opening caret may be escaped as `\^[literal]`. Balanced brackets, links,
+code spans, and soft line breaks are supported inside a note, but an inline
+note is always one paragraph. The iA Presenter form `[^Footnote text.]` is not
+accepted as an inline note because it is indistinguishable from ferromark's
+existing `[^label]` reference syntax.
+
+The HTML renderer numbers inline and reference notes together by first
+appearance and emits their definitions in the document-end footnote section.
+Presentation adapters should consume `InlineEvent::InlineFootnote` and flush
+collected notes at their own slide boundary; the core HTML renderer does not
+infer slides.
+
+### Definition lists
 
 Enable `definition_lists` for PHP Markdown Extra-style terms and descriptions:
 

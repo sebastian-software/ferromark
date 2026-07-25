@@ -44,6 +44,7 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
         autolink_literals: false,
         disallowed_raw_html: false,
         footnotes,
+        inline_footnotes: false,
         front_matter: false,
         heading_ids: false,
         math,

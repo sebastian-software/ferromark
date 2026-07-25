@@ -16,7 +16,7 @@ title: Features and Flags
 
 ## Beyond GFM
 
-- Footnotes
+- Reference and inline footnotes
 - Front matter extraction (`---` and `+++`)
 - Heading IDs (GitHub-compatible slugs)
 - Math spans (`$` and `$$`)
@@ -33,9 +33,26 @@ Enable only what your workload needs:
 ```text
 allow_html · allow_link_refs · tables · strikethrough · highlight
 superscript · subscript · task_lists · autolink_literals
-disallowed_raw_html · footnotes · front_matter · heading_ids
+disallowed_raw_html · footnotes · inline_footnotes · front_matter · heading_ids
 math · callouts · definition_lists · line_comments · indented_code_blocks
 ```
+
+## Inline footnotes
+
+Enable `inline_footnotes` for Pandoc-style notes:
+
+```markdown
+The result needs context.^[This note can contain *inline Markdown*.]
+```
+
+This flag is independent from reference `footnotes`. Inline and reference
+notes share first-appearance numbering in HTML. The iA Presenter
+`[^Footnote text.]` form remains reference syntax to avoid ambiguity.
+
+Event-based presentation adapters can use `InlineEvent::InlineFootnote` to
+collect notes and place them at slide boundaries.
+
+## Definition lists
 
 Definition lists are an independent opt-in extension:
 

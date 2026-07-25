@@ -204,6 +204,16 @@ mod tests {
     }
 
     #[test]
+    fn inline_footnotes_should_not_count_as_inline_text_work() {
+        reset();
+        record_inline_events(&[InlineEvent::InlineFootnote(crate::Range::new(2, 6))], 1);
+
+        let counters = snapshot();
+        assert_eq!(counters.max_inline_event_capacity, 1);
+        assert_eq!(counters.inline_text_events, 0);
+    }
+
+    #[test]
     fn comments_should_not_count_as_block_text_work() {
         reset();
         record_block_events(&[BlockEvent::Comment(crate::Range::new(0, 4))], 1);

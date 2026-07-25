@@ -188,6 +188,7 @@ fn all_extensions() -> Options {
         autolink_literals: true,
         disallowed_raw_html: true,
         footnotes: true,
+        inline_footnotes: true,
         front_matter: true,
         heading_ids: true,
         math: true,
