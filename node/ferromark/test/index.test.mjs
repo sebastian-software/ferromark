@@ -13,6 +13,23 @@ test('maps typed options to the Rust surface', () => {
     toHtml('| Short | Long |\n| -- | ------ |', { tableColumnWidths: true }),
     /<col style="width: 25%">/,
   )
+  assert.match(
+    toHtml('| A | B |\n| --- | --- |\n| merged ||', { mergedTableCells: true }),
+    /colspan="2"/,
+  )
+  assert.match(
+    toHtml('Text.^[Node note.]', { inlineFootnotes: true }),
+    /user-content-inline-fn-1/,
+  )
+  assert.equal(
+    toHtml('Term\n: Definition', { definitionLists: true }),
+    '<dl>\n<dt>Term</dt>\n<dd>Definition</dd>\n</dl>\n',
+  )
+  assert.equal(toHtml('// private note', { lineComments: true }), '')
+  assert.equal(
+    toHtml('    code', { indentedCodeBlocks: false }),
+    '<p>code</p>\n',
+  )
   assert.throws(
     () => toHtml('text', { renderPolicy: 'invalid' }),
     /renderPolicy must be either 'untrusted' or 'trusted'/,

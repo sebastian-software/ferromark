@@ -11,6 +11,7 @@ fn minimal_should_disable_every_optional_syntax_feature() {
             allow_html: false,
             allow_link_refs: false,
             tables: false,
+            merged_table_cells: false,
             table_column_widths: false,
             strikethrough: false,
             highlight: false,
@@ -20,10 +21,14 @@ fn minimal_should_disable_every_optional_syntax_feature() {
             autolink_literals: false,
             disallowed_raw_html: false,
             footnotes: false,
+            inline_footnotes: false,
             front_matter: false,
             heading_ids: false,
             math: false,
             callouts: false,
+            definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     );
 }
@@ -76,6 +81,7 @@ fn default_should_retain_the_existing_feature_mix() {
             allow_html: true,
             allow_link_refs: true,
             tables: true,
+            merged_table_cells: false,
             table_column_widths: false,
             strikethrough: true,
             highlight: false,
@@ -85,10 +91,14 @@ fn default_should_retain_the_existing_feature_mix() {
             autolink_literals: false,
             disallowed_raw_html: true,
             footnotes: false,
+            inline_footnotes: false,
             front_matter: false,
             heading_ids: true,
             math: false,
             callouts: true,
+            definition_lists: false,
+            line_comments: false,
+            indented_code_blocks: true,
         }
     );
 }

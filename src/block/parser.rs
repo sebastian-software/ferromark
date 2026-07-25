@@ -77,6 +77,11 @@ enum ContainerType {
         /// Column where content starts (after `[^label]: `)
         content_indent: usize,
     },
+    /// Definition-list description (`: content`).
+    DefinitionDescription {
+        /// Column where continuation content starts.
+        content_indent: usize,
+    },
 }
 
 /// An open container on the stack.
@@ -104,6 +109,30 @@ struct OpenList {
     item_count: u32,
 }
 
+/// A source cell and its semantic table-column span.
+#[derive(Debug, Clone, Copy)]
+struct TableCell {
+    start: u32,
+    end: u32,
+    colspan: u16,
+}
+
+/// A definition list that may accept another term or description.
+#[derive(Debug, Clone, Copy)]
+struct OpenDefinitionList {
+    /// Container depth outside the definition list.
+    outer_depth: usize,
+}
+
+/// A paragraph emitted before a possible blank-separated definition marker.
+#[derive(Debug, Clone, Copy)]
+struct PendingDefinitionTerm {
+    /// First event of the emitted paragraph.
+    event_start: usize,
+    /// Container depth at which the paragraph was emitted.
+    outer_depth: usize,
+}
+
 /// Block parser state.
 pub struct BlockParser<'a> {
     /// Input bytes.
@@ -114,6 +143,8 @@ pub struct BlockParser<'a> {
     in_paragraph: bool,
     /// Accumulated paragraph text ranges.
     paragraph_lines: Vec<Range>,
+    /// Source-only comments encountered while paragraph text is buffered.
+    paragraph_comments: Vec<Range>,
     /// Current fenced code block state, if inside one.
     fence_state: Option<FenceState>,
     /// Whether we're in an indented code block.
@@ -162,6 +193,14 @@ pub struct BlockParser<'a> {
     footnote_event_start: Option<usize>,
     /// Pending label for the current footnote definition (normalized, original).
     pending_footnote_label: Option<(String, String)>,
+    /// Definition lists that may accept another term or description.
+    open_definition_lists: SmallVec<[OpenDefinitionList; 2]>,
+    /// Paragraph immediately before a blank line that may become definition terms.
+    pending_definition_term: Option<PendingDefinitionTerm>,
+    /// Whether the next non-blank physical line follows a blank line.
+    definition_blank_before_next: bool,
+    /// Blank-line state captured for the physical line currently being parsed.
+    definition_current_line_loose: bool,
 }
 
 impl<'a> BlockParser<'a> {
@@ -177,6 +216,7 @@ impl<'a> BlockParser<'a> {
             cursor: Cursor::new(input),
             in_paragraph: false,
             paragraph_lines: Vec::new(),
+            paragraph_comments: Vec::new(),
             fence_state: None,
             in_indented_code: false,
             indented_code_extra_spaces: 0,
@@ -199,6 +239,10 @@ impl<'a> BlockParser<'a> {
             footnote_store: FootnoteStore::new(),
             footnote_event_start: None,
             pending_footnote_label: None,
+            open_definition_lists: SmallVec::new(),
+            pending_definition_term: None,
+            definition_blank_before_next: false,
+            definition_current_line_loose: false,
         }
     }
 
@@ -210,6 +254,14 @@ impl<'a> BlockParser<'a> {
 
         // Close any open table at end of input
         self.close_table(events);
+
+        self.resolve_pending_definition_term_as_paragraph(events);
+
+        // A paragraph after a completed definition description is ordinary
+        // content unless a following `:` marker converted it into terms.
+        if self.in_paragraph && self.has_waiting_definition_list() {
+            self.close_waiting_definition_lists(events);
+        }
 
         // Close any open paragraph at end of input
         self.close_paragraph(events);
@@ -235,6 +287,7 @@ impl<'a> BlockParser<'a> {
 
         // Close all open containers
         self.close_all_containers(events);
+        self.close_all_definition_lists(events);
     }
 
     /// Take the collected link reference definitions.
@@ -254,10 +307,20 @@ impl<'a> BlockParser<'a> {
         }
 
         let line_start = self.cursor.offset();
+        if self.options.definition_lists {
+            self.definition_current_line_loose =
+                std::mem::take(&mut self.definition_blank_before_next);
+        }
 
         // Reset column tracking at the start of each line
         self.partial_tab_cols = 0;
         self.current_col = 0;
+
+        // Source-only comments are removed before block/container matching so
+        // they do not alter the surrounding Markdown structure.
+        if self.try_line_comment(line_start, events) {
+            return;
+        }
 
         // Check for blank line first (before any space skipping), unless we're in an HTML block
         if self.html_block.is_none() && self.is_blank_line() {
@@ -320,9 +383,19 @@ impl<'a> BlockParser<'a> {
             }
 
             self.close_table(events);
+            let definition_candidate_start = events.len();
+            let had_paragraph = self.in_paragraph;
             self.close_paragraph(events);
             // This is a truly blank line (no container markers) - close blockquotes
             self.handle_blank_line_containers(events, true);
+            self.remember_definition_term_after_blank(
+                had_paragraph,
+                definition_candidate_start,
+                events,
+            );
+            if self.options.definition_lists {
+                self.definition_blank_before_next = true;
+            }
             return;
         }
 
@@ -376,9 +449,19 @@ impl<'a> BlockParser<'a> {
                 parser_cursor_bump!(self.cursor);
             }
             self.close_table(events);
+            let definition_candidate_start = events.len();
+            let had_paragraph = self.in_paragraph;
             self.close_paragraph(events);
             // Container markers were present, so don't close blockquotes
             self.handle_blank_line_containers(events, false);
+            self.remember_definition_term_after_blank(
+                had_paragraph,
+                definition_candidate_start,
+                events,
+            );
+            if self.options.definition_lists {
+                self.definition_blank_before_next = true;
+            }
             return;
         }
 
@@ -410,6 +493,10 @@ impl<'a> BlockParser<'a> {
             // close_containers_from is smart about keeping lists open when starting new items
             // Pass indent so it knows if a new item is actually possible (only at indent < 4)
             self.close_containers_from(matched_containers, indent, events);
+        }
+
+        if self.options.definition_lists {
+            self.prepare_definition_lists_for_line(indent, events);
         }
 
         // If we're in an indented code block and containers matched, handle continuation
@@ -476,6 +563,15 @@ impl<'a> BlockParser<'a> {
             }
         }
 
+        if self.options.definition_lists
+            && indent < 4
+            && self.cursor.at(b':')
+            && self.try_definition_description(indent, events)
+        {
+            self.parse_line_content(events);
+            return;
+        }
+
         // Check for setext heading underline (when in a paragraph)
         // Must check BEFORE thematic break since `---` can be either
         // Note: indent must be < 4 for a valid setext underline
@@ -532,9 +628,9 @@ impl<'a> BlockParser<'a> {
                 if !self.paragraph_lines.is_empty() {
                     let last_para_line = self.paragraph_lines.last().unwrap();
                     let header_line = last_para_line.slice(self.input);
-                    let header_cells = Self::split_table_cells(header_line);
+                    let header_cells = self.table_cells(header_line);
 
-                    if header_cells.len() == alignments.len() {
+                    if Self::table_width(&header_cells) == alignments.len() {
                         let dash_counts = self
                             .options
                             .table_column_widths
@@ -577,7 +673,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for indented code block (4+ spaces, not in paragraph)
-        if indent >= 4 && !self.in_paragraph {
+        if self.options.indented_code_blocks && indent >= 4 && !self.in_paragraph {
             self.start_indented_code(indent, events);
             return;
         }
@@ -594,6 +690,7 @@ impl<'a> BlockParser<'a> {
             || self.in_indented_code
             || self.in_table
             || !self.container_stack.is_empty()
+            || !self.open_definition_lists.is_empty()
         {
             return false;
         }
@@ -614,11 +711,30 @@ impl<'a> BlockParser<'a> {
                 if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                     parser_cursor_bump!(self.cursor);
                 }
+                let definition_candidate_start = events.len();
+                let had_paragraph = self.in_paragraph;
                 self.close_paragraph(events);
+                self.remember_definition_term_after_blank(
+                    had_paragraph,
+                    definition_candidate_start,
+                    events,
+                );
+                if self.options.definition_lists {
+                    self.definition_blank_before_next = true;
+                }
                 return true;
             }
 
-            if indent >= 4 || !is_simple_line_start(first) {
+            if self.options.line_comments
+                && indent < 4
+                && first == b'/'
+                && self.cursor.remaining_slice().starts_with(b"//")
+            {
+                self.cursor = Cursor::new_at(self.input, line_start);
+                return consumed_any;
+            }
+
+            if (indent >= 4 && self.options.indented_code_blocks) || !is_simple_line_start(first) {
                 self.cursor = Cursor::new_at(self.input, line_start);
                 return consumed_any;
             }
@@ -626,7 +742,9 @@ impl<'a> BlockParser<'a> {
             // When tables are enabled and we're in a paragraph, bail on lines
             // that could be delimiter rows (starting with ':' or '-')
             // '-' is already caught by is_simple_line_start above.
-            if self.options.tables && self.in_paragraph && first == b':' {
+            if first == b':'
+                && ((self.options.tables && self.in_paragraph) || self.options.definition_lists)
+            {
                 self.cursor = Cursor::new_at(self.input, line_start);
                 return consumed_any;
             }
@@ -810,6 +928,10 @@ impl<'a> BlockParser<'a> {
             return;
         }
 
+        if self.options.definition_lists {
+            self.prepare_definition_lists_for_line(indent, events);
+        }
+
         // If we're in a table, check for continuation or termination
         if self.in_table {
             // Check if the line starts a block construct that would terminate the table
@@ -828,6 +950,7 @@ impl<'a> BlockParser<'a> {
         if indent < 4 {
             if is_simple_line_start(first)
                 && !(self.options.tables && (first == b'|' || (first == b':' && self.in_paragraph)))
+                && !(self.options.definition_lists && first == b':')
                 && !(self.options.footnotes && first == b'[')
             {
                 let line_start = self.cursor.offset();
@@ -850,6 +973,14 @@ impl<'a> BlockParser<'a> {
                     self.close_paragraph_as_setext_heading(level, events);
                     return;
                 }
+            }
+
+            if self.options.definition_lists
+                && first == b':'
+                && self.try_definition_description(indent, events)
+            {
+                self.parse_line_content(events);
+                return;
             }
 
             // Check for GFM table delimiter row (when in a paragraph)
@@ -875,9 +1006,9 @@ impl<'a> BlockParser<'a> {
                     if !self.paragraph_lines.is_empty() {
                         let last_para_line = self.paragraph_lines.last().unwrap();
                         let header_line = last_para_line.slice(self.input);
-                        let header_cells = Self::split_table_cells(header_line);
+                        let header_cells = self.table_cells(header_line);
 
-                        if header_cells.len() == alignments.len() {
+                        if Self::table_width(&header_cells) == alignments.len() {
                             let dash_counts = self
                                 .options
                                 .table_column_widths
@@ -951,7 +1082,7 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for indented code block (4+ spaces, not in paragraph)
-        if indent >= 4 && !self.in_paragraph {
+        if self.options.indented_code_blocks && indent >= 4 && !self.in_paragraph {
             self.start_indented_code(indent, events);
             return;
         }
@@ -1086,6 +1217,33 @@ impl<'a> BlockParser<'a> {
                         }
                     }
                 }
+                ContainerType::DefinitionDescription { content_indent } => {
+                    let remaining = self.cursor.remaining_slice();
+                    let is_blank = Self::is_blank_remaining_line(remaining);
+
+                    if is_blank {
+                        matched += 1;
+                    } else {
+                        let save_pos = self.cursor.offset();
+                        let save_partial = self.partial_tab_cols;
+                        let save_col = self.current_col;
+                        let (cols, _bytes) = self.skip_indent();
+
+                        if cols >= content_indent {
+                            self.cursor = Cursor::new_at(self.input, save_pos);
+                            self.partial_tab_cols = save_partial;
+                            self.current_col = save_col;
+                            let (_skipped_cols, _skipped_bytes) =
+                                self.skip_indent_max(content_indent);
+                            matched += 1;
+                        } else {
+                            self.cursor = Cursor::new_at(self.input, save_pos);
+                            self.partial_tab_cols = save_partial;
+                            self.current_col = save_col;
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -1185,12 +1343,14 @@ impl<'a> BlockParser<'a> {
             return false;
         }
 
-        // The first unmatched container must be a blockquote or list item
-        // (CommonMark allows lazy continuation for paragraphs in both)
+        // Definition descriptions deliberately follow list-style lazy
+        // paragraph continuation when the extension is enabled.
         let container = &self.container_stack[matched];
         let is_lazy_container = matches!(
             container.typ,
-            ContainerType::BlockQuote | ContainerType::ListItem { .. }
+            ContainerType::BlockQuote
+                | ContainerType::ListItem { .. }
+                | ContainerType::DefinitionDescription { .. }
         );
         if !is_lazy_container {
             return false;
@@ -1273,6 +1433,9 @@ impl<'a> BlockParser<'a> {
             b'<' => {
                 self.options.allow_html && indent < 4 && self.peek_html_block_start(true).is_some()
             }
+            b':' => {
+                self.options.definition_lists && indent < 4 && self.is_definition_marker_candidate()
+            }
             // Note: We don't check for setext underlines (= or plain line of -) here because
             // setext underlines can't interrupt lazy continuation. They only work when the
             // paragraph is at the same container level as the underline.
@@ -1310,6 +1473,8 @@ impl<'a> BlockParser<'a> {
 
                     if is_same_list {
                         // Just close the item, not the list
+                        let enclosing_depth = self.container_stack.len() - 1;
+                        self.close_definition_lists_deeper_than(enclosing_depth, events);
                         self.container_stack.pop();
                         self.close_paragraph(events);
                         events.push(BlockEvent::ListItemEnd);
@@ -1832,6 +1997,11 @@ impl<'a> BlockParser<'a> {
 
     /// Close the topmost container.
     fn close_top_container(&mut self, events: &mut Vec<BlockEvent>) {
+        // Close a completed nested definition list before its enclosing
+        // container emits an end event.
+        let enclosing_depth = self.container_stack.len().saturating_sub(1);
+        self.close_definition_lists_deeper_than(enclosing_depth, events);
+
         if let Some(container) = self.container_stack.pop() {
             // Close table first
             self.close_table(events);
@@ -1872,7 +2042,13 @@ impl<'a> BlockParser<'a> {
                 ContainerType::FootnoteDefinition { .. } => {
                     self.close_footnote_definition(events);
                 }
+                ContainerType::DefinitionDescription { .. } => {
+                    events.push(BlockEvent::DefinitionDescriptionEnd);
+                }
             }
+
+            let remaining_depth = self.container_stack.len();
+            self.close_definition_lists_deeper_than(remaining_depth, events);
         }
     }
 
@@ -1916,7 +2092,7 @@ impl<'a> BlockParser<'a> {
     /// Try to parse a thematic break.
     /// Returns true if successful.
     fn try_thematic_break(&mut self, events: &mut Vec<BlockEvent>) -> bool {
-        let _start_pos = self.cursor.offset();
+        let start_pos = self.cursor.offset();
 
         // Must start with -, *, or _
         let marker = match self.cursor.peek() {
@@ -1959,7 +2135,10 @@ impl<'a> BlockParser<'a> {
         // Mark the current container as having content
         self.mark_container_has_content();
 
-        events.push(BlockEvent::ThematicBreak);
+        events.push(BlockEvent::ThematicBreak(Range::from_usize(
+            start_pos,
+            temp_cursor.offset(),
+        )));
         true
     }
 
@@ -2119,26 +2298,7 @@ impl<'a> BlockParser<'a> {
 
         events.push(BlockEvent::HeadingStart { level });
 
-        // Emit text ranges for each line with soft breaks between
-        // Trim trailing spaces/tabs from the last line
-        let line_count = self.paragraph_lines.len();
-        for (i, mut range) in self.paragraph_lines.drain(..).enumerate() {
-            if i > 0 {
-                events.push(BlockEvent::SoftBreak);
-            }
-            // Trim trailing whitespace from the last line
-            if i == line_count - 1 {
-                while range.end > range.start {
-                    let b = self.input[(range.end - 1) as usize];
-                    if b == b' ' || b == b'\t' {
-                        range.end -= 1;
-                    } else {
-                        break;
-                    }
-                }
-            }
-            events.push(BlockEvent::Text(range));
-        }
+        self.emit_paragraph_items(events, true);
 
         events.push(BlockEvent::HeadingEnd { level });
     }
@@ -2824,6 +2984,8 @@ impl<'a> BlockParser<'a> {
                 content_start + remaining
             }
         };
+        let content_end = line_end
+            - usize::from(line_end > content_start && self.input.get(line_end - 1) == Some(&b'\r'));
 
         // If we weren't in a paragraph, we are now
         if !self.in_paragraph {
@@ -2835,18 +2997,71 @@ impl<'a> BlockParser<'a> {
         // Add this line to paragraph content
         // We include from original line_start to capture any leading spaces we skipped
         // Actually, use content_start which is after indent
-        if line_end > content_start {
+        if content_end > content_start {
             self.paragraph_lines
-                .push(Range::from_usize(content_start, line_end));
+                .push(Range::from_usize(content_start, content_end));
         }
+    }
+
+    /// Consume an enabled source-only line comment.
+    ///
+    /// Recognition is deliberately physical-line based: up to three leading
+    /// spaces are accepted, while tabs, four-space indentation, and explicit
+    /// block container markers remain ordinary Markdown syntax.
+    fn try_line_comment(&mut self, line_start: usize, events: &mut Vec<BlockEvent>) -> bool {
+        if !self.options.line_comments
+            || self.fence_state.is_some()
+            || self.in_indented_code
+            || self.html_block.is_some()
+        {
+            return false;
+        }
+
+        let mut marker_start = line_start;
+        let mut spaces = 0usize;
+        while marker_start < self.input.len() && self.input[marker_start] == b' ' && spaces < 4 {
+            marker_start += 1;
+            spaces += 1;
+        }
+        if spaces > 3
+            || !self
+                .input
+                .get(marker_start..)
+                .is_some_and(|rest| rest.starts_with(b"//"))
+        {
+            return false;
+        }
+
+        let mut line_end = marker_start + 2;
+        while line_end < self.input.len() && self.input[line_end] != b'\n' {
+            line_end += 1;
+        }
+        let comment_end = if line_end > marker_start + 2 && self.input[line_end - 1] == b'\r' {
+            line_end - 1
+        } else {
+            line_end
+        };
+        let range = Range::from_usize(marker_start, comment_end);
+
+        if line_end < self.input.len() {
+            line_end += 1;
+        }
+        self.cursor = Cursor::new_at(self.input, line_end);
+
+        if self.in_paragraph {
+            self.paragraph_comments.push(range);
+        } else {
+            events.push(BlockEvent::Comment(range));
+        }
+        true
     }
 
     // --- Table parsing ---
 
     /// Split a table line by unescaped `|` outside backtick code spans.
-    /// Returns byte offset pairs (start, end) for each cell, trimmed of whitespace.
-    /// Leading and trailing pipe are stripped.
-    fn split_table_cells(line: &[u8]) -> SmallVec<[(usize, usize); 8]> {
+    /// Returns source-relative cells trimmed of whitespace. Leading and
+    /// trailing pipes are stripped and every cell has a span of one.
+    fn split_table_cells(line: &[u8]) -> SmallVec<[TableCell; 8]> {
         let mut cells = SmallVec::new();
         let len = line.len();
         if len == 0 {
@@ -2889,62 +3104,145 @@ impl<'a> BlockParser<'a> {
             if pos == scan_end {
                 // End of line - emit last cell
                 let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
-                cells.push((s, e));
+                cells.push(TableCell {
+                    start: s as u32,
+                    end: e as u32,
+                    colspan: 1,
+                });
                 break;
             }
 
-            let b = line[pos];
-            if b == b'\\' && pos + 1 < scan_end {
-                // Escaped character - skip next
-                pos += 2;
-            } else if b == b'`' {
-                // Code span - skip until matching backticks
-                let bt_len = {
-                    let mut n = 0;
-                    while pos + n < scan_end && line[pos + n] == b'`' {
-                        n += 1;
-                    }
-                    n
-                };
-                pos += bt_len;
-                // Find closing backtick sequence of same length
-                let mut found = false;
-                while pos < scan_end {
-                    if line[pos] == b'`' {
-                        let close_len = {
-                            let mut n = 0;
-                            while pos + n < scan_end && line[pos + n] == b'`' {
-                                n += 1;
-                            }
-                            n
-                        };
-                        pos += close_len;
-                        if close_len == bt_len {
-                            found = true;
-                            break;
-                        }
-                    } else {
-                        pos += 1;
-                    }
-                }
-                if !found {
-                    // Unclosed code span - just continue
-                }
-            } else if b == b'|' {
+            if line[pos] == b'|' {
                 // Cell boundary
                 let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
-                cells.push((s, e));
+                cells.push(TableCell {
+                    start: s as u32,
+                    end: e as u32,
+                    colspan: 1,
+                });
                 pos += 1;
                 cell_start = pos;
                 if cells.len() >= limits::MAX_TABLE_COLUMNS {
                     break;
                 }
             } else {
-                pos += 1;
+                pos = Self::advance_table_cell_scan(line, pos, scan_end);
             }
         }
 
         cells
+    }
+
+    /// Split a table row into semantic cells, interpreting consecutive pipes
+    /// after a cell as its column span.
+    ///
+    /// Unlike ordinary GFM splitting, the final pipe is significant here:
+    /// one pipe closes a one-column cell, `||` closes a two-column cell, and
+    /// so on. Whitespace between pipes preserves an explicit empty cell.
+    fn split_merged_table_cells(line: &[u8]) -> SmallVec<[TableCell; 8]> {
+        let mut cells = SmallVec::new();
+        let len = line.len();
+        if len == 0 {
+            return cells;
+        }
+
+        let mut line_end = len;
+        while line_end > 0 && matches!(line[line_end - 1], b' ' | b'\t') {
+            line_end -= 1;
+        }
+
+        let mut pos = 0;
+        while pos < line_end && matches!(line[pos], b' ' | b'\t') {
+            pos += 1;
+        }
+        if pos < line_end && line[pos] == b'|' {
+            pos += 1;
+        }
+        if pos >= line_end {
+            return cells;
+        }
+
+        let mut cell_start = pos;
+        while pos < line_end {
+            if line[pos] == b'|' {
+                let mut pipe_count = 0usize;
+                while pos < line_end && line[pos] == b'|' {
+                    pipe_count += 1;
+                    pos += 1;
+                }
+                let (start, end) = Self::trim_cell(&line[cell_start..pos - pipe_count], cell_start);
+                cells.push(TableCell {
+                    start: start as u32,
+                    end: end as u32,
+                    colspan: pipe_count.min(u16::MAX as usize) as u16,
+                });
+                if cells.len() >= limits::MAX_TABLE_COLUMNS || pos == line_end {
+                    return cells;
+                }
+                cell_start = pos;
+            } else {
+                pos = Self::advance_table_cell_scan(line, pos, line_end);
+            }
+        }
+
+        let (start, end) = Self::trim_cell(&line[cell_start..line_end], cell_start);
+        cells.push(TableCell {
+            start: start as u32,
+            end: end as u32,
+            colspan: 1,
+        });
+        cells
+    }
+
+    /// Advance past one table-cell token, treating escapes and matching
+    /// backtick runs as opaque so their pipes cannot become cell boundaries.
+    #[inline]
+    fn advance_table_cell_scan(line: &[u8], pos: usize, scan_end: usize) -> usize {
+        debug_assert!(pos < scan_end);
+        debug_assert!(scan_end <= line.len());
+
+        if line[pos] == b'\\' && pos + 1 < scan_end {
+            return pos + 2;
+        }
+        if line[pos] != b'`' {
+            return pos + 1;
+        }
+
+        let mut opener_len = 1usize;
+        while pos + opener_len < scan_end && line[pos + opener_len] == b'`' {
+            opener_len += 1;
+        }
+
+        let mut next = pos + opener_len;
+        while next < scan_end {
+            if line[next] != b'`' {
+                next += 1;
+                continue;
+            }
+
+            let mut closer_len = 1usize;
+            while next + closer_len < scan_end && line[next + closer_len] == b'`' {
+                closer_len += 1;
+            }
+            next += closer_len;
+            if closer_len == opener_len {
+                break;
+            }
+        }
+        next
+    }
+
+    fn table_cells(&self, line: &[u8]) -> SmallVec<[TableCell; 8]> {
+        if self.options.merged_table_cells {
+            Self::split_merged_table_cells(line)
+        } else {
+            Self::split_table_cells(line)
+        }
+    }
+
+    #[inline]
+    fn table_width(cells: &[TableCell]) -> usize {
+        cells.iter().map(|cell| cell.colspan as usize).sum()
     }
 
     /// Trim whitespace from a cell slice, returning absolute byte offsets.
@@ -2988,8 +3286,8 @@ impl<'a> BlockParser<'a> {
         }
 
         let mut alignments = SmallVec::new();
-        for &(start, end) in &cells {
-            let cell = &line[start..end];
+        for cell_range in &cells {
+            let cell = &line[cell_range.start as usize..cell_range.end as usize];
             if cell.is_empty() {
                 return None;
             }
@@ -3039,8 +3337,8 @@ impl<'a> BlockParser<'a> {
     fn delimiter_dash_counts(line: &[u8]) -> SmallVec<[u16; 8]> {
         let cells = Self::split_table_cells(line);
         let mut dash_counts = SmallVec::new();
-        for &(start, end) in &cells {
-            let cell = &line[start..end];
+        for cell in &cells {
+            let cell = &line[cell.start as usize..cell.end as usize];
             debug_assert!(
                 !cell.is_empty(),
                 "validated table delimiter cells must not be empty"
@@ -3091,13 +3389,17 @@ impl<'a> BlockParser<'a> {
     /// Start a table from the last paragraph line (header) and delimiter row.
     fn start_table(
         &mut self,
-        header_cells: SmallVec<[(usize, usize); 8]>,
+        header_cells: SmallVec<[TableCell; 8]>,
         alignments: SmallVec<[Alignment; 8]>,
         dash_counts: Option<SmallVec<[u16; 8]>>,
         events: &mut Vec<BlockEvent>,
     ) {
         // Extract the last paragraph line for use as header
         let header_range = self.paragraph_lines.pop().unwrap();
+        let table_comment_start = self
+            .paragraph_comments
+            .partition_point(|range| range.start < header_range.start);
+        let table_comments = self.paragraph_comments.split_off(table_comment_start);
 
         // Close any remaining paragraph content (lines before the header line)
         // These stay as a normal paragraph
@@ -3105,13 +3407,10 @@ impl<'a> BlockParser<'a> {
             // Emit those lines as a paragraph
             self.mark_container_has_content();
             events.push(BlockEvent::ParagraphStart);
-            for (i, range) in self.paragraph_lines.drain(..).enumerate() {
-                if i > 0 {
-                    events.push(BlockEvent::SoftBreak);
-                }
-                events.push(BlockEvent::Text(range));
-            }
+            self.emit_paragraph_items(events, false);
             events.push(BlockEvent::ParagraphEnd);
+        } else {
+            events.extend(self.paragraph_comments.drain(..).map(BlockEvent::Comment));
         }
         self.in_paragraph = false;
 
@@ -3127,21 +3426,30 @@ impl<'a> BlockParser<'a> {
 
         let header_base = header_range.start as usize;
 
-        for (i, &alignment) in alignments.iter().enumerate() {
-            events.push(BlockEvent::TableCellStart { alignment });
-            if i < header_cells.len() {
-                let (s, e) = header_cells[i];
-                if e > s {
-                    events.push(BlockEvent::Text(Range::from_usize(
-                        header_base + s,
-                        header_base + e,
-                    )));
-                }
+        let mut column = 0usize;
+        for cell in &header_cells {
+            if column >= alignments.len() {
+                break;
+            }
+            let colspan = (cell.colspan as usize)
+                .min(alignments.len() - column)
+                .max(1);
+            events.push(BlockEvent::TableCellStart {
+                alignment: alignments[column],
+                colspan: colspan as u16,
+            });
+            if cell.end > cell.start {
+                events.push(BlockEvent::Text(Range::from_usize(
+                    header_base + cell.start as usize,
+                    header_base + cell.end as usize,
+                )));
             }
             events.push(BlockEvent::TableCellEnd);
+            column += colspan;
         }
 
         events.push(BlockEvent::TableRowEnd);
+        events.extend(table_comments.into_iter().map(BlockEvent::Comment));
         events.push(BlockEvent::TableHeadEnd);
 
         // Set table state
@@ -3209,7 +3517,7 @@ impl<'a> BlockParser<'a> {
         };
 
         let line = &self.input[line_start..line_end];
-        let cells = Self::split_table_cells(line);
+        let cells = self.table_cells(line);
         let col_count = self.table_alignments.len();
 
         if !self.table_has_body {
@@ -3219,20 +3527,35 @@ impl<'a> BlockParser<'a> {
 
         events.push(BlockEvent::TableRowStart);
 
-        for i in 0..col_count {
-            let alignment = self.table_alignments[i];
-            events.push(BlockEvent::TableCellStart { alignment });
-            if i < cells.len() {
-                let (s, e) = cells[i];
-                if e > s {
-                    events.push(BlockEvent::Text(Range::from_usize(
-                        line_start + s,
-                        line_start + e,
-                    )));
-                }
+        let mut column = 0usize;
+        for cell in &cells {
+            if column >= col_count {
+                break;
             }
-            // If i >= cells.len(), emit an empty cell (no Text event)
+            let colspan = (cell.colspan as usize).min(col_count - column).max(1);
+            events.push(BlockEvent::TableCellStart {
+                alignment: self.table_alignments[column],
+                colspan: colspan as u16,
+            });
+            if cell.end > cell.start {
+                events.push(BlockEvent::Text(Range::from_usize(
+                    line_start + cell.start as usize,
+                    line_start + cell.end as usize,
+                )));
+            }
             events.push(BlockEvent::TableCellEnd);
+            column += colspan;
+        }
+
+        // GFM pads ragged rows with empty cells. A merged cell consumes every
+        // source column it spans, so padding resumes at the next free column.
+        while column < col_count {
+            events.push(BlockEvent::TableCellStart {
+                alignment: self.table_alignments[column],
+                colspan: 1,
+            });
+            events.push(BlockEvent::TableCellEnd);
+            column += 1;
         }
 
         events.push(BlockEvent::TableRowEnd);
@@ -3247,6 +3570,7 @@ impl<'a> BlockParser<'a> {
         self.in_paragraph = false;
 
         if self.paragraph_lines.is_empty() {
+            events.extend(self.paragraph_comments.drain(..).map(BlockEvent::Comment));
             return;
         }
 
@@ -3258,6 +3582,7 @@ impl<'a> BlockParser<'a> {
         }
 
         if self.paragraph_lines.is_empty() {
+            events.extend(self.paragraph_comments.drain(..).map(BlockEvent::Comment));
             return;
         }
 
@@ -3266,16 +3591,258 @@ impl<'a> BlockParser<'a> {
 
         events.push(BlockEvent::ParagraphStart);
 
-        // Emit text ranges for each line with soft breaks between
-        for (i, range) in self.paragraph_lines.drain(..).enumerate() {
-            if i > 0 {
-                // Add soft break between lines
+        self.emit_paragraph_items(events, false);
+
+        events.push(BlockEvent::ParagraphEnd);
+    }
+
+    /// Emit buffered paragraph text and comments in source order.
+    fn emit_paragraph_items(&mut self, events: &mut Vec<BlockEvent>, trim_last_line: bool) {
+        let mut comments = std::mem::take(&mut self.paragraph_comments)
+            .into_iter()
+            .peekable();
+        let line_count = self.paragraph_lines.len();
+
+        for (index, mut range) in self.paragraph_lines.drain(..).enumerate() {
+            while comments
+                .peek()
+                .is_some_and(|comment| comment.start < range.start)
+            {
+                events.push(BlockEvent::Comment(comments.next().unwrap()));
+            }
+
+            if index > 0 {
                 events.push(BlockEvent::SoftBreak);
+            }
+
+            if trim_last_line && index == line_count - 1 {
+                while range.end > range.start {
+                    let byte = self.input[(range.end - 1) as usize];
+                    if byte == b' ' || byte == b'\t' {
+                        range.end -= 1;
+                    } else {
+                        break;
+                    }
+                }
             }
             events.push(BlockEvent::Text(range));
         }
 
-        events.push(BlockEvent::ParagraphEnd);
+        events.extend(comments.map(BlockEvent::Comment));
+    }
+
+    /// Return whether `:` at the current cursor is a definition marker.
+    #[inline]
+    fn is_definition_marker_candidate(&self) -> bool {
+        self.cursor.at(b':') && matches!(self.cursor.peek_ahead(1), Some(b' ' | b'\t'))
+    }
+
+    fn active_definition_description_count(&self) -> usize {
+        self.container_stack
+            .iter()
+            .filter(|container| {
+                matches!(container.typ, ContainerType::DefinitionDescription { .. })
+            })
+            .count()
+    }
+
+    fn definition_list_is_waiting(&self, list: OpenDefinitionList) -> bool {
+        !matches!(
+            self.container_stack.get(list.outer_depth),
+            Some(Container {
+                typ: ContainerType::DefinitionDescription { .. },
+                ..
+            })
+        )
+    }
+
+    fn has_waiting_definition_list(&self) -> bool {
+        self.open_definition_lists
+            .last()
+            .is_some_and(|list| self.definition_list_is_waiting(*list))
+    }
+
+    /// Remember a paragraph closed by a blank line as a possible term block.
+    fn remember_definition_term_after_blank(
+        &mut self,
+        had_paragraph: bool,
+        event_start: usize,
+        events: &[BlockEvent],
+    ) {
+        if !self.options.definition_lists
+            || !had_paragraph
+            || self.active_definition_description_count() > 0
+            || event_start >= events.len()
+            || !matches!(events.get(event_start), Some(BlockEvent::ParagraphStart))
+            || !matches!(events.last(), Some(BlockEvent::ParagraphEnd))
+        {
+            return;
+        }
+
+        if events[event_start + 1..events.len() - 1]
+            .iter()
+            .all(|event| matches!(event, BlockEvent::Text(_) | BlockEvent::SoftBreak))
+        {
+            self.pending_definition_term = Some(PendingDefinitionTerm {
+                event_start,
+                outer_depth: self.container_stack.len(),
+            });
+        }
+    }
+
+    /// Close an open definition list before a paragraph that did not become terms.
+    fn resolve_pending_definition_term_as_paragraph(&mut self, events: &mut Vec<BlockEvent>) {
+        let Some(pending) = self.pending_definition_term.take() else {
+            return;
+        };
+
+        let Some(list) = self.open_definition_lists.last().copied() else {
+            return;
+        };
+        if list.outer_depth != pending.outer_depth || !self.definition_list_is_waiting(list) {
+            return;
+        }
+
+        events.insert(pending.event_start, BlockEvent::DefinitionListEnd);
+        self.open_definition_lists.pop();
+    }
+
+    /// Keep a waiting definition list open only while a possible next term is parsed.
+    fn prepare_definition_lists_for_line(&mut self, indent: usize, events: &mut Vec<BlockEvent>) {
+        let marker = indent < 4 && self.is_definition_marker_candidate();
+        let outer_depth = self.container_stack.len();
+
+        if let Some(pending) = self.pending_definition_term {
+            if marker && pending.outer_depth == outer_depth {
+                return;
+            }
+            self.resolve_pending_definition_term_as_paragraph(events);
+        }
+
+        let Some(list) = self.open_definition_lists.last().copied() else {
+            return;
+        };
+        if list.outer_depth != outer_depth || !self.definition_list_is_waiting(list) || marker {
+            return;
+        }
+
+        // Plain paragraph lines may be the next one or more terms. Any
+        // unambiguous block start ends the definition list before that block.
+        if indent < 4 && !self.would_start_block(indent) {
+            return;
+        }
+
+        self.close_waiting_definition_lists(events);
+    }
+
+    /// Start a new definition description, converting the preceding paragraph
+    /// into one or more single-line terms when present.
+    fn try_definition_description(&mut self, indent: usize, events: &mut Vec<BlockEvent>) -> bool {
+        if !self.is_definition_marker_candidate() {
+            return false;
+        }
+
+        let outer_depth = self.container_stack.len();
+        let waiting_list = self
+            .open_definition_lists
+            .last()
+            .copied()
+            .is_some_and(|list| {
+                list.outer_depth == outer_depth && self.definition_list_is_waiting(list)
+            });
+
+        let mut terms = Vec::new();
+        if self.in_paragraph {
+            self.in_paragraph = false;
+            terms.append(&mut self.paragraph_lines);
+            self.pending_definition_term = None;
+        } else if let Some(pending) = self.pending_definition_term {
+            if pending.outer_depth == outer_depth
+                && matches!(
+                    events.get(pending.event_start),
+                    Some(BlockEvent::ParagraphStart)
+                )
+                && matches!(events.last(), Some(BlockEvent::ParagraphEnd))
+            {
+                for event in events.drain(pending.event_start..) {
+                    if let BlockEvent::Text(range) = event {
+                        terms.push(range);
+                    }
+                }
+                self.pending_definition_term = None;
+            }
+        }
+
+        if terms.is_empty() && !waiting_list {
+            return false;
+        }
+
+        if !waiting_list {
+            self.close_orphaned_lists(events);
+            self.mark_container_has_content();
+            events.push(BlockEvent::DefinitionListStart);
+            self.open_definition_lists
+                .push(OpenDefinitionList { outer_depth });
+        }
+
+        for mut term in terms {
+            while term.end > term.start
+                && matches!(self.input[(term.end - 1) as usize], b' ' | b'\t')
+            {
+                term.end -= 1;
+            }
+            events.push(BlockEvent::DefinitionTermStart);
+            events.push(BlockEvent::Text(term));
+            events.push(BlockEvent::DefinitionTermEnd);
+        }
+
+        parser_cursor_bump!(self.cursor);
+        self.current_col += 1;
+        let (content_space, _bytes) = self.skip_indent();
+        debug_assert!(content_space > 0);
+        let content_indent = indent + 1 + content_space;
+
+        events.push(BlockEvent::DefinitionDescriptionStart {
+            tight: !self.definition_current_line_loose,
+        });
+        self.container_stack.push(Container {
+            typ: ContainerType::DefinitionDescription { content_indent },
+            has_content: false,
+        });
+        true
+    }
+
+    fn close_waiting_definition_lists(&mut self, events: &mut Vec<BlockEvent>) {
+        while self
+            .open_definition_lists
+            .last()
+            .copied()
+            .is_some_and(|list| self.definition_list_is_waiting(list))
+        {
+            self.open_definition_lists.pop();
+            events.push(BlockEvent::DefinitionListEnd);
+        }
+    }
+
+    fn close_definition_lists_deeper_than(
+        &mut self,
+        container_depth: usize,
+        events: &mut Vec<BlockEvent>,
+    ) {
+        while self
+            .open_definition_lists
+            .last()
+            .is_some_and(|list| list.outer_depth > container_depth)
+        {
+            self.open_definition_lists.pop();
+            events.push(BlockEvent::DefinitionListEnd);
+        }
+    }
+
+    fn close_all_definition_lists(&mut self, events: &mut Vec<BlockEvent>) {
+        while self.open_definition_lists.pop().is_some() {
+            events.push(BlockEvent::DefinitionListEnd);
+        }
     }
 
     /// Close the current footnote definition, draining captured events into the store.
@@ -3915,31 +4482,46 @@ mod tests {
     #[test]
     fn test_thematic_break_dashes() {
         let events = parse("---");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_asterisks() {
         let events = parse("***");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_underscores() {
         let events = parse("___");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 3))]
+        );
     }
 
     #[test]
     fn test_thematic_break_with_spaces() {
         let events = parse("- - -");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 5))]
+        );
     }
 
     #[test]
     fn test_thematic_break_many() {
         let events = parse("----------");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(0, 10))]
+        );
     }
 
     #[test]
@@ -4048,7 +4630,10 @@ mod tests {
         assert_eq!(events.len(), 4);
         assert_eq!(events[0], BlockEvent::ParagraphStart);
         assert_eq!(events[2], BlockEvent::ParagraphEnd);
-        assert_eq!(events[3], BlockEvent::ThematicBreak);
+        assert_eq!(
+            events[3],
+            BlockEvent::ThematicBreak(Range::from_usize(6, 9))
+        );
     }
 
     #[test]
@@ -4074,7 +4659,19 @@ mod tests {
     #[test]
     fn test_thematic_break_with_leading_spaces() {
         let events = parse("   ---");
-        assert_eq!(events, vec![BlockEvent::ThematicBreak]);
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(3, 6))]
+        );
+    }
+
+    #[test]
+    fn test_thematic_break_range_includes_trailing_horizontal_whitespace() {
+        let events = parse("  - - - \t\n");
+        assert_eq!(
+            events,
+            vec![BlockEvent::ThematicBreak(Range::from_usize(2, 9))]
+        );
     }
 
     // Fenced code block tests

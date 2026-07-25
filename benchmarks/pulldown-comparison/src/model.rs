@@ -180,6 +180,8 @@ fn all_extensions() -> Options {
         allow_html: true,
         allow_link_refs: true,
         tables: true,
+        merged_table_cells: true,
+        table_column_widths: true,
         strikethrough: true,
         highlight: true,
         superscript: true,
@@ -188,10 +190,14 @@ fn all_extensions() -> Options {
         autolink_literals: true,
         disallowed_raw_html: true,
         footnotes: true,
+        inline_footnotes: true,
         front_matter: true,
         heading_ids: true,
         math: true,
         callouts: true,
+        definition_lists: true,
+        line_comments: true,
+        indented_code_blocks: true,
     }
 }
 

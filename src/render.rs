@@ -654,6 +654,45 @@ impl HtmlWriter {
         self.write_str("</li>\n");
     }
 
+    /// Write definition list start: `<dl>\n`
+    #[inline]
+    pub fn dl_start(&mut self) {
+        self.write_str("<dl>\n");
+    }
+
+    /// Write definition list end: `</dl>\n`
+    #[inline]
+    pub fn dl_end(&mut self) {
+        self.write_str("</dl>\n");
+    }
+
+    /// Write definition term start: `<dt>`
+    #[inline]
+    pub fn dt_start(&mut self) {
+        self.write_str("<dt>");
+    }
+
+    /// Write definition term end: `</dt>\n`
+    #[inline]
+    pub fn dt_end(&mut self) {
+        self.write_str("</dt>\n");
+    }
+
+    /// Write definition description start.
+    #[inline]
+    pub fn dd_start(&mut self, tight: bool) {
+        self.write_str("<dd>");
+        if !tight {
+            self.newline();
+        }
+    }
+
+    /// Write definition description end: `</dd>\n`
+    #[inline]
+    pub fn dd_end(&mut self) {
+        self.write_str("</dd>\n");
+    }
+
     // --- Table Elements ---
 
     /// Write table start: `<table>\n`
@@ -732,15 +771,22 @@ impl HtmlWriter {
         self.write_str("</tr>\n");
     }
 
-    /// Write th start with optional alignment: `<th>` or `<th align="...">`
+    /// Write a table-header cell start with optional alignment and colspan.
     #[inline]
-    pub fn th_start(&mut self, align: crate::block::Alignment) {
+    pub fn th_start(&mut self, align: crate::block::Alignment, colspan: u16) {
+        self.write_str("<th");
         match align {
-            crate::block::Alignment::None => self.write_str("<th>"),
-            crate::block::Alignment::Left => self.write_str("<th align=\"left\">"),
-            crate::block::Alignment::Center => self.write_str("<th align=\"center\">"),
-            crate::block::Alignment::Right => self.write_str("<th align=\"right\">"),
+            crate::block::Alignment::None => {}
+            crate::block::Alignment::Left => self.write_str(" align=\"left\""),
+            crate::block::Alignment::Center => self.write_str(" align=\"center\""),
+            crate::block::Alignment::Right => self.write_str(" align=\"right\""),
         }
+        if colspan > 1 {
+            self.write_str(" colspan=\"");
+            self.write_u32(colspan as u32);
+            self.write_str("\"");
+        }
+        self.write_str(">");
     }
 
     /// Write th end: `</th>\n`
@@ -749,15 +795,22 @@ impl HtmlWriter {
         self.write_str("</th>\n");
     }
 
-    /// Write td start with optional alignment: `<td>` or `<td align="...">`
+    /// Write a table-data cell start with optional alignment and colspan.
     #[inline]
-    pub fn td_start(&mut self, align: crate::block::Alignment) {
+    pub fn td_start(&mut self, align: crate::block::Alignment, colspan: u16) {
+        self.write_str("<td");
         match align {
-            crate::block::Alignment::None => self.write_str("<td>"),
-            crate::block::Alignment::Left => self.write_str("<td align=\"left\">"),
-            crate::block::Alignment::Center => self.write_str("<td align=\"center\">"),
-            crate::block::Alignment::Right => self.write_str("<td align=\"right\">"),
+            crate::block::Alignment::None => {}
+            crate::block::Alignment::Left => self.write_str(" align=\"left\""),
+            crate::block::Alignment::Center => self.write_str(" align=\"center\""),
+            crate::block::Alignment::Right => self.write_str(" align=\"right\""),
         }
+        if colspan > 1 {
+            self.write_str(" colspan=\"");
+            self.write_u32(colspan as u32);
+            self.write_str("\"");
+        }
+        self.write_str(">");
     }
 
     /// Write td end: `</td>\n`
