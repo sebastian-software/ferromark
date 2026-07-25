@@ -614,7 +614,7 @@ impl<'a> BlockParser<'a> {
                 return true;
             }
 
-            if indent >= 4 || !is_simple_line_start(first) {
+            if (indent >= 4 && self.options.indented_code_blocks) || !is_simple_line_start(first) {
                 self.cursor = Cursor::new_at(self.input, line_start);
                 return consumed_any;
             }
