@@ -86,7 +86,7 @@ raw-HTML CommonMark output parity. Run `cargo test --test commonmark_spec --
 
 **All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
 
-**Beyond GFM**: Footnotes, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), superscript (`^text^`), subscript (`~text~`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
+**Beyond GFM**: Footnotes, definition lists, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), superscript (`^text^`), subscript (`~text~`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
 
 **MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
 
@@ -95,10 +95,22 @@ Fine-grained options let you turn on exactly what you need:
 ```text
 allow_html · allow_link_refs · tables · strikethrough · highlight · superscript · subscript · task_lists
 autolink_literals · disallowed_raw_html · footnotes · front_matter
-heading_ids · math · callouts · line_comments · indented_code_blocks
+heading_ids · math · callouts · definition_lists · line_comments · indented_code_blocks
 ```
 
 Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
+
+Enable `definition_lists` for PHP Markdown Extra-style terms and descriptions:
+
+```markdown
+Term
+: A definition with *inline Markdown*.
+```
+
+Markers may have up to three leading spaces and require whitespace after the
+colon. Continuation paragraphs and nested blocks must be indented to the
+description content; lazy continuation is supported only for paragraph text.
+The option is disabled by default and in every dialect constructor.
 
 Enable `line_comments` to omit source-only note lines from HTML:
 

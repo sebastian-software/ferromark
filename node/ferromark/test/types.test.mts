@@ -4,6 +4,7 @@ import { toHtml, toHtmlWithHighlighter } from '../index.mjs'
 const options: Options = {
   renderPolicy: 'untrusted',
   tables: true,
+  definitionLists: true,
   lineComments: true,
   indentedCodeBlocks: false,
 }

@@ -99,7 +99,13 @@ pub(crate) fn record_block_events(events: &[BlockEvent], capacity: usize) {
                 | BlockEvent::ListStart { .. }
                 | BlockEvent::ListEnd { .. }
                 | BlockEvent::ListItemStart { .. }
-                | BlockEvent::ListItemEnd => counters.block_container_events += 1,
+                | BlockEvent::ListItemEnd
+                | BlockEvent::DefinitionListStart
+                | BlockEvent::DefinitionListEnd
+                | BlockEvent::DefinitionTermStart
+                | BlockEvent::DefinitionTermEnd
+                | BlockEvent::DefinitionDescriptionStart { .. }
+                | BlockEvent::DefinitionDescriptionEnd => counters.block_container_events += 1,
                 BlockEvent::TableStart
                 | BlockEvent::TableEnd
                 | BlockEvent::TableHeadStart

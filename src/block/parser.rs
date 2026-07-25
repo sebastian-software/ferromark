@@ -77,6 +77,11 @@ enum ContainerType {
         /// Column where content starts (after `[^label]: `)
         content_indent: usize,
     },
+    /// Definition-list description (`: content`).
+    DefinitionDescription {
+        /// Column where continuation content starts.
+        content_indent: usize,
+    },
 }
 
 /// An open container on the stack.
@@ -102,6 +107,22 @@ struct OpenList {
     blank_in_item: bool,
     /// Number of items so far.
     item_count: u32,
+}
+
+/// A definition list that may accept another term or description.
+#[derive(Debug, Clone, Copy)]
+struct OpenDefinitionList {
+    /// Container depth outside the definition list.
+    outer_depth: usize,
+}
+
+/// A paragraph emitted before a possible blank-separated definition marker.
+#[derive(Debug, Clone, Copy)]
+struct PendingDefinitionTerm {
+    /// First event of the emitted paragraph.
+    event_start: usize,
+    /// Container depth at which the paragraph was emitted.
+    outer_depth: usize,
 }
 
 /// Block parser state.
@@ -164,6 +185,14 @@ pub struct BlockParser<'a> {
     footnote_event_start: Option<usize>,
     /// Pending label for the current footnote definition (normalized, original).
     pending_footnote_label: Option<(String, String)>,
+    /// Definition lists that may accept another term or description.
+    open_definition_lists: SmallVec<[OpenDefinitionList; 2]>,
+    /// Paragraph immediately before a blank line that may become definition terms.
+    pending_definition_term: Option<PendingDefinitionTerm>,
+    /// Whether the next non-blank physical line follows a blank line.
+    definition_blank_before_next: bool,
+    /// Blank-line state captured for the physical line currently being parsed.
+    definition_current_line_loose: bool,
 }
 
 impl<'a> BlockParser<'a> {
@@ -202,6 +231,10 @@ impl<'a> BlockParser<'a> {
             footnote_store: FootnoteStore::new(),
             footnote_event_start: None,
             pending_footnote_label: None,
+            open_definition_lists: SmallVec::new(),
+            pending_definition_term: None,
+            definition_blank_before_next: false,
+            definition_current_line_loose: false,
         }
     }
 
@@ -213,6 +246,14 @@ impl<'a> BlockParser<'a> {
 
         // Close any open table at end of input
         self.close_table(events);
+
+        self.resolve_pending_definition_term_as_paragraph(events);
+
+        // A paragraph after a completed definition description is ordinary
+        // content unless a following `:` marker converted it into terms.
+        if self.in_paragraph && self.has_waiting_definition_list() {
+            self.close_waiting_definition_lists(events);
+        }
 
         // Close any open paragraph at end of input
         self.close_paragraph(events);
@@ -238,6 +279,7 @@ impl<'a> BlockParser<'a> {
 
         // Close all open containers
         self.close_all_containers(events);
+        self.close_all_definition_lists(events);
     }
 
     /// Take the collected link reference definitions.
@@ -257,6 +299,10 @@ impl<'a> BlockParser<'a> {
         }
 
         let line_start = self.cursor.offset();
+        if self.options.definition_lists {
+            self.definition_current_line_loose =
+                std::mem::take(&mut self.definition_blank_before_next);
+        }
 
         // Reset column tracking at the start of each line
         self.partial_tab_cols = 0;
@@ -329,9 +375,19 @@ impl<'a> BlockParser<'a> {
             }
 
             self.close_table(events);
+            let definition_candidate_start = events.len();
+            let had_paragraph = self.in_paragraph;
             self.close_paragraph(events);
             // This is a truly blank line (no container markers) - close blockquotes
             self.handle_blank_line_containers(events, true);
+            self.remember_definition_term_after_blank(
+                had_paragraph,
+                definition_candidate_start,
+                events,
+            );
+            if self.options.definition_lists {
+                self.definition_blank_before_next = true;
+            }
             return;
         }
 
@@ -385,9 +441,19 @@ impl<'a> BlockParser<'a> {
                 parser_cursor_bump!(self.cursor);
             }
             self.close_table(events);
+            let definition_candidate_start = events.len();
+            let had_paragraph = self.in_paragraph;
             self.close_paragraph(events);
             // Container markers were present, so don't close blockquotes
             self.handle_blank_line_containers(events, false);
+            self.remember_definition_term_after_blank(
+                had_paragraph,
+                definition_candidate_start,
+                events,
+            );
+            if self.options.definition_lists {
+                self.definition_blank_before_next = true;
+            }
             return;
         }
 
@@ -419,6 +485,10 @@ impl<'a> BlockParser<'a> {
             // close_containers_from is smart about keeping lists open when starting new items
             // Pass indent so it knows if a new item is actually possible (only at indent < 4)
             self.close_containers_from(matched_containers, indent, events);
+        }
+
+        if self.options.definition_lists {
+            self.prepare_definition_lists_for_line(indent, events);
         }
 
         // If we're in an indented code block and containers matched, handle continuation
@@ -483,6 +553,15 @@ impl<'a> BlockParser<'a> {
                 self.emit_table_row(events);
                 return;
             }
+        }
+
+        if self.options.definition_lists
+            && indent < 4
+            && self.cursor.at(b':')
+            && self.try_definition_description(indent, events)
+        {
+            self.parse_line_content(events);
+            return;
         }
 
         // Check for setext heading underline (when in a paragraph)
@@ -599,6 +678,7 @@ impl<'a> BlockParser<'a> {
             || self.in_indented_code
             || self.in_table
             || !self.container_stack.is_empty()
+            || !self.open_definition_lists.is_empty()
         {
             return false;
         }
@@ -619,7 +699,17 @@ impl<'a> BlockParser<'a> {
                 if !self.cursor.is_eof() && self.cursor.at(b'\n') {
                     parser_cursor_bump!(self.cursor);
                 }
+                let definition_candidate_start = events.len();
+                let had_paragraph = self.in_paragraph;
                 self.close_paragraph(events);
+                self.remember_definition_term_after_blank(
+                    had_paragraph,
+                    definition_candidate_start,
+                    events,
+                );
+                if self.options.definition_lists {
+                    self.definition_blank_before_next = true;
+                }
                 return true;
             }
 
@@ -640,7 +730,9 @@ impl<'a> BlockParser<'a> {
             // When tables are enabled and we're in a paragraph, bail on lines
             // that could be delimiter rows (starting with ':' or '-')
             // '-' is already caught by is_simple_line_start above.
-            if self.options.tables && self.in_paragraph && first == b':' {
+            if first == b':'
+                && ((self.options.tables && self.in_paragraph) || self.options.definition_lists)
+            {
                 self.cursor = Cursor::new_at(self.input, line_start);
                 return consumed_any;
             }
@@ -824,6 +916,10 @@ impl<'a> BlockParser<'a> {
             return;
         }
 
+        if self.options.definition_lists {
+            self.prepare_definition_lists_for_line(indent, events);
+        }
+
         // If we're in a table, check for continuation or termination
         if self.in_table {
             // Check if the line starts a block construct that would terminate the table
@@ -842,6 +938,7 @@ impl<'a> BlockParser<'a> {
         if indent < 4 {
             if is_simple_line_start(first)
                 && !(self.options.tables && (first == b'|' || (first == b':' && self.in_paragraph)))
+                && !(self.options.definition_lists && first == b':')
                 && !(self.options.footnotes && first == b'[')
             {
                 let line_start = self.cursor.offset();
@@ -864,6 +961,14 @@ impl<'a> BlockParser<'a> {
                     self.close_paragraph_as_setext_heading(level, events);
                     return;
                 }
+            }
+
+            if self.options.definition_lists
+                && first == b':'
+                && self.try_definition_description(indent, events)
+            {
+                self.parse_line_content(events);
+                return;
             }
 
             // Check for GFM table delimiter row (when in a paragraph)
@@ -1096,6 +1201,33 @@ impl<'a> BlockParser<'a> {
                         }
                     }
                 }
+                ContainerType::DefinitionDescription { content_indent } => {
+                    let remaining = self.cursor.remaining_slice();
+                    let is_blank = Self::is_blank_remaining_line(remaining);
+
+                    if is_blank {
+                        matched += 1;
+                    } else {
+                        let save_pos = self.cursor.offset();
+                        let save_partial = self.partial_tab_cols;
+                        let save_col = self.current_col;
+                        let (cols, _bytes) = self.skip_indent();
+
+                        if cols >= content_indent {
+                            self.cursor = Cursor::new_at(self.input, save_pos);
+                            self.partial_tab_cols = save_partial;
+                            self.current_col = save_col;
+                            let (_skipped_cols, _skipped_bytes) =
+                                self.skip_indent_max(content_indent);
+                            matched += 1;
+                        } else {
+                            self.cursor = Cursor::new_at(self.input, save_pos);
+                            self.partial_tab_cols = save_partial;
+                            self.current_col = save_col;
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -1195,12 +1327,14 @@ impl<'a> BlockParser<'a> {
             return false;
         }
 
-        // The first unmatched container must be a blockquote or list item
-        // (CommonMark allows lazy continuation for paragraphs in both)
+        // Definition descriptions deliberately follow list-style lazy
+        // paragraph continuation when the extension is enabled.
         let container = &self.container_stack[matched];
         let is_lazy_container = matches!(
             container.typ,
-            ContainerType::BlockQuote | ContainerType::ListItem { .. }
+            ContainerType::BlockQuote
+                | ContainerType::ListItem { .. }
+                | ContainerType::DefinitionDescription { .. }
         );
         if !is_lazy_container {
             return false;
@@ -1283,6 +1417,9 @@ impl<'a> BlockParser<'a> {
             b'<' => {
                 self.options.allow_html && indent < 4 && self.peek_html_block_start(true).is_some()
             }
+            b':' => {
+                self.options.definition_lists && indent < 4 && self.is_definition_marker_candidate()
+            }
             // Note: We don't check for setext underlines (= or plain line of -) here because
             // setext underlines can't interrupt lazy continuation. They only work when the
             // paragraph is at the same container level as the underline.
@@ -1320,6 +1457,8 @@ impl<'a> BlockParser<'a> {
 
                     if is_same_list {
                         // Just close the item, not the list
+                        let enclosing_depth = self.container_stack.len() - 1;
+                        self.close_definition_lists_deeper_than(enclosing_depth, events);
                         self.container_stack.pop();
                         self.close_paragraph(events);
                         events.push(BlockEvent::ListItemEnd);
@@ -1842,6 +1981,11 @@ impl<'a> BlockParser<'a> {
 
     /// Close the topmost container.
     fn close_top_container(&mut self, events: &mut Vec<BlockEvent>) {
+        // Close a completed nested definition list before its enclosing
+        // container emits an end event.
+        let enclosing_depth = self.container_stack.len().saturating_sub(1);
+        self.close_definition_lists_deeper_than(enclosing_depth, events);
+
         if let Some(container) = self.container_stack.pop() {
             // Close table first
             self.close_table(events);
@@ -1882,7 +2026,13 @@ impl<'a> BlockParser<'a> {
                 ContainerType::FootnoteDefinition { .. } => {
                     self.close_footnote_definition(events);
                 }
+                ContainerType::DefinitionDescription { .. } => {
+                    events.push(BlockEvent::DefinitionDescriptionEnd);
+                }
             }
+
+            let remaining_depth = self.container_stack.len();
+            self.close_definition_lists_deeper_than(remaining_depth, events);
         }
     }
 
@@ -3302,6 +3452,220 @@ impl<'a> BlockParser<'a> {
         }
 
         events.extend(comments.map(BlockEvent::Comment));
+    }
+
+    /// Return whether `:` at the current cursor is a definition marker.
+    #[inline]
+    fn is_definition_marker_candidate(&self) -> bool {
+        self.cursor.at(b':') && matches!(self.cursor.peek_ahead(1), Some(b' ' | b'\t'))
+    }
+
+    fn active_definition_description_count(&self) -> usize {
+        self.container_stack
+            .iter()
+            .filter(|container| {
+                matches!(container.typ, ContainerType::DefinitionDescription { .. })
+            })
+            .count()
+    }
+
+    fn definition_list_is_waiting(&self, list: OpenDefinitionList) -> bool {
+        !matches!(
+            self.container_stack.get(list.outer_depth),
+            Some(Container {
+                typ: ContainerType::DefinitionDescription { .. },
+                ..
+            })
+        )
+    }
+
+    fn has_waiting_definition_list(&self) -> bool {
+        self.open_definition_lists
+            .last()
+            .is_some_and(|list| self.definition_list_is_waiting(*list))
+    }
+
+    /// Remember a paragraph closed by a blank line as a possible term block.
+    fn remember_definition_term_after_blank(
+        &mut self,
+        had_paragraph: bool,
+        event_start: usize,
+        events: &[BlockEvent],
+    ) {
+        if !self.options.definition_lists
+            || !had_paragraph
+            || self.active_definition_description_count() > 0
+            || event_start >= events.len()
+            || !matches!(events.get(event_start), Some(BlockEvent::ParagraphStart))
+            || !matches!(events.last(), Some(BlockEvent::ParagraphEnd))
+        {
+            return;
+        }
+
+        if events[event_start + 1..events.len() - 1]
+            .iter()
+            .all(|event| matches!(event, BlockEvent::Text(_) | BlockEvent::SoftBreak))
+        {
+            self.pending_definition_term = Some(PendingDefinitionTerm {
+                event_start,
+                outer_depth: self.container_stack.len(),
+            });
+        }
+    }
+
+    /// Close an open definition list before a paragraph that did not become terms.
+    fn resolve_pending_definition_term_as_paragraph(&mut self, events: &mut Vec<BlockEvent>) {
+        let Some(pending) = self.pending_definition_term.take() else {
+            return;
+        };
+
+        let Some(list) = self.open_definition_lists.last().copied() else {
+            return;
+        };
+        if list.outer_depth != pending.outer_depth || !self.definition_list_is_waiting(list) {
+            return;
+        }
+
+        events.insert(pending.event_start, BlockEvent::DefinitionListEnd);
+        self.open_definition_lists.pop();
+    }
+
+    /// Keep a waiting definition list open only while a possible next term is parsed.
+    fn prepare_definition_lists_for_line(&mut self, indent: usize, events: &mut Vec<BlockEvent>) {
+        let marker = indent < 4 && self.is_definition_marker_candidate();
+        let outer_depth = self.container_stack.len();
+
+        if let Some(pending) = self.pending_definition_term {
+            if marker && pending.outer_depth == outer_depth {
+                return;
+            }
+            self.resolve_pending_definition_term_as_paragraph(events);
+        }
+
+        let Some(list) = self.open_definition_lists.last().copied() else {
+            return;
+        };
+        if list.outer_depth != outer_depth || !self.definition_list_is_waiting(list) || marker {
+            return;
+        }
+
+        // Plain paragraph lines may be the next one or more terms. Any
+        // unambiguous block start ends the definition list before that block.
+        if indent < 4 && !self.would_start_block(indent) {
+            return;
+        }
+
+        self.close_waiting_definition_lists(events);
+    }
+
+    /// Start a new definition description, converting the preceding paragraph
+    /// into one or more single-line terms when present.
+    fn try_definition_description(&mut self, indent: usize, events: &mut Vec<BlockEvent>) -> bool {
+        if !self.is_definition_marker_candidate() {
+            return false;
+        }
+
+        let outer_depth = self.container_stack.len();
+        let waiting_list = self
+            .open_definition_lists
+            .last()
+            .copied()
+            .is_some_and(|list| {
+                list.outer_depth == outer_depth && self.definition_list_is_waiting(list)
+            });
+
+        let mut terms = Vec::new();
+        if self.in_paragraph {
+            self.in_paragraph = false;
+            terms.append(&mut self.paragraph_lines);
+            self.pending_definition_term = None;
+        } else if let Some(pending) = self.pending_definition_term {
+            if pending.outer_depth == outer_depth
+                && matches!(
+                    events.get(pending.event_start),
+                    Some(BlockEvent::ParagraphStart)
+                )
+                && matches!(events.last(), Some(BlockEvent::ParagraphEnd))
+            {
+                for event in events.drain(pending.event_start..) {
+                    if let BlockEvent::Text(range) = event {
+                        terms.push(range);
+                    }
+                }
+                self.pending_definition_term = None;
+            }
+        }
+
+        if terms.is_empty() && !waiting_list {
+            return false;
+        }
+
+        if !waiting_list {
+            self.close_orphaned_lists(events);
+            self.mark_container_has_content();
+            events.push(BlockEvent::DefinitionListStart);
+            self.open_definition_lists
+                .push(OpenDefinitionList { outer_depth });
+        }
+
+        for mut term in terms {
+            while term.end > term.start
+                && matches!(self.input[(term.end - 1) as usize], b' ' | b'\t')
+            {
+                term.end -= 1;
+            }
+            events.push(BlockEvent::DefinitionTermStart);
+            events.push(BlockEvent::Text(term));
+            events.push(BlockEvent::DefinitionTermEnd);
+        }
+
+        parser_cursor_bump!(self.cursor);
+        self.current_col += 1;
+        let (content_space, _bytes) = self.skip_indent();
+        debug_assert!(content_space > 0);
+        let content_indent = indent + 1 + content_space;
+
+        events.push(BlockEvent::DefinitionDescriptionStart {
+            tight: !self.definition_current_line_loose,
+        });
+        self.container_stack.push(Container {
+            typ: ContainerType::DefinitionDescription { content_indent },
+            has_content: false,
+        });
+        true
+    }
+
+    fn close_waiting_definition_lists(&mut self, events: &mut Vec<BlockEvent>) {
+        while self
+            .open_definition_lists
+            .last()
+            .copied()
+            .is_some_and(|list| self.definition_list_is_waiting(list))
+        {
+            self.open_definition_lists.pop();
+            events.push(BlockEvent::DefinitionListEnd);
+        }
+    }
+
+    fn close_definition_lists_deeper_than(
+        &mut self,
+        container_depth: usize,
+        events: &mut Vec<BlockEvent>,
+    ) {
+        while self
+            .open_definition_lists
+            .last()
+            .is_some_and(|list| list.outer_depth > container_depth)
+        {
+            self.open_definition_lists.pop();
+            events.push(BlockEvent::DefinitionListEnd);
+        }
+    }
+
+    fn close_all_definition_lists(&mut self, events: &mut Vec<BlockEvent>) {
+        while self.open_definition_lists.pop().is_some() {
+            events.push(BlockEvent::DefinitionListEnd);
+        }
     }
 
     /// Close the current footnote definition, draining captured events into the store.

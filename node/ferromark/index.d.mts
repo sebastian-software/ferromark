@@ -17,6 +17,7 @@ export interface Options {
   headingIds?: boolean
   math?: boolean
   callouts?: boolean
+  definitionLists?: boolean
   lineComments?: boolean
   indentedCodeBlocks?: boolean
 }

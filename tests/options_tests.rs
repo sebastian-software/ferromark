@@ -23,6 +23,7 @@ fn minimal_should_disable_every_optional_syntax_feature() {
             heading_ids: false,
             math: false,
             callouts: false,
+            definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
         }
@@ -89,6 +90,7 @@ fn default_should_retain_the_existing_feature_mix() {
             heading_ids: true,
             math: false,
             callouts: true,
+            definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
         }

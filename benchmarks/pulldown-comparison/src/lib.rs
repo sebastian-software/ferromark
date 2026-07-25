@@ -48,6 +48,9 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
         heading_ids: false,
         math,
         callouts,
+        definition_lists: false,
+        line_comments: false,
+        indented_code_blocks: true,
     }
 }
 
