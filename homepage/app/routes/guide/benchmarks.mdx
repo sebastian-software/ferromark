@@ -63,7 +63,9 @@ URL/raw-HTML trust boundary.
 
 ## Option costs
 
-`cargo bench --bench options` runs the dialect presets (`minimal`,
-`commonmark`, `gfm`, `default`) and individual extension flags over one shared
-corpus. This isolates the overhead of enabled but unused feature paths; it is
-not a comparison of different documents.
+`cargo bench --bench options` renders one shared corpus under the dialect
+presets (`minimal`, `commonmark`, `gfm`, `default`) and under individual
+extension flags. Because the document stays constant, differences between
+lanes show what each configuration costs on identical input — a mix of
+features the corpus actually uses (tables, task lists, strikethrough) and
+enabled-but-unused paths. It is not a comparison of different documents.

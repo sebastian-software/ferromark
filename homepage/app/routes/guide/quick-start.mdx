@@ -6,9 +6,8 @@ title: Quick Start
 
 Install the crate and render Markdown to HTML in one call.
 
-```toml
-[dependencies]
-ferromark = "0.5"
+```bash
+cargo add ferromark
 ```
 
 ```rust
@@ -42,8 +41,8 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 
 MDX support is opt-in via feature flag:
 
-```toml
-ferromark = { version = "0.5", features = ["mdx"] }
+```bash
+cargo add ferromark --features mdx
 ```
 
 See [MDX Examples](/guide/mdx-examples) for full code paths.

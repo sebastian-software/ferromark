@@ -87,11 +87,12 @@ does not expose an equivalent trust boundary.
 ## What you get
 
 **CommonMark conformance**: With `RenderPolicy::Trusted`, `Options::commonmark()`
-passes all 652 of 652 spec examples. The secure default
+passes all 652 of 652 spec examples — enforced in CI by
+`commonmark_spec_trusted_full_conformance`. The secure default
 (`RenderPolicy::Untrusted`) intentionally escapes raw HTML and passes 577 of 652
 (88.5%) — every failure is the safety boundary doing its job, not a parsing
 gap. Run `cargo test --test commonmark_spec -- --ignored --nocapture` for the
-complete, current report.
+per-section report of the secure default.
 
 **All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
 
@@ -274,8 +275,8 @@ MDX is the standard for component-driven docs in Next.js, Docusaurus, and Astro.
 
 ferromark takes a different approach: segment `.mdx` files into typed blocks and render them at native speed. No JS runtime. No AST.
 
-```toml
-ferromark = { version = "0.5", features = ["mdx"] }
+```bash
+cargo add ferromark --features mdx
 ```
 
 ### Render — one call, full output
@@ -461,7 +462,7 @@ What makes this fast in practice:
 - **Block scanning** runs on `memchr` for line boundaries. Container state is a compact stack, not a tree.
 - **Inline parsing** has three phases: collect delimiter marks, resolve precedence (code spans, math, links, emphasis, strikethrough, subscript, superscript, highlight), emit. No backtracking.
 - **Emphasis resolution** uses the CommonMark modulo-3 rule with a delimiter stack instead of expensive rescans.
-- **SIMD scanning** (SSE2 on x86-64, NEON on AArch64) detects special characters in inline content and HTML escaping.
+- **SIMD scanning**: NEON (AArch64) drives the inline specials scan; the HTML escaper uses SSE2 (x86-64) and NEON short scans; memchr covers the remaining byte searches on every architecture.
 - **Zero-copy references**: events carry `Range` pointers into the input, not copied strings.
 - **Compact events**: 24 bytes each, cache-line friendly.
 - **Hot/cold annotation**: `#[inline]` on tight loops, `#[cold]` on error paths, table-driven byte classification.
