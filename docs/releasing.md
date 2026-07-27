@@ -2,7 +2,7 @@
 
 Release Please owns the shared Rust and npm version. Its release PR updates `Cargo.toml`, `node/native/Cargo.toml`, and `node/ferromark/package.json` together.
 
-When that PR merges, `.github/workflows/release.yml`:
+When that PR merges, `.github/workflows/publish.yml`:
 
 1. creates the GitHub release,
 2. builds and tests native packages for x64 and arm64 on macOS, Windows, and glibc Linux,
@@ -17,7 +17,7 @@ The npm package must have a GitHub Actions trusted publisher configured with:
 
 - organization or user: `sebastian-software`
 - repository: `ferromark`
-- workflow: `release.yml`
+- workflow: `publish.yml`
 
 The publish job requests `id-token: write` and runs `npm publish --provenance`. It does not read or forward an npm token. Keep the workflow filename and npm trusted-publisher settings aligned.
 
