@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.6.0...ferromark-v0.7.0) (2026-07-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **msrv:** ferromark now requires Rust 1.88 or newer.
+* **deps:** The ferromark npm package now requires Node.js 22 or newer.
+
+### Miscellaneous Chores
+
+* **deps:** standardize on pnpm 11 ([#130](https://github.com/sebastian-software/ferromark/issues/130)) ([26e3f52](https://github.com/sebastian-software/ferromark/commit/26e3f529bb23f68ef7f76f0a49e7e3a4c3b8e1bf))
+* **msrv:** require Rust 1.88 ([#133](https://github.com/sebastian-software/ferromark/issues/133)) ([d4264a0](https://github.com/sebastian-software/ferromark/commit/d4264a00c1e82daa8227f03d4f760752eef14f0c))
+
 ## [0.6.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.5.0...ferromark-v0.6.0) (2026-07-25)
 
 
