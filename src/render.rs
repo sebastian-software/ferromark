@@ -333,15 +333,14 @@ impl HtmlWriter {
         policy: RenderPolicy,
         base: Option<&str>,
     ) {
-        if let Some(base) = base {
-            if url.first() == Some(&b'/')
-                && url.get(1) != Some(&b'/')
-                && !Self::has_base_prefix(url, base.as_bytes())
-            {
-                // The base is configuration, not authored URL text, but it
-                // still lands inside an attribute value: escape it.
-                escape::escape_full_into(&mut self.out, base.as_bytes());
-            }
+        if let Some(base) = base
+            && url.first() == Some(&b'/')
+            && url.get(1) != Some(&b'/')
+            && !Self::has_base_prefix(url, base.as_bytes())
+        {
+            // The base is configuration, not authored URL text, but it
+            // still lands inside an attribute value: escape it.
+            escape::escape_full_into(&mut self.out, base.as_bytes());
         }
         self.write_link_url_with_policy(url, policy);
     }
@@ -768,7 +767,7 @@ impl HtmlWriter {
         if fraction != 0 {
             self.write_byte(b'.');
             self.write_byte(b'0' + (fraction / 10) as u8);
-            if fraction % 10 != 0 {
+            if !fraction.is_multiple_of(10) {
                 self.write_byte(b'0' + (fraction % 10) as u8);
             }
         }

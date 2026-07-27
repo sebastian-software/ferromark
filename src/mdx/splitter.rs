@@ -42,90 +42,89 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
         }
 
         // 1. Closing tag: `</`
-        if first == b'<' && first_non_ws + 1 < len && bytes[first_non_ws + 1] == b'/' {
-            if let Some(tag_info) = parse_jsx_tag(&bytes[first_non_ws..]) {
-                if tag_info.is_closing {
-                    let end = first_non_ws + tag_info.end_offset;
-                    // Flow JSX requires no trailing non-whitespace content on the line
-                    if has_trailing_content(bytes, end) {
-                        // Fall through to markdown
-                    } else {
-                        flush_markdown(input, &mut md_start, line_start, &mut segments);
-                        let seg_end = consume_trailing_newline(bytes, end);
-                        segments.push(Segment::JsxBlockClose(&input[line_start..seg_end]));
-                        if !tag_info.name.is_empty() {
-                            if let Some(top_pos) =
-                                tag_stack.iter().rposition(|n| n == tag_info.name)
-                            {
-                                tag_stack.remove(top_pos);
-                            }
-                        }
-                        pos = seg_end;
-                        in_paragraph = false;
-                        continue;
-                    }
-                }
-            }
-            // Fall through to markdown
-        }
-
-        // 2. ESM: `import ` or `export ` at column 0, not interrupting a paragraph
-        if pos == first_non_ws && !in_paragraph {
-            if let Some(esm_end) = try_esm(bytes, pos) {
+        if first == b'<'
+            && first_non_ws + 1 < len
+            && bytes[first_non_ws + 1] == b'/'
+            && let Some(tag_info) = parse_jsx_tag(&bytes[first_non_ws..])
+            && tag_info.is_closing
+        {
+            let end = first_non_ws + tag_info.end_offset;
+            // Flow JSX requires no trailing non-whitespace content on the line
+            if has_trailing_content(bytes, end) {
+                // Fall through to markdown
+            } else {
                 flush_markdown(input, &mut md_start, line_start, &mut segments);
-                segments.push(Segment::Esm(&input[pos..esm_end]));
-                pos = esm_end;
+                let seg_end = consume_trailing_newline(bytes, end);
+                segments.push(Segment::JsxBlockClose(&input[line_start..seg_end]));
+                if !tag_info.name.is_empty()
+                    && let Some(top_pos) = tag_stack.iter().rposition(|n| n == tag_info.name)
+                {
+                    tag_stack.remove(top_pos);
+                }
+                pos = seg_end;
                 in_paragraph = false;
                 continue;
             }
         }
+        // Fall through to markdown
+
+        // 2. ESM: `import ` or `export ` at column 0, not interrupting a paragraph
+        if pos == first_non_ws
+            && !in_paragraph
+            && let Some(esm_end) = try_esm(bytes, pos)
+        {
+            flush_markdown(input, &mut md_start, line_start, &mut segments);
+            segments.push(Segment::Esm(&input[pos..esm_end]));
+            pos = esm_end;
+            in_paragraph = false;
+            continue;
+        }
 
         // 3. Expression: `{` as first non-whitespace
-        if first == b'{' {
-            if let Some(expr_len) = find_expression_end(&bytes[first_non_ws..]) {
-                let end = first_non_ws + expr_len;
-                // Flow expression requires no trailing non-whitespace content
-                if !has_trailing_content(bytes, end) {
-                    flush_markdown(input, &mut md_start, line_start, &mut segments);
-                    let seg_end = consume_trailing_newline(bytes, end);
-                    segments.push(Segment::Expression(&input[line_start..seg_end]));
-                    pos = seg_end;
-                    in_paragraph = false;
-                    continue;
-                }
-                // Trailing content → treat as markdown
+        if first == b'{'
+            && let Some(expr_len) = find_expression_end(&bytes[first_non_ws..])
+        {
+            let end = first_non_ws + expr_len;
+            // Flow expression requires no trailing non-whitespace content
+            if !has_trailing_content(bytes, end) {
+                flush_markdown(input, &mut md_start, line_start, &mut segments);
+                let seg_end = consume_trailing_newline(bytes, end);
+                segments.push(Segment::Expression(&input[line_start..seg_end]));
+                pos = seg_end;
+                in_paragraph = false;
+                continue;
             }
-            // Unterminated expression → treat as markdown
+            // Trailing content → treat as markdown
         }
+        // Unterminated expression → treat as markdown
 
         // 4. JSX opening/self-closing tag: `<` followed by letter or `>`
         if first == b'<'
             && first_non_ws + 1 < len
             && (bytes[first_non_ws + 1].is_ascii_alphabetic() || bytes[first_non_ws + 1] == b'>')
+            && let Some(tag_info) = parse_jsx_tag(&bytes[first_non_ws..])
         {
-            if let Some(tag_info) = parse_jsx_tag(&bytes[first_non_ws..]) {
-                let end = first_non_ws + tag_info.end_offset;
-                // Flow JSX requires no trailing non-whitespace content on the line
-                if !has_trailing_content(bytes, end) {
-                    flush_markdown(input, &mut md_start, line_start, &mut segments);
-                    let seg_end = consume_trailing_newline(bytes, end);
-                    let slice = &input[line_start..seg_end];
-                    if tag_info.is_self_closing {
-                        segments.push(Segment::JsxBlockSelfClose(slice));
-                    } else {
-                        if !tag_info.name.is_empty() {
-                            tag_stack.push(tag_info.name.to_string());
-                        }
-                        segments.push(Segment::JsxBlockOpen(slice));
+            let end = first_non_ws + tag_info.end_offset;
+            // Flow JSX requires no trailing non-whitespace content on the line
+            if !has_trailing_content(bytes, end) {
+                flush_markdown(input, &mut md_start, line_start, &mut segments);
+                let seg_end = consume_trailing_newline(bytes, end);
+                let slice = &input[line_start..seg_end];
+                if tag_info.is_self_closing {
+                    segments.push(Segment::JsxBlockSelfClose(slice));
+                } else {
+                    if !tag_info.name.is_empty() {
+                        tag_stack.push(tag_info.name.to_string());
                     }
-                    pos = seg_end;
-                    in_paragraph = false;
-                    continue;
+                    segments.push(Segment::JsxBlockOpen(slice));
                 }
-                // Trailing content → treat as markdown
+                pos = seg_end;
+                in_paragraph = false;
+                continue;
             }
-            // Invalid JSX → fall through to markdown
+            // Trailing content → treat as markdown
         }
+        // Invalid JSX → fall through to markdown
 
         // 5. Otherwise → Markdown
         extend_markdown(&mut md_start, line_start);
@@ -134,10 +133,10 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
     }
 
     // Flush any remaining markdown
-    if let Some(start) = md_start {
-        if start < len {
-            segments.push(Segment::Markdown(&input[start..len]));
-        }
+    if let Some(start) = md_start
+        && start < len
+    {
+        segments.push(Segment::Markdown(&input[start..len]));
     }
 
     segments
@@ -158,10 +157,10 @@ fn flush_markdown<'a>(
     current_pos: usize,
     segments: &mut Vec<Segment<'a>>,
 ) {
-    if let Some(start) = md_start.take() {
-        if start < current_pos {
-            segments.push(Segment::Markdown(&input[start..current_pos]));
-        }
+    if let Some(start) = md_start.take()
+        && start < current_pos
+    {
+        segments.push(Segment::Markdown(&input[start..current_pos]));
     }
 }
 
