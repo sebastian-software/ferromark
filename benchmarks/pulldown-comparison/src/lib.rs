@@ -54,6 +54,7 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
         definition_lists: false,
         line_comments: false,
         indented_code_blocks: true,
+        link_base_path: None,
     }
 }
 
