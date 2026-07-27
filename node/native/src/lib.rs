@@ -140,6 +140,7 @@ pub fn transform(markdown: String, options: Option<Options>) -> Result<Transform
     )))
 }
 
+#[allow(clippy::type_complexity)]
 struct CallbackRenderer<'scope> {
     callback: Function<'scope, FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 }
@@ -159,6 +160,7 @@ impl FencedCodeRenderer for CallbackRenderer<'_> {
 }
 
 #[napi]
+#[allow(clippy::type_complexity)]
 pub fn to_html_with_renderer(
     markdown: String,
     options: Option<Options>,
@@ -179,6 +181,7 @@ pub fn to_html_with_renderer(
 /// fully escaped HTML — or null/undefined to fall back to the default
 /// escaped `<pre><code>` output.
 #[napi]
+#[allow(clippy::type_complexity)]
 pub fn transform_with_renderer(
     markdown: String,
     options: Option<Options>,

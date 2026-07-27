@@ -52,13 +52,12 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
             continue;
         }
 
-        if first_non_ws == pos && !in_paragraph {
-            if let Some(esm_end) = try_esm(bytes, pos) {
+        if first_non_ws == pos && !in_paragraph
+            && let Some(esm_end) = try_esm(bytes, pos) {
                 in_paragraph = false;
                 pos = esm_end;
                 continue;
             }
-        }
 
         if is_esm_start(&bytes[first_non_ws..]) {
             diagnostics.push(diagnostic(

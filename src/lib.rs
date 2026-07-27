@@ -1922,8 +1922,8 @@ fn render_inline_event(
             }
         }
         InlineEvent::LinkStartRef { def_index } => {
-            if !in_image {
-                if let Some(def) = link_refs.get(*def_index as usize) {
+            if !in_image
+                && let Some(def) = link_refs.get(*def_index as usize) {
                     writer.write_str("<a href=\"");
                     writer.write_link_url_with_policy_and_base(&def.url, render_policy, link_base);
                     writer.write_str("\"");
@@ -1934,7 +1934,6 @@ fn render_inline_event(
                     }
                     writer.write_str(">");
                 }
-            }
         }
         InlineEvent::LinkEnd => {
             if !in_image {
@@ -2074,8 +2073,8 @@ fn render_inline_event(
             }
         }
         InlineEvent::FootnoteRef { def_index } => {
-            if !in_image {
-                if let Some(fn_store) = footnote_store {
+            if !in_image
+                && let Some(fn_store) = footnote_store {
                     let def_idx = *def_index as usize;
                     if let (Some(number), Some(def)) = (
                         footnote_numbers.number_reference(def_idx),
@@ -2091,7 +2090,6 @@ fn render_inline_event(
                         writer.write_str("</a></sup>");
                     }
                 }
-            }
         }
         InlineEvent::InlineFootnote(range) => {
             if !in_image {

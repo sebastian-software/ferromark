@@ -63,8 +63,8 @@ fn uses_reference_links(markdown: &str) -> bool {
     // Reference definition pattern: starts with optional spaces, [label]:
     for line in markdown.lines() {
         let trimmed = line.trim_start();
-        if let Some(stripped) = trimmed.strip_prefix('[') {
-            if let Some(bracket_end) = stripped.find("]:") {
+        if let Some(stripped) = trimmed.strip_prefix('[')
+            && let Some(bracket_end) = stripped.find("]:") {
                 // Found a potential reference definition
                 let label = &stripped[..bracket_end];
                 // Label should not be empty and should not contain unescaped brackets
@@ -72,7 +72,6 @@ fn uses_reference_links(markdown: &str) -> bool {
                     return true;
                 }
             }
-        }
         // Also check for continuation lines that contain ]: followed by URL/space
         // This catches multi-line reference labels like "[Foo\n  bar]: /url"
         if (trimmed.contains("]: ") || trimmed.contains("]:/") || trimmed.contains("]: <"))
