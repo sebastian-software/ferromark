@@ -338,9 +338,10 @@ fn contains_ref_link_candidate(
 
         if let Some((ref_start, ref_end, _ref_close)) =
             parse_ref_label_immediate(text, close_pos as usize + 1)
-            && ref_start != ref_end {
-                label_bytes = &text[ref_start..ref_end];
-            }
+            && ref_start != ref_end
+        {
+            label_bytes = &text[ref_start..ref_end];
+        }
 
         normalize_label_into(label_bytes, label_buf);
         if label_buf.is_empty() {
@@ -697,24 +698,26 @@ fn is_uri_autolink(content: &[u8]) -> bool {
 fn is_email_autolink(content: &[u8]) -> bool {
     // Simple check: must contain @ with text before and after
     if let Some(at_pos) = content.iter().position(|&b| b == b'@')
-        && at_pos > 0 && at_pos < content.len() - 1 {
-            // Check for valid email characters
-            let local = &content[..at_pos];
-            let domain = &content[at_pos + 1..];
+        && at_pos > 0
+        && at_pos < content.len() - 1
+    {
+        // Check for valid email characters
+        let local = &content[..at_pos];
+        let domain = &content[at_pos + 1..];
 
-            // Local part: alphanumeric and some special chars
-            let local_valid = local.iter().all(|&b| {
-                b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' || b == b'+'
-            });
+        // Local part: alphanumeric and some special chars
+        let local_valid = local.iter().all(|&b| {
+            b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' || b == b'+'
+        });
 
-            // Domain: alphanumeric, dots, hyphens
-            let domain_valid = domain
-                .iter()
-                .all(|&b| b.is_ascii_alphanumeric() || b == b'.' || b == b'-')
-                && domain.contains(&b'.');
+        // Domain: alphanumeric, dots, hyphens
+        let domain_valid = domain
+            .iter()
+            .all(|&b| b.is_ascii_alphanumeric() || b == b'.' || b == b'-')
+            && domain.contains(&b'.');
 
-            return local_valid && domain_valid;
-        }
+        return local_valid && domain_valid;
+    }
     false
 }
 
@@ -769,15 +772,15 @@ pub fn find_autolink_literals_into(
                     && !in_any_range(at_pos as u32, autolink_ranges)
                     && !in_any_range(at_pos as u32, link_ranges)
                     && let Some(al) = try_email_autolink(text, at_pos)
-                        && !overlaps_any_range(al.start, al.end, code_spans)
-                            && !overlaps_any_range(al.start, al.end, html_ranges)
-                            && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                            && !overlaps_any_range(al.start, al.end, link_ranges)
-                        {
-                            pos = al.end as usize;
-                            out.push(al);
-                            continue;
-                        }
+                    && !overlaps_any_range(al.start, al.end, code_spans)
+                    && !overlaps_any_range(al.start, al.end, html_ranges)
+                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                    && !overlaps_any_range(al.start, al.end, link_ranges)
+                {
+                    pos = al.end as usize;
+                    out.push(al);
+                    continue;
+                }
                 pos = at_pos + 1;
             } else {
                 break;
@@ -801,20 +804,20 @@ pub fn find_autolink_literals_into(
                     let proto_start = find_protocol_start(text, colon);
                     if let Some(start) = proto_start
                         && !in_any_range(start as u32, code_spans)
-                            && !in_any_range(start as u32, html_ranges)
-                            && !in_any_range(start as u32, autolink_ranges)
-                            && !in_any_range(start as u32, link_ranges)
-                            && is_valid_autolink_preceding(text, start)
-                            && let Some(al) = try_url_autolink(text, start)
-                                && !overlaps_any_range(al.start, al.end, code_spans)
-                                    && !overlaps_any_range(al.start, al.end, html_ranges)
-                                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                                    && !overlaps_any_range(al.start, al.end, link_ranges)
-                                {
-                                    pos = al.end as usize;
-                                    out.push(al);
-                                    continue;
-                                }
+                        && !in_any_range(start as u32, html_ranges)
+                        && !in_any_range(start as u32, autolink_ranges)
+                        && !in_any_range(start as u32, link_ranges)
+                        && is_valid_autolink_preceding(text, start)
+                        && let Some(al) = try_url_autolink(text, start)
+                        && !overlaps_any_range(al.start, al.end, code_spans)
+                        && !overlaps_any_range(al.start, al.end, html_ranges)
+                        && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                        && !overlaps_any_range(al.start, al.end, link_ranges)
+                    {
+                        pos = al.end as usize;
+                        out.push(al);
+                        continue;
+                    }
                 }
                 pos = colon + 1;
             } else {
@@ -841,15 +844,15 @@ pub fn find_autolink_literals_into(
                         && !in_any_range(start as u32, autolink_ranges)
                         && !in_any_range(start as u32, link_ranges)
                         && let Some(al) = try_www_autolink(text, start)
-                            && !overlaps_any_range(al.start, al.end, code_spans)
-                                && !overlaps_any_range(al.start, al.end, html_ranges)
-                                && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                                && !overlaps_any_range(al.start, al.end, link_ranges)
-                            {
-                                pos = al.end as usize;
-                                out.push(al);
-                                continue;
-                            }
+                        && !overlaps_any_range(al.start, al.end, code_spans)
+                        && !overlaps_any_range(al.start, al.end, html_ranges)
+                        && !overlaps_any_range(al.start, al.end, autolink_ranges)
+                        && !overlaps_any_range(al.start, al.end, link_ranges)
+                    {
+                        pos = al.end as usize;
+                        out.push(al);
+                        continue;
+                    }
                 }
                 pos = dot + 1;
             } else {
@@ -1123,10 +1126,11 @@ fn trim_autolink_trailing(text: &[u8], start: usize, mut end: usize) -> usize {
 
         // Rule 3: Entity check - if ends with `;` preceded by `&<alphanum>+`
         if last == b';'
-            && let Some(new_end) = trim_trailing_entity(text, start, end) {
-                end = new_end;
-                continue;
-            }
+            && let Some(new_end) = trim_trailing_entity(text, start, end)
+        {
+            end = new_end;
+            continue;
+        }
 
         break;
     }

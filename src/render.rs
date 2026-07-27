@@ -335,13 +335,13 @@ impl HtmlWriter {
     ) {
         if let Some(base) = base
             && url.first() == Some(&b'/')
-                && url.get(1) != Some(&b'/')
-                && !Self::has_base_prefix(url, base.as_bytes())
-            {
-                // The base is configuration, not authored URL text, but it
-                // still lands inside an attribute value: escape it.
-                escape::escape_full_into(&mut self.out, base.as_bytes());
-            }
+            && url.get(1) != Some(&b'/')
+            && !Self::has_base_prefix(url, base.as_bytes())
+        {
+            // The base is configuration, not authored URL text, but it
+            // still lands inside an attribute value: escape it.
+            escape::escape_full_into(&mut self.out, base.as_bytes());
+        }
         self.write_link_url_with_policy(url, policy);
     }
 

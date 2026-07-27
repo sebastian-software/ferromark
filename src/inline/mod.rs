@@ -675,10 +675,12 @@ impl InlineParser {
                 code_span_index += 1;
             }
             if let Some(span) = code_spans.get(code_span_index)
-                && pos as u32 >= span.opener_pos && (pos as u32) < span.closer_end {
-                    pos = span.closer_end as usize;
-                    continue;
-                }
+                && pos as u32 >= span.opener_pos
+                && (pos as u32) < span.closer_end
+            {
+                pos = span.closer_end as usize;
+                continue;
+            }
 
             let bracket_mark = matches!(text[pos], b'[' | b']')
                 .then(|| {
@@ -2254,15 +2256,16 @@ mod tests {
         let mut found = false;
         for event in events {
             if let InlineEvent::Html(range) = event
-                && range.start == 0 {
-                    let slice = range.slice(input.as_bytes());
-                    assert!(
-                        slice.starts_with(b"<a "),
-                        "Expected HTML span to start at <a>"
-                    );
-                    found = true;
-                    break;
-                }
+                && range.start == 0
+            {
+                let slice = range.slice(input.as_bytes());
+                assert!(
+                    slice.starts_with(b"<a "),
+                    "Expected HTML span to start at <a>"
+                );
+                found = true;
+                break;
+            }
         }
         assert!(found, "Expected raw HTML tag to be parsed at start");
     }

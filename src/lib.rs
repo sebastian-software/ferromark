@@ -1922,18 +1922,17 @@ fn render_inline_event(
             }
         }
         InlineEvent::LinkStartRef { def_index } => {
-            if !in_image
-                && let Some(def) = link_refs.get(*def_index as usize) {
-                    writer.write_str("<a href=\"");
-                    writer.write_link_url_with_policy_and_base(&def.url, render_policy, link_base);
+            if !in_image && let Some(def) = link_refs.get(*def_index as usize) {
+                writer.write_str("<a href=\"");
+                writer.write_link_url_with_policy_and_base(&def.url, render_policy, link_base);
+                writer.write_str("\"");
+                if let Some(title) = &def.title {
+                    writer.write_str(" title=\"");
+                    writer.write_link_title(title);
                     writer.write_str("\"");
-                    if let Some(title) = &def.title {
-                        writer.write_str(" title=\"");
-                        writer.write_link_title(title);
-                        writer.write_str("\"");
-                    }
-                    writer.write_str(">");
                 }
+                writer.write_str(">");
+            }
         }
         InlineEvent::LinkEnd => {
             if !in_image {
@@ -2073,23 +2072,22 @@ fn render_inline_event(
             }
         }
         InlineEvent::FootnoteRef { def_index } => {
-            if !in_image
-                && let Some(fn_store) = footnote_store {
-                    let def_idx = *def_index as usize;
-                    if let (Some(number), Some(def)) = (
-                        footnote_numbers.number_reference(def_idx),
-                        fn_store.get(def_idx),
-                    ) {
-                        writer.write_str("<sup><a href=\"#user-content-fn-");
-                        writer.write_string(&def.label);
-                        writer.write_str("\" id=\"user-content-fnref-");
-                        writer.write_string(&def.label);
-                        writer.write_str("\" data-footnote-ref>");
-                        let num_str = number.to_string();
-                        writer.write_string(&num_str);
-                        writer.write_str("</a></sup>");
-                    }
+            if !in_image && let Some(fn_store) = footnote_store {
+                let def_idx = *def_index as usize;
+                if let (Some(number), Some(def)) = (
+                    footnote_numbers.number_reference(def_idx),
+                    fn_store.get(def_idx),
+                ) {
+                    writer.write_str("<sup><a href=\"#user-content-fn-");
+                    writer.write_string(&def.label);
+                    writer.write_str("\" id=\"user-content-fnref-");
+                    writer.write_string(&def.label);
+                    writer.write_str("\" data-footnote-ref>");
+                    let num_str = number.to_string();
+                    writer.write_string(&num_str);
+                    writer.write_str("</a></sup>");
                 }
+            }
         }
         InlineEvent::InlineFootnote(range) => {
             if !in_image {

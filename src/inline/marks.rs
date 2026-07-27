@@ -499,14 +499,12 @@ fn next_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
     if let Some(i) = memchr::memchr(b'$', slice) {
         best = Some(best.map_or(i, |b| b.min(i)));
     }
-    if SUPERSCRIPT
-        && let Some(i) = memchr::memchr(b'^', slice) {
-            best = Some(best.map_or(i, |b| b.min(i)));
-        }
-    if HIGHLIGHT
-        && let Some(i) = memchr::memchr(b'=', slice) {
-            best = Some(best.map_or(i, |b| b.min(i)));
-        }
+    if SUPERSCRIPT && let Some(i) = memchr::memchr(b'^', slice) {
+        best = Some(best.map_or(i, |b| b.min(i)));
+    }
+    if HIGHLIGHT && let Some(i) = memchr::memchr(b'=', slice) {
+        best = Some(best.map_or(i, |b| b.min(i)));
+    }
 
     best.map(|i| pos + i)
 }

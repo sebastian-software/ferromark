@@ -575,33 +575,35 @@ impl<'a> BlockParser<'a> {
         // Check for setext heading underline (when in a paragraph)
         // Must check BEFORE thematic break since `---` can be either
         // Note: indent must be < 4 for a valid setext underline
-        if indent < 4 && self.in_paragraph
-            && let Some(level) = self.is_setext_underline_after_indent() {
-                // Strip link reference definitions before deciding on setext conversion.
-                let consumed = self.extract_link_ref_defs();
-                if consumed > 0 {
-                    let drain_count = consumed.min(self.paragraph_lines.len());
-                    self.paragraph_lines.drain(0..drain_count);
-                }
-                if self.paragraph_lines.is_empty() {
-                    // No paragraph content left after stripping definitions; not a setext heading.
-                    // Treat this line as normal paragraph content.
-                    let line_start = self.cursor.offset();
-                    self.parse_paragraph_line(line_start, events);
-                    return;
-                } else {
-                    // Skip to end of line
-                    while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
-                        parser_cursor_bump!(self.cursor);
-                    }
-                    if !self.cursor.is_eof() {
-                        parser_cursor_bump!(self.cursor);
-                    }
-                    // Convert paragraph to heading
-                    self.close_paragraph_as_setext_heading(level, events);
-                    return;
-                }
+        if indent < 4
+            && self.in_paragraph
+            && let Some(level) = self.is_setext_underline_after_indent()
+        {
+            // Strip link reference definitions before deciding on setext conversion.
+            let consumed = self.extract_link_ref_defs();
+            if consumed > 0 {
+                let drain_count = consumed.min(self.paragraph_lines.len());
+                self.paragraph_lines.drain(0..drain_count);
             }
+            if self.paragraph_lines.is_empty() {
+                // No paragraph content left after stripping definitions; not a setext heading.
+                // Treat this line as normal paragraph content.
+                let line_start = self.cursor.offset();
+                self.parse_paragraph_line(line_start, events);
+                return;
+            } else {
+                // Skip to end of line
+                while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
+                    parser_cursor_bump!(self.cursor);
+                }
+                if !self.cursor.is_eof() {
+                    parser_cursor_bump!(self.cursor);
+                }
+                // Convert paragraph to heading
+                self.close_paragraph_as_setext_heading(level, events);
+                return;
+            }
+        }
 
         // Check for GFM table delimiter row at top level (when in a paragraph)
         // Quick guard: delimiter rows start with |, -, or :
@@ -624,24 +626,25 @@ impl<'a> BlockParser<'a> {
             let line = &self.input[save_pos..line_end];
 
             if let Some(alignments) = Self::is_delimiter_row(line)
-                && !self.paragraph_lines.is_empty() {
-                    let last_para_line = self.paragraph_lines.last().unwrap();
-                    let header_line = last_para_line.slice(self.input);
-                    let header_cells = self.table_cells(header_line);
+                && !self.paragraph_lines.is_empty()
+            {
+                let last_para_line = self.paragraph_lines.last().unwrap();
+                let header_line = last_para_line.slice(self.input);
+                let header_cells = self.table_cells(header_line);
 
-                    if Self::table_width(&header_cells) == alignments.len() {
-                        let dash_counts = self
-                            .options
-                            .table_column_widths
-                            .then(|| Self::delimiter_dash_counts(line));
-                        self.cursor = Cursor::new_at(self.input, line_end);
-                        if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                            parser_cursor_bump!(self.cursor);
-                        }
-                        self.start_table(header_cells, alignments, dash_counts, events);
-                        return;
+                if Self::table_width(&header_cells) == alignments.len() {
+                    let dash_counts = self
+                        .options
+                        .table_column_widths
+                        .then(|| Self::delimiter_dash_counts(line));
+                    self.cursor = Cursor::new_at(self.input, line_end);
+                    if !self.cursor.is_eof() && self.cursor.at(b'\n') {
+                        parser_cursor_bump!(self.cursor);
                     }
+                    self.start_table(header_cells, alignments, dash_counts, events);
+                    return;
                 }
+            }
 
             self.cursor = Cursor::new_at(self.input, save_pos);
             self.partial_tab_cols = save_partial;
@@ -958,19 +961,21 @@ impl<'a> BlockParser<'a> {
 
             // Check for setext heading underline (when in a paragraph)
             // Must check BEFORE thematic break since `---` can be either
-            if self.in_paragraph && matches!(first, b'=' | b'-')
-                && let Some(level) = self.is_setext_underline_after_indent() {
-                    // Skip to end of line
-                    while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
-                        parser_cursor_bump!(self.cursor);
-                    }
-                    if !self.cursor.is_eof() {
-                        parser_cursor_bump!(self.cursor);
-                    }
-                    // Convert paragraph to heading
-                    self.close_paragraph_as_setext_heading(level, events);
-                    return;
+            if self.in_paragraph
+                && matches!(first, b'=' | b'-')
+                && let Some(level) = self.is_setext_underline_after_indent()
+            {
+                // Skip to end of line
+                while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
+                    parser_cursor_bump!(self.cursor);
                 }
+                if !self.cursor.is_eof() {
+                    parser_cursor_bump!(self.cursor);
+                }
+                // Convert paragraph to heading
+                self.close_paragraph_as_setext_heading(level, events);
+                return;
+            }
 
             if self.options.definition_lists
                 && first == b':'
@@ -1248,9 +1253,10 @@ impl<'a> BlockParser<'a> {
         // This ensures the blank only affects the innermost level that actually continues.
         if let Some(list_idx) = deepest_list_match {
             if let Some(open_list) = self.open_lists.get_mut(list_idx)
-                && open_list.blank_in_item {
-                    open_list.tight = false;
-                }
+                && open_list.blank_in_item
+            {
+                open_list.tight = false;
+            }
             // Clear blank_in_item for all outer lists - the blank was "consumed" by the deeper level
             for outer_list in self.open_lists[..list_idx].iter_mut() {
                 outer_list.blank_in_item = false;
@@ -1455,29 +1461,31 @@ impl<'a> BlockParser<'a> {
             let is_last_to_close = self.container_stack.len() == from + 1;
             let can_start_new_item = indent < 4;
 
-            if is_last_to_close && can_start_new_item
-                && let ContainerType::ListItem { kind, marker, .. } = top.typ {
-                    // Check if the current position has a same-type list marker
-                    let save_pos = self.cursor.offset();
-                    let save_partial = self.partial_tab_cols;
-                    let save_col = self.current_col;
-                    self.skip_indent();
-                    let is_same_list = self.peek_list_marker(kind, marker);
-                    self.cursor = Cursor::new_at(self.input, save_pos);
-                    self.partial_tab_cols = save_partial;
-                    self.current_col = save_col;
+            if is_last_to_close
+                && can_start_new_item
+                && let ContainerType::ListItem { kind, marker, .. } = top.typ
+            {
+                // Check if the current position has a same-type list marker
+                let save_pos = self.cursor.offset();
+                let save_partial = self.partial_tab_cols;
+                let save_col = self.current_col;
+                self.skip_indent();
+                let is_same_list = self.peek_list_marker(kind, marker);
+                self.cursor = Cursor::new_at(self.input, save_pos);
+                self.partial_tab_cols = save_partial;
+                self.current_col = save_col;
 
-                    if is_same_list {
-                        // Just close the item, not the list
-                        let enclosing_depth = self.container_stack.len() - 1;
-                        self.close_definition_lists_deeper_than(enclosing_depth, events);
-                        self.container_stack.pop();
-                        self.close_paragraph(events);
-                        events.push(BlockEvent::ListItemEnd);
-                        // Don't pop from open_lists
-                        continue;
-                    }
+                if is_same_list {
+                    // Just close the item, not the list
+                    let enclosing_depth = self.container_stack.len() - 1;
+                    self.close_definition_lists_deeper_than(enclosing_depth, events);
+                    self.container_stack.pop();
+                    self.close_paragraph(events);
+                    events.push(BlockEvent::ListItemEnd);
+                    // Don't pop from open_lists
+                    continue;
                 }
+            }
 
             self.close_top_container(events);
         }
@@ -1508,19 +1516,20 @@ impl<'a> BlockParser<'a> {
         // But keep the list open - only close the item.
         if let Some(container) = self.container_stack.last()
             && let ContainerType::ListItem { .. } = container.typ
-                && !container.has_content {
-                    // This is the second blank line (first was the blank item itself)
-                    // Close just the list item, not the list
-                    self.container_stack.pop();
-                    self.close_paragraph(events);
-                    events.push(BlockEvent::ListItemEnd);
-                    // Mark blank_in_item for the list - the blank line is between items,
-                    // which will make the list loose when the next item starts.
-                    if let Some(open_list) = self.open_lists.last_mut() {
-                        open_list.blank_in_item = true;
-                    }
-                    return; // Already handled blank marking for this case
-                }
+            && !container.has_content
+        {
+            // This is the second blank line (first was the blank item itself)
+            // Close just the list item, not the list
+            self.container_stack.pop();
+            self.close_paragraph(events);
+            events.push(BlockEvent::ListItemEnd);
+            // Mark blank_in_item for the list - the blank line is between items,
+            // which will make the list loose when the next item starts.
+            if let Some(open_list) = self.open_lists.last_mut() {
+                open_list.blank_in_item = true;
+            }
+            return; // Already handled blank marking for this case
+        }
 
         // Mark all lists with an active item as having seen a blank line.
         // We don't know yet which level the blank is at - that's determined
@@ -1531,10 +1540,11 @@ impl<'a> BlockParser<'a> {
         // not directly in the list item, so don't mark the list.
         if !close_blockquotes
             && let Some(container) = self.container_stack.last()
-                && container.typ == ContainerType::BlockQuote {
-                    // The blank is inside a blockquote, not between list item blocks
-                    return;
-                }
+            && container.typ == ContainerType::BlockQuote
+        {
+            // The blank is inside a blockquote, not between list item blocks
+            return;
+        }
 
         let active_list_count = self
             .container_stack
@@ -2540,18 +2550,21 @@ impl<'a> BlockParser<'a> {
 
         // Type 6: block tags
         if let Some((name, tag_end)) = self.parse_html_tag_name(line)
-            && self.is_block_tag(name) && self.tag_boundary(line, tag_end) {
-                return Some(HtmlBlockKind::Type6);
-            }
+            && self.is_block_tag(name)
+            && self.tag_boundary(line, tag_end)
+        {
+            return Some(HtmlBlockKind::Type6);
+        }
 
         // Type 7: any other HTML tag (cannot interrupt a paragraph)
         if in_paragraph {
             return None;
         }
         if let Some((_name, tag_end)) = self.parse_html_tag(line)
-            && line[tag_end..].iter().all(|&b| Self::is_html_whitespace(b)) {
-                return Some(HtmlBlockKind::Type7);
-            }
+            && line[tag_end..].iter().all(|&b| Self::is_html_whitespace(b))
+        {
+            return Some(HtmlBlockKind::Type7);
+        }
 
         None
     }
@@ -3754,19 +3767,19 @@ impl<'a> BlockParser<'a> {
             self.pending_definition_term = None;
         } else if let Some(pending) = self.pending_definition_term
             && pending.outer_depth == outer_depth
-                && matches!(
-                    events.get(pending.event_start),
-                    Some(BlockEvent::ParagraphStart)
-                )
-                && matches!(events.last(), Some(BlockEvent::ParagraphEnd))
-            {
-                for event in events.drain(pending.event_start..) {
-                    if let BlockEvent::Text(range) = event {
-                        terms.push(range);
-                    }
+            && matches!(
+                events.get(pending.event_start),
+                Some(BlockEvent::ParagraphStart)
+            )
+            && matches!(events.last(), Some(BlockEvent::ParagraphEnd))
+        {
+            for event in events.drain(pending.event_start..) {
+                if let BlockEvent::Text(range) = event {
+                    terms.push(range);
                 }
-                self.pending_definition_term = None;
             }
+            self.pending_definition_term = None;
+        }
 
         if terms.is_empty() && !waiting_list {
             return false;
