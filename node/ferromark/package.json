@@ -41,7 +41,7 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "build": "node ./scripts/build-native.mjs && node ./scripts/verify-package.mjs",

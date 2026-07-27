@@ -55,4 +55,4 @@ toHtml('[guide](/guide)', { linkBasePath: '/docs' })
 
 Image sources and autolinks are not rewritten.
 
-The package supports Node.js 20 or newer on glibc Linux, macOS, and Windows for x64 and arm64. It does not include a WASM fallback.
+The package supports Node.js 22 or newer on glibc Linux, macOS, and Windows for x64 and arm64. It does not include a WASM fallback.
