@@ -14,12 +14,8 @@ test = false
 
 [dependencies]
 ferromark = { path = "../.." }
-napi = { version = "=3.4.0", default-features = false, features = ["dyn-symbols", "napi8"] }
-napi-derive = "=3.3.0"
-# napi-derive 3.3 allows newer incompatible backends; keep its MSRV-compatible pair exact.
-napi-derive-backend = "=3.0.0"
-# napi 3.4 also allows newer napi-sys releases that raised the MSRV to 1.88.
-napi-sys = "=3.0.1"
+napi = { version = "=3.11.0", default-features = false, features = ["dyn-symbols", "napi8"] }
+napi-derive = "=3.6.0"
 
 [build-dependencies]
-napi-build = "=2.2.4"
+napi-build = "=2.3.2"
