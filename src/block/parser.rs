@@ -46,6 +46,18 @@ struct FenceState {
     indent: usize,
 }
 
+/// Internal source metadata for a fenced code block.
+///
+/// This stays separate from [`CodeBlockKind`] so the public block-event API
+/// remains source-compatible while MDX can use exact delimiter ranges.
+#[cfg(feature = "mdx")]
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct FencedCodeBoundary {
+    pub(crate) delimiter: Range,
+    /// Start of the outermost active container, when the fence is nested.
+    pub(crate) container_start: Option<usize>,
+}
+
 /// HTML block kinds (CommonMark types 1-7).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum HtmlBlockKind {
@@ -89,6 +101,9 @@ enum ContainerType {
 struct Container {
     /// Type of container.
     typ: ContainerType,
+    /// Physical line where this container began.
+    #[cfg(feature = "mdx")]
+    source_line_start: usize,
     /// Whether this container has had any content yet.
     /// For list items, this is used to implement the two-blank-line rule.
     has_content: bool,
@@ -181,6 +196,8 @@ pub struct BlockParser<'a> {
     partial_tab_cols: usize,
     /// Current absolute column position within the line (for tab expansion).
     current_col: usize,
+    /// Physical start of the line currently being parsed.
+    current_line_start: usize,
     /// Whether we're currently inside a table.
     in_table: bool,
     /// Column alignments for the current table.
@@ -195,6 +212,9 @@ pub struct BlockParser<'a> {
     pending_footnote_label: Option<(String, String)>,
     /// Definition lists that may accept another term or description.
     open_definition_lists: SmallVec<[OpenDefinitionList; 2]>,
+    /// Optional fenced-code metadata requested by the MDX splitter.
+    #[cfg(feature = "mdx")]
+    fenced_code_boundaries: Option<Vec<FencedCodeBoundary>>,
     /// Paragraph immediately before a blank line that may become definition terms.
     pending_definition_term: Option<PendingDefinitionTerm>,
     /// Whether the next non-blank physical line follows a blank line.
@@ -233,6 +253,7 @@ impl<'a> BlockParser<'a> {
             open_lists: SmallVec::new(),
             partial_tab_cols: 0,
             current_col: 0,
+            current_line_start: 0,
             in_table: false,
             table_alignments: SmallVec::new(),
             table_has_body: false,
@@ -240,6 +261,8 @@ impl<'a> BlockParser<'a> {
             footnote_event_start: None,
             pending_footnote_label: None,
             open_definition_lists: SmallVec::new(),
+            #[cfg(feature = "mdx")]
+            fenced_code_boundaries: None,
             pending_definition_term: None,
             definition_blank_before_next: false,
             definition_current_line_loose: false,
@@ -290,6 +313,19 @@ impl<'a> BlockParser<'a> {
         self.close_all_definition_lists(events);
     }
 
+    /// Parse blocks and return internal metadata for each fenced code start.
+    #[cfg(feature = "mdx")]
+    pub(crate) fn parse_with_fenced_code_boundaries(
+        &mut self,
+        events: &mut Vec<BlockEvent>,
+    ) -> Vec<FencedCodeBoundary> {
+        self.fenced_code_boundaries = Some(Vec::new());
+        self.parse(events);
+        self.fenced_code_boundaries
+            .take()
+            .expect("fenced-code boundary collection was initialized")
+    }
+
     /// Take the collected link reference definitions.
     pub fn take_link_refs(&mut self) -> LinkRefStore {
         std::mem::take(&mut self.link_refs)
@@ -302,11 +338,12 @@ impl<'a> BlockParser<'a> {
 
     /// Parse a single line.
     fn parse_line(&mut self, events: &mut Vec<BlockEvent>) {
+        self.current_line_start = self.cursor.offset();
         if self.parse_simple_paragraph_run(events) {
             return;
         }
 
-        let line_start = self.cursor.offset();
+        let line_start = self.current_line_start;
         if self.options.definition_lists {
             self.definition_current_line_loose =
                 std::mem::take(&mut self.definition_blank_before_next);
@@ -1603,6 +1640,8 @@ impl<'a> BlockParser<'a> {
         // Push blockquote container
         self.container_stack.push(Container {
             typ: ContainerType::BlockQuote,
+            #[cfg(feature = "mdx")]
+            source_line_start: self.current_line_start,
             has_content: false,
         });
 
@@ -1944,6 +1983,8 @@ impl<'a> BlockParser<'a> {
                 marker,
                 content_indent,
             },
+            #[cfg(feature = "mdx")]
+            source_line_start: self.current_line_start,
             has_content: false,
         });
 
@@ -2341,7 +2382,6 @@ impl<'a> BlockParser<'a> {
         if fence_len < 3 {
             return false;
         }
-
         // For backtick fences, info string cannot contain backticks
         let _info_start = temp_cursor.offset();
 
@@ -2361,6 +2401,23 @@ impl<'a> BlockParser<'a> {
             if info_slice.contains(&b'`') {
                 return false;
             }
+        }
+
+        // Keep boundary metadata in lockstep with the public events below.
+        // An invalid backtick info string is not a fence and therefore cannot
+        // contribute a boundary for MDX's parser-derived fence tracking.
+        #[cfg(feature = "mdx")]
+        if let Some(boundaries) = &mut self.fenced_code_boundaries {
+            boundaries.push(FencedCodeBoundary {
+                delimiter: Range::from_usize(
+                    self.cursor.offset(),
+                    self.cursor.offset() + fence_len,
+                ),
+                container_start: self
+                    .container_stack
+                    .first()
+                    .map(|container| container.source_line_start),
+            });
         }
 
         // Trim trailing whitespace from info string
@@ -3831,6 +3888,8 @@ impl<'a> BlockParser<'a> {
         });
         self.container_stack.push(Container {
             typ: ContainerType::DefinitionDescription { content_indent },
+            #[cfg(feature = "mdx")]
+            source_line_start: self.current_line_start,
             has_content: false,
         });
         true
@@ -3976,6 +4035,8 @@ impl<'a> BlockParser<'a> {
         // Push footnote container
         self.container_stack.push(Container {
             typ: ContainerType::FootnoteDefinition { content_indent },
+            #[cfg(feature = "mdx")]
+            source_line_start: self.current_line_start,
             has_content: false,
         });
 

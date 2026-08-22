@@ -1,6 +1,7 @@
 use super::Segment;
 use super::expr::find_expression_end;
 use super::jsx_tag::parse_jsx_tag;
+use crate::{BlockEvent, BlockParser, CodeBlockKind};
 
 /// Split MDX input into typed segments.
 ///
@@ -20,9 +21,60 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
     // Track whether the previous line was non-blank markdown content.
     // ESM cannot interrupt a paragraph (requires blank line before it).
     let mut in_paragraph = false;
+    let mut open_fence: Option<CodeFence> = None;
+    let container_fences = container_fence_lines(bytes);
 
     while pos < len {
         let line_start = pos;
+
+        if container_fences.contains_opener(line_start) {
+            extend_markdown(&mut md_start, line_start);
+            in_paragraph = true;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        // The line-oriented delimiter state below handles root-level fences.
+        // For fences in Markdown containers (such as list items), use the
+        // block parser's source-ranged code events to keep their contents
+        // opaque without duplicating CommonMark's container rules here.
+        if container_fences.contains_content(line_start) {
+            extend_markdown(&mut md_start, line_start);
+            in_paragraph = !is_blank_line(bytes, line_start);
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        // A container fence closer ends the surrounding Markdown block.  It
+        // must not be reinterpreted as a root fence merely because its list
+        // indentation also happens to be valid root-fence indentation.
+        if container_fences.contains_closer(line_start) {
+            extend_markdown(&mut md_start, line_start);
+            in_paragraph = false;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        if let Some(fence) = open_fence {
+            extend_markdown(&mut md_start, line_start);
+            if fence.is_closing(bytes, line_start) {
+                open_fence = None;
+                in_paragraph = false;
+            } else {
+                in_paragraph = true;
+            }
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        if let Some(fence) = opening_code_fence(bytes, line_start) {
+            open_fence = Some(fence);
+            extend_markdown(&mut md_start, line_start);
+            in_paragraph = true;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
         let first_non_ws = skip_whitespace_offset(bytes, pos);
 
         if first_non_ws >= len {
@@ -71,7 +123,7 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
         // 2. ESM: `import ` or `export ` at column 0, not interrupting a paragraph
         if pos == first_non_ws
             && !in_paragraph
-            && let Some(esm_end) = try_esm(bytes, pos)
+            && let Some(esm_end) = try_esm(bytes, pos, &container_fences)
         {
             flush_markdown(input, &mut md_start, line_start, &mut segments);
             segments.push(Segment::Esm(&input[pos..esm_end]));
@@ -142,6 +194,96 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
     segments
 }
 
+/// A CommonMark fenced code block delimiter.
+#[derive(Clone, Copy)]
+pub(crate) struct CodeFence {
+    marker: u8,
+    length: usize,
+}
+
+impl CodeFence {
+    pub(crate) fn is_closing(self, bytes: &[u8], line_start: usize) -> bool {
+        let mut pos = skip_closing_fence_indentation(bytes, line_start);
+        let mut length = 0;
+        while bytes.get(pos) == Some(&self.marker) {
+            length += 1;
+            pos += 1;
+        }
+
+        length >= self.length
+            && bytes[pos..]
+                .iter()
+                .take_while(|byte| **byte != b'\n')
+                .all(|byte| matches!(*byte, b' ' | b'\t'))
+    }
+}
+
+/// Recognize a CommonMark fenced-code opening line.
+///
+/// Fences may be indented by up to three spaces. Backtick fence info strings
+/// cannot contain backticks, while tilde fence info strings have no equivalent
+/// restriction.
+pub(crate) fn opening_code_fence(bytes: &[u8], line_start: usize) -> Option<CodeFence> {
+    let mut pos = skip_fence_indentation(bytes, line_start);
+    let marker = *bytes.get(pos)?;
+    if !matches!(marker, b'`' | b'~') {
+        return None;
+    }
+
+    let fence_start = pos;
+    while bytes.get(pos) == Some(&marker) {
+        pos += 1;
+    }
+    let length = pos - fence_start;
+    if length < 3 {
+        return None;
+    }
+
+    let info = &bytes[pos..];
+    if marker == b'`'
+        && info
+            .iter()
+            .take_while(|byte| **byte != b'\n')
+            .any(|byte| *byte == b'`')
+    {
+        return None;
+    }
+
+    Some(CodeFence { marker, length })
+}
+
+/// Skip at most three leading spaces, leaving a fourth space in place so the
+/// caller will reject indented code blocks as fenced-code delimiters.
+fn skip_fence_indentation(bytes: &[u8], mut pos: usize) -> usize {
+    for _ in 0..3 {
+        if bytes.get(pos) != Some(&b' ') {
+            break;
+        }
+        pos += 1;
+    }
+    pos
+}
+
+/// Match the block parser's closing-fence indentation scan, including tabs
+/// that advance beyond its three-column limit.
+fn skip_closing_fence_indentation(bytes: &[u8], mut pos: usize) -> usize {
+    let mut columns = 0;
+    while columns < 3 {
+        match bytes.get(pos) {
+            Some(b' ') => {
+                columns += 1;
+                pos += 1;
+            }
+            Some(b'\t') => {
+                columns = (columns + 4) & !3;
+                pos += 1;
+            }
+            _ => break,
+        }
+    }
+    pos
+}
+
 /// If we're already accumulating markdown, do nothing.
 /// Otherwise, mark `pos` as the start of a new markdown region.
 fn extend_markdown(md_start: &mut Option<usize>, pos: usize) {
@@ -175,6 +317,14 @@ fn next_line(bytes: &[u8], mut pos: usize) -> usize {
     } else {
         len
     }
+}
+
+/// Whether a physical line has only horizontal whitespace before its ending.
+pub(crate) fn is_blank_line(bytes: &[u8], mut pos: usize) -> bool {
+    while matches!(bytes.get(pos), Some(b' ' | b'\t')) {
+        pos += 1;
+    }
+    matches!(bytes.get(pos), None | Some(b'\n' | b'\r'))
 }
 
 /// Return the offset of the first non-whitespace byte at or after `pos`.
@@ -221,7 +371,11 @@ fn consume_trailing_newline(bytes: &[u8], mut pos: usize) -> usize {
 /// look like a continuation.
 ///
 /// Returns the byte offset after the ESM block, or `None` if not ESM.
-pub(crate) fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
+pub(crate) fn try_esm(
+    bytes: &[u8],
+    pos: usize,
+    container_fences: &ContainerFenceLines,
+) -> Option<usize> {
     let len = bytes.len();
     let rest = &bytes[pos..];
 
@@ -240,6 +394,16 @@ pub(crate) fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
     // keep going until blank line.
     loop {
         if end >= len {
+            break;
+        }
+        // A fenced code block starts a new Markdown block even when the
+        // preceding ESM declaration omits its optional semicolon.  Do this
+        // before looking for generic continuation lines so the opener and
+        // its opaque contents remain Markdown.
+        if opening_code_fence(bytes, end).is_some()
+            || container_fences.contains_opener(end)
+            || container_fences.contains_owner(end)
+        {
             break;
         }
         // Check for blank line
@@ -278,6 +442,205 @@ pub(crate) fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
     }
 
     Some(end)
+}
+
+/// Parser-derived physical line boundaries for fenced code in containers.
+///
+/// Root-level fences are tracked directly by [`split`]. CommonMark also lets
+/// fences occur after container prefixes such as list markers, so reuse the
+/// block parser's fenced-code events rather than copying its container rules.
+pub(crate) struct ContainerFenceLines {
+    openers: Vec<usize>,
+    owners: Vec<usize>,
+    content: Vec<usize>,
+    closers: Vec<usize>,
+    root_openers: Vec<usize>,
+}
+
+impl ContainerFenceLines {
+    pub(crate) fn contains_opener(&self, line_start: usize) -> bool {
+        self.openers.binary_search(&line_start).is_ok()
+    }
+
+    pub(crate) fn contains_owner(&self, line_start: usize) -> bool {
+        self.owners.binary_search(&line_start).is_ok()
+    }
+
+    pub(crate) fn contains_content(&self, line_start: usize) -> bool {
+        self.content.binary_search(&line_start).is_ok()
+    }
+
+    pub(crate) fn contains_closer(&self, line_start: usize) -> bool {
+        self.closers.binary_search(&line_start).is_ok()
+    }
+
+    fn contains_root_opener(&self, line_start: usize) -> bool {
+        self.root_openers.binary_search(&line_start).is_ok()
+    }
+}
+
+struct ParsedFence {
+    opener: usize,
+    owner: Option<usize>,
+    delimiter: CodeFence,
+    content: Vec<usize>,
+}
+
+pub(crate) fn container_fence_lines(bytes: &[u8]) -> ContainerFenceLines {
+    let mut parser = BlockParser::new(bytes);
+    let mut events = Vec::new();
+    let boundaries = parser.parse_with_fenced_code_boundaries(&mut events);
+
+    let mut fences = ContainerFenceLines {
+        openers: Vec::new(),
+        owners: Vec::new(),
+        content: Vec::new(),
+        closers: Vec::new(),
+        root_openers: Vec::new(),
+    };
+
+    // A container mismatch can close an existing fence and reparse the same
+    // physical delimiter as a root-level opener. Record those parser-derived
+    // root openers before assigning container closers below.
+    let mut boundary_iter = boundaries.iter();
+    let mut container_depth = 0usize;
+    for event in &events {
+        match event {
+            BlockEvent::BlockQuoteStart { .. }
+            | BlockEvent::ListItemStart { .. }
+            | BlockEvent::DefinitionDescriptionStart { .. } => container_depth += 1,
+            BlockEvent::BlockQuoteEnd
+            | BlockEvent::ListItemEnd
+            | BlockEvent::DefinitionDescriptionEnd => {
+                container_depth = container_depth.saturating_sub(1);
+            }
+            BlockEvent::CodeBlockStart {
+                kind: CodeBlockKind::Fenced { .. },
+            } => {
+                let boundary = boundary_iter
+                    .next()
+                    .expect("fenced-code boundary accompanies every fenced start");
+                if container_depth == 0 {
+                    fences
+                        .root_openers
+                        .push(line_start(bytes, boundary.delimiter.start_usize()));
+                }
+            }
+            _ => {}
+        }
+    }
+    fences.root_openers.sort_unstable();
+    fences.root_openers.dedup();
+
+    let mut boundaries = boundaries.into_iter();
+    let mut current_fence = None;
+    let mut container_depth = 0usize;
+    for event in events {
+        match event {
+            BlockEvent::BlockQuoteStart { .. }
+            | BlockEvent::ListItemStart { .. }
+            | BlockEvent::DefinitionDescriptionStart { .. } => container_depth += 1,
+            BlockEvent::BlockQuoteEnd
+            | BlockEvent::ListItemEnd
+            | BlockEvent::DefinitionDescriptionEnd => {
+                container_depth = container_depth.saturating_sub(1);
+            }
+            BlockEvent::CodeBlockStart {
+                kind: CodeBlockKind::Fenced { .. },
+            } => {
+                let boundary = boundaries
+                    .next()
+                    .expect("fenced-code boundary accompanies every fenced start");
+                current_fence = (container_depth > 0).then(|| ParsedFence {
+                    opener: line_start(bytes, boundary.delimiter.start_usize()),
+                    owner: boundary.container_start,
+                    delimiter: CodeFence {
+                        marker: bytes[boundary.delimiter.start_usize()],
+                        length: boundary.delimiter.len_usize(),
+                    },
+                    content: Vec::new(),
+                });
+            }
+            BlockEvent::CodeBlockStart { .. } => current_fence = None,
+            BlockEvent::Code(range) => {
+                if let Some(fence) = &mut current_fence {
+                    fence.content.push(line_start(bytes, range.start_usize()));
+                }
+            }
+            BlockEvent::CodeBlockEnd => finish_fence(bytes, &mut fences, current_fence.take()),
+            _ => {}
+        }
+    }
+
+    finish_fence(bytes, &mut fences, current_fence);
+    fences.openers.sort_unstable();
+    fences.openers.dedup();
+    fences.owners.sort_unstable();
+    fences.owners.dedup();
+    fences.content.sort_unstable();
+    fences.content.dedup();
+    fences.closers.sort_unstable();
+    fences.closers.dedup();
+    fences
+}
+
+fn finish_fence(bytes: &[u8], fences: &mut ContainerFenceLines, fence: Option<ParsedFence>) {
+    let Some(fence) = fence else {
+        return;
+    };
+    let opener = fence.opener;
+
+    fences.openers.push(opener);
+    if let Some(owner) = fence.owner {
+        fences.owners.push(owner);
+    }
+    fences.content.extend(fence.content.iter().copied());
+    let final_line = fence.content.last().copied().unwrap_or(opener);
+    let closer = next_line(bytes, final_line);
+    if closer < bytes.len()
+        && !fences.contains_root_opener(closer)
+        && is_container_fence_delimiter(bytes, closer, fence.delimiter)
+    {
+        fences.closers.push(closer);
+    }
+}
+
+/// Whether `line_start` is a delimiter line after an optional container
+/// prefix. The block parser emits `CodeBlockEnd` for both a real closing
+/// delimiter and a container mismatch, so only the former may reset MDX's
+/// paragraph state.
+fn is_container_fence_delimiter(bytes: &[u8], mut pos: usize, fence: CodeFence) -> bool {
+    skip_horizontal_whitespace(bytes, &mut pos);
+    while bytes.get(pos) == Some(&b'>') {
+        pos += 1;
+        skip_horizontal_whitespace(bytes, &mut pos);
+    }
+
+    let fence_start = pos;
+    while bytes.get(pos) == Some(&fence.marker) {
+        pos += 1;
+    }
+    if pos - fence_start < fence.length {
+        return false;
+    }
+
+    bytes[pos..]
+        .iter()
+        .take_while(|byte| **byte != b'\n')
+        .all(|byte| matches!(*byte, b' ' | b'\t'))
+}
+
+fn skip_horizontal_whitespace(bytes: &[u8], pos: &mut usize) {
+    while matches!(bytes.get(*pos), Some(b' ' | b'\t')) {
+        *pos += 1;
+    }
+}
+
+fn line_start(bytes: &[u8], mut pos: usize) -> usize {
+    while pos > 0 && bytes[pos - 1] != b'\n' {
+        pos -= 1;
+    }
+    pos
 }
 
 /// Check whether bytes start with a static `import` or `export` declaration.

@@ -1,6 +1,8 @@
 use super::expr::find_expression_end;
 use super::jsx_tag::parse_jsx_tag;
-use super::splitter::{is_esm_start, try_esm};
+use super::splitter::{
+    CodeFence, container_fence_lines, is_blank_line, is_esm_start, opening_code_fence, try_esm,
+};
 use super::{MdxDiagnostic, MdxDiagnosticCode, SpannedSegment, segment_spanned};
 use crate::Range;
 
@@ -36,9 +38,48 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
     let mut open_tags = Vec::new();
     let mut in_paragraph = false;
     let mut pos = 0;
+    let mut open_fence: Option<CodeFence> = None;
+    let container_fences = container_fence_lines(bytes);
 
     while pos < len {
         let line_start = pos;
+
+        if container_fences.contains_opener(line_start) {
+            in_paragraph = true;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        if container_fences.contains_content(line_start) {
+            in_paragraph = !is_blank_line(bytes, line_start);
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        if container_fences.contains_closer(line_start) {
+            in_paragraph = false;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        if let Some(fence) = open_fence {
+            if fence.is_closing(bytes, line_start) {
+                open_fence = None;
+                in_paragraph = false;
+            } else {
+                in_paragraph = true;
+            }
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        if let Some(fence) = opening_code_fence(bytes, line_start) {
+            open_fence = Some(fence);
+            in_paragraph = true;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
         let first_non_ws = skip_indentation(bytes, pos);
 
         if first_non_ws >= len {
@@ -54,7 +95,7 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
 
         if first_non_ws == pos
             && !in_paragraph
-            && let Some(esm_end) = try_esm(bytes, pos)
+            && let Some(esm_end) = try_esm(bytes, pos, &container_fences)
         {
             in_paragraph = false;
             pos = esm_end;

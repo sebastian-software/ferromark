@@ -1,10 +1,10 @@
 #![cfg(feature = "mdx")]
 
-use ferromark::Options;
 use ferromark::mdx::{
     MdxDiagnosticCode, Segment, render, render_with_options, segment, segment_spanned,
     segment_strict, source_location,
 };
+use ferromark::{CodeBlockKind, Options};
 
 // ── Helper ───────────────────────────────────────────────────────────
 
@@ -80,6 +80,392 @@ fn spanned_segments_match_existing_segment_api() {
             .collect::<Vec<_>>(),
         existing
     );
+}
+
+#[test]
+fn fenced_code_keeps_mdx_constructs_in_a_single_markdown_segment() {
+    let input =
+        "   ```jsx\n<Card />\n{value}\nimport A from 'a'\nexport { A }\n  ```\n\n<Live />\n";
+    let segments = segment_spanned(input);
+
+    assert_eq!(segments.len(), 2);
+    assert_eq!(
+        segments[0].segment,
+        Segment::Markdown(
+            "   ```jsx\n<Card />\n{value}\nimport A from 'a'\nexport { A }\n  ```\n\n"
+        )
+    );
+    assert_eq!(segments[0].range.start_usize(), 0);
+    assert_eq!(
+        segments[0].range.end_usize(),
+        segments[0].segment.as_str().len()
+    );
+    assert_eq!(
+        segments[1].segment,
+        Segment::JsxBlockSelfClose("<Live />\n")
+    );
+}
+
+#[test]
+fn fenced_code_closes_only_with_the_matching_marker_and_length() {
+    let input = "````\n<Card />\n```\n{unterminated\n````\n";
+
+    assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+    assert!(segment_strict(input).is_ok());
+}
+
+#[test]
+fn fenced_code_allows_root_esm_immediately_after_its_closing_fence() {
+    let input = "```\n<Card />\n```\nimport A from 'a'\nexport { A }\n";
+    let segments = segment(input);
+
+    assert_eq!(
+        segments,
+        vec![
+            Segment::Markdown("```\n<Card />\n```\n"),
+            Segment::Esm("import A from 'a'\n"),
+            Segment::Esm("export { A }\n"),
+        ]
+    );
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
+fn fenced_code_fence_boundaries_match_the_markdown_parser() {
+    let crlf_input = "```\r\n<Card />\r\n```\r\nimport A from 'a'\r\n";
+    assert_eq!(segment(crlf_input), vec![Segment::Markdown(crlf_input)]);
+    assert!(segment_strict(crlf_input).is_ok());
+
+    let tab_closing_input = "```\n<Card />\n\t```\nimport A from 'a'\n";
+    assert_eq!(
+        segment(tab_closing_input),
+        vec![
+            Segment::Markdown("```\n<Card />\n\t```\n"),
+            Segment::Esm("import A from 'a'\n"),
+        ]
+    );
+    assert_eq!(
+        segment_strict(tab_closing_input).unwrap(),
+        segment_spanned(tab_closing_input)
+    );
+}
+
+#[test]
+fn tilde_fenced_code_does_not_create_mdx_segments_or_strict_diagnostics() {
+    let input = "~~~tsx\n</Card>\n{unterminated\nimport A from 'a'\n~~~\n";
+
+    assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
+fn rendering_fenced_mdx_like_syntax_keeps_it_as_escaped_code() {
+    let input = "```jsx\n<Card />\n{value}\nimport A from 'a'\n```\n";
+    let output = render(input);
+
+    assert!(output.body.contains("&lt;Card /&gt;"));
+    assert!(output.body.contains("{value}"));
+    assert!(output.body.contains("import A from 'a'"));
+    assert!(!output.body.contains("\n<Card />\n"));
+}
+
+#[test]
+fn semicolonless_esm_stops_before_backtick_and_tilde_fences() {
+    for (input, esm) in [
+        (
+            "import A from 'a'\n```jsx\n<Card />\n```\n",
+            "import A from 'a'\n",
+        ),
+        ("export { A }\n~~~jsx\n<Card />\n~~~\n", "export { A }\n"),
+    ] {
+        assert_eq!(
+            segment(input),
+            vec![Segment::Esm(esm), Segment::Markdown(&input[esm.len()..])]
+        );
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert!(output.body.contains("&lt;Card /&gt;"));
+        assert!(!output.body.contains("\n<Card />\n"));
+    }
+}
+
+#[test]
+fn list_fenced_code_keeps_mdx_constructs_opaque() {
+    for input in [
+        "- ```jsx\n  <Card />\n  {value}\n  import A from 'a'\n  ```\n",
+        "1. ~~~jsx\n   <Card />\n   {value}\n   export { value }\n   ~~~\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert!(output.body.contains("&lt;Card /&gt;"));
+        assert!(output.body.contains("{value}"));
+        assert!(!output.body.contains("\n<Card />\n"));
+    }
+}
+
+#[test]
+fn list_fence_closer_restores_post_list_mdx_detection() {
+    let list = "- ```jsx\n  <Card />\n  ```\n";
+    let input = "- ```jsx\n  <Card />\n  ```\nimport A from \"a\"\n<Live />\n{value}\n";
+
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Markdown(list),
+            Segment::Esm("import A from \"a\"\n"),
+            Segment::JsxBlockSelfClose("<Live />\n"),
+            Segment::Expression("{value}\n"),
+        ]
+    );
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+    let output = render(input);
+    assert_eq!(output.esm, vec!["import A from \"a\"\n"]);
+    assert!(output.body.contains("&lt;Card /&gt;"));
+    assert!(output.body.contains("<Live />"));
+    assert!(output.body.contains("{value}"));
+
+    let diagnostics = segment_strict(&format!("{list}</Unmatched>\n")).unwrap_err();
+    assert_eq!(
+        diagnostics[0].code,
+        MdxDiagnosticCode::UnexpectedJsxClosingTag
+    );
+}
+
+#[test]
+fn semicolonless_esm_stops_before_container_fences() {
+    for (input, esm) in [
+        (
+            "import A from 'a'\n- ```jsx\n  <Card />\n  ```\n",
+            "import A from 'a'\n",
+        ),
+        (
+            "export { A }\n1. ~~~jsx\n   <Card />\n   ~~~\n",
+            "export { A }\n",
+        ),
+    ] {
+        assert_eq!(
+            segment(input),
+            vec![Segment::Esm(esm), Segment::Markdown(&input[esm.len()..])]
+        );
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("&lt;Card /&gt;"));
+    }
+}
+
+#[test]
+fn semicolonless_multiline_esm_stops_before_continuation_fence_owners() {
+    for (input, esm) in [
+        (
+            "export {\n  A\n}\n- item\n  ```jsx\n  <Card />\n  ```\n",
+            "export {\n  A\n}\n",
+        ),
+        (
+            "export {\n  A\n}\n1. item\n   ~~~jsx\n   <Card />\n   ~~~\n",
+            "export {\n  A\n}\n",
+        ),
+        (
+            "export {\n  A\n}\n> item\n> ```jsx\n> <Card />\n> ```\n",
+            "export {\n  A\n}\n",
+        ),
+    ] {
+        assert_eq!(
+            segment(input),
+            vec![Segment::Esm(esm), Segment::Markdown(&input[esm.len()..])]
+        );
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("item"));
+        assert!(output.body.contains("&lt;Card /&gt;"));
+    }
+}
+
+#[test]
+fn semicolonless_esm_does_not_stop_at_a_list_without_a_continuation_fence() {
+    let input = "export { A }\n- ordinary list item\n";
+
+    // The owner boundary is parser-derived from a continuation fence, not a
+    // blanket rule for list markers. Keep the existing multiline ESM scan for
+    // an adjacent list that does not own such a fence.
+    assert_eq!(segment(input), vec![Segment::Esm(input)]);
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
+fn container_exit_keeps_following_markdown_in_the_paragraph() {
+    for input in [
+        "- ```jsx\n  <Card />\nordinary list exit\nimport A from 'a'\n",
+        "> ```jsx\n> <Card />\nordinary quote exit\nexport { A }\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+
+        let output = render(input);
+        assert!(output.esm.is_empty());
+        assert!(output.body.contains("ordinary"));
+        assert!(output.body.contains("import A from 'a'") || output.body.contains("export { A }"));
+
+        let diagnostics = segment_strict(input).unwrap_err();
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InvalidEsmPosition);
+    }
+}
+
+#[test]
+fn blockquote_fence_delimiter_still_allows_root_esm() {
+    let input = "> ```jsx\n> <Card />\n> ```\nimport A from 'a'\n";
+
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Markdown("> ```jsx\n> <Card />\n> ```\n"),
+            Segment::Esm("import A from 'a'\n"),
+        ]
+    );
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+    let output = render(input);
+    assert_eq!(output.esm, vec!["import A from 'a'\n"]);
+    assert!(output.body.contains("&lt;Card /&gt;"));
+}
+
+#[test]
+fn empty_container_fences_restore_root_mdx() {
+    for fence in ["- ```\n  ```\n", "1. ~~~\n   ~~~\n", "> ```\n> ```\n"] {
+        let input = format!("{fence}import A from 'a'\n<Live />\n{{value}}\n");
+
+        assert_eq!(
+            segment(&input),
+            vec![
+                Segment::Markdown(&input[..fence.len()]),
+                Segment::Esm("import A from 'a'\n"),
+                Segment::JsxBlockSelfClose("<Live />\n"),
+                Segment::Expression("{value}\n"),
+            ]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec!["import A from 'a'\n"]);
+        assert!(output.body.contains("<Live />"));
+        assert!(output.body.contains("{value}"));
+    }
+}
+
+#[test]
+fn empty_container_fence_followed_by_paragraph_keeps_esm_nonflow() {
+    for input in [
+        "- ```\n  ```\nordinary list paragraph\nimport A from 'a'\n",
+        "1. ~~~\n   ~~~\nordinary ordered paragraph\nexport { A }\n",
+        "> ```\n> ```\nordinary quote paragraph\nimport A from 'a'\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+
+        let output = render(input);
+        assert!(output.esm.is_empty());
+        assert!(output.body.contains("ordinary"));
+
+        let diagnostics = segment_strict(input).unwrap_err();
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InvalidEsmPosition);
+    }
+}
+
+#[test]
+fn continuation_line_fences_restore_root_mdx_after_a_blank_exit() {
+    for fence in [
+        "- item\n  ```jsx\n  <Card />\n",
+        "1. item\n   ~~~jsx\n   <Card />\n",
+    ] {
+        let input = format!("{fence}\nimport A from 'a'\n<Live />\n{{value}}\n");
+        let markdown_end = fence.len() + 1;
+
+        assert_eq!(
+            segment(&input),
+            vec![
+                Segment::Markdown(&input[..markdown_end]),
+                Segment::Esm("import A from 'a'\n"),
+                Segment::JsxBlockSelfClose("<Live />\n"),
+                Segment::Expression("{value}\n"),
+            ]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec!["import A from 'a'\n"]);
+        assert!(output.body.contains("<Live />"));
+        assert!(output.body.contains("{value}"));
+    }
+}
+
+#[test]
+fn continuation_line_fence_container_exit_keeps_esm_nonflow() {
+    for input in [
+        "- item\n  ```jsx\n  <Card />\nordinary list exit\nimport A from 'a'\n",
+        "1. item\n   ~~~jsx\n   <Card />\nordinary ordered exit\nexport { A }\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        assert!(render(input).esm.is_empty());
+
+        let diagnostics = segment_strict(input).unwrap_err();
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InvalidEsmPosition);
+    }
+}
+
+#[test]
+fn rejected_backtick_opener_does_not_shift_container_fence_boundaries() {
+    for input in [
+        "``` invalid ` info\n- ```jsx\n  <Card />\n  {value}\n  import A from 'a'\n  ```\n",
+        "``` invalid ` info\n1. ~~~jsx\n   <Card />\n   {value}\n   export { value }\n   ~~~\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert!(output.esm.is_empty());
+        assert!(output.body.contains("&lt;Card /&gt;"));
+        assert!(!output.body.contains("\n<Card />\n"));
+    }
+}
+
+#[test]
+fn code_block_kind_fenced_pattern_remains_source_compatible() {
+    let kind = CodeBlockKind::Fenced { info: None };
+    assert!(matches!(kind, CodeBlockKind::Fenced { info: None }));
+}
+
+#[test]
+fn container_exit_does_not_skip_a_new_root_fence() {
+    let input = "- ```jsx\n  <Card />\n~~~\nimport A from 'a'\n";
+
+    assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+    assert!(segment_strict(input).is_ok());
+
+    let output = render(input);
+    assert!(output.esm.is_empty());
+    assert!(output.body.contains("import A from 'a'"));
+}
+
+#[test]
+fn container_exit_does_not_treat_a_new_matching_root_fence_as_its_closer() {
+    for input in [
+        "- ```jsx\n  <Card />\n```\nimport A from 'a'\n```\n",
+        "1. ~~~jsx\n   <Card />\n~~~\nexport { value }\n~~~\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert!(output.esm.is_empty());
+        assert!(
+            output.body.contains("import A from 'a'") || output.body.contains("export { value }")
+        );
+    }
 }
 
 // ── Strict diagnostics ──────────────────────────────────────────────
