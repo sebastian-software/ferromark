@@ -1,10 +1,10 @@
 #![cfg(feature = "mdx")]
 
-use ferromark::Options;
 use ferromark::mdx::{
     MdxDiagnosticCode, Segment, render, render_with_options, segment, segment_spanned,
     segment_strict, source_location,
 };
+use ferromark::{CodeBlockKind, Options};
 
 // ── Helper ───────────────────────────────────────────────────────────
 
@@ -334,6 +334,53 @@ fn empty_container_fence_followed_by_paragraph_keeps_esm_nonflow() {
         let diagnostics = segment_strict(input).unwrap_err();
         assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InvalidEsmPosition);
     }
+}
+
+#[test]
+fn continuation_line_fences_restore_root_mdx_after_a_blank_exit() {
+    for fence in [
+        "- item\n  ```jsx\n  <Card />\n",
+        "1. item\n   ~~~jsx\n   <Card />\n",
+    ] {
+        let input = format!("{fence}\nimport A from 'a'\n<Live />\n{{value}}\n");
+        let markdown_end = fence.len() + 1;
+
+        assert_eq!(
+            segment(&input),
+            vec![
+                Segment::Markdown(&input[..markdown_end]),
+                Segment::Esm("import A from 'a'\n"),
+                Segment::JsxBlockSelfClose("<Live />\n"),
+                Segment::Expression("{value}\n"),
+            ]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec!["import A from 'a'\n"]);
+        assert!(output.body.contains("<Live />"));
+        assert!(output.body.contains("{value}"));
+    }
+}
+
+#[test]
+fn continuation_line_fence_container_exit_keeps_esm_nonflow() {
+    for input in [
+        "- item\n  ```jsx\n  <Card />\nordinary list exit\nimport A from 'a'\n",
+        "1. item\n   ~~~jsx\n   <Card />\nordinary ordered exit\nexport { A }\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        assert!(render(input).esm.is_empty());
+
+        let diagnostics = segment_strict(input).unwrap_err();
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InvalidEsmPosition);
+    }
+}
+
+#[test]
+fn code_block_kind_fenced_pattern_remains_source_compatible() {
+    let kind = CodeBlockKind::Fenced { info: None };
+    assert!(matches!(kind, CodeBlockKind::Fenced { info: None }));
 }
 
 #[test]

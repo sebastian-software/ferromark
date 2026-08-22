@@ -46,6 +46,16 @@ struct FenceState {
     indent: usize,
 }
 
+/// Internal source metadata for a fenced code block.
+///
+/// This stays separate from [`CodeBlockKind`] so the public block-event API
+/// remains source-compatible while MDX can use exact delimiter ranges.
+#[cfg(feature = "mdx")]
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct FencedCodeBoundary {
+    pub(crate) delimiter: Range,
+}
+
 /// HTML block kinds (CommonMark types 1-7).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum HtmlBlockKind {
@@ -195,6 +205,9 @@ pub struct BlockParser<'a> {
     pending_footnote_label: Option<(String, String)>,
     /// Definition lists that may accept another term or description.
     open_definition_lists: SmallVec<[OpenDefinitionList; 2]>,
+    /// Optional fenced-code metadata requested by the MDX splitter.
+    #[cfg(feature = "mdx")]
+    fenced_code_boundaries: Option<Vec<FencedCodeBoundary>>,
     /// Paragraph immediately before a blank line that may become definition terms.
     pending_definition_term: Option<PendingDefinitionTerm>,
     /// Whether the next non-blank physical line follows a blank line.
@@ -240,6 +253,8 @@ impl<'a> BlockParser<'a> {
             footnote_event_start: None,
             pending_footnote_label: None,
             open_definition_lists: SmallVec::new(),
+            #[cfg(feature = "mdx")]
+            fenced_code_boundaries: None,
             pending_definition_term: None,
             definition_blank_before_next: false,
             definition_current_line_loose: false,
@@ -288,6 +303,19 @@ impl<'a> BlockParser<'a> {
         // Close all open containers
         self.close_all_containers(events);
         self.close_all_definition_lists(events);
+    }
+
+    /// Parse blocks and return internal metadata for each fenced code start.
+    #[cfg(feature = "mdx")]
+    pub(crate) fn parse_with_fenced_code_boundaries(
+        &mut self,
+        events: &mut Vec<BlockEvent>,
+    ) -> Vec<FencedCodeBoundary> {
+        self.fenced_code_boundaries = Some(Vec::new());
+        self.parse(events);
+        self.fenced_code_boundaries
+            .take()
+            .expect("fenced-code boundary collection was initialized")
     }
 
     /// Take the collected link reference definitions.
@@ -2325,7 +2353,15 @@ impl<'a> BlockParser<'a> {
         if fence_len < 3 {
             return false;
         }
-        let delimiter = Range::from_usize(self.cursor.offset(), self.cursor.offset() + fence_len);
+        #[cfg(feature = "mdx")]
+        if let Some(boundaries) = &mut self.fenced_code_boundaries {
+            boundaries.push(FencedCodeBoundary {
+                delimiter: Range::from_usize(
+                    self.cursor.offset(),
+                    self.cursor.offset() + fence_len,
+                ),
+            });
+        }
 
         // For backtick fences, info string cannot contain backticks
         let _info_start = temp_cursor.offset();
@@ -2382,7 +2418,7 @@ impl<'a> BlockParser<'a> {
             None
         };
         events.push(BlockEvent::CodeBlockStart {
-            kind: CodeBlockKind::Fenced { info, delimiter },
+            kind: CodeBlockKind::Fenced { info },
         });
 
         true
@@ -4695,7 +4731,7 @@ mod tests {
     fn get_info<'a>(input: &'a str, event: &BlockEvent) -> Option<&'a str> {
         match event {
             BlockEvent::CodeBlockStart {
-                kind: CodeBlockKind::Fenced { info, .. },
+                kind: CodeBlockKind::Fenced { info },
             } => info
                 .as_ref()
                 .map(|r| std::str::from_utf8(r.slice(input.as_bytes())).unwrap()),

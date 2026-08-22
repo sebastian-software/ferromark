@@ -514,12 +514,9 @@ fn offset_range(range: Range, offset: usize) -> Range {
 fn offset_block_event(mut event: BlockEvent, offset: usize) -> BlockEvent {
     match &mut event {
         BlockEvent::CodeBlockStart {
-            kind: CodeBlockKind::Fenced { info, delimiter },
+            kind: CodeBlockKind::Fenced { info: Some(range) },
         } => {
-            *delimiter = offset_range(*delimiter, offset);
-            if let Some(info) = info {
-                *info = offset_range(*info, offset);
-            }
+            *range = offset_range(*range, offset);
         }
         BlockEvent::HtmlBlockText(range)
         | BlockEvent::Comment(range)

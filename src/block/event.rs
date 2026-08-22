@@ -62,8 +62,6 @@ pub enum CodeBlockKind {
     Fenced {
         /// Optional CommonMark info string.
         info: Option<Range>,
-        /// The opening fence delimiter, excluding its container prefix.
-        delimiter: Range,
     },
     /// A code block introduced by four columns of indentation.
     Indented,

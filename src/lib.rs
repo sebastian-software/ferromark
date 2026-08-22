@@ -1342,11 +1342,11 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     *at_tight_li_start = false;
                 }
                 match kind {
-                    CodeBlockKind::Fenced { info, .. } if fenced_code_renderer.is_some() => {
+                    CodeBlockKind::Fenced { info } if fenced_code_renderer.is_some() => {
                         fenced_code_buffer.clear();
                         *fenced_code_state = Some(FencedCodeState::new(*info));
                     }
-                    CodeBlockKind::Fenced { info, .. } => {
+                    CodeBlockKind::Fenced { info } => {
                         writer.code_block_start(info.as_ref().map(|range| range.slice(input)));
                     }
                     CodeBlockKind::Indented => writer.code_block_start(None),
