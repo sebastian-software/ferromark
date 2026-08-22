@@ -1,7 +1,7 @@
 use super::expr::find_expression_end;
 use super::jsx_tag::parse_jsx_tag;
 use super::splitter::{
-    CodeFence, fenced_code_line_starts, is_esm_start, opening_code_fence, try_esm,
+    CodeFence, container_fence_lines, is_esm_start, opening_code_fence, try_esm,
 };
 use super::{MdxDiagnostic, MdxDiagnosticCode, SpannedSegment, segment_spanned};
 use crate::Range;
@@ -39,13 +39,19 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
     let mut in_paragraph = false;
     let mut pos = 0;
     let mut open_fence: Option<CodeFence> = None;
-    let fenced_code_lines = fenced_code_line_starts(bytes);
+    let container_fences = container_fence_lines(bytes);
 
     while pos < len {
         let line_start = pos;
 
-        if fenced_code_lines.binary_search(&line_start).is_ok() {
+        if container_fences.contains_content(line_start) {
             in_paragraph = true;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        if container_fences.contains_closer(line_start) {
+            in_paragraph = false;
             pos = next_line(bytes, pos);
             continue;
         }
@@ -83,7 +89,7 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
 
         if first_non_ws == pos
             && !in_paragraph
-            && let Some(esm_end) = try_esm(bytes, pos)
+            && let Some(esm_end) = try_esm(bytes, pos, &container_fences)
         {
             in_paragraph = false;
             pos = esm_end;

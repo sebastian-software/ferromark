@@ -206,6 +206,59 @@ fn list_fenced_code_keeps_mdx_constructs_opaque() {
     }
 }
 
+#[test]
+fn list_fence_closer_restores_post_list_mdx_detection() {
+    let list = "- ```jsx\n  <Card />\n  ```\n";
+    let input = "- ```jsx\n  <Card />\n  ```\nimport A from \"a\"\n<Live />\n{value}\n";
+
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Markdown(list),
+            Segment::Esm("import A from \"a\"\n"),
+            Segment::JsxBlockSelfClose("<Live />\n"),
+            Segment::Expression("{value}\n"),
+        ]
+    );
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+    let output = render(input);
+    assert_eq!(output.esm, vec!["import A from \"a\"\n"]);
+    assert!(output.body.contains("&lt;Card /&gt;"));
+    assert!(output.body.contains("<Live />"));
+    assert!(output.body.contains("{value}"));
+
+    let diagnostics = segment_strict(&format!("{list}</Unmatched>\n")).unwrap_err();
+    assert_eq!(
+        diagnostics[0].code,
+        MdxDiagnosticCode::UnexpectedJsxClosingTag
+    );
+}
+
+#[test]
+fn semicolonless_esm_stops_before_container_fences() {
+    for (input, esm) in [
+        (
+            "import A from 'a'\n- ```jsx\n  <Card />\n  ```\n",
+            "import A from 'a'\n",
+        ),
+        (
+            "export { A }\n1. ~~~jsx\n   <Card />\n   ~~~\n",
+            "export { A }\n",
+        ),
+    ] {
+        assert_eq!(
+            segment(input),
+            vec![Segment::Esm(esm), Segment::Markdown(&input[esm.len()..])]
+        );
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("&lt;Card /&gt;"));
+    }
+}
+
 // ── Strict diagnostics ──────────────────────────────────────────────
 
 #[test]
