@@ -39,6 +39,7 @@ run_fixture() {
 }
 
 run_fixture full-sha.yml 0
+run_fixture quoted-full-sha.yml 0
 run_fixture local-and-docker.yml 0
 run_fixture mutable-ref.yml 1 'actions/checkout@v5'
 run_fixture missing-ref.yml 1 'actions/checkout'

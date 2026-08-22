@@ -33,6 +33,14 @@ while IFS= read -r entry; do
     continue
   fi
 
+  first_character=${value:0:1}
+  last_character=${value: -1}
+  if [[ ${#value} -ge 2 ]] && \
+    { [[ "$first_character" == '"' && "$last_character" == '"' ]] || \
+      [[ "$first_character" == "'" && "$last_character" == "'" ]]; }; then
+    value=${value:1:-1}
+  fi
+
   # Local actions and Docker container actions are not GitHub Action refs.
   if [[ "$value" == ./* || "$value" == docker://* ]]; then
     continue
