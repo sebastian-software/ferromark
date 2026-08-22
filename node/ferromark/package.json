@@ -46,8 +46,8 @@
   "scripts": {
     "build": "node ./scripts/build-native.mjs && node ./scripts/verify-package.mjs",
     "build:native": "node ./scripts/build-native.mjs",
-    "lint": "node --check index.mjs && node --check scripts/build-native.mjs && node --check scripts/verify-package.mjs",
-    "test": "node --test test/*.test.mjs"
+    "lint": "node --check index.mjs && node --check scripts/build-native.mjs && node --check scripts/verify-package.mjs && node --check scripts/verify-panic-unwind.mjs",
+    "test": "node --test test/*.test.mjs && node ./scripts/verify-panic-unwind.mjs"
   },
   "publishConfig": {
     "access": "public",

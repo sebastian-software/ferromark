@@ -78,6 +78,13 @@ panic = "abort"
 opt-level = 3
 strip = true
 
+# N-API catches Rust panics and turns them into JavaScript exceptions. Cargo only
+# reads workspace profiles from this manifest, so the Node addon must opt into
+# this profile explicitly rather than defining it in node/native/Cargo.toml.
+[profile.release-node]
+inherits = "release"
+panic = "unwind"
+
 [profile.release-debug]
 inherits = "release"
 debug = true

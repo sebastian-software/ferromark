@@ -4,6 +4,12 @@ use ferromark::{
 use napi::bindgen_prelude::{Error, FnArgs, Function, Result, Status};
 use napi_derive::napi;
 
+#[cfg(feature = "panic-test")]
+#[napi(catch_unwind)]
+pub fn __test_panic_unwind() {
+    panic!("ferromark N-API panic-unwind verification");
+}
+
 #[napi(object)]
 pub struct Options {
     pub render_policy: Option<String>,
@@ -85,7 +91,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     options.map_or_else(|| Ok(CoreOptions::default()), Options::into_core)
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
     Ok(ferromark::to_html_with_options(
         &markdown,
@@ -132,7 +138,7 @@ fn transform_result(result: ferromark::ParseResult<'_>) -> TransformResult {
 }
 
 /// Render Markdown and return HTML together with headings and front matter.
-#[napi]
+#[napi(catch_unwind)]
 pub fn transform(markdown: String, options: Option<Options>) -> Result<TransformResult> {
     let options = core_options(options)?;
     Ok(transform_result(ferromark::parse_with_options(
@@ -159,7 +165,7 @@ impl FencedCodeRenderer for CallbackRenderer<'_> {
     }
 }
 
-#[napi]
+#[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn to_html_with_renderer(
     markdown: String,
@@ -180,7 +186,7 @@ pub fn to_html_with_renderer(
 /// The callback receives `(code, language, meta)` and must return trusted,
 /// fully escaped HTML — or null/undefined to fall back to the default
 /// escaped `<pre><code>` output.
-#[napi]
+#[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn transform_with_renderer(
     markdown: String,

@@ -12,6 +12,9 @@ crate-type = ["cdylib"]
 doctest = false
 test = false
 
+[features]
+panic-test = []
+
 [dependencies]
 ferromark = { path = "../.." }
 napi = { version = "=3.11.0", default-features = false, features = ["dyn-symbols", "napi8"] }

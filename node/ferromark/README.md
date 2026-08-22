@@ -56,3 +56,10 @@ toHtml('[guide](/guide)', { linkBasePath: '/docs' })
 Image sources and autolinks are not rewritten.
 
 The package supports Node.js 22 or newer on glibc Linux, macOS, and Windows for x64 and arm64. It does not include a WASM fallback.
+
+## Native build profile
+
+The native addon is built with Cargo's workspace-level `release-node` profile. It
+keeps the optimized release settings while enabling panic unwinding, allowing
+N-API to translate a Rust panic into a JavaScript exception instead of aborting
+the Node.js process.
