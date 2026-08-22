@@ -1,0 +1,28 @@
+name: Fuzz
+
+on:
+  schedule:
+    - cron: "27 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: nightly
+      - run: cargo install cargo-fuzz --version 0.13.2 --locked
+      - run: >-
+          cargo +nightly fuzz run parse_bytes --
+          -dict=fuzz/ferromark.dict -max_total_time=300 -max_len=65536
+          -timeout=10 -rss_limit_mb=1024
+      - run: >-
+          cargo +nightly fuzz run render_lossy --
+          -dict=fuzz/ferromark.dict -max_total_time=300 -max_len=65536
+          -timeout=10 -rss_limit_mb=1024

@@ -1,0 +1,32 @@
+[package]
+name = "ferromark-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.ferromark]
+path = ".."
+
+[[bin]]
+name = "parse_bytes"
+path = "fuzz_targets/parse_bytes.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "render_lossy"
+path = "fuzz_targets/render_lossy.rs"
+test = false
+doc = false
+bench = false
+
+# Keep this harness outside the release workspace and package.
+[workspace]
+members = ["."]

@@ -543,11 +543,14 @@ impl<'a> BlockParser<'a> {
 
         // If we're in a table, check for continuation or termination
         if self.in_table {
-            let first = self.cursor.peek_or_zero();
-            if first == 0 || first == b'\n' {
-                if first == b'\n' {
-                    parser_cursor_bump!(self.cursor);
-                }
+            let Some(first) = self.cursor.peek() else {
+                self.close_table(events);
+                self.close_paragraph(events);
+                self.handle_blank_line_containers(events, false);
+                return;
+            };
+            if first == b'\n' {
+                parser_cursor_bump!(self.cursor);
                 self.close_table(events);
                 self.close_paragraph(events);
                 self.handle_blank_line_containers(events, false);
@@ -707,11 +710,22 @@ impl<'a> BlockParser<'a> {
             let (indent, indent_bytes) = self.skip_indent();
             self.line_indent_bytes = indent_bytes;
 
-            let first = self.cursor.peek_or_zero();
-            if first == 0 || first == b'\n' {
-                if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                    parser_cursor_bump!(self.cursor);
+            let Some(first) = self.cursor.peek() else {
+                let definition_candidate_start = events.len();
+                let had_paragraph = self.in_paragraph;
+                self.close_paragraph(events);
+                self.remember_definition_term_after_blank(
+                    had_paragraph,
+                    definition_candidate_start,
+                    events,
+                );
+                if self.options.definition_lists {
+                    self.definition_blank_before_next = true;
                 }
+                return true;
+            };
+            if first == b'\n' {
+                parser_cursor_bump!(self.cursor);
                 let definition_candidate_start = events.len();
                 let had_paragraph = self.in_paragraph;
                 self.close_paragraph(events);
@@ -917,13 +931,15 @@ impl<'a> BlockParser<'a> {
     /// Parse line content with a known indent value.
     /// Cursor should already be past the leading whitespace.
     fn parse_line_content_with_indent(&mut self, indent: usize, events: &mut Vec<BlockEvent>) {
-        let first = self.cursor.peek_or_zero();
+        let Some(first) = self.cursor.peek() else {
+            self.close_table(events);
+            self.close_paragraph(events);
+            return;
+        };
 
         // Check for blank line (can happen after container markers)
-        if first == 0 || first == b'\n' {
-            if first == b'\n' {
-                parser_cursor_bump!(self.cursor);
-            }
+        if first == b'\n' {
+            parser_cursor_bump!(self.cursor);
             self.close_table(events);
             self.close_paragraph(events);
             return;
@@ -4444,6 +4460,21 @@ mod tests {
     fn test_blank_lines() {
         let events = parse("\n\n\n");
         assert!(events.is_empty());
+    }
+
+    #[test]
+    fn nul_bytes_are_input_not_end_of_file() {
+        for input in [
+            b"\0\0\0\x04".as_slice(),
+            b"> \0".as_slice(),
+            b"a|b\n---|---\n\0".as_slice(),
+        ] {
+            let mut parser = BlockParser::new(input);
+            let mut events = Vec::new();
+            parser.parse(&mut events);
+
+            assert!(parser.cursor.is_eof(), "parser did not consume {input:?}");
+        }
     }
 
     #[test]
