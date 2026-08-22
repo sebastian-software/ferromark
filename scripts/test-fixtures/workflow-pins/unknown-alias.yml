@@ -1,0 +1,9 @@
+name: Unknown alias
+
+on: workflow_dispatch
+
+jobs:
+  invalid:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: *missing_action

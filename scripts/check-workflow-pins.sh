@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-mutable_refs=$(rg --pcre2 --line-number \
-  'uses:\s+(?!\./)[^@\s]+@(?![0-9a-f]{40}(?:\s|$))' \
-  .github/workflows || true)
+workflow_directory=${1:-.github/workflows}
+script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
-if [[ -n "$mutable_refs" ]]; then
-  echo "Workflow actions must use full 40-character commit SHAs:" >&2
-  echo "$mutable_refs" >&2
-  exit 1
+if [[ ! -d "$workflow_directory" ]]; then
+  echo "Workflow directory does not exist or is not a directory: $workflow_directory" >&2
+  exit 2
 fi
+
+ruby "$script_directory/check-workflow-pins.rb" "$workflow_directory"
