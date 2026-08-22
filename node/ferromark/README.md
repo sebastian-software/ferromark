@@ -8,6 +8,12 @@ import { toHtml } from 'ferromark'
 const html = toHtml('# Hello')
 ```
 
+## Input size limit
+
+ferromark source ranges use `u32` byte offsets, so input is limited to
+4,294,967,295 bytes. Calls above that limit throw an `InvalidArg` native error
+instead of parsing with truncated source offsets.
+
 ## Syntax highlighting with Ferriki
 
 An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter plugs into the fenced-code renderer without coupling the two native cores:

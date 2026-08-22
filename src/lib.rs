@@ -36,7 +36,7 @@ pub use block::{Alignment, BlockEvent, BlockParser, CalloutType, CodeBlockKind, 
 pub use footnote::FootnoteStore;
 pub use inline::{InlineEvent, InlineParser};
 pub use link_ref::{LinkRefDef, LinkRefStore};
-pub use range::Range;
+pub use range::{InputSizeError, MAX_INPUT_BYTES, Range, validate_input_size};
 pub use render::HtmlWriter;
 
 /// A complete fenced code block passed to a custom renderer.
@@ -496,20 +496,44 @@ fn extract_front_matter(input: &str) -> Option<(&str, usize)> {
 /// assert_eq!(result.headings[0].id.as_deref(), Some("content"));
 /// assert_eq!(result.headings[0].text, "Content");
 /// ```
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use [`try_parse`] to
+/// handle the limit as an error.
 pub fn parse(input: &str) -> ParseResult<'_> {
+    try_parse(input).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Parse Markdown with default options without panicking for oversized input.
+pub fn try_parse(input: &str) -> Result<ParseResult<'_>, InputSizeError> {
     let options = Options {
         front_matter: true,
         ..Options::default()
     };
-    parse_with_options(input, &options)
+    try_parse_with_options(input, &options)
 }
 
 /// Parse Markdown with options and return HTML, front matter, and headings.
 ///
 /// Front matter is only extracted when `options.front_matter` is `true`.
 /// Heading IDs are only present when `options.heading_ids` is enabled.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+/// [`try_parse_with_options`] to handle the limit as an error.
 pub fn parse_with_options<'a>(input: &'a str, options: &Options) -> ParseResult<'a> {
-    parse_impl(input, options, None)
+    try_parse_with_options(input, options).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Parse Markdown with options without panicking for oversized input.
+pub fn try_parse_with_options<'a>(
+    input: &'a str,
+    options: &Options,
+) -> Result<ParseResult<'a>, InputSizeError> {
+    validate_input_size(input.len())?;
+    Ok(parse_impl(input, options, None))
 }
 
 /// Parse Markdown with options and an opt-in fenced-code renderer, returning
@@ -517,12 +541,28 @@ pub fn parse_with_options<'a>(input: &'a str, options: &Options) -> ParseResult<
 ///
 /// See [`FencedCodeRenderer`] for the escaping contract the renderer must
 /// uphold.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+/// [`try_parse_with_renderer`] to handle the limit as an error.
 pub fn parse_with_renderer<'a>(
     input: &'a str,
     options: &Options,
     renderer: &mut dyn FencedCodeRenderer,
 ) -> ParseResult<'a> {
-    parse_impl(input, options, Some(renderer))
+    try_parse_with_renderer(input, options, renderer).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Parse Markdown with options and a fenced-code renderer without panicking
+/// for oversized input.
+pub fn try_parse_with_renderer<'a>(
+    input: &'a str,
+    options: &Options,
+    renderer: &mut dyn FencedCodeRenderer,
+) -> Result<ParseResult<'a>, InputSizeError> {
+    validate_input_size(input.len())?;
+    Ok(parse_impl(input, options, Some(renderer)))
 }
 
 fn parse_impl<'a>(
@@ -568,39 +608,71 @@ fn parse_impl<'a>(
 /// assert!(html.contains("Hello</h1>"));
 /// assert!(html.contains("<p>World</p>"));
 /// ```
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use [`try_to_html`] to
+/// handle the limit as an error.
 pub fn to_html(input: &str) -> String {
-    let mut writer = HtmlWriter::with_capacity_for(input.len());
-    render_to_writer(input.as_bytes(), &mut writer, &Options::default());
-    writer
-        .into_string()
-        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
+    try_to_html(input).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Convert Markdown to HTML without panicking for oversized input.
+pub fn try_to_html(input: &str) -> Result<String, InputSizeError> {
+    try_to_html_with_options(input, &Options::default())
 }
 
 /// Convert Markdown to HTML, writing into a provided buffer.
 ///
 /// This avoids allocation if the buffer has sufficient capacity.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+/// [`try_to_html_into`] to handle the limit as an error.
 pub fn to_html_into(input: &str, out: &mut Vec<u8>) {
-    to_html_into_with_options(input, out, &Options::default());
+    try_to_html_into(input, out).unwrap_or_else(|error| panic!("{error}"));
+}
+
+/// Convert Markdown to HTML into a provided buffer without panicking for
+/// oversized input.
+pub fn try_to_html_into(input: &str, out: &mut Vec<u8>) -> Result<(), InputSizeError> {
+    try_to_html_into_with_options(input, out, &Options::default())
 }
 
 /// Convert Markdown to HTML with options.
 ///
 /// When `options.front_matter` is `true`, any front matter at the start of the
 /// document is silently stripped before parsing.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+/// [`try_to_html_with_options`] to handle the limit as an error.
 pub fn to_html_with_options(input: &str, options: &Options) -> String {
-    let markdown = if options.front_matter {
+    try_to_html_with_options(input, options).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Convert Markdown to HTML with options without panicking for oversized input.
+pub fn try_to_html_with_options(input: &str, options: &Options) -> Result<String, InputSizeError> {
+    validate_input_size(input.len())?;
+    let markdown = markdown_without_front_matter(input, options);
+    let mut writer = HtmlWriter::with_capacity_for(markdown.len());
+    render_to_writer(markdown.as_bytes(), &mut writer, options);
+    Ok(writer
+        .into_string()
+        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML"))
+}
+
+fn markdown_without_front_matter<'a>(input: &'a str, options: &Options) -> &'a str {
+    if options.front_matter {
         match extract_front_matter(input) {
             Some((_, offset)) => &input[offset..],
             None => input,
         }
     } else {
         input
-    };
-    let mut writer = HtmlWriter::with_capacity_for(markdown.len());
-    render_to_writer(markdown.as_bytes(), &mut writer, options);
-    writer
-        .into_string()
-        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
+    }
 }
 
 /// Convert Markdown to HTML with an opt-in fenced-code renderer.
@@ -608,39 +680,57 @@ pub fn to_html_with_options(input: &str, options: &Options) -> String {
 /// The renderer sees only fenced code blocks. Returning `None` preserves the
 /// normal escaped code-block output. Installing a renderer is an explicit HTML
 /// trust boundary; see [`TrustedHtml`].
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+/// [`try_to_html_with_renderer`] to handle the limit as an error.
 pub fn to_html_with_renderer(
     input: &str,
     options: &Options,
     renderer: &mut dyn FencedCodeRenderer,
 ) -> String {
-    let markdown = if options.front_matter {
-        match extract_front_matter(input) {
-            Some((_, offset)) => &input[offset..],
-            None => input,
-        }
-    } else {
-        input
-    };
+    try_to_html_with_renderer(input, options, renderer).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Convert Markdown to HTML with a fenced-code renderer without panicking for
+/// oversized input.
+pub fn try_to_html_with_renderer(
+    input: &str,
+    options: &Options,
+    renderer: &mut dyn FencedCodeRenderer,
+) -> Result<String, InputSizeError> {
+    validate_input_size(input.len())?;
+    let markdown = markdown_without_front_matter(input, options);
     let mut writer = HtmlWriter::with_capacity_for(markdown.len());
     render_to_writer_with_renderer(markdown.as_bytes(), &mut writer, options, Some(renderer));
-    writer
+    Ok(writer
         .into_string()
-        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML")
+        .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML"))
 }
 
 /// Convert Markdown to HTML into a provided buffer with options.
 ///
 /// When `options.front_matter` is `true`, any front matter at the start of the
 /// document is silently stripped before parsing.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+/// [`try_to_html_into_with_options`] to handle the limit as an error.
 pub fn to_html_into_with_options(input: &str, out: &mut Vec<u8>, options: &Options) {
-    let markdown = if options.front_matter {
-        match extract_front_matter(input) {
-            Some((_, offset)) => &input[offset..],
-            None => input,
-        }
-    } else {
-        input
-    };
+    try_to_html_into_with_options(input, out, options).unwrap_or_else(|error| panic!("{error}"));
+}
+
+/// Convert Markdown into a provided buffer with options without panicking for
+/// oversized input.
+pub fn try_to_html_into_with_options(
+    input: &str,
+    out: &mut Vec<u8>,
+    options: &Options,
+) -> Result<(), InputSizeError> {
+    validate_input_size(input.len())?;
+    let markdown = markdown_without_front_matter(input, options);
     out.clear();
     out.reserve(markdown.len() + markdown.len() / 4);
     let mut writer = HtmlWriter::with_capacity(0);
@@ -648,29 +738,42 @@ pub fn to_html_into_with_options(input: &str, out: &mut Vec<u8>, options: &Optio
     std::mem::swap(writer.buffer_mut(), out);
     render_to_writer(markdown.as_bytes(), &mut writer, options);
     std::mem::swap(writer.buffer_mut(), out);
+    Ok(())
 }
 
 /// Convert Markdown into a reusable buffer with an opt-in fenced-code renderer.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+/// [`try_to_html_into_with_renderer`] to handle the limit as an error.
 pub fn to_html_into_with_renderer(
     input: &str,
     out: &mut Vec<u8>,
     options: &Options,
     renderer: &mut dyn FencedCodeRenderer,
 ) {
-    let markdown = if options.front_matter {
-        match extract_front_matter(input) {
-            Some((_, offset)) => &input[offset..],
-            None => input,
-        }
-    } else {
-        input
-    };
+    try_to_html_into_with_renderer(input, out, options, renderer)
+        .unwrap_or_else(|error| panic!("{error}"));
+}
+
+/// Convert Markdown into a reusable buffer with a fenced-code renderer without
+/// panicking for oversized input.
+pub fn try_to_html_into_with_renderer(
+    input: &str,
+    out: &mut Vec<u8>,
+    options: &Options,
+    renderer: &mut dyn FencedCodeRenderer,
+) -> Result<(), InputSizeError> {
+    validate_input_size(input.len())?;
+    let markdown = markdown_without_front_matter(input, options);
     out.clear();
     out.reserve(markdown.len() + markdown.len() / 4);
     let mut writer = HtmlWriter::with_capacity(0);
     std::mem::swap(writer.buffer_mut(), out);
     render_to_writer_with_renderer(markdown.as_bytes(), &mut writer, options, Some(renderer));
     std::mem::swap(writer.buffer_mut(), out);
+    Ok(())
 }
 
 /// State for collecting paragraph content before inline parsing.

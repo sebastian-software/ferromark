@@ -1,7 +1,64 @@
 //! Compact range representation for zero-copy text references.
 //!
 //! Uses `u32` offsets to save memory (8 bytes vs 16 for usize pair).
-//! Supports documents up to 4GB in size.
+//! Supports documents up to [`MAX_INPUT_BYTES`] bytes in size.
+
+use std::fmt;
+
+/// Largest input size supported by ferromark's compact source ranges.
+pub const MAX_INPUT_BYTES: usize = u32::MAX as usize;
+
+/// Error returned when an input cannot be represented by [`Range`] offsets.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InputSizeError {
+    input_len: usize,
+}
+
+impl InputSizeError {
+    /// The rejected input length in bytes.
+    #[must_use]
+    pub const fn input_len(self) -> usize {
+        self.input_len
+    }
+}
+
+impl fmt::Display for InputSizeError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "input is {} bytes, exceeding the maximum supported size of {MAX_INPUT_BYTES} bytes",
+            self.input_len
+        )
+    }
+}
+
+impl std::error::Error for InputSizeError {}
+
+/// Validate that an input length fits every ferromark source offset.
+///
+/// This is useful for callers of infallible legacy APIs, which panic when the
+/// input is too large to represent. APIs that can return an error use the same
+/// validation internally.
+pub fn validate_input_size(input_len: usize) -> Result<(), InputSizeError> {
+    if input_len <= MAX_INPUT_BYTES {
+        Ok(())
+    } else {
+        Err(InputSizeError { input_len })
+    }
+}
+
+#[inline]
+pub(crate) fn assert_input_size(input_len: usize) {
+    if let Err(error) = validate_input_size(input_len) {
+        panic!("{error}");
+    }
+}
+
+/// Convert a source offset after the input-size invariant has been checked.
+#[inline]
+pub(crate) fn offset_to_u32(offset: usize) -> u32 {
+    u32::try_from(offset).expect("source offset exceeds the supported u32 range")
+}
 
 /// Compact range into an input buffer.
 ///
@@ -35,14 +92,12 @@ impl Range {
     /// Create a range from usize values.
     ///
     /// # Panics
-    /// Panics if either value exceeds `u32::MAX`.
+    /// Panics if either value exceeds [`u32::MAX`].
     #[inline]
     pub fn from_usize(start: usize, end: usize) -> Self {
-        assert!(start <= u32::MAX as usize, "range start exceeds u32::MAX");
-        assert!(end <= u32::MAX as usize, "range end exceeds u32::MAX");
         Self {
-            start: start as u32,
-            end: end as u32,
+            start: offset_to_u32(start),
+            end: offset_to_u32(end),
         }
     }
 
@@ -160,6 +215,31 @@ mod tests {
     }
 
     #[test]
+    fn input_size_boundary_is_accepted() {
+        assert!(validate_input_size(MAX_INPUT_BYTES).is_ok());
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn input_size_rejection_reports_the_actual_length() {
+        let too_large = MAX_INPUT_BYTES + 1;
+        let error = validate_input_size(too_large).unwrap_err();
+
+        assert_eq!(error.input_len(), too_large);
+        assert_eq!(
+            error.to_string(),
+            "input is 4294967296 bytes, exceeding the maximum supported size of 4294967295 bytes"
+        );
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    #[should_panic(expected = "exceeding the maximum supported size")]
+    fn legacy_input_guard_rejects_oversized_lengths() {
+        assert_input_size(MAX_INPUT_BYTES + 1);
+    }
+
+    #[test]
     fn test_range_new() {
         let r = Range::new(10, 20);
         assert_eq!(r.start, 10);
@@ -205,7 +285,7 @@ mod tests {
 
     #[cfg(target_pointer_width = "64")]
     #[test]
-    #[should_panic(expected = "range start exceeds u32::MAX")]
+    #[should_panic(expected = "source offset exceeds the supported u32 range")]
     fn range_from_usize_rejects_truncation() {
         let _ = Range::from_usize(u32::MAX as usize + 1, u32::MAX as usize + 1);
     }

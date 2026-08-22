@@ -6,6 +6,7 @@
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use super::simd;
 use crate::limits;
+use crate::range::{assert_input_size, offset_to_u32};
 use memchr::memchr3;
 
 /// Flags for mark state.
@@ -225,22 +226,42 @@ pub static SPECIAL_CHARS: [bool; 256] = {
 };
 
 /// Scan text and collect marks for the default inline syntax set.
+///
+/// # Panics
+///
+/// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
 pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    assert_input_size(text.len());
     collect_marks_impl::<false, false>(text, buffer)
 }
 
 /// Scan text and collect marks with highlight support enabled.
+///
+/// # Panics
+///
+/// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
 pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    assert_input_size(text.len());
     collect_marks_impl::<true, false>(text, buffer)
 }
 
 /// Scan text and collect marks with superscript support enabled.
+///
+/// # Panics
+///
+/// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
 pub fn collect_marks_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    assert_input_size(text.len());
     collect_marks_impl::<false, true>(text, buffer)
 }
 
 /// Scan text and collect marks with highlight and superscript enabled.
+///
+/// # Panics
+///
+/// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
 pub fn collect_marks_highlight_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    assert_input_size(text.len());
     collect_marks_impl::<true, true>(text, buffer)
 }
 
@@ -274,8 +295,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                 // Code span backticks can be both opener and closer
                 if run_len <= limits::MAX_CODE_SPAN_BACKTICKS {
                     buffer.push(Mark::new(
-                        start as u32,
-                        pos as u32,
+                        offset_to_u32(start),
+                        offset_to_u32(pos),
                         b'`',
                         flags::POTENTIAL_OPENER | flags::POTENTIAL_CLOSER,
                     ));
@@ -293,8 +314,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                 // Only collect runs of 1 or 2
                 if run_len <= 2 {
                     buffer.push(Mark::new(
-                        start as u32,
-                        pos as u32,
+                        offset_to_u32(start),
+                        offset_to_u32(pos),
                         b'$',
                         flags::POTENTIAL_OPENER | flags::POTENTIAL_CLOSER,
                     ));
@@ -338,7 +359,12 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                 );
 
                 if flags != 0 {
-                    buffer.push(Mark::new(start as u32, pos as u32, ch, flags));
+                    buffer.push(Mark::new(
+                        offset_to_u32(start),
+                        offset_to_u32(pos),
+                        ch,
+                        flags,
+                    ));
                 }
             }
 
@@ -351,8 +377,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                     if is_escapable(next) || next == b'\n' {
                         // Regular escape or hard line break (backslash before newline)
                         buffer.push(Mark::new(
-                            pos as u32,
-                            (pos + 2) as u32,
+                            offset_to_u32(pos),
+                            offset_to_u32(pos + 2),
                             b'\\',
                             flags::POTENTIAL_OPENER, // Mark for processing
                         ));
@@ -361,8 +387,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                         if next == b'`' {
                             summary.record(MarkSummary::CODE);
                             buffer.push(Mark::new(
-                                (pos + 1) as u32,
-                                (pos + 2) as u32,
+                                offset_to_u32(pos + 1),
+                                offset_to_u32(pos + 2),
                                 b'`',
                                 flags::POTENTIAL_OPENER | flags::POTENTIAL_CLOSER,
                             ));
@@ -387,8 +413,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                         space_start -= 1;
                     }
                     buffer.push(Mark::new(
-                        space_start as u32,
-                        (pos + 1) as u32,
+                        offset_to_u32(space_start),
+                        offset_to_u32(pos + 1),
                         b'\n',
                         flags::POTENTIAL_OPENER, // Hard break marker
                     ));
@@ -406,8 +432,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                         space_end += 1;
                     }
                     buffer.push(Mark::new(
-                        space_start as u32,
-                        space_end as u32,
+                        offset_to_u32(space_start),
+                        offset_to_u32(space_end),
                         b'\n',
                         flags::POTENTIAL_CLOSER, // Soft break marker (distinguished from hard break)
                     ));
@@ -419,8 +445,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                 // Check for image: ![
                 let is_image = pos > 0 && text[pos - 1] == b'!' && !is_escaped(text, pos - 1);
                 buffer.push(Mark::new(
-                    pos as u32,
-                    (pos + 1) as u32,
+                    offset_to_u32(pos),
+                    offset_to_u32(pos + 1),
                     b'[',
                     if is_image {
                         flags::POTENTIAL_OPENER | flags::IN_CODE
@@ -433,8 +459,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
 
             b']' => {
                 buffer.push(Mark::new(
-                    pos as u32,
-                    (pos + 1) as u32,
+                    offset_to_u32(pos),
+                    offset_to_u32(pos + 1),
                     b']',
                     flags::POTENTIAL_CLOSER,
                 ));
@@ -445,8 +471,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                 summary.record(MarkSummary::LESS_THAN);
                 // Potential autolink
                 buffer.push(Mark::new(
-                    pos as u32,
-                    (pos + 1) as u32,
+                    offset_to_u32(pos),
+                    offset_to_u32(pos + 1),
                     b'<',
                     flags::POTENTIAL_OPENER,
                 ));
