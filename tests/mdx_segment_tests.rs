@@ -296,6 +296,47 @@ fn blockquote_fence_delimiter_still_allows_root_esm() {
 }
 
 #[test]
+fn empty_container_fences_restore_root_mdx() {
+    for fence in ["- ```\n  ```\n", "1. ~~~\n   ~~~\n", "> ```\n> ```\n"] {
+        let input = format!("{fence}import A from 'a'\n<Live />\n{{value}}\n");
+
+        assert_eq!(
+            segment(&input),
+            vec![
+                Segment::Markdown(&input[..fence.len()]),
+                Segment::Esm("import A from 'a'\n"),
+                Segment::JsxBlockSelfClose("<Live />\n"),
+                Segment::Expression("{value}\n"),
+            ]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec!["import A from 'a'\n"]);
+        assert!(output.body.contains("<Live />"));
+        assert!(output.body.contains("{value}"));
+    }
+}
+
+#[test]
+fn empty_container_fence_followed_by_paragraph_keeps_esm_nonflow() {
+    for input in [
+        "- ```\n  ```\nordinary list paragraph\nimport A from 'a'\n",
+        "1. ~~~\n   ~~~\nordinary ordered paragraph\nexport { A }\n",
+        "> ```\n> ```\nordinary quote paragraph\nimport A from 'a'\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+
+        let output = render(input);
+        assert!(output.esm.is_empty());
+        assert!(output.body.contains("ordinary"));
+
+        let diagnostics = segment_strict(input).unwrap_err();
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InvalidEsmPosition);
+    }
+}
+
+#[test]
 fn container_exit_does_not_skip_a_new_root_fence() {
     let input = "- ```jsx\n  <Card />\n~~~\nimport A from 'a'\n";
 

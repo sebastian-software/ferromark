@@ -2325,6 +2325,7 @@ impl<'a> BlockParser<'a> {
         if fence_len < 3 {
             return false;
         }
+        let delimiter = Range::from_usize(self.cursor.offset(), self.cursor.offset() + fence_len);
 
         // For backtick fences, info string cannot contain backticks
         let _info_start = temp_cursor.offset();
@@ -2381,7 +2382,7 @@ impl<'a> BlockParser<'a> {
             None
         };
         events.push(BlockEvent::CodeBlockStart {
-            kind: CodeBlockKind::Fenced { info },
+            kind: CodeBlockKind::Fenced { info, delimiter },
         });
 
         true
@@ -4694,7 +4695,7 @@ mod tests {
     fn get_info<'a>(input: &'a str, event: &BlockEvent) -> Option<&'a str> {
         match event {
             BlockEvent::CodeBlockStart {
-                kind: CodeBlockKind::Fenced { info },
+                kind: CodeBlockKind::Fenced { info, .. },
             } => info
                 .as_ref()
                 .map(|r| std::str::from_utf8(r.slice(input.as_bytes())).unwrap()),

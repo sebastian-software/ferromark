@@ -451,9 +451,9 @@ impl ContainerFenceLines {
     }
 }
 
-#[derive(Default)]
 struct ParsedFence {
-    opener: Option<usize>,
+    opener: usize,
+    delimiter: CodeFence,
     content: Vec<usize>,
 }
 
@@ -471,10 +471,14 @@ pub(crate) fn container_fence_lines(bytes: &[u8]) -> ContainerFenceLines {
     for event in events {
         match event {
             BlockEvent::CodeBlockStart {
-                kind: CodeBlockKind::Fenced { info },
+                kind: CodeBlockKind::Fenced { delimiter, .. },
             } => {
                 current_fence = Some(ParsedFence {
-                    opener: info.map(|range| line_start(bytes, range.start_usize())),
+                    opener: line_start(bytes, delimiter.start_usize()),
+                    delimiter: CodeFence {
+                        marker: bytes[delimiter.start_usize()],
+                        length: delimiter.len_usize(),
+                    },
                     content: Vec::new(),
                 });
             }
@@ -503,16 +507,7 @@ fn finish_fence(bytes: &[u8], fences: &mut ContainerFenceLines, fence: Option<Pa
     let Some(fence) = fence else {
         return;
     };
-    let opener = fence.opener.or_else(|| {
-        fence
-            .content
-            .first()
-            .copied()
-            .and_then(|line_start| previous_line_start(bytes, line_start))
-    });
-    let Some(opener) = opener else {
-        return;
-    };
+    let opener = fence.opener;
 
     // Root fences remain owned by the delimiter state machine in `split`.
     if opening_code_fence(bytes, opener).is_some() {
@@ -523,10 +518,7 @@ fn finish_fence(bytes: &[u8], fences: &mut ContainerFenceLines, fence: Option<Pa
     fences.content.extend(fence.content.iter().copied());
     let final_line = fence.content.last().copied().unwrap_or(opener);
     let closer = next_line(bytes, final_line);
-    if closer < bytes.len()
-        && let Some(fence) = code_fence_on_line(bytes, opener)
-        && is_container_fence_delimiter(bytes, closer, fence)
-    {
+    if closer < bytes.len() && is_container_fence_delimiter(bytes, closer, fence.delimiter) {
         fences.closers.push(closer);
     }
 }
@@ -556,34 +548,6 @@ fn is_container_fence_delimiter(bytes: &[u8], mut pos: usize, fence: CodeFence) 
         .all(|byte| matches!(*byte, b' ' | b'\t'))
 }
 
-/// Find the CommonMark fence delimiter embedded in a container opener line.
-/// The core parser has already established that the line opened a fence, so
-/// this only recovers its marker and length for the matching closing check.
-fn code_fence_on_line(bytes: &[u8], line_start: usize) -> Option<CodeFence> {
-    let line_end = bytes[line_start..]
-        .iter()
-        .position(|byte| *byte == b'\n')
-        .map_or(bytes.len(), |offset| line_start + offset);
-    let mut pos = line_start;
-    while pos < line_end {
-        let marker = bytes[pos];
-        if !matches!(marker, b'`' | b'~') {
-            pos += 1;
-            continue;
-        }
-
-        let fence_start = pos;
-        while pos < line_end && bytes[pos] == marker {
-            pos += 1;
-        }
-        let length = pos - fence_start;
-        if length >= 3 {
-            return Some(CodeFence { marker, length });
-        }
-    }
-    None
-}
-
 fn skip_horizontal_whitespace(bytes: &[u8], pos: &mut usize) {
     while matches!(bytes.get(*pos), Some(b' ' | b'\t')) {
         *pos += 1;
@@ -595,13 +559,6 @@ fn line_start(bytes: &[u8], mut pos: usize) -> usize {
         pos -= 1;
     }
     pos
-}
-
-fn previous_line_start(bytes: &[u8], current_line_start: usize) -> Option<usize> {
-    if current_line_start == 0 {
-        return None;
-    }
-    Some(line_start(bytes, current_line_start - 1))
 }
 
 /// Check whether bytes start with a static `import` or `export` declaration.
