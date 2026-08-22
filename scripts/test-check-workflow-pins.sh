@@ -42,6 +42,7 @@ run_fixture full-sha.yml 0
 run_fixture local-and-docker.yml 0
 run_fixture mutable-ref.yml 1 'actions/checkout@v5'
 run_fixture missing-ref.yml 1 'actions/checkout'
+run_fixture flow-style-mutable-ref.yml 1 'actions/upload-artifact@v4'
 run_fixture no-matches.yml 0
 
 scanner_directory="$temporary_directory/scanner-failure"

@@ -11,7 +11,7 @@ fi
 set +e
 uses_entries=$(grep --recursive --line-number --extended-regexp \
   --include='*.yml' --include='*.yaml' \
-  '^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*' "$workflow_directory")
+  'uses:[[:space:]]*' "$workflow_directory")
 grep_status=$?
 set -e
 
@@ -26,10 +26,12 @@ esac
 
 invalid_refs=()
 while IFS= read -r entry; do
-  [[ "$entry" =~ uses:[[:space:]]*(.*)$ ]] || continue
-  value=${BASH_REMATCH[1]}
-  value=${value%%#*}
-  value=$(sed 's/^[[:space:]]*//; s/[[:space:]]*$//' <<< "$value")
+  if [[ "$entry" =~ uses:[[:space:]]*([^[:space:],}#]+) ]]; then
+    value=${BASH_REMATCH[1]}
+  else
+    invalid_refs+=("$entry")
+    continue
+  fi
 
   # Local actions and Docker container actions are not GitHub Action refs.
   if [[ "$value" == ./* || "$value" == docker://* ]]; then
