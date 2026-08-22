@@ -169,6 +169,43 @@ fn rendering_fenced_mdx_like_syntax_keeps_it_as_escaped_code() {
     assert!(!output.body.contains("\n<Card />\n"));
 }
 
+#[test]
+fn semicolonless_esm_stops_before_backtick_and_tilde_fences() {
+    for (input, esm) in [
+        (
+            "import A from 'a'\n```jsx\n<Card />\n```\n",
+            "import A from 'a'\n",
+        ),
+        ("export { A }\n~~~jsx\n<Card />\n~~~\n", "export { A }\n"),
+    ] {
+        assert_eq!(
+            segment(input),
+            vec![Segment::Esm(esm), Segment::Markdown(&input[esm.len()..])]
+        );
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert!(output.body.contains("&lt;Card /&gt;"));
+        assert!(!output.body.contains("\n<Card />\n"));
+    }
+}
+
+#[test]
+fn list_fenced_code_keeps_mdx_constructs_opaque() {
+    for input in [
+        "- ```jsx\n  <Card />\n  {value}\n  import A from 'a'\n  ```\n",
+        "1. ~~~jsx\n   <Card />\n   {value}\n   export { value }\n   ~~~\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert!(output.body.contains("&lt;Card /&gt;"));
+        assert!(output.body.contains("{value}"));
+        assert!(!output.body.contains("\n<Card />\n"));
+    }
+}
+
 // ── Strict diagnostics ──────────────────────────────────────────────
 
 #[test]

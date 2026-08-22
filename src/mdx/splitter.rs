@@ -1,6 +1,7 @@
 use super::Segment;
 use super::expr::find_expression_end;
 use super::jsx_tag::parse_jsx_tag;
+use crate::{BlockEvent, BlockParser, CodeBlockKind};
 
 /// Split MDX input into typed segments.
 ///
@@ -21,9 +22,21 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
     // ESM cannot interrupt a paragraph (requires blank line before it).
     let mut in_paragraph = false;
     let mut open_fence: Option<CodeFence> = None;
+    let fenced_code_lines = fenced_code_line_starts(bytes);
 
     while pos < len {
         let line_start = pos;
+
+        // The line-oriented delimiter state below handles root-level fences.
+        // For fences in Markdown containers (such as list items), use the
+        // block parser's source-ranged code events to keep their contents
+        // opaque without duplicating CommonMark's container rules here.
+        if fenced_code_lines.binary_search(&line_start).is_ok() {
+            extend_markdown(&mut md_start, line_start);
+            in_paragraph = true;
+            pos = next_line(bytes, pos);
+            continue;
+        }
 
         if let Some(fence) = open_fence {
             extend_markdown(&mut md_start, line_start);
@@ -354,6 +367,13 @@ pub(crate) fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
         if end >= len {
             break;
         }
+        // A fenced code block starts a new Markdown block even when the
+        // preceding ESM declaration omits its optional semicolon.  Do this
+        // before looking for generic continuation lines so the opener and
+        // its opaque contents remain Markdown.
+        if opening_code_fence(bytes, end).is_some() {
+            break;
+        }
         // Check for blank line
         let next_first_non_ws = skip_whitespace_offset(bytes, end);
         if next_first_non_ws >= len || bytes[next_first_non_ws] == b'\n' {
@@ -390,6 +410,44 @@ pub(crate) fn try_esm(bytes: &[u8], pos: usize) -> Option<usize> {
     }
 
     Some(end)
+}
+
+/// Return the physical line starts occupied by fenced-code contents.
+///
+/// Root-level fences are tracked directly by [`split`], but CommonMark lets
+/// fences occur after container prefixes such as list markers.  Reusing the
+/// block parser's fenced-code events keeps MDX detection aligned with the
+/// parser's list indentation and continuation rules.  Only code content
+/// lines are returned: opening and closing delimiter lines contain no MDX
+/// constructs to suppress and continue through the normal Markdown path.
+pub(crate) fn fenced_code_line_starts(bytes: &[u8]) -> Vec<usize> {
+    let mut parser = BlockParser::new(bytes);
+    let mut events = Vec::new();
+    parser.parse(&mut events);
+
+    let mut in_fenced_code = false;
+    let mut line_starts = Vec::new();
+    for event in events {
+        match event {
+            BlockEvent::CodeBlockStart {
+                kind: CodeBlockKind::Fenced { .. },
+            } => in_fenced_code = true,
+            BlockEvent::CodeBlockStart { .. } => in_fenced_code = false,
+            BlockEvent::CodeBlockEnd => in_fenced_code = false,
+            BlockEvent::Code(range) if in_fenced_code => {
+                let mut line_start = range.start_usize();
+                while line_start > 0 && bytes[line_start - 1] != b'\n' {
+                    line_start -= 1;
+                }
+                line_starts.push(line_start);
+            }
+            _ => {}
+        }
+    }
+
+    line_starts.sort_unstable();
+    line_starts.dedup();
+    line_starts
 }
 
 /// Check whether bytes start with a static `import` or `export` declaration.
