@@ -260,6 +260,46 @@ fn semicolonless_esm_stops_before_container_fences() {
 }
 
 #[test]
+fn semicolonless_multiline_esm_stops_before_continuation_fence_owners() {
+    for (input, esm) in [
+        (
+            "export {\n  A\n}\n- item\n  ```jsx\n  <Card />\n  ```\n",
+            "export {\n  A\n}\n",
+        ),
+        (
+            "export {\n  A\n}\n1. item\n   ~~~jsx\n   <Card />\n   ~~~\n",
+            "export {\n  A\n}\n",
+        ),
+        (
+            "export {\n  A\n}\n> item\n> ```jsx\n> <Card />\n> ```\n",
+            "export {\n  A\n}\n",
+        ),
+    ] {
+        assert_eq!(
+            segment(input),
+            vec![Segment::Esm(esm), Segment::Markdown(&input[esm.len()..])]
+        );
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("item"));
+        assert!(output.body.contains("&lt;Card /&gt;"));
+    }
+}
+
+#[test]
+fn semicolonless_esm_does_not_stop_at_a_list_without_a_continuation_fence() {
+    let input = "export { A }\n- ordinary list item\n";
+
+    // The owner boundary is parser-derived from a continuation fence, not a
+    // blanket rule for list markers. Keep the existing multiline ESM scan for
+    // an adjacent list that does not own such a fence.
+    assert_eq!(segment(input), vec![Segment::Esm(input)]);
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
 fn container_exit_keeps_following_markdown_in_the_paragraph() {
     for input in [
         "- ```jsx\n  <Card />\nordinary list exit\nimport A from 'a'\n",

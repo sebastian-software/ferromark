@@ -400,7 +400,10 @@ pub(crate) fn try_esm(
         // preceding ESM declaration omits its optional semicolon.  Do this
         // before looking for generic continuation lines so the opener and
         // its opaque contents remain Markdown.
-        if opening_code_fence(bytes, end).is_some() || container_fences.contains_opener(end) {
+        if opening_code_fence(bytes, end).is_some()
+            || container_fences.contains_opener(end)
+            || container_fences.contains_owner(end)
+        {
             break;
         }
         // Check for blank line
@@ -448,6 +451,7 @@ pub(crate) fn try_esm(
 /// block parser's fenced-code events rather than copying its container rules.
 pub(crate) struct ContainerFenceLines {
     openers: Vec<usize>,
+    owners: Vec<usize>,
     content: Vec<usize>,
     closers: Vec<usize>,
     root_openers: Vec<usize>,
@@ -456,6 +460,10 @@ pub(crate) struct ContainerFenceLines {
 impl ContainerFenceLines {
     pub(crate) fn contains_opener(&self, line_start: usize) -> bool {
         self.openers.binary_search(&line_start).is_ok()
+    }
+
+    pub(crate) fn contains_owner(&self, line_start: usize) -> bool {
+        self.owners.binary_search(&line_start).is_ok()
     }
 
     pub(crate) fn contains_content(&self, line_start: usize) -> bool {
@@ -473,6 +481,7 @@ impl ContainerFenceLines {
 
 struct ParsedFence {
     opener: usize,
+    owner: Option<usize>,
     delimiter: CodeFence,
     content: Vec<usize>,
 }
@@ -484,6 +493,7 @@ pub(crate) fn container_fence_lines(bytes: &[u8]) -> ContainerFenceLines {
 
     let mut fences = ContainerFenceLines {
         openers: Vec::new(),
+        owners: Vec::new(),
         content: Vec::new(),
         closers: Vec::new(),
         root_openers: Vec::new(),
@@ -543,6 +553,7 @@ pub(crate) fn container_fence_lines(bytes: &[u8]) -> ContainerFenceLines {
                     .expect("fenced-code boundary accompanies every fenced start");
                 current_fence = (container_depth > 0).then(|| ParsedFence {
                     opener: line_start(bytes, boundary.delimiter.start_usize()),
+                    owner: boundary.container_start,
                     delimiter: CodeFence {
                         marker: bytes[boundary.delimiter.start_usize()],
                         length: boundary.delimiter.len_usize(),
@@ -564,6 +575,8 @@ pub(crate) fn container_fence_lines(bytes: &[u8]) -> ContainerFenceLines {
     finish_fence(bytes, &mut fences, current_fence);
     fences.openers.sort_unstable();
     fences.openers.dedup();
+    fences.owners.sort_unstable();
+    fences.owners.dedup();
     fences.content.sort_unstable();
     fences.content.dedup();
     fences.closers.sort_unstable();
@@ -578,6 +591,9 @@ fn finish_fence(bytes: &[u8], fences: &mut ContainerFenceLines, fence: Option<Pa
     let opener = fence.opener;
 
     fences.openers.push(opener);
+    if let Some(owner) = fence.owner {
+        fences.owners.push(owner);
+    }
     fences.content.extend(fence.content.iter().copied());
     let final_line = fence.content.last().copied().unwrap_or(opener);
     let closer = next_line(bytes, final_line);
