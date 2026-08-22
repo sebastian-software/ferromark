@@ -1,0 +1,9 @@
+name: Full SHA
+
+on: workflow_dispatch
+
+jobs:
+  pinned:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567

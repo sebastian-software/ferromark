@@ -1,0 +1,9 @@
+name: No action references
+
+on: workflow_dispatch
+
+jobs:
+  shell-only:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hello

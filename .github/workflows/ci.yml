@@ -50,6 +50,7 @@ jobs:
           toolchain: stable
           components: rustfmt
       - run: cargo fmt --check
+      - run: ./scripts/test-check-workflow-pins.sh
       - run: ./scripts/check-workflow-pins.sh
 
   rustsec:
