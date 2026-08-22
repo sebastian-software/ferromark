@@ -36,6 +36,34 @@ fn reference_link_resolution_budget_is_shared_across_paragraphs() {
     assert!(html.ends_with("<p>[x]</p>\n"));
 }
 
+#[cfg(feature = "mdx")]
+#[test]
+fn mdx_reference_budget_is_shared_across_markdown_segments() {
+    use ferromark::mdx::{MdxEvent, parse_events};
+
+    let references_per_segment = limits::MAX_REFERENCE_RESOLUTION_WORK / 3;
+    let segment = "[x]\n\n".repeat(references_per_segment);
+    let input = format!("[x]: /safe\n\n{segment}<Component />\n\n{segment}");
+    let stream = parse_events(&input);
+
+    // A flow JSX separator creates two independent Markdown segments, but
+    // they are still one MDX document and therefore share one work allowance.
+    assert_eq!(
+        stream
+            .events
+            .iter()
+            .filter(|event| matches!(event, MdxEvent::Inline(InlineEvent::LinkStartRef { .. })))
+            .count(),
+        references_per_segment
+    );
+    assert!(
+        stream
+            .events
+            .iter()
+            .any(|event| matches!(event, MdxEvent::FlowJsxSelfClose(_)))
+    );
+}
+
 #[test]
 fn reusable_inline_parser_resets_reference_budget_per_document() {
     let mut refs = LinkRefStore::new();
