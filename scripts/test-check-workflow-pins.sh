@@ -44,14 +44,17 @@ run_fixture local-and-docker.yml 0
 run_fixture mutable-ref.yml 1 'actions/checkout@v5'
 run_fixture missing-ref.yml 1 'actions/checkout'
 run_fixture flow-style-mutable-ref.yml 1 'actions/upload-artifact@v4'
+run_fixture multiple-flow-mappings.yml 1 'actions/cache@v4'
+run_fixture non-action-text.yml 0
 run_fixture no-matches.yml 0
+run_fixture malformed.yml 2 'Failed to parse workflow file'
 
 scanner_directory="$temporary_directory/scanner-failure"
 fake_bin="$temporary_directory/fake-bin"
 mkdir -p "$scanner_directory" "$fake_bin"
 cp "$fixtures/full-sha.yml" "$scanner_directory/workflow.yml"
-cp "$fixtures/failing-grep" "$fake_bin/grep"
-chmod +x "$fake_bin/grep"
+cp "$fixtures/failing-ruby" "$fake_bin/ruby"
+chmod +x "$fake_bin/ruby"
 
 if PATH="$fake_bin:$PATH" "$checker" "$scanner_directory" >"$temporary_directory/scanner-output" 2>&1; then
   fail "scanner failure unexpectedly succeeded"
@@ -61,7 +64,7 @@ fi
 
 [[ "$scanner_status" == 2 ]] || \
   fail "scanner failure exited $scanner_status; expected 2: $(<"$temporary_directory/scanner-output")"
-grep --fixed-strings --quiet 'Failed to scan workflow files' "$temporary_directory/scanner-output" || \
+grep --fixed-strings --quiet 'simulated Ruby scanner failure' "$temporary_directory/scanner-output" || \
   fail "scanner failure did not report the scan error: $(<"$temporary_directory/scanner-output")"
 
 echo "workflow pin checks passed"
