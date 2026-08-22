@@ -3,7 +3,10 @@
 use crate::Range;
 
 /// GitHub-style callout/admonition type.
+///
+/// Future releases may add callout types. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CalloutType {
     /// Informational note.
     Note,
@@ -42,7 +45,10 @@ impl CalloutType {
 }
 
 /// Column alignment for table cells.
+///
+/// Future releases may add alignment modes. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum Alignment {
     /// No alignment specified.
     #[default]
@@ -56,7 +62,10 @@ pub enum Alignment {
 }
 
 /// The source form of a code block.
+///
+/// Future releases may add code-block forms. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CodeBlockKind {
     /// A backtick- or tilde-fenced code block.
     Fenced {
@@ -68,7 +77,10 @@ pub enum CodeBlockKind {
 }
 
 /// Events emitted by the block parser.
+///
+/// Future releases may add events. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BlockEvent {
     /// Start of a paragraph.
     ParagraphStart,
@@ -209,7 +221,10 @@ pub enum BlockEvent {
 }
 
 /// Type of list.
+///
+/// Future releases may add list forms. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ListKind {
     /// Unordered list (bullet points).
     Unordered,
@@ -223,7 +238,10 @@ pub enum ListKind {
 }
 
 /// Task list item state.
+///
+/// Future releases may add task states. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum TaskState {
     /// Not a task item.
     #[default]

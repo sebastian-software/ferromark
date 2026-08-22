@@ -93,7 +93,10 @@ pub trait FencedCodeRenderer {
 }
 
 /// Trust boundary applied while rendering links, images, and raw HTML.
+///
+/// Future releases may add policies. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum RenderPolicy {
     /// Escape all raw HTML and allow only browser-safe URL schemes.
     #[default]
@@ -103,7 +106,22 @@ pub enum RenderPolicy {
 }
 
 /// Parsing/rendering options.
+///
+/// This struct is non-exhaustive so new options can be added without a breaking
+/// release. Outside ferromark, Rust rejects both complete and struct-update
+/// literals for non-exhaustive structs. Start with a preset and mutate the
+/// public fields instead:
+///
+/// ```
+/// use ferromark::Options;
+///
+/// let mut options = Options::default();
+/// options.heading_ids = false;
+/// ```
+///
+/// [`options!`] is a compact equivalent when several fields need changing.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Options {
     /// Select the output trust boundary. Defaults to [`RenderPolicy::Untrusted`].
     pub render_policy: RenderPolicy,
@@ -302,6 +320,39 @@ impl Default for Options {
             link_base_path: None,
         }
     }
+}
+
+/// Create [`Options`] by applying public-field updates to a preset.
+///
+/// This is useful outside ferromark because [`Options`] is non-exhaustive and
+/// therefore cannot be constructed with a struct literal. It is equivalent to
+/// creating the preset, mutating each named public field, and returning it.
+///
+/// ```
+/// use ferromark::Options;
+///
+/// let options = ferromark::options!(Options::gfm();
+///     front_matter: true,
+///     allow_html: false,
+/// );
+/// assert!(options.front_matter);
+/// assert!(!options.allow_html);
+/// ```
+#[macro_export]
+macro_rules! options {
+    ($base:expr; $($field:ident $( : $value:expr )?),* $(,)?) => {{
+        let mut __ferromark_options = $base;
+        $(
+            $crate::options!(@set __ferromark_options, $field $(, $value)?);
+        )*
+        __ferromark_options
+    }};
+    (@set $options:ident, $field:ident, $value:expr) => {
+        $options.$field = $value
+    };
+    (@set $options:ident, $field:ident) => {
+        $options.$field = $field
+    };
 }
 
 /// Result of parsing Markdown with front matter extraction.

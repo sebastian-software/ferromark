@@ -3,22 +3,18 @@ use ferromark::{Options, to_html_with_options};
 fn superscript_html(input: &str) -> String {
     to_html_with_options(
         input,
-        &Options {
+        &ferromark::options!(Options::default();
             superscript: true,
-            heading_ids: false,
-            ..Options::default()
-        },
+            heading_ids: false,),
     )
 }
 
 fn no_superscript_html(input: &str) -> String {
     to_html_with_options(
         input,
-        &Options {
+        &ferromark::options!(Options::default();
             superscript: false,
-            heading_ids: false,
-            ..Options::default()
-        },
+            heading_ids: false,),
     )
 }
 
@@ -97,12 +93,10 @@ fn superscript_does_not_parse_in_link_destinations() {
 fn superscript_does_not_break_footnote_refs() {
     let result = to_html_with_options(
         "[^fn] and 2^2^\n\n[^fn]: Footnote",
-        &Options {
+        &ferromark::options!(Options::default();
             superscript: true,
             footnotes: true,
-            heading_ids: false,
-            ..Options::default()
-        },
+            heading_ids: false,),
     );
 
     assert!(result.contains("<sup>2</sup>"), "{result}");

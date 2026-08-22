@@ -15,10 +15,8 @@ fn spec_to_html(input: &str) -> String {
 /// Full spec conformance requires raw-HTML passthrough, which only the
 /// trusted rendering policy provides.
 fn spec_to_html_trusted(input: &str) -> String {
-    let options = Options {
-        render_policy: RenderPolicy::Trusted,
-        ..Options::commonmark()
-    };
+    let options = ferromark::options!(Options::commonmark();
+        render_policy: RenderPolicy::Trusted,);
     to_html_with_options(input, &options)
 }
 

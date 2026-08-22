@@ -25,7 +25,7 @@ fn throughput(bytes: usize, seconds: f64) -> f64 { bytes as f64 / seconds }
 "#;
 
 fn all_extensions() -> Options {
-    Options {
+    ferromark::options!(Options::default();
         render_policy: RenderPolicy::Untrusted,
         allow_html: true,
         allow_link_refs: true,
@@ -48,27 +48,20 @@ fn all_extensions() -> Options {
         definition_lists: true,
         line_comments: true,
         indented_code_blocks: true,
-        link_base_path: None,
-    }
+        link_base_path: None,)
 }
 
 fn options_cost_benches(c: &mut Criterion) {
     let input = SHARED_SECTION.repeat(96);
     let mut group = c.benchmark_group("options/shared_corpus");
     group.throughput(Throughput::Bytes(input.len() as u64));
-    let table_column_widths = Options {
-        table_column_widths: true,
-        ..Options::default()
-    };
+    let table_column_widths = ferromark::options!(Options::default();
+        table_column_widths: true,);
 
-    let merged_table_cells = Options {
-        merged_table_cells: true,
-        ..Options::default()
-    };
-    let inline_footnotes = Options {
-        inline_footnotes: true,
-        ..Options::default()
-    };
+    let merged_table_cells = ferromark::options!(Options::default();
+        merged_table_cells: true,);
+    let inline_footnotes = ferromark::options!(Options::default();
+        inline_footnotes: true,);
 
     for (name, options) in [
         ("minimal", Options::minimal()),
@@ -80,24 +73,18 @@ fn options_cost_benches(c: &mut Criterion) {
         ("default_inline_footnotes", inline_footnotes),
         (
             "default_definition_lists",
-            Options {
-                definition_lists: true,
-                ..Options::default()
-            },
+            ferromark::options!(Options::default();
+                definition_lists: true,),
         ),
         (
             "default_line_comments",
-            Options {
-                line_comments: true,
-                ..Options::default()
-            },
+            ferromark::options!(Options::default();
+                line_comments: true,),
         ),
         (
             "default_no_indented_code",
-            Options {
-                indented_code_blocks: false,
-                ..Options::default()
-            },
+            ferromark::options!(Options::default();
+                indented_code_blocks: false,),
         ),
         ("all_extensions", all_extensions()),
     ] {

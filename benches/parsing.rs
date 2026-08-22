@@ -187,10 +187,8 @@ fn bench_extensions(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("extensions");
 
-    let deflist_options = Options {
-        definition_lists: true,
-        ..Options::gfm()
-    };
+    let deflist_options = ferromark::options!(Options::gfm();
+        definition_lists: true,);
     group.throughput(Throughput::Bytes(samples::DEFLISTS_5K.len() as u64));
     group.bench_function("deflists_5k", |b| {
         b.iter(|| {
@@ -198,11 +196,9 @@ fn bench_extensions(c: &mut Criterion) {
         })
     });
 
-    let merged_options = Options {
+    let merged_options = ferromark::options!(Options::gfm();
         merged_table_cells: true,
-        table_column_widths: true,
-        ..Options::gfm()
-    };
+        table_column_widths: true,);
     group.throughput(Throughput::Bytes(samples::TABLES_MERGED_5K.len() as u64));
     group.bench_function("tables_merged_5k", |b| {
         b.iter(|| {
@@ -210,7 +206,7 @@ fn bench_extensions(c: &mut Criterion) {
         })
     });
 
-    let all_options = Options {
+    let all_options = ferromark::options!(Options::default();
         render_policy: RenderPolicy::Untrusted,
         allow_html: true,
         allow_link_refs: true,
@@ -233,8 +229,7 @@ fn bench_extensions(c: &mut Criterion) {
         definition_lists: true,
         line_comments: true,
         indented_code_blocks: true,
-        link_base_path: None,
-    };
+        link_base_path: None,);
     group.throughput(Throughput::Bytes(samples::MIXED_EXTENDED_5K.len() as u64));
     group.bench_function("mixed_extended_5k", |b| {
         b.iter(|| {

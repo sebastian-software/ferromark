@@ -201,11 +201,9 @@ Start from the syntax contract you need, then enable individual extensions:
 ```rust
 use ferromark::Options;
 
-let options = Options {
-    front_matter: true,
-    allow_html: false,
-    ..Options::gfm()
-};
+let mut options = Options::gfm();
+options.front_matter = true;
+options.allow_html = false;
 
 let html = ferromark::to_html_with_options(markdown, &options);
 ```
@@ -234,9 +232,12 @@ deployed under a subpath; image sources and autolinks are not rewritten.
 
 All constructors keep `RenderPolicy::Untrusted`. `allow_html` controls whether
 raw HTML syntax is parsed; `RenderPolicy` independently controls whether parsed
-HTML is preserved or escaped. `Options::default()` retains ferromark's
-backward-compatible feature mix. Measure the configurations on your corpus with
-`cargo bench --bench options`.
+HTML is preserved or escaped. `Options` is non-exhaustive: Rust therefore
+forbids external `Options { .. }` literals, including struct-update literals.
+Start with a preset and mutate its public fields as above, or use
+`ferromark::options!(Options::default(); field: value,)` for a compact form.
+`Options::default()` retains ferromark's backward-compatible feature mix.
+Measure the configurations on your corpus with `cargo bench --bench options`.
 
 ## Trade-offs
 
@@ -269,16 +270,15 @@ Trusted documents and MDX can opt into passthrough explicitly:
 ```rust
 use ferromark::{Options, RenderPolicy};
 
-let options = Options {
-    render_policy: RenderPolicy::Trusted,
-    ..Options::default()
-};
+let mut options = Options::default();
+options.render_policy = RenderPolicy::Trusted;
 let html = ferromark::to_html_with_options(trusted_markdown, &options);
 ```
 
 `disallowed_raw_html` implements the narrower GFM tag filter in trusted mode. It is not a general-purpose HTML sanitizer and does not make arbitrary raw HTML safe by itself.
 
-Upgrading from an older release? See the
+Upgrading from an older release? See the [0.8 migration guide](docs/migration-0.8.md)
+for the `Options` and event-match migration, the
 [0.2 migration guide](docs/migration-0.2.md) for the rendering default and the
 fallible UTF-8 and MDX APIs, and the
 [0.3 migration guide](docs/migration-0.3.md) for removed Cargo features and the

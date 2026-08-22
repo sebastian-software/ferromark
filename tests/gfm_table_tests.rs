@@ -153,10 +153,8 @@ fn table_terminated_by_thematic_break() {
 #[test]
 fn table_disabled_via_options() {
     let input = "| a | b |\n| - | - |\n| c | d |\n";
-    let options = Options {
-        tables: false,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        tables: false,);
     let result = to_html_with_options(input, &options);
     // Without tables, this should be a paragraph (with thematic break from ---)
     assert!(
@@ -212,10 +210,8 @@ fn delimiter_left_alignment() {
 // === Opt-in relative column-width hints ===
 
 fn table_width_options() -> Options {
-    Options {
-        table_column_widths: true,
-        ..Options::default()
-    }
+    ferromark::options!(Options::default();
+        table_column_widths: true,)
 }
 
 #[test]
@@ -282,11 +278,9 @@ fn rounded_column_widths_still_total_one_hundred_percent() {
 #[test]
 fn column_width_option_does_not_enable_tables() {
     let input = "| A | B |\n| -- | ---- |\n";
-    let options = Options {
+    let options = ferromark::options!(Options::default();
         tables: false,
-        table_column_widths: true,
-        ..Options::default()
-    };
+        table_column_widths: true,);
     let result = to_html_with_options(input, &options);
 
     assert!(!result.contains("<table>"));
@@ -432,10 +426,8 @@ fn cmark_ext_embedded_html_in_cells() {
     assert_eq!(
         to_html_with_options(
             input,
-            &Options {
-                render_policy: RenderPolicy::Trusted,
-                ..Options::default()
-            }
+            &ferromark::options!(Options::default();
+                render_policy: RenderPolicy::Trusted,)
         ),
         expected
     );

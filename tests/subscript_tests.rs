@@ -3,22 +3,18 @@ use ferromark::{Options, to_html_with_options};
 fn subscript_html(input: &str) -> String {
     to_html_with_options(
         input,
-        &Options {
+        &ferromark::options!(Options::default();
             subscript: true,
-            heading_ids: false,
-            ..Options::default()
-        },
+            heading_ids: false,),
     )
 }
 
 fn no_subscript_html(input: &str) -> String {
     to_html_with_options(
         input,
-        &Options {
+        &ferromark::options!(Options::default();
             subscript: false,
-            heading_ids: false,
-            ..Options::default()
-        },
+            heading_ids: false,),
     )
 }
 

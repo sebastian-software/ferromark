@@ -85,10 +85,8 @@ fn crlf_line_endings() {
 
 #[test]
 fn to_html_with_front_matter_strips() {
-    let options = Options {
-        front_matter: true,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        front_matter: true,);
     let html = to_html_with_options("---\ntitle: Hello\n---\n# Content", &options);
     assert!(html.contains("Content</h1>"));
     assert!(!html.contains("title"));

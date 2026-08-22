@@ -49,10 +49,8 @@ fn default_policy_keeps_safe_and_relative_urls() {
 fn literal_autolinks_use_the_untrusted_policy_path() {
     let html = to_html_with_options(
         "https://example.com",
-        &Options {
-            autolink_literals: true,
-            ..Options::default()
-        },
+        &ferromark::options!(Options::default();
+            autolink_literals: true,),
     );
 
     assert!(html.contains("href=\"https://example.com\""));
@@ -62,11 +60,9 @@ fn literal_autolinks_use_the_untrusted_policy_path() {
 fn trusted_policy_is_an_explicit_passthrough_boundary() {
     let html = to_html_with_options(
         "<span onclick=\"run()\">ok</span> [custom](app:open)",
-        &Options {
+        &ferromark::options!(Options::default();
             render_policy: RenderPolicy::Trusted,
-            disallowed_raw_html: false,
-            ..Options::default()
-        },
+            disallowed_raw_html: false,),
     );
 
     assert!(html.contains("<span onclick=\"run()\">"));

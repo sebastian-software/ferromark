@@ -5,7 +5,10 @@ use crate::{Options, RenderPolicy};
 use super::{Segment, segment};
 
 /// Error returned when a component name cannot be used as a JavaScript binding.
+///
+/// Future releases may add validation failures. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ComponentNameError {
     /// The name is empty.
     Empty,

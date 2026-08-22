@@ -200,10 +200,8 @@ fn table_columns_are_bounded() {
     let markdown = format!("| {header} |\n| {delimiter} |\n");
     let html = to_html_with_options(
         &markdown,
-        &Options {
-            tables: true,
-            ..Options::default()
-        },
+        &ferromark::options!(Options::default();
+            tables: true,),
     );
 
     assert_eq!(html.matches("<th>").count(), limits::MAX_TABLE_COLUMNS);

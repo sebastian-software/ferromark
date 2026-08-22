@@ -1,11 +1,9 @@
 use ferromark::{BlockEvent, BlockParser, Options, to_html_with_options};
 
 fn options() -> Options {
-    Options {
+    ferromark::options!(Options::default();
         tables: true,
-        merged_table_cells: true,
-        ..Options::default()
-    }
+        merged_table_cells: true,)
 }
 
 fn render(input: &str) -> String {
@@ -82,12 +80,10 @@ fn merged_header_cells_participate_in_table_recognition() {
 
 #[test]
 fn merged_cells_compose_with_underlying_column_width_hints() {
-    let options = Options {
+    let options = ferromark::options!(Options::default();
         tables: true,
         merged_table_cells: true,
-        table_column_widths: true,
-        ..Options::default()
-    };
+        table_column_widths: true,);
     let html = to_html_with_options(
         "\
 | Group ||

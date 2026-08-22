@@ -57,6 +57,9 @@ cargo add ferromark
                 println!("[{i}] Expression");
                 println!("    {}", s.trim());
             }
+            _ => {
+                println!("[{i}] Unsupported segment");
+            }
         }
         println!();
     }

@@ -3,10 +3,8 @@ use ferromark::{Options, to_html, to_html_with_options};
 fn without_indented_code(input: &str) -> String {
     to_html_with_options(
         input,
-        &Options {
-            indented_code_blocks: false,
-            ..Options::default()
-        },
+        &ferromark::options!(Options::default();
+            indented_code_blocks: false,),
     )
 }
 
@@ -62,11 +60,9 @@ fn blockquote_indented_code_falls_back_to_paragraph_when_disabled() {
 fn footnote_indented_code_falls_back_to_paragraph_when_disabled() {
     let result = to_html_with_options(
         "[^1]: note\n\n        nested\n\nText[^1].\n",
-        &Options {
+        &ferromark::options!(Options::default();
             footnotes: true,
-            indented_code_blocks: false,
-            ..Options::default()
-        },
+            indented_code_blocks: false,),
     );
 
     assert!(result.contains("<p>note</p>"), "{result}");

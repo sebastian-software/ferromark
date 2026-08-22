@@ -838,7 +838,10 @@ fn is_email_autolink(content: &[u8]) -> bool {
 // ─── Autolink Literals (GFM extension) ───────────────────────────────────────
 
 /// Kind of autolink literal.
+///
+/// Future releases may add literal kinds. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AutolinkLiteralKind {
     /// `http://` or `https://` or `ftp://` URL.
     Url,

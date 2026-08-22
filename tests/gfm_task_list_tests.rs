@@ -49,9 +49,7 @@ fn task_list_disabled() {
 
     let input = "- [ ] foo\n- [x] bar";
     let expected = "<ul>\n<li>[ ] foo</li>\n<li>[x] bar</li>\n</ul>\n";
-    let options = Options {
-        task_lists: false,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        task_lists: false,);
     assert_eq!(to_html_with_options(input, &options), expected);
 }

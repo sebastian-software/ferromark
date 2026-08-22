@@ -24,10 +24,8 @@ fn document_with_distinct_footnotes(count: usize) -> String {
 }
 
 fn benchmark_footnote_scaling(c: &mut Criterion) {
-    let options = Options {
-        footnotes: true,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        footnotes: true,);
     let mut group = c.benchmark_group("footnotes/distinct_references");
     group.sample_size(10);
 

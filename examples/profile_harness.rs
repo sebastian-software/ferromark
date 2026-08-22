@@ -18,7 +18,7 @@ use std::hint::black_box;
 use ferromark::{Options, RenderPolicy};
 
 fn all_extensions() -> Options {
-    Options {
+    ferromark::options!(Options::default();
         render_policy: RenderPolicy::Untrusted,
         allow_html: true,
         allow_link_refs: true,
@@ -41,8 +41,7 @@ fn all_extensions() -> Options {
         definition_lists: true,
         line_comments: true,
         indented_code_blocks: true,
-        link_base_path: None,
-    }
+        link_base_path: None,)
 }
 
 fn preset(name: &str) -> Options {
@@ -52,64 +51,36 @@ fn preset(name: &str) -> Options {
         "gfm" => Options::gfm(),
         "default" => Options::default(),
         "all" => all_extensions(),
-        "gfm-deflists" => Options {
-            definition_lists: true,
-            ..Options::gfm()
-        },
-        "gfm-merged" => Options {
-            merged_table_cells: true,
-            ..Options::gfm()
-        },
-        "gfm-widths" => Options {
-            table_column_widths: true,
-            ..Options::gfm()
-        },
-        "gfm-footnotes" => Options {
+        "gfm-deflists" => ferromark::options!(Options::gfm();
+            definition_lists: true,),
+        "gfm-merged" => ferromark::options!(Options::gfm();
+            merged_table_cells: true,),
+        "gfm-widths" => ferromark::options!(Options::gfm();
+            table_column_widths: true,),
+        "gfm-footnotes" => ferromark::options!(Options::gfm();
             footnotes: true,
-            inline_footnotes: true,
-            ..Options::gfm()
-        },
-        "cm+tables" => Options {
-            tables: true,
-            ..Options::commonmark()
-        },
-        "cm+autolink" => Options {
-            autolink_literals: true,
-            ..Options::commonmark()
-        },
-        "cm+strike" => Options {
-            strikethrough: true,
-            ..Options::commonmark()
-        },
-        "cm+tasklists" => Options {
-            task_lists: true,
-            ..Options::commonmark()
-        },
-        "cm+disallowed" => Options {
-            disallowed_raw_html: true,
-            ..Options::commonmark()
-        },
-        "cm+headingids" => Options {
-            heading_ids: true,
-            ..Options::commonmark()
-        },
-        "cm+math" => Options {
-            math: true,
-            ..Options::commonmark()
-        },
-        "cm+highlight" => Options {
-            highlight: true,
-            ..Options::commonmark()
-        },
-        "cm+supsub" => Options {
+            inline_footnotes: true,),
+        "cm+tables" => ferromark::options!(Options::commonmark();
+            tables: true,),
+        "cm+autolink" => ferromark::options!(Options::commonmark();
+            autolink_literals: true,),
+        "cm+strike" => ferromark::options!(Options::commonmark();
+            strikethrough: true,),
+        "cm+tasklists" => ferromark::options!(Options::commonmark();
+            task_lists: true,),
+        "cm+disallowed" => ferromark::options!(Options::commonmark();
+            disallowed_raw_html: true,),
+        "cm+headingids" => ferromark::options!(Options::commonmark();
+            heading_ids: true,),
+        "cm+math" => ferromark::options!(Options::commonmark();
+            math: true,),
+        "cm+highlight" => ferromark::options!(Options::commonmark();
+            highlight: true,),
+        "cm+supsub" => ferromark::options!(Options::commonmark();
             superscript: true,
-            subscript: true,
-            ..Options::commonmark()
-        },
-        "cm+callouts" => Options {
-            callouts: true,
-            ..Options::commonmark()
-        },
+            subscript: true,),
+        "cm+callouts" => ferromark::options!(Options::commonmark();
+            callouts: true,),
         other => {
             eprintln!("unknown preset: {other}");
             std::process::exit(2);
