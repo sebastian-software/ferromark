@@ -345,10 +345,13 @@ pub fn resolve_reference_links_into(
 
         // Links cannot contain links (but can contain images)
         let end_open_idx = open_brackets.partition_point(|&(pos, _)| pos < close_pos);
-        if end_open_idx > candidate_limit {
-            continue;
-        }
-        let has_nested_candidate = candidate_prefix[end_open_idx] > candidate_prefix[open_idx + 1];
+        // Once the budget boundary is reached, later openers are deliberately
+        // literal. They cannot invalidate a completed outer candidate; only
+        // candidates that were fully inspected before that boundary can form
+        // nested links.
+        let inspected_end_open_idx = end_open_idx.min(candidate_limit);
+        let has_nested_candidate =
+            candidate_prefix[inspected_end_open_idx] > candidate_prefix[open_idx + 1];
         if contains_link(occupied, open_pos, close_pos) || has_nested_candidate {
             continue;
         }

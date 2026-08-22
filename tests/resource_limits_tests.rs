@@ -90,6 +90,29 @@ fn exhausted_reference_budget_keeps_completed_candidates_in_the_current_paragrap
 }
 
 #[test]
+fn exhausted_reference_budget_keeps_completed_outer_full_reference_links() {
+    // Leave enough work for the final paragraph's bracket structure and its
+    // outer full-reference candidate, but not its unresolved inner openers.
+    let completed_paragraphs = (limits::MAX_REFERENCE_RESOLUTION_WORK - 24) / 3;
+    let markdown = format!(
+        "[x]: /safe\n[label]: /target\n\n{}[x [a [b] ] ][label]",
+        "[x]\n\n".repeat(completed_paragraphs)
+    );
+    let html = to_html(&markdown);
+
+    // The uninspected `[a ...]` and `[b]` syntax degrades to literal text,
+    // but it must not discard the already completed outer full reference.
+    assert_eq!(
+        html.matches("<a href=\"/safe\">").count(),
+        completed_paragraphs
+    );
+    assert!(
+        html.ends_with("<p><a href=\"/target\">x [a [b] ] </a></p>\n"),
+        "{html}"
+    );
+}
+
+#[test]
 fn nested_reference_brackets_remain_bounded_and_literal_after_exhaustion() {
     let depth = limits::MAX_INLINE_MARKS / 2 - 1;
     let nested = format!("{}x{}", "[".repeat(depth), "]".repeat(depth));
