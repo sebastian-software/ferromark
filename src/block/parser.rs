@@ -2353,16 +2353,6 @@ impl<'a> BlockParser<'a> {
         if fence_len < 3 {
             return false;
         }
-        #[cfg(feature = "mdx")]
-        if let Some(boundaries) = &mut self.fenced_code_boundaries {
-            boundaries.push(FencedCodeBoundary {
-                delimiter: Range::from_usize(
-                    self.cursor.offset(),
-                    self.cursor.offset() + fence_len,
-                ),
-            });
-        }
-
         // For backtick fences, info string cannot contain backticks
         let _info_start = temp_cursor.offset();
 
@@ -2382,6 +2372,19 @@ impl<'a> BlockParser<'a> {
             if info_slice.contains(&b'`') {
                 return false;
             }
+        }
+
+        // Keep boundary metadata in lockstep with the public events below.
+        // An invalid backtick info string is not a fence and therefore cannot
+        // contribute a boundary for MDX's parser-derived fence tracking.
+        #[cfg(feature = "mdx")]
+        if let Some(boundaries) = &mut self.fenced_code_boundaries {
+            boundaries.push(FencedCodeBoundary {
+                delimiter: Range::from_usize(
+                    self.cursor.offset(),
+                    self.cursor.offset() + fence_len,
+                ),
+            });
         }
 
         // Trim trailing whitespace from info string

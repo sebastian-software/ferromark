@@ -378,6 +378,22 @@ fn continuation_line_fence_container_exit_keeps_esm_nonflow() {
 }
 
 #[test]
+fn rejected_backtick_opener_does_not_shift_container_fence_boundaries() {
+    for input in [
+        "``` invalid ` info\n- ```jsx\n  <Card />\n  {value}\n  import A from 'a'\n  ```\n",
+        "``` invalid ` info\n1. ~~~jsx\n   <Card />\n   {value}\n   export { value }\n   ~~~\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert!(output.esm.is_empty());
+        assert!(output.body.contains("&lt;Card /&gt;"));
+        assert!(!output.body.contains("\n<Card />\n"));
+    }
+}
+
+#[test]
 fn code_block_kind_fenced_pattern_remains_source_compatible() {
     let kind = CodeBlockKind::Fenced { info: None };
     assert!(matches!(kind, CodeBlockKind::Fenced { info: None }));
