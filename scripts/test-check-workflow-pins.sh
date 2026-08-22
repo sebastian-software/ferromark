@@ -46,8 +46,15 @@ run_fixture missing-ref.yml 1 'actions/checkout'
 run_fixture flow-style-mutable-ref.yml 1 'actions/upload-artifact@v4'
 run_fixture multiple-flow-mappings.yml 1 'actions/cache@v4'
 run_fixture non-action-text.yml 0
+run_fixture aliased-key-mutable-ref.yml 1 'actions/checkout@v5'
+run_fixture aliased-pinned-ref.yml 0
+run_fixture merged-mutable-ref.yml 1 'actions/cache@v4'
+run_fixture self-repository-actions.yml 0
+run_fixture invalid-self-repository-actions.yml 1 '$/.github/actions/build@v1'
 run_fixture no-matches.yml 0
 run_fixture malformed.yml 2 'Failed to parse workflow file'
+run_fixture unknown-alias.yml 2 'Failed to parse workflow file'
+run_fixture cyclic-alias.yml 2 'Failed to scan workflow file'
 
 scanner_directory="$temporary_directory/scanner-failure"
 fake_bin="$temporary_directory/fake-bin"
