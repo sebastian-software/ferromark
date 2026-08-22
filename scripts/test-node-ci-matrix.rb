@@ -7,6 +7,10 @@ workflow_path = File.expand_path('../.github/workflows/ci.yml', __dir__)
 workflow = YAML.safe_load(File.read(workflow_path), aliases: false)
 native = workflow.fetch('jobs').fetch('native')
 
+unless native.fetch('runs-on') == '${{ matrix.os }}'
+  abort 'native CI job must run on the operating system selected by the matrix'
+end
+
 unless native.fetch('permissions') == { 'contents' => 'read' }
   abort 'native CI job must use contents: read permissions only'
 end
