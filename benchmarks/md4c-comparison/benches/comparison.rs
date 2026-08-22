@@ -206,11 +206,9 @@ to handle longer documents efficiently.
 /// extras (heading IDs, callouts) off so every parser performs the same work.
 /// pulldown-cmark, md4c, and comrak generate no heading IDs in this setup.
 fn ferromark_comparison_options() -> ferromark::Options {
-    ferromark::Options {
+    ferromark::options!(ferromark::Options::default();
         heading_ids: false,
-        callouts: false,
-        ..Default::default()
-    }
+        callouts: false,)
 }
 
 /// Parse with ferromark

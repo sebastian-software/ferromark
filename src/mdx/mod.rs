@@ -128,7 +128,9 @@ pub use events::{
 /// A typed segment of an MDX document.
 ///
 /// All variants are zero-copy `&str` slices into the original input.
+/// Future releases may add segment types. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Segment<'a> {
     /// ESM statement (`import` / `export`) — pass through unchanged.
     Esm(&'a str),
@@ -161,7 +163,10 @@ pub struct SpannedSegment<'a> {
 }
 
 /// A stable category for a structural MDX diagnostic.
+///
+/// Future releases may add diagnostic categories. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MdxDiagnosticCode {
     /// A flow expression has no closing `}`.
     UnterminatedExpression,

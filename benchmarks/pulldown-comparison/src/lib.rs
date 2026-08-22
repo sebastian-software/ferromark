@@ -31,7 +31,7 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
         ParityConfig::ExtendedOverlap => (true, true, true, true, true, true, true),
     };
 
-    FerromarkOptions {
+    ferromark::options!(FerromarkOptions::default();
         render_policy: RenderPolicy::Trusted,
         allow_html: true,
         allow_link_refs: true,
@@ -55,7 +55,7 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
         line_comments: false,
         indented_code_blocks: true,
         link_base_path: None,
-    }
+    )
 }
 
 /// Return the explicit pulldown-cmark options for a parity configuration.

@@ -63,10 +63,8 @@ fn parse_setext_headings_are_collected() {
 }
 
 fn base_options(base: &str) -> Options {
-    Options {
-        link_base_path: Some(base.into()),
-        ..Options::default()
-    }
+    ferromark::options!(Options::default();
+        link_base_path: Some(base.into()),)
 }
 
 #[test]
@@ -142,10 +140,8 @@ fn link_base_path_is_attribute_escaped() {
 #[test]
 fn parse_heading_text_survives_trusted_raw_html_with_quoted_gt() {
     use ferromark::RenderPolicy;
-    let options = Options {
-        render_policy: RenderPolicy::Trusted,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        render_policy: RenderPolicy::Trusted,);
     let result = ferromark::parse_with_options("# <span title=\"a>b\">Text</span>\n", &options);
 
     assert_eq!(result.headings[0].text, "Text");

@@ -1296,13 +1296,11 @@ yarn add ferromark
 #[test]
 fn render_with_custom_options() {
     let input = "# Heading\n\n~~struck~~\n";
-    let opts = Options {
+    let opts = ferromark::options!(Options::default();
         strikethrough: true,
         heading_ids: false,
         allow_html: true,
-        disallowed_raw_html: false,
-        ..Options::default()
-    };
+        disallowed_raw_html: false,);
     let out = render_with_options(input, &opts);
     assert!(out.body.contains("<del>struck</del>"));
     assert!(!out.body.contains("id="));

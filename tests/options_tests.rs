@@ -6,7 +6,7 @@ fn minimal_should_disable_every_optional_syntax_feature() {
 
     assert_eq!(
         options,
-        Options {
+        ferromark::options!(Options::default();
             render_policy: RenderPolicy::Untrusted,
             allow_html: false,
             allow_link_refs: false,
@@ -29,8 +29,7 @@ fn minimal_should_disable_every_optional_syntax_feature() {
             definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
-            link_base_path: None,
-        }
+            link_base_path: None,)
     );
 }
 
@@ -41,11 +40,9 @@ fn commonmark_should_enable_only_commonmark_syntax_boundaries() {
     assert!(options.allow_html && options.allow_link_refs);
     assert_eq!(
         options,
-        Options {
+        ferromark::options!(Options::minimal();
             allow_html: true,
-            allow_link_refs: true,
-            ..Options::minimal()
-        }
+            allow_link_refs: true,)
     );
 }
 
@@ -55,14 +52,12 @@ fn gfm_should_extend_commonmark_with_exact_gfm_extensions() {
 
     assert_eq!(
         options,
-        Options {
+        ferromark::options!(Options::commonmark();
             tables: true,
             strikethrough: true,
             task_lists: true,
             autolink_literals: true,
-            disallowed_raw_html: true,
-            ..Options::commonmark()
-        }
+            disallowed_raw_html: true,)
     );
 }
 
@@ -77,7 +72,7 @@ fn syntax_presets_should_keep_untrusted_rendering() {
 fn default_should_retain_the_existing_feature_mix() {
     assert_eq!(
         Options::default(),
-        Options {
+        ferromark::options!(Options::default();
             render_policy: RenderPolicy::Untrusted,
             allow_html: true,
             allow_link_refs: true,
@@ -100,8 +95,7 @@ fn default_should_retain_the_existing_feature_mix() {
             definition_lists: false,
             line_comments: false,
             indented_code_blocks: true,
-            link_base_path: None,
-        }
+            link_base_path: None,)
     );
 }
 
@@ -127,10 +121,8 @@ fn commonmark_should_parse_html_without_implicitly_trusting_it() {
     let untrusted = to_html_with_options(markdown, &Options::commonmark());
     let trusted = to_html_with_options(
         markdown,
-        &Options {
-            render_policy: RenderPolicy::Trusted,
-            ..Options::commonmark()
-        },
+        &ferromark::options!(Options::commonmark();
+            render_policy: RenderPolicy::Trusted,),
     );
 
     assert_eq!(untrusted, "&lt;div&gt;content&lt;/div&gt;");

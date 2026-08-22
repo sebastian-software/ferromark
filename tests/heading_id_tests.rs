@@ -1,18 +1,14 @@
 use ferromark::{Options, to_html, to_html_with_options};
 
 fn html_with_ids(input: &str) -> String {
-    let options = Options {
-        heading_ids: true,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        heading_ids: true,);
     to_html_with_options(input, &options)
 }
 
 fn html_without_ids(input: &str) -> String {
-    let options = Options {
-        heading_ids: false,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        heading_ids: false,);
     to_html_with_options(input, &options)
 }
 

@@ -29,7 +29,9 @@ pub const MDX_EVENT_STREAM_VERSION: u16 = 2;
 ///
 /// Ranges embedded in any event are absolute byte ranges into the original
 /// input passed to [`parse_events`](super::parse_events).
+/// Future releases may add events. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MdxEvent {
     /// Front matter including its opening and closing delimiter lines.
     FrontMatter {

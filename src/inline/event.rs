@@ -3,7 +3,10 @@
 use crate::Range;
 
 /// Events emitted by the inline parser.
+///
+/// Future releases may add events. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum InlineEvent {
     /// Plain text content.
     Text(Range),

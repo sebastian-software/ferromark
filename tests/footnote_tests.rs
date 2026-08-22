@@ -1,10 +1,8 @@
 use ferromark::{Options, to_html_with_options};
 
 fn opts() -> Options {
-    Options {
-        footnotes: true,
-        ..Options::default()
-    }
+    ferromark::options!(Options::default();
+        footnotes: true,)
 }
 
 fn render(input: &str) -> String {
@@ -132,10 +130,8 @@ fn duplicate_definition_first_wins() {
 
 #[test]
 fn footnotes_disabled_literal() {
-    let opts = Options {
-        footnotes: false,
-        ..Options::default()
-    };
+    let opts = ferromark::options!(Options::default();
+        footnotes: false,);
     let result = to_html_with_options("Text[^1].\n\n[^1]: Content.", &opts);
     assert!(
         !result.contains("<sup>"),

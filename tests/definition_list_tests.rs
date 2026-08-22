@@ -1,10 +1,8 @@
 use ferromark::{BlockEvent, BlockParser, Options, to_html_with_options};
 
 fn options() -> Options {
-    Options {
-        definition_lists: true,
-        ..Options::default()
-    }
+    ferromark::options!(Options::default();
+        definition_lists: true,)
 }
 
 fn render(input: &str) -> String {

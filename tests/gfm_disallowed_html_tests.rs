@@ -3,10 +3,8 @@ use ferromark::{Options, RenderPolicy, to_html_with_options};
 fn to_html(input: &str) -> String {
     to_html_with_options(
         input,
-        &Options {
-            render_policy: RenderPolicy::Trusted,
-            ..Options::default()
-        },
+        &ferromark::options!(Options::default();
+            render_policy: RenderPolicy::Trusted,),
     )
 }
 
@@ -129,11 +127,9 @@ fn self_closing_disallowed_tag() {
 fn disallowed_html_disabled() {
     let result = to_html_with_options(
         "foo <script>alert('xss')</script> bar",
-        &Options {
+        &ferromark::options!(Options::default();
             render_policy: RenderPolicy::Trusted,
-            disallowed_raw_html: false,
-            ..Options::default()
-        },
+            disallowed_raw_html: false,),
     );
     assert_eq!(result, "<p>foo <script>alert('xss')</script> bar</p>\n");
 }

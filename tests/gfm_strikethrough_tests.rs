@@ -86,10 +86,8 @@ fn double_tilde_strikethrough() {
 fn strikethrough_disabled() {
     let result = to_html_with_options(
         "~~test~~",
-        &Options {
-            strikethrough: false,
-            ..Options::default()
-        },
+        &ferromark::options!(Options::default();
+            strikethrough: false,),
     );
     assert_eq!(result, "<p>~~test~~</p>\n");
 }

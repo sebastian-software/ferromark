@@ -21,10 +21,8 @@ Content you fully control can opt into raw HTML passthrough:
 ```rust
 use ferromark::{Options, RenderPolicy};
 
-let options = Options {
-    render_policy: RenderPolicy::Trusted,
-    ..Options::default()
-};
+let options = ferromark::options!(Options::default();
+    render_policy: RenderPolicy::Trusted,);
 let html = ferromark::to_html_with_options(trusted_markdown, &options);
 ```
 

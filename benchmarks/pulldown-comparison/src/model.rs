@@ -128,10 +128,8 @@ impl RunConfig {
             Self::MinimalSecure => Options::minimal(),
             Self::MinimalTrusted => trusted(Options::minimal()),
             Self::DefaultSecure => Options::default(),
-            Self::DefaultSecureNoHeadingIds => Options {
-                heading_ids: false,
-                ..Options::default()
-            },
+            Self::DefaultSecureNoHeadingIds => ferromark::options!(Options::default();
+                heading_ids: false,),
             Self::DefaultTrusted => trusted(Options::default()),
             Self::AllExtensionsSecure => all_extensions(),
             Self::AllExtensionsTrusted => trusted(all_extensions()),
@@ -168,14 +166,12 @@ impl FromStr for RunConfig {
 }
 
 fn trusted(options: Options) -> Options {
-    Options {
-        render_policy: RenderPolicy::Trusted,
-        ..options
-    }
+    ferromark::options!(options;
+        render_policy: RenderPolicy::Trusted,)
 }
 
 fn all_extensions() -> Options {
-    Options {
+    ferromark::options!(Options::default();
         render_policy: RenderPolicy::Untrusted,
         allow_html: true,
         allow_link_refs: true,
@@ -198,8 +194,7 @@ fn all_extensions() -> Options {
         definition_lists: true,
         line_comments: true,
         indented_code_blocks: true,
-        link_base_path: None,
-    }
+        link_base_path: None,)
 }
 
 #[cfg(test)]
@@ -235,10 +230,8 @@ mod tests {
         assert!(enabled.heading_ids);
         assert!(!disabled.heading_ids);
         assert_eq!(
-            Options {
-                heading_ids: false,
-                ..enabled
-            },
+            ferromark::options!(enabled;
+                heading_ids: false,),
             disabled
         );
     }

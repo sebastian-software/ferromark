@@ -1,10 +1,8 @@
 use ferromark::{InlineEvent, InlineParser, Options, to_html_with_options};
 
 fn options() -> Options {
-    Options {
-        inline_footnotes: true,
-        ..Options::default()
-    }
+    ferromark::options!(Options::default();
+        inline_footnotes: true,)
 }
 
 fn render(input: &str) -> String {
@@ -49,11 +47,9 @@ Reference.[^ref]
 [^ref]: Second.";
     let html = to_html_with_options(
         input,
-        &Options {
+        &ferromark::options!(Options::default();
             footnotes: true,
-            inline_footnotes: true,
-            ..Options::default()
-        },
+            inline_footnotes: true,),
     );
 
     assert!(html.contains("data-footnote-ref>1</a></sup>"), "{html}");
@@ -67,11 +63,9 @@ Reference.[^ref]
 fn inline_notes_take_precedence_over_superscript() {
     let html = to_html_with_options(
         "2^10^ and a note.^[Content.]",
-        &Options {
+        &ferromark::options!(Options::default();
             superscript: true,
-            inline_footnotes: true,
-            ..Options::default()
-        },
+            inline_footnotes: true,),
     );
 
     assert!(html.contains("2<sup>10</sup>"), "{html}");
@@ -82,11 +76,9 @@ fn inline_notes_take_precedence_over_superscript() {
 fn whitespace_only_notes_do_not_capture_later_superscript_delimiters() {
     let html = to_html_with_options(
         "some text^[  ]^word^",
-        &Options {
+        &ferromark::options!(Options::default();
             superscript: true,
-            inline_footnotes: true,
-            ..Options::default()
-        },
+            inline_footnotes: true,),
     );
 
     assert_eq!(html, "<p>some text^[  ]<sup>word</sup></p>\n");

@@ -5,10 +5,8 @@ fn html(input: &str) -> String {
 }
 
 fn html_no_callouts(input: &str) -> String {
-    let opts = Options {
-        callouts: false,
-        ..Options::default()
-    };
+    let opts = ferromark::options!(Options::default();
+        callouts: false,);
     to_html_with_options(input, &opts)
 }
 

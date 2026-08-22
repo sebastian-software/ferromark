@@ -3,10 +3,8 @@ use ferromark::{BlockEvent, BlockParser, Options, Range, RenderPolicy, to_html_w
 fn with_line_comments(input: &str) -> String {
     to_html_with_options(
         input,
-        &Options {
-            line_comments: true,
-            ..Options::default()
-        },
+        &ferromark::options!(Options::default();
+            line_comments: true,),
     )
 }
 
@@ -64,11 +62,9 @@ fn fenced_code_and_raw_html_blocks_remain_opaque() {
 
     let html = to_html_with_options(
         "<div>\n// html content\n</div>\n",
-        &Options {
+        &ferromark::options!(Options::default();
             line_comments: true,
-            render_policy: RenderPolicy::Trusted,
-            ..Options::default()
-        },
+            render_policy: RenderPolicy::Trusted,),
     );
     assert_eq!(html, "<div>\n// html content\n</div>\n");
 }
@@ -110,10 +106,8 @@ fn semantic_comment_events_keep_exact_source_order_and_range() {
     let input = "first\n// private\nsecond\n";
     let mut parser = BlockParser::new_with_options(
         input.as_bytes(),
-        Options {
-            line_comments: true,
-            ..Options::default()
-        },
+        ferromark::options!(Options::default();
+            line_comments: true,),
     );
     let mut events = Vec::new();
     parser.parse(&mut events);
@@ -140,10 +134,8 @@ fn crlf_comment_ranges_exclude_the_line_ending() {
     let input = "// private\r\nvisible\r\n";
     let mut parser = BlockParser::new_with_options(
         input.as_bytes(),
-        Options {
-            line_comments: true,
-            ..Options::default()
-        },
+        ferromark::options!(Options::default();
+            line_comments: true,),
     );
     let mut events = Vec::new();
     parser.parse(&mut events);
@@ -157,10 +149,8 @@ fn comments_before_link_reference_definitions_do_not_leak() {
     let input = "// private\n[target]: /url\n\nvisible\n";
     let mut parser = BlockParser::new_with_options(
         input.as_bytes(),
-        Options {
-            line_comments: true,
-            ..Options::default()
-        },
+        ferromark::options!(Options::default();
+            line_comments: true,),
     );
     let mut events = Vec::new();
     parser.parse(&mut events);

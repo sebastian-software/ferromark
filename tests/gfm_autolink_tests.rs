@@ -1,10 +1,8 @@
 use ferromark::{Options, to_html_with_options};
 
 fn autolink_html(input: &str) -> String {
-    let options = Options {
-        autolink_literals: true,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        autolink_literals: true,);
     to_html_with_options(input, &options)
 }
 
@@ -107,10 +105,8 @@ fn no_autolink_for_at_only() {
 #[test]
 fn autolink_disabled() {
     let input = "http://google.com";
-    let options = Options {
-        autolink_literals: false,
-        ..Options::default()
-    };
+    let options = ferromark::options!(Options::default();
+        autolink_literals: false,);
     let result = to_html_with_options(input, &options);
     assert!(
         !result.contains("<a"),
