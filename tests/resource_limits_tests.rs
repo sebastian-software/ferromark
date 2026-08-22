@@ -1,4 +1,7 @@
-use ferromark::{Options, limits, to_html, to_html_with_options};
+use ferromark::{
+    InlineEvent, InlineParser, LinkRefDef, LinkRefStore, Options, limits, to_html,
+    to_html_with_options,
+};
 
 #[test]
 fn block_container_nesting_is_bounded() {
@@ -31,6 +34,40 @@ fn reference_link_resolution_budget_is_shared_across_paragraphs() {
     // is exhausted, proving that the allowance does not reset per paragraph.
     assert_eq!(html.matches("<a href=\"/safe\">").count(), paragraphs - 2);
     assert!(html.ends_with("<p>[x]</p>\n"));
+}
+
+#[test]
+fn reusable_inline_parser_resets_reference_budget_per_document() {
+    let mut refs = LinkRefStore::new();
+    refs.insert(
+        "x".to_owned(),
+        LinkRefDef {
+            url: b"/safe".to_vec(),
+            title: None,
+        },
+    );
+    let mut parser = InlineParser::new();
+    let mut events = Vec::new();
+
+    // One document depletes its allowance. Reusing the public parser for a
+    // separate document must start a fresh document budget.
+    let exhausting_document = "[x] ".repeat(limits::MAX_REFERENCE_RESOLUTION_WORK / 3 + 1);
+    parser.parse(
+        exhausting_document.as_bytes(),
+        Some(&refs),
+        true,
+        &mut events,
+    );
+
+    events.clear();
+    parser.parse(b"[x]", Some(&refs), true, &mut events);
+    assert!(
+        matches!(
+            events.first(),
+            Some(InlineEvent::LinkStartRef { def_index: 0 })
+        ),
+        "a reusable parser must not retain the prior document's exhausted budget: {events:?}"
+    );
 }
 
 #[test]

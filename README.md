@@ -254,10 +254,11 @@ The default `RenderPolicy::Untrusted` is the browser-facing safety boundary. It 
 
 Reference-link resolution also has a document-wide work budget. If a document
 uses up that budget while inspecting reference labels, later reference links
-are emitted as literal text instead of being resolved. This conservative
-fallback applies to the default untrusted renderer (and trusted rendering as
-well), so repeated adversarial paragraphs cannot accumulate unbounded parser
-work.
+are emitted as literal text instead of being resolved. The budget resets for
+each new render or public inline-parser call, while remaining shared across
+paragraphs of that document. This conservative fallback applies to the default
+untrusted renderer (and trusted rendering as well), so repeated adversarial
+paragraphs cannot accumulate unbounded parser work.
 
 ```rust
 let html = ferromark::to_html(user_supplied_markdown);

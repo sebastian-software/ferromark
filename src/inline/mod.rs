@@ -143,7 +143,8 @@ impl InlineParser {
         allow_html: bool,
         events: &mut Vec<InlineEvent>,
     ) {
-        self.parse_with_options(
+        self.begin_document();
+        self.parse_with_options_in_document(
             text, link_refs, allow_html, true, false, false, false, true, false, false, None,
             events,
         );
@@ -165,8 +166,30 @@ impl InlineParser {
         link_refs: Option<&LinkRefStore>,
         events: &mut Vec<InlineEvent>,
     ) {
+        self.begin_document();
+        self.parse_mdx_in_document(text, link_refs, events);
+    }
+
+    /// Begin a document-level inline parsing session.
+    ///
+    /// Public parsing methods call this automatically. Renderers that parse
+    /// multiple paragraphs with one reusable parser call it once per document
+    /// so reference-resolution work remains bounded for the whole document.
+    pub(crate) fn begin_document(&mut self) {
+        self.ref_work_budget.reset();
+    }
+
+    /// Parse inline Markdown with opt-in MDX expressions as part of an active
+    /// document-level parsing session.
+    #[cfg(feature = "mdx")]
+    pub(crate) fn parse_mdx_in_document(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        events: &mut Vec<InlineEvent>,
+    ) {
         let new_events_start = events.len();
-        self.parse_with_options(
+        self.parse_with_options_in_document(
             text, link_refs, false, true, false, false, false, true, false, false, None, events,
         );
         split_mdx_text_events(text, events, new_events_start);
@@ -175,6 +198,40 @@ impl InlineParser {
     /// Parse inline content with configurable inline extensions.
     #[allow(clippy::too_many_arguments)]
     pub fn parse_with_options(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        allow_html: bool,
+        strikethrough: bool,
+        highlight: bool,
+        superscript: bool,
+        subscript: bool,
+        autolink_literals: bool,
+        math: bool,
+        inline_footnotes: bool,
+        footnote_store: Option<&FootnoteStore>,
+        events: &mut Vec<InlineEvent>,
+    ) {
+        self.begin_document();
+        self.parse_with_options_in_document(
+            text,
+            link_refs,
+            allow_html,
+            strikethrough,
+            highlight,
+            superscript,
+            subscript,
+            autolink_literals,
+            math,
+            inline_footnotes,
+            footnote_store,
+            events,
+        );
+    }
+
+    /// Parse inline content as part of an active document-level parsing session.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn parse_with_options_in_document(
         &mut self,
         text: &[u8],
         link_refs: Option<&LinkRefStore>,

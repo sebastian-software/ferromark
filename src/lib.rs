@@ -1012,9 +1012,11 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
         fenced_code_renderer: Option<&'r mut R>,
         headings: Option<&'a mut Vec<Heading>>,
     ) -> Self {
+        let mut inline_parser = InlineParser::new();
+        inline_parser.begin_document();
         Self {
             writer,
-            inline_parser: InlineParser::new(),
+            inline_parser,
             inline_events: Vec::with_capacity(64),
             para_state: ParagraphState::new(),
             heading_state: HeadingState::new(),
@@ -1685,7 +1687,7 @@ fn render_inline_content(
     inline_events.clear();
     inline_events.reserve((text.len() / 8).max(8));
     let refs = options.allow_link_refs.then_some(link_refs);
-    inline_parser.parse_with_options(
+    inline_parser.parse_with_options_in_document(
         text,
         refs,
         options.allow_html,

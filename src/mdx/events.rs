@@ -370,6 +370,7 @@ fn emit_markdown_events(
     events: &mut Vec<MdxEvent>,
 ) {
     let mut inline_parser = InlineParser::new();
+    inline_parser.begin_document();
     let mut inline_events = Vec::new();
     let mut inline_group = Vec::new();
     for block_event in block_events {
@@ -499,7 +500,7 @@ fn emit_inline_range(
     events: &mut Vec<MdxEvent>,
 ) {
     inline_events.clear();
-    inline_parser.parse_mdx(range.slice(markdown), Some(link_refs), inline_events);
+    inline_parser.parse_mdx_in_document(range.slice(markdown), Some(link_refs), inline_events);
     let inline_offset = source_offset + range.start_usize();
 
     for event in inline_events.drain(..) {

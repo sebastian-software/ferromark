@@ -79,6 +79,12 @@ impl ReferenceResolutionBudget {
     }
 
     #[inline]
+    pub(crate) fn reset(&mut self) {
+        self.remaining = limits::MAX_REFERENCE_RESOLUTION_WORK;
+        self.exhausted = false;
+    }
+
+    #[inline]
     fn consume(&mut self, work: usize) -> bool {
         let Some(remaining) = self.remaining.checked_sub(work) else {
             self.remaining = 0;
