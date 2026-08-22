@@ -82,6 +82,57 @@ fn spanned_segments_match_existing_segment_api() {
     );
 }
 
+#[test]
+fn fenced_code_keeps_mdx_constructs_in_a_single_markdown_segment() {
+    let input =
+        "   ```jsx\n<Card />\n{value}\nimport A from 'a'\nexport { A }\n  ```\n\n<Live />\n";
+    let segments = segment_spanned(input);
+
+    assert_eq!(segments.len(), 2);
+    assert_eq!(
+        segments[0].segment,
+        Segment::Markdown(
+            "   ```jsx\n<Card />\n{value}\nimport A from 'a'\nexport { A }\n  ```\n\n"
+        )
+    );
+    assert_eq!(segments[0].range.start_usize(), 0);
+    assert_eq!(
+        segments[0].range.end_usize(),
+        segments[0].segment.as_str().len()
+    );
+    assert_eq!(
+        segments[1].segment,
+        Segment::JsxBlockSelfClose("<Live />\n")
+    );
+}
+
+#[test]
+fn fenced_code_closes_only_with_the_matching_marker_and_length() {
+    let input = "````\n<Card />\n```\n{unterminated\n````\n";
+
+    assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+    assert!(segment_strict(input).is_ok());
+}
+
+#[test]
+fn tilde_fenced_code_does_not_create_mdx_segments_or_strict_diagnostics() {
+    let input = "~~~tsx\n</Card>\n{unterminated\nimport A from 'a'\n~~~\n";
+
+    assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
+fn rendering_fenced_mdx_like_syntax_keeps_it_as_escaped_code() {
+    let input = "```jsx\n<Card />\n{value}\nimport A from 'a'\n```\n";
+    let output = render(input);
+
+    assert!(output.body.contains("&lt;Card /&gt;"));
+    assert!(output.body.contains("{value}"));
+    assert!(output.body.contains("import A from 'a'"));
+    assert!(!output.body.contains("\n<Card />\n"));
+}
+
 // ── Strict diagnostics ──────────────────────────────────────────────
 
 #[test]

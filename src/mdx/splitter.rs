@@ -20,9 +20,29 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
     // Track whether the previous line was non-blank markdown content.
     // ESM cannot interrupt a paragraph (requires blank line before it).
     let mut in_paragraph = false;
+    let mut open_fence: Option<CodeFence> = None;
 
     while pos < len {
         let line_start = pos;
+
+        if let Some(fence) = open_fence {
+            extend_markdown(&mut md_start, line_start);
+            if fence.is_closing(bytes, line_start) {
+                open_fence = None;
+            }
+            in_paragraph = true;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
+        if let Some(fence) = opening_code_fence(bytes, line_start) {
+            open_fence = Some(fence);
+            extend_markdown(&mut md_start, line_start);
+            in_paragraph = true;
+            pos = next_line(bytes, pos);
+            continue;
+        }
+
         let first_non_ws = skip_whitespace_offset(bytes, pos);
 
         if first_non_ws >= len {
@@ -140,6 +160,76 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
     }
 
     segments
+}
+
+/// A CommonMark fenced code block delimiter.
+#[derive(Clone, Copy)]
+pub(crate) struct CodeFence {
+    marker: u8,
+    length: usize,
+}
+
+impl CodeFence {
+    pub(crate) fn is_closing(self, bytes: &[u8], line_start: usize) -> bool {
+        let mut pos = skip_fence_indentation(bytes, line_start);
+        let mut length = 0;
+        while bytes.get(pos) == Some(&self.marker) {
+            length += 1;
+            pos += 1;
+        }
+
+        length >= self.length
+            && bytes[pos..]
+                .iter()
+                .take_while(|byte| **byte != b'\n' && **byte != b'\r')
+                .all(|byte| matches!(*byte, b' ' | b'\t'))
+    }
+}
+
+/// Recognize a CommonMark fenced-code opening line.
+///
+/// Fences may be indented by up to three spaces. Backtick fence info strings
+/// cannot contain backticks, while tilde fence info strings have no equivalent
+/// restriction.
+pub(crate) fn opening_code_fence(bytes: &[u8], line_start: usize) -> Option<CodeFence> {
+    let mut pos = skip_fence_indentation(bytes, line_start);
+    let marker = *bytes.get(pos)?;
+    if !matches!(marker, b'`' | b'~') {
+        return None;
+    }
+
+    let fence_start = pos;
+    while bytes.get(pos) == Some(&marker) {
+        pos += 1;
+    }
+    let length = pos - fence_start;
+    if length < 3 {
+        return None;
+    }
+
+    let info = &bytes[pos..];
+    if marker == b'`'
+        && info
+            .iter()
+            .take_while(|byte| **byte != b'\n' && **byte != b'\r')
+            .any(|byte| *byte == b'`')
+    {
+        return None;
+    }
+
+    Some(CodeFence { marker, length })
+}
+
+/// Skip at most three leading spaces, leaving a fourth space in place so the
+/// caller will reject indented code blocks as fenced-code delimiters.
+fn skip_fence_indentation(bytes: &[u8], mut pos: usize) -> usize {
+    for _ in 0..3 {
+        if bytes.get(pos) != Some(&b' ') {
+            break;
+        }
+        pos += 1;
+    }
+    pos
 }
 
 /// If we're already accumulating markdown, do nothing.
