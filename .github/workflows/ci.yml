@@ -51,6 +51,7 @@ jobs:
           components: rustfmt
       - run: cargo fmt --check
       - run: ./scripts/test-check-workflow-pins.sh
+      - run: ruby ./scripts/test-node-ci-matrix.rb
       - run: ./scripts/check-workflow-pins.sh
 
   rustsec:
@@ -113,15 +114,22 @@ jobs:
       - run: pnpm pack:check
       - run: pnpm smoke:clean
 
-  native-windows:
+  native:
+    # Each target is built and loaded on a runner with the same architecture;
+    # this is runtime coverage, not a cross-compilation-only check.
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         include:
+          - { os: macos-latest, rust_target: aarch64-apple-darwin }
+          - { os: macos-15-intel, rust_target: x86_64-apple-darwin }
+          - { os: ubuntu-24.04-arm, rust_target: aarch64-unknown-linux-gnu }
           - { os: windows-latest, rust_target: x86_64-pc-windows-msvc }
           - { os: windows-11-arm, rust_target: aarch64-pc-windows-msvc }
     runs-on: ${{ matrix.os }}
-    name: native Windows (${{ matrix.rust_target }})
+    name: native (${{ matrix.rust_target }})
     defaults:
       run:
         working-directory: node
@@ -143,3 +151,5 @@ jobs:
       - run: pnpm build:native
         env:
           FERROMARK_RUST_TARGET: ${{ matrix.rust_target }}
+      - name: Test native package
+        run: pnpm test
