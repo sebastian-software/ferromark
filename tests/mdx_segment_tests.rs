@@ -259,6 +259,54 @@ fn semicolonless_esm_stops_before_container_fences() {
     }
 }
 
+#[test]
+fn container_exit_keeps_following_markdown_in_the_paragraph() {
+    for input in [
+        "- ```jsx\n  <Card />\nordinary list exit\nimport A from 'a'\n",
+        "> ```jsx\n> <Card />\nordinary quote exit\nexport { A }\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+
+        let output = render(input);
+        assert!(output.esm.is_empty());
+        assert!(output.body.contains("ordinary"));
+        assert!(output.body.contains("import A from 'a'") || output.body.contains("export { A }"));
+
+        let diagnostics = segment_strict(input).unwrap_err();
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InvalidEsmPosition);
+    }
+}
+
+#[test]
+fn blockquote_fence_delimiter_still_allows_root_esm() {
+    let input = "> ```jsx\n> <Card />\n> ```\nimport A from 'a'\n";
+
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Markdown("> ```jsx\n> <Card />\n> ```\n"),
+            Segment::Esm("import A from 'a'\n"),
+        ]
+    );
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+    let output = render(input);
+    assert_eq!(output.esm, vec!["import A from 'a'\n"]);
+    assert!(output.body.contains("&lt;Card /&gt;"));
+}
+
+#[test]
+fn container_exit_does_not_skip_a_new_root_fence() {
+    let input = "- ```jsx\n  <Card />\n~~~\nimport A from 'a'\n";
+
+    assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+    assert!(segment_strict(input).is_ok());
+
+    let output = render(input);
+    assert!(output.esm.is_empty());
+    assert!(output.body.contains("import A from 'a'"));
+}
+
 // ── Strict diagnostics ──────────────────────────────────────────────
 
 #[test]

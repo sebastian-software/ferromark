@@ -523,8 +523,70 @@ fn finish_fence(bytes: &[u8], fences: &mut ContainerFenceLines, fence: Option<Pa
     fences.content.extend(fence.content.iter().copied());
     let final_line = fence.content.last().copied().unwrap_or(opener);
     let closer = next_line(bytes, final_line);
-    if closer < bytes.len() {
+    if closer < bytes.len()
+        && let Some(fence) = code_fence_on_line(bytes, opener)
+        && is_container_fence_delimiter(bytes, closer, fence)
+    {
         fences.closers.push(closer);
+    }
+}
+
+/// Whether `line_start` is a delimiter line after an optional container
+/// prefix. The block parser emits `CodeBlockEnd` for both a real closing
+/// delimiter and a container mismatch, so only the former may reset MDX's
+/// paragraph state.
+fn is_container_fence_delimiter(bytes: &[u8], mut pos: usize, fence: CodeFence) -> bool {
+    skip_horizontal_whitespace(bytes, &mut pos);
+    while bytes.get(pos) == Some(&b'>') {
+        pos += 1;
+        skip_horizontal_whitespace(bytes, &mut pos);
+    }
+
+    let fence_start = pos;
+    while bytes.get(pos) == Some(&fence.marker) {
+        pos += 1;
+    }
+    if pos - fence_start < fence.length {
+        return false;
+    }
+
+    bytes[pos..]
+        .iter()
+        .take_while(|byte| **byte != b'\n')
+        .all(|byte| matches!(*byte, b' ' | b'\t'))
+}
+
+/// Find the CommonMark fence delimiter embedded in a container opener line.
+/// The core parser has already established that the line opened a fence, so
+/// this only recovers its marker and length for the matching closing check.
+fn code_fence_on_line(bytes: &[u8], line_start: usize) -> Option<CodeFence> {
+    let line_end = bytes[line_start..]
+        .iter()
+        .position(|byte| *byte == b'\n')
+        .map_or(bytes.len(), |offset| line_start + offset);
+    let mut pos = line_start;
+    while pos < line_end {
+        let marker = bytes[pos];
+        if !matches!(marker, b'`' | b'~') {
+            pos += 1;
+            continue;
+        }
+
+        let fence_start = pos;
+        while pos < line_end && bytes[pos] == marker {
+            pos += 1;
+        }
+        let length = pos - fence_start;
+        if length >= 3 {
+            return Some(CodeFence { marker, length });
+        }
+    }
+    None
+}
+
+fn skip_horizontal_whitespace(bytes: &[u8], pos: &mut usize) {
+    while matches!(bytes.get(*pos), Some(b' ' | b'\t')) {
+        *pos += 1;
     }
 }
 
