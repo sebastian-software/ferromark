@@ -34,6 +34,25 @@ fn reference_link_resolution_budget_is_shared_across_paragraphs() {
 }
 
 #[test]
+fn exhausted_reference_budget_keeps_completed_candidates_in_the_current_paragraph() {
+    let completed_paragraphs = limits::MAX_REFERENCE_RESOLUTION_WORK / 3 - 3;
+    let markdown = format!(
+        "[x]: /safe\n\n{}[x] [x] [x] [x]",
+        "[x]\n\n".repeat(completed_paragraphs)
+    );
+    let html = to_html(&markdown);
+
+    // The final paragraph has budget for its bracket structure and exactly
+    // three labels. Its completed candidates still resolve; only the final
+    // candidate falls back to literal text.
+    assert_eq!(
+        html.matches("<a href=\"/safe\">").count(),
+        completed_paragraphs + 3
+    );
+    assert!(html.ends_with("<a href=\"/safe\">x</a> [x]</p>\n"));
+}
+
+#[test]
 fn nested_reference_brackets_remain_bounded_and_literal_after_exhaustion() {
     let depth = limits::MAX_INLINE_MARKS / 2 - 1;
     let nested = format!("{}x{}", "[".repeat(depth), "]".repeat(depth));

@@ -67,12 +67,14 @@ pub struct RefLink {
 #[derive(Debug)]
 pub(crate) struct ReferenceResolutionBudget {
     remaining: usize,
+    exhausted: bool,
 }
 
 impl ReferenceResolutionBudget {
     pub(crate) const fn new() -> Self {
         Self {
             remaining: limits::MAX_REFERENCE_RESOLUTION_WORK,
+            exhausted: false,
         }
     }
 
@@ -80,6 +82,7 @@ impl ReferenceResolutionBudget {
     fn consume(&mut self, work: usize) -> bool {
         let Some(remaining) = self.remaining.checked_sub(work) else {
             self.remaining = 0;
+            self.exhausted = true;
             return false;
         };
         self.remaining = remaining;
@@ -281,7 +284,12 @@ pub fn resolve_reference_links_into(
     candidate_prefix.clear();
     candidate_prefix.reserve(open_brackets.len() + 1);
     candidate_prefix.push(0);
+    let mut candidate_limit = open_brackets.len();
     for (open_idx, &(open_pos, is_image)) in open_brackets.iter().enumerate() {
+        if work_budget.remaining == 0 {
+            candidate_limit = open_idx;
+            break;
+        }
         let candidate = (!formed_opens[open_idx])
             .then(|| {
                 matching_closes[open_idx].and_then(|close_idx| {
@@ -298,17 +306,21 @@ pub fn resolve_reference_links_into(
                 })
             })
             .flatten();
+        if work_budget.exhausted {
+            candidate_limit = open_idx;
+            break;
+        }
         candidates[open_idx] = candidate;
         let count = candidate_prefix[open_idx] + usize::from(!is_image && candidate.is_some());
         candidate_prefix.push(count);
         if work_budget.remaining == 0 {
-            out_links.clear();
-            return;
+            candidate_limit = open_idx + 1;
+            break;
         }
     }
 
     // Process open brackets from left to right.
-    for open_idx in 0..open_brackets.len() {
+    for open_idx in 0..candidate_limit {
         if formed_opens[open_idx] {
             continue;
         }
@@ -327,6 +339,9 @@ pub fn resolve_reference_links_into(
 
         // Links cannot contain links (but can contain images)
         let end_open_idx = open_brackets.partition_point(|&(pos, _)| pos < close_pos);
+        if end_open_idx > candidate_limit {
+            continue;
+        }
         let has_nested_candidate = candidate_prefix[end_open_idx] > candidate_prefix[open_idx + 1];
         if contains_link(occupied, open_pos, close_pos) || has_nested_candidate {
             continue;
