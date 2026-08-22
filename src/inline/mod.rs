@@ -27,8 +27,9 @@ use code_span::{CodeSpan, extract_code_spans, resolve_code_spans};
 use emphasis::{EmphasisMatch, EmphasisStacks, resolve_emphasis_with_stacks_into};
 use highlight::{HighlightMatch, resolve_highlight_into};
 use links::{
-    Autolink, AutolinkLiteral, Link, RefLink, find_autolink_literals_into, find_autolinks_into,
-    resolve_links_into, resolve_reference_links_into,
+    Autolink, AutolinkLiteral, Link, RefLink, ReferenceResolutionBudget,
+    find_autolink_literals_into, find_autolinks_into, resolve_links_into,
+    resolve_reference_links_into,
 };
 use marks::{
     Mark, MarkBuffer, MarkSummary, collect_marks, collect_marks_highlight,
@@ -62,6 +63,11 @@ pub struct InlineParser {
     ref_formed_opens: Vec<bool>,
     ref_used_closes: Vec<bool>,
     ref_occupied: Vec<(u32, u32)>,
+    ref_matching_closes: Vec<Option<usize>>,
+    ref_matching_stack: Vec<usize>,
+    ref_candidates: Vec<Option<links::RefCandidate>>,
+    ref_candidate_prefix: Vec<usize>,
+    ref_work_budget: ReferenceResolutionBudget,
     autolink_literals: Vec<AutolinkLiteral>,
     emphasis_stacks: EmphasisStacks,
     emphasis_matches: Vec<EmphasisMatch>,
@@ -104,6 +110,11 @@ impl InlineParser {
             ref_formed_opens: Vec::with_capacity(32),
             ref_used_closes: Vec::with_capacity(32),
             ref_occupied: Vec::with_capacity(8),
+            ref_matching_closes: Vec::with_capacity(32),
+            ref_matching_stack: Vec::with_capacity(32),
+            ref_candidates: Vec::with_capacity(32),
+            ref_candidate_prefix: Vec::with_capacity(33),
+            ref_work_budget: ReferenceResolutionBudget::new(),
             autolink_literals: Vec::new(),
             emphasis_stacks: EmphasisStacks::default(),
             emphasis_matches: Vec::with_capacity(16),
@@ -132,7 +143,8 @@ impl InlineParser {
         allow_html: bool,
         events: &mut Vec<InlineEvent>,
     ) {
-        self.parse_with_options(
+        self.begin_document();
+        self.parse_with_options_in_document(
             text, link_refs, allow_html, true, false, false, false, true, false, false, None,
             events,
         );
@@ -154,8 +166,30 @@ impl InlineParser {
         link_refs: Option<&LinkRefStore>,
         events: &mut Vec<InlineEvent>,
     ) {
+        self.begin_document();
+        self.parse_mdx_in_document(text, link_refs, events);
+    }
+
+    /// Begin a document-level inline parsing session.
+    ///
+    /// Public parsing methods call this automatically. Renderers that parse
+    /// multiple paragraphs with one reusable parser call it once per document
+    /// so reference-resolution work remains bounded for the whole document.
+    pub(crate) fn begin_document(&mut self) {
+        self.ref_work_budget.reset();
+    }
+
+    /// Parse inline Markdown with opt-in MDX expressions as part of an active
+    /// document-level parsing session.
+    #[cfg(feature = "mdx")]
+    pub(crate) fn parse_mdx_in_document(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        events: &mut Vec<InlineEvent>,
+    ) {
         let new_events_start = events.len();
-        self.parse_with_options(
+        self.parse_with_options_in_document(
             text, link_refs, false, true, false, false, false, true, false, false, None, events,
         );
         split_mdx_text_events(text, events, new_events_start);
@@ -164,6 +198,40 @@ impl InlineParser {
     /// Parse inline content with configurable inline extensions.
     #[allow(clippy::too_many_arguments)]
     pub fn parse_with_options(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        allow_html: bool,
+        strikethrough: bool,
+        highlight: bool,
+        superscript: bool,
+        subscript: bool,
+        autolink_literals: bool,
+        math: bool,
+        inline_footnotes: bool,
+        footnote_store: Option<&FootnoteStore>,
+        events: &mut Vec<InlineEvent>,
+    ) {
+        self.begin_document();
+        self.parse_with_options_in_document(
+            text,
+            link_refs,
+            allow_html,
+            strikethrough,
+            highlight,
+            superscript,
+            subscript,
+            autolink_literals,
+            math,
+            inline_footnotes,
+            footnote_store,
+            events,
+        );
+    }
+
+    /// Parse inline content as part of an active document-level parsing session.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn parse_with_options_in_document(
         &mut self,
         text: &[u8],
         link_refs: Option<&LinkRefStore>,
@@ -346,6 +414,11 @@ impl InlineParser {
                     &mut self.ref_formed_opens,
                     &mut self.ref_used_closes,
                     &mut self.ref_occupied,
+                    &mut self.ref_matching_closes,
+                    &mut self.ref_matching_stack,
+                    &mut self.ref_candidates,
+                    &mut self.ref_candidate_prefix,
+                    &mut self.ref_work_budget,
                 );
             } else {
                 self.ref_links.clear();

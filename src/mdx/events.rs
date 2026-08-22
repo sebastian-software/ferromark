@@ -188,6 +188,8 @@ fn build_event_stream(
     let (link_refs, markdown_block_events) = parse_markdown_segments(&segments);
     link_refs.append_definitions_to(&mut stream.link_references);
     let mut markdown_block_events = markdown_block_events.into_iter();
+    let mut inline_parser = InlineParser::new();
+    inline_parser.begin_document();
 
     for spanned in segments {
         let segment_start = content_start + spanned.range.start_usize();
@@ -204,6 +206,7 @@ fn build_event_stream(
                     segment_start,
                     &link_refs,
                     block_events,
+                    &mut inline_parser,
                     &mut stream.events,
                 );
             }
@@ -367,9 +370,9 @@ fn emit_markdown_events(
     source_offset: usize,
     link_refs: &LinkRefStore,
     block_events: Vec<BlockEvent>,
+    inline_parser: &mut InlineParser,
     events: &mut Vec<MdxEvent>,
 ) {
-    let mut inline_parser = InlineParser::new();
     let mut inline_events = Vec::new();
     let mut inline_group = Vec::new();
     for block_event in block_events {
@@ -385,7 +388,7 @@ fn emit_markdown_events(
                     markdown,
                     source_offset,
                     link_refs,
-                    &mut inline_parser,
+                    inline_parser,
                     &mut inline_events,
                     &mut inline_group,
                     events,
@@ -398,7 +401,7 @@ fn emit_markdown_events(
         markdown,
         source_offset,
         link_refs,
-        &mut inline_parser,
+        inline_parser,
         &mut inline_events,
         &mut inline_group,
         events,
@@ -499,7 +502,7 @@ fn emit_inline_range(
     events: &mut Vec<MdxEvent>,
 ) {
     inline_events.clear();
-    inline_parser.parse_mdx(range.slice(markdown), Some(link_refs), inline_events);
+    inline_parser.parse_mdx_in_document(range.slice(markdown), Some(link_refs), inline_events);
     let inline_offset = source_offset + range.start_usize();
 
     for event in inline_events.drain(..) {

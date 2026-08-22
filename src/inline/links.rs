@@ -60,6 +60,49 @@ pub struct RefLink {
     pub def_index: usize,
 }
 
+/// Shared work allowance for reference-link resolution in one document.
+///
+/// Exhaustion is a safe fallback: callers leave unresolved reference syntax as
+/// literal text rather than attempting more label scans.
+#[derive(Debug)]
+pub(crate) struct ReferenceResolutionBudget {
+    remaining: usize,
+    exhausted: bool,
+}
+
+impl ReferenceResolutionBudget {
+    pub(crate) const fn new() -> Self {
+        Self {
+            remaining: limits::MAX_REFERENCE_RESOLUTION_WORK,
+            exhausted: false,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn reset(&mut self) {
+        self.remaining = limits::MAX_REFERENCE_RESOLUTION_WORK;
+        self.exhausted = false;
+    }
+
+    #[inline]
+    fn consume(&mut self, work: usize) -> bool {
+        let Some(remaining) = self.remaining.checked_sub(work) else {
+            self.remaining = 0;
+            self.exhausted = true;
+            return false;
+        };
+        self.remaining = remaining;
+        true
+    }
+}
+
+#[derive(Clone, Copy)]
+pub(super) struct RefCandidate {
+    def_index: usize,
+    end: u32,
+    suffix_brackets: Option<(usize, usize)>,
+}
+
 /// Parse links from text, given bracket positions.
 /// Returns list of resolved links.
 #[allow(dead_code)]
@@ -191,6 +234,11 @@ pub fn resolve_reference_links_into(
     formed_opens: &mut Vec<bool>,
     used_closes: &mut Vec<bool>,
     occupied: &mut Vec<(u32, u32)>,
+    matching_closes: &mut Vec<Option<usize>>,
+    matching_stack: &mut Vec<usize>,
+    candidates: &mut Vec<Option<RefCandidate>>,
+    candidate_prefix: &mut Vec<usize>,
+    work_budget: &mut ReferenceResolutionBudget,
 ) {
     out_links.clear();
     label_buf.clear();
@@ -221,137 +269,195 @@ pub fn resolve_reference_links_into(
         }
     }
 
-    // Process open brackets from left to right
-    let mut nested_label_buf = String::new();
-    for open_idx in 0..open_brackets.len() {
+    // Build the bracket structure once. The old resolver rebuilt this nesting
+    // walk for every opener, which made nested input super-linear.
+    if !work_budget.consume(open_brackets.len() + close_brackets.len()) {
+        return;
+    }
+    precompute_matching_closes(
+        open_brackets,
+        close_brackets,
+        formed_opens,
+        used_closes,
+        matching_closes,
+        matching_stack,
+    );
+
+    // Determine each resolvable candidate once, then answer the "does this
+    // link contain another link?" question with a prefix-count range query.
+    candidates.clear();
+    candidates.resize(open_brackets.len(), None);
+    candidate_prefix.clear();
+    candidate_prefix.reserve(open_brackets.len() + 1);
+    candidate_prefix.push(0);
+    let mut candidate_limit = open_brackets.len();
+    for (open_idx, &(open_pos, is_image)) in open_brackets.iter().enumerate() {
+        if work_budget.remaining == 0 {
+            candidate_limit = open_idx;
+            break;
+        }
+        let candidate = (!formed_opens[open_idx])
+            .then(|| {
+                matching_closes[open_idx].and_then(|close_idx| {
+                    build_ref_candidate(
+                        text,
+                        open_pos,
+                        close_idx,
+                        open_brackets,
+                        close_brackets,
+                        defs,
+                        label_buf,
+                        work_budget,
+                    )
+                })
+            })
+            .flatten();
+        if work_budget.exhausted {
+            candidate_limit = open_idx;
+            break;
+        }
+        candidates[open_idx] = candidate;
+        let count = candidate_prefix[open_idx] + usize::from(!is_image && candidate.is_some());
+        candidate_prefix.push(count);
+        if work_budget.remaining == 0 {
+            candidate_limit = open_idx + 1;
+            break;
+        }
+    }
+
+    // Process open brackets from left to right.
+    for open_idx in 0..candidate_limit {
         if formed_opens[open_idx] {
             continue;
         }
         let (open_pos, is_image) = open_brackets[open_idx];
 
-        let close_idx = find_matching_close(
-            open_pos,
-            open_brackets,
-            close_brackets,
-            formed_opens,
-            used_closes,
-        );
-
-        let Some(close_idx) = close_idx else { continue };
-        let close_pos = close_brackets[close_idx];
-
-        // Determine reference label
-        let mut end = close_pos + 1;
-        let label_start = (open_pos + 1) as usize;
-        let label_end = close_pos as usize;
-        let mut label_bytes = &text[label_start..label_end];
-
-        let mut ref_label: Option<(usize, usize, usize)> = None;
-        if let Some((ref_start, ref_end, ref_close_pos)) =
-            parse_ref_label_immediate(text, close_pos as usize + 1)
-        {
-            // Full or collapsed reference: [label][ref] or [label][]
-            if ref_start == ref_end {
-                // Collapsed: use link text as label
-            } else {
-                label_bytes = &text[ref_start..ref_end];
-            }
-            end = (ref_close_pos + 1) as u32;
-            ref_label = Some((ref_start, ref_end, ref_close_pos));
-        }
-
-        normalize_label_into(label_bytes, label_buf);
-        if label_buf.is_empty() {
+        let Some(close_idx) = matching_closes[open_idx] else {
+            continue;
+        };
+        if used_closes[close_idx] {
             continue;
         }
-        let Some(def_index) = defs.get_index(label_buf) else {
+        let close_pos = close_brackets[close_idx];
+        let Some(candidate) = candidates[open_idx] else {
             continue;
         };
 
         // Links cannot contain links (but can contain images)
-        if contains_link(occupied, open_pos, close_pos)
-            || contains_ref_link_candidate(
-                text,
-                open_brackets,
-                close_brackets,
-                defs,
-                open_pos,
-                close_pos,
-                &mut nested_label_buf,
-            )
-        {
+        let end_open_idx = open_brackets.partition_point(|&(pos, _)| pos < close_pos);
+        // Once the budget boundary is reached, later openers are deliberately
+        // literal. They cannot invalidate a completed outer candidate; only
+        // candidates that were fully inspected before that boundary can form
+        // nested links.
+        let inspected_end_open_idx = end_open_idx.min(candidate_limit);
+        let has_nested_candidate =
+            candidate_prefix[inspected_end_open_idx] > candidate_prefix[open_idx + 1];
+        if contains_link(occupied, open_pos, close_pos) || has_nested_candidate {
             continue;
         }
 
         formed_opens[open_idx] = true;
         used_closes[close_idx] = true;
 
-        if let Some((ref_start, _ref_end, ref_close_pos)) = ref_label {
-            if let Some(idx) = find_open_idx(open_brackets, (ref_start - 1) as u32) {
-                formed_opens[idx] = true;
-            }
-            if let Some(idx) = find_close_idx(close_brackets, ref_close_pos as u32) {
-                used_closes[idx] = true;
-            }
+        if let Some((ref_open_idx, ref_close_idx)) = candidate.suffix_brackets {
+            formed_opens[ref_open_idx] = true;
+            used_closes[ref_close_idx] = true;
         }
 
         out_links.push(RefLink {
             start: if is_image { open_pos - 1 } else { open_pos },
             text_end: close_pos,
-            end,
+            end: candidate.end,
             is_image,
-            def_index,
+            def_index: candidate.def_index,
         });
-
-        occupied.push((open_pos, end));
     }
 
     out_links.sort_by_key(|l| l.start);
 }
 
-fn contains_ref_link_candidate(
+fn precompute_matching_closes(
+    open_brackets: &[(u32, bool)],
+    close_brackets: &[u32],
+    formed_opens: &[bool],
+    used_closes: &[bool],
+    matching_closes: &mut Vec<Option<usize>>,
+    stack: &mut Vec<usize>,
+) {
+    matching_closes.clear();
+    matching_closes.resize(open_brackets.len(), None);
+    stack.clear();
+
+    let mut open_idx = 0;
+    let mut close_idx = 0;
+    while open_idx < open_brackets.len() || close_idx < close_brackets.len() {
+        while open_idx < open_brackets.len() && formed_opens[open_idx] {
+            open_idx += 1;
+        }
+        while close_idx < close_brackets.len() && used_closes[close_idx] {
+            close_idx += 1;
+        }
+        if open_idx == open_brackets.len() && close_idx == close_brackets.len() {
+            break;
+        }
+
+        let next_open = open_brackets
+            .get(open_idx)
+            .map_or(u32::MAX, |&(pos, _)| pos);
+        let next_close = close_brackets.get(close_idx).copied().unwrap_or(u32::MAX);
+        if next_open <= next_close {
+            stack.push(open_idx);
+            open_idx += 1;
+        } else {
+            if let Some(open_idx) = stack.pop() {
+                matching_closes[open_idx] = Some(close_idx);
+            }
+            close_idx += 1;
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn build_ref_candidate(
     text: &[u8],
+    open_pos: u32,
+    close_idx: usize,
     open_brackets: &[(u32, bool)],
     close_brackets: &[u32],
     defs: &LinkRefStore,
-    start: u32,
-    end: u32,
     label_buf: &mut String,
-) -> bool {
-    label_buf.clear();
-    for &(open_pos, is_image) in open_brackets {
-        if open_pos <= start || open_pos >= end || is_image {
-            continue;
-        }
-        let close_pos = close_brackets
-            .iter()
-            .copied()
-            .find(|&c| c > open_pos && c < end);
-        let Some(close_pos) = close_pos else { continue };
+    work_budget: &mut ReferenceResolutionBudget,
+) -> Option<RefCandidate> {
+    let close_pos = close_brackets[close_idx];
+    let label_start = (open_pos + 1) as usize;
+    let label_end = close_pos as usize;
+    let mut label_bytes = text.get(label_start..label_end)?;
+    let mut end = close_pos + 1;
+    let mut suffix_brackets = None;
 
-        let label_start = (open_pos + 1) as usize;
-        let label_end = close_pos as usize;
-        if label_start >= label_end || label_end > text.len() {
-            continue;
-        }
-        let mut label_bytes = &text[label_start..label_end];
-
-        if let Some((ref_start, ref_end, _ref_close)) =
-            parse_ref_label_immediate(text, close_pos as usize + 1)
-            && ref_start != ref_end
-        {
+    if let Some((ref_start, ref_end, ref_close_pos)) =
+        parse_ref_label_immediate(text, close_pos as usize + 1, work_budget)
+    {
+        if ref_start != ref_end {
             label_bytes = &text[ref_start..ref_end];
         }
-
-        normalize_label_into(label_bytes, label_buf);
-        if label_buf.is_empty() {
-            continue;
-        }
-        if defs.get_index(label_buf).is_some() {
-            return true;
-        }
+        end = (ref_close_pos + 1) as u32;
+        suffix_brackets = Some((
+            find_open_idx(open_brackets, (ref_start - 1) as u32)?,
+            find_close_idx(close_brackets, ref_close_pos as u32)?,
+        ));
     }
-    false
+
+    if !work_budget.consume(label_bytes.len()) {
+        return None;
+    }
+    normalize_label_into(label_bytes, label_buf);
+    let def_index = defs.get_index(label_buf)?;
+    Some(RefCandidate {
+        def_index,
+        end,
+        suffix_brackets,
+    })
 }
 
 #[inline]
@@ -365,7 +471,8 @@ fn find_close_idx(close_brackets: &[u32], pos: u32) -> Option<usize> {
 }
 
 fn contains_link(links: &[(u32, u32)], start: u32, end: u32) -> bool {
-    links.iter().any(|&(s, e)| s >= start && e <= end)
+    let idx = links.partition_point(|&(link_start, _)| link_start < start);
+    links.get(idx).is_some_and(|&(_, link_end)| link_end <= end)
 }
 
 /// Find the matching close bracket for an open bracket, accounting for nesting.
@@ -438,7 +545,11 @@ fn find_matching_close(
     None
 }
 
-fn parse_ref_label_immediate(text: &[u8], mut pos: usize) -> Option<(usize, usize, usize)> {
+fn parse_ref_label_immediate(
+    text: &[u8],
+    mut pos: usize,
+    work_budget: &mut ReferenceResolutionBudget,
+) -> Option<(usize, usize, usize)> {
     let len = text.len();
 
     if pos >= len || text[pos] != b'[' {
@@ -448,6 +559,9 @@ fn parse_ref_label_immediate(text: &[u8], mut pos: usize) -> Option<(usize, usiz
     pos += 1;
 
     while pos < len {
+        if !work_budget.consume(1) {
+            return None;
+        }
         match text[pos] {
             b'\\' => {
                 if pos + 1 < len {
