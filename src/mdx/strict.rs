@@ -44,8 +44,10 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
         if let Some(fence) = open_fence {
             if fence.is_closing(bytes, line_start) {
                 open_fence = None;
+                in_paragraph = false;
+            } else {
+                in_paragraph = true;
             }
-            in_paragraph = true;
             pos = next_line(bytes, pos);
             continue;
         }

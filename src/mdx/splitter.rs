@@ -29,8 +29,10 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
             extend_markdown(&mut md_start, line_start);
             if fence.is_closing(bytes, line_start) {
                 open_fence = None;
+                in_paragraph = false;
+            } else {
+                in_paragraph = true;
             }
-            in_paragraph = true;
             pos = next_line(bytes, pos);
             continue;
         }
@@ -171,7 +173,7 @@ pub(crate) struct CodeFence {
 
 impl CodeFence {
     pub(crate) fn is_closing(self, bytes: &[u8], line_start: usize) -> bool {
-        let mut pos = skip_fence_indentation(bytes, line_start);
+        let mut pos = skip_closing_fence_indentation(bytes, line_start);
         let mut length = 0;
         while bytes.get(pos) == Some(&self.marker) {
             length += 1;
@@ -181,7 +183,7 @@ impl CodeFence {
         length >= self.length
             && bytes[pos..]
                 .iter()
-                .take_while(|byte| **byte != b'\n' && **byte != b'\r')
+                .take_while(|byte| **byte != b'\n')
                 .all(|byte| matches!(*byte, b' ' | b'\t'))
     }
 }
@@ -211,7 +213,7 @@ pub(crate) fn opening_code_fence(bytes: &[u8], line_start: usize) -> Option<Code
     if marker == b'`'
         && info
             .iter()
-            .take_while(|byte| **byte != b'\n' && **byte != b'\r')
+            .take_while(|byte| **byte != b'\n')
             .any(|byte| *byte == b'`')
     {
         return None;
@@ -228,6 +230,26 @@ fn skip_fence_indentation(bytes: &[u8], mut pos: usize) -> usize {
             break;
         }
         pos += 1;
+    }
+    pos
+}
+
+/// Match the block parser's closing-fence indentation scan, including tabs
+/// that advance beyond its three-column limit.
+fn skip_closing_fence_indentation(bytes: &[u8], mut pos: usize) -> usize {
+    let mut columns = 0;
+    while columns < 3 {
+        match bytes.get(pos) {
+            Some(b' ') => {
+                columns += 1;
+                pos += 1;
+            }
+            Some(b'\t') => {
+                columns = (columns + 4) & !3;
+                pos += 1;
+            }
+            _ => break,
+        }
     }
     pos
 }

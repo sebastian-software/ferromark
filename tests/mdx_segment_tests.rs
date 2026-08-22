@@ -115,6 +115,42 @@ fn fenced_code_closes_only_with_the_matching_marker_and_length() {
 }
 
 #[test]
+fn fenced_code_allows_root_esm_immediately_after_its_closing_fence() {
+    let input = "```\n<Card />\n```\nimport A from 'a'\nexport { A }\n";
+    let segments = segment(input);
+
+    assert_eq!(
+        segments,
+        vec![
+            Segment::Markdown("```\n<Card />\n```\n"),
+            Segment::Esm("import A from 'a'\n"),
+            Segment::Esm("export { A }\n"),
+        ]
+    );
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
+fn fenced_code_fence_boundaries_match_the_markdown_parser() {
+    let crlf_input = "```\r\n<Card />\r\n```\r\nimport A from 'a'\r\n";
+    assert_eq!(segment(crlf_input), vec![Segment::Markdown(crlf_input)]);
+    assert!(segment_strict(crlf_input).is_ok());
+
+    let tab_closing_input = "```\n<Card />\n\t```\nimport A from 'a'\n";
+    assert_eq!(
+        segment(tab_closing_input),
+        vec![
+            Segment::Markdown("```\n<Card />\n\t```\n"),
+            Segment::Esm("import A from 'a'\n"),
+        ]
+    );
+    assert_eq!(
+        segment_strict(tab_closing_input).unwrap(),
+        segment_spanned(tab_closing_input)
+    );
+}
+
+#[test]
 fn tilde_fenced_code_does_not_create_mdx_segments_or_strict_diagnostics() {
     let input = "~~~tsx\n</Card>\n{unterminated\nimport A from 'a'\n~~~\n";
 
