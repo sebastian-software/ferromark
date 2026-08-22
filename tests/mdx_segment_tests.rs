@@ -411,6 +411,23 @@ fn container_exit_does_not_skip_a_new_root_fence() {
     assert!(output.body.contains("import A from 'a'"));
 }
 
+#[test]
+fn container_exit_does_not_treat_a_new_matching_root_fence_as_its_closer() {
+    for input in [
+        "- ```jsx\n  <Card />\n```\nimport A from 'a'\n```\n",
+        "1. ~~~jsx\n   <Card />\n~~~\nexport { value }\n~~~\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+        let output = render(input);
+        assert!(output.esm.is_empty());
+        assert!(
+            output.body.contains("import A from 'a'") || output.body.contains("export { value }")
+        );
+    }
+}
+
 // ── Strict diagnostics ──────────────────────────────────────────────
 
 #[test]

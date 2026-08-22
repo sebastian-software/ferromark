@@ -450,6 +450,7 @@ pub(crate) struct ContainerFenceLines {
     openers: Vec<usize>,
     content: Vec<usize>,
     closers: Vec<usize>,
+    root_openers: Vec<usize>,
 }
 
 impl ContainerFenceLines {
@@ -464,6 +465,10 @@ impl ContainerFenceLines {
     pub(crate) fn contains_closer(&self, line_start: usize) -> bool {
         self.closers.binary_search(&line_start).is_ok()
     }
+
+    fn contains_root_opener(&self, line_start: usize) -> bool {
+        self.root_openers.binary_search(&line_start).is_ok()
+    }
 }
 
 struct ParsedFence {
@@ -475,15 +480,49 @@ struct ParsedFence {
 pub(crate) fn container_fence_lines(bytes: &[u8]) -> ContainerFenceLines {
     let mut parser = BlockParser::new(bytes);
     let mut events = Vec::new();
-    let mut boundaries = parser
-        .parse_with_fenced_code_boundaries(&mut events)
-        .into_iter();
+    let boundaries = parser.parse_with_fenced_code_boundaries(&mut events);
 
     let mut fences = ContainerFenceLines {
         openers: Vec::new(),
         content: Vec::new(),
         closers: Vec::new(),
+        root_openers: Vec::new(),
     };
+
+    // A container mismatch can close an existing fence and reparse the same
+    // physical delimiter as a root-level opener. Record those parser-derived
+    // root openers before assigning container closers below.
+    let mut boundary_iter = boundaries.iter();
+    let mut container_depth = 0usize;
+    for event in &events {
+        match event {
+            BlockEvent::BlockQuoteStart { .. }
+            | BlockEvent::ListItemStart { .. }
+            | BlockEvent::DefinitionDescriptionStart { .. } => container_depth += 1,
+            BlockEvent::BlockQuoteEnd
+            | BlockEvent::ListItemEnd
+            | BlockEvent::DefinitionDescriptionEnd => {
+                container_depth = container_depth.saturating_sub(1);
+            }
+            BlockEvent::CodeBlockStart {
+                kind: CodeBlockKind::Fenced { .. },
+            } => {
+                let boundary = boundary_iter
+                    .next()
+                    .expect("fenced-code boundary accompanies every fenced start");
+                if container_depth == 0 {
+                    fences
+                        .root_openers
+                        .push(line_start(bytes, boundary.delimiter.start_usize()));
+                }
+            }
+            _ => {}
+        }
+    }
+    fences.root_openers.sort_unstable();
+    fences.root_openers.dedup();
+
+    let mut boundaries = boundaries.into_iter();
     let mut current_fence = None;
     let mut container_depth = 0usize;
     for event in events {
@@ -542,7 +581,10 @@ fn finish_fence(bytes: &[u8], fences: &mut ContainerFenceLines, fence: Option<Pa
     fences.content.extend(fence.content.iter().copied());
     let final_line = fence.content.last().copied().unwrap_or(opener);
     let closer = next_line(bytes, final_line);
-    if closer < bytes.len() && is_container_fence_delimiter(bytes, closer, fence.delimiter) {
+    if closer < bytes.len()
+        && !fences.contains_root_opener(closer)
+        && is_container_fence_delimiter(bytes, closer, fence.delimiter)
+    {
         fences.closers.push(closer);
     }
 }
