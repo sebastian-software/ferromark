@@ -27,8 +27,9 @@ use code_span::{CodeSpan, extract_code_spans, resolve_code_spans};
 use emphasis::{EmphasisMatch, EmphasisStacks, resolve_emphasis_with_stacks_into};
 use highlight::{HighlightMatch, resolve_highlight_into};
 use links::{
-    Autolink, AutolinkLiteral, Link, RefLink, find_autolink_literals_into, find_autolinks_into,
-    resolve_links_into, resolve_reference_links_into,
+    Autolink, AutolinkLiteral, Link, RefLink, ReferenceResolutionBudget,
+    find_autolink_literals_into, find_autolinks_into, resolve_links_into,
+    resolve_reference_links_into,
 };
 use marks::{
     Mark, MarkBuffer, MarkSummary, collect_marks, collect_marks_highlight,
@@ -62,6 +63,11 @@ pub struct InlineParser {
     ref_formed_opens: Vec<bool>,
     ref_used_closes: Vec<bool>,
     ref_occupied: Vec<(u32, u32)>,
+    ref_matching_closes: Vec<Option<usize>>,
+    ref_matching_stack: Vec<usize>,
+    ref_candidates: Vec<Option<links::RefCandidate>>,
+    ref_candidate_prefix: Vec<usize>,
+    ref_work_budget: ReferenceResolutionBudget,
     autolink_literals: Vec<AutolinkLiteral>,
     emphasis_stacks: EmphasisStacks,
     emphasis_matches: Vec<EmphasisMatch>,
@@ -104,6 +110,11 @@ impl InlineParser {
             ref_formed_opens: Vec::with_capacity(32),
             ref_used_closes: Vec::with_capacity(32),
             ref_occupied: Vec::with_capacity(8),
+            ref_matching_closes: Vec::with_capacity(32),
+            ref_matching_stack: Vec::with_capacity(32),
+            ref_candidates: Vec::with_capacity(32),
+            ref_candidate_prefix: Vec::with_capacity(33),
+            ref_work_budget: ReferenceResolutionBudget::new(),
             autolink_literals: Vec::new(),
             emphasis_stacks: EmphasisStacks::default(),
             emphasis_matches: Vec::with_capacity(16),
@@ -346,6 +357,11 @@ impl InlineParser {
                     &mut self.ref_formed_opens,
                     &mut self.ref_used_closes,
                     &mut self.ref_occupied,
+                    &mut self.ref_matching_closes,
+                    &mut self.ref_matching_stack,
+                    &mut self.ref_candidates,
+                    &mut self.ref_candidate_prefix,
+                    &mut self.ref_work_budget,
                 );
             } else {
                 self.ref_links.clear();

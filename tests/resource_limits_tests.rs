@@ -21,6 +21,32 @@ fn inline_mark_collection_is_bounded() {
 }
 
 #[test]
+fn reference_link_resolution_budget_is_shared_across_paragraphs() {
+    let paragraphs = limits::MAX_REFERENCE_RESOLUTION_WORK / 3 + 2;
+    let markdown = format!("[x]: /safe\n\n{}", "[x]\n\n".repeat(paragraphs));
+    let html = to_html(&markdown);
+
+    // A `[x]` reference spends two bracket records plus one label byte. The
+    // final paragraphs are deliberately left literal once the document budget
+    // is exhausted, proving that the allowance does not reset per paragraph.
+    assert_eq!(html.matches("<a href=\"/safe\">").count(), paragraphs - 2);
+    assert!(html.ends_with("<p>[x]</p>\n"));
+}
+
+#[test]
+fn nested_reference_brackets_remain_bounded_and_literal_after_exhaustion() {
+    let depth = limits::MAX_INLINE_MARKS / 2 - 1;
+    let nested = format!("{}x{}", "[".repeat(depth), "]".repeat(depth));
+    let markdown = format!("[x]: /safe\n\n{nested}\n\n{nested}");
+    let html = to_html(&markdown);
+
+    // The first deeply nested paragraph consumes the shared label-inspection
+    // allowance. The second cannot re-run quadratic nesting work.
+    assert_eq!(html.matches("<a href=\"/safe\">").count(), 0);
+    assert!(html.contains(&nested));
+}
+
+#[test]
 fn oversized_backtick_runs_stay_literal() {
     let fence = "`".repeat(limits::MAX_CODE_SPAN_BACKTICKS + 1);
     let html = to_html(&format!("{fence}code{fence}"));

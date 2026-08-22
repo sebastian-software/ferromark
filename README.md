@@ -252,6 +252,13 @@ These aren't planned. They'd compromise the streaming architecture that makes fe
 
 The default `RenderPolicy::Untrusted` is the browser-facing safety boundary. It escapes all raw HTML and allows relative URLs plus a small set of non-script schemes (`http`, `https`, `mailto`, `tel`, and similar). URL schemes are checked after entity and control-character normalization, so spellings such as `javas&#99;ript:` are blocked too.
 
+Reference-link resolution also has a document-wide work budget. If a document
+uses up that budget while inspecting reference labels, later reference links
+are emitted as literal text instead of being resolved. This conservative
+fallback applies to the default untrusted renderer (and trusted rendering as
+well), so repeated adversarial paragraphs cannot accumulate unbounded parser
+work.
+
 ```rust
 let html = ferromark::to_html(user_supplied_markdown);
 ```
@@ -478,7 +485,7 @@ What makes this fast in practice:
 
 - **Linear time.** No regex, no backtracking, no quadratic blowup on adversarial input.
 - **Low allocation pressure.** Compact events, range references, reusable output buffers.
-- **Operational safety.** Enforced limits cap block nesting (32), inline marks (4,096), code-span backtick runs (32), link-destination parenthesis depth (32), ordered-list marker digits (9), and table columns (128). Footnote numbering has no arbitrary count cap; its definition-index lookup stays O(1) per reference.
+- **Operational safety.** Enforced limits cap block nesting (32), inline marks (4,096), document-wide reference-link resolution work, code-span backtick runs (32), link-destination parenthesis depth (32), ordered-list marker digits (9), and table columns (128). Footnote numbering has no arbitrary count cap; its definition-index lookup stays O(1) per reference.
 - **Small dependency surface.** Minimal crates, straightforward integration.
 
 <details>
