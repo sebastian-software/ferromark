@@ -878,8 +878,9 @@ impl EsmContinuation {
         }
 
         let start = skip_whitespace_offset(bytes, line_start);
-        matches!(bytes.get(start), Some(b'.' | b'[' | b'(' | b'`'))
-            || (bytes.get(start) == Some(&b'?') && bytes.get(start + 1) == Some(&b'.'))
+        let is_expression_suffix = matches!(bytes.get(start), Some(b'.' | b'[' | b'(' | b'`'))
+            || (bytes.get(start) == Some(&b'?') && bytes.get(start + 1) == Some(&b'.'));
+        is_expression_suffix && !is_markdown_regex_suffix(bytes, start)
     }
 }
 
@@ -1068,6 +1069,24 @@ fn is_plain_prose_line(bytes: &[u8], line_start: usize) -> bool {
                 && word != b"async"
                 && !word_requires_following(word)
         })
+}
+
+/// Markdown constructs that share a leading token with a JavaScript suffix
+/// after a terminal regex literal. Prefer these recognizable Markdown forms so
+/// permissive segmentation does not silently remove document body content.
+fn is_markdown_regex_suffix(bytes: &[u8], start: usize) -> bool {
+    let end = next_line(bytes, start);
+    let line = &bytes[start..end];
+    match line.first() {
+        Some(b'[') => line.windows(2).any(|pair| pair == b"](" || pair == b"]:"),
+        Some(b'(') => line.iter().any(|byte| matches!(byte, b' ' | b'\t')),
+        Some(b'.') => line.get(1).is_some_and(u8::is_ascii_whitespace),
+        Some(b'`') => line[1..]
+            .iter()
+            .take_while(|&&byte| byte != b'`')
+            .any(u8::is_ascii_whitespace),
+        _ => false,
+    }
 }
 
 fn starts_with_word(bytes: &[u8], line_start: usize, word: &[u8]) -> bool {

@@ -436,7 +436,7 @@ fn esm_terminal_regex_literals_end_without_flags_or_member_access() {
         "export const cross_line_member = /}/\n.test(value)\n",
         "export const cross_line_flagged_member = /}/gi\n.test(value)\n",
         "export const cross_line_optional_member = /}/\n?.test(value)\n",
-        "export const cross_line_index = /}/\n[Symbol.match](value)\n",
+        "export const cross_line_index = /}/\n[index]\n",
         "export const cross_line_call = /}/\n(value)\n",
         "export const cross_line_tag = /}/\n`value`\n",
         "export const ratio = value / divisor\n",
@@ -454,6 +454,34 @@ fn esm_terminal_regex_literals_end_without_flags_or_member_access() {
         assert_eq!(output.esm, vec![esm]);
         assert!(output.body.contains("Markdown."));
         assert!(output.to_component("Page").unwrap().starts_with(esm));
+    }
+}
+
+#[test]
+fn esm_terminal_regex_preserves_suffix_like_markdown() {
+    let esm = "export const matcher = /}/\n";
+    for markdown in [
+        "[a Markdown link](https://example.com)\n",
+        "(Markdown prose in parentheses)\n",
+        ". Markdown prose\n",
+        "`Markdown code span`\n",
+    ] {
+        let input = format!("{esm}{markdown}");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown(markdown)]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(!output.body.trim().is_empty());
+        assert!(
+            output
+                .to_component("Page")
+                .unwrap()
+                .contains(output.body.trim())
+        );
     }
 }
 
