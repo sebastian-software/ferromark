@@ -49,6 +49,12 @@ struct LexicalFailures {
     unterminated_block_comment_start: std::cell::Cell<Option<usize>>,
     /// Equivalent frontier for line comments which run through EOF.
     unterminated_line_comment_start: std::cell::Cell<Option<usize>>,
+    /// Earliest unterminated lexical opener of each quoted form.  A later
+    /// delimiter may still close an earlier string, so probes scan through
+    /// the frontier once before proving the preceding suffix unterminated.
+    unterminated_double_quote_start: std::cell::Cell<Option<usize>>,
+    unterminated_single_quote_start: std::cell::Cell<Option<usize>>,
+    unterminated_template_start: std::cell::Cell<Option<usize>>,
 }
 
 impl LexicalFailures {
@@ -102,10 +108,34 @@ impl LexicalFailures {
         bytes.len()
     }
 
+    fn quote_search_end(&self, delimiter: u8, len: usize) -> usize {
+        let frontier = match delimiter {
+            b'"' => self.unterminated_double_quote_start.get(),
+            b'\'' => self.unterminated_single_quote_start.get(),
+            b'`' => self.unterminated_template_start.get(),
+            _ => unreachable!("only quoted delimiters use a lexical frontier"),
+        };
+        // Include the frontier delimiter: it can close a preceding string.
+        frontier.map_or(len, |start| start.saturating_add(1).min(len))
+    }
+
+    fn mark_unterminated_quote(&self, delimiter: u8, start: usize) {
+        let frontier = match delimiter {
+            b'"' => &self.unterminated_double_quote_start,
+            b'\'' => &self.unterminated_single_quote_start,
+            b'`' => &self.unterminated_template_start,
+            _ => unreachable!("only quoted delimiters use a lexical frontier"),
+        };
+        frontier.set(Some(frontier.get().map_or(start, |old| old.min(start))));
+    }
+
     #[cfg(test)]
     fn entry_count(&self) -> usize {
         usize::from(self.unterminated_block_comment_start.get().is_some())
             + usize::from(self.unterminated_line_comment_start.get().is_some())
+            + usize::from(self.unterminated_double_quote_start.get().is_some())
+            + usize::from(self.unterminated_single_quote_start.get().is_some())
+            + usize::from(self.unterminated_template_start.get().is_some())
     }
 }
 
@@ -282,10 +312,10 @@ fn find_expression_end_from(
                 pos += 1;
             }
             b'"' => {
-                pos = skip_double_quoted(bytes, pos, work)?;
+                pos = skip_double_quoted(bytes, pos, cached_ends, work)?;
             }
             b'\'' => {
-                pos = skip_single_quoted(bytes, pos, work)?;
+                pos = skip_single_quoted(bytes, pos, cached_ends, work)?;
             }
             b'`' => {
                 pos = skip_template_literal(bytes, pos, cached_ends, work)?;
@@ -308,10 +338,17 @@ fn find_expression_end_from(
 
 /// Skip a `"..."` string. `pos` points at the opening `"`.
 /// Returns position after the closing `"`, or `None` if unterminated.
-fn skip_double_quoted(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option<usize> {
-    let len = bytes.len();
+fn skip_double_quoted(
+    bytes: &[u8],
+    start: usize,
+    cached_ends: Option<CachedEnds<'_>>,
+    work: &mut ScanWork,
+) -> Option<usize> {
+    let search_end = cached_ends.map_or(bytes.len(), |cached| {
+        cached.lexical_failures.quote_search_end(b'"', bytes.len())
+    });
     let mut pos = start + 1;
-    while pos < len {
+    while pos < search_end {
         work.visit();
         match bytes[pos] {
             b'\\' => pos += 2, // skip escaped char
@@ -319,21 +356,38 @@ fn skip_double_quoted(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option
             _ => pos += 1,
         }
     }
+    if let Some(cached_ends) = cached_ends {
+        cached_ends
+            .lexical_failures
+            .mark_unterminated_quote(b'"', start);
+    }
     None
 }
 
 /// Skip a `'...'` string. `pos` points at the opening `'`.
 /// Returns position after the closing `'`, or `None` if unterminated.
-fn skip_single_quoted(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option<usize> {
-    let len = bytes.len();
+fn skip_single_quoted(
+    bytes: &[u8],
+    start: usize,
+    cached_ends: Option<CachedEnds<'_>>,
+    work: &mut ScanWork,
+) -> Option<usize> {
+    let search_end = cached_ends.map_or(bytes.len(), |cached| {
+        cached.lexical_failures.quote_search_end(b'\'', bytes.len())
+    });
     let mut pos = start + 1;
-    while pos < len {
+    while pos < search_end {
         work.visit();
         match bytes[pos] {
             b'\\' => pos += 2,
             b'\'' => return Some(pos + 1),
             _ => pos += 1,
         }
+    }
+    if let Some(cached_ends) = cached_ends {
+        cached_ends
+            .lexical_failures
+            .mark_unterminated_quote(b'\'', start);
     }
     None
 }
@@ -347,14 +401,16 @@ fn skip_template_literal(
     cached_ends: Option<CachedEnds<'_>>,
     work: &mut ScanWork,
 ) -> Option<usize> {
-    let len = bytes.len();
+    let search_end = cached_ends.map_or(bytes.len(), |cached| {
+        cached.lexical_failures.quote_search_end(b'`', bytes.len())
+    });
     let mut pos = start + 1;
-    while pos < len {
+    while pos < search_end {
         work.visit();
         match bytes[pos] {
             b'\\' => pos += 2,
             b'`' => return Some(pos + 1),
-            b'$' if pos + 1 < len && bytes[pos + 1] == b'{' => {
+            b'$' if pos + 1 < search_end && bytes[pos + 1] == b'{' => {
                 // Nested expression inside template literal
                 let expression_start = pos + 1;
                 if let Some(cached_ends) = cached_ends {
@@ -369,6 +425,11 @@ fn skip_template_literal(
             }
             _ => pos += 1,
         }
+    }
+    if let Some(cached_ends) = cached_ends {
+        cached_ends
+            .lexical_failures
+            .mark_unterminated_quote(b'`', start);
     }
     None
 }
@@ -510,6 +571,9 @@ mod tests {
             b"{// unterminated {later}".as_slice(),
             b"{'unterminated\n{later}".as_slice(),
             b"{`unterminated\n{later}".as_slice(),
+            b"{\\\"\n{\\\"\n{later}".as_slice(),
+            b"{\\'\n{\\'\n{later}".as_slice(),
+            b"{\\`\n{\\`\n{later}".as_slice(),
             b"{/* comment */}\n{later}".as_slice(),
             b"{// comment\n}\n{later}".as_slice(),
             b"{`plain`}\n{later}".as_slice(),
@@ -596,6 +660,57 @@ mod tests {
                 input.len(),
             );
         }
+    }
+
+    #[test]
+    fn cached_ends_bound_escaped_quote_and_template_scan_work() {
+        let inputs = [
+            "{\\\"".repeat(8_192),
+            "{\\'".repeat(8_192),
+            "{\\`".repeat(8_192),
+        ];
+
+        for (case, input) in inputs.into_iter().enumerate() {
+            let ends = ExpressionEnds::new(input.as_bytes());
+            assert!(
+                input
+                    .bytes()
+                    .enumerate()
+                    .filter(|(_, byte)| *byte == b'{')
+                    .all(|(start, _)| ends.end_at(start).is_none()),
+                "every escaped lexical opener is unterminated for case {case}",
+            );
+            assert!(
+                ends.scanned_bytes() <= input.len() * 3,
+                "case {case}: cached escaped lexical scans visited {} bytes for a {} byte input",
+                ends.scanned_bytes(),
+                input.len(),
+            );
+            assert_eq!(ends.lexical_entry_count(), 1);
+        }
+    }
+
+    #[test]
+    fn cached_ends_bound_escaped_jsx_attribute_quote_scan_work() {
+        // Roughly 640 KiB, matching the formerly quadratic JSX-attribute
+        // shape without relying on wall-clock timing.
+        let input = "<Component value={\\\"".repeat(32_768);
+        let ends = ExpressionEnds::new(input.as_bytes());
+
+        assert!(
+            input
+                .bytes()
+                .enumerate()
+                .filter(|(_, byte)| *byte == b'{')
+                .all(|(start, _)| ends.end_at(start).is_none()),
+        );
+        assert!(
+            ends.scanned_bytes() <= input.len() * 3,
+            "cached escaped JSX scans visited {} bytes for a {} byte input",
+            ends.scanned_bytes(),
+            input.len(),
+        );
+        assert_eq!(ends.lexical_entry_count(), 1);
     }
 
     #[test]
