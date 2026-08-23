@@ -406,6 +406,14 @@ enum LineEnd {
     StatementBoundary,
 }
 
+/// Whether a recognized statement introducer still expects a block body, or
+/// may instead be followed by one braceless statement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PendingStatementBlock {
+    Required,
+    Optional,
+}
+
 /// Lightweight JavaScript state needed to distinguish a continued declaration
 /// from a following Markdown block. This deliberately recognises only lexical
 /// structure and module-clause boundaries; it is not a JavaScript parser.
@@ -421,7 +429,7 @@ struct EsmContinuation {
     mode: LexicalMode,
     regex_char_class: bool,
     line_end: LineEnd,
-    statement_block_pending: bool,
+    statement_block_pending: Option<PendingStatementBlock>,
     control_condition_pending: bool,
     malformed: bool,
 }
@@ -440,7 +448,7 @@ impl EsmContinuation {
             mode: LexicalMode::Code,
             regex_char_class: false,
             line_end: LineEnd::None,
-            statement_block_pending: false,
+            statement_block_pending: None,
             control_condition_pending: false,
             malformed: false,
         }
@@ -454,6 +462,7 @@ impl EsmContinuation {
             let byte = bytes[pos];
             match self.mode {
                 LexicalMode::Code => {
+                    self.consume_optional_statement_body(bytes, pos);
                     if is_esm_word_byte(byte) {
                         word_start.get_or_insert(pos);
                         pos += 1;
@@ -587,18 +596,14 @@ impl EsmContinuation {
             );
         if starts_control_condition {
             self.control_condition_pending = true;
-            // An `else` may introduce a braceless nested control statement.
-            // That control statement consumes the pending `else` body rather
-            // than opening the previously expected block.
-            if self.statement_block_pending && matches!(self.line_end, LineEnd::StatementBoundary) {
-                self.statement_block_pending = false;
-            }
         }
 
-        if (self.is_statement_position() && matches!(word, b"else" | b"try" | b"finally" | b"do"))
+        if starts_else_statement || starts_do_statement {
+            self.statement_block_pending = Some(PendingStatementBlock::Optional);
+        } else if (self.is_statement_position() && matches!(word, b"try" | b"finally"))
             || (matches!(word, b"function" | b"class") && self.can_start_function_or_class())
         {
-            self.statement_block_pending = true;
+            self.statement_block_pending = Some(PendingStatementBlock::Required);
         }
 
         if !self.declaration_seen {
@@ -712,15 +717,33 @@ impl EsmContinuation {
     }
 
     fn open_brace(&mut self, byte: u8) {
-        let delimiter = if self.statement_block_pending
+        let delimiter = if self.statement_block_pending.is_some()
             || matches!(self.line_end, LineEnd::StatementBoundary)
         {
-            self.statement_block_pending = false;
+            self.statement_block_pending = None;
             Delimiter::StatementBlock
         } else {
             Delimiter::Brace
         };
         self.open(delimiter, byte);
+    }
+
+    fn consume_optional_statement_body(&mut self, bytes: &[u8], pos: usize) {
+        if self.statement_block_pending != Some(PendingStatementBlock::Optional) {
+            return;
+        }
+
+        let byte = bytes[pos];
+        if matches!(byte, b' ' | b'\t' | b'\r' | b'\n' | b'{')
+            || (byte == b'/' && matches!(bytes.get(pos + 1), Some(b'/' | b'*')))
+        {
+            return;
+        }
+
+        // A non-block token starts the one braceless body statement. Its
+        // eventual semicolon or ASI boundary cannot introduce a delayed block,
+        // so never let this marker affect a later object literal.
+        self.statement_block_pending = None;
     }
 
     fn close_parenthesis(&mut self, byte: u8) {

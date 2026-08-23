@@ -533,6 +533,27 @@ fn esm_braceless_control_bodies_preserve_regex_and_division_contexts() {
 }
 
 #[test]
+fn esm_braceless_bodies_do_not_leak_block_context_past_their_end() {
+    for esm in [
+        "export function after_else(value) { if (value) {} else value; ({ value: 1 }) / 2 }\n",
+        "export function after_asi(value) { if (value) {} else\n  value\n  ({ value: 1 }) / 2 }\n",
+        "export function after_nested_if(value) { if (value) if (value) value; ({ value: 1 }) / 2 }\n",
+        "export function after_loop(value) { while (value) value; ({ value: 1 }) / 2 }\n",
+        "export function after_do(value) { do value; ({ value: 1 }) / 2 while (value) }\n",
+        "export function after_else_regex(value) { if (value) {} else /\\}/.test(value); ({ value: 1 }) / 2 }\n",
+        "export function after_else_block(value) { if (value) {} else {} /\\}/.test(value) }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
 fn incomplete_esm_falls_back_to_markdown_and_is_strictly_diagnosed() {
     for input in [
         "import Widget\nOrdinary prose.\n",
