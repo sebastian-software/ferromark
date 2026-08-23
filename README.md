@@ -207,8 +207,6 @@ Set `indented_code_blocks: false` for dialects that require fenced code blocks
 and interpret four-space indentation as ordinary paragraph content. Fenced code
 blocks remain available.
 
-## Markdown configuration
-
 ## CLI
 
 `cargo install ferromark` installs `ferromark`, which reads Markdown from a file
@@ -222,6 +220,8 @@ by the selected syntax preset is preserved; use it only for Markdown you trust.
 ferromark --gfm README.md -o README.html
 printf '# Hello\n' | ferromark --no-heading-ids
 ```
+
+## Markdown configuration
 
 Start from the syntax contract you need, then enable individual extensions:
 
