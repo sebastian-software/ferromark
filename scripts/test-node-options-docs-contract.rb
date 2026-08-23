@@ -26,12 +26,21 @@ def fail_contract(message)
 end
 
 def validate(types, readme, rust, native)
+  default_body = rust[/impl Default for Options \{\s*fn default\(\) -> Self \{\s*Self \{(.*?)\n        \}\n    \}/m, 1]
+  fail_contract('cannot read Rust Options defaults') unless default_body
   FIELDS.each do |js, (rs, default)|
     field = types[/\/\*\*(.*?)\*\/\s*#{Regexp.escape(js)}\?:/m, 1]
     fail_contract("#{js} needs TSDoc") unless field
     fail_contract("#{js} TSDoc must state default #{default}") unless field.include?("Default: #{default}")
     fail_contract("Rust Options missing #{rs}") unless rust.include?("pub #{rs}:")
     fail_contract("native mapping missing #{rs}") unless native.include?("pub #{rs}:") && native.include?("options.#{rs}")
+    expected = case default
+               when 'on' then 'true'
+               when 'off' then 'false'
+               when 'unset' then 'None'
+               else 'RenderPolicy::Untrusted'
+               end
+    fail_contract("Rust default for #{rs} must be #{expected}") unless default_body.match?(/^            #{rs}: #{Regexp.escape(expected)},$/)
   end
   fail_contract('README must link Options declaration') unless readme.include?('[`Options`](./index.d.mts)')
   fail_contract('README must state untrusted default') unless readme.include?("defaults to `'untrusted'")
@@ -41,16 +50,18 @@ end
 types = File.read(TYPE_PATH); readme = File.read(README_PATH); rust = File.read(RUST_PATH); native = File.read(NATIVE_PATH)
 validate(types, readme, rust, native)
 if ARGV == ['--self-test']
+  class MutationAccepted < StandardError; end
   def rejected
     yield
-    raise 'mutation unexpectedly passed'
-  rescue RuntimeError
+    raise MutationAccepted, 'mutation unexpectedly passed'
+  rescue RuntimeError => error
+    raise error if error.is_a?(MutationAccepted)
   end
   rejected do
-    validate(types.sub('Default: on.', 'Default: off.'), readme, rust, native)
+    validate(types.sub('Default: on', 'Default: off'), readme, rust, native)
   end
   rejected do
-    validate(types, readme.sub('[`Options`](./index.d.mts)', 'Options'), rust, native)
+    validate(types, readme.gsub('[`Options`](./index.d.mts)', 'Options'), rust, native)
   end
 elsif !ARGV.empty?
   fail_contract('usage: test-node-options-docs-contract.rb [--self-test]')
