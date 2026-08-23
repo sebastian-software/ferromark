@@ -1,6 +1,6 @@
 use super::Segment;
-use super::expr::find_expression_end;
-use super::jsx_tag::parse_jsx_tag;
+use super::expr::ExpressionEnds;
+use super::jsx_tag::parse_jsx_tag_cached;
 use crate::{BlockEvent, BlockParser, CodeBlockKind};
 
 /// Split MDX input into typed segments.
@@ -12,6 +12,15 @@ use crate::{BlockEvent, BlockParser, CodeBlockKind};
 ///
 /// The returned `Vec<Segment>` covers the entire input (no bytes are dropped).
 pub fn split(input: &str) -> Vec<Segment<'_>> {
+    let bytes = input.as_bytes();
+    let expression_ends = ExpressionEnds::new(bytes);
+    split_with_expression_ends(input, &expression_ends)
+}
+
+pub(crate) fn split_with_expression_ends<'a>(
+    input: &'a str,
+    expression_ends: &ExpressionEnds,
+) -> Vec<Segment<'a>> {
     let bytes = input.as_bytes();
     let len = bytes.len();
     let mut segments: Vec<Segment<'_>> = Vec::new();
@@ -97,7 +106,8 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
         if first == b'<'
             && first_non_ws + 1 < len
             && bytes[first_non_ws + 1] == b'/'
-            && let Some(tag_info) = parse_jsx_tag(&bytes[first_non_ws..])
+            && let Some(tag_info) =
+                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, expression_ends)
             && tag_info.is_closing
         {
             let end = first_non_ws + tag_info.end_offset;
@@ -134,9 +144,8 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
 
         // 3. Expression: `{` as first non-whitespace
         if first == b'{'
-            && let Some(expr_len) = find_expression_end(&bytes[first_non_ws..])
+            && let Some(end) = expression_ends.end_at(first_non_ws)
         {
-            let end = first_non_ws + expr_len;
             // Flow expression requires no trailing non-whitespace content
             if !has_trailing_content(bytes, end) {
                 flush_markdown(input, &mut md_start, line_start, &mut segments);
@@ -154,7 +163,8 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
         if first == b'<'
             && first_non_ws + 1 < len
             && (bytes[first_non_ws + 1].is_ascii_alphabetic() || bytes[first_non_ws + 1] == b'>')
-            && let Some(tag_info) = parse_jsx_tag(&bytes[first_non_ws..])
+            && let Some(tag_info) =
+                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, expression_ends)
         {
             let end = first_non_ws + tag_info.end_offset;
             // Flow JSX requires no trailing non-whitespace content on the line

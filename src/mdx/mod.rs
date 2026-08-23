@@ -264,9 +264,23 @@ pub fn segment_spanned(input: &str) -> Vec<SpannedSegment<'_>> {
 /// input.
 pub fn try_segment_spanned(input: &str) -> Result<Vec<SpannedSegment<'_>>, crate::InputSizeError> {
     crate::validate_input_size(input.len())?;
+    Ok(spanned_segments(input, splitter::split(input)))
+}
+
+pub(crate) fn segment_spanned_with_expression_ends<'a>(
+    input: &'a str,
+    expression_ends: &expr::ExpressionEnds,
+) -> Vec<SpannedSegment<'a>> {
+    spanned_segments(
+        input,
+        splitter::split_with_expression_ends(input, expression_ends),
+    )
+}
+
+fn spanned_segments<'a>(input: &'a str, segments: Vec<Segment<'a>>) -> Vec<SpannedSegment<'a>> {
     let input_start = input.as_ptr() as usize;
 
-    Ok(splitter::split(input)
+    segments
         .into_iter()
         .map(|segment| {
             let text = segment.as_str();
@@ -277,7 +291,7 @@ pub fn try_segment_spanned(input: &str) -> Result<Vec<SpannedSegment<'_>>, crate
             let range = crate::Range::from_usize(start, end);
             SpannedSegment { segment, range }
         })
-        .collect())
+        .collect()
 }
 
 /// Validate structural MDX and return source-spanned segments on success.

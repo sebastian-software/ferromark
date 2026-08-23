@@ -53,14 +53,26 @@ fn container_flow_mdx() -> String {
     .repeat(240)
 }
 
+fn unterminated_expression_mdx() -> String {
+    "{unterminated\n".repeat(8_192)
+}
+
+fn unterminated_jsx_attribute_mdx() -> String {
+    "<Component value={unterminated\n".repeat(8_192)
+}
+
 fn bench_mdx(c: &mut Criterion) {
     let root_flow = root_flow_mdx();
     let container_flow = container_flow_mdx();
+    let unterminated_expression = unterminated_expression_mdx();
+    let unterminated_jsx_attribute = unterminated_jsx_attribute_mdx();
 
     // Keep the experiment honest: the probe must actually find the JSX lines
     // present in the fixture before it is used as a benchmarked operation.
     assert_eq!(logical_flow_candidates(&root_flow), 480);
     assert_eq!(logical_flow_candidates(&container_flow), 480);
+    assert_eq!(mdx::segment(&unterminated_expression).len(), 1);
+    assert_eq!(mdx::segment(&unterminated_jsx_attribute).len(), 1);
 
     let mut group = c.benchmark_group("mdx");
     group.sample_size(80);
@@ -71,6 +83,11 @@ fn bench_mdx(c: &mut Criterion) {
         ("plain_markdown", PLAIN_MARKDOWN),
         ("root_flow", root_flow.as_str()),
         ("container_flow", container_flow.as_str()),
+        ("unterminated_expression", unterminated_expression.as_str()),
+        (
+            "unterminated_jsx_attribute",
+            unterminated_jsx_attribute.as_str(),
+        ),
     ] {
         group.throughput(Throughput::Bytes(input.len() as u64));
         group.bench_with_input(format!("segment/{name}"), input, |b, input| {
