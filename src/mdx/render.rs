@@ -10,6 +10,12 @@ use super::{
 
 const COMPONENT_BODY_INDENT: &str = "      ";
 
+#[derive(Clone, Copy)]
+enum HtmlTextKind {
+    Raw,
+    Rcdata,
+}
+
 /// Error returned when a component name cannot be used as a JavaScript binding.
 ///
 /// Future releases may add validation failures. Downstream matches must include a wildcard arm.
@@ -226,6 +232,11 @@ fn write_component_body(out: &mut String, body: &str) {
             continue;
         }
 
+        if bytes[pos] == b'<' && matches!(bytes.get(pos + 1), Some(b'!' | b'?')) {
+            pos = declaration_end(bytes, pos).unwrap_or(bytes.len());
+            continue;
+        }
+
         if bytes[pos] == b'<'
             && let Some(tag) = parse_jsx_tag(&bytes[pos..])
         {
@@ -233,12 +244,13 @@ fn write_component_body(out: &mut String, body: &str) {
             write_component_tag(out, &body[pos..pos + tag.end_offset], &tag);
             at_line_start = false;
 
-            let is_raw_text_open = !tag.is_closing
-                && !tag.is_self_closing
-                && (tag.name.eq_ignore_ascii_case("script")
-                    || tag.name.eq_ignore_ascii_case("style"));
+            let text_kind = if !tag.is_closing && !tag.is_self_closing {
+                html_text_kind(tag.name)
+            } else {
+                None
+            };
 
-            if tag.name.eq_ignore_ascii_case("pre") && !tag.is_self_closing {
+            if tag.name == "pre" && !tag.is_self_closing {
                 if tag.is_closing {
                     pre_depth = pre_depth.saturating_sub(1);
                 } else {
@@ -247,9 +259,13 @@ fn write_component_body(out: &mut String, body: &str) {
             }
 
             pos += tag.end_offset;
-            if is_raw_text_open {
+            if let Some(text_kind) = text_kind {
                 let end = raw_text_end(bytes, pos, tag.name).unwrap_or(bytes.len());
-                write_jsx_string_child(out, &body[pos..end], false);
+                write_jsx_string_child(
+                    out,
+                    &body[pos..end],
+                    matches!(text_kind, HtmlTextKind::Rcdata),
+                );
                 // The raw text's line breaks are escaped inside the string child,
                 // so the generated JSX source is still on the opening tag's line.
                 at_line_start = false;
@@ -329,6 +345,14 @@ fn is_html_void_element(name: &str) -> bool {
     )
 }
 
+fn html_text_kind(name: &str) -> Option<HtmlTextKind> {
+    match name {
+        "script" | "style" | "xmp" | "iframe" | "noembed" | "noframes" => Some(HtmlTextKind::Raw),
+        "textarea" | "title" => Some(HtmlTextKind::Rcdata),
+        _ => None,
+    }
+}
+
 fn indent_component_line(out: &mut String, at_line_start: bool, pre_depth: u32) {
     if at_line_start && pre_depth == 0 {
         out.push_str(COMPONENT_BODY_INDENT);
@@ -375,7 +399,7 @@ fn raw_text_end(bytes: &[u8], start: usize, tag_name: &str) -> Option<usize> {
         pos += offset;
         if let Some(tag) = parse_jsx_tag(&bytes[pos..])
             && tag.is_closing
-            && tag.name.eq_ignore_ascii_case(tag_name)
+            && tag.name == tag_name
         {
             return Some(pos);
         }
@@ -399,6 +423,30 @@ fn comment_end(bytes: &[u8], start: usize) -> Option<usize> {
         .windows(3)
         .position(|window| window == b"-->")
         .map(|offset| start + 4 + offset + 3)
+}
+
+fn declaration_end(bytes: &[u8], start: usize) -> Option<usize> {
+    if bytes[start..].starts_with(b"<![CDATA[") {
+        return bytes[start + 9..]
+            .windows(3)
+            .position(|window| window == b"]]>")
+            .map(|offset| start + 9 + offset + 3);
+    }
+
+    let mut pos = start + 2;
+    let mut quote = None;
+    while pos < bytes.len() {
+        match (quote, bytes[pos]) {
+            (Some(expected), current) if current == expected => quote = None,
+            (Some(_), _) => {}
+            (None, b'"' | b'\'') => quote = Some(bytes[pos]),
+            (None, b'>') => return Some(pos + 1),
+            (None, _) => {}
+        }
+        pos += 1;
+    }
+
+    None
 }
 
 fn standalone_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
@@ -804,6 +852,57 @@ Content
             "{component}"
         );
         assert!(component.contains("line<br />\n"), "{component}");
+    }
+
+    #[test]
+    fn to_component_omits_html_declarations() {
+        let out = MdxOutput {
+            body:
+                "<!DOCTYPE html>\n<?xml version=\"1.0\"?>\n<![CDATA[ignored > text]]>\n<p>Safe</p>"
+                    .to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(!component.contains("<!"), "{component}");
+        assert!(!component.contains("<?"), "{component}");
+        assert!(!component.contains("ignored"), "{component}");
+        assert!(component.contains("<p>Safe</p>"), "{component}");
+    }
+
+    #[test]
+    fn to_component_preserves_textarea_and_title_text() {
+        let out = MdxOutput {
+            body: "<textarea data-kind=\"example\">first\r\n  second {value}&amp;\r\n</textarea>\r\n<title>first\n  second {value}&amp;\n</title>"
+                .to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains(
+            "<textarea data-kind=\"example\">{\"first\\r\\n  second {value}&\\r\\n\"}</textarea>"
+        ), "{component}");
+        assert!(
+            component.contains("<title>{\"first\\n  second {value}&\\n\"}</title>"),
+            "{component}"
+        );
+    }
+
+    #[test]
+    fn to_component_does_not_treat_component_names_as_html_text_elements() {
+        let out = render("<Pre>\n\n{value}\n\n</Pre>\n\n<Style>\n\n{text}\n\n</Style>\n");
+        let component = out.to_component("Page").unwrap();
+
+        assert!(
+            component.contains("      <Pre>\n      {value}\n      </Pre>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("      <Style>\n      {text}\n      </Style>"),
+            "{component}"
+        );
     }
 
     #[test]
