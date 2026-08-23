@@ -5,10 +5,11 @@
 ```bash
 git clone https://github.com/sebastian-software/ferromark.git
 cd ferromark
-cargo test --locked --all-features
 ```
 
 The minimum supported Rust version (MSRV) is Rust 1.88.
+
+Run the [required local checks](#required-local-checks) below.
 
 ## Required local checks
 

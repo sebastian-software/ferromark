@@ -49,6 +49,13 @@ def validate(repository_root)
   unless getting_started.include?(expected_msrv)
     fail_contract("Getting started must state #{expected_msrv.inspect}")
   end
+  unless getting_started.include?('Run the [required local checks](#required-local-checks) below.')
+    fail_contract('Getting started must point contributors to Required local checks')
+  end
+  bootstrap_commands = fenced_bash_commands(getting_started, 'Getting started')
+  if bootstrap_commands.any? { |command| command.start_with?('cargo ') }
+    fail_contract('Getting started must not duplicate cargo commands from Required local checks')
+  end
 
   jobs = workflow.fetch('jobs')
   test_job = jobs.fetch('test')
@@ -97,9 +104,9 @@ def with_fixture(source_root)
   end
 end
 
-def mutate_required_command(document, original, replacement)
-  section_start = document.index("## Required local checks\n")
-  fail 'test fixture is missing Required local checks' unless section_start
+def mutate_section_command(document, heading, original, replacement)
+  section_start = document.index("## #{heading}\n")
+  fail "test fixture is missing #{heading.inspect}" unless section_start
 
   prefix = document[0...section_start]
   section = document[section_start..]
@@ -149,24 +156,25 @@ def self_test(source_root)
       if label == 'required MSRV statement'
         document.sub!(original, replacement) || raise("test fixture is missing #{original.inspect}")
       else
-        document = mutate_required_command(document, original, replacement)
+        document = mutate_section_command(document, 'Required local checks', original, replacement)
       end
       File.write(path, document)
       assert_rejected(label) { validate(fixture_root) }
     end
   end
 
-  # The bootstrap command intentionally duplicates the required test command.
-  # Mutating only the Required local checks occurrence must still fail.
+  # The bootstrap section deliberately contains no cargo command, leaving
+  # Required local checks as the single source for CI-equivalent commands.
   with_fixture(source_root) do |fixture_root|
     path = File.join(fixture_root, 'CONTRIBUTING.md')
-    document = mutate_required_command(
+    document = mutate_section_command(
       File.read(path),
-      required_test,
-      'cargo test --locked'
+      'Getting started',
+      'cd ferromark',
+      "cd ferromark\ncargo test --locked"
     )
     File.write(path, document)
-    assert_rejected('duplicate bootstrap command') { validate(fixture_root) }
+    assert_rejected('bootstrap cargo command') { validate(fixture_root) }
   end
 end
 
