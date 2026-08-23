@@ -53,6 +53,7 @@ jobs:
       - run: ./scripts/test-check-workflow-pins.sh
       - run: node ./scripts/test-publish-verification.mjs
       - run: ruby ./scripts/test-node-ci-matrix.rb
+      - run: ruby ./scripts/test-contributing-ci-contract.rb
       - run: ./scripts/check-workflow-pins.sh
 
   rustsec:
