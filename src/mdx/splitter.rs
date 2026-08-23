@@ -364,84 +364,1227 @@ fn consume_trailing_newline(bytes: &[u8], mut pos: usize) -> usize {
     pos
 }
 
-/// Try to parse an ESM block (`import`/`export`) starting at `pos`.
+/// Result of scanning a potential ESM declaration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EsmScan {
+    /// A complete declaration ending at this byte offset.
+    Complete(usize),
+    /// A declaration that needs more JavaScript but encountered a Markdown boundary.
+    Incomplete(usize),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Delimiter {
+    Parenthesis,
+    StatementParenthesis,
+    Bracket,
+    Brace,
+    StatementBlock,
+    TemplateExpression,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LexicalMode {
+    Code,
+    SingleQuote,
+    DoubleQuote,
+    Template,
+    Regex,
+    RegexFlags,
+    LineComment,
+    BlockComment,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LineEnd {
+    None,
+    /// A completed regular-expression literal. This is distinct from `/`,
+    /// which is a dangling division operator when it appears in code.
+    Regex,
+    Word {
+        requires_following: bool,
+        starts_control_condition: bool,
+        allows_function_or_class: bool,
+    },
+    Punctuation(u8),
+    StatementBoundary,
+}
+
+/// Whether a recognized statement introducer still expects a block body, or
+/// may instead be followed by one braceless statement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PendingStatementBlock {
+    Required,
+    Optional,
+}
+
+/// Lightweight JavaScript state needed to distinguish a continued declaration
+/// from a following Markdown block. This deliberately recognises only lexical
+/// structure and module-clause boundaries; it is not a JavaScript parser.
+struct EsmContinuation {
+    declaration_is_import: bool,
+    declaration_is_export: bool,
+    declaration_seen: bool,
+    import_has_clause: bool,
+    import_saw_from: bool,
+    import_has_source: bool,
+    export_from_candidate: bool,
+    delimiters: Vec<Delimiter>,
+    mode: LexicalMode,
+    regex_char_class: bool,
+    line_end: LineEnd,
+    statement_block_pending: Option<PendingStatementBlock>,
+    control_condition_pending: bool,
+    malformed: bool,
+}
+
+impl EsmContinuation {
+    fn new(bytes: &[u8], pos: usize) -> Self {
+        Self {
+            declaration_is_import: bytes[pos..].starts_with(b"import"),
+            declaration_is_export: bytes[pos..].starts_with(b"export"),
+            declaration_seen: false,
+            import_has_clause: false,
+            import_saw_from: false,
+            import_has_source: false,
+            export_from_candidate: false,
+            delimiters: Vec::new(),
+            mode: LexicalMode::Code,
+            regex_char_class: false,
+            line_end: LineEnd::None,
+            statement_block_pending: None,
+            control_condition_pending: false,
+            malformed: false,
+        }
+    }
+
+    fn scan_line(&mut self, bytes: &[u8], mut pos: usize, end: usize) {
+        self.line_end = LineEnd::None;
+        let mut word_start = None;
+
+        while pos < end {
+            let byte = bytes[pos];
+            match self.mode {
+                LexicalMode::Code => {
+                    self.consume_optional_statement_body(bytes, pos);
+                    if is_esm_word_byte(byte) {
+                        word_start.get_or_insert(pos);
+                        pos += 1;
+                        continue;
+                    }
+                    self.finish_word(bytes, &mut word_start, pos);
+
+                    match byte {
+                        b'\'' => {
+                            self.mark_string_start();
+                            self.mode = LexicalMode::SingleQuote;
+                        }
+                        b'"' => {
+                            self.mark_string_start();
+                            self.mode = LexicalMode::DoubleQuote;
+                        }
+                        b'`' => {
+                            self.line_end = LineEnd::Punctuation(byte);
+                            self.mode = LexicalMode::Template;
+                        }
+                        b'/' if bytes.get(pos + 1) == Some(&b'/') => {
+                            self.mode = LexicalMode::LineComment;
+                            pos += 1;
+                        }
+                        b'/' if bytes.get(pos + 1) == Some(&b'*') => {
+                            self.mode = LexicalMode::BlockComment;
+                            pos += 1;
+                        }
+                        b'/' if self.can_start_regex() => {
+                            self.mode = LexicalMode::Regex;
+                            self.regex_char_class = false;
+                        }
+                        b'(' => self.open_parenthesis(byte),
+                        b'[' => self.open(Delimiter::Bracket, byte),
+                        b'{' => self.open_brace(byte),
+                        b')' => self.close_parenthesis(byte),
+                        b']' => self.close(Delimiter::Bracket, byte),
+                        b'}' => self.close_brace(byte),
+                        b' ' | b'\t' | b'\r' | b'\n' => {}
+                        _ => {
+                            if self.declaration_is_import
+                                && self.declaration_seen
+                                && self.delimiters.is_empty()
+                                && matches!(byte, b'{' | b'*')
+                            {
+                                self.import_has_clause = true;
+                            }
+                            if self.declaration_is_export
+                                && self.declaration_seen
+                                && self.delimiters.is_empty()
+                                && matches!(byte, b'{' | b'*')
+                            {
+                                self.export_from_candidate = true;
+                            }
+                            self.line_end = LineEnd::Punctuation(byte);
+                        }
+                    }
+                }
+                LexicalMode::SingleQuote => match byte {
+                    b'\\' if pos + 1 < end => pos += 1,
+                    b'\'' => {
+                        self.mode = LexicalMode::Code;
+                        self.line_end = LineEnd::Punctuation(byte);
+                    }
+                    _ => {}
+                },
+                LexicalMode::DoubleQuote => match byte {
+                    b'\\' if pos + 1 < end => pos += 1,
+                    b'"' => {
+                        self.mode = LexicalMode::Code;
+                        self.line_end = LineEnd::Punctuation(byte);
+                    }
+                    _ => {}
+                },
+                LexicalMode::Template => match byte {
+                    b'\\' if pos + 1 < end => pos += 1,
+                    b'`' => {
+                        self.mode = LexicalMode::Code;
+                        self.line_end = LineEnd::Punctuation(byte);
+                    }
+                    b'$' if bytes.get(pos + 1) == Some(&b'{') => {
+                        self.delimiters.push(Delimiter::TemplateExpression);
+                        self.mode = LexicalMode::Code;
+                        self.line_end = LineEnd::Punctuation(b'{');
+                        pos += 1;
+                    }
+                    _ => {}
+                },
+                LexicalMode::Regex => match byte {
+                    b'\\' if pos + 1 < end => pos += 1,
+                    b'[' => self.regex_char_class = true,
+                    b']' => self.regex_char_class = false,
+                    b'/' if !self.regex_char_class => {
+                        self.mode = LexicalMode::RegexFlags;
+                        self.line_end = LineEnd::Regex;
+                    }
+                    _ => {}
+                },
+                LexicalMode::RegexFlags => {
+                    if !byte.is_ascii_alphabetic() {
+                        self.mode = LexicalMode::Code;
+                        continue;
+                    }
+                }
+                LexicalMode::LineComment => {
+                    if byte == b'\n' {
+                        self.mode = LexicalMode::Code;
+                    }
+                }
+                LexicalMode::BlockComment => {
+                    if byte == b'*' && bytes.get(pos + 1) == Some(&b'/') {
+                        self.mode = LexicalMode::Code;
+                        pos += 1;
+                    }
+                }
+            }
+            pos += 1;
+        }
+
+        if self.mode == LexicalMode::RegexFlags {
+            self.mode = LexicalMode::Code;
+        }
+        self.finish_word(bytes, &mut word_start, end);
+    }
+
+    fn finish_word(&mut self, bytes: &[u8], word_start: &mut Option<usize>, end: usize) {
+        let Some(start) = word_start.take() else {
+            return;
+        };
+        let word = &bytes[start..end];
+        let is_from = word == b"from";
+        let at_top_level = self.delimiters.is_empty();
+        let starts_else_statement = self.is_statement_position() && word == b"else";
+        let starts_do_statement = self.is_statement_position() && word == b"do";
+
+        let starts_control_condition = self.is_statement_position()
+            && matches!(
+                word,
+                b"if" | b"while" | b"for" | b"with" | b"switch" | b"catch"
+            );
+        if starts_control_condition {
+            self.control_condition_pending = true;
+        }
+
+        if starts_else_statement || starts_do_statement {
+            self.statement_block_pending = Some(PendingStatementBlock::Optional);
+        } else if (self.is_statement_position() && matches!(word, b"try" | b"finally"))
+            || (matches!(word, b"function" | b"class") && self.can_start_function_or_class())
+        {
+            self.statement_block_pending = Some(PendingStatementBlock::Required);
+        }
+
+        if !self.declaration_seen {
+            self.declaration_seen = true;
+        } else if self.declaration_is_import && at_top_level {
+            if is_from {
+                self.import_saw_from = true;
+            } else {
+                self.import_has_clause = true;
+            }
+        } else if self.declaration_is_export && at_top_level && is_from {
+            self.export_from_candidate = false;
+        }
+
+        self.line_end = if starts_else_statement || starts_do_statement {
+            // Both `else` and `do` are followed by a statement, which may be
+            // braceless. Treat that following source position exactly like a
+            // completed control condition while still retaining the pending
+            // block marker for a `{` body.
+            LineEnd::StatementBoundary
+        } else {
+            LineEnd::Word {
+                requires_following: word_requires_following(word),
+                starts_control_condition,
+                allows_function_or_class: matches!(word, b"export" | b"default" | b"async"),
+            }
+        };
+    }
+
+    fn mark_string_start(&mut self) {
+        if self.declaration_is_import
+            && self.delimiters.is_empty()
+            && (!self.import_has_clause || self.import_saw_from)
+        {
+            self.import_has_source = true;
+        }
+        self.line_end = LineEnd::Punctuation(b'\'');
+    }
+
+    fn open(&mut self, delimiter: Delimiter, byte: u8) {
+        if self.declaration_is_import
+            && self.declaration_seen
+            && self.delimiters.is_empty()
+            && matches!(delimiter, Delimiter::Brace)
+        {
+            self.import_has_clause = true;
+        }
+        if self.declaration_is_export
+            && self.declaration_seen
+            && self.delimiters.is_empty()
+            && matches!(delimiter, Delimiter::Brace)
+        {
+            self.export_from_candidate = true;
+        }
+        self.delimiters.push(delimiter);
+        self.line_end = LineEnd::Punctuation(byte);
+    }
+
+    fn open_parenthesis(&mut self, byte: u8) {
+        let delimiter = if self.control_condition_pending
+            || matches!(
+                self.line_end,
+                LineEnd::Word {
+                    starts_control_condition: true,
+                    ..
+                }
+            ) {
+            self.control_condition_pending = false;
+            Delimiter::StatementParenthesis
+        } else {
+            Delimiter::Parenthesis
+        };
+        self.open(delimiter, byte);
+    }
+
+    fn is_statement_position(&self) -> bool {
+        matches!(
+            self.delimiters.last(),
+            None | Some(Delimiter::StatementBlock)
+        ) && matches!(
+            self.line_end,
+            LineEnd::None | LineEnd::StatementBoundary | LineEnd::Punctuation(b'{' | b'}' | b';')
+        )
+    }
+
+    fn can_start_function_or_class(&self) -> bool {
+        if matches!(
+            self.delimiters.last(),
+            Some(Delimiter::Brace | Delimiter::Bracket)
+        ) {
+            return matches!(
+                self.line_end,
+                LineEnd::Punctuation(b':' | b'=' | b'(' | b'[' | b',')
+            );
+        }
+
+        matches!(
+            self.line_end,
+            LineEnd::None
+                | LineEnd::StatementBoundary
+                | LineEnd::Word {
+                    requires_following: true,
+                    ..
+                }
+                | LineEnd::Word {
+                    allows_function_or_class: true,
+                    ..
+                }
+                | LineEnd::Punctuation(b'=' | b':' | b'(' | b'[' | b'{' | b',')
+        )
+    }
+
+    fn open_brace(&mut self, byte: u8) {
+        let delimiter = if self.statement_block_pending.is_some()
+            || matches!(self.line_end, LineEnd::StatementBoundary)
+        {
+            self.statement_block_pending = None;
+            Delimiter::StatementBlock
+        } else {
+            Delimiter::Brace
+        };
+        self.open(delimiter, byte);
+    }
+
+    fn consume_optional_statement_body(&mut self, bytes: &[u8], pos: usize) {
+        if self.statement_block_pending != Some(PendingStatementBlock::Optional) {
+            return;
+        }
+
+        let byte = bytes[pos];
+        if matches!(byte, b' ' | b'\t' | b'\r' | b'\n' | b'{')
+            || (byte == b'/' && matches!(bytes.get(pos + 1), Some(b'/' | b'*')))
+        {
+            return;
+        }
+
+        // A non-block token starts the one braceless body statement. Its
+        // eventual semicolon or ASI boundary cannot introduce a delayed block,
+        // so never let this marker affect a later object literal.
+        self.statement_block_pending = None;
+    }
+
+    fn close_parenthesis(&mut self, byte: u8) {
+        let Some(actual) = self.delimiters.pop() else {
+            self.malformed = true;
+            return;
+        };
+        if actual == Delimiter::StatementParenthesis {
+            self.line_end = LineEnd::StatementBoundary;
+        } else if actual == Delimiter::Parenthesis {
+            self.line_end = LineEnd::Punctuation(byte);
+        } else {
+            self.malformed = true;
+        }
+    }
+
+    fn close_brace(&mut self, byte: u8) {
+        let Some(actual) = self.delimiters.pop() else {
+            self.malformed = true;
+            return;
+        };
+        if actual == Delimiter::TemplateExpression {
+            self.mode = LexicalMode::Template;
+            self.line_end = LineEnd::Punctuation(byte);
+        } else if actual == Delimiter::StatementBlock {
+            self.line_end = LineEnd::StatementBoundary;
+        } else if actual == Delimiter::Brace {
+            self.line_end = LineEnd::Punctuation(byte);
+        } else {
+            self.malformed = true;
+        }
+    }
+
+    fn close(&mut self, expected: Delimiter, byte: u8) {
+        let Some(actual) = self.delimiters.pop() else {
+            self.malformed = true;
+            return;
+        };
+        if actual == Delimiter::TemplateExpression && expected == Delimiter::Brace {
+            self.mode = LexicalMode::Template;
+        } else if actual != expected {
+            self.malformed = true;
+        }
+        self.line_end = LineEnd::Punctuation(byte);
+    }
+
+    fn needs_explicit_continuation(&self) -> bool {
+        !self.delimiters.is_empty()
+            || !matches!(self.mode, LexicalMode::Code)
+            || matches!(
+                self.line_end,
+                LineEnd::Word {
+                    requires_following: true,
+                    ..
+                } | LineEnd::Punctuation(
+                    b',' | b'.'
+                        | b'='
+                        | b'+'
+                        | b'-'
+                        | b'*'
+                        | b'/'
+                        | b'%'
+                        | b'&'
+                        | b'|'
+                        | b'^'
+                        | b'!'
+                        | b'~'
+                        | b'?'
+                        | b':'
+                        | b'<'
+                        | b'>'
+                )
+            )
+    }
+
+    fn can_start_regex(&self) -> bool {
+        matches!(
+            self.line_end,
+            LineEnd::None
+                | LineEnd::Word {
+                    requires_following: true,
+                    ..
+                }
+                | LineEnd::StatementBoundary
+                | LineEnd::Punctuation(
+                    b'(' | b'['
+                        | b'{'
+                        | b','
+                        | b':'
+                        | b';'
+                        | b'='
+                        | b'!'
+                        | b'?'
+                        | b'&'
+                        | b'|'
+                        | b'^'
+                        | b'~'
+                        | b'+'
+                        | b'-'
+                        | b'*'
+                        | b'%'
+                        | b'<'
+                        | b'>'
+                )
+        )
+    }
+
+    fn import_needs_source(&self) -> bool {
+        self.declaration_is_import && !self.import_has_source
+    }
+
+    /// A completed expression can continue on the following line only through
+    /// a lexically valid suffix chain. The lookahead is deliberately bounded
+    /// to that physical line: this keeps ordinary Markdown from being
+    /// accumulated while avoiding rescanning prior lines.
+    fn expression_continues_with_suffix(&self, bytes: &[u8], line_start: usize) -> bool {
+        if !matches!(
+            self.line_end,
+            LineEnd::Regex
+                | LineEnd::Word {
+                    requires_following: false,
+                    ..
+                }
+                | LineEnd::Punctuation(b')' | b']' | b'}' | b'\'' | b'"' | b'`')
+        ) {
+            return false;
+        }
+
+        let start = skip_whitespace_offset(bytes, line_start);
+        has_expression_suffix(bytes, start)
+    }
+}
+
+fn is_esm_word_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$')
+}
+
+fn word_requires_following(word: &[u8]) -> bool {
+    matches!(
+        word,
+        b"as"
+            | b"async"
+            | b"await"
+            | b"class"
+            | b"const"
+            | b"default"
+            | b"delete"
+            | b"extends"
+            | b"from"
+            | b"function"
+            | b"in"
+            | b"instanceof"
+            | b"let"
+            | b"new"
+            | b"of"
+            | b"return"
+            | b"throw"
+            | b"typeof"
+            | b"var"
+            | b"void"
+            | b"yield"
+    )
+}
+
+/// Scan an ESM block once, continuing only across lexical or module-clause
+/// boundaries that require another JavaScript line. The state is updated as
+/// each byte is consumed, so long declarations are linear in their input size.
+pub(crate) fn scan_esm(
+    bytes: &[u8],
+    pos: usize,
+    container_fences: &ContainerFenceLines,
+) -> Option<EsmScan> {
+    if !is_esm_start(&bytes[pos..]) {
+        return None;
+    }
+
+    let len = bytes.len();
+    let mut state = EsmContinuation::new(bytes, pos);
+    let mut line_start = pos;
+    let mut end = next_line(bytes, line_start);
+    loop {
+        state.scan_line(bytes, line_start, end);
+
+        if end >= len {
+            return Some(
+                if state.malformed
+                    || state.needs_explicit_continuation()
+                    || state.import_needs_source()
+                {
+                    EsmScan::Incomplete(end)
+                } else {
+                    EsmScan::Complete(end)
+                },
+            );
+        }
+
+        if opening_code_fence(bytes, end).is_some()
+            || container_fences.contains_opener(end)
+            || container_fences.contains_owner(end)
+        {
+            return Some(
+                if state.malformed
+                    || state.needs_explicit_continuation()
+                    || state.import_needs_source()
+                {
+                    EsmScan::Incomplete(end)
+                } else {
+                    EsmScan::Complete(end)
+                },
+            );
+        }
+
+        if is_blank_line(bytes, end) {
+            return Some(
+                if state.malformed
+                    || state.needs_explicit_continuation()
+                    || state.import_needs_source()
+                {
+                    EsmScan::Incomplete(end)
+                } else {
+                    EsmScan::Complete(end)
+                },
+            );
+        }
+
+        if state.malformed {
+            return Some(EsmScan::Incomplete(end));
+        }
+
+        if state.needs_explicit_continuation() {
+            if is_markdown_block_start(bytes, end) || is_plain_prose_line(bytes, end) {
+                return Some(EsmScan::Incomplete(end));
+            }
+            line_start = end;
+            end = next_line(bytes, line_start);
+            continue;
+        }
+
+        if state.expression_continues_with_suffix(bytes, end) {
+            line_start = end;
+            end = next_line(bytes, line_start);
+            continue;
+        }
+
+        if state.import_needs_source() {
+            if is_import_clause_continuation(bytes, end) {
+                line_start = end;
+                end = next_line(bytes, line_start);
+                continue;
+            }
+            return Some(EsmScan::Incomplete(end));
+        }
+
+        if state.export_from_candidate && starts_with_word(bytes, end, b"from") {
+            line_start = end;
+            end = next_line(bytes, line_start);
+            continue;
+        }
+
+        return Some(EsmScan::Complete(end));
+    }
+}
+
+fn is_markdown_block_start(bytes: &[u8], line_start: usize) -> bool {
+    let first = skip_whitespace_offset(bytes, line_start);
+    let Some(&byte) = bytes.get(first) else {
+        return false;
+    };
+    match byte {
+        b'#' | b'>' | b'!' | b'<' | b'{' => true,
+        b'-' | b'+' | b'*' => matches!(bytes.get(first + 1), Some(b' ' | b'\t')),
+        b'0'..=b'9' => {
+            let mut pos = first;
+            while bytes.get(pos).is_some_and(u8::is_ascii_digit) {
+                pos += 1;
+            }
+            matches!(bytes.get(pos), Some(b'.' | b')'))
+                && matches!(bytes.get(pos + 1), Some(b' ' | b'\t'))
+        }
+        _ => false,
+    }
+}
+
+fn is_plain_prose_line(bytes: &[u8], line_start: usize) -> bool {
+    let end = next_line(bytes, line_start);
+    let mut pos = line_start;
+    let mut first_word = None;
+    let mut words = 0;
+
+    while pos < end {
+        while matches!(bytes.get(pos), Some(b' ' | b'\t' | b'\r' | b'\n')) {
+            pos += 1;
+        }
+        let start = pos;
+        while pos < end && !matches!(bytes[pos], b' ' | b'\t' | b'\r' | b'\n') {
+            if !(bytes[pos].is_ascii_alphanumeric()
+                || matches!(bytes[pos], b'_' | b'$' | b'.' | b'!' | b'?'))
+            {
+                return false;
+            }
+            pos += 1;
+        }
+        if start == pos {
+            break;
+        }
+        if first_word.is_none() {
+            first_word = Some(&bytes[start..pos]);
+        }
+        words += 1;
+    }
+
+    words > 1
+        && first_word.is_some_and(|word| {
+            word[0].is_ascii_alphabetic()
+                && word != b"new"
+                && word != b"async"
+                && !word_requires_following(word)
+        })
+}
+
+/// Return whether the rest of this physical line is a plausible continuation
+/// of a completed expression.
 ///
-/// ESM statements can span multiple lines (e.g. multiline imports).
-/// We accumulate lines until we hit a blank line or a line that doesn't
-/// look like a continuation.
-///
-/// Returns the byte offset after the ESM block, or `None` if not ESM.
+/// Markdown and JavaScript intentionally overlap here: `[value](arg)`,
+/// `(value, flags)`, and a template literal are all valid ECMAScript suffixes.
+/// In those cases we follow ECMAScript continuation rules. We only stop for a
+/// suffix that is lexically impossible, such as prose containing adjacent
+/// identifiers inside an index or call. A semicolon or blank line before
+/// Markdown makes the intended boundary explicit.
+fn has_expression_suffix(bytes: &[u8], start: usize) -> bool {
+    try_expression_suffix(bytes, start).unwrap_or(false)
+}
+
+fn try_expression_suffix(bytes: &[u8], start: usize) -> Option<bool> {
+    let end = next_line(bytes, start);
+    let mut pos = start;
+    let mut saw_suffix = false;
+
+    loop {
+        pos = skip_suffix_trivia(bytes, pos, end)?;
+        match bytes.get(pos).copied() {
+            Some(b'.') => {
+                pos = scan_suffix_property(bytes, pos + 1, end)?;
+                saw_suffix = true;
+            }
+            Some(b'?') if bytes.get(pos + 1) == Some(&b'.') => {
+                pos += 2;
+                pos = skip_suffix_trivia(bytes, pos, end)?;
+                pos = match bytes.get(pos).copied() {
+                    Some(b'[') => scan_suffix_group(bytes, pos, b'[', b']', end)?,
+                    Some(b'(') => scan_suffix_group(bytes, pos, b'(', b')', end)?,
+                    _ if suffix_identifier_starts_at(bytes, pos, end) => {
+                        scan_suffix_identifier(bytes, pos, end)?
+                    }
+                    _ => return Some(false),
+                };
+                saw_suffix = true;
+            }
+            Some(b'[') => {
+                pos = scan_suffix_group(bytes, pos, b'[', b']', end)?;
+                saw_suffix = true;
+            }
+            Some(b'(') => {
+                pos = scan_suffix_group(bytes, pos, b'(', b')', end)?;
+                saw_suffix = true;
+            }
+            Some(b'`') => {
+                pos = scan_suffix_template(bytes, pos, end)?;
+                saw_suffix = true;
+            }
+            _ => break,
+        }
+    }
+
+    if !saw_suffix {
+        return Some(false);
+    }
+
+    pos = skip_suffix_trivia(bytes, pos, end)?;
+    Some(pos >= end || matches!(bytes.get(pos), Some(b';')))
+}
+
+/// Skip whitespace and comments between suffix tokens without leaving the
+/// current physical line. `None` denotes an unterminated block comment.
+fn skip_suffix_trivia(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    loop {
+        while pos < end && matches!(bytes[pos], b' ' | b'\t' | b'\r' | b'\n') {
+            pos += 1;
+        }
+        if bytes.get(pos..pos + 2) == Some(b"//") {
+            return Some(end);
+        }
+        if bytes.get(pos..pos + 2) != Some(b"/*") {
+            return Some(pos);
+        }
+        pos += 2;
+        while pos + 1 < end && bytes.get(pos..pos + 2) != Some(b"*/") {
+            pos += 1;
+        }
+        if bytes.get(pos..pos + 2) != Some(b"*/") {
+            return None;
+        }
+        pos += 2;
+    }
+}
+
+fn scan_suffix_property(bytes: &[u8], pos: usize, end: usize) -> Option<usize> {
+    let pos = skip_suffix_trivia(bytes, pos, end)?;
+    scan_suffix_identifier(bytes, pos, end)
+}
+
+fn suffix_identifier_starts_at(bytes: &[u8], pos: usize, end: usize) -> bool {
+    scan_suffix_identifier_char(bytes, pos, end, true).is_some()
+}
+
+/// Scan an ECMAScript identifier token, including Unicode scalar values and
+/// `\\uXXXX`/`\\u{X...}` escapes. The scanner deliberately validates only the
+/// identifier primitive; declaration grammar remains outside this lightweight
+/// continuation check.
+fn scan_suffix_identifier(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    pos = scan_suffix_identifier_char(bytes, pos, end, true)?;
+    while let Some(next) = scan_suffix_identifier_char(bytes, pos, end, false) {
+        pos = next;
+    }
+    Some(pos)
+}
+
+fn scan_suffix_identifier_char(
+    bytes: &[u8],
+    pos: usize,
+    end: usize,
+    is_start: bool,
+) -> Option<usize> {
+    let byte = *bytes.get(pos)?;
+    if byte == b'\\' {
+        return scan_suffix_identifier_escape(bytes, pos, end, is_start);
+    }
+    if byte.is_ascii() {
+        let valid = if is_start {
+            is_suffix_identifier_start_char(char::from(byte))
+        } else {
+            is_suffix_identifier_continue_char(char::from(byte))
+        };
+        return valid.then_some(pos + 1);
+    }
+
+    let character = std::str::from_utf8(bytes.get(pos..end)?)
+        .ok()?
+        .chars()
+        .next()?;
+    let valid = if is_start {
+        is_suffix_identifier_start_char(character)
+    } else {
+        is_suffix_identifier_continue_char(character)
+    };
+    valid.then_some(pos + character.len_utf8())
+}
+
+#[inline]
+fn is_suffix_identifier_start_char(character: char) -> bool {
+    character == '$' || character == '_' || is_ecmascript_id_start(character)
+}
+
+#[inline]
+fn is_suffix_identifier_continue_char(character: char) -> bool {
+    character == '$'
+        || character == '_'
+        || matches!(character, '\u{200c}' | '\u{200d}')
+        || unicode_ident::is_xid_continue(character)
+        || is_ecmascript_id_start(character)
+}
+
+/// ECMAScript uses Unicode ID_Start/ID_Continue while `unicode-ident` exposes
+/// the stricter normalization-closed XID properties. Keep XID as the fast
+/// common path and include the finite ID_Start compatibility set it excludes.
+#[inline]
+fn is_ecmascript_id_start(character: char) -> bool {
+    unicode_ident::is_xid_start(character)
+        || matches!(
+            character,
+            '\u{037a}'
+                | '\u{0e33}'
+                | '\u{0eb3}'
+                | '\u{2118}'
+                | '\u{212e}'
+                | '\u{309b}'
+                | '\u{309c}'
+                | '\u{fc5e}'
+                ..='\u{fc63}'
+                    | '\u{fdfa}'
+                    | '\u{fdfb}'
+                    | '\u{fe70}'
+                    | '\u{fe72}'
+                    | '\u{fe74}'
+                    | '\u{fe76}'
+                    | '\u{fe78}'
+                    | '\u{fe7a}'
+                    | '\u{fe7c}'
+                    | '\u{fe7e}'
+                    | '\u{ff9e}'
+                    | '\u{ff9f}'
+        )
+}
+
+fn scan_suffix_identifier_escape(
+    bytes: &[u8],
+    pos: usize,
+    end: usize,
+    is_start: bool,
+) -> Option<usize> {
+    if bytes.get(pos + 1) != Some(&b'u') {
+        return None;
+    }
+    let mut cursor = pos + 2;
+    let code_point = if bytes.get(cursor) == Some(&b'{') {
+        cursor += 1;
+        let digits_start = cursor;
+        let mut value = 0_u32;
+        while cursor < end && bytes[cursor] != b'}' {
+            value = value.checked_mul(16)? + u32::from(hex_value(bytes[cursor])?);
+            cursor += 1;
+            if cursor - digits_start > 6 {
+                return None;
+            }
+        }
+        if cursor == digits_start || bytes.get(cursor) != Some(&b'}') {
+            return None;
+        }
+        cursor += 1;
+        value
+    } else {
+        let mut value = 0_u32;
+        for _ in 0..4 {
+            value = value.checked_mul(16)? + u32::from(hex_value(*bytes.get(cursor)?)?);
+            cursor += 1;
+        }
+        value
+    };
+    let character = char::from_u32(code_point)?;
+    let valid = if is_start {
+        is_suffix_identifier_start_char(character)
+    } else {
+        is_suffix_identifier_continue_char(character)
+    };
+    valid.then_some(cursor)
+}
+
+fn hex_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
+}
+
+/// Scan a bracketed/index or parenthesized/call suffix and reject obvious prose
+/// (for example `Markdown prose`) while accepting balanced nested JavaScript
+/// strings, comments, templates, and groups.
+fn scan_suffix_group(
+    bytes: &[u8],
+    pos: usize,
+    opening: u8,
+    closing: u8,
+    end: usize,
+) -> Option<usize> {
+    debug_assert_eq!(bytes.get(pos), Some(&opening));
+    let mut stack = vec![closing];
+    let mut pos = pos + 1;
+    let mut previous_is_operand = false;
+
+    while pos < end {
+        match bytes[pos] {
+            b' ' | b'\t' | b'\r' | b'\n' => pos += 1,
+            b'/' if bytes.get(pos + 1) == Some(&b'/') => return None,
+            b'/' if bytes.get(pos + 1) == Some(&b'*') => {
+                pos = skip_suffix_trivia(bytes, pos, end)?;
+            }
+            b'\'' | b'"' => {
+                if previous_is_operand {
+                    return None;
+                }
+                pos = scan_suffix_string(bytes, pos, end)?;
+                previous_is_operand = true;
+            }
+            b'`' => {
+                if previous_is_operand {
+                    return None;
+                }
+                pos = scan_suffix_template(bytes, pos, end)?;
+                previous_is_operand = true;
+            }
+            b'/' if !previous_is_operand => {
+                pos = scan_suffix_regex(bytes, pos, end)?;
+                previous_is_operand = true;
+            }
+            _ if suffix_identifier_starts_at(bytes, pos, end) => {
+                let word_start = pos;
+                pos = scan_suffix_identifier(bytes, pos, end)?;
+                let word = &bytes[word_start..pos];
+                if word_requires_following(word) {
+                    previous_is_operand = false;
+                } else if previous_is_operand {
+                    return None;
+                } else {
+                    previous_is_operand = true;
+                }
+            }
+            b'0'..=b'9' => {
+                if previous_is_operand {
+                    return None;
+                }
+                pos = scan_suffix_number(bytes, pos, end)?;
+                previous_is_operand = true;
+            }
+            b'(' => {
+                stack.push(b')');
+                pos += 1;
+                previous_is_operand = false;
+            }
+            b'[' => {
+                stack.push(b']');
+                pos += 1;
+                previous_is_operand = false;
+            }
+            b'{' => {
+                stack.push(b'}');
+                pos += 1;
+                previous_is_operand = false;
+            }
+            b')' | b']' | b'}' => {
+                if stack.pop()? != bytes[pos] {
+                    return None;
+                }
+                pos += 1;
+                previous_is_operand = true;
+                if stack.is_empty() {
+                    return Some(pos);
+                }
+            }
+            // These are expression separators/operators. Full JavaScript
+            // grammar validation happens downstream; this bounded lexical
+            // check only needs to reject unambiguously prose-like adjacency.
+            b'.' | b',' | b':' | b';' | b'=' | b'+' | b'-' | b'*' | b'/' | b'%' | b'&' | b'|'
+            | b'^' | b'!' | b'~' | b'?' | b'<' | b'>' => {
+                previous_is_operand = false;
+                pos += 1;
+            }
+            _ => return None,
+        }
+    }
+
+    None
+}
+
+/// Scan decimal (including a leading-dot fractional part when entered after a
+/// punctuator), exponent, radix-prefixed, separator, and BigInt numeric forms.
+fn scan_suffix_number(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    debug_assert!(matches!(bytes.get(pos), Some(b'0'..=b'9')));
+    if bytes.get(pos) == Some(&b'0') {
+        let radix = match bytes.get(pos + 1) {
+            Some(b'x' | b'X') => Some(16),
+            Some(b'o' | b'O') => Some(8),
+            Some(b'b' | b'B') => Some(2),
+            _ => None,
+        };
+        if let Some(radix) = radix {
+            pos += 2;
+            pos = scan_suffix_digits(bytes, pos, end, radix)?;
+            if bytes.get(pos) == Some(&b'n') {
+                pos += 1;
+            }
+            return Some(pos);
+        }
+    }
+
+    pos = scan_suffix_digits(bytes, pos, end, 10)?;
+    let mut has_fraction_or_exponent = false;
+    if bytes.get(pos) == Some(&b'.') {
+        has_fraction_or_exponent = true;
+        pos += 1;
+        if matches!(bytes.get(pos), Some(b'0'..=b'9')) {
+            pos = scan_suffix_digits(bytes, pos, end, 10)?;
+        }
+    }
+    if matches!(bytes.get(pos), Some(b'e' | b'E')) {
+        has_fraction_or_exponent = true;
+        pos += 1;
+        if matches!(bytes.get(pos), Some(b'+' | b'-')) {
+            pos += 1;
+        }
+        pos = scan_suffix_digits(bytes, pos, end, 10)?;
+    }
+    if !has_fraction_or_exponent && bytes.get(pos) == Some(&b'n') {
+        pos += 1;
+    }
+    Some(pos)
+}
+
+fn scan_suffix_digits(bytes: &[u8], mut pos: usize, end: usize, radix: u8) -> Option<usize> {
+    let mut saw_digit = false;
+    let mut previous_was_separator = false;
+    while let Some(&byte) = bytes.get(pos).filter(|_| pos < end) {
+        if digit_value(byte).is_some_and(|value| value < radix) {
+            saw_digit = true;
+            previous_was_separator = false;
+            pos += 1;
+        } else if byte == b'_' {
+            if !saw_digit || previous_was_separator {
+                return None;
+            }
+            previous_was_separator = true;
+            pos += 1;
+        } else {
+            break;
+        }
+    }
+    (saw_digit && !previous_was_separator).then_some(pos)
+}
+
+fn digit_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
+}
+
+fn scan_suffix_string(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    let quote = *bytes.get(pos)?;
+    pos += 1;
+    while pos < end {
+        match bytes[pos] {
+            b'\\' => pos += 2,
+            byte if byte == quote => return Some(pos + 1),
+            _ => pos += 1,
+        }
+    }
+    None
+}
+
+fn scan_suffix_regex(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    pos += 1;
+    let mut in_class = false;
+    while pos < end {
+        match bytes[pos] {
+            b'\\' => pos += 2,
+            b'[' => {
+                in_class = true;
+                pos += 1;
+            }
+            b']' => {
+                in_class = false;
+                pos += 1;
+            }
+            b'/' if !in_class => {
+                pos += 1;
+                while pos < end && bytes[pos].is_ascii_alphabetic() {
+                    pos += 1;
+                }
+                return Some(pos);
+            }
+            _ => pos += 1,
+        }
+    }
+    None
+}
+
+fn scan_suffix_template(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    debug_assert_eq!(bytes.get(pos), Some(&b'`'));
+    pos += 1;
+    while pos < end {
+        match bytes[pos] {
+            b'\\' => pos += 2,
+            b'`' => return Some(pos + 1),
+            b'$' if bytes.get(pos + 1) == Some(&b'{') => {
+                pos = scan_suffix_group(bytes, pos + 1, b'{', b'}', end)?;
+            }
+            _ => pos += 1,
+        }
+    }
+    None
+}
+
+fn starts_with_word(bytes: &[u8], line_start: usize, word: &[u8]) -> bool {
+    let start = skip_whitespace_offset(bytes, line_start);
+    bytes.get(start..start + word.len()) == Some(word)
+        && bytes
+            .get(start + word.len())
+            .is_none_or(|byte| !is_esm_word_byte(*byte))
+}
+
+fn is_import_clause_continuation(bytes: &[u8], line_start: usize) -> bool {
+    let start = skip_whitespace_offset(bytes, line_start);
+    matches!(bytes.get(start), Some(b'{' | b'*' | b'\'' | b'"'))
+        || starts_with_word(bytes, line_start, b"from")
+        || line_contains_from_clause(bytes, start)
+}
+
+fn line_contains_from_clause(bytes: &[u8], mut pos: usize) -> bool {
+    let end = next_line(bytes, pos);
+    while pos + 4 <= end {
+        if bytes.get(pos..pos + 4) == Some(b"from")
+            && (pos == 0 || !is_esm_word_byte(bytes[pos - 1]))
+            && bytes
+                .get(pos + 4)
+                .is_none_or(|byte| !is_esm_word_byte(*byte))
+        {
+            return true;
+        }
+        pos += 1;
+    }
+    false
+}
+
+/// Try to parse a complete ESM block (`import`/`export`) starting at `pos`.
+/// Incomplete declarations deliberately fall back to Markdown in permissive
+/// mode; strict mode obtains their boundary through [`scan_esm`].
 pub(crate) fn try_esm(
     bytes: &[u8],
     pos: usize,
     container_fences: &ContainerFenceLines,
 ) -> Option<usize> {
-    let len = bytes.len();
-    let rest = &bytes[pos..];
-
-    if !is_esm_start(rest) {
-        return None;
+    match scan_esm(bytes, pos, container_fences)? {
+        EsmScan::Complete(end) => Some(end),
+        EsmScan::Incomplete(_) => None,
     }
-
-    // Find the end of the ESM statement.
-    // Simple heuristic: accumulate lines until we see a blank line,
-    // or the first line ends with a semicolon/newline.
-    let mut end = next_line(bytes, pos);
-
-    // Check if the statement might be multiline (has an unclosed `{` or
-    // uses `from` keyword that hasn't appeared yet, etc.)
-    // Simple approach: if line doesn't end with `;` or contain `from`,
-    // keep going until blank line.
-    loop {
-        if end >= len {
-            break;
-        }
-        // A fenced code block starts a new Markdown block even when the
-        // preceding ESM declaration omits its optional semicolon.  Do this
-        // before looking for generic continuation lines so the opener and
-        // its opaque contents remain Markdown.
-        if opening_code_fence(bytes, end).is_some()
-            || container_fences.contains_opener(end)
-            || container_fences.contains_owner(end)
-        {
-            break;
-        }
-        // Check for blank line
-        let next_first_non_ws = skip_whitespace_offset(bytes, end);
-        if next_first_non_ws >= len || bytes[next_first_non_ws] == b'\n' {
-            break;
-        }
-        // If this line starts with a keyword that begins a new statement, stop
-        let next_rest = &bytes[end..];
-        if next_rest.starts_with(b"import ")
-            || next_rest.starts_with(b"export ")
-            || next_rest.starts_with(b"<")
-            || next_rest.starts_with(b"{")
-            || next_rest.starts_with(b"#")
-        {
-            break;
-        }
-        // Check if previous line ended with a semicolon (before the newline)
-        let prev_line_end = if end >= 2 && bytes[end - 2] == b'\r' {
-            end - 2
-        } else if end >= 1 {
-            end - 1
-        } else {
-            break;
-        };
-        // Walk back past whitespace to find the last significant char
-        let mut check = prev_line_end;
-        while check > pos && (bytes[check - 1] == b' ' || bytes[check - 1] == b'\t') {
-            check -= 1;
-        }
-        if check > pos && bytes[check - 1] == b';' {
-            break;
-        }
-        // Continue accumulating
-        end = next_line(bytes, end);
-    }
-
-    Some(end)
 }
 
 /// Parser-derived physical line boundaries for fenced code in containers.

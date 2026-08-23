@@ -1,7 +1,8 @@
 use super::expr::find_expression_end;
 use super::jsx_tag::parse_jsx_tag;
 use super::splitter::{
-    CodeFence, container_fence_lines, is_blank_line, is_esm_start, opening_code_fence, try_esm,
+    CodeFence, EsmScan, container_fence_lines, is_blank_line, is_esm_start, opening_code_fence,
+    scan_esm,
 };
 use super::{MdxDiagnostic, MdxDiagnosticCode, SpannedSegment, segment_spanned};
 use crate::Range;
@@ -13,6 +14,7 @@ const UNEXPECTED_JSX_CLOSING_TAG: &str = "closing JSX tag has no matching openin
 const MISMATCHED_JSX_CLOSING_TAG: &str = "closing JSX tag does not match the innermost opening tag";
 const UNCLOSED_JSX_TAG: &str = "expected a matching closing JSX tag";
 const INVALID_ESM_POSITION: &str = "ESM blocks must begin at column 1 after a blank Markdown line";
+const INCOMPLETE_ESM: &str = "ESM declaration needs a JavaScript continuation before Markdown";
 // Both `import` and `export` are six bytes; diagnostics highlight just the keyword.
 const ESM_KEYWORD_LEN: usize = 6;
 
@@ -95,11 +97,27 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
 
         if first_non_ws == pos
             && !in_paragraph
-            && let Some(esm_end) = try_esm(bytes, pos, &container_fences)
+            && let Some(scan) = scan_esm(bytes, pos, &container_fences)
         {
-            in_paragraph = false;
-            pos = esm_end;
-            continue;
+            match scan {
+                EsmScan::Complete(esm_end) => {
+                    in_paragraph = false;
+                    pos = esm_end;
+                    continue;
+                }
+                EsmScan::Incomplete(esm_end) => {
+                    diagnostics.push(diagnostic(
+                        MdxDiagnosticCode::IncompleteEsm,
+                        INCOMPLETE_ESM,
+                        pos,
+                        esm_end,
+                        None,
+                    ));
+                    in_paragraph = true;
+                    pos = esm_end;
+                    continue;
+                }
+            }
         }
 
         if is_esm_start(&bytes[first_non_ws..]) {

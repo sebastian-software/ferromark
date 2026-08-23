@@ -390,7 +390,7 @@ for seg in segment(input) {
 }
 ```
 
-The segmenter handles JSX attribute parsing (strings, expressions, spreads), brace-depth tracking (with string/comment/template-literal awareness), fragment syntax, member expressions (`<Foo.Bar>`), and multiline tags. Invalid constructs fall back to Markdown — no panics, always valid output.
+The segmenter handles JSX attribute parsing (strings, expressions, spreads), brace-depth tracking (with string/comment/template-literal awareness), fragment syntax, member expressions (`<Foo.Bar>`), and multiline tags. ESM continuation only crosses lines when lexical structure or an import/export clause requires it, so a complete semicolonless declaration cannot consume following Markdown prose. Invalid or ambiguous constructs fall back to Markdown — no panics, always valid output.
 
 For source locations, `segment_spanned()` returns the same zero-copy segments
 with contiguous [`Range`](https://docs.rs/ferromark/latest/ferromark/struct.Range.html)
@@ -413,7 +413,7 @@ assert_eq!((location.line, location.column), (1, 1));
 ```
 
 Strict mode checks MDX structure (flow-expression delimiters, JSX tag shape and
-nesting, and ESM placement). It intentionally does not parse or type-check
+nesting, ESM placement, and ambiguous/incomplete ESM continuations). It intentionally does not parse or type-check
 JavaScript or TypeScript inside an otherwise well-delimited ESM block or
 expression.
 

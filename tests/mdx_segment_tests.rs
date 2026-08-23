@@ -289,14 +289,483 @@ fn semicolonless_multiline_esm_stops_before_continuation_fence_owners() {
 }
 
 #[test]
-fn semicolonless_esm_does_not_stop_at_a_list_without_a_continuation_fence() {
+fn semicolonless_esm_stops_before_a_list_without_a_continuation_fence() {
     let input = "export { A }\n- ordinary list item\n";
 
-    // The owner boundary is parser-derived from a continuation fence, not a
-    // blanket rule for list markers. Keep the existing multiline ESM scan for
-    // an adjacent list that does not own such a fence.
-    assert_eq!(segment(input), vec![Segment::Esm(input)]);
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Esm("export { A }\n"),
+            Segment::Markdown("- ordinary list item\n"),
+        ]
+    );
     assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
+fn complete_semicolonless_esm_does_not_swallow_following_markdown() {
+    let input = "export const x = 1\nSome prose paragraph.\nMore prose.\n\nAfter blank.\n";
+
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Esm("export const x = 1\n"),
+            Segment::Markdown("Some prose paragraph.\nMore prose.\n\nAfter blank.\n"),
+        ]
+    );
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+    let output = render(input);
+    assert_eq!(output.esm, vec!["export const x = 1\n"]);
+    assert!(output.body.contains("Some prose paragraph."));
+    assert!(output.body.contains("More prose."));
+
+    let component = output.to_component("Page").unwrap();
+    assert!(component.contains("<p>Some prose paragraph."));
+    assert!(!component.starts_with("export const x = 1\nSome prose"));
+}
+
+#[test]
+fn complete_semicolonless_esm_preserves_markdown_and_mdx_boundaries() {
+    for (following, expected) in [
+        ("Ordinary prose.\n", Segment::Markdown("Ordinary prose.\n")),
+        ("- list item\n", Segment::Markdown("- list item\n")),
+        ("> quote\n", Segment::Markdown("> quote\n")),
+        (
+            "![diagram](diagram.png)\n",
+            Segment::Markdown("![diagram](diagram.png)\n"),
+        ),
+        ("# Heading\n", Segment::Markdown("# Heading\n")),
+        ("<Card />\n", Segment::JsxBlockSelfClose("<Card />\n")),
+        ("{value}\n", Segment::Expression("{value}\n")),
+    ] {
+        let input = format!("export const x = 1\n{following}");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm("export const x = 1\n"), expected]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+    }
+
+    let crlf = "export const x = 1\r\nOrdinary prose.\r\n";
+    assert_eq!(
+        segment(crlf),
+        vec![
+            Segment::Esm("export const x = 1\r\n"),
+            Segment::Markdown("Ordinary prose.\r\n"),
+        ]
+    );
+
+    let fence = "export const x = 1\n```jsx\n<Card />\n```\n";
+    assert_eq!(
+        segment(fence),
+        vec![
+            Segment::Esm("export const x = 1\n"),
+            Segment::Markdown("```jsx\n<Card />\n```\n"),
+        ]
+    );
+}
+
+#[test]
+fn multiline_esm_keeps_lexically_required_continuations() {
+    for (input, esm) in [
+        (
+            "import {\n  A as B,\n} from \"module\"\nMarkdown.\n",
+            "import {\n  A as B,\n} from \"module\"\n",
+        ),
+        (
+            "import Widget\nfrom \"module\"\nMarkdown.\n",
+            "import Widget\nfrom \"module\"\n",
+        ),
+        (
+            "export {\n  A as B,\n}\nfrom \"module\"\nMarkdown.\n",
+            "export {\n  A as B,\n}\nfrom \"module\"\n",
+        ),
+        (
+            "export const value = {\n  title: \"brace } in a string\",\n  template: `value: ${name}`,\n  // } in a comment\n}\nMarkdown.\n",
+            "export const value = {\n  title: \"brace } in a string\",\n  template: `value: ${name}`,\n  // } in a comment\n}\n",
+        ),
+        (
+            "export const total = 1 +\n  2\nMarkdown.\n",
+            "export const total = 1 +\n  2\n",
+        ),
+        (
+            "export default\nComponent\nMarkdown.\n",
+            "export default\nComponent\n",
+        ),
+        (
+            "export const note = /* comment\n */ `value: ${name}`\nMarkdown.\n",
+            "export const note = /* comment\n */ `value: ${name}`\n",
+        ),
+    ] {
+        assert_eq!(
+            segment(input),
+            vec![Segment::Esm(esm), Segment::Markdown(&input[esm.len()..])]
+        );
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+    }
+}
+
+#[test]
+fn esm_regex_literals_do_not_change_delimiter_state() {
+    for esm in [
+        "export const closing = /\\}/g\n",
+        "export const class_closing = /[}]/g\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
+fn esm_terminal_regex_literals_end_without_flags_or_member_access() {
+    for esm in [
+        "export const matcher = /}/\n",
+        "export default /}/\n",
+        "export const matcher = () => /}/\n",
+        "export const escaped = /\\//\n",
+        "export const class_closing = /[}]/\n",
+        "export const empty_match = /(?:)/\n",
+        "export const flagged = /}/gi\n",
+        "export const member = /}/.source\n",
+        "export const cross_line_member = /}/\n.test(value)\n",
+        "export const cross_line_flagged_member = /}/gi\n.test(value)\n",
+        "export const cross_line_optional_member = /}/\n?.test(value)\n",
+        "export const cross_line_index = /}/\n[index]\n",
+        "export const cross_line_call = /}/\n(value)\n",
+        "export const cross_line_tag = /}/\n`value`\n",
+        "export const ratio = value / divisor\n",
+        "export const continued = value /\n  divisor\n",
+        "export function matches(value) { if (value) /}/\n}\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("Markdown."));
+        assert!(output.to_component("Page").unwrap().starts_with(esm));
+    }
+}
+
+#[test]
+fn esm_terminal_regex_preserves_syntactically_impossible_suffix_like_markdown() {
+    let esm = "export const matcher = /}/\n";
+    for markdown in [
+        "[a Markdown link](https://example.com)\n",
+        "[a Markdown reference]: https://example.com\nReference prose.\n",
+        "(Markdown prose in parentheses)\n",
+        "(1e3 prose)\n",
+        "[π prose]\n",
+        "[\u{0301}]\n",
+        "[π•]\n",
+        "[\\u0030]\n",
+        ". Markdown prose\n",
+    ] {
+        let input = format!("{esm}{markdown}");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown(markdown)]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(!output.body.trim().is_empty());
+        assert!(
+            output
+                .to_component("Page")
+                .unwrap()
+                .contains(output.body.trim())
+        );
+    }
+}
+
+#[test]
+fn esm_terminal_regex_follows_valid_cross_line_suffix_chains() {
+    for esm in [
+        "export const matcher = /}/\n[Symbol.match](value)\n",
+        "export const matcher = /}/\n(value, flags)\n",
+        "export const matcher = /}/\n`tagged template with whitespace`\n",
+        "export const matcher = /}/\n[lookup[`${name}` /* nested */]](value, { flags: true })\n",
+        "export const matcher = /}/\n[π + café + \\u0061]\n",
+        "export const matcher = /}/\n[π\u{0301} + name\u{203f} + join\u{200c}\u{200d}]\n",
+        "export const matcher = /}/\n[\\u03c0\\u0301 + name\\u{203f} + join\\u200c\\u200d]\n",
+        "export const matcher = /}/\n[℘ + ℮ + ゛ + ゜ + ͺ + ำ + ຳ + ﱞ + ﾞ]\n",
+        "export const matcher = /}/\n[\\u2118 + \\u212e + \\u309b + \\u{309c} + \\u037a + \\u0e33 + \\u0eb3 + \\u{fc5e} + \\uff9e]\n",
+        "export const matcher = /}/\n(1e3, 1_000.5e-2, 0xFFn, 0o77n, 0b10n, .5)\n",
+        "export const matcher = /}/\n.\\u006d(0xCAFEn)\n",
+        "export const matcher = /}/\n.π\u{0301}(join\u{200c}\u{200d})\n",
+        "export const matcher = /}/\n`numeric ${1e3 + π}`\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("Markdown."));
+        assert!(output.to_component("Page").unwrap().starts_with(esm));
+    }
+}
+
+#[test]
+fn esm_completed_expressions_follow_valid_cross_line_suffix_chains() {
+    for esm in [
+        "export const property = value\n.property\n",
+        "export const index = value\n[0]\n",
+        "export const call = value\n(argument)\n",
+        "export const tagged = value\n`tagged template`\n",
+        "export const string_property = \"value\"\n.property\n",
+        "export const object_index = ({ value: 1 })\n[\"value\"]\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("Markdown."));
+        assert!(output.to_component("Page").unwrap().starts_with(esm));
+    }
+}
+
+#[test]
+fn esm_completed_expressions_keep_markdown_and_asi_boundaries() {
+    for (esm, markdown) in [
+        ("export const value = expression\n", ". Markdown prose\n"),
+        (
+            "export const value = expression\n",
+            "[a Markdown link](https://example.com)\n",
+        ),
+        (
+            "export const value = expression\n",
+            "(Markdown prose in parentheses)\n",
+        ),
+        (
+            "export const value = expression;\n",
+            "`Markdown code span`\n",
+        ),
+        ("export const value = expression;\n", ".property\n"),
+    ] {
+        let input = format!("{esm}{markdown}");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown(markdown)]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert!(!render(&input).body.trim().is_empty());
+    }
+}
+
+#[test]
+fn esm_terminal_regex_requires_an_explicit_boundary_before_ambiguous_markdown() {
+    let esm = "export const matcher = /}/;\n";
+    let markdown = "`Markdown code span`\n";
+    let input = format!("{esm}{markdown}");
+    assert_eq!(
+        segment(&input),
+        vec![Segment::Esm(esm), Segment::Markdown(markdown)]
+    );
+    assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+    let output = render(&input);
+    assert!(output.body.contains("Markdown code span"));
+    assert!(
+        output
+            .to_component("Page")
+            .unwrap()
+            .contains(output.body.trim())
+    );
+}
+
+#[test]
+fn esm_terminal_regex_suffix_validation_remains_linear_for_long_calls() {
+    let arguments = "0xFFn, π, 1e3, ".repeat(16_384);
+    let esm = format!("export const matcher = /}}/\n[Symbol.match]({arguments}value)\n");
+    let input = format!("{esm}Markdown.\n");
+
+    assert_eq!(
+        segment(&input),
+        vec![Segment::Esm(&esm), Segment::Markdown("Markdown.\n")]
+    );
+    assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+}
+
+#[test]
+fn esm_statement_context_regex_literals_do_not_change_delimiter_state() {
+    for esm in [
+        "export function after_condition(value) {\n  if (value) /\\}/.test(value)\n}\n",
+        "export function after_block(value) {\n  if (value) {}\n  /\\}/.test(value)\n}\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
+fn esm_other_statement_blocks_allow_following_regex_literals() {
+    // The continuation scanner deliberately does not validate JavaScript
+    // statement grammar. These exercise its lexical statement-block context:
+    // all four block introducers must leave a following regex literal opaque.
+    for esm in [
+        "export function after_else(value) { if (value) {} else {} /\\}/.test(value) }\n",
+        "export function after_try() { try {} /\\}/.test(value) }\n",
+        "export function after_finally() { try {} finally {} /\\}/.test(value) }\n",
+        "export function after_do() { do {} /\\}/.test(value) }\n",
+        "export function after_all_blocks(value) { if (value) {} else {} /\\}/.test(value); try {} finally {} /\\}/.test(value); do {} /\\}/.test(value) }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
+fn esm_expression_closers_do_not_start_regex_literals() {
+    for esm in [
+        "export const ratio = divide(value) / divisor\n",
+        "export const ratio = ({ value: 1 }) / divisor\n",
+        "export function ratio(value) { return ({ value }) / divisor }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+    }
+}
+
+#[test]
+fn esm_object_property_keywords_do_not_start_statement_blocks() {
+    for keyword in ["else", "try", "finally", "do"] {
+        for esm in [
+            format!("export const value = {{ {keyword}: {{ a: 1 }} / 2 }}\n"),
+            format!("export const value = {{ {keyword}, value: {{ a: 1 }} / 2 }}\n"),
+            format!("export const value = {{ {keyword}() {{}} / 2 }}\n"),
+            format!("export const value = {{ [{keyword}]: {{ a: 1 }} / 2 }}\n"),
+            format!("export const value = {{ outer: {{ {keyword}: {{ a: 1 }} / 2 }} }}\n"),
+        ] {
+            let input = format!("{esm}Markdown.\n");
+            assert_eq!(
+                segment(&input),
+                vec![Segment::Esm(&esm), Segment::Markdown("Markdown.\n")]
+            );
+            assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+            assert_eq!(render(&input).esm, vec![esm.as_str()]);
+        }
+    }
+}
+
+#[test]
+fn esm_for_await_keeps_its_control_condition_context() {
+    for esm in [
+        "export async function iterate(items) { for await (const item of items) {} /\\}/.test(items) }\n",
+        "export function iterate(items) { for (const item of items) {} /\\}/.test(items) }\n",
+        "export async function pending(task) { return await task / divisor }\n",
+        "export async function matches(value) { return await /\\}/.test(value) }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
+fn esm_braceless_control_bodies_preserve_regex_and_division_contexts() {
+    for esm in [
+        "export function nested(first, second) {\n  if (first)\n    if (second) /\\}/.test(second)\n    else /\\}/.test(first)\n  else /\\}/.test(second)\n}\n",
+        "export function loops(items, value) { for (const item of items) /\\}/.test(item); while (value) /\\}/.test(value); with (items) /\\}/.test(items) }\n",
+        "export function division(value, ratio, divisor) { if (value) ratio / divisor; else\n  ratio / divisor; do /\\}/.test(value) while (value) }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
+fn esm_braceless_bodies_do_not_leak_block_context_past_their_end() {
+    for esm in [
+        "export function after_else(value) { if (value) {} else value; ({ value: 1 }) / 2 }\n",
+        "export function after_asi(value) { if (value) {} else\n  value\n  ({ value: 1 }) / 2 }\n",
+        "export function after_nested_if(value) { if (value) if (value) value; ({ value: 1 }) / 2 }\n",
+        "export function after_loop(value) { while (value) value; ({ value: 1 }) / 2 }\n",
+        "export function after_do(value) { do value; ({ value: 1 }) / 2 while (value) }\n",
+        "export function after_else_regex(value) { if (value) {} else /\\}/.test(value); ({ value: 1 }) / 2 }\n",
+        "export function after_else_block(value) { if (value) {} else {} /\\}/.test(value) }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
+fn incomplete_esm_falls_back_to_markdown_and_is_strictly_diagnosed() {
+    for input in [
+        "import Widget\nOrdinary prose.\n",
+        "export default\nSome prose.\n",
+        "export const item = {\n# Heading\n",
+        "export const total = 1 +\n- list item\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        let diagnostics = segment_strict(input).unwrap_err();
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::IncompleteEsm);
+    }
+}
+
+#[test]
+fn long_multiline_esm_scan_remains_single_segment() {
+    let mut input = String::from("export {\n");
+    for index in 0..10_000 {
+        input.push_str(&format!("  value_{index},\n"));
+    }
+    input.push_str("} from \"module\"\nMarkdown.\n");
+
+    let segments = segment(&input);
+    assert_eq!(segments.len(), 2);
+    assert!(matches!(segments[0], Segment::Esm(_)));
+    assert_eq!(
+        segments[0].as_str().len() + segments[1].as_str().len(),
+        input.len()
+    );
 }
 
 #[test]
