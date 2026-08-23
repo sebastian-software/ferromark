@@ -9,6 +9,10 @@ use super::{
 };
 
 const COMPONENT_BODY_INDENT: &str = "      ";
+const HTML_VOID_ELEMENTS: [&str; 14] = [
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
+    "track", "wbr",
+];
 
 #[derive(Clone, Copy)]
 enum HtmlTextKind {
@@ -207,6 +211,8 @@ fn write_component_body(out: &mut String, body: &str) {
     let mut pos = 0;
     let mut at_line_start = true;
     let mut pre_depth = 0_u32;
+    let mut void_openings = [0_usize; HTML_VOID_ELEMENTS.len()];
+    let mut void_named_component_openings = Vec::new();
 
     while pos < bytes.len() {
         if pre_depth > 0 && bytes[pos] != b'<' {
@@ -241,7 +247,13 @@ fn write_component_body(out: &mut String, body: &str) {
             && let Some(tag) = parse_jsx_tag(&bytes[pos..])
         {
             indent_component_line(out, at_line_start, pre_depth);
-            write_component_tag(out, &body[pos..pos + tag.end_offset], &tag);
+            write_component_tag(
+                out,
+                &body[pos..pos + tag.end_offset],
+                &tag,
+                &mut void_openings,
+                &mut void_named_component_openings,
+            );
             at_line_start = false;
 
             let text_kind = if !tag.is_closing && !tag.is_self_closing {
@@ -319,8 +331,42 @@ fn write_component_body(out: &mut String, body: &str) {
     }
 }
 
-fn write_component_tag(out: &mut String, source: &str, tag: &TagInfo<'_>) {
-    if !tag.is_closing && !tag.is_self_closing && is_html_void_element(tag.name) {
+fn write_component_tag<'a>(
+    out: &mut String,
+    source: &str,
+    tag: &TagInfo<'a>,
+    void_openings: &mut [usize; HTML_VOID_ELEMENTS.len()],
+    void_named_component_openings: &mut Vec<&'a str>,
+) {
+    if tag.is_closing {
+        if void_named_component_openings.last() == Some(&tag.name) {
+            void_named_component_openings.pop();
+            out.push_str(source);
+            return;
+        }
+
+        if let Some(index) = html_void_element_index(tag.name) {
+            void_openings[index] = void_openings[index].saturating_sub(1);
+            return;
+        }
+        if let Some(index) = html_void_element_index_ignore_ascii_case(tag.name)
+            && void_openings[index] > 0
+        {
+            void_openings[index] -= 1;
+            return;
+        }
+
+        out.push_str(source);
+        return;
+    }
+
+    if let Some(index) = html_void_element_index(tag.name) {
+        void_openings[index] += 1;
+        if tag.is_self_closing {
+            out.push_str(source);
+            return;
+        }
+
         let before_close = &source[..source.len() - 1];
         out.push_str(before_close);
         if before_close.ends_with(char::is_whitespace) {
@@ -329,29 +375,25 @@ fn write_component_tag(out: &mut String, source: &str, tag: &TagInfo<'_>) {
             out.push_str(" /");
         }
         out.push('>');
-    } else {
-        out.push_str(source);
+        return;
     }
+
+    if !tag.is_self_closing && html_void_element_index_ignore_ascii_case(tag.name).is_some() {
+        void_named_component_openings.push(tag.name);
+    }
+    out.push_str(source);
 }
 
-fn is_html_void_element(name: &str) -> bool {
-    matches!(
-        name,
-        "area"
-            | "base"
-            | "br"
-            | "col"
-            | "embed"
-            | "hr"
-            | "img"
-            | "input"
-            | "link"
-            | "meta"
-            | "param"
-            | "source"
-            | "track"
-            | "wbr"
-    )
+fn html_void_element_index(name: &str) -> Option<usize> {
+    HTML_VOID_ELEMENTS
+        .iter()
+        .position(|element| *element == name)
+}
+
+fn html_void_element_index_ignore_ascii_case(name: &str) -> Option<usize> {
+    HTML_VOID_ELEMENTS
+        .iter()
+        .position(|element| element.eq_ignore_ascii_case(name))
 }
 
 fn html_text_kind(name: &str) -> Option<HtmlTextKind> {
@@ -869,6 +911,81 @@ Content
             "{component}"
         );
         assert!(component.contains("line<br />\n"), "{component}");
+    }
+
+    #[test]
+    fn to_component_omits_html_void_element_closing_tags() {
+        let body = "<area data-kind=\"example\"></AREA   ><base ></base><br></BR><col></col><embed></embed><hr></hr><img src=\"image.png\"></IMG><input></input><link></link><meta></meta><param></param><source></source><track></track><wbr></wBr>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert_eq!(out.body, body);
+        for expected in [
+            "<area data-kind=\"example\" />",
+            "<base />",
+            "<br />",
+            "<col />",
+            "<embed />",
+            "<hr />",
+            "<img src=\"image.png\" />",
+            "<input />",
+            "<link />",
+            "<meta />",
+            "<param />",
+            "<source />",
+            "<track />",
+            "<wbr />",
+        ] {
+            assert!(
+                component.contains(expected),
+                "missing {expected:?}: {component}"
+            );
+        }
+        for omitted in [
+            "</AREA", "</base", "</BR", "</col", "</embed", "</hr", "</IMG", "</input", "</link",
+            "</meta", "</param", "</source", "</track", "</wBr",
+        ] {
+            assert!(
+                !component.contains(omitted),
+                "retained {omitted:?}: {component}"
+            );
+        }
+    }
+
+    #[test]
+    fn to_component_omits_void_closing_tag_from_rendered_markdown() {
+        let out = render("a<br></br>z");
+        assert!(out.body.contains("<p>a<br></br>z</p>"), "{}", out.body);
+
+        let component = out.to_component("Page").unwrap();
+        assert!(component.contains("<p>a<br />z</p>"), "{component}");
+        assert!(!component.contains("</br>"), "{component}");
+    }
+
+    #[test]
+    fn to_component_preserves_non_void_and_component_tag_pairs() {
+        let body = "<div data-kind=\"normal\"></div><bravo></bravo><custom-br></custom-br><br><Br></Br></BR><Img></Img><br></bravo>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(
+            component.contains("<div data-kind=\"normal\"></div>"),
+            "{component}"
+        );
+        assert!(component.contains("<bravo></bravo>"), "{component}");
+        assert!(component.contains("<custom-br></custom-br>"), "{component}");
+        assert!(component.contains("<br /><Br></Br>"), "{component}");
+        assert!(!component.contains("</BR>"), "{component}");
+        assert!(component.contains("<Img></Img>"), "{component}");
+        assert!(component.contains("<br /></bravo>"), "{component}");
     }
 
     #[test]
