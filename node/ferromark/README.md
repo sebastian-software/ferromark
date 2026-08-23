@@ -2,11 +2,50 @@
 
 Native Node.js bindings for the [ferromark](https://github.com/sebastian-software/ferromark) Markdown-to-HTML compiler.
 
+## Install
+
+```sh
+npm install ferromark
+# or: pnpm add ferromark
+```
+
+The package requires Node.js 22 or newer. It ships native binaries for glibc
+Linux, macOS, and Windows on x64 and arm64; there is no WASM fallback.
+
 ```js
 import { toHtml } from 'ferromark'
 
 const html = toHtml('# Hello')
 ```
+
+## Untrusted by default
+
+`toHtml()` and `transform()` default to `renderPolicy: 'untrusted'`. Raw HTML
+is escaped, and unsafe link and image URL schemes (such as `javascript:`) are
+removed from the rendered attributes. Use this default for Markdown from users
+or other untrusted sources.
+
+```js
+toHtml('<img src=x onerror=alert(1)>')
+// '&lt;img src=x onerror=alert(1)&gt;'
+```
+
+Set `renderPolicy: 'trusted'` only when the Markdown source is trusted. Trusted
+mode permits arbitrary URL schemes and ordinary raw HTML. The default
+`disallowedRawHtml` filter still removes GFM-disallowed tags; set it to `false`
+only when trusted content needs those tags. Trusted mode is not appropriate for
+untrusted user content.
+
+```js
+toHtml('<span class="note">Internal note</span>', {
+  renderPolicy: 'trusted',
+})
+// '<p><span class="note">Internal note</span></p>\n'
+```
+
+See [`Options`](./index.d.mts) for the complete optional syntax and rendering
+configuration. `transform()` also returns headings and optional front matter;
+the highlighter helpers below accept trusted highlighter HTML.
 
 ## Input size limit
 
@@ -61,7 +100,20 @@ toHtml('[guide](/guide)', { linkBasePath: '/docs' })
 
 Image sources and autolinks are not rewritten.
 
-The package supports Node.js 22 or newer on glibc Linux, macOS, and Windows for x64 and arm64. It does not include a WASM fallback.
+## Troubleshooting native loading
+
+The native binding loads on the first call to `toHtml()`, `transform()`, or a
+highlighter helper, not when this package is imported. If that call fails:
+
+| Message or environment | Resolution |
+| --- | --- |
+| Node.js below 22 | Upgrade to Node.js 22 or newer; this is the package's declared engine requirement. |
+| Alpine or another musl Linux environment | Use a glibc Linux environment. musl binaries are not published. |
+| Unsupported platform or architecture | Use macOS, Windows, or glibc Linux on x64 or arm64. |
+| `does not include a native binary` | Reinstall the published package and verify that installation did not omit its platform binary. |
+
+This package does not include a WASM fallback, so unsupported environments need
+one of the supported native runtimes rather than a JavaScript fallback.
 
 ## Native build profile
 
