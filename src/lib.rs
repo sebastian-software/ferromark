@@ -2730,9 +2730,24 @@ mod crate_docs_tests {
         assert!(!crate_docs.contains("NEON intrinsics for ARM"));
 
         assert!(cargo_toml.contains("mdx = []"));
-        assert!(simd_source.contains("target_arch = \"x86_64\""));
-        assert!(simd_source.contains("target_arch = \"aarch64\""));
-        assert!(simd_source.contains("target_feature = \"neon\""));
+        assert!(simd_source.contains(
+            r#"#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[target_feature(enable = "neon")]
+pub unsafe fn has_inline_specials_simd"#,
+        ));
+        assert!(simd_source.contains(
+            r#"#[cfg(target_arch = "x86_64")]
+#[inline]
+pub unsafe fn has_inline_specials_simd"#,
+        ));
+        assert!(simd_source.contains(
+            r#"#[cfg(not(any(
+    target_arch = "x86_64",
+    all(target_arch = "aarch64", target_feature = "neon")
+)))]
+#[allow(dead_code)]
+pub fn has_inline_specials_simd"#,
+        ));
     }
 }
 
