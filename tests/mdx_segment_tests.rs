@@ -516,6 +516,23 @@ fn esm_for_await_keeps_its_control_condition_context() {
 }
 
 #[test]
+fn esm_braceless_control_bodies_preserve_regex_and_division_contexts() {
+    for esm in [
+        "export function nested(first, second) {\n  if (first)\n    if (second) /\\}/.test(second)\n    else /\\}/.test(first)\n  else /\\}/.test(second)\n}\n",
+        "export function loops(items, value) { for (const item of items) /\\}/.test(item); while (value) /\\}/.test(value); with (items) /\\}/.test(items) }\n",
+        "export function division(value, ratio, divisor) { if (value) ratio / divisor; else\n  ratio / divisor; do /\\}/.test(value) while (value) }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
 fn incomplete_esm_falls_back_to_markdown_and_is_strictly_diagnosed() {
     for input in [
         "import Widget\nOrdinary prose.\n",

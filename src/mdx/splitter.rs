@@ -577,6 +577,8 @@ impl EsmContinuation {
         let word = &bytes[start..end];
         let is_from = word == b"from";
         let at_top_level = self.delimiters.is_empty();
+        let starts_else_statement = self.is_statement_position() && word == b"else";
+        let starts_do_statement = self.is_statement_position() && word == b"do";
 
         let starts_control_condition = self.is_statement_position()
             && matches!(
@@ -585,6 +587,12 @@ impl EsmContinuation {
             );
         if starts_control_condition {
             self.control_condition_pending = true;
+            // An `else` may introduce a braceless nested control statement.
+            // That control statement consumes the pending `else` body rather
+            // than opening the previously expected block.
+            if self.statement_block_pending && matches!(self.line_end, LineEnd::StatementBoundary) {
+                self.statement_block_pending = false;
+            }
         }
 
         if (self.is_statement_position() && matches!(word, b"else" | b"try" | b"finally" | b"do"))
@@ -605,10 +613,18 @@ impl EsmContinuation {
             self.export_from_candidate = false;
         }
 
-        self.line_end = LineEnd::Word {
-            requires_following: word_requires_following(word),
-            starts_control_condition,
-            allows_function_or_class: matches!(word, b"export" | b"default" | b"async"),
+        self.line_end = if starts_else_statement || starts_do_statement {
+            // Both `else` and `do` are followed by a statement, which may be
+            // braceless. Treat that following source position exactly like a
+            // completed control condition while still retaining the pending
+            // block marker for a `{` body.
+            LineEnd::StatementBoundary
+        } else {
+            LineEnd::Word {
+                requires_following: word_requires_following(word),
+                starts_control_condition,
+                allows_function_or_class: matches!(word, b"export" | b"default" | b"async"),
+            }
         };
     }
 
