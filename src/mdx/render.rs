@@ -34,7 +34,7 @@ enum HtmlTextKind {
 enum ComponentTagEffect {
     None,
     PreOpen,
-    PreClose,
+    PreClose(u32),
 }
 
 /// Error returned when a component name cannot be used as a JavaScript binding.
@@ -309,7 +309,9 @@ fn write_component_body(out: &mut String, body: &str) {
 
             match tag_effect {
                 ComponentTagEffect::PreOpen => pre_depth = pre_depth.saturating_add(1),
-                ComponentTagEffect::PreClose => pre_depth = pre_depth.saturating_sub(1),
+                ComponentTagEffect::PreClose(count) => {
+                    pre_depth = pre_depth.saturating_sub(count);
+                }
                 ComponentTagEffect::None => {}
             }
 
@@ -382,16 +384,42 @@ fn write_component_tag<'a>(
 ) -> ComponentTagEffect {
     if tag.is_closing {
         if let Some(canonical_name) = html_element_ignore_ascii_case(tag.name) {
-            if html_openings
+            let component_syntax = !uses_html_intrinsic_syntax(tag.name);
+            let top_matches = html_openings
                 .last()
-                .is_some_and(|(opening_canonical, _)| *opening_canonical == canonical_name)
-            {
+                .is_some_and(|(opening_canonical, _)| *opening_canonical == canonical_name);
+            let matching_index = if top_matches && is_all_uppercase_html_name(tag.name) {
+                Some(html_openings.len() - 1)
+            } else {
+                html_openings
+                    .iter()
+                    .rposition(|(opening_canonical, component_name)| {
+                        *opening_canonical == canonical_name
+                            && component_name.is_some() == component_syntax
+                    })
+                    .or_else(|| {
+                        html_openings.iter().rposition(|(opening_canonical, _)| {
+                            *opening_canonical == canonical_name
+                        })
+                    })
+            };
+            if let Some(matching_index) = matching_index {
+                let mut closed_pre_count = 0;
+                while html_openings.len() > matching_index + 1 {
+                    let (intervening_name, component_name) = html_openings
+                        .pop()
+                        .expect("an intervening HTML opening was just counted");
+                    write_synthetic_closing_tag(out, component_name.unwrap_or(intervening_name));
+                    closed_pre_count +=
+                        u32::from(component_name.is_none() && intervening_name == "pre");
+                }
                 let (_, component_name) = html_openings
                     .pop()
-                    .expect("last HTML opening was just checked");
+                    .expect("matching HTML opening was just located");
                 write_closing_tag(out, source, component_name.unwrap_or(canonical_name));
-                return if component_name.is_none() && canonical_name == "pre" {
-                    ComponentTagEffect::PreClose
+                closed_pre_count += u32::from(component_name.is_none() && canonical_name == "pre");
+                return if closed_pre_count > 0 {
+                    ComponentTagEffect::PreClose(closed_pre_count)
                 } else {
                     ComponentTagEffect::None
                 };
@@ -402,7 +430,7 @@ fn write_component_tag<'a>(
             if uses_html_intrinsic_syntax(tag.name) {
                 write_closing_tag(out, source, canonical_name);
                 return if canonical_name == "pre" {
-                    ComponentTagEffect::PreClose
+                    ComponentTagEffect::PreClose(1)
                 } else {
                     ComponentTagEffect::None
                 };
@@ -516,10 +544,12 @@ fn uses_html_intrinsic_syntax(name: &str) -> bool {
     // Lowercase-leading and all-uppercase HTML names are emitted as JSX
     // intrinsics. Preserve PascalCase/mixed-leading-uppercase names as MDX
     // components.
-    name.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
-        || name
-            .bytes()
-            .all(|byte| !byte.is_ascii_alphabetic() || byte.is_ascii_uppercase())
+    name.as_bytes().first().is_some_and(u8::is_ascii_lowercase) || is_all_uppercase_html_name(name)
+}
+
+fn is_all_uppercase_html_name(name: &str) -> bool {
+    name.bytes()
+        .all(|byte| !byte.is_ascii_alphabetic() || byte.is_ascii_uppercase())
 }
 
 fn indent_component_line(out: &mut String, at_line_start: bool, pre_depth: u32) {
@@ -567,6 +597,12 @@ fn write_closing_tag(out: &mut String, source: &str, opening_name: &str) {
     out.push_str("</");
     out.push_str(opening_name);
     out.push_str(&source[opening_name.len() + 2..]);
+}
+
+fn write_synthetic_closing_tag(out: &mut String, opening_name: &str) {
+    out.push_str("</");
+    out.push_str(opening_name);
+    out.push('>');
 }
 
 fn write_html_opening_tag(
@@ -1806,7 +1842,7 @@ Content
 
     #[test]
     fn to_component_keeps_nested_intrinsic_and_component_owners_distinct() {
-        let body = "<Div><div>inner</div></Div><div><Div>component</DIV></DIV><Pre><PRE><CODE>first\n  second {value}\n</code></pre></PRE>";
+        let body = "<Div><div>inner</div></Div><div><Div>component</DIV></DIV><Div><div>component first</Div><div><Div>intrinsic first</div><Pre><pre>first\n  second {value}\n</Pre>";
         let out = MdxOutput {
             body: body.to_owned(),
             esm: vec![],
@@ -1823,8 +1859,15 @@ Content
             "{component}"
         );
         assert!(
-            component
-                .contains("<Pre><pre><code>{\"first\\n  second {value}\\n\"}</code></pre></Pre>"),
+            component.contains("<Div><div>component first</div></Div>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<div><Div>intrinsic first</Div></div>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<Pre><pre>{\"first\\n  second {value}\\n\"}</pre></Pre>"),
             "{component}"
         );
     }
