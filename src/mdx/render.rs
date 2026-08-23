@@ -329,7 +329,7 @@ fn write_component_body(out: &mut String, body: &str) {
                         &body[pos..text_end],
                         matches!(text_kind, HtmlTextKind::Rcdata),
                     );
-                    write_closing_tag(out, &body[text_end..tag_end], canonical_name);
+                    write_synthetic_closing_tag(out, canonical_name);
                     pos = tag_end;
                 } else {
                     write_jsx_string_child(
@@ -337,6 +337,7 @@ fn write_component_body(out: &mut String, body: &str) {
                         &body[pos..],
                         matches!(text_kind, HtmlTextKind::Rcdata),
                     );
+                    write_synthetic_closing_tag(out, canonical_name);
                     pos = bytes.len();
                 }
                 // The raw text's line breaks are escaped inside the string child,
@@ -457,6 +458,9 @@ fn write_component_tag<'a>(
                 *count -= 1;
                 return ComponentTagEffect::None;
             }
+            if html_text_element_ignore_ascii_case(tag.name).is_some() {
+                return ComponentTagEffect::None;
+            }
             if HTML_VOID_ELEMENTS.contains(&canonical_name) {
                 return ComponentTagEffect::None;
             }
@@ -555,6 +559,10 @@ fn html_text_element(name: &str) -> Option<(HtmlTextKind, &'static str)> {
         return None;
     }
 
+    html_text_element_ignore_ascii_case(name)
+}
+
+fn html_text_element_ignore_ascii_case(name: &str) -> Option<(HtmlTextKind, &'static str)> {
     for (canonical, kind) in [
         ("script", HtmlTextKind::Raw),
         ("style", HtmlTextKind::Raw),
@@ -656,11 +664,48 @@ fn raw_text_end(bytes: &[u8], start: usize, tag_name: &str) -> Option<(usize, us
 
     while let Some(offset) = bytes[pos..].iter().position(|byte| *byte == b'<') {
         pos += offset;
-        if let Some(tag) = parse_jsx_tag(&bytes[pos..])
-            && tag.is_closing
-            && tag.name.eq_ignore_ascii_case(tag_name)
-        {
-            return Some((pos, pos + tag.end_offset));
+        if let Some(end) = html_text_closing_tag_end(bytes, pos, tag_name) {
+            return Some((pos, end));
+        }
+        pos += 1;
+    }
+
+    None
+}
+
+/// Locate an HTML raw-text/RCDATA end tag, including parse-error forms that
+/// HTML still closes but JSX rejects, such as `</textarea/>` or end-tag attrs.
+fn html_text_closing_tag_end(bytes: &[u8], start: usize, tag_name: &str) -> Option<usize> {
+    let name_start = start.checked_add(2)?;
+    let name_end = name_start.checked_add(tag_name.len())?;
+    if !bytes.get(start..name_start)?.eq(b"</")
+        || !bytes
+            .get(name_start..name_end)?
+            .eq_ignore_ascii_case(tag_name.as_bytes())
+    {
+        return None;
+    }
+
+    match bytes.get(name_end) {
+        Some(b'>') => return Some(name_end + 1),
+        Some(byte) if byte.is_ascii_whitespace() || *byte == b'/' => {}
+        _ => return None,
+    }
+
+    let mut pos = name_end + 1;
+    let mut quote = None;
+    while pos < bytes.len() {
+        if let Some(delimiter) = quote {
+            if bytes[pos] == delimiter {
+                quote = None;
+            }
+        } else {
+            match bytes[pos] {
+                b'\'' | b'"' => quote = Some(bytes[pos]),
+                b'>' => return Some(pos + 1),
+                b'<' => return None,
+                _ => {}
+            }
         }
         pos += 1;
     }
@@ -1755,7 +1800,7 @@ Content
         let component = out.to_component("Page").unwrap();
 
         assert!(component.contains(
-            "<textarea data-kind=\"example\">{\"first\\r\\n  second {value}&\\r\\n\"}</textarea   ><p>after textarea</p>"
+            "<textarea data-kind=\"example\">{\"first\\r\\n  second {value}&\\r\\n\"}</textarea><p>after textarea</p>"
         ), "{component}");
         assert!(
             component.contains(
@@ -1770,6 +1815,70 @@ Content
         );
         assert!(
             component.contains("<style>{\".x { color: red }\"}</style><p>after style</p>"),
+            "{component}"
+        );
+    }
+
+    #[test]
+    fn to_component_normalizes_html_text_closers_to_valid_jsx() {
+        let cases = [
+            ("textarea", "</textarea/>"),
+            ("title", "</TiTlE / >"),
+            ("script", "</SCRIPT data-kind='ignored'>"),
+            ("style", "</stYLE data-kind=\"value>still\">"),
+            ("xmp", "</XMP/>"),
+            ("iframe", "</IFRAME / >"),
+            ("noembed", "</NOEMBED data-kind='ignored'>"),
+            ("noframes", "</noFrames data-kind=\"value>still\">"),
+        ];
+
+        for (name, closer) in cases {
+            let body = format!("<{name}>a {{value}}&amp;{closer}b<p>after</p>");
+            let out = MdxOutput {
+                body,
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert!(
+                component.contains(&format!("</{name}>b<p>after</p>")),
+                "{component}"
+            );
+            assert!(!component.contains(closer), "{component}");
+        }
+
+        let public_component = render("<textarea>a</textarea/>b")
+            .to_component("Page")
+            .unwrap();
+        assert!(
+            public_component.contains("<textarea>{\"a\"}</textarea>b"),
+            "{public_component}"
+        );
+    }
+
+    #[test]
+    fn to_component_keeps_html_text_closer_near_matches_as_text() {
+        let body = "<textarea>a</textareax>b</textarea><p>after name</p><title>c</title?>d</title><p>after punctuation</p><script>e</script data='unterminated<p>inside raw text</p>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(
+            component.contains("<textarea>{\"a</textareax>b\"}</textarea><p>after name</p>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<title>{\"c</title?>d\"}</title><p>after punctuation</p>"),
+            "{component}"
+        );
+        assert!(
+            component.contains(
+                "<script>{\"e</script data='unterminated<p>inside raw text</p>\"}</script>"
+            ),
             "{component}"
         );
     }
@@ -1809,7 +1918,7 @@ Content
     }
 
     #[test]
-    fn to_component_ignores_raw_text_closing_tag_near_matches() {
+    fn to_component_uses_html_text_end_tag_name_boundaries() {
         let out = MdxOutput {
             body: "<textarea>before</TEXTAREAX>middle</textarea extra>still</TeXtArEa><p>after</p>\n<script>before</SCRIPTS>middle</ScRiPt><p>after script</p>"
                 .to_owned(),
@@ -1819,9 +1928,8 @@ Content
         let component = out.to_component("Page").unwrap();
 
         assert!(
-            component.contains(
-                "<textarea>{\"before</TEXTAREAX>middle</textarea extra>still\"}</textarea><p>after</p>"
-            ),
+            component
+                .contains("<textarea>{\"before</TEXTAREAX>middle\"}</textarea>still<p>after</p>"),
             "{component}"
         );
         assert!(
