@@ -1209,7 +1209,7 @@ fn scan_suffix_identifier_char(
 
 #[inline]
 fn is_suffix_identifier_start_char(character: char) -> bool {
-    character == '$' || character == '_' || unicode_ident::is_xid_start(character)
+    character == '$' || character == '_' || is_ecmascript_id_start(character)
 }
 
 #[inline]
@@ -1218,6 +1218,39 @@ fn is_suffix_identifier_continue_char(character: char) -> bool {
         || character == '_'
         || matches!(character, '\u{200c}' | '\u{200d}')
         || unicode_ident::is_xid_continue(character)
+        || is_ecmascript_id_start(character)
+}
+
+/// ECMAScript uses Unicode ID_Start/ID_Continue while `unicode-ident` exposes
+/// the stricter normalization-closed XID properties. Keep XID as the fast
+/// common path and include the finite ID_Start compatibility set it excludes.
+#[inline]
+fn is_ecmascript_id_start(character: char) -> bool {
+    unicode_ident::is_xid_start(character)
+        || matches!(
+            character,
+            '\u{037a}'
+                | '\u{0e33}'
+                | '\u{0eb3}'
+                | '\u{2118}'
+                | '\u{212e}'
+                | '\u{309b}'
+                | '\u{309c}'
+                | '\u{fc5e}'
+                ..='\u{fc63}'
+                    | '\u{fdfa}'
+                    | '\u{fdfb}'
+                    | '\u{fe70}'
+                    | '\u{fe72}'
+                    | '\u{fe74}'
+                    | '\u{fe76}'
+                    | '\u{fe78}'
+                    | '\u{fe7a}'
+                    | '\u{fe7c}'
+                    | '\u{fe7e}'
+                    | '\u{ff9e}'
+                    | '\u{ff9f}'
+        )
 }
 
 fn scan_suffix_identifier_escape(

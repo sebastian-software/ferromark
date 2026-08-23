@@ -500,6 +500,8 @@ fn esm_terminal_regex_follows_valid_cross_line_suffix_chains() {
         "export const matcher = /}/\n[π + café + \\u0061]\n",
         "export const matcher = /}/\n[π\u{0301} + name\u{203f} + join\u{200c}\u{200d}]\n",
         "export const matcher = /}/\n[\\u03c0\\u0301 + name\\u{203f} + join\\u200c\\u200d]\n",
+        "export const matcher = /}/\n[℘ + ℮ + ゛ + ゜ + ͺ + ำ + ຳ + ﱞ + ﾞ]\n",
+        "export const matcher = /}/\n[\\u2118 + \\u212e + \\u309b + \\u{309c} + \\u037a + \\u0e33 + \\u0eb3 + \\u{fc5e} + \\uff9e]\n",
         "export const matcher = /}/\n(1e3, 1_000.5e-2, 0xFFn, 0o77n, 0b10n, .5)\n",
         "export const matcher = /}/\n.\\u006d(0xCAFEn)\n",
         "export const matcher = /}/\n.π\u{0301}(join\u{200c}\u{200d})\n",
