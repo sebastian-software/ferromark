@@ -50,6 +50,13 @@ end
 fail_contract('CI must define a cargo clippy command') unless clippy_command
 fail_contract("must include CI clippy command #{clippy_command.inspect}") unless contributing.include?(clippy_command)
 
+fmt_job = jobs.fetch('fmt')
+fmt_command = fmt_job.fetch('steps').map { |step| step['run'] }.compact.find do |command|
+  command.start_with?('cargo fmt ')
+end
+fail_contract('CI must define a cargo fmt command') unless fmt_command
+fail_contract("must include CI fmt command #{fmt_command.inspect}") unless contributing.include?(fmt_command)
+
 fail_contract('must link the Node workspace release checks') unless contributing.include?('[releasing guide](docs/releasing.md)')
 
 puts 'CONTRIBUTING CI contract checks passed'
