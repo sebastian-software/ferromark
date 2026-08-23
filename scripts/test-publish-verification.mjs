@@ -31,7 +31,21 @@ function assertValidVerifierJob(source) {
   assert.match(job, /run: node \.\/node\/scripts\/verify-npm-publish\.mjs/)
 }
 
+function assertCratePublicationWaitsForVerification(source) {
+  const crateJob = source.slice(
+    source.indexOf('\n  publish-crate:\n'),
+    source.indexOf('\n  build-native:\n'),
+  )
+  assert.match(
+    crateJob,
+    /needs:\n      - release-please\n      - verify-npm-publish/,
+    'crate publication must wait for successful npm registry verification',
+  )
+  assert.doesNotMatch(crateJob, /- publish-npm/)
+}
+
 assertValidVerifierJob(workflow)
+assertCratePublicationWaitsForVerification(workflow)
 assert.throws(
   () => assertValidVerifierJob(workflow.replace('\n  verify-npm-publish:\n', '\n  npm-check:\n')),
   /verify-npm-publish/,
@@ -53,6 +67,13 @@ assert.throws(
 assert.throws(
   () => assertValidVerifierJob(workflow.replace('timeout-minutes: 5', 'timeout-minutes: 30')),
   /timeout-minutes: 5/,
+)
+assert.throws(
+  () =>
+    assertCratePublicationWaitsForVerification(
+      workflow.replace('- verify-npm-publish', '- publish-npm'),
+    ),
+  /crate publication must wait for successful npm registry verification/,
 )
 
 assert.equal(registryVersionUrl('ferromark', '0.7.0'), 'https://registry.npmjs.org/ferromark/0.7.0')

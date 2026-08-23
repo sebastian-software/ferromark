@@ -32,7 +32,7 @@ jobs:
   publish-crate:
     needs:
       - release-please
-      - publish-npm
+      - verify-npm-publish
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     runs-on: ubuntu-latest
     steps:
