@@ -390,6 +390,7 @@ enum LexicalMode {
     DoubleQuote,
     Template,
     Regex,
+    RegexFlags,
     LineComment,
     BlockComment,
 }
@@ -559,11 +560,17 @@ impl EsmContinuation {
                     b'[' => self.regex_char_class = true,
                     b']' => self.regex_char_class = false,
                     b'/' if !self.regex_char_class => {
-                        self.mode = LexicalMode::Code;
+                        self.mode = LexicalMode::RegexFlags;
                         self.line_end = LineEnd::Regex;
                     }
                     _ => {}
                 },
+                LexicalMode::RegexFlags => {
+                    if !byte.is_ascii_alphabetic() {
+                        self.mode = LexicalMode::Code;
+                        continue;
+                    }
+                }
                 LexicalMode::LineComment => {
                     if byte == b'\n' {
                         self.mode = LexicalMode::Code;
@@ -579,6 +586,9 @@ impl EsmContinuation {
             pos += 1;
         }
 
+        if self.mode == LexicalMode::RegexFlags {
+            self.mode = LexicalMode::Code;
+        }
         self.finish_word(bytes, &mut word_start, end);
     }
 
@@ -857,6 +867,20 @@ impl EsmContinuation {
     fn import_needs_source(&self) -> bool {
         self.declaration_is_import && !self.import_has_source
     }
+
+    /// A completed regex expression can continue on the following line only
+    /// through a token that is unambiguously an expression suffix. Keep this
+    /// narrower than general continuation so terminal literals still stop
+    /// before ordinary Markdown prose.
+    fn regex_continues_with_expression(&self, bytes: &[u8], line_start: usize) -> bool {
+        if self.line_end != LineEnd::Regex {
+            return false;
+        }
+
+        let start = skip_whitespace_offset(bytes, line_start);
+        matches!(bytes.get(start), Some(b'.' | b'[' | b'(' | b'`'))
+            || (bytes.get(start) == Some(&b'?') && bytes.get(start + 1) == Some(&b'.'))
+    }
 }
 
 fn is_esm_word_byte(byte: u8) -> bool {
@@ -959,6 +983,12 @@ pub(crate) fn scan_esm(
             if is_markdown_block_start(bytes, end) || is_plain_prose_line(bytes, end) {
                 return Some(EsmScan::Incomplete(end));
             }
+            line_start = end;
+            end = next_line(bytes, line_start);
+            continue;
+        }
+
+        if state.regex_continues_with_expression(bytes, end) {
             line_start = end;
             end = next_line(bytes, line_start);
             continue;
