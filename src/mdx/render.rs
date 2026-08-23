@@ -260,16 +260,25 @@ fn write_component_body(out: &mut String, body: &str) {
 
             pos += tag.end_offset;
             if let Some(text_kind) = text_kind {
-                let end = raw_text_end(bytes, pos, tag.name).unwrap_or(bytes.len());
-                write_jsx_string_child(
-                    out,
-                    &body[pos..end],
-                    matches!(text_kind, HtmlTextKind::Rcdata),
-                );
+                if let Some((text_end, tag_end)) = raw_text_end(bytes, pos, tag.name) {
+                    write_jsx_string_child(
+                        out,
+                        &body[pos..text_end],
+                        matches!(text_kind, HtmlTextKind::Rcdata),
+                    );
+                    write_html_text_closing_tag(out, &body[text_end..tag_end], tag.name);
+                    pos = tag_end;
+                } else {
+                    write_jsx_string_child(
+                        out,
+                        &body[pos..],
+                        matches!(text_kind, HtmlTextKind::Rcdata),
+                    );
+                    pos = bytes.len();
+                }
                 // The raw text's line breaks are escaped inside the string child,
                 // so the generated JSX source is still on the opening tag's line.
                 at_line_start = false;
-                pos = end;
             }
             continue;
         }
@@ -392,16 +401,24 @@ fn write_jsx_string_child(out: &mut String, text: &str, decode_entities: bool) {
     out.push_str("\"}");
 }
 
-fn raw_text_end(bytes: &[u8], start: usize, tag_name: &str) -> Option<usize> {
+fn write_html_text_closing_tag(out: &mut String, source: &str, opening_name: &str) {
+    debug_assert!(source.starts_with("</"));
+    debug_assert!(source.len() >= opening_name.len() + 2);
+    out.push_str("</");
+    out.push_str(opening_name);
+    out.push_str(&source[opening_name.len() + 2..]);
+}
+
+fn raw_text_end(bytes: &[u8], start: usize, tag_name: &str) -> Option<(usize, usize)> {
     let mut pos = start;
 
     while let Some(offset) = bytes[pos..].iter().position(|byte| *byte == b'<') {
         pos += offset;
         if let Some(tag) = parse_jsx_tag(&bytes[pos..])
             && tag.is_closing
-            && tag.name == tag_name
+            && tag.name.eq_ignore_ascii_case(tag_name)
         {
-            return Some(pos);
+            return Some((pos, pos + tag.end_offset));
         }
         pos += 1;
     }
@@ -886,6 +903,58 @@ Content
         ), "{component}");
         assert!(
             component.contains("<title>{\"first\\n  second {value}&\\n\"}</title>"),
+            "{component}"
+        );
+    }
+
+    #[test]
+    fn to_component_matches_html_text_end_tags_ascii_case_insensitively() {
+        let out = MdxOutput {
+            body: "<textarea data-kind=\"example\">first\r\n  second {value}&amp;\r\n</TEXTAREA   ><p>after textarea</p>\n<title data-kind=\"example\">heading &amp; {value}</TiTlE><p>after title</p>\n<script>if (left < right) { run(); }</SCRIPT><p>after script</p>\n<style>.x { color: red }</StYlE><p>after style</p>"
+                .to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains(
+            "<textarea data-kind=\"example\">{\"first\\r\\n  second {value}&\\r\\n\"}</textarea   ><p>after textarea</p>"
+        ), "{component}");
+        assert!(
+            component.contains(
+                "<title data-kind=\"example\">{\"heading & {value}\"}</title><p>after title</p>"
+            ),
+            "{component}"
+        );
+        assert!(
+            component
+                .contains("<script>{\"if (left < right) { run(); }\"}</script><p>after script</p>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<style>{\".x { color: red }\"}</style><p>after style</p>"),
+            "{component}"
+        );
+    }
+
+    #[test]
+    fn to_component_ignores_raw_text_closing_tag_near_matches() {
+        let out = MdxOutput {
+            body: "<textarea>before</TEXTAREAX>middle</textarea extra>still</TeXtArEa><p>after</p>\n<script>before</SCRIPTS>middle</ScRiPt><p>after script</p>"
+                .to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(
+            component.contains(
+                "<textarea>{\"before</TEXTAREAX>middle</textarea extra>still\"}</textarea><p>after</p>"
+            ),
+            "{component}"
+        );
+        assert!(
+            component.contains("<script>{\"before</SCRIPTS>middle\"}</script><p>after script</p>"),
             "{component}"
         );
     }
