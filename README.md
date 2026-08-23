@@ -209,6 +209,18 @@ blocks remain available.
 
 ## Markdown configuration
 
+## CLI
+
+`cargo install ferromark` installs `ferromark`, which reads Markdown from a file
+or standard input and writes HTML to standard output. Use `ferromark --help` for
+the complete interface. `--gfm`, `--commonmark`, and `--minimal` select syntax
+presets; output remains safely untrusted unless `--trusted` is explicitly set.
+
+```sh
+ferromark --gfm README.md -o README.html
+printf '# Hello\n' | ferromark --no-heading-ids
+```
+
 Start from the syntax contract you need, then enable individual extensions:
 
 - `Options::minimal()` keeps the smallest Markdown surface and disables raw
