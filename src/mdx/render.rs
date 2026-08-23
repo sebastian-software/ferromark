@@ -13,11 +13,28 @@ const HTML_VOID_ELEMENTS: [&str; 14] = [
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
     "track", "wbr",
 ];
+const HTML_INTRINSIC_ELEMENTS: &str = concat!(
+    "a abbr acronym address applet area article aside audio b base bdi bdo big blink blockquote ",
+    "body br button canvas caption center cite code col colgroup data datalist dd del details dfn ",
+    "dialog dir div dl dt em embed fieldset figcaption figure font footer form frameset h1 h2 h3 ",
+    "h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map ",
+    "mark marquee menu menuitem meta meter nav nobr noembed noframes noscript object ol optgroup ",
+    "option output p param picture plaintext pre progress q rb rp rt rtc ruby s samp script search ",
+    "section select slot small source span strike strong style sub summary sup table tbody td ",
+    "template textarea tfoot th thead time title tr track tt u ul var video wbr xmp",
+);
 
 #[derive(Clone, Copy)]
 enum HtmlTextKind {
     Raw,
     Rcdata,
+}
+
+#[derive(Clone, Copy)]
+enum ComponentTagEffect {
+    None,
+    PreOpen,
+    PreClose,
 }
 
 /// Error returned when a component name cannot be used as a JavaScript binding.
@@ -211,7 +228,7 @@ fn write_component_body(out: &mut String, body: &str) {
     let mut pos = 0;
     let mut at_line_start = true;
     let mut pre_depth = 0_u32;
-    let mut void_component_openings = Vec::new();
+    let mut html_component_openings = Vec::new();
 
     while pos < bytes.len() {
         if pre_depth > 0 && bytes[pos] != b'<' {
@@ -272,29 +289,28 @@ fn write_component_body(out: &mut String, body: &str) {
                 None
             };
             indent_component_line(out, at_line_start, pre_depth);
-            if let Some((_, canonical_name)) = text_element {
-                write_html_text_opening_tag(
+            let tag_effect = if let Some((_, canonical_name)) = text_element {
+                write_html_opening_tag(
                     out,
                     &body[pos..pos + tag.end_offset],
                     tag.name,
                     canonical_name,
                 );
+                ComponentTagEffect::None
             } else {
                 write_component_tag(
                     out,
                     &body[pos..pos + tag.end_offset],
                     &tag,
-                    &mut void_component_openings,
-                );
-            }
+                    &mut html_component_openings,
+                )
+            };
             at_line_start = false;
 
-            if tag.name == "pre" && !tag.is_self_closing {
-                if tag.is_closing {
-                    pre_depth = pre_depth.saturating_sub(1);
-                } else {
-                    pre_depth = pre_depth.saturating_add(1);
-                }
+            match tag_effect {
+                ComponentTagEffect::PreOpen => pre_depth = pre_depth.saturating_add(1),
+                ComponentTagEffect::PreClose => pre_depth = pre_depth.saturating_sub(1),
+                ComponentTagEffect::None => {}
             }
 
             pos += tag.end_offset;
@@ -362,36 +378,57 @@ fn write_component_tag<'a>(
     out: &mut String,
     source: &str,
     tag: &TagInfo<'a>,
-    void_component_openings: &mut Vec<(usize, &'a str)>,
-) {
+    html_component_openings: &mut Vec<(&'static str, &'a str)>,
+) -> ComponentTagEffect {
     if tag.is_closing {
-        if let Some(index) = html_void_element_index_ignore_ascii_case(tag.name) {
-            if void_component_openings
+        if let Some(canonical_name) = html_element_ignore_ascii_case(tag.name) {
+            if html_component_openings
                 .last()
-                .is_some_and(|(opening_index, _)| *opening_index == index)
+                .is_some_and(|(opening_canonical, _)| *opening_canonical == canonical_name)
             {
-                let (_, opening_name) = void_component_openings
+                let (_, opening_name) = html_component_openings
                     .pop()
                     .expect("last component opening was just checked");
                 write_closing_tag(out, source, opening_name);
+                return ComponentTagEffect::None;
             }
-            return;
+            if HTML_VOID_ELEMENTS.contains(&canonical_name) {
+                return ComponentTagEffect::None;
+            }
+            if uses_html_intrinsic_syntax(tag.name) {
+                write_closing_tag(out, source, canonical_name);
+                return if canonical_name == "pre" {
+                    ComponentTagEffect::PreClose
+                } else {
+                    ComponentTagEffect::None
+                };
+            }
         }
         out.push_str(source);
-        return;
+        return ComponentTagEffect::None;
     }
 
-    if let Some((_, canonical_name)) = html_void_element(tag.name) {
+    if let Some(canonical_name) = html_void_element(tag.name) {
         write_html_void_opening_tag(out, source, tag.name, canonical_name, tag.is_self_closing);
-        return;
+        return ComponentTagEffect::None;
+    }
+
+    if let Some(canonical_name) = html_element(tag.name) {
+        write_html_opening_tag(out, source, tag.name, canonical_name);
+        return if canonical_name == "pre" && !tag.is_self_closing {
+            ComponentTagEffect::PreOpen
+        } else {
+            ComponentTagEffect::None
+        };
     }
 
     if !tag.is_self_closing
-        && let Some(index) = html_void_element_index_ignore_ascii_case(tag.name)
+        && let Some(canonical_name) = html_element_ignore_ascii_case(tag.name)
     {
-        void_component_openings.push((index, tag.name));
+        html_component_openings.push((canonical_name, tag.name));
     }
     out.push_str(source);
+    ComponentTagEffect::None
 }
 
 fn write_html_void_opening_tag(
@@ -422,22 +459,27 @@ fn write_html_void_opening_tag(
     out.push('>');
 }
 
-fn html_void_element(name: &str) -> Option<(usize, &'static str)> {
+fn html_void_element(name: &str) -> Option<&'static str> {
     if !uses_html_intrinsic_syntax(name) {
         return None;
     }
 
     HTML_VOID_ELEMENTS
         .iter()
-        .enumerate()
-        .find(|(_, element)| element.eq_ignore_ascii_case(name))
-        .map(|(index, element)| (index, *element))
+        .find(|element| element.eq_ignore_ascii_case(name))
+        .copied()
 }
 
-fn html_void_element_index_ignore_ascii_case(name: &str) -> Option<usize> {
-    HTML_VOID_ELEMENTS
-        .iter()
-        .position(|element| element.eq_ignore_ascii_case(name))
+fn html_element(name: &str) -> Option<&'static str> {
+    uses_html_intrinsic_syntax(name)
+        .then(|| html_element_ignore_ascii_case(name))
+        .flatten()
+}
+
+fn html_element_ignore_ascii_case(name: &str) -> Option<&'static str> {
+    HTML_INTRINSIC_ELEMENTS
+        .split_ascii_whitespace()
+        .find(|element| element.eq_ignore_ascii_case(name))
 }
 
 fn html_text_element(name: &str) -> Option<(HtmlTextKind, &'static str)> {
@@ -520,7 +562,7 @@ fn write_closing_tag(out: &mut String, source: &str, opening_name: &str) {
     out.push_str(&source[opening_name.len() + 2..]);
 }
 
-fn write_html_text_opening_tag(
+fn write_html_opening_tag(
     out: &mut String,
     source: &str,
     original_name: &str,
@@ -1706,6 +1748,53 @@ Content
             component.contains("      <Title>\n      {text}\n      </Title>"),
             "{component}"
         );
+    }
+
+    #[test]
+    fn to_component_canonicalizes_rendered_case_variant_pre_and_code() {
+        let out = render("<PRE><CODE>first\n  second {value}\n</CODE></PRE>\n");
+        let component = out.to_component("Page").unwrap();
+
+        assert!(
+            component.contains("      <pre><code>{\"first\\n  second {value}\\n\"}</code></pre>"),
+            "{component}"
+        );
+    }
+
+    #[test]
+    fn to_component_preserves_case_variant_pre_text_and_nested_html_kinds() {
+        for body in [
+            "<PRE data-kind=\"upper\"><CODE>first\r\n  second {value}&amp;\r\n</cOdE></pRe><p>after</p>",
+            "<pRe><cOdE>first\n  second {value}\n</CODE><TEXTAREA>third\n  fourth &amp; {value}\n</textarea><SCRIPT>if (left < right) { run(); }</script></PRE>",
+        ] {
+            let out = MdxOutput {
+                body: body.to_owned(),
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert!(!component.contains("<PRE"), "{component}");
+            assert!(!component.contains("<CODE"), "{component}");
+            assert!(component.contains("<pre"), "{component}");
+            assert!(component.contains("<code>"), "{component}");
+            assert!(component.contains("second {value}"), "{component}");
+            assert!(!component.contains("      second"), "{component}");
+            assert!(component.contains("</code>"), "{component}");
+            assert!(component.contains("</pre>"), "{component}");
+        }
+    }
+
+    #[test]
+    fn to_component_keeps_pascal_case_pre_and_code_components() {
+        let out = render("<Pre>\n\n<Code>\n\n{value}\n\n</Code>\n\n</Pre>\n");
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains("      <Pre>"), "{component}");
+        assert!(component.contains("      <Code>"), "{component}");
+        assert!(component.contains("      {value}"), "{component}");
+        assert!(component.contains("      </Code>"), "{component}");
+        assert!(component.contains("      </Pre>"), "{component}");
     }
 
     #[test]
