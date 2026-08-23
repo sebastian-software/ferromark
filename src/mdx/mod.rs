@@ -294,7 +294,7 @@ pub(super) fn validate_mdx_input_size(input_len: usize) -> Result<(), Vec<MdxDia
 fn input_size_diagnostic() -> MdxDiagnostic {
     MdxDiagnostic {
         code: MdxDiagnosticCode::InputTooLarge,
-        message: "input exceeds the maximum supported size of 4294967295 bytes",
+        message: "input exceeds the maximum supported size of 4294967294 bytes",
         primary_range: crate::Range::empty_at(0),
         related_range: None,
     }
@@ -369,6 +369,11 @@ mod tests {
         assert_eq!(diagnostics.len(), 1);
         assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InputTooLarge);
         assert_eq!(diagnostics[0].primary_range, crate::Range::empty_at(0));
+        assert!(
+            diagnostics[0]
+                .message
+                .contains(&crate::MAX_INPUT_BYTES.to_string())
+        );
     }
 
     #[test]
