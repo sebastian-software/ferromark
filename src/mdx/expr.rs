@@ -34,6 +34,163 @@ pub(crate) struct ExpressionEnds {
     scanned_bytes: usize,
 }
 
+/// Cached ends for lexical constructs that can otherwise make every earlier
+/// expression scan walk to EOF. Unlike expression ends, these values depend
+/// only on the construct's delimiter bytes, so they can be shared safely by
+/// every expression start in the input.
+struct LexicalEnds {
+    double_quotes: FxHashMap<usize, usize>,
+    single_quotes: FxHashMap<usize, usize>,
+    templates: FxHashMap<usize, TemplateEnd>,
+    line_comments: FxHashMap<usize, usize>,
+    block_comments: FxHashMap<usize, usize>,
+}
+
+#[derive(Clone, Copy)]
+struct TemplateEnd {
+    end: usize,
+    has_interpolation: bool,
+}
+
+impl LexicalEnds {
+    fn new(bytes: &[u8]) -> Self {
+        let mut double_quote_positions = Vec::new();
+        let mut single_quote_positions = Vec::new();
+        let mut template_positions = Vec::new();
+        let mut preceding_backslashes = 0usize;
+
+        for (pos, byte) in bytes.iter().copied().enumerate() {
+            if byte == b'\\' {
+                preceding_backslashes += 1;
+                continue;
+            }
+
+            let escaped = preceding_backslashes % 2 == 1;
+            match byte {
+                b'"' => double_quote_positions.push((pos, escaped)),
+                b'\'' => single_quote_positions.push((pos, escaped)),
+                b'`' => template_positions.push((pos, escaped)),
+                _ => {}
+            }
+            preceding_backslashes = 0;
+        }
+
+        let mut lexical_ends = Self {
+            double_quotes: FxHashMap::default(),
+            single_quotes: FxHashMap::default(),
+            templates: FxHashMap::default(),
+            line_comments: FxHashMap::default(),
+            block_comments: FxHashMap::default(),
+        };
+        fill_quoted_ends(&mut lexical_ends.double_quotes, &double_quote_positions);
+        fill_quoted_ends(&mut lexical_ends.single_quotes, &single_quote_positions);
+        let mut next_line_end = bytes.len();
+        let mut next_block_comment_end = None;
+        let mut next_template_interpolation = None;
+        let mut template_interpolations = vec![None; template_positions.len()];
+        let mut template_index = template_positions.len();
+        for pos in (0..bytes.len()).rev() {
+            if bytes[pos] == b'$' && bytes.get(pos + 1) == Some(&b'{') {
+                next_template_interpolation = Some(pos);
+            }
+            if template_index > 0 && template_positions[template_index - 1].0 == pos {
+                template_index -= 1;
+                template_interpolations[template_index] = next_template_interpolation;
+            }
+            if bytes[pos] == b'\n' {
+                next_line_end = pos + 1;
+            }
+            if bytes[pos] == b'*' && bytes.get(pos + 1) == Some(&b'/') {
+                next_block_comment_end = Some(pos + 2);
+            }
+            if bytes[pos] == b'/' && bytes.get(pos + 1) == Some(&b'/') {
+                lexical_ends.line_comments.insert(pos, next_line_end);
+            }
+            if bytes[pos] == b'/' && bytes.get(pos + 1) == Some(&b'*') {
+                lexical_ends.block_comments.insert(
+                    pos,
+                    next_block_comment_end.unwrap_or(UNTERMINATED_EXPRESSION),
+                );
+            }
+        }
+        fill_template_ends(
+            &mut lexical_ends.templates,
+            &template_positions,
+            &template_interpolations,
+        );
+
+        lexical_ends
+    }
+
+    fn double_quote_end(&self, start: usize) -> Option<usize> {
+        cached_end(&self.double_quotes, start)
+    }
+
+    fn single_quote_end(&self, start: usize) -> Option<usize> {
+        cached_end(&self.single_quotes, start)
+    }
+
+    fn template_end(&self, start: usize) -> Option<TemplateEnd> {
+        self.templates
+            .get(&start)
+            .copied()
+            .filter(|end| end.end != UNTERMINATED_EXPRESSION)
+    }
+
+    fn line_comment_end(&self, start: usize) -> usize {
+        self.line_comments[&start]
+    }
+
+    fn block_comment_end(&self, start: usize) -> Option<usize> {
+        cached_end(&self.block_comments, start)
+    }
+}
+
+fn fill_quoted_ends(ends: &mut FxHashMap<usize, usize>, positions: &[(usize, bool)]) {
+    let mut next_closing = None;
+    for &(pos, escaped) in positions.iter().rev() {
+        ends.insert(pos, next_closing.unwrap_or(UNTERMINATED_EXPRESSION));
+        if !escaped {
+            next_closing = Some(pos + 1);
+        }
+    }
+}
+
+fn fill_template_ends(
+    ends: &mut FxHashMap<usize, TemplateEnd>,
+    positions: &[(usize, bool)],
+    interpolations: &[Option<usize>],
+) {
+    let mut next_closing = None;
+    for (&(pos, escaped), interpolation) in positions.iter().zip(interpolations).rev() {
+        let end = next_closing.unwrap_or(UNTERMINATED_EXPRESSION);
+        ends.insert(
+            pos,
+            TemplateEnd {
+                end,
+                has_interpolation: interpolation.is_some_and(|start| start < end),
+            },
+        );
+        if !escaped {
+            next_closing = Some(pos + 1);
+        }
+    }
+}
+
+fn cached_end(ends: &FxHashMap<usize, usize>, start: usize) -> Option<usize> {
+    (*ends
+        .get(&start)
+        .expect("lexical cache contains every queried delimiter")
+        != UNTERMINATED_EXPRESSION)
+        .then(|| ends[&start])
+}
+
+#[derive(Clone, Copy)]
+struct CachedEnds<'a> {
+    expressions: &'a ExpressionEndStorage,
+    lexical: &'a LexicalEnds,
+}
+
 enum ExpressionEndStorage {
     Sparse(FxHashMap<usize, usize>),
     Dense(Vec<usize>),
@@ -82,12 +239,21 @@ impl ExpressionEnds {
 
         let brace_count = bytes.iter().filter(|&&byte| byte == b'{').count();
         let mut ends = ExpressionEndStorage::new(bytes.len(), brace_count);
+        let lexical_ends = LexicalEnds::new(bytes);
         let mut work = ScanWork::default();
 
         for start in (0..bytes.len()).rev() {
             if bytes[start] == b'{' {
-                let end = find_expression_end_from(bytes, start, Some(&ends), &mut work)
-                    .unwrap_or(UNTERMINATED_EXPRESSION);
+                let end = find_expression_end_from(
+                    bytes,
+                    start,
+                    Some(CachedEnds {
+                        expressions: &ends,
+                        lexical: &lexical_ends,
+                    }),
+                    &mut work,
+                )
+                .unwrap_or(UNTERMINATED_EXPRESSION);
                 ends.insert(start, end);
             }
         }
@@ -95,7 +261,7 @@ impl ExpressionEnds {
         Self {
             ends,
             #[cfg(test)]
-            scanned_bytes: bytes.len() + work.scanned_bytes,
+            scanned_bytes: bytes.len() * 2 + work.scanned_bytes,
         }
     }
 
@@ -152,7 +318,7 @@ pub fn find_expression_end(bytes: &[u8]) -> Option<usize> {
 fn find_expression_end_from(
     bytes: &[u8],
     start: usize,
-    cached_ends: Option<&ExpressionEndStorage>,
+    cached_ends: Option<CachedEnds<'_>>,
     work: &mut ScanWork,
 ) -> Option<usize> {
     debug_assert!(bytes.get(start) == Some(&b'{'));
@@ -165,7 +331,7 @@ fn find_expression_end_from(
         match bytes[pos] {
             b'{' => {
                 if let Some(cached_ends) = cached_ends {
-                    let end = cached_ends.get(pos);
+                    let end = cached_ends.expressions.get(pos);
                     if end == UNTERMINATED_EXPRESSION {
                         return None;
                     }
@@ -183,20 +349,20 @@ fn find_expression_end_from(
                 pos += 1;
             }
             b'"' => {
-                pos = skip_double_quoted(bytes, pos, work)?;
+                pos = skip_double_quoted(bytes, pos, cached_ends, work)?;
             }
             b'\'' => {
-                pos = skip_single_quoted(bytes, pos, work)?;
+                pos = skip_single_quoted(bytes, pos, cached_ends, work)?;
             }
             b'`' => {
                 pos = skip_template_literal(bytes, pos, cached_ends, work)?;
             }
             b'/' if pos + 1 < len => match bytes[pos + 1] {
                 b'/' => {
-                    pos = skip_line_comment(bytes, pos, work);
+                    pos = skip_line_comment(bytes, pos, cached_ends, work);
                 }
                 b'*' => {
-                    pos = skip_block_comment(bytes, pos, work)?;
+                    pos = skip_block_comment(bytes, pos, cached_ends, work)?;
                 }
                 _ => pos += 1,
             },
@@ -209,7 +375,15 @@ fn find_expression_end_from(
 
 /// Skip a `"..."` string. `pos` points at the opening `"`.
 /// Returns position after the closing `"`, or `None` if unterminated.
-fn skip_double_quoted(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option<usize> {
+fn skip_double_quoted(
+    bytes: &[u8],
+    start: usize,
+    cached_ends: Option<CachedEnds<'_>>,
+    work: &mut ScanWork,
+) -> Option<usize> {
+    if let Some(cached_ends) = cached_ends {
+        return cached_ends.lexical.double_quote_end(start);
+    }
     let len = bytes.len();
     let mut pos = start + 1;
     while pos < len {
@@ -225,7 +399,15 @@ fn skip_double_quoted(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option
 
 /// Skip a `'...'` string. `pos` points at the opening `'`.
 /// Returns position after the closing `'`, or `None` if unterminated.
-fn skip_single_quoted(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option<usize> {
+fn skip_single_quoted(
+    bytes: &[u8],
+    start: usize,
+    cached_ends: Option<CachedEnds<'_>>,
+    work: &mut ScanWork,
+) -> Option<usize> {
+    if let Some(cached_ends) = cached_ends {
+        return cached_ends.lexical.single_quote_end(start);
+    }
     let len = bytes.len();
     let mut pos = start + 1;
     while pos < len {
@@ -245,10 +427,16 @@ fn skip_single_quoted(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option
 fn skip_template_literal(
     bytes: &[u8],
     start: usize,
-    cached_ends: Option<&ExpressionEndStorage>,
+    cached_ends: Option<CachedEnds<'_>>,
     work: &mut ScanWork,
 ) -> Option<usize> {
     let len = bytes.len();
+    if let Some(cached_ends) = cached_ends {
+        let template_end = cached_ends.lexical.template_end(start)?;
+        if !template_end.has_interpolation {
+            return Some(template_end.end);
+        }
+    }
     let mut pos = start + 1;
     while pos < len {
         work.visit();
@@ -259,7 +447,7 @@ fn skip_template_literal(
                 // Nested expression inside template literal
                 let expression_start = pos + 1;
                 if let Some(cached_ends) = cached_ends {
-                    let end = cached_ends.get(expression_start);
+                    let end = cached_ends.expressions.get(expression_start);
                     if end == UNTERMINATED_EXPRESSION {
                         return None;
                     }
@@ -275,7 +463,15 @@ fn skip_template_literal(
 }
 
 /// Skip a `// ...` line comment. Returns position after the newline (or EOF).
-fn skip_line_comment(bytes: &[u8], start: usize, work: &mut ScanWork) -> usize {
+fn skip_line_comment(
+    bytes: &[u8],
+    start: usize,
+    cached_ends: Option<CachedEnds<'_>>,
+    work: &mut ScanWork,
+) -> usize {
+    if let Some(cached_ends) = cached_ends {
+        return cached_ends.lexical.line_comment_end(start);
+    }
     let len = bytes.len();
     let mut pos = start + 2;
     while pos < len {
@@ -289,7 +485,15 @@ fn skip_line_comment(bytes: &[u8], start: usize, work: &mut ScanWork) -> usize {
 }
 
 /// Skip a `/* ... */` block comment. Returns position after `*/`, or `None` if unterminated.
-fn skip_block_comment(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option<usize> {
+fn skip_block_comment(
+    bytes: &[u8],
+    start: usize,
+    cached_ends: Option<CachedEnds<'_>>,
+    work: &mut ScanWork,
+) -> Option<usize> {
+    if let Some(cached_ends) = cached_ends {
+        return cached_ends.lexical.block_comment_end(start);
+    }
     let len = bytes.len();
     let mut pos = start + 2;
     while pos + 1 < len {
@@ -386,6 +590,14 @@ mod tests {
             b"{`template ${value}`}\n{later}".as_slice(),
             b"{unterminated\n{later}".as_slice(),
             b"{\"unterminated\n{later}".as_slice(),
+            b"{/* unterminated\n{later}".as_slice(),
+            b"{// unterminated {later}".as_slice(),
+            b"{'unterminated\n{later}".as_slice(),
+            b"{`unterminated\n{later}".as_slice(),
+            b"{/* comment */}\n{later}".as_slice(),
+            b"{// comment\n}\n{later}".as_slice(),
+            b"{`plain`}\n{later}".as_slice(),
+            b"{`escaped \\${literal}`}\n{later}".as_slice(),
         ] {
             let ends = ExpressionEnds::new(input);
             for (start, byte) in input.iter().enumerate() {
@@ -438,6 +650,36 @@ mod tests {
             ends.scanned_bytes(),
             input.len(),
         );
+    }
+
+    #[test]
+    fn cached_ends_bound_unterminated_lexical_scan_work() {
+        let inputs = [
+            "{/*\n".repeat(8_192),
+            "{//".repeat(8_192),
+            "{\"".repeat(8_192),
+            "{'".repeat(8_192),
+            "{`".repeat(8_192),
+            "{/unterminated ".repeat(8_192),
+        ];
+
+        for (case, input) in inputs.into_iter().enumerate() {
+            let ends = ExpressionEnds::new(input.as_bytes());
+            assert!(
+                input
+                    .bytes()
+                    .enumerate()
+                    .filter(|(_, byte)| *byte == b'{')
+                    .all(|(start, _)| ends.end_at(start).is_none()),
+                "every opening brace is unterminated for case {case}: {input:?}",
+            );
+            assert!(
+                ends.scanned_bytes() <= input.len() * 3,
+                "case {case}: cached lexical scans visited {} bytes for a {} byte input",
+                ends.scanned_bytes(),
+                input.len(),
+            );
+        }
     }
 
     #[test]

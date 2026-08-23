@@ -1010,6 +1010,38 @@ fn unterminated_expression_keeps_later_flow_mdx_available_to_permissive_segmenti
 }
 
 #[test]
+fn unterminated_comment_expression_keeps_later_flow_mdx_available_to_permissive_segmenting() {
+    let input = "{/* unterminated\n{later}\n<After />\n";
+
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Markdown("{/* unterminated\n"),
+            Segment::Expression("{later}\n"),
+            Segment::JsxBlockSelfClose("<After />\n"),
+        ]
+    );
+
+    let rendered = render(input).body;
+    assert!(rendered.contains("<p>{/* unterminated</p>"));
+    assert!(rendered.contains("{later}\n<After />"));
+
+    let diagnostics = segment_strict(input).unwrap_err();
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        diagnostics[0].code,
+        MdxDiagnosticCode::UnterminatedExpression
+    );
+    assert_eq!(
+        diagnostics[0]
+            .primary_range
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        input
+    );
+}
+
+#[test]
 fn unterminated_jsx_attribute_keeps_later_flow_mdx_available_to_permissive_segmenting() {
     let input = "<Broken value={\n{later}\n<After />\n";
 
