@@ -2,7 +2,13 @@ use std::fmt::Write;
 
 use crate::{Options, RenderPolicy};
 
-use super::Segment;
+use super::{
+    Segment,
+    expr::find_expression_end,
+    jsx_tag::{TagInfo, parse_jsx_tag},
+};
+
+const COMPONENT_BODY_INDENT: &str = "      ";
 
 /// Error returned when a component name cannot be used as a JavaScript binding.
 ///
@@ -153,6 +159,11 @@ impl MdxOutput<'_> {
     ///   );
     /// }
     /// ```
+    ///
+    /// Literal braces in rendered Markdown are emitted as HTML character
+    /// references so they cannot be interpreted as JSX expressions. MDX flow
+    /// expressions remain executable, HTML comments are omitted, and whitespace
+    /// inside `<pre>` elements is preserved.
     pub fn to_component(&self, name: &str) -> Result<String, ComponentNameError> {
         validate_component_name(name)?;
         let mut out = String::with_capacity(self.body.len() + self.esm.len() * 40 + 80);
@@ -170,20 +181,239 @@ impl MdxOutput<'_> {
 
         let body = self.body.trim();
         if !body.is_empty() {
-            for line in body.lines() {
-                if line.is_empty() {
-                    out.push('\n');
-                } else {
-                    out.push_str("      ");
-                    out.push_str(line);
-                    out.push('\n');
-                }
-            }
+            write_component_body(&mut out, body);
+            out.push('\n');
         }
 
         out.push_str("    </>\n  );\n}\n");
         Ok(out)
     }
+}
+
+/// Write an HTML/MDX body as JSX without changing its rendered text semantics.
+///
+/// This deliberately operates on tokens instead of applying global replacements:
+/// tags and MDX flow expressions must remain executable, while braces in HTML text
+/// nodes are literal characters. The emitter also tracks `<pre>` ownership so its
+/// presentation indentation never becomes part of preformatted content.
+fn write_component_body(out: &mut String, body: &str) {
+    let bytes = body.as_bytes();
+    let mut pos = 0;
+    let mut at_line_start = true;
+    let mut pre_depth = 0_u32;
+
+    while pos < bytes.len() {
+        if pre_depth > 0 && bytes[pos] != b'<' {
+            let end = bytes[pos..]
+                .iter()
+                .position(|byte| *byte == b'<')
+                .map_or(bytes.len(), |offset| pos + offset);
+            write_preformatted_text(out, &body[pos..end]);
+            at_line_start = body[pos..end].ends_with(['\n', '\r']);
+            pos = end;
+            continue;
+        }
+
+        if let Some(line_break_len) = line_break_len(bytes, pos) {
+            out.push_str(&body[pos..pos + line_break_len]);
+            pos += line_break_len;
+            at_line_start = true;
+            continue;
+        }
+
+        if bytes[pos..].starts_with(b"<!--") {
+            pos = comment_end(bytes, pos).unwrap_or(bytes.len());
+            continue;
+        }
+
+        if bytes[pos] == b'<'
+            && let Some(tag) = parse_jsx_tag(&bytes[pos..])
+        {
+            indent_component_line(out, at_line_start, pre_depth);
+            write_component_tag(out, &body[pos..pos + tag.end_offset], &tag);
+            at_line_start = false;
+
+            let is_raw_text_open = !tag.is_closing
+                && !tag.is_self_closing
+                && (tag.name.eq_ignore_ascii_case("script")
+                    || tag.name.eq_ignore_ascii_case("style"));
+
+            if tag.name.eq_ignore_ascii_case("pre") && !tag.is_self_closing {
+                if tag.is_closing {
+                    pre_depth = pre_depth.saturating_sub(1);
+                } else {
+                    pre_depth = pre_depth.saturating_add(1);
+                }
+            }
+
+            pos += tag.end_offset;
+            if is_raw_text_open {
+                let end = raw_text_end(bytes, pos, tag.name).unwrap_or(bytes.len());
+                write_jsx_string_child(out, &body[pos..end], false);
+                // The raw text's line breaks are escaped inside the string child,
+                // so the generated JSX source is still on the opening tag's line.
+                at_line_start = false;
+                pos = end;
+            }
+            continue;
+        }
+
+        if at_line_start
+            && pre_depth == 0
+            && bytes[pos] == b'{'
+            && let Some(end) = standalone_expression_end(bytes, pos)
+        {
+            indent_component_line(out, true, pre_depth);
+            out.push_str(&body[pos..end]);
+            at_line_start = body[pos..end].ends_with(['\n', '\r']);
+            pos = end;
+            continue;
+        }
+
+        indent_component_line(out, at_line_start, pre_depth);
+        at_line_start = false;
+
+        match bytes[pos] {
+            b'{' => {
+                out.push_str("&#123;");
+                pos += 1;
+            }
+            b'}' => {
+                out.push_str("&#125;");
+                pos += 1;
+            }
+            _ => {
+                let ch = body[pos..]
+                    .chars()
+                    .next()
+                    .expect("position is inside the body");
+                out.push(ch);
+                pos += ch.len_utf8();
+            }
+        }
+    }
+}
+
+fn write_component_tag(out: &mut String, source: &str, tag: &TagInfo<'_>) {
+    if !tag.is_closing && !tag.is_self_closing && is_html_void_element(tag.name) {
+        let before_close = &source[..source.len() - 1];
+        out.push_str(before_close);
+        if before_close.ends_with(char::is_whitespace) {
+            out.push('/');
+        } else {
+            out.push_str(" /");
+        }
+        out.push('>');
+    } else {
+        out.push_str(source);
+    }
+}
+
+fn is_html_void_element(name: &str) -> bool {
+    matches!(
+        name,
+        "area"
+            | "base"
+            | "br"
+            | "col"
+            | "embed"
+            | "hr"
+            | "img"
+            | "input"
+            | "link"
+            | "meta"
+            | "param"
+            | "source"
+            | "track"
+            | "wbr"
+    )
+}
+
+fn indent_component_line(out: &mut String, at_line_start: bool, pre_depth: u32) {
+    if at_line_start && pre_depth == 0 {
+        out.push_str(COMPONENT_BODY_INDENT);
+    }
+}
+
+fn write_preformatted_text(out: &mut String, text: &str) {
+    write_jsx_string_child(out, text, true);
+}
+
+fn write_jsx_string_child(out: &mut String, text: &str, decode_entities: bool) {
+    let decoded = if decode_entities {
+        crate::render::decode_entities_commonmark(text)
+    } else {
+        std::borrow::Cow::Borrowed(text)
+    };
+    out.push_str("{\"");
+
+    for ch in decoded.chars() {
+        match ch {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            '\u{0008}' => out.push_str("\\b"),
+            '\u{000c}' => out.push_str("\\f"),
+            '\u{2028}' => out.push_str("\\u2028"),
+            '\u{2029}' => out.push_str("\\u2029"),
+            ch if ch.is_control() => {
+                let _ = write!(out, "\\u{:04x}", ch as u32);
+            }
+            _ => out.push(ch),
+        }
+    }
+
+    out.push_str("\"}");
+}
+
+fn raw_text_end(bytes: &[u8], start: usize, tag_name: &str) -> Option<usize> {
+    let mut pos = start;
+
+    while let Some(offset) = bytes[pos..].iter().position(|byte| *byte == b'<') {
+        pos += offset;
+        if let Some(tag) = parse_jsx_tag(&bytes[pos..])
+            && tag.is_closing
+            && tag.name.eq_ignore_ascii_case(tag_name)
+        {
+            return Some(pos);
+        }
+        pos += 1;
+    }
+
+    None
+}
+
+fn line_break_len(bytes: &[u8], pos: usize) -> Option<usize> {
+    match bytes[pos] {
+        b'\n' => Some(1),
+        b'\r' if bytes.get(pos + 1) == Some(&b'\n') => Some(2),
+        b'\r' => Some(1),
+        _ => None,
+    }
+}
+
+fn comment_end(bytes: &[u8], start: usize) -> Option<usize> {
+    bytes[start + 4..]
+        .windows(3)
+        .position(|window| window == b"-->")
+        .map(|offset| start + 4 + offset + 3)
+}
+
+fn standalone_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let relative_end = find_expression_end(&bytes[start..])?;
+    let end = start + relative_end;
+    let mut pos = end;
+
+    while pos < bytes.len() && bytes[pos] != b'\n' && bytes[pos] != b'\r' {
+        if !bytes[pos].is_ascii_whitespace() {
+            return None;
+        }
+        pos += 1;
+    }
+
+    Some(end)
 }
 
 /// Render MDX to HTML body with default options.
@@ -454,6 +684,126 @@ Content
 
         assert!(comp.contains("import A from 'a'"));
         assert!(comp.contains("<>\n    </>"));
+    }
+
+    #[test]
+    fn to_component_escapes_markdown_braces_but_preserves_mdx_expressions() {
+        let out = render(
+            "Use {braces}, `code {braces}`, and `{'{'}literal}`.\n\n{value ?? { nested: true }}\n",
+        );
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains(
+            "<p>Use &#123;braces&#125;, <code>code &#123;braces&#125;</code>, and <code>&#123;'&#123;'&#125;literal&#125;</code>.</p>"
+        ));
+        assert!(component.contains("      {value ?? { nested: true }}\n"));
+    }
+
+    #[test]
+    fn to_component_escapes_fenced_code_braces() {
+        let out = render("```rust\nfn main() { println!(\"hi\"); }\n```\n");
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains("{\"fn main() { println!(\\\"hi\\\"); }\\n\"}"));
+        assert!(!component.contains("fn main() { println!(\"hi\"); }"));
+    }
+
+    #[test]
+    fn to_component_drops_html_comments() {
+        let out = render("Before.\n\n<!-- comment with */ and {brace} -->\n\nAfter.\n");
+        assert!(out.body.contains("<!-- comment with */ and {brace} -->"));
+
+        let component = out.to_component("Page").unwrap();
+
+        assert!(!component.contains("<!--"));
+        assert!(!component.contains("comment with"));
+        assert!(component.contains("<p>Before.</p>"));
+        assert!(component.contains("<p>After.</p>"));
+    }
+
+    #[test]
+    fn to_component_preserves_preformatted_whitespace_and_crlf() {
+        let out = MdxOutput {
+            body: "<pre data-kind=\"example\"><code>first\r\n  second {value}\r\n</code></pre>\r\n<p>After</p>"
+                .to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains(
+            "      <pre data-kind=\"example\"><code>{\"first\\r\\n  second {value}\\r\\n\"}</code></pre>\r\n      <p>After</p>"
+        ));
+    }
+
+    #[test]
+    fn to_component_keeps_existing_entities_and_jsx_flow() {
+        let out = render(
+            "<Card value={{ nested: true }}>\n\nLiteral &#123; and {'{'}text}.\n\n</Card>\n",
+        );
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains("      <Card value={{ nested: true }}>"));
+        assert!(component.contains("Literal &#123; and &#123;'&#123;'&#125;text&#125;."));
+        assert!(component.contains("      </Card>"));
+    }
+
+    #[test]
+    fn to_component_keeps_escaped_comments_visible() {
+        let options = Options {
+            allow_html: false,
+            ..Options::default()
+        };
+        let out = render_with_options("<!-- visible -->\n", &options);
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains("&lt;!-- visible --&gt;"));
+    }
+
+    #[test]
+    fn to_component_preserves_entities_in_preformatted_text() {
+        let out = MdxOutput {
+            body: "<pre><code>&lt;&amp;&quot;&#123;&#125;&ngE;&#0;\n</code></pre>".to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains("<pre><code>{\"<&\\\"{}≧̸�\\n\"}</code></pre>"));
+    }
+
+    #[test]
+    fn to_component_preserves_raw_script_and_style_text() {
+        let out = MdxOutput {
+            body: "<script>const value = { text: \"<!-- &amp;\" };\n</script>\n<style>.x { color: red } /* <!-- */</style>"
+                .to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(
+            component
+                .contains("<script>{\"const value = { text: \\\"<!-- &amp;\\\" };\\n\"}</script>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<style>{\".x { color: red } /* <!-- */\"}</style>"),
+            "{component}"
+        );
+    }
+
+    #[test]
+    fn to_component_self_closes_html_void_elements() {
+        let out = render("Before.\n\n---\n\n![alt](image.png)\n\nline  \nbreak\n");
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains("<hr />"), "{component}");
+        assert!(
+            component.contains("<img src=\"image.png\" alt=\"alt\" />"),
+            "{component}"
+        );
+        assert!(component.contains("line<br />\n"), "{component}");
     }
 
     #[test]
