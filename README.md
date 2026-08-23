@@ -321,11 +321,11 @@ cargo add ferromark --features mdx
 ```rust
 use ferromark::mdx::render;
 
-let input = r#"import { Card } from './card'
-
----
+let input = r#"---
 title: Hello
 ---
+
+import { Card } from './card'
 
 # Hello World
 
