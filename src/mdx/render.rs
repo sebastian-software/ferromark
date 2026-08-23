@@ -259,7 +259,8 @@ fn write_component_body(out: &mut String, body: &str) {
             }
 
             // Bound malformed-comment recovery just like incomplete
-            // declarations so a later real element is not swallowed.
+            // declarations so a later real element is not swallowed. The
+            // ordinary text path below also encodes its braces and closing `>`.
             indent_component_line(out, at_line_start, pre_depth);
             out.push_str("&lt;");
             at_line_start = false;
@@ -274,8 +275,9 @@ fn write_component_body(out: &mut String, body: &str) {
             }
 
             // An incomplete or declaration-like near-match is not an HTML node.
-            // Escape only its opening delimiter so later real JSX/HTML nodes are
-            // still processed instead of truncating the rest of the component.
+            // Escape its opening delimiter and let the ordinary text path encode
+            // the remaining JSX-significant bytes. Later real JSX/HTML nodes are
+            // still processed instead of being swallowed by malformed recovery.
             indent_component_line(out, at_line_start, pre_depth);
             out.push_str("&lt;");
             at_line_start = false;
@@ -366,6 +368,10 @@ fn write_component_body(out: &mut String, body: &str) {
             }
             b'}' => {
                 out.push_str("&#125;");
+                pos += 1;
+            }
+            b'>' => {
+                out.push_str("&gt;");
                 pos += 1;
             }
             _ => {
@@ -1687,6 +1693,35 @@ Content
 
             assert!(component.contains("&lt;"), "{component}");
             assert!(component.contains("<p>after"), "{component}");
+        }
+    }
+
+    #[test]
+    fn to_component_escapes_complete_malformed_declaration_text() {
+        for line_break in ["\n", "\r\n"] {
+            for malformed in [
+                "<?bad>",
+                "<?bad data='value>still' {literal}>",
+                "<![not-cdata]>",
+                "<![not-cdata data=\"value>still\"]>",
+                "<!-- no terminator>",
+                "<!-- no terminator {literal}>",
+                "<!-near-match>",
+            ] {
+                let markdown = format!("{malformed}{line_break}{line_break}<p>after</p>");
+                let component = render(&markdown).to_component("Page").unwrap();
+
+                assert!(component.contains("&lt;"), "{malformed}: {component}");
+                assert!(component.contains("&gt;"), "{malformed}: {component}");
+                assert!(!component.contains("{literal}"), "{malformed}: {component}");
+                if malformed.contains("{literal}") {
+                    assert!(component.contains("&#123;literal&#125;"), "{component}");
+                }
+                assert!(
+                    component.contains("<p>after</p>"),
+                    "{malformed}: {component}"
+                );
+            }
         }
     }
 
