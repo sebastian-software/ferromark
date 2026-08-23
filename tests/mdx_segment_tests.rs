@@ -289,14 +289,152 @@ fn semicolonless_multiline_esm_stops_before_continuation_fence_owners() {
 }
 
 #[test]
-fn semicolonless_esm_does_not_stop_at_a_list_without_a_continuation_fence() {
+fn semicolonless_esm_stops_before_a_list_without_a_continuation_fence() {
     let input = "export { A }\n- ordinary list item\n";
 
-    // The owner boundary is parser-derived from a continuation fence, not a
-    // blanket rule for list markers. Keep the existing multiline ESM scan for
-    // an adjacent list that does not own such a fence.
-    assert_eq!(segment(input), vec![Segment::Esm(input)]);
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Esm("export { A }\n"),
+            Segment::Markdown("- ordinary list item\n"),
+        ]
+    );
     assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+}
+
+#[test]
+fn complete_semicolonless_esm_does_not_swallow_following_markdown() {
+    let input = "export const x = 1\nSome prose paragraph.\nMore prose.\n\nAfter blank.\n";
+
+    assert_eq!(
+        segment(input),
+        vec![
+            Segment::Esm("export const x = 1\n"),
+            Segment::Markdown("Some prose paragraph.\nMore prose.\n\nAfter blank.\n"),
+        ]
+    );
+    assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+
+    let output = render(input);
+    assert_eq!(output.esm, vec!["export const x = 1\n"]);
+    assert!(output.body.contains("Some prose paragraph."));
+    assert!(output.body.contains("More prose."));
+
+    let component = output.to_component("Page").unwrap();
+    assert!(component.contains("<p>Some prose paragraph."));
+    assert!(!component.starts_with("export const x = 1\nSome prose"));
+}
+
+#[test]
+fn complete_semicolonless_esm_preserves_markdown_and_mdx_boundaries() {
+    for (following, expected) in [
+        ("Ordinary prose.\n", Segment::Markdown("Ordinary prose.\n")),
+        ("- list item\n", Segment::Markdown("- list item\n")),
+        ("> quote\n", Segment::Markdown("> quote\n")),
+        (
+            "![diagram](diagram.png)\n",
+            Segment::Markdown("![diagram](diagram.png)\n"),
+        ),
+        ("# Heading\n", Segment::Markdown("# Heading\n")),
+        ("<Card />\n", Segment::JsxBlockSelfClose("<Card />\n")),
+        ("{value}\n", Segment::Expression("{value}\n")),
+    ] {
+        let input = format!("export const x = 1\n{following}");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm("export const x = 1\n"), expected]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+    }
+
+    let crlf = "export const x = 1\r\nOrdinary prose.\r\n";
+    assert_eq!(
+        segment(crlf),
+        vec![
+            Segment::Esm("export const x = 1\r\n"),
+            Segment::Markdown("Ordinary prose.\r\n"),
+        ]
+    );
+
+    let fence = "export const x = 1\n```jsx\n<Card />\n```\n";
+    assert_eq!(
+        segment(fence),
+        vec![
+            Segment::Esm("export const x = 1\n"),
+            Segment::Markdown("```jsx\n<Card />\n```\n"),
+        ]
+    );
+}
+
+#[test]
+fn multiline_esm_keeps_lexically_required_continuations() {
+    for (input, esm) in [
+        (
+            "import {\n  A as B,\n} from \"module\"\nMarkdown.\n",
+            "import {\n  A as B,\n} from \"module\"\n",
+        ),
+        (
+            "import Widget\nfrom \"module\"\nMarkdown.\n",
+            "import Widget\nfrom \"module\"\n",
+        ),
+        (
+            "export {\n  A as B,\n}\nfrom \"module\"\nMarkdown.\n",
+            "export {\n  A as B,\n}\nfrom \"module\"\n",
+        ),
+        (
+            "export const value = {\n  title: \"brace } in a string\",\n  template: `value: ${name}`,\n  // } in a comment\n}\nMarkdown.\n",
+            "export const value = {\n  title: \"brace } in a string\",\n  template: `value: ${name}`,\n  // } in a comment\n}\n",
+        ),
+        (
+            "export const total = 1 +\n  2\nMarkdown.\n",
+            "export const total = 1 +\n  2\n",
+        ),
+        (
+            "export default\nComponent\nMarkdown.\n",
+            "export default\nComponent\n",
+        ),
+        (
+            "export const note = /* comment\n */ `value: ${name}`\nMarkdown.\n",
+            "export const note = /* comment\n */ `value: ${name}`\n",
+        ),
+    ] {
+        assert_eq!(
+            segment(input),
+            vec![Segment::Esm(esm), Segment::Markdown(&input[esm.len()..])]
+        );
+        assert_eq!(segment_strict(input).unwrap(), segment_spanned(input));
+    }
+}
+
+#[test]
+fn incomplete_esm_falls_back_to_markdown_and_is_strictly_diagnosed() {
+    for input in [
+        "import Widget\nOrdinary prose.\n",
+        "export default\nSome prose.\n",
+        "export const item = {\n# Heading\n",
+        "export const total = 1 +\n- list item\n",
+    ] {
+        assert_eq!(segment(input), vec![Segment::Markdown(input)]);
+        let diagnostics = segment_strict(input).unwrap_err();
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::IncompleteEsm);
+    }
+}
+
+#[test]
+fn long_multiline_esm_scan_remains_single_segment() {
+    let mut input = String::from("export {\n");
+    for index in 0..10_000 {
+        input.push_str(&format!("  value_{index},\n"));
+    }
+    input.push_str("} from \"module\"\nMarkdown.\n");
+
+    let segments = segment(&input);
+    assert_eq!(segments.len(), 2);
+    assert!(matches!(segments[0], Segment::Esm(_)));
+    assert_eq!(
+        segments[0].as_str().len() + segments[1].as_str().len(),
+        input.len()
+    );
 }
 
 #[test]

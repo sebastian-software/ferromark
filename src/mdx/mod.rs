@@ -69,8 +69,10 @@
 //! the JavaScript syntax. We use heuristics: `import`/`export` at column 0,
 //! brace-depth counting for expressions. This means:
 //! - We won't reject syntactically invalid JS (e.g. `export const = ;`)
-//! - Multi-line ESM uses blank-line termination, not parser-driven boundaries
-//! - Exotic edge cases (e.g. `export var a = 1\nvar b`) may be grouped differently
+//! - Multi-line ESM follows lexical continuation boundaries (delimiters,
+//!   strings, comments, templates, and module clauses), not a full JS parser
+//! - Ambiguous or incomplete ESM falls back to Markdown in permissive mode and
+//!   is diagnosed by [`segment_strict`]
 //!
 //! ## No Markdown syntax modifications
 //!
@@ -182,6 +184,8 @@ pub enum MdxDiagnosticCode {
     UnclosedJsxTag,
     /// An ESM block is indented or interrupts a Markdown paragraph.
     InvalidEsmPosition,
+    /// An ESM declaration needs a continuation that could not be safely separated from Markdown.
+    IncompleteEsm,
 }
 
 /// A structural MDX diagnostic returned by [`segment_strict`].
