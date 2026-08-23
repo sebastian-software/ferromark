@@ -1,4 +1,24 @@
+use rustc_hash::FxHashMap;
+
+#[cfg(test)]
+use std::cell::Cell;
+
 const UNTERMINATED_EXPRESSION: usize = usize::MAX;
+
+#[cfg(test)]
+thread_local! {
+    static CACHE_BUILD_COUNT: Cell<usize> = const { Cell::new(0) };
+}
+
+#[cfg(test)]
+pub(crate) fn reset_cache_build_count() {
+    CACHE_BUILD_COUNT.with(|count| count.set(0));
+}
+
+#[cfg(test)]
+pub(crate) fn cache_build_count() -> usize {
+    CACHE_BUILD_COUNT.with(Cell::get)
+}
 
 /// Cached expression ends for a single input buffer.
 ///
@@ -6,29 +26,69 @@ const UNTERMINATED_EXPRESSION: usize = usize::MAX;
 /// brace in normal expression syntax, its cached result is therefore already
 /// available: a completed nested expression can be skipped as one unit, while
 /// an unterminated nested expression proves that the current one cannot close.
+/// Sparse documents store only opening braces; dense documents use a compact
+/// direct index once that is smaller than a hash table.
 pub(crate) struct ExpressionEnds {
-    ends: Vec<usize>,
+    ends: ExpressionEndStorage,
     #[cfg(test)]
     scanned_bytes: usize,
 }
 
+enum ExpressionEndStorage {
+    Sparse(FxHashMap<usize, usize>),
+    Dense(Vec<usize>),
+}
+
+impl ExpressionEndStorage {
+    fn new(input_len: usize, brace_count: usize) -> Self {
+        // A direct index is more compact than a hash table once openings are
+        // dense. Otherwise, retain only the positions that can be queried.
+        if brace_count > input_len / 4 {
+            Self::Dense(vec![UNTERMINATED_EXPRESSION; input_len])
+        } else {
+            Self::Sparse(FxHashMap::default())
+        }
+    }
+
+    fn insert(&mut self, start: usize, end: usize) {
+        match self {
+            Self::Sparse(ends) => {
+                ends.insert(start, end);
+            }
+            Self::Dense(ends) => ends[start] = end,
+        }
+    }
+
+    fn get(&self, start: usize) -> usize {
+        match self {
+            Self::Sparse(ends) => ends[&start],
+            Self::Dense(ends) => ends[start],
+        }
+    }
+
+    #[cfg(test)]
+    fn entry_count(&self) -> usize {
+        match self {
+            Self::Sparse(ends) => ends.len(),
+            Self::Dense(ends) => ends.len(),
+        }
+    }
+}
+
 impl ExpressionEnds {
     pub(crate) fn new(bytes: &[u8]) -> Self {
-        if !bytes.contains(&b'{') {
-            return Self {
-                ends: Vec::new(),
-                #[cfg(test)]
-                scanned_bytes: 0,
-            };
-        }
+        #[cfg(test)]
+        CACHE_BUILD_COUNT.with(|count| count.set(count.get() + 1));
 
-        let mut ends = vec![UNTERMINATED_EXPRESSION; bytes.len()];
+        let brace_count = bytes.iter().filter(|&&byte| byte == b'{').count();
+        let mut ends = ExpressionEndStorage::new(bytes.len(), brace_count);
         let mut work = ScanWork::default();
 
         for start in (0..bytes.len()).rev() {
             if bytes[start] == b'{' {
-                ends[start] = find_expression_end_from(bytes, start, Some(&ends), &mut work)
+                let end = find_expression_end_from(bytes, start, Some(&ends), &mut work)
                     .unwrap_or(UNTERMINATED_EXPRESSION);
+                ends.insert(start, end);
             }
         }
 
@@ -41,15 +101,18 @@ impl ExpressionEnds {
 
     /// Return the absolute offset after the matching `}` for `start`.
     pub(crate) fn end_at(&self, start: usize) -> Option<usize> {
-        self.ends
-            .get(start)
-            .copied()
-            .filter(|end| *end != UNTERMINATED_EXPRESSION)
+        let end = self.ends.get(start);
+        (end != UNTERMINATED_EXPRESSION).then_some(end)
     }
 
     #[cfg(test)]
     fn scanned_bytes(&self) -> usize {
         self.scanned_bytes
+    }
+
+    #[cfg(test)]
+    fn entry_count(&self) -> usize {
+        self.ends.entry_count()
     }
 }
 
@@ -89,7 +152,7 @@ pub fn find_expression_end(bytes: &[u8]) -> Option<usize> {
 fn find_expression_end_from(
     bytes: &[u8],
     start: usize,
-    cached_ends: Option<&[usize]>,
+    cached_ends: Option<&ExpressionEndStorage>,
     work: &mut ScanWork,
 ) -> Option<usize> {
     debug_assert!(bytes.get(start) == Some(&b'{'));
@@ -102,7 +165,7 @@ fn find_expression_end_from(
         match bytes[pos] {
             b'{' => {
                 if let Some(cached_ends) = cached_ends {
-                    let end = cached_ends[pos];
+                    let end = cached_ends.get(pos);
                     if end == UNTERMINATED_EXPRESSION {
                         return None;
                     }
@@ -182,7 +245,7 @@ fn skip_single_quoted(bytes: &[u8], start: usize, work: &mut ScanWork) -> Option
 fn skip_template_literal(
     bytes: &[u8],
     start: usize,
-    cached_ends: Option<&[usize]>,
+    cached_ends: Option<&ExpressionEndStorage>,
     work: &mut ScanWork,
 ) -> Option<usize> {
     let len = bytes.len();
@@ -196,7 +259,7 @@ fn skip_template_literal(
                 // Nested expression inside template literal
                 let expression_start = pos + 1;
                 if let Some(cached_ends) = cached_ends {
-                    let end = cached_ends[expression_start];
+                    let end = cached_ends.get(expression_start);
                     if end == UNTERMINATED_EXPRESSION {
                         return None;
                     }
@@ -374,6 +437,19 @@ mod tests {
             "cached JSX attribute scans visited {} bytes for a {} byte input",
             ends.scanned_bytes(),
             input.len(),
+        );
+    }
+
+    #[test]
+    fn cached_ends_store_only_sparse_opening_braces() {
+        let mut input = "plain Markdown without expressions\n".repeat(32_768);
+        input.push_str("{value}\n");
+        let ends = ExpressionEnds::new(input.as_bytes());
+
+        assert_eq!(ends.entry_count(), 1);
+        assert_eq!(
+            ends.end_at(input.len() - "{value}\n".len()),
+            Some(input.len() - 1)
         );
     }
 }

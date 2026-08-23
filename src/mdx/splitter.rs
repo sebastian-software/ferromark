@@ -13,6 +13,15 @@ use crate::{BlockEvent, BlockParser, CodeBlockKind};
 /// The returned `Vec<Segment>` covers the entire input (no bytes are dropped).
 pub fn split(input: &str) -> Vec<Segment<'_>> {
     let bytes = input.as_bytes();
+    let expression_ends = ExpressionEnds::new(bytes);
+    split_with_expression_ends(input, &expression_ends)
+}
+
+pub(crate) fn split_with_expression_ends<'a>(
+    input: &'a str,
+    expression_ends: &ExpressionEnds,
+) -> Vec<Segment<'a>> {
+    let bytes = input.as_bytes();
     let len = bytes.len();
     let mut segments: Vec<Segment<'_>> = Vec::new();
     let mut pos = 0;
@@ -23,7 +32,6 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
     let mut in_paragraph = false;
     let mut open_fence: Option<CodeFence> = None;
     let container_fences = container_fence_lines(bytes);
-    let expression_ends = ExpressionEnds::new(bytes);
 
     while pos < len {
         let line_start = pos;
@@ -99,7 +107,7 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
             && first_non_ws + 1 < len
             && bytes[first_non_ws + 1] == b'/'
             && let Some(tag_info) =
-                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, &expression_ends)
+                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, expression_ends)
             && tag_info.is_closing
         {
             let end = first_non_ws + tag_info.end_offset;
@@ -156,7 +164,7 @@ pub fn split(input: &str) -> Vec<Segment<'_>> {
             && first_non_ws + 1 < len
             && (bytes[first_non_ws + 1].is_ascii_alphabetic() || bytes[first_non_ws + 1] == b'>')
             && let Some(tag_info) =
-                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, &expression_ends)
+                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, expression_ends)
         {
             let end = first_non_ws + tag_info.end_offset;
             // Flow JSX requires no trailing non-whitespace content on the line

@@ -4,7 +4,9 @@ use super::splitter::{
     CodeFence, EsmScan, container_fence_lines, is_blank_line, is_esm_start, opening_code_fence,
     scan_esm,
 };
-use super::{MdxDiagnostic, MdxDiagnosticCode, SpannedSegment, segment_spanned};
+use super::{
+    MdxDiagnostic, MdxDiagnosticCode, SpannedSegment, segment_spanned_with_expression_ends,
+};
 use crate::Range;
 
 const UNTERMINATED_EXPRESSION: &str = "expected `}` to close this flow expression";
@@ -25,15 +27,19 @@ struct OpenTag {
 }
 
 pub(super) fn segment_strict(input: &str) -> Result<Vec<SpannedSegment<'_>>, Vec<MdxDiagnostic>> {
-    let diagnostics = validate(input);
+    let expression_ends = ExpressionEnds::new(input.as_bytes());
+    let diagnostics = validate(input, &expression_ends);
     if diagnostics.is_empty() {
-        Ok(segment_spanned(input))
+        Ok(segment_spanned_with_expression_ends(
+            input,
+            &expression_ends,
+        ))
     } else {
         Err(diagnostics)
     }
 }
 
-fn validate(input: &str) -> Vec<MdxDiagnostic> {
+fn validate(input: &str, expression_ends: &ExpressionEnds) -> Vec<MdxDiagnostic> {
     let bytes = input.as_bytes();
     let len = bytes.len();
     let mut diagnostics = Vec::new();
@@ -42,7 +48,6 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
     let mut pos = 0;
     let mut open_fence: Option<CodeFence> = None;
     let container_fences = container_fence_lines(bytes);
-    let expression_ends = ExpressionEnds::new(bytes);
 
     while pos < len {
         let line_start = pos;
@@ -158,7 +163,7 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
 
         if is_jsx_candidate(bytes, first_non_ws) {
             if let Some(tag) =
-                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, &expression_ends)
+                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, expression_ends)
             {
                 let end = first_non_ws + tag.end_offset;
                 if !has_trailing_content(bytes, end) {
@@ -442,4 +447,20 @@ fn consume_trailing_newline(bytes: &[u8], mut pos: usize) -> usize {
         pos += 1;
     }
     pos
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mdx::expr::{cache_build_count, reset_cache_build_count};
+
+    #[test]
+    fn successful_strict_segmentation_reuses_its_expression_cache() {
+        let input = "{value}\n";
+        reset_cache_build_count();
+
+        let segments = segment_strict(input).unwrap();
+        assert_eq!(segments.len(), 1);
+        assert_eq!(cache_build_count(), 1);
+    }
 }
