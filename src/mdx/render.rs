@@ -1,4 +1,4 @@
-use std::fmt::Write;
+use std::{collections::HashMap, fmt::Write};
 
 use crate::{Options, RenderPolicy};
 
@@ -229,6 +229,9 @@ fn write_component_body(out: &mut String, body: &str) {
     let mut at_line_start = true;
     let mut pre_depth = 0_u32;
     let mut html_openings = Vec::new();
+    // A crossed owner is balanced at the first mismatched closer. Remember that
+    // its eventual source closer must be consumed if no newer live owner claims it.
+    let mut synthetic_closings = HashMap::new();
 
     while pos < bytes.len() {
         if pre_depth > 0 && bytes[pos] != b'<' {
@@ -303,6 +306,7 @@ fn write_component_body(out: &mut String, body: &str) {
                     &body[pos..pos + tag.end_offset],
                     &tag,
                     &mut html_openings,
+                    &mut synthetic_closings,
                 )
             };
             at_line_start = false;
@@ -381,6 +385,7 @@ fn write_component_tag<'a>(
     source: &str,
     tag: &TagInfo<'a>,
     html_openings: &mut Vec<(&'static str, Option<&'a str>)>,
+    synthetic_closings: &mut HashMap<(&'static str, bool), usize>,
 ) -> ComponentTagEffect {
     if tag.is_closing {
         if let Some(canonical_name) = html_element_ignore_ascii_case(tag.name) {
@@ -410,6 +415,9 @@ fn write_component_tag<'a>(
                         .pop()
                         .expect("an intervening HTML opening was just counted");
                     write_synthetic_closing_tag(out, component_name.unwrap_or(intervening_name));
+                    *synthetic_closings
+                        .entry((intervening_name, component_name.is_some()))
+                        .or_default() += 1;
                     closed_pre_count +=
                         u32::from(component_name.is_none() && intervening_name == "pre");
                 }
@@ -423,6 +431,25 @@ fn write_component_tag<'a>(
                 } else {
                     ComponentTagEffect::None
                 };
+            }
+            let exact_key = (canonical_name, component_syntax);
+            let fallback_key = (canonical_name, !component_syntax);
+            let synthetic_key = synthetic_closings
+                .get(&exact_key)
+                .is_some_and(|count| *count > 0)
+                .then_some(exact_key)
+                .or_else(|| {
+                    synthetic_closings
+                        .get(&fallback_key)
+                        .is_some_and(|count| *count > 0)
+                        .then_some(fallback_key)
+                });
+            if let Some(synthetic_key) = synthetic_key {
+                let count = synthetic_closings
+                    .get_mut(&synthetic_key)
+                    .expect("a synthetic closing was just located");
+                *count -= 1;
+                return ComponentTagEffect::None;
             }
             if HTML_VOID_ELEMENTS.contains(&canonical_name) {
                 return ComponentTagEffect::None;
@@ -1870,6 +1897,46 @@ Content
             component.contains("<Pre><pre>{\"first\\n  second {value}\\n\"}</pre></Pre>"),
             "{component}"
         );
+    }
+
+    #[test]
+    fn to_component_drops_source_closers_for_synthetically_closed_owners() {
+        let cases = [
+            ("<Div><div>a</Div></div>", "<Div><div>a</div></Div>"),
+            ("<div><Div>a</div></Div>", "<div><Div>a</Div></div>"),
+            (
+                "<Section><div><span>a</Section></span></div>",
+                "<Section><div><span>a</span></div></Section>",
+            ),
+            (
+                "<Div><div>a</Div><div>b</div></div>",
+                "<Div><div>a</div></Div><div>b</div>",
+            ),
+            ("<Div><DIV>a</Div></DIV>", "<Div><div>a</div></Div>"),
+        ];
+
+        for (body, expected) in cases {
+            let out = MdxOutput {
+                body: body.to_owned(),
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert!(component.contains(expected), "{body}: {component}");
+            assert_eq!(
+                component.matches("</div>").count(),
+                expected.matches("</div>").count()
+            );
+            assert_eq!(
+                component.matches("</Div>").count(),
+                expected.matches("</Div>").count()
+            );
+            assert_eq!(
+                component.matches("</span>").count(),
+                expected.matches("</span>").count()
+            );
+        }
     }
 
     #[test]
