@@ -211,8 +211,7 @@ fn write_component_body(out: &mut String, body: &str) {
     let mut pos = 0;
     let mut at_line_start = true;
     let mut pre_depth = 0_u32;
-    let mut void_openings = [0_usize; HTML_VOID_ELEMENTS.len()];
-    let mut void_named_component_openings = Vec::new();
+    let mut void_component_openings = Vec::new();
 
     while pos < bytes.len() {
         if pre_depth > 0 && bytes[pos] != b'<' {
@@ -275,8 +274,7 @@ fn write_component_body(out: &mut String, body: &str) {
                     out,
                     &body[pos..pos + tag.end_offset],
                     &tag,
-                    &mut void_openings,
-                    &mut void_named_component_openings,
+                    &mut void_component_openings,
                 );
             }
             at_line_start = false;
@@ -297,7 +295,7 @@ fn write_component_body(out: &mut String, body: &str) {
                         &body[pos..text_end],
                         matches!(text_kind, HtmlTextKind::Rcdata),
                     );
-                    write_html_text_closing_tag(out, &body[text_end..tag_end], canonical_name);
+                    write_closing_tag(out, &body[text_end..tag_end], canonical_name);
                     pos = tag_end;
                 } else {
                     write_jsx_string_child(
@@ -354,33 +352,34 @@ fn write_component_tag<'a>(
     out: &mut String,
     source: &str,
     tag: &TagInfo<'a>,
-    void_openings: &mut [usize; HTML_VOID_ELEMENTS.len()],
-    void_named_component_openings: &mut Vec<&'a str>,
+    void_component_openings: &mut Vec<(usize, &'a str)>,
 ) {
     if tag.is_closing {
-        if void_named_component_openings.last() == Some(&tag.name) {
-            void_named_component_openings.pop();
-            out.push_str(source);
+        if let Some(index) = html_void_element_index_ignore_ascii_case(tag.name) {
+            if void_component_openings
+                .last()
+                .is_some_and(|(opening_index, _)| *opening_index == index)
+            {
+                let (_, opening_name) = void_component_openings
+                    .pop()
+                    .expect("last component opening was just checked");
+                write_closing_tag(out, source, opening_name);
+            }
             return;
         }
-
-        if let Some((index, _)) = html_void_element(tag.name) {
-            void_openings[index] = void_openings[index].saturating_sub(1);
-            return;
-        }
-
         out.push_str(source);
         return;
     }
 
-    if let Some((index, canonical_name)) = html_void_element(tag.name) {
-        void_openings[index] += 1;
+    if let Some((_, canonical_name)) = html_void_element(tag.name) {
         write_html_void_opening_tag(out, source, tag.name, canonical_name, tag.is_self_closing);
         return;
     }
 
-    if !tag.is_self_closing && html_void_element_index_ignore_ascii_case(tag.name).is_some() {
-        void_named_component_openings.push(tag.name);
+    if !tag.is_self_closing
+        && let Some(index) = html_void_element_index_ignore_ascii_case(tag.name)
+    {
+        void_component_openings.push((index, tag.name));
     }
     out.push_str(source);
 }
@@ -503,7 +502,7 @@ fn write_jsx_string_child(out: &mut String, text: &str, decode_entities: bool) {
     out.push_str("\"}");
 }
 
-fn write_html_text_closing_tag(out: &mut String, source: &str, opening_name: &str) {
+fn write_closing_tag(out: &mut String, source: &str, opening_name: &str) {
     debug_assert!(source.starts_with("</"));
     debug_assert!(source.len() >= opening_name.len() + 2);
     out.push_str("</");
@@ -579,10 +578,9 @@ fn declaration_end(bytes: &[u8], start: usize) -> Option<usize> {
         return None;
     }
 
-    bytes[start + 2..]
-        .iter()
-        .position(|byte| *byte == b'>')
-        .map(|offset| start + 2 + offset + 1)
+    let tail = &bytes[start + 2..];
+    let boundary = tail.iter().position(|byte| matches!(byte, b'<' | b'>'))?;
+    (tail[boundary] == b'>').then_some(start + 2 + boundary + 1)
 }
 
 fn standalone_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
@@ -1035,6 +1033,53 @@ Content
     }
 
     #[test]
+    fn to_component_pairs_void_named_components_across_closing_case() {
+        let mut body = String::new();
+        for name in HTML_VOID_ELEMENTS {
+            let pascal = format!("{}{}", name[..1].to_ascii_uppercase(), &name[1..]);
+            let upper = name.to_ascii_uppercase();
+            let _ = write!(
+                body,
+                "<{pascal} data-kind=\"component\" ></{upper}   ><{upper} data-kind=\"intrinsic\"></{pascal}>"
+            );
+        }
+        let out = MdxOutput {
+            body: body.clone(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert_eq!(out.body, body);
+        for name in HTML_VOID_ELEMENTS {
+            let pascal = format!("{}{}", name[..1].to_ascii_uppercase(), &name[1..]);
+            assert!(
+                component.contains(&format!(
+                    "<{pascal} data-kind=\"component\" ></{pascal}   >"
+                )),
+                "component pair for {name:?} was not retained: {component}"
+            );
+            assert!(
+                component.contains(&format!("<{name} data-kind=\"intrinsic\" />")),
+                "intrinsic pair for {name:?} was not normalized: {component}"
+            );
+        }
+    }
+
+    #[test]
+    fn to_component_leaves_void_near_matches_and_custom_elements_unchanged() {
+        let body = "<Brave data-kind=\"component\"></Brave><BR-X></BR-X><br-x></br-x><brr></BRR><ImgExtra></ImgExtra>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(component.contains(body), "{component}");
+    }
+
+    #[test]
     fn to_component_distinguishes_html_void_names_from_pascal_case_components() {
         let body = "<bR data-kind=\"mixed\"></BR><iMg src=\"mixed.png\"></IMG><Br data-kind=\"component\"></Br><Img src=\"component.png\"></Img><BRAVO></BRAVO><BR-X></BR-X><custom-img></custom-img>";
         let out = MdxOutput {
@@ -1213,6 +1258,55 @@ Content
             rendered_component.contains("<p>after node</p>"),
             "{rendered_component}"
         );
+    }
+
+    #[test]
+    fn to_component_does_not_extend_incomplete_declarations_into_following_tags() {
+        for line_break in ["\n", "\r\n"] {
+            let body = format!(
+                "<!DOCTYPE html{line_break}<p>after doctype</p>{line_break}<?pi incomplete{line_break}<p>after pi</p>{line_break}<![CDATA[incomplete{line_break}<p>after cdata</p>"
+            );
+            let out = MdxOutput {
+                body: body.clone(),
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert_eq!(out.body, body);
+            for declaration in ["&lt;!DOCTYPE html", "&lt;?pi incomplete", "&lt;![CDATA["] {
+                assert!(component.contains(declaration), "{component}");
+            }
+            for paragraph in [
+                "<p>after doctype</p>",
+                "<p>after pi</p>",
+                "<p>after cdata</p>",
+            ] {
+                assert!(component.contains(paragraph), "{component}");
+            }
+        }
+    }
+
+    #[test]
+    fn to_component_omits_closed_multiline_declarations_at_their_own_boundary() {
+        let body = "<!DOCTYPE\nhtml>\n<p>after doctype</p>\n<?pi\nvalue?>\n<p>after pi</p>\n<![CDATA[ignored\n<p>inside cdata</p>]]>\n<p>after cdata</p>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        for omitted in ["DOCTYPE", "<?pi", "inside cdata", "CDATA"] {
+            assert!(!component.contains(omitted), "{component}");
+        }
+        for paragraph in [
+            "<p>after doctype</p>",
+            "<p>after pi</p>",
+            "<p>after cdata</p>",
+        ] {
+            assert!(component.contains(paragraph), "{component}");
+        }
     }
 
     #[test]
