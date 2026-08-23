@@ -68,6 +68,7 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Cli, String> {
     }
     if trusted {
         cli.options.render_policy = RenderPolicy::Trusted;
+        cli.options.disallowed_raw_html = false;
     }
     if front_matter {
         cli.options.front_matter = true;
@@ -139,5 +140,31 @@ mod tests {
         }
         let cli = parse_args(["--", "-draft.md"].map(String::from)).unwrap();
         assert_eq!(cli.input.unwrap(), PathBuf::from("-draft.md"));
+    }
+
+    #[test]
+    fn trusted_mode_preserves_raw_html_independently_of_preset_order() {
+        for args in [
+            ["--trusted"].as_slice(),
+            ["--gfm", "--trusted"].as_slice(),
+            ["--trusted", "--gfm"].as_slice(),
+            ["--commonmark", "--trusted"].as_slice(),
+            ["--trusted", "--commonmark"].as_slice(),
+        ] {
+            let cli = parse_args(args.iter().map(|arg| (*arg).to_owned())).unwrap();
+            assert_eq!(cli.options.render_policy, RenderPolicy::Trusted);
+            assert!(!cli.options.disallowed_raw_html);
+            let html = to_html_with_options("<script>x()</script><style>p{}</style>", &cli.options);
+            assert_eq!(html, "<script>x()</script><style>p{}</style>");
+        }
+    }
+
+    #[test]
+    fn default_cli_mode_remains_untrusted() {
+        let cli = parse_args(std::iter::empty()).unwrap();
+        let html =
+            to_html_with_options("<script>x()</script>[x](javascript:alert(1))", &cli.options);
+        assert!(html.contains("&lt;script&gt;"), "{html}");
+        assert!(!html.contains("href=\"javascript:"), "{html}");
     }
 }

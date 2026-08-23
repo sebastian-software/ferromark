@@ -215,6 +215,8 @@ blocks remain available.
 or standard input and writes HTML to standard output. Use `ferromark --help` for
 the complete interface. `--gfm`, `--commonmark`, and `--minimal` select syntax
 presets; output remains safely untrusted unless `--trusted` is explicitly set.
+`--trusted` also disables GFM's disallowed-raw-HTML filter, so raw HTML parsed
+by the selected syntax preset is preserved; use it only for Markdown you trust.
 
 ```sh
 ferromark --gfm README.md -o README.html
