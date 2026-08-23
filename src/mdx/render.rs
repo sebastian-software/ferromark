@@ -578,9 +578,59 @@ fn declaration_end(bytes: &[u8], start: usize) -> Option<usize> {
         return None;
     }
 
-    let tail = &bytes[start + 2..];
-    let boundary = tail.iter().position(|byte| matches!(byte, b'<' | b'>'))?;
-    (tail[boundary] == b'>').then_some(start + 2 + boundary + 1)
+    generic_declaration_end(bytes, start)
+}
+
+fn generic_declaration_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let mut pos = start + 2;
+    let mut bracket_depth = 0_u32;
+    let mut quote = None;
+
+    while pos < bytes.len() {
+        if let Some(delimiter) = quote {
+            if bytes[pos] == delimiter {
+                quote = None;
+            } else if bytes[pos] == b'<' && bracket_depth == 0 {
+                // A new top-level tag cannot belong to an unclosed declaration
+                // literal. Bound recovery here so a later quote and `>` cannot
+                // make the following node look like the declaration's suffix.
+                return None;
+            }
+            pos += 1;
+            continue;
+        }
+
+        if bracket_depth > 0 && bytes[pos..].starts_with(b"<!--") {
+            pos = comment_end(bytes, pos)?;
+            continue;
+        }
+        if bracket_depth > 0 && bytes[pos..].starts_with(b"<?") {
+            pos = bytes[pos + 2..]
+                .windows(2)
+                .position(|window| window == b"?>")
+                .map(|offset| pos + 2 + offset + 2)?;
+            continue;
+        }
+
+        match bytes[pos] {
+            b'\'' | b'"' => quote = Some(bytes[pos]),
+            b'[' => bracket_depth = bracket_depth.checked_add(1)?,
+            b']' if bracket_depth > 0 => bracket_depth -= 1,
+            b'<' => {
+                // Internal subsets contain nested declarations and processing
+                // instructions. An ordinary tag is instead the recovery
+                // boundary for an incomplete outer declaration.
+                if bracket_depth == 0 || !matches!(bytes.get(pos + 1), Some(b'!' | b'?')) {
+                    return None;
+                }
+            }
+            b'>' if bracket_depth == 0 => return Some(pos + 1),
+            _ => {}
+        }
+        pos += 1;
+    }
+
+    None
 }
 
 fn standalone_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
@@ -1231,7 +1281,7 @@ Content
         let component = out.to_component("Page").unwrap();
 
         assert_eq!(out.body, body);
-        assert!(!component.contains("DOCTYPE"), "{component}");
+        assert!(component.contains("&lt;!DOCTYPE"), "{component}");
         assert!(!component.contains("<?pi"), "{component}");
         assert!(!component.contains("CDATA"), "{component}");
         for trailing in ["after doctype", "after pi", "after cdata"] {
@@ -1306,6 +1356,68 @@ Content
             "<p>after cdata</p>",
         ] {
             assert!(component.contains(paragraph), "{component}");
+        }
+    }
+
+    #[test]
+    fn to_component_omits_complete_doctype_internal_subsets() {
+        for line_break in ["\n", "\r\n"] {
+            let body = format!(
+                "<!DOCTYPE html [{line_break}<!ENTITY example \"value>still\">{line_break}<!ENTITY markup '<p data-kind=\"literal\">text</p>'>{line_break}<!-- subset ] > comment -->{line_break}<?subset ] > data?>{line_break}]>{line_break}<p>after subset</p>{line_break}<!DOCTYPE root [<![INCLUDE[<!ENTITY nested \"[value]>\">]]>]><p>after nested subset</p>{line_break}<!DOCTYPE html SYSTEM \"value>still\"><p>after system literal</p>"
+            );
+            let out = MdxOutput {
+                body: body.clone(),
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert_eq!(out.body, body);
+            for omitted in [
+                "DOCTYPE",
+                "ENTITY",
+                "data-kind=\"literal\"",
+                "subset ] > comment",
+                "subset ] > data",
+                "INCLUDE",
+                "value>still",
+            ] {
+                assert!(!component.contains(omitted), "{component}");
+            }
+            for paragraph in [
+                "<p>after subset</p>",
+                "<p>after nested subset</p>",
+                "<p>after system literal</p>",
+            ] {
+                assert!(component.contains(paragraph), "{component}");
+            }
+        }
+    }
+
+    #[test]
+    fn to_component_bounds_incomplete_doctype_internal_subsets() {
+        for body in [
+            "<!DOCTYPE html [<!ENTITY example \"value\">\n<p>after missing subset close</p>",
+            "<!DOCTYPE html [<!ENTITY example \"unterminated\n<p>after unterminated entity</p>",
+            "<!DOCTYPE html SYSTEM \"unterminated\n<p data-kind='next'>after system literal</p>",
+            "<!DOCTYPE html [\r\n<section>after CRLF subset</section>",
+        ] {
+            let out = MdxOutput {
+                body: body.to_owned(),
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert!(component.contains("&lt;!DOCTYPE"), "{component}");
+            assert!(
+                component.contains("after ") || component.contains("after CRLF"),
+                "{component}"
+            );
+            assert!(
+                component.contains("<p") || component.contains("<section>"),
+                "{component}"
+            );
         }
     }
 
