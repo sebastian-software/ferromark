@@ -36,8 +36,9 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 
 ### Input-size limit
 
-Source ranges use compact `u32` byte offsets, so a document may contain at
-most 4,294,967,295 bytes. Use the fallible `try_*` entry points when input size
+Source positions use compact `u32` values, so a document may contain at most
+4,294,967,294 bytes. This keeps both byte offsets and one-based line/column
+values representable. Use the fallible `try_*` entry points when input size
 is not already bounded:
 
 ```rust

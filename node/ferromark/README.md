@@ -10,8 +10,8 @@ const html = toHtml('# Hello')
 
 ## Input size limit
 
-ferromark source ranges use `u32` byte offsets, so input is limited to
-4,294,967,295 bytes. Calls above that limit throw an `InvalidArg` native error
+ferromark source positions use compact `u32` values, so input is limited to
+4,294,967,294 bytes. Calls above that limit throw an `InvalidArg` native error
 instead of parsing with truncated source offsets.
 
 ## Syntax highlighting with Ferriki

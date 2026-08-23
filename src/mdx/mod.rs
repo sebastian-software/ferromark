@@ -323,14 +323,21 @@ pub fn source_location(input: &str, byte_offset: usize) -> SourceLocation {
     );
 
     let before = &input[..byte_offset];
-    let line = before.bytes().filter(|byte| *byte == b'\n').count() + 1;
+    let line = before.bytes().filter(|byte| *byte == b'\n').count();
     let line_start = before.rfind('\n').map_or(0, |offset| offset + 1);
-    let column = input[line_start..byte_offset].chars().count() + 1;
+    let column = input[line_start..byte_offset].chars().count();
 
     SourceLocation {
-        line: u32::try_from(line).expect("line number exceeds u32::MAX"),
-        column: u32::try_from(column).expect("column number exceeds u32::MAX"),
+        line: one_based_source_count(line),
+        column: one_based_source_count(column),
     }
+}
+
+fn one_based_source_count(zero_based_count: usize) -> u32 {
+    let one_based_count = zero_based_count
+        .checked_add(1)
+        .expect("source position exceeds usize::MAX");
+    u32::try_from(one_based_count).expect("source position exceeds u32::MAX")
 }
 
 impl<'a> Segment<'a> {
@@ -362,5 +369,10 @@ mod tests {
         assert_eq!(diagnostics.len(), 1);
         assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InputTooLarge);
         assert_eq!(diagnostics[0].primary_range, crate::Range::empty_at(0));
+    }
+
+    #[test]
+    fn maximum_input_length_preserves_one_based_source_positions() {
+        assert_eq!(one_based_source_count(crate::MAX_INPUT_BYTES), u32::MAX);
     }
 }

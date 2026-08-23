@@ -5,8 +5,11 @@
 
 use std::fmt;
 
-/// Largest input size supported by ferromark's compact source ranges.
-pub const MAX_INPUT_BYTES: usize = u32::MAX as usize;
+/// Largest input size supported by ferromark's compact source positions.
+///
+/// One byte is reserved so one-based line and column values remain
+/// representable even when every byte is a newline or a single-byte scalar.
+pub const MAX_INPUT_BYTES: usize = u32::MAX as usize - 1;
 
 /// Error returned when an input cannot be represented by [`Range`] offsets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -228,7 +231,7 @@ mod tests {
         assert_eq!(error.input_len(), too_large);
         assert_eq!(
             error.to_string(),
-            "input is 4294967296 bytes, exceeding the maximum supported size of 4294967295 bytes"
+            "input is 4294967295 bytes, exceeding the maximum supported size of 4294967294 bytes"
         );
     }
 
