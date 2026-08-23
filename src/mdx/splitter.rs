@@ -1100,8 +1100,8 @@ fn try_regex_expression_suffix(bytes: &[u8], start: usize) -> Option<bool> {
                 pos = match bytes.get(pos).copied() {
                     Some(b'[') => scan_suffix_group(bytes, pos, b'[', b']', end)?,
                     Some(b'(') => scan_suffix_group(bytes, pos, b'(', b')', end)?,
-                    Some(byte) if is_suffix_identifier_start(byte) => {
-                        scan_suffix_identifier(bytes, pos, end)
+                    _ if suffix_identifier_starts_at(bytes, pos, end) => {
+                        scan_suffix_identifier(bytes, pos, end)?
                     }
                     _ => return Some(false),
                 };
@@ -1157,18 +1157,106 @@ fn skip_suffix_trivia(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize>
 
 fn scan_suffix_property(bytes: &[u8], pos: usize, end: usize) -> Option<usize> {
     let pos = skip_suffix_trivia(bytes, pos, end)?;
-    is_suffix_identifier_start(*bytes.get(pos)?).then(|| scan_suffix_identifier(bytes, pos, end))
+    scan_suffix_identifier(bytes, pos, end)
 }
 
-fn is_suffix_identifier_start(byte: u8) -> bool {
-    byte.is_ascii_alphabetic() || matches!(byte, b'_' | b'$')
+fn suffix_identifier_starts_at(bytes: &[u8], pos: usize, end: usize) -> bool {
+    scan_suffix_identifier_char(bytes, pos, end, true).is_some()
 }
 
-fn scan_suffix_identifier(bytes: &[u8], mut pos: usize, end: usize) -> usize {
-    while pos < end && is_esm_word_byte(bytes[pos]) {
-        pos += 1;
+/// Scan an ECMAScript identifier token, including Unicode scalar values and
+/// `\\uXXXX`/`\\u{X...}` escapes. The scanner deliberately validates only the
+/// identifier primitive; declaration grammar remains outside this lightweight
+/// continuation check.
+fn scan_suffix_identifier(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    pos = scan_suffix_identifier_char(bytes, pos, end, true)?;
+    while let Some(next) = scan_suffix_identifier_char(bytes, pos, end, false) {
+        pos = next;
     }
-    pos
+    Some(pos)
+}
+
+fn scan_suffix_identifier_char(
+    bytes: &[u8],
+    pos: usize,
+    end: usize,
+    is_start: bool,
+) -> Option<usize> {
+    let byte = *bytes.get(pos)?;
+    if byte == b'\\' {
+        return scan_suffix_identifier_escape(bytes, pos, end, is_start);
+    }
+    if byte.is_ascii() {
+        let valid = if is_start {
+            byte.is_ascii_alphabetic() || matches!(byte, b'_' | b'$')
+        } else {
+            is_esm_word_byte(byte)
+        };
+        return valid.then_some(pos + 1);
+    }
+
+    let character = std::str::from_utf8(bytes.get(pos..end)?)
+        .ok()?
+        .chars()
+        .next()?;
+    let valid = if is_start {
+        character.is_alphabetic()
+    } else {
+        character.is_alphanumeric()
+    };
+    valid.then_some(pos + character.len_utf8())
+}
+
+fn scan_suffix_identifier_escape(
+    bytes: &[u8],
+    pos: usize,
+    end: usize,
+    is_start: bool,
+) -> Option<usize> {
+    if bytes.get(pos + 1) != Some(&b'u') {
+        return None;
+    }
+    let mut cursor = pos + 2;
+    let code_point = if bytes.get(cursor) == Some(&b'{') {
+        cursor += 1;
+        let digits_start = cursor;
+        let mut value = 0_u32;
+        while cursor < end && bytes[cursor] != b'}' {
+            value = value.checked_mul(16)? + u32::from(hex_value(bytes[cursor])?);
+            cursor += 1;
+            if cursor - digits_start > 6 {
+                return None;
+            }
+        }
+        if cursor == digits_start || bytes.get(cursor) != Some(&b'}') {
+            return None;
+        }
+        cursor += 1;
+        value
+    } else {
+        let mut value = 0_u32;
+        for _ in 0..4 {
+            value = value.checked_mul(16)? + u32::from(hex_value(*bytes.get(cursor)?)?);
+            cursor += 1;
+        }
+        value
+    };
+    let character = char::from_u32(code_point)?;
+    let valid = if is_start {
+        character.is_alphabetic() || matches!(character, '_' | '$')
+    } else {
+        character.is_alphanumeric() || matches!(character, '_' | '$')
+    };
+    valid.then_some(cursor)
+}
+
+fn hex_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
 
 /// Scan a bracketed/index or parenthesized/call suffix and reject obvious prose
@@ -1211,9 +1299,9 @@ fn scan_suffix_group(
                 pos = scan_suffix_regex(bytes, pos, end)?;
                 previous_is_operand = true;
             }
-            byte if is_suffix_identifier_start(byte) => {
+            _ if suffix_identifier_starts_at(bytes, pos, end) => {
                 let word_start = pos;
-                pos = scan_suffix_identifier(bytes, pos, end);
+                pos = scan_suffix_identifier(bytes, pos, end)?;
                 let word = &bytes[word_start..pos];
                 if word_requires_following(word) {
                     previous_is_operand = false;
@@ -1227,9 +1315,7 @@ fn scan_suffix_group(
                 if previous_is_operand {
                     return None;
                 }
-                while pos < end && matches!(bytes[pos], b'0'..=b'9' | b'_' | b'.') {
-                    pos += 1;
-                }
+                pos = scan_suffix_number(bytes, pos, end)?;
                 previous_is_operand = true;
             }
             b'(' => {
@@ -1270,6 +1356,80 @@ fn scan_suffix_group(
     }
 
     None
+}
+
+/// Scan decimal (including a leading-dot fractional part when entered after a
+/// punctuator), exponent, radix-prefixed, separator, and BigInt numeric forms.
+fn scan_suffix_number(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    debug_assert!(matches!(bytes.get(pos), Some(b'0'..=b'9')));
+    if bytes.get(pos) == Some(&b'0') {
+        let radix = match bytes.get(pos + 1) {
+            Some(b'x' | b'X') => Some(16),
+            Some(b'o' | b'O') => Some(8),
+            Some(b'b' | b'B') => Some(2),
+            _ => None,
+        };
+        if let Some(radix) = radix {
+            pos += 2;
+            pos = scan_suffix_digits(bytes, pos, end, radix)?;
+            if bytes.get(pos) == Some(&b'n') {
+                pos += 1;
+            }
+            return Some(pos);
+        }
+    }
+
+    pos = scan_suffix_digits(bytes, pos, end, 10)?;
+    let mut has_fraction_or_exponent = false;
+    if bytes.get(pos) == Some(&b'.') {
+        has_fraction_or_exponent = true;
+        pos += 1;
+        if matches!(bytes.get(pos), Some(b'0'..=b'9')) {
+            pos = scan_suffix_digits(bytes, pos, end, 10)?;
+        }
+    }
+    if matches!(bytes.get(pos), Some(b'e' | b'E')) {
+        has_fraction_or_exponent = true;
+        pos += 1;
+        if matches!(bytes.get(pos), Some(b'+' | b'-')) {
+            pos += 1;
+        }
+        pos = scan_suffix_digits(bytes, pos, end, 10)?;
+    }
+    if !has_fraction_or_exponent && bytes.get(pos) == Some(&b'n') {
+        pos += 1;
+    }
+    Some(pos)
+}
+
+fn scan_suffix_digits(bytes: &[u8], mut pos: usize, end: usize, radix: u8) -> Option<usize> {
+    let mut saw_digit = false;
+    let mut previous_was_separator = false;
+    while let Some(&byte) = bytes.get(pos).filter(|_| pos < end) {
+        if digit_value(byte).is_some_and(|value| value < radix) {
+            saw_digit = true;
+            previous_was_separator = false;
+            pos += 1;
+        } else if byte == b'_' {
+            if !saw_digit || previous_was_separator {
+                return None;
+            }
+            previous_was_separator = true;
+            pos += 1;
+        } else {
+            break;
+        }
+    }
+    (saw_digit && !previous_was_separator).then_some(pos)
+}
+
+fn digit_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
 
 fn scan_suffix_string(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {

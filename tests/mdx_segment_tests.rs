@@ -464,6 +464,8 @@ fn esm_terminal_regex_preserves_syntactically_impossible_suffix_like_markdown() 
         "[a Markdown link](https://example.com)\n",
         "[a Markdown reference]: https://example.com\nReference prose.\n",
         "(Markdown prose in parentheses)\n",
+        "(1e3 prose)\n",
+        "[π prose]\n",
         ". Markdown prose\n",
     ] {
         let input = format!("{esm}{markdown}");
@@ -492,6 +494,10 @@ fn esm_terminal_regex_follows_valid_cross_line_suffix_chains() {
         "export const matcher = /}/\n(value, flags)\n",
         "export const matcher = /}/\n`tagged template with whitespace`\n",
         "export const matcher = /}/\n[lookup[`${name}` /* nested */]](value, { flags: true })\n",
+        "export const matcher = /}/\n[π + café + \\u0061]\n",
+        "export const matcher = /}/\n(1e3, 1_000.5e-2, 0xFFn, 0o77n, 0b10n, .5)\n",
+        "export const matcher = /}/\n.\\u006d(0xCAFEn)\n",
+        "export const matcher = /}/\n`numeric ${1e3 + π}`\n",
     ] {
         let input = format!("{esm}Markdown.\n");
         assert_eq!(
@@ -529,7 +535,7 @@ fn esm_terminal_regex_requires_an_explicit_boundary_before_ambiguous_markdown() 
 
 #[test]
 fn esm_terminal_regex_suffix_validation_remains_linear_for_long_calls() {
-    let arguments = "value, ".repeat(16_384);
+    let arguments = "0xFFn, π, 1e3, ".repeat(16_384);
     let esm = format!("export const matcher = /}}/\n[Symbol.match]({arguments}value)\n");
     let input = format!("{esm}Markdown.\n");
 
