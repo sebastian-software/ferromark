@@ -5,8 +5,24 @@
 ```bash
 git clone https://github.com/sebastian-software/ferromark.git
 cd ferromark
-cargo test
 ```
+
+The minimum supported Rust version (MSRV) is Rust 1.88.
+
+Run the [required local checks](#required-local-checks) below.
+
+## Required local checks
+
+Run these commands from the repository root before opening a pull request:
+
+```bash
+cargo test --locked --all-features
+cargo clippy --all-targets --all-features --locked -- -D warnings
+cargo fmt --check
+```
+
+Changes to the Node workspace or release process have additional package checks;
+follow the [releasing guide](docs/releasing.md) for those commands.
 
 ## Running benchmarks
 
@@ -49,5 +65,5 @@ Breaking changes: add `!` after the type (e.g., `feat!:`) or include `BREAKING C
 ## Pull requests
 
 1. Fork the repo and create a branch from `main`
-2. Run `cargo test` and `cargo clippy` before submitting
+2. Run the required local checks before submitting
 3. Keep PRs focused -- one change per PR
