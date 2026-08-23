@@ -3,7 +3,10 @@
 //! Marks represent potential delimiter positions (backticks, asterisks, etc.)
 //! collected in a single pass before resolution.
 
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[cfg(any(
+    target_arch = "x86_64",
+    all(target_arch = "aarch64", target_feature = "neon")
+))]
 use super::simd;
 use crate::limits;
 use crate::range::{assert_input_size, offset_to_u32};
@@ -495,7 +498,10 @@ fn next_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
     start: usize,
 ) -> Option<usize> {
     let pos = {
-        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        #[cfg(any(
+            target_arch = "x86_64",
+            all(target_arch = "aarch64", target_feature = "neon")
+        ))]
         {
             let mut pos = start;
             if let Some(found) =
@@ -505,7 +511,10 @@ fn next_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
             }
             pos
         }
-        #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
+        #[cfg(not(any(
+            target_arch = "x86_64",
+            all(target_arch = "aarch64", target_feature = "neon")
+        )))]
         {
             start
         }
