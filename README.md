@@ -299,6 +299,8 @@ let html = ferromark::to_html_with_options(trusted_markdown, &options);
 
 Upgrading from an older release? See the [0.8 migration guide](docs/migration-0.8.md)
 for the `Options` and event-match migration, the
+[0.4–0.7 migration guide](docs/migration-0.4.md) for `Profile`, inline-parser,
+fenced-renderer, Rust, and Node.js changes, the
 [0.2 migration guide](docs/migration-0.2.md) for the rendering default and the
 fallible UTF-8 and MDX APIs, and the
 [0.3 migration guide](docs/migration-0.3.md) for removed Cargo features and the
