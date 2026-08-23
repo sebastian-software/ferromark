@@ -24,17 +24,29 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Cli, String> {
         help: false,
         version: false,
     };
+    let mut preset: Option<fn() -> Options> = None;
+    let mut trusted = false;
+    let mut front_matter = false;
+    let mut no_heading_ids = false;
+    let mut positional_only = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
+        if positional_only {
+            if cli.input.replace(PathBuf::from(arg)).is_some() {
+                return Err("only one input path is supported".into());
+            }
+            continue;
+        }
         match arg.as_str() {
             "-h" | "--help" => cli.help = true,
             "-V" | "--version" => cli.version = true,
-            "--minimal" => cli.options = Options::minimal(),
-            "--commonmark" => cli.options = Options::commonmark(),
-            "--gfm" => cli.options = Options::gfm(),
-            "--trusted" => cli.options.render_policy = RenderPolicy::Trusted,
-            "--front-matter" => cli.options.front_matter = true,
-            "--no-heading-ids" => cli.options.heading_ids = false,
+            "--minimal" => preset = Some(Options::minimal),
+            "--commonmark" => preset = Some(Options::commonmark),
+            "--gfm" => preset = Some(Options::gfm),
+            "--trusted" => trusted = true,
+            "--front-matter" => front_matter = true,
+            "--no-heading-ids" => no_heading_ids = true,
+            "--" => positional_only = true,
             "-o" | "--output" => {
                 cli.output = Some(PathBuf::from(
                     args.next()
@@ -50,6 +62,18 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Cli, String> {
                 }
             }
         }
+    }
+    if let Some(preset) = preset {
+        cli.options = preset();
+    }
+    if trusted {
+        cli.options.render_policy = RenderPolicy::Trusted;
+    }
+    if front_matter {
+        cli.options.front_matter = true;
+    }
+    if no_heading_ids {
+        cli.options.heading_ids = false;
     }
     Ok(cli)
 }
@@ -100,5 +124,20 @@ mod tests {
         assert_eq!(cli.options.render_policy, RenderPolicy::Trusted);
         assert!(cli.options.tables);
         assert_eq!(cli.output.unwrap(), PathBuf::from("out"));
+    }
+
+    #[test]
+    fn presets_do_not_override_explicit_flags_or_dash_paths() {
+        for args in [
+            ["--trusted", "--front-matter", "--no-heading-ids", "--gfm"],
+            ["--gfm", "--trusted", "--front-matter", "--no-heading-ids"],
+        ] {
+            let cli = parse_args(args.map(String::from)).unwrap();
+            assert_eq!(cli.options.render_policy, RenderPolicy::Trusted);
+            assert!(cli.options.front_matter);
+            assert!(!cli.options.heading_ids);
+        }
+        let cli = parse_args(["--", "-draft.md"].map(String::from)).unwrap();
+        assert_eq!(cli.input.unwrap(), PathBuf::from("-draft.md"));
     }
 }
