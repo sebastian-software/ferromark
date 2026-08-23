@@ -387,6 +387,7 @@ enum LexicalMode {
     SingleQuote,
     DoubleQuote,
     Template,
+    Regex,
     LineComment,
     BlockComment,
 }
@@ -411,6 +412,7 @@ struct EsmContinuation {
     export_from_candidate: bool,
     delimiters: Vec<Delimiter>,
     mode: LexicalMode,
+    regex_char_class: bool,
     line_end: LineEnd,
     malformed: bool,
 }
@@ -427,6 +429,7 @@ impl EsmContinuation {
             export_from_candidate: false,
             delimiters: Vec::new(),
             mode: LexicalMode::Code,
+            regex_char_class: false,
             line_end: LineEnd::None,
             malformed: false,
         }
@@ -467,6 +470,10 @@ impl EsmContinuation {
                         b'/' if bytes.get(pos + 1) == Some(&b'*') => {
                             self.mode = LexicalMode::BlockComment;
                             pos += 1;
+                        }
+                        b'/' if self.can_start_regex() => {
+                            self.mode = LexicalMode::Regex;
+                            self.regex_char_class = false;
                         }
                         b'(' => self.open(Delimiter::Parenthesis, byte),
                         b'[' => self.open(Delimiter::Bracket, byte),
@@ -521,6 +528,16 @@ impl EsmContinuation {
                         self.mode = LexicalMode::Code;
                         self.line_end = LineEnd::Punctuation(b'{');
                         pos += 1;
+                    }
+                    _ => {}
+                },
+                LexicalMode::Regex => match byte {
+                    b'\\' if pos + 1 < end => pos += 1,
+                    b'[' => self.regex_char_class = true,
+                    b']' => self.regex_char_class = false,
+                    b'/' if !self.regex_char_class => {
+                        self.mode = LexicalMode::Code;
+                        self.line_end = LineEnd::Punctuation(byte);
                     }
                     _ => {}
                 },
@@ -635,6 +652,36 @@ impl EsmContinuation {
                         | b'>'
                 )
             )
+    }
+
+    fn can_start_regex(&self) -> bool {
+        matches!(
+            self.line_end,
+            LineEnd::None
+                | LineEnd::Word {
+                    requires_following: true
+                }
+                | LineEnd::Punctuation(
+                    b'(' | b'['
+                        | b'{'
+                        | b','
+                        | b':'
+                        | b';'
+                        | b'='
+                        | b'!'
+                        | b'?'
+                        | b'&'
+                        | b'|'
+                        | b'^'
+                        | b'~'
+                        | b'+'
+                        | b'-'
+                        | b'*'
+                        | b'%'
+                        | b'<'
+                        | b'>'
+                )
+        )
     }
 
     fn import_needs_source(&self) -> bool {

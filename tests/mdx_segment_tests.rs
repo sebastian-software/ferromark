@@ -407,6 +407,22 @@ fn multiline_esm_keeps_lexically_required_continuations() {
 }
 
 #[test]
+fn esm_regex_literals_do_not_change_delimiter_state() {
+    for esm in [
+        "export const closing = /\\}/g\n",
+        "export const class_closing = /[}]/g\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
 fn incomplete_esm_falls_back_to_markdown_and_is_strictly_diagnosed() {
     for input in [
         "import Widget\nOrdinary prose.\n",
