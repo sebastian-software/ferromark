@@ -51,6 +51,7 @@ jobs:
           components: rustfmt
       - run: cargo fmt --check
       - run: ./scripts/test-check-workflow-pins.sh
+      - run: node ./scripts/test-publish-verification.mjs
       - run: ruby ./scripts/test-node-ci-matrix.rb
       - run: ./scripts/check-workflow-pins.sh
 
