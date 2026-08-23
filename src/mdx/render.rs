@@ -239,28 +239,47 @@ fn write_component_body(out: &mut String, body: &str) {
         }
 
         if bytes[pos] == b'<' && matches!(bytes.get(pos + 1), Some(b'!' | b'?')) {
-            pos = declaration_end(bytes, pos).unwrap_or(bytes.len());
+            if let Some(end) = declaration_end(bytes, pos) {
+                pos = end;
+                continue;
+            }
+
+            // An incomplete or declaration-like near-match is not an HTML node.
+            // Escape only its opening delimiter so later real JSX/HTML nodes are
+            // still processed instead of truncating the rest of the component.
+            indent_component_line(out, at_line_start, pre_depth);
+            out.push_str("&lt;");
+            at_line_start = false;
+            pos += 1;
             continue;
         }
 
         if bytes[pos] == b'<'
             && let Some(tag) = parse_jsx_tag(&bytes[pos..])
         {
-            indent_component_line(out, at_line_start, pre_depth);
-            write_component_tag(
-                out,
-                &body[pos..pos + tag.end_offset],
-                &tag,
-                &mut void_openings,
-                &mut void_named_component_openings,
-            );
-            at_line_start = false;
-
-            let text_kind = if !tag.is_closing && !tag.is_self_closing {
-                html_text_kind(tag.name)
+            let text_element = if !tag.is_closing && !tag.is_self_closing {
+                html_text_element(tag.name)
             } else {
                 None
             };
+            indent_component_line(out, at_line_start, pre_depth);
+            if let Some((_, canonical_name)) = text_element {
+                write_html_text_opening_tag(
+                    out,
+                    &body[pos..pos + tag.end_offset],
+                    tag.name,
+                    canonical_name,
+                );
+            } else {
+                write_component_tag(
+                    out,
+                    &body[pos..pos + tag.end_offset],
+                    &tag,
+                    &mut void_openings,
+                    &mut void_named_component_openings,
+                );
+            }
+            at_line_start = false;
 
             if tag.name == "pre" && !tag.is_self_closing {
                 if tag.is_closing {
@@ -271,14 +290,14 @@ fn write_component_body(out: &mut String, body: &str) {
             }
 
             pos += tag.end_offset;
-            if let Some(text_kind) = text_kind {
+            if let Some((text_kind, canonical_name)) = text_element {
                 if let Some((text_end, tag_end)) = raw_text_end(bytes, pos, tag.name) {
                     write_jsx_string_child(
                         out,
                         &body[pos..text_end],
                         matches!(text_kind, HtmlTextKind::Rcdata),
                     );
-                    write_html_text_closing_tag(out, &body[text_end..tag_end], tag.name);
+                    write_html_text_closing_tag(out, &body[text_end..tag_end], canonical_name);
                     pos = tag_end;
                 } else {
                     write_jsx_string_child(
@@ -396,12 +415,33 @@ fn html_void_element_index_ignore_ascii_case(name: &str) -> Option<usize> {
         .position(|element| element.eq_ignore_ascii_case(name))
 }
 
-fn html_text_kind(name: &str) -> Option<HtmlTextKind> {
-    match name {
-        "script" | "style" | "xmp" | "iframe" | "noembed" | "noframes" => Some(HtmlTextKind::Raw),
-        "textarea" | "title" => Some(HtmlTextKind::Rcdata),
-        _ => None,
+fn html_text_element(name: &str) -> Option<(HtmlTextKind, &'static str)> {
+    // Lowercase-leading and all-uppercase names use HTML intrinsic semantics in
+    // JSX. Preserve PascalCase/mixed-leading-uppercase names as MDX components.
+    let html_syntax = name.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
+        || name
+            .bytes()
+            .all(|byte| !byte.is_ascii_alphabetic() || byte.is_ascii_uppercase());
+    if !html_syntax {
+        return None;
     }
+
+    for (canonical, kind) in [
+        ("script", HtmlTextKind::Raw),
+        ("style", HtmlTextKind::Raw),
+        ("xmp", HtmlTextKind::Raw),
+        ("iframe", HtmlTextKind::Raw),
+        ("noembed", HtmlTextKind::Raw),
+        ("noframes", HtmlTextKind::Raw),
+        ("textarea", HtmlTextKind::Rcdata),
+        ("title", HtmlTextKind::Rcdata),
+    ] {
+        if name.eq_ignore_ascii_case(canonical) {
+            return Some((kind, canonical));
+        }
+    }
+
+    None
 }
 
 fn indent_component_line(out: &mut String, at_line_start: bool, pre_depth: u32) {
@@ -451,6 +491,19 @@ fn write_html_text_closing_tag(out: &mut String, source: &str, opening_name: &st
     out.push_str(&source[opening_name.len() + 2..]);
 }
 
+fn write_html_text_opening_tag(
+    out: &mut String,
+    source: &str,
+    original_name: &str,
+    canonical_name: &str,
+) {
+    debug_assert!(source.starts_with('<'));
+    debug_assert!(source.len() > original_name.len());
+    out.push('<');
+    out.push_str(canonical_name);
+    out.push_str(&source[original_name.len() + 1..]);
+}
+
 fn raw_text_end(bytes: &[u8], start: usize, tag_name: &str) -> Option<(usize, usize)> {
     let mut pos = start;
 
@@ -492,20 +545,24 @@ fn declaration_end(bytes: &[u8], start: usize) -> Option<usize> {
             .map(|offset| start + 9 + offset + 3);
     }
 
-    let mut pos = start + 2;
-    let mut quote = None;
-    while pos < bytes.len() {
-        match (quote, bytes[pos]) {
-            (Some(expected), current) if current == expected => quote = None,
-            (Some(_), _) => {}
-            (None, b'"' | b'\'') => quote = Some(bytes[pos]),
-            (None, b'>') => return Some(pos + 1),
-            (None, _) => {}
-        }
-        pos += 1;
+    if bytes[start..].starts_with(b"<?") {
+        return bytes[start + 2..]
+            .windows(2)
+            .position(|window| window == b"?>")
+            .map(|offset| start + 2 + offset + 2);
     }
 
-    None
+    if bytes
+        .get(start + 2)
+        .is_none_or(|byte| !byte.is_ascii_alphabetic())
+    {
+        return None;
+    }
+
+    bytes[start + 2..]
+        .iter()
+        .position(|byte| *byte == b'>')
+        .map(|offset| start + 2 + offset + 1)
 }
 
 fn standalone_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
@@ -1006,6 +1063,66 @@ Content
     }
 
     #[test]
+    fn to_component_uses_html_declaration_boundaries_without_truncation() {
+        let body = "<!DOCTYPE html data='unterminated><p>after doctype</p><?pi data='unterminated?><p>after pi</p><![CDATA[ignored > text]]><p>after cdata</p>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert_eq!(out.body, body);
+        assert!(!component.contains("DOCTYPE"), "{component}");
+        assert!(!component.contains("<?pi"), "{component}");
+        assert!(!component.contains("CDATA"), "{component}");
+        for trailing in ["after doctype", "after pi", "after cdata"] {
+            assert!(
+                component.contains(trailing),
+                "missing {trailing:?}: {component}"
+            );
+        }
+
+        let rendered = render(
+            "before <!DOCTYPE html data='unterminated> after declaration\n\n<p>after node</p>",
+        );
+        assert!(
+            rendered.body.contains("after declaration"),
+            "{}",
+            rendered.body
+        );
+        let rendered_component = rendered.to_component("Page").unwrap();
+        assert!(
+            rendered_component.contains("after declaration"),
+            "{rendered_component}"
+        );
+        assert!(
+            rendered_component.contains("<p>after node</p>"),
+            "{rendered_component}"
+        );
+    }
+
+    #[test]
+    fn to_component_bounds_incomplete_declarations_and_near_matches() {
+        for body in [
+            "<![CDATA[unterminated<p>after cdata</p>",
+            "<?unterminated<p>after pi</p>",
+            "<![near-match><p>after bracket near-match</p>",
+            "<!-near-match><p>after punctuation near-match</p>",
+        ] {
+            let out = MdxOutput {
+                body: body.to_owned(),
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert!(component.contains("&lt;"), "{component}");
+            assert!(component.contains("<p>after"), "{component}");
+        }
+    }
+
+    #[test]
     fn to_component_preserves_textarea_and_title_text() {
         let out = MdxOutput {
             body: "<textarea data-kind=\"example\">first\r\n  second {value}&amp;\r\n</textarea>\r\n<title>first\n  second {value}&amp;\n</title>"
@@ -1055,6 +1172,40 @@ Content
     }
 
     #[test]
+    fn to_component_preserves_case_variant_html_text_semantics() {
+        let body = "<TEXTAREA data-kind=\"upper\">first\r\n  second {value}&amp;\r\n</textAREA><p>after textarea</p>\n<textAREA data-kind=\"mixed\">third\n  fourth &amp; {value}\n</TEXTAREA><TITLE>heading\n  continuation &amp; {value}</title><SCRIPT>if (left < right) { run(); }</script><stYLE>.x { color: red }</STYLE>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert_eq!(out.body, body);
+        assert!(component.contains(
+            "<textarea data-kind=\"upper\">{\"first\\r\\n  second {value}&\\r\\n\"}</textarea><p>after textarea</p>"
+        ), "{component}");
+        assert!(
+            component.contains(
+                "<textarea data-kind=\"mixed\">{\"third\\n  fourth & {value}\\n\"}</textarea>"
+            ),
+            "{component}"
+        );
+        assert!(
+            component.contains("<title>{\"heading\\n  continuation & {value}\"}</title>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<script>{\"if (left < right) { run(); }\"}</script>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<style>{\".x { color: red }\"}</style>"),
+            "{component}"
+        );
+    }
+
+    #[test]
     fn to_component_ignores_raw_text_closing_tag_near_matches() {
         let out = MdxOutput {
             body: "<textarea>before</TEXTAREAX>middle</textarea extra>still</TeXtArEa><p>after</p>\n<script>before</SCRIPTS>middle</ScRiPt><p>after script</p>"
@@ -1078,7 +1229,9 @@ Content
 
     #[test]
     fn to_component_does_not_treat_component_names_as_html_text_elements() {
-        let out = render("<Pre>\n\n{value}\n\n</Pre>\n\n<Style>\n\n{text}\n\n</Style>\n");
+        let out = render(
+            "<Pre>\n\n{value}\n\n</Pre>\n\n<Style>\n\n{text}\n\n</Style>\n\n<Textarea>\n\n{value}\n\n</Textarea>\n\n<Title>\n\n{text}\n\n</Title>\n",
+        );
         let component = out.to_component("Page").unwrap();
 
         assert!(
@@ -1087,6 +1240,14 @@ Content
         );
         assert!(
             component.contains("      <Style>\n      {text}\n      </Style>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("      <Textarea>\n      {value}\n      </Textarea>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("      <Title>\n      {text}\n      </Title>"),
             "{component}"
         );
     }
