@@ -34,6 +34,26 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 // buffer survives across calls — zero repeated allocation
 ```
 
+### Input-size limit
+
+Source positions use compact `u32` values, so a document may contain at most
+4,294,967,294 bytes. This keeps both byte offsets and one-based line/column
+values representable. Use the fallible `try_*` entry points when input size
+is not already bounded:
+
+```rust
+fn main() -> Result<(), ferromark::InputSizeError> {
+    let markdown = "# Hello";
+    let html = ferromark::try_to_html(markdown)?;
+    assert!(html.contains("Hello"));
+    Ok(())
+}
+```
+
+`validate_input_size` is available when a caller needs to preflight a shared
+input before selecting an API. The legacy infallible APIs preserve their return
+types and panic with the same error if this limit is exceeded.
+
 ## Benchmarks
 
 Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run

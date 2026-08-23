@@ -20,9 +20,10 @@ mod superscript;
 pub use event::InlineEvent;
 pub use links::AutolinkLiteralKind;
 
-use crate::Range;
 use crate::footnote::FootnoteStore;
 use crate::link_ref::LinkRefStore;
+use crate::range::assert_input_size;
+use crate::{InputSizeError, Range};
 use code_span::{CodeSpan, extract_code_spans, resolve_code_spans};
 use emphasis::{EmphasisMatch, EmphasisStacks, resolve_emphasis_with_stacks_into};
 use highlight::{HighlightMatch, resolve_highlight_into};
@@ -136,6 +137,11 @@ impl InlineParser {
     }
 
     /// Parse inline content and emit events.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`]. Use
+    /// [`Self::try_parse`] to handle the limit as an error.
     pub fn parse(
         &mut self,
         text: &[u8],
@@ -143,11 +149,25 @@ impl InlineParser {
         allow_html: bool,
         events: &mut Vec<InlineEvent>,
     ) {
+        self.try_parse(text, link_refs, allow_html, events)
+            .unwrap_or_else(|error| panic!("{error}"));
+    }
+
+    /// Parse inline content without panicking for oversized input.
+    pub fn try_parse(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        allow_html: bool,
+        events: &mut Vec<InlineEvent>,
+    ) -> Result<(), InputSizeError> {
+        crate::validate_input_size(text.len())?;
         self.begin_document();
         self.parse_with_options_in_document(
             text, link_refs, allow_html, true, false, false, false, true, false, false, None,
             events,
         );
+        Ok(())
     }
 
     /// Parse inline Markdown with opt-in MDX expressions and JSX tags.
@@ -159,6 +179,11 @@ impl InlineParser {
     ///
     /// Inline HTML is intentionally disabled for this mode so valid JSX tags
     /// are not consumed as raw HTML before MDX recognition.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`]. Use
+    /// [`Self::try_parse_mdx`] to handle the limit as an error.
     #[cfg(feature = "mdx")]
     pub fn parse_mdx(
         &mut self,
@@ -166,8 +191,23 @@ impl InlineParser {
         link_refs: Option<&LinkRefStore>,
         events: &mut Vec<InlineEvent>,
     ) {
+        self.try_parse_mdx(text, link_refs, events)
+            .unwrap_or_else(|error| panic!("{error}"));
+    }
+
+    /// Parse inline Markdown with MDX support without panicking for oversized
+    /// input.
+    #[cfg(feature = "mdx")]
+    pub fn try_parse_mdx(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        events: &mut Vec<InlineEvent>,
+    ) -> Result<(), InputSizeError> {
+        crate::validate_input_size(text.len())?;
         self.begin_document();
         self.parse_mdx_in_document(text, link_refs, events);
+        Ok(())
     }
 
     /// Begin a document-level inline parsing session.
@@ -196,6 +236,11 @@ impl InlineParser {
     }
 
     /// Parse inline content with configurable inline extensions.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`]. Use
+    /// [`Self::try_parse_with_options`] to handle the limit as an error.
     #[allow(clippy::too_many_arguments)]
     pub fn parse_with_options(
         &mut self,
@@ -212,6 +257,42 @@ impl InlineParser {
         footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
+        self.try_parse_with_options(
+            text,
+            link_refs,
+            allow_html,
+            strikethrough,
+            highlight,
+            superscript,
+            subscript,
+            autolink_literals,
+            math,
+            inline_footnotes,
+            footnote_store,
+            events,
+        )
+        .unwrap_or_else(|error| panic!("{error}"));
+    }
+
+    /// Parse inline content with configurable extensions without panicking for
+    /// oversized input.
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_parse_with_options(
+        &mut self,
+        text: &[u8],
+        link_refs: Option<&LinkRefStore>,
+        allow_html: bool,
+        strikethrough: bool,
+        highlight: bool,
+        superscript: bool,
+        subscript: bool,
+        autolink_literals: bool,
+        math: bool,
+        inline_footnotes: bool,
+        footnote_store: Option<&FootnoteStore>,
+        events: &mut Vec<InlineEvent>,
+    ) -> Result<(), InputSizeError> {
+        crate::validate_input_size(text.len())?;
         self.begin_document();
         self.parse_with_options_in_document(
             text,
@@ -227,6 +308,7 @@ impl InlineParser {
             footnote_store,
             events,
         );
+        Ok(())
     }
 
     /// Parse inline content as part of an active document-level parsing session.
@@ -246,6 +328,10 @@ impl InlineParser {
         footnote_store: Option<&FootnoteStore>,
         events: &mut Vec<InlineEvent>,
     ) {
+        // Every source offset produced by the inline pipeline is narrowed to
+        // `u32`; keep that invariant at this shared entry point for reusable
+        // parser sessions as well as the public `try_*` methods.
+        assert_input_size(text.len());
         #[cfg(feature = "profiling")]
         let event_start = events.len();
         let may_have_inline_footnotes = inline_footnotes && has_inline_footnote_candidate(text);

@@ -10,7 +10,7 @@ use crate::{
     fixup_list_tight,
 };
 
-use super::{MdxDiagnostic, Segment, segment_spanned};
+use super::{MdxDiagnostic, Segment};
 
 /// Version of the public MDX event ordering and balancing contract.
 ///
@@ -120,17 +120,30 @@ impl MdxEventStream {
 /// contract and remains Markdown text. Use
 /// [`parse_events_strict`](super::parse_events_strict) when structural
 /// diagnostics are required.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`crate::MAX_INPUT_BYTES`]. Use
+/// [`try_parse_events`] to handle the limit as an error.
 #[must_use]
 pub fn parse_events(input: &str) -> MdxEventStream {
-    assert!(
-        u32::try_from(input.len()).is_ok(),
-        "MDX input exceeds the supported u32 source range"
-    );
+    try_parse_events(input).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Build a permissive semantic event stream without panicking for oversized
+/// input.
+pub fn try_parse_events(input: &str) -> Result<MdxEventStream, crate::InputSizeError> {
+    crate::validate_input_size(input.len())?;
 
     let (content_start, front_matter) = front_matter_event(input);
     let content = &input[content_start..];
-    let segments = segment_spanned(content);
-    build_event_stream(input, content_start, front_matter, segments)
+    let segments = super::try_segment_spanned(content)?;
+    Ok(build_event_stream(
+        input,
+        content_start,
+        front_matter,
+        segments,
+    ))
 }
 
 /// Build a strict semantic MDX event stream.
@@ -146,10 +159,7 @@ pub fn parse_events(input: &str) -> MdxEventStream {
 /// constructs; malformed inline MDX retains the permissive `InlineEvent::Text`
 /// recovery in both event modes.
 pub fn parse_events_strict(input: &str) -> Result<MdxEventStream, Vec<MdxDiagnostic>> {
-    assert!(
-        u32::try_from(input.len()).is_ok(),
-        "MDX input exceeds the supported u32 source range"
-    );
+    super::validate_mdx_input_size(input.len())?;
 
     let (content_start, front_matter) = front_matter_event(input);
     match super::segment_strict(&input[content_start..]) {

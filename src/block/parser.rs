@@ -1,8 +1,9 @@
 //! Block parser implementation.
 
-use crate::Range;
 use crate::cursor::Cursor;
 use crate::limits;
+use crate::range::offset_to_u32;
+use crate::{InputSizeError, Range, validate_input_size};
 use smallvec::SmallVec;
 
 // Parser branches establish these bounds through `peek`, `at`, `remaining`,
@@ -225,12 +226,38 @@ pub struct BlockParser<'a> {
 
 impl<'a> BlockParser<'a> {
     /// Create a new block parser.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `input` exceeds [`crate::MAX_INPUT_BYTES`]. Use
+    /// [`Self::try_new`] to handle that limit as an error.
     pub fn new(input: &'a [u8]) -> Self {
-        Self::new_with_options(input, Options::default())
+        Self::try_new(input).unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    /// Create a new block parser without panicking for oversized input.
+    pub fn try_new(input: &'a [u8]) -> Result<Self, InputSizeError> {
+        Self::try_new_with_options(input, Options::default())
     }
 
     /// Create a new block parser with options.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `input` exceeds [`crate::MAX_INPUT_BYTES`]. Use
+    /// [`Self::try_new_with_options`] to handle that limit as an error.
     pub fn new_with_options(input: &'a [u8], options: Options) -> Self {
+        Self::try_new_with_options(input, options).unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    /// Create a new block parser with options without panicking for oversized
+    /// input.
+    pub fn try_new_with_options(input: &'a [u8], options: Options) -> Result<Self, InputSizeError> {
+        validate_input_size(input.len())?;
+        Ok(Self::new_unchecked(input, options))
+    }
+
+    fn new_unchecked(input: &'a [u8], options: Options) -> Self {
         Self {
             input,
             cursor: Cursor::new(input),
@@ -412,7 +439,7 @@ impl<'a> BlockParser<'a> {
                     let extra_spaces = cols.saturating_sub(4) as u8;
                     self.pending_code_blanks.push((
                         extra_spaces,
-                        Range::new(newline_start as u32, ws_end as u32),
+                        Range::new(offset_to_u32(newline_start), offset_to_u32(ws_end)),
                     ));
                     return;
                 }
@@ -565,8 +592,8 @@ impl<'a> BlockParser<'a> {
                     events.push(BlockEvent::VirtualSpaces(extra_spaces as u8));
                 }
                 events.push(BlockEvent::Code(Range::new(
-                    text_start as u32,
-                    content_end as u32,
+                    offset_to_u32(text_start),
+                    offset_to_u32(content_end),
                 )));
                 return;
             } else {
@@ -2498,8 +2525,8 @@ impl<'a> BlockParser<'a> {
         }
         // Emit the content (including newline) - use Code event to skip inline parsing
         events.push(BlockEvent::Code(Range::new(
-            text_start as u32,
-            content_end as u32,
+            offset_to_u32(text_start),
+            offset_to_u32(content_end),
         )));
     }
 
@@ -3182,8 +3209,8 @@ impl<'a> BlockParser<'a> {
                 // End of line - emit last cell
                 let (s, e) = Self::trim_cell(&line[cell_start..scan_end], cell_start);
                 cells.push(TableCell {
-                    start: s as u32,
-                    end: e as u32,
+                    start: offset_to_u32(s),
+                    end: offset_to_u32(e),
                     colspan: 1,
                 });
                 break;
@@ -3194,8 +3221,8 @@ impl<'a> BlockParser<'a> {
                 // Cell boundary
                 let (s, e) = Self::trim_cell(&line[cell_start..pos], cell_start);
                 cells.push(TableCell {
-                    start: s as u32,
-                    end: e as u32,
+                    start: offset_to_u32(s),
+                    end: offset_to_u32(e),
                     colspan: 1,
                 });
                 pos += 1;
@@ -3254,8 +3281,8 @@ impl<'a> BlockParser<'a> {
                 }
                 let (start, end) = Self::trim_cell(&line[cell_start..pos - pipe_count], cell_start);
                 cells.push(TableCell {
-                    start: start as u32,
-                    end: end as u32,
+                    start: offset_to_u32(start),
+                    end: offset_to_u32(end),
                     colspan: pipe_count.min(u16::MAX as usize) as u16,
                 });
                 if cells.len() >= limits::MAX_TABLE_COLUMNS || pos == line_end {
@@ -3269,8 +3296,8 @@ impl<'a> BlockParser<'a> {
 
         let (start, end) = Self::trim_cell(&line[cell_start..line_end], cell_start);
         cells.push(TableCell {
-            start: start as u32,
-            end: end as u32,
+            start: offset_to_u32(start),
+            end: offset_to_u32(end),
             colspan: 1,
         });
         cells

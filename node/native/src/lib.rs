@@ -1,5 +1,6 @@
 use ferromark::{
-    FencedCodeBlock, FencedCodeRenderer, Options as CoreOptions, RenderPolicy, TrustedHtml,
+    FencedCodeBlock, FencedCodeRenderer, InputSizeError, Options as CoreOptions, RenderPolicy,
+    TrustedHtml,
 };
 use napi::bindgen_prelude::{Error, FnArgs, Function, Result, Status};
 use napi_derive::napi;
@@ -91,12 +92,14 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     options.map_or_else(|| Ok(CoreOptions::default()), Options::into_core)
 }
 
+fn input_size_error(error: InputSizeError) -> Error {
+    Error::new(Status::InvalidArg, error.to_string())
+}
+
 #[napi(catch_unwind)]
 pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
-    Ok(ferromark::to_html_with_options(
-        &markdown,
-        &core_options(options)?,
-    ))
+    ferromark::try_to_html_with_options(&markdown, &core_options(options)?)
+        .map_err(input_size_error)
 }
 
 /// One document heading, in source order.
@@ -141,9 +144,9 @@ fn transform_result(result: ferromark::ParseResult<'_>) -> TransformResult {
 #[napi(catch_unwind)]
 pub fn transform(markdown: String, options: Option<Options>) -> Result<TransformResult> {
     let options = core_options(options)?;
-    Ok(transform_result(ferromark::parse_with_options(
-        &markdown, &options,
-    )))
+    ferromark::try_parse_with_options(&markdown, &options)
+        .map(transform_result)
+        .map_err(input_size_error)
 }
 
 #[allow(clippy::type_complexity)]
@@ -174,11 +177,8 @@ pub fn to_html_with_renderer(
 ) -> Result<String> {
     let options = core_options(options)?;
     let mut renderer = CallbackRenderer { callback: renderer };
-    Ok(ferromark::to_html_with_renderer(
-        &markdown,
-        &options,
-        &mut renderer,
-    ))
+    ferromark::try_to_html_with_renderer(&markdown, &options, &mut renderer)
+        .map_err(input_size_error)
 }
 
 /// `transform` with an opt-in fenced-code renderer callback.
@@ -195,9 +195,7 @@ pub fn transform_with_renderer(
 ) -> Result<TransformResult> {
     let options = core_options(options)?;
     let mut renderer = CallbackRenderer { callback: renderer };
-    Ok(transform_result(ferromark::parse_with_renderer(
-        &markdown,
-        &options,
-        &mut renderer,
-    )))
+    ferromark::try_parse_with_renderer(&markdown, &options, &mut renderer)
+        .map(transform_result)
+        .map_err(input_size_error)
 }

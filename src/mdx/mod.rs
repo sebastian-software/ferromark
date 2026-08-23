@@ -123,6 +123,7 @@ mod strict;
 
 pub use events::{
     MDX_EVENT_STREAM_VERSION, MdxEvent, MdxEventStream, parse_events, parse_events_strict,
+    try_parse_events,
 };
 
 /// A typed segment of an MDX document.
@@ -168,6 +169,8 @@ pub struct SpannedSegment<'a> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum MdxDiagnosticCode {
+    /// The document exceeds the maximum size representable by source ranges.
+    InputTooLarge,
     /// A flow expression has no closing `}`.
     UnterminatedExpression,
     /// A JSX tag has no closing `>`.
@@ -214,9 +217,20 @@ pub struct SourceLocation {
 ///
 /// This is the primary entry point. The returned segments cover the entire
 /// input — no bytes are dropped.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`crate::MAX_INPUT_BYTES`]. Use
+/// [`try_segment`] to handle the limit as an error.
 #[must_use]
 pub fn segment(input: &str) -> Vec<Segment<'_>> {
-    splitter::split(input)
+    try_segment(input).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Segment an MDX document without panicking for oversized input.
+pub fn try_segment(input: &str) -> Result<Vec<Segment<'_>>, crate::InputSizeError> {
+    crate::validate_input_size(input.len())?;
+    Ok(splitter::split(input))
 }
 
 /// Segment an MDX document and retain exact byte ranges for each segment.
@@ -229,13 +243,21 @@ pub fn segment(input: &str) -> Vec<Segment<'_>> {
 ///
 /// # Panics
 ///
-/// Panics when `input` is larger than [`u32::MAX`] bytes, matching the size
-/// limit of [`crate::Range`].
+/// Panics when the input exceeds [`crate::MAX_INPUT_BYTES`]. Use
+/// [`try_segment_spanned`] to handle the limit as an error.
+///
 #[must_use]
 pub fn segment_spanned(input: &str) -> Vec<SpannedSegment<'_>> {
+    try_segment_spanned(input).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Segment an MDX document with byte ranges without panicking for oversized
+/// input.
+pub fn try_segment_spanned(input: &str) -> Result<Vec<SpannedSegment<'_>>, crate::InputSizeError> {
+    crate::validate_input_size(input.len())?;
     let input_start = input.as_ptr() as usize;
 
-    segment(input)
+    Ok(splitter::split(input)
         .into_iter()
         .map(|segment| {
             let text = segment.as_str();
@@ -246,7 +268,7 @@ pub fn segment_spanned(input: &str) -> Vec<SpannedSegment<'_>> {
             let range = crate::Range::from_usize(start, end);
             SpannedSegment { segment, range }
         })
-        .collect()
+        .collect())
 }
 
 /// Validate structural MDX and return source-spanned segments on success.
@@ -260,12 +282,22 @@ pub fn segment_spanned(input: &str) -> Vec<SpannedSegment<'_>> {
 /// When a malformed construct makes later segmentation ambiguous, validation
 /// stops at that construct. Otherwise, independent diagnostics are collected.
 ///
-/// # Panics
-///
-/// Panics when `input` is larger than [`u32::MAX`] bytes, matching the size
-/// limit of [`crate::Range`].
 pub fn segment_strict(input: &str) -> Result<Vec<SpannedSegment<'_>>, Vec<MdxDiagnostic>> {
+    validate_mdx_input_size(input.len())?;
     strict::segment_strict(input)
+}
+
+pub(super) fn validate_mdx_input_size(input_len: usize) -> Result<(), Vec<MdxDiagnostic>> {
+    crate::validate_input_size(input_len).map_err(|_| vec![input_size_diagnostic()])
+}
+
+fn input_size_diagnostic() -> MdxDiagnostic {
+    MdxDiagnostic {
+        code: MdxDiagnosticCode::InputTooLarge,
+        message: "input exceeds the maximum supported size of 4294967294 bytes",
+        primary_range: crate::Range::empty_at(0),
+        related_range: None,
+    }
 }
 
 /// Translate a UTF-8 byte offset into a one-based line and Unicode scalar column.
@@ -280,6 +312,7 @@ pub fn segment_strict(input: &str) -> Result<Vec<SpannedSegment<'_>>, Vec<MdxDia
 /// character boundary.
 #[must_use]
 pub fn source_location(input: &str, byte_offset: usize) -> SourceLocation {
+    crate::range::assert_input_size(input.len());
     assert!(
         byte_offset <= input.len(),
         "byte offset is outside the input"
@@ -290,14 +323,21 @@ pub fn source_location(input: &str, byte_offset: usize) -> SourceLocation {
     );
 
     let before = &input[..byte_offset];
-    let line = before.bytes().filter(|byte| *byte == b'\n').count() + 1;
+    let line = before.bytes().filter(|byte| *byte == b'\n').count();
     let line_start = before.rfind('\n').map_or(0, |offset| offset + 1);
-    let column = input[line_start..byte_offset].chars().count() + 1;
+    let column = input[line_start..byte_offset].chars().count();
 
     SourceLocation {
-        line: u32::try_from(line).expect("line number exceeds u32::MAX"),
-        column: u32::try_from(column).expect("column number exceeds u32::MAX"),
+        line: one_based_source_count(line),
+        column: one_based_source_count(column),
     }
+}
+
+fn one_based_source_count(zero_based_count: usize) -> u32 {
+    let one_based_count = zero_based_count
+        .checked_add(1)
+        .expect("source position exceeds usize::MAX");
+    u32::try_from(one_based_count).expect("source position exceeds u32::MAX")
 }
 
 impl<'a> Segment<'a> {
@@ -315,4 +355,29 @@ impl<'a> Segment<'a> {
     }
 }
 
-pub use render::{MdxOutput, render, render_with_options};
+pub use render::{MdxOutput, render, render_with_options, try_render, try_render_with_options};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn strict_size_validation_returns_a_stable_diagnostic() {
+        let diagnostics = validate_mdx_input_size(crate::MAX_INPUT_BYTES + 1).unwrap_err();
+
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].code, MdxDiagnosticCode::InputTooLarge);
+        assert_eq!(diagnostics[0].primary_range, crate::Range::empty_at(0));
+        assert!(
+            diagnostics[0]
+                .message
+                .contains(&crate::MAX_INPUT_BYTES.to_string())
+        );
+    }
+
+    #[test]
+    fn maximum_input_length_preserves_one_based_source_positions() {
+        assert_eq!(one_based_source_count(crate::MAX_INPUT_BYTES), u32::MAX);
+    }
+}

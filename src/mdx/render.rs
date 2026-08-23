@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use crate::{Options, RenderPolicy};
 
-use super::{Segment, segment};
+use super::Segment;
 
 /// Error returned when a component name cannot be used as a JavaScript binding.
 ///
@@ -187,13 +187,37 @@ impl MdxOutput<'_> {
 }
 
 /// Render MDX to HTML body with default options.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`crate::MAX_INPUT_BYTES`]. Use
+/// [`try_render`] to handle the limit as an error.
 pub fn render(input: &str) -> MdxOutput<'_> {
-    render_with_options(input, &mdx_default_options())
+    try_render(input).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Render MDX to HTML without panicking for oversized input.
+pub fn try_render(input: &str) -> Result<MdxOutput<'_>, crate::InputSizeError> {
+    try_render_with_options(input, &mdx_default_options())
 }
 
 /// Render MDX to HTML body with custom Markdown options.
+///
+/// # Panics
+///
+/// Panics when the input exceeds [`crate::MAX_INPUT_BYTES`]. Use
+/// [`try_render_with_options`] to handle the limit as an error.
 pub fn render_with_options<'a>(input: &'a str, options: &Options) -> MdxOutput<'a> {
-    let segments = segment(input);
+    try_render_with_options(input, options).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Render MDX to HTML with custom Markdown options without panicking for
+/// oversized input.
+pub fn try_render_with_options<'a>(
+    input: &'a str,
+    options: &Options,
+) -> Result<MdxOutput<'a>, crate::InputSizeError> {
+    let segments = super::try_segment(input)?;
     let mut body = String::with_capacity(input.len());
     let mut esm: Vec<&'a str> = Vec::new();
     let mut front_matter: Option<&'a str> = None;
@@ -204,7 +228,7 @@ pub fn render_with_options<'a>(input: &'a str, options: &Options) -> MdxOutput<'
                 esm.push(s);
             }
             Segment::Markdown(s) => {
-                let result = crate::parse_with_options(s, options);
+                let result = crate::try_parse_with_options(s, options)?;
                 body.push_str(&result.html);
                 if front_matter.is_none() {
                     front_matter = result.front_matter;
@@ -220,11 +244,11 @@ pub fn render_with_options<'a>(input: &'a str, options: &Options) -> MdxOutput<'
         }
     }
 
-    MdxOutput {
+    Ok(MdxOutput {
         body,
         esm,
         front_matter,
-    }
+    })
 }
 
 fn mdx_default_options() -> Options {
