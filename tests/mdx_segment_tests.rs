@@ -466,6 +466,9 @@ fn esm_terminal_regex_preserves_syntactically_impossible_suffix_like_markdown() 
         "(Markdown prose in parentheses)\n",
         "(1e3 prose)\n",
         "[π prose]\n",
+        "[\u{0301}]\n",
+        "[π•]\n",
+        "[\\u0030]\n",
         ". Markdown prose\n",
     ] {
         let input = format!("{esm}{markdown}");
@@ -495,8 +498,11 @@ fn esm_terminal_regex_follows_valid_cross_line_suffix_chains() {
         "export const matcher = /}/\n`tagged template with whitespace`\n",
         "export const matcher = /}/\n[lookup[`${name}` /* nested */]](value, { flags: true })\n",
         "export const matcher = /}/\n[π + café + \\u0061]\n",
+        "export const matcher = /}/\n[π\u{0301} + name\u{203f} + join\u{200c}\u{200d}]\n",
+        "export const matcher = /}/\n[\\u03c0\\u0301 + name\\u{203f} + join\\u200c\\u200d]\n",
         "export const matcher = /}/\n(1e3, 1_000.5e-2, 0xFFn, 0o77n, 0b10n, .5)\n",
         "export const matcher = /}/\n.\\u006d(0xCAFEn)\n",
+        "export const matcher = /}/\n.π\u{0301}(join\u{200c}\u{200d})\n",
         "export const matcher = /}/\n`numeric ${1e3 + π}`\n",
     ] {
         let input = format!("{esm}Markdown.\n");

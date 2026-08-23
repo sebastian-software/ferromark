@@ -1188,9 +1188,9 @@ fn scan_suffix_identifier_char(
     }
     if byte.is_ascii() {
         let valid = if is_start {
-            byte.is_ascii_alphabetic() || matches!(byte, b'_' | b'$')
+            is_suffix_identifier_start_char(char::from(byte))
         } else {
-            is_esm_word_byte(byte)
+            is_suffix_identifier_continue_char(char::from(byte))
         };
         return valid.then_some(pos + 1);
     }
@@ -1200,11 +1200,24 @@ fn scan_suffix_identifier_char(
         .chars()
         .next()?;
     let valid = if is_start {
-        character.is_alphabetic()
+        is_suffix_identifier_start_char(character)
     } else {
-        character.is_alphanumeric()
+        is_suffix_identifier_continue_char(character)
     };
     valid.then_some(pos + character.len_utf8())
+}
+
+#[inline]
+fn is_suffix_identifier_start_char(character: char) -> bool {
+    character == '$' || character == '_' || unicode_ident::is_xid_start(character)
+}
+
+#[inline]
+fn is_suffix_identifier_continue_char(character: char) -> bool {
+    character == '$'
+        || character == '_'
+        || matches!(character, '\u{200c}' | '\u{200d}')
+        || unicode_ident::is_xid_continue(character)
 }
 
 fn scan_suffix_identifier_escape(
@@ -1243,9 +1256,9 @@ fn scan_suffix_identifier_escape(
     };
     let character = char::from_u32(code_point)?;
     let valid = if is_start {
-        character.is_alphabetic() || matches!(character, '_' | '$')
+        is_suffix_identifier_start_char(character)
     } else {
-        character.is_alphanumeric() || matches!(character, '_' | '$')
+        is_suffix_identifier_continue_char(character)
     };
     valid.then_some(cursor)
 }
