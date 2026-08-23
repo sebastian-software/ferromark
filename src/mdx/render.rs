@@ -324,6 +324,35 @@ Paragraph.
     }
 
     #[test]
+    fn readme_render_example_extracts_front_matter_before_esm() {
+        let input = r#"---
+title: Hello
+---
+
+import { Card } from './card'
+
+# Hello World
+
+<Card title="Example">
+
+Markdown **inside** a component.
+
+</Card>
+
+{new Date().getFullYear()}
+"#;
+        let out = render(input);
+
+        assert_eq!(out.front_matter, Some("title: Hello\n"));
+        assert_eq!(out.esm, ["import { Card } from './card'\n"]);
+        assert!(out.body.contains("<h1 id=\"hello-world\">Hello World</h1>"));
+        assert!(out.body.contains("<Card title=\"Example\">"));
+        assert!(out.body.contains("<strong>inside</strong>"));
+        assert!(out.body.contains("{new Date().getFullYear()}"));
+        assert!(!out.body.contains("title: Hello"));
+    }
+
+    #[test]
     fn inline_html_passthrough() {
         let input = "Text with <sl-button>Click</sl-button> here.\n";
         let out = render(input);
