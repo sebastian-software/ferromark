@@ -233,7 +233,17 @@ fn write_component_body(out: &mut String, body: &str) {
         }
 
         if bytes[pos..].starts_with(b"<!--") {
-            pos = comment_end(bytes, pos).unwrap_or(bytes.len());
+            if let Some(end) = comment_end(bytes, pos) {
+                pos = end;
+                continue;
+            }
+
+            // Bound malformed-comment recovery just like incomplete
+            // declarations so a later real element is not swallowed.
+            indent_component_line(out, at_line_start, pre_depth);
+            out.push_str("&lt;");
+            at_line_start = false;
+            pos += 1;
             continue;
         }
 
@@ -611,6 +621,10 @@ fn generic_declaration_end(bytes: &[u8], start: usize) -> Option<usize> {
                 .map(|offset| pos + 2 + offset + 2)?;
             continue;
         }
+        if bracket_depth > 0 && conditional_section_content_start(bytes, pos).is_some() {
+            pos = conditional_section_end(bytes, pos)?;
+            continue;
+        }
 
         match bytes[pos] {
             b'\'' | b'"' => quote = Some(bytes[pos]),
@@ -631,6 +645,85 @@ fn generic_declaration_end(bytes: &[u8], start: usize) -> Option<usize> {
     }
 
     None
+}
+
+fn conditional_section_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let mut pos = conditional_section_content_start(bytes, start)?;
+    let mut depth = 1_u32;
+
+    while pos < bytes.len() {
+        if bytes[pos..].starts_with(b"<!--") {
+            pos = comment_end(bytes, pos)?;
+            continue;
+        }
+        if bytes[pos..].starts_with(b"<?") {
+            pos = bytes[pos + 2..]
+                .windows(2)
+                .position(|window| window == b"?>")
+                .map(|offset| pos + 2 + offset + 2)?;
+            continue;
+        }
+        if bytes[pos..].starts_with(b"<![CDATA[") {
+            pos = bytes[pos + 9..]
+                .windows(3)
+                .position(|window| window == b"]]>")
+                .map(|offset| pos + 9 + offset + 3)?;
+            continue;
+        }
+        if let Some(content_start) = conditional_section_content_start(bytes, pos) {
+            depth = depth.checked_add(1)?;
+            pos = content_start;
+            continue;
+        }
+        if bytes[pos..].starts_with(b"]]>") {
+            depth -= 1;
+            pos += 3;
+            if depth == 0 {
+                return Some(pos);
+            }
+            continue;
+        }
+
+        match bytes[pos] {
+            b'\'' | b'"' => pos = declaration_quote_end(bytes, pos)?,
+            _ => pos += 1,
+        }
+    }
+
+    None
+}
+
+fn conditional_section_content_start(bytes: &[u8], start: usize) -> Option<usize> {
+    if !bytes[start..].starts_with(b"<![") {
+        return None;
+    }
+
+    let mut pos = skip_ascii_whitespace(bytes, start + 3);
+    if bytes[pos..].starts_with(b"INCLUDE") {
+        pos += b"INCLUDE".len();
+    } else if bytes[pos..].starts_with(b"IGNORE") {
+        pos += b"IGNORE".len();
+    } else {
+        return None;
+    }
+    pos = skip_ascii_whitespace(bytes, pos);
+
+    (bytes.get(pos) == Some(&b'[')).then_some(pos + 1)
+}
+
+fn declaration_quote_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let quote = bytes[start];
+    bytes[start + 1..]
+        .iter()
+        .position(|byte| *byte == quote)
+        .map(|offset| start + 1 + offset + 1)
+}
+
+fn skip_ascii_whitespace(bytes: &[u8], mut pos: usize) -> usize {
+    while bytes.get(pos).is_some_and(u8::is_ascii_whitespace) {
+        pos += 1;
+    }
+    pos
 }
 
 fn standalone_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
@@ -1391,6 +1484,50 @@ Content
             ] {
                 assert!(component.contains(paragraph), "{component}");
             }
+        }
+    }
+
+    #[test]
+    fn to_component_omits_conditional_sections_containing_markup() {
+        for line_break in ["\n", "\r\n"] {
+            let body = format!(
+                "<!DOCTYPE html [{line_break}<![ INCLUDE [{line_break}<p data-end=']]>'>literal</p>{line_break}<![IGNORE[<section>nested</section><!-- comment ]]> --><?inside ]]>?><![CDATA[<em>cdata</em>]]>]]>{line_break}]]>{line_break}]>{line_break}<p>after section</p>"
+            );
+            let out = MdxOutput {
+                body: body.clone(),
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert_eq!(out.body, body);
+            for omitted in [
+                "DOCTYPE", "data-end", "literal", "nested", "comment", "<?inside", "cdata",
+            ] {
+                assert!(!component.contains(omitted), "{component}");
+            }
+            assert!(component.contains("<p>after section</p>"), "{component}");
+        }
+    }
+
+    #[test]
+    fn to_component_bounds_incomplete_conditional_sections() {
+        for body in [
+            "<!DOCTYPE html [<![INCLUDE[<section>inside</section>\n<p>after missing close</p>",
+            "<!DOCTYPE html [<![IGNORE['unterminated\n<p>after quote</p>",
+            "<!DOCTYPE html [<![INCLUDE[<!-- unterminated\n<p>after comment</p>",
+            "<!DOCTYPE html [<![INCLUDE[<?unterminated\n<p>after pi</p>",
+            "<!DOCTYPE html [<![INCLUD[near match\n<p>after near match</p>",
+        ] {
+            let out = MdxOutput {
+                body: body.to_owned(),
+                esm: vec![],
+                front_matter: None,
+            };
+            let component = out.to_component("Page").unwrap();
+
+            assert!(component.contains("&lt;!DOCTYPE"), "{component}");
+            assert!(component.contains("<p>after"), "{component}");
         }
     }
 
