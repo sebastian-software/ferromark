@@ -868,17 +868,25 @@ impl EsmContinuation {
         self.declaration_is_import && !self.import_has_source
     }
 
-    /// A completed regex expression can continue on the following line only
-    /// through a lexically valid expression suffix chain. The lookahead is
-    /// deliberately bounded to that physical line: this keeps ordinary
-    /// Markdown from being accumulated while avoiding rescanning prior lines.
-    fn regex_continues_with_expression(&self, bytes: &[u8], line_start: usize) -> bool {
-        if self.line_end != LineEnd::Regex {
+    /// A completed expression can continue on the following line only through
+    /// a lexically valid suffix chain. The lookahead is deliberately bounded
+    /// to that physical line: this keeps ordinary Markdown from being
+    /// accumulated while avoiding rescanning prior lines.
+    fn expression_continues_with_suffix(&self, bytes: &[u8], line_start: usize) -> bool {
+        if !matches!(
+            self.line_end,
+            LineEnd::Regex
+                | LineEnd::Word {
+                    requires_following: false,
+                    ..
+                }
+                | LineEnd::Punctuation(b')' | b']' | b'}' | b'\'' | b'"' | b'`')
+        ) {
             return false;
         }
 
         let start = skip_whitespace_offset(bytes, line_start);
-        has_regex_expression_suffix(bytes, start)
+        has_expression_suffix(bytes, start)
     }
 }
 
@@ -987,7 +995,7 @@ pub(crate) fn scan_esm(
             continue;
         }
 
-        if state.regex_continues_with_expression(bytes, end) {
+        if state.expression_continues_with_suffix(bytes, end) {
             line_start = end;
             end = next_line(bytes, line_start);
             continue;
@@ -1070,7 +1078,7 @@ fn is_plain_prose_line(bytes: &[u8], line_start: usize) -> bool {
 }
 
 /// Return whether the rest of this physical line is a plausible continuation
-/// of a completed regex expression.
+/// of a completed expression.
 ///
 /// Markdown and JavaScript intentionally overlap here: `[value](arg)`,
 /// `(value, flags)`, and a template literal are all valid ECMAScript suffixes.
@@ -1078,11 +1086,11 @@ fn is_plain_prose_line(bytes: &[u8], line_start: usize) -> bool {
 /// suffix that is lexically impossible, such as prose containing adjacent
 /// identifiers inside an index or call. A semicolon or blank line before
 /// Markdown makes the intended boundary explicit.
-fn has_regex_expression_suffix(bytes: &[u8], start: usize) -> bool {
-    try_regex_expression_suffix(bytes, start).unwrap_or(false)
+fn has_expression_suffix(bytes: &[u8], start: usize) -> bool {
+    try_expression_suffix(bytes, start).unwrap_or(false)
 }
 
-fn try_regex_expression_suffix(bytes: &[u8], start: usize) -> Option<bool> {
+fn try_expression_suffix(bytes: &[u8], start: usize) -> Option<bool> {
     let end = next_line(bytes, start);
     let mut pos = start;
     let mut saw_suffix = false;

@@ -522,6 +522,58 @@ fn esm_terminal_regex_follows_valid_cross_line_suffix_chains() {
 }
 
 #[test]
+fn esm_completed_expressions_follow_valid_cross_line_suffix_chains() {
+    for esm in [
+        "export const property = value\n.property\n",
+        "export const index = value\n[0]\n",
+        "export const call = value\n(argument)\n",
+        "export const tagged = value\n`tagged template`\n",
+        "export const string_property = \"value\"\n.property\n",
+        "export const object_index = ({ value: 1 })\n[\"value\"]\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("Markdown."));
+        assert!(output.to_component("Page").unwrap().starts_with(esm));
+    }
+}
+
+#[test]
+fn esm_completed_expressions_keep_markdown_and_asi_boundaries() {
+    for (esm, markdown) in [
+        ("export const value = expression\n", ". Markdown prose\n"),
+        (
+            "export const value = expression\n",
+            "[a Markdown link](https://example.com)\n",
+        ),
+        (
+            "export const value = expression\n",
+            "(Markdown prose in parentheses)\n",
+        ),
+        (
+            "export const value = expression;\n",
+            "`Markdown code span`\n",
+        ),
+        ("export const value = expression;\n", ".property\n"),
+    ] {
+        let input = format!("{esm}{markdown}");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown(markdown)]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert!(!render(&input).body.trim().is_empty());
+    }
+}
+
+#[test]
 fn esm_terminal_regex_requires_an_explicit_boundary_before_ambiguous_markdown() {
     let esm = "export const matcher = /}/;\n";
     let markdown = "`Markdown code span`\n";
