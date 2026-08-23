@@ -6,62 +6,121 @@ README_PATH = 'node/ferromark/README.md'
 RUST_PATH = 'src/lib.rs'
 NATIVE_PATH = 'node/native/src/lib.rs'
 
-FIELDS = {
-  'renderPolicy' => ['render_policy', "`'untrusted'`"],
-  'allowHtml' => ['allow_html', 'on'], 'allowLinkRefs' => ['allow_link_refs', 'on'],
-  'tables' => ['tables', 'on'], 'mergedTableCells' => ['merged_table_cells', 'off'],
-  'tableColumnWidths' => ['table_column_widths', 'off'], 'strikethrough' => ['strikethrough', 'on'],
-  'highlight' => ['highlight', 'off'], 'superscript' => ['superscript', 'off'],
-  'subscript' => ['subscript', 'off'], 'taskLists' => ['task_lists', 'on'],
-  'autolinkLiterals' => ['autolink_literals', 'off'], 'disallowedRawHtml' => ['disallowed_raw_html', 'on'],
-  'footnotes' => ['footnotes', 'off'], 'inlineFootnotes' => ['inline_footnotes', 'off'],
-  'frontMatter' => ['front_matter', 'off'], 'headingIds' => ['heading_ids', 'on'],
-  'math' => ['math', 'off'], 'callouts' => ['callouts', 'on'], 'definitionLists' => ['definition_lists', 'off'],
-  'lineComments' => ['line_comments', 'off'], 'indentedCodeBlocks' => ['indented_code_blocks', 'on'],
-  'linkBasePath' => ['link_base_path', 'unset']
-}.freeze
+class ContractFailure < StandardError; end
 
 def fail_contract(message)
-  raise message
+  raise ContractFailure, message
+end
+
+def source_block(source, pattern, description)
+  block = source[pattern, 1]
+  fail_contract("cannot read #{description}") unless block
+  block
+end
+
+def rust_options(rust)
+  struct_body = source_block(rust, /pub struct Options \{(.*?)^\}/m, 'Rust Options fields')
+  default_body = rust[/impl Default for Options \{\s*fn default\(\) -> Self \{\s*Self \{(.*?)\n        \}\n    \}/m, 1]
+  fail_contract('cannot read Rust Options defaults') unless default_body
+  fields = struct_body.scan(/^    pub (\w+): ([^,]+),$/).to_h
+  defaults = default_body.scan(/^            (\w+): (.+),$/).to_h
+  fail_contract('Rust Options must declare at least one field') if fields.empty?
+  fail_contract("Rust Options fields without defaults: #{(fields.keys - defaults.keys).join(', ')}") unless (fields.keys - defaults.keys).empty?
+  fail_contract("Rust defaults without fields: #{(defaults.keys - fields.keys).join(', ')}") unless (defaults.keys - fields.keys).empty?
+  fields.each_key { |field| fields[field] = defaults.fetch(field) }
+end
+
+def camel_case(field)
+  field.split('_').each_with_index.map { |part, index| index.zero? ? part : part.capitalize }.join
+end
+
+def documented_default(value)
+  case value
+  when 'true' then 'on'
+  when 'false' then 'off'
+  when 'None' then 'unset'
+  when 'RenderPolicy::Untrusted' then "`'untrusted'`"
+  else fail_contract("unsupported Rust Options default #{value.inspect}")
+  end
+end
+
+def node_option_docs(types)
+  body = source_block(types, /export interface Options \{(.*?)^\}/m, 'Node Options declaration')
+  body.scan(/\/\*\*(.*?)\*\/\s*(\w+)\?:/m).map { |documentation, field| [field, documentation] }.to_h
+end
+
+def native_option_fields(native)
+  body = source_block(native, /pub struct Options \{(.*?)^\}/m, 'native Options fields')
+  body.scan(/^    pub (\w+): /).to_h { |(field)| [field, true] }
+end
+
+def list_with_and(items)
+  return items.first if items.length == 1
+  return items.join(' and ') if items.length == 2
+
+  "#{items[0...-1].join(', ')}, and #{items.last}"
 end
 
 def validate(types, readme, rust, native)
-  default_body = rust[/impl Default for Options \{\s*fn default\(\) -> Self \{\s*Self \{(.*?)\n        \}\n    \}/m, 1]
-  fail_contract('cannot read Rust Options defaults') unless default_body
-  FIELDS.each do |js, (rs, default)|
-    field = types[/\/\*\*(.*?)\*\/\s*#{Regexp.escape(js)}\?:/m, 1]
-    fail_contract("#{js} needs TSDoc") unless field
-    fail_contract("#{js} TSDoc must state default #{default}") unless field.include?("Default: #{default}")
-    fail_contract("Rust Options missing #{rs}") unless rust.include?("pub #{rs}:")
-    fail_contract("native mapping missing #{rs}") unless native.include?("pub #{rs}:") && native.include?("options.#{rs}")
-    expected = case default
-               when 'on' then 'true'
-               when 'off' then 'false'
-               when 'unset' then 'None'
-               else 'RenderPolicy::Untrusted'
-               end
-    fail_contract("Rust default for #{rs} must be #{expected}") unless default_body.match?(/^            #{rs}: #{Regexp.escape(expected)},$/)
+  rust_fields = rust_options(rust)
+  node_docs = node_option_docs(types)
+  native_fields = native_option_fields(native)
+  expected_node_fields = rust_fields.keys.to_h { |field| [camel_case(field), field] }
+
+  fail_contract("Node Options field mismatch: expected #{expected_node_fields.keys.join(', ')}") unless node_docs.keys.sort == expected_node_fields.keys.sort
+  fail_contract("native Options field mismatch: expected #{rust_fields.keys.join(', ')}") unless native_fields.keys.sort == rust_fields.keys.sort
+
+  rust_fields.each do |rust_field, default_value|
+    node_field = camel_case(rust_field)
+    documentation = node_docs.fetch(node_field)
+    default = documented_default(default_value)
+    fail_contract("#{node_field} TSDoc must state default #{default}") unless documentation.include?("Default: #{default}")
+    fail_contract("native mapping missing #{rust_field}") unless native.include?("options.#{rust_field}")
   end
+
   fail_contract('README must link Options declaration') unless readme.include?('[`Options`](./index.d.mts)')
-  fail_contract('README must state untrusted default') unless readme.include?("defaults to `'untrusted'")
+  enabled = rust_fields.select { |_field, default| default == 'true' }.keys.map { |field| "`#{camel_case(field)}`" }
+  policy = rust_fields.select { |_field, default| default == 'RenderPolicy::Untrusted' }.keys.map { |field| "`#{camel_case(field)}`" }
+  unset = rust_fields.select { |_field, default| default == 'None' }.keys.map { |field| "`#{camel_case(field)}`" }
+  fail_contract('README summary requires one untrusted policy default') unless policy.length == 1
+  fail_contract('README summary requires one unset option default') unless unset.length == 1
+  expected_defaults = "Defaults on: #{list_with_and(enabled)}. All other boolean syntax extensions default off; #{policy.first} defaults to `'untrusted'` and #{unset.first} is unset."
+  fail_contract('README must state source-derived defaults') unless readme.include?(expected_defaults)
   fail_contract('README must document table constraints') unless readme.include?('require `tables`')
 end
 
 types = File.read(TYPE_PATH); readme = File.read(README_PATH); rust = File.read(RUST_PATH); native = File.read(NATIVE_PATH)
 validate(types, readme, rust, native)
 if ARGV == ['--self-test']
-  class MutationAccepted < StandardError; end
   def rejected
     yield
-    raise MutationAccepted, 'mutation unexpectedly passed'
-  rescue RuntimeError => error
-    raise error if error.is_a?(MutationAccepted)
+  rescue ContractFailure
+    return
+  else
+    fail_contract('mutation unexpectedly passed')
   end
   rejected do
     validate(types.sub('Default: on', 'Default: off'), readme, rust, native)
   end
   rejected do
     validate(types, readme.gsub('[`Options`](./index.d.mts)', 'Options'), rust, native)
+  end
+  future_field = rust.sub(
+    '    pub link_base_path: Option<Box<str>>,',
+    "    pub link_base_path: Option<Box<str>>,\n    pub future_option: bool,"
+  ).sub(
+    '            link_base_path: None,',
+    "            link_base_path: None,\n            future_option: false,"
+  )
+  rejected do
+    validate(types, readme, future_field, native)
+  end
+  future_with_docs = types.sub(
+    "  /**\n   * Prefix internal absolute link destinations",
+    "  /** Future option. Default: off. */\n  futureOption?: boolean\n  /**\n   * Prefix internal absolute link destinations"
+  )
+  rejected do
+    validate(future_with_docs, readme, future_field, native)
   end
 elsif !ARGV.empty?
   fail_contract('usage: test-node-options-docs-contract.rb [--self-test]')
