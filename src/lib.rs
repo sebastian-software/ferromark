@@ -2718,7 +2718,7 @@ mod crate_docs_tests {
             .expect("crate docs must precede the public module declarations")
             .0;
         let cargo_toml = include_str!("../Cargo.toml");
-        let simd_source = include_str!("inline/simd.rs");
+        let simd_source = include_str!("inline/simd.rs").replace("\r\n", "\n");
 
         assert_eq!(RenderPolicy::default(), RenderPolicy::Untrusted);
         assert!(crate_docs.contains("RenderPolicy::Untrusted"));
