@@ -17,6 +17,9 @@ exclude = [
     "node",
 ]
 
+[package.metadata.docs.rs]
+features = ["mdx"]
+
 [workspace]
 members = ["node/native"]
 resolver = "2"

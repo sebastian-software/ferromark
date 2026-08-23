@@ -54,6 +54,8 @@ jobs:
       - run: node ./scripts/test-publish-verification.mjs
       - run: ruby ./scripts/test-node-ci-matrix.rb
       - run: ruby ./scripts/test-contributing-ci-contract.rb --self-test
+      - run: ruby ./scripts/test-docs-rs-metadata.rb --self-test
+      - run: RUSTDOCFLAGS='-D warnings' cargo doc --locked --no-deps --features mdx
       - run: ./scripts/check-workflow-pins.sh
 
   rustsec:
