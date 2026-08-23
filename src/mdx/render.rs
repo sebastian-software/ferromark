@@ -364,14 +364,8 @@ fn write_component_tag<'a>(
             return;
         }
 
-        if let Some(index) = html_void_element_index(tag.name) {
+        if let Some((index, _)) = html_void_element(tag.name) {
             void_openings[index] = void_openings[index].saturating_sub(1);
-            return;
-        }
-        if let Some(index) = html_void_element_index_ignore_ascii_case(tag.name)
-            && void_openings[index] > 0
-        {
-            void_openings[index] -= 1;
             return;
         }
 
@@ -379,21 +373,9 @@ fn write_component_tag<'a>(
         return;
     }
 
-    if let Some(index) = html_void_element_index(tag.name) {
+    if let Some((index, canonical_name)) = html_void_element(tag.name) {
         void_openings[index] += 1;
-        if tag.is_self_closing {
-            out.push_str(source);
-            return;
-        }
-
-        let before_close = &source[..source.len() - 1];
-        out.push_str(before_close);
-        if before_close.ends_with(char::is_whitespace) {
-            out.push('/');
-        } else {
-            out.push_str(" /");
-        }
-        out.push('>');
+        write_html_void_opening_tag(out, source, tag.name, canonical_name, tag.is_self_closing);
         return;
     }
 
@@ -403,10 +385,44 @@ fn write_component_tag<'a>(
     out.push_str(source);
 }
 
-fn html_void_element_index(name: &str) -> Option<usize> {
+fn write_html_void_opening_tag(
+    out: &mut String,
+    source: &str,
+    original_name: &str,
+    canonical_name: &str,
+    is_self_closing: bool,
+) {
+    debug_assert!(source.starts_with('<'));
+    debug_assert!(source.len() > original_name.len());
+    out.push('<');
+    out.push_str(canonical_name);
+
+    let after_name = &source[original_name.len() + 1..];
+    if is_self_closing {
+        out.push_str(after_name);
+        return;
+    }
+
+    let before_close = &after_name[..after_name.len() - 1];
+    out.push_str(before_close);
+    if before_close.ends_with(char::is_whitespace) {
+        out.push('/');
+    } else {
+        out.push_str(" /");
+    }
+    out.push('>');
+}
+
+fn html_void_element(name: &str) -> Option<(usize, &'static str)> {
+    if !uses_html_intrinsic_syntax(name) {
+        return None;
+    }
+
     HTML_VOID_ELEMENTS
         .iter()
-        .position(|element| *element == name)
+        .enumerate()
+        .find(|(_, element)| element.eq_ignore_ascii_case(name))
+        .map(|(index, element)| (index, *element))
 }
 
 fn html_void_element_index_ignore_ascii_case(name: &str) -> Option<usize> {
@@ -416,13 +432,7 @@ fn html_void_element_index_ignore_ascii_case(name: &str) -> Option<usize> {
 }
 
 fn html_text_element(name: &str) -> Option<(HtmlTextKind, &'static str)> {
-    // Lowercase-leading and all-uppercase names use HTML intrinsic semantics in
-    // JSX. Preserve PascalCase/mixed-leading-uppercase names as MDX components.
-    let html_syntax = name.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
-        || name
-            .bytes()
-            .all(|byte| !byte.is_ascii_alphabetic() || byte.is_ascii_uppercase());
-    if !html_syntax {
+    if !uses_html_intrinsic_syntax(name) {
         return None;
     }
 
@@ -442,6 +452,16 @@ fn html_text_element(name: &str) -> Option<(HtmlTextKind, &'static str)> {
     }
 
     None
+}
+
+fn uses_html_intrinsic_syntax(name: &str) -> bool {
+    // Lowercase-leading and all-uppercase HTML names are emitted as JSX
+    // intrinsics. Preserve PascalCase/mixed-leading-uppercase names as MDX
+    // components.
+    name.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
+        || name
+            .bytes()
+            .all(|byte| !byte.is_ascii_alphabetic() || byte.is_ascii_uppercase())
 }
 
 fn indent_component_line(out: &mut String, at_line_start: bool, pre_depth: u32) {
@@ -968,6 +988,99 @@ Content
             "{component}"
         );
         assert!(component.contains("line<br />\n"), "{component}");
+    }
+
+    #[test]
+    fn to_component_canonicalizes_all_uppercase_html_void_elements() {
+        let body = "<AREA data-kind=\"upper\"></area><BASE ></BASE><BR></br><COL span={2}></COL><EMBED type=\"example/test\"></EMBED><HR></hr><IMG src=\"image.png\"></img><INPUT disabled></INPUT><LINK rel=\"help\"></LINK><META name=\"kind\"></META><PARAM name=\"example\"></PARAM><SOURCE src=\"media.mp4\"></SOURCE><TRACK kind=\"captions\"></TRACK><WBR/></wbr>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert_eq!(out.body, body);
+        for expected in [
+            "<area data-kind=\"upper\" />",
+            "<base />",
+            "<br />",
+            "<col span={2} />",
+            "<embed type=\"example/test\" />",
+            "<hr />",
+            "<img src=\"image.png\" />",
+            "<input disabled />",
+            "<link rel=\"help\" />",
+            "<meta name=\"kind\" />",
+            "<param name=\"example\" />",
+            "<source src=\"media.mp4\" />",
+            "<track kind=\"captions\" />",
+            "<wbr/>",
+        ] {
+            assert!(
+                component.contains(expected),
+                "missing {expected:?}: {component}"
+            );
+        }
+        for omitted in HTML_VOID_ELEMENTS.map(str::to_ascii_uppercase) {
+            assert!(
+                !component.contains(&format!("<{omitted}")),
+                "retained uppercase opener {omitted:?}: {component}"
+            );
+            assert!(
+                !component.contains(&format!("</{omitted}")),
+                "retained void closer {omitted:?}: {component}"
+            );
+        }
+    }
+
+    #[test]
+    fn to_component_distinguishes_html_void_names_from_pascal_case_components() {
+        let body = "<bR data-kind=\"mixed\"></BR><iMg src=\"mixed.png\"></IMG><Br data-kind=\"component\"></Br><Img src=\"component.png\"></Img><BRAVO></BRAVO><BR-X></BR-X><custom-img></custom-img>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(
+            component.contains("<br data-kind=\"mixed\" />"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<img src=\"mixed.png\" />"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<Br data-kind=\"component\"></Br>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<Img src=\"component.png\"></Img>"),
+            "{component}"
+        );
+        assert!(component.contains("<BRAVO></BRAVO>"), "{component}");
+        assert!(component.contains("<BR-X></BR-X>"), "{component}");
+        assert!(
+            component.contains("<custom-img></custom-img>"),
+            "{component}"
+        );
+    }
+
+    #[test]
+    fn to_component_canonicalizes_uppercase_void_tags_from_rendered_markdown() {
+        let out = render("a<BR>b\n\n<IMG src=\"image.png\">\n\nAfter.");
+        assert!(out.body.contains("<p>a<BR>b</p>"), "{}", out.body);
+        assert!(out.body.contains("<IMG src=\"image.png\">"), "{}", out.body);
+
+        let component = out.to_component("Page").unwrap();
+        assert!(component.contains("<p>a<br />b</p>"), "{component}");
+        assert!(
+            component.contains("<img src=\"image.png\" />"),
+            "{component}"
+        );
+        assert!(component.contains("<p>After.</p>"), "{component}");
     }
 
     #[test]
