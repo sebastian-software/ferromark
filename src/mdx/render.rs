@@ -228,7 +228,7 @@ fn write_component_body(out: &mut String, body: &str) {
     let mut pos = 0;
     let mut at_line_start = true;
     let mut pre_depth = 0_u32;
-    let mut html_component_openings = Vec::new();
+    let mut html_openings = Vec::new();
 
     while pos < bytes.len() {
         if pre_depth > 0 && bytes[pos] != b'<' {
@@ -302,7 +302,7 @@ fn write_component_body(out: &mut String, body: &str) {
                     out,
                     &body[pos..pos + tag.end_offset],
                     &tag,
-                    &mut html_component_openings,
+                    &mut html_openings,
                 )
             };
             at_line_start = false;
@@ -378,19 +378,23 @@ fn write_component_tag<'a>(
     out: &mut String,
     source: &str,
     tag: &TagInfo<'a>,
-    html_component_openings: &mut Vec<(&'static str, &'a str)>,
+    html_openings: &mut Vec<(&'static str, Option<&'a str>)>,
 ) -> ComponentTagEffect {
     if tag.is_closing {
         if let Some(canonical_name) = html_element_ignore_ascii_case(tag.name) {
-            if html_component_openings
+            if html_openings
                 .last()
                 .is_some_and(|(opening_canonical, _)| *opening_canonical == canonical_name)
             {
-                let (_, opening_name) = html_component_openings
+                let (_, component_name) = html_openings
                     .pop()
-                    .expect("last component opening was just checked");
-                write_closing_tag(out, source, opening_name);
-                return ComponentTagEffect::None;
+                    .expect("last HTML opening was just checked");
+                write_closing_tag(out, source, component_name.unwrap_or(canonical_name));
+                return if component_name.is_none() && canonical_name == "pre" {
+                    ComponentTagEffect::PreClose
+                } else {
+                    ComponentTagEffect::None
+                };
             }
             if HTML_VOID_ELEMENTS.contains(&canonical_name) {
                 return ComponentTagEffect::None;
@@ -415,6 +419,9 @@ fn write_component_tag<'a>(
 
     if let Some(canonical_name) = html_element(tag.name) {
         write_html_opening_tag(out, source, tag.name, canonical_name);
+        if !tag.is_self_closing {
+            html_openings.push((canonical_name, None));
+        }
         return if canonical_name == "pre" && !tag.is_self_closing {
             ComponentTagEffect::PreOpen
         } else {
@@ -425,7 +432,7 @@ fn write_component_tag<'a>(
     if !tag.is_self_closing
         && let Some(canonical_name) = html_element_ignore_ascii_case(tag.name)
     {
-        html_component_openings.push((canonical_name, tag.name));
+        html_openings.push((canonical_name, Some(tag.name)));
     }
     out.push_str(source);
     ComponentTagEffect::None
@@ -1795,6 +1802,31 @@ Content
         assert!(component.contains("      {value}"), "{component}");
         assert!(component.contains("      </Code>"), "{component}");
         assert!(component.contains("      </Pre>"), "{component}");
+    }
+
+    #[test]
+    fn to_component_keeps_nested_intrinsic_and_component_owners_distinct() {
+        let body = "<Div><div>inner</div></Div><div><Div>component</DIV></DIV><Pre><PRE><CODE>first\n  second {value}\n</code></pre></PRE>";
+        let out = MdxOutput {
+            body: body.to_owned(),
+            esm: vec![],
+            front_matter: None,
+        };
+        let component = out.to_component("Page").unwrap();
+
+        assert!(
+            component.contains("<Div><div>inner</div></Div>"),
+            "{component}"
+        );
+        assert!(
+            component.contains("<div><Div>component</Div></div>"),
+            "{component}"
+        );
+        assert!(
+            component
+                .contains("<Pre><pre><code>{\"first\\n  second {value}\\n\"}</code></pre></Pre>"),
+            "{component}"
+        );
     }
 
     #[test]
