@@ -2708,11 +2708,26 @@ More text."#;
 
 #[cfg(test)]
 mod crate_docs_tests {
-    use super::RenderPolicy;
+    use super::{Options, RenderPolicy};
+
+    fn documented_default_policy(crate_docs: &str) -> RenderPolicy {
+        const UNTRUSTED_DEFAULT: &str = "Its default\n//! [`RenderPolicy::Untrusted`] escapes raw HTML and restricts unsafe URL";
+        const TRUSTED_DEFAULT: &str =
+            "Its default\n//! [`RenderPolicy::Trusted`] preserves raw HTML and arbitrary URL";
+
+        match (
+            crate_docs.contains(UNTRUSTED_DEFAULT),
+            crate_docs.contains(TRUSTED_DEFAULT),
+        ) {
+            (true, false) => RenderPolicy::Untrusted,
+            (false, true) => RenderPolicy::Trusted,
+            _ => panic!("crate docs must identify exactly one default render policy"),
+        }
+    }
 
     #[test]
     fn crate_docs_describe_current_security_feature_and_simd_contracts() {
-        let source = include_str!("lib.rs");
+        let source = include_str!("lib.rs").replace("\r\n", "\n");
         let crate_docs = source
             .split_once("pub mod block;")
             .expect("crate docs must precede the public module declarations")
@@ -2720,8 +2735,11 @@ mod crate_docs_tests {
         let cargo_toml = include_str!("../Cargo.toml");
         let simd_source = include_str!("inline/simd.rs").replace("\r\n", "\n");
 
-        assert_eq!(RenderPolicy::default(), RenderPolicy::Untrusted);
-        assert!(crate_docs.contains("RenderPolicy::Untrusted"));
+        assert_eq!(
+            documented_default_policy(crate_docs),
+            Options::default().render_policy,
+            "crate docs must describe the policy used by default public render entry points",
+        );
         assert!(crate_docs.contains("`mdx` Cargo feature"));
         assert!(crate_docs.contains("AArch64 builds with NEON enabled"));
         assert!(crate_docs.contains("x86-64"));
