@@ -1,18 +1,28 @@
-//! ferromark: Ultra-high-performance Markdown to HTML compiler
+//! Markdown to HTML with a secure rendering default.
 //!
-//! This crate provides a streaming Markdown parser optimized for speed,
-//! targeting 20-30% better throughput than existing Rust parsers.
+//! ferromark streams Markdown into HTML without building an AST. Its default
+//! [`RenderPolicy::Untrusted`] escapes raw HTML and restricts unsafe URL
+//! schemes. Use [`Options`] to select syntax extensions and rendering policy.
 //!
-//! # Design Principles
-//! - No AST: streaming events only
-//! - No regex: pure byte-level scanning
-//! - No backtracking: O(n) time on all inputs
-//! - Minimal allocations: ranges into input buffer
+//! # Quick start
 //!
-//! # Future Optimizations
-//! - `simdutf` / `simdutf8`: SIMD-accelerated UTF-8 validation for input
-//! - NEON intrinsics for ARM: inline marker scanning
-//! - Loop unrolling in hot paths (4x unroll like md4c)
+//! ```
+//! let html = ferromark::to_html("# Hello\n\n**World**");
+//!
+//! assert_eq!(html, "<h1 id=\"hello\">Hello</h1>\n<p><strong>World</strong></p>\n");
+//! ```
+//!
+//! # Optional MDX support
+//!
+//! Enable the `mdx` Cargo feature to segment and render MDX documents. The
+//! feature is opt-in and does not alter the default Markdown renderer.
+//!
+//! # Platform optimizations
+//!
+//! The inline-specials scanner uses NEON on AArch64 builds with NEON enabled
+//! and baseline SSE2 on x86-64. When neither path is available, it uses the
+//! scalar scanner. See the repository benchmark documentation for current,
+//! reproducible measurements.
 
 pub mod block;
 pub mod cursor;
@@ -2693,6 +2703,36 @@ More text."#;
             "Alt text should be plain: {html}"
         );
         assert!(!html.contains("<strong>"), "No <strong> tags in alt text");
+    }
+}
+
+#[cfg(test)]
+mod crate_docs_tests {
+    use super::RenderPolicy;
+
+    #[test]
+    fn crate_docs_describe_current_security_feature_and_simd_contracts() {
+        let source = include_str!("lib.rs");
+        let crate_docs = source
+            .split_once("pub mod block;")
+            .expect("crate docs must precede the public module declarations")
+            .0;
+        let cargo_toml = include_str!("../Cargo.toml");
+        let simd_source = include_str!("inline/simd.rs");
+
+        assert_eq!(RenderPolicy::default(), RenderPolicy::Untrusted);
+        assert!(crate_docs.contains("RenderPolicy::Untrusted"));
+        assert!(crate_docs.contains("`mdx` Cargo feature"));
+        assert!(crate_docs.contains("AArch64 builds with NEON enabled"));
+        assert!(crate_docs.contains("x86-64"));
+        assert!(!crate_docs.contains("targeting 20-30% better throughput"));
+        assert!(!crate_docs.contains("Future Optimizations"));
+        assert!(!crate_docs.contains("NEON intrinsics for ARM"));
+
+        assert!(cargo_toml.contains("mdx = []"));
+        assert!(simd_source.contains("target_arch = \"x86_64\""));
+        assert!(simd_source.contains("target_arch = \"aarch64\""));
+        assert!(simd_source.contains("target_feature = \"neon\""));
     }
 }
 
