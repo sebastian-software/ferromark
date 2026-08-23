@@ -19,6 +19,7 @@ exclude = [
 
 [package.metadata.docs.rs]
 features = ["mdx"]
+no-default-features = true
 
 [workspace]
 members = ["node/native"]

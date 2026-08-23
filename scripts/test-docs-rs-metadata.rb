@@ -49,10 +49,23 @@ def docs_rs_features(manifest, document: File.read(manifest))
   match[:features].scan(/"([^"]+)"/).flatten
 end
 
+def docs_rs_no_default_features(manifest, document: File.read(manifest))
+  header = '[package.metadata.docs.rs]'
+  start = document.index("#{header}\n")
+  fail_contract("#{manifest} must contain #{header}") unless start
+
+  table = document[(start + header.length + 1)..].split(/^\[/, 2).fetch(0)
+  match = table.match(/^no-default-features\s*=\s*(?<value>true|false)\s*$/)
+  fail_contract("#{manifest} docs.rs metadata must define no-default-features") unless match
+
+  match[:value] == 'true'
+end
+
 def assert_docs_rs_features(metadata, manifest, document: File.read(manifest))
   features = docs_rs_features(manifest, document: document)
   expected = ['mdx']
   fail_contract("#{manifest} docs.rs features must be #{expected.inspect}, got #{features.inspect}") unless features == expected
+  fail_contract("#{manifest} docs.rs must disable default features") unless docs_rs_no_default_features(manifest, document: document)
 
   package_features = package_for_manifest(metadata, manifest).fetch('features')
   fail_contract("#{manifest} must declare the mdx feature") unless package_features.key?('mdx')
@@ -76,7 +89,7 @@ end
 def build_mdx_docs(target_directory)
   output, status = Open3.capture2e(
     { 'RUSTDOCFLAGS' => '-D warnings' },
-    'cargo', 'doc', '--locked', '--no-deps', '--features', 'mdx', '--target-dir', target_directory,
+    'cargo', 'doc', '--locked', '--no-deps', '--no-default-features', '--features', 'mdx', '--target-dir', target_directory,
     chdir: REPOSITORY_ROOT
   )
   fail_contract("MDX documentation build failed:\n#{output}") unless status.success?
@@ -133,8 +146,9 @@ def self_test(repository_root)
   package_for_manifest(metadata_without_mdx, source_manifest).fetch('features').delete('mdx')
 
   mutations = {
-    'missing docs.rs table' => source_document.sub("[package.metadata.docs.rs]\nfeatures = [\"mdx\"]\n\n", ''),
-    'broader docs.rs feature set' => source_document.sub('features = ["mdx"]', 'features = ["mdx", "profiling"]')
+    'missing docs.rs table' => source_document.sub("[package.metadata.docs.rs]\nfeatures = [\"mdx\"]\nno-default-features = true\n\n", ''),
+    'broader docs.rs feature set' => source_document.sub('features = ["mdx"]', 'features = ["mdx", "profiling"]'),
+    'default features enabled' => source_document.sub('no-default-features = true', 'no-default-features = false')
   }
   mutations.each do |label, document|
     assert_rejected(label) { assert_docs_rs_features(metadata, source_manifest, document: document) }
