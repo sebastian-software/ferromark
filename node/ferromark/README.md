@@ -40,7 +40,7 @@ untrusted user content.
 toHtml('<span class="note">Internal note</span>', {
   renderPolicy: 'trusted',
 })
-// '<span class="note">Internal note</span>'
+// '<p><span class="note">Internal note</span></p>\n'
 ```
 
 See [`Options`](./index.d.mts) for the complete optional syntax and rendering

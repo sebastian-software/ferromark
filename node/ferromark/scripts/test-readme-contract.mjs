@@ -41,6 +41,11 @@ function assertReadmeContract(candidate) {
   assert.match(candidate, /unsafe link and image URL schemes/i, 'README must describe URL filtering')
   assert.match(candidate, /renderPolicy: 'trusted'/, 'README must show the trusted opt-in')
   assert.match(candidate, /only when the Markdown source is trusted/i, 'README must scope trusted mode')
+  assert.match(
+    candidate,
+    /'<p><span class="note">Internal note<\/span><\/p>\\n'/,
+    'README must show the actual trusted inline HTML output',
+  )
   assert.match(candidate, /\[`Options`\]\(\.\/index\.d\.mts\)/, 'README must link the typed options')
 
   assert.match(candidate, /^## Troubleshooting native loading$/m, 'README must explain lazy loader failures')
@@ -91,6 +96,11 @@ assert.throws(
   () => assertReadmeContract(readme.replace("renderPolicy: 'untrusted'", "renderPolicy: 'trusted'")),
   /default render policy/,
   'security documentation contract must reject a missing untrusted default',
+)
+assert.throws(
+  () => assertReadmeContract(readme.replace('<p><span class="note">Internal note</span></p>\\n', '<span class="note">Internal note</span>')),
+  /actual trusted inline HTML output/,
+  'security documentation contract must reject incorrect trusted output',
 )
 assert.throws(
   () => assertReadmeContract(readme.replace('Alpine or another musl Linux environment', 'Linux environment')),
