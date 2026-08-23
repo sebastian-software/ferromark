@@ -400,6 +400,7 @@ enum LineEnd {
     Word {
         requires_following: bool,
         starts_control_condition: bool,
+        allows_function_or_class: bool,
     },
     Punctuation(u8),
     StatementBoundary,
@@ -421,6 +422,7 @@ struct EsmContinuation {
     regex_char_class: bool,
     line_end: LineEnd,
     statement_block_pending: bool,
+    control_condition_pending: bool,
     malformed: bool,
 }
 
@@ -439,6 +441,7 @@ impl EsmContinuation {
             regex_char_class: false,
             line_end: LineEnd::None,
             statement_block_pending: false,
+            control_condition_pending: false,
             malformed: false,
         }
     }
@@ -575,10 +578,18 @@ impl EsmContinuation {
         let is_from = word == b"from";
         let at_top_level = self.delimiters.is_empty();
 
-        if matches!(
-            word,
-            b"function" | b"class" | b"else" | b"try" | b"finally" | b"do"
-        ) {
+        let starts_control_condition = self.is_statement_position()
+            && matches!(
+                word,
+                b"if" | b"while" | b"for" | b"with" | b"switch" | b"catch"
+            );
+        if starts_control_condition {
+            self.control_condition_pending = true;
+        }
+
+        if (self.is_statement_position() && matches!(word, b"else" | b"try" | b"finally" | b"do"))
+            || (matches!(word, b"function" | b"class") && self.can_start_function_or_class())
+        {
             self.statement_block_pending = true;
         }
 
@@ -596,10 +607,8 @@ impl EsmContinuation {
 
         self.line_end = LineEnd::Word {
             requires_following: word_requires_following(word),
-            starts_control_condition: matches!(
-                word,
-                b"if" | b"while" | b"for" | b"with" | b"switch" | b"catch"
-            ),
+            starts_control_condition,
+            allows_function_or_class: matches!(word, b"export" | b"default" | b"async"),
         };
     }
 
@@ -633,14 +642,57 @@ impl EsmContinuation {
     }
 
     fn open_parenthesis(&mut self, byte: u8) {
-        let delimiter = match self.line_end {
-            LineEnd::Word {
-                starts_control_condition: true,
-                ..
-            } => Delimiter::StatementParenthesis,
-            _ => Delimiter::Parenthesis,
+        let delimiter = if self.control_condition_pending
+            || matches!(
+                self.line_end,
+                LineEnd::Word {
+                    starts_control_condition: true,
+                    ..
+                }
+            ) {
+            self.control_condition_pending = false;
+            Delimiter::StatementParenthesis
+        } else {
+            Delimiter::Parenthesis
         };
         self.open(delimiter, byte);
+    }
+
+    fn is_statement_position(&self) -> bool {
+        matches!(
+            self.delimiters.last(),
+            None | Some(Delimiter::StatementBlock)
+        ) && matches!(
+            self.line_end,
+            LineEnd::None | LineEnd::StatementBoundary | LineEnd::Punctuation(b'{' | b'}' | b';')
+        )
+    }
+
+    fn can_start_function_or_class(&self) -> bool {
+        if matches!(
+            self.delimiters.last(),
+            Some(Delimiter::Brace | Delimiter::Bracket)
+        ) {
+            return matches!(
+                self.line_end,
+                LineEnd::Punctuation(b':' | b'=' | b'(' | b'[' | b',')
+            );
+        }
+
+        matches!(
+            self.line_end,
+            LineEnd::None
+                | LineEnd::StatementBoundary
+                | LineEnd::Word {
+                    requires_following: true,
+                    ..
+                }
+                | LineEnd::Word {
+                    allows_function_or_class: true,
+                    ..
+                }
+                | LineEnd::Punctuation(b'=' | b':' | b'(' | b'[' | b'{' | b',')
+        )
     }
 
     fn open_brace(&mut self, byte: u8) {

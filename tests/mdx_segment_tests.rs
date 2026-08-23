@@ -477,6 +477,45 @@ fn esm_expression_closers_do_not_start_regex_literals() {
 }
 
 #[test]
+fn esm_object_property_keywords_do_not_start_statement_blocks() {
+    for keyword in ["else", "try", "finally", "do"] {
+        for esm in [
+            format!("export const value = {{ {keyword}: {{ a: 1 }} / 2 }}\n"),
+            format!("export const value = {{ {keyword}, value: {{ a: 1 }} / 2 }}\n"),
+            format!("export const value = {{ {keyword}() {{}} / 2 }}\n"),
+            format!("export const value = {{ [{keyword}]: {{ a: 1 }} / 2 }}\n"),
+            format!("export const value = {{ outer: {{ {keyword}: {{ a: 1 }} / 2 }} }}\n"),
+        ] {
+            let input = format!("{esm}Markdown.\n");
+            assert_eq!(
+                segment(&input),
+                vec![Segment::Esm(&esm), Segment::Markdown("Markdown.\n")]
+            );
+            assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+            assert_eq!(render(&input).esm, vec![esm.as_str()]);
+        }
+    }
+}
+
+#[test]
+fn esm_for_await_keeps_its_control_condition_context() {
+    for esm in [
+        "export async function iterate(items) { for await (const item of items) {} /\\}/.test(items) }\n",
+        "export function iterate(items) { for (const item of items) {} /\\}/.test(items) }\n",
+        "export async function pending(task) { return await task / divisor }\n",
+        "export async function matches(value) { return await /\\}/.test(value) }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
 fn incomplete_esm_falls_back_to_markdown_and_is_strictly_diagnosed() {
     for input in [
         "import Widget\nOrdinary prose.\n",
