@@ -1,4 +1,4 @@
-use super::expr::find_expression_end;
+use super::expr::{ExpressionEnds, find_expression_end};
 
 /// Information about a parsed JSX tag.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,6 +28,26 @@ pub struct TagInfo<'a> {
 /// - Attributes with string values, expression values (`{...}`), and bare attributes
 /// - Multiline attributes (byte-based, not line-based)
 pub fn parse_jsx_tag(input: &[u8]) -> Option<TagInfo<'_>> {
+    parse_jsx_tag_with_expression_ends(input, None)
+}
+
+/// Parse a JSX tag with expression ends cached for the full input buffer.
+///
+/// `input` must be a suffix of the buffer used to construct `expression_ends`.
+/// The cache preserves the ordinary parser's result while avoiding repeated
+/// scans of unterminated expression attributes.
+pub(crate) fn parse_jsx_tag_cached<'a>(
+    input: &'a [u8],
+    input_offset: usize,
+    expression_ends: &'a ExpressionEnds,
+) -> Option<TagInfo<'a>> {
+    parse_jsx_tag_with_expression_ends(input, Some((input_offset, expression_ends)))
+}
+
+fn parse_jsx_tag_with_expression_ends<'a>(
+    input: &'a [u8],
+    expression_ends: Option<(usize, &'a ExpressionEnds)>,
+) -> Option<TagInfo<'a>> {
     let len = input.len();
     if len < 2 || input[0] != b'<' {
         return None;
@@ -106,7 +126,7 @@ pub fn parse_jsx_tag(input: &[u8]) -> Option<TagInfo<'_>> {
         // Attribute: either `{...spread}` or `name` or `name=value`
         if input[pos] == b'{' {
             // Spread attribute or expression
-            let end = find_expression_end(&input[pos..])?;
+            let end = expression_end(input, pos, expression_ends)?;
             pos += end;
         } else if input[pos].is_ascii_alphabetic() || input[pos] == b'_' {
             // Attribute name
@@ -136,7 +156,7 @@ pub fn parse_jsx_tag(input: &[u8]) -> Option<TagInfo<'_>> {
                         pos = skip_single_quoted(input, pos)?;
                     }
                     b'{' => {
-                        let end = find_expression_end(&input[pos..])?;
+                        let end = expression_end(input, pos, expression_ends)?;
                         pos += end;
                     }
                     _ => {
@@ -183,6 +203,19 @@ pub fn parse_jsx_tag(input: &[u8]) -> Option<TagInfo<'_>> {
     }
 
     None
+}
+
+fn expression_end(
+    input: &[u8],
+    pos: usize,
+    expression_ends: Option<(usize, &ExpressionEnds)>,
+) -> Option<usize> {
+    match expression_ends {
+        Some((input_offset, expression_ends)) => expression_ends
+            .end_at(input_offset + pos)
+            .map(|end| end - input_offset - pos),
+        None => find_expression_end(&input[pos..]),
+    }
 }
 
 fn skip_whitespace(bytes: &[u8], mut pos: usize) -> usize {

@@ -1,5 +1,5 @@
-use super::expr::find_expression_end;
-use super::jsx_tag::parse_jsx_tag;
+use super::expr::{ExpressionEnds, find_expression_end};
+use super::jsx_tag::parse_jsx_tag_cached;
 use super::splitter::{
     CodeFence, EsmScan, container_fence_lines, is_blank_line, is_esm_start, opening_code_fence,
     scan_esm,
@@ -42,6 +42,7 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
     let mut pos = 0;
     let mut open_fence: Option<CodeFence> = None;
     let container_fences = container_fence_lines(bytes);
+    let expression_ends = ExpressionEnds::new(bytes);
 
     while pos < len {
         let line_start = pos;
@@ -134,9 +135,8 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
         }
 
         if first == b'{' {
-            match find_expression_end(&bytes[first_non_ws..]) {
-                Some(expression_len) => {
-                    let end = first_non_ws + expression_len;
+            match expression_ends.end_at(first_non_ws) {
+                Some(end) => {
                     if !has_trailing_content(bytes, end) {
                         in_paragraph = false;
                         pos = consume_trailing_newline(bytes, end);
@@ -157,7 +157,9 @@ fn validate(input: &str) -> Vec<MdxDiagnostic> {
         }
 
         if is_jsx_candidate(bytes, first_non_ws) {
-            if let Some(tag) = parse_jsx_tag(&bytes[first_non_ws..]) {
+            if let Some(tag) =
+                parse_jsx_tag_cached(&bytes[first_non_ws..], first_non_ws, &expression_ends)
+            {
                 let end = first_non_ws + tag.end_offset;
                 if !has_trailing_content(bytes, end) {
                     let range = Range::from_usize(first_non_ws, end);
