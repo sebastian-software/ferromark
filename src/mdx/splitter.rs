@@ -376,8 +376,10 @@ pub(crate) enum EsmScan {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Delimiter {
     Parenthesis,
+    StatementParenthesis,
     Bracket,
     Brace,
+    StatementBlock,
     TemplateExpression,
 }
 
@@ -395,8 +397,12 @@ enum LexicalMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LineEnd {
     None,
-    Word { requires_following: bool },
+    Word {
+        requires_following: bool,
+        starts_control_condition: bool,
+    },
     Punctuation(u8),
+    StatementBoundary,
 }
 
 /// Lightweight JavaScript state needed to distinguish a continued declaration
@@ -414,6 +420,7 @@ struct EsmContinuation {
     mode: LexicalMode,
     regex_char_class: bool,
     line_end: LineEnd,
+    statement_block_pending: bool,
     malformed: bool,
 }
 
@@ -431,6 +438,7 @@ impl EsmContinuation {
             mode: LexicalMode::Code,
             regex_char_class: false,
             line_end: LineEnd::None,
+            statement_block_pending: false,
             malformed: false,
         }
     }
@@ -475,12 +483,12 @@ impl EsmContinuation {
                             self.mode = LexicalMode::Regex;
                             self.regex_char_class = false;
                         }
-                        b'(' => self.open(Delimiter::Parenthesis, byte),
+                        b'(' => self.open_parenthesis(byte),
                         b'[' => self.open(Delimiter::Bracket, byte),
-                        b'{' => self.open(Delimiter::Brace, byte),
-                        b')' => self.close(Delimiter::Parenthesis, byte),
+                        b'{' => self.open_brace(byte),
+                        b')' => self.close_parenthesis(byte),
                         b']' => self.close(Delimiter::Bracket, byte),
-                        b'}' => self.close(Delimiter::Brace, byte),
+                        b'}' => self.close_brace(byte),
                         b' ' | b'\t' | b'\r' | b'\n' => {}
                         _ => {
                             if self.declaration_is_import
@@ -567,6 +575,10 @@ impl EsmContinuation {
         let is_from = word == b"from";
         let at_top_level = self.delimiters.is_empty();
 
+        if matches!(word, b"function" | b"class") {
+            self.statement_block_pending = true;
+        }
+
         if !self.declaration_seen {
             self.declaration_seen = true;
         } else if self.declaration_is_import && at_top_level {
@@ -581,6 +593,10 @@ impl EsmContinuation {
 
         self.line_end = LineEnd::Word {
             requires_following: word_requires_following(word),
+            starts_control_condition: matches!(
+                word,
+                b"if" | b"while" | b"for" | b"with" | b"switch" | b"catch"
+            ),
         };
     }
 
@@ -613,6 +629,60 @@ impl EsmContinuation {
         self.line_end = LineEnd::Punctuation(byte);
     }
 
+    fn open_parenthesis(&mut self, byte: u8) {
+        let delimiter = match self.line_end {
+            LineEnd::Word {
+                starts_control_condition: true,
+                ..
+            } => Delimiter::StatementParenthesis,
+            _ => Delimiter::Parenthesis,
+        };
+        self.open(delimiter, byte);
+    }
+
+    fn open_brace(&mut self, byte: u8) {
+        let delimiter = if self.statement_block_pending
+            || matches!(self.line_end, LineEnd::StatementBoundary)
+        {
+            self.statement_block_pending = false;
+            Delimiter::StatementBlock
+        } else {
+            Delimiter::Brace
+        };
+        self.open(delimiter, byte);
+    }
+
+    fn close_parenthesis(&mut self, byte: u8) {
+        let Some(actual) = self.delimiters.pop() else {
+            self.malformed = true;
+            return;
+        };
+        if actual == Delimiter::StatementParenthesis {
+            self.line_end = LineEnd::StatementBoundary;
+        } else if actual == Delimiter::Parenthesis {
+            self.line_end = LineEnd::Punctuation(byte);
+        } else {
+            self.malformed = true;
+        }
+    }
+
+    fn close_brace(&mut self, byte: u8) {
+        let Some(actual) = self.delimiters.pop() else {
+            self.malformed = true;
+            return;
+        };
+        if actual == Delimiter::TemplateExpression {
+            self.mode = LexicalMode::Template;
+            self.line_end = LineEnd::Punctuation(byte);
+        } else if actual == Delimiter::StatementBlock {
+            self.line_end = LineEnd::StatementBoundary;
+        } else if actual == Delimiter::Brace {
+            self.line_end = LineEnd::Punctuation(byte);
+        } else {
+            self.malformed = true;
+        }
+    }
+
     fn close(&mut self, expected: Delimiter, byte: u8) {
         let Some(actual) = self.delimiters.pop() else {
             self.malformed = true;
@@ -632,7 +702,8 @@ impl EsmContinuation {
             || matches!(
                 self.line_end,
                 LineEnd::Word {
-                    requires_following: true
+                    requires_following: true,
+                    ..
                 } | LineEnd::Punctuation(
                     b',' | b'.'
                         | b'='
@@ -659,8 +730,10 @@ impl EsmContinuation {
             self.line_end,
             LineEnd::None
                 | LineEnd::Word {
-                    requires_following: true
+                    requires_following: true,
+                    ..
                 }
+                | LineEnd::StatementBoundary
                 | LineEnd::Punctuation(
                     b'(' | b'['
                         | b'{'
