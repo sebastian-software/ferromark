@@ -71,8 +71,13 @@
 //! - We won't reject syntactically invalid JS (e.g. `export const = ;`)
 //! - Multi-line ESM follows lexical continuation boundaries (delimiters,
 //!   strings, comments, templates, and module clauses), not a full JS parser
-//! - Ambiguous or incomplete ESM falls back to Markdown in permissive mode and
-//!   is diagnosed by [`segment_strict`]
+//! - A terminal expression followed on the next line by a valid ECMAScript
+//!   suffix (`[index]`, `(args)`, `.member`, or a tagged template) continues
+//!   as ESM. This intentionally follows ECMAScript's newline/ASI rules even
+//!   where the same bytes could be Markdown; put a semicolon or blank line
+//!   before Markdown to make that boundary explicit.
+//! - Incomplete ESM falls back to Markdown in permissive mode and is diagnosed
+//!   by [`segment_strict`]
 //!
 //! ## No Markdown syntax modifications
 //!

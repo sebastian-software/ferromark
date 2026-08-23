@@ -869,18 +869,16 @@ impl EsmContinuation {
     }
 
     /// A completed regex expression can continue on the following line only
-    /// through a token that is unambiguously an expression suffix. Keep this
-    /// narrower than general continuation so terminal literals still stop
-    /// before ordinary Markdown prose.
+    /// through a lexically valid expression suffix chain. The lookahead is
+    /// deliberately bounded to that physical line: this keeps ordinary
+    /// Markdown from being accumulated while avoiding rescanning prior lines.
     fn regex_continues_with_expression(&self, bytes: &[u8], line_start: usize) -> bool {
         if self.line_end != LineEnd::Regex {
             return false;
         }
 
         let start = skip_whitespace_offset(bytes, line_start);
-        let is_expression_suffix = matches!(bytes.get(start), Some(b'.' | b'[' | b'(' | b'`'))
-            || (bytes.get(start) == Some(&b'?') && bytes.get(start + 1) == Some(&b'.'));
-        is_expression_suffix && !is_markdown_regex_suffix(bytes, start)
+        has_regex_expression_suffix(bytes, start)
     }
 }
 
@@ -1071,22 +1069,263 @@ fn is_plain_prose_line(bytes: &[u8], line_start: usize) -> bool {
         })
 }
 
-/// Markdown constructs that share a leading token with a JavaScript suffix
-/// after a terminal regex literal. Prefer these recognizable Markdown forms so
-/// permissive segmentation does not silently remove document body content.
-fn is_markdown_regex_suffix(bytes: &[u8], start: usize) -> bool {
+/// Return whether the rest of this physical line is a plausible continuation
+/// of a completed regex expression.
+///
+/// Markdown and JavaScript intentionally overlap here: `[value](arg)`,
+/// `(value, flags)`, and a template literal are all valid ECMAScript suffixes.
+/// In those cases we follow ECMAScript continuation rules. We only stop for a
+/// suffix that is lexically impossible, such as prose containing adjacent
+/// identifiers inside an index or call. A semicolon or blank line before
+/// Markdown makes the intended boundary explicit.
+fn has_regex_expression_suffix(bytes: &[u8], start: usize) -> bool {
+    try_regex_expression_suffix(bytes, start).unwrap_or(false)
+}
+
+fn try_regex_expression_suffix(bytes: &[u8], start: usize) -> Option<bool> {
     let end = next_line(bytes, start);
-    let line = &bytes[start..end];
-    match line.first() {
-        Some(b'[') => line.windows(2).any(|pair| pair == b"](" || pair == b"]:"),
-        Some(b'(') => line.iter().any(|byte| matches!(byte, b' ' | b'\t')),
-        Some(b'.') => line.get(1).is_some_and(u8::is_ascii_whitespace),
-        Some(b'`') => line[1..]
-            .iter()
-            .take_while(|&&byte| byte != b'`')
-            .any(u8::is_ascii_whitespace),
-        _ => false,
+    let mut pos = start;
+    let mut saw_suffix = false;
+
+    loop {
+        pos = skip_suffix_trivia(bytes, pos, end)?;
+        match bytes.get(pos).copied() {
+            Some(b'.') => {
+                pos = scan_suffix_property(bytes, pos + 1, end)?;
+                saw_suffix = true;
+            }
+            Some(b'?') if bytes.get(pos + 1) == Some(&b'.') => {
+                pos += 2;
+                pos = skip_suffix_trivia(bytes, pos, end)?;
+                pos = match bytes.get(pos).copied() {
+                    Some(b'[') => scan_suffix_group(bytes, pos, b'[', b']', end)?,
+                    Some(b'(') => scan_suffix_group(bytes, pos, b'(', b')', end)?,
+                    Some(byte) if is_suffix_identifier_start(byte) => {
+                        scan_suffix_identifier(bytes, pos, end)
+                    }
+                    _ => return Some(false),
+                };
+                saw_suffix = true;
+            }
+            Some(b'[') => {
+                pos = scan_suffix_group(bytes, pos, b'[', b']', end)?;
+                saw_suffix = true;
+            }
+            Some(b'(') => {
+                pos = scan_suffix_group(bytes, pos, b'(', b')', end)?;
+                saw_suffix = true;
+            }
+            Some(b'`') => {
+                pos = scan_suffix_template(bytes, pos, end)?;
+                saw_suffix = true;
+            }
+            _ => break,
+        }
     }
+
+    if !saw_suffix {
+        return Some(false);
+    }
+
+    pos = skip_suffix_trivia(bytes, pos, end)?;
+    Some(pos >= end || matches!(bytes.get(pos), Some(b';')))
+}
+
+/// Skip whitespace and comments between suffix tokens without leaving the
+/// current physical line. `None` denotes an unterminated block comment.
+fn skip_suffix_trivia(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    loop {
+        while pos < end && matches!(bytes[pos], b' ' | b'\t' | b'\r' | b'\n') {
+            pos += 1;
+        }
+        if bytes.get(pos..pos + 2) == Some(b"//") {
+            return Some(end);
+        }
+        if bytes.get(pos..pos + 2) != Some(b"/*") {
+            return Some(pos);
+        }
+        pos += 2;
+        while pos + 1 < end && bytes.get(pos..pos + 2) != Some(b"*/") {
+            pos += 1;
+        }
+        if bytes.get(pos..pos + 2) != Some(b"*/") {
+            return None;
+        }
+        pos += 2;
+    }
+}
+
+fn scan_suffix_property(bytes: &[u8], pos: usize, end: usize) -> Option<usize> {
+    let pos = skip_suffix_trivia(bytes, pos, end)?;
+    is_suffix_identifier_start(*bytes.get(pos)?).then(|| scan_suffix_identifier(bytes, pos, end))
+}
+
+fn is_suffix_identifier_start(byte: u8) -> bool {
+    byte.is_ascii_alphabetic() || matches!(byte, b'_' | b'$')
+}
+
+fn scan_suffix_identifier(bytes: &[u8], mut pos: usize, end: usize) -> usize {
+    while pos < end && is_esm_word_byte(bytes[pos]) {
+        pos += 1;
+    }
+    pos
+}
+
+/// Scan a bracketed/index or parenthesized/call suffix and reject obvious prose
+/// (for example `Markdown prose`) while accepting balanced nested JavaScript
+/// strings, comments, templates, and groups.
+fn scan_suffix_group(
+    bytes: &[u8],
+    pos: usize,
+    opening: u8,
+    closing: u8,
+    end: usize,
+) -> Option<usize> {
+    debug_assert_eq!(bytes.get(pos), Some(&opening));
+    let mut stack = vec![closing];
+    let mut pos = pos + 1;
+    let mut previous_is_operand = false;
+
+    while pos < end {
+        match bytes[pos] {
+            b' ' | b'\t' | b'\r' | b'\n' => pos += 1,
+            b'/' if bytes.get(pos + 1) == Some(&b'/') => return None,
+            b'/' if bytes.get(pos + 1) == Some(&b'*') => {
+                pos = skip_suffix_trivia(bytes, pos, end)?;
+            }
+            b'\'' | b'"' => {
+                if previous_is_operand {
+                    return None;
+                }
+                pos = scan_suffix_string(bytes, pos, end)?;
+                previous_is_operand = true;
+            }
+            b'`' => {
+                if previous_is_operand {
+                    return None;
+                }
+                pos = scan_suffix_template(bytes, pos, end)?;
+                previous_is_operand = true;
+            }
+            b'/' if !previous_is_operand => {
+                pos = scan_suffix_regex(bytes, pos, end)?;
+                previous_is_operand = true;
+            }
+            byte if is_suffix_identifier_start(byte) => {
+                let word_start = pos;
+                pos = scan_suffix_identifier(bytes, pos, end);
+                let word = &bytes[word_start..pos];
+                if word_requires_following(word) {
+                    previous_is_operand = false;
+                } else if previous_is_operand {
+                    return None;
+                } else {
+                    previous_is_operand = true;
+                }
+            }
+            b'0'..=b'9' => {
+                if previous_is_operand {
+                    return None;
+                }
+                while pos < end && matches!(bytes[pos], b'0'..=b'9' | b'_' | b'.') {
+                    pos += 1;
+                }
+                previous_is_operand = true;
+            }
+            b'(' => {
+                stack.push(b')');
+                pos += 1;
+                previous_is_operand = false;
+            }
+            b'[' => {
+                stack.push(b']');
+                pos += 1;
+                previous_is_operand = false;
+            }
+            b'{' => {
+                stack.push(b'}');
+                pos += 1;
+                previous_is_operand = false;
+            }
+            b')' | b']' | b'}' => {
+                if stack.pop()? != bytes[pos] {
+                    return None;
+                }
+                pos += 1;
+                previous_is_operand = true;
+                if stack.is_empty() {
+                    return Some(pos);
+                }
+            }
+            // These are expression separators/operators. Full JavaScript
+            // grammar validation happens downstream; this bounded lexical
+            // check only needs to reject unambiguously prose-like adjacency.
+            b'.' | b',' | b':' | b';' | b'=' | b'+' | b'-' | b'*' | b'/' | b'%' | b'&' | b'|'
+            | b'^' | b'!' | b'~' | b'?' | b'<' | b'>' => {
+                previous_is_operand = false;
+                pos += 1;
+            }
+            _ => return None,
+        }
+    }
+
+    None
+}
+
+fn scan_suffix_string(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    let quote = *bytes.get(pos)?;
+    pos += 1;
+    while pos < end {
+        match bytes[pos] {
+            b'\\' => pos += 2,
+            byte if byte == quote => return Some(pos + 1),
+            _ => pos += 1,
+        }
+    }
+    None
+}
+
+fn scan_suffix_regex(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    pos += 1;
+    let mut in_class = false;
+    while pos < end {
+        match bytes[pos] {
+            b'\\' => pos += 2,
+            b'[' => {
+                in_class = true;
+                pos += 1;
+            }
+            b']' => {
+                in_class = false;
+                pos += 1;
+            }
+            b'/' if !in_class => {
+                pos += 1;
+                while pos < end && bytes[pos].is_ascii_alphabetic() {
+                    pos += 1;
+                }
+                return Some(pos);
+            }
+            _ => pos += 1,
+        }
+    }
+    None
+}
+
+fn scan_suffix_template(bytes: &[u8], mut pos: usize, end: usize) -> Option<usize> {
+    debug_assert_eq!(bytes.get(pos), Some(&b'`'));
+    pos += 1;
+    while pos < end {
+        match bytes[pos] {
+            b'\\' => pos += 2,
+            b'`' => return Some(pos + 1),
+            b'$' if bytes.get(pos + 1) == Some(&b'{') => {
+                pos = scan_suffix_group(bytes, pos + 1, b'{', b'}', end)?;
+            }
+            _ => pos += 1,
+        }
+    }
+    None
 }
 
 fn starts_with_word(bytes: &[u8], line_start: usize, word: &[u8]) -> bool {

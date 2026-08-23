@@ -458,13 +458,13 @@ fn esm_terminal_regex_literals_end_without_flags_or_member_access() {
 }
 
 #[test]
-fn esm_terminal_regex_preserves_suffix_like_markdown() {
+fn esm_terminal_regex_preserves_syntactically_impossible_suffix_like_markdown() {
     let esm = "export const matcher = /}/\n";
     for markdown in [
         "[a Markdown link](https://example.com)\n",
+        "[a Markdown reference]: https://example.com\nReference prose.\n",
         "(Markdown prose in parentheses)\n",
         ". Markdown prose\n",
-        "`Markdown code span`\n",
     ] {
         let input = format!("{esm}{markdown}");
         assert_eq!(
@@ -483,6 +483,61 @@ fn esm_terminal_regex_preserves_suffix_like_markdown() {
                 .contains(output.body.trim())
         );
     }
+}
+
+#[test]
+fn esm_terminal_regex_follows_valid_cross_line_suffix_chains() {
+    for esm in [
+        "export const matcher = /}/\n[Symbol.match](value)\n",
+        "export const matcher = /}/\n(value, flags)\n",
+        "export const matcher = /}/\n`tagged template with whitespace`\n",
+        "export const matcher = /}/\n[lookup[`${name}` /* nested */]](value, { flags: true })\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("Markdown."));
+        assert!(output.to_component("Page").unwrap().starts_with(esm));
+    }
+}
+
+#[test]
+fn esm_terminal_regex_requires_an_explicit_boundary_before_ambiguous_markdown() {
+    let esm = "export const matcher = /}/;\n";
+    let markdown = "`Markdown code span`\n";
+    let input = format!("{esm}{markdown}");
+    assert_eq!(
+        segment(&input),
+        vec![Segment::Esm(esm), Segment::Markdown(markdown)]
+    );
+    assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+    let output = render(&input);
+    assert!(output.body.contains("Markdown code span"));
+    assert!(
+        output
+            .to_component("Page")
+            .unwrap()
+            .contains(output.body.trim())
+    );
+}
+
+#[test]
+fn esm_terminal_regex_suffix_validation_remains_linear_for_long_calls() {
+    let arguments = "value, ".repeat(16_384);
+    let esm = format!("export const matcher = /}}/\n[Symbol.match]({arguments}value)\n");
+    let input = format!("{esm}Markdown.\n");
+
+    assert_eq!(
+        segment(&input),
+        vec![Segment::Esm(&esm), Segment::Markdown("Markdown.\n")]
+    );
+    assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
 }
 
 #[test]
