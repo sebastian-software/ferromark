@@ -423,6 +423,35 @@ fn esm_regex_literals_do_not_change_delimiter_state() {
 }
 
 #[test]
+fn esm_terminal_regex_literals_end_without_flags_or_member_access() {
+    for esm in [
+        "export const matcher = /}/\n",
+        "export default /}/\n",
+        "export const matcher = () => /}/\n",
+        "export const escaped = /\\//\n",
+        "export const class_closing = /[}]/\n",
+        "export const empty_match = /(?:)/\n",
+        "export const flagged = /}/gi\n",
+        "export const member = /}/.source\n",
+        "export const ratio = value / divisor\n",
+        "export const continued = value /\n  divisor\n",
+        "export function matches(value) { if (value) /}/\n}\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+
+        let output = render(&input);
+        assert_eq!(output.esm, vec![esm]);
+        assert!(output.body.contains("Markdown."));
+        assert!(output.to_component("Page").unwrap().starts_with(esm));
+    }
+}
+
+#[test]
 fn esm_statement_context_regex_literals_do_not_change_delimiter_state() {
     for esm in [
         "export function after_condition(value) {\n  if (value) /\\}/.test(value)\n}\n",

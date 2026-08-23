@@ -397,6 +397,9 @@ enum LexicalMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LineEnd {
     None,
+    /// A completed regular-expression literal. This is distinct from `/`,
+    /// which is a dangling division operator when it appears in code.
+    Regex,
     Word {
         requires_following: bool,
         starts_control_condition: bool,
@@ -557,7 +560,7 @@ impl EsmContinuation {
                     b']' => self.regex_char_class = false,
                     b'/' if !self.regex_char_class => {
                         self.mode = LexicalMode::Code;
-                        self.line_end = LineEnd::Punctuation(byte);
+                        self.line_end = LineEnd::Regex;
                     }
                     _ => {}
                 },
