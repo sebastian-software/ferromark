@@ -575,7 +575,10 @@ impl EsmContinuation {
         let is_from = word == b"from";
         let at_top_level = self.delimiters.is_empty();
 
-        if matches!(word, b"function" | b"class") {
+        if matches!(
+            word,
+            b"function" | b"class" | b"else" | b"try" | b"finally" | b"do"
+        ) {
             self.statement_block_pending = true;
         }
 

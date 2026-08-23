@@ -439,10 +439,33 @@ fn esm_statement_context_regex_literals_do_not_change_delimiter_state() {
 }
 
 #[test]
+fn esm_other_statement_blocks_allow_following_regex_literals() {
+    // The continuation scanner deliberately does not validate JavaScript
+    // statement grammar. These exercise its lexical statement-block context:
+    // all four block introducers must leave a following regex literal opaque.
+    for esm in [
+        "export function after_else(value) { if (value) {} else {} /\\}/.test(value) }\n",
+        "export function after_try() { try {} /\\}/.test(value) }\n",
+        "export function after_finally() { try {} finally {} /\\}/.test(value) }\n",
+        "export function after_do() { do {} /\\}/.test(value) }\n",
+        "export function after_all_blocks(value) { if (value) {} else {} /\\}/.test(value); try {} finally {} /\\}/.test(value); do {} /\\}/.test(value) }\n",
+    ] {
+        let input = format!("{esm}Markdown.\n");
+        assert_eq!(
+            segment(&input),
+            vec![Segment::Esm(esm), Segment::Markdown("Markdown.\n")]
+        );
+        assert_eq!(segment_strict(&input).unwrap(), segment_spanned(&input));
+        assert_eq!(render(&input).esm, vec![esm]);
+    }
+}
+
+#[test]
 fn esm_expression_closers_do_not_start_regex_literals() {
     for esm in [
         "export const ratio = divide(value) / divisor\n",
         "export const ratio = ({ value: 1 }) / divisor\n",
+        "export function ratio(value) { return ({ value }) / divisor }\n",
     ] {
         let input = format!("{esm}Markdown.\n");
         assert_eq!(
