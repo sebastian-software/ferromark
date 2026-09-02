@@ -229,7 +229,8 @@ fn write_component_body(out: &mut String, body: &str) {
     let mut at_line_start = true;
     let mut pre_depth = 0_u32;
     let mut html_openings = Vec::new();
-    let mut generic_declaration_ends = None;
+    let mut declaration_ends = DeclarationEnds::default();
+    let mut declaration_scan_work = DeclarationScanWork::default();
     // A crossed owner is balanced at the first mismatched closer. Remember that
     // its eventual source closer must be consumed if no newer live owner claims it.
     let mut synthetic_closings = HashMap::new();
@@ -270,7 +271,12 @@ fn write_component_body(out: &mut String, body: &str) {
         }
 
         if bytes[pos] == b'<' && matches!(bytes.get(pos + 1), Some(b'!' | b'?')) {
-            if let Some(end) = declaration_end(bytes, pos, &mut generic_declaration_ends) {
+            if let Some(end) = declaration_end(
+                bytes,
+                pos,
+                &mut declaration_ends,
+                &mut declaration_scan_work,
+            ) {
                 pos = end;
                 continue;
             }
@@ -741,14 +747,52 @@ struct GenericDeclarationEnd {
 /// Entries are built from right to left. A complete declaration nested in an
 /// internal subset can therefore be skipped as a balanced unit. An inner scan
 /// which reaches EOF proves that an enclosing declaration with additional
-/// bracket depth cannot close either. Boundary failures are deliberately not
-/// propagated because an enclosing subset can assign different meaning to the
-/// same `<` byte.
+/// bracket depth cannot close either. Ordinary-tag boundaries are reusable at
+/// every subset depth; quote and declaration boundaries remain context-local
+/// because an enclosing subset can assign different meaning to the same byte.
 struct GenericDeclarationEnds {
     entries: Vec<GenericDeclarationEnd>,
     next_entry: usize,
     #[cfg(test)]
     scanned_bytes: usize,
+}
+
+#[derive(Default)]
+struct DeclarationEnds {
+    generic: Option<GenericDeclarationEnds>,
+    processing_instructions: Option<DeclarationTerminatorEnds>,
+    cdata: Option<DeclarationTerminatorEnds>,
+}
+
+struct DeclarationTerminatorEnds {
+    ends: Vec<usize>,
+    next_end: usize,
+}
+
+impl DeclarationTerminatorEnds {
+    fn new(bytes: &[u8], terminator: &[u8], work: &mut DeclarationScanWork) -> Self {
+        let mut ends = Vec::new();
+        let mut pos = 0;
+        while pos + terminator.len() <= bytes.len() {
+            work.visit();
+            if bytes[pos..].starts_with(terminator) {
+                ends.push(pos + terminator.len());
+            }
+            pos += 1;
+        }
+        Self { ends, next_end: 0 }
+    }
+
+    fn end_after(&mut self, content_start: usize) -> Option<usize> {
+        while self
+            .ends
+            .get(self.next_end)
+            .is_some_and(|end| *end < content_start)
+        {
+            self.next_end += 1;
+        }
+        self.ends.get(self.next_end).copied()
+    }
 }
 
 #[derive(Default)]
@@ -774,7 +818,7 @@ impl GenericDeclarationEnds {
             if is_generic_declaration_start(bytes, start) {
                 entries.push(GenericDeclarationEnd {
                     start,
-                    outcome: GenericDeclarationScan::BoundaryFailure,
+                    outcome: GenericDeclarationScan::BoundaryFailure { reusable: false },
                 });
             }
         }
@@ -811,12 +855,15 @@ impl GenericDeclarationEnds {
             .entries
             .get(self.next_entry)
             .filter(|entry| entry.start == start)
-            .map_or(GenericDeclarationScan::BoundaryFailure, |entry| {
-                entry.outcome
-            });
+            .map_or(
+                GenericDeclarationScan::BoundaryFailure { reusable: false },
+                |entry| entry.outcome,
+            );
         match outcome {
             GenericDeclarationScan::Complete { end, .. } => Some(end),
-            GenericDeclarationScan::BoundaryFailure | GenericDeclarationScan::EofFailure => None,
+            GenericDeclarationScan::BoundaryFailure { .. } | GenericDeclarationScan::EofFailure => {
+                None
+            }
         }
     }
 
@@ -834,27 +881,28 @@ impl GenericDeclarationEnds {
 fn declaration_end(
     bytes: &[u8],
     start: usize,
-    generic_ends: &mut Option<GenericDeclarationEnds>,
+    ends: &mut DeclarationEnds,
+    work: &mut DeclarationScanWork,
 ) -> Option<usize> {
     if bytes[start..].starts_with(b"<![CDATA[") {
-        return bytes[start + 9..]
-            .windows(3)
-            .position(|window| window == b"]]>")
-            .map(|offset| start + 9 + offset + 3);
+        return ends
+            .cdata
+            .get_or_insert_with(|| DeclarationTerminatorEnds::new(bytes, b"]]>", work))
+            .end_after(start + 9);
     }
 
     if bytes[start..].starts_with(b"<?") {
-        return bytes[start + 2..]
-            .windows(2)
-            .position(|window| window == b"?>")
-            .map(|offset| start + 2 + offset + 2);
+        return ends
+            .processing_instructions
+            .get_or_insert_with(|| DeclarationTerminatorEnds::new(bytes, b"?>", work))
+            .end_after(start + 2);
     }
 
     if !is_generic_declaration_start(bytes, start) {
         return None;
     }
 
-    generic_ends
+    ends.generic
         .get_or_insert_with(|| GenericDeclarationEnds::new(bytes, start))
         .end_at(start)
 }
@@ -867,7 +915,11 @@ enum GenericDeclarationScan {
         /// without borrowing a closing bracket from an enclosing subset.
         independently_balanced: bool,
     },
-    BoundaryFailure,
+    BoundaryFailure {
+        /// The same ordinary-tag boundary also terminates every enclosing
+        /// declaration, regardless of its current subset depth.
+        reusable: bool,
+    },
     EofFailure,
 }
 
@@ -898,7 +950,7 @@ fn generic_declaration_scan(
                 // A new top-level tag cannot belong to an unclosed declaration
                 // literal. Bound recovery here so a later quote and `>` cannot
                 // make the following node look like the declaration's suffix.
-                return GenericDeclarationScan::BoundaryFailure;
+                return GenericDeclarationScan::BoundaryFailure { reusable: false };
             }
             pos += 1;
             continue;
@@ -948,7 +1000,10 @@ fn generic_declaration_scan(
                     GenericDeclarationScan::EofFailure => {
                         return GenericDeclarationScan::EofFailure;
                     }
-                    GenericDeclarationScan::BoundaryFailure
+                    GenericDeclarationScan::BoundaryFailure { reusable: true } => {
+                        return GenericDeclarationScan::BoundaryFailure { reusable: true };
+                    }
+                    GenericDeclarationScan::BoundaryFailure { reusable: false }
                     | GenericDeclarationScan::Complete {
                         independently_balanced: false,
                         ..
@@ -968,7 +1023,7 @@ fn generic_declaration_scan(
             b'\'' | b'"' => quote = Some(bytes[pos]),
             b'[' => {
                 let Some(next_depth) = bracket_depth.checked_add(1) else {
-                    return GenericDeclarationScan::BoundaryFailure;
+                    return GenericDeclarationScan::BoundaryFailure { reusable: false };
                 };
                 bracket_depth = next_depth;
             }
@@ -978,8 +1033,11 @@ fn generic_declaration_scan(
                 // Internal subsets contain nested declarations and processing
                 // instructions. An ordinary tag is instead the recovery
                 // boundary for an incomplete outer declaration.
-                if bracket_depth == 0 || !matches!(bytes.get(pos + 1), Some(b'!' | b'?')) {
-                    return GenericDeclarationScan::BoundaryFailure;
+                if !matches!(bytes.get(pos + 1), Some(b'!' | b'?')) {
+                    return GenericDeclarationScan::BoundaryFailure { reusable: true };
+                }
+                if bracket_depth == 0 {
+                    return GenericDeclarationScan::BoundaryFailure { reusable: false };
                 }
             }
             b'>' if bracket_depth == 0 => {
@@ -1000,7 +1058,7 @@ fn generic_declaration_scan(
 fn generic_declaration_end_uncached(bytes: &[u8], start: usize) -> Option<usize> {
     match generic_declaration_scan(bytes, start, None, &mut DeclarationScanWork::default()) {
         GenericDeclarationScan::Complete { end, .. } => Some(end),
-        GenericDeclarationScan::BoundaryFailure | GenericDeclarationScan::EofFailure => None,
+        GenericDeclarationScan::BoundaryFailure { .. } | GenericDeclarationScan::EofFailure => None,
     }
 }
 
@@ -1969,6 +2027,79 @@ Content
     }
 
     #[test]
+    fn repeated_unterminated_subsets_before_a_tag_have_a_linear_work_bound() {
+        const REPEATS: usize = 4_096;
+        let unit = "<!DOCTYPE [";
+        let body = format!("{}<p>after</p>", unit.repeat(REPEATS));
+        let mut cached = GenericDeclarationEnds::new(body.as_bytes(), 0);
+
+        assert_eq!(cached.entry_count(), REPEATS);
+        for start in (0..unit.len() * REPEATS).step_by(unit.len()) {
+            assert_eq!(cached.end_at(start), None);
+        }
+        assert!(
+            cached.scanned_bytes() <= body.len() * 4,
+            "{} scan visits for {} input bytes",
+            cached.scanned_bytes(),
+            body.len()
+        );
+    }
+
+    #[test]
+    fn repeated_unterminated_pi_and_cdata_have_a_linear_work_bound() {
+        const REPEATS: usize = 4_096;
+
+        for unit in ["<?", "<![CDATA["] {
+            let body = format!("{}<p>after</p>", unit.repeat(REPEATS));
+            let mut declaration_ends = DeclarationEnds::default();
+            let mut work = DeclarationScanWork::default();
+
+            for start in (0..unit.len() * REPEATS).step_by(unit.len()) {
+                assert_eq!(
+                    declaration_end(body.as_bytes(), start, &mut declaration_ends, &mut work),
+                    None,
+                );
+            }
+            assert!(
+                work.scanned_bytes <= body.len() * 3,
+                "{} scan visits for {} input bytes ({unit:?})",
+                work.scanned_bytes,
+                body.len()
+            );
+        }
+    }
+
+    #[test]
+    fn declaration_terminator_cache_matches_sequential_searches() {
+        let body = "<?outer <?inner?> tail <?unterminated <![CDATA[first <![CDATA[second]]> tail <![CDATA[unterminated";
+        let bytes = body.as_bytes();
+        let mut declaration_ends = DeclarationEnds::default();
+        let mut work = DeclarationScanWork::default();
+
+        for start in (0..bytes.len()).filter(|&start| bytes[start..].starts_with(b"<?")) {
+            let expected = bytes[start + 2..]
+                .windows(2)
+                .position(|window| window == b"?>")
+                .map(|offset| start + 2 + offset + 2);
+            assert_eq!(
+                declaration_end(bytes, start, &mut declaration_ends, &mut work),
+                expected,
+            );
+        }
+
+        for start in (0..bytes.len()).filter(|&start| bytes[start..].starts_with(b"<![CDATA[")) {
+            let expected = bytes[start + 9..]
+                .windows(3)
+                .position(|window| window == b"]]>")
+                .map(|offset| start + 9 + offset + 3);
+            assert_eq!(
+                declaration_end(bytes, start, &mut declaration_ends, &mut work),
+                expected,
+            );
+        }
+    }
+
+    #[test]
     fn repeated_unterminated_subsets_keep_public_output_and_strict_parity() {
         let input = "<!DOCTYPE [".repeat(1_024);
         let output = render(&input);
@@ -1980,6 +2111,23 @@ Content
             crate::mdx::segment_strict(&input).unwrap(),
             crate::mdx::segment_spanned(&input)
         );
+    }
+
+    #[test]
+    fn repeated_unterminated_declarations_before_a_tag_keep_public_output_and_strict_parity() {
+        for unit in ["<!DOCTYPE [", "<?", "<![CDATA["] {
+            let input = format!("{}<p>after</p>", unit.repeat(256));
+            let output = render(&input);
+            let component = output.to_component("Page").unwrap();
+
+            assert_eq!(component.matches("&lt;").count(), 256, "{unit:?}");
+            assert!(component.contains("<p>after</p>"), "{unit:?}: {component}");
+            assert_eq!(
+                crate::mdx::segment_strict(&input).unwrap(),
+                crate::mdx::segment_spanned(&input),
+                "{unit:?}",
+            );
+        }
     }
 
     #[test]
