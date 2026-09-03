@@ -3,24 +3,10 @@
 //! Uses raw pointers internally for maximum scanning speed,
 //! wrapped in a safe API with bounds checking at block entry.
 
-use crate::Range;
-
 /// A cursor for efficient byte-by-byte scanning.
 ///
 /// Internally uses raw pointers to avoid bounds checks in tight loops.
 /// The cursor is bounds-checked at creation and when advancing past known-safe regions.
-///
-/// # Example
-/// ```
-/// use ferromark::cursor::Cursor;
-///
-/// let input = b"Hello, World!";
-/// let mut cursor = Cursor::new(input);
-///
-/// assert_eq!(cursor.peek(), Some(b'H'));
-/// cursor.advance(7);
-/// assert_eq!(cursor.peek(), Some(b'W'));
-/// ```
 #[derive(Clone, Copy)]
 pub struct Cursor<'a> {
     ptr: *const u8,
@@ -109,17 +95,6 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    /// Peek the current byte without bounds check.
-    ///
-    /// # Safety
-    /// Caller must ensure cursor is not at EOF.
-    #[inline]
-    pub unsafe fn peek_unchecked(&self) -> u8 {
-        debug_assert!(!self.is_eof());
-        // SAFETY: Caller guarantees not at EOF
-        unsafe { *self.ptr }
-    }
-
     /// Peek at byte n positions ahead.
     #[inline]
     pub fn peek_ahead(&self, n: usize) -> Option<u8> {
@@ -129,23 +104,6 @@ impl<'a> Cursor<'a> {
             // SAFETY: n < remaining
             Some(unsafe { *self.ptr.add(n) })
         }
-    }
-
-    /// Advance by n bytes.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `n` exceeds the number of remaining bytes.
-    #[inline]
-    pub fn advance(&mut self, n: usize) {
-        let remaining = self.remaining();
-        assert!(
-            n <= remaining,
-            "cannot advance cursor by {n} bytes with only {remaining} remaining"
-        );
-        // SAFETY: The assertion above keeps the pointer within the allocation
-        // or exactly one byte past its end.
-        self.ptr = unsafe { self.ptr.add(n) };
     }
 
     /// Advance without checking the remaining length.
@@ -164,18 +122,6 @@ impl<'a> Cursor<'a> {
         self.ptr = unsafe { self.ptr.add(n) };
     }
 
-    /// Advance by 1 byte.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the cursor is already at EOF.
-    #[inline]
-    pub fn bump(&mut self) {
-        assert!(!self.is_eof(), "cannot bump cursor past EOF");
-        // SAFETY: The assertion above guarantees one byte remains.
-        self.ptr = unsafe { self.ptr.add(1) };
-    }
-
     /// Advance by one byte without checking for EOF.
     ///
     /// # Safety
@@ -188,33 +134,10 @@ impl<'a> Cursor<'a> {
         self.ptr = unsafe { self.ptr.add(1) };
     }
 
-    /// Consume and return current byte.
-    #[inline]
-    #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Option<u8> {
-        if self.is_eof() {
-            None
-        } else {
-            // SAFETY: not at EOF
-            let b = unsafe { *self.ptr };
-            self.ptr = unsafe { self.ptr.add(1) };
-            Some(b)
-        }
-    }
-
     /// Check if current position matches a byte.
     #[inline]
     pub fn at(&self, b: u8) -> bool {
         self.peek() == Some(b)
-    }
-
-    /// Check if current position matches any of the given bytes.
-    #[inline]
-    pub fn at_any(&self, bytes: &[u8]) -> bool {
-        match self.peek() {
-            Some(b) => bytes.contains(&b),
-            None => false,
-        }
     }
 
     /// Skip while predicate is true.
@@ -240,47 +163,6 @@ impl<'a> Cursor<'a> {
         self.skip_while(|b| b == b' ' || b == b'\t')
     }
 
-    /// Skip spaces only.
-    #[inline]
-    pub fn skip_spaces(&mut self) -> usize {
-        self.skip_while(|b| b == b' ')
-    }
-
-    /// Consume a specific byte if present.
-    #[inline]
-    pub fn eat(&mut self, b: u8) -> bool {
-        if self.at(b) {
-            // SAFETY: `at` can only succeed when a byte remains.
-            unsafe { self.bump_unchecked() };
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Consume a specific byte sequence if present.
-    #[inline]
-    pub fn eat_bytes(&mut self, bytes: &[u8]) -> bool {
-        if self.remaining() < bytes.len() {
-            return false;
-        }
-        // SAFETY: remaining >= bytes.len()
-        let slice = unsafe { std::slice::from_raw_parts(self.ptr, bytes.len()) };
-        if slice == bytes {
-            // SAFETY: The remaining-length check above covers `bytes.len()`.
-            unsafe { self.advance_unchecked(bytes.len()) };
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Get a range from a start offset to current position.
-    #[inline]
-    pub fn range_from(&self, start: usize) -> Range {
-        Range::from_usize(start, self.offset())
-    }
-
     /// Get the remaining bytes as a slice.
     #[inline]
     pub fn remaining_slice(&self) -> &'a [u8] {
@@ -298,28 +180,6 @@ impl<'a> Cursor<'a> {
     #[inline]
     pub fn find_newline(&self) -> Option<usize> {
         self.find(b'\n')
-    }
-
-    /// Advance to the next newline, returning the range of the line (excluding newline).
-    #[inline]
-    pub fn consume_line(&mut self) -> Range {
-        let start = self.offset();
-        match self.find_newline() {
-            Some(pos) => {
-                let end = start + pos;
-                // SAFETY: `pos` identifies a newline in the remaining slice.
-                unsafe { self.advance_unchecked(pos + 1) }; // Skip past newline
-                Range::from_usize(start, end)
-            }
-            None => {
-                // No newline found, consume rest of input
-                let end = start + self.remaining();
-                let remaining = self.remaining();
-                // SAFETY: Advancing by the exact remaining length reaches EOF.
-                unsafe { self.advance_unchecked(remaining) };
-                Range::from_usize(start, end)
-            }
-        }
     }
 }
 
@@ -365,43 +225,10 @@ mod tests {
     }
 
     #[test]
-    fn test_cursor_advance() {
-        let mut cursor = Cursor::new(b"Hello");
-        assert_eq!(cursor.peek(), Some(b'H'));
-
-        cursor.advance(2);
-        assert_eq!(cursor.offset(), 2);
-        assert_eq!(cursor.peek(), Some(b'l'));
-
-        cursor.bump();
-        assert_eq!(cursor.offset(), 3);
-        assert_eq!(cursor.peek(), Some(b'l'));
-    }
-
-    #[test]
-    fn test_cursor_next() {
-        let mut cursor = Cursor::new(b"abc");
-        assert_eq!(cursor.next(), Some(b'a'));
-        assert_eq!(cursor.next(), Some(b'b'));
-        assert_eq!(cursor.next(), Some(b'c'));
-        assert_eq!(cursor.next(), None);
-    }
-
-    #[test]
     fn test_cursor_at() {
         let cursor = Cursor::new(b"abc");
         assert!(cursor.at(b'a'));
         assert!(!cursor.at(b'b'));
-        assert!(cursor.at_any(b"axy"));
-        assert!(!cursor.at_any(b"xyz"));
-    }
-
-    #[test]
-    fn test_cursor_skip_while() {
-        let mut cursor = Cursor::new(b"   abc");
-        let skipped = cursor.skip_spaces();
-        assert_eq!(skipped, 3);
-        assert_eq!(cursor.peek(), Some(b'a'));
     }
 
     #[test]
@@ -413,61 +240,10 @@ mod tests {
     }
 
     #[test]
-    fn test_cursor_eat() {
-        let mut cursor = Cursor::new(b"abc");
-        assert!(cursor.eat(b'a'));
-        assert!(!cursor.eat(b'a'));
-        assert!(cursor.eat(b'b'));
-    }
-
-    #[test]
-    fn test_cursor_eat_bytes() {
-        let mut cursor = Cursor::new(b"hello world");
-        assert!(cursor.eat_bytes(b"hello"));
-        assert_eq!(cursor.peek(), Some(b' '));
-        assert!(!cursor.eat_bytes(b"hello"));
-        assert!(cursor.eat_bytes(b" world"));
-        assert!(cursor.is_eof());
-    }
-
-    #[test]
     fn test_cursor_find() {
         let cursor = Cursor::new(b"hello\nworld");
         assert_eq!(cursor.find(b'\n'), Some(5));
         assert_eq!(cursor.find(b'x'), None);
-    }
-
-    #[test]
-    fn test_cursor_consume_line() {
-        let mut cursor = Cursor::new(b"line1\nline2\nline3");
-
-        let line1 = cursor.consume_line();
-        assert_eq!(line1.slice(b"line1\nline2\nline3"), b"line1");
-
-        let line2 = cursor.consume_line();
-        assert_eq!(line2.slice(b"line1\nline2\nline3"), b"line2");
-
-        let line3 = cursor.consume_line();
-        assert_eq!(line3.slice(b"line1\nline2\nline3"), b"line3");
-
-        assert!(cursor.is_eof());
-    }
-
-    #[test]
-    fn test_cursor_consume_line_no_trailing_newline() {
-        let mut cursor = Cursor::new(b"hello");
-        let line = cursor.consume_line();
-        assert_eq!(line.slice(b"hello"), b"hello");
-        assert!(cursor.is_eof());
-    }
-
-    #[test]
-    fn test_cursor_range_from() {
-        let mut cursor = Cursor::new(b"hello world");
-        cursor.advance(6);
-        let range = cursor.range_from(0);
-        assert_eq!(range.start, 0);
-        assert_eq!(range.end, 6);
     }
 
     #[test]
@@ -482,19 +258,5 @@ mod tests {
     #[should_panic(expected = "cursor offset 2 exceeds input length 1")]
     fn new_at_panics_when_offset_exceeds_input() {
         let _ = Cursor::new_at(b"x", 2);
-    }
-
-    #[test]
-    #[should_panic(expected = "cannot advance cursor by 2 bytes with only 1 remaining")]
-    fn advance_panics_when_distance_exceeds_remaining_input() {
-        let mut cursor = Cursor::new(b"x");
-        cursor.advance(2);
-    }
-
-    #[test]
-    #[should_panic(expected = "cannot bump cursor past EOF")]
-    fn bump_panics_at_eof() {
-        let mut cursor = Cursor::new(b"");
-        cursor.bump();
     }
 }

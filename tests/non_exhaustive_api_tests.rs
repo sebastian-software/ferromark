@@ -1,10 +1,22 @@
 //! Public API compatibility checks compiled as an external crate.
 
-use ferromark::block::{ListKind, TaskState};
-use ferromark::inline::AutolinkLiteralKind;
 use ferromark::{
-    Alignment, BlockEvent, CalloutType, CodeBlockKind, InlineEvent, Options, RenderPolicy,
+    Alignment, AutolinkLiteralKind, BlockEvent, CalloutType, CodeBlockKind, FootnoteDef,
+    FootnoteStore, InlineEvent, ListKind, Options, RenderPolicy, TaskState, escape_attr_into,
+    escape_text_into,
 };
+
+#[test]
+fn downstream_uses_the_stable_root_facade() {
+    let mut escaped = Vec::new();
+    escape_text_into(&mut escaped, b"<text>");
+    escape_attr_into(&mut escaped, b"\"");
+    assert_eq!(escaped, b"&lt;text&gt;&quot;");
+
+    let store = FootnoteStore::new();
+    let definition: Option<&FootnoteDef> = store.get(0);
+    assert!(definition.is_none());
+}
 
 #[test]
 fn downstream_can_customize_non_exhaustive_options_by_mutating_a_preset() {

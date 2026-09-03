@@ -5,6 +5,7 @@
 use std::hint::black_box;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
+use ferromark::escape_text_into;
 
 /// Sample Markdown documents of various sizes
 mod samples {
@@ -254,7 +255,7 @@ fn bench_escaping(c: &mut Criterion) {
     group.bench_function("plain_text", |b| {
         b.iter(|| {
             let mut out = Vec::with_capacity(plain.len());
-            ferromark::escape::escape_text_into(&mut out, black_box(plain.as_bytes()));
+            escape_text_into(&mut out, black_box(plain.as_bytes()));
             out
         })
     });
@@ -265,7 +266,7 @@ fn bench_escaping(c: &mut Criterion) {
     group.bench_function("html_heavy", |b| {
         b.iter(|| {
             let mut out = Vec::with_capacity(html_heavy.len() * 2);
-            ferromark::escape::escape_text_into(&mut out, black_box(html_heavy.as_bytes()));
+            escape_text_into(&mut out, black_box(html_heavy.as_bytes()));
             out
         })
     });

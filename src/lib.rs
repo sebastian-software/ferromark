@@ -5,6 +5,8 @@
 //! ferromark streams Markdown into HTML without building an AST. Its default
 //! [`RenderPolicy::Untrusted`] escapes raw HTML and restricts unsafe URL
 //! schemes. Use [`Options`] to select syntax extensions and rendering policy.
+//! Parser implementation modules are private; stable parser, event, range,
+//! store, escaping, and writer types are re-exported from the crate root.
 //!
 //! # Quick start
 //!
@@ -26,27 +28,31 @@
 //! scalar scanner. See the repository benchmark documentation for current,
 //! reproducible measurements.
 
-pub mod block;
-pub mod cursor;
-pub mod escape;
-pub mod footnote;
-pub mod inline;
+mod block;
+mod cursor;
+mod escape;
+mod footnote;
+mod inline;
 pub mod limits;
-pub mod link_ref;
+mod link_ref;
 #[cfg(feature = "mdx")]
 pub mod mdx;
 #[cfg(feature = "profiling")]
 #[doc(hidden)]
 pub mod profiling;
-pub mod range;
-pub mod render;
+mod range;
+mod render;
 
 use smallvec::SmallVec;
 
 // Re-export primary types
-pub use block::{Alignment, BlockEvent, BlockParser, CalloutType, CodeBlockKind, fixup_list_tight};
-pub use footnote::FootnoteStore;
-pub use inline::{InlineEvent, InlineParser};
+pub use block::{
+    Alignment, BlockEvent, BlockParser, CalloutType, CodeBlockKind, ListKind, TaskState,
+    fixup_list_tight,
+};
+pub use escape::{escape_attr_into, escape_text_into};
+pub use footnote::{FootnoteDef, FootnoteStore};
+pub use inline::{AutolinkLiteralKind, InlineEvent, InlineParser};
 pub use limits::{ResourceLimit, ResourceLimitReport};
 pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::{InputSizeError, MAX_INPUT_BYTES, Range, validate_input_size};

@@ -1,6 +1,5 @@
 //! Link reference definitions (CommonMark).
 
-use crate::Range;
 use memchr::memchr;
 use rustc_hash::FxBuildHasher as FastHashBuilder;
 use std::borrow::Cow;
@@ -74,14 +73,6 @@ impl LinkRefStore {
     pub(crate) fn append_definitions_to(&self, definitions: &mut Vec<LinkRefDef>) {
         definitions.extend(self.defs.iter().cloned());
     }
-}
-
-/// Normalize a link label per CommonMark: decode entities, process backslash escapes,
-/// collapse internal whitespace to single spaces, trim, and case-fold.
-pub fn normalize_label(bytes: &[u8]) -> String {
-    let mut out = String::new();
-    normalize_label_into(bytes, &mut out);
-    out
 }
 
 /// Normalize a link label into a reusable buffer.
@@ -188,14 +179,4 @@ fn normalize_label_text_ascii(input: &[u8], out: &mut String) {
 #[inline]
 fn is_label_escapable(b: u8) -> bool {
     matches!(b, b'[' | b']' | b'\\')
-}
-
-/// Convenience helper to create a definition from ranges in input.
-pub fn def_from_ranges(input: &[u8], url: Range, title: Option<Range>) -> LinkRefDef {
-    let url_bytes = url.slice(input).to_vec();
-    let title_bytes = title.map(|r| r.slice(input).to_vec());
-    LinkRefDef {
-        url: url_bytes,
-        title: title_bytes,
-    }
 }

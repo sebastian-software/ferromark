@@ -1,8 +1,10 @@
 # Migrating to ferromark 0.8
 
 Version 0.8 makes ferromark's public `Options` and event/type enums
-forward-compatible before 1.0. This is an intentional pre-1.0 breaking API
-change: update option construction and exhaustive enum matches as below.
+forward-compatible before 1.0 and moves parser implementation modules behind
+the stable crate-root facade. These are intentional pre-1.0 breaking API
+changes: update option construction, exhaustive enum matches, and
+module-qualified imports as below.
 
 ## Configure non-exhaustive options from a preset
 
@@ -51,3 +53,32 @@ let label = match RenderPolicy::Untrusted {
 };
 assert_eq!(label, "untrusted");
 ```
+
+## Import public types and helpers from the crate root
+
+The `block`, `cursor`, `escape`, `footnote`, `inline`, `link_ref`, `range`, and
+`render` modules are now private implementation details. Public parsers,
+events, stores, ranges, the HTML writer, and the supported escaping helpers are
+available directly from `ferromark`.
+
+Replace module-qualified imports:
+
+```rust,ignore
+use ferromark::block::{ListKind, TaskState};
+use ferromark::inline::AutolinkLiteralKind;
+use ferromark::escape::escape_text_into;
+```
+
+with crate-root imports:
+
+```rust
+use ferromark::{AutolinkLiteralKind, ListKind, TaskState, escape_text_into};
+
+let mut escaped = Vec::new();
+escape_text_into(&mut escaped, b"<code>");
+assert_eq!(escaped, b"&lt;code&gt;");
+```
+
+`Cursor`, mark-resolution internals, and other low-level helpers no longer form
+part of the public API. Keep custom integrations on the root-level
+`BlockParser`, `InlineParser`, event, store, `Range`, and `HtmlWriter` types.
