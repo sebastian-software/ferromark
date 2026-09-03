@@ -5,6 +5,10 @@ class ContractError < StandardError; end
 
 README_PATH = 'README.md'
 MIGRATION_GUIDE = '[0.4–0.7 migration guide](docs/migration-0.4.md)'
+REPOSITORY_ROOT = File.expand_path('..', __dir__)
+CONTRIBUTING_PATH = File.join(REPOSITORY_ROOT, 'CONTRIBUTING.md')
+BENCHMARK_LOCK_PATH = File.join(REPOSITORY_ROOT, 'benchmarks/md4c-comparison/Cargo.lock')
+BENCHMARK_BUILD_PATH = File.join(REPOSITORY_ROOT, 'benchmarks/md4c-comparison/build.rs')
 
 def fail_contract(message)
   raise ContractError, "README structure contract: #{message}"
@@ -19,7 +23,23 @@ def section(document, heading)
   document[content_start...(following_heading || document.length)]
 end
 
-def validate(document)
+def locked_benchmark_version(package_name)
+  lockfile = File.read(BENCHMARK_LOCK_PATH)
+  match = lockfile.match(/^name = "#{Regexp.escape(package_name)}"\nversion = "([^"]+)"$/)
+  fail_contract("benchmark lockfile must contain #{package_name}") unless match
+
+  match[1]
+end
+
+def pinned_md4c_revision
+  build_script = File.read(BENCHMARK_BUILD_PATH)
+  revision = build_script[/^const MD4C_REVISION: &str = "([0-9a-f]{40})";$/, 1]
+  fail_contract('benchmark build must declare a full MD4C_REVISION') unless revision
+
+  revision
+end
+
+def validate(document, contributing = File.read(CONTRIBUTING_PATH))
   headings = document.scan(/^## (.+)$/).flatten
   fail_contract('must not repeat top-level headings') unless headings.uniq.length == headings.length
 
@@ -49,6 +69,28 @@ def validate(document)
   end
   unless benchmarks.include?('has not been re-measured') && benchmarks.include?('x86-64')
     fail_contract('Benchmarks must disclose the missing x86-64 comparison')
+  end
+  %w[pulldown-cmark comrak].each do |package_name|
+    locked_version = locked_benchmark_version(package_name)
+    unless benchmarks.match?(/#{Regexp.escape(package_name)}\s+#{Regexp.escape(locked_version)}/)
+      fail_contract("Benchmarks must state locked #{package_name} #{locked_version}")
+    end
+  end
+
+  md4c_revision = pinned_md4c_revision
+  short_revision = md4c_revision[0, 7]
+  unless benchmarks.include?("md4c @ #{short_revision}")
+    fail_contract("Benchmarks must state pinned md4c revision #{short_revision}")
+  end
+  unless benchmarks.include?("checkout --detach #{short_revision}") &&
+         contributing.include?("checkout --detach #{short_revision}")
+    fail_contract("README and CONTRIBUTING must check out pinned md4c revision #{short_revision}")
+  end
+  [benchmarks, contributing].each do |benchmark_instructions|
+    unless benchmark_instructions.include?('cargo bench --locked') &&
+           benchmark_instructions.include?('--manifest-path benchmarks/md4c-comparison/Cargo.toml')
+      fail_contract('README and CONTRIBUTING must use the locked isolated benchmark manifest')
+    end
   end
   unless document.include?('baseline SSE2 (x86-64)')
     fail_contract('README must describe the x86-64 inline SIMD path')
@@ -88,9 +130,18 @@ def self_test(document)
   assert_rejected('x86-64 benchmark caveat') do
     validate(document.sub('has not been re-measured', 'has been re-measured'))
   end
+  assert_rejected('locked comrak version') do
+    locked_version = locked_benchmark_version('comrak')
+    validate(document.sub(/comrak\s+#{Regexp.escape(locked_version)}/, 'comrak 0.0.0'))
+  end
+  assert_rejected('pinned md4c contributor checkout') do
+    revision = pinned_md4c_revision[0, 7]
+    contributing = File.read(CONTRIBUTING_PATH)
+    validate(document, contributing.sub("checkout --detach #{revision}", 'checkout --detach main'))
+  end
 end
 
-document = File.read(File.expand_path("../#{README_PATH}", __dir__))
+document = File.read(File.join(REPOSITORY_ROOT, README_PATH))
 
 begin
   if ARGV == ['--self-test']

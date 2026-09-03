@@ -1,5 +1,8 @@
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+const MD4C_REVISION: &str = "65c6c9d72cebd9a731aaa5597414ce04d9ea5de3";
 
 fn main() {
     println!("cargo:rustc-check-cfg=cfg(md4c)");
@@ -39,7 +42,30 @@ fn main() {
 }
 
 fn md4c_dir() -> PathBuf {
-    env::var_os("MD4C_DIR")
+    let directory = env::var_os("MD4C_DIR")
         .map(PathBuf::from)
-        .expect("set MD4C_DIR to the explicit md4c checkout used for comparison")
+        .expect("set MD4C_DIR to the explicit md4c checkout used for comparison");
+    verify_md4c_revision(&directory);
+    directory
+}
+
+fn verify_md4c_revision(directory: &Path) {
+    let output = Command::new("git")
+        .args(["-C"])
+        .arg(directory)
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .expect("git must be available to verify the pinned md4c revision");
+    assert!(
+        output.status.success(),
+        "MD4C_DIR must point to a git checkout so its pinned revision can be verified"
+    );
+
+    let revision =
+        String::from_utf8(output.stdout).expect("git rev-parse must return a UTF-8 commit hash");
+    assert_eq!(
+        revision.trim(),
+        MD4C_REVISION,
+        "MD4C_DIR must be checked out at md4c revision {MD4C_REVISION}"
+    );
 }
