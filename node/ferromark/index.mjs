@@ -56,6 +56,17 @@ export function toHtml(markdown, options) {
   return loadNative().toHtml(markdown, options)
 }
 
+/**
+ * Render UTF-8 HTML into a Node.js Buffer.
+ * @param {string} markdown
+ * @param {import('./index.mjs').Options} [options]
+ * @returns {import('node:buffer').Buffer}
+ */
+export function toHtmlBuffer(markdown, options) {
+  validateOptions(options)
+  return loadNative().toHtmlBuffer(markdown, options)
+}
+
 /** Reusable Markdown renderer with fixed options. */
 export class Renderer {
   /** @type {NativeRendererSession} */
@@ -71,6 +82,11 @@ export class Renderer {
   /** @param {string} markdown */
   toHtml(markdown) {
     return this.#native.toHtml(markdown)
+  }
+
+  /** @param {string} markdown @returns {import('node:buffer').Buffer} */
+  toHtmlBuffer(markdown) {
+    return this.#native.toHtmlBuffer(markdown)
   }
 }
 
@@ -150,10 +166,17 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
 
 /**
  * @typedef {(code: string, language?: string | null, meta?: string | null) => string | null} NativeFencedCodeRenderer
- * @typedef {{ toHtml(markdown: string): string }} NativeRendererSession
+ * @typedef {{
+ *   toHtml(markdown: string): string
+ *   toHtmlBuffer(markdown: string): import('node:buffer').Buffer
+ * }} NativeRendererSession
  * @typedef {{
  *   Renderer: new (options?: import('./index.mjs').Options) => NativeRendererSession
  *   toHtml(markdown: string, options?: import('./index.mjs').Options): string
+ *   toHtmlBuffer(
+ *     markdown: string,
+ *     options?: import('./index.mjs').Options,
+ *   ): import('node:buffer').Buffer
  *   toHtmlWithRenderer(
  *     markdown: string,
  *     options: import('./index.mjs').Options | undefined,

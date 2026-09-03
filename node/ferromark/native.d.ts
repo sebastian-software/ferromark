@@ -6,6 +6,8 @@ export declare class Renderer {
   constructor(options?: Options | undefined | null)
   /** Render one Markdown document and retain scratch allocations for the next. */
   toHtml(markdown: string): string
+  /** Render into a Node.js Buffer and retain parser scratch allocations. */
+  toHtmlBuffer(markdown: string): Buffer
 }
 
 /** One document heading, in source order. */
@@ -45,6 +47,9 @@ export interface Options {
 }
 
 export declare function toHtml(markdown: string, options?: Options | undefined | null): string
+
+/** Render Markdown into a Node.js Buffer without transcoding the HTML to a JS string. */
+export declare function toHtmlBuffer(markdown: string, options?: Options | undefined | null): Buffer
 
 export declare function toHtmlWithRenderer(markdown: string, options: Options | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): string
 

@@ -10,7 +10,7 @@ const [declarations, packageJson, releaseConfig, buildNative] = await Promise.al
   readFile(new URL('../../../release-please-config.json', import.meta.url), 'utf8').then(JSON.parse),
   readFile(new URL('./build-native.mjs', import.meta.url), 'utf8'),
 ])
-for (const name of ['Options', 'toHtml', 'toHtmlWithRenderer']) {
+for (const name of ['Options', 'toHtml', 'toHtmlBuffer', 'toHtmlWithRenderer']) {
   if (!declarations.includes(name)) {
     throw new Error(`Generated native declarations are missing ${name}`)
   }

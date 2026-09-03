@@ -58,8 +58,14 @@ function assertReadmeContract(candidate) {
   assert.match(loader, /export class Renderer/, 'loader must export the reusable Renderer API')
   assert.match(declarations, /export declare class Renderer/, 'declarations must expose Renderer')
 
+  assert.match(candidate, /^## Buffer output$/m, 'README must document Buffer output')
+  assert.match(candidate, /response\.end\(toHtmlBuffer\(/, 'README must show direct Buffer consumption')
+  assert.match(loader, /export function toHtmlBuffer/, 'loader must export Buffer rendering')
+  assert.match(declarations, /function toHtmlBuffer\([^)]*\): Buffer/, 'declarations must expose Buffer rendering')
+  assert.match(declarations, /toHtmlBuffer\(markdown: string\): Buffer/, 'reusable renderer must expose Buffer rendering')
+
   assert.match(candidate, /^## Troubleshooting native loading$/m, 'README must explain lazy loader failures')
-  assert.match(candidate, /constructing `Renderer` or on the first call to\s+`toHtml\(\)`, `transform\(\)`, or a highlighter helper/i)
+  assert.match(candidate, /constructing `Renderer` or on the first call to\s+`toHtml\(\)`, `toHtmlBuffer\(\)`, `transform\(\)`, or a highlighter helper/i)
 
   assert.match(nativeTargets, /linux-arm64-musl/, 'loader must select the arm64 musl package')
   assert.match(nativeTargets, /linux-x64-musl/, 'loader must select the x64 musl package')
