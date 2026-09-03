@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Write};
 
-use crate::{Options, RenderPolicy};
+use crate::{BlockParser, LinkRefStore, Options, RenderPolicy};
 
 use super::{
     Segment,
@@ -1188,6 +1188,7 @@ pub fn try_render_with_options<'a>(
     options: &Options,
 ) -> Result<MdxOutput<'a>, crate::InputSizeError> {
     let segments = super::try_segment(input)?;
+    let link_refs = collect_link_references(&segments, options);
     let mut body = String::with_capacity(input.len());
     let mut esm: Vec<&'a str> = Vec::new();
     let mut front_matter: Option<&'a str> = None;
@@ -1198,7 +1199,7 @@ pub fn try_render_with_options<'a>(
                 esm.push(s);
             }
             Segment::Markdown(s) => {
-                let result = crate::try_parse_with_options(s, options)?;
+                let result = crate::try_parse_with_options_and_link_refs(s, options, &link_refs)?;
                 body.push_str(&result.html);
                 if front_matter.is_none() {
                     front_matter = result.front_matter;
@@ -1219,6 +1220,25 @@ pub fn try_render_with_options<'a>(
         esm,
         front_matter,
     })
+}
+
+fn collect_link_references(segments: &[Segment<'_>], options: &Options) -> LinkRefStore {
+    let mut link_refs = LinkRefStore::new();
+    let mut events = Vec::new();
+
+    for segment in segments {
+        let Segment::Markdown(markdown) = segment else {
+            continue;
+        };
+        let markdown = crate::markdown_without_front_matter(markdown, options);
+
+        events.clear();
+        let mut parser = BlockParser::new_with_options(markdown.as_bytes(), options.clone());
+        parser.parse(&mut events);
+        link_refs.merge_first_wins(parser.take_link_refs());
+    }
+
+    link_refs
 }
 
 fn mdx_default_options() -> Options {

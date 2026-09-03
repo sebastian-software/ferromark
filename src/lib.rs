@@ -549,7 +549,17 @@ pub fn try_parse_with_options<'a>(
     options: &Options,
 ) -> Result<ParseResult<'a>, InputSizeError> {
     validate_input_size(input.len())?;
-    Ok(parse_impl(input, options, None))
+    Ok(parse_impl(input, options, None, None))
+}
+
+#[cfg(feature = "mdx")]
+pub(crate) fn try_parse_with_options_and_link_refs<'a>(
+    input: &'a str,
+    options: &Options,
+    link_refs: &LinkRefStore,
+) -> Result<ParseResult<'a>, InputSizeError> {
+    validate_input_size(input.len())?;
+    Ok(parse_impl(input, options, None, Some(link_refs)))
 }
 
 /// Parse Markdown with options and an opt-in fenced-code renderer, returning
@@ -578,13 +588,14 @@ pub fn try_parse_with_renderer<'a>(
     renderer: &mut dyn FencedCodeRenderer,
 ) -> Result<ParseResult<'a>, InputSizeError> {
     validate_input_size(input.len())?;
-    Ok(parse_impl(input, options, Some(renderer)))
+    Ok(parse_impl(input, options, Some(renderer), None))
 }
 
 fn parse_impl<'a>(
     input: &'a str,
     options: &Options,
     renderer: Option<&mut dyn FencedCodeRenderer>,
+    shared_link_refs: Option<&LinkRefStore>,
 ) -> ParseResult<'a> {
     let (front_matter, markdown) = if options.front_matter {
         match extract_front_matter(input) {
@@ -605,6 +616,7 @@ fn parse_impl<'a>(
         renderer,
         Some(&mut headings),
         Some(&mut resource_limits),
+        shared_link_refs,
     );
     let html = writer
         .into_string()
@@ -737,6 +749,7 @@ impl Renderer {
             &mut self.inline_parser,
             &mut self.inline_events,
             &mut self.render_state,
+            None,
         );
     }
 }
@@ -1449,7 +1462,9 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
 
 /// Render Markdown to an HtmlWriter.
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
-    render_to_writer_impl::<DisabledFencedCodeRenderer>(input, writer, options, None, None, None);
+    render_to_writer_impl::<DisabledFencedCodeRenderer>(
+        input, writer, options, None, None, None, None,
+    );
 }
 
 fn render_to_writer_with_renderer(
@@ -1458,7 +1473,15 @@ fn render_to_writer_with_renderer(
     options: &Options,
     fenced_code_renderer: Option<&mut dyn FencedCodeRenderer>,
 ) {
-    render_to_writer_impl(input, writer, options, fenced_code_renderer, None, None);
+    render_to_writer_impl(
+        input,
+        writer,
+        options,
+        fenced_code_renderer,
+        None,
+        None,
+        None,
+    );
 }
 
 struct DisabledFencedCodeRenderer;
@@ -1476,6 +1499,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     fenced_code_renderer: Option<&mut R>,
     headings: Option<&mut Vec<Heading>>,
     resource_limits: Option<&mut ResourceLimitReport>,
+    shared_link_refs: Option<&LinkRefStore>,
 ) {
     let mut events = Vec::with_capacity((input.len() / 16).max(64));
     let mut inline_parser = InlineParser::new();
@@ -1492,6 +1516,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
         &mut inline_parser,
         &mut inline_events,
         &mut render_state,
+        shared_link_refs,
     );
 }
 
@@ -1507,6 +1532,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     inline_parser: &mut InlineParser,
     inline_events: &mut Vec<InlineEvent>,
     render_state: &mut RenderState,
+    shared_link_refs: Option<&LinkRefStore>,
 ) {
     // Parse blocks
     events.clear();
@@ -1518,7 +1544,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     }
     #[cfg(feature = "profiling")]
     profiling::record_block_events(events, events.capacity());
-    let link_refs = parser.take_link_refs();
+    let segment_link_refs = parser.take_link_refs();
     let footnote_store = if options.footnotes {
         Some(parser.take_footnote_store())
     } else {
@@ -1528,6 +1554,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     // Fix up list tight status (ListStart gets its tight value from ListEnd)
     fixup_list_tight(events);
 
+    let link_refs = shared_link_refs.unwrap_or(&segment_link_refs);
     let fn_store_ref = footnote_store.as_ref();
     inline_parser.begin_document();
     {
@@ -1536,7 +1563,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
             inline_parser,
             inline_events,
             render_state,
-            &link_refs,
+            link_refs,
             fn_store_ref,
             options,
             fenced_code_renderer,
