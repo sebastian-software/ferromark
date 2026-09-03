@@ -207,6 +207,20 @@ Set `indented_code_blocks: false` for dialects that require fenced code blocks
 and interpret four-space indentation as ordinary paragraph content. Fenced code
 blocks remain available.
 
+## CLI
+
+`cargo install ferromark` installs `ferromark`, which reads Markdown from a file
+or standard input and writes HTML to standard output. Use `ferromark --help` for
+the complete interface. `--gfm`, `--commonmark`, and `--minimal` select syntax
+presets; output remains safely untrusted unless `--trusted` is explicitly set.
+`--trusted` also disables GFM's disallowed-raw-HTML filter, so raw HTML parsed
+by the selected syntax preset is preserved; use it only for Markdown you trust.
+
+```sh
+ferromark --gfm README.md -o README.html
+printf '# Hello\n' | ferromark --no-heading-ids
+```
+
 ## Markdown configuration
 
 Start from the syntax contract you need, then enable individual extensions:

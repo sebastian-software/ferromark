@@ -1,32 +1,54 @@
 export type RenderPolicy = 'untrusted' | 'trusted'
 
 export interface Options {
+  /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy
+  /** Parse raw inline and block HTML. Default: on; untrusted output still escapes it. */
   allowHtml?: boolean
+  /** Resolve reference definitions and reference-style links. Default: on. */
   allowLinkRefs?: boolean
+  /** Enable GFM pipe tables. Default: on. */
   tables?: boolean
+  /** Enable MultiMarkdown-style table column spans. Default: off; requires `tables`. */
   mergedTableCells?: boolean
+  /** Emit numeric table column-width hints. Default: off; requires `tables`. */
   tableColumnWidths?: boolean
+  /** Enable GFM `~~strikethrough~~`. Default: on. */
   strikethrough?: boolean
+  /** Enable `==highlight==`. Default: off. */
   highlight?: boolean
+  /** Enable `^superscript^`. Default: off. */
   superscript?: boolean
+  /** Enable `~subscript~`. Default: off. */
   subscript?: boolean
+  /** Enable GFM task lists. Default: on. */
   taskLists?: boolean
+  /** Enable bare URL, `www`, and email autolinks. Default: off. */
   autolinkLiterals?: boolean
+  /** Filter GFM-disallowed raw HTML in trusted mode. Default: on; this is not a sanitizer. */
   disallowedRawHtml?: boolean
+  /** Enable `[^label]` footnotes. Default: off. */
   footnotes?: boolean
+  /** Enable Pandoc-style `^[note]` footnotes. Default: off. */
   inlineFootnotes?: boolean
+  /** Extract a leading `---` or `+++` front-matter block. Default: off. */
   frontMatter?: boolean
+  /** Generate GitHub-compatible heading IDs. Default: on. */
   headingIds?: boolean
+  /** Enable `$inline$` and `$$display$$` math. Default: off. */
   math?: boolean
+  /** Enable GitHub-style blockquote callouts. Default: on. */
   callouts?: boolean
+  /** Enable PHP Markdown Extra definition lists. Default: off. */
   definitionLists?: boolean
+  /** Omit physical-line-start `//` source comments. Default: off. */
   lineComments?: boolean
+  /** Parse four-space indented code blocks. Default: on. */
   indentedCodeBlocks?: boolean
   /**
    * Prefix internal absolute link destinations (starting with `/`) with
    * this base path, for sites deployed under a subpath. Image sources and
-   * autolinks are not rewritten.
+   * autolinks are not rewritten. Default: unset.
    */
   linkBasePath?: string
 }

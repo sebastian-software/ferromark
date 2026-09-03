@@ -57,6 +57,8 @@ jobs:
       - run: ruby ./scripts/test-docs-rs-metadata.rb --self-test
       - run: RUSTDOCFLAGS='-D warnings' cargo doc --locked --no-deps --no-default-features --features mdx
       - run: ruby ./scripts/test-migration-guide-contract.rb --self-test
+      - run: ruby ./scripts/test-node-options-docs-contract.rb --self-test
+      - run: ruby ./scripts/test-readme-structure-contract.rb --self-test
       - run: ./scripts/check-workflow-pins.sh
 
   rustsec:
