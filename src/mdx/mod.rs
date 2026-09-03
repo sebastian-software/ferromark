@@ -177,6 +177,9 @@ pub struct SpannedSegment<'a> {
 
 /// A stable category for a structural MDX diagnostic.
 ///
+/// Its [`std::fmt::Display`] representation is a stable kebab-case identifier
+/// suitable for logs and command-line diagnostics.
+///
 /// Future releases may add diagnostic categories. Downstream matches must include a wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -201,11 +204,29 @@ pub enum MdxDiagnosticCode {
     IncompleteEsm,
 }
 
+impl std::fmt::Display for MdxDiagnosticCode {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::InputTooLarge => "input-too-large",
+            Self::UnterminatedExpression => "unterminated-expression",
+            Self::UnterminatedJsxTag => "unterminated-jsx-tag",
+            Self::InvalidJsxTag => "invalid-jsx-tag",
+            Self::UnexpectedJsxClosingTag => "unexpected-jsx-closing-tag",
+            Self::MismatchedJsxClosingTag => "mismatched-jsx-closing-tag",
+            Self::UnclosedJsxTag => "unclosed-jsx-tag",
+            Self::InvalidEsmPosition => "invalid-esm-position",
+            Self::IncompleteEsm => "incomplete-esm",
+        })
+    }
+}
+
 /// A structural MDX diagnostic returned by [`segment_strict`].
 ///
 /// `primary_range` is always a valid UTF-8 byte range into the original input.
 /// For a mismatched JSX closing tag, `related_range` identifies the innermost
 /// opening tag that the closing tag cannot close past.
+/// Its [`std::fmt::Display`] representation includes the diagnostic code,
+/// message, primary byte range, and related byte range when present.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MdxDiagnostic {
     /// Stable machine-readable diagnostic category.
@@ -217,6 +238,26 @@ pub struct MdxDiagnostic {
     /// Related source range for a mismatched JSX closing tag's blocking opening tag.
     pub related_range: Option<crate::Range>,
 }
+
+impl std::fmt::Display for MdxDiagnostic {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "{}: {} at bytes {}..{}",
+            self.code, self.message, self.primary_range.start, self.primary_range.end
+        )?;
+        if let Some(related_range) = self.related_range {
+            write!(
+                formatter,
+                ", related bytes {}..{}",
+                related_range.start, related_range.end
+            )?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for MdxDiagnostic {}
 
 /// A one-based source location derived from a UTF-8 byte offset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -418,5 +459,66 @@ mod tests {
     #[test]
     fn maximum_input_length_preserves_one_based_source_positions() {
         assert_eq!(one_based_source_count(crate::MAX_INPUT_BYTES), u32::MAX);
+    }
+
+    #[test]
+    fn diagnostic_codes_have_stable_display_names() {
+        let cases = [
+            (MdxDiagnosticCode::InputTooLarge, "input-too-large"),
+            (
+                MdxDiagnosticCode::UnterminatedExpression,
+                "unterminated-expression",
+            ),
+            (
+                MdxDiagnosticCode::UnterminatedJsxTag,
+                "unterminated-jsx-tag",
+            ),
+            (MdxDiagnosticCode::InvalidJsxTag, "invalid-jsx-tag"),
+            (
+                MdxDiagnosticCode::UnexpectedJsxClosingTag,
+                "unexpected-jsx-closing-tag",
+            ),
+            (
+                MdxDiagnosticCode::MismatchedJsxClosingTag,
+                "mismatched-jsx-closing-tag",
+            ),
+            (MdxDiagnosticCode::UnclosedJsxTag, "unclosed-jsx-tag"),
+            (
+                MdxDiagnosticCode::InvalidEsmPosition,
+                "invalid-esm-position",
+            ),
+            (MdxDiagnosticCode::IncompleteEsm, "incomplete-esm"),
+        ];
+
+        for (code, expected) in cases {
+            assert_eq!(code.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn diagnostics_format_their_code_message_and_ranges() {
+        fn assert_error<T: std::error::Error>() {}
+
+        assert_error::<MdxDiagnostic>();
+        let diagnostic = MdxDiagnostic {
+            code: MdxDiagnosticCode::MismatchedJsxClosingTag,
+            message: "closing JSX tag does not match the innermost opening tag",
+            primary_range: crate::Range::new(16, 24),
+            related_range: Some(crate::Range::new(8, 15)),
+        };
+
+        assert_eq!(
+            diagnostic.to_string(),
+            "mismatched-jsx-closing-tag: closing JSX tag does not match the innermost opening tag at bytes 16..24, related bytes 8..15"
+        );
+    }
+
+    #[test]
+    fn rendered_mdx_output_is_debuggable() {
+        let output = render("# Title\n");
+        let debug = format!("{output:?}");
+
+        assert!(debug.contains("MdxOutput"));
+        assert!(debug.contains("<h1 id=\\\"title\\\">Title</h1>"));
     }
 }

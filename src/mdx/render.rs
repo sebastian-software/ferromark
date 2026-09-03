@@ -158,6 +158,7 @@ fn is_reserved_word(name: &str) -> bool {
 }
 
 /// Rendered MDX output with extracted metadata.
+#[derive(Debug)]
 pub struct MdxOutput<'a> {
     /// Rendered body: Markdown→HTML, JSX/expressions passed through.
     pub body: String,

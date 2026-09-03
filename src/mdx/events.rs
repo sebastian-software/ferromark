@@ -158,6 +158,13 @@ pub fn try_parse_events(input: &str) -> Result<MdxEventStream, crate::InputSizeE
 /// outside this validator's scope. The existing strict validator covers flow
 /// constructs; malformed inline MDX retains the permissive `InlineEvent::Text`
 /// recovery in both event modes.
+///
+/// # Errors
+///
+/// Returns all structural MDX diagnostics found in the document. An input
+/// exceeding [`crate::MAX_INPUT_BYTES`] returns one
+/// [`MdxDiagnosticCode::InputTooLarge`](super::MdxDiagnosticCode::InputTooLarge)
+/// diagnostic instead of panicking.
 pub fn parse_events_strict(input: &str) -> Result<MdxEventStream, Vec<MdxDiagnostic>> {
     super::validate_mdx_input_size(input.len())?;
 
