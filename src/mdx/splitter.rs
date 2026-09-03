@@ -26,7 +26,6 @@ pub(crate) fn split_with_expression_ends<'a>(
     let mut segments: Vec<Segment<'_>> = Vec::new();
     let mut pos = 0;
     let mut md_start: Option<usize> = None;
-    let mut tag_stack: Vec<String> = Vec::new();
     // Track whether the previous line was non-blank markdown content.
     // ESM cannot interrupt a paragraph (requires blank line before it).
     let mut in_paragraph = false;
@@ -118,11 +117,6 @@ pub(crate) fn split_with_expression_ends<'a>(
                 flush_markdown(input, &mut md_start, line_start, &mut segments);
                 let seg_end = consume_trailing_newline(bytes, end);
                 segments.push(Segment::JsxBlockClose(&input[line_start..seg_end]));
-                if !tag_info.name.is_empty()
-                    && let Some(top_pos) = tag_stack.iter().rposition(|n| n == tag_info.name)
-                {
-                    tag_stack.remove(top_pos);
-                }
                 pos = seg_end;
                 in_paragraph = false;
                 continue;
@@ -175,9 +169,6 @@ pub(crate) fn split_with_expression_ends<'a>(
                 if tag_info.is_self_closing {
                     segments.push(Segment::JsxBlockSelfClose(slice));
                 } else {
-                    if !tag_info.name.is_empty() {
-                        tag_stack.push(tag_info.name.to_string());
-                    }
                     segments.push(Segment::JsxBlockOpen(slice));
                 }
                 pos = seg_end;
