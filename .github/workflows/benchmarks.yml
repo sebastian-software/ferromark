@@ -1,0 +1,76 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "benches/**"
+      - Cargo.toml
+      - Cargo.lock
+      - .github/workflows/benchmarks.yml
+  pull_request:
+    paths:
+      - "src/**"
+      - "benches/**"
+      - Cargo.toml
+      - Cargo.lock
+      - .github/workflows/benchmarks.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Performance regression check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+      - name: Restore benchmark history
+        id: benchmark-history
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .benchmark-cache
+          key: ferromark-benchmark-${{ runner.os }}-main-${{ github.sha }}
+          restore-keys: |
+            ferromark-benchmark-${{ runner.os }}-main-
+      - name: Run representative benchmarks
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p .benchmark-cache
+          cargo bench --locked --bench parsing -- \
+            --output-format bencher \
+            --warm-up-time 1 \
+            --measurement-time 3 \
+            --sample-size 30 | tee benchmark-output.txt
+      - name: Compare with main baseline
+        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
+        with:
+          name: ferromark parser
+          tool: cargo
+          output-file-path: benchmark-output.txt
+          external-data-json-path: .benchmark-cache/benchmark-data.json
+          save-data-file: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+          alert-threshold: "120%"
+          fail-threshold: "120%"
+          fail-on-alert: ${{ github.event_name == 'pull_request' }}
+          summary-always: true
+      - name: Save main benchmark history
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.benchmark-history.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .benchmark-cache
+          key: ferromark-benchmark-${{ runner.os }}-main-${{ github.sha }}
