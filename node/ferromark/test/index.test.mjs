@@ -112,6 +112,31 @@ test('selects the musl optional package on Alpine-style Linux', () => {
   assert.equal(result.status, 0, result.stderr)
 })
 
+test('does not collect a diagnostic report on non-Linux platforms', () => {
+  const entry = new URL('../index.mjs', import.meta.url).href
+  const script = `
+    Object.defineProperty(process, 'platform', { value: 'darwin' })
+    Object.defineProperty(process, 'arch', { value: 'arm64' })
+    Object.defineProperty(process, 'report', {
+      value: { getReport: () => { throw new Error('diagnostic report collected') } },
+    })
+    const { toHtml } = await import(${JSON.stringify(entry)})
+    try {
+      toHtml('text')
+    }
+    catch (error) {
+      if (error instanceof Error && error.message === 'diagnostic report collected') {
+        process.exit(1)
+      }
+    }
+  `
+  const result = spawnSync(process.execPath, ['--input-type=module', '--eval', script], {
+    encoding: 'utf8',
+  })
+
+  assert.equal(result.status, 0, result.stderr)
+})
+
 test('wraps native dynamic-loader failures with platform guidance', async (t) => {
   const target = currentNativeTarget()
   const packageName = `ferromark-${target}`
