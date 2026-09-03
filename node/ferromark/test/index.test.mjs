@@ -36,6 +36,27 @@ test('maps typed options to the Rust surface', () => {
   )
 })
 
+test('rejects unknown option keys across every public render entry point', () => {
+  const highlighter = {
+    codeToHtml() {
+      return '<pre><code></code></pre>\n'
+    },
+  }
+  const calls = [
+    () => toHtml('text', { taskList: true }),
+    () => transform('text', { footnote: true }),
+    () => toHtmlWithHighlighter('text', highlighter, { theme: 'dark' }, { taskList: true }),
+    () => transformWithHighlighter('text', highlighter, { theme: 'dark' }, { footnote: true }),
+  ]
+
+  for (const call of calls) {
+    assert.throws(
+      call,
+      error => error instanceof TypeError && /unknown option.*(?:taskList|footnote)/i.test(error.message),
+    )
+  }
+})
+
 test('composes with a synchronous Ferriki-compatible highlighter', () => {
   const calls = []
   const highlighter = {

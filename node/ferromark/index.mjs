@@ -4,11 +4,53 @@ import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
 
+const optionKeys = new Set([
+  'renderPolicy',
+  'allowHtml',
+  'allowLinkRefs',
+  'tables',
+  'mergedTableCells',
+  'tableColumnWidths',
+  'strikethrough',
+  'highlight',
+  'superscript',
+  'subscript',
+  'taskLists',
+  'autolinkLiterals',
+  'disallowedRawHtml',
+  'footnotes',
+  'inlineFootnotes',
+  'frontMatter',
+  'headingIds',
+  'math',
+  'callouts',
+  'definitionLists',
+  'lineComments',
+  'indentedCodeBlocks',
+  'linkBasePath',
+])
+
+/** @param {import('./index.mjs').Options | null | undefined} options */
+function validateOptions(options) {
+  if (options == null) {
+    return
+  }
+  if (typeof options !== 'object' && typeof options !== 'function') {
+    throw new TypeError('options must be an object')
+  }
+  for (const key of Reflect.ownKeys(options)) {
+    if (typeof key !== 'string' || !optionKeys.has(key)) {
+      throw new TypeError(`unknown option "${String(key)}"`)
+    }
+  }
+}
+
 /**
  * @param {string} markdown
  * @param {import('./index.mjs').Options} [options]
  */
 export function toHtml(markdown, options) {
+  validateOptions(options)
   return loadNative().toHtml(markdown, options)
 }
 
@@ -17,6 +59,7 @@ export function toHtml(markdown, options) {
  * @param {import('./index.mjs').Options} [options]
  */
 export function transform(markdown, options) {
+  validateOptions(options)
   return loadNative().transform(markdown, options)
 }
 
@@ -59,6 +102,7 @@ function highlighterRenderer(highlighter, highlightOptions) {
  * @param {import('./index.mjs').Options} [options]
  */
 export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, options) {
+  validateOptions(options)
   const render = highlighterRenderer(highlighter, highlightOptions)
   return loadNative().toHtmlWithRenderer(markdown, options, render)
 }
@@ -70,6 +114,7 @@ export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, o
  * @param {import('./index.mjs').Options} [options]
  */
 export function transformWithHighlighter(markdown, highlighter, highlightOptions, options) {
+  validateOptions(options)
   const render = highlighterRenderer(highlighter, highlightOptions)
   return loadNative().transformWithRenderer(markdown, options, render)
 }
