@@ -6,11 +6,15 @@ Increase end-to-end Markdown-to-HTML throughput while preserving full CommonMark
 
 ## Evidence source
 
-This plan is calibrated against `PERF_ATTEMPTS.md` so we avoid re-running low-yield micro-optimizations.
+This plan retains its February 2026 execution log below and is supplemented by
+the checked-in evidence under [`docs/reports`](../reports/). Use both sources to
+avoid re-running low-yield micro-optimizations without new profiling evidence.
 
 ## Baseline and guardrails
 
-- Benchmark command: `cargo bench --bench comparison`
+- Benchmark setup: follow [Running benchmarks](../../CONTRIBUTING.md#running-benchmarks)
+  to create the pinned md4c checkout.
+- Benchmark command: `MD4C_DIR=/path/to/md4c cargo bench --locked --manifest-path benchmarks/md4c-comparison/Cargo.toml --bench comparison`
 - Primary datasets: `REFS`, `MIXED`, `COMMONMARK_5K`, `COMMONMARK_20K`, `COMMONMARK_50K`
 - Correctness gate: `cargo test`
 - Rule: no regression in spec compliance for optimization merges.
@@ -47,7 +51,7 @@ Success criteria:
 
 Context:
 - Label normalization is called in both block extraction and inline resolution.
-- PERF_ATTEMPTS already includes multiple ASCII/SIMD label-normalization variants; most were noise/regressions, one ASCII fast path was already kept.
+- The execution log below includes multiple ASCII/SIMD label-normalization variants; most were noise/regressions, one ASCII fast path was already kept.
 
 Tasks:
 1. Focus on reducing normalization call count (algorithmic), not on further byte-level micro-tuning.
@@ -62,7 +66,7 @@ Success criteria:
 
 Context:
 - Current matching logic combines binary searches and repeated range checks.
-- PERF_ATTEMPTS already tried several local tweaks in `contains_ref_link_candidate` and open/close lookup paths with no gain.
+- The execution log below records several local tweaks in `contains_ref_link_candidate` and open/close lookup paths with no gain.
 
 Tasks:
 1. Prioritize structural simplification (single-pass or precomputed bracket pairing) over local lookup tweaks.
@@ -101,7 +105,7 @@ Success criteria:
 
 ## Already attempted: do not prioritize again (unless new evidence)
 
-From `PERF_ATTEMPTS.md`:
+From the execution log below:
 
 - NEON escape scans and NEON URL-escape scans: no clear improvement (reverted).
 - Multiple SIMD/ASCII label-normalization micro variants: mostly no gain or regression.
@@ -125,7 +129,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 ### Benchmark protocol used for all A/B decisions
 
 - Correctness gate before each decision: `cargo test` (all green in all runs).
-- Perf command: `cargo bench --bench comparison -- "(complexity/ferromark/(refs|mixed)|commonmark50k/ferromark)" --sample-size 60 --measurement-time 2`
+- Perf command: `MD4C_DIR=/path/to/md4c cargo bench --locked --manifest-path benchmarks/md4c-comparison/Cargo.toml --bench comparison -- "(complexity/ferromark/(refs|mixed)|commonmark50k/ferromark)" --sample-size 60 --measurement-time 2`
 - Decision rule: keep only if no `COMMONMARK_50K` regression and meaningful `REFS`/`MIXED` gain.
 
 ### Baseline snapshot
@@ -354,7 +358,7 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 
 ### Current `refs` position vs other libraries (2026-02-07)
 
-- Snapshot command: `cargo bench --bench comparison -- "complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$" --sample-size 40 --measurement-time 2`
+- Snapshot command: `MD4C_DIR=/path/to/md4c cargo bench --locked --manifest-path benchmarks/md4c-comparison/Cargo.toml --bench comparison -- "complexity/(ferromark|md4c|pulldown-cmark|comrak)/refs$" --sample-size 40 --measurement-time 2`
 - Median times:
   - `ferromark`: `2.1598 us`
   - `md4c`: `2.4712 us`
@@ -390,12 +394,12 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 ### P1 and P2 progress
 
 1. P1.1/P1.2 (normalization call-count/scratch reuse):
-- Repeated micro-tuning was not retried because `PERF_ATTEMPTS.md` already records no-gain/regression variants and this run did not introduce new profiler evidence to justify revisiting them.
+- Repeated micro-tuning was not retried because the execution log above records no-gain/regression variants and this run did not introduce new profiler evidence to justify revisiting them.
 
 2. P1.3 + P2.1 (new focused benchmark coverage):
 - Implemented new bench group in `benches/comparison.rs`: `link_refs_focus`.
 - Added cases: `refs`, `refs_escaped` (escaped/entity-heavy), `mixed`.
-- Sample measurements from `cargo bench --bench comparison -- "link_refs_focus/ferromark/(refs|refs_escaped|mixed)" --sample-size 40 --measurement-time 2`:
+- Sample measurements from `MD4C_DIR=/path/to/md4c cargo bench --locked --manifest-path benchmarks/md4c-comparison/Cargo.toml --bench comparison -- "link_refs_focus/ferromark/(refs|refs_escaped|mixed)" --sample-size 40 --measurement-time 2`:
   - `refs`: `2.4212 us`
   - `refs_escaped`: `4.4347 us`
   - `mixed`: `3.3616 us`
@@ -405,7 +409,9 @@ These should stay out of short-term roadmap unless a new profiler run shows chan
 - Completed in this section (baseline and per-attempt deltas recorded).
 
 4. P2.3 (simple CI perf regression check):
-- Deferred: repository currently has no checked-in CI workflow in `.github/workflows`, so no non-speculative target pipeline was available to wire safely in this pass.
+- Completed after this execution pass: `.github/workflows/benchmarks.yml` now
+  runs representative parsing benchmarks for source changes and rejects
+  regressions beyond its configured threshold.
 
 ### P3 status
 

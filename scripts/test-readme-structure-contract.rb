@@ -9,6 +9,7 @@ REPOSITORY_ROOT = File.expand_path('..', __dir__)
 CONTRIBUTING_PATH = File.join(REPOSITORY_ROOT, 'CONTRIBUTING.md')
 BENCHMARK_LOCK_PATH = File.join(REPOSITORY_ROOT, 'benchmarks/md4c-comparison/Cargo.lock')
 BENCHMARK_BUILD_PATH = File.join(REPOSITORY_ROOT, 'benchmarks/md4c-comparison/build.rs')
+PERFORMANCE_PLAN_PATH = File.join(REPOSITORY_ROOT, 'docs/arch/ARCH-PLAN-001-performance-opportunities.md')
 
 def fail_contract(message)
   raise ContractError, "README structure contract: #{message}"
@@ -39,7 +40,11 @@ def pinned_md4c_revision
   revision
 end
 
-def validate(document, contributing = File.read(CONTRIBUTING_PATH))
+def validate(
+  document,
+  contributing: File.read(CONTRIBUTING_PATH),
+  performance_plan: File.read(PERFORMANCE_PLAN_PATH)
+)
   headings = document.scan(/^## (.+)$/).flatten
   fail_contract('must not repeat top-level headings') unless headings.uniq.length == headings.length
 
@@ -92,6 +97,17 @@ def validate(document, contributing = File.read(CONTRIBUTING_PATH))
       fail_contract('README and CONTRIBUTING must use the locked isolated benchmark manifest')
     end
   end
+  if performance_plan.include?('PERF_ATTEMPTS.md')
+    fail_contract('Performance plan must not reference the removed PERF_ATTEMPTS.md')
+  end
+  comparison_commands = performance_plan.scan(/`([^`\n]*cargo bench[^`\n]*comparison[^`\n]*)`/).flatten
+  fail_contract('Performance plan must document the comparison benchmark command') if comparison_commands.empty?
+  unless comparison_commands.all? do |command|
+           command.include?('MD4C_DIR=/path/to/md4c cargo bench --locked') &&
+             command.include?('--manifest-path benchmarks/md4c-comparison/Cargo.toml')
+         end
+    fail_contract('Every performance-plan comparison command must use the locked isolated benchmark')
+  end
   unless document.include?('baseline SSE2 (x86-64)')
     fail_contract('README must describe the x86-64 inline SIMD path')
   end
@@ -137,7 +153,18 @@ def self_test(document)
   assert_rejected('pinned md4c contributor checkout') do
     revision = pinned_md4c_revision[0, 7]
     contributing = File.read(CONTRIBUTING_PATH)
-    validate(document, contributing.sub("checkout --detach #{revision}", 'checkout --detach main'))
+    validate(document, contributing: contributing.sub("checkout --detach #{revision}", 'checkout --detach main'))
+  end
+  assert_rejected('removed performance evidence file') do
+    performance_plan = File.read(PERFORMANCE_PLAN_PATH)
+    validate(document, performance_plan: "References PERF_ATTEMPTS.md\n#{performance_plan}")
+  end
+  assert_rejected('isolated performance benchmark command') do
+    performance_plan = File.read(PERFORMANCE_PLAN_PATH)
+    validate(
+      document,
+      performance_plan: performance_plan.gsub('MD4C_DIR=/path/to/md4c cargo bench --locked', 'cargo bench')
+    )
   end
 end
 
