@@ -92,22 +92,31 @@ function highlighterRenderer(highlighter, highlightOptions) {
   if (!highlightOptions || typeof highlightOptions.theme !== 'string') {
     throw new TypeError('highlightOptions.theme must be a string')
   }
+  if (
+    highlightOptions.onHighlightError != null
+    && typeof highlightOptions.onHighlightError !== 'function'
+  ) {
+    throw new TypeError('highlightOptions.onHighlightError must be a function')
+  }
 
   const fallbackLanguage = highlightOptions.fallbackLanguage ?? 'text'
+  const onHighlightError = highlightOptions.onHighlightError
   /**
    * @param {string} code
    * @param {string | null | undefined} language
    * @param {string | null | undefined} meta
    */
   return (code, language, meta) => {
+    const lang = language ?? fallbackLanguage
     try {
       return highlighter.codeToHtml(code, {
-        lang: language ?? fallbackLanguage,
+        lang,
         theme: highlightOptions.theme,
         ...(meta ? { meta: { __raw: meta } } : {}),
       })
     }
-    catch {
+    catch (error) {
+      onHighlightError?.(error, { lang })
       return null
     }
   }

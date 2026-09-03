@@ -95,11 +95,16 @@ const highlighter = await createHighlighter({
 const html = toHtmlWithHighlighter(
   '```rust\nfn main() {}\n```',
   highlighter,
-  { theme: 'github-dark' },
+  {
+    theme: 'github-dark',
+    onHighlightError(error, { lang }) {
+      console.warn(`Could not highlight ${lang}`, error)
+    },
+  },
 )
 ```
 
-Unsupported languages and highlighter errors fall back to ferromark's escaped `<pre><code>` output.
+Unsupported languages and highlighter exceptions fall back to ferromark's escaped `<pre><code>` output. Use `onHighlightError` to observe exceptions; if that callback throws, the render call throws too. Invalid highlighter return values also surface as native callback errors.
 Highlighter HTML is otherwise written verbatim, so only pass an implementation that escapes untrusted code and metadata.
 Fence meta text after the language (e.g. ` ```ts {1-3} title="…" `) reaches the highlighter as Shiki-style `meta.__raw`, so meta-driven transformers (line highlighting, titles) work unchanged.
 

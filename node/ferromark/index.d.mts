@@ -64,6 +64,8 @@ export interface CodeHighlighter {
 export interface HighlightOptions {
   theme: string
   fallbackLanguage?: string
+  /** Observe a highlighter exception before escaped-code fallback is used. */
+  onHighlightError?: (error: unknown, context: { lang: string }) => void
 }
 
 export declare function toHtml(markdown: string, options?: Options): string
@@ -77,7 +79,8 @@ export declare class Renderer {
 
 /**
  * Render fenced code with a trusted synchronous highlighter.
- * Highlighter errors fall back to ferromark's escaped code-block output.
+ * Highlighter exceptions fall back to ferromark's escaped code-block output
+ * and can be observed with `onHighlightError`.
  */
 export declare function toHtmlWithHighlighter(
   markdown: string,
@@ -113,7 +116,8 @@ export declare function transform(markdown: string, options?: Options): Transfor
 
 /**
  * `transform` with fenced code rendered by a trusted synchronous highlighter.
- * Highlighter errors fall back to ferromark's escaped code-block output.
+ * Highlighter exceptions fall back to ferromark's escaped code-block output
+ * and can be observed with `onHighlightError`.
  */
 export declare function transformWithHighlighter(
   markdown: string,

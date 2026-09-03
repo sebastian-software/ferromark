@@ -130,21 +130,75 @@ test('composes with a synchronous Ferriki-compatible highlighter', () => {
 })
 
 test('falls back to escaped code when highlighting fails', () => {
+  const failures = []
+  const failure = new Error('unsupported language')
   const highlighter = {
     codeToHtml() {
-      throw new Error('unsupported language')
+      throw failure
     },
   }
 
   const html = toHtmlWithHighlighter(
     '```unknown\n<tag>\n```',
     highlighter,
-    { theme: 'github-dark' },
+    {
+      theme: 'github-dark',
+      onHighlightError(error, context) {
+        failures.push({ error, context })
+      },
+    },
   )
 
   assert.equal(
     html,
     '<pre><code class="language-unknown">&lt;tag&gt;\n</code></pre>\n',
+  )
+  assert.deepEqual(failures, [{ error: failure, context: { lang: 'unknown' } }])
+  assert.equal(
+    toHtmlWithHighlighter(
+      '```unknown\n<tag>\n```',
+      highlighter,
+      { theme: 'github-dark' },
+    ),
+    html,
+  )
+})
+
+test('validates and surfaces highlighter error observers', () => {
+  const highlighter = {
+    codeToHtml() {
+      throw new Error('highlight failed')
+    },
+  }
+
+  assert.throws(
+    () => toHtmlWithHighlighter('```js\ncode\n```', highlighter, {
+      theme: 'dark',
+      onHighlightError: 'invalid',
+    }),
+    /onHighlightError must be a function/,
+  )
+  assert.throws(
+    () => transformWithHighlighter('```js\ncode\n```', highlighter, {
+      theme: 'dark',
+      onHighlightError() {
+        throw new Error('observer failed')
+      },
+    }),
+    /observer failed/,
+  )
+})
+
+test('surfaces invalid highlighter return values from the native callback', () => {
+  const highlighter = {
+    codeToHtml() {
+      return { html: '<pre>wrong shape</pre>' }
+    },
+  }
+
+  assert.throws(
+    () => toHtmlWithHighlighter('```js\ncode\n```', highlighter, { theme: 'dark' }),
+    error => error instanceof Error,
   )
 })
 
