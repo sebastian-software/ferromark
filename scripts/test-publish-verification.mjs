@@ -61,9 +61,15 @@ function assertPlatformPackagesArePublished(source) {
   const assembleIndex = source.indexOf(
     'run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm',
   )
+  const buildIndex = source.indexOf('run: pnpm build:native')
+  const artifactVerifyIndex = source.indexOf(
+    'run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.artifact }}',
+  )
   const verifyIndex = source.indexOf('run: node ./scripts/verify-release.mjs')
   const platformPublishIndex = source.indexOf('run: node ./scripts/publish-platform-packages.mjs')
   const mainPublishIndex = source.indexOf('run: npm publish --access public --provenance')
+  assert.ok(buildIndex !== -1 && buildIndex < artifactVerifyIndex)
+  assert.ok(artifactVerifyIndex < assembleIndex)
   assert.ok(assembleIndex !== -1 && assembleIndex < verifyIndex)
   assert.ok(verifyIndex < platformPublishIndex)
   assert.ok(platformPublishIndex < mainPublishIndex)

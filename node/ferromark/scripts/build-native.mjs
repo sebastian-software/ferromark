@@ -31,7 +31,10 @@ const args = [
 
 if (process.env.FERROMARK_RUST_TARGET) {
   args.push('--target', process.env.FERROMARK_RUST_TARGET)
-  if (process.env.FERROMARK_RUST_TARGET.endsWith('-musl')) {
+  if (process.env.FERROMARK_RUST_TARGET.includes('-unknown-linux-gnu')) {
+    args.push('--use-napi-cross')
+  }
+  else if (process.env.FERROMARK_RUST_TARGET.endsWith('-musl')) {
     args.push('--cross-compile')
   }
 }

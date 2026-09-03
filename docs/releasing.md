@@ -5,11 +5,15 @@ Release Please owns the shared Rust and npm version. Its release PR updates `Car
 When that PR merges, `.github/workflows/publish.yml`:
 
 1. creates the GitHub release,
-2. builds and tests native packages for x64 and arm64 on macOS, Windows, and glibc Linux,
+2. builds and tests native packages for x64 and arm64 on macOS, Windows, and Linux,
 3. verifies the complete binary matrix and packed npm contents,
 4. runs a clean consumer install,
 5. publishes `ferromark` to npm through trusted publishing,
 6. publishes the matching Rust crate to crates.io.
+
+GNU Linux binaries use napi-rs's pinned cross-toolchain so their native glibc
+symbol floor stays at 2.17 instead of following the current GitHub runner. CI
+checks each GNU artifact with `readelf`; musl binaries use cargo-zigbuild.
 
 ## npm trusted publisher setup
 

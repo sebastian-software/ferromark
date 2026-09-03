@@ -19,6 +19,7 @@ expected_targets = [
   { 'os' => 'macos-latest', 'rust_target' => 'aarch64-apple-darwin', 'artifact' => 'darwin-arm64', 'runtime_test' => true },
   { 'os' => 'macos-15-intel', 'rust_target' => 'x86_64-apple-darwin', 'artifact' => 'darwin-x64', 'runtime_test' => true },
   { 'os' => 'ubuntu-24.04-arm', 'rust_target' => 'aarch64-unknown-linux-gnu', 'artifact' => 'linux-arm64-gnu', 'runtime_test' => true },
+  { 'os' => 'ubuntu-latest', 'rust_target' => 'x86_64-unknown-linux-gnu', 'artifact' => 'linux-x64-gnu', 'runtime_test' => true },
   { 'os' => 'ubuntu-latest', 'rust_target' => 'x86_64-unknown-linux-musl', 'artifact' => 'linux-x64-musl', 'runtime_test' => false },
   { 'os' => 'ubuntu-latest', 'rust_target' => 'aarch64-unknown-linux-musl', 'artifact' => 'linux-arm64-musl', 'runtime_test' => false },
   { 'os' => 'windows-latest', 'rust_target' => 'x86_64-pc-windows-msvc', 'artifact' => 'win32-x64-msvc', 'runtime_test' => true },
