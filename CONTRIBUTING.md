@@ -51,6 +51,17 @@ cargo bench --bench parsing
 cargo bench --bench options
 ```
 
+To focus on large-corpus or fixed-budget pathological parsing cases:
+
+```bash
+cargo bench --locked --bench parsing -- commonmark_1m
+cargo bench --locked --bench parsing -- pathological
+```
+
+The committed synthetic CommonMark fixtures can be regenerated together or by
+filename; for example, `python3 scripts/generate_commonmark_50k.py
+commonmark-1m.md` refreshes only the 1 MiB corpus.
+
 ## Commit messages
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated changelog generation via Release Please.

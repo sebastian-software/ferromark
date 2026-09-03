@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -11,6 +12,7 @@ SAMPLES = [
     ("commonmark-5k.md", 5 * 1024),
     ("commonmark-20k.md", 20 * 1024),
     ("commonmark-50k.md", 50 * 1024),
+    ("commonmark-1m.md", 1024 * 1024),
 ]
 
 
@@ -293,8 +295,17 @@ def build_article(target_bytes: int, label: str) -> str:
 
 
 def main() -> None:
+    requested = set(sys.argv[1:])
+    known = {filename for filename, _ in SAMPLES}
+    unknown = requested - known
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise SystemExit(f"unknown fixture name(s): {names}")
+
     FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
     for filename, target in SAMPLES:
+        if requested and filename not in requested:
+            continue
         label = filename.split(".")[0].replace("commonmark-", "")
         sample = build_article(target, label)
         path = FIXTURES_DIR / filename
