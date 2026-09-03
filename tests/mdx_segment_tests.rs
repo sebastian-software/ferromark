@@ -2161,6 +2161,33 @@ Paragraph with **bold**.
 }
 
 #[test]
+fn render_resolves_link_reference_definitions_across_markdown_segments() {
+    let input = "See [docs].\n\n<Divider />\n\n[docs]: https://example.com\n";
+    let out = render(input);
+
+    assert!(
+        out.body
+            .contains("See <a href=\"https://example.com\">docs</a>."),
+        "a definition in a later Markdown segment should resolve an earlier reference: {}",
+        out.body
+    );
+}
+
+#[test]
+fn render_keeps_the_first_link_reference_definition_across_segments() {
+    let input = "[docs]: https://first.example\n\n<Divider />\n\n[docs]: https://second.example\n\nRead [docs].\n";
+    let out = render(input);
+
+    assert!(
+        out.body
+            .contains("Read <a href=\"https://first.example\">docs</a>."),
+        "the first document-scoped definition should win: {}",
+        out.body
+    );
+    assert!(!out.body.contains("https://second.example"));
+}
+
+#[test]
 fn render_web_component_inline() {
     let input = "Text with <sl-button>Click</sl-button> here.\n";
     let out = render(input);
