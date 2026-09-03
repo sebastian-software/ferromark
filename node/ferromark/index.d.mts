@@ -68,6 +68,13 @@ export interface HighlightOptions {
 
 export declare function toHtml(markdown: string, options?: Options): string
 
+/** Reusable Markdown renderer with fixed options. */
+export declare class Renderer {
+  constructor(options?: Options)
+  /** Render one document while retaining parser scratch allocations. */
+  toHtml(markdown: string): string
+}
+
 /**
  * Render fenced code with a trusted synchronous highlighter.
  * Highlighter errors fall back to ferromark's escaped code-block output.

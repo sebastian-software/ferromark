@@ -1,6 +1,6 @@
 use ferromark::{
     FencedCodeBlock, FencedCodeRenderer, InputSizeError, Options as CoreOptions, RenderPolicy,
-    TrustedHtml,
+    Renderer as CoreRenderer, TrustedHtml,
 };
 use napi::bindgen_prelude::{Error, FnArgs, Function, Result, Status};
 use napi_derive::napi;
@@ -100,6 +100,29 @@ fn input_size_error(error: InputSizeError) -> Error {
 pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
     ferromark::try_to_html_with_options(&markdown, &core_options(options)?)
         .map_err(input_size_error)
+}
+
+/// Reusable Markdown-to-HTML renderer with fixed options.
+#[napi]
+pub struct Renderer {
+    inner: CoreRenderer,
+}
+
+#[napi]
+impl Renderer {
+    /// Create a renderer whose parser scratch space is retained between calls.
+    #[napi(constructor, catch_unwind)]
+    pub fn new(options: Option<Options>) -> Result<Self> {
+        Ok(Self {
+            inner: CoreRenderer::with_options(core_options(options)?),
+        })
+    }
+
+    /// Render one Markdown document and retain scratch allocations for the next.
+    #[napi(catch_unwind, js_name = "toHtml")]
+    pub fn to_html(&mut self, markdown: String) -> Result<String> {
+        self.inner.try_render(&markdown).map_err(input_size_error)
+    }
 }
 
 /// One document heading, in source order.

@@ -29,10 +29,16 @@ native npm package: `npm install ferromark` — see the
 When allocation pressure matters:
 
 ```rust
+let mut renderer = ferromark::Renderer::new();
 let mut buffer = Vec::new();
-ferromark::to_html_into("# Reuse me", &mut buffer);
-// buffer survives across calls — zero repeated allocation
+renderer.render_into("# Reuse me", &mut buffer);
+renderer.render_into("Another document", &mut buffer);
+// Both the output buffer and parser scratch space survive across calls.
 ```
+
+Use one `Renderer` per worker when processing many documents with the same
+options. `to_html_into` still reuses its output buffer, but creates fresh parser
+state for every call.
 
 ### Input-size limit
 

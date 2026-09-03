@@ -617,6 +617,136 @@ fn parse_impl<'a>(
     }
 }
 
+/// Reusable Markdown-to-HTML rendering session.
+///
+/// A session keeps parser and renderer scratch buffers between documents. Use
+/// it when rendering many documents with the same [`Options`], especially
+/// small inputs where per-call allocations would otherwise dominate. A
+/// `Renderer` is not shared implicitly; create one per worker or protect it
+/// with application-level synchronization.
+///
+/// # Example
+/// ```
+/// use ferromark::Renderer;
+///
+/// let mut renderer = Renderer::new();
+/// let mut html = Vec::new();
+/// renderer.render_into("# First", &mut html);
+/// assert_eq!(html, b"<h1 id=\"first\">First</h1>\n");
+///
+/// renderer.render_into("**Second**", &mut html);
+/// assert_eq!(html, b"<p><strong>Second</strong></p>\n");
+/// ```
+pub struct Renderer {
+    options: Options,
+    block_events: Vec<BlockEvent>,
+    inline_parser: InlineParser,
+    inline_events: Vec<InlineEvent>,
+    render_state: RenderState,
+}
+
+impl Renderer {
+    /// Create a reusable renderer with [`Options::default`].
+    #[must_use]
+    pub fn new() -> Self {
+        Self::with_options(Options::default())
+    }
+
+    /// Create a reusable renderer with fixed options.
+    #[must_use]
+    pub fn with_options(options: Options) -> Self {
+        Self {
+            render_state: RenderState::new(&options),
+            options,
+            block_events: Vec::with_capacity(64),
+            inline_parser: InlineParser::new(),
+            inline_events: Vec::with_capacity(64),
+        }
+    }
+
+    /// Return the options used by every document rendered by this session.
+    #[must_use]
+    pub const fn options(&self) -> &Options {
+        &self.options
+    }
+
+    /// Render one Markdown document to an owned HTML string.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+    /// [`Self::try_render`] to handle the limit as an error.
+    #[must_use]
+    pub fn render(&mut self, input: &str) -> String {
+        self.try_render(input)
+            .unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    /// Render one Markdown document without panicking for oversized input.
+    pub fn try_render(&mut self, input: &str) -> Result<String, InputSizeError> {
+        validate_input_size(input.len())?;
+        let markdown = markdown_without_front_matter(input, &self.options);
+        let mut writer = HtmlWriter::with_capacity_for(markdown.len());
+        self.render_to_writer(markdown.as_bytes(), &mut writer);
+        Ok(writer
+            .into_string()
+            .expect("rendering from a UTF-8 Markdown string must produce UTF-8 HTML"))
+    }
+
+    /// Render one Markdown document into a caller-owned reusable buffer.
+    ///
+    /// The output buffer and this session's parser scratch allocations are
+    /// retained for the next call.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
+    /// [`Self::try_render_into`] to handle the limit as an error.
+    pub fn render_into(&mut self, input: &str, out: &mut Vec<u8>) {
+        self.try_render_into(input, out)
+            .unwrap_or_else(|error| panic!("{error}"));
+    }
+
+    /// Render into a caller-owned buffer without panicking for oversized
+    /// input.
+    pub fn try_render_into(
+        &mut self,
+        input: &str,
+        out: &mut Vec<u8>,
+    ) -> Result<(), InputSizeError> {
+        validate_input_size(input.len())?;
+        let markdown = markdown_without_front_matter(input, &self.options);
+        out.clear();
+        out.reserve(markdown.len() + markdown.len() / 4);
+        let mut writer = HtmlWriter::with_capacity(0);
+        std::mem::swap(writer.buffer_mut(), out);
+        self.render_to_writer(markdown.as_bytes(), &mut writer);
+        std::mem::swap(writer.buffer_mut(), out);
+        Ok(())
+    }
+
+    fn render_to_writer(&mut self, input: &[u8], writer: &mut HtmlWriter) {
+        render_to_writer_with_state::<DisabledFencedCodeRenderer>(
+            input,
+            writer,
+            &self.options,
+            None,
+            None,
+            None,
+            &mut self.block_events,
+            &mut self.inline_parser,
+            &mut self.inline_events,
+            &mut self.render_state,
+        );
+    }
+}
+
+impl Default for Renderer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Convert Markdown to HTML.
 ///
 /// This is the primary API for simple use cases.
@@ -643,7 +773,8 @@ pub fn try_to_html(input: &str) -> Result<String, InputSizeError> {
 
 /// Convert Markdown to HTML, writing into a provided buffer.
 ///
-/// This avoids allocation if the buffer has sufficient capacity.
+/// This reuses only the output buffer. Use [`Renderer`] to retain parser and
+/// renderer scratch allocations across documents as well.
 ///
 /// # Panics
 ///
@@ -816,6 +947,11 @@ impl ParagraphState {
         self.content.clear();
     }
 
+    fn reset(&mut self) {
+        self.content.clear();
+        self.in_paragraph = false;
+    }
+
     fn add_text(&mut self, text: &[u8]) {
         #[cfg(feature = "profiling")]
         profiling::record_paragraph_copy(text.len());
@@ -864,6 +1000,12 @@ impl HeadingState {
     fn start(&mut self) {
         self.in_heading = true;
         self.content.clear();
+    }
+
+    fn reset(&mut self) {
+        self.content.clear();
+        self.in_heading = false;
+        self.level = 0;
     }
 
     fn add_text(&mut self, text: &[u8]) {
@@ -925,6 +1067,12 @@ impl HeadingIdTracker {
             ),
             slug_buf: Vec::with_capacity(64),
         }
+    }
+
+    fn reset(&mut self) {
+        self.arena.clear();
+        self.used.clear();
+        self.slug_buf.clear();
     }
 
     /// Build a unique heading id from raw heading content, appending `-1`,
@@ -1080,6 +1228,12 @@ impl CellState {
         self.pending = None;
     }
 
+    fn reset(&mut self) {
+        self.content.clear();
+        self.pending = None;
+        self.in_cell = false;
+    }
+
     fn add_text(&mut self, range: Range, input: &[u8]) {
         let text = range.slice(input);
         // Fast path: a cell is almost always a single text range without a
@@ -1146,11 +1300,8 @@ impl FencedCodeState {
     }
 }
 
-/// Mutable state and shared inputs for one HTML rendering pass.
-struct RenderContext<'a, 'r, R: FencedCodeRenderer + ?Sized> {
-    writer: &'a mut HtmlWriter,
-    inline_parser: InlineParser,
-    inline_events: Vec<InlineEvent>,
+/// Scratch buffers and mutable state retained by a reusable renderer.
+struct RenderState {
     para_state: ParagraphState,
     heading_state: HeadingState,
     cell_state: CellState,
@@ -1161,36 +1312,19 @@ struct RenderContext<'a, 'r, R: FencedCodeRenderer + ?Sized> {
     blockquote_depth: u32,
     in_table_head: bool,
     pending_task: block::TaskState,
-    link_refs: &'a LinkRefStore,
-    footnote_store: Option<&'a FootnoteStore>,
     footnote_numbers: FootnoteNumbers,
     heading_id_tracker: Option<HeadingIdTracker>,
     callout_stack: Vec<Option<block::CalloutType>>,
     pending_footnote_backref: Option<(String, usize)>,
     definition_description_stack: Vec<bool>,
     paragraph_tags_suppressed: bool,
-    options: &'a Options,
-    fenced_code_renderer: Option<&'r mut R>,
     fenced_code_state: Option<FencedCodeState>,
     fenced_code_buffer: Vec<u8>,
-    headings: Option<&'a mut Vec<Heading>>,
 }
 
-impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
-    fn new(
-        writer: &'a mut HtmlWriter,
-        link_refs: &'a LinkRefStore,
-        footnote_store: Option<&'a FootnoteStore>,
-        options: &'a Options,
-        fenced_code_renderer: Option<&'r mut R>,
-        headings: Option<&'a mut Vec<Heading>>,
-    ) -> Self {
-        let mut inline_parser = InlineParser::new();
-        inline_parser.begin_document();
+impl RenderState {
+    fn new(options: &Options) -> Self {
         Self {
-            writer,
-            inline_parser,
-            inline_events: Vec::with_capacity(64),
             para_state: ParagraphState::new(),
             heading_state: HeadingState::new(),
             cell_state: CellState::new(),
@@ -1201,18 +1335,113 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
             blockquote_depth: 0,
             in_table_head: false,
             pending_task: block::TaskState::None,
-            link_refs,
-            footnote_store,
-            footnote_numbers: FootnoteNumbers::new(footnote_store.map_or(0, FootnoteStore::len)),
+            footnote_numbers: FootnoteNumbers::new(0),
             heading_id_tracker: options.heading_ids.then(HeadingIdTracker::new),
             callout_stack: Vec::new(),
             pending_footnote_backref: None,
             definition_description_stack: Vec::new(),
             paragraph_tags_suppressed: false,
-            options,
-            fenced_code_renderer,
             fenced_code_state: None,
             fenced_code_buffer: Vec::new(),
+        }
+    }
+
+    fn reset(&mut self, options: &Options, footnote_definition_count: usize) {
+        self.para_state.reset();
+        self.heading_state.reset();
+        self.cell_state.reset();
+        self.tight_list_stack.clear();
+        self.at_tight_li_start = false;
+        self.need_newline_before_block = false;
+        self.pending_loose_li_newline = false;
+        self.blockquote_depth = 0;
+        self.in_table_head = false;
+        self.pending_task = block::TaskState::None;
+        self.footnote_numbers.reset(footnote_definition_count);
+        match (options.heading_ids, self.heading_id_tracker.as_mut()) {
+            (true, Some(tracker)) => tracker.reset(),
+            (true, None) => self.heading_id_tracker = Some(HeadingIdTracker::new()),
+            (false, _) => self.heading_id_tracker = None,
+        }
+        self.callout_stack.clear();
+        self.pending_footnote_backref = None;
+        self.definition_description_stack.clear();
+        self.paragraph_tags_suppressed = false;
+        self.fenced_code_state = None;
+        self.fenced_code_buffer.clear();
+    }
+}
+
+/// Mutable state and shared inputs for one HTML rendering pass.
+struct RenderContext<'a, 'r, R: FencedCodeRenderer + ?Sized> {
+    writer: &'a mut HtmlWriter,
+    inline_parser: &'a mut InlineParser,
+    inline_events: &'a mut Vec<InlineEvent>,
+    para_state: &'a mut ParagraphState,
+    heading_state: &'a mut HeadingState,
+    cell_state: &'a mut CellState,
+    tight_list_stack: &'a mut Vec<(bool, u32)>,
+    at_tight_li_start: &'a mut bool,
+    need_newline_before_block: &'a mut bool,
+    pending_loose_li_newline: &'a mut bool,
+    blockquote_depth: &'a mut u32,
+    in_table_head: &'a mut bool,
+    pending_task: &'a mut block::TaskState,
+    link_refs: &'a LinkRefStore,
+    footnote_store: Option<&'a FootnoteStore>,
+    footnote_numbers: &'a mut FootnoteNumbers,
+    heading_id_tracker: &'a mut Option<HeadingIdTracker>,
+    callout_stack: &'a mut Vec<Option<block::CalloutType>>,
+    pending_footnote_backref: &'a mut Option<(String, usize)>,
+    definition_description_stack: &'a mut Vec<bool>,
+    paragraph_tags_suppressed: &'a mut bool,
+    options: &'a Options,
+    fenced_code_renderer: Option<&'r mut R>,
+    fenced_code_state: &'a mut Option<FencedCodeState>,
+    fenced_code_buffer: &'a mut Vec<u8>,
+    headings: Option<&'a mut Vec<Heading>>,
+}
+
+impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        writer: &'a mut HtmlWriter,
+        inline_parser: &'a mut InlineParser,
+        inline_events: &'a mut Vec<InlineEvent>,
+        state: &'a mut RenderState,
+        link_refs: &'a LinkRefStore,
+        footnote_store: Option<&'a FootnoteStore>,
+        options: &'a Options,
+        fenced_code_renderer: Option<&'r mut R>,
+        headings: Option<&'a mut Vec<Heading>>,
+    ) -> Self {
+        state.reset(options, footnote_store.map_or(0, FootnoteStore::len));
+        Self {
+            writer,
+            inline_parser,
+            inline_events,
+            para_state: &mut state.para_state,
+            heading_state: &mut state.heading_state,
+            cell_state: &mut state.cell_state,
+            tight_list_stack: &mut state.tight_list_stack,
+            at_tight_li_start: &mut state.at_tight_li_start,
+            need_newline_before_block: &mut state.need_newline_before_block,
+            pending_loose_li_newline: &mut state.pending_loose_li_newline,
+            blockquote_depth: &mut state.blockquote_depth,
+            in_table_head: &mut state.in_table_head,
+            pending_task: &mut state.pending_task,
+            link_refs,
+            footnote_store,
+            footnote_numbers: &mut state.footnote_numbers,
+            heading_id_tracker: &mut state.heading_id_tracker,
+            callout_stack: &mut state.callout_stack,
+            pending_footnote_backref: &mut state.pending_footnote_backref,
+            definition_description_stack: &mut state.definition_description_stack,
+            paragraph_tags_suppressed: &mut state.paragraph_tags_suppressed,
+            options,
+            fenced_code_renderer,
+            fenced_code_state: &mut state.fenced_code_state,
+            fenced_code_buffer: &mut state.fenced_code_buffer,
             headings,
         }
     }
@@ -1246,17 +1475,49 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     options: &Options,
     fenced_code_renderer: Option<&mut R>,
     headings: Option<&mut Vec<Heading>>,
+    resource_limits: Option<&mut ResourceLimitReport>,
+) {
+    let mut events = Vec::with_capacity((input.len() / 16).max(64));
+    let mut inline_parser = InlineParser::new();
+    let mut inline_events = Vec::with_capacity(64);
+    let mut render_state = RenderState::new(options);
+    render_to_writer_with_state(
+        input,
+        writer,
+        options,
+        fenced_code_renderer,
+        headings,
+        resource_limits,
+        &mut events,
+        &mut inline_parser,
+        &mut inline_events,
+        &mut render_state,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+    input: &[u8],
+    writer: &mut HtmlWriter,
+    options: &Options,
+    fenced_code_renderer: Option<&mut R>,
+    headings: Option<&mut Vec<Heading>>,
     mut resource_limits: Option<&mut ResourceLimitReport>,
+    events: &mut Vec<BlockEvent>,
+    inline_parser: &mut InlineParser,
+    inline_events: &mut Vec<InlineEvent>,
+    render_state: &mut RenderState,
 ) {
     // Parse blocks
+    events.clear();
+    events.reserve((input.len() / 16).max(64));
     let mut parser = BlockParser::new_with_options(input, options.clone());
-    let mut events = Vec::with_capacity((input.len() / 16).max(64));
-    parser.parse(&mut events);
+    parser.parse(events);
     if let Some(report) = resource_limits.as_deref_mut() {
         report.extend(parser.resource_limits());
     }
     #[cfg(feature = "profiling")]
-    profiling::record_block_events(&events, events.capacity());
+    profiling::record_block_events(events, events.capacity());
     let link_refs = parser.take_link_refs();
     let footnote_store = if options.footnotes {
         Some(parser.take_footnote_store())
@@ -1265,29 +1526,35 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     };
 
     // Fix up list tight status (ListStart gets its tight value from ListEnd)
-    fixup_list_tight(&mut events);
+    fixup_list_tight(events);
 
     let fn_store_ref = footnote_store.as_ref();
-    let mut context = RenderContext::new(
-        writer,
-        &link_refs,
-        fn_store_ref,
-        options,
-        fenced_code_renderer,
-        headings,
-    );
+    inline_parser.begin_document();
+    {
+        let mut context = RenderContext::new(
+            writer,
+            inline_parser,
+            inline_events,
+            render_state,
+            &link_refs,
+            fn_store_ref,
+            options,
+            fenced_code_renderer,
+            headings,
+        );
 
-    // Render events to HTML
-    for event in &events {
-        context.render_block_event(input, event);
-    }
+        // Render events to HTML
+        for event in events.iter() {
+            context.render_block_event(input, event);
+        }
 
-    // Render footnote section at document end
-    if !context.footnote_numbers.is_empty() {
-        context.render_footnote_section(input);
+        // Render footnote section at document end
+        if !context.footnote_numbers.is_empty() {
+            context.render_footnote_section(input);
+        }
     }
     if let Some(report) = resource_limits {
-        report.extend(context.inline_parser.resource_limits());
+        report.extend(inline_parser.resource_limits());
     }
 }
 
@@ -1295,30 +1562,30 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
     /// Render a single block event using the context's explicit state boundary.
     fn render_block_event(&mut self, input: &[u8], event: &BlockEvent) {
         let writer = &mut *self.writer;
-        let inline_parser = &mut self.inline_parser;
-        let inline_events = &mut self.inline_events;
-        let para_state = &mut self.para_state;
-        let heading_state = &mut self.heading_state;
-        let cell_state = &mut self.cell_state;
-        let tight_list_stack = &mut self.tight_list_stack;
-        let at_tight_li_start = &mut self.at_tight_li_start;
-        let need_newline_before_block = &mut self.need_newline_before_block;
-        let pending_loose_li_newline = &mut self.pending_loose_li_newline;
-        let blockquote_depth = &mut self.blockquote_depth;
-        let in_table_head = &mut self.in_table_head;
-        let pending_task = &mut self.pending_task;
+        let inline_parser = &mut *self.inline_parser;
+        let inline_events = &mut *self.inline_events;
+        let para_state = &mut *self.para_state;
+        let heading_state = &mut *self.heading_state;
+        let cell_state = &mut *self.cell_state;
+        let tight_list_stack = &mut *self.tight_list_stack;
+        let at_tight_li_start = &mut *self.at_tight_li_start;
+        let need_newline_before_block = &mut *self.need_newline_before_block;
+        let pending_loose_li_newline = &mut *self.pending_loose_li_newline;
+        let blockquote_depth = &mut *self.blockquote_depth;
+        let in_table_head = &mut *self.in_table_head;
+        let pending_task = &mut *self.pending_task;
         let link_refs = self.link_refs;
         let footnote_store = self.footnote_store;
-        let footnote_numbers = &mut self.footnote_numbers;
-        let heading_id_tracker = &mut self.heading_id_tracker;
-        let callout_stack = &mut self.callout_stack;
-        let pending_footnote_backref = &mut self.pending_footnote_backref;
-        let definition_description_stack = &mut self.definition_description_stack;
-        let paragraph_tags_suppressed = &mut self.paragraph_tags_suppressed;
+        let footnote_numbers = &mut *self.footnote_numbers;
+        let heading_id_tracker = &mut *self.heading_id_tracker;
+        let callout_stack = &mut *self.callout_stack;
+        let pending_footnote_backref = &mut *self.pending_footnote_backref;
+        let definition_description_stack = &mut *self.definition_description_stack;
+        let paragraph_tags_suppressed = &mut *self.paragraph_tags_suppressed;
         let options = self.options;
         let fenced_code_renderer = &mut self.fenced_code_renderer;
-        let fenced_code_state = &mut self.fenced_code_state;
-        let fenced_code_buffer = &mut self.fenced_code_buffer;
+        let fenced_code_state = &mut *self.fenced_code_state;
+        let fenced_code_buffer = &mut *self.fenced_code_buffer;
         let headings = &mut self.headings;
 
         // Check if we're in a tight list (innermost list is tight)
@@ -1830,6 +2097,13 @@ impl FootnoteNumbers {
             reference_ordinals: vec![0; definition_count],
             inline_definitions: Vec::new(),
         }
+    }
+
+    fn reset(&mut self, definition_count: usize) {
+        self.order.clear();
+        self.reference_ordinals.clear();
+        self.reference_ordinals.resize(definition_count, 0);
+        self.inline_definitions.clear();
     }
 
     fn number_reference(&mut self, definition_index: usize) -> Option<usize> {
@@ -2366,24 +2640,24 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         inline_footnotes: false,
                         ..self.options.clone()
                     };
+                    let mut nested_state = RenderState::new(&nested_options);
                     let mut nested = RenderContext::new(
                         &mut *self.writer,
+                        &mut *self.inline_parser,
+                        &mut *self.inline_events,
+                        &mut nested_state,
                         self.link_refs,
                         Some(footnote_store),
                         &nested_options,
                         renderer,
                         None,
                     );
-                    // Reuse the parent's inline parser (idle by now) so each
-                    // footnote does not pay for a fresh set of scratch buffers.
-                    std::mem::swap(&mut nested.inline_parser, &mut self.inline_parser);
                     for (index, event) in def.events.iter().enumerate() {
                         if Some(index) == last_paragraph_end {
-                            nested.pending_footnote_backref = Some((def.label.clone(), number));
+                            *nested.pending_footnote_backref = Some((def.label.clone(), number));
                         }
                         nested.render_block_event(input, event);
                     }
-                    std::mem::swap(&mut nested.inline_parser, &mut self.inline_parser);
                 }
                 FootnoteTarget::Inline(definition_index) => {
                     let Some(content) = self
@@ -2410,8 +2684,8 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     render_inline_content(
                         &content,
                         &mut *self.writer,
-                        &mut self.inline_parser,
-                        &mut self.inline_events,
+                        &mut *self.inline_parser,
+                        &mut *self.inline_events,
                         self.link_refs,
                         None,
                         &mut nested_numbers,
