@@ -44,6 +44,20 @@ function assertCratePublicationWaitsForVerification(source) {
   assert.doesNotMatch(crateJob, /- publish-npm/)
 }
 
+function assertCratePublicationCanBeRecovered(source) {
+  const crateJob = source.slice(
+    source.indexOf('\n  publish-crate:\n'),
+    source.indexOf('\n  build-native:\n'),
+  )
+  assert.match(source, /\n  workflow_dispatch:\n/)
+  assert.match(source, /release-please:\n    if: \$\{\{ github\.event_name == 'push' \}\}/)
+  assert.match(crateJob, /always\(\)/, 'manual recovery must run despite skipped npm jobs')
+  assert.match(crateJob, /github\.ref == 'refs\/heads\/main'/)
+  assert.match(crateJob, /github\.event_name == 'workflow_dispatch'/)
+  assert.match(crateJob, /needs\.verify-npm-publish\.result == 'success'/)
+  assert.match(crateJob, /run: cargo publish --locked/)
+}
+
 function assertPlatformPackagesArePublished(source) {
   for (const artifact of [
     'darwin-arm64',
@@ -77,6 +91,7 @@ function assertPlatformPackagesArePublished(source) {
 
 assertValidVerifierJob(workflow)
 assertCratePublicationWaitsForVerification(workflow)
+assertCratePublicationCanBeRecovered(workflow)
 assertPlatformPackagesArePublished(workflow)
 assert.throws(
   () => assertValidVerifierJob(workflow.replace('\n  verify-npm-publish:\n', '\n  npm-check:\n')),
@@ -106,6 +121,17 @@ assert.throws(
       workflow.replace('- verify-npm-publish', '- publish-npm'),
     ),
   /crate publication must wait for successful npm registry verification/,
+)
+assert.throws(
+  () => assertCratePublicationCanBeRecovered(workflow.replace('\n  workflow_dispatch:\n', '\n')),
+  /workflow_dispatch/,
+)
+assert.throws(
+  () =>
+    assertCratePublicationCanBeRecovered(
+      workflow.replace('cargo publish --locked', 'cargo publish'),
+    ),
+  /cargo publish --locked/,
 )
 
 assert.equal(registryVersionUrl('ferromark', '0.7.0'), 'https://registry.npmjs.org/ferromark/0.7.0')
