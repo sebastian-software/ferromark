@@ -51,14 +51,14 @@ function assertReadmeContract(candidate) {
   assert.match(candidate, /^## Troubleshooting native loading$/m, 'README must explain lazy loader failures')
   assert.match(candidate, /first call to `toHtml\(\)`, `transform\(\)`, or a\s+highlighter helper/i)
 
-  assert.match(loader, /musl is not supported/, 'loader must retain its musl diagnostic')
-  assert.match(candidate, /Alpine or another musl Linux environment/, 'README must cover the musl loader error')
+  assert.match(loader, /linux-arm64-musl/, 'loader must select the arm64 musl package')
+  assert.match(loader, /linux-x64-musl/, 'loader must select the x64 musl package')
   assert.match(loader, /does not support \$\{process\.platform\}/, 'loader must retain unsupported-target diagnostics')
   assert.match(candidate, /Unsupported platform or architecture/, 'README must cover unsupported targets')
-  assert.match(loader, /does not include a native binary/, 'loader must retain missing-binary diagnostics')
-  assert.match(candidate, /`does not include a native binary`/, 'README must cover missing binaries')
+  assert.match(loader, /could not load the optional native package/, 'loader must retain missing-package diagnostics')
+  assert.match(candidate, /`could not load the optional native package`/, 'README must cover missing platform packages')
 
-  const loaderTargets = [...loader.matchAll(/'([a-z0-9]+-(?:arm64|x64))': '([a-z0-9-]+)'/g)]
+  const loaderTargets = [...loader.matchAll(/'([a-z0-9]+-(?:arm64|x64)(?:-(?:gnu|musl))?)': '([a-z0-9-]+)'/g)]
     .map(([, host, target]) => ({ host, target }))
   const packageTargets = packageJson.napi.targets.map(packageTargetToBindingTarget)
   assert.deepEqual(
@@ -66,12 +66,12 @@ function assertReadmeContract(candidate) {
     packageTargets.slice().sort(),
     'loader targets and published native targets must stay aligned',
   )
-  assert.match(candidate, /glibc\s+Linux, macOS, and Windows on x64 and arm64/, 'README must state published platforms')
+  assert.match(candidate, /glibc or musl Linux, macOS, and Windows on x64 and arm64/, 'README must state published platforms')
   assert.match(candidate, /no WASM fallback/, 'README must state the missing fallback')
 }
 
 function packageTargetToBindingTarget(target) {
-  const match = target.match(/^(aarch64|x86_64)-(apple|unknown-linux|pc-windows)-(darwin|gnu|msvc)$/)
+  const match = target.match(/^(aarch64|x86_64)-(apple|unknown-linux|pc-windows)-(darwin|gnu|musl|msvc)$/)
   assert.ok(match, `unsupported napi target format: ${target}`)
 
   const [, architecture, platform, abi] = match
@@ -103,9 +103,9 @@ assert.throws(
   'security documentation contract must reject incorrect trusted output',
 )
 assert.throws(
-  () => assertReadmeContract(readme.replace('Alpine or another musl Linux environment', 'Linux environment')),
-  /musl loader error/,
-  'loader troubleshooting contract must reject missing musl guidance',
+  () => assertReadmeContract(readme.replace('glibc or musl Linux', 'glibc Linux')),
+  /published platforms/,
+  'loader contract must reject missing musl support documentation',
 )
 
 console.log('Node README package, security, and loader contract checks passed')

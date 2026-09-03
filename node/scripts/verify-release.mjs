@@ -19,16 +19,30 @@ const targets = [
   'darwin-arm64',
   'darwin-x64',
   'linux-arm64-gnu',
+  'linux-arm64-musl',
   'linux-x64-gnu',
+  'linux-x64-musl',
   'win32-arm64-msvc',
   'win32-x64-msvc',
 ]
 for (const target of targets) {
-  const file = path.join(packageDir, `ferromark.${target}.node`)
+  const platformDir = path.join(packageDir, 'npm', target)
+  const platformPackage = JSON.parse(
+    await readFile(path.join(platformDir, 'package.json'), 'utf8'),
+  )
+  if (platformPackage.version !== packageJson.version) {
+    throw new Error(
+      `Platform package version mismatch: ${platformPackage.name}@${platformPackage.version}`,
+    )
+  }
+  if (packageJson.optionalDependencies[platformPackage.name] !== packageJson.version) {
+    throw new Error(`Main package does not pin ${platformPackage.name}@${packageJson.version}`)
+  }
+  const file = path.join(platformDir, `ferromark.${target}.node`)
   const info = await stat(file)
   if (!info.isFile() || info.size === 0) {
     throw new Error(`Invalid native binary: ${file}`)
   }
 }
 
-console.log(`Verified ferromark ${packageJson.version} with ${targets.length} native binaries`)
+console.log(`Verified ferromark ${packageJson.version} with ${targets.length} platform packages`)

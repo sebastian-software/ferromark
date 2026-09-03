@@ -1,0 +1,28 @@
+{
+  "name": "ferromark-darwin-arm64",
+  "version": "0.7.0",
+  "description": "Native aarch64-apple-darwin binary for ferromark",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferromark.git",
+    "directory": "node/ferromark"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "ferromark.darwin-arm64.node",
+  "files": [
+    "ferromark.darwin-arm64.node"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

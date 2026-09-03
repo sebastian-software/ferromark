@@ -21,7 +21,48 @@ importers:
         specifier: 7.0.2
         version: 7.0.2
 
-  ferromark: {}
+  ferromark:
+    optionalDependencies:
+      ferromark-darwin-arm64:
+        specifier: 0.7.0
+        version: link:npm/darwin-arm64
+      ferromark-darwin-x64:
+        specifier: 0.7.0
+        version: link:npm/darwin-x64
+      ferromark-linux-arm64-gnu:
+        specifier: 0.7.0
+        version: link:npm/linux-arm64-gnu
+      ferromark-linux-arm64-musl:
+        specifier: 0.7.0
+        version: link:npm/linux-arm64-musl
+      ferromark-linux-x64-gnu:
+        specifier: 0.7.0
+        version: link:npm/linux-x64-gnu
+      ferromark-linux-x64-musl:
+        specifier: 0.7.0
+        version: link:npm/linux-x64-musl
+      ferromark-win32-arm64-msvc:
+        specifier: 0.7.0
+        version: link:npm/win32-arm64-msvc
+      ferromark-win32-x64-msvc:
+        specifier: 0.7.0
+        version: link:npm/win32-x64-msvc
+
+  ferromark/npm/darwin-arm64: {}
+
+  ferromark/npm/darwin-x64: {}
+
+  ferromark/npm/linux-arm64-gnu: {}
+
+  ferromark/npm/linux-arm64-musl: {}
+
+  ferromark/npm/linux-x64-gnu: {}
+
+  ferromark/npm/linux-x64-musl: {}
+
+  ferromark/npm/win32-arm64-msvc: {}
+
+  ferromark/npm/win32-x64-msvc: {}
 
 packages:
 

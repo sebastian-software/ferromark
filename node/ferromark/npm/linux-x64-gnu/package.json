@@ -1,0 +1,31 @@
+{
+  "name": "ferromark-linux-x64-gnu",
+  "version": "0.7.0",
+  "description": "Native x86_64-unknown-linux-gnu binary for ferromark",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferromark.git",
+    "directory": "node/ferromark"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "main": "ferromark.linux-x64-gnu.node",
+  "files": [
+    "ferromark.linux-x64-gnu.node"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

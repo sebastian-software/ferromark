@@ -1,0 +1,31 @@
+{
+  "name": "ferromark-linux-arm64-musl",
+  "version": "0.7.0",
+  "description": "Native aarch64-unknown-linux-musl binary for ferromark",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferromark.git",
+    "directory": "node/ferromark"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "libc": [
+    "musl"
+  ],
+  "main": "ferromark.linux-arm64-musl.node",
+  "files": [
+    "ferromark.linux-arm64-musl.node"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

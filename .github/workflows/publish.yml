@@ -61,21 +61,35 @@ jobs:
           - os: ubuntu-latest
             rust-target: x86_64-unknown-linux-gnu
             artifact: linux-x64-gnu
+            runtime_test: true
           - os: ubuntu-24.04-arm
             rust-target: aarch64-unknown-linux-gnu
             artifact: linux-arm64-gnu
+            runtime_test: true
+          - os: ubuntu-latest
+            rust-target: x86_64-unknown-linux-musl
+            artifact: linux-x64-musl
+            runtime_test: false
+          - os: ubuntu-latest
+            rust-target: aarch64-unknown-linux-musl
+            artifact: linux-arm64-musl
+            runtime_test: false
           - os: macos-latest
             rust-target: aarch64-apple-darwin
             artifact: darwin-arm64
+            runtime_test: true
           - os: macos-15-intel
             rust-target: x86_64-apple-darwin
             artifact: darwin-x64
+            runtime_test: true
           - os: windows-latest
             rust-target: x86_64-pc-windows-msvc
             artifact: win32-x64-msvc
+            runtime_test: true
           - os: windows-11-arm
             rust-target: aarch64-pc-windows-msvc
             artifact: win32-arm64-msvc
+            runtime_test: true
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -102,6 +116,20 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.rust-target }}
 
+      - name: Set Zig
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        if: ${{ contains(matrix.rust-target, '-musl') }}
+        with:
+          version: 0.15.2
+
+      - name: Install cargo-zigbuild
+        uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
+        if: ${{ contains(matrix.rust-target, '-musl') }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tool: cargo-zigbuild
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -111,6 +139,7 @@ jobs:
           FERROMARK_RUST_TARGET: ${{ matrix.rust-target }}
 
       - name: Test native package
+        if: ${{ matrix.runtime_test }}
         run: pnpm test
 
       - name: Upload native binary
@@ -161,7 +190,10 @@ jobs:
         with:
           pattern: native-*
           merge-multiple: true
-          path: node/ferromark
+          path: node/ferromark/.napi-artifacts
+
+      - name: Assemble platform packages
+        run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm
 
       - name: Verify release package
         run: node ./scripts/verify-release.mjs
@@ -174,7 +206,10 @@ jobs:
           node ./scripts/verify-pack.mjs --all-targets
           pnpm smoke:clean
 
-      - name: Publish to npm with trusted publishing
+      - name: Publish platform packages with trusted publishing
+        run: node ./scripts/publish-platform-packages.mjs
+
+      - name: Publish main package with trusted publishing
         working-directory: node/ferromark
         run: npm publish --access public --provenance
 

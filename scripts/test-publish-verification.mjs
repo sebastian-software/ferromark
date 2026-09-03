@@ -44,8 +44,34 @@ function assertCratePublicationWaitsForVerification(source) {
   assert.doesNotMatch(crateJob, /- publish-npm/)
 }
 
+function assertPlatformPackagesArePublished(source) {
+  for (const artifact of [
+    'darwin-arm64',
+    'darwin-x64',
+    'linux-arm64-gnu',
+    'linux-arm64-musl',
+    'linux-x64-gnu',
+    'linux-x64-musl',
+    'win32-arm64-msvc',
+    'win32-x64-msvc',
+  ]) {
+    assert.match(source, new RegExp(`artifact: ${artifact}\\n`))
+  }
+
+  const assembleIndex = source.indexOf(
+    'run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm',
+  )
+  const verifyIndex = source.indexOf('run: node ./scripts/verify-release.mjs')
+  const platformPublishIndex = source.indexOf('run: node ./scripts/publish-platform-packages.mjs')
+  const mainPublishIndex = source.indexOf('run: npm publish --access public --provenance')
+  assert.ok(assembleIndex !== -1 && assembleIndex < verifyIndex)
+  assert.ok(verifyIndex < platformPublishIndex)
+  assert.ok(platformPublishIndex < mainPublishIndex)
+}
+
 assertValidVerifierJob(workflow)
 assertCratePublicationWaitsForVerification(workflow)
+assertPlatformPackagesArePublished(workflow)
 assert.throws(
   () => assertValidVerifierJob(workflow.replace('\n  verify-npm-publish:\n', '\n  npm-check:\n')),
   /verify-npm-publish/,
