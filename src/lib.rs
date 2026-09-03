@@ -45,6 +45,7 @@ use smallvec::SmallVec;
 pub use block::{Alignment, BlockEvent, BlockParser, CalloutType, CodeBlockKind, fixup_list_tight};
 pub use footnote::FootnoteStore;
 pub use inline::{InlineEvent, InlineParser};
+pub use limits::{ResourceLimit, ResourceLimitReport};
 pub use link_ref::{LinkRefDef, LinkRefStore};
 pub use range::{InputSizeError, MAX_INPUT_BYTES, Range, validate_input_size};
 pub use render::HtmlWriter;
@@ -373,6 +374,8 @@ pub struct ParseResult<'a> {
     pub front_matter: Option<&'a str>,
     /// Document headings in source order, for table-of-contents rendering.
     pub headings: Vec<Heading>,
+    /// Resource-limit fallbacks used while parsing the document.
+    pub resource_limits: ResourceLimitReport,
 }
 
 /// One document heading collected during rendering.
@@ -494,7 +497,8 @@ fn extract_front_matter(input: &str) -> Option<(&str, usize)> {
     None
 }
 
-/// Parse Markdown and return HTML, front matter, and headings.
+/// Parse Markdown and return HTML, front matter, headings, and resource-limit
+/// fallbacks.
 ///
 /// Uses default options with `front_matter: true`.
 ///
@@ -505,6 +509,7 @@ fn extract_front_matter(input: &str) -> Option<(&str, usize)> {
 /// assert!(result.html.contains("Content</h1>"));
 /// assert_eq!(result.headings[0].id.as_deref(), Some("content"));
 /// assert_eq!(result.headings[0].text, "Content");
+/// assert!(result.resource_limits.is_empty());
 /// ```
 ///
 /// # Panics
@@ -524,7 +529,8 @@ pub fn try_parse(input: &str) -> Result<ParseResult<'_>, InputSizeError> {
     try_parse_with_options(input, &options)
 }
 
-/// Parse Markdown with options and return HTML, front matter, and headings.
+/// Parse Markdown with options and return HTML, front matter, headings, and
+/// resource-limit fallbacks.
 ///
 /// Front matter is only extracted when `options.front_matter` is `true`.
 /// Heading IDs are only present when `options.heading_ids` is enabled.
@@ -547,7 +553,7 @@ pub fn try_parse_with_options<'a>(
 }
 
 /// Parse Markdown with options and an opt-in fenced-code renderer, returning
-/// HTML, front matter, and headings.
+/// HTML, front matter, headings, and resource-limit fallbacks.
 ///
 /// See [`FencedCodeRenderer`] for the escaping contract the renderer must
 /// uphold.
@@ -590,6 +596,7 @@ fn parse_impl<'a>(
     };
 
     let mut headings = Vec::new();
+    let mut resource_limits = ResourceLimitReport::default();
     let mut writer = HtmlWriter::with_capacity_for(markdown.len());
     render_to_writer_impl(
         markdown.as_bytes(),
@@ -597,6 +604,7 @@ fn parse_impl<'a>(
         options,
         renderer,
         Some(&mut headings),
+        Some(&mut resource_limits),
     );
     let html = writer
         .into_string()
@@ -605,6 +613,7 @@ fn parse_impl<'a>(
         html,
         front_matter,
         headings,
+        resource_limits,
     }
 }
 
@@ -1211,7 +1220,7 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
 
 /// Render Markdown to an HtmlWriter.
 fn render_to_writer(input: &[u8], writer: &mut HtmlWriter, options: &Options) {
-    render_to_writer_impl::<DisabledFencedCodeRenderer>(input, writer, options, None, None);
+    render_to_writer_impl::<DisabledFencedCodeRenderer>(input, writer, options, None, None, None);
 }
 
 fn render_to_writer_with_renderer(
@@ -1220,7 +1229,7 @@ fn render_to_writer_with_renderer(
     options: &Options,
     fenced_code_renderer: Option<&mut dyn FencedCodeRenderer>,
 ) {
-    render_to_writer_impl(input, writer, options, fenced_code_renderer, None);
+    render_to_writer_impl(input, writer, options, fenced_code_renderer, None, None);
 }
 
 struct DisabledFencedCodeRenderer;
@@ -1237,11 +1246,15 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     options: &Options,
     fenced_code_renderer: Option<&mut R>,
     headings: Option<&mut Vec<Heading>>,
+    mut resource_limits: Option<&mut ResourceLimitReport>,
 ) {
     // Parse blocks
     let mut parser = BlockParser::new_with_options(input, options.clone());
     let mut events = Vec::with_capacity((input.len() / 16).max(64));
     parser.parse(&mut events);
+    if let Some(report) = resource_limits.as_deref_mut() {
+        report.extend(parser.resource_limits());
+    }
     #[cfg(feature = "profiling")]
     profiling::record_block_events(&events, events.capacity());
     let link_refs = parser.take_link_refs();
@@ -1272,6 +1285,9 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     // Render footnote section at document end
     if !context.footnote_numbers.is_empty() {
         context.render_footnote_section(input);
+    }
+    if let Some(report) = resource_limits {
+        report.extend(context.inline_parser.resource_limits());
     }
 }
 

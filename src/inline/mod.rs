@@ -21,6 +21,7 @@ pub use event::InlineEvent;
 pub use links::AutolinkLiteralKind;
 
 use crate::footnote::FootnoteStore;
+use crate::limits::{ResourceLimit, ResourceLimitReport};
 use crate::link_ref::LinkRefStore;
 use crate::range::assert_input_size;
 use crate::{InputSizeError, Range};
@@ -29,7 +30,7 @@ use emphasis::{EmphasisMatch, EmphasisStacks, resolve_emphasis_with_stacks_into}
 use highlight::{HighlightMatch, resolve_highlight_into};
 use links::{
     Autolink, AutolinkLiteral, Link, RefLink, ReferenceResolutionBudget,
-    find_autolink_literals_into, find_autolinks_into, resolve_links_into,
+    find_autolink_literals_into, find_autolinks_into, resolve_links_into_with_limits,
     resolve_reference_links_into,
 };
 use marks::{
@@ -86,6 +87,7 @@ pub struct InlineParser {
     inline_footnotes: Vec<InlineFootnote>,
     inline_footnote_brackets: Vec<(u32, Option<u32>)>,
     math_spans: Vec<MathSpan>,
+    resource_limits: ResourceLimitReport,
 }
 
 impl InlineParser {
@@ -133,6 +135,7 @@ impl InlineParser {
             inline_footnotes: Vec::new(),
             inline_footnote_brackets: Vec::new(),
             math_spans: Vec::new(),
+            resource_limits: ResourceLimitReport::default(),
         }
     }
 
@@ -217,6 +220,16 @@ impl InlineParser {
     /// so reference-resolution work remains bounded for the whole document.
     pub(crate) fn begin_document(&mut self) {
         self.ref_work_budget.reset();
+        self.resource_limits = ResourceLimitReport::default();
+    }
+
+    /// Return resource-limit fallbacks used in the current document.
+    ///
+    /// Public parse methods reset this report before parsing. Document
+    /// renderers accumulate limits across every paragraph in the document.
+    #[must_use]
+    pub const fn resource_limits(&self) -> ResourceLimitReport {
+        self.resource_limits
     }
 
     /// Parse inline Markdown with opt-in MDX expressions as part of an active
@@ -383,6 +396,14 @@ impl InlineParser {
             MarkSummary::default()
         };
 
+        if self.mark_buffer.limit_exceeded() {
+            self.resource_limits.record(ResourceLimit::InlineMarks);
+        }
+        if self.mark_buffer.code_span_limit_exceeded() {
+            self.resource_limits
+                .record(ResourceLimit::CodeSpanBackticks);
+        }
+
         if self.mark_buffer.is_empty() && !may_have_autolinks {
             // No special characters and no autolink candidates, emit as plain text
             if !text.is_empty() {
@@ -473,7 +494,7 @@ impl InlineParser {
         });
         let has_inline_link_candidate = has_brackets && has_inline_link_opener(text);
         if has_inline_link_candidate {
-            resolve_links_into(
+            if resolve_links_into_with_limits(
                 text,
                 &self.open_brackets,
                 &self.close_brackets,
@@ -481,7 +502,10 @@ impl InlineParser {
                 &mut self.link_formed_opens,
                 &mut self.link_inactive_opens,
                 &mut self.link_used_closes,
-            );
+            ) {
+                self.resource_limits
+                    .record(ResourceLimit::LinkDestinationParentheses);
+            }
         } else {
             self.resolved_links.clear();
         }
@@ -506,6 +530,10 @@ impl InlineParser {
                     &mut self.ref_candidate_prefix,
                     &mut self.ref_work_budget,
                 );
+                if self.ref_work_budget.limit_exceeded() {
+                    self.resource_limits
+                        .record(ResourceLimit::ReferenceResolutionWork);
+                }
             } else {
                 self.ref_links.clear();
             }
