@@ -328,8 +328,9 @@ fn promotable_paragraph(source: &[u8], events: &[MdxEvent]) -> Option<MdxEvent> 
 }
 
 fn front_matter_event(input: &str) -> (usize, Option<MdxEvent>) {
-    let Some((content, rest_offset)) = crate::extract_front_matter(input) else {
-        return (0, None);
+    let (document, document_start) = super::content_after_bom(input);
+    let Some((content, rest_offset)) = crate::extract_front_matter(document) else {
+        return (document_start, None);
     };
 
     let input_start = input.as_ptr() as usize;
@@ -339,9 +340,9 @@ fn front_matter_event(input: &str) -> (usize, Option<MdxEvent>) {
     let content_end = content_start + content.len();
 
     (
-        rest_offset,
+        document_start + rest_offset,
         Some(MdxEvent::FrontMatter {
-            range: Range::from_usize(0, rest_offset),
+            range: Range::from_usize(document_start, document_start + rest_offset),
             content: Range::from_usize(content_start, content_end),
         }),
     )

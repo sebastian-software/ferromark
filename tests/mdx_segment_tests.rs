@@ -36,6 +36,38 @@ fn whitespace_only() {
 }
 
 #[test]
+fn leading_utf8_bom_is_ignored_before_segmenting() {
+    let input = "\u{feff}import Card from './Card'\n\n<Card />\n";
+    let content = &input['\u{feff}'.len_utf8()..];
+    let expected = vec![
+        Segment::Esm("import Card from './Card'\n"),
+        Segment::Markdown("\n"),
+        Segment::JsxBlockSelfClose("<Card />\n"),
+    ];
+
+    assert_eq!(segment(input), expected);
+
+    let spanned = segment_spanned(input);
+    assert_eq!(
+        spanned
+            .iter()
+            .map(|segment| segment.segment.clone())
+            .collect::<Vec<_>>(),
+        expected
+    );
+    assert_eq!(spanned.first().unwrap().range.start_usize(), 3);
+    assert_eq!(spanned.last().unwrap().range.end_usize(), input.len());
+    assert_eq!(
+        spanned
+            .iter()
+            .map(|segment| segment.segment.as_str())
+            .collect::<String>(),
+        content
+    );
+    assert_eq!(segment_strict(input).unwrap(), spanned);
+}
+
+#[test]
 fn spanned_segments_cover_input_with_exact_byte_ranges() {
     let input = "import A from 'a'\r\n\r\n# Grüß\r\n\r\n<Card />\r\n\r\n{user.name}\r\n";
     let segments = segment_spanned(input);
@@ -1135,6 +1167,29 @@ fn strict_mode_reports_mismatched_jsx_tags_with_related_opening_range() {
 }
 
 #[test]
+fn strict_diagnostics_after_a_leading_utf8_bom_keep_absolute_ranges() {
+    let input = "\u{feff}<Outer>\n<Inner>\n</Outer>\n";
+    let diagnostics = segment_strict(input).unwrap_err();
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        diagnostics[0]
+            .primary_range
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        "</Outer>"
+    );
+    assert_eq!(
+        diagnostics[0]
+            .related_range
+            .unwrap()
+            .slice_str(input.as_bytes())
+            .unwrap(),
+        "<Inner>"
+    );
+}
+
+#[test]
 fn strict_mode_reports_an_unmatched_jsx_closing_tag() {
     let input = "</Card>\n";
     let diagnostics = segment_strict(input).unwrap_err();
@@ -2204,6 +2259,17 @@ fn render_front_matter() {
     assert_eq!(out.front_matter, Some("title: Hello\nauthor: World\n"));
     assert!(out.body.contains("<h1"));
     assert!(out.body.contains("Heading"));
+}
+
+#[test]
+fn render_ignores_a_leading_utf8_bom_before_front_matter_and_esm() {
+    let input = "\u{feff}---\ntitle: Hello\n---\n\nimport Card from './Card'\n\n# Heading\n";
+    let out = render(input);
+
+    assert_eq!(out.front_matter, Some("title: Hello\n"));
+    assert_eq!(out.esm, vec!["import Card from './Card'\n"]);
+    assert!(out.body.contains("Heading"));
+    assert!(!out.body.contains('\u{feff}'));
 }
 
 #[test]
