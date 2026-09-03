@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import test from 'node:test'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import {
   Renderer,
@@ -152,6 +152,20 @@ test('wraps native dynamic-loader failures with platform guidance', async (t) =>
       return true
     },
   )
+})
+
+test('loads the ESM entry point from CommonJS', () => {
+  const entry = fileURLToPath(new URL('../index.mjs', import.meta.url))
+  const script = `
+    const { toHtml } = require(${JSON.stringify(entry)})
+    process.stdout.write(toHtml('# CommonJS'))
+  `
+  const result = spawnSync(process.execPath, ['--input-type=commonjs', '--eval', script], {
+    encoding: 'utf8',
+  })
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stdout, '<h1 id="commonjs">CommonJS</h1>\n')
 })
 
 test('composes with a synchronous Ferriki-compatible highlighter', () => {

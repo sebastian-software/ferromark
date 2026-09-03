@@ -194,7 +194,7 @@ rustup toolchain install 1.88
 cargo +1.88 check --all-features
 ```
 
-The published `ferromark` npm package requires Node.js 22.0.0 or newer. Update
+The published `ferromark` npm package requires Node.js 22.12.0 or newer. Update
 the runtime before running `npm install ferromark` or loading the native
 module. Repository contributors who run the `node/` workspace also need its
 pinned pnpm 11.17.0 toolchain and Node.js 22.13.0 or newer.
@@ -205,7 +205,7 @@ Run the checks that match the surfaces your project uses:
 
 ```sh
 cargo check --all-features
-# For npm consumers, verify that `node --version` is 22.0.0 or newer.
+# For npm consumers, verify that `node --version` is 22.12.0 or newer.
 ```
 
 For custom renderers, include a fenced block with an info string in a local

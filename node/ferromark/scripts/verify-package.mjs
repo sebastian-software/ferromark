@@ -45,6 +45,7 @@ for (const triple of packageJson.napi.targets) {
   assert.deepEqual(platformPackage.libc, target.libc ? [target.libc] : undefined)
   assert.equal(platformPackage.main, `ferromark.${target.suffix}.node`)
   assert.deepEqual(platformPackage.files, [platformPackage.main])
+  assert.deepEqual(platformPackage.engines, packageJson.engines)
   assert.equal(platformPackage.publishConfig?.provenance, true)
   assert.ok(extraFiles.includes(packagePath), `${packagePath} must be versioned by release-please`)
   assert.ok(

@@ -9,7 +9,7 @@ npm install ferromark
 # or: pnpm add ferromark
 ```
 
-The package requires Node.js 22 or newer. It installs one platform-specific
+The package requires Node.js 22.12 or newer. It installs one platform-specific
 native package for glibc or musl Linux, macOS, and Windows on x64 and arm64;
 musl support includes Alpine Linux. GNU Linux binaries target glibc 2.17 or
 newer, although the installed Node.js runtime may impose a newer requirement.
@@ -19,6 +19,12 @@ There is no WASM fallback.
 import { toHtml } from 'ferromark'
 
 const html = toHtml('# Hello')
+```
+
+Both ESM `import` and CommonJS `require()` work on supported Node.js versions:
+
+```js
+const { toHtml } = require('ferromark')
 ```
 
 ## Repeated rendering
@@ -140,7 +146,7 @@ The native binding loads when constructing `Renderer` or on the first call to
 
 | Message or environment | Resolution |
 | --- | --- |
-| Node.js below 22 | Upgrade to Node.js 22 or newer; this is the package's declared engine requirement. |
+| Node.js below 22.12 | Upgrade to Node.js 22.12 or newer; this is the package's declared engine requirement and the first Node 22 release with unflagged `require(esm)` support. |
 | Unsupported platform or architecture | Use macOS, Windows, or glibc/musl Linux on x64 or arm64. |
 | `could not load the optional native package` | Reinstall without `--omit=optional` and verify that your lockfile includes ferromark's package for the current platform. |
 | `ERR_DLOPEN_FAILED` | Read the wrapped loader message for the exact binary and platform. On GNU Linux, verify glibc 2.17 or newer and required shared libraries; on Windows, install or repair the Microsoft Visual C++ Redistributable; on macOS, check architecture, OS compatibility, quarantine, and code-signing policy. The original loader error is available as `error.cause`. |
