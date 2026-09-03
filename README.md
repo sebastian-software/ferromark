@@ -69,6 +69,10 @@ APIs allow and binaries are non-PGO. ferromark also keeps its secure default
 rendering in this published product lane, so it performs URL and raw-HTML safety
 work that pulldown-cmark does not.
 
+These rankings are Apple Silicon results only. ferromark also uses baseline
+SSE2 for inline scanning on x86-64, but this comparison has not been re-measured
+there; do not infer the same relative ordering on x86-64 from these tables.
+
 **CommonMark 5 KB** (wiki-style, mixed content with tables)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
@@ -85,7 +89,9 @@ work that pulldown-cmark does not.
 | md4c (C) | 253.3 MiB/s | 0.90x |
 | comrak | 71.8 MiB/s | 0.26x |
 
-2% faster than pulldown-cmark. 11% faster than md4c. 4x faster than comrak. Competitor versions: pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
+On this Apple Silicon run, ferromark was 2% faster than pulldown-cmark, 11%
+faster than md4c, and 4x faster than comrak. Competitor versions:
+pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
 
 The fixtures are synthetic wiki-style documents with paragraphs, lists, code blocks, and tables. Nothing cherry-picked. The cross-parser harness is isolated from the library build and pins md4c at `65c6c9d` for the published numbers:
 
@@ -522,7 +528,7 @@ What makes this fast in practice:
 - **Block scanning** runs on `memchr` for line boundaries. Container state is a compact stack, not a tree.
 - **Inline parsing** has three phases: collect delimiter marks, resolve precedence (code spans, math, links, emphasis, strikethrough, subscript, superscript, highlight), emit. No backtracking.
 - **Emphasis resolution** uses the CommonMark modulo-3 rule with a delimiter stack instead of expensive rescans.
-- **SIMD scanning**: NEON (AArch64) drives the inline specials scan; the HTML escaper uses SSE2 (x86-64) and NEON short scans; memchr covers the remaining byte searches on every architecture.
+- **SIMD scanning**: NEON (AArch64) and baseline SSE2 (x86-64) drive the inline specials scan; the HTML escaper uses both for short scans; memchr covers the remaining byte searches on every architecture.
 - **Zero-copy references**: events carry `Range` pointers into the input, not copied strings.
 - **Compact events**: 24 bytes each, cache-line friendly.
 - **Hot/cold annotation**: `#[inline]` on tight loops, `#[cold]` on error paths, table-driven byte classification.
@@ -652,7 +658,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>SIMD accelerates scanning for special characters. ferromark and pulldown-cmark have SIMD paths; md4c relies on C compiler optimizations; comrak is not SIMD-focused.</small></td></tr>
+    <tr><td colspan="5"><small>SIMD accelerates scanning for special characters. ferromark uses baseline NEON on AArch64 and SSE2 on x86-64, but the published comparison above measures Apple Silicon only. pulldown-cmark also has SIMD paths; md4c relies on C compiler optimizations; comrak is not SIMD-focused.</small></td></tr>
     <tr>
       <td><b>Hot-path control</b></td>
       <td align="center">🟩</td>
@@ -828,7 +834,7 @@ src/
 ├── inline/         # Inline-level parser
 │   ├── mod.rs      # Three-phase inline parsing
 │   ├── marks.rs    # Mark collection + SIMD integration
-│   ├── simd.rs     # SIMD character scanning (NEON)
+│   ├── simd.rs     # SIMD character scanning (SSE2/NEON)
 │   ├── event.rs    # InlineEvent types
 │   ├── code_span.rs
 │   ├── emphasis.rs      # Modulo-3 stack optimization

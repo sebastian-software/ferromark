@@ -11,6 +11,10 @@ are non-PGO. ferromark keeps its secure default rendering in this published
 product lane, so it also performs URL and raw-HTML safety work that
 pulldown-cmark does not.
 
+These rankings are Apple Silicon results only. ferromark also uses baseline
+SSE2 for inline scanning on x86-64, but this comparison has not been re-measured
+there; do not infer the same relative ordering on x86-64 from these tables.
+
 ## CommonMark 5 KB
 
 | Parser | Throughput | vs ferromark |
@@ -29,7 +33,9 @@ pulldown-cmark does not.
 | md4c (C) | 253.3 MiB/s | 0.90x |
 | comrak | 71.8 MiB/s | 0.26x |
 
-Summary: 2% faster than pulldown-cmark, 11% faster than md4c, and roughly 4x faster than comrak on this fixture set. Competitor versions: pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
+Summary: on this Apple Silicon fixture set, ferromark was 2% faster than
+pulldown-cmark, 11% faster than md4c, and roughly 4x faster than comrak.
+Competitor versions: pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
 
 ## Reproduce locally
 

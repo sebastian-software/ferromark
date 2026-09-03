@@ -42,6 +42,17 @@ def validate(document)
     fail_contract('Markdown configuration must document Options construction')
   end
   fail_contract('README must preserve the migration guide link') unless document.include?(MIGRATION_GUIDE)
+
+  benchmarks = section(document, 'Benchmarks')
+  unless benchmarks.include?('These rankings are Apple Silicon results only')
+    fail_contract('Benchmarks must scope published rankings to Apple Silicon')
+  end
+  unless benchmarks.include?('has not been re-measured') && benchmarks.include?('x86-64')
+    fail_contract('Benchmarks must disclose the missing x86-64 comparison')
+  end
+  unless document.include?('baseline SSE2 (x86-64)')
+    fail_contract('README must describe the x86-64 inline SIMD path')
+  end
 end
 
 def assert_rejected(label)
@@ -70,6 +81,12 @@ def self_test(document)
   end
   assert_rejected('migration guide link') do
     validate(document.sub(MIGRATION_GUIDE, 'migration guide'))
+  end
+  assert_rejected('Apple Silicon benchmark scope') do
+    validate(document.sub('These rankings are Apple Silicon results only', 'These rankings apply everywhere'))
+  end
+  assert_rejected('x86-64 benchmark caveat') do
+    validate(document.sub('has not been re-measured', 'has been re-measured'))
   end
 end
 
