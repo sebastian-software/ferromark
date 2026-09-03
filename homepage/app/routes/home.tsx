@@ -61,7 +61,7 @@ export default function HomePage() {
         <p className="eyebrow">Rust Markdown Engine</p>
         <h1>Markdown to HTML at 280 MiB/s</h1>
         <p className="lead">
-          ferromark is a streaming parser focused on one job: turning Markdown into HTML faster than
+          In our published Apple Silicon benchmark, ferromark turns Markdown into HTML faster than
           pulldown-cmark, md4c, and comrak while staying fully CommonMark compliant.
         </p>
         <div className="hero-actions">
@@ -95,7 +95,10 @@ export default function HomePage() {
         <div className="section-head">
           <p className="eyebrow">Proof</p>
           <h2>Benchmark numbers you can verify</h2>
-          <p>Apple Silicon (M-series), July 2026. Non-PGO binaries. Same GFM settings for all parsers.</p>
+          <p>
+            Apple Silicon (M-series), July 2026. Non-PGO binaries. Same GFM settings for all parsers.
+            The relative ranking has not been re-measured on x86-64.
+          </p>
         </div>
         <div className="benchmark-table">
           <table>
