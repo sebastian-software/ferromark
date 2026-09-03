@@ -72,6 +72,7 @@ jobs:
       - run: ruby ./scripts/test-node-ci-matrix.rb
       - run: ruby ./scripts/test-contributing-ci-contract.rb --self-test
       - run: ruby ./scripts/test-ci-hardening.rb --self-test
+      - run: ruby ./scripts/test-benchmark-ci-contract.rb --self-test
       - run: ruby ./scripts/test-docs-rs-metadata.rb --self-test
       - run: RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features --locked
       - run: ruby ./scripts/test-migration-guide-contract.rb --self-test
