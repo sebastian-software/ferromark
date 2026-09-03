@@ -9,7 +9,9 @@ use std::collections::HashMap;
 /// A link reference definition (URL + optional title).
 #[derive(Debug, Clone)]
 pub struct LinkRefDef {
+    /// Destination URL bytes after parsing the definition.
     pub url: Vec<u8>,
+    /// Optional title bytes after parsing the definition.
     pub title: Option<Vec<u8>>,
 }
 
@@ -21,6 +23,8 @@ pub struct LinkRefStore {
 }
 
 impl LinkRefStore {
+    /// Create an empty link-reference-definition store.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -35,14 +39,18 @@ impl LinkRefStore {
         self.by_label.insert(label, idx);
     }
 
+    /// Return the insertion-order index for a normalized label.
     pub fn get_index(&self, label: &str) -> Option<usize> {
         self.by_label.get(label).copied()
     }
 
+    /// Return the definition at an insertion-order index.
     pub fn get(&self, idx: usize) -> Option<&LinkRefDef> {
         self.defs.get(idx)
     }
 
+    /// Return whether the store contains no definitions.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.defs.is_empty()
     }
