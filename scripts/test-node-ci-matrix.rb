@@ -5,6 +5,29 @@ require 'yaml'
 
 workflow_path = File.expand_path('../.github/workflows/ci.yml', __dir__)
 workflow = YAML.safe_load(File.read(workflow_path), aliases: false)
+node_versions = workflow.fetch('jobs').fetch('node').fetch('strategy').fetch('matrix').fetch('node')
+unless node_versions == ['22', '24']
+  abort 'Node CI matrix must test the current Node 22 and 24 release lines'
+end
+
+node_floor = workflow.fetch('jobs').fetch('node-floor')
+floor_steps = node_floor.fetch('steps')
+workspace_setup_index = floor_steps.index do |step|
+  step.dig('with', 'node-version') == '22.13.0'
+end
+build_index = floor_steps.index { |step| step['run'] == 'pnpm build' }
+floor_setup_index = floor_steps.index do |step|
+  step.dig('with', 'node-version') == '22.12.0'
+end
+floor_test_index = floor_steps.index do |step|
+  step['run'] == 'node --test ferromark/test/index.test.mjs'
+end
+unless workspace_setup_index && build_index && floor_setup_index && floor_test_index &&
+       workspace_setup_index < build_index && build_index < floor_setup_index &&
+       floor_setup_index < floor_test_index
+  abort 'Node floor CI must build on the workspace runtime before testing on Node 22.12.0'
+end
+
 native = workflow.fetch('jobs').fetch('native')
 
 unless native.fetch('runs-on') == '${{ matrix.os }}'

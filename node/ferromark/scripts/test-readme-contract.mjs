@@ -22,13 +22,15 @@ function assertReadmeContract(candidate) {
   assert.match(candidate, new RegExp(`npm install ${packageJson.name}`), 'README must show npm install')
   assert.match(candidate, new RegExp(`pnpm add ${packageJson.name}`), 'README must show pnpm add')
 
-  const minimumNode = packageJson.engines.node.match(/^>=(\d+)/)?.[1]
-  assert.ok(minimumNode, 'package.json must declare a minimum Node major version')
+  const minimumNode = packageJson.engines.node.match(/^>=(\d+\.\d+\.\d+)$/)?.[1]
+  assert.ok(minimumNode, 'package.json must declare an exact minimum Node version')
+  const documentedNode = minimumNode.replace(/\.0$/, '')
   assert.match(
     candidate,
-    new RegExp(`Node\\.js ${minimumNode} or newer`),
+    new RegExp(`Node\\.js ${documentedNode} or newer`),
     'README must state the package Node.js requirement',
   )
+  assert.match(candidate, /require\('ferromark'\)/, 'README must document CommonJS loading')
 
   assert.match(candidate, /^## Untrusted by default$/m, 'README must explain the default trust boundary')
   assert.match(declarations, /export type RenderPolicy = 'untrusted' \| 'trusted'/, 'declarations must expose both render policies')
