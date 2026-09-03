@@ -13,7 +13,7 @@ export default function HomePage() {
     {
       heading: "CommonMark + GFM",
       items: [
-        "652/652 CommonMark spec tests pass",
+        "652/652 CommonMark spec tests pass in trusted mode",
         "Tables, strikethrough, task lists",
         "Autolink literals + disallowed raw HTML",
       ],
@@ -62,7 +62,8 @@ export default function HomePage() {
         <h1>Markdown to HTML at 280 MiB/s</h1>
         <p className="lead">
           In our published Apple Silicon benchmark, ferromark turns Markdown into HTML faster than
-          pulldown-cmark, md4c, and comrak while staying fully CommonMark compliant.
+          pulldown-cmark, md4c, and comrak while passing the complete CommonMark suite in trusted
+          rendering mode.
         </p>
         <div className="hero-actions">
           <Link className="button button-primary" to="/guide/quick-start">
@@ -78,11 +79,11 @@ export default function HomePage() {
         <div className="hero-stats">
           <article>
             <strong>652/652</strong>
-            <span>CommonMark tests passed</span>
+            <span>CommonMark tests passed in trusted mode</span>
           </article>
           <article>
-            <strong>15</strong>
-            <span>Rendering controls for precise output</span>
+            <strong>Fine-grained</strong>
+            <span>Parsing and rendering controls for precise output</span>
           </article>
           <article>
             <strong>90%+</strong>

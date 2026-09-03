@@ -19,6 +19,10 @@ const requiredFragments = [
   "/ferromark/favicon.ico",
   'class="ferramenta-family"',
   'aria-current="true"',
+  "652/652 CommonMark spec tests pass in trusted mode",
+  "CommonMark tests passed in trusted mode",
+  "Fine-grained",
+  "Parsing and rendering controls for precise output",
 ]
 
 for (const fragment of requiredFragments) {
