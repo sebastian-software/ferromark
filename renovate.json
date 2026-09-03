@@ -1,4 +1,15 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>sebastian-software/renovate-config"]
+  "extends": ["github>sebastian-software/renovate-config"],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Group compatible Rust dependency updates",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "Rust dependencies"
+    }
+  ]
 }
