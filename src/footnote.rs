@@ -21,6 +21,8 @@ pub struct FootnoteStore {
 }
 
 impl FootnoteStore {
+    /// Create an empty footnote-definition store.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -35,6 +37,7 @@ impl FootnoteStore {
         self.by_label.insert(normalized_label, idx);
     }
 
+    /// Return the insertion-order index for a normalized label.
     pub fn get_index(&self, label: &str) -> Option<usize> {
         self.by_label.get(label).copied()
     }
@@ -59,14 +62,19 @@ impl FootnoteStore {
         self.by_label.get(normalized).copied()
     }
 
+    /// Return the definition at an insertion-order index.
     pub fn get(&self, idx: usize) -> Option<&FootnoteDef> {
         self.defs.get(idx)
     }
 
+    /// Return whether the store contains no definitions.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.defs.is_empty()
     }
 
+    /// Return the number of stored definitions.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.defs.len()
     }

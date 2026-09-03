@@ -126,8 +126,11 @@
 //! TypeScript syntax inside otherwise well-delimited ESM and expressions.
 
 mod events;
+/// JavaScript-expression boundary scanning used by MDX parsers.
 pub mod expr;
+/// JSX tag parsing and structural metadata.
 pub mod jsx_tag;
+/// Rendering MDX segments as a JavaScript component module.
 pub mod render;
 mod splitter;
 mod strict;

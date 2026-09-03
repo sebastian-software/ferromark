@@ -14,8 +14,11 @@ use memchr::memchr3;
 
 /// Flags for mark state.
 pub mod flags {
+    /// The delimiter may open an inline construct.
     pub const POTENTIAL_OPENER: u8 = 0b0001;
+    /// The delimiter may close an inline construct.
     pub const POTENTIAL_CLOSER: u8 = 0b0010;
+    /// The delimiter has already been consumed by a construct.
     pub const RESOLVED: u8 = 0b0100;
     /// Mark is part of a code span (skip in emphasis processing).
     pub const IN_CODE: u8 = 0b1000;
@@ -44,36 +47,50 @@ impl MarkSummary {
     }
 
     #[inline]
+    /// Return whether the input contains a possible code-span delimiter.
+    #[must_use]
     pub const fn has_code(self) -> bool {
         self.0 & Self::CODE != 0
     }
 
     #[inline]
+    /// Return whether the input contains a possible math delimiter.
+    #[must_use]
     pub const fn has_math(self) -> bool {
         self.0 & Self::MATH != 0
     }
 
     #[inline]
+    /// Return whether the input contains a possible emphasis delimiter.
+    #[must_use]
     pub const fn has_emphasis(self) -> bool {
         self.0 & Self::EMPHASIS != 0
     }
 
     #[inline]
+    /// Return whether the input contains a possible tilde-based delimiter.
+    #[must_use]
     pub const fn has_tilde(self) -> bool {
         self.0 & Self::TILDE != 0
     }
 
     #[inline]
+    /// Return whether the input contains a possible highlight delimiter.
+    #[must_use]
     pub const fn has_highlight(self) -> bool {
         self.0 & Self::HIGHLIGHT != 0
     }
 
     #[inline]
+    /// Return whether the input contains a possible superscript delimiter.
+    #[must_use]
     pub const fn has_superscript(self) -> bool {
         self.0 & Self::SUPERSCRIPT != 0
     }
 
     #[inline]
+    /// Return whether the input contains a less-than sign that may start HTML.
+    #[must_use]
     pub const fn has_less_than(self) -> bool {
         self.0 & Self::LESS_THAN != 0
     }

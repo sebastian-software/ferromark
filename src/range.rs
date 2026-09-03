@@ -78,7 +78,9 @@ pub(crate) fn offset_to_u32(offset: usize) -> u32 {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[repr(C)]
 pub struct Range {
+    /// Inclusive byte offset where the range starts.
     pub start: u32,
+    /// Exclusive byte offset where the range ends.
     pub end: u32,
 }
 

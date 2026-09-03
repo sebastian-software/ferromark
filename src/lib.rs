@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 //! Markdown to HTML with a secure rendering default.
 //!
 //! ferromark streams Markdown into HTML without building an AST. Its default
@@ -789,6 +791,15 @@ pub fn try_to_html(input: &str) -> Result<String, InputSizeError> {
 /// This reuses only the output buffer. Use [`Renderer`] to retain parser and
 /// renderer scratch allocations across documents as well.
 ///
+/// # Example
+///
+/// ```
+/// let mut output = Vec::new();
+/// ferromark::to_html_into("**Hello**", &mut output);
+///
+/// assert_eq!(output, b"<p><strong>Hello</strong></p>\n");
+/// ```
+///
 /// # Panics
 ///
 /// Panics when the input exceeds [`MAX_INPUT_BYTES`]. Use
@@ -807,6 +818,20 @@ pub fn try_to_html_into(input: &str, out: &mut Vec<u8>) -> Result<(), InputSizeE
 ///
 /// When `options.front_matter` is `true`, any front matter at the start of the
 /// document is silently stripped before parsing.
+///
+/// # Example
+///
+/// ```
+/// use ferromark::{Options, to_html_with_options};
+///
+/// let mut options = Options::gfm();
+/// options.heading_ids = true;
+///
+/// assert_eq!(
+///     to_html_with_options("# Hello", &options),
+///     "<h1 id=\"hello\">Hello</h1>\n"
+/// );
+/// ```
 ///
 /// # Panics
 ///
