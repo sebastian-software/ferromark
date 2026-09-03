@@ -107,6 +107,11 @@ to handle longer documents efficiently.
         "*a ".repeat(1000) + &"b* ".repeat(1000)
     }
 
+    /// Mark-capped emphasis followed by link boundaries found by full-text scans.
+    pub fn pathological_emphasis_boundaries() -> String {
+        "*a ".repeat(2048) + &"b* ".repeat(2048) + &"<https://example.com/path> ".repeat(4096)
+    }
+
     /// Document with deeply nested structures
     pub fn pathological_nested() -> String {
         "> ".repeat(100) + "deep\n"
@@ -276,6 +281,12 @@ fn bench_pathological(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(emphasis.len() as u64));
     group.bench_function("emphasis_explosion", |b| {
         b.iter(|| ferromark::to_html(black_box(&emphasis)))
+    });
+
+    let emphasis_boundaries = samples::pathological_emphasis_boundaries();
+    group.throughput(Throughput::Bytes(emphasis_boundaries.len() as u64));
+    group.bench_function("emphasis_many_link_boundaries", |b| {
+        b.iter(|| ferromark::to_html(black_box(&emphasis_boundaries)))
     });
 
     let nested = samples::pathological_nested();
