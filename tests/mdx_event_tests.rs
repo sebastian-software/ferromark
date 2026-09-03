@@ -101,6 +101,37 @@ import Card from './Card'
 }
 
 #[test]
+fn leading_utf8_bom_is_ignored_with_absolute_event_ranges() {
+    let input = "\u{feff}---\ntitle: Hello\n---\nimport Card from './Card'\n\n<Card />\n";
+    let stream = parse_events(input);
+
+    let Some(MdxEvent::FrontMatter { range, content }) = stream.events.first() else {
+        panic!("expected front matter as the first event");
+    };
+    assert_eq!(range.start_usize(), 3);
+    assert_eq!(
+        range.slice_str(input.as_bytes()).unwrap(),
+        "---\ntitle: Hello\n---\n"
+    );
+    assert_eq!(
+        content.slice_str(input.as_bytes()).unwrap(),
+        "title: Hello\n"
+    );
+    assert!(stream.events.iter().any(|event| {
+        matches!(event, MdxEvent::Esm(range)
+            if range.slice_str(input.as_bytes()).unwrap()
+                == "import Card from './Card'\n")
+    }));
+    assert!(stream.events.iter().any(|event| {
+        matches!(event, MdxEvent::FlowJsxSelfClose(range)
+            if range.slice_str(input.as_bytes()).unwrap() == "<Card />\n")
+    }));
+
+    let strict = parse_events_strict(input).unwrap();
+    assert_eq!(strict.events, stream.events);
+}
+
+#[test]
 fn reference_consumer_can_collect_translatable_prose_without_code_or_mdx() {
     let input = "\
 # Hello *world*

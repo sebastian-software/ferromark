@@ -27,16 +27,30 @@ struct OpenTag {
 }
 
 pub(super) fn segment_strict(input: &str) -> Result<Vec<SpannedSegment<'_>>, Vec<MdxDiagnostic>> {
-    let expression_ends = ExpressionEnds::new(input.as_bytes());
-    let diagnostics = validate(input, &expression_ends);
+    let (content, content_start) = super::content_after_bom(input);
+    let expression_ends = ExpressionEnds::new(content.as_bytes());
+    let mut diagnostics = validate(content, &expression_ends);
     if diagnostics.is_empty() {
         Ok(segment_spanned_with_expression_ends(
             input,
+            content,
             &expression_ends,
         ))
     } else {
+        if content_start != 0 {
+            for diagnostic in &mut diagnostics {
+                diagnostic.primary_range = offset_range(diagnostic.primary_range, content_start);
+                diagnostic.related_range = diagnostic
+                    .related_range
+                    .map(|range| offset_range(range, content_start));
+            }
+        }
         Err(diagnostics)
     }
+}
+
+fn offset_range(range: Range, offset: usize) -> Range {
+    Range::from_usize(range.start_usize() + offset, range.end_usize() + offset)
 }
 
 fn validate(input: &str, expression_ends: &ExpressionEnds) -> Vec<MdxDiagnostic> {

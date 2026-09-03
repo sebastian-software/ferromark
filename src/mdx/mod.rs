@@ -5,6 +5,10 @@
 //! segments need to go through ferromark's Markdown parser; JSX, expressions,
 //! and ESM statements are passed through unchanged.
 //!
+//! All entry points ignore one leading UTF-8 byte-order mark. Source ranges
+//! remain absolute offsets into the original input, so content after a BOM
+//! starts at byte 3.
+//!
 //! This module is gated behind the `mdx` Cargo feature.
 //!
 //! # Example
@@ -159,7 +163,8 @@ pub enum Segment<'a> {
 /// The range covers precisely the bytes in [`Self::segment`], including
 /// delimiters, indentation, and a trailing line ending when the segmenter
 /// includes one. The returned ranges are ordered, contiguous, and cover the
-/// complete input without gaps or overlap.
+/// complete parsed content without gaps or overlap. A leading UTF-8 byte-order
+/// mark is ignored, so it is not covered by a segment range.
 ///
 /// Like [`Segment`], this type borrows from the input and performs no copying.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -225,7 +230,8 @@ pub struct SourceLocation {
 /// Segment an MDX document into typed blocks.
 ///
 /// This is the primary entry point. The returned segments cover the entire
-/// input — no bytes are dropped.
+/// input except for an optional leading UTF-8 byte-order mark, which is
+/// ignored before parsing.
 ///
 /// # Panics
 ///
@@ -239,7 +245,8 @@ pub fn segment(input: &str) -> Vec<Segment<'_>> {
 /// Segment an MDX document without panicking for oversized input.
 pub fn try_segment(input: &str) -> Result<Vec<Segment<'_>>, crate::InputSizeError> {
     crate::validate_input_size(input.len())?;
-    Ok(splitter::split(input))
+    let (content, _) = content_after_bom(input);
+    Ok(splitter::split(content))
 }
 
 /// Segment an MDX document and retain exact byte ranges for each segment.
@@ -248,7 +255,8 @@ pub fn try_segment(input: &str) -> Result<Vec<Segment<'_>>, crate::InputSizeErro
 /// same segmentation semantics, while each result records its position in the
 /// original UTF-8 input. The range includes every byte represented by the
 /// segment, including MDX delimiters and any trailing newline owned by that
-/// segment.
+/// segment. An optional leading UTF-8 byte-order mark is ignored, so the first
+/// range begins at byte 3 when one is present.
 ///
 /// # Panics
 ///
@@ -264,17 +272,25 @@ pub fn segment_spanned(input: &str) -> Vec<SpannedSegment<'_>> {
 /// input.
 pub fn try_segment_spanned(input: &str) -> Result<Vec<SpannedSegment<'_>>, crate::InputSizeError> {
     crate::validate_input_size(input.len())?;
-    Ok(spanned_segments(input, splitter::split(input)))
+    let (content, _) = content_after_bom(input);
+    Ok(spanned_segments(input, splitter::split(content)))
 }
 
 pub(crate) fn segment_spanned_with_expression_ends<'a>(
     input: &'a str,
+    content: &'a str,
     expression_ends: &expr::ExpressionEnds,
 ) -> Vec<SpannedSegment<'a>> {
     spanned_segments(
         input,
-        splitter::split_with_expression_ends(input, expression_ends),
+        splitter::split_with_expression_ends(content, expression_ends),
     )
+}
+
+pub(crate) fn content_after_bom(input: &str) -> (&str, usize) {
+    input
+        .strip_prefix('\u{feff}')
+        .map_or((input, 0), |content| (content, '\u{feff}'.len_utf8()))
 }
 
 fn spanned_segments<'a>(input: &'a str, segments: Vec<Segment<'a>>) -> Vec<SpannedSegment<'a>> {
