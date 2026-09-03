@@ -5,44 +5,13 @@
 
 use memchr::{memchr, memchr2, memchr3};
 
-/// Characters that need escaping in HTML text content.
-#[allow(dead_code)]
-const TEXT_ESCAPE_CHARS: &[u8] = b"<>&";
-
-/// Characters that need escaping in HTML attribute values.
-#[allow(dead_code)]
-const ATTR_ESCAPE_CHARS: &[u8] = b"<>&\"'";
-
-/// Lookup table for escapable characters in text content.
-/// Index by byte value, true if needs escaping.
-/// Note: We escape " as &quot; for CommonMark spec compliance.
-const TEXT_ESCAPE_TABLE: [bool; 256] = {
-    let mut table = [false; 256];
-    table[b'<' as usize] = true;
-    table[b'>' as usize] = true;
-    table[b'&' as usize] = true;
-    table[b'"' as usize] = true;
-    table
-};
-
-/// Lookup table for escapable characters in attributes.
-const ATTR_ESCAPE_TABLE: [bool; 256] = {
-    let mut table = [false; 256];
-    table[b'<' as usize] = true;
-    table[b'>' as usize] = true;
-    table[b'&' as usize] = true;
-    table[b'"' as usize] = true;
-    table[b'\'' as usize] = true;
-    table
-};
-
 /// Escape HTML text content into output buffer.
 ///
 /// Escapes `<`, `>`, and `&` to their HTML entity equivalents.
 ///
 /// # Example
 /// ```
-/// use ferromark::escape::escape_text_into;
+/// use ferromark::escape_text_into;
 ///
 /// let mut out = Vec::new();
 /// escape_text_into(&mut out, b"<script>");
@@ -97,7 +66,7 @@ pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
 ///
 /// # Example
 /// ```
-/// use ferromark::escape::escape_attr_into;
+/// use ferromark::escape_attr_into;
 ///
 /// let mut out = Vec::new();
 /// escape_attr_into(&mut out, b"value=\"test\"");
@@ -106,18 +75,6 @@ pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
 #[inline]
 pub fn escape_attr_into(out: &mut Vec<u8>, input: &[u8]) {
     escape_full_into(out, input)
-}
-
-/// Check if a byte slice needs any escaping for text content.
-#[inline]
-pub fn needs_text_escape(input: &[u8]) -> bool {
-    input.iter().any(|&b| TEXT_ESCAPE_TABLE[b as usize])
-}
-
-/// Check if a byte slice needs any escaping for attribute values.
-#[inline]
-pub fn needs_attr_escape(input: &[u8]) -> bool {
-    input.iter().any(|&b| ATTR_ESCAPE_TABLE[b as usize])
 }
 
 /// Below this length the local short scan beats SIMD memchr passes, whose
@@ -292,25 +249,6 @@ unsafe fn first_escape_neon<const ATTR: bool>(input: &[u8]) -> Option<usize> {
         }
     }
     None
-}
-
-/// Escape and return as a new Vec.
-///
-/// Prefer `escape_text_into` to reuse buffers.
-pub fn escape_text(input: &[u8]) -> Vec<u8> {
-    let mut out = Vec::with_capacity(input.len() + input.len() / 8);
-    escape_text_into(&mut out, input);
-    out
-}
-
-/// Escape and return as a String.
-///
-/// Prefer `escape_text_into` to reuse buffers.
-pub fn escape_text_to_string(input: &str) -> String {
-    let escaped = escape_text(input.as_bytes());
-    // SAFETY: We only add ASCII sequences, so if input was valid UTF-8,
-    // output is also valid UTF-8
-    unsafe { String::from_utf8_unchecked(escaped) }
 }
 
 /// URL percent-encode special characters, then HTML-escape for href attribute.
@@ -572,14 +510,6 @@ mod tests {
     }
 
     #[test]
-    fn test_needs_escape() {
-        assert!(!needs_text_escape(b"hello"));
-        assert!(needs_text_escape(b"<hello>"));
-        assert!(needs_text_escape(b"a & b"));
-        assert!(!needs_text_escape(b""));
-    }
-
-    #[test]
     fn test_escape_consecutive() {
         let mut out = Vec::new();
         escape_text_into(&mut out, b"<<<");
@@ -599,12 +529,6 @@ mod tests {
         out.clear();
         escape_text_into(&mut out, b"<hello");
         assert_eq!(out, b"&lt;hello");
-    }
-
-    #[test]
-    fn test_escape_to_string() {
-        let result = escape_text_to_string("<script>");
-        assert_eq!(result, "&lt;script&gt;");
     }
 
     #[test]

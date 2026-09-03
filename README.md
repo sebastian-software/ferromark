@@ -333,7 +333,7 @@ let html = ferromark::to_html_with_options(trusted_markdown, &options);
 `disallowed_raw_html` implements the narrower GFM tag filter in trusted mode. It is not a general-purpose HTML sanitizer and does not make arbitrary raw HTML safe by itself.
 
 Upgrading from an older release? See the [0.8 migration guide](docs/migration-0.8.md)
-for the `Options` and event-match migration, the
+for the `Options`, event-match, and crate-root import migration, the
 [0.4–0.7 migration guide](docs/migration-0.4.md) for `Profile`, inline-parser,
 fenced-renderer, Rust, and Node.js changes, the
 [0.2 migration guide](docs/migration-0.2.md) for the rendering default and the

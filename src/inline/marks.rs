@@ -249,25 +249,6 @@ impl Default for MarkBuffer {
     }
 }
 
-/// Lookup table for special inline characters.
-/// Returns true if the character might be a delimiter.
-pub static SPECIAL_CHARS: [bool; 256] = {
-    let mut table = [false; 256];
-    table[b'`' as usize] = true; // Code span
-    table[b'*' as usize] = true; // Emphasis
-    table[b'_' as usize] = true; // Emphasis
-    table[b'~' as usize] = true; // Strikethrough
-    table[b'=' as usize] = true; // Highlight
-    table[b'^' as usize] = true; // Superscript
-    table[b'$' as usize] = true; // Math span
-    table[b'\\' as usize] = true; // Escape
-    table[b'\n' as usize] = true; // Line break
-    table[b'[' as usize] = true; // Link
-    table[b']' as usize] = true; // Link
-    table[b'<' as usize] = true; // Autolink/HTML
-    table
-};
-
 /// Scan text and collect marks for the default inline syntax set.
 ///
 /// # Panics

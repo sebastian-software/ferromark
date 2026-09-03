@@ -2,7 +2,8 @@ use std::hint::black_box;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use ferromark::{
-    FencedCodeBlock, FencedCodeRenderer, Options, TrustedHtml, to_html, to_html_with_renderer,
+    FencedCodeBlock, FencedCodeRenderer, Options, TrustedHtml, escape_text_into, to_html,
+    to_html_with_renderer,
 };
 
 struct FallbackRenderer;
@@ -19,7 +20,7 @@ struct EscapingRenderer;
 impl FencedCodeRenderer for EscapingRenderer {
     fn render(&mut self, block: FencedCodeBlock<'_>) -> Option<TrustedHtml> {
         let mut escaped = Vec::with_capacity(block.code.len());
-        ferromark::escape::escape_text_into(&mut escaped, block.code.as_bytes());
+        escape_text_into(&mut escaped, block.code.as_bytes());
         let escaped = String::from_utf8(escaped).expect("HTML escaping preserves UTF-8");
         Some(TrustedHtml::from_trusted(format!(
             "<pre class=\"highlighted\"><code>{escaped}</code></pre>\n"
