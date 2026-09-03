@@ -94,6 +94,11 @@ impl ReferenceResolutionBudget {
         self.remaining = remaining;
         true
     }
+
+    #[inline]
+    pub(crate) const fn limit_exceeded(&self) -> bool {
+        self.exhausted
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -137,6 +142,28 @@ pub fn resolve_links_into(
     inactive_opens: &mut Vec<bool>,
     used_closes: &mut Vec<bool>,
 ) {
+    let _ = resolve_links_into_with_limits(
+        text,
+        open_brackets,
+        close_brackets,
+        out_links,
+        formed_opens,
+        inactive_opens,
+        used_closes,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn resolve_links_into_with_limits(
+    text: &[u8],
+    open_brackets: &[(u32, bool)],
+    close_brackets: &[u32],
+    out_links: &mut Vec<Link>,
+    formed_opens: &mut Vec<bool>,
+    inactive_opens: &mut Vec<bool>,
+    used_closes: &mut Vec<bool>,
+) -> bool {
+    let mut destination_parentheses_limit_exceeded = false;
     out_links.clear();
     // Track opens that have formed links (consumed with their close)
     formed_opens.clear();
@@ -170,7 +197,11 @@ pub fn resolve_links_into(
             if after_close < text.len() && text[after_close] == b'(' {
                 // Try to parse link destination
                 if let Some((url_start, url_end, title_start, title_end, end)) =
-                    parse_link_destination(text, after_close + 1)
+                    parse_link_destination(
+                        text,
+                        after_close + 1,
+                        &mut destination_parentheses_limit_exceeded,
+                    )
                 {
                     out_links.push(Link {
                         start: if is_image { open_pos - 1 } else { open_pos },
@@ -219,6 +250,7 @@ pub fn resolve_links_into(
 
     // Sort by start position
     out_links.sort_by_key(|l| l.start);
+    destination_parentheses_limit_exceeded
 }
 
 /// Resolve reference-style links/images using link reference definitions.
@@ -293,6 +325,7 @@ pub fn resolve_reference_links_into(
     let mut candidate_limit = open_brackets.len();
     for (open_idx, &(open_pos, is_image)) in open_brackets.iter().enumerate() {
         if work_budget.remaining == 0 {
+            work_budget.exhausted = true;
             candidate_limit = open_idx;
             break;
         }
@@ -320,6 +353,9 @@ pub fn resolve_reference_links_into(
         let count = candidate_prefix[open_idx] + usize::from(!is_image && candidate.is_some());
         candidate_prefix.push(count);
         if work_budget.remaining == 0 {
+            if open_idx + 1 < open_brackets.len() {
+                work_budget.exhausted = true;
+            }
             candidate_limit = open_idx + 1;
             break;
         }
@@ -588,6 +624,7 @@ fn parse_ref_label_immediate(
 fn parse_link_destination(
     text: &[u8],
     start: usize,
+    destination_parentheses_limit_exceeded: &mut bool,
 ) -> Option<(usize, usize, Option<usize>, Option<usize>, usize)> {
     let mut pos = start;
     let len = text.len();
@@ -629,6 +666,7 @@ fn parse_link_destination(
                 b'(' => {
                     paren_depth += 1;
                     if paren_depth > limits::MAX_LINK_PAREN_DEPTH as u32 {
+                        *destination_parentheses_limit_exceeded = true;
                         return None;
                     }
                     pos += 1;

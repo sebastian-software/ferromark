@@ -1,7 +1,7 @@
 //! Block parser implementation.
 
 use crate::cursor::Cursor;
-use crate::limits;
+use crate::limits::{self, ResourceLimit, ResourceLimitReport};
 use crate::range::offset_to_u32;
 use crate::{InputSizeError, Range, validate_input_size};
 use smallvec::SmallVec;
@@ -222,6 +222,8 @@ pub struct BlockParser<'a> {
     definition_blank_before_next: bool,
     /// Blank-line state captured for the physical line currently being parsed.
     definition_current_line_loose: bool,
+    /// Resource-limit fallbacks used while parsing this document.
+    resource_limits: ResourceLimitReport,
 }
 
 impl<'a> BlockParser<'a> {
@@ -293,6 +295,7 @@ impl<'a> BlockParser<'a> {
             pending_definition_term: None,
             definition_blank_before_next: false,
             definition_current_line_loose: false,
+            resource_limits: ResourceLimitReport::default(),
         }
     }
 
@@ -338,6 +341,12 @@ impl<'a> BlockParser<'a> {
         // Close all open containers
         self.close_all_containers(events);
         self.close_all_definition_lists(events);
+    }
+
+    /// Return resource-limit fallbacks used while parsing this document.
+    #[must_use]
+    pub const fn resource_limits(&self) -> ResourceLimitReport {
+        self.resource_limits
     }
 
     /// Parse blocks and return internal metadata for each fenced code start.
@@ -692,14 +701,17 @@ impl<'a> BlockParser<'a> {
             };
             let line = &self.input[save_pos..line_end];
 
-            if let Some(alignments) = Self::is_delimiter_row(line)
+            if let Some((alignments, delimiter_truncated)) = Self::is_delimiter_row(line)
                 && !self.paragraph_lines.is_empty()
             {
                 let last_para_line = self.paragraph_lines.last().unwrap();
                 let header_line = last_para_line.slice(self.input);
-                let header_cells = self.table_cells(header_line);
+                let (header_cells, header_truncated) = self.table_cells(header_line);
 
                 if Self::table_width(&header_cells) == alignments.len() {
+                    if delimiter_truncated || header_truncated {
+                        self.resource_limits.record(ResourceLimit::TableColumns);
+                    }
                     let dash_counts = self
                         .options
                         .table_column_widths
@@ -724,19 +736,23 @@ impl<'a> BlockParser<'a> {
         }
 
         // Check for new container starts (blockquote, list)
-        if indent < 4 && self.container_stack.len() < limits::MAX_BLOCK_NESTING {
-            // Check for blockquote
-            if self.try_blockquote(events) {
-                // Recursively parse the rest of the line
-                self.parse_line_content(events);
-                return;
-            }
+        if indent < 4 {
+            if self.container_stack.len() < limits::MAX_BLOCK_NESTING {
+                // Check for blockquote
+                if self.try_blockquote(events) {
+                    // Recursively parse the rest of the line
+                    self.parse_line_content(events);
+                    return;
+                }
 
-            // Check for list item - either continuing an existing list or starting new
-            // Pass the pre-marker indent so content_indent can be calculated correctly
-            if self.try_list_item(indent, events) {
-                self.parse_line_content(events);
-                return;
+                // Check for list item - either continuing an existing list or starting new
+                // Pass the pre-marker indent so content_indent can be calculated correctly
+                if self.try_list_item(indent, events) {
+                    self.parse_line_content(events);
+                    return;
+                }
+            } else {
+                self.record_block_nesting_limit_if_needed();
             }
         }
 
@@ -1083,14 +1099,17 @@ impl<'a> BlockParser<'a> {
                 };
                 let line = &self.input[save_pos..line_end];
 
-                if let Some(alignments) = Self::is_delimiter_row(line) {
+                if let Some((alignments, delimiter_truncated)) = Self::is_delimiter_row(line) {
                     // Check cell count of the last paragraph line matches
                     if !self.paragraph_lines.is_empty() {
                         let last_para_line = self.paragraph_lines.last().unwrap();
                         let header_line = last_para_line.slice(self.input);
-                        let header_cells = self.table_cells(header_line);
+                        let (header_cells, header_truncated) = self.table_cells(header_line);
 
                         if Self::table_width(&header_cells) == alignments.len() {
+                            if delimiter_truncated || header_truncated {
+                                self.resource_limits.record(ResourceLimit::TableColumns);
+                            }
                             let dash_counts = self
                                 .options
                                 .table_column_widths
@@ -1144,6 +1163,8 @@ impl<'a> BlockParser<'a> {
                     self.parse_line_content(events);
                     return;
                 }
+            } else {
+                self.record_block_nesting_limit_if_needed();
             }
 
             // Check for HTML block
@@ -1863,13 +1884,9 @@ impl<'a> BlockParser<'a> {
         // Parse digits
         while let Some(b) = self.cursor.peek() {
             if b.is_ascii_digit() {
-                if digits >= limits::MAX_LIST_MARKER_DIGITS {
-                    // Too many digits, reset and return
-                    self.cursor = Cursor::new_at(self.input, start);
-                    self.current_col = start_col;
-                    return None;
+                if digits < limits::MAX_LIST_MARKER_DIGITS {
+                    num = num * 10 + (b - b'0') as u32;
                 }
-                num = num * 10 + (b - b'0') as u32;
                 digits += 1;
                 parser_cursor_bump!(self.cursor);
                 self.current_col += 1;
@@ -1879,6 +1896,21 @@ impl<'a> BlockParser<'a> {
         }
 
         if digits == 0 {
+            return None;
+        }
+
+        if digits > limits::MAX_LIST_MARKER_DIGITS {
+            let is_marker = matches!(self.cursor.peek(), Some(b'.' | b')'))
+                && self
+                    .input
+                    .get(self.cursor.offset() + 1)
+                    .is_none_or(|byte| matches!(byte, b' ' | b'\t' | b'\n' | b'\r'));
+            if is_marker {
+                self.resource_limits
+                    .record(ResourceLimit::OrderedListMarkerDigits);
+            }
+            self.cursor = Cursor::new_at(self.input, start);
+            self.current_col = start_col;
             return None;
         }
 
@@ -1943,6 +1975,45 @@ impl<'a> BlockParser<'a> {
         // relative_content_indent = digits + delimiter(1) + cols_after_marker
         let relative_content_indent = digits + 1 + cols_after_marker;
         Some((num, relative_content_indent, delimiter))
+    }
+
+    /// Record a syntactically plausible container marker left literal because
+    /// the parser has already reached the block nesting cap.
+    fn record_block_nesting_limit_if_needed(&mut self) {
+        let start = self.cursor.offset();
+        let line_end = self.input[start..]
+            .iter()
+            .position(|&byte| byte == b'\n')
+            .map_or(self.input.len(), |offset| start + offset);
+        let line = &self.input[start..line_end];
+        let Some(&first) = line.first() else {
+            return;
+        };
+
+        let is_container = match first {
+            b'>' => true,
+            b'-' | b'+' | b'*' => line
+                .get(1)
+                .is_none_or(|byte| matches!(byte, b' ' | b'\t' | b'\r')),
+            b'0'..=b'9' => {
+                let digit_count = line.iter().take_while(|byte| byte.is_ascii_digit()).count();
+                let delimiter = line.get(digit_count);
+                let followed_by_space = line
+                    .get(digit_count + 1)
+                    .is_none_or(|byte| matches!(byte, b' ' | b'\t' | b'\r'));
+                let is_marker = matches!(delimiter, Some(b'.' | b')')) && followed_by_space;
+                if is_marker && digit_count > limits::MAX_LIST_MARKER_DIGITS {
+                    self.resource_limits
+                        .record(ResourceLimit::OrderedListMarkerDigits);
+                }
+                is_marker
+            }
+            _ => false,
+        };
+
+        if is_container {
+            self.resource_limits.record(ResourceLimit::BlockNesting);
+        }
     }
 
     /// Start a new list item.
@@ -3163,11 +3234,11 @@ impl<'a> BlockParser<'a> {
     /// Split a table line by unescaped `|` outside backtick code spans.
     /// Returns source-relative cells trimmed of whitespace. Leading and
     /// trailing pipes are stripped and every cell has a span of one.
-    fn split_table_cells(line: &[u8]) -> SmallVec<[TableCell; 8]> {
+    fn split_table_cells(line: &[u8]) -> (SmallVec<[TableCell; 8]>, bool) {
         let mut cells = SmallVec::new();
         let len = line.len();
         if len == 0 {
-            return cells;
+            return (cells, false);
         }
 
         // Strip trailing whitespace from the line
@@ -3198,10 +3269,11 @@ impl<'a> BlockParser<'a> {
         // A line that is just a bare pipe (e.g., "|") has no content between leading/trailing
         // pipes and should not produce any cells.
         if pos >= scan_end {
-            return cells;
+            return (cells, false);
         }
 
         let mut cell_start = pos;
+        let mut truncated = false;
         loop {
             // Jump straight to the next byte that can affect cell structure;
             // everything in between is plain cell content.
@@ -3228,6 +3300,7 @@ impl<'a> BlockParser<'a> {
                 pos += 1;
                 cell_start = pos;
                 if cells.len() >= limits::MAX_TABLE_COLUMNS {
+                    truncated = pos < scan_end;
                     break;
                 }
             } else {
@@ -3235,7 +3308,7 @@ impl<'a> BlockParser<'a> {
             }
         }
 
-        cells
+        (cells, truncated)
     }
 
     /// Split a table row into semantic cells, interpreting consecutive pipes
@@ -3244,11 +3317,11 @@ impl<'a> BlockParser<'a> {
     /// Unlike ordinary GFM splitting, the final pipe is significant here:
     /// one pipe closes a one-column cell, `||` closes a two-column cell, and
     /// so on. Whitespace between pipes preserves an explicit empty cell.
-    fn split_merged_table_cells(line: &[u8]) -> SmallVec<[TableCell; 8]> {
+    fn split_merged_table_cells(line: &[u8]) -> (SmallVec<[TableCell; 8]>, bool) {
         let mut cells = SmallVec::new();
         let len = line.len();
         if len == 0 {
-            return cells;
+            return (cells, false);
         }
 
         let mut line_end = len;
@@ -3264,7 +3337,7 @@ impl<'a> BlockParser<'a> {
             pos += 1;
         }
         if pos >= line_end {
-            return cells;
+            return (cells, false);
         }
 
         let mut cell_start = pos;
@@ -3286,7 +3359,9 @@ impl<'a> BlockParser<'a> {
                     colspan: pipe_count.min(u16::MAX as usize) as u16,
                 });
                 if cells.len() >= limits::MAX_TABLE_COLUMNS || pos == line_end {
-                    return cells;
+                    let truncated =
+                        pos < line_end || Self::table_width(&cells) > limits::MAX_TABLE_COLUMNS;
+                    return (cells, truncated);
                 }
                 cell_start = pos;
             } else {
@@ -3300,7 +3375,8 @@ impl<'a> BlockParser<'a> {
             end: offset_to_u32(end),
             colspan: 1,
         });
-        cells
+        let truncated = Self::table_width(&cells) > limits::MAX_TABLE_COLUMNS;
+        (cells, truncated)
     }
 
     /// Advance past one table-cell token, treating escapes and matching
@@ -3341,7 +3417,7 @@ impl<'a> BlockParser<'a> {
         next
     }
 
-    fn table_cells(&self, line: &[u8]) -> SmallVec<[TableCell; 8]> {
+    fn table_cells(&self, line: &[u8]) -> (SmallVec<[TableCell; 8]>, bool) {
         if self.options.merged_table_cells {
             Self::split_merged_table_cells(line)
         } else {
@@ -3385,11 +3461,11 @@ impl<'a> BlockParser<'a> {
 
     /// Check if a line is a valid GFM table delimiter row.
     /// Returns column alignments if valid.
-    fn is_delimiter_row(line: &[u8]) -> Option<SmallVec<[Alignment; 8]>> {
+    fn is_delimiter_row(line: &[u8]) -> Option<(SmallVec<[Alignment; 8]>, bool)> {
         if !Self::could_be_delimiter_row(line) {
             return None;
         }
-        let cells = Self::split_table_cells(line);
+        let (cells, truncated) = Self::split_table_cells(line);
         if cells.is_empty() {
             return None;
         }
@@ -3438,13 +3514,13 @@ impl<'a> BlockParser<'a> {
             }
         }
 
-        Some(alignments)
+        Some((alignments, truncated))
     }
 
     /// Collect dash counts from a delimiter row already validated by
     /// `is_delimiter_row`.
     fn delimiter_dash_counts(line: &[u8]) -> SmallVec<[u16; 8]> {
-        let cells = Self::split_table_cells(line);
+        let (cells, _) = Self::split_table_cells(line);
         let mut dash_counts = SmallVec::new();
         for cell in &cells {
             let cell = &line[cell.start as usize..cell.end as usize];
@@ -3626,7 +3702,10 @@ impl<'a> BlockParser<'a> {
         };
 
         let line = &self.input[line_start..line_end];
-        let cells = self.table_cells(line);
+        let (cells, truncated) = self.table_cells(line);
+        if truncated {
+            self.resource_limits.record(ResourceLimit::TableColumns);
+        }
         let col_count = self.table_alignments.len();
 
         if !self.table_has_body {

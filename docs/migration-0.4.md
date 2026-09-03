@@ -155,8 +155,8 @@ impl FencedCodeRenderer for Highlighter {
 ```
 
 `parse`, `parse_with_options`, and `parse_with_renderer` now return document
-headings alongside HTML and front matter. If your code constructs or
-destructures `ParseResult`, account for `headings`:
+`headings` and a `resource_limits` report alongside HTML and front matter. If
+your code constructs or destructures `ParseResult`, account for those fields:
 
 ```rust,ignore
 // Before (0.5)
@@ -172,10 +172,12 @@ let ParseResult {
     html,
     front_matter,
     headings,
+    resource_limits,
 } = parse("# Guide");
 assert!(front_matter.is_none());
 assert!(html.contains("Guide"));
 assert_eq!(headings[0].text, "Guide");
+assert!(resource_limits.is_empty());
 ```
 
 The Node package did not remove a callable API in 0.6. It added `transform()`

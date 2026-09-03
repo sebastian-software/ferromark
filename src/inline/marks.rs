@@ -140,6 +140,8 @@ impl Mark {
 #[derive(Debug)]
 pub struct MarkBuffer {
     marks: Vec<Mark>,
+    limit_exceeded: bool,
+    code_span_limit_exceeded: bool,
 }
 
 impl MarkBuffer {
@@ -147,6 +149,8 @@ impl MarkBuffer {
     pub fn new() -> Self {
         Self {
             marks: Vec::with_capacity(64),
+            limit_exceeded: false,
+            code_span_limit_exceeded: false,
         }
     }
 
@@ -154,6 +158,8 @@ impl MarkBuffer {
     #[inline]
     pub fn clear(&mut self) {
         self.marks.clear();
+        self.limit_exceeded = false;
+        self.code_span_limit_exceeded = false;
     }
 
     /// Reserve capacity based on input length.
@@ -170,7 +176,24 @@ impl MarkBuffer {
     pub fn push(&mut self, mark: Mark) {
         if self.marks.len() < limits::MAX_INLINE_MARKS {
             self.marks.push(mark);
+        } else {
+            self.limit_exceeded = true;
         }
+    }
+
+    #[inline]
+    pub(crate) const fn limit_exceeded(&self) -> bool {
+        self.limit_exceeded
+    }
+
+    #[inline]
+    pub(crate) const fn code_span_limit_exceeded(&self) -> bool {
+        self.code_span_limit_exceeded
+    }
+
+    #[inline]
+    fn record_code_span_limit(&mut self) {
+        self.code_span_limit_exceeded = true;
     }
 
     /// Get marks slice.
@@ -303,6 +326,8 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
                         b'`',
                         flags::POTENTIAL_OPENER | flags::POTENTIAL_CLOSER,
                     ));
+                } else {
+                    buffer.record_code_span_limit();
                 }
             }
 

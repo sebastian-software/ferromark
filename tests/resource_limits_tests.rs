@@ -1,7 +1,116 @@
 use ferromark::{
-    InlineEvent, InlineParser, LinkRefDef, LinkRefStore, Options, limits, to_html,
-    to_html_with_options,
+    InlineEvent, InlineParser, LinkRefDef, LinkRefStore, Options, ResourceLimit, limits, parse,
+    parse_with_options, to_html, to_html_with_options,
 };
+
+#[test]
+fn parse_reports_each_silent_resource_limit() {
+    let nested = format!("{}content", "> ".repeat(limits::MAX_BLOCK_NESTING + 1));
+    assert!(
+        parse(&nested)
+            .resource_limits
+            .contains(ResourceLimit::BlockNesting)
+    );
+
+    let marks = "*x* ".repeat(limits::MAX_INLINE_MARKS);
+    assert!(
+        parse(&marks)
+            .resource_limits
+            .contains(ResourceLimit::InlineMarks)
+    );
+
+    let references = format!(
+        "[x]: /safe\n\n{}",
+        "[x]\n\n".repeat(limits::MAX_REFERENCE_RESOLUTION_WORK / 3 + 2)
+    );
+    assert!(
+        parse(&references)
+            .resource_limits
+            .contains(ResourceLimit::ReferenceResolutionWork)
+    );
+
+    let backticks = "`".repeat(limits::MAX_CODE_SPAN_BACKTICKS + 1);
+    assert!(
+        parse(&format!("{backticks}code{backticks}"))
+            .resource_limits
+            .contains(ResourceLimit::CodeSpanBackticks)
+    );
+
+    let parentheses = format!(
+        "[link](url{}{})",
+        "(".repeat(limits::MAX_LINK_PAREN_DEPTH + 1),
+        ")".repeat(limits::MAX_LINK_PAREN_DEPTH + 1)
+    );
+    assert!(
+        parse(&parentheses)
+            .resource_limits
+            .contains(ResourceLimit::LinkDestinationParentheses)
+    );
+
+    let marker = format!("{}. item", "1".repeat(limits::MAX_LIST_MARKER_DIGITS + 1));
+    assert!(
+        parse(&marker)
+            .resource_limits
+            .contains(ResourceLimit::OrderedListMarkerDigits)
+    );
+
+    let columns = limits::MAX_TABLE_COLUMNS + 1;
+    let header = std::iter::repeat_n("cell", columns)
+        .collect::<Vec<_>>()
+        .join(" | ");
+    let delimiter = std::iter::repeat_n("---", columns)
+        .collect::<Vec<_>>()
+        .join(" | ");
+    let table = format!("| {header} |\n| {delimiter} |\n");
+    assert!(
+        parse_with_options(&table, &Options::gfm())
+            .resource_limits
+            .contains(ResourceLimit::TableColumns)
+    );
+}
+
+#[test]
+fn parse_reports_no_limit_for_fully_processed_input() {
+    let result = parse("# Heading\n\nA [safe link](https://example.com).\n");
+
+    assert!(result.resource_limits.is_empty());
+}
+
+#[test]
+fn exact_limits_and_rejected_table_candidates_are_not_reported() {
+    let nested = format!("{}content", "> ".repeat(limits::MAX_BLOCK_NESTING));
+    assert!(parse(&nested).resource_limits.is_empty());
+
+    let marks = "*x*".repeat(limits::MAX_INLINE_MARKS / 2);
+    assert!(parse(&marks).resource_limits.is_empty());
+
+    let backticks = "`".repeat(limits::MAX_CODE_SPAN_BACKTICKS);
+    assert!(
+        parse(&format!("{backticks}code{backticks}"))
+            .resource_limits
+            .is_empty()
+    );
+
+    let parentheses = format!(
+        "[link](url{}{})",
+        "(".repeat(limits::MAX_LINK_PAREN_DEPTH),
+        ")".repeat(limits::MAX_LINK_PAREN_DEPTH)
+    );
+    assert!(parse(&parentheses).resource_limits.is_empty());
+
+    let marker = format!("{}. item", "1".repeat(limits::MAX_LIST_MARKER_DIGITS));
+    assert!(parse(&marker).resource_limits.is_empty());
+
+    let delimiter = std::iter::repeat_n("---", limits::MAX_TABLE_COLUMNS + 1)
+        .collect::<Vec<_>>()
+        .join(" | ");
+    let rejected_table = format!("one cell\n| {delimiter} |\n");
+    assert!(
+        parse_with_options(&rejected_table, &Options::gfm())
+            .resource_limits
+            .is_empty()
+    );
+}
 
 #[test]
 fn block_container_nesting_is_bounded() {

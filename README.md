@@ -259,7 +259,10 @@ underlying table columns, while a merged cell spans those columns.
 
 For documentation pipelines, `parse()` / `parse_with_options()` return the
 rendered HTML together with the raw front matter block and a list of headings
-(level, id, plain text) for table-of-contents rendering;
+(level, id, plain text) for table-of-contents rendering. Their
+`resource_limits` report identifies any bounded parser operation that fell
+back to literal or truncated output; an empty report means no such fallback
+was used.
 `parse_with_renderer()` adds the opt-in fenced-code renderer to the same pass.
 `link_base_path` prefixes internal absolute link destinations (`/…`) for sites
 deployed under a subpath; image sources and autolinks are not rewritten.
