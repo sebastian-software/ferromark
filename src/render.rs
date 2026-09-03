@@ -9,7 +9,7 @@ use memchr::memchr;
 /// Decode HTML entities with CommonMark compliance.
 /// - Replaces null bytes (from &#0;) with U+FFFD replacement character
 /// - Handles multi-codepoint entities that html_escape doesn't support
-fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
+pub(crate) fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
     let decoded = html_escape::decode_html_entities(input);
 
     // Check if we need to fix null bytes or missing multi-codepoint entities
