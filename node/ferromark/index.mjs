@@ -188,7 +188,10 @@ function loadNative() {
     return native
   }
   catch (error) {
-    if (!(error instanceof Error) || !('code' in error) || error.code !== 'MODULE_NOT_FOUND') {
+    if (hasErrorCode(error, 'ERR_DLOPEN_FAILED')) {
+      throw nativeBinaryLoadError(filename, 'the local package', target, error)
+    }
+    if (!hasErrorCode(error, 'MODULE_NOT_FOUND')) {
       throw error
     }
     localError = error
@@ -200,7 +203,10 @@ function loadNative() {
     return native
   }
   catch (error) {
-    if (!(error instanceof Error) || !('code' in error) || error.code !== 'MODULE_NOT_FOUND') {
+    if (hasErrorCode(error, 'ERR_DLOPEN_FAILED')) {
+      throw nativeBinaryLoadError(filename, `the optional package ${packageName}`, target, error)
+    }
+    if (!hasErrorCode(error, 'MODULE_NOT_FOUND')) {
       throw error
     }
     throw new Error(
@@ -208,6 +214,38 @@ function loadNative() {
       { cause: new AggregateError([localError, error], `No native binary found for ${target}`) },
     )
   }
+}
+
+/** @param {unknown} error @param {string} code */
+function hasErrorCode(error, code) {
+  return error instanceof Error && 'code' in error && error.code === code
+}
+
+/**
+ * @param {string} filename
+ * @param {string} source
+ * @param {string} target
+ * @param {unknown} cause
+ */
+function nativeBinaryLoadError(filename, source, target, cause) {
+  return new Error(
+    `ferromark could not load native binary ${filename} from ${source} for ${process.platform}/${process.arch} (ERR_DLOPEN_FAILED). ${nativeLoadHint(target)}`,
+    { cause },
+  )
+}
+
+/** @param {string} target */
+function nativeLoadHint(target) {
+  if (target.endsWith('-gnu')) {
+    return 'Check that glibc 2.17 or newer is available and that no required shared library is missing.'
+  }
+  if (target.endsWith('-musl')) {
+    return 'Check that the musl runtime is compatible and that no required shared library is missing.'
+  }
+  if (target.startsWith('win32-')) {
+    return 'Install or repair the Microsoft Visual C++ Redistributable and verify the binary architecture.'
+  }
+  return 'Check the macOS version and binary architecture, and whether quarantine or code-signing policy blocked the addon.'
 }
 
 function nativeTarget() {

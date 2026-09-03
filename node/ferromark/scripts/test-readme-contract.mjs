@@ -62,6 +62,9 @@ function assertReadmeContract(candidate) {
   assert.match(candidate, /Unsupported platform or architecture/, 'README must cover unsupported targets')
   assert.match(loader, /could not load the optional native package/, 'loader must retain missing-package diagnostics')
   assert.match(candidate, /`could not load the optional native package`/, 'README must cover missing platform packages')
+  assert.match(loader, /ERR_DLOPEN_FAILED/, 'loader must wrap native dynamic-loader failures')
+  assert.match(candidate, /glibc 2\.17/, 'README must document the GNU Linux binary baseline')
+  assert.match(candidate, /`ERR_DLOPEN_FAILED`/, 'README must cover native dynamic-loader failures')
 
   const loaderTargets = [...loader.matchAll(/'([a-z0-9]+-(?:arm64|x64)(?:-(?:gnu|musl))?)': '([a-z0-9-]+)'/g)]
     .map(([, host, target]) => ({ host, target }))

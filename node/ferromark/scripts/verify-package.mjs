@@ -22,6 +22,11 @@ assert.match(
   /endsWith\('-musl'\)[\s\S]*args\.push\('--cross-compile'\)/,
   'musl targets must use napi-rs cargo-zigbuild cross-compilation',
 )
+assert.match(
+  buildNative,
+  /includes\('-unknown-linux-gnu'\)[\s\S]*args\.push\('--use-napi-cross'\)/,
+  'GNU Linux targets must use the napi-rs glibc 2.17 cross-toolchain',
+)
 
 const extraFiles = releaseConfig.packages['.']['extra-files']
 for (const triple of packageJson.napi.targets) {

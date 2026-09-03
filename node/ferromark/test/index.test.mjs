@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
+import { copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import process from 'node:process'
 import test from 'node:test'
+import { pathToFileURL } from 'node:url'
 
 import {
   Renderer,
@@ -105,6 +110,48 @@ test('selects the musl optional package on Alpine-style Linux', () => {
   })
 
   assert.equal(result.status, 0, result.stderr)
+})
+
+test('wraps native dynamic-loader failures with platform guidance', async (t) => {
+  const target = currentNativeTarget()
+  const packageName = `ferromark-${target}`
+  const binaryName = `ferromark.${target}.node`
+  const fixture = await mkdtemp(path.join(tmpdir(), 'ferromark-loader-'))
+  const packageDir = path.join(fixture, 'node_modules', packageName)
+  const entry = path.join(fixture, 'index.mjs')
+  t.after(() => rm(fixture, { force: true, recursive: true }))
+
+  await mkdir(packageDir, { recursive: true })
+  await Promise.all([
+    copyFile(new URL('../index.mjs', import.meta.url), entry),
+    writeFile(
+      path.join(packageDir, 'package.json'),
+      JSON.stringify({ name: packageName, main: binaryName }),
+    ),
+    writeFile(path.join(packageDir, binaryName), 'not a native addon'),
+  ])
+
+  const fixtureModule = await import(pathToFileURL(entry).href)
+  assert.throws(
+    () => fixtureModule.toHtml('text'),
+    (error) => {
+      assert.ok(error instanceof Error)
+      assert.match(error.message, new RegExp(binaryName.replaceAll('.', '\\.')))
+      assert.match(error.message, new RegExp(`${process.platform}/${process.arch}`))
+      assert.match(error.message, /ERR_DLOPEN_FAILED/)
+      assert.equal(error.cause?.code, 'ERR_DLOPEN_FAILED')
+      if (process.platform === 'linux') {
+        assert.match(error.message, /glibc 2\.17|musl runtime/)
+      }
+      else if (process.platform === 'win32') {
+        assert.match(error.message, /Visual C\+\+ Redistributable/)
+      }
+      else {
+        assert.match(error.message, /quarantine or code-signing policy/)
+      }
+      return true
+    },
+  )
 })
 
 test('composes with a synchronous Ferriki-compatible highlighter', () => {
@@ -252,3 +299,24 @@ test('highlighter receives fence meta as Shiki-style __raw', () => {
     { lang: 'ts', theme: 'github-dark' },
   ])
 })
+
+function currentNativeTarget() {
+  const report = process.report?.getReport?.()
+  const libc = report?.header?.glibcVersionRuntime ? 'gnu' : 'musl'
+  const key = process.platform === 'linux'
+    ? `${process.platform}-${process.arch}-${libc}`
+    : `${process.platform}-${process.arch}`
+  const targets = {
+    'darwin-arm64': 'darwin-arm64',
+    'darwin-x64': 'darwin-x64',
+    'linux-arm64-gnu': 'linux-arm64-gnu',
+    'linux-arm64-musl': 'linux-arm64-musl',
+    'linux-x64-gnu': 'linux-x64-gnu',
+    'linux-x64-musl': 'linux-x64-musl',
+    'win32-arm64': 'win32-arm64-msvc',
+    'win32-x64': 'win32-x64-msvc',
+  }
+  const target = targets[key]
+  assert.ok(target, `test requires a supported native target, received ${key}`)
+  return target
+}

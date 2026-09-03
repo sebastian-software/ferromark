@@ -11,7 +11,9 @@ npm install ferromark
 
 The package requires Node.js 22 or newer. It installs one platform-specific
 native package for glibc or musl Linux, macOS, and Windows on x64 and arm64;
-musl support includes Alpine Linux. There is no WASM fallback.
+musl support includes Alpine Linux. GNU Linux binaries target glibc 2.17 or
+newer, although the installed Node.js runtime may impose a newer requirement.
+There is no WASM fallback.
 
 ```js
 import { toHtml } from 'ferromark'
@@ -141,6 +143,7 @@ The native binding loads when constructing `Renderer` or on the first call to
 | Node.js below 22 | Upgrade to Node.js 22 or newer; this is the package's declared engine requirement. |
 | Unsupported platform or architecture | Use macOS, Windows, or glibc/musl Linux on x64 or arm64. |
 | `could not load the optional native package` | Reinstall without `--omit=optional` and verify that your lockfile includes ferromark's package for the current platform. |
+| `ERR_DLOPEN_FAILED` | Read the wrapped loader message for the exact binary and platform. On GNU Linux, verify glibc 2.17 or newer and required shared libraries; on Windows, install or repair the Microsoft Visual C++ Redistributable; on macOS, check architecture, OS compatibility, quarantine, and code-signing policy. The original loader error is available as `error.cause`. |
 
 This package does not include a WASM fallback, so unsupported environments need
 one of the supported native runtimes rather than a JavaScript fallback.
