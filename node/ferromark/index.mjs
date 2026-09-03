@@ -54,6 +54,24 @@ export function toHtml(markdown, options) {
   return loadNative().toHtml(markdown, options)
 }
 
+/** Reusable Markdown renderer with fixed options. */
+export class Renderer {
+  /** @type {NativeRendererSession} */
+  #native
+
+  /** @param {import('./index.mjs').Options} [options] */
+  constructor(options) {
+    validateOptions(options)
+    const NativeRenderer = loadNative().Renderer
+    this.#native = new NativeRenderer(options)
+  }
+
+  /** @param {string} markdown */
+  toHtml(markdown) {
+    return this.#native.toHtml(markdown)
+  }
+}
+
 /**
  * @param {string} markdown
  * @param {import('./index.mjs').Options} [options]
@@ -120,13 +138,15 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
 }
 
 /**
- * @typedef {(code: string, language?: string | null, meta?: string | null) => string | null} NativeRenderer
+ * @typedef {(code: string, language?: string | null, meta?: string | null) => string | null} NativeFencedCodeRenderer
+ * @typedef {{ toHtml(markdown: string): string }} NativeRendererSession
  * @typedef {{
+ *   Renderer: new (options?: import('./index.mjs').Options) => NativeRendererSession
  *   toHtml(markdown: string, options?: import('./index.mjs').Options): string
  *   toHtmlWithRenderer(
  *     markdown: string,
  *     options: import('./index.mjs').Options | undefined,
- *     renderer: NativeRenderer,
+ *     renderer: NativeFencedCodeRenderer,
  *   ): string
  *   transform(
  *     markdown: string,
@@ -135,7 +155,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   transformWithRenderer(
  *     markdown: string,
  *     options: import('./index.mjs').Options | undefined,
- *     renderer: NativeRenderer,
+ *     renderer: NativeFencedCodeRenderer,
  *   ): import('./index.mjs').TransformResult
  * }} NativeBindings
  */

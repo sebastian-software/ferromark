@@ -1,5 +1,5 @@
 import type { CodeHighlighter, Options } from '../index.mjs'
-import { toHtml, toHtmlWithHighlighter } from '../index.mjs'
+import { Renderer, toHtml, toHtmlWithHighlighter } from '../index.mjs'
 
 const options: Options = {
   renderPolicy: 'untrusted',
@@ -16,6 +16,7 @@ const highlighter: CodeHighlighter = {
 }
 
 toHtml('# Typed', options)
+new Renderer(options).toHtml('# Reused')
 toHtmlWithHighlighter('```ts\nconst typed = true\n```', highlighter, {
   theme: 'github-dark',
 })

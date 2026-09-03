@@ -2,10 +2,33 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
-import { toHtml, toHtmlWithHighlighter, transform, transformWithHighlighter } from '../index.mjs'
+import {
+  Renderer,
+  toHtml,
+  toHtmlWithHighlighter,
+  transform,
+  transformWithHighlighter,
+} from '../index.mjs'
 
 test('renders Markdown through the native binding', () => {
   assert.equal(toHtml('# Hello'), '<h1 id="hello">Hello</h1>\n')
+})
+
+test('reuses a renderer without leaking document state', () => {
+  const renderer = new Renderer({ footnotes: true })
+
+  assert.match(renderer.toHtml('# Same\n\n# Same\n\nA[^a]\n\n[^a]: First'), /id="same-1"/)
+  assert.equal(
+    renderer.toHtml('# Same\n\n[local][ref]\n\n[^b]: Unused'),
+    '<h1 id="same">Same</h1>\n<p>[local][ref]</p>\n',
+  )
+})
+
+test('validates reusable renderer options at construction', () => {
+  assert.throws(
+    () => new Renderer({ taskList: true }),
+    error => error instanceof TypeError && /unknown option.*taskList/i.test(error.message),
+  )
 })
 
 test('maps typed options to the Rust surface', () => {

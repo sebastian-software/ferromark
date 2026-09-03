@@ -48,8 +48,13 @@ function assertReadmeContract(candidate) {
   )
   assert.match(candidate, /\[`Options`\]\(\.\/index\.d\.mts\)/, 'README must link the typed options')
 
+  assert.match(candidate, /^## Repeated rendering$/m, 'README must document reusable rendering')
+  assert.match(candidate, /new Renderer\(/, 'README must show the reusable Renderer API')
+  assert.match(loader, /export class Renderer/, 'loader must export the reusable Renderer API')
+  assert.match(declarations, /export declare class Renderer/, 'declarations must expose Renderer')
+
   assert.match(candidate, /^## Troubleshooting native loading$/m, 'README must explain lazy loader failures')
-  assert.match(candidate, /first call to `toHtml\(\)`, `transform\(\)`, or a\s+highlighter helper/i)
+  assert.match(candidate, /constructing `Renderer` or on the first call to\s+`toHtml\(\)`, `transform\(\)`, or a highlighter helper/i)
 
   assert.match(loader, /linux-arm64-musl/, 'loader must select the arm64 musl package')
   assert.match(loader, /linux-x64-musl/, 'loader must select the x64 musl package')

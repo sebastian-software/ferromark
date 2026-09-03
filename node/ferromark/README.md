@@ -19,6 +19,22 @@ import { toHtml } from 'ferromark'
 const html = toHtml('# Hello')
 ```
 
+## Repeated rendering
+
+Create a `Renderer` when processing many documents with the same options. It
+retains native parser scratch allocations between calls while keeping each
+document's headings, references, and footnotes isolated.
+
+```js
+import { Renderer } from 'ferromark'
+
+const renderer = new Renderer({ headingIds: true })
+const first = renderer.toHtml('# First')
+const second = renderer.toHtml('# Second')
+```
+
+Create one renderer per worker; its options are fixed at construction.
+
 ## Untrusted by default
 
 `toHtml()` and `transform()` default to `renderPolicy: 'untrusted'`. Raw HTML
@@ -112,8 +128,8 @@ Image sources and autolinks are not rewritten.
 
 ## Troubleshooting native loading
 
-The native binding loads on the first call to `toHtml()`, `transform()`, or a
-highlighter helper, not when this package is imported. If that call fails:
+The native binding loads when constructing `Renderer` or on the first call to
+`toHtml()`, `transform()`, or a highlighter helper. If that load fails:
 
 | Message or environment | Resolution |
 | --- | --- |

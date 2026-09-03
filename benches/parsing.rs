@@ -310,12 +310,39 @@ fn bench_buffer_reuse(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_renderer_session(c: &mut Criterion) {
+    let mut group = c.benchmark_group("renderer_session");
+
+    let input = samples::TINY;
+    group.throughput(Throughput::Bytes(input.len() as u64));
+
+    group.bench_function("output_buffer_only", |b| {
+        let mut buffer = Vec::with_capacity(input.len() * 2);
+        b.iter(|| {
+            ferromark::to_html_into(black_box(input), &mut buffer);
+            black_box(&buffer);
+        })
+    });
+
+    group.bench_function("parser_and_output_buffers", |b| {
+        let mut renderer = ferromark::Renderer::new();
+        let mut buffer = Vec::with_capacity(input.len() * 2);
+        b.iter(|| {
+            renderer.render_into(black_box(input), &mut buffer);
+            black_box(&buffer);
+        })
+    });
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
     bench_parsing,
     bench_extensions,
     bench_escaping,
     bench_pathological,
-    bench_buffer_reuse
+    bench_buffer_reuse,
+    bench_renderer_session
 );
 criterion_main!(benches);
