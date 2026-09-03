@@ -1,0 +1,59 @@
+name: Bug report
+description: Report reproducible incorrect behavior in ferromark
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Thanks for reporting a bug. For security vulnerabilities, follow
+        SECURITY.md instead of opening a public issue.
+  - type: input
+    id: version
+    attributes:
+      label: ferromark version
+      description: The crate or npm package version where the problem occurs.
+      placeholder: 0.7.0
+    validations:
+      required: true
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Interface
+      options:
+        - Rust crate
+        - Node.js package
+        - CLI
+        - MDX
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: Minimal input and configuration
+      description: Include the smallest Markdown input and options that reproduce the issue.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the rendered output or error and relevant environment details.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I reproduced this with the latest published release.
+          required: true
+        - label: This report does not disclose a security vulnerability.
+          required: true
