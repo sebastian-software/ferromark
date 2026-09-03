@@ -10,6 +10,7 @@ CONTRIBUTING_PATH = File.join(REPOSITORY_ROOT, 'CONTRIBUTING.md')
 BENCHMARK_LOCK_PATH = File.join(REPOSITORY_ROOT, 'benchmarks/md4c-comparison/Cargo.lock')
 BENCHMARK_BUILD_PATH = File.join(REPOSITORY_ROOT, 'benchmarks/md4c-comparison/build.rs')
 PERFORMANCE_PLAN_PATH = File.join(REPOSITORY_ROOT, 'docs/arch/ARCH-PLAN-001-performance-opportunities.md')
+PROJECT_STRUCTURE_FILES = %w[highlight.rs events.rs strict.rs].freeze
 
 def fail_contract(message)
   raise ContractError, "README structure contract: #{message}"
@@ -111,6 +112,13 @@ def validate(
   unless document.include?('baseline SSE2 (x86-64)')
     fail_contract('README must describe the x86-64 inline SIMD path')
   end
+
+  project_structure = section(document, 'Project structure')
+  PROJECT_STRUCTURE_FILES.each do |filename|
+    unless project_structure.include?(filename)
+      fail_contract("Project structure must include #{filename}")
+    end
+  end
 end
 
 def assert_rejected(label)
@@ -165,6 +173,11 @@ def self_test(document)
       document,
       performance_plan: performance_plan.gsub('MD4C_DIR=/path/to/md4c cargo bench --locked', 'cargo bench')
     )
+  end
+  PROJECT_STRUCTURE_FILES.each do |filename|
+    assert_rejected("project structure #{filename}") do
+      validate(document.sub(filename, 'omitted-source-file.rs'))
+    end
   end
 end
 
