@@ -43,6 +43,21 @@ const second = renderer.toHtml('# Second')
 
 Create one renderer per worker; its options are fixed at construction.
 
+## Buffer output
+
+Use `toHtmlBuffer()` when the rendered HTML goes directly to a byte-oriented
+consumer such as an HTTP response. It returns a UTF-8 Node.js `Buffer` backed by
+the native output allocation, avoiding the extra JavaScript string transcode.
+
+```js
+import { toHtmlBuffer } from 'ferromark'
+
+response.end(toHtmlBuffer('# Hello'))
+```
+
+Reusable renderers provide the same output path through
+`renderer.toHtmlBuffer(markdown)`.
+
 ## Untrusted by default
 
 `toHtml()` and `transform()` default to `renderPolicy: 'untrusted'`. Raw HTML
@@ -142,7 +157,8 @@ Image sources and autolinks are not rewritten.
 ## Troubleshooting native loading
 
 The native binding loads when constructing `Renderer` or on the first call to
-`toHtml()`, `transform()`, or a highlighter helper. If that load fails:
+`toHtml()`, `toHtmlBuffer()`, `transform()`, or a highlighter helper. If that
+load fails:
 
 | Message or environment | Resolution |
 | --- | --- |

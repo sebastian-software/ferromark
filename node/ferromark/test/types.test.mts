@@ -1,5 +1,6 @@
+import type { Buffer } from 'node:buffer'
 import type { CodeHighlighter, Options } from '../index.mjs'
-import { Renderer, toHtml, toHtmlWithHighlighter } from '../index.mjs'
+import { Renderer, toHtml, toHtmlBuffer, toHtmlWithHighlighter } from '../index.mjs'
 
 const options: Options = {
   renderPolicy: 'untrusted',
@@ -16,7 +17,12 @@ const highlighter: CodeHighlighter = {
 }
 
 toHtml('# Typed', options)
-new Renderer(options).toHtml('# Reused')
+const output: Buffer = toHtmlBuffer('# Buffered', options)
+output.toString('utf8')
+const renderer = new Renderer(options)
+renderer.toHtml('# Reused')
+const reusedOutput: Buffer = renderer.toHtmlBuffer('# Buffered and reused')
+reusedOutput.toString('utf8')
 toHtmlWithHighlighter('```ts\nconst typed = true\n```', highlighter, {
   theme: 'github-dark',
   onHighlightError(error, { lang }) {

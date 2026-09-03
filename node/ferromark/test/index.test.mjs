@@ -11,6 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   Renderer,
   toHtml,
+  toHtmlBuffer,
   toHtmlWithHighlighter,
   transform,
   transformWithHighlighter,
@@ -21,12 +22,27 @@ test('renders Markdown through the native binding', () => {
   assert.equal(toHtml('# Hello'), '<h1 id="hello">Hello</h1>\n')
 })
 
+test('renders UTF-8 HTML directly into Node.js Buffers', () => {
+  const expected = '<h1 id="grüße">Grüße</h1>\n'
+  const output = toHtmlBuffer('# Grüße')
+
+  assert.ok(Buffer.isBuffer(output))
+  assert.equal(output.toString('utf8'), expected)
+
+  const renderer = new Renderer({ headingIds: false })
+  const reusedOutput = renderer.toHtmlBuffer('# Grüße')
+  assert.ok(Buffer.isBuffer(reusedOutput))
+  assert.equal(reusedOutput.toString('utf8'), '<h1>Grüße</h1>\n')
+})
+
 test('rejects non-string Markdown across every public render entry point', () => {
   const highlighter = { codeToHtml: () => '<pre><code></code></pre>\n' }
   const calls = [
     () => toHtml(123),
+    () => toHtmlBuffer(123),
     () => transform(null),
     () => new Renderer().toHtml({}),
+    () => new Renderer().toHtmlBuffer({}),
     () => toHtmlWithHighlighter(123, highlighter, { theme: 'dark' }),
     () => transformWithHighlighter(123, highlighter, { theme: 'dark' }),
   ]
@@ -101,6 +117,7 @@ test('rejects unknown option keys across every public render entry point', () =>
   }
   const calls = [
     () => toHtml('text', { taskList: true }),
+    () => toHtmlBuffer('text', { taskList: true }),
     () => transform('text', { footnote: true }),
     () => toHtmlWithHighlighter('text', highlighter, { theme: 'dark' }, { taskList: true }),
     () => transformWithHighlighter('text', highlighter, { theme: 'dark' }, { footnote: true }),

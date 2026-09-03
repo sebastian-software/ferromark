@@ -2,7 +2,8 @@ use ferromark::{
     FencedCodeBlock, FencedCodeRenderer, InputSizeError, Options as CoreOptions, RenderPolicy,
     Renderer as CoreRenderer, TrustedHtml,
 };
-use napi::bindgen_prelude::{Error, FnArgs, Function, Result, Status};
+use napi::JsValue;
+use napi::bindgen_prelude::{Buffer, Error, FnArgs, FromNapiValue, Function, Result, Status};
 use napi_derive::napi;
 
 #[cfg(feature = "panic-test")]
@@ -102,6 +103,16 @@ pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
         .map_err(input_size_error)
 }
 
+/// Render Markdown into a Node.js Buffer without transcoding the HTML to a JS string.
+#[napi(catch_unwind)]
+pub fn to_html_buffer(markdown: String, options: Option<Options>) -> Result<Buffer> {
+    let options = core_options(options)?;
+    let mut output = Vec::new();
+    ferromark::try_to_html_into_with_options(&markdown, &mut output, &options)
+        .map_err(input_size_error)?;
+    Ok(output.into())
+}
+
 /// Reusable Markdown-to-HTML renderer with fixed options.
 #[napi]
 pub struct Renderer {
@@ -122,6 +133,16 @@ impl Renderer {
     #[napi(catch_unwind, js_name = "toHtml")]
     pub fn to_html(&mut self, markdown: String) -> Result<String> {
         self.inner.try_render(&markdown).map_err(input_size_error)
+    }
+
+    /// Render into a Node.js Buffer and retain parser scratch allocations.
+    #[napi(catch_unwind, js_name = "toHtmlBuffer")]
+    pub fn to_html_buffer(&mut self, markdown: String) -> Result<Buffer> {
+        let mut output = Vec::new();
+        self.inner
+            .try_render_into(&markdown, &mut output)
+            .map_err(input_size_error)?;
+        Ok(output.into())
     }
 }
 
@@ -172,6 +193,12 @@ pub fn transform(markdown: String, options: Option<Options>) -> Result<Transform
         .map_err(input_size_error)
 }
 
+type BorrowedCallback<'scope, 'input> = Function<
+    'scope,
+    FnArgs<(&'input str, Option<&'input str>, Option<&'input str>)>,
+    Option<String>,
+>;
+
 #[allow(clippy::type_complexity)]
 struct CallbackRenderer<'scope> {
     callback: Function<'scope, FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
@@ -182,6 +209,21 @@ impl CallbackRenderer<'_> {
     fn finish<T>(self, result: Result<T>) -> Result<T> {
         self.error.map_or(result, Err)
     }
+
+    fn call(
+        &self,
+        code: &str,
+        language: Option<&str>,
+        meta: Option<&str>,
+    ) -> Result<Option<String>> {
+        let value = self.callback.value();
+        // SAFETY: Function argument types only control Rust-to-JavaScript
+        // conversion. The reborrowed handle is the same validated JS function,
+        // and its shorter lifetime cannot escape this synchronous call.
+        let callback: BorrowedCallback<'_, '_> =
+            unsafe { Function::from_napi_value(value.env, value.value)? };
+        callback.call(FnArgs::from((code, language, meta)))
+    }
 }
 
 impl FencedCodeRenderer for CallbackRenderer<'_> {
@@ -190,11 +232,7 @@ impl FencedCodeRenderer for CallbackRenderer<'_> {
             return None;
         }
 
-        match self.callback.call(FnArgs::from((
-            block.code.to_owned(),
-            block.language.map(str::to_owned),
-            block.meta.map(str::to_owned),
-        ))) {
+        match self.call(block.code, block.language, block.meta) {
             Ok(html) => html.map(TrustedHtml::from_trusted),
             Err(error) => {
                 self.error = Some(error);
