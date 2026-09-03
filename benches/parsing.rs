@@ -60,6 +60,10 @@ Thank you for reading!
     pub const COMMONMARK_5K: &str = include_str!("fixtures/commonmark-5k.md");
     pub const COMMONMARK_20K: &str = include_str!("fixtures/commonmark-20k.md");
     pub const COMMONMARK_50K: &str = include_str!("fixtures/commonmark-50k.md");
+    pub const COMMONMARK_1M: &str = include_str!("fixtures/commonmark-1m.md");
+
+    /// Keep each pathological case directly comparable at the same input size.
+    pub const PATHOLOGICAL_BYTES: usize = 64 * 1024;
 
     /// Table-heavy document (~5KB)
     pub const TABLES_5K: &str = include_str!("fixtures/tables-5k.md");
@@ -118,6 +122,55 @@ to handle longer documents efficiently.
         "> ".repeat(100) + "deep\n"
     }
 
+    /// Classic nested-bracket stress case for link/reference resolution.
+    pub fn pathological_brackets() -> String {
+        let half = PATHOLOGICAL_BYTES / 2;
+        "[".repeat(half) + &"]".repeat(half)
+    }
+
+    /// Unmatched backtick runs of every supported length, split into paragraphs.
+    pub fn pathological_backticks() -> String {
+        let mut paragraph = String::new();
+        for run_length in 1..=ferromark::limits::MAX_CODE_SPAN_BACKTICKS {
+            paragraph.push_str(&"`".repeat(run_length));
+            paragraph.push('x');
+        }
+        paragraph.push_str("\n\n");
+        repeat_to_budget(&paragraph)
+    }
+
+    /// Many unique, valid definitions exercise label normalization and storage.
+    pub fn pathological_reference_definitions() -> String {
+        let mut input = String::with_capacity(PATHOLOGICAL_BYTES);
+        let mut index = 0;
+        loop {
+            let definition =
+                format!("[reference-{index:05}-xxxxxxxxxxxxxxxx]: https://example.com/{index}\n");
+            if input.len() + definition.len() > PATHOLOGICAL_BYTES {
+                break;
+            }
+            input.push_str(&definition);
+            index += 1;
+        }
+        input.push_str(&" ".repeat(PATHOLOGICAL_BYTES - input.len()));
+        input
+    }
+
+    /// Repeated invalid tag starts exercise the inline HTML candidate scanner.
+    pub fn pathological_html_starts() -> String {
+        repeat_to_budget("<not-a-tag ")
+    }
+
+    fn repeat_to_budget(pattern: &str) -> String {
+        debug_assert!(pattern.is_ascii());
+        let repetitions = PATHOLOGICAL_BYTES / pattern.len();
+        let remainder = PATHOLOGICAL_BYTES % pattern.len();
+        let mut input = pattern.repeat(repetitions);
+        input.push_str(&pattern[..remainder]);
+        debug_assert_eq!(input.len(), PATHOLOGICAL_BYTES);
+        input
+    }
+
     /// Presentation-like input that exercises semantic slide boundaries.
     pub fn thematic_breaks() -> String {
         "Slide content with **formatting**.\n\n---\n\n".repeat(500)
@@ -169,6 +222,12 @@ fn bench_parsing(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(commonmark_50k.len() as u64));
     group.bench_function("commonmark_50k", |b| {
         b.iter(|| ferromark::to_html(black_box(commonmark_50k)))
+    });
+
+    let commonmark_1m = samples::COMMONMARK_1M;
+    group.throughput(Throughput::Bytes(commonmark_1m.len() as u64));
+    group.bench_function("commonmark_1m", |b| {
+        b.iter(|| ferromark::to_html(black_box(commonmark_1m)))
     });
 
     // Table-heavy document
@@ -294,6 +353,30 @@ fn bench_pathological(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(nested.len() as u64));
     group.bench_function("deep_nesting", |b| {
         b.iter(|| ferromark::to_html(black_box(&nested)))
+    });
+
+    let brackets = samples::pathological_brackets();
+    group.throughput(Throughput::Bytes(brackets.len() as u64));
+    group.bench_function("bracket_explosion_64k", |b| {
+        b.iter(|| ferromark::to_html(black_box(&brackets)))
+    });
+
+    let backticks = samples::pathological_backticks();
+    group.throughput(Throughput::Bytes(backticks.len() as u64));
+    group.bench_function("unmatched_backticks_64k", |b| {
+        b.iter(|| ferromark::to_html(black_box(&backticks)))
+    });
+
+    let reference_definitions = samples::pathological_reference_definitions();
+    group.throughput(Throughput::Bytes(reference_definitions.len() as u64));
+    group.bench_function("reference_definitions_64k", |b| {
+        b.iter(|| ferromark::to_html(black_box(&reference_definitions)))
+    });
+
+    let html_starts = samples::pathological_html_starts();
+    group.throughput(Throughput::Bytes(html_starts.len() as u64));
+    group.bench_function("invalid_html_starts_64k", |b| {
+        b.iter(|| ferromark::to_html(black_box(&html_starts)))
     });
 
     group.finish();

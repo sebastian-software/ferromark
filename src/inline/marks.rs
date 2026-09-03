@@ -225,9 +225,10 @@ impl MarkBuffer {
         &mut self.marks
     }
 
-    /// Number of marks.
+    /// Number of collected marks exposed to profiling instrumentation.
+    #[cfg(feature = "profiling")]
     #[inline]
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.marks.len()
     }
 
@@ -931,7 +932,7 @@ mod tests {
         let mut buffer = MarkBuffer::new();
         collect_marks(b"hello `code` world", &mut buffer);
 
-        assert_eq!(buffer.len(), 2);
+        assert_eq!(buffer.marks().len(), 2);
         assert_eq!(buffer.marks()[0].ch, b'`');
         assert_eq!(buffer.marks()[0].len(), 1);
         assert_eq!(buffer.marks()[1].ch, b'`');
@@ -942,7 +943,7 @@ mod tests {
         let mut buffer = MarkBuffer::new();
         collect_marks(b"hello *world*", &mut buffer);
 
-        assert_eq!(buffer.len(), 2);
+        assert_eq!(buffer.marks().len(), 2);
         assert!(buffer.marks()[0].can_open());
         assert!(buffer.marks()[1].can_close());
     }
@@ -952,7 +953,7 @@ mod tests {
         let mut buffer = MarkBuffer::new();
         collect_marks(b"hello \\* world", &mut buffer);
 
-        assert_eq!(buffer.len(), 1);
+        assert_eq!(buffer.marks().len(), 1);
         assert_eq!(buffer.marks()[0].ch, b'\\');
     }
 
@@ -989,7 +990,7 @@ mod tests {
         // Since neither can open nor close, they won't be added as marks at all
         // This is correct - they shouldn't form emphasis
         assert_eq!(
-            buffer.len(),
+            buffer.marks().len(),
             0,
             "No marks should be collected when asterisks are surrounded by whitespace"
         );
@@ -1006,7 +1007,7 @@ mod tests {
         collect_marks(text, &mut buffer);
 
         // Should have 2 marks for the asterisks
-        assert_eq!(buffer.len(), 2);
+        assert_eq!(buffer.marks().len(), 2);
         let first = &buffer.marks()[0];
         let last = &buffer.marks()[1];
 

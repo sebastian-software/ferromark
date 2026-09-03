@@ -6,6 +6,8 @@ require 'yaml'
 class ContractError < StandardError; end
 
 WORKFLOW_PATH = File.expand_path('../.github/workflows/benchmarks.yml', __dir__)
+BENCHMARK_SOURCE_PATH = File.expand_path('../benches/parsing.rs', __dir__)
+LARGE_FIXTURE_PATH = File.expand_path('../benches/fixtures/commonmark-1m.md', __dir__)
 CHECKOUT_ACTION = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
 RUST_TOOLCHAIN_ACTION = 'dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c'
 RUST_CACHE_ACTION = 'Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae'
@@ -23,7 +25,11 @@ def triggers(workflow)
   workflow['on'] || workflow[true] || fail_contract('workflow triggers are missing')
 end
 
-def validate(workflow)
+def validate(
+  workflow,
+  benchmark_source: File.read(BENCHMARK_SOURCE_PATH),
+  large_fixture_bytes: File.size(LARGE_FIXTURE_PATH)
+)
   unless workflow.fetch('permissions') == { 'contents' => 'read' }
     fail_contract('workflow permissions must grant contents: read only')
   end
@@ -93,15 +99,43 @@ def validate(workflow)
     fail_contract('benchmark history must only be saved outside pull requests')
   end
   fail_contract('saved benchmark history must reuse the restore key') unless save.dig('with', 'key') == CACHE_KEY
+
+  unless benchmark_source.include?('pub const PATHOLOGICAL_BYTES: usize = 64 * 1024;')
+    fail_contract('pathological benchmarks must share a fixed 64 KiB byte budget')
+  end
+  %w[
+    bracket_explosion_64k
+    unmatched_backticks_64k
+    reference_definitions_64k
+    invalid_html_starts_64k
+  ].each do |benchmark_name|
+    unless benchmark_source.include?("bench_function(\"#{benchmark_name}\"")
+      fail_contract("pathological benchmark #{benchmark_name} is missing")
+    end
+  end
+  unless benchmark_source.include?('include_str!("fixtures/commonmark-1m.md")') &&
+         benchmark_source.include?('bench_function("commonmark_1m"')
+    fail_contract('the 1 MiB CommonMark fixture must be benchmarked')
+  end
+  fail_contract('large CommonMark fixture must be at least 1 MiB') if large_fixture_bytes < 1024 * 1024
 end
 
 def deep_copy(value)
   Marshal.load(Marshal.dump(value))
 end
 
-def assert_rejected(label, workflow)
+def assert_rejected(
+  label,
+  workflow,
+  benchmark_source: File.read(BENCHMARK_SOURCE_PATH),
+  large_fixture_bytes: File.size(LARGE_FIXTURE_PATH)
+)
   yield workflow
-  validate(workflow)
+  validate(
+    workflow,
+    benchmark_source: benchmark_source,
+    large_fixture_bytes: large_fixture_bytes
+  )
   raise "#{label} mutation unexpectedly passed"
 rescue ContractError
   # Expected: this mutation must be rejected by the contract.
@@ -128,6 +162,17 @@ def self_test(workflow)
     step = copy.fetch('jobs').fetch('benchmark').fetch('steps').find { |candidate| candidate['uses'] == CACHE_SAVE_ACTION }
     step['if'] = 'always()'
   end
+  benchmark_source = File.read(BENCHMARK_SOURCE_PATH)
+  assert_rejected(
+    'missing bracket stress case',
+    deep_copy(workflow),
+    benchmark_source: benchmark_source.sub('bench_function("bracket_explosion_64k"', 'bench_function("removed"')
+  ) { |_copy| }
+  assert_rejected(
+    'undersized large fixture',
+    deep_copy(workflow),
+    large_fixture_bytes: 1024 * 1024 - 1
+  ) { |_copy| }
 end
 
 workflow = YAML.safe_load(File.read(WORKFLOW_PATH), aliases: false)
