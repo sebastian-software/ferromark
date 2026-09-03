@@ -66,6 +66,17 @@ def validate(repository_root)
   all_feature_args = test_matrix.map { |entry| entry['args'] if entry['args'] == '--all-features' }.compact
   fail_contract('CI test matrix must include --all-features') if all_feature_args.empty?
 
+  mdx_entries = test_matrix.select { |entry| entry['features'] == 'mdx' }
+  expected_mdx_entry = {
+    'os' => 'ubuntu-latest',
+    'rust' => 'stable',
+    'features' => 'mdx',
+    'args' => '--no-default-features --features mdx'
+  }
+  unless mdx_entries == [expected_mdx_entry]
+    fail_contract('CI test matrix must isolate the mdx feature on stable Ubuntu')
+  end
+
   msrv_entries = test_matrix.select { |entry| entry['rust'] == rust_version }
   fail_contract("CI test matrix must test Rust #{rust_version}") if msrv_entries.empty?
   msrv_args = msrv_entries.map { |entry| entry['args'] }
@@ -175,6 +186,15 @@ def self_test(source_root)
     )
     File.write(path, document)
     assert_rejected('bootstrap cargo command') { validate(fixture_root) }
+  end
+
+  with_fixture(source_root) do |fixture_root|
+    path = File.join(fixture_root, '.github/workflows/ci.yml')
+    document = File.read(path)
+    mdx_entry = '          - { os: ubuntu-latest, rust: stable, features: mdx, args: "--no-default-features --features mdx" }'
+    document.sub!("#{mdx_entry}\n", '') || raise('test fixture is missing the isolated mdx matrix entry')
+    File.write(path, document)
+    assert_rejected('isolated mdx matrix entry') { validate(fixture_root) }
   end
 end
 
