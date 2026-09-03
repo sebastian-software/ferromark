@@ -3,7 +3,10 @@
 //! Uses the "modulo-3" stack optimization from md4c to efficiently
 //! match emphasis openers and closers according to CommonMark rules.
 
-use super::marks::{Mark, flags};
+use super::{
+    link_boundary_for,
+    marks::{Mark, flags},
+};
 
 /// Result of emphasis resolution for a mark pair.
 #[derive(Debug, Clone, Copy)]
@@ -197,12 +200,7 @@ impl<'a> EmphasisResolver<'a> {
     /// Find which link boundary (if any) a position is inside.
     /// Returns Some(index) if inside a link, None if outside all links.
     fn link_boundary_for(&self, pos: u32) -> Option<usize> {
-        for (i, &(start, end)) in self.link_boundaries.iter().enumerate() {
-            if pos >= start && pos < end {
-                return Some(i);
-            }
-        }
-        None
+        link_boundary_for(pos, self.link_boundaries)
     }
 
     /// Get stack index for a mark.

@@ -3,7 +3,10 @@
 //! Matches single-caret runs as opener/closer pairs.
 //! Uses the same flanking rules as `*` emphasis (already computed in mark collection).
 
-use super::marks::{Mark, flags};
+use super::{
+    marks::{Mark, flags},
+    same_link_boundary,
+};
 
 /// A matched superscript pair.
 #[derive(Debug, Clone, Copy)]
@@ -82,12 +85,6 @@ pub fn resolve_superscript_into(
             openers.push(i);
         }
     }
-}
-
-fn same_link_boundary(a: u32, b: u32, boundaries: &[(u32, u32)]) -> bool {
-    let a_boundary = boundaries.iter().position(|&(s, e)| a >= s && a < e);
-    let b_boundary = boundaries.iter().position(|&(s, e)| b >= s && b < e);
-    a_boundary == b_boundary
 }
 
 fn pos_in_ranges(pos: u32, ranges: &[(u32, u32)]) -> bool {

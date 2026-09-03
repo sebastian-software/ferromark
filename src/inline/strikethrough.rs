@@ -3,7 +3,10 @@
 //! Matches double-tilde runs as opener/closer pairs.
 //! Uses same flanking rules as `*` emphasis (already computed in mark collection).
 
-use super::marks::{Mark, flags};
+use super::{
+    marks::{Mark, flags},
+    same_link_boundary,
+};
 
 /// A matched strikethrough pair.
 #[derive(Debug, Clone, Copy)]
@@ -82,11 +85,4 @@ pub fn resolve_strikethrough_into(
             openers.push(i);
         }
     }
-}
-
-fn same_link_boundary(a: u32, b: u32, boundaries: &[(u32, u32)]) -> bool {
-    // Both must be in the same link boundary (or both outside any)
-    let a_boundary = boundaries.iter().position(|&(s, e)| a >= s && a < e);
-    let b_boundary = boundaries.iter().position(|&(s, e)| b >= s && b < e);
-    a_boundary == b_boundary
 }

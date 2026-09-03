@@ -621,6 +621,7 @@ impl InlineParser {
             self.link_boundaries
                 .push((inline_note.start, inline_note.end));
         }
+        normalize_link_boundaries(&mut self.link_boundaries);
         let emphasis_matches = if summary.has_emphasis() {
             resolve_emphasis_with_stacks_into(
                 self.mark_buffer.marks_mut(),
@@ -2100,6 +2101,50 @@ fn pos_in_ranges_u32(pos: u32, ranges: &[(u32, u32)], idx: &mut usize) -> bool {
     *idx < ranges.len() && pos >= ranges[*idx].0
 }
 
+/// Sort and coalesce link-like boundaries into disjoint half-open ranges.
+///
+/// Resolvers only need to know whether two delimiters occupy the same protected
+/// region. Coalescing nested or overlapping ranges preserves that property and
+/// makes logarithmic lookup possible.
+fn normalize_link_boundaries(boundaries: &mut Vec<(u32, u32)>) {
+    boundaries.sort_unstable_by_key(|&(start, end)| (start, end));
+
+    let mut write = 0;
+    for read in 0..boundaries.len() {
+        let (start, end) = boundaries[read];
+        if start >= end {
+            continue;
+        }
+
+        if write > 0 && start < boundaries[write - 1].1 {
+            boundaries[write - 1].1 = boundaries[write - 1].1.max(end);
+        } else {
+            boundaries[write] = (start, end);
+            write += 1;
+        }
+    }
+    boundaries.truncate(write);
+
+    debug_assert!(
+        boundaries
+            .windows(2)
+            .all(|pair| pair[0].0 < pair[0].1 && pair[0].1 <= pair[1].0)
+    );
+}
+
+#[inline]
+fn link_boundary_for(pos: u32, boundaries: &[(u32, u32)]) -> Option<usize> {
+    let index = boundaries
+        .partition_point(|&(start, _)| start <= pos)
+        .checked_sub(1)?;
+    (pos < boundaries[index].1).then_some(index)
+}
+
+#[inline]
+fn same_link_boundary(a: u32, b: u32, boundaries: &[(u32, u32)]) -> bool {
+    link_boundary_for(a, boundaries) == link_boundary_for(b, boundaries)
+}
+
 #[inline]
 fn is_escaped(text: &[u8], pos: usize) -> bool {
     if pos == 0 {
@@ -2327,6 +2372,30 @@ mod tests {
         let mut events = Vec::new();
         parser.parse(text.as_bytes(), None, true, &mut events);
         events
+    }
+
+    #[test]
+    fn link_boundaries_are_normalized_for_binary_lookup() {
+        let mut boundaries = vec![
+            (20, 30),
+            (8, 18),
+            (5, 15),
+            (30, 35),
+            (40, 40),
+            (2, 4),
+            (9, 10),
+        ];
+
+        normalize_link_boundaries(&mut boundaries);
+
+        assert_eq!(boundaries, vec![(2, 4), (5, 18), (20, 30), (30, 35)]);
+        assert_eq!(link_boundary_for(3, &boundaries), Some(0));
+        assert_eq!(link_boundary_for(4, &boundaries), None);
+        assert_eq!(link_boundary_for(17, &boundaries), Some(1));
+        assert_eq!(link_boundary_for(18, &boundaries), None);
+        assert_eq!(link_boundary_for(29, &boundaries), Some(2));
+        assert_eq!(link_boundary_for(30, &boundaries), Some(3));
+        assert_eq!(link_boundary_for(35, &boundaries), None);
     }
 
     #[test]
