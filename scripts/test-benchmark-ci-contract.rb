@@ -9,9 +9,9 @@ WORKFLOW_PATH = File.expand_path('../.github/workflows/benchmarks.yml', __dir__)
 CHECKOUT_ACTION = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
 RUST_TOOLCHAIN_ACTION = 'dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c'
 RUST_CACHE_ACTION = 'Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae'
-CACHE_RESTORE_ACTION = 'actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830'
+CACHE_RESTORE_ACTION = 'actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
 BENCHMARK_ACTION = 'benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba'
-CACHE_SAVE_ACTION = 'actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830'
+CACHE_SAVE_ACTION = 'actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
 CACHE_KEY = 'ferromark-benchmark-${{ runner.os }}-main-${{ github.sha }}'
 
 def fail_contract(message)
