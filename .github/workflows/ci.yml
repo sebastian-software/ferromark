@@ -21,6 +21,7 @@ jobs:
           - { os: macos-latest, rust: stable, features: default, args: "" }
           - { os: windows-latest, rust: stable, features: default, args: "" }
           - { os: ubuntu-latest, rust: stable, features: all, args: "--all-features" }
+          - { os: ubuntu-latest, rust: stable, features: mdx, args: "--no-default-features --features mdx" }
           - { os: ubuntu-latest, rust: "1.88", features: default, args: "" }
           - { os: ubuntu-latest, rust: "1.88", features: all, args: "--all-features" }
     runs-on: ${{ matrix.os }}
