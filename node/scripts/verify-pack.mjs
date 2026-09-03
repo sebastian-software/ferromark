@@ -29,6 +29,7 @@ const allowedMain = [
   'README.md',
   'index.d.mts',
   'index.mjs',
+  'native-target.mjs',
   'native.d.ts',
   'package.json',
 ]

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { access, readFile } from 'node:fs/promises'
 
-const required = ['index.mjs', 'index.d.mts', 'native.d.ts', 'package.json']
+const required = ['index.mjs', 'index.d.mts', 'native-target.mjs', 'native.d.ts', 'package.json']
 await Promise.all(required.map(file => access(new URL(`../${file}`, import.meta.url))))
 
 const [declarations, packageJson, releaseConfig, buildNative] = await Promise.all([

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -14,9 +15,25 @@ import {
   transform,
   transformWithHighlighter,
 } from '../index.mjs'
+import { nativeTarget } from '../native-target.mjs'
 
 test('renders Markdown through the native binding', () => {
   assert.equal(toHtml('# Hello'), '<h1 id="hello">Hello</h1>\n')
+})
+
+test('rejects non-string Markdown across every public render entry point', () => {
+  const highlighter = { codeToHtml: () => '<pre><code></code></pre>\n' }
+  const calls = [
+    () => toHtml(123),
+    () => transform(null),
+    () => new Renderer().toHtml({}),
+    () => toHtmlWithHighlighter(123, highlighter, { theme: 'dark' }),
+    () => transformWithHighlighter(123, highlighter, { theme: 'dark' }),
+  ]
+
+  for (const call of calls) {
+    assert.throws(call, error => error instanceof Error && /string/i.test(error.message))
+  }
 })
 
 test('reuses a renderer without leaking document state', () => {
@@ -62,6 +79,17 @@ test('maps typed options to the Rust surface', () => {
   assert.throws(
     () => toHtml('text', { renderPolicy: 'invalid' }),
     /renderPolicy must be either 'untrusted' or 'trusted'/,
+  )
+})
+
+test('requires trusted rendering before allowHtml passes raw HTML through', () => {
+  assert.equal(
+    toHtml('<i>content</i>', { allowHtml: true }),
+    '<p>&lt;i&gt;content&lt;/i&gt;</p>\n',
+  )
+  assert.equal(
+    toHtml('<i>content</i>', { renderPolicy: 'trusted', allowHtml: true }),
+    '<p><i>content</i></p>\n',
   )
 })
 
@@ -112,6 +140,31 @@ test('selects the musl optional package on Alpine-style Linux', () => {
   assert.equal(result.status, 0, result.stderr)
 })
 
+test('maps every supported native platform and rejects unsupported targets', () => {
+  const targets = [
+    ['darwin', 'arm64', undefined, 'darwin-arm64'],
+    ['darwin', 'x64', undefined, 'darwin-x64'],
+    ['linux', 'arm64', '2.17', 'linux-arm64-gnu'],
+    ['linux', 'arm64', undefined, 'linux-arm64-musl'],
+    ['linux', 'x64', '2.39', 'linux-x64-gnu'],
+    ['linux', 'x64', undefined, 'linux-x64-musl'],
+    ['win32', 'arm64', undefined, 'win32-arm64-msvc'],
+    ['win32', 'x64', undefined, 'win32-x64-msvc'],
+  ]
+
+  for (const [platform, arch, glibcVersionRuntime, expected] of targets) {
+    assert.equal(nativeTarget(platform, arch, glibcVersionRuntime), expected)
+  }
+  assert.throws(
+    () => nativeTarget('linux', 'riscv64', '2.39'),
+    /ferromark does not support linux\/riscv64/,
+  )
+  assert.throws(
+    () => nativeTarget('freebsd', 'x64'),
+    /ferromark does not support freebsd\/x64/,
+  )
+})
+
 test('does not collect a diagnostic report on non-Linux platforms', () => {
   const entry = new URL('../index.mjs', import.meta.url).href
   const script = `
@@ -149,6 +202,10 @@ test('wraps native dynamic-loader failures with platform guidance', async (t) =>
   await mkdir(packageDir, { recursive: true })
   await Promise.all([
     copyFile(new URL('../index.mjs', import.meta.url), entry),
+    copyFile(
+      new URL('../native-target.mjs', import.meta.url),
+      path.join(fixture, 'native-target.mjs'),
+    ),
     writeFile(
       path.join(packageDir, 'package.json'),
       JSON.stringify({ name: packageName, main: binaryName }),
@@ -179,18 +236,11 @@ test('wraps native dynamic-loader failures with platform guidance', async (t) =>
   )
 })
 
-test('loads the ESM entry point from CommonJS', () => {
-  const entry = fileURLToPath(new URL('../index.mjs', import.meta.url))
-  const script = `
-    const { toHtml } = require(${JSON.stringify(entry)})
-    process.stdout.write(toHtml('# CommonJS'))
-  `
-  const result = spawnSync(process.execPath, ['--input-type=commonjs', '--eval', script], {
-    encoding: 'utf8',
-  })
+test('loads the package by name from CommonJS', () => {
+  const require = createRequire(import.meta.url)
+  const { toHtml: cjsToHtml } = require('ferromark')
 
-  assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, '<h1 id="commonjs">CommonJS</h1>\n')
+  assert.equal(cjsToHtml('# CommonJS'), '<h1 id="commonjs">CommonJS</h1>\n')
 })
 
 test('composes with a synchronous Ferriki-compatible highlighter', () => {
@@ -250,6 +300,38 @@ test('falls back to escaped code when highlighting fails', () => {
   )
 })
 
+test('uses fallbackLanguage and preserves transform metadata when highlighting fails', () => {
+  const calls = []
+  const failure = new Error('unsupported language')
+  const highlighter = {
+    codeToHtml(code, options) {
+      calls.push({ code, options })
+      throw failure
+    },
+  }
+  const failures = []
+  const result = transformWithHighlighter(
+    '```\n<tag>\n```\n\n# After',
+    highlighter,
+    {
+      theme: 'github-dark',
+      fallbackLanguage: 'plaintext',
+      onHighlightError(error, context) {
+        failures.push({ error, context })
+      },
+    },
+  )
+
+  assert.match(result.html, /<pre><code>&lt;tag&gt;\n<\/code><\/pre>/)
+  assert.match(result.html, /<h1 id="after">After<\/h1>/)
+  assert.deepEqual(result.headings, [{ level: 1, id: 'after', text: 'After' }])
+  assert.deepEqual(calls, [{
+    code: '<tag>\n',
+    options: { lang: 'plaintext', theme: 'github-dark' },
+  }])
+  assert.deepEqual(failures, [{ error: failure, context: { lang: 'plaintext' } }])
+})
+
 test('validates and surfaces highlighter error observers', () => {
   const highlighter = {
     codeToHtml() {
@@ -297,6 +379,13 @@ test('transform returns html, headings, and front matter', () => {
     { level: 1, id: 'top', text: 'Top' },
     { level: 2, id: 'sub-code', text: 'Sub code' },
   ])
+})
+
+test('transform extracts TOML-style front matter', () => {
+  const result = transform('+++\ntitle = "TOML"\n+++\n# Top', { frontMatter: true })
+
+  assert.equal(result.frontMatter, 'title = "TOML"\n')
+  assert.match(result.html, /<h1 id="top">Top<\/h1>/)
 })
 
 test('transform omits ids when headingIds is disabled', () => {

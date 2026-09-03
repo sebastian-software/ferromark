@@ -2,6 +2,8 @@ import { createRequire } from 'node:module'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
+import { nativeTarget as resolveNativeTarget } from './native-target.mjs'
+
 const require = createRequire(import.meta.url)
 
 const optionKeys = new Set([
@@ -249,29 +251,14 @@ function nativeLoadHint(target) {
 }
 
 function nativeTarget() {
-  let key = `${process.platform}-${process.arch}`
-  if (process.platform === 'linux') {
-    const report = /** @type {{ header?: { glibcVersionRuntime?: string } }} */ (
-      process.report?.getReport?.()
-    )
-    const libc = report?.header?.glibcVersionRuntime ? 'gnu' : 'musl'
-    key = `${key}-${libc}`
-  }
-  /** @type {Record<string, string>} */
-  const targets = {
-    'darwin-arm64': 'darwin-arm64',
-    'darwin-x64': 'darwin-x64',
-    'linux-arm64-gnu': 'linux-arm64-gnu',
-    'linux-arm64-musl': 'linux-arm64-musl',
-    'linux-x64-gnu': 'linux-x64-gnu',
-    'linux-x64-musl': 'linux-x64-musl',
-    'win32-arm64': 'win32-arm64-msvc',
-    'win32-x64': 'win32-x64-msvc',
-  }
-
-  const target = targets[key]
-  if (!target) {
-    throw new Error(`ferromark does not support ${process.platform}/${process.arch}`)
-  }
-  return target
+  const report = process.platform === 'linux'
+    ? /** @type {{ header?: { glibcVersionRuntime?: string } }} */ (
+        process.report?.getReport?.()
+      )
+    : undefined
+  return resolveNativeTarget(
+    process.platform,
+    process.arch,
+    report?.header?.glibcVersionRuntime,
+  )
 }
