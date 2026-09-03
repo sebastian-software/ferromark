@@ -62,12 +62,12 @@ types and panic with the same error if this limit is exceeded.
 
 ## Benchmarks
 
-Numbers, not adjectives. Apple Silicon (M-series), July 2026. All parsers run
-with GFM tables, strikethrough, and task lists enabled; ferromark's non-GFM
-extras (heading IDs, callouts) are disabled. Output buffers are reused where
-APIs allow and binaries are non-PGO. ferromark also keeps its secure default
-rendering in this published product lane, so it performs URL and raw-HTML safety
-work that pulldown-cmark does not.
+Numbers, not adjectives. Apple M1 Pro (10-core), macOS 26.6.2, rustc 1.97.1,
+September 2026. All parsers run with GFM tables, strikethrough, and task lists
+enabled; ferromark's non-GFM extras (heading IDs, callouts) are disabled. Output
+buffers are reused where APIs allow and binaries are non-PGO. ferromark also
+keeps its secure default rendering in this published product lane, so it
+performs URL and raw-HTML safety work that pulldown-cmark does not.
 
 These rankings are Apple Silicon results only. ferromark also uses baseline
 SSE2 for inline scanning on x86-64, but this comparison has not been re-measured
@@ -76,28 +76,34 @@ there; do not infer the same relative ordering on x86-64 from these tables.
 **CommonMark 5 KB** (wiki-style, mixed content with tables)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
-| **ferromark** | **259.6 MiB/s** | **baseline** |
-| pulldown-cmark | 254.5 MiB/s | 0.98x |
-| md4c (C) | 243.1 MiB/s | 0.94x |
-| comrak | 67.9 MiB/s | 0.26x |
+| **ferromark** | **248.2 MiB/s** | **baseline** |
+| pulldown-cmark | 228.7 MiB/s | 0.92x |
+| md4c (C) | 247.4 MiB/s | 1.00x |
+| comrak | 69.0 MiB/s | 0.28x |
 
 **CommonMark 50 KB** (same style, scaled)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
-| **ferromark** | **280.5 MiB/s** | **baseline** |
-| pulldown-cmark | 275.2 MiB/s | 0.98x |
-| md4c (C) | 253.3 MiB/s | 0.90x |
-| comrak | 71.8 MiB/s | 0.26x |
+| **ferromark** | **267.5 MiB/s** | **baseline** |
+| pulldown-cmark | 240.3 MiB/s | 0.90x |
+| md4c (C) | 252.5 MiB/s | 0.94x |
+| comrak | 70.6 MiB/s | 0.26x |
 
-On this Apple Silicon run, ferromark was 2% faster than pulldown-cmark, 11%
-faster than md4c, and 4x faster than comrak. Competitor versions:
-pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
+On this Apple Silicon run, ferromark was 9–11% faster than pulldown-cmark,
+within 1% of md4c at 5 KB and 6% faster at 50 KB, and 3.6–3.8x faster than
+comrak. The locked competitor versions were pulldown-cmark 0.13.4, comrak
+0.54.0, and md4c @ 65c6c9d.
 
-The fixtures are synthetic wiki-style documents with paragraphs, lists, code blocks, and tables. Nothing cherry-picked. The cross-parser harness is isolated from the library build and pins md4c at `65c6c9d` for the published numbers:
+The fixtures are synthetic wiki-style documents with paragraphs, lists, code
+blocks, and tables. Nothing cherry-picked. The cross-parser harness is isolated
+from the library build, uses its committed Cargo lockfile, and verifies md4c at
+`65c6c9d` for the published numbers:
 
 ```bash
-cd benchmarks/md4c-comparison
-MD4C_DIR=/path/to/md4c cargo bench --bench comparison
+git clone https://github.com/mity/md4c.git ../md4c
+git -C ../md4c checkout --detach 65c6c9d
+MD4C_DIR=../md4c cargo bench --locked \
+  --manifest-path benchmarks/md4c-comparison/Cargo.toml --bench comparison
 ```
 
 `MD4C_DIR` is required deliberately; normal `cargo build`, `cargo test`, and package consumers never inspect or compile a sibling C checkout.

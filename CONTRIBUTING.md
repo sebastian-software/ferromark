@@ -29,10 +29,13 @@ follow the [releasing guide](docs/releasing.md) for those commands.
 Comparison benchmarks need the md4c C sources:
 
 ```bash
-git clone --depth 1 https://github.com/mity/md4c.git ../md4c
-cd benchmarks/md4c-comparison
-MD4C_DIR=../../../md4c cargo bench --bench comparison
+git clone https://github.com/mity/md4c.git ../md4c
+git -C ../md4c checkout --detach 65c6c9d
+MD4C_DIR=../md4c cargo bench --locked \
+  --manifest-path benchmarks/md4c-comparison/Cargo.toml --bench comparison
 ```
+
+The benchmark build verifies the md4c revision before compiling its C sources.
 
 The focused ferromark/pulldown-cmark parity harness does not need md4c:
 

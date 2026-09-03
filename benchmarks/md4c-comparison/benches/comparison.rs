@@ -164,10 +164,8 @@ Paragraph after code.
 
     /// CommonMark-heavy documents (wiki-style, text-heavy)
     pub const COMMONMARK_5K: &str = include_str!("../../../benches/fixtures/commonmark-5k.md");
-    pub const COMMONMARK_20K: &str =
-        include_str!("../../../benches/fixtures/commonmark-20k.md");
-    pub const COMMONMARK_50K: &str =
-        include_str!("../../../benches/fixtures/commonmark-50k.md");
+    pub const COMMONMARK_20K: &str = include_str!("../../../benches/fixtures/commonmark-20k.md");
+    pub const COMMONMARK_50K: &str = include_str!("../../../benches/fixtures/commonmark-50k.md");
 
     /// Table-heavy document (~5KB)
     pub const TABLES_5K: &str = include_str!("../../../benches/fixtures/tables-5k.md");
@@ -256,6 +254,7 @@ fn parse_comrak(input: &str) -> String {
 }
 
 #[cfg(md4c)]
+#[link(name = "md4c", kind = "static")]
 unsafe extern "C" {
     fn md_html(
         input: *const c_char,
@@ -664,12 +663,12 @@ fn prescan_full(input: &[u8]) -> usize {
     let mut count = 0usize;
     let mut pos = 0usize;
     while pos < input.len() {
-        if pos == 0 || input[pos - 1] == b'\n' {
-            if let Some((_def, end)) = parse_link_ref_def(input, pos) {
-                count += 1;
-                pos = end;
-                continue;
-            }
+        if (pos == 0 || input[pos - 1] == b'\n')
+            && let Some((_def, end)) = parse_link_ref_def(input, pos)
+        {
+            count += 1;
+            pos = end;
+            continue;
         }
         pos += 1;
     }
