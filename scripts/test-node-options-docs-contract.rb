@@ -5,6 +5,7 @@ TYPE_PATH = 'node/ferromark/index.d.mts'
 README_PATH = 'node/ferromark/README.md'
 RUST_PATH = 'src/lib.rs'
 NATIVE_PATH = 'node/native/src/lib.rs'
+JAVASCRIPT_PATH = 'node/ferromark/index.mjs'
 
 class ContractFailure < StandardError; end
 
@@ -54,6 +55,15 @@ def native_option_fields(native)
   body.scan(/^    pub (\w+): /).to_h { |(field)| [field, true] }
 end
 
+def javascript_option_fields(javascript)
+  body = source_block(
+    javascript,
+    /const optionKeys = new Set\(\[(.*?)^\]\)/m,
+    'JavaScript option-key set'
+  )
+  body.scan(/^  '([^']+)',$/).flatten
+end
+
 def list_with_and(items)
   return items.first if items.length == 1
   return items.join(' and ') if items.length == 2
@@ -61,14 +71,16 @@ def list_with_and(items)
   "#{items[0...-1].join(', ')}, and #{items.last}"
 end
 
-def validate(types, readme, rust, native)
+def validate(types, readme, rust, native, javascript)
   rust_fields = rust_options(rust)
   node_docs = node_option_docs(types)
   native_fields = native_option_fields(native)
+  javascript_fields = javascript_option_fields(javascript)
   expected_node_fields = rust_fields.keys.to_h { |field| [camel_case(field), field] }
 
   fail_contract("Node Options field mismatch: expected #{expected_node_fields.keys.join(', ')}") unless node_docs.keys.sort == expected_node_fields.keys.sort
   fail_contract("native Options field mismatch: expected #{rust_fields.keys.join(', ')}") unless native_fields.keys.sort == rust_fields.keys.sort
+  fail_contract("JavaScript option-key mismatch: expected #{expected_node_fields.keys.join(', ')}") unless javascript_fields.sort == expected_node_fields.keys.sort
 
   rust_fields.each do |rust_field, default_value|
     node_field = camel_case(rust_field)
@@ -89,8 +101,8 @@ def validate(types, readme, rust, native)
   fail_contract('README must document table constraints') unless readme.include?('require `tables`')
 end
 
-types = File.read(TYPE_PATH); readme = File.read(README_PATH); rust = File.read(RUST_PATH); native = File.read(NATIVE_PATH)
-validate(types, readme, rust, native)
+types = File.read(TYPE_PATH); readme = File.read(README_PATH); rust = File.read(RUST_PATH); native = File.read(NATIVE_PATH); javascript = File.read(JAVASCRIPT_PATH)
+validate(types, readme, rust, native, javascript)
 if ARGV == ['--self-test']
   def rejected
     yield
@@ -100,10 +112,10 @@ if ARGV == ['--self-test']
     fail_contract('mutation unexpectedly passed')
   end
   rejected do
-    validate(types.sub('Default: on', 'Default: off'), readme, rust, native)
+    validate(types.sub('Default: on', 'Default: off'), readme, rust, native, javascript)
   end
   rejected do
-    validate(types, readme.gsub('[`Options`](./index.d.mts)', 'Options'), rust, native)
+    validate(types, readme.gsub('[`Options`](./index.d.mts)', 'Options'), rust, native, javascript)
   end
   future_field = rust.sub(
     '    pub link_base_path: Option<Box<str>>,',
@@ -113,14 +125,17 @@ if ARGV == ['--self-test']
     "            link_base_path: None,\n            future_option: false,"
   )
   rejected do
-    validate(types, readme, future_field, native)
+    validate(types, readme, future_field, native, javascript)
   end
   future_with_docs = types.sub(
     "  /**\n   * Prefix internal absolute link destinations",
     "  /** Future option. Default: off. */\n  futureOption?: boolean\n  /**\n   * Prefix internal absolute link destinations"
   )
   rejected do
-    validate(future_with_docs, readme, future_field, native)
+    validate(future_with_docs, readme, future_field, native, javascript)
+  end
+  rejected do
+    validate(types, readme, rust, native, javascript.sub("  'linkBasePath',\n", ''))
   end
 elsif !ARGV.empty?
   fail_contract('usage: test-node-options-docs-contract.rb [--self-test]')

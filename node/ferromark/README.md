@@ -51,6 +51,9 @@ the highlighter helpers below accept trusted highlighter HTML.
 
 Every `Options` property is optional; omitted values use the Rust `Options::default()` values. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `allowLinkRefs`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, `callouts`, and `indentedCodeBlocks`. All other boolean syntax extensions default off; `renderPolicy` defaults to `'untrusted'` and `linkBasePath` is unset.
 
+Unknown option names throw a `TypeError` that identifies the rejected key, so
+misspellings such as `taskList` cannot silently change rendered output.
+
 `mergedTableCells` and `tableColumnWidths` require `tables`. `disallowedRawHtml` only filters a narrow GFM tag list in trusted mode and is not a sanitizer. `renderPolicy: 'trusted'` permits raw HTML and unrestricted URL schemes, so use it only for trusted Markdown. See [`Options`](./index.d.mts) for each field's semantics and examples above for `frontMatter` and `linkBasePath`.
 
 ## Input size limit
