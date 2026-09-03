@@ -9,7 +9,7 @@
   "scripts": {
     "build": "pnpm --filter ferromark build",
     "build:native": "pnpm --filter ferromark build:native",
-    "lint": "node --check scripts/clean-install-smoke.mjs && node --check scripts/verify-npm-publish.mjs && node --check scripts/verify-pack.mjs && node --check scripts/verify-release.mjs && pnpm --filter ferromark lint",
+    "lint": "node --check scripts/clean-install-smoke.mjs && node --check scripts/publish-platform-packages.mjs && node --check scripts/verify-npm-publish.mjs && node --check scripts/verify-pack.mjs && node --check scripts/verify-platform-artifact.mjs && node --check scripts/verify-release.mjs && pnpm --filter ferromark lint",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "pnpm --filter ferromark test",
     "pack:check": "node ./scripts/verify-pack.mjs",

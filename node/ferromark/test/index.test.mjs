@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
 import { toHtml, toHtmlWithHighlighter, transform, transformWithHighlighter } from '../index.mjs'
@@ -55,6 +56,32 @@ test('rejects unknown option keys across every public render entry point', () =>
       error => error instanceof TypeError && /unknown option.*(?:taskList|footnote)/i.test(error.message),
     )
   }
+})
+
+test('selects the musl optional package on Alpine-style Linux', () => {
+  const entry = new URL('../index.mjs', import.meta.url).href
+  const script = `
+    Object.defineProperty(process, 'platform', { value: 'linux' })
+    Object.defineProperty(process, 'arch', { value: 'arm64' })
+    Object.defineProperty(process, 'report', {
+      value: { getReport: () => ({ header: {} }) },
+    })
+    const { toHtml } = await import(${JSON.stringify(entry)})
+    try {
+      toHtml('text')
+    }
+    catch (error) {
+      if (error instanceof Error && error.message.includes('ferromark-linux-arm64-musl')) {
+        process.exit(0)
+      }
+    }
+    process.exit(1)
+  `
+  const result = spawnSync(process.execPath, ['--input-type=module', '--eval', script], {
+    encoding: 'utf8',
+  })
+
+  assert.equal(result.status, 0, result.stderr)
 })
 
 test('composes with a synchronous Ferriki-compatible highlighter', () => {

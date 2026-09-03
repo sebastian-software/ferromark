@@ -6,7 +6,55 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
-        "node/ferromark/package.json"
+        "node/ferromark/package.json",
+        "node/ferromark/npm/darwin-arm64/package.json",
+        "node/ferromark/npm/darwin-x64/package.json",
+        "node/ferromark/npm/linux-arm64-gnu/package.json",
+        "node/ferromark/npm/linux-arm64-musl/package.json",
+        "node/ferromark/npm/linux-x64-gnu/package.json",
+        "node/ferromark/npm/linux-x64-musl/package.json",
+        "node/ferromark/npm/win32-arm64-msvc/package.json",
+        "node/ferromark/npm/win32-x64-msvc/package.json",
+        {
+          "type": "json",
+          "path": "node/ferromark/package.json",
+          "jsonpath": "$.optionalDependencies['ferromark-darwin-arm64']"
+        },
+        {
+          "type": "json",
+          "path": "node/ferromark/package.json",
+          "jsonpath": "$.optionalDependencies['ferromark-darwin-x64']"
+        },
+        {
+          "type": "json",
+          "path": "node/ferromark/package.json",
+          "jsonpath": "$.optionalDependencies['ferromark-linux-arm64-gnu']"
+        },
+        {
+          "type": "json",
+          "path": "node/ferromark/package.json",
+          "jsonpath": "$.optionalDependencies['ferromark-linux-arm64-musl']"
+        },
+        {
+          "type": "json",
+          "path": "node/ferromark/package.json",
+          "jsonpath": "$.optionalDependencies['ferromark-linux-x64-gnu']"
+        },
+        {
+          "type": "json",
+          "path": "node/ferromark/package.json",
+          "jsonpath": "$.optionalDependencies['ferromark-linux-x64-musl']"
+        },
+        {
+          "type": "json",
+          "path": "node/ferromark/package.json",
+          "jsonpath": "$.optionalDependencies['ferromark-win32-arm64-msvc']"
+        },
+        {
+          "type": "json",
+          "path": "node/ferromark/package.json",
+          "jsonpath": "$.optionalDependencies['ferromark-win32-x64-msvc']"
+        }
       ]
     }
   }

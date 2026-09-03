@@ -151,6 +151,7 @@ function loadNative() {
 
   const target = nativeTarget()
   const filename = `ferromark.${target}.node`
+  let localError
   try {
     native = /** @type {NativeBindings} */ (
       require(fileURLToPath(new URL(filename, import.meta.url)))
@@ -161,30 +162,43 @@ function loadNative() {
     if (!(error instanceof Error) || !('code' in error) || error.code !== 'MODULE_NOT_FOUND') {
       throw error
     }
+    localError = error
+  }
+
+  const packageName = `ferromark-${target}`
+  try {
+    native = /** @type {NativeBindings} */ (require(packageName))
+    return native
+  }
+  catch (error) {
+    if (!(error instanceof Error) || !('code' in error) || error.code !== 'MODULE_NOT_FOUND') {
+      throw error
+    }
     throw new Error(
-      `ferromark does not include a native binary for ${process.platform}/${process.arch} (${target})`,
-      { cause: error },
+      `ferromark could not load the optional native package ${packageName} for ${process.platform}/${process.arch}`,
+      { cause: new AggregateError([localError, error], `No native binary found for ${target}`) },
     )
   }
 }
 
 function nativeTarget() {
-  const key = `${process.platform}-${process.arch}`
+  const report = /** @type {{ header?: { glibcVersionRuntime?: string } }} */ (
+    process.report?.getReport?.()
+  )
+  const libc = report?.header?.glibcVersionRuntime ? 'gnu' : 'musl'
+  const key = process.platform === 'linux'
+    ? `${process.platform}-${process.arch}-${libc}`
+    : `${process.platform}-${process.arch}`
   /** @type {Record<string, string>} */
   const targets = {
     'darwin-arm64': 'darwin-arm64',
     'darwin-x64': 'darwin-x64',
-    'linux-arm64': 'linux-arm64-gnu',
-    'linux-x64': 'linux-x64-gnu',
+    'linux-arm64-gnu': 'linux-arm64-gnu',
+    'linux-arm64-musl': 'linux-arm64-musl',
+    'linux-x64-gnu': 'linux-x64-gnu',
+    'linux-x64-musl': 'linux-x64-musl',
     'win32-arm64': 'win32-arm64-msvc',
     'win32-x64': 'win32-x64-msvc',
-  }
-
-  const report = /** @type {{ header?: { glibcVersionRuntime?: string } }} */ (
-    process.report?.getReport?.()
-  )
-  if (process.platform === 'linux' && !report?.header?.glibcVersionRuntime) {
-    throw new Error('ferromark currently supports glibc Linux builds; musl is not supported')
   }
 
   const target = targets[key]

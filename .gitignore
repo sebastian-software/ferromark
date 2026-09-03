@@ -4,7 +4,10 @@
 /fuzz/target
 /node/node_modules
 /node/ferromark/*.node
+/node/ferromark/.napi-artifacts
+/node/ferromark/npm/*/*.node
 /node/artifacts
+/.pnpm-store
 .DS_Store
 *.swp
 *.swo
