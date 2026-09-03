@@ -175,22 +175,38 @@ pub fn transform(markdown: String, options: Option<Options>) -> Result<Transform
 #[allow(clippy::type_complexity)]
 struct CallbackRenderer<'scope> {
     callback: Function<'scope, FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
+    error: Option<Error>,
+}
+
+impl CallbackRenderer<'_> {
+    fn finish<T>(self, result: Result<T>) -> Result<T> {
+        self.error.map_or(result, Err)
+    }
 }
 
 impl FencedCodeRenderer for CallbackRenderer<'_> {
     fn render(&mut self, block: FencedCodeBlock<'_>) -> Option<TrustedHtml> {
-        self.callback
-            .call(FnArgs::from((
-                block.code.to_owned(),
-                block.language.map(str::to_owned),
-                block.meta.map(str::to_owned),
-            )))
-            .ok()
-            .flatten()
-            .map(TrustedHtml::from_trusted)
+        if self.error.is_some() {
+            return None;
+        }
+
+        match self.callback.call(FnArgs::from((
+            block.code.to_owned(),
+            block.language.map(str::to_owned),
+            block.meta.map(str::to_owned),
+        ))) {
+            Ok(html) => html.map(TrustedHtml::from_trusted),
+            Err(error) => {
+                self.error = Some(error);
+                None
+            }
+        }
     }
 }
 
+/// Render Markdown with a synchronous fenced-code callback.
+///
+/// Callback exceptions and invalid return values are surfaced as N-API errors.
 #[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn to_html_with_renderer(
@@ -199,16 +215,21 @@ pub fn to_html_with_renderer(
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
     let options = core_options(options)?;
-    let mut renderer = CallbackRenderer { callback: renderer };
-    ferromark::try_to_html_with_renderer(&markdown, &options, &mut renderer)
-        .map_err(input_size_error)
+    let mut renderer = CallbackRenderer {
+        callback: renderer,
+        error: None,
+    };
+    let result = ferromark::try_to_html_with_renderer(&markdown, &options, &mut renderer)
+        .map_err(input_size_error);
+    renderer.finish(result)
 }
 
 /// `transform` with an opt-in fenced-code renderer callback.
 ///
 /// The callback receives `(code, language, meta)` and must return trusted,
 /// fully escaped HTML — or null/undefined to fall back to the default
-/// escaped `<pre><code>` output.
+/// escaped `<pre><code>` output. Callback exceptions and invalid return values
+/// are surfaced as N-API errors.
 #[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn transform_with_renderer(
@@ -217,8 +238,12 @@ pub fn transform_with_renderer(
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<TransformResult> {
     let options = core_options(options)?;
-    let mut renderer = CallbackRenderer { callback: renderer };
-    ferromark::try_parse_with_renderer(&markdown, &options, &mut renderer)
+    let mut renderer = CallbackRenderer {
+        callback: renderer,
+        error: None,
+    };
+    let result = ferromark::try_parse_with_renderer(&markdown, &options, &mut renderer)
         .map(transform_result)
-        .map_err(input_size_error)
+        .map_err(input_size_error);
+    renderer.finish(result)
 }

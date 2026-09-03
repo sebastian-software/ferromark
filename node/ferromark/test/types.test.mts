@@ -19,4 +19,8 @@ toHtml('# Typed', options)
 new Renderer(options).toHtml('# Reused')
 toHtmlWithHighlighter('```ts\nconst typed = true\n```', highlighter, {
   theme: 'github-dark',
+  onHighlightError(error, { lang }) {
+    void error
+    lang.toUpperCase()
+  },
 })
