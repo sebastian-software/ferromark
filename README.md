@@ -844,6 +844,7 @@ src/
 │   ├── event.rs    # InlineEvent types
 │   ├── code_span.rs
 │   ├── emphasis.rs      # Modulo-3 stack optimization
+│   ├── highlight.rs     # Highlight/mark resolution (==text==)
 │   ├── strikethrough.rs # GFM strikethrough resolution
 │   ├── subscript.rs     # Subscript resolution (~text~)
 │   ├── superscript.rs   # Superscript resolution (^text^)
@@ -851,8 +852,10 @@ src/
 │   └── links.rs         # Link/image/autolink parsing
 ├── mdx/            # MDX segmenter + renderer (feature = "mdx")
 │   ├── mod.rs      # Public API — Segment enum, segment(), render()
+│   ├── events.rs   # Semantic event stream exposed by parse_events()
 │   ├── render.rs   # Assembly layer: segments → HTML body + ESM + front matter
 │   ├── splitter.rs # Line-based state machine
+│   ├── strict.rs   # Structural diagnostics exposed by segment_strict()
 │   ├── jsx_tag.rs  # JSX tag boundary parser
 │   └── expr.rs     # Expression boundary parser (brace/string/comment tracking)
 ├── footnote.rs     # Footnote store and rendering
