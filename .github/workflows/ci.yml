@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -41,6 +44,20 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       - run: cargo clippy --all-targets --all-features --locked -- -D warnings
 
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
+        with:
+          tool: cargo-llvm-cov
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+      - run: cargo llvm-cov --all-features --locked
+
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -54,8 +71,9 @@ jobs:
       - run: node ./scripts/test-publish-verification.mjs
       - run: ruby ./scripts/test-node-ci-matrix.rb
       - run: ruby ./scripts/test-contributing-ci-contract.rb --self-test
+      - run: ruby ./scripts/test-ci-hardening.rb --self-test
       - run: ruby ./scripts/test-docs-rs-metadata.rb --self-test
-      - run: RUSTDOCFLAGS='-D warnings' cargo doc --locked --no-deps --no-default-features --features mdx
+      - run: RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features --locked
       - run: ruby ./scripts/test-migration-guide-contract.rb --self-test
       - run: ruby ./scripts/test-node-options-docs-contract.rb --self-test
       - run: ruby ./scripts/test-readme-structure-contract.rb --self-test
@@ -63,6 +81,9 @@ jobs:
 
   rustsec:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2
