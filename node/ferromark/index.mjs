@@ -249,13 +249,14 @@ function nativeLoadHint(target) {
 }
 
 function nativeTarget() {
-  const report = /** @type {{ header?: { glibcVersionRuntime?: string } }} */ (
-    process.report?.getReport?.()
-  )
-  const libc = report?.header?.glibcVersionRuntime ? 'gnu' : 'musl'
-  const key = process.platform === 'linux'
-    ? `${process.platform}-${process.arch}-${libc}`
-    : `${process.platform}-${process.arch}`
+  let key = `${process.platform}-${process.arch}`
+  if (process.platform === 'linux') {
+    const report = /** @type {{ header?: { glibcVersionRuntime?: string } }} */ (
+      process.report?.getReport?.()
+    )
+    const libc = report?.header?.glibcVersionRuntime ? 'gnu' : 'musl'
+    key = `${key}-${libc}`
+  }
   /** @type {Record<string, string>} */
   const targets = {
     'darwin-arm64': 'darwin-arm64',
