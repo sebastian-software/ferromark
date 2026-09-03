@@ -4,18 +4,21 @@ import { readFile } from 'node:fs/promises'
 const readmeUrl = new URL('../README.md', import.meta.url)
 const packageUrl = new URL('../package.json', import.meta.url)
 const loaderUrl = new URL('../index.mjs', import.meta.url)
+const nativeTargetUrl = new URL('../native-target.mjs', import.meta.url)
 const declarationUrl = new URL('../index.d.mts', import.meta.url)
 const nativeOptionsUrl = new URL('../../native/src/lib.rs', import.meta.url)
 const coreOptionsUrl = new URL('../../../src/lib.rs', import.meta.url)
 
-const [readme, packageJson, loader, declarations, nativeOptions, coreOptions] = await Promise.all([
-  readFile(readmeUrl, 'utf8'),
-  readFile(packageUrl, 'utf8').then(JSON.parse),
-  readFile(loaderUrl, 'utf8'),
-  readFile(declarationUrl, 'utf8'),
-  readFile(nativeOptionsUrl, 'utf8'),
-  readFile(coreOptionsUrl, 'utf8'),
-])
+const [readme, packageJson, loader, nativeTargets, declarations, nativeOptions, coreOptions]
+  = await Promise.all([
+    readFile(readmeUrl, 'utf8'),
+    readFile(packageUrl, 'utf8').then(JSON.parse),
+    readFile(loaderUrl, 'utf8'),
+    readFile(nativeTargetUrl, 'utf8'),
+    readFile(declarationUrl, 'utf8'),
+    readFile(nativeOptionsUrl, 'utf8'),
+    readFile(coreOptionsUrl, 'utf8'),
+  ])
 
 function assertReadmeContract(candidate) {
   assert.match(candidate, /^## Install$/m, 'README must have an install section')
@@ -58,9 +61,9 @@ function assertReadmeContract(candidate) {
   assert.match(candidate, /^## Troubleshooting native loading$/m, 'README must explain lazy loader failures')
   assert.match(candidate, /constructing `Renderer` or on the first call to\s+`toHtml\(\)`, `transform\(\)`, or a highlighter helper/i)
 
-  assert.match(loader, /linux-arm64-musl/, 'loader must select the arm64 musl package')
-  assert.match(loader, /linux-x64-musl/, 'loader must select the x64 musl package')
-  assert.match(loader, /does not support \$\{process\.platform\}/, 'loader must retain unsupported-target diagnostics')
+  assert.match(nativeTargets, /linux-arm64-musl/, 'loader must select the arm64 musl package')
+  assert.match(nativeTargets, /linux-x64-musl/, 'loader must select the x64 musl package')
+  assert.match(nativeTargets, /does not support \$\{platform\}/, 'loader must retain unsupported-target diagnostics')
   assert.match(candidate, /Unsupported platform or architecture/, 'README must cover unsupported targets')
   assert.match(loader, /could not load the optional native package/, 'loader must retain missing-package diagnostics')
   assert.match(candidate, /`could not load the optional native package`/, 'README must cover missing platform packages')
@@ -68,7 +71,7 @@ function assertReadmeContract(candidate) {
   assert.match(candidate, /glibc 2\.17/, 'README must document the GNU Linux binary baseline')
   assert.match(candidate, /`ERR_DLOPEN_FAILED`/, 'README must cover native dynamic-loader failures')
 
-  const loaderTargets = [...loader.matchAll(/'([a-z0-9]+-(?:arm64|x64)(?:-(?:gnu|musl))?)': '([a-z0-9-]+)'/g)]
+  const loaderTargets = [...nativeTargets.matchAll(/'([a-z0-9]+-(?:arm64|x64)(?:-(?:gnu|musl))?)': '([a-z0-9-]+)'/g)]
     .map(([, host, target]) => ({ host, target }))
   const packageTargets = packageJson.napi.targets.map(packageTargetToBindingTarget)
   assert.deepEqual(
