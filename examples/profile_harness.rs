@@ -1,6 +1,7 @@
-//! Profiling harness: renders a fixture repeatedly under a named option preset.
+//! Profiling harness: renders a fixture repeatedly under a named option preset,
+//! reusing the output buffer between iterations.
 //!
-//! Usage: profile_harness <fixture-path> <preset> <iterations>
+//! Usage: profile_harness <fixture-path> <preset> <iterations> [--forever]
 //!
 //! Presets: minimal | commonmark | gfm | default | all | gfm-deflists |
 //!          gfm-merged | gfm-widths | gfm-footnotes
@@ -96,15 +97,35 @@ fn main() {
         std::process::exit(2);
     };
     let iterations: usize = iters.parse().expect("iterations must be a number");
+    let forever = match args.next().as_deref() {
+        None => false,
+        Some("--forever") if iterations == 0 => true,
+        Some(_) => {
+            eprintln!("usage: profile_harness <fixture-path> <preset> <iterations> [--forever]");
+            std::process::exit(2);
+        }
+    };
+    if args.next().is_some() {
+        eprintln!("usage: profile_harness <fixture-path> <preset> <iterations> [--forever]");
+        std::process::exit(2);
+    }
     let input = std::fs::read_to_string(&path).expect("fixture must be readable");
     let options = preset(&preset_name);
 
     let mut out = Vec::with_capacity(input.len() * 2);
     let start = std::time::Instant::now();
-    for _ in 0..iterations {
-        out.clear();
-        ferromark::to_html_into_with_options(black_box(&input), &mut out, &options);
-        black_box(&out);
+    if forever {
+        loop {
+            out.clear();
+            ferromark::to_html_into_with_options(black_box(&input), &mut out, &options);
+            black_box(&out);
+        }
+    } else {
+        for _ in 0..iterations {
+            out.clear();
+            ferromark::to_html_into_with_options(black_box(&input), &mut out, &options);
+            black_box(&out);
+        }
     }
     let elapsed = start.elapsed();
     let bytes = input.len() as f64 * iterations as f64;
