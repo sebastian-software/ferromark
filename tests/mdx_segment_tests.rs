@@ -2243,6 +2243,104 @@ fn render_keeps_the_first_link_reference_definition_across_segments() {
 }
 
 #[test]
+fn render_shares_heading_ids_across_markdown_segments() {
+    let out = render("# foo\n\n<X />\n\n# foo\n");
+    assert!(out.body.contains("<h1 id=\"foo\">foo</h1>"), "{}", out.body);
+    assert!(
+        out.body.contains("<h1 id=\"foo-1\">foo</h1>"),
+        "{}",
+        out.body
+    );
+}
+
+#[test]
+fn render_resolves_footnote_definition_across_segments() {
+    let options = ferromark::options!(Options::default(); footnotes: true, inline_footnotes: true,);
+    let out = render_with_options("a[^x]\n\n<X />\n\n[^x]: note\n", &options);
+    assert!(
+        out.body.contains("<sup><a href=\"#user-content-fn-x\""),
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("<li id=\"user-content-fn-x\">"),
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<p>note"), "{}", out.body);
+}
+
+#[test]
+fn render_numbers_inline_footnotes_across_segments() {
+    let options = ferromark::options!(Options::default(); footnotes: true, inline_footnotes: true,);
+    let out = render_with_options("^[first]\n\n<X />\n\n^[second]\n", &options);
+    assert!(
+        out.body.contains("id=\"user-content-inline-fnref-1\""),
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("id=\"user-content-inline-fnref-2\""),
+        "{}",
+        out.body
+    );
+    assert_eq!(
+        out.body.matches("<section data-footnotes").count(),
+        1,
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains(">first"), "{}", out.body);
+    assert!(out.body.contains(">second"), "{}", out.body);
+}
+
+#[test]
+fn render_inline_only_footnotes_across_segments() {
+    let options = ferromark::options!(Options::default(); inline_footnotes: true,);
+    let out = render_with_options("^[first]\n\n<X />\n\n^[second]\n", &options);
+    assert_eq!(
+        out.body.matches("<section data-footnotes").count(),
+        1,
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("id=\"user-content-inline-fnref-1\""),
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("id=\"user-content-inline-fnref-2\""),
+        "{}",
+        out.body
+    );
+}
+
+#[test]
+fn render_state_does_not_leak_between_mdx_documents() {
+    let first = render("# foo\n");
+    let second = render("# foo\n");
+    assert!(first.body.contains("<h1 id=\"foo\">"), "{}", first.body);
+    assert!(second.body.contains("<h1 id=\"foo\">"), "{}", second.body);
+    assert!(!second.body.contains("foo-1"), "{}", second.body);
+}
+
+#[test]
+fn render_footnotes_keep_first_definition_and_repeated_reference_number() {
+    let options = ferromark::options!(Options::default(); footnotes: true, inline_footnotes: true,);
+    let input = "[^x]: first\n\n<X />\n\na[^x] and [^x]\n\n[^x]: second\n";
+    let out = render_with_options(input, &options);
+    assert_eq!(
+        out.body.matches("data-footnote-ref>1</a>").count(),
+        2,
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<p>first"), "{}", out.body);
+    assert!(!out.body.contains("second"), "{}", out.body);
+}
+
+#[test]
 fn render_web_component_inline() {
     let input = "Text with <sl-button>Click</sl-button> here.\n";
     let out = render(input);

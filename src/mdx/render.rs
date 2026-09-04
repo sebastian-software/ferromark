@@ -1,6 +1,8 @@
 use std::{collections::HashMap, fmt::Write};
 
-use crate::{BlockParser, LinkRefStore, Options, RenderPolicy};
+use crate::{
+    BlockEvent, BlockParser, FootnoteStore, HtmlWriter, LinkRefStore, Options, RenderPolicy,
+};
 
 use super::{
     Segment,
@@ -1189,32 +1191,111 @@ pub fn try_render_with_options<'a>(
     options: &Options,
 ) -> Result<MdxOutput<'a>, crate::InputSizeError> {
     let segments = super::try_segment(input)?;
-    let link_refs = collect_link_references(&segments, options);
-    let mut body = String::with_capacity(input.len());
+    let mut parsed_markdown = Vec::new();
+    let mut link_refs = LinkRefStore::new();
+    let mut footnote_store = FootnoteStore::new();
     let mut esm: Vec<&'a str> = Vec::new();
     let mut front_matter: Option<&'a str> = None;
 
-    for seg in &segments {
-        match seg {
-            Segment::Esm(s) => {
-                esm.push(s);
-            }
-            Segment::Markdown(s) => {
-                let result = crate::try_parse_with_options_and_link_refs(s, options, &link_refs)?;
-                body.push_str(&result.html);
-                if front_matter.is_none() {
-                    front_matter = result.front_matter;
+    // Parse each Markdown slice once. Stores are assembled in source order
+    // before rendering so forward references resolve without changing the
+    // first-definition-wins rule.
+    for segment in &segments {
+        match segment {
+            Segment::Esm(s) => esm.push(s),
+            Segment::Markdown(source) => {
+                if front_matter.is_none() && options.front_matter {
+                    front_matter = crate::extract_front_matter(source).map(|(value, _)| value);
                 }
+
+                let markdown = crate::markdown_without_front_matter(source, options);
+                let source_offset = (markdown.as_ptr() as usize)
+                    .checked_sub(input.as_ptr() as usize)
+                    .expect("MDX Markdown segment must borrow from its input");
+                let mut events = Vec::with_capacity((markdown.len() / 16).max(64));
+                let mut parser =
+                    BlockParser::new_with_options(markdown.as_bytes(), options.clone());
+                parser.parse(&mut events);
+                crate::fixup_list_tight(&mut events);
+                if options.allow_link_refs {
+                    link_refs.merge_first_wins(parser.take_link_refs());
+                }
+                if options.footnotes {
+                    let mut notes = parser.take_footnote_store();
+                    notes.shift_ranges(crate::range::offset_to_u32(source_offset));
+                    footnote_store.merge_first_wins(notes);
+                }
+                parsed_markdown.push(ParsedMarkdown {
+                    source: markdown,
+                    events,
+                });
             }
             Segment::JsxBlockOpen(s)
             | Segment::JsxBlockClose(s)
             | Segment::JsxBlockSelfClose(s)
             | Segment::Expression(s) => {
-                body.push_str(s.trim());
-                body.push('\n');
+                let _ = s;
             }
         }
     }
+
+    let mut body_writer = HtmlWriter::with_capacity_for(input.len());
+    let mut inline_parser = crate::InlineParser::new();
+    let mut inline_events = Vec::with_capacity(64);
+    let mut render_state = crate::RenderState::new(options);
+    let mut footnote_numbers = crate::FootnoteNumbers::new(0);
+    let mut markdown_started = false;
+    let mut markdown_index = 0;
+    inline_parser.begin_document();
+
+    for segment in &segments {
+        match segment {
+            Segment::Esm(_) => {}
+            Segment::Markdown(_) => {
+                let parsed = &parsed_markdown[markdown_index];
+                crate::render_events_with_state(
+                    parsed.source.as_bytes(),
+                    &parsed.events,
+                    &mut body_writer,
+                    options,
+                    &link_refs,
+                    options.footnotes.then_some(&footnote_store),
+                    &mut inline_parser,
+                    &mut inline_events,
+                    &mut render_state,
+                    &mut footnote_numbers,
+                    !markdown_started,
+                );
+                markdown_started = true;
+                markdown_index += 1;
+            }
+            Segment::JsxBlockOpen(s)
+            | Segment::JsxBlockClose(s)
+            | Segment::JsxBlockSelfClose(s)
+            | Segment::Expression(s) => {
+                body_writer.write_string(s.trim());
+                body_writer.write_byte(b'\n');
+            }
+        }
+    }
+
+    if markdown_started && (options.footnotes || options.inline_footnotes) {
+        crate::render_footnotes_with_state(
+            input.as_bytes(),
+            &mut body_writer,
+            options,
+            &link_refs,
+            &footnote_store,
+            &mut inline_parser,
+            &mut inline_events,
+            &mut render_state,
+            &mut footnote_numbers,
+        );
+    }
+
+    let body = body_writer
+        .into_string()
+        .expect("rendering from a UTF-8 MDX string must produce UTF-8 HTML");
 
     Ok(MdxOutput {
         body,
@@ -1223,23 +1304,9 @@ pub fn try_render_with_options<'a>(
     })
 }
 
-fn collect_link_references(segments: &[Segment<'_>], options: &Options) -> LinkRefStore {
-    let mut link_refs = LinkRefStore::new();
-    let mut events = Vec::new();
-
-    for segment in segments {
-        let Segment::Markdown(markdown) = segment else {
-            continue;
-        };
-        let markdown = crate::markdown_without_front_matter(markdown, options);
-
-        events.clear();
-        let mut parser = BlockParser::new_with_options(markdown.as_bytes(), options.clone());
-        parser.parse(&mut events);
-        link_refs.merge_first_wins(parser.take_link_refs());
-    }
-
-    link_refs
+struct ParsedMarkdown<'a> {
+    source: &'a str,
+    events: Vec<BlockEvent>,
 }
 
 fn mdx_default_options() -> Options {
