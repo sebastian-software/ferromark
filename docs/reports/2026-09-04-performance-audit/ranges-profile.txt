@@ -1,0 +1,36 @@
+Analysis of sampling ferromark-audit-before (pid 4468) every 1 millisecond
+Process:         ferromark-audit-before [4468]
+Path:            /private/tmp/ferromark-audit-before
+Load Address:    0x1046a0000
+Identifier:      ferromark-audit-before
+Version:         ???
+Code Type:       ARM64
+Parent Process:  zsh [4467]
+Target Type:     live task
+
+Date/Time:       2026-09-04 21:57:39.456 +0200
+Launch Time:     2026-09-04 21:57:39.428 +0200
+OS Version:      macOS 26.6.2 (25G83)
+Report Version:  7
+Analysis Tool:   /usr/bin/sample
+
+Physical footprint:         5840K
+Physical footprint (peak):  5840K
+Idle exit:                  untracked
+----
+
+Sort by top of stack, same collapsed (when >= 5):
+        _RNvMNtCs9EYORsUHBSV_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in ferromark-audit-before)        2784
+        _dyld_start  (in dyld)        91
+        _RNvNtCs9EYORsUHBSV_9ferromark6render22is_safe_normalized_url  (in ferromark-audit-before)        27
+        _RNvNtCs9EYORsUHBSV_9ferromark6escape27url_encode_then_html_escape  (in ferromark-audit-before)        24
+        _RNvCs9EYORsUHBSV_9ferromark21render_inline_content  (in ferromark-audit-before)        14
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser21peek_html_block_start  (in ferromark-audit-before)        12
+        _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in ferromark-audit-before)        11
+        _RNvNtCs9EYORsUHBSV_9ferromark6escape16escape_text_into  (in ferromark-audit-before)        10
+        _RNvNtCs9EYORsUHBSV_9ferromark6render11is_safe_url  (in ferromark-audit-before)        6
+        _platform_memmove  (in libsystem_platform.dylib)        5
+        mach_msg2_trap  (in dyld)        5
+
+Binary images description not available
+

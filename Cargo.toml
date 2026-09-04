@@ -54,6 +54,10 @@ profiling = []
 name = "mdx_segment"
 required-features = ["mdx"]
 
+[[example]]
+name = "performance_audit"
+required-features = ["mdx"]
+
 [[bench]]
 name = "parsing"
 harness = false

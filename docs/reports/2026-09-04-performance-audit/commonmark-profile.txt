@@ -1,0 +1,87 @@
+Analysis of sampling profile_harness (pid 94255) every 1 millisecond
+Process:         profile_harness [94255]
+Path:            /Users/USER/*/profile_harness
+Load Address:    0x100914000
+Identifier:      profile_harness
+Version:         0
+Code Type:       ARM64
+Platform:        macOS
+Parent Process:  zsh [94254]
+Target Type:     live task
+
+Date/Time:       2026-09-04 21:53:26.818 +0200
+Launch Time:     2026-09-04 21:53:26.770 +0200
+OS Version:      macOS 26.6.2 (25G83)
+Report Version:  7
+Analysis Tool:   /usr/bin/sample
+
+Physical footprint:         2048K
+Physical footprint (peak):  2048K
+Idle exit:                  untracked
+----
+
+Sort by top of stack, same collapsed (when >= 5):
+        _RNvMNtCs2uMf2uGoigq_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile_harness)        799
+        _RNvMsb_Cs2uMf2uGoigq_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile_harness)        510
+        _RINvCs2uMf2uGoigq_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile_harness)        424
+        _platform_memmove  (in libsystem_platform.dylib)        269
+        _RNvCs2uMf2uGoigq_9ferromark21render_inline_content  (in profile_harness)        236
+        _RNvNtCs2uMf2uGoigq_9ferromark6escape16escape_text_into  (in profile_harness)        236
+        _RNvMs5_Cs2uMf2uGoigq_9ferromarkNtB5_16HeadingIdTracker7make_id  (in profile_harness)        165
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile_harness)        154
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile_harness)        84
+        _RNvNtCs2uMf2uGoigq_9ferromark6escape31url_escape_link_destination_raw  (in profile_harness)        61
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile_harness)        55
+        _RINvMs6_NtCs9nAj5kJTqSU_9hashbrown3rawINtB6_8RawTableTyINtCs3XHdhrdxuTv_8smallvec8SmallVecANtCs2uMf2uGoigq_9ferromark9SlugEntryj1_EEE14reserve_rehashNCINvNtB8_3map11make_hasheryBR_NtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE0EB1t_  (in profile_harness)        52
+        _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile_harness)        51
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile_harness)        50
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in profile_harness)        49
+        DYLD-STUB$$memcpy  (in profile_harness)        48
+        _RNvNtCs2uMf2uGoigq_9ferromark8link_ref20normalize_label_text  (in profile_harness)        48
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile_harness)        41
+        _RNvMs3_Cs2uMf2uGoigq_9ferromarkNtB5_14ParagraphState8add_text  (in profile_harness)        41
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile_harness)        39
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser17split_table_cells  (in profile_harness)        38
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile_harness)        38
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile_harness)        35
+        mach_absolute_time  (in libsystem_kernel.dylib)        33
+        _RNvNtCs2uMf2uGoigq_9ferromark6render22is_safe_normalized_url  (in profile_harness)        29
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile_harness)        28
+        _RNvMs6_Cs2uMf2uGoigq_9ferromarkNtB5_9CellState8add_text  (in profile_harness)        28
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile_harness)        27
+        _RNvNtCs2uMf2uGoigq_9ferromark6escape27url_encode_then_html_escape  (in profile_harness)        27
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter16write_link_title  (in profile_harness)        26
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser14try_blockquote  (in profile_harness)        26
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile_harness)        25
+        _RNvNtCs2uMf2uGoigq_9ferromark8link_ref20normalize_label_into  (in profile_harness)        21
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile_harness)        20
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile_harness)        19
+        _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE3geteECs2uMf2uGoigq_9ferromark  (in profile_harness)        18
+        _RINvNtNtNtNtCsgtPOCBgevO_4core5slice4sort6shared9smallsort25insertion_sort_shift_leftNtNtCs2uMf2uGoigq_9ferromark6inline9EmitPointNCINvMB8_SB1l_20sort_unstable_by_keyTmbENCNvMB1n_NtB1n_12InlineParser11emit_eventss_0E0EB1p_  (in profile_harness)        17
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter8td_start  (in profile_harness)        17
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser14emit_table_row  (in profile_harness)        14
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser21peek_html_block_start  (in profile_harness)        13
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile_harness)        13
+        _RNvNtNtCs2uMf2uGoigq_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile_harness)        13
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser16is_delimiter_row  (in profile_harness)        12
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter21heading_start_with_id  (in profile_harness)        11
+        _RNvNtCs2uMf2uGoigq_9ferromark6escape16escape_full_into  (in profile_harness)        10
+        _platform_memcmp  (in libsystem_platform.dylib)        10
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter11heading_end  (in profile_harness)        9
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser14try_code_fence  (in profile_harness)        9
+        _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib)        9
+        _xzm_free  (in libsystem_malloc.dylib)        8
+        _RINvNtCsgtPOCBgevO_4core3ptr9drop_glueINtNtB4_6option6OptionNtCs2uMf2uGoigq_9ferromark16HeadingIdTrackerEEBY_  (in profile_harness)        7
+        _xzm_xzone_malloc  (in libsystem_malloc.dylib)        7
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter13paragraph_end  (in profile_harness)        6
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter6td_end  (in profile_harness)        6
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser17would_start_block  (in profile_harness)        6
+        _RNvMNtNtCs2uMf2uGoigq_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile_harness)        6
+        _malloc_zone_malloc  (in libsystem_malloc.dylib)        6
+        <deduplicated_symbol>  (in libsystem_malloc.dylib)        5
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter15paragraph_start  (in profile_harness)        5
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile_harness)        5
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter20unescape_backslashes  (in profile_harness)        5
+        _RNvMNtCs2uMf2uGoigq_9ferromark6renderNtB2_10HtmlWriter8ul_start  (in profile_harness)        5
+        _RNvNtCs2uMf2uGoigq_9ferromark6render26decode_entities_commonmark  (in profile_harness)        5
+
