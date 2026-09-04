@@ -1,6 +1,11 @@
 # Releasing ferromark
 
-Release Please owns the shared Rust and npm version. Its release PR updates `Cargo.toml`, `node/native/Cargo.toml`, and `node/ferromark/package.json` together.
+Release Please owns the shared Rust and npm version. Its release PR updates
+`Cargo.toml`, `node/native/Cargo.toml`, `node/ferromark/package.json`, the native
+platform package versions, and their specifiers in `node/pnpm-lock.yaml` together.
+The lockfile updater changes the eight local dependency specifiers while retaining
+their workspace links. CI checks this contract with
+`ruby scripts/test-release-version-sync.rb --self-test`.
 
 When that PR merges, `.github/workflows/publish.yml`:
 
