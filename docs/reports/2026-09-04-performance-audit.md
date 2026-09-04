@@ -2,9 +2,10 @@
 
 Baseline: `14009ced40e6c06d81e8208fc4e2f8ad4a9ac29b` (ferromark 0.7.0).
 
-Two bounded scanner fixes were implemented locally. Eight distinct findings
-were filed as GitHub issues, including the two fixes pending review/merge.
-The other six findings remain open; this audit does not claim to fix them.
+The initial audit identified eight findings. Follow-up implementation and review
+now cover all eight, plus two additional review findings, in seven pull requests.
+The original measurements below describe the initial pass; the final follow-up
+results and dependency order are recorded at the end of this report.
 
 ## Method and scope
 
@@ -180,3 +181,81 @@ cargo bench --locked --bench parsing -- --sample-size 30 --warm-up-time 0.3 --me
 For sampling, run `performance_audit spin <case> <size> <seconds>` and attach
 macOS `sample` to that process. The existing `profile_harness` also remains
 usable for fixture/preset profiling. The broken wrapper scripts were bypassed.
+
+
+## Follow-up implementation and review
+
+The remaining issues were delegated to GPT-5.6 Luna agents at high reasoning
+and reviewed independently. Review corrections covered nested footnote numbering,
+reset ownership, document-wide heading identity, UTF-8 source ranges, event-buffer
+retention, document-only frontmatter, Cargo PGO configuration, and signal cleanup.
+
+| Issues | Change | Pull request | Base dependency |
+| --- | --- | --- | --- |
+| #244, #245 | Bound angle scanning and trailing-parenthesis trimming | [#252](https://github.com/sebastian-software/ferromark/pull/252) | main |
+| #246 | Index autolink exclusion ranges | [#254](https://github.com/sebastian-software/ferromark/pull/254) | #252 |
+| #247 | Reuse footnote state and global numbering | [#253](https://github.com/sebastian-software/ferromark/pull/253) | main |
+| #248 | Reserve all emitted heading IDs | [#256](https://github.com/sebastian-software/ferromark/pull/256) | #253 |
+| #249, #250, #257 | Parse MDX segments once; preserve document state/frontmatter | [#259](https://github.com/sebastian-software/ferromark/pull/259) | #256 |
+| #251 | Repair standalone profiling and process cleanup | [#260](https://github.com/sebastian-software/ferromark/pull/260) | main |
+| #255 | Patch the transitive homepage TOML dependency | [#258](https://github.com/sebastian-software/ferromark/pull/258) | main |
+
+Merge #258 first to remove the shared homepage audit blocker. Then merge
+#252 → #254 and #253 → #256 → #259, retargeting each dependent PR to main once
+its base has merged. #260 is otherwise independent. The complete CI for #258
+is green; older branches still report the homepage audit until that fix is included.
+
+### Final measurements
+
+Same release-debug audit harness and input/options on the baseline and optimized
+revisions; five 150 ms windows per size, with source construction outside timing.
+Times below use the output-only reuse lane (MDX constructs its returned output).
+
+| Probe | Baseline | Optimized | Observation |
+| --- | ---: | ---: | --- |
+| 8,192 angle autolinks, GFM literals enabled | 16.065 ms | 1.310 ms | 12.3× faster; range-query scans removed |
+| 8,192 footnote definitions | 9.219 ms | 4.394 ms | 2.1× faster in this paired run |
+| 8,192 MDX segments | 13.650 ms | 3.929 ms | 3.5× faster on final code |
+| CommonMark 52,342-byte corpus, all core changes combined | 206.049 µs | 203.790 µs | −1.1% |
+| Tables 4,552-byte corpus, all core changes combined | 37.647 µs | 37.962 µs | +0.8% |
+
+The reusable-Renderer control lanes for CommonMark/tables were within +1.1%.
+Local timings are machine-specific; the raw windows retain observed variance.
+
+Footnotes at 8,192 definitions requested 572,209,004 → 3,688,052 cumulative
+allocation bytes (99.36% reduction); allocation/reallocation calls fell from
+106,578 to 49,239. With a reusable Renderer, requested bytes fell from
+570,968,540 to 2,447,588.
+
+MDX at 128 segments requested 2,083,022 → 138,512 cumulative bytes and made
+6,592 → 458 allocation/reallocation calls. Retaining parsed events trades memory
+for avoiding the second parse: a separate live-allocation probe at 8,192 segments
+measured 1,408,112 → 2,883,664 additional live requested bytes above the pre-render
+baseline. This is **not RSS**, and there is no claim of lower peak memory. Review
+reduced the minimum per-segment event capacity to eight and frees each event
+buffer immediately after rendering its segment.
+
+Raw follow-up data: [measurements](2026-09-04-performance-audit/follow-up-measurements.json).
+The [live-allocation probe](2026-09-04-performance-audit/mdx-memory-probe.rs)
+includes reproduction instructions. The final combined review commit was
+`0a46520` (all implementation PRs, before this documentation update).
+
+### Final validation
+
+- Combined implementation: **968 passed, 0 failed, 3 ignored**, including trusted
+  CommonMark coverage; all-target/all-feature Clippy with warnings denied, format,
+  diff checks and the new profiling contract tests pass.
+- The combined MDX integration regression includes natural heading suffixes,
+  Unicode frontmatter, JSX, inline notes, forward and nested reference notes.
+  It failed before the changes and passes after their integration.
+- Both profiling entry points ran with real macOS `sample` from `/tmp`, with
+  MD4C_DIR unset and a custom CARGO_TARGET_DIR. Both produced profiles and their
+  workload PIDs were confirmed reaped. Mocked tests cover failure, SIGTERM,
+  PGO flags/paths, exact Cargo JSON artifacts, and cross-parser dispatch.
+- Actual PGO profile-use and cross-parser execution were not exercised; their
+  invocation contracts were tested. Ferromark-only profiling explicitly uses
+  the commonmark preset and a reused output buffer.
+- The homepage fix passes frozen install, typecheck, build/prerender verification,
+  production audit, and actual remark TOML-frontmatter pipeline checks for valid
+  and malformed input. No high advisories remain in that audit; one low and six
+  moderate advisories remain.
