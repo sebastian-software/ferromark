@@ -1,4 +1,4 @@
-use ferromark::{Options, to_html_with_options};
+use ferromark::{Options, Renderer, to_html_with_options};
 
 fn opts() -> Options {
     ferromark::options!(Options::default();
@@ -52,6 +52,57 @@ fn footnote_backref() {
         "Missing backref: {result}"
     );
     assert!(result.contains("\u{21a9}"), "Missing ↩ symbol: {result}");
+}
+
+#[test]
+fn nested_references_extend_document_order_and_terminate_cycles() {
+    let result = render("Text[^a].\n\n[^a]: A references[^b].\n\n[^b]: B references[^a].");
+
+    let section = result
+        .split_once("<section data-footnotes class=\"footnotes\">\n")
+        .map(|(_, section)| section)
+        .expect("footnote section");
+    let a_pos = section.find("<li id=\"user-content-fn-a\">").unwrap();
+    let b_pos = section.find("<li id=\"user-content-fn-b\">").unwrap();
+    assert!(
+        a_pos < b_pos,
+        "nested definition should be queued after a: {result}"
+    );
+    assert!(
+        section[a_pos..b_pos].contains("href=\"#user-content-fn-b\""),
+        "a should retain its nested reference: {result}"
+    );
+    assert!(
+        section[a_pos..b_pos].contains("data-footnote-ref>2</a></sup>"),
+        "b should receive its document ordinal: {result}"
+    );
+    assert!(
+        section[a_pos..b_pos].contains("id=\"user-content-fnref-b\""),
+        "b's backlink target should remain in the nested reference: {result}"
+    );
+    assert!(
+        section[b_pos..].contains("href=\"#user-content-fn-a\""),
+        "b should retain the cycle edge back to a: {result}"
+    );
+    assert!(
+        section[b_pos..].contains("data-footnote-ref>1</a></sup>"),
+        "a should retain ordinal 1 through the cycle: {result}"
+    );
+    assert!(
+        section[b_pos..].contains("href=\"#user-content-fnref-b\""),
+        "b's backlink should target its nested reference: {result}"
+    );
+    assert_eq!(result.matches("<li id=\"user-content-fn-").count(), 2);
+}
+
+#[test]
+fn reusable_renderer_resets_nested_document_numbering() {
+    let input = "Text[^a].\n\n[^a]: A references[^b].\n\n[^b]: B.";
+    let follow_up = "Text[^b].\n\n[^b]: Follow-up.";
+    let mut renderer = Renderer::with_options(opts());
+
+    assert_eq!(renderer.render(input), render(input));
+    assert_eq!(renderer.render(follow_up), render(follow_up));
 }
 
 // --- Multiple footnotes with numbering ---

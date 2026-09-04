@@ -663,6 +663,7 @@ pub struct Renderer {
     inline_parser: InlineParser,
     inline_events: Vec<InlineEvent>,
     render_state: RenderState,
+    footnote_numbers: FootnoteNumbers,
 }
 
 impl Renderer {
@@ -681,6 +682,7 @@ impl Renderer {
             block_events: Vec::with_capacity(64),
             inline_parser: InlineParser::new(),
             inline_events: Vec::with_capacity(64),
+            footnote_numbers: FootnoteNumbers::new(0),
         }
     }
 
@@ -757,6 +759,7 @@ impl Renderer {
             &mut self.inline_parser,
             &mut self.inline_events,
             &mut self.render_state,
+            &mut self.footnote_numbers,
             None,
         );
     }
@@ -1356,7 +1359,6 @@ struct RenderState {
     blockquote_depth: u32,
     in_table_head: bool,
     pending_task: block::TaskState,
-    footnote_numbers: FootnoteNumbers,
     heading_id_tracker: Option<HeadingIdTracker>,
     callout_stack: Vec<Option<block::CalloutType>>,
     pending_footnote_backref: Option<(String, usize)>,
@@ -1379,7 +1381,6 @@ impl RenderState {
             blockquote_depth: 0,
             in_table_head: false,
             pending_task: block::TaskState::None,
-            footnote_numbers: FootnoteNumbers::new(0),
             heading_id_tracker: options.heading_ids.then(HeadingIdTracker::new),
             callout_stack: Vec::new(),
             pending_footnote_backref: None,
@@ -1390,7 +1391,7 @@ impl RenderState {
         }
     }
 
-    fn reset(&mut self, options: &Options, footnote_definition_count: usize) {
+    fn reset(&mut self, options: &Options) {
         self.para_state.reset();
         self.heading_state.reset();
         self.cell_state.reset();
@@ -1401,7 +1402,6 @@ impl RenderState {
         self.blockquote_depth = 0;
         self.in_table_head = false;
         self.pending_task = block::TaskState::None;
-        self.footnote_numbers.reset(footnote_definition_count);
         match (options.heading_ids, self.heading_id_tracker.as_mut()) {
             (true, Some(tracker)) => tracker.reset(),
             (true, None) => self.heading_id_tracker = Some(HeadingIdTracker::new()),
@@ -1453,13 +1453,13 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
         inline_parser: &'a mut InlineParser,
         inline_events: &'a mut Vec<InlineEvent>,
         state: &'a mut RenderState,
+        footnote_numbers: &'a mut FootnoteNumbers,
         link_refs: &'a LinkRefStore,
         footnote_store: Option<&'a FootnoteStore>,
         options: &'a Options,
         fenced_code_renderer: Option<&'r mut R>,
         headings: Option<&'a mut Vec<Heading>>,
     ) -> Self {
-        state.reset(options, footnote_store.map_or(0, FootnoteStore::len));
         Self {
             writer,
             inline_parser,
@@ -1476,7 +1476,7 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
             pending_task: &mut state.pending_task,
             link_refs,
             footnote_store,
-            footnote_numbers: &mut state.footnote_numbers,
+            footnote_numbers,
             heading_id_tracker: &mut state.heading_id_tracker,
             callout_stack: &mut state.callout_stack,
             pending_footnote_backref: &mut state.pending_footnote_backref,
@@ -1536,6 +1536,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     let mut inline_parser = InlineParser::new();
     let mut inline_events = Vec::with_capacity(64);
     let mut render_state = RenderState::new(options);
+    let mut footnote_numbers = FootnoteNumbers::new(0);
     render_to_writer_with_state(
         input,
         writer,
@@ -1547,6 +1548,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
         &mut inline_parser,
         &mut inline_events,
         &mut render_state,
+        &mut footnote_numbers,
         shared_link_refs,
     );
 }
@@ -1563,6 +1565,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     inline_parser: &mut InlineParser,
     inline_events: &mut Vec<InlineEvent>,
     render_state: &mut RenderState,
+    footnote_numbers: &mut FootnoteNumbers,
     shared_link_refs: Option<&LinkRefStore>,
 ) {
     // Parse blocks
@@ -1588,12 +1591,15 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     let link_refs = shared_link_refs.unwrap_or(&segment_link_refs);
     let fn_store_ref = footnote_store.as_ref();
     inline_parser.begin_document();
+    render_state.reset(options);
+    footnote_numbers.reset_document(footnote_store.as_ref().map_or(0, FootnoteStore::len));
     {
         let mut context = RenderContext::new(
             writer,
             inline_parser,
             inline_events,
             render_state,
+            footnote_numbers,
             link_refs,
             fn_store_ref,
             options,
@@ -2134,7 +2140,10 @@ struct ImageState {
     depth: u32,
 }
 
-/// First-reference ordering plus constant-time definition-to-ordinal lookup.
+/// Document-wide first-reference ordering plus constant-time definition lookup.
+///
+/// This is kept separate from [`RenderState`] because the same numbering map
+/// is needed while rendering every definition in the footnote section.
 struct FootnoteNumbers {
     order: Vec<FootnoteTarget>,
     /// Zero means unassigned; stored ordinals are one-based.
@@ -2157,7 +2166,7 @@ impl FootnoteNumbers {
         }
     }
 
-    fn reset(&mut self, definition_count: usize) {
+    fn reset_document(&mut self, definition_count: usize) {
         self.order.clear();
         self.reference_ordinals.clear();
         self.reference_ordinals.resize(definition_count, 0);
@@ -2671,12 +2680,19 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
     /// Render collected footnotes with a fresh block state per definition.
     fn render_footnote_section(&mut self, input: &[u8]) {
         let footnote_store = self.footnote_store;
-        let order = self.footnote_numbers.order.clone();
+        let nested_options = Options {
+            inline_footnotes: false,
+            ..self.options.clone()
+        };
+        let mut nested_state = RenderState::new(&nested_options);
         self.writer
             .write_str("<section data-footnotes class=\"footnotes\">\n<ol>\n");
 
-        for (seq_num, target) in order.into_iter().enumerate() {
+        let mut seq_num = 0;
+        while seq_num < self.footnote_numbers.order.len() {
+            let target = self.footnote_numbers.order[seq_num];
             let number = seq_num + 1;
+            seq_num += 1;
             match target {
                 FootnoteTarget::Reference(def_idx) => {
                     let Some(footnote_store) = footnote_store else {
@@ -2694,16 +2710,13 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         .iter()
                         .rposition(|event| matches!(event, BlockEvent::ParagraphEnd));
                     let renderer = self.fenced_code_renderer.as_deref_mut();
-                    let nested_options = Options {
-                        inline_footnotes: false,
-                        ..self.options.clone()
-                    };
-                    let mut nested_state = RenderState::new(&nested_options);
+                    nested_state.reset(&nested_options);
                     let mut nested = RenderContext::new(
                         &mut *self.writer,
                         &mut *self.inline_parser,
                         &mut *self.inline_events,
                         &mut nested_state,
+                        &mut *self.footnote_numbers,
                         self.link_refs,
                         Some(footnote_store),
                         &nested_options,
