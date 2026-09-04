@@ -1212,7 +1212,9 @@ pub fn try_render_with_options<'a>(
                 let source_offset = (markdown.as_ptr() as usize)
                     .checked_sub(input.as_ptr() as usize)
                     .expect("MDX Markdown segment must borrow from its input");
-                let mut events = Vec::with_capacity((markdown.len() / 16).max(64));
+                // These buffers live until their segment is rendered. Small
+                // JSX-separated paragraphs usually need only a few events.
+                let mut events = Vec::with_capacity((markdown.len() / 16).max(8));
                 let mut parser =
                     BlockParser::new_with_options(markdown.as_bytes(), options.clone());
                 parser.parse(&mut events);
@@ -1245,7 +1247,7 @@ pub fn try_render_with_options<'a>(
     let mut render_state = crate::RenderState::new(options);
     let mut footnote_numbers = crate::FootnoteNumbers::new(0);
     let mut markdown_started = false;
-    let mut markdown_index = 0;
+    let mut parsed_markdown = parsed_markdown.into_iter();
     inline_parser.begin_document();
     render_state.reset(options);
     footnote_numbers.reset_document(footnote_store.len());
@@ -1254,7 +1256,9 @@ pub fn try_render_with_options<'a>(
         match segment {
             Segment::Esm(_) => {}
             Segment::Markdown(_) => {
-                let parsed = &parsed_markdown[markdown_index];
+                let parsed = parsed_markdown
+                    .next()
+                    .expect("each Markdown segment has one parsed event stream");
                 crate::render_events_with_state(
                     parsed.source.as_bytes(),
                     &parsed.events,
@@ -1268,7 +1272,6 @@ pub fn try_render_with_options<'a>(
                     &mut footnote_numbers,
                 );
                 markdown_started = true;
-                markdown_index += 1;
             }
             Segment::JsxBlockOpen(s)
             | Segment::JsxBlockClose(s)
