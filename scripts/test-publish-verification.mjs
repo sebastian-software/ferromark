@@ -58,6 +58,25 @@ function assertCratePublicationCanBeRecovered(source) {
   assert.match(crateJob, /run: cargo publish --locked/)
 }
 
+function assertCratePublicationUsesTrustedPublishing(source) {
+  const crateJob = source.slice(
+    source.indexOf('\n  publish-crate:\n'),
+    source.indexOf('\n  build-native:\n'),
+  )
+  assert.match(crateJob, /    permissions:\n      contents: read\n      id-token: write\n/)
+  assert.match(
+    crateJob,
+    /id: crates-io-auth\n        uses: rust-lang\/crates-io-auth-action@[a-f0-9]{40} /,
+  )
+  assert.match(crateJob, /CARGO_REGISTRY_TOKEN: \$\{\{ steps\.crates-io-auth\.outputs\.token \}\}/)
+  assert.doesNotMatch(crateJob, /secrets\.CARGO_REGISTRY_TOKEN/)
+  assert.ok(
+    crateJob.indexOf('uses: rust-lang/crates-io-auth-action@') <
+      crateJob.indexOf('run: cargo publish --locked'),
+    'crate authentication must precede publication',
+  )
+}
+
 function assertPlatformPackagesArePublished(source) {
   for (const artifact of [
     'darwin-arm64',
@@ -92,6 +111,7 @@ function assertPlatformPackagesArePublished(source) {
 assertValidVerifierJob(workflow)
 assertCratePublicationWaitsForVerification(workflow)
 assertCratePublicationCanBeRecovered(workflow)
+assertCratePublicationUsesTrustedPublishing(workflow)
 assertPlatformPackagesArePublished(workflow)
 assert.throws(
   () => assertValidVerifierJob(workflow.replace('\n  verify-npm-publish:\n', '\n  npm-check:\n')),
@@ -133,6 +153,14 @@ assert.throws(
     ),
   /cargo publish --locked/,
 )
+
+for (const [before, after] of [
+  ['      id-token: write\n', ''],
+  ['id: crates-io-auth', 'id: wrong-auth'],
+  ['steps.crates-io-auth.outputs.token', 'secrets.CARGO_REGISTRY_TOKEN'],
+]) {
+  assert.throws(() => assertCratePublicationUsesTrustedPublishing(workflow.replace(before, after)))
+}
 
 assert.equal(registryVersionUrl('ferromark', '0.7.0'), 'https://registry.npmjs.org/ferromark/0.7.0')
 

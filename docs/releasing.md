@@ -25,6 +25,27 @@ The npm package must have a GitHub Actions trusted publisher configured with:
 
 The publish job requests `id-token: write` and runs `npm publish --provenance`. It does not read or forward an npm token. Keep the workflow filename and npm trusted-publisher settings aligned.
 
+## crates.io trusted publisher setup
+
+The `ferromark` crate must have a GitHub Actions trusted publisher configured with:
+
+- organization or user: `sebastian-software`
+- repository: `ferromark`
+- workflow: `publish.yml`
+- environment: leave unset (the crate job does not use a GitHub environment)
+
+The `publish-crate` job requests `id-token: write` and exchanges its GitHub OIDC
+identity for a temporary crates.io token using the pinned
+`rust-lang/crates-io-auth-action`. Only `cargo publish --locked` receives that
+token; the action revokes it in its post-job cleanup. The workflow does not use
+the repository's `CARGO_REGISTRY_TOKEN` secret.
+
+After an interrupted release, run the Release workflow manually on `main` to
+retry crate publication. Manual recovery uses the same trusted publisher and
+skips Release Please and npm publication. Check that the version in `Cargo.toml`
+is the intended unpublished version before starting recovery. A real OIDC token
+exchange requires GitHub Actions; local dry runs cannot validate publisher setup.
+
 ## Local package checks
 
 From `node/`:
