@@ -145,3 +145,12 @@ fn trailing_parentheses_preserve_balance_across_punctuation_and_entities() {
         );
     }
 }
+
+#[test]
+fn repeated_angle_autolinks_keep_gfm_output_flat() {
+    let input = "<https://example.com> ".repeat(8192);
+    let html = to_html_with_options(&input, &Options::gfm());
+
+    assert_eq!(html.matches("<a href=").count(), 8192);
+    assert!(!html.contains("<a href=\"https://example.com\"><a href="));
+}
