@@ -1247,6 +1247,8 @@ pub fn try_render_with_options<'a>(
     let mut markdown_started = false;
     let mut markdown_index = 0;
     inline_parser.begin_document();
+    render_state.reset(options);
+    footnote_numbers.reset_document(footnote_store.len());
 
     for segment in &segments {
         match segment {
@@ -1264,7 +1266,6 @@ pub fn try_render_with_options<'a>(
                     &mut inline_events,
                     &mut render_state,
                     &mut footnote_numbers,
-                    !markdown_started,
                 );
                 markdown_started = true;
                 markdown_index += 1;

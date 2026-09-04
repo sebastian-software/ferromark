@@ -2341,6 +2341,56 @@ fn render_footnotes_keep_first_definition_and_repeated_reference_number() {
 }
 
 #[test]
+fn render_delayed_footnote_ranges_survive_front_matter_unicode_and_jsx() {
+    let options = ferromark::options!(Options::default(); footnotes: true,);
+    let input = "---\ntitle: café\n---\n\nRésumé[^a]\n\n<Component />\n\n[^a]: première ligne\n      ```rust\n      let café = true;\n      ```\n      > quoted\n      >\n      > - listed\n";
+    let out = render_with_options(input, &options);
+    assert!(
+        out.body.contains("<li id=\"user-content-fn-a\">"),
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<p>première ligne"), "{}", out.body);
+    assert!(
+        out.body
+            .contains("<code class=\"language-rust\">let café = true;"),
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<blockquote>"), "{}", out.body);
+    assert!(out.body.contains("<li>listed "), "{}", out.body);
+}
+
+#[test]
+fn render_nested_footnote_reference_resolves_in_a_later_segment() {
+    let options = ferromark::options!(Options::default(); footnotes: true,);
+    let input = "See[^a]\n\n<X />\n\n[^a]: outer[^b]\n\n<X />\n\n[^b]: inner\n";
+    let out = render_with_options(input, &options);
+    assert!(
+        out.body.contains("<li id=\"user-content-fn-a\">"),
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("<li id=\"user-content-fn-b\">"),
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<p>outer"), "{}", out.body);
+    assert!(out.body.contains("<p>inner"), "{}", out.body);
+}
+
+#[test]
+fn render_keeps_independent_container_boundaries_byte_identical() {
+    let input = "# Title\n\n- one\n- two\n\n<X />\n\n| a | b |\n| - | - |\n| c | d |\n\n<X />\n\n```rust\ncode\n```\n";
+    let out = render(input);
+    assert_eq!(
+        out.body,
+        "<h1 id=\"title\">Title</h1>\n<ul>\n<li>one</li>\n<li>two</li>\n</ul>\n<X />\n<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<X />\n<pre><code class=\"language-rust\">code\n</code></pre>\n"
+    );
+}
+
+#[test]
 fn render_web_component_inline() {
     let input = "Text with <sl-button>Click</sl-button> here.\n";
     let out = render(input);

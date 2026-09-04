@@ -1518,38 +1518,6 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
             headings,
         }
     }
-
-    #[allow(clippy::too_many_arguments)]
-    fn new_with_state(
-        writer: &'a mut HtmlWriter,
-        inline_parser: &'a mut InlineParser,
-        inline_events: &'a mut Vec<InlineEvent>,
-        state: &'a mut RenderState,
-        footnote_numbers: &'a mut FootnoteNumbers,
-        link_refs: &'a LinkRefStore,
-        footnote_store: Option<&'a FootnoteStore>,
-        options: &'a Options,
-        fenced_code_renderer: Option<&'r mut R>,
-        headings: Option<&'a mut Vec<Heading>>,
-        reset_state: bool,
-    ) -> Self {
-        if reset_state {
-            state.reset(options);
-            footnote_numbers.reset_document(footnote_store.map_or(0, FootnoteStore::len));
-        }
-        Self::new(
-            writer,
-            inline_parser,
-            inline_events,
-            state,
-            footnote_numbers,
-            link_refs,
-            footnote_store,
-            options,
-            fenced_code_renderer,
-            headings,
-        )
-    }
 }
 
 /// Render an already-parsed Markdown event stream into a shared document
@@ -1568,9 +1536,8 @@ pub(crate) fn render_events_with_state(
     inline_events: &mut Vec<InlineEvent>,
     render_state: &mut RenderState,
     footnote_numbers: &mut FootnoteNumbers,
-    reset_state: bool,
 ) {
-    let mut context = RenderContext::<DisabledFencedCodeRenderer>::new_with_state(
+    let mut context = RenderContext::<DisabledFencedCodeRenderer>::new(
         writer,
         inline_parser,
         inline_events,
@@ -1581,7 +1548,6 @@ pub(crate) fn render_events_with_state(
         options,
         None,
         None,
-        reset_state,
     );
     for event in events {
         context.render_block_event(input, event);
@@ -1602,7 +1568,7 @@ pub(crate) fn render_footnotes_with_state(
     render_state: &mut RenderState,
     footnote_numbers: &mut FootnoteNumbers,
 ) {
-    let mut context = RenderContext::<DisabledFencedCodeRenderer>::new_with_state(
+    let mut context = RenderContext::<DisabledFencedCodeRenderer>::new(
         writer,
         inline_parser,
         inline_events,
@@ -1613,7 +1579,6 @@ pub(crate) fn render_footnotes_with_state(
         options,
         None,
         None,
-        false,
     );
     if !context.footnote_numbers.is_empty() {
         context.render_footnote_section(input);
