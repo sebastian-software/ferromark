@@ -379,6 +379,21 @@ fn bench_pathological(c: &mut Criterion) {
         b.iter(|| ferromark::to_html(black_box(&html_starts)))
     });
 
+    // Failed autolink candidates must not repeatedly scan the same suffix.
+    let angle_starts = format!("a {}", "<".repeat(8192));
+    group.throughput(Throughput::Bytes(angle_starts.len() as u64));
+    group.bench_function("angle_starts_8k", |b| {
+        b.iter(|| ferromark::to_html(black_box(&angle_starts)))
+    });
+
+    // GFM URL suffix trimming must count parentheses at most once per URL.
+    let trailing_parentheses = format!("https://example.com/{}", ")".repeat(8192));
+    let gfm = ferromark::Options::gfm();
+    group.throughput(Throughput::Bytes(trailing_parentheses.len() as u64));
+    group.bench_function("unmatched_url_parentheses_8k", |b| {
+        b.iter(|| ferromark::to_html_with_options(black_box(&trailing_parentheses), &gfm))
+    });
+
     group.finish();
 }
 

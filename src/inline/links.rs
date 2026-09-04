@@ -774,8 +774,10 @@ fn try_parse_autolink(text: &[u8], start: usize) -> Option<Autolink> {
     let content_start = start + 1;
     let mut pos = content_start;
 
-    // Find the closing '>'
-    while pos < len && text[pos] != b'>' && text[pos] != b' ' && text[pos] != b'\n' {
+    // A URI autolink cannot contain '<', spaces, or ASCII controls. Stop at
+    // another opener as well as invalid whitespace so a run of failed '<'
+    // candidates never scans the same suffix repeatedly.
+    while pos < len && !matches!(text[pos], 0..=b' ' | b'<' | b'>' | 0x7f) {
         pos += 1;
     }
 
@@ -1253,6 +1255,10 @@ fn try_email_autolink(text: &[u8], at_pos: usize) -> Option<AutolinkLiteral> {
 
 /// Trim trailing punctuation from an autolink per GFM rules.
 fn trim_autolink_trailing(text: &[u8], start: usize, mut end: usize) -> usize {
+    // Compute the balance only if a trailing ')' needs it. All other suffix
+    // removals below contain no parentheses, so only removing ')' changes the
+    // excess. Recounting the whole URL after each removal was quadratic.
+    let mut excess_closes = None;
     loop {
         if end <= start {
             return end;
@@ -1270,10 +1276,14 @@ fn trim_autolink_trailing(text: &[u8], start: usize, mut end: usize) -> usize {
 
         // Rule 2: Parenthesis balancing
         if last == b')' {
-            let url = &text[start..end];
-            let open_count = url.iter().filter(|&&b| b == b'(').count();
-            let close_count = url.iter().filter(|&&b| b == b')').count();
-            if close_count > open_count {
+            let excess = excess_closes.get_or_insert_with(|| {
+                let url = &text[start..end];
+                let open_count = url.iter().filter(|&&b| b == b'(').count();
+                let close_count = url.iter().filter(|&&b| b == b')').count();
+                close_count.saturating_sub(open_count)
+            });
+            if *excess > 0 {
+                *excess -= 1;
                 end -= 1;
                 continue;
             }

@@ -114,3 +114,34 @@ fn autolink_disabled() {
         result
     );
 }
+
+#[test]
+fn many_unmatched_trailing_parentheses_stay_outside_the_link() {
+    let suffix = ")".repeat(32_768);
+    let input = format!("https://example.com/path{suffix}");
+    assert_eq!(
+        autolink_html(&input),
+        format!(
+            "<p><a href=\"https://example.com/path\">https://example.com/path</a>{suffix}</p>\n"
+        )
+    );
+}
+
+#[test]
+fn trailing_parentheses_preserve_balance_across_punctuation_and_entities() {
+    for (tail, linked, rest) in [
+        ("(x))", "(x)", ")"),
+        ("(x)).", "(x)", ")."),
+        ("(x))&amp;)", "(x)", ")&amp;)"),
+        ("((x))", "((x))", ""),
+        ("((x)", "((x)", ""),
+        (")(x))", ")(x", "))"),
+    ] {
+        let url = format!("https://example.com/{linked}");
+        assert_eq!(
+            autolink_html(&format!("https://example.com/{tail}")),
+            format!("<p><a href=\"{url}\">{url}</a>{rest}</p>\n"),
+            "tail={tail:?}"
+        );
+    }
+}

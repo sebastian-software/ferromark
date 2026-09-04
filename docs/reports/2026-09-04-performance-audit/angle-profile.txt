@@ -1,0 +1,26 @@
+Analysis of sampling performance_audit (pid 98773) every 1 millisecond
+Process:         performance_audit [98773]
+Path:            /Users/USER/*/performance_audit
+Load Address:    0x102c90000
+Identifier:      performance_audit
+Version:         0
+Code Type:       ARM64
+Platform:        macOS
+Parent Process:  zsh [98771]
+Target Type:     live task
+
+Date/Time:       2026-09-04 21:55:19.670 +0200
+Launch Time:     2026-09-04 21:55:19.634 +0200
+OS Version:      macOS 26.6.2 (25G83)
+Report Version:  7
+Analysis Tool:   /usr/bin/sample
+
+Physical footprint:         2032K
+Physical footprint (peak):  2032K
+Idle exit:                  untracked
+----
+
+Sort by top of stack, same collapsed (when >= 5):
+        _RNvMNtCs9EYORsUHBSV_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in performance_audit)        4107
+        _RNvNtCs9EYORsUHBSV_9ferromark6escape16escape_text_into  (in performance_audit)        11
+

@@ -1,0 +1,88 @@
+Analysis of sampling ferromark-audit-before (pid 4480) every 1 millisecond
+Process:         ferromark-audit-before [4480]
+Path:            /private/tmp/ferromark-audit-before
+Load Address:    0x104a2c000
+Identifier:      ferromark-audit-before
+Version:         0
+Code Type:       ARM64
+Platform:        macOS
+Parent Process:  zsh [4467]
+Target Type:     live task
+
+Date/Time:       2026-09-04 21:57:46.677 +0200
+Launch Time:     2026-09-04 21:57:46.645 +0200
+OS Version:      macOS 26.6.2 (25G83)
+Report Version:  7
+Analysis Tool:   /usr/bin/sample
+
+Physical footprint:         10.3M
+Physical footprint (peak):  10.3M
+Idle exit:                  untracked
+----
+
+Sort by top of stack, same collapsed (when >= 5):
+        __bzero  (in libsystem_platform.dylib)        1072
+        mach_absolute_time  (in libsystem_kernel.dylib)        287
+        _RNvMNtCs9EYORsUHBSV_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in ferromark-audit-before)        224
+        _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib)        151
+        _xzm_free  (in libsystem_malloc.dylib)        109
+        _RNvMsb_Cs9EYORsUHBSV_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in ferromark-audit-before)        87
+        _malloc_zone_malloc  (in libsystem_malloc.dylib)        71
+        _platform_memmove  (in libsystem_platform.dylib)        65
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser5parse  (in ferromark-audit-before)        64
+        _RNvCs9EYORsUHBSV_9ferromark21render_inline_content  (in ferromark-audit-before)        56
+        _free  (in libsystem_malloc.dylib)        50
+        <deduplicated_symbol>  (in libsystem_malloc.dylib)        46
+        _RINvCs9EYORsUHBSV_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in ferromark-audit-before)        42
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in ferromark-audit-before)        31
+        _xzm_xzone_malloc  (in libsystem_malloc.dylib)        30
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser23try_footnote_definition  (in ferromark-audit-before)        28
+        _RNvMNtCs9EYORsUHBSV_9ferromark8footnoteNtB2_13FootnoteStore15get_index_bytes  (in ferromark-audit-before)        27
+        _RNvNtCs9EYORsUHBSV_9ferromark6escape16escape_text_into  (in ferromark-audit-before)        27
+        _RNvMs8_Cs9EYORsUHBSV_9ferromarkNtB5_11RenderState3new  (in ferromark-audit-before)        25
+        _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE12contains_keyBO_ECs9EYORsUHBSV_9ferromark  (in ferromark-audit-before)        24
+        _RINvMs6_NtCs9nAj5kJTqSU_9hashbrown3rawINtB6_8RawTableTNtNtCslJsSqIQKwiA_5alloc6string6StringjEE14reserve_rehashNCINvNtB8_3map11make_hasherBQ_jNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE0ECs9EYORsUHBSV_9ferromark  (in ferromark-audit-before)        24
+        _RNvMs8_Cs9EYORsUHBSV_9ferromarkNtB5_11RenderState5reset  (in ferromark-audit-before)        23
+        _xzm_segment_group_find_and_allocate_chunk  (in libsystem_malloc.dylib)        23
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in ferromark-audit-before)        21
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in ferromark-audit-before)        20
+        _RNvCs9EYORsUHBSV_9ferromark22write_footnote_backref  (in ferromark-audit-before)        19
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in ferromark-audit-before)        16
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in ferromark-audit-before)        14
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in ferromark-audit-before)        14
+        _RNvNtCs9EYORsUHBSV_9ferromark8footnote24normalize_footnote_label  (in ferromark-audit-before)        14
+        _platform_memset  (in libsystem_platform.dylib)        14
+        DYLD-STUB$$memcpy  (in ferromark-audit-before)        13
+        mach_vm_reclaim_try_cancel  (in libsystem_kernel.dylib)        13
+        DYLD-STUB$$malloc  (in ferromark-audit-before)        12
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in ferromark-audit-before)        11
+        _RNvMsk_NtNtNtCsgtPOCBgevO_4core3fmt3num3impj10__fmt_inner  (in ferromark-audit-before)        11
+        _RINvNtCsgtPOCBgevO_4core3ptr9drop_glueINtNtB4_6option6OptionNtNtCs9EYORsUHBSV_9ferromark8footnote13FootnoteStoreEEB10_  (in ferromark-audit-before)        10
+        DYLD-STUB$$free  (in ferromark-audit-before)        9
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in ferromark-audit-before)        9
+        mach_vm_reclaim_try_enter  (in libsystem_kernel.dylib)        9
+        _RNvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB5_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE6insertCs9EYORsUHBSV_9ferromark  (in ferromark-audit-before)        8
+        _RNvXs2_NtNtCsgtPOCBgevO_4core3str5lossyNtB5_10Utf8ChunksNtNtNtNtB9_4iter6traits8iterator8Iterator4next  (in ferromark-audit-before)        8
+        _xzm_free_outlined  (in libsystem_malloc.dylib)        8
+        _xzm_malloc_large_huge  (in libsystem_malloc.dylib)        8
+        _xzm_segment_group_span_mark_smaller  (in libsystem_malloc.dylib)        8
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in ferromark-audit-before)        7
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in ferromark-audit-before)        7
+        _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCs9EYORsUHBSV_9ferromark  (in ferromark-audit-before)        7
+        _xzm_free_large_huge  (in libsystem_malloc.dylib)        7
+        xzm_segment_group_alloc_chunk  (in libsystem_malloc.dylib)        7
+        _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE3geteECs9EYORsUHBSV_9ferromark  (in ferromark-audit-before)        6
+        _RINvNtCsgtPOCBgevO_4core3ptr9drop_glueNtCs9EYORsUHBSV_9ferromark11RenderStateEBC_  (in ferromark-audit-before)        6
+        _RNvMNtCs9EYORsUHBSV_9ferromark6renderNtB2_10HtmlWriter15paragraph_start  (in ferromark-audit-before)        6
+        _RNvMNtNtCs9EYORsUHBSV_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in ferromark-audit-before)        6
+        _RNvMs3_Cs9EYORsUHBSV_9ferromarkNtB5_14ParagraphState8add_text  (in ferromark-audit-before)        6
+        _xzm_reclaim_mark_used  (in libsystem_malloc.dylib)        6
+        xzm_segment_group_free_chunk  (in libsystem_malloc.dylib)        6
+        _RNvMNtCslJsSqIQKwiA_5alloc6stringNtB2_6String15from_utf8_lossy  (in ferromark-audit-before)        5
+        _RNvMs5_Cs9EYORsUHBSV_9ferromarkNtB5_16HeadingIdTracker3new  (in ferromark-audit-before)        5
+        _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in ferromark-audit-before)        5
+        _platform_memcmp  (in libsystem_platform.dylib)        5
+        _xzm_reclaim_mark_free  (in libsystem_malloc.dylib)        5
+        _xzm_reclaim_mark_used_locked  (in libsystem_malloc.dylib)        5
+        _xzm_segment_group_segment_span_free  (in libsystem_malloc.dylib)        5
+

@@ -1,0 +1,1392 @@
+{
+  "metadata": {
+    "baseline_commit": "14009ced40e6c06d81e8208fc4e2f8ad4a9ac29b",
+    "rustc": "1.97.1",
+    "target": "aarch64-apple-darwin",
+    "os": "macOS 26.6.2",
+    "profile": "release-debug",
+    "windows": 5,
+    "window_ms": 150,
+    "timing_note": "Timing probe retains a disabled allocation-counting branch; cumulative allocation counts are measured separately. Initial baseline cases use default options, which disable autolink literals."
+  },
+  "baseline_default": [
+    {
+      "case": "angle_starts",
+      "input_bytes": 1026,
+      "max_ns": 372122.7301980198,
+      "median_ns": 371400.0618811881,
+      "min_ns": 367903.4926470588,
+      "n": 1024,
+      "output_bytes": 4106,
+      "reuse": false
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 1026,
+      "max_ns": 369440.7248157248,
+      "median_ns": 368328.02205882355,
+      "min_ns": 367512.83618581906,
+      "n": 1024,
+      "output_bytes": 4106,
+      "reuse": true
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 2050,
+      "max_ns": 1440055.561904762,
+      "median_ns": 1431126.1904761905,
+      "min_ns": 1421165.8773584906,
+      "n": 2048,
+      "output_bytes": 8202,
+      "reuse": false
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 2050,
+      "max_ns": 1432740.0761904763,
+      "median_ns": 1432173.8095238095,
+      "min_ns": 1415337.2242990655,
+      "n": 2048,
+      "output_bytes": 8202,
+      "reuse": true
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 4098,
+      "max_ns": 5636438.259259259,
+      "median_ns": 5614737.62962963,
+      "min_ns": 5586760.814814814,
+      "n": 4096,
+      "output_bytes": 16394,
+      "reuse": false
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 4098,
+      "max_ns": 5576473.777777778,
+      "median_ns": 5562242.296296297,
+      "min_ns": 5543247.0,
+      "n": 4096,
+      "output_bytes": 16394,
+      "reuse": true
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 8194,
+      "max_ns": 21953285.714285713,
+      "median_ns": 21823797.57142857,
+      "min_ns": 21813053.57142857,
+      "n": 8192,
+      "output_bytes": 32778,
+      "reuse": false
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 8194,
+      "max_ns": 22058256.0,
+      "median_ns": 21948797.57142857,
+      "min_ns": 21923887.0,
+      "n": 8192,
+      "output_bytes": 32778,
+      "reuse": true
+    },
+    {
+      "case": "mdx_segments",
+      "input_bytes": 37888,
+      "max_ns": 1800071.4285714286,
+      "median_ns": 1791310.511904762,
+      "min_ns": 1779765.188235294,
+      "n": 1024,
+      "output_bytes": 56320,
+      "reuse": false
+    },
+    {
+      "case": "mdx_segments",
+      "input_bytes": 75776,
+      "max_ns": 3687948.1707317075,
+      "median_ns": 3637616.0714285714,
+      "min_ns": 3534711.2558139535,
+      "n": 2048,
+      "output_bytes": 112640,
+      "reuse": false
+    },
+    {
+      "case": "mdx_segments",
+      "input_bytes": 151552,
+      "max_ns": 7371750.0,
+      "median_ns": 7335722.238095238,
+      "min_ns": 7236910.714285715,
+      "n": 4096,
+      "output_bytes": 225280,
+      "reuse": false
+    },
+    {
+      "case": "mdx_segments",
+      "input_bytes": 303104,
+      "max_ns": 14727026.545454545,
+      "median_ns": 14512144.0,
+      "min_ns": 14303121.181818182,
+      "n": 8192,
+      "output_bytes": 450560,
+      "reuse": false
+    },
+    {
+      "case": "plain_segments",
+      "input_bytes": 25600,
+      "max_ns": 193356.42139175258,
+      "median_ns": 187503.125,
+      "min_ns": 187276.68539325843,
+      "n": 1024,
+      "output_bytes": 45056,
+      "reuse": false
+    },
+    {
+      "case": "plain_segments",
+      "input_bytes": 25600,
+      "max_ns": 185292.38765432098,
+      "median_ns": 183958.0269607843,
+      "min_ns": 183786.15911872705,
+      "n": 1024,
+      "output_bytes": 45056,
+      "reuse": true
+    },
+    {
+      "case": "plain_segments",
+      "input_bytes": 51200,
+      "max_ns": 379019.88636363635,
+      "median_ns": 374535.536159601,
+      "min_ns": 368839.47665847663,
+      "n": 2048,
+      "output_bytes": 90112,
+      "reuse": false
+    },
+    {
+      "case": "plain_segments",
+      "input_bytes": 51200,
+      "max_ns": 372300.5583126551,
+      "median_ns": 371025.5135802469,
+      "min_ns": 369658.45566502464,
+      "n": 2048,
+      "output_bytes": 90112,
+      "reuse": true
+    },
+    {
+      "case": "plain_segments",
+      "input_bytes": 102400,
+      "max_ns": 751076.665,
+      "median_ns": 744821.3712871287,
+      "min_ns": 744209.1584158416,
+      "n": 4096,
+      "output_bytes": 180224,
+      "reuse": false
+    },
+    {
+      "case": "plain_segments",
+      "input_bytes": 102400,
+      "max_ns": 742668.9356435643,
+      "median_ns": 742077.1724137932,
+      "min_ns": 739723.5221674877,
+      "n": 4096,
+      "output_bytes": 180224,
+      "reuse": true
+    },
+    {
+      "case": "plain_segments",
+      "input_bytes": 204800,
+      "max_ns": 1500601.67,
+      "median_ns": 1492227.3168316833,
+      "min_ns": 1487935.6435643565,
+      "n": 8192,
+      "output_bytes": 360448,
+      "reuse": false
+    },
+    {
+      "case": "plain_segments",
+      "input_bytes": 204800,
+      "max_ns": 1484566.5882352942,
+      "median_ns": 1480810.862745098,
+      "min_ns": 1475179.7352941176,
+      "n": 8192,
+      "output_bytes": 360448,
+      "reuse": true
+    },
+    {
+      "case": "commonmark",
+      "input_bytes": 52342,
+      "max_ns": 202415.6563342318,
+      "median_ns": 201561.57718120806,
+      "min_ns": 201218.94638069705,
+      "n": 1024,
+      "output_bytes": 77985,
+      "reuse": false
+    },
+    {
+      "case": "commonmark",
+      "input_bytes": 52342,
+      "max_ns": 197444.46315789473,
+      "median_ns": 196336.17015706806,
+      "min_ns": 196123.85620915034,
+      "n": 1024,
+      "output_bytes": 77985,
+      "reuse": true
+    },
+    {
+      "case": "tables",
+      "input_bytes": 4552,
+      "max_ns": 37223.11811414392,
+      "median_ns": 37164.33415902898,
+      "min_ns": 37046.420844653,
+      "n": 1024,
+      "output_bytes": 13800,
+      "reuse": false
+    },
+    {
+      "case": "tables",
+      "input_bytes": 4552,
+      "max_ns": 35058.619537275066,
+      "median_ns": 35031.05044371789,
+      "min_ns": 34880.657521506626,
+      "n": 1024,
+      "output_bytes": 13800,
+      "reuse": true
+    },
+    {
+      "case": "footnotes",
+      "input_bytes": 34558,
+      "max_ns": 826933.1538461539,
+      "median_ns": 824455.5879120879,
+      "min_ns": 818430.4782608695,
+      "n": 1024,
+      "output_bytes": 277997,
+      "reuse": false
+    },
+    {
+      "case": "footnotes",
+      "input_bytes": 34558,
+      "max_ns": 823882.5136612022,
+      "median_ns": 821063.7540983607,
+      "min_ns": 817432.2934782609,
+      "n": 1024,
+      "output_bytes": 277997,
+      "reuse": true
+    },
+    {
+      "case": "footnotes",
+      "input_bytes": 72446,
+      "max_ns": 1879571.875,
+      "median_ns": 1871850.8148148148,
+      "min_ns": 1863333.851851852,
+      "n": 2048,
+      "output_bytes": 563693,
+      "reuse": false
+    },
+    {
+      "case": "footnotes",
+      "input_bytes": 72446,
+      "max_ns": 1885987.5,
+      "median_ns": 1865576.6543209876,
+      "min_ns": 1855104.938271605,
+      "n": 2048,
+      "output_bytes": 563693,
+      "reuse": true
+    },
+    {
+      "case": "footnotes",
+      "input_bytes": 148222,
+      "max_ns": 4885115.580645162,
+      "median_ns": 4625220.96969697,
+      "min_ns": 4515091.911764706,
+      "n": 4096,
+      "output_bytes": 1135085,
+      "reuse": false
+    },
+    {
+      "case": "footnotes",
+      "input_bytes": 148222,
+      "max_ns": 4868686.806451613,
+      "median_ns": 4756996.09375,
+      "min_ns": 4669867.424242424,
+      "n": 4096,
+      "output_bytes": 1135085,
+      "reuse": true
+    },
+    {
+      "case": "footnotes",
+      "input_bytes": 299774,
+      "max_ns": 12006852.615384616,
+      "median_ns": 11782516.076923076,
+      "min_ns": 11666689.153846154,
+      "n": 8192,
+      "output_bytes": 2277869,
+      "reuse": false
+    },
+    {
+      "case": "footnotes",
+      "input_bytes": 299774,
+      "max_ns": 11992278.846153846,
+      "median_ns": 11906791.692307692,
+      "min_ns": 11893250.0,
+      "n": 8192,
+      "output_bytes": 2277869,
+      "reuse": true
+    }
+  ],
+  "baseline_autolinks_disabled_control": [
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 22528,
+      "max_ns": 131033.62445414848,
+      "median_ns": 130783.2031386225,
+      "min_ns": 130237.12326388889,
+      "n": 1024,
+      "output_bytes": 55303,
+      "reuse": false
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 22528,
+      "max_ns": 144834.37934362935,
+      "median_ns": 127318.70229007634,
+      "min_ns": 126593.60084388185,
+      "n": 1024,
+      "output_bytes": 55303,
+      "reuse": true
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 45056,
+      "max_ns": 259229.49050086355,
+      "median_ns": 258588.28227194492,
+      "min_ns": 258040.0206185567,
+      "n": 2048,
+      "output_bytes": 110599,
+      "reuse": false
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 45056,
+      "max_ns": 254169.1336717428,
+      "median_ns": 252545.3148148148,
+      "min_ns": 249630.68552412646,
+      "n": 2048,
+      "output_bytes": 110599,
+      "reuse": true
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 90112,
+      "max_ns": 515075.19863013696,
+      "median_ns": 514164.0993150685,
+      "min_ns": 513344.70989761094,
+      "n": 4096,
+      "output_bytes": 221191,
+      "reuse": false
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 90112,
+      "max_ns": 509238.2779661017,
+      "median_ns": 508398.08445945947,
+      "min_ns": 506650.6734006734,
+      "n": 4096,
+      "output_bytes": 221191,
+      "reuse": true
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 180224,
+      "max_ns": 1023969.1020408163,
+      "median_ns": 1022217.9727891156,
+      "min_ns": 1016358.9527027027,
+      "n": 8192,
+      "output_bytes": 442375,
+      "reuse": false
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 180224,
+      "max_ns": 1015685.527027027,
+      "median_ns": 1009217.2818791947,
+      "min_ns": 1008871.9261744966,
+      "n": 8192,
+      "output_bytes": 442375,
+      "reuse": true
+    }
+  ],
+  "baseline_autolinks_enabled": [
+    {
+      "case": "trailing_parens",
+      "input_bytes": 1044,
+      "max_ns": 197775.63768115942,
+      "median_ns": 194730.43579766536,
+      "min_ns": 191686.72924648787,
+      "n": 1024,
+      "output_bytes": 1087,
+      "reuse": false
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 1044,
+      "max_ns": 253994.78341793572,
+      "median_ns": 197110.60052562418,
+      "min_ns": 188946.42065491184,
+      "n": 1024,
+      "output_bytes": 1087,
+      "reuse": true
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 2068,
+      "max_ns": 754826.8391959799,
+      "median_ns": 747877.4875621891,
+      "min_ns": 742583.3316831683,
+      "n": 2048,
+      "output_bytes": 2111,
+      "reuse": false
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 2068,
+      "max_ns": 740858.1674876848,
+      "median_ns": 738512.4607843137,
+      "min_ns": 732974.5951219512,
+      "n": 2048,
+      "output_bytes": 2111,
+      "reuse": true
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 4116,
+      "max_ns": 2883411.169811321,
+      "median_ns": 2876421.396226415,
+      "min_ns": 2862848.2641509436,
+      "n": 4096,
+      "output_bytes": 4159,
+      "reuse": false
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 4116,
+      "max_ns": 2879262.5849056602,
+      "median_ns": 2875665.0943396227,
+      "min_ns": 2869521.2264150945,
+      "n": 4096,
+      "output_bytes": 4159,
+      "reuse": true
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 8212,
+      "max_ns": 11358970.285714285,
+      "median_ns": 11291023.785714285,
+      "min_ns": 11243497.07142857,
+      "n": 8192,
+      "output_bytes": 8255,
+      "reuse": false
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 8212,
+      "max_ns": 11291178.57142857,
+      "median_ns": 11272446.42857143,
+      "min_ns": 11238559.57142857,
+      "n": 8192,
+      "output_bytes": 8255,
+      "reuse": true
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 22528,
+      "max_ns": 387682.0620155039,
+      "median_ns": 386512.853470437,
+      "min_ns": 385968.0796915167,
+      "n": 1024,
+      "output_bytes": 55303,
+      "reuse": false
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 22528,
+      "max_ns": 534334.5195729537,
+      "median_ns": 427707.0256410256,
+      "min_ns": 381112.2055837563,
+      "n": 1024,
+      "output_bytes": 55303,
+      "reuse": true
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 45056,
+      "max_ns": 1268766.4537815126,
+      "median_ns": 1254576.7333333334,
+      "min_ns": 1248306.123966942,
+      "n": 2048,
+      "output_bytes": 110599,
+      "reuse": false
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 45056,
+      "max_ns": 1256864.9333333333,
+      "median_ns": 1238532.450819672,
+      "min_ns": 1236243.1721311475,
+      "n": 2048,
+      "output_bytes": 110599,
+      "reuse": true
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 90112,
+      "max_ns": 4667012.606060606,
+      "median_ns": 4427226.735294118,
+      "min_ns": 4396927.4,
+      "n": 4096,
+      "output_bytes": 221191,
+      "reuse": false
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 90112,
+      "max_ns": 4812604.15625,
+      "median_ns": 4353497.628571428,
+      "min_ns": 4327822.628571428,
+      "n": 4096,
+      "output_bytes": 221191,
+      "reuse": true
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 180224,
+      "max_ns": 17917708.333333332,
+      "median_ns": 15965004.2,
+      "min_ns": 15757262.5,
+      "n": 8192,
+      "output_bytes": 442375,
+      "reuse": false
+    },
+    {
+      "case": "autolink_ranges",
+      "input_bytes": 180224,
+      "max_ns": 16995208.333333332,
+      "median_ns": 15824962.5,
+      "min_ns": 15719945.9,
+      "n": 8192,
+      "output_bytes": 442375,
+      "reuse": true
+    }
+  ],
+  "allocations": [
+    {
+      "alloc_realloc_calls": 41,
+      "case": "trailing_parens",
+      "input_bytes": 148,
+      "n": 128,
+      "requested_bytes": 14640,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 2,
+      "case": "trailing_parens",
+      "input_bytes": 148,
+      "n": 128,
+      "requested_bytes": 96,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 44,
+      "case": "angle_starts",
+      "input_bytes": 130,
+      "n": 128,
+      "requested_bytes": 23952,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 2,
+      "case": "angle_starts",
+      "input_bytes": 130,
+      "n": 128,
+      "requested_bytes": 96,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 53,
+      "case": "autolink_ranges",
+      "input_bytes": 2816,
+      "n": 128,
+      "requested_bytes": 52940,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 2,
+      "case": "autolink_ranges",
+      "input_bytes": 2816,
+      "n": 128,
+      "requested_bytes": 96,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 6592,
+      "case": "mdx_segments",
+      "input_bytes": 4736,
+      "n": 128,
+      "requested_bytes": 2083022,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 48,
+      "case": "plain_segments",
+      "input_bytes": 3200,
+      "n": 128,
+      "requested_bytes": 23984,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 2,
+      "case": "plain_segments",
+      "input_bytes": 3200,
+      "n": 128,
+      "requested_bytes": 96,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 109,
+      "case": "commonmark",
+      "input_bytes": 52342,
+      "n": 128,
+      "requested_bytes": 236461,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 53,
+      "case": "commonmark",
+      "input_bytes": 52342,
+      "n": 128,
+      "requested_bytes": 5325,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 51,
+      "case": "tables",
+      "input_bytes": 4552,
+      "n": 128,
+      "requested_bytes": 82552,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 2,
+      "case": "tables",
+      "input_bytes": 4552,
+      "n": 128,
+      "requested_bytes": 96,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 1728,
+      "case": "footnotes",
+      "input_bytes": 4022,
+      "n": 128,
+      "requested_bytes": 693250,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 1680,
+      "case": "footnotes",
+      "input_bytes": 4022,
+      "n": 128,
+      "requested_bytes": 662578,
+      "reuse": true
+    }
+  ],
+  "footnote_allocation_scaling": [
+    {
+      "alloc_realloc_calls": 13385,
+      "case": "footnotes",
+      "input_bytes": 34558,
+      "n": 1024,
+      "requested_bytes": 12803924,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 13334,
+      "case": "footnotes",
+      "input_bytes": 34558,
+      "n": 1024,
+      "requested_bytes": 12645828,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 26700,
+      "case": "footnotes",
+      "input_bytes": 72446,
+      "n": 2048,
+      "requested_bytes": 42387292,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 26648,
+      "case": "footnotes",
+      "input_bytes": 72446,
+      "n": 2048,
+      "requested_bytes": 42074572,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 53327,
+      "case": "footnotes",
+      "input_bytes": 148222,
+      "n": 4096,
+      "requested_bytes": 151885668,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 53274,
+      "case": "footnotes",
+      "input_bytes": 148222,
+      "n": 4096,
+      "requested_bytes": 151263700,
+      "reuse": true
+    },
+    {
+      "alloc_realloc_calls": 106578,
+      "case": "footnotes",
+      "input_bytes": 299774,
+      "n": 8192,
+      "requested_bytes": 572209004,
+      "reuse": false
+    },
+    {
+      "alloc_realloc_calls": 106524,
+      "case": "footnotes",
+      "input_bytes": 299774,
+      "n": 8192,
+      "requested_bytes": 570968540,
+      "reuse": true
+    }
+  ],
+  "final_scaling": [
+    {
+      "case": "trailing_parens",
+      "input_bytes": 1044,
+      "max_ns": 3915.565976663447,
+      "median_ns": 3862.984265148979,
+      "min_ns": 3835.2861087673546,
+      "n": 1024,
+      "output_bytes": 1087,
+      "reuse": false
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 1044,
+      "max_ns": 2600.617919866849,
+      "median_ns": 2562.2665607597964,
+      "min_ns": 2552.572398536544,
+      "n": 1024,
+      "output_bytes": 1087,
+      "reuse": true
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 2068,
+      "max_ns": 6024.9511186086675,
+      "median_ns": 6002.435974389756,
+      "min_ns": 5970.840146479321,
+      "n": 2048,
+      "output_bytes": 2111,
+      "reuse": false
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 2068,
+      "max_ns": 4861.537838275806,
+      "median_ns": 4818.914385762015,
+      "min_ns": 4799.950401587149,
+      "n": 2048,
+      "output_bytes": 2111,
+      "reuse": true
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 4116,
+      "max_ns": 10604.506892895017,
+      "median_ns": 10568.438565591096,
+      "min_ns": 10529.82703916889,
+      "n": 4096,
+      "output_bytes": 4159,
+      "reuse": false
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 4116,
+      "max_ns": 9488.656271743943,
+      "median_ns": 9371.0121821703,
+      "min_ns": 9265.64333806906,
+      "n": 4096,
+      "output_bytes": 4159,
+      "reuse": true
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 8212,
+      "max_ns": 19742.05382995525,
+      "median_ns": 19632.78157309253,
+      "min_ns": 19536.82599635322,
+      "n": 8192,
+      "output_bytes": 8255,
+      "reuse": false
+    },
+    {
+      "case": "trailing_parens",
+      "input_bytes": 8212,
+      "max_ns": 18539.45223087381,
+      "median_ns": 18364.11029501775,
+      "min_ns": 18343.67106872096,
+      "n": 8192,
+      "output_bytes": 8255,
+      "reuse": true
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 1026,
+      "max_ns": 25496.027362338544,
+      "median_ns": 25234.686122792264,
+      "min_ns": 25010.628542847615,
+      "n": 1024,
+      "output_bytes": 4106,
+      "reuse": false
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 1026,
+      "max_ns": 23083.448684412986,
+      "median_ns": 22994.30318822808,
+      "min_ns": 22979.696537990196,
+      "n": 1024,
+      "output_bytes": 4106,
+      "reuse": true
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 2050,
+      "max_ns": 50100.78490313961,
+      "median_ns": 49926.85823627288,
+      "min_ns": 49755.63847429519,
+      "n": 2048,
+      "output_bytes": 8202,
+      "reuse": false
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 2050,
+      "max_ns": 46978.42937676167,
+      "median_ns": 46493.1307716145,
+      "min_ns": 46420.92079207921,
+      "n": 2048,
+      "output_bytes": 8202,
+      "reuse": true
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 4098,
+      "max_ns": 98127.77959450621,
+      "median_ns": 97299.15175097276,
+      "min_ns": 97055.35769728331,
+      "n": 4096,
+      "output_bytes": 16394,
+      "reuse": false
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 4098,
+      "max_ns": 93375.36278780336,
+      "median_ns": 93330.45708955223,
+      "min_ns": 93172.12732919255,
+      "n": 4096,
+      "output_bytes": 16394,
+      "reuse": true
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 8194,
+      "max_ns": 184501.89434889436,
+      "median_ns": 184054.44785276073,
+      "min_ns": 183434.086797066,
+      "n": 8192,
+      "output_bytes": 32778,
+      "reuse": false
+    },
+    {
+      "case": "angle_starts",
+      "input_bytes": 8194,
+      "max_ns": 183022.71341463414,
+      "median_ns": 179523.42464114833,
+      "min_ns": 179067.42243436753,
+      "n": 8192,
+      "output_bytes": 32778,
+      "reuse": true
+    }
+  ],
+  "criterion_final": [
+    {
+      "case": "parsing/tiny",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 1483.3137832685402,
+          "upper_bound": 1493.9519713171605
+        },
+        "point_estimate": 1488.5439369878081,
+        "standard_error": 2.7123294849502555
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 1481.4412301413313,
+          "upper_bound": 1492.099389095202
+        },
+        "point_estimate": 1486.8347642055608,
+        "standard_error": 2.7098827596034125
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": -0.006339377820651142,
+          "upper_bound": 0.0034921992851954606
+        },
+        "point_estimate": -0.0011482178925171782,
+        "standard_error": 0.0025092913097341345
+      }
+    },
+    {
+      "case": "parsing/small",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 2538.794525672229,
+          "upper_bound": 2562.156194809282
+        },
+        "point_estimate": 2550.0210787235574,
+        "standard_error": 5.979300741202622
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 2575.495415979685,
+          "upper_bound": 2596.373751322043
+        },
+        "point_estimate": 2585.7024439185793,
+        "standard_error": 5.327350356471423
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 0.007967919783237909,
+          "upper_bound": 0.020324652877670275
+        },
+        "point_estimate": 0.013992576568379933,
+        "standard_error": 0.0031554001334636963
+      }
+    },
+    {
+      "case": "parsing/medium",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 4058.0153239055867,
+          "upper_bound": 4083.540810933786
+        },
+        "point_estimate": 4070.8470051121017,
+        "standard_error": 6.503293624919524
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 4095.365505778446,
+          "upper_bound": 4128.902214759969
+        },
+        "point_estimate": 4111.5744364709735,
+        "standard_error": 8.538506822741603
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 0.0046251140025343205,
+          "upper_bound": 0.014428518252563707
+        },
+        "point_estimate": 0.010004657828635466,
+        "standard_error": 0.0025075808372573296
+      }
+    },
+    {
+      "case": "parsing/large",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 113256.33632314777,
+          "upper_bound": 114163.15969659608
+        },
+        "point_estimate": 113720.66015525282,
+        "standard_error": 231.70019089235842
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 112804.26198077056,
+          "upper_bound": 113565.13848202433
+        },
+        "point_estimate": 113188.04235316793,
+        "standard_error": 195.23979802923606
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": -0.009612200357734139,
+          "upper_bound": 0.0004382007900313818
+        },
+        "point_estimate": -0.004683562347929993,
+        "standard_error": 0.002566854620846584
+      }
+    },
+    {
+      "case": "parsing/commonmark_5k",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 22651.91895228963,
+          "upper_bound": 22837.2003108957
+        },
+        "point_estimate": 22748.21033055177,
+        "standard_error": 47.19543879297432
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 22555.12412091996,
+          "upper_bound": 23965.38070440503
+        },
+        "point_estimate": 23136.111094545795,
+        "standard_error": 368.4572515026758
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": -0.009242390887682344,
+          "upper_bound": 0.051179733118245856
+        },
+        "point_estimate": 0.0170519244528462,
+        "standard_error": 0.016040126674934842
+      }
+    },
+    {
+      "case": "parsing/commonmark_20k",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 76955.58108722078,
+          "upper_bound": 77704.59797760317
+        },
+        "point_estimate": 77340.8753549307,
+        "standard_error": 190.7745445284185
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 75875.02216071155,
+          "upper_bound": 76385.7122579097
+        },
+        "point_estimate": 76150.7773978192,
+        "standard_error": 130.7746865055679
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": -0.021312437137120416,
+          "upper_bound": -0.009783206130389188
+        },
+        "point_estimate": -0.015387697018555024,
+        "standard_error": 0.0029421547090653804
+      }
+    },
+    {
+      "case": "parsing/commonmark_50k",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 201831.2746984478,
+          "upper_bound": 203170.07869209442
+        },
+        "point_estimate": 202528.41254926787,
+        "standard_error": 343.30216959383944
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 200166.6545589692,
+          "upper_bound": 201435.9391900314
+        },
+        "point_estimate": 200802.1791566394,
+        "standard_error": 323.59175971765086
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": -0.013117528396242153,
+          "upper_bound": -0.003984667556051554
+        },
+        "point_estimate": -0.008523413435675531,
+        "standard_error": 0.0023196903237112303
+      }
+    },
+    {
+      "case": "parsing/commonmark_1m",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 3771276.5693348427,
+          "upper_bound": 3807006.6225480135
+        },
+        "point_estimate": 3787645.5478865756,
+        "standard_error": 9123.831433943573
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 3787296.303033745,
+          "upper_bound": 3826096.0549543123
+        },
+        "point_estimate": 3808095.208424269,
+        "standard_error": 9952.651001989232
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": -0.0021751108330207796,
+          "upper_bound": 0.011900248092930298
+        },
+        "point_estimate": 0.005399042829945966,
+        "standard_error": 0.0036075298518382774
+      }
+    },
+    {
+      "case": "parsing/tables_5k",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 37902.109995197694,
+          "upper_bound": 38148.13119084398
+        },
+        "point_estimate": 38015.96110355288,
+        "standard_error": 62.81165547185027
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 38516.98379886436,
+          "upper_bound": 38889.93895708188
+        },
+        "point_estimate": 38689.27084637994,
+        "standard_error": 95.41803036946315
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 0.012246272481297516,
+          "upper_bound": 0.023876043935624276
+        },
+        "point_estimate": 0.017711238208420133,
+        "standard_error": 0.002963594565763082
+      }
+    },
+    {
+      "case": "parsing/thematic_breaks",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 105131.70404345726,
+          "upper_bound": 105775.15223945382
+        },
+        "point_estimate": 105455.47799830188,
+        "standard_error": 164.65262580340467
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 106015.31953570731,
+          "upper_bound": 106664.04017944608
+        },
+        "point_estimate": 106338.88010698023,
+        "standard_error": 165.18653912171857
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 0.004372537899280522,
+          "upper_bound": 0.012896029372515537
+        },
+        "point_estimate": 0.008377014882930744,
+        "standard_error": 0.002160386364316995
+      }
+    },
+    {
+      "case": "extensions/deflists_5k",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 21795.421384785226,
+          "upper_bound": 21942.39195578424
+        },
+        "point_estimate": 21873.295004973428,
+        "standard_error": 37.46498044984142
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 22088.989712679355,
+          "upper_bound": 22192.401757906664
+        },
+        "point_estimate": 22140.582209468823,
+        "standard_error": 26.33598585659913
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 0.008254899077824585,
+          "upper_bound": 0.016542796074426002
+        },
+        "point_estimate": 0.012219796077116873,
+        "standard_error": 0.0021106938327467113
+      }
+    },
+    {
+      "case": "extensions/tables_merged_5k",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 32979.045276100835,
+          "upper_bound": 33296.60252771479
+        },
+        "point_estimate": 33123.503193403085,
+        "standard_error": 81.3779133316026
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 33086.06112990257,
+          "upper_bound": 33363.01127728131
+        },
+        "point_estimate": 33230.12775207021,
+        "standard_error": 70.86316191388039
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": -0.0032757530277596047,
+          "upper_bound": 0.009324434222077169
+        },
+        "point_estimate": 0.0032190000569856103,
+        "standard_error": 0.003217274265849044
+      }
+    },
+    {
+      "case": "extensions/mixed_extended_5k",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 34694.59469543546,
+          "upper_bound": 35104.34544456078
+        },
+        "point_estimate": 34865.92037371002,
+        "standard_error": 106.03720444867919
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 35382.50201970295,
+          "upper_bound": 35741.51585082107
+        },
+        "point_estimate": 35550.57371470977,
+        "standard_error": 92.0867891061027
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 0.011225757522528475,
+          "upper_bound": 0.027596962149962736
+        },
+        "point_estimate": 0.019636749400598008,
+        "standard_error": 0.00413083143682275
+      }
+    },
+    {
+      "case": "pathological/emphasis_many_link_boundaries",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 925391.6642422983,
+          "upper_bound": 931248.5349969848
+        },
+        "point_estimate": 928354.1681514287,
+        "standard_error": 1494.4484860345026
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 950177.009381164,
+          "upper_bound": 955543.1560538777
+        },
+        "point_estimate": 952854.8892270236,
+        "standard_error": 1363.4339324629482
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 0.02181132273033401,
+          "upper_bound": 0.030907105668829277
+        },
+        "point_estimate": 0.026391566835296976,
+        "standard_error": 0.0023160671068760256
+      }
+    },
+    {
+      "case": "pathological/invalid_html_starts_64k",
+      "before_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 296843.1965411386,
+          "upper_bound": 298839.287873399
+        },
+        "point_estimate": 297818.2044661789,
+        "standard_error": 510.1161031971233
+      },
+      "after_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 310040.710397167,
+          "upper_bound": 311766.7121923335
+        },
+        "point_estimate": 310834.97142885556,
+        "standard_error": 443.23163989835956
+      },
+      "relative_change": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 0.039232117129361574,
+          "upper_bound": 0.04838510977525077
+        },
+        "point_estimate": 0.04370708965225423,
+        "standard_error": 0.0023324854626674014
+      }
+    }
+  ],
+  "validation": {
+    "command": "cargo test --locked --all-features",
+    "passed": 941,
+    "failed": 0,
+    "ignored": 3,
+    "commonmark_trusted": {
+      "passed": 652,
+      "total": 652
+    },
+    "clippy": "passed -D warnings",
+    "fmt": "passed"
+  }
+}
