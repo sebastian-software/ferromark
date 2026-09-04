@@ -106,6 +106,23 @@ to handle longer documents efficiently.
         section.repeat(50)
     }
 
+    /// Generate many natural and generated suffix collisions. The first
+    /// repeated `foo` scans the occupied natural suffixes; the per-base
+    /// cursor keeps all later repeats amortized linear.
+    pub fn heading_collision_suffixes() -> String {
+        let mut input = String::with_capacity(64 * 1024);
+        input.push_str("# foo\n\n");
+        for suffix in 1..=1024 {
+            input.push_str("# foo-");
+            input.push_str(&suffix.to_string());
+            input.push_str("\n\n");
+        }
+        for _ in 0..1024 {
+            input.push_str("# foo\n\n");
+        }
+        input
+    }
+
     /// Pathological document with many potential delimiters
     pub fn pathological_emphasis() -> String {
         // Many potential opener/closer pairs
@@ -359,6 +376,12 @@ fn bench_pathological(c: &mut Criterion) {
     group.throughput(Throughput::Bytes(brackets.len() as u64));
     group.bench_function("bracket_explosion_64k", |b| {
         b.iter(|| ferromark::to_html(black_box(&brackets)))
+    });
+
+    let heading_collisions = samples::heading_collision_suffixes();
+    group.throughput(Throughput::Bytes(heading_collisions.len() as u64));
+    group.bench_function("heading_collision_suffixes", |b| {
+        b.iter(|| ferromark::to_html(black_box(&heading_collisions)))
     });
 
     let backticks = samples::pathological_backticks();

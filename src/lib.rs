@@ -1081,12 +1081,12 @@ impl HeadingState {
 /// Uses the crate's fast non-cryptographic hasher: heading slugs are short
 /// and not a hash-DoS surface, so SipHash's cost is not warranted.
 ///
-/// Base slugs live in a single append-only arena; the dedup map is keyed by
-/// the slug's hash and stores arena ranges, so recording a new slug never
-/// allocates a dedicated key. Distinct slugs that collide on the 64-bit hash
+/// Assigned IDs live in a single append-only arena; the dedup map is keyed by
+/// the ID's hash and stores arena ranges, so recording a new ID never
+/// allocates a dedicated key. Distinct IDs that collide on the 64-bit hash
 /// share a map entry and are told apart by comparing arena bytes.
 struct HeadingIdTracker {
-    /// All base slugs seen so far, concatenated.
+    /// All assigned IDs seen so far, concatenated.
     arena: Vec<u8>,
     /// Maps a slug hash to the entries whose slug has that hash.
     used: std::collections::HashMap<u64, SmallVec<[SlugEntry; 1]>, rustc_hash::FxBuildHasher>,
@@ -1100,8 +1100,8 @@ struct SlugEntry {
     start: usize,
     /// Length of the slug in bytes.
     len: usize,
-    /// How many times this base slug has been seen after the first.
-    seen: usize,
+    /// Next suffix to try when this slug is repeated.
+    next_suffix: usize,
 }
 
 impl HeadingIdTracker {
@@ -1123,7 +1123,9 @@ impl HeadingIdTracker {
     }
 
     /// Build a unique heading id from raw heading content, appending `-1`,
-    /// `-2`, etc. on collision. The returned slice borrows the internal
+    /// `-2`, etc. on collision. Every final ID is recorded, including a
+    /// generated suffix, so naturally written suffixes cannot collide with
+    /// an earlier generated ID. The returned slice borrows the internal
     /// buffer and is valid until the next call. Recording a slug appends to
     /// the arena instead of allocating a per-heading map key.
     fn make_id(&mut self, raw: &[u8]) -> &str {
@@ -1135,36 +1137,71 @@ impl HeadingIdTracker {
         // The slug is valid UTF-8 by construction: `generate_slug_into` only
         // removes whole ASCII bytes and lowercases ASCII, which cannot split
         // multibyte sequences in UTF-8 heading text.
-        let hash = {
-            use std::hash::{BuildHasher, Hasher};
-            let mut hasher = rustc_hash::FxBuildHasher.build_hasher();
-            hasher.write(&self.slug_buf);
-            hasher.finish()
-        };
-        let entries = self.used.entry(hash).or_default();
-        let arena = &self.arena;
-        let slug = self.slug_buf.as_slice();
-        match entries
-            .iter_mut()
-            .find(|e| &arena[e.start..e.start + e.len] == slug)
-        {
-            Some(entry) => {
-                entry.seen += 1;
-                let n = entry.seen;
+        let hash = hash_bytes(&self.slug_buf);
+        let base_entry = self
+            .find_entry(hash, &self.slug_buf)
+            .map(|entry| (entry.start, entry.len, entry.next_suffix));
+
+        if let Some((base_start, base_len, mut suffix)) = base_entry {
+            loop {
+                self.slug_buf.truncate(base_len);
                 self.slug_buf.push(b'-');
-                push_decimal(&mut self.slug_buf, n);
+                push_decimal(&mut self.slug_buf, suffix);
+                let candidate_hash = hash_bytes(&self.slug_buf);
+                if self.find_entry(candidate_hash, &self.slug_buf).is_none() {
+                    self.record_id(candidate_hash);
+                    self.set_next_suffix(hash, base_start, base_len, suffix + 1);
+                    break;
+                }
+                suffix += 1;
             }
-            None => {
-                entries.push(SlugEntry {
-                    start: self.arena.len(),
-                    len: self.slug_buf.len(),
-                    seen: 0,
-                });
-                self.arena.extend_from_slice(&self.slug_buf);
-            }
+        } else {
+            self.record_id(hash);
         }
         std::str::from_utf8(&self.slug_buf).unwrap_or("heading")
     }
+
+    fn find_entry(&self, hash: u64, slug: &[u8]) -> Option<&SlugEntry> {
+        self.used.get(&hash).and_then(|entries| {
+            entries
+                .iter()
+                .find(|entry| &self.arena[entry.start..entry.start + entry.len] == slug)
+        })
+    }
+
+    fn record_id(&mut self, hash: u64) {
+        let start = self.arena.len();
+        let len = self.slug_buf.len();
+        self.arena.extend_from_slice(&self.slug_buf);
+        self.used.entry(hash).or_default().push(SlugEntry {
+            start,
+            len,
+            next_suffix: 1,
+        });
+    }
+
+    fn set_next_suffix(
+        &mut self,
+        hash: u64,
+        base_start: usize,
+        base_len: usize,
+        next_suffix: usize,
+    ) {
+        if let Some(entry) = self.used.get_mut(&hash).and_then(|entries| {
+            entries
+                .iter_mut()
+                .find(|entry| entry.start == base_start && entry.len == base_len)
+        }) {
+            entry.next_suffix = next_suffix;
+        }
+    }
+}
+
+fn hash_bytes(bytes: &[u8]) -> u64 {
+    use std::hash::{BuildHasher, Hasher};
+    let mut hasher = rustc_hash::FxBuildHasher.build_hasher();
+    hasher.write(bytes);
+    hasher.finish()
 }
 
 /// Append the decimal representation of `n` to `buf`.
@@ -1456,10 +1493,12 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
         footnote_numbers: &'a mut FootnoteNumbers,
         link_refs: &'a LinkRefStore,
         footnote_store: Option<&'a FootnoteStore>,
+        heading_id_tracker: Option<&'a mut Option<HeadingIdTracker>>,
         options: &'a Options,
         fenced_code_renderer: Option<&'r mut R>,
         headings: Option<&'a mut Vec<Heading>>,
     ) -> Self {
+        let heading_id_tracker = heading_id_tracker.unwrap_or(&mut state.heading_id_tracker);
         Self {
             writer,
             inline_parser,
@@ -1477,7 +1516,7 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
             link_refs,
             footnote_store,
             footnote_numbers,
-            heading_id_tracker: &mut state.heading_id_tracker,
+            heading_id_tracker,
             callout_stack: &mut state.callout_stack,
             pending_footnote_backref: &mut state.pending_footnote_backref,
             definition_description_stack: &mut state.definition_description_stack,
@@ -1602,6 +1641,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
             footnote_numbers,
             link_refs,
             fn_store_ref,
+            None,
             options,
             fenced_code_renderer,
             headings,
@@ -2719,6 +2759,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         &mut *self.footnote_numbers,
                         self.link_refs,
                         Some(footnote_store),
+                        Some(&mut *self.heading_id_tracker),
                         &nested_options,
                         renderer,
                         None,
