@@ -8,6 +8,7 @@
 use crate::limits;
 use crate::link_ref::{LinkRefStore, normalize_label_into};
 use memchr::memchr;
+use smallvec::SmallVec;
 
 /// A resolved link or image.
 #[derive(Debug, Clone)]
@@ -899,6 +900,61 @@ pub struct AutolinkLiteral {
     pub kind: AutolinkLiteralKind,
 }
 
+/// Sorted, disjoint ranges for logarithmic point and overlap queries.
+///
+/// Inline parsing collects most ranges in source order, but link ranges can
+/// come from both inline and reference links. Sorting and merging here keeps
+/// the autolink-literal passes independent of those collection details while
+/// avoiding a scan over every range for every candidate.
+struct RangeIndex {
+    ranges: SmallVec<[(u32, u32); 8]>,
+}
+
+impl RangeIndex {
+    fn from_slices(slices: &[&[(u32, u32)]]) -> Self {
+        let capacity = slices.iter().map(|ranges| ranges.len()).sum();
+        let mut merged = SmallVec::<[(u32, u32); 8]>::with_capacity(capacity);
+        merged.extend(
+            slices
+                .iter()
+                .flat_map(|ranges| ranges.iter().copied())
+                .filter(|&(start, end)| start < end),
+        );
+        merged.sort_unstable_by_key(|&(start, _)| start);
+
+        let mut write = 0;
+        for read in 0..merged.len() {
+            let (start, end) = merged[read];
+            if write == 0 || start > merged[write - 1].1 {
+                merged[write] = (start, end);
+                write += 1;
+            } else if end > merged[write - 1].1 {
+                merged[write - 1].1 = end;
+            }
+        }
+        merged.truncate(write);
+
+        Self { ranges: merged }
+    }
+
+    #[inline]
+    fn contains(&self, pos: u32) -> bool {
+        let first = self.ranges.partition_point(|&(_, end)| end <= pos);
+        first < self.ranges.len() && self.ranges[first].0 <= pos
+    }
+
+    #[inline]
+    fn overlaps(&self, start: u32, end: u32) -> bool {
+        if start >= end {
+            return false;
+        }
+        let first = self
+            .ranges
+            .partition_point(|&(_, range_end)| range_end <= start);
+        first < self.ranges.len() && self.ranges[first].0 < end
+    }
+}
+
 /// Find autolink literals in text, avoiding code spans, HTML ranges, existing autolinks, and link ranges.
 #[allow(clippy::too_many_arguments)]
 pub fn find_autolink_literals_into(
@@ -915,6 +971,9 @@ pub fn find_autolink_literals_into(
         return;
     }
 
+    let excluded_ranges =
+        RangeIndex::from_slices(&[code_spans, html_ranges, autolink_ranges, link_ranges]);
+
     // Scan for @ (email), : (URL protocol), and w/W (www) using memchr jumps
     // instead of checking every byte position.
 
@@ -924,15 +983,9 @@ pub fn find_autolink_literals_into(
         while pos < len {
             if let Some(offset) = memchr(b'@', &text[pos..]) {
                 let at_pos = pos + offset;
-                if !in_any_range(at_pos as u32, code_spans)
-                    && !in_any_range(at_pos as u32, html_ranges)
-                    && !in_any_range(at_pos as u32, autolink_ranges)
-                    && !in_any_range(at_pos as u32, link_ranges)
+                if !excluded_ranges.contains(at_pos as u32)
                     && let Some(al) = try_email_autolink(text, at_pos)
-                    && !overlaps_any_range(al.start, al.end, code_spans)
-                    && !overlaps_any_range(al.start, al.end, html_ranges)
-                    && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                    && !overlaps_any_range(al.start, al.end, link_ranges)
+                    && !excluded_ranges.overlaps(al.start, al.end)
                 {
                     pos = al.end as usize;
                     out.push(al);
@@ -960,16 +1013,10 @@ pub fn find_autolink_literals_into(
                     // Walk backwards to find protocol start (http, https, ftp)
                     let proto_start = find_protocol_start(text, colon);
                     if let Some(start) = proto_start
-                        && !in_any_range(start as u32, code_spans)
-                        && !in_any_range(start as u32, html_ranges)
-                        && !in_any_range(start as u32, autolink_ranges)
-                        && !in_any_range(start as u32, link_ranges)
+                        && !excluded_ranges.contains(start as u32)
                         && is_valid_autolink_preceding(text, start)
                         && let Some(al) = try_url_autolink(text, start)
-                        && !overlaps_any_range(al.start, al.end, code_spans)
-                        && !overlaps_any_range(al.start, al.end, html_ranges)
-                        && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                        && !overlaps_any_range(al.start, al.end, link_ranges)
+                        && !excluded_ranges.overlaps(al.start, al.end)
                     {
                         pos = al.end as usize;
                         out.push(al);
@@ -996,15 +1043,9 @@ pub fn find_autolink_literals_into(
                     && is_valid_autolink_preceding(text, dot - 3)
                 {
                     let start = dot - 3;
-                    if !in_any_range(start as u32, code_spans)
-                        && !in_any_range(start as u32, html_ranges)
-                        && !in_any_range(start as u32, autolink_ranges)
-                        && !in_any_range(start as u32, link_ranges)
+                    if !excluded_ranges.contains(start as u32)
                         && let Some(al) = try_www_autolink(text, start)
-                        && !overlaps_any_range(al.start, al.end, code_spans)
-                        && !overlaps_any_range(al.start, al.end, html_ranges)
-                        && !overlaps_any_range(al.start, al.end, autolink_ranges)
-                        && !overlaps_any_range(al.start, al.end, link_ranges)
+                        && !excluded_ranges.overlaps(al.start, al.end)
                     {
                         pos = al.end as usize;
                         out.push(al);
@@ -1359,16 +1400,6 @@ fn has_underscore_in_last_two_segments(domain: &[u8]) -> bool {
     segments.iter().any(|seg| seg.contains(&b'_'))
 }
 
-#[inline]
-fn in_any_range(pos: u32, ranges: &[(u32, u32)]) -> bool {
-    ranges.iter().any(|&(s, e)| pos >= s && pos < e)
-}
-
-#[inline]
-fn overlaps_any_range(start: u32, end: u32, ranges: &[(u32, u32)]) -> bool {
-    ranges.iter().any(|&(s, e)| start < e && end > s)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1426,5 +1457,61 @@ mod tests {
         let autolinks = find_autolinks(text);
 
         assert_eq!(autolinks.len(), 0);
+    }
+
+    #[test]
+    fn range_index_merges_unsorted_ranges_for_point_and_overlap_queries() {
+        let index = RangeIndex::from_slices(&[&[(30, 40), (10, 20), (18, 35), (50, 50), (42, 45)]]);
+
+        assert_eq!(index.ranges.as_slice(), &[(10, 40), (42, 45)]);
+        assert!(index.contains(10));
+        assert!(index.contains(39));
+        assert!(!index.contains(40));
+        assert!(index.overlaps(0, 11));
+        assert!(index.overlaps(39, 43));
+        assert!(!index.overlaps(40, 42));
+    }
+
+    #[test]
+    fn angle_autolinks_do_not_trigger_nested_literal_links() {
+        let text = "<https://example.com> ".repeat(8192);
+        let autolinks = find_autolinks(text.as_bytes());
+        let ranges = autolinks
+            .iter()
+            .map(|autolink| (autolink.start, autolink.end))
+            .collect::<Vec<_>>();
+        let mut literals = Vec::new();
+
+        find_autolink_literals_into(text.as_bytes(), &[], &[], &ranges, &[], &mut literals);
+
+        assert_eq!(autolinks.len(), 8192);
+        assert!(literals.is_empty());
+    }
+
+    #[test]
+    fn autolink_literal_overlap_checks_cover_email_start_before_at() {
+        let text = b"foo@example.com bar@example.com";
+        let mut literals = Vec::new();
+
+        // The first range contains the start of the first email but ends
+        // before its `@`; checking only the candidate trigger would miss it.
+        find_autolink_literals_into(text, &[], &[], &[], &[(0, 3)], &mut literals);
+        assert_eq!(literals.len(), 1);
+        assert_eq!(literals[0].start, 16);
+        assert_eq!(literals[0].end, 31);
+        assert_eq!(literals[0].kind, AutolinkLiteralKind::Email);
+    }
+
+    #[test]
+    fn autolink_literal_ranges_use_end_exclusive_boundaries() {
+        let text = b"x http://example.com http://example.org";
+        let mut literals = Vec::new();
+
+        // A range ending at a candidate start does not overlap it, while a
+        // range starting at the candidate end also remains outside it.
+        find_autolink_literals_into(text, &[], &[], &[], &[(0, 2), (21, 39)], &mut literals);
+        assert_eq!(literals.len(), 1);
+        assert_eq!(literals[0].start, 2);
+        assert_eq!(literals[0].end, 20);
     }
 }
