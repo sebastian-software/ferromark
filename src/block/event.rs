@@ -220,6 +220,74 @@ pub enum BlockEvent {
     TableCellEnd,
 }
 
+impl BlockEvent {
+    /// Shift source ranges when an event stream is moved into a larger source.
+    ///
+    /// Block events are normally relative to the Markdown slice parsed by the
+    /// block parser. MDX keeps footnote definitions until the assembled body
+    /// has rendered, so those definition events need to refer to the original
+    /// document instead.
+    #[cfg(feature = "mdx")]
+    pub(crate) fn shift_ranges(&mut self, offset: u32) {
+        fn shift(range: &mut Range, offset: u32) {
+            range.start = range
+                .start
+                .checked_add(offset)
+                .expect("shifted source range exceeds the supported input size");
+            range.end = range
+                .end
+                .checked_add(offset)
+                .expect("shifted source range exceeds the supported input size");
+        }
+
+        match self {
+            Self::ThematicBreak(range)
+            | Self::Comment(range)
+            | Self::HtmlBlockText(range)
+            | Self::Text(range)
+            | Self::Code(range) => shift(range, offset),
+            Self::CodeBlockStart {
+                kind: CodeBlockKind::Fenced { info: Some(range) },
+            } => shift(range, offset),
+            Self::CodeBlockStart { .. }
+            | Self::ParagraphStart
+            | Self::ParagraphEnd
+            | Self::HeadingStart { .. }
+            | Self::HeadingEnd { .. }
+            | Self::CodeBlockEnd
+            | Self::BlockQuoteStart { .. }
+            | Self::BlockQuoteEnd
+            | Self::ListStart { .. }
+            | Self::ListEnd { .. }
+            | Self::ListItemStart { .. }
+            | Self::ListItemEnd
+            | Self::DefinitionListStart
+            | Self::DefinitionListEnd
+            | Self::DefinitionTermStart
+            | Self::DefinitionTermEnd
+            | Self::DefinitionDescriptionStart { .. }
+            | Self::DefinitionDescriptionEnd
+            | Self::HtmlBlockStart
+            | Self::HtmlBlockEnd
+            | Self::SoftBreak
+            | Self::VirtualSpaces(_)
+            | Self::TableStart
+            | Self::TableColumnWidthsStart
+            | Self::TableColumnWidth { .. }
+            | Self::TableColumnWidthsEnd
+            | Self::TableEnd
+            | Self::TableHeadStart
+            | Self::TableHeadEnd
+            | Self::TableBodyStart
+            | Self::TableBodyEnd
+            | Self::TableRowStart
+            | Self::TableRowEnd
+            | Self::TableCellStart { .. }
+            | Self::TableCellEnd => {}
+        }
+    }
+}
+
 /// Type of list.
 ///
 /// Future releases may add list forms. Downstream matches must include a wildcard arm.

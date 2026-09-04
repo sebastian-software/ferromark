@@ -37,6 +37,29 @@ impl FootnoteStore {
         self.by_label.insert(normalized_label, idx);
     }
 
+    /// Merge definitions in source order, preserving the first definition for
+    /// every normalized label.
+    #[cfg(feature = "mdx")]
+    pub(crate) fn merge_first_wins(&mut self, other: Self) {
+        for def in other.defs {
+            let Some(normalized) = normalize_footnote_label(def.label.as_bytes()) else {
+                continue;
+            };
+            self.insert(normalized, def.label, def.events);
+        }
+    }
+
+    /// Move definition event ranges into the coordinate space of the complete
+    /// MDX input.
+    #[cfg(feature = "mdx")]
+    pub(crate) fn shift_ranges(&mut self, offset: u32) {
+        for definition in &mut self.defs {
+            for event in &mut definition.events {
+                event.shift_ranges(offset);
+            }
+        }
+    }
+
     /// Return the insertion-order index for a normalized label.
     pub fn get_index(&self, label: &str) -> Option<usize> {
         self.by_label.get(label).copied()

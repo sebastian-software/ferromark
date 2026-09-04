@@ -560,16 +560,6 @@ pub fn try_parse_with_options<'a>(
     Ok(parse_impl(input, options, None, None))
 }
 
-#[cfg(feature = "mdx")]
-pub(crate) fn try_parse_with_options_and_link_refs<'a>(
-    input: &'a str,
-    options: &Options,
-    link_refs: &LinkRefStore,
-) -> Result<ParseResult<'a>, InputSizeError> {
-    validate_input_size(input.len())?;
-    Ok(parse_impl(input, options, None, Some(link_refs)))
-}
-
 /// Parse Markdown with options and an opt-in fenced-code renderer, returning
 /// HTML, front matter, headings, and resource-limit fallbacks.
 ///
@@ -1527,6 +1517,73 @@ impl<'a, 'r, R: FencedCodeRenderer + ?Sized> RenderContext<'a, 'r, R> {
             fenced_code_buffer: &mut state.fenced_code_buffer,
             headings,
         }
+    }
+}
+
+/// Render an already-parsed Markdown event stream into a shared document
+/// state. MDX uses this to avoid parsing each segment twice and to keep
+/// headings and footnote numbering continuous across JSX boundaries.
+#[cfg(feature = "mdx")]
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn render_events_with_state(
+    input: &[u8],
+    events: &[BlockEvent],
+    writer: &mut HtmlWriter,
+    options: &Options,
+    link_refs: &LinkRefStore,
+    footnote_store: Option<&FootnoteStore>,
+    inline_parser: &mut InlineParser,
+    inline_events: &mut Vec<InlineEvent>,
+    render_state: &mut RenderState,
+    footnote_numbers: &mut FootnoteNumbers,
+) {
+    let mut context = RenderContext::<DisabledFencedCodeRenderer>::new(
+        writer,
+        inline_parser,
+        inline_events,
+        render_state,
+        footnote_numbers,
+        link_refs,
+        footnote_store,
+        None,
+        options,
+        None,
+        None,
+    );
+    for event in events {
+        context.render_block_event(input, event);
+    }
+}
+
+/// Render the single document-level footnote section after MDX body assembly.
+#[cfg(feature = "mdx")]
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn render_footnotes_with_state(
+    input: &[u8],
+    writer: &mut HtmlWriter,
+    options: &Options,
+    link_refs: &LinkRefStore,
+    footnote_store: &FootnoteStore,
+    inline_parser: &mut InlineParser,
+    inline_events: &mut Vec<InlineEvent>,
+    render_state: &mut RenderState,
+    footnote_numbers: &mut FootnoteNumbers,
+) {
+    let mut context = RenderContext::<DisabledFencedCodeRenderer>::new(
+        writer,
+        inline_parser,
+        inline_events,
+        render_state,
+        footnote_numbers,
+        link_refs,
+        Some(footnote_store),
+        None,
+        options,
+        None,
+        None,
+    );
+    if !context.footnote_numbers.is_empty() {
+        context.render_footnote_section(input);
     }
 }
 

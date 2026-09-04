@@ -2243,6 +2243,154 @@ fn render_keeps_the_first_link_reference_definition_across_segments() {
 }
 
 #[test]
+fn render_shares_heading_ids_across_markdown_segments() {
+    let out = render("# foo\n\n<X />\n\n# foo\n");
+    assert!(out.body.contains("<h1 id=\"foo\">foo</h1>"), "{}", out.body);
+    assert!(
+        out.body.contains("<h1 id=\"foo-1\">foo</h1>"),
+        "{}",
+        out.body
+    );
+}
+
+#[test]
+fn render_resolves_footnote_definition_across_segments() {
+    let options = ferromark::options!(Options::default(); footnotes: true, inline_footnotes: true,);
+    let out = render_with_options("a[^x]\n\n<X />\n\n[^x]: note\n", &options);
+    assert!(
+        out.body.contains("<sup><a href=\"#user-content-fn-x\""),
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("<li id=\"user-content-fn-x\">"),
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<p>note"), "{}", out.body);
+}
+
+#[test]
+fn render_numbers_inline_footnotes_across_segments() {
+    let options = ferromark::options!(Options::default(); footnotes: true, inline_footnotes: true,);
+    let out = render_with_options("^[first]\n\n<X />\n\n^[second]\n", &options);
+    assert!(
+        out.body.contains("id=\"user-content-inline-fnref-1\""),
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("id=\"user-content-inline-fnref-2\""),
+        "{}",
+        out.body
+    );
+    assert_eq!(
+        out.body.matches("<section data-footnotes").count(),
+        1,
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains(">first"), "{}", out.body);
+    assert!(out.body.contains(">second"), "{}", out.body);
+}
+
+#[test]
+fn render_inline_only_footnotes_across_segments() {
+    let options = ferromark::options!(Options::default(); inline_footnotes: true,);
+    let out = render_with_options("^[first]\n\n<X />\n\n^[second]\n", &options);
+    assert_eq!(
+        out.body.matches("<section data-footnotes").count(),
+        1,
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("id=\"user-content-inline-fnref-1\""),
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("id=\"user-content-inline-fnref-2\""),
+        "{}",
+        out.body
+    );
+}
+
+#[test]
+fn render_state_does_not_leak_between_mdx_documents() {
+    let first = render("# foo\n");
+    let second = render("# foo\n");
+    assert!(first.body.contains("<h1 id=\"foo\">"), "{}", first.body);
+    assert!(second.body.contains("<h1 id=\"foo\">"), "{}", second.body);
+    assert!(!second.body.contains("foo-1"), "{}", second.body);
+}
+
+#[test]
+fn render_footnotes_keep_first_definition_and_repeated_reference_number() {
+    let options = ferromark::options!(Options::default(); footnotes: true, inline_footnotes: true,);
+    let input = "[^x]: first\n\n<X />\n\na[^x] and [^x]\n\n[^x]: second\n";
+    let out = render_with_options(input, &options);
+    assert_eq!(
+        out.body.matches("data-footnote-ref>1</a>").count(),
+        2,
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<p>first"), "{}", out.body);
+    assert!(!out.body.contains("second"), "{}", out.body);
+}
+
+#[test]
+fn render_delayed_footnote_ranges_survive_front_matter_unicode_and_jsx() {
+    let options = ferromark::options!(Options::default(); footnotes: true,);
+    let input = "---\ntitle: café\n---\n\nRésumé[^a]\n\n<Component />\n\n[^a]: première ligne\n      ```rust\n      let café = true;\n      ```\n      > quoted\n      >\n      > - listed\n";
+    let out = render_with_options(input, &options);
+    assert!(
+        out.body.contains("<li id=\"user-content-fn-a\">"),
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<p>première ligne"), "{}", out.body);
+    assert!(
+        out.body
+            .contains("<code class=\"language-rust\">let café = true;"),
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<blockquote>"), "{}", out.body);
+    assert!(out.body.contains("<li>listed "), "{}", out.body);
+}
+
+#[test]
+fn render_nested_footnote_reference_resolves_in_a_later_segment() {
+    let options = ferromark::options!(Options::default(); footnotes: true,);
+    let input = "See[^a]\n\n<X />\n\n[^a]: outer[^b]\n\n<X />\n\n[^b]: inner\n";
+    let out = render_with_options(input, &options);
+    assert!(
+        out.body.contains("<li id=\"user-content-fn-a\">"),
+        "{}",
+        out.body
+    );
+    assert!(
+        out.body.contains("<li id=\"user-content-fn-b\">"),
+        "{}",
+        out.body
+    );
+    assert!(out.body.contains("<p>outer"), "{}", out.body);
+    assert!(out.body.contains("<p>inner"), "{}", out.body);
+}
+
+#[test]
+fn render_keeps_independent_container_boundaries_byte_identical() {
+    let input = "# Title\n\n- one\n- two\n\n<X />\n\n| a | b |\n| - | - |\n| c | d |\n\n<X />\n\n```rust\ncode\n```\n";
+    let out = render(input);
+    assert_eq!(
+        out.body,
+        "<h1 id=\"title\">Title</h1>\n<ul>\n<li>one</li>\n<li>two</li>\n</ul>\n<X />\n<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<X />\n<pre><code class=\"language-rust\">code\n</code></pre>\n"
+    );
+}
+
+#[test]
 fn render_web_component_inline() {
     let input = "Text with <sl-button>Click</sl-button> here.\n";
     let out = render(input);
@@ -2259,6 +2407,61 @@ fn render_front_matter() {
     assert_eq!(out.front_matter, Some("title: Hello\nauthor: World\n"));
     assert!(out.body.contains("<h1"));
     assert!(out.body.contains("Heading"));
+}
+
+#[test]
+fn render_does_not_extract_front_matter_after_jsx() {
+    let input = "<Component />\n---\ntitle: actually markdown\n---\n";
+    let out = render(input);
+
+    assert!(out.front_matter.is_none(), "{:?}", out.front_matter);
+    assert!(out.body.contains("<Component />"), "{}", out.body);
+    assert!(out.body.contains("actually markdown"), "{}", out.body);
+}
+
+#[test]
+fn render_front_matter_stays_document_scoped_across_esm_and_unicode_jsx() {
+    let input = "---\ntitle: Überprüfung\n---\n\nimport Card from './card'\n\n<Card />\n\nRésumé\n";
+    let out = render(input);
+
+    assert_eq!(out.front_matter, Some("title: Überprüfung\n"));
+    assert_eq!(out.esm, ["import Card from './card'\n"]);
+    assert!(out.body.contains("<Card />"), "{}", out.body);
+    assert!(out.body.contains("Résumé"), "{}", out.body);
+    assert!(!out.body.contains("title: Überprüfung"), "{}", out.body);
+}
+
+#[test]
+fn render_removes_front_matter_before_splitting_jsx_like_yaml_values() {
+    let input = "---\nvalue: |\n  <Component />\n---\n\n# Heading\n";
+    let out = render(input);
+
+    assert_eq!(out.front_matter, Some("value: |\n  <Component />\n"));
+    assert!(
+        out.body.contains("<h1 id=\"heading\">Heading</h1>"),
+        "{}",
+        out.body
+    );
+    assert!(!out.body.contains("<Component />"), "{}", out.body);
+}
+
+#[test]
+fn render_does_not_extract_front_matter_after_esm() {
+    let input = "import Card from './card'\n---\ntitle: actually markdown\n---\n";
+    let out = render(input);
+
+    assert!(out.front_matter.is_none(), "{:?}", out.front_matter);
+    assert_eq!(out.esm, ["import Card from './card'\n"]);
+    assert!(out.body.contains("actually markdown"), "{}", out.body);
+}
+
+#[test]
+fn render_keeps_front_matter_as_markdown_when_disabled() {
+    let options = ferromark::options!(Options::default(); front_matter: false,);
+    let out = render_with_options("---\ntitle: plain markdown\n---\n", &options);
+
+    assert!(out.front_matter.is_none());
+    assert!(out.body.contains("plain markdown"), "{}", out.body);
 }
 
 #[test]
