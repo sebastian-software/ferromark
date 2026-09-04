@@ -1,4 +1,4 @@
-use ferromark::{Options, to_html, to_html_with_options};
+use ferromark::{Options, Renderer, to_html, to_html_with_options};
 
 fn html_with_ids(input: &str) -> String {
     let options = ferromark::options!(Options::default();
@@ -36,6 +36,70 @@ fn test_duplicate_headings() {
     assert!(html.contains("id=\"hello\""), "First heading");
     assert!(html.contains("id=\"hello-1\""), "Second heading: {html}");
     assert!(html.contains("id=\"hello-2\""), "Third heading: {html}");
+}
+
+#[test]
+fn natural_suffixes_cannot_collide_with_generated_ids() {
+    assert_eq!(
+        html_with_ids("# foo\n\n# foo\n\n# foo-1"),
+        "<h1 id=\"foo\">foo</h1>\n<h1 id=\"foo-1\">foo</h1>\n<h1 id=\"foo-1-1\">foo-1</h1>\n"
+    );
+    assert_eq!(
+        html_with_ids("# foo-1\n\n# foo\n\n# foo"),
+        "<h1 id=\"foo-1\">foo-1</h1>\n<h1 id=\"foo\">foo</h1>\n<h1 id=\"foo-2\">foo</h1>\n"
+    );
+}
+
+#[test]
+fn suffix_cursor_skips_long_natural_suffix_chains() {
+    let html = html_with_ids("# foo\n\n# foo\n\n# foo-1\n\n# foo\n\n# foo-2");
+    assert!(html.contains("<h1 id=\"foo-1-1\">foo-1</h1>"), "{html}");
+    assert!(html.contains("<h1 id=\"foo-2\">foo</h1>"), "{html}");
+    assert!(html.contains("<h1 id=\"foo-2-1\">foo-2</h1>"), "{html}");
+}
+
+#[test]
+fn natural_suffixes_and_empty_slug_fallbacks_are_unique_with_unicode() {
+    let html = html_with_ids("# !!!\n\n# !!!\n\n# heading-1\n\n# Héllo\n\n# héllo\n\n# héllo-1");
+    assert!(html.contains("<h1 id=\"heading\">!!!</h1>"), "{html}");
+    assert!(html.contains("<h1 id=\"heading-1\">!!!</h1>"), "{html}");
+    assert!(
+        html.contains("<h1 id=\"heading-1-1\">heading-1</h1>"),
+        "{html}"
+    );
+    assert!(html.contains("<h1 id=\"héllo\">Héllo</h1>"), "{html}");
+    assert!(html.contains("<h1 id=\"héllo-1\">héllo</h1>"), "{html}");
+    assert!(html.contains("<h1 id=\"héllo-1-1\">héllo-1</h1>"), "{html}");
+}
+
+#[test]
+fn parse_headings_match_emitted_ids_and_renderer_reuse_resets_them() {
+    let first = "# foo\n\n# foo\n\n# foo-1";
+    let second = "# foo-1\n\n# foo\n\n# foo";
+    let parsed = ferromark::parse(first);
+    assert_eq!(
+        parsed
+            .headings
+            .iter()
+            .map(|heading| heading.id.as_deref())
+            .collect::<Vec<_>>(),
+        vec![Some("foo"), Some("foo-1"), Some("foo-1-1")]
+    );
+    assert!(parsed.html.contains("id=\"foo-1-1\""));
+
+    let mut renderer = Renderer::new();
+    assert_eq!(renderer.render(first), html_with_ids(first));
+    assert_eq!(renderer.render(second), html_with_ids(second));
+}
+
+#[test]
+fn headings_inside_footnotes_share_document_id_registry() {
+    let options = ferromark::options!(Options::default();
+        footnotes: true,);
+    let html = to_html_with_options("# heading\n\nText[^note].\n\n[^note]: # heading", &options);
+
+    assert!(html.contains("<h1 id=\"heading\">heading</h1>"), "{html}");
+    assert!(html.contains("<h1 id=\"heading-1\">heading</h1>"), "{html}");
 }
 
 #[test]
