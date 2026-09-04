@@ -1190,12 +1190,20 @@ pub fn try_render_with_options<'a>(
     input: &'a str,
     options: &Options,
 ) -> Result<MdxOutput<'a>, crate::InputSizeError> {
-    let segments = super::try_segment(input)?;
+    crate::validate_input_size(input.len())?;
+    let (document, _) = super::content_after_bom(input);
+    let (front_matter, markdown_input) = if options.front_matter {
+        crate::extract_front_matter(document).map_or((None, document), |(content, rest_offset)| {
+            (Some(content), &document[rest_offset..])
+        })
+    } else {
+        (None, document)
+    };
+    let segments = super::splitter::split(markdown_input);
     let mut parsed_markdown = Vec::new();
     let mut link_refs = LinkRefStore::new();
     let mut footnote_store = FootnoteStore::new();
     let mut esm: Vec<&'a str> = Vec::new();
-    let mut front_matter: Option<&'a str> = None;
 
     // Parse each Markdown slice once. Stores are assembled in source order
     // before rendering so forward references resolve without changing the
@@ -1204,11 +1212,7 @@ pub fn try_render_with_options<'a>(
         match segment {
             Segment::Esm(s) => esm.push(s),
             Segment::Markdown(source) => {
-                if front_matter.is_none() && options.front_matter {
-                    front_matter = crate::extract_front_matter(source).map(|(value, _)| value);
-                }
-
-                let markdown = crate::markdown_without_front_matter(source, options);
+                let markdown = source;
                 let source_offset = (markdown.as_ptr() as usize)
                     .checked_sub(input.as_ptr() as usize)
                     .expect("MDX Markdown segment must borrow from its input");

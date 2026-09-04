@@ -2410,6 +2410,61 @@ fn render_front_matter() {
 }
 
 #[test]
+fn render_does_not_extract_front_matter_after_jsx() {
+    let input = "<Component />\n---\ntitle: actually markdown\n---\n";
+    let out = render(input);
+
+    assert!(out.front_matter.is_none(), "{:?}", out.front_matter);
+    assert!(out.body.contains("<Component />"), "{}", out.body);
+    assert!(out.body.contains("actually markdown"), "{}", out.body);
+}
+
+#[test]
+fn render_front_matter_stays_document_scoped_across_esm_and_unicode_jsx() {
+    let input = "---\ntitle: Überprüfung\n---\n\nimport Card from './card'\n\n<Card />\n\nRésumé\n";
+    let out = render(input);
+
+    assert_eq!(out.front_matter, Some("title: Überprüfung\n"));
+    assert_eq!(out.esm, ["import Card from './card'\n"]);
+    assert!(out.body.contains("<Card />"), "{}", out.body);
+    assert!(out.body.contains("Résumé"), "{}", out.body);
+    assert!(!out.body.contains("title: Überprüfung"), "{}", out.body);
+}
+
+#[test]
+fn render_removes_front_matter_before_splitting_jsx_like_yaml_values() {
+    let input = "---\nvalue: |\n  <Component />\n---\n\n# Heading\n";
+    let out = render(input);
+
+    assert_eq!(out.front_matter, Some("value: |\n  <Component />\n"));
+    assert!(
+        out.body.contains("<h1 id=\"heading\">Heading</h1>"),
+        "{}",
+        out.body
+    );
+    assert!(!out.body.contains("<Component />"), "{}", out.body);
+}
+
+#[test]
+fn render_does_not_extract_front_matter_after_esm() {
+    let input = "import Card from './card'\n---\ntitle: actually markdown\n---\n";
+    let out = render(input);
+
+    assert!(out.front_matter.is_none(), "{:?}", out.front_matter);
+    assert_eq!(out.esm, ["import Card from './card'\n"]);
+    assert!(out.body.contains("actually markdown"), "{}", out.body);
+}
+
+#[test]
+fn render_keeps_front_matter_as_markdown_when_disabled() {
+    let options = ferromark::options!(Options::default(); front_matter: false,);
+    let out = render_with_options("---\ntitle: plain markdown\n---\n", &options);
+
+    assert!(out.front_matter.is_none());
+    assert!(out.body.contains("plain markdown"), "{}", out.body);
+}
+
+#[test]
 fn render_ignores_a_leading_utf8_bom_before_front_matter_and_esm() {
     let input = "\u{feff}---\ntitle: Hello\n---\n\nimport Card from './Card'\n\n# Heading\n";
     let out = render(input);
