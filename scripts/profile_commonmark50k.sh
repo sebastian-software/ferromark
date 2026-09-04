@@ -1,104 +1,71 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+# shellcheck source=profile_common.sh
+source "$script_dir/profile_common.sh"
+
 size="${1:-50k}"
 parser="${2:-ferromark}"
 sample_secs="${3:-10}"
 measure_secs="${4:-60}"
 mode="${5:-pgo}"
 
-case "$mode" in
-  pgo|non-pgo) ;;
-  *)
-    echo "Usage: $0 [5k|20k|50k] [ferromark|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
-    exit 1
-    ;;
-esac
-
+usage="Usage: $0 [5k|20k|50k] [ferromark|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]"
 case "$size" in
   5k|20k|50k) ;;
-  *)
-    echo "Usage: $0 [5k|20k|50k] [ferromark|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
-    exit 1
-    ;;
+  *) echo "$usage" >&2; exit 1 ;;
 esac
-
 case "$parser" in
   ferromark|md4c|pulldown-cmark|comrak) ;;
-  *)
-    echo "Usage: $0 [5k|20k|50k] [ferromark|md4c|pulldown-cmark|comrak] [sample_seconds] [measurement_seconds] [pgo|non-pgo]" >&2
-    exit 1
-    ;;
+  *) echo "$usage" >&2; exit 1 ;;
 esac
+case "$mode" in
+  pgo|non-pgo) ;;
+  *) echo "$usage" >&2; exit 1 ;;
+esac
+profile_validate_duration "$sample_secs" sample_seconds
+profile_validate_duration "$measure_secs" measurement_seconds
+profile_validate_sample_budget "$sample_secs" "$measure_secs"
+profile_normalize_target_dir
+profile_configure_mode "$mode"
+PROFILE_MODE="$mode"
+export PROFILE_MODE PROFILE_RUSTFLAGS PROFILE_ENCODED_RUSTFLAGS
 
-if [[ "$mode" == "pgo" ]]; then
-  if [[ -z "${PGO_PROFDATA:-}" ]]; then
-    echo "PGO mode requires PGO_PROFDATA to point to a .profdata file." >&2
-    exit 1
-  fi
-  if [[ ! -f "$PGO_PROFDATA" ]]; then
-    echo "PGO profile data not found: $PGO_PROFDATA" >&2
-    exit 1
-  fi
-  rustflags="-Cprofile-use=${PGO_PROFDATA} -Cllvm-args=-pgo-warn-missing-function"
-else
-  rustflags=""
+build_log="$(mktemp "${TMPDIR:-/tmp}/ferromark-profile-commonmark-build.XXXXXX")"
+cleanup_files() {
+  rm -f "$build_log"
+}
+trap cleanup_files EXIT
+
+fixture="$repo_root/benches/fixtures/commonmark-${size}.md"
+if [[ ! -f "$fixture" ]]; then
+  echo "CommonMark fixture not found: $fixture" >&2
+  exit 1
 fi
 
-# Build bench binary with symbols (avoid stripping) and parse exact binary path.
-build_output=$(
-  CARGO_PROFILE_BENCH_STRIP=false RUSTFLAGS="$rustflags" \
-    cargo bench --bench comparison --no-run 2>&1
-)
-bin=$(printf '%s\n' "$build_output" | sed -nE 's|.*Executable benches/comparison\.rs \((target/release/deps/comparison-[^)]+)\).*|\1|p' | tail -n 1)
-if [[ -z "$bin" || ! -x "$bin" ]]; then
-  echo "Could not resolve comparison bench binary from cargo output." >&2
-  printf '%s\n' "$build_output" >&2
-  exit 1
+if [[ "$parser" == ferromark ]]; then
+  bin="$(profile_build_harness "$repo_root" "$build_log")"
+  args=("$fixture" commonmark 0 --forever)
+else
+  bin="$(profile_build_comparison "$repo_root" "$build_log")"
+  args=(--bench --measurement-time "$measure_secs" --warm-up-time 5 --sample-size 100 "^commonmark${size}/${parser}$")
 fi
 
 echo "Mode: $mode"
-if [[ "$mode" == "pgo" ]]; then
+if [[ "$mode" == pgo ]]; then
   echo "Using PGO profile: $PGO_PROFDATA"
 fi
-echo "Using bench binary: $bin"
-
-echo "Available benches:"
-"$bin" --list > /tmp/ferromark-bench.list || true
-cat /tmp/ferromark-bench.list
-
-if rg -q "^commonmark${size}/${parser}:" /tmp/ferromark-bench.list; then
-  filter="^commonmark${size}/${parser}$"
+echo "Parser: $parser"
+echo "Using executable: $bin"
+if [[ "$parser" == ferromark ]]; then
+  echo "Workload: ferromark commonmark preset with a reused output buffer."
 else
-  echo "No 'commonmark${size}/${parser}' benchmark found. Aborting." >&2
-  exit 1
+  echo "Workload: isolated comparison bench with Criterion's fresh benchmark inputs."
 fi
+echo "Sampling commonmark${size}/${parser} for ${sample_secs}s (budget ${measure_secs}s)..."
 
-echo "Starting benchmark (${measure_secs}s) and sampling for ${sample_secs}s..."
-out="/tmp/ferromark-commonmark${size}-${parser}-${mode}.bench.out"
-"$bin" --bench --measurement-time "$measure_secs" --warm-up-time 5 --sample-size 100 "$filter" > "$out" 2>&1 &
-pid=$!
-
-for i in $(seq 1 50); do
-  if ! kill -0 "$pid" 2>/dev/null; then
-    echo "Benchmark exited early. Output:" >&2
-    cat "$out" >&2
-    exit 1
-  fi
-  if rg -q "Benchmarking" "$out"; then
-    break
-  fi
-  sleep 0.1
-done
-
-sample_out="/tmp/ferromark-commonmark${size}-${parser}-${mode}.sample.txt"
-if ! sample "$pid" "$sample_secs" -mayDie -fullPaths -file "$sample_out"; then
-  echo "sample failed. If this requires elevated privileges, rerun in a terminal with sudo:" >&2
-  echo "  sudo sample $pid $sample_secs -mayDie -fullPaths -file $sample_out" >&2
-  exit 1
-fi
-
-# Best-effort cleanup
-kill "$pid" 2>/dev/null || true
-
-echo "Sample saved to $sample_out"
+profile_run_and_sample_supervised \
+  "$bin" "commonmark${size}-${parser}-${mode}" "$sample_secs" "$measure_secs" \
+  "${args[@]}"
