@@ -54,6 +54,46 @@
           "type": "json",
           "path": "node/ferromark/package.json",
           "jsonpath": "$.optionalDependencies['ferromark-win32-x64-msvc']"
+        },
+        {
+          "type": "yaml",
+          "path": "node/pnpm-lock.yaml",
+          "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-darwin-arm64'].specifier"
+        },
+        {
+          "type": "yaml",
+          "path": "node/pnpm-lock.yaml",
+          "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-darwin-x64'].specifier"
+        },
+        {
+          "type": "yaml",
+          "path": "node/pnpm-lock.yaml",
+          "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-linux-arm64-gnu'].specifier"
+        },
+        {
+          "type": "yaml",
+          "path": "node/pnpm-lock.yaml",
+          "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-linux-arm64-musl'].specifier"
+        },
+        {
+          "type": "yaml",
+          "path": "node/pnpm-lock.yaml",
+          "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-linux-x64-gnu'].specifier"
+        },
+        {
+          "type": "yaml",
+          "path": "node/pnpm-lock.yaml",
+          "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-linux-x64-musl'].specifier"
+        },
+        {
+          "type": "yaml",
+          "path": "node/pnpm-lock.yaml",
+          "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-win32-arm64-msvc'].specifier"
+        },
+        {
+          "type": "yaml",
+          "path": "node/pnpm-lock.yaml",
+          "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-win32-x64-msvc'].specifier"
         }
       ]
     }

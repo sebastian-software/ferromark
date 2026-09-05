@@ -1,5 +1,68 @@
 # Changelog
 
+## [0.8.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.7.0...ferromark-v0.8.0) (2026-09-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* **api:** Options is now non-exhaustive; configure a preset by mutating public fields or with ferromark::options!. Add wildcard arms to matches on public enums.
+
+### Features
+
+* **api:** make options and public enums non-exhaustive ([#196](https://github.com/sebastian-software/ferromark/issues/196)) ([a1f4b6e](https://github.com/sebastian-software/ferromark/commit/a1f4b6ec6d4c007f58bc7d67909d90d4709f6454))
+* **cli:** add documented command interface ([#211](https://github.com/sebastian-software/ferromark/issues/211)) ([dc76b70](https://github.com/sebastian-software/ferromark/commit/dc76b70c9ffeef9fe01083a9cb3d09a87e3b923c))
+* **mdx:** improve diagnostic ergonomics ([#233](https://github.com/sebastian-software/ferromark/issues/233)) ([cda5ab8](https://github.com/sebastian-software/ferromark/commit/cda5ab8efa0440582d85398e4beb83c48e272ad5))
+* **node:** publish per-platform native packages ([#217](https://github.com/sebastian-software/ferromark/issues/217)) ([3602c6e](https://github.com/sebastian-software/ferromark/commit/3602c6ea63221bab5b7ec12e9d25a6006c771b9e))
+* **parser:** report resource limit fallbacks ([#215](https://github.com/sebastian-software/ferromark/issues/215)) ([c284c26](https://github.com/sebastian-software/ferromark/commit/c284c26c6966d9e3a325ca5b5dc66c904f6bd722))
+
+
+### Bug Fixes
+
+* align Node engine with CommonJS support ([#227](https://github.com/sebastian-software/ferromark/issues/227)) ([f37b798](https://github.com/sebastian-software/ferromark/commit/f37b798c1a6a329865cb8ff3909eac5eb454429e))
+* bound reference-link resolution work ([#193](https://github.com/sebastian-software/ferromark/issues/193)) ([4695ecd](https://github.com/sebastian-software/ferromark/commit/4695ecd0306b8605ec82a0bc8ca5e61faf727a3c))
+* **ci:** enforce workflow action SHA pins ([#195](https://github.com/sebastian-software/ferromark/issues/195)) ([520ac09](https://github.com/sebastian-software/ferromark/commit/520ac09f3538f0e12d44650ddd16d3fad82c29e5))
+* **ci:** verify npm releases ([#201](https://github.com/sebastian-software/ferromark/issues/201)) ([33ce6d0](https://github.com/sebastian-software/ferromark/commit/33ce6d0af80aee7865cc92dae8e4171dd2b66508))
+* complete crates.io trusted publishing ([617a29d](https://github.com/sebastian-software/ferromark/commit/617a29dbe8833e5bdbb207186cfe573051cfd18c))
+* guarantee parser progress under fuzzing ([#197](https://github.com/sebastian-software/ferromark/issues/197)) ([2f7eb1a](https://github.com/sebastian-software/ferromark/commit/2f7eb1a989cdecb5b1b7be444573c50e4feff2f4))
+* harden native addon loading ([#226](https://github.com/sebastian-software/ferromark/issues/226)) ([f8393bb](https://github.com/sebastian-software/ferromark/commit/f8393bb8831826bdcb23baf9dd4a71f9c796c366))
+* **homepage:** patch transitive toml advisories ([8baa9f3](https://github.com/sebastian-software/ferromark/commit/8baa9f3f86c80d2c3f373506ddd70590d3816545))
+* **homepage:** patch transitive TOML advisories blocking CI ([68d74c3](https://github.com/sebastian-software/ferromark/commit/68d74c353ddde7db3f82aadd15616d802c43f49e))
+* ignore leading BOM in MDX documents ([#223](https://github.com/sebastian-software/ferromark/issues/223)) ([1e780e9](https://github.com/sebastian-software/ferromark/commit/1e780e948f82619f856a92da9d53ed1564169e8e))
+* **mdx:** emit valid JSX components ([#203](https://github.com/sebastian-software/ferromark/issues/203)) ([649c3ab](https://github.com/sebastian-software/ferromark/commit/649c3ab9892fd08ce592820939a3de9d3d5fc691))
+* **mdx:** preserve document state across segments ([c705b36](https://github.com/sebastian-software/ferromark/commit/c705b362e2bfc47fc5375a2f0ac8aca25542c00c))
+* **mdx:** preserve prose after multiline ESM ([#200](https://github.com/sebastian-software/ferromark/issues/200)) ([84eff19](https://github.com/sebastian-software/ferromark/commit/84eff19b589edc1b1638961bfe5d1051fd75c51f))
+* **mdx:** resolve references across segments ([#220](https://github.com/sebastian-software/ferromark/issues/220)) ([bdfe9b0](https://github.com/sebastian-software/ferromark/commit/bdfe9b04596045e602bb1a6d40f4649e654aac4d))
+* **mdx:** scope front matter to document start ([#257](https://github.com/sebastian-software/ferromark/issues/257)) ([24b6628](https://github.com/sebastian-software/ferromark/commit/24b6628d3b3e181e0fa2d9d3bd5d6eafcd53282f))
+* **mdx:** share document state and parse segments once ([23cf98d](https://github.com/sebastian-software/ferromark/commit/23cf98db5da162aa42cd81bf2e60378c3fb0412d))
+* **node:** reject unknown option keys ([#216](https://github.com/sebastian-software/ferromark/issues/216)) ([924cce8](https://github.com/sebastian-software/ferromark/commit/924cce8b32ea977c56f6860d5105f3252448ed3e))
+* **node:** unwind panics in native addon ([#192](https://github.com/sebastian-software/ferromark/issues/192)) ([c79a661](https://github.com/sebastian-software/ferromark/commit/c79a661df215885f5bd5038e26cc066407352ddb))
+* preserve fenced code in MDX segmentation ([#191](https://github.com/sebastian-software/ferromark/issues/191)) ([16a4ce6](https://github.com/sebastian-software/ferromark/commit/16a4ce6de9c02b1805293972f7611088c6b7dedc))
+* **profiling:** repair standalone profiling scripts ([4666393](https://github.com/sebastian-software/ferromark/commit/4666393783e1eca0a9fb1d09064dc2c5218b4c33))
+* **profiling:** restore standalone sampling and process cleanup ([d05ddc2](https://github.com/sebastian-software/ferromark/commit/d05ddc2bbf7e0328bb333b2e8c12e8a8dcdbcf27))
+* publish crate with trusted OIDC credentials ([a38e6ef](https://github.com/sebastian-software/ferromark/commit/a38e6ef8c74cc481745fb50b0a887423edaab253))
+* reject oversized inputs ([#199](https://github.com/sebastian-software/ferromark/issues/199)) ([dabfe98](https://github.com/sebastian-software/ferromark/commit/dabfe98f668a2c3152667f676b0e06815226961b))
+* reserve every emitted heading ID across the document ([4dfc019](https://github.com/sebastian-software/ferromark/commit/4dfc01930e0226a40ab4b807d4d708e419edabd0))
+* reserve generated heading IDs ([1aef51f](https://github.com/sebastian-software/ferromark/commit/1aef51fc577f1b63f787965c38efa02dd2a20b8f))
+* surface Node highlighter failures ([#225](https://github.com/sebastian-software/ferromark/issues/225)) ([054168d](https://github.com/sebastian-software/ferromark/commit/054168d5259174c355d19184051f5ad64f4070f4))
+
+
+### Performance Improvements
+
+* add reusable renderer sessions ([#218](https://github.com/sebastian-software/ferromark/issues/218)) ([948d631](https://github.com/sebastian-software/ferromark/commit/948d6316114459a98f98dd24225b3cd82acd0e99))
+* avoid quadratic footnote ordinal initialization ([6b4e622](https://github.com/sebastian-software/ferromark/commit/6b4e622cfda9be942ee144635277176a725881e2))
+* avoid reports outside Linux ([#228](https://github.com/sebastian-software/ferromark/issues/228)) ([a8591c3](https://github.com/sebastian-software/ferromark/commit/a8591c3e5031646b309e5ce2e064af5c639a3fe6))
+* bound autolink candidate and suffix scans ([14e46d4](https://github.com/sebastian-software/ferromark/commit/14e46d43e9935fcfa6708e6dfda5a6d1500eb61d))
+* bound inline boundary lookups ([#222](https://github.com/sebastian-software/ferromark/issues/222)) ([46abe56](https://github.com/sebastian-software/ferromark/commit/46abe56dafb30e4f393c9198544abafc66a67fec))
+* index autolink exclusion ranges ([6918c21](https://github.com/sebastian-software/ferromark/commit/6918c21d6d748879c67056088d3d01ef7f205a46))
+* **inline:** add x86 SIMD specials scan ([#206](https://github.com/sebastian-software/ferromark/issues/206)) ([e5083e8](https://github.com/sebastian-software/ferromark/commit/e5083e8d905ea2e332953323260982d5e57c9359))
+* **inline:** index autolink exclusion ranges ([5a99aaa](https://github.com/sebastian-software/ferromark/commit/5a99aaa386180b681f7a7feb2db24f8e0db7a5a9))
+* make autolink candidate and suffix scans linear ([13ed634](https://github.com/sebastian-software/ferromark/commit/13ed6343797df2bd7eabc31c52be1813bc8fb81c))
+* **mdx:** cache unterminated expression scans ([#202](https://github.com/sebastian-software/ferromark/issues/202)) ([934a34e](https://github.com/sebastian-software/ferromark/commit/934a34ea4db7ed390c5f13397e8e6adc1d7041de))
+* **mdx:** release compact segment buffers after rendering ([adf7272](https://github.com/sebastian-software/ferromark/commit/adf727227fea90c42f537d386f9e600411afe9cb))
+* **node:** reduce N-API boundary copies ([#241](https://github.com/sebastian-software/ferromark/issues/241)) ([018fb03](https://github.com/sebastian-software/ferromark/commit/018fb03ed4d305f1f47cfd900e0dae7598b1c6d1))
+* remove dead MDX tag stack ([#224](https://github.com/sebastian-software/ferromark/issues/224)) ([b2501a0](https://github.com/sebastian-software/ferromark/commit/b2501a04170ccca6cf4d4e76ed5b1c520faa123b))
+* reuse document footnote numbering and render state ([021f2ea](https://github.com/sebastian-software/ferromark/commit/021f2ea169d263aa51a8d6feda4698c87921846a))
+
 ## [0.7.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.6.0...ferromark-v0.7.0) (2026-07-27)
 
 
