@@ -897,9 +897,11 @@ This project is part of [Ferramenta](https://ferramenta.dev) — the family of R
 </p>
 
 <p align="center">
-  <a href="https://oss.sebastian-software.com">Open Source at Sebastian Software</a><br />
-  Copyright &copy; 2026 Sebastian Software GmbH
+  <strong>Built by Sebastian Software</strong> — consulting for TypeScript, React &amp; Rust.<br />
+  <a href="https://sebastian-software.de">Work with us</a> · <a href="https://oss.sebastian-software.com">More open source</a>
 </p>
+
+<p align="center">Copyright &copy; 2026 Sebastian Software GmbH</p>
 <!-- sebastian-software-branding:end -->
 
 ## Security
