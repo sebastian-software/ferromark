@@ -7,7 +7,7 @@ git clone https://github.com/sebastian-software/ferromark.git
 cd ferromark
 ```
 
-The minimum supported Rust version (MSRV) is Rust 1.88.
+The minimum supported Rust version (MSRV) is Rust 1.94.
 
 Run the [required local checks](#required-local-checks) below.
 

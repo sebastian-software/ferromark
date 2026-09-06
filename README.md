@@ -5,7 +5,7 @@
 [![crates.io](https://img.shields.io/crates/v/ferromark.svg)](https://crates.io/crates/ferromark)
 [![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
-[![Rust 1.88+](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](#minimum-supported-rust-version)
+[![Rust 1.94+](https://img.shields.io/badge/rust-1.94%2B-orange.svg)](#minimum-supported-rust-version)
 
 Markdown to HTML with a secure default and every GFM extension included. The
 reproducible benchmark protocol and current CommonMark conformance result are
@@ -834,10 +834,10 @@ cargo bench            # benchmarks
 
 ### Minimum supported Rust version
 
-Ferromark builds on Rust 1.88 and newer. The floor is declared as
+Ferromark builds on Rust 1.94 and newer. The floor is declared as
 `rust-version` in `Cargo.toml`, restated for contributors in
 [CONTRIBUTING.md](CONTRIBUTING.md), and exercised on every pull request by the
-dedicated Rust 1.88 rows of the CI test matrix, so the badge above reflects a
+dedicated Rust 1.94 rows of the CI test matrix, so the badge above reflects a
 tested version rather than an intention.
 
 ## Project structure

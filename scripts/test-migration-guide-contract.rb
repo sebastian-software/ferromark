@@ -164,7 +164,7 @@ def self_test(repository_root)
     validate_document(guide.sub("            ..\n", ''), readme, cargo_toml, node_package, node_workspace, changelog)
   end
   assert_rejected('Rust version') do
-    validate_document(guide.sub('requires Rust 1.88 or newer', 'requires Rust 1.85 or newer'), readme, cargo_toml, node_package, node_workspace, changelog)
+    validate_document(guide.sub('requires Rust 1.94 or newer', 'requires Rust 1.85 or newer'), readme, cargo_toml, node_package, node_workspace, changelog)
   end
   assert_rejected('Node version') do
     validate_document(guide.sub('Node.js 22.12.0 or newer', 'Node.js 20.0.0 or newer'), readme, cargo_toml, node_package, node_workspace, changelog)
