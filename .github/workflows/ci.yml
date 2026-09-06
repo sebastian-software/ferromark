@@ -34,7 +34,10 @@ jobs:
       # The action only sets the rustup default, and rust-toolchain.toml
       # outranks that; a directory override outranks the file. Without this
       # line the MSRV rows would quietly test with stable instead.
+      # `shell: bash` is required: the Windows default shell is pwsh, which
+      # does not expand `$TOOLCHAIN`.
       - run: rustup override set "$TOOLCHAIN"
+        shell: bash
         env:
           TOOLCHAIN: ${{ matrix.rust }}
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
