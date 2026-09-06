@@ -15,5 +15,8 @@
     "types": ["vite/client", "ardo/virtual"]
   },
   "include": ["app/**/*", "*.ts", "*.config.ts"],
-  "exclude": ["node_modules", "build"]
+  // The seeded eslint/oxlint configs stay out of the program until the
+  // workspace installs the org lint toolchain; their imports do not
+  // resolve yet and they are not part of the site build.
+  "exclude": ["node_modules", "build", "eslint.config.ts", "oxlint.config.ts"]
 }
