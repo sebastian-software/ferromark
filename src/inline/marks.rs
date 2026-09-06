@@ -3,14 +3,9 @@
 //! Marks represent potential delimiter positions (backticks, asterisks, etc.)
 //! collected in a single pass before resolution.
 
-#[cfg(any(
-    target_arch = "x86_64",
-    all(target_arch = "aarch64", target_feature = "neon")
-))]
 use super::simd;
 use crate::limits;
 use crate::range::{assert_input_size, offset_to_u32};
-use memchr::memchr3;
 
 /// Flags for mark state.
 pub mod flags {
@@ -521,51 +516,7 @@ fn next_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
     text: &[u8],
     start: usize,
 ) -> Option<usize> {
-    let pos = {
-        #[cfg(any(
-            target_arch = "x86_64",
-            all(target_arch = "aarch64", target_feature = "neon")
-        ))]
-        {
-            let mut pos = start;
-            if let Some(found) =
-                unsafe { simd::next_mark_special_simd::<HIGHLIGHT, SUPERSCRIPT>(text, &mut pos) }
-            {
-                return Some(found);
-            }
-            pos
-        }
-        #[cfg(not(any(
-            target_arch = "x86_64",
-            all(target_arch = "aarch64", target_feature = "neon")
-        )))]
-        {
-            start
-        }
-    };
-    let slice = &text[pos..];
-    let mut best = None;
-
-    if let Some(i) = memchr3(b'`', b'*', b'_', slice) {
-        best = Some(i);
-    }
-    if let Some(i) = memchr3(b'\\', b'\n', b'[', slice) {
-        best = Some(best.map_or(i, |b| b.min(i)));
-    }
-    if let Some(i) = memchr3(b']', b'<', b'~', slice) {
-        best = Some(best.map_or(i, |b| b.min(i)));
-    }
-    if let Some(i) = memchr::memchr(b'$', slice) {
-        best = Some(best.map_or(i, |b| b.min(i)));
-    }
-    if SUPERSCRIPT && let Some(i) = memchr::memchr(b'^', slice) {
-        best = Some(best.map_or(i, |b| b.min(i)));
-    }
-    if HIGHLIGHT && let Some(i) = memchr::memchr(b'=', slice) {
-        best = Some(best.map_or(i, |b| b.min(i)));
-    }
-
-    best.map(|i| pos + i)
+    simd::next_mark_special::<HIGHLIGHT, SUPERSCRIPT>(&text[start..]).map(|i| start + i)
 }
 
 #[inline]

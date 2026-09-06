@@ -14,6 +14,7 @@ readme = "README.md"
 keywords = ["markdown", "html", "commonmark", "gfm", "ferramenta"]
 categories = ["parsing", "text-processing", "web-programming"]
 exclude = [
+    "benchmarks/bun-comparison",
     "benchmarks/md4c-comparison",
     "benchmarks/pulldown-comparison",
     "fuzz",
@@ -25,7 +26,7 @@ features = ["mdx"]
 no-default-features = true
 
 [workspace]
-members = ["node/native"]
+members = ["node/native", "crates/ferro-byte-search"]
 resolver = "2"
 
 # The workspace lints mirror the CI gate (clippy with `-D warnings` over all

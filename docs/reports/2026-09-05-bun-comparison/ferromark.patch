@@ -1,0 +1,216 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 2fd35c2..67157e0 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -11,6 +11,7 @@ readme = "README.md"
+ keywords = ["markdown", "html", "parser", "commonmark", "gfm"]
+ categories = ["parsing", "text-processing", "web-programming"]
+ exclude = [
++    "benchmarks/bun-comparison",
+     "benchmarks/md4c-comparison",
+     "benchmarks/pulldown-comparison",
+     "fuzz",
+diff --git a/src/block/mod.rs b/src/block/mod.rs
+index c5f3722..6312e1f 100644
+--- a/src/block/mod.rs
++++ b/src/block/mod.rs
+@@ -13,6 +13,7 @@ mod parser;
+ 
+ pub use event::{Alignment, BlockEvent, CalloutType, CodeBlockKind, ListKind, TaskState};
+ pub use parser::BlockParser;
++pub(crate) use parser::BlockScratch;
+ 
+ /// Post-process events to fix up list tight status.
+ ///
+diff --git a/src/block/parser.rs b/src/block/parser.rs
+index ce3b855..e563e49 100644
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -149,6 +149,17 @@ struct PendingDefinitionTerm {
+     outer_depth: usize,
+ }
+ 
++/// Input-independent allocations retained by a reusable renderer. All semantic
++/// document state (definitions, cursor, containers and limits) stays in the parser.
++#[derive(Default)]
++pub(crate) struct BlockScratch {
++    paragraph_lines: Vec<Range>,
++    paragraph_comments: Vec<Range>,
++    pending_code_blanks: Vec<(u8, Range)>,
++    link_ref_parse_buf: Vec<u8>,
++    link_ref_label_buf: String,
++}
++
+ /// Block parser state.
+ pub struct BlockParser<'a> {
+     /// Input bytes.
+@@ -260,22 +271,38 @@ impl<'a> BlockParser<'a> {
+     }
+ 
+     fn new_unchecked(input: &'a [u8], options: Options) -> Self {
++        Self::with_scratch_unchecked(
++            input,
++            options,
++            BlockScratch {
++                link_ref_label_buf: String::with_capacity(64),
++                ..BlockScratch::default()
++            },
++        )
++    }
++
++    pub(crate) fn with_scratch(input: &'a [u8], options: Options, scratch: BlockScratch) -> Self {
++        crate::range::assert_input_size(input.len());
++        Self::with_scratch_unchecked(input, options, scratch)
++    }
++
++    fn with_scratch_unchecked(input: &'a [u8], options: Options, scratch: BlockScratch) -> Self {
+         Self {
+             input,
+             cursor: Cursor::new(input),
+             in_paragraph: false,
+-            paragraph_lines: Vec::new(),
+-            paragraph_comments: Vec::new(),
++            paragraph_lines: scratch.paragraph_lines,
++            paragraph_comments: scratch.paragraph_comments,
+             fence_state: None,
+             in_indented_code: false,
+             indented_code_extra_spaces: 0,
+-            pending_code_blanks: Vec::new(),
++            pending_code_blanks: scratch.pending_code_blanks,
+             html_block: None,
+             line_indent_bytes: 0,
+             pending_html_indent_start: None,
+             link_refs: LinkRefStore::new(),
+-            link_ref_parse_buf: Vec::new(),
+-            link_ref_label_buf: String::with_capacity(64),
++            link_ref_parse_buf: scratch.link_ref_parse_buf,
++            link_ref_label_buf: scratch.link_ref_label_buf,
+             options,
+             container_stack: SmallVec::new(),
+             tight_list: false,
+@@ -299,6 +326,21 @@ impl<'a> BlockParser<'a> {
+         }
+     }
+ 
++    pub(crate) fn into_scratch(mut self) -> BlockScratch {
++        self.paragraph_lines.clear();
++        self.paragraph_comments.clear();
++        self.pending_code_blanks.clear();
++        self.link_ref_parse_buf.clear();
++        self.link_ref_label_buf.clear();
++        BlockScratch {
++            paragraph_lines: self.paragraph_lines,
++            paragraph_comments: self.paragraph_comments,
++            pending_code_blanks: self.pending_code_blanks,
++            link_ref_parse_buf: self.link_ref_parse_buf,
++            link_ref_label_buf: self.link_ref_label_buf,
++        }
++    }
++
+     /// Parse all blocks and collect events.
+     pub fn parse(&mut self, events: &mut Vec<BlockEvent>) {
+         while !self.cursor.is_eof() {
+diff --git a/src/escape.rs b/src/escape.rs
+index f4dec4d..5e82f34 100644
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -85,7 +85,7 @@ pub fn escape_attr_into(out: &mut Vec<u8>, input: &[u8]) {
+ const SHORT_SCAN_MAX: usize = 128;
+ 
+ #[inline]
+-fn first_text_escape(input: &[u8]) -> Option<usize> {
++pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
+     if input.len() <= SHORT_SCAN_MAX {
+         return first_escape_short::<false>(input);
+     }
+diff --git a/src/lib.rs b/src/lib.rs
+index 6d07946..2832d39 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -649,6 +649,7 @@ fn parse_impl<'a>(
+ /// ```
+ pub struct Renderer {
+     options: Options,
++    block_scratch: block::BlockScratch,
+     block_events: Vec<BlockEvent>,
+     inline_parser: InlineParser,
+     inline_events: Vec<InlineEvent>,
+@@ -668,6 +669,7 @@ impl Renderer {
+     pub fn with_options(options: Options) -> Self {
+         Self {
+             render_state: RenderState::new(&options),
++            block_scratch: block::BlockScratch::default(),
+             options,
+             block_events: Vec::with_capacity(64),
+             inline_parser: InlineParser::new(),
+@@ -751,6 +753,7 @@ impl Renderer {
+             &mut self.render_state,
+             &mut self.footnote_numbers,
+             None,
++            Some(&mut self.block_scratch),
+         );
+     }
+ }
+@@ -1646,6 +1649,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
+         &mut render_state,
+         &mut footnote_numbers,
+         shared_link_refs,
++        None,
+     );
+ }
+ 
+@@ -1663,11 +1667,16 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+     render_state: &mut RenderState,
+     footnote_numbers: &mut FootnoteNumbers,
+     shared_link_refs: Option<&LinkRefStore>,
++    mut block_scratch: Option<&mut block::BlockScratch>,
+ ) {
+     // Parse blocks
+     events.clear();
+     events.reserve((input.len() / 16).max(64));
+-    let mut parser = BlockParser::new_with_options(input, options.clone());
++    let mut parser = if let Some(scratch) = block_scratch.as_deref_mut() {
++        BlockParser::with_scratch(input, options.clone(), std::mem::take(scratch))
++    } else {
++        BlockParser::new_with_options(input, options.clone())
++    };
+     parser.parse(events);
+     if let Some(report) = resource_limits.as_deref_mut() {
+         report.extend(parser.resource_limits());
+@@ -1681,6 +1690,10 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+         None
+     };
+ 
++    if let Some(scratch) = block_scratch {
++        *scratch = parser.into_scratch();
++    }
++
+     // Fix up list tight status (ListStart gets its tight value from ListEnd)
+     fixup_list_tight(events);
+ 
+diff --git a/src/render.rs b/src/render.rs
+index 9fb007d..5eb3880 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -201,10 +201,19 @@ impl HtmlWriter {
+     /// First decodes HTML entities, then escapes for output.
+     #[inline]
+     pub fn write_text_with_entities(&mut self, text: &[u8]) {
+-        if memchr(b'&', text).is_none() {
+-            escape::escape_text_into(&mut self.out, text);
++        // The escape scan also proves the absence of entities on plain text.
++        // Reuse its prefix instead of scanning every ordinary segment twice.
++        let Some(first) = escape::first_text_escape(text) else {
++            self.out.extend_from_slice(text);
++            return;
++        };
++        if text[first] != b'&' && memchr(b'&', &text[first..]).is_none() {
++            self.out.extend_from_slice(&text[..first]);
++            escape::escape_text_into(&mut self.out, &text[first..]);
+             return;
+         }
++        // Decode the complete input when entities occur: CommonMark fixups and
++        // invalid-UTF-8 fallback must retain their existing whole-input behavior.
+         // First decode HTML entities
+         let text_str = core::str::from_utf8(text).unwrap_or("");
+         let decoded = decode_entities_commonmark(text_str);

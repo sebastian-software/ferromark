@@ -29,6 +29,7 @@
 //! reproducible measurements.
 
 mod block;
+mod byte_search;
 mod cursor;
 mod escape;
 mod footnote;
@@ -649,6 +650,7 @@ fn parse_impl<'a>(
 /// ```
 pub struct Renderer {
     options: Options,
+    block_scratch: block::BlockScratch,
     block_events: Vec<BlockEvent>,
     inline_parser: InlineParser,
     inline_events: Vec<InlineEvent>,
@@ -668,6 +670,7 @@ impl Renderer {
     pub fn with_options(options: Options) -> Self {
         Self {
             render_state: RenderState::new(&options),
+            block_scratch: block::BlockScratch::default(),
             options,
             block_events: Vec::with_capacity(64),
             inline_parser: InlineParser::new(),
@@ -751,6 +754,7 @@ impl Renderer {
             &mut self.render_state,
             &mut self.footnote_numbers,
             None,
+            Some(&mut self.block_scratch),
         );
     }
 }
@@ -1646,6 +1650,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
         &mut render_state,
         &mut footnote_numbers,
         shared_link_refs,
+        None,
     );
 }
 
@@ -1663,11 +1668,16 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     render_state: &mut RenderState,
     footnote_numbers: &mut FootnoteNumbers,
     shared_link_refs: Option<&LinkRefStore>,
+    mut block_scratch: Option<&mut block::BlockScratch>,
 ) {
     // Parse blocks
     events.clear();
     events.reserve((input.len() / 16).max(64));
-    let mut parser = BlockParser::new_with_options(input, options.clone());
+    let mut parser = if let Some(scratch) = block_scratch.as_deref_mut() {
+        BlockParser::with_scratch(input, options.clone(), std::mem::take(scratch))
+    } else {
+        BlockParser::new_with_options(input, options.clone())
+    };
     parser.parse(events);
     if let Some(report) = resource_limits.as_deref_mut() {
         report.extend(parser.resource_limits());
@@ -1680,6 +1690,10 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     } else {
         None
     };
+
+    if let Some(scratch) = block_scratch {
+        *scratch = parser.into_scratch();
+    }
 
     // Fix up list tight status (ListStart gets its tight value from ListEnd)
     fixup_list_tight(events);
@@ -3188,11 +3202,11 @@ mod crate_docs_tests {
     fn crate_docs_describe_current_security_feature_and_simd_contracts() {
         let source = include_str!("lib.rs").replace("\r\n", "\n");
         let crate_docs = source
-            .split_once("pub mod block;")
-            .expect("crate docs must precede the public module declarations")
+            .split_once("mod block;")
+            .expect("crate docs must precede module declarations")
             .0;
         let cargo_toml = include_str!("../Cargo.toml");
-        let simd_source = include_str!("inline/simd.rs").replace("\r\n", "\n");
+        let simd_source = include_str!("byte_search.rs").replace("\r\n", "\n");
 
         assert_eq!(
             documented_default_policy(crate_docs),
@@ -3207,24 +3221,17 @@ mod crate_docs_tests {
         assert!(!crate_docs.contains("NEON intrinsics for ARM"));
 
         assert!(cargo_toml.contains("mdx = []"));
-        assert!(simd_source.contains(
-            r#"#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-#[target_feature(enable = "neon")]
-pub unsafe fn has_inline_specials_simd"#,
-        ));
-        assert!(simd_source.contains(
-            r#"#[cfg(target_arch = "x86_64")]
-#[inline]
-pub unsafe fn has_inline_specials_simd"#,
-        ));
-        assert!(simd_source.contains(
-            r#"#[cfg(not(any(
-    target_arch = "x86_64",
-    all(target_arch = "aarch64", target_feature = "neon")
-)))]
-#[allow(dead_code)]
-pub fn has_inline_specials_simd"#,
-        ));
+        // The docs name the backends of the shared, safe byte-search API.
+        // Execution and scalar-equivalence tests live in ferro-byte-search.
+        assert!(
+            simd_source
+                .contains(r#"#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]"#)
+        );
+        assert!(simd_source.contains("use core::arch::aarch64::*;"));
+        assert!(simd_source.contains(r#"#[cfg(target_arch = "x86_64")]"#));
+        assert!(simd_source.contains("use core::arch::x86_64::*;"));
+        assert!(simd_source.contains("pub fn find(&self, input: &[u8])"));
+        assert!(simd_source.contains("self.find_scalar(input)"));
     }
 }
 

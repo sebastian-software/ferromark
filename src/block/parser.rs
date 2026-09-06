@@ -149,6 +149,17 @@ struct PendingDefinitionTerm {
     outer_depth: usize,
 }
 
+/// Input-independent allocations retained by a reusable renderer. All semantic
+/// document state (definitions, cursor, containers and limits) stays in the parser.
+#[derive(Default)]
+pub(crate) struct BlockScratch {
+    paragraph_lines: Vec<Range>,
+    paragraph_comments: Vec<Range>,
+    pending_code_blanks: Vec<(u8, Range)>,
+    link_ref_parse_buf: Vec<u8>,
+    link_ref_label_buf: String,
+}
+
 /// Block parser state.
 pub struct BlockParser<'a> {
     /// Input bytes.
@@ -260,22 +271,38 @@ impl<'a> BlockParser<'a> {
     }
 
     fn new_unchecked(input: &'a [u8], options: Options) -> Self {
+        Self::with_scratch_unchecked(
+            input,
+            options,
+            BlockScratch {
+                link_ref_label_buf: String::with_capacity(64),
+                ..BlockScratch::default()
+            },
+        )
+    }
+
+    pub(crate) fn with_scratch(input: &'a [u8], options: Options, scratch: BlockScratch) -> Self {
+        crate::range::assert_input_size(input.len());
+        Self::with_scratch_unchecked(input, options, scratch)
+    }
+
+    fn with_scratch_unchecked(input: &'a [u8], options: Options, scratch: BlockScratch) -> Self {
         Self {
             input,
             cursor: Cursor::new(input),
             in_paragraph: false,
-            paragraph_lines: Vec::new(),
-            paragraph_comments: Vec::new(),
+            paragraph_lines: scratch.paragraph_lines,
+            paragraph_comments: scratch.paragraph_comments,
             fence_state: None,
             in_indented_code: false,
             indented_code_extra_spaces: 0,
-            pending_code_blanks: Vec::new(),
+            pending_code_blanks: scratch.pending_code_blanks,
             html_block: None,
             line_indent_bytes: 0,
             pending_html_indent_start: None,
             link_refs: LinkRefStore::new(),
-            link_ref_parse_buf: Vec::new(),
-            link_ref_label_buf: String::with_capacity(64),
+            link_ref_parse_buf: scratch.link_ref_parse_buf,
+            link_ref_label_buf: scratch.link_ref_label_buf,
             options,
             container_stack: SmallVec::new(),
             tight_list: false,
@@ -296,6 +323,21 @@ impl<'a> BlockParser<'a> {
             definition_blank_before_next: false,
             definition_current_line_loose: false,
             resource_limits: ResourceLimitReport::default(),
+        }
+    }
+
+    pub(crate) fn into_scratch(mut self) -> BlockScratch {
+        self.paragraph_lines.clear();
+        self.paragraph_comments.clear();
+        self.pending_code_blanks.clear();
+        self.link_ref_parse_buf.clear();
+        self.link_ref_label_buf.clear();
+        BlockScratch {
+            paragraph_lines: self.paragraph_lines,
+            paragraph_comments: self.paragraph_comments,
+            pending_code_blanks: self.pending_code_blanks,
+            link_ref_parse_buf: self.link_ref_parse_buf,
+            link_ref_label_buf: self.link_ref_label_buf,
         }
     }
 

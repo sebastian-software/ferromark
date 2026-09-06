@@ -212,6 +212,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e5e8f6c15a24b9a3ee5efec809ccd006d3b30e8b3bb63c39af737c7f87daa1d"
 
 [[package]]
+name = "ferro-byte-search"
+version = "0.0.0"
+dependencies = [
+ "criterion",
+]
+
+[[package]]
 name = "ferromark"
 version = "0.8.0"
 dependencies = [
