@@ -1,0 +1,11 @@
+# Keep measured evidence available without expanding raw data in PR reviews.
+docs/reports/2026-09-04-core-performance/** linguist-generated=true
+docs/reports/2026-09-05-bun-comparison/** linguist-generated=true
+docs/reports/2026-09-05-byte-search-extraction/** linguist-generated=true
+
+# Preserve archived patches and command output byte-for-byte, including the
+# leading space on blank context lines in unified diffs.
+docs/reports/2026-09-04-core-performance/**/*.patch -whitespace
+docs/reports/2026-09-05-bun-comparison/*.patch -whitespace
+docs/reports/2026-09-05-byte-search-extraction/*.patch -whitespace
+docs/reports/2026-09-05-byte-search-extraction/*.log -whitespace

@@ -1,0 +1,968 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 45e054a..776d020 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -211,6 +211,13 @@ version = "1.17.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "9e5e8f6c15a24b9a3ee5efec809ccd006d3b30e8b3bb63c39af737c7f87daa1d"
+ 
++[[package]]
++name = "ferro-byte-search"
++version = "0.0.0"
++dependencies = [
++ "criterion",
++]
++
+ [[package]]
+ name = "ferromark"
+ version = "0.7.0"
+diff --git a/Cargo.toml b/Cargo.toml
+index 2fd35c2..1072c87 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -11,6 +11,7 @@ readme = "README.md"
+ keywords = ["markdown", "html", "parser", "commonmark", "gfm"]
+ categories = ["parsing", "text-processing", "web-programming"]
+ exclude = [
++    "benchmarks/bun-comparison",
+     "benchmarks/md4c-comparison",
+     "benchmarks/pulldown-comparison",
+     "fuzz",
+@@ -22,7 +23,7 @@ features = ["mdx"]
+ no-default-features = true
+ 
+ [workspace]
+-members = ["node/native"]
++members = ["node/native", "crates/ferro-byte-search"]
+ resolver = "2"
+ 
+ [lib]
+diff --git a/src/block/mod.rs b/src/block/mod.rs
+index c5f3722..6312e1f 100644
+--- a/src/block/mod.rs
++++ b/src/block/mod.rs
+@@ -13,6 +13,7 @@ mod parser;
+ 
+ pub use event::{Alignment, BlockEvent, CalloutType, CodeBlockKind, ListKind, TaskState};
+ pub use parser::BlockParser;
++pub(crate) use parser::BlockScratch;
+ 
+ /// Post-process events to fix up list tight status.
+ ///
+diff --git a/src/block/parser.rs b/src/block/parser.rs
+index ce3b855..e563e49 100644
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -149,6 +149,17 @@ struct PendingDefinitionTerm {
+     outer_depth: usize,
+ }
+ 
++/// Input-independent allocations retained by a reusable renderer. All semantic
++/// document state (definitions, cursor, containers and limits) stays in the parser.
++#[derive(Default)]
++pub(crate) struct BlockScratch {
++    paragraph_lines: Vec<Range>,
++    paragraph_comments: Vec<Range>,
++    pending_code_blanks: Vec<(u8, Range)>,
++    link_ref_parse_buf: Vec<u8>,
++    link_ref_label_buf: String,
++}
++
+ /// Block parser state.
+ pub struct BlockParser<'a> {
+     /// Input bytes.
+@@ -260,22 +271,38 @@ impl<'a> BlockParser<'a> {
+     }
+ 
+     fn new_unchecked(input: &'a [u8], options: Options) -> Self {
++        Self::with_scratch_unchecked(
++            input,
++            options,
++            BlockScratch {
++                link_ref_label_buf: String::with_capacity(64),
++                ..BlockScratch::default()
++            },
++        )
++    }
++
++    pub(crate) fn with_scratch(input: &'a [u8], options: Options, scratch: BlockScratch) -> Self {
++        crate::range::assert_input_size(input.len());
++        Self::with_scratch_unchecked(input, options, scratch)
++    }
++
++    fn with_scratch_unchecked(input: &'a [u8], options: Options, scratch: BlockScratch) -> Self {
+         Self {
+             input,
+             cursor: Cursor::new(input),
+             in_paragraph: false,
+-            paragraph_lines: Vec::new(),
+-            paragraph_comments: Vec::new(),
++            paragraph_lines: scratch.paragraph_lines,
++            paragraph_comments: scratch.paragraph_comments,
+             fence_state: None,
+             in_indented_code: false,
+             indented_code_extra_spaces: 0,
+-            pending_code_blanks: Vec::new(),
++            pending_code_blanks: scratch.pending_code_blanks,
+             html_block: None,
+             line_indent_bytes: 0,
+             pending_html_indent_start: None,
+             link_refs: LinkRefStore::new(),
+-            link_ref_parse_buf: Vec::new(),
+-            link_ref_label_buf: String::with_capacity(64),
++            link_ref_parse_buf: scratch.link_ref_parse_buf,
++            link_ref_label_buf: scratch.link_ref_label_buf,
+             options,
+             container_stack: SmallVec::new(),
+             tight_list: false,
+@@ -299,6 +326,21 @@ impl<'a> BlockParser<'a> {
+         }
+     }
+ 
++    pub(crate) fn into_scratch(mut self) -> BlockScratch {
++        self.paragraph_lines.clear();
++        self.paragraph_comments.clear();
++        self.pending_code_blanks.clear();
++        self.link_ref_parse_buf.clear();
++        self.link_ref_label_buf.clear();
++        BlockScratch {
++            paragraph_lines: self.paragraph_lines,
++            paragraph_comments: self.paragraph_comments,
++            pending_code_blanks: self.pending_code_blanks,
++            link_ref_parse_buf: self.link_ref_parse_buf,
++            link_ref_label_buf: self.link_ref_label_buf,
++        }
++    }
++
+     /// Parse all blocks and collect events.
+     pub fn parse(&mut self, events: &mut Vec<BlockEvent>) {
+         while !self.cursor.is_eof() {
+diff --git a/src/escape.rs b/src/escape.rs
+index f4dec4d..c279bf8 100644
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -85,7 +85,7 @@ pub fn escape_attr_into(out: &mut Vec<u8>, input: &[u8]) {
+ const SHORT_SCAN_MAX: usize = 128;
+ 
+ #[inline]
+-fn first_text_escape(input: &[u8]) -> Option<usize> {
++pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
+     if input.len() <= SHORT_SCAN_MAX {
+         return first_escape_short::<false>(input);
+     }
+@@ -106,149 +106,17 @@ fn first_attr_escape(input: &[u8]) -> Option<usize> {
+     memchr2(b'"', b'\'', &input[..limit]).or(a)
+ }
+ 
+-/// Find the first escapable byte (`<>&"`, plus `'` when `ATTR`) in a short
+-/// input, without memchr's per-call runtime dispatch: SSE2 is baseline on
+-/// x86_64 and NEON on AArch64, so both compile to direct SIMD with no
+-/// feature detection. Other architectures fall back to a table scan.
+-#[inline]
+-fn first_escape_short<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+-    #[cfg(target_arch = "x86_64")]
+-    return first_escape_sse2::<ATTR>(input);
+-    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+-    return unsafe { first_escape_neon::<ATTR>(input) };
+-    #[cfg(not(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    )))]
+-    {
+-        let table = if ATTR {
+-            &ATTR_ESCAPE_TABLE
+-        } else {
+-            &TEXT_ESCAPE_TABLE
+-        };
+-        input.iter().position(|&b| table[b as usize])
+-    }
+-}
+-
+-/// Bitmask of lanes equal to any escapable byte in a 16-byte SSE2 vector.
+-#[cfg(target_arch = "x86_64")]
+-#[inline]
+-fn escape_mask_sse2<const ATTR: bool>(v: std::arch::x86_64::__m128i) -> u32 {
+-    use std::arch::x86_64::*;
+-    // SAFETY: SSE2 is part of the x86_64 baseline.
+-    unsafe {
+-        let lt = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'<' as i8));
+-        let gt = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'>' as i8));
+-        let amp = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'&' as i8));
+-        let quot = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'"' as i8));
+-        let mut m = _mm_or_si128(_mm_or_si128(lt, gt), _mm_or_si128(amp, quot));
+-        if ATTR {
+-            m = _mm_or_si128(m, _mm_cmpeq_epi8(v, _mm_set1_epi8(b'\'' as i8)));
+-        }
+-        _mm_movemask_epi8(m) as u32
+-    }
+-}
+-
+-#[cfg(target_arch = "x86_64")]
+-#[inline]
+-fn first_escape_sse2<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+-    use std::arch::x86_64::*;
+-    let len = input.len();
+-    if len < 16 {
+-        // Pad into a stack buffer; NUL is never an escape byte, so the
+-        // padding cannot produce a hit.
+-        let mut buf = [0u8; 16];
+-        buf[..len].copy_from_slice(input);
+-        // SAFETY: `buf` is 16 bytes; unaligned load is allowed.
+-        let v = unsafe { _mm_loadu_si128(buf.as_ptr().cast()) };
+-        let m = escape_mask_sse2::<ATTR>(v);
+-        return (m != 0).then(|| m.trailing_zeros() as usize);
+-    }
+-    let mut pos = 0;
+-    while pos + 16 <= len {
+-        // SAFETY: `pos + 16 <= len` bounds the unaligned 16-byte load.
+-        let v = unsafe { _mm_loadu_si128(input.as_ptr().add(pos).cast()) };
+-        let m = escape_mask_sse2::<ATTR>(v);
+-        if m != 0 {
+-            return Some(pos + m.trailing_zeros() as usize);
+-        }
+-        pos += 16;
+-    }
+-    if pos < len {
+-        // Overlapping final chunk; lanes before `pos` were already scanned
+-        // clean, so any set bit belongs to the unscanned tail.
+-        // SAFETY: `len >= 16` in this branch, so `len - 16` is in bounds.
+-        let v = unsafe { _mm_loadu_si128(input.as_ptr().add(len - 16).cast()) };
+-        let m = escape_mask_sse2::<ATTR>(v);
+-        if m != 0 {
+-            return Some(len - 16 + m.trailing_zeros() as usize);
+-        }
+-    }
+-    None
+-}
++// Escape policy stays here; the shared scanner knows only byte sets.
++const TEXT_SPECIALS: crate::byte_search::ByteSet<4> = crate::byte_search::ByteSet::new(b"<>&\"");
++const ATTR_SPECIALS: crate::byte_search::ByteSet<5> = crate::byte_search::ByteSet::new(b"<>&\"'");
+ 
+-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+ #[inline]
+-fn is_escape_byte<const ATTR: bool>(b: u8) -> bool {
+-    matches!(b, b'<' | b'>' | b'&' | b'"') || (ATTR && b == b'\'')
+-}
+-
+-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+-#[target_feature(enable = "neon")]
+-#[allow(unsafe_op_in_unsafe_fn)]
+-unsafe fn first_escape_neon<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+-    use std::arch::aarch64::*;
+-
+-    #[inline]
+-    #[target_feature(enable = "neon")]
+-    unsafe fn chunk_hits<const ATTR: bool>(v: uint8x16_t) -> bool {
+-        let lt = vceqq_u8(v, vdupq_n_u8(b'<'));
+-        let gt = vceqq_u8(v, vdupq_n_u8(b'>'));
+-        let amp = vceqq_u8(v, vdupq_n_u8(b'&'));
+-        let quot = vceqq_u8(v, vdupq_n_u8(b'"'));
+-        let mut m = vorrq_u8(vorrq_u8(lt, gt), vorrq_u8(amp, quot));
+-        if ATTR {
+-            m = vorrq_u8(m, vceqq_u8(v, vdupq_n_u8(b'\'')));
+-        }
+-        vmaxvq_u8(m) != 0
+-    }
+-
+-    let len = input.len();
+-    if len < 16 {
+-        // Pad into a stack buffer; NUL is never an escape byte.
+-        let mut buf = [0u8; 16];
+-        buf[..len].copy_from_slice(input);
+-        let v = vld1q_u8(buf.as_ptr());
+-        if chunk_hits::<ATTR>(v) {
+-            return input.iter().position(|&b| is_escape_byte::<ATTR>(b));
+-        }
+-        return None;
+-    }
+-    let mut pos = 0;
+-    while pos + 16 <= len {
+-        let v = vld1q_u8(input.as_ptr().add(pos));
+-        if chunk_hits::<ATTR>(v) {
+-            for (i, &b) in input[pos..pos + 16].iter().enumerate() {
+-                if is_escape_byte::<ATTR>(b) {
+-                    return Some(pos + i);
+-                }
+-            }
+-        }
+-        pos += 16;
+-    }
+-    if pos < len {
+-        // Overlapping final chunk; lanes before `pos` were already scanned
+-        // clean, so the first scalar hit is the overall first.
+-        let v = vld1q_u8(input.as_ptr().add(len - 16));
+-        if chunk_hits::<ATTR>(v) {
+-            for (i, &b) in input[pos..].iter().enumerate() {
+-                if is_escape_byte::<ATTR>(b) {
+-                    return Some(pos + i);
+-                }
+-            }
+-        }
++fn first_escape_short<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++    if ATTR {
++        ATTR_SPECIALS.find(input)
++    } else {
++        TEXT_SPECIALS.find(input)
+     }
+-    None
+ }
+ 
+ /// URL percent-encode special characters, then HTML-escape for href attribute.
+diff --git a/src/inline/marks.rs b/src/inline/marks.rs
+index 4107533..89be2e8 100644
+--- a/src/inline/marks.rs
++++ b/src/inline/marks.rs
+@@ -3,14 +3,9 @@
+ //! Marks represent potential delimiter positions (backticks, asterisks, etc.)
+ //! collected in a single pass before resolution.
+ 
+-#[cfg(any(
+-    target_arch = "x86_64",
+-    all(target_arch = "aarch64", target_feature = "neon")
+-))]
+ use super::simd;
+ use crate::limits;
+ use crate::range::{assert_input_size, offset_to_u32};
+-use memchr::memchr3;
+ 
+ /// Flags for mark state.
+ pub mod flags {
+@@ -521,51 +516,7 @@ fn next_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+     text: &[u8],
+     start: usize,
+ ) -> Option<usize> {
+-    let pos = {
+-        #[cfg(any(
+-            target_arch = "x86_64",
+-            all(target_arch = "aarch64", target_feature = "neon")
+-        ))]
+-        {
+-            let mut pos = start;
+-            if let Some(found) =
+-                unsafe { simd::next_mark_special_simd::<HIGHLIGHT, SUPERSCRIPT>(text, &mut pos) }
+-            {
+-                return Some(found);
+-            }
+-            pos
+-        }
+-        #[cfg(not(any(
+-            target_arch = "x86_64",
+-            all(target_arch = "aarch64", target_feature = "neon")
+-        )))]
+-        {
+-            start
+-        }
+-    };
+-    let slice = &text[pos..];
+-    let mut best = None;
+-
+-    if let Some(i) = memchr3(b'`', b'*', b'_', slice) {
+-        best = Some(i);
+-    }
+-    if let Some(i) = memchr3(b'\\', b'\n', b'[', slice) {
+-        best = Some(best.map_or(i, |b| b.min(i)));
+-    }
+-    if let Some(i) = memchr3(b']', b'<', b'~', slice) {
+-        best = Some(best.map_or(i, |b| b.min(i)));
+-    }
+-    if let Some(i) = memchr::memchr(b'$', slice) {
+-        best = Some(best.map_or(i, |b| b.min(i)));
+-    }
+-    if SUPERSCRIPT && let Some(i) = memchr::memchr(b'^', slice) {
+-        best = Some(best.map_or(i, |b| b.min(i)));
+-    }
+-    if HIGHLIGHT && let Some(i) = memchr::memchr(b'=', slice) {
+-        best = Some(best.map_or(i, |b| b.min(i)));
+-    }
+-
+-    best.map(|i| pos + i)
++    simd::next_mark_special::<HIGHLIGHT, SUPERSCRIPT>(&text[start..]).map(|i| start + i)
+ }
+ 
+ #[inline]
+diff --git a/src/inline/mod.rs b/src/inline/mod.rs
+index 4212cf8..22d9e6f 100644
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -1655,90 +1655,19 @@ impl InlineParser {
+ 
+ #[inline]
+ fn has_inline_specials(input: &[u8]) -> bool {
+-    #[cfg(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    ))]
+-    {
+-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false, false>(input) } {
+-            return result;
+-        }
+-    }
+-    for &b in input {
+-        match b {
+-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' => {
+-                return true;
+-            }
+-            _ => {}
+-        }
+-    }
+-    false
++    simd::has_inline_specials::<false, false>(input)
+ }
+-
+ #[inline]
+ fn has_inline_specials_highlight(input: &[u8]) -> bool {
+-    #[cfg(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    ))]
+-    {
+-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true, false>(input) } {
+-            return result;
+-        }
+-    }
+-    for &b in input {
+-        match b {
+-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' => {
+-                return true;
+-            }
+-            _ => {}
+-        }
+-    }
+-    false
++    simd::has_inline_specials::<true, false>(input)
+ }
+-
+ #[inline]
+ fn has_inline_specials_superscript(input: &[u8]) -> bool {
+-    #[cfg(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    ))]
+-    {
+-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false, true>(input) } {
+-            return result;
+-        }
+-    }
+-    for &b in input {
+-        match b {
+-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'^' => {
+-                return true;
+-            }
+-            _ => {}
+-        }
+-    }
+-    false
++    simd::has_inline_specials::<false, true>(input)
+ }
+-
+ #[inline]
+ fn has_inline_specials_highlight_superscript(input: &[u8]) -> bool {
+-    #[cfg(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    ))]
+-    {
+-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true, true>(input) } {
+-            return result;
+-        }
+-    }
+-    for &b in input {
+-        match b {
+-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' | b'^' => {
+-                return true;
+-            }
+-            _ => {}
+-        }
+-    }
+-    false
++    simd::has_inline_specials::<true, true>(input)
+ }
+ 
+ /// Check if text might contain autolink literal triggers.
+diff --git a/src/inline/simd.rs b/src/inline/simd.rs
+index 7404dfe..30dd2c3 100644
+--- a/src/inline/simd.rs
++++ b/src/inline/simd.rs
+@@ -1,308 +1,33 @@
+-//! SIMD helpers for inline parsing.
+-//!
+-//! AArch64 uses NEON and x86-64 uses its baseline SSE2 support. Other
+-//! architectures keep the scalar fallback in the callers.
++//! Markdown byte-set definitions. Native search lives in `byte_search`.
++use crate::byte_search::ByteSet;
+ 
+-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+-use std::arch::aarch64::*;
++const BASE: ByteSet<10> = ByteSet::new(b"*_`[]<\\\n~$");
++const HIGHLIGHT: ByteSet<11> = ByteSet::new(b"*_`[]<\\\n~$=");
++const SUPERSCRIPT: ByteSet<11> = ByteSet::new(b"*_`[]<\\\n~$^");
++const BOTH: ByteSet<12> = ByteSet::new(b"*_`[]<\\\n~$=^");
+ 
+-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+ #[inline]
+-#[target_feature(enable = "neon")]
+-unsafe fn any_eq_mask(v: uint8x16_t, bytes: &[u8]) -> uint8x16_t {
+-    let mut mask = vdupq_n_u8(0);
+-    for &b in bytes {
+-        let m = vceqq_u8(v, vdupq_n_u8(b));
+-        mask = vorrq_u8(mask, m);
++pub(super) fn has_inline_specials<const H: bool, const S: bool>(input: &[u8]) -> bool {
++    if H && S {
++        BOTH.contains_any(input)
++    } else if H {
++        HIGHLIGHT.contains_any(input)
++    } else if S {
++        SUPERSCRIPT.contains_any(input)
++    } else {
++        BASE.contains_any(input)
+     }
+-    mask
+ }
+ 
+-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+ #[inline]
+-#[target_feature(enable = "neon")]
+-unsafe fn mask_has_any(mask: uint8x16_t) -> bool {
+-    vmaxvq_u8(mask) != 0
+-}
+-
+-#[cfg(any(
+-    target_arch = "x86_64",
+-    all(target_arch = "aarch64", target_feature = "neon")
+-))]
+-#[inline]
+-fn is_inline_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(b: u8) -> bool {
+-    matches!(
+-        b,
+-        b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$'
+-    ) || (HIGHLIGHT && b == b'=')
+-        || (SUPERSCRIPT && b == b'^')
+-}
+-
+-#[cfg(any(test, all(target_arch = "aarch64", target_feature = "neon")))]
+-#[inline]
+-fn is_mark_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(b: u8) -> bool {
+-    matches!(
+-        b,
+-        b'`' | b'*' | b'_' | b'\\' | b'\n' | b'[' | b']' | b'<' | b'~' | b'$'
+-    ) || (HIGHLIGHT && b == b'=')
+-        || (SUPERSCRIPT && b == b'^')
+-}
+-
+-/// SIMD-accelerated check for inline specials.
+-/// Returns Some(result) if SIMD path was used, otherwise None.
+-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+-#[target_feature(enable = "neon")]
+-pub unsafe fn has_inline_specials_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+-    input: &[u8],
+-) -> Option<bool> {
+-    let len = input.len();
+-    let mut pos = 0usize;
+-    while pos + 16 <= len {
+-        unsafe {
+-            let v = vld1q_u8(input.as_ptr().add(pos));
+-            let mask = if HIGHLIGHT && SUPERSCRIPT {
+-                any_eq_mask(v, b"*_`[]<\\\n~$=^")
+-            } else if HIGHLIGHT {
+-                any_eq_mask(v, b"*_`[]<\\\n~$=")
+-            } else if SUPERSCRIPT {
+-                any_eq_mask(v, b"*_`[]<\\\n~$^")
+-            } else {
+-                any_eq_mask(v, b"*_`[]<\\\n~$")
+-            };
+-            if mask_has_any(mask) {
+-                return Some(true);
+-            }
+-        }
+-        pos += 16;
+-    }
+-    // Fallback for tail.
+-    for &b in &input[pos..] {
+-        if is_inline_special::<HIGHLIGHT, SUPERSCRIPT>(b) {
+-            return Some(true);
+-        }
+-    }
+-    Some(false)
+-}
+-
+-/// SIMD scan for next inline mark special used by mark collection.
+-/// Advances `pos` to the end of SIMD-scanned region if no hit.
+-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+-#[target_feature(enable = "neon")]
+-pub unsafe fn next_mark_special_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+-    text: &[u8],
+-    pos: &mut usize,
+-) -> Option<usize> {
+-    let len = text.len();
+-    let mut p = *pos;
+-    while p + 16 <= len {
+-        unsafe {
+-            let v = vld1q_u8(text.as_ptr().add(p));
+-            let mask = if HIGHLIGHT && SUPERSCRIPT {
+-                any_eq_mask(v, b"`*_\\\n[]<~$=^")
+-            } else if HIGHLIGHT {
+-                any_eq_mask(v, b"`*_\\\n[]<~$=")
+-            } else if SUPERSCRIPT {
+-                any_eq_mask(v, b"`*_\\\n[]<~$^")
+-            } else {
+-                any_eq_mask(v, b"`*_\\\n[]<~$")
+-            };
+-            if mask_has_any(mask) {
+-                // Find first match within the chunk.
+-                for i in 0..16 {
+-                    if is_mark_special::<HIGHLIGHT, SUPERSCRIPT>(text[p + i]) {
+-                        return Some(p + i);
+-                    }
+-                }
+-            }
+-        }
+-        p += 16;
+-    }
+-    *pos = p;
+-    None
+-}
+-
+-/// Bitmask of lanes equal to an inline or mark special byte.
+-#[cfg(target_arch = "x86_64")]
+-#[inline]
+-fn special_mask_sse2<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+-    v: std::arch::x86_64::__m128i,
+-) -> u32 {
+-    use std::arch::x86_64::*;
+-
+-    // SAFETY: SSE2 is part of the x86-64 baseline. `v` was loaded from a
+-    // valid 16-byte input range by the caller; these operations do not impose
+-    // additional alignment or pointer requirements.
+-    unsafe {
+-        let mut mask = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'*' as i8));
+-        for byte in b"_`[]<\\\n~$" {
+-            mask = _mm_or_si128(mask, _mm_cmpeq_epi8(v, _mm_set1_epi8(*byte as i8)));
+-        }
+-        if HIGHLIGHT {
+-            mask = _mm_or_si128(mask, _mm_cmpeq_epi8(v, _mm_set1_epi8(b'=' as i8)));
+-        }
+-        if SUPERSCRIPT {
+-            mask = _mm_or_si128(mask, _mm_cmpeq_epi8(v, _mm_set1_epi8(b'^' as i8)));
+-        }
+-        _mm_movemask_epi8(mask) as u32
+-    }
+-}
+-
+-/// SSE2-accelerated check for inline specials on x86-64.
+-///
+-/// SSE2 is guaranteed by the x86-64 architecture, so unlike optional x86
+-/// features this path does not require runtime feature detection.
+-#[cfg(target_arch = "x86_64")]
+-#[inline]
+-pub unsafe fn has_inline_specials_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+-    input: &[u8],
+-) -> Option<bool> {
+-    use std::arch::x86_64::_mm_loadu_si128;
+-
+-    let mut pos = 0;
+-    while pos + 16 <= input.len() {
+-        // SAFETY: `pos + 16 <= input.len()` proves that this unaligned
+-        // 16-byte load is in bounds. SSE2 is guaranteed on x86-64.
+-        let vector = unsafe { _mm_loadu_si128(input.as_ptr().add(pos).cast()) };
+-        if special_mask_sse2::<HIGHLIGHT, SUPERSCRIPT>(vector) != 0 {
+-            return Some(true);
+-        }
+-        pos += 16;
+-    }
+-
+-    Some(
+-        input[pos..]
+-            .iter()
+-            .copied()
+-            .any(is_inline_special::<HIGHLIGHT, SUPERSCRIPT>),
+-    )
+-}
+-
+-/// SSE2 scan for the next inline mark special used by mark collection.
+-#[cfg(target_arch = "x86_64")]
+-#[inline]
+-pub unsafe fn next_mark_special_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+-    text: &[u8],
+-    pos: &mut usize,
+-) -> Option<usize> {
+-    use std::arch::x86_64::_mm_loadu_si128;
+-
+-    let mut scan = *pos;
+-    while scan + 16 <= text.len() {
+-        // SAFETY: `scan + 16 <= text.len()` proves that this unaligned
+-        // 16-byte load is in bounds. SSE2 is guaranteed on x86-64.
+-        let vector = unsafe { _mm_loadu_si128(text.as_ptr().add(scan).cast()) };
+-        let mask = special_mask_sse2::<HIGHLIGHT, SUPERSCRIPT>(vector);
+-        if mask != 0 {
+-            return Some(scan + mask.trailing_zeros() as usize);
+-        }
+-        scan += 16;
+-    }
+-    *pos = scan;
+-    None
+-}
+-
+-#[cfg(not(any(
+-    target_arch = "x86_64",
+-    all(target_arch = "aarch64", target_feature = "neon")
+-)))]
+-#[allow(dead_code)]
+-pub fn has_inline_specials_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+-    _input: &[u8],
+-) -> Option<bool> {
+-    None
+-}
+-
+-#[cfg(not(any(
+-    target_arch = "x86_64",
+-    all(target_arch = "aarch64", target_feature = "neon")
+-)))]
+-#[allow(dead_code)]
+-pub fn next_mark_special_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+-    _text: &[u8],
+-    _pos: &mut usize,
+-) -> Option<usize> {
+-    None
+-}
+-
+-#[cfg(all(
+-    test,
+-    any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    )
+-))]
+-mod tests {
+-    use super::*;
+-
+-    fn scalar_inline<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(input: &[u8]) -> bool {
+-        input
+-            .iter()
+-            .copied()
+-            .any(is_inline_special::<HIGHLIGHT, SUPERSCRIPT>)
+-    }
+-
+-    fn scalar_mark<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(input: &[u8]) -> Option<usize> {
+-        input
+-            .iter()
+-            .position(|&byte| is_mark_special::<HIGHLIGHT, SUPERSCRIPT>(byte))
+-    }
+-
+-    fn assert_inline_parity<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>() {
+-        for len in [0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65] {
+-            for byte in 0..=u8::MAX {
+-                for special_pos in 0..=len {
+-                    let mut input = vec![b'a'; len];
+-                    if special_pos < len {
+-                        input[special_pos] = byte;
+-                    }
+-                    // SAFETY: this test only compiles for NEON-enabled AArch64 or
+-                    // x86-64, whose SIMD path has no caller-controlled precondition.
+-                    let simd =
+-                        unsafe { has_inline_specials_simd::<HIGHLIGHT, SUPERSCRIPT>(&input) }
+-                            .expect("SIMD implementation is compiled for this target");
+-                    assert_eq!(simd, scalar_inline::<HIGHLIGHT, SUPERSCRIPT>(&input));
+-                }
+-            }
+-        }
+-    }
+-
+-    fn assert_mark_parity<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>() {
+-        for len in [0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65] {
+-            for byte in 0..=u8::MAX {
+-                for special_pos in 0..=len {
+-                    let mut input = vec![b'a'; len];
+-                    if special_pos < len {
+-                        input[special_pos] = byte;
+-                    }
+-                    let mut pos = 0;
+-                    // SAFETY: see `assert_inline_parity`.
+-                    let simd = unsafe {
+-                        next_mark_special_simd::<HIGHLIGHT, SUPERSCRIPT>(&input, &mut pos)
+-                    };
+-                    let scanned_len = input.len() / 16 * 16;
+-                    let scalar = scalar_mark::<HIGHLIGHT, SUPERSCRIPT>(&input[..scanned_len]);
+-                    assert_eq!(simd, scalar);
+-                    if scalar.is_none() {
+-                        assert_eq!(pos, scanned_len);
+-                    }
+-                }
+-            }
+-        }
+-    }
+-
+-    #[test]
+-    fn inline_specials_match_scalar_at_vector_boundaries() {
+-        assert_inline_parity::<false, false>();
+-        assert_inline_parity::<true, false>();
+-        assert_inline_parity::<false, true>();
+-        assert_inline_parity::<true, true>();
+-    }
+-
+-    #[test]
+-    fn mark_specials_match_scalar_at_vector_boundaries() {
+-        assert_mark_parity::<false, false>();
+-        assert_mark_parity::<true, false>();
+-        assert_mark_parity::<false, true>();
+-        assert_mark_parity::<true, true>();
++pub(super) fn next_mark_special<const H: bool, const S: bool>(input: &[u8]) -> Option<usize> {
++    if H && S {
++        BOTH.find(input)
++    } else if H {
++        HIGHLIGHT.find(input)
++    } else if S {
++        SUPERSCRIPT.find(input)
++    } else {
++        BASE.find(input)
+     }
+ }
+diff --git a/src/lib.rs b/src/lib.rs
+index 6d07946..9e89ae4 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -29,6 +29,7 @@
+ //! reproducible measurements.
+ 
+ mod block;
++mod byte_search;
+ mod cursor;
+ mod escape;
+ mod footnote;
+@@ -649,6 +650,7 @@ fn parse_impl<'a>(
+ /// ```
+ pub struct Renderer {
+     options: Options,
++    block_scratch: block::BlockScratch,
+     block_events: Vec<BlockEvent>,
+     inline_parser: InlineParser,
+     inline_events: Vec<InlineEvent>,
+@@ -668,6 +670,7 @@ impl Renderer {
+     pub fn with_options(options: Options) -> Self {
+         Self {
+             render_state: RenderState::new(&options),
++            block_scratch: block::BlockScratch::default(),
+             options,
+             block_events: Vec::with_capacity(64),
+             inline_parser: InlineParser::new(),
+@@ -751,6 +754,7 @@ impl Renderer {
+             &mut self.render_state,
+             &mut self.footnote_numbers,
+             None,
++            Some(&mut self.block_scratch),
+         );
+     }
+ }
+@@ -1646,6 +1650,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
+         &mut render_state,
+         &mut footnote_numbers,
+         shared_link_refs,
++        None,
+     );
+ }
+ 
+@@ -1663,11 +1668,16 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+     render_state: &mut RenderState,
+     footnote_numbers: &mut FootnoteNumbers,
+     shared_link_refs: Option<&LinkRefStore>,
++    mut block_scratch: Option<&mut block::BlockScratch>,
+ ) {
+     // Parse blocks
+     events.clear();
+     events.reserve((input.len() / 16).max(64));
+-    let mut parser = BlockParser::new_with_options(input, options.clone());
++    let mut parser = if let Some(scratch) = block_scratch.as_deref_mut() {
++        BlockParser::with_scratch(input, options.clone(), std::mem::take(scratch))
++    } else {
++        BlockParser::new_with_options(input, options.clone())
++    };
+     parser.parse(events);
+     if let Some(report) = resource_limits.as_deref_mut() {
+         report.extend(parser.resource_limits());
+@@ -1681,6 +1691,10 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+         None
+     };
+ 
++    if let Some(scratch) = block_scratch {
++        *scratch = parser.into_scratch();
++    }
++
+     // Fix up list tight status (ListStart gets its tight value from ListEnd)
+     fixup_list_tight(events);
+ 
+@@ -3188,11 +3202,11 @@ mod crate_docs_tests {
+     fn crate_docs_describe_current_security_feature_and_simd_contracts() {
+         let source = include_str!("lib.rs").replace("\r\n", "\n");
+         let crate_docs = source
+-            .split_once("pub mod block;")
+-            .expect("crate docs must precede the public module declarations")
++            .split_once("mod block;")
++            .expect("crate docs must precede module declarations")
+             .0;
+         let cargo_toml = include_str!("../Cargo.toml");
+-        let simd_source = include_str!("inline/simd.rs").replace("\r\n", "\n");
++        let simd_source = include_str!("byte_search.rs").replace("\r\n", "\n");
+ 
+         assert_eq!(
+             documented_default_policy(crate_docs),
+@@ -3207,24 +3221,17 @@ mod crate_docs_tests {
+         assert!(!crate_docs.contains("NEON intrinsics for ARM"));
+ 
+         assert!(cargo_toml.contains("mdx = []"));
+-        assert!(simd_source.contains(
+-            r#"#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+-#[target_feature(enable = "neon")]
+-pub unsafe fn has_inline_specials_simd"#,
+-        ));
+-        assert!(simd_source.contains(
+-            r#"#[cfg(target_arch = "x86_64")]
+-#[inline]
+-pub unsafe fn has_inline_specials_simd"#,
+-        ));
+-        assert!(simd_source.contains(
+-            r#"#[cfg(not(any(
+-    target_arch = "x86_64",
+-    all(target_arch = "aarch64", target_feature = "neon")
+-)))]
+-#[allow(dead_code)]
+-pub fn has_inline_specials_simd"#,
+-        ));
++        // The docs name the backends of the shared, safe byte-search API.
++        // Execution and scalar-equivalence tests live in ferro-byte-search.
++        assert!(
++            simd_source
++                .contains(r#"#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]"#)
++        );
++        assert!(simd_source.contains("use core::arch::aarch64::*;"));
++        assert!(simd_source.contains(r#"#[cfg(target_arch = "x86_64")]"#));
++        assert!(simd_source.contains("use core::arch::x86_64::*;"));
++        assert!(simd_source.contains("pub fn find(&self, input: &[u8])"));
++        assert!(simd_source.contains("self.find_scalar(input)"));
+     }
+ }
+ 
+diff --git a/src/render.rs b/src/render.rs
+index 9fb007d..5eb3880 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -201,10 +201,19 @@ impl HtmlWriter {
+     /// First decodes HTML entities, then escapes for output.
+     #[inline]
+     pub fn write_text_with_entities(&mut self, text: &[u8]) {
+-        if memchr(b'&', text).is_none() {
+-            escape::escape_text_into(&mut self.out, text);
++        // The escape scan also proves the absence of entities on plain text.
++        // Reuse its prefix instead of scanning every ordinary segment twice.
++        let Some(first) = escape::first_text_escape(text) else {
++            self.out.extend_from_slice(text);
++            return;
++        };
++        if text[first] != b'&' && memchr(b'&', &text[first..]).is_none() {
++            self.out.extend_from_slice(&text[..first]);
++            escape::escape_text_into(&mut self.out, &text[first..]);
+             return;
+         }
++        // Decode the complete input when entities occur: CommonMark fixups and
++        // invalid-UTF-8 fallback must retain their existing whole-input behavior.
+         // First decode HTML entities
+         let text_str = core::str::from_utf8(text).unwrap_or("");
+         let decoded = decode_entities_commonmark(text_str);

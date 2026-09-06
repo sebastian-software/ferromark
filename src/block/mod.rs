@@ -13,6 +13,7 @@ mod parser;
 
 pub use event::{Alignment, BlockEvent, CalloutType, CodeBlockKind, ListKind, TaskState};
 pub use parser::BlockParser;
+pub(crate) use parser::BlockScratch;
 
 /// Post-process events to fix up list tight status.
 ///

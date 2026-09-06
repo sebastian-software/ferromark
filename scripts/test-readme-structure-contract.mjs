@@ -199,6 +199,13 @@ function validate(
   }
 
   const benchmarks = section(document, 'Benchmarks')
+  if (
+    !benchmarks.includes('benchmarks/bun-comparison/README.md') ||
+    !benchmarks.includes('docs/reports/2026-09-05-bun-comparison.md') ||
+    !benchmarks.includes('different compiler and allocator from the tables above')
+  ) {
+    failContract('Benchmarks must link and distinguish the exploratory Bun comparison')
+  }
   if (!benchmarks.includes('These rankings are Apple Silicon results only')) {
     failContract('Benchmarks must scope published rankings to Apple Silicon')
   }
@@ -342,6 +349,13 @@ describe('README structure contract', () => {
             'checkout --detach main',
           ),
         }),
+      ContractError,
+    )
+  })
+
+  it('rejects a Bun comparison without its measurement caveat', () => {
+    assert.throws(
+      () => validate(document.replace('different compiler and allocator from the tables above', 'the same configuration')),
       ContractError,
     )
   })

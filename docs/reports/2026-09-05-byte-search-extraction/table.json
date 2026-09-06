@@ -1,0 +1,567 @@
+{
+  "arguments": {
+    "baseline": "target/byte-search-extraction/baseline",
+    "candidate": "target/byte-search-extraction/table",
+    "output": "/private/tmp/ferromark-bytes-table.json",
+    "pairs": 3,
+    "window_ms": 60,
+    "filter": "emphasis",
+    "preset": ""
+  },
+  "runs": [
+    {
+      "baseline": [
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35538.32547169811,
+          "preset": "commonmark",
+          "samples_ns": [
+            35521.594929245286,
+            35538.32547169811,
+            35552.4274764151
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33668.29408482143,
+          "preset": "commonmark",
+          "samples_ns": [
+            33605.678013392855,
+            33668.29408482143,
+            34127.367613636365
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35357.6956775701,
+          "preset": "default",
+          "samples_ns": [
+            35281.517523364484,
+            35357.6956775701,
+            35624.58195754717
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33373.06415929204,
+          "preset": "default",
+          "samples_ns": [
+            33341.62942477876,
+            33373.06415929204,
+            33747.97712053572
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 36153.971754807695,
+          "preset": "gfm",
+          "samples_ns": [
+            36005.80357142857,
+            36153.971754807695,
+            36221.8046875
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 34773.7025462963,
+          "preset": "gfm",
+          "samples_ns": [
+            34348.24772727273,
+            34773.7025462963,
+            35261.219626168226
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        }
+      ],
+      "candidate": [
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35586.10966981132,
+          "preset": "commonmark",
+          "samples_ns": [
+            35086.983644859814,
+            35586.10966981132,
+            36965.839460784315
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33799.26801801802,
+          "preset": "commonmark",
+          "samples_ns": [
+            33543.99162946428,
+            33799.26801801802,
+            34032.14132882883
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35237.46612149533,
+          "preset": "default",
+          "samples_ns": [
+            35085.01285046729,
+            35237.46612149533,
+            35398.68278301887
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33568.75446428572,
+          "preset": "default",
+          "samples_ns": [
+            33453.07853982301,
+            33568.75446428572,
+            33607.56138392857
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 36023.858928571426,
+          "preset": "gfm",
+          "samples_ns": [
+            35977.72797619048,
+            36023.858928571426,
+            36320.963942307695
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 34080.776463963964,
+          "preset": "gfm",
+          "samples_ns": [
+            33622.303013392855,
+            34080.776463963964,
+            34111.51013513513
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35396.324882075474,
+          "preset": "commonmark",
+          "samples_ns": [
+            35063.44918224299,
+            35396.324882075474,
+            35689.145636792455
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 34165.056818181816,
+          "preset": "commonmark",
+          "samples_ns": [
+            33925.93355855856,
+            34165.056818181816,
+            34206.43920454545
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 34821.05960648148,
+          "preset": "default",
+          "samples_ns": [
+            34731.72280092593,
+            34821.05960648148,
+            35425.38856132075
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33094.68640350877,
+          "preset": "default",
+          "samples_ns": [
+            33084.726425438595,
+            33094.68640350877,
+            33148.34649122807
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35468.84846698113,
+          "preset": "gfm",
+          "samples_ns": [
+            35458.55424528302,
+            35468.84846698113,
+            35598.93396226415
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33727.60881696428,
+          "preset": "gfm",
+          "samples_ns": [
+            33707.40290178572,
+            33727.60881696428,
+            33920.96002252252
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        }
+      ],
+      "baseline": [
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35089.344626168226,
+          "preset": "commonmark",
+          "samples_ns": [
+            34886.429398148146,
+            35089.344626168226,
+            35166.39894859813
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33218.03539823009,
+          "preset": "commonmark",
+          "samples_ns": [
+            33206.74280973451,
+            33218.03539823009,
+            33412.84126106195
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35111.22488317757,
+          "preset": "default",
+          "samples_ns": [
+            35053.2511682243,
+            35111.22488317757,
+            35119.40186915888
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33192.10896017699,
+          "preset": "default",
+          "samples_ns": [
+            33116.82236842105,
+            33192.10896017699,
+            33273.16095132743
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35784.15178571428,
+          "preset": "gfm",
+          "samples_ns": [
+            35703.91096698113,
+            35784.15178571428,
+            35876.38869047619
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 34059.426801801805,
+          "preset": "gfm",
+          "samples_ns": [
+            33818.435247747744,
+            34059.426801801805,
+            34154.593181818185
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35202.832943925234,
+          "preset": "commonmark",
+          "samples_ns": [
+            35081.60514018692,
+            35202.832943925234,
+            35832.51488095238
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33815.55011261261,
+          "preset": "commonmark",
+          "samples_ns": [
+            33614.2109375,
+            33815.55011261261,
+            33818.69369369369
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35070.53154205607,
+          "preset": "default",
+          "samples_ns": [
+            35004.991319444445,
+            35070.53154205607,
+            35663.66922169811
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33390.46349557522,
+          "preset": "default",
+          "samples_ns": [
+            33375.78373893805,
+            33390.46349557522,
+            33445.03595132743
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35771.627380952385,
+          "preset": "gfm",
+          "samples_ns": [
+            35724.504166666666,
+            35771.627380952385,
+            36024.975595238095
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 34177.95909090909,
+          "preset": "gfm",
+          "samples_ns": [
+            34135.91420454546,
+            34177.95909090909,
+            34300.89943181818
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        }
+      ],
+      "candidate": [
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 34990.692708333336,
+          "preset": "commonmark",
+          "samples_ns": [
+            34845.58217592593,
+            34990.692708333336,
+            35036.21701388889
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33056.67489035088,
+          "preset": "commonmark",
+          "samples_ns": [
+            33048.56524122807,
+            33056.67489035088,
+            33212.11283185841
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 34901.01736111111,
+          "preset": "default",
+          "samples_ns": [
+            34703.60321100918,
+            34901.01736111111,
+            34935.95659722222
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33263.85066371682,
+          "preset": "default",
+          "samples_ns": [
+            33105.993969298244,
+            33263.85066371682,
+            33414.63882743363
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "fresh",
+          "ns": 35466.29304245283,
+          "preset": "gfm",
+          "samples_ns": [
+            35450.00471698113,
+            35466.29304245283,
+            35491.8679245283
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        },
+        {
+          "case": "emphasis",
+          "input_bytes": 5760,
+          "lane": "reused",
+          "ns": 33663.0859375,
+          "preset": "gfm",
+          "samples_ns": [
+            33635.88169642857,
+            33663.0859375,
+            33978.204954954956
+          ],
+          "html_sha256": "eccf60a429da0f8fc931d985b8648fc6a692fb3b044691d48fb426358acd4de4"
+        }
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "case": "emphasis",
+      "preset": "commonmark",
+      "lane": "fresh",
+      "change_percent": 0.1344582151211915,
+      "ratios": [
+        1.001344582151212,
+        1.0087485320452043,
+        0.9939737737604863
+      ]
+    },
+    {
+      "case": "emphasis",
+      "preset": "commonmark",
+      "lane": "reused",
+      "change_percent": 0.3890126801988414,
+      "ratios": [
+        1.0038901268019884,
+        1.0285092543432652,
+        0.9775583948883124
+      ]
+    },
+    {
+      "case": "emphasis",
+      "preset": "default",
+      "lane": "fresh",
+      "change_percent": -0.48335218626979204,
+      "ratios": [
+        0.9965996212770439,
+        0.9917358258602048,
+        0.9951664781373021
+      ]
+    },
+    {
+      "case": "emphasis",
+      "preset": "default",
+      "lane": "reused",
+      "change_percent": -0.29351119805345327,
+      "ratios": [
+        1.0058637200366032,
+        0.9970648880194655,
+        0.9962081139761603
+      ]
+    },
+    {
+      "case": "emphasis",
+      "preset": "gfm",
+      "lane": "fresh",
+      "change_percent": -0.8535656911771827,
+      "ratios": [
+        0.9964011470961287,
+        0.9911887440948361,
+        0.9914643430882282
+      ]
+    },
+    {
+      "case": "emphasis",
+      "preset": "gfm",
+      "lane": "reused",
+      "change_percent": -1.5064479187876456,
+      "ratios": [
+        0.9800732728587127,
+        0.9902576755983465,
+        0.9849355208121235
+      ]
+    }
+  ]
+}
