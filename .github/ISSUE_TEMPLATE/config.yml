@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Report a security vulnerability
+  - name: Email a private security report
+    url: https://github.com/sebastian-software/ferromark/blob/main/SECURITY.md
+    about: Do not open a public issue. Email security@sebastian-software.de; this route always works.
+  - name: Open a private vulnerability advisory
     url: https://github.com/sebastian-software/ferromark/security/advisories/new
-    about: Do not open a public issue. Use "Report a vulnerability" on this repository's Security tab, or email security@sebastian-software.de.
+    about: Use GitHub private vulnerability reporting once it is enabled for this repository.

@@ -27,16 +27,14 @@ to protect the community and the project.
 
 ## Reporting
 
-Report unacceptable behavior privately rather than opening a public issue. Two
-routes are available:
+Report unacceptable behavior privately rather than opening a public issue. Use
+**security@sebastian-software.de** — a private inbox at Sebastian Software GmbH,
+independent of any individual repository maintainer. It works when a report
+concerns a maintainer, and conduct reports sent there are handled
+confidentially as conduct reports.
 
-- **The repository maintainers**, through GitHub — for everyday reports about
-  behavior in project spaces.
-- **security@sebastian-software.de** — a private inbox at Sebastian Software
-  GmbH, independent of any individual repository maintainer. Use it when the
-  report concerns a maintainer, or whenever you would rather not write to the
-  maintainers directly. It is the same address as for security reports; conduct
-  reports sent there are handled confidentially as conduct reports.
+GitHub does not provide a private channel to repository maintainers, so this
+code of conduct does not name a separate maintainer route.
 
 Reports are reviewed as promptly and confidentially as practical. Include links,
 dates, and relevant context, but no credentials and no data you are not allowed
