@@ -10,6 +10,13 @@ This plan retains its February 2026 execution log below and is supplemented by
 the checked-in evidence under [`docs/reports`](../reports/). Use both sources to
 avoid re-running low-yield micro-optimizations without new profiling evidence.
 
+The [September 6 NEON and match-cache experiments](../reports/2026-09-06-neon-match-reuse.md)
+tested direct vector hit localization and cached block matches against merged
+PR #283. All six variants were rejected: targeted gains were offset by confirmed
+regressions or insufficient improvement on mixed Markdown. Archived patches and
+timing evidence are available; do not repeat these implementations without new
+profiling or platform evidence.
+
 ## Baseline and guardrails
 
 - Benchmark setup: follow [Running benchmarks](../../CONTRIBUTING.md#running-benchmarks)
