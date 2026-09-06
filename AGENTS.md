@@ -50,6 +50,11 @@ gate, not a suggestion.
   section preceding Markdown configuration, the migration-guide link, the
   benchmark disclosures, and the project-structure listing are all asserted.
   When the README legitimately changes, update the contract in the same change.
+- The Ferramenta family block in `README.md` and `node/ferromark/README.md` is
+  generated from the registry in `sebastian-software/ferramenta`. Never
+  hand-edit between the `ferramenta-family` markers; run
+  `node ./scripts/check-readme-family.mjs --write` and see
+  [CONTRIBUTING.md](CONTRIBUTING.md#the-ferramenta-family-block) for the pin.
 - Do not edit benchmark numbers by hand. Published figures come from a measured
   run, and the contracts cross-check locked comparison versions plus the pinned
   md4c revision against README and CONTRIBUTING.

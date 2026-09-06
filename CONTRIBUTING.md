@@ -26,7 +26,9 @@ cargo fmt --check
 ```
 
 Changes to the Node workspace or release process have additional package checks;
-follow the [releasing guide](docs/releasing.md) for those commands.
+follow the [releasing guide](docs/releasing.md) for those commands. Changes to a
+README also run the generated-block check in
+[The Ferramenta family block](#the-ferramenta-family-block).
 
 ## Node.js workspace
 
@@ -107,6 +109,28 @@ node --test ./scripts/test-readme-structure-contract.mjs
 `.github/workflows/ci.yml` lists the full set; each one is a gate. When a
 contract legitimately changes, update it in the same pull request as the change
 it describes.
+
+## The Ferramenta family block
+
+The `## The Ferramenta family` section of `README.md` and the closing two lines
+of `node/ferromark/README.md` are generated from the registry in
+[sebastian-software/ferramenta](https://github.com/sebastian-software/ferramenta),
+which owns the family's tool names, jobs, groups, and links. Never hand-edit the
+text between the `<!-- ferramenta-family:start -->` and
+`<!-- ferramenta-family:end -->` markers; regenerate it instead:
+
+```bash
+node ./scripts/check-readme-family.mjs           # fails on drift, as CI does
+node ./scripts/check-readme-family.mjs --write   # regenerate both READMEs
+```
+
+The script runs the generator through `pnpm dlx`, so it needs pnpm, Node.js
+22.13 or newer, and network access. It pins the generator to one commit in
+`FAMILY_GENERATOR_REVISION`, the only place this repository names a generator
+revision. When the registry changes, bump `FAMILY_GENERATOR_REVISION` to the new
+ferramenta commit, run the script with `--write`, and commit the regenerated
+blocks together with the pin. The company footer below the block belongs to
+`@sebastian-software/standards` and is not touched by the generator.
 
 ## Coverage and dependency policy
 
