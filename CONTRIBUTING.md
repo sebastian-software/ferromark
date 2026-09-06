@@ -86,12 +86,30 @@ The committed synthetic CommonMark fixtures can be regenerated together or by
 filename; for example, `python3 scripts/generate_commonmark_50k.py
 commonmark-1m.md` refreshes only the 1 MiB corpus.
 
+## Repository contracts
+
+`scripts/` holds executable contracts that the CI `fmt` job runs. They assert
+that this document, the README, the workflows, the release configuration, the
+profiling scripts, and the Node option documentation still describe what the
+code actually does. They are Node test files with a single dependency, so
+install it once and then run the contracts that cover what you touched:
+
+```bash
+(cd scripts && pnpm install --frozen-lockfile)
+node --test ./scripts/test-readme-structure-contract.mjs
+./scripts/check-workflow-pins.sh
+```
+
+`.github/workflows/ci.yml` lists the full set; each one is a gate. When a
+contract legitimately changes, update it in the same pull request as the change
+it describes.
+
 ## Coverage and dependency policy
 
 CI measures coverage with `cargo llvm-cov` across all features and fails below a
 floor of 90% line coverage. The same job uploads `lcov.info` to
 Codecov, which feeds the coverage badge in the README. The floor itself lives in
-`.github/workflows/ci.yml`; `scripts/test-ci-hardening.rb` checks that this
+`.github/workflows/ci.yml`; `scripts/test-ci-hardening.mjs` checks that this
 document states the same number, so raise them together.
 
 Dependencies follow `deny.toml`: a permissive license allow-list, crates.io as

@@ -5,7 +5,7 @@ Release Please owns the shared Rust and npm version. Its release PR updates
 platform package versions, and their specifiers in `node/pnpm-lock.yaml` together.
 The lockfile updater changes the eight local dependency specifiers while retaining
 their workspace links. CI checks this contract with
-`ruby scripts/test-release-version-sync.rb --self-test`.
+`node --test scripts/test-release-version-sync.mjs`.
 
 ## Why the npm versions stay explicit
 
@@ -23,7 +23,7 @@ repository also require the literal version: `verify-package.mjs`,
 
 The eight `optionalDependencies` and the eight `node/pnpm-lock.yaml` specifiers
 therefore stay explicit versions maintained by typed release-please
-`extra-files`, and `scripts/test-release-version-sync.rb` proves that every one
+`extra-files`, and `scripts/test-release-version-sync.mjs` proves that every one
 of those fields moves together. CI additionally runs the template's lockfile
 no-diff check (`pnpm install --lockfile-only && git diff --exit-code`) in the
 `node` job, so a manifest change can no longer outrun the lockfile.

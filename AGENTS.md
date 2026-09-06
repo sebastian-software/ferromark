@@ -24,16 +24,18 @@ tests on the published floor.
 ## Contract scripts
 
 The `fmt` job of [.github/workflows/ci.yml](.github/workflows/ci.yml) runs
-executable contracts next to `cargo fmt --check`. They need Ruby and Node. Run
-the ones covering what you touched, for example:
+executable contracts next to `cargo fmt --check`. They run on Node with
+`node --test` and need the contract dependencies installed once
+(`pnpm install --frozen-lockfile` in `scripts/`). Run the ones covering what you
+touched, for example:
 
 ```bash
-ruby ./scripts/test-readme-structure-contract.rb --self-test
-ruby ./scripts/test-contributing-ci-contract.rb --self-test
+node --test ./scripts/test-readme-structure-contract.mjs
+node --test ./scripts/test-contributing-ci-contract.mjs
 ./scripts/check-workflow-pins.sh
 ```
 
-The workflow lists the full set; every `scripts/test-*.rb` invoked there is a
+The workflow lists the full set; every `scripts/test-*.mjs` invoked there is a
 gate, not a suggestion.
 
 ## Rules
@@ -44,7 +46,7 @@ gate, not a suggestion.
   the changelog from them. Breaking changes need `!` or a `BREAKING CHANGE:`
   footer.
 - The README has a structure contract
-  (`scripts/test-readme-structure-contract.rb`): heading uniqueness, the CLI
+  (`scripts/test-readme-structure-contract.mjs`): heading uniqueness, the CLI
   section preceding Markdown configuration, the migration-guide link, the
   benchmark disclosures, and the project-structure listing are all asserted.
   When the README legitimately changes, update the contract in the same change.
