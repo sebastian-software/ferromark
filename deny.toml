@@ -1,0 +1,42 @@
+# Dependency policy for the dual-licensed ferromark distribution.
+#
+# The allow-list is the permissive set shared across the Ferramenta family.
+# Widening it is a reviewed decision, not a routine fix: every entry has to be
+# compatible with distributing ferromark under `MIT OR Apache-2.0`.
+
+[graph]
+all-features = true
+
+[advisories]
+# A yanked package still builds from Cargo.lock, but must not ship unnoticed.
+yanked = "deny"
+ignore = []
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
+    "Unicode-3.0",
+    "Zlib",
+]
+confidence-threshold = 0.8
+exceptions = []
+
+[bans]
+# Duplicate versions are surfaced for maintenance review without blocking a
+# build that is otherwise safe.
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+deny = []
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

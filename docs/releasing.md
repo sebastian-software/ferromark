@@ -7,6 +7,27 @@ The lockfile updater changes the eight local dependency specifiers while retaini
 their workspace links. CI checks this contract with
 `ruby scripts/test-release-version-sync.rb --self-test`.
 
+## Why the npm versions stay explicit
+
+The org release-please template prefers `workspace:` references between local
+packages "when the package manager's pack and publish behavior fits the
+repository". Here it does not. The release publishes the main package with
+`npm publish --access public --provenance`, the platform packages with
+`npm publish` (`node/scripts/publish-platform-packages.mjs`), and inspects both
+with `npm pack` (`node/scripts/verify-pack.mjs`). npm only resolves the
+`workspace:` protocol inside an npm workspace, and `node/` is a pnpm workspace,
+so `npm pack` copies a `workspace:*` specifier verbatim into the published
+`package.json` and ships an uninstallable release. Three checks in this
+repository also require the literal version: `verify-package.mjs`,
+`verify-release.mjs`, and `publish-platform-packages.mjs`.
+
+The eight `optionalDependencies` and the eight `node/pnpm-lock.yaml` specifiers
+therefore stay explicit versions maintained by typed release-please
+`extra-files`, and `scripts/test-release-version-sync.rb` proves that every one
+of those fields moves together. CI additionally runs the template's lockfile
+no-diff check (`pnpm install --lockfile-only && git diff --exit-code`) in the
+`node` job, so a manifest change can no longer outrun the lockfile.
+
 When that PR merges, `.github/workflows/publish.yml`:
 
 1. creates the GitHub release,

@@ -86,6 +86,25 @@ The committed synthetic CommonMark fixtures can be regenerated together or by
 filename; for example, `python3 scripts/generate_commonmark_50k.py
 commonmark-1m.md` refreshes only the 1 MiB corpus.
 
+## Coverage and dependency policy
+
+CI measures coverage with `cargo llvm-cov` across all features and fails below a
+floor of 90% line coverage. The same job uploads `lcov.info` to
+Codecov, which feeds the coverage badge in the README. The floor itself lives in
+`.github/workflows/ci.yml`; `scripts/test-ci-hardening.rb` checks that this
+document states the same number, so raise them together.
+
+Dependencies follow `deny.toml`: a permissive license allow-list, crates.io as
+the only registry, and `yanked = "deny"`. Duplicate versions are reported but do
+not fail the build. Run the policy locally before adding or bumping a
+dependency:
+
+```bash
+cargo deny check
+```
+
+`rustsec/audit-check` keeps reporting advisories as its own check run.
+
 ## Commit messages
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated changelog generation via Release Please.
