@@ -1,0 +1,7 @@
+# Seeded by @sebastian-software/standards. A repository that pins its MSRV
+# here instead of tracking stable keeps its own channel — this file is created
+# once and never rewritten. Tracking stable means rustfmt output can shift
+# between stable releases; pin a version here if that must not happen.
+[toolchain]
+channel = "stable"
+components = ["clippy", "rustfmt"]
