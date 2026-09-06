@@ -1,6 +1,9 @@
 # ferromark for Node.js
 
-Native Node.js bindings for the [ferromark](https://github.com/sebastian-software/ferromark) Markdown-to-HTML compiler.
+Native Node.js bindings for the [Ferromark](https://github.com/sebastian-software/ferromark) Markdown-to-HTML compiler.
+
+[Documentation site](https://sebastian-software.github.io/ferromark/) ·
+[Rust crate](https://crates.io/crates/ferromark)
 
 ## Install
 
@@ -98,7 +101,7 @@ misspellings such as `taskList` cannot silently change rendered output.
 
 ## Input size limit
 
-ferromark source positions use compact `u32` values, so input is limited to
+Ferromark source positions use compact `u32` values, so input is limited to
 4,294,967,294 bytes. Calls above that limit throw an `InvalidArg` native error
 instead of parsing with truncated source offsets.
 
@@ -127,7 +130,7 @@ const html = toHtmlWithHighlighter(
 )
 ```
 
-Unsupported languages and highlighter exceptions fall back to ferromark's escaped `<pre><code>` output. Use `onHighlightError` to observe exceptions; if that callback throws, the render call throws too. Invalid highlighter return values also surface as native callback errors.
+Unsupported languages and highlighter exceptions fall back to Ferromark's escaped `<pre><code>` output. Use `onHighlightError` to observe exceptions; if that callback throws, the render call throws too. Invalid highlighter return values also surface as native callback errors.
 Highlighter HTML is otherwise written verbatim, so only pass an implementation that escapes untrusted code and metadata.
 Fence meta text after the language (e.g. ` ```ts {1-3} title="…" `) reaches the highlighter as Shiki-style `meta.__raw`, so meta-driven transformers (line highlighting, titles) work unchanged.
 
@@ -164,7 +167,7 @@ load fails:
 | --- | --- |
 | Node.js below 22.12 | Upgrade to Node.js 22.12 or newer; this is the package's declared engine requirement and the first Node 22 release with unflagged `require(esm)` support. |
 | Unsupported platform or architecture | Use macOS, Windows, or glibc/musl Linux on x64 or arm64. |
-| `could not load the optional native package` | Reinstall without `--omit=optional` and verify that your lockfile includes ferromark's package for the current platform. |
+| `could not load the optional native package` | Reinstall without `--omit=optional` and verify that your lockfile includes Ferromark's package for the current platform. |
 | `ERR_DLOPEN_FAILED` | Read the wrapped loader message for the exact binary and platform. On GNU Linux, verify glibc 2.17 or newer and required shared libraries; on Windows, install or repair the Microsoft Visual C++ Redistributable; on macOS, check architecture, OS compatibility, quarantine, and code-signing policy. The original loader error is available as `error.cause`. |
 
 This package does not include a WASM fallback, so unsupported environments need
