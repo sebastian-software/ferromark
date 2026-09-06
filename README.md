@@ -339,7 +339,8 @@ fenced-renderer, Rust, and Node.js changes, the
 [0.2 migration guide](docs/migration-0.2.md) for the rendering default and the
 fallible UTF-8 and MDX APIs, and the
 [0.3 migration guide](docs/migration-0.3.md) for removed Cargo features and the
-integration APIs.
+integration APIs. All four guides are indexed under "Migrating" in
+[docs/README.md](docs/README.md).
 
 ## MDX support
 

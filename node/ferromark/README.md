@@ -15,6 +15,13 @@ musl support includes Alpine Linux. GNU Linux binaries target glibc 2.17 or
 newer, although the installed Node.js runtime may impose a newer requirement.
 There is no WASM fallback.
 
+Consumers and contributors have different floors on purpose. This published
+package supports Node.js 22.12.0 and newer, while the repository's `node/`
+development workspace declares Node.js 22.13.0 for its pinned pnpm toolchain.
+The `node-floor` CI job therefore builds the addon on the workspace version and
+then runs the package tests on 22.12.0, so the published floor stays the one
+that is actually verified.
+
 ```js
 import { toHtml } from 'ferromark'
 

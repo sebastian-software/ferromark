@@ -34,5 +34,5 @@ GitHub-compatible heading IDs (`<h1 id="hello-world">`) require knowing the head
 ## Consequences
 
 - Default `to_html()` output now includes heading IDs — CommonMark spec tests use `heading_ids: false`.
-- Slug is generated from pre-inline-parse text, so markup delimiters are stripped but entity-decoded text is not processed (matching GitHub behaviour).
+- Slug is generated from pre-inline-parse text, so markup delimiters are stripped but entity-decoded text is not processed (matching GitHub behavior).
 - `HeadingIdTracker` is per-document, reset for each parse call.
