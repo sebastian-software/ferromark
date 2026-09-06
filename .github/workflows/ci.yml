@@ -59,7 +59,7 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       - run: cargo llvm-cov --all-features --locked --no-report
       # The floor is documented in CONTRIBUTING.md and checked against this
-      # command by scripts/test-ci-hardening.rb.
+      # command by scripts/test-ci-hardening.mjs.
       - run: cargo llvm-cov report --lcov --output-path lcov.info --fail-under-lines 90
       - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
@@ -75,20 +75,31 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: scripts/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: scripts/pnpm-lock.yaml
+      - name: Install contract dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: scripts
       - run: cargo fmt --check
       - run: ./scripts/test-check-workflow-pins.sh
       - run: node ./scripts/test-publish-verification.mjs
-      - run: ruby ./scripts/test-release-version-sync.rb --self-test
-      - run: ruby ./scripts/test-node-ci-matrix.rb
-      - run: ruby ./scripts/test-contributing-ci-contract.rb --self-test
-      - run: ruby ./scripts/test-ci-hardening.rb --self-test
-      - run: ruby ./scripts/test-benchmark-ci-contract.rb --self-test
-      - run: ruby ./scripts/test-profiling-scripts.rb
-      - run: ruby ./scripts/test-docs-rs-metadata.rb --self-test
+      - run: node --test ./scripts/test-release-version-sync.mjs
+      - run: node --test ./scripts/test-node-ci-matrix.mjs
+      - run: node --test ./scripts/test-contributing-ci-contract.mjs
+      - run: node --test ./scripts/test-ci-hardening.mjs
+      - run: node --test ./scripts/test-benchmark-ci-contract.mjs
+      - run: node --test ./scripts/test-profiling-scripts.mjs
+      - run: node --test ./scripts/test-docs-rs-metadata.mjs
       - run: RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features --locked
-      - run: ruby ./scripts/test-migration-guide-contract.rb --self-test
-      - run: ruby ./scripts/test-node-options-docs-contract.rb --self-test
-      - run: ruby ./scripts/test-readme-structure-contract.rb --self-test
+      - run: node --test ./scripts/test-migration-guide-contract.mjs
+      - run: node --test ./scripts/test-node-options-docs-contract.mjs
+      - run: node --test ./scripts/test-readme-structure-contract.mjs
       - run: ./scripts/check-workflow-pins.sh
 
   rustsec:

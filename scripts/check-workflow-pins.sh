@@ -9,4 +9,4 @@ if [[ ! -d "$workflow_directory" ]]; then
   exit 2
 fi
 
-ruby "$script_directory/check-workflow-pins.rb" "$workflow_directory"
+node "$script_directory/check-workflow-pins.mjs" "$workflow_directory"
