@@ -11,8 +11,10 @@ body:
     id: version
     attributes:
       label: ferromark version
-      description: The crate or npm package version where the problem occurs.
-      placeholder: 0.7.0
+      description: >-
+        The exact crate or npm package version where the problem occurs, for
+        example from `cargo tree --package ferromark` or `npm list ferromark`.
+      placeholder: The exact version you reproduced this with
     validations:
       required: true
   - type: dropdown

@@ -2,49 +2,47 @@
 title: Benchmarks
 ---
 
+import {
+  BenchmarkTable,
+  benchmarkCompetitors,
+  benchmarkEnvironment,
+  benchmarks,
+} from "../../components/benchmarks"
+
 # Benchmarks
 
-Apple Silicon (M-series), July 2026. All parsers run with GFM tables,
-strikethrough, and task lists enabled; ferromark's non-GFM extras (heading IDs,
-callouts) are disabled. Output buffers are reused where APIs allow and binaries
-are non-PGO. ferromark keeps its secure default rendering in this published
-product lane, so it also performs URL and raw-HTML safety work that
-pulldown-cmark does not.
+{benchmarkEnvironment}. {benchmarks.conditions}
 
-These rankings are Apple Silicon results only. ferromark also uses baseline
-SSE2 for inline scanning on x86-64, but this comparison has not been re-measured
-there; do not infer the same relative ordering on x86-64 from these tables.
+{benchmarks.scope}
 
 ## CommonMark 5 KB
 
-| Parser | Throughput | vs ferromark |
-| --- | ---: | ---: |
-| **ferromark** | **259.6 MiB/s** | **baseline** |
-| pulldown-cmark | 254.5 MiB/s | 0.98x |
-| md4c (C) | 243.1 MiB/s | 0.94x |
-| comrak | 67.9 MiB/s | 0.26x |
+<BenchmarkTable id="commonmark-5k" />
 
 ## CommonMark 50 KB
 
-| Parser | Throughput | vs ferromark |
-| --- | ---: | ---: |
-| **ferromark** | **280.5 MiB/s** | **baseline** |
-| pulldown-cmark | 275.2 MiB/s | 0.98x |
-| md4c (C) | 253.3 MiB/s | 0.90x |
-| comrak | 71.8 MiB/s | 0.26x |
+<BenchmarkTable id="commonmark-50k" />
 
-Summary: on this Apple Silicon fixture set, ferromark was 2% faster than
-pulldown-cmark, 11% faster than md4c, and roughly 4x faster than comrak.
-Competitor versions: pulldown-cmark 0.13.4, comrak 0.53, md4c @ 65c6c9d.
+{benchmarks.summary} Locked competitor versions: {benchmarkCompetitors}.
+
+This page and the
+[repository README](https://github.com/sebastian-software/ferromark#benchmarks)
+render the same source file, so the published figures cannot drift apart.
 
 ## Reproduce locally
 
-The published four-parser lane requires the pinned md4c checkout:
+The published four-parser lane requires the pinned md4c checkout and the
+harness's own locked manifest, exactly as in the repository README:
 
 ```bash
-cd benchmarks/md4c-comparison
-MD4C_DIR=/path/to/md4c cargo bench --bench comparison
+git clone https://github.com/mity/md4c.git ../md4c
+git -C ../md4c checkout --detach 65c6c9d
+MD4C_DIR=../md4c cargo bench --locked \
+  --manifest-path benchmarks/md4c-comparison/Cargo.toml --bench comparison
 ```
+
+`MD4C_DIR` is required deliberately: an ordinary `cargo build`, `cargo test`, or
+package install never inspects or compiles a sibling C checkout.
 
 ## Feature-parity lanes
 

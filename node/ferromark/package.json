@@ -1,10 +1,11 @@
 {
   "name": "ferromark",
   "version": "0.8.0",
-  "description": "Ultra-high-performance Markdown to HTML compiler with a native Rust core",
-  "license": "MIT",
+  "description": "Markdown to HTML with a secure default and every GFM extension included.",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
-  "homepage": "https://github.com/sebastian-software/ferromark#readme",
+  "author": "Sebastian Software GmbH",
+  "homepage": "https://sebastian-software.github.io/ferromark/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sebastian-software/ferromark.git",
@@ -19,7 +20,8 @@
     "commonmark",
     "gfm",
     "rust",
-    "napi"
+    "napi",
+    "ferramenta"
   ],
   "sideEffects": false,
   "exports": {
@@ -35,7 +37,8 @@
   "files": [
     "index.d.mts",
     "index.mjs",
-    "LICENSE",
+    "LICENSE-APACHE",
+    "LICENSE-MIT",
     "native-target.mjs",
     "native.d.ts",
     "README.md"
