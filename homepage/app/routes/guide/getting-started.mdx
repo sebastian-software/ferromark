@@ -2,6 +2,8 @@
 title: Getting Started
 ---
 
+import { headlineThroughput } from "../../components/benchmarks"
+
 # Getting Started with ferromark
 
 ferromark is a Rust Markdown parser built for high-throughput HTML rendering with full CommonMark conformance in trusted rendering mode and a secure-by-default output policy.
@@ -18,7 +20,7 @@ ferromark is a Rust Markdown parser built for high-throughput HTML rendering wit
 - 652/652 CommonMark spec tests pass with trusted rendering; the secure default escapes raw HTML by design and passes 577/652.
 - All five GFM extensions are available.
 - Additional extensions include footnotes, heading IDs, front matter extraction, math spans, callouts, highlight, superscript, and subscript.
-- Throughput reaches 280 MiB/s on CommonMark 50 KB fixtures.
+- Throughput reaches {headlineThroughput} on the CommonMark 50 KB fixture of the published [benchmark run](/guide/benchmarks).
 
 ## Core API
 

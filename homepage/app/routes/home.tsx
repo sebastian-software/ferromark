@@ -1,14 +1,8 @@
 import { Link } from "react-router"
+import { BenchmarkTable, benchmarkEnvironment, headlineThroughput } from "../components/benchmarks"
 import "../styles/home.css"
 
 export default function HomePage() {
-  const benchmarks = [
-    { parser: "ferromark", throughput: "280.5 MiB/s", ratio: "baseline" },
-    { parser: "pulldown-cmark", throughput: "275.2 MiB/s", ratio: "0.98x" },
-    { parser: "md4c (C)", throughput: "253.3 MiB/s", ratio: "0.90x" },
-    { parser: "comrak", throughput: "71.8 MiB/s", ratio: "0.26x" },
-  ]
-
   const featureColumns = [
     {
       heading: "CommonMark + GFM",
@@ -59,7 +53,7 @@ export default function HomePage() {
     <main className="landing">
       <section className="hero">
         <p className="eyebrow">Rust Markdown Engine</p>
-        <h1>Markdown to HTML at 280 MiB/s</h1>
+        <h1>Markdown to HTML at {headlineThroughput}</h1>
         <p className="lead">
           In our published Apple Silicon benchmark, ferromark turns Markdown into HTML faster than
           pulldown-cmark, md4c, and comrak while passing the complete CommonMark suite in trusted
@@ -86,8 +80,8 @@ export default function HomePage() {
             <span>Parsing and rendering controls for precise output</span>
           </article>
           <article>
-            <strong>90%+</strong>
-            <span>Real-world MDX patterns covered</span>
+            <strong>MDX</strong>
+            <span>Segmented and rendered without a JavaScript toolchain</span>
           </article>
         </div>
       </section>
@@ -97,30 +91,11 @@ export default function HomePage() {
           <p className="eyebrow">Proof</p>
           <h2>Benchmark numbers you can verify</h2>
           <p>
-            Apple Silicon (M-series), July 2026. Non-PGO binaries. Same GFM settings for all parsers.
-            The relative ranking has not been re-measured on x86-64.
+            {benchmarkEnvironment}. Non-PGO binaries. Same GFM settings for all parsers. The relative
+            ranking has not been re-measured on x86-64.
           </p>
         </div>
-        <div className="benchmark-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Parser</th>
-                <th>Throughput</th>
-                <th>vs ferromark</th>
-              </tr>
-            </thead>
-            <tbody>
-              {benchmarks.map((row) => (
-                <tr key={row.parser} className={row.parser === "ferromark" ? "is-highlight" : undefined}>
-                  <td>{row.parser}</td>
-                  <td>{row.throughput}</td>
-                  <td>{row.ratio}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <BenchmarkTable id="commonmark-50k" variant="panel" />
       </section>
 
       <section className="panel">
