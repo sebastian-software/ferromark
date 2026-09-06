@@ -8,7 +8,7 @@
 Official MDX permits Markdown blocks inside JSX when the JSX and the Markdown
 are on separate lines. This includes common documentation patterns such as a
 heading or a list nested in a component. The official compiler also treats JSX
-as part of a larger grammar: it changes some Markdown syntax rules, recognises
+as part of a larger grammar: it changes some Markdown syntax rules, recognizes
 inline MDX, and parses JavaScript expressions/ESM.
 
 Ferromark's current MDX renderer intentionally uses a lightweight, line-based
@@ -17,7 +17,7 @@ does not keep block-container state while detecting flow JSX/ESM. The opt-in
 `parse_events` API can promote a tag-only paragraph inside a container, but it
 is not a complete rendering-compatible MDX parser.
 
-There was no measured record explaining the missing container-flow behaviour.
+There was no measured record explaining the missing container-flow behavior.
 ARCH-EXP-016 now supplies a first bound: an intentionally incomplete,
 zero-allocation, universal recognition pass added 9.8–12.2% to plain Markdown,
 2.0–4.2% to root-level MDX, and 13.1–15.0% to container-heavy MDX. A correct

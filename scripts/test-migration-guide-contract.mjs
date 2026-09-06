@@ -197,7 +197,7 @@ describe('migration guide contract', () => {
 
   it('rejects a stale Rust version', () => {
     assertRejected({
-      guide: inputs.guide.replace('requires Rust 1.88 or newer', 'requires Rust 1.85 or newer'),
+      guide: inputs.guide.replace('requires Rust 1.94 or newer', 'requires Rust 1.85 or newer'),
     })
   })
 

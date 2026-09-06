@@ -5,13 +5,16 @@
 [![crates.io](https://img.shields.io/crates/v/ferromark.svg)](https://crates.io/crates/ferromark)
 [![codecov](https://codecov.io/gh/sebastian-software/ferromark/branch/main/graph/badge.svg)](https://codecov.io/gh/sebastian-software/ferromark)
 [![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Rust 1.88+](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org)
-[![clippy](https://img.shields.io/badge/clippy--strict-passing-brightgreen.svg)](https://doc.rust-lang.org/clippy/)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+[![Rust 1.94+](https://img.shields.io/badge/rust-1.94%2B-orange.svg)](#minimum-supported-rust-version)
 
 Markdown to HTML with a secure default and every GFM extension included. The
 reproducible benchmark protocol and current CommonMark conformance result are
 documented below.
+
+[Documentation site](https://sebastian-software.github.io/ferromark/) ·
+[API reference](https://docs.rs/ferromark) ·
+[Node.js package](node/ferromark/README.md)
 
 ## Quick start
 
@@ -65,12 +68,12 @@ types and panic with the same error if this limit is exceeded.
 
 Numbers, not adjectives. Apple M1 Pro (10-core), macOS 26.6.2, rustc 1.97.1,
 September 2026. All parsers run with GFM tables, strikethrough, and task lists
-enabled; ferromark's non-GFM extras (heading IDs, callouts) are disabled. Output
-buffers are reused where APIs allow and binaries are non-PGO. ferromark also
+enabled; Ferromark's non-GFM extras (heading IDs, callouts) are disabled. Output
+buffers are reused where APIs allow and binaries are non-PGO. Ferromark also
 keeps its secure default rendering in this published product lane, so it
 performs URL and raw-HTML safety work that pulldown-cmark does not.
 
-These rankings are Apple Silicon results only. ferromark also uses baseline
+These rankings are Apple Silicon results only. Ferromark also uses baseline
 SSE2 for inline scanning on x86-64, but this comparison has not been re-measured
 there; do not infer the same relative ordering on x86-64 from these tables.
 
@@ -90,7 +93,7 @@ there; do not infer the same relative ordering on x86-64 from these tables.
 | md4c (C) | 252.5 MiB/s | 0.94x |
 | comrak | 70.6 MiB/s | 0.26x |
 
-On this Apple Silicon run, ferromark was 9–11% faster than pulldown-cmark,
+On this Apple Silicon run, Ferromark was 9–11% faster than pulldown-cmark,
 within 1% of md4c at 5 KB and 6% faster at 50 KB, and 3.6–3.8x faster than
 comrak. The locked competitor versions were pulldown-cmark 0.13.4, comrak
 0.54.0, and md4c @ 65c6c9d.
@@ -137,7 +140,7 @@ per-section report of the secure default.
 
 **Beyond GFM**: Reference and inline footnotes, definition lists, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), superscript (`^text^`), subscript (`~text~`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
 
-**MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers 90%+ of real-world MDX patterns in Next.js, Docusaurus, and Astro.
+**MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers the block-level patterns Next.js, Docusaurus, and Astro pages are built from — imports at the top, components wrapping content, expressions between paragraphs. [What it deliberately skips](#mdx-support) is listed with the reason.
 
 Fine-grained options let you turn on exactly what you need:
 
@@ -147,7 +150,7 @@ autolink_literals · disallowed_raw_html · footnotes · inline_footnotes · fro
 heading_ids · math · callouts · definition_lists · line_comments · indented_code_blocks · link_base_path
 ```
 
-Syntax note: ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
+Syntax note: Ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
 
 ### Merged table cells
 
@@ -182,7 +185,7 @@ The result needs context.^[This note can contain *inline Markdown*.]
 The opening caret may be escaped as `\^[literal]`. Balanced brackets, links,
 code spans, and soft line breaks are supported inside a note, but an inline
 note is always one paragraph. The iA Presenter form `[^Footnote text.]` is not
-accepted as an inline note because it is indistinguishable from ferromark's
+accepted as an inline note because it is indistinguishable from Ferromark's
 existing `[^label]` reference syntax.
 
 The HTML renderer numbers inline and reference notes together by first
@@ -292,18 +295,18 @@ HTML is preserved or escaped. `Options` is non-exhaustive: Rust therefore
 forbids external `Options { .. }` literals, including struct-update literals.
 Start with a preset and mutate its public fields as above, or use
 `ferromark::options!(Options::default(); field: value,)` for a compact form.
-`Options::default()` retains ferromark's backward-compatible feature mix.
+`Options::default()` retains Ferromark's backward-compatible feature mix.
 Measure the configurations on your corpus with `cargo bench --bench options`.
 
 ## Trade-offs
 
-ferromark is built for one job: turning Markdown into HTML as fast as possible. That focus means some things it deliberately skips:
+Ferromark is built for one job: turning Markdown into HTML as fast as possible. That focus means some things it deliberately skips:
 
 - **No AST access.** You can't walk a syntax tree or write custom renderers against parsed nodes. If you need that, pulldown-cmark's iterator model or comrak's AST are better fits.
 - **No source maps.** No byte-offset tracking for mapping HTML back to Markdown positions.
 - **HTML only.** No XML, no CommonMark round-tripping, no alternative output formats.
 
-These aren't planned. They'd compromise the streaming architecture that makes ferromark fast.
+These aren't planned. They'd compromise the streaming architecture that makes Ferromark fast.
 
 ## Rendering untrusted Markdown
 
@@ -340,13 +343,14 @@ fenced-renderer, Rust, and Node.js changes, the
 [0.2 migration guide](docs/migration-0.2.md) for the rendering default and the
 fallible UTF-8 and MDX APIs, and the
 [0.3 migration guide](docs/migration-0.3.md) for removed Cargo features and the
-integration APIs.
+integration APIs. All four guides are indexed under "Migrating" in
+[docs/README.md](docs/README.md).
 
 ## MDX support
 
 MDX is the standard for component-driven docs in Next.js, Docusaurus, and Astro. Processing it usually requires a full JavaScript toolchain — Node.js, acorn, babel, the works.
 
-ferromark takes a different approach: segment `.mdx` files into typed blocks and render them at native speed. No JS runtime. No AST.
+Ferromark takes a different approach: segment `.mdx` files into typed blocks and render them at native speed. No JS runtime. No AST.
 
 ```bash
 cargo add ferromark --features mdx
@@ -491,7 +495,7 @@ Full example: `cargo run --features mdx --example mdx_segment`
 
 <br>
 
-The segmenter covers the block-level MDX patterns that make up 90%+ of real-world `.mdx` files: imports at the top, components wrapping content, expressions between paragraphs. This is what a typical Docusaurus, Next.js, or Astro page looks like — and it works out of the box.
+The segmenter covers the block-level MDX patterns a typical Docusaurus, Next.js, or Astro page is built from: imports at the top, components wrapping content, expressions between paragraphs. `tests/mdx_segment_tests.rs` exercises that supported set.
 
 What the segmenter deliberately skips — and why that's fine for most use cases:
 
@@ -504,7 +508,7 @@ What the segmenter deliberately skips — and why that's fine for most use cases
 | **TypeScript generics** | `<Component<T>>` not parsed | Only relevant for TSX-heavy content pages — very rare in docs |
 | **Error reporting** | Permissive fallback by default; opt-in structural diagnostics with `segment_strict()` | Use strict mode when broken MDX must fail a content pipeline |
 
-The full `@mdx-js/mdx` compiler exists to produce a React component tree from MDX. It needs a JavaScript parser because it compiles to JSX. ferromark's segmenter exists to answer a simpler question: *where does the Markdown stop and the JSX start?* That question doesn't need a JS runtime.
+The full `@mdx-js/mdx` compiler exists to produce a React component tree from MDX. It needs a JavaScript parser because it compiles to JSX. Ferromark's segmenter exists to answer a simpler question: *where does the Markdown stop and the JSX start?* That question doesn't need a JS runtime.
 
 For the detailed technical spec, see `src/mdx/mod.rs`.
 
@@ -552,7 +556,7 @@ What makes this fast in practice:
 
 <br>
 
-How ferromark compares to the other three top-tier parsers across architecture, features, and output. Ratings use a 4-level heatmap focused on end-to-end Markdown-to-HTML throughput. Scoring is relative per row, so each row has at least one top mark.
+How Ferromark compares to the other three top-tier parsers across architecture, features, and output. Ratings use a 4-level heatmap focused on end-to-end Markdown-to-HTML throughput. Scoring is relative per row, so each row has at least one top mark.
 
 Legend: 🟩 strongest &nbsp; 🟨 close behind &nbsp; 🟧 notable tradeoffs &nbsp; 🟥 weakest
 
@@ -577,7 +581,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Streaming parsers emit output as they scan, avoiding intermediate trees. ferromark and md4c stream directly; pulldown-cmark uses a pull iterator; comrak builds an AST.</small></td></tr>
+    <tr><td colspan="5"><small>Streaming parsers emit output as they scan, avoiding intermediate trees. Ferromark and md4c stream directly; pulldown-cmark uses a pull iterator; comrak builds an AST.</small></td></tr>
     <tr>
       <td><b>API overhead profile</b></td>
       <td align="center">🟩</td>
@@ -585,7 +589,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Measures overhead on straight Markdown-to-HTML throughput. md4c callbacks and ferromark streaming events are lean; pulldown-cmark pull iterators are close; comrak's AST model adds more overhead for this workload.</small></td></tr>
+    <tr><td colspan="5"><small>Measures overhead on straight Markdown-to-HTML throughput. md4c callbacks and Ferromark streaming events are lean; pulldown-cmark pull iterators are close; comrak's AST model adds more overhead for this workload.</small></td></tr>
     <tr>
       <td><b>Parse/render separation</b></td>
       <td align="center">🟨</td>
@@ -593,7 +597,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
       <td align="center">🟧</td>
     </tr>
-    <tr><td colspan="5"><small>Clear separation lets renderers be swapped or tuned. md4c and pulldown-cmark separate parse and render clearly; ferromark is mostly separated; comrak leans on AST-based renderers.</small></td></tr>
+    <tr><td colspan="5"><small>Clear separation lets renderers be swapped or tuned. md4c and pulldown-cmark separate parse and render clearly; Ferromark is mostly separated; comrak leans on AST-based renderers.</small></td></tr>
     <tr>
       <td><b>Inline parsing pipeline</b></td>
       <td align="center">🟩</td>
@@ -601,7 +605,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Multi-phase inline parsing (collect, resolve, emit) keeps the hot path linear. ferromark uses this approach; md4c and pulldown-cmark are optimized byte scanners; comrak does more AST bookkeeping.</small></td></tr>
+    <tr><td colspan="5"><small>Multi-phase inline parsing (collect, resolve, emit) keeps the hot path linear. Ferromark uses this approach; md4c and pulldown-cmark are optimized byte scanners; comrak does more AST bookkeeping.</small></td></tr>
     <tr>
       <td><b>Emphasis matching efficiency</b></td>
       <td align="center">🟩</td>
@@ -609,7 +613,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Stack-based algorithms reduce rescans on text-heavy documents. ferromark uses modulo-3 stacks; md4c and pulldown-cmark are optimized; comrak pays AST overhead.</small></td></tr>
+    <tr><td colspan="5"><small>Stack-based algorithms reduce rescans on text-heavy documents. Ferromark uses modulo-3 stacks; md4c and pulldown-cmark are optimized; comrak pays AST overhead.</small></td></tr>
     <tr>
       <td><b>Link reference processing cost</b></td>
       <td align="center">🟩</td>
@@ -617,7 +621,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>Link labels need normalization. ferromark, md4c, and pulldown-cmark minimize allocations; comrak handles more feature paths.</small></td></tr>
+    <tr><td colspan="5"><small>Link labels need normalization. Ferromark, md4c, and pulldown-cmark minimize allocations; comrak handles more feature paths.</small></td></tr>
     <tr>
       <td><b>Zero-copy text handling</b></td>
       <td align="center">🟩</td>
@@ -625,7 +629,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Text slices that point directly into input reduce allocation and copy costs. ferromark uses ranges; md4c and pulldown-cmark borrow slices; comrak allocates AST nodes.</small></td></tr>
+    <tr><td colspan="5"><small>Text slices that point directly into input reduce allocation and copy costs. Ferromark uses ranges; md4c and pulldown-cmark borrow slices; comrak allocates AST nodes.</small></td></tr>
     <tr>
       <td><b>Allocation pressure (hot path)</b></td>
       <td align="center">🟩</td>
@@ -641,7 +645,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Reusing buffers avoids repeated allocations across runs. ferromark, md4c, and pulldown-cmark allow reuse; comrak allocates internally.</small></td></tr>
+    <tr><td colspan="5"><small>Reusing buffers avoids repeated allocations across runs. Ferromark, md4c, and pulldown-cmark allow reuse; comrak allocates internally.</small></td></tr>
     <tr>
       <td><b>Memory locality</b></td>
       <td align="center">🟩</td>
@@ -657,7 +661,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Linear scans and contiguous buffers work well for CPU caches. ferromark and md4c favor linear scans; pulldown-cmark is close; comrak traverses AST allocations.</small></td></tr>
+    <tr><td colspan="5"><small>Linear scans and contiguous buffers work well for CPU caches. Ferromark and md4c favor linear scans; pulldown-cmark is close; comrak traverses AST allocations.</small></td></tr>
     <tr>
       <td><b>SIMD availability</b></td>
       <td align="center">🟩</td>
@@ -665,7 +669,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>SIMD accelerates scanning for special characters. ferromark uses baseline NEON on AArch64 and SSE2 on x86-64, but the published comparison above measures Apple Silicon only. pulldown-cmark also has SIMD paths; md4c relies on C compiler optimizations; comrak is not SIMD-focused.</small></td></tr>
+    <tr><td colspan="5"><small>SIMD accelerates scanning for special characters. Ferromark uses baseline NEON on AArch64 and SSE2 on x86-64, but the published comparison above measures Apple Silicon only. pulldown-cmark also has SIMD paths; md4c relies on C compiler optimizations; comrak is not SIMD-focused.</small></td></tr>
     <tr>
       <td><b>Hot-path control</b></td>
       <td align="center">🟩</td>
@@ -673,7 +677,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Performance headroom from low-level control in inner loops. md4c (C) and ferromark use tighter tuning; pulldown-cmark is mostly safe-Rust hot loops; comrak prioritizes flexibility.</small></td></tr>
+    <tr><td colspan="5"><small>Performance headroom from low-level control in inner loops. md4c (C) and Ferromark use tighter tuning; pulldown-cmark is mostly safe-Rust hot loops; comrak prioritizes flexibility.</small></td></tr>
     <tr>
       <td><b>Dependency footprint</b></td>
       <td align="center">🟩</td>
@@ -681,7 +685,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Fewer dependencies simplify builds. md4c and ferromark are minimal; pulldown-cmark is moderate; comrak is heavier.</small></td></tr>
+    <tr><td colspan="5"><small>Fewer dependencies simplify builds. md4c and Ferromark are minimal; pulldown-cmark is moderate; comrak is heavier.</small></td></tr>
     <tr>
       <td><b>Throughput ceiling (architectural)</b></td>
       <td align="center">🟩</td>
@@ -689,7 +693,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Streaming architectures with fewer allocations generally allow higher throughput ceilings. ferromark and md4c lead; pulldown-cmark is close; comrak trades throughput for flexibility.</small></td></tr>
+    <tr><td colspan="5"><small>Streaming architectures with fewer allocations generally allow higher throughput ceilings. Ferromark and md4c lead; pulldown-cmark is close; comrak trades throughput for flexibility.</small></td></tr>
     <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Feature coverage and extensibility</b></td></tr>
     <tr>
@@ -699,7 +703,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>comrak has the broadest catalog; ferromark implements all 5 GFM extensions plus footnotes, front matter, heading IDs, math, highlight, subscript, superscript, and callouts; pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
+    <tr><td colspan="5"><small>comrak has the broadest catalog; Ferromark implements all 5 GFM extensions plus footnotes, front matter, heading IDs, math, highlight, subscript, superscript, and callouts; pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
     <tr>
       <td><b>Spec compliance (CommonMark)</b></td>
       <td align="center">🟩</td>
@@ -707,7 +711,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>All four target CommonMark. Beyond CommonMark and GFM, ferromark, pulldown-cmark, and comrak also support footnotes, heading IDs, math spans, and callouts.</small></td></tr>
+    <tr><td colspan="5"><small>All four target CommonMark. Beyond CommonMark and GFM, Ferromark, pulldown-cmark, and comrak also support footnotes, heading IDs, math spans, and callouts.</small></td></tr>
     <tr>
       <td><b>Extension configuration surface</b></td>
       <td align="center">🟨</td>
@@ -715,7 +719,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; ferromark, pulldown-cmark, and comrak use option structs.</small></td></tr>
+    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; Ferromark, pulldown-cmark, and comrak use option structs.</small></td></tr>
     <tr>
       <td><b>Raw HTML control</b></td>
       <td align="center">🟩</td>
@@ -723,7 +727,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>md4c and comrak expose explicit switches; ferromark defaults to <code>RenderPolicy::Untrusted</code> and requires an explicit trusted policy for raw HTML passthrough; pulldown-cmark is more fixed.</small></td></tr>
+    <tr><td colspan="5"><small>md4c and comrak expose explicit switches; Ferromark defaults to <code>RenderPolicy::Untrusted</code> and requires an explicit trusted policy for raw HTML passthrough; pulldown-cmark is more fixed.</small></td></tr>
     <tr>
       <td><b>GFM tables</b></td>
       <td align="center">🟩</td>
@@ -747,7 +751,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>ferromark, pulldown-cmark, and comrak support footnotes; md4c does not.</small></td></tr>
+    <tr><td colspan="5"><small>Ferromark, pulldown-cmark, and comrak support footnotes; md4c does not.</small></td></tr>
     <tr>
       <td><b>Permissive autolinks</b></td>
       <td align="center">🟩</td>
@@ -755,7 +759,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>ferromark and md4c support GFM autolink literals (URL, www, email); comrak has relaxed autolinks; pulldown-cmark focuses on spec defaults.</small></td></tr>
+    <tr><td colspan="5"><small>Ferromark and md4c support GFM autolink literals (URL, www, email); comrak has relaxed autolinks; pulldown-cmark focuses on spec defaults.</small></td></tr>
     <tr>
       <td><b>Output safety toggles</b></td>
       <td align="center">🟨</td>
@@ -763,7 +767,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>md4c and comrak provide explicit unsafe/escape switches; ferromark uses an untrusted-by-default rendering policy with URL scheme checks; pulldown-cmark is more fixed.</small></td></tr>
+    <tr><td colspan="5"><small>md4c and comrak provide explicit unsafe/escape switches; Ferromark uses an untrusted-by-default rendering policy with URL scheme checks; pulldown-cmark is more fixed.</small></td></tr>
     <tr><td colspan="5">&nbsp;</td></tr>
     <tr><td colspan="5"><b>Rendering and output</b></td></tr>
     <tr>
@@ -773,7 +777,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>Incremental output lowers peak memory and removes extra passes. ferromark and md4c stream to buffers; pulldown-cmark streams events; comrak renders after AST work.</small></td></tr>
+    <tr><td colspan="5"><small>Incremental output lowers peak memory and removes extra passes. Ferromark and md4c stream to buffers; pulldown-cmark streams events; comrak renders after AST work.</small></td></tr>
     <tr>
       <td><b>Output customization hooks</b></td>
       <td align="center">🟧</td>
@@ -781,7 +785,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>Callbacks and ASTs are great for custom rendering but add indirection. md4c callbacks and comrak AST are very flexible; pulldown-cmark iterators are easy to transform; ferromark is lower level.</small></td></tr>
+    <tr><td colspan="5"><small>Callbacks and ASTs are great for custom rendering but add indirection. md4c callbacks and comrak AST are very flexible; pulldown-cmark iterators are easy to transform; Ferromark is lower level.</small></td></tr>
     <tr>
       <td><b>Output formats</b></td>
       <td align="center">🟥</td>
@@ -789,7 +793,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟨</td>
       <td align="center">🟩</td>
     </tr>
-    <tr><td colspan="5"><small>comrak emits HTML, XML, and CommonMark; pulldown-cmark provides HTML plus event streams; md4c has HTML and callbacks; ferromark targets HTML only.</small></td></tr>
+    <tr><td colspan="5"><small>comrak emits HTML, XML, and CommonMark; pulldown-cmark provides HTML plus event streams; md4c has HTML and callbacks; Ferromark targets HTML only.</small></td></tr>
     <tr>
       <td><b>Source position support</b></td>
       <td align="center">🟥</td>
@@ -797,7 +801,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>pulldown-cmark has strong source map support; comrak can emit source positions; ferromark and md4c skip this for speed.</small></td></tr>
+    <tr><td colspan="5"><small>pulldown-cmark has strong source map support; comrak can emit source positions; Ferromark and md4c skip this for speed.</small></td></tr>
     <tr>
       <td><b>Source map tooling</b></td>
       <td align="center">🟥</td>
@@ -805,7 +809,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟩</td>
       <td align="center">🟨</td>
     </tr>
-    <tr><td colspan="5"><small>pulldown-cmark exposes event ranges; comrak can emit source position attributes; ferromark and md4c keep this minimal.</small></td></tr>
+    <tr><td colspan="5"><small>pulldown-cmark exposes event ranges; comrak can emit source position attributes; Ferromark and md4c keep this minimal.</small></td></tr>
     <tr>
       <td><b>IO friendliness</b></td>
       <td align="center">🟩</td>
@@ -813,7 +817,7 @@ Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportuniti
       <td align="center">🟧</td>
       <td align="center">🟥</td>
     </tr>
-    <tr><td colspan="5"><small>md4c and ferromark stream into buffers; pulldown-cmark recommends buffered output; comrak often builds strings after AST work.</small></td></tr>
+    <tr><td colspan="5"><small>md4c and Ferromark stream into buffers; pulldown-cmark recommends buffered output; comrak often builds strings after AST work.</small></td></tr>
   </tbody>
 </table>
 
@@ -828,6 +832,14 @@ cargo test             # run tests
 cargo test --test commonmark_spec -- --nocapture  # CommonMark spec
 cargo bench            # benchmarks
 ```
+
+### Minimum supported Rust version
+
+Ferromark builds on Rust 1.94 and newer. The floor is declared as
+`rust-version` in `Cargo.toml`, restated for contributors in
+[CONTRIBUTING.md](CONTRIBUTING.md), and exercised on every pull request by the
+dedicated Rust 1.94 rows of the CI test matrix, so the badge above reflects a
+tested version rather than an intention.
 
 ## Project structure
 
@@ -870,7 +882,10 @@ src/
 
 ## License
 
-MIT
+Licensed under either of [MIT](LICENSE-MIT) or
+[Apache License, Version 2.0](LICENSE-APACHE) at your option. Unless you state
+otherwise, any contribution you intentionally submit for inclusion in this
+project is dual licensed as above, without additional terms or conditions.
 
 ---
 

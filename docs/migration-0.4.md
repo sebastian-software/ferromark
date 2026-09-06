@@ -186,12 +186,13 @@ metadata; use those functions when the extra metadata is needed.
 
 ## 0.7: raise runtime prerequisites
 
-ferromark 0.7 requires Rust 1.88 or newer. Update the compiler used by local
-builds and CI before updating the crate version:
+ferromark 0.7 raised the compiler floor to Rust 1.88; the current release
+requires Rust 1.94 or newer. Update the compiler used by local builds and CI
+before updating the crate version:
 
 ```sh
-rustup toolchain install 1.88
-cargo +1.88 check --all-features
+rustup toolchain install 1.94
+cargo +1.94 check --all-features
 ```
 
 The published `ferromark` npm package requires Node.js 22.12.0 or newer. Update
