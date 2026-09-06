@@ -15,7 +15,11 @@ cargo fmt --check
 ```
 
 Node workspace (`node/`) or release changes need the extra package checks in
-[docs/releasing.md](docs/releasing.md).
+[docs/releasing.md](docs/releasing.md). The workspace requires Node.js 22.13.0
+(`node/package.json`) while the published package supports 22.12.0
+(`node/ferromark/package.json`); the difference is deliberate, and the
+`node-floor` CI job builds on the workspace version before running the package
+tests on the published floor.
 
 ## Contract scripts
 
