@@ -6,6 +6,10 @@
 
 <!-- List the commands or checks used to verify the change. -->
 
+## Issue
+
+<!-- Closes #123, Refs #123, or a short note on why no issue exists. -->
+
 ## Checklist
 
 - [ ] The change is focused and preserves existing compatibility unless documented.
