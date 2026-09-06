@@ -3,6 +3,7 @@
 [![Powered by Sebastian Software](https://img.shields.io/badge/Powered%20by-Sebastian%20Software-00718d?style=flat-square)](https://oss.sebastian-software.com)
 [![CI](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/ferromark.svg)](https://crates.io/crates/ferromark)
+[![codecov](https://codecov.io/gh/sebastian-software/ferromark/branch/main/graph/badge.svg)](https://codecov.io/gh/sebastian-software/ferromark)
 [![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust 1.88+](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org)

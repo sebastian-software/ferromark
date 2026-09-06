@@ -57,7 +57,15 @@ jobs:
         with:
           tool: cargo-llvm-cov
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
-      - run: cargo llvm-cov --all-features --locked
+      - run: cargo llvm-cov --all-features --locked --no-report
+      # The floor is documented in CONTRIBUTING.md and checked against this
+      # command by scripts/test-ci-hardening.rb.
+      - run: cargo llvm-cov report --lcov --output-path lcov.info --fail-under-lines 90
+      - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   fmt:
     runs-on: ubuntu-latest
@@ -93,6 +101,17 @@ jobs:
       - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  cargo-deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Licenses, duplicate versions, sources, and yanked crates come from
+      # deny.toml; rustsec above keeps reporting advisories as a check run.
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
+        with:
+          command: check
+          arguments: ""
 
   homepage:
     runs-on: ubuntu-latest
@@ -138,6 +157,8 @@ jobs:
         with:
           toolchain: stable
       - run: pnpm install --frozen-lockfile
+      - name: Verify the lockfile matches the manifests
+        run: pnpm install --lockfile-only && git diff --exit-code -- pnpm-lock.yaml
       - run: pnpm audit --audit-level high
       - run: pnpm build
       - run: pnpm test
