@@ -24,6 +24,30 @@ cargo fmt --check
 Changes to the Node workspace or release process have additional package checks;
 follow the [releasing guide](docs/releasing.md) for those commands.
 
+## Node.js workspace
+
+The `node/` directory is a pnpm workspace that holds two kinds of package:
+
+- `node/package.json` (`ferromark-workspace`) is private. It is the development
+  root and owns the build, test, lint, and packaging scripts.
+- `node/ferromark/` is the published `ferromark` npm package. Its eight platform
+  packages live in `node/ferromark/npm/*`, one per target triple, and ship the
+  binary built from the N-API crate in `node/native/`.
+
+The minimum supported Node.js version is 22.12.0. It is declared once, by the
+published package, and the `node-floor` CI job runs the package's tests against
+exactly that version. The private workspace root requires Node.js 22.13.0
+because the development toolchain does, so contributors need 22.13.0 or newer
+while consumers only need 22.12.0.
+
+Workspace commands run from `node/`:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+pnpm test
+```
+
 ## Running benchmarks
 
 Comparison benchmarks need the md4c C sources:

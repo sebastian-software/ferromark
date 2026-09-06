@@ -4,11 +4,14 @@ version = "0.8.0"
 edition = "2024"
 rust-version = "1.88"
 description = "Ultra-high-performance Markdown to HTML compiler"
-license = "MIT"
+license = "MIT OR Apache-2.0"
+authors = ["Sebastian Software GmbH"]
 repository = "https://github.com/sebastian-software/ferromark"
-homepage = "https://github.com/sebastian-software/ferromark"
+homepage = "https://sebastian-software.github.io/ferromark/"
+documentation = "https://docs.rs/ferromark"
 readme = "README.md"
-keywords = ["markdown", "html", "parser", "commonmark", "gfm"]
+# crates.io allows at most five keywords; "ferramenta" marks the tool family.
+keywords = ["markdown", "html", "commonmark", "gfm", "ferramenta"]
 categories = ["parsing", "text-processing", "web-programming"]
 exclude = [
     "benchmarks/md4c-comparison",
@@ -24,6 +27,18 @@ no-default-features = true
 [workspace]
 members = ["node/native"]
 resolver = "2"
+
+# The workspace lints mirror the CI gate (clippy with `-D warnings` over all
+# targets and features), so a local build or clippy run fails on exactly what
+# CI rejects.
+[workspace.lints.rust]
+warnings = "deny"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+
+[lints]
+workspace = true
 
 [lib]
 name = "ferromark"

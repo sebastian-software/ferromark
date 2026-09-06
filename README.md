@@ -4,7 +4,7 @@
 [![CI](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/ferromark.svg)](https://crates.io/crates/ferromark)
 [![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Rust 1.88+](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org)
 [![clippy](https://img.shields.io/badge/clippy--strict-passing-brightgreen.svg)](https://doc.rust-lang.org/clippy/)
 
@@ -869,7 +869,10 @@ src/
 
 ## License
 
-MIT
+Licensed under either of [MIT](LICENSE-MIT) or
+[Apache License, Version 2.0](LICENSE-APACHE) at your option. Unless you state
+otherwise, any contribution you intentionally submit for inclusion in this
+project is dual licensed as above, without additional terms or conditions.
 
 ---
 

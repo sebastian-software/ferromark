@@ -25,7 +25,8 @@ await mkdir(artifacts, { recursive: true })
 const main = pack(packageDir)
 const mainFiles = main.files.map(file => file.path).sort()
 const allowedMain = [
-  'LICENSE',
+  'LICENSE-APACHE',
+  'LICENSE-MIT',
   'README.md',
   'index.d.mts',
   'index.mjs',
