@@ -12,6 +12,21 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+
+  standards:
+    name: Standards drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: "Guard: agent step not yet completed for this PR"
+        run: test ! -f .standards/pending.json
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: scripts/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+      - run: pnpm --config.minimum-release-age=0 dlx @sebastian-software/standards@0.9.0 check
   test:
     strategy:
       fail-fast: false

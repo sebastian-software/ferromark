@@ -1,15 +1,36 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>sebastian-software/renovate-config"],
+  "extends": [
+    "github>sebastian-software/renovate-config"
+  ],
   "lockFileMaintenance": {
     "enabled": true
   },
   "packageRules": [
     {
       "description": "Group compatible Rust dependency updates",
-      "matchManagers": ["cargo"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": [
+        "cargo"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "Rust dependencies"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Keep the pinned standards CLI in the workflows current",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/.+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "@sebastian-software/standards@(?<currentValue>[^\\s]+) "
+      ],
+      "depNameTemplate": "@sebastian-software/standards",
+      "datasourceTemplate": "npm"
     }
   ]
 }
