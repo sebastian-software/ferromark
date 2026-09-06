@@ -95,6 +95,11 @@ jobs:
       - name: Install contract dependencies
         run: pnpm install --frozen-lockfile
         working-directory: scripts
+      # The contract scripts are a declared Node workspace, so they are
+      # formatted with the org's managed oxfmt config that lives next to them.
+      - name: Check the contract scripts formatting
+        run: pnpm format:check
+        working-directory: scripts
       - run: cargo fmt --check
       - run: ./scripts/test-check-workflow-pins.sh
       - run: node ./scripts/test-publish-verification.mjs

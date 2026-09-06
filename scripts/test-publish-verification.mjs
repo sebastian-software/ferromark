@@ -1,223 +1,223 @@
-import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const workflowPath = path.join(root, '.github', 'workflows', 'publish.yml')
-const workflow = await readFile(workflowPath, 'utf8')
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const workflowPath = path.join(root, ".github", "workflows", "publish.yml");
+const workflow = await readFile(workflowPath, "utf8");
 const { MAX_ATTEMPTS, registryVersionUrl, verifyNpmPublication } = await import(
-  pathToFileURL(path.join(root, 'node', 'scripts', 'verify-npm-publish.mjs')).href,
-)
+  pathToFileURL(path.join(root, "node", "scripts", "verify-npm-publish.mjs")).href
+);
 
 function verifierJob(source) {
-  const marker = '\n  verify-npm-publish:\n'
-  const start = source.indexOf(marker)
-  assert.notEqual(start, -1, 'publish workflow must define verify-npm-publish')
-  const remaining = source.slice(start + marker.length)
-  const nextJob = remaining.search(/\n  [a-z0-9-]+:\n/)
-  return nextJob === -1 ? remaining : remaining.slice(0, nextJob)
+  const marker = "\n  verify-npm-publish:\n";
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, "publish workflow must define verify-npm-publish");
+  const remaining = source.slice(start + marker.length);
+  const nextJob = remaining.search(/\n  [a-z0-9-]+:\n/);
+  return nextJob === -1 ? remaining : remaining.slice(0, nextJob);
 }
 
 function assertValidVerifierJob(source) {
-  const job = verifierJob(source)
-  assert.match(job, /needs:\n      - release-please\n      - publish-npm/)
+  const job = verifierJob(source);
+  assert.match(job, /needs:\n      - release-please\n      - publish-npm/);
   assert.match(
     job,
     /if: \$\{\{ always\(\) && needs\.release-please\.outputs\.releases_created == 'true' \}\}/,
-  )
-  assert.match(job, /timeout-minutes: 5/)
-  assert.match(job, /NPM_PUBLISH_RESULT: \$\{\{ needs\.publish-npm\.result \}\}/)
-  assert.match(job, /run: node \.\/node\/scripts\/verify-npm-publish\.mjs/)
+  );
+  assert.match(job, /timeout-minutes: 5/);
+  assert.match(job, /NPM_PUBLISH_RESULT: \$\{\{ needs\.publish-npm\.result \}\}/);
+  assert.match(job, /run: node \.\/node\/scripts\/verify-npm-publish\.mjs/);
 }
 
 function assertCratePublicationWaitsForVerification(source) {
   const crateJob = source.slice(
-    source.indexOf('\n  publish-crate:\n'),
-    source.indexOf('\n  build-native:\n'),
-  )
+    source.indexOf("\n  publish-crate:\n"),
+    source.indexOf("\n  build-native:\n"),
+  );
   assert.match(
     crateJob,
     /needs:\n      - release-please\n      - verify-npm-publish/,
-    'crate publication must wait for successful npm registry verification',
-  )
-  assert.doesNotMatch(crateJob, /- publish-npm/)
+    "crate publication must wait for successful npm registry verification",
+  );
+  assert.doesNotMatch(crateJob, /- publish-npm/);
 }
 
 function assertCratePublicationCanBeRecovered(source) {
   const crateJob = source.slice(
-    source.indexOf('\n  publish-crate:\n'),
-    source.indexOf('\n  build-native:\n'),
-  )
-  assert.match(source, /\n  workflow_dispatch:\n/)
-  assert.match(source, /release-please:\n    if: \$\{\{ github\.event_name == 'push' \}\}/)
-  assert.match(crateJob, /always\(\)/, 'manual recovery must run despite skipped npm jobs')
-  assert.match(crateJob, /github\.ref == 'refs\/heads\/main'/)
-  assert.match(crateJob, /github\.event_name == 'workflow_dispatch'/)
-  assert.match(crateJob, /needs\.verify-npm-publish\.result == 'success'/)
-  assert.match(crateJob, /run: cargo publish --locked/)
+    source.indexOf("\n  publish-crate:\n"),
+    source.indexOf("\n  build-native:\n"),
+  );
+  assert.match(source, /\n  workflow_dispatch:\n/);
+  assert.match(source, /release-please:\n    if: \$\{\{ github\.event_name == 'push' \}\}/);
+  assert.match(crateJob, /always\(\)/, "manual recovery must run despite skipped npm jobs");
+  assert.match(crateJob, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(crateJob, /github\.event_name == 'workflow_dispatch'/);
+  assert.match(crateJob, /needs\.verify-npm-publish\.result == 'success'/);
+  assert.match(crateJob, /run: cargo publish --locked/);
 }
 
 function assertCratePublicationUsesTrustedPublishing(source) {
   const crateJob = source.slice(
-    source.indexOf('\n  publish-crate:\n'),
-    source.indexOf('\n  build-native:\n'),
-  )
-  assert.match(crateJob, /    permissions:\n      contents: read\n      id-token: write\n/)
+    source.indexOf("\n  publish-crate:\n"),
+    source.indexOf("\n  build-native:\n"),
+  );
+  assert.match(crateJob, /    permissions:\n      contents: read\n      id-token: write\n/);
   assert.match(
     crateJob,
     /id: crates-io-auth\n        uses: rust-lang\/crates-io-auth-action@[a-f0-9]{40} /,
-  )
-  assert.match(crateJob, /CARGO_REGISTRY_TOKEN: \$\{\{ steps\.crates-io-auth\.outputs\.token \}\}/)
-  assert.doesNotMatch(crateJob, /secrets\.CARGO_REGISTRY_TOKEN/)
+  );
+  assert.match(crateJob, /CARGO_REGISTRY_TOKEN: \$\{\{ steps\.crates-io-auth\.outputs\.token \}\}/);
+  assert.doesNotMatch(crateJob, /secrets\.CARGO_REGISTRY_TOKEN/);
   assert.ok(
-    crateJob.indexOf('uses: rust-lang/crates-io-auth-action@') <
-      crateJob.indexOf('run: cargo publish --locked'),
-    'crate authentication must precede publication',
-  )
+    crateJob.indexOf("uses: rust-lang/crates-io-auth-action@") <
+      crateJob.indexOf("run: cargo publish --locked"),
+    "crate authentication must precede publication",
+  );
 }
 
 function assertPlatformPackagesArePublished(source) {
   for (const artifact of [
-    'darwin-arm64',
-    'darwin-x64',
-    'linux-arm64-gnu',
-    'linux-arm64-musl',
-    'linux-x64-gnu',
-    'linux-x64-musl',
-    'win32-arm64-msvc',
-    'win32-x64-msvc',
+    "darwin-arm64",
+    "darwin-x64",
+    "linux-arm64-gnu",
+    "linux-arm64-musl",
+    "linux-x64-gnu",
+    "linux-x64-musl",
+    "win32-arm64-msvc",
+    "win32-x64-msvc",
   ]) {
-    assert.match(source, new RegExp(`artifact: ${artifact}\\n`))
+    assert.match(source, new RegExp(`artifact: ${artifact}\\n`));
   }
 
   const assembleIndex = source.indexOf(
-    'run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm',
-  )
-  const buildIndex = source.indexOf('run: pnpm build:native')
+    "run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm",
+  );
+  const buildIndex = source.indexOf("run: pnpm build:native");
   const artifactVerifyIndex = source.indexOf(
-    'run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.artifact }}',
-  )
-  const verifyIndex = source.indexOf('run: node ./scripts/verify-release.mjs')
-  const platformPublishIndex = source.indexOf('run: node ./scripts/publish-platform-packages.mjs')
-  const mainPublishIndex = source.indexOf('run: npm publish --access public --provenance')
-  assert.ok(buildIndex !== -1 && buildIndex < artifactVerifyIndex)
-  assert.ok(artifactVerifyIndex < assembleIndex)
-  assert.ok(assembleIndex !== -1 && assembleIndex < verifyIndex)
-  assert.ok(verifyIndex < platformPublishIndex)
-  assert.ok(platformPublishIndex < mainPublishIndex)
+    "run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.artifact }}",
+  );
+  const verifyIndex = source.indexOf("run: node ./scripts/verify-release.mjs");
+  const platformPublishIndex = source.indexOf("run: node ./scripts/publish-platform-packages.mjs");
+  const mainPublishIndex = source.indexOf("run: npm publish --access public --provenance");
+  assert.ok(buildIndex !== -1 && buildIndex < artifactVerifyIndex);
+  assert.ok(artifactVerifyIndex < assembleIndex);
+  assert.ok(assembleIndex !== -1 && assembleIndex < verifyIndex);
+  assert.ok(verifyIndex < platformPublishIndex);
+  assert.ok(platformPublishIndex < mainPublishIndex);
 }
 
-assertValidVerifierJob(workflow)
-assertCratePublicationWaitsForVerification(workflow)
-assertCratePublicationCanBeRecovered(workflow)
-assertCratePublicationUsesTrustedPublishing(workflow)
-assertPlatformPackagesArePublished(workflow)
+assertValidVerifierJob(workflow);
+assertCratePublicationWaitsForVerification(workflow);
+assertCratePublicationCanBeRecovered(workflow);
+assertCratePublicationUsesTrustedPublishing(workflow);
+assertPlatformPackagesArePublished(workflow);
 assert.throws(
-  () => assertValidVerifierJob(workflow.replace('\n  verify-npm-publish:\n', '\n  npm-check:\n')),
+  () => assertValidVerifierJob(workflow.replace("\n  verify-npm-publish:\n", "\n  npm-check:\n")),
   /verify-npm-publish/,
-)
+);
 assert.throws(
   () =>
     assertValidVerifierJob(
       workflow.replace(
-        '  verify-npm-publish:\n    needs:\n      - release-please\n      - publish-npm\n',
-        '  verify-npm-publish:\n    needs:\n      - release-please\n      - build-native\n',
+        "  verify-npm-publish:\n    needs:\n      - release-please\n      - publish-npm\n",
+        "  verify-npm-publish:\n    needs:\n      - release-please\n      - build-native\n",
       ),
     ),
   /publish-npm/,
-)
+);
+assert.throws(() => assertValidVerifierJob(workflow.replace("always() && ", "")), /always/);
 assert.throws(
-  () => assertValidVerifierJob(workflow.replace('always() && ', '')),
-  /always/,
-)
-assert.throws(
-  () => assertValidVerifierJob(workflow.replace('timeout-minutes: 5', 'timeout-minutes: 30')),
+  () => assertValidVerifierJob(workflow.replace("timeout-minutes: 5", "timeout-minutes: 30")),
   /timeout-minutes: 5/,
-)
+);
 assert.throws(
   () =>
     assertCratePublicationWaitsForVerification(
-      workflow.replace('- verify-npm-publish', '- publish-npm'),
+      workflow.replace("- verify-npm-publish", "- publish-npm"),
     ),
   /crate publication must wait for successful npm registry verification/,
-)
+);
 assert.throws(
-  () => assertCratePublicationCanBeRecovered(workflow.replace('\n  workflow_dispatch:\n', '\n')),
+  () => assertCratePublicationCanBeRecovered(workflow.replace("\n  workflow_dispatch:\n", "\n")),
   /workflow_dispatch/,
-)
+);
 assert.throws(
   () =>
     assertCratePublicationCanBeRecovered(
-      workflow.replace('cargo publish --locked', 'cargo publish'),
+      workflow.replace("cargo publish --locked", "cargo publish"),
     ),
   /cargo publish --locked/,
-)
+);
 
 for (const [before, after] of [
-  ['      id-token: write\n', ''],
-  ['id: crates-io-auth', 'id: wrong-auth'],
-  ['steps.crates-io-auth.outputs.token', 'secrets.CARGO_REGISTRY_TOKEN'],
+  ["      id-token: write\n", ""],
+  ["id: crates-io-auth", "id: wrong-auth"],
+  ["steps.crates-io-auth.outputs.token", "secrets.CARGO_REGISTRY_TOKEN"],
 ]) {
-  assert.throws(() => assertCratePublicationUsesTrustedPublishing(workflow.replace(before, after)))
+  assert.throws(() => assertCratePublicationUsesTrustedPublishing(workflow.replace(before, after)));
 }
 
-assert.equal(registryVersionUrl('ferromark', '0.7.0'), 'https://registry.npmjs.org/ferromark/0.7.0')
+assert.equal(
+  registryVersionUrl("ferromark", "0.7.0"),
+  "https://registry.npmjs.org/ferromark/0.7.0",
+);
 
-let attempts = 0
+let attempts = 0;
 await verifyNpmPublication({
-  packageName: 'ferromark',
-  version: '0.7.0',
-  publishResult: 'success',
+  packageName: "ferromark",
+  version: "0.7.0",
+  publishResult: "success",
   fetchImpl: async () => {
-    attempts += 1
+    attempts += 1;
     return {
       ok: attempts === 2,
       status: attempts === 2 ? 200 : 404,
-      json: async () => ({ name: 'ferromark', version: '0.7.0' }),
-    }
+      json: async () => ({ name: "ferromark", version: "0.7.0" }),
+    };
   },
   sleepImpl: async () => {},
-})
-assert.equal(attempts, 2)
+});
+assert.equal(attempts, 2);
 
-let wrongVersionAttempts = 0
+let wrongVersionAttempts = 0;
 await assert.rejects(
   verifyNpmPublication({
-    packageName: 'ferromark',
-    version: '0.7.0',
-    publishResult: 'success',
+    packageName: "ferromark",
+    version: "0.7.0",
+    publishResult: "success",
     fetchImpl: async () => {
-      wrongVersionAttempts += 1
+      wrongVersionAttempts += 1;
       return {
         ok: true,
         status: 200,
-        json: async () => ({ name: 'ferromark', version: '0.6.0' }),
-      }
+        json: async () => ({ name: "ferromark", version: "0.6.0" }),
+      };
     },
     sleepImpl: async () => {},
   }),
   /expected ferromark@0\.7\.0/,
-)
-assert.equal(wrongVersionAttempts, MAX_ATTEMPTS, 'registry polling must stay bounded')
+);
+assert.equal(wrongVersionAttempts, MAX_ATTEMPTS, "registry polling must stay bounded");
 
 await assert.rejects(
   verifyNpmPublication({
-    packageName: 'ferromark',
-    version: '0.7.0',
-    publishResult: 'failure',
+    packageName: "ferromark",
+    version: "0.7.0",
+    publishResult: "failure",
     fetchImpl: async () => ({
       ok: true,
       status: 200,
-      json: async () => ({ name: 'wrong-package', version: '0.7.0' }),
+      json: async () => ({ name: "wrong-package", version: "0.7.0" }),
     }),
     sleepImpl: async () => {},
   }),
   (error) => {
-    assert.match(error.message, /publish-npm concluded failure/)
-    assert.match(error.message, /registry returned wrong-package@0\.7\.0/)
-    return true
+    assert.match(error.message, /publish-npm concluded failure/);
+    assert.match(error.message, /registry returned wrong-package@0\.7\.0/);
+    return true;
   },
-)
+);
 
-console.log('Publish verification workflow and retry contract checks passed')
+console.log("Publish verification workflow and retry contract checks passed");

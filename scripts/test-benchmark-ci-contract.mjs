@@ -1,6 +1,6 @@
-import assert from 'node:assert/strict'
-import { statSync } from 'node:fs'
-import { describe, it } from 'node:test'
+import assert from "node:assert/strict";
+import { statSync } from "node:fs";
+import { describe, it } from "node:test";
 
 import {
   ContractError,
@@ -8,78 +8,79 @@ import {
   readRepositoryFile,
   readYaml,
   repositoryPath,
-} from './lib/contracts.mjs'
+} from "./lib/contracts.mjs";
 
-const CHECKOUT_ACTION = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-const RUST_TOOLCHAIN_ACTION = 'dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c'
-const RUST_CACHE_ACTION = 'Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae'
-const CACHE_RESTORE_ACTION = 'actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
-const BENCHMARK_ACTION = 'benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba'
-const CACHE_SAVE_ACTION = 'actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
-const CACHE_KEY = 'ferromark-benchmark-${{ runner.os }}-main-${{ github.sha }}'
+const CHECKOUT_ACTION = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1";
+const RUST_TOOLCHAIN_ACTION = "dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c";
+const RUST_CACHE_ACTION = "Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae";
+const CACHE_RESTORE_ACTION = "actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9";
+const BENCHMARK_ACTION =
+  "benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba";
+const CACHE_SAVE_ACTION = "actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9";
+const CACHE_KEY = "ferromark-benchmark-${{ runner.os }}-main-${{ github.sha }}";
 const PATHOLOGICAL_BENCHMARKS = [
-  'bracket_explosion_64k',
-  'unmatched_backticks_64k',
-  'reference_definitions_64k',
-  'invalid_html_starts_64k',
-]
+  "bracket_explosion_64k",
+  "unmatched_backticks_64k",
+  "reference_definitions_64k",
+  "invalid_html_starts_64k",
+];
 
 function failContract(message) {
-  throw new ContractError(`Benchmark CI contract: ${message}`)
+  throw new ContractError(`Benchmark CI contract: ${message}`);
 }
 
 function assertDeepEqual(actual, expected, message) {
   try {
-    assert.deepEqual(actual, expected)
+    assert.deepEqual(actual, expected);
   } catch {
-    failContract(message)
+    failContract(message);
   }
 }
 
 // The YAML 1.1 parser Ruby used turned an unquoted `on` key into true; the
 // 1.2 parser keeps the string. Accept whichever the parser produced.
 function triggers(workflow) {
-  const events = workflow.on ?? workflow[true]
+  const events = workflow.on ?? workflow[true];
   if (!events) {
-    failContract('workflow triggers are missing')
+    failContract("workflow triggers are missing");
   }
-  return events
+  return events;
 }
 
 function validate(
   workflow,
   {
-    benchmarkSource = readRepositoryFile('benches/parsing.rs'),
-    largeFixtureBytes = statSync(repositoryPath('benches/fixtures/commonmark-1m.md')).size,
+    benchmarkSource = readRepositoryFile("benches/parsing.rs"),
+    largeFixtureBytes = statSync(repositoryPath("benches/fixtures/commonmark-1m.md")).size,
   } = {},
 ) {
   assertDeepEqual(
     workflow.permissions,
-    { contents: 'read' },
-    'workflow permissions must grant contents: read only',
-  )
+    { contents: "read" },
+    "workflow permissions must grant contents: read only",
+  );
 
-  const events = triggers(workflow)
-  const push = events.push
-  const pullRequest = events.pull_request
-  assertDeepEqual(push.branches, ['main'], 'push must target main')
-  if (!push.paths.includes('src/**')) {
-    failContract('push must run for src changes')
+  const events = triggers(workflow);
+  const push = events.push;
+  const pullRequest = events.pull_request;
+  assertDeepEqual(push.branches, ["main"], "push must target main");
+  if (!push.paths.includes("src/**")) {
+    failContract("push must run for src changes");
   }
-  if (!pullRequest.paths.includes('src/**')) {
-    failContract('pull requests must run benchmarks for src changes')
+  if (!pullRequest.paths.includes("src/**")) {
+    failContract("pull requests must run benchmarks for src changes");
   }
-  if (!('workflow_dispatch' in events)) {
-    failContract('manual benchmark runs must remain available')
-  }
-
-  const job = workflow.jobs.benchmark
-  if (job['runs-on'] !== 'ubuntu-latest') {
-    failContract('benchmark job must use ubuntu-latest')
+  if (!("workflow_dispatch" in events)) {
+    failContract("manual benchmark runs must remain available");
   }
 
-  const steps = job.steps
-  const actions = steps.map(step => step.uses).filter(uses => uses !== undefined)
+  const job = workflow.jobs.benchmark;
+  if (job["runs-on"] !== "ubuntu-latest") {
+    failContract("benchmark job must use ubuntu-latest");
+  }
+
+  const steps = job.steps;
+  const actions = steps.map((step) => step.uses).filter((uses) => uses !== undefined);
   assertDeepEqual(
     actions,
     [
@@ -90,141 +91,141 @@ function validate(
       BENCHMARK_ACTION,
       CACHE_SAVE_ACTION,
     ],
-    'workflow actions must remain pinned and ordered',
-  )
+    "workflow actions must remain pinned and ordered",
+  );
 
-  const restoreInputs = steps.find(step => step.uses === CACHE_RESTORE_ACTION).with
+  const restoreInputs = steps.find((step) => step.uses === CACHE_RESTORE_ACTION).with;
   if (restoreInputs.key !== CACHE_KEY) {
-    failContract('benchmark history cache key changed')
+    failContract("benchmark history cache key changed");
   }
-  if (!restoreInputs['restore-keys'].includes('ferromark-benchmark-${{ runner.os }}-main-')) {
-    failContract('pull requests must restore the latest main benchmark history')
+  if (!restoreInputs["restore-keys"].includes("ferromark-benchmark-${{ runner.os }}-main-")) {
+    failContract("pull requests must restore the latest main benchmark history");
   }
 
-  const command = steps.find(step => step.name === 'Run representative benchmarks').run
+  const command = steps.find((step) => step.name === "Run representative benchmarks").run;
   for (const fragment of [
-    'set -o pipefail',
-    'cargo bench --locked --bench parsing',
-    '--output-format bencher',
-    '--warm-up-time 1',
-    '--measurement-time 3',
-    '--sample-size 30',
+    "set -o pipefail",
+    "cargo bench --locked --bench parsing",
+    "--output-format bencher",
+    "--warm-up-time 1",
+    "--measurement-time 3",
+    "--sample-size 30",
   ]) {
     if (!command.includes(fragment)) {
-      failContract(`benchmark command must include ${fragment}`)
+      failContract(`benchmark command must include ${fragment}`);
     }
   }
 
-  const compare = steps.find(step => step.uses === BENCHMARK_ACTION).with
+  const compare = steps.find((step) => step.uses === BENCHMARK_ACTION).with;
   assertDeepEqual(
     compare,
     {
-      name: 'ferromark parser',
-      tool: 'cargo',
-      'output-file-path': 'benchmark-output.txt',
-      'external-data-json-path': '.benchmark-cache/benchmark-data.json',
-      'save-data-file':
+      name: "ferromark parser",
+      tool: "cargo",
+      "output-file-path": "benchmark-output.txt",
+      "external-data-json-path": ".benchmark-cache/benchmark-data.json",
+      "save-data-file":
         "${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}",
-      'alert-threshold': '120%',
-      'fail-threshold': '120%',
-      'fail-on-alert': "${{ github.event_name == 'pull_request' }}",
-      'summary-always': true,
+      "alert-threshold": "120%",
+      "fail-threshold": "120%",
+      "fail-on-alert": "${{ github.event_name == 'pull_request' }}",
+      "summary-always": true,
     },
-    'comparison must fail pull requests at a 20% regression',
-  )
+    "comparison must fail pull requests at a 20% regression",
+  );
 
-  const save = steps.find(step => step.uses === CACHE_SAVE_ACTION)
+  const save = steps.find((step) => step.uses === CACHE_SAVE_ACTION);
   const expectedCondition =
-    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.benchmark-history.outputs.cache-hit != 'true'"
+    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.benchmark-history.outputs.cache-hit != 'true'";
   if (save.if !== expectedCondition) {
-    failContract('benchmark history must only be saved outside pull requests')
+    failContract("benchmark history must only be saved outside pull requests");
   }
   if (save.with?.key !== CACHE_KEY) {
-    failContract('saved benchmark history must reuse the restore key')
+    failContract("saved benchmark history must reuse the restore key");
   }
 
-  if (!benchmarkSource.includes('pub const PATHOLOGICAL_BYTES: usize = 64 * 1024;')) {
-    failContract('pathological benchmarks must share a fixed 64 KiB byte budget')
+  if (!benchmarkSource.includes("pub const PATHOLOGICAL_BYTES: usize = 64 * 1024;")) {
+    failContract("pathological benchmarks must share a fixed 64 KiB byte budget");
   }
   for (const benchmarkName of PATHOLOGICAL_BENCHMARKS) {
     if (!benchmarkSource.includes(`bench_function("${benchmarkName}"`)) {
-      failContract(`pathological benchmark ${benchmarkName} is missing`)
+      failContract(`pathological benchmark ${benchmarkName} is missing`);
     }
   }
   if (
     !benchmarkSource.includes('include_str!("fixtures/commonmark-1m.md")') ||
     !benchmarkSource.includes('bench_function("commonmark_1m"')
   ) {
-    failContract('the 1 MiB CommonMark fixture must be benchmarked')
+    failContract("the 1 MiB CommonMark fixture must be benchmarked");
   }
   if (largeFixtureBytes < 1024 * 1024) {
-    failContract('large CommonMark fixture must be at least 1 MiB')
+    failContract("large CommonMark fixture must be at least 1 MiB");
   }
 }
 
 function assertRejected(mutate, options = {}) {
-  const copy = deepCopy(workflow)
-  mutate(copy)
-  assert.throws(() => validate(copy, options), ContractError)
+  const copy = deepCopy(workflow);
+  mutate(copy);
+  assert.throws(() => validate(copy, options), ContractError);
 }
 
-const workflow = readYaml('.github', 'workflows', 'benchmarks.yml')
+const workflow = readYaml(".github", "workflows", "benchmarks.yml");
 
-describe('benchmark CI contract', () => {
-  it('accepts the current workflow', () => {
-    validate(workflow)
-  })
+describe("benchmark CI contract", () => {
+  it("accepts the current workflow", () => {
+    validate(workflow);
+  });
 
-  it('rejects a write-scoped token', () => {
-    assertRejected(copy => {
-      copy.permissions.contents = 'write'
-    })
-  })
+  it("rejects a write-scoped token", () => {
+    assertRejected((copy) => {
+      copy.permissions.contents = "write";
+    });
+  });
 
-  it('rejects a missing source trigger', () => {
-    assertRejected(copy => {
-      const events = triggers(copy)
-      events.pull_request.paths = events.pull_request.paths.filter(path => path !== 'src/**')
-    })
-  })
+  it("rejects a missing source trigger", () => {
+    assertRejected((copy) => {
+      const events = triggers(copy);
+      events.pull_request.paths = events.pull_request.paths.filter((path) => path !== "src/**");
+    });
+  });
 
-  it('rejects a mutable benchmark action', () => {
-    assertRejected(copy => {
+  it("rejects a mutable benchmark action", () => {
+    assertRejected((copy) => {
       const step = copy.jobs.benchmark.steps.find(
-        candidate => candidate.uses === BENCHMARK_ACTION,
-      )
-      step.uses = 'benchmark-action/github-action-benchmark@v1'
-    })
-  })
+        (candidate) => candidate.uses === BENCHMARK_ACTION,
+      );
+      step.uses = "benchmark-action/github-action-benchmark@v1";
+    });
+  });
 
-  it('rejects a relaxed regression threshold', () => {
-    assertRejected(copy => {
+  it("rejects a relaxed regression threshold", () => {
+    assertRejected((copy) => {
       const step = copy.jobs.benchmark.steps.find(
-        candidate => candidate.uses === BENCHMARK_ACTION,
-      )
-      step.with['fail-threshold'] = '150%'
-    })
-  })
+        (candidate) => candidate.uses === BENCHMARK_ACTION,
+      );
+      step.with["fail-threshold"] = "150%";
+    });
+  });
 
-  it('rejects a pull request cache write', () => {
-    assertRejected(copy => {
+  it("rejects a pull request cache write", () => {
+    assertRejected((copy) => {
       const step = copy.jobs.benchmark.steps.find(
-        candidate => candidate.uses === CACHE_SAVE_ACTION,
-      )
-      step.if = 'always()'
-    })
-  })
+        (candidate) => candidate.uses === CACHE_SAVE_ACTION,
+      );
+      step.if = "always()";
+    });
+  });
 
-  it('rejects a missing bracket stress case', () => {
+  it("rejects a missing bracket stress case", () => {
     assertRejected(() => {}, {
-      benchmarkSource: readRepositoryFile('benches/parsing.rs').replace(
+      benchmarkSource: readRepositoryFile("benches/parsing.rs").replace(
         'bench_function("bracket_explosion_64k"',
         'bench_function("removed"',
       ),
-    })
-  })
+    });
+  });
 
-  it('rejects an undersized large fixture', () => {
-    assertRejected(() => {}, { largeFixtureBytes: 1024 * 1024 - 1 })
-  })
-})
+  it("rejects an undersized large fixture", () => {
+    assertRejected(() => {}, { largeFixtureBytes: 1024 * 1024 - 1 });
+  });
+});
