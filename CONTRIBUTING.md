@@ -22,6 +22,8 @@ Run these commands from the repository root before opening a pull request:
 ```bash
 cargo test --locked --all-features
 cargo clippy --all-targets --all-features --locked -- -D warnings
+cargo test -p ferro-byte-search --locked
+cargo clippy -p ferro-byte-search --all-targets --locked -- -D warnings
 cargo fmt --check
 ```
 

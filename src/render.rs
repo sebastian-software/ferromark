@@ -201,10 +201,19 @@ impl HtmlWriter {
     /// First decodes HTML entities, then escapes for output.
     #[inline]
     pub fn write_text_with_entities(&mut self, text: &[u8]) {
-        if memchr(b'&', text).is_none() {
-            escape::escape_text_into(&mut self.out, text);
+        // The escape scan also proves the absence of entities on plain text.
+        // Reuse its prefix instead of scanning every ordinary segment twice.
+        let Some(first) = escape::first_text_escape(text) else {
+            self.out.extend_from_slice(text);
+            return;
+        };
+        if text[first] != b'&' && memchr(b'&', &text[first..]).is_none() {
+            self.out.extend_from_slice(&text[..first]);
+            escape::escape_text_into(&mut self.out, &text[first..]);
             return;
         }
+        // Decode the complete input when entities occur: CommonMark fixups and
+        // invalid-UTF-8 fallback must retain their existing whole-input behavior.
         // First decode HTML entities
         let text_str = core::str::from_utf8(text).unwrap_or("");
         let decoded = decode_entities_commonmark(text_str);

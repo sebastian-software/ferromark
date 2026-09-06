@@ -1,0 +1,313 @@
+diff --git a/src/inline/marks.rs b/src/inline/marks.rs
+index 4107533..f391d11 100644
+--- a/src/inline/marks.rs
++++ b/src/inline/marks.rs
+@@ -257,7 +257,7 @@ impl Default for MarkBuffer {
+ /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
+ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+     assert_input_size(text.len());
+-    collect_marks_impl::<false, false>(text, buffer)
++    collect_marks_from::<false, false>(text, buffer, 0)
+ }
+ 
+ /// Scan text and collect marks with highlight support enabled.
+@@ -267,7 +267,7 @@ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+ /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
+ pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+     assert_input_size(text.len());
+-    collect_marks_impl::<true, false>(text, buffer)
++    collect_marks_from::<true, false>(text, buffer, 0)
+ }
+ 
+ /// Scan text and collect marks with superscript support enabled.
+@@ -277,7 +277,7 @@ pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) -> MarkSumm
+ /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
+ pub fn collect_marks_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+     assert_input_size(text.len());
+-    collect_marks_impl::<false, true>(text, buffer)
++    collect_marks_from::<false, true>(text, buffer, 0)
+ }
+ 
+ /// Scan text and collect marks with highlight and superscript enabled.
+@@ -287,17 +287,18 @@ pub fn collect_marks_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSu
+ /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
+ pub fn collect_marks_highlight_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+     assert_input_size(text.len());
+-    collect_marks_impl::<true, true>(text, buffer)
++    collect_marks_from::<true, true>(text, buffer, 0)
+ }
+ 
+-fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
++pub(crate) fn collect_marks_from<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+     text: &[u8],
+     buffer: &mut MarkBuffer,
++    start: usize,
+ ) -> MarkSummary {
+     buffer.clear();
+     let mut summary = MarkSummary::default();
+ 
+-    let mut pos = 0;
++    let mut pos = start;
+     let len = text.len();
+ 
+     while pos < len {
+diff --git a/src/inline/mod.rs b/src/inline/mod.rs
+index 4212cf8..6acc601 100644
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -33,10 +33,7 @@ use links::{
+     find_autolink_literals_into, find_autolinks_into, resolve_links_into_with_limits,
+     resolve_reference_links_into,
+ };
+-use marks::{
+-    Mark, MarkBuffer, MarkSummary, collect_marks, collect_marks_highlight,
+-    collect_marks_highlight_superscript, collect_marks_superscript, flags,
+-};
++use marks::{Mark, MarkBuffer, MarkSummary, collect_marks_from, flags};
+ use math::{MathSpan, resolve_math_spans};
+ use memchr::memchr;
+ use strikethrough::{StrikethroughMatch, resolve_strikethrough_into};
+@@ -349,20 +346,20 @@ impl InlineParser {
+         let event_start = events.len();
+         let may_have_inline_footnotes = inline_footnotes && has_inline_footnote_candidate(text);
+         let caret_syntax = superscript || may_have_inline_footnotes;
+-        let has_specials = if highlight && caret_syntax {
+-            has_inline_specials_highlight_superscript(text)
++        let first_special = if highlight && caret_syntax {
++            first_inline_special::<true, true>(text)
+         } else if highlight {
+-            has_inline_specials_highlight(text)
++            first_inline_special::<true, false>(text)
+         } else if caret_syntax {
+-            has_inline_specials_superscript(text)
++            first_inline_special::<false, true>(text)
+         } else {
+-            has_inline_specials(text)
++            first_inline_special::<false, false>(text)
+         };
+ 
+         // Check for potential autolink literal triggers when enabled
+         let may_have_autolinks = autolink_literals && has_autolink_candidates(text);
+ 
+-        if !has_specials && !may_have_autolinks {
++        if first_special.is_none() && !may_have_autolinks {
+             if !text.is_empty() {
+                 events.push(InlineEvent::Text(Range::from_usize(0, text.len())));
+             }
+@@ -381,15 +378,15 @@ impl InlineParser {
+ 
+         // Phase 1: Collect marks
+         self.mark_buffer.reserve_for_text(text.len());
+-        let summary = if has_specials {
++        let summary = if let Some(first) = first_special {
+             if highlight && caret_syntax {
+-                collect_marks_highlight_superscript(text, &mut self.mark_buffer)
++                collect_marks_from::<true, true>(text, &mut self.mark_buffer, first)
+             } else if highlight {
+-                collect_marks_highlight(text, &mut self.mark_buffer)
++                collect_marks_from::<true, false>(text, &mut self.mark_buffer, first)
+             } else if caret_syntax {
+-                collect_marks_superscript(text, &mut self.mark_buffer)
++                collect_marks_from::<false, true>(text, &mut self.mark_buffer, first)
+             } else {
+-                collect_marks(text, &mut self.mark_buffer)
++                collect_marks_from::<false, false>(text, &mut self.mark_buffer, first)
+             }
+         } else {
+             self.mark_buffer.clear();
+@@ -1654,91 +1651,20 @@ impl InlineParser {
+ }
+ 
+ #[inline]
+-fn has_inline_specials(input: &[u8]) -> bool {
+-    #[cfg(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    ))]
+-    {
+-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false, false>(input) } {
+-            return result;
+-        }
+-    }
+-    for &b in input {
+-        match b {
+-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' => {
+-                return true;
+-            }
+-            _ => {}
+-        }
+-    }
+-    false
+-}
+-
+-#[inline]
+-fn has_inline_specials_highlight(input: &[u8]) -> bool {
+-    #[cfg(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    ))]
++fn first_inline_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(input: &[u8]) -> Option<usize> {
++    #[cfg(any(target_arch = "x86_64", all(target_arch = "aarch64", target_feature = "neon")))]
+     {
+-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true, false>(input) } {
+-            return result;
+-        }
+-    }
+-    for &b in input {
+-        match b {
+-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' => {
+-                return true;
+-            }
+-            _ => {}
++        let mut first = 0;
++        if let Some(found) = unsafe {
++            simd::has_inline_specials_simd::<HIGHLIGHT, SUPERSCRIPT>(input, &mut first)
++        } {
++            return found.then_some(first);
+         }
+     }
+-    false
+-}
+-
+-#[inline]
+-fn has_inline_specials_superscript(input: &[u8]) -> bool {
+-    #[cfg(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    ))]
+-    {
+-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false, true>(input) } {
+-            return result;
+-        }
+-    }
+-    for &b in input {
+-        match b {
+-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'^' => {
+-                return true;
+-            }
+-            _ => {}
+-        }
+-    }
+-    false
+-}
+-
+-#[inline]
+-fn has_inline_specials_highlight_superscript(input: &[u8]) -> bool {
+-    #[cfg(any(
+-        target_arch = "x86_64",
+-        all(target_arch = "aarch64", target_feature = "neon")
+-    ))]
+-    {
+-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true, true>(input) } {
+-            return result;
+-        }
+-    }
+-    for &b in input {
+-        match b {
+-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' | b'^' => {
+-                return true;
+-            }
+-            _ => {}
+-        }
+-    }
+-    false
++    input.iter().position(|&b| {
++        matches!(b, b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$')
++            || (HIGHLIGHT && b == b'=') || (SUPERSCRIPT && b == b'^')
++    })
+ }
+ 
+ /// Check if text might contain autolink literal triggers.
+diff --git a/src/inline/simd.rs b/src/inline/simd.rs
+index 7404dfe..36682b6 100644
+--- a/src/inline/simd.rs
++++ b/src/inline/simd.rs
+@@ -54,6 +54,7 @@ fn is_mark_special<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(b: u8) -> boo
+ #[target_feature(enable = "neon")]
+ pub unsafe fn has_inline_specials_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+     input: &[u8],
++    first: &mut usize,
+ ) -> Option<bool> {
+     let len = input.len();
+     let mut pos = 0usize;
+@@ -70,14 +71,18 @@ pub unsafe fn has_inline_specials_simd<const HIGHLIGHT: bool, const SUPERSCRIPT:
+                 any_eq_mask(v, b"*_`[]<\\\n~$")
+             };
+             if mask_has_any(mask) {
++                // Collection will locate the byte inside this already-matched
++                // vector. Retain the skipped prefix without a second lane scan.
++                *first = pos;
+                 return Some(true);
+             }
+         }
+         pos += 16;
+     }
+     // Fallback for tail.
+-    for &b in &input[pos..] {
++    for (offset, &b) in input[pos..].iter().enumerate() {
+         if is_inline_special::<HIGHLIGHT, SUPERSCRIPT>(b) {
++            *first = pos + offset;
+             return Some(true);
+         }
+     }
+@@ -155,6 +160,7 @@ fn special_mask_sse2<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+ #[inline]
+ pub unsafe fn has_inline_specials_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+     input: &[u8],
++    first: &mut usize,
+ ) -> Option<bool> {
+     use std::arch::x86_64::_mm_loadu_si128;
+ 
+@@ -163,18 +169,20 @@ pub unsafe fn has_inline_specials_simd<const HIGHLIGHT: bool, const SUPERSCRIPT:
+         // SAFETY: `pos + 16 <= input.len()` proves that this unaligned
+         // 16-byte load is in bounds. SSE2 is guaranteed on x86-64.
+         let vector = unsafe { _mm_loadu_si128(input.as_ptr().add(pos).cast()) };
+-        if special_mask_sse2::<HIGHLIGHT, SUPERSCRIPT>(vector) != 0 {
++        let mask = special_mask_sse2::<HIGHLIGHT, SUPERSCRIPT>(vector);
++        if mask != 0 {
++            *first = pos;
+             return Some(true);
+         }
+         pos += 16;
+     }
+ 
+-    Some(
+-        input[pos..]
+-            .iter()
+-            .copied()
+-            .any(is_inline_special::<HIGHLIGHT, SUPERSCRIPT>),
+-    )
++    if let Some(offset) = input[pos..].iter().position(|&b| is_inline_special::<HIGHLIGHT, SUPERSCRIPT>(b)) {
++        *first = pos + offset;
++        Some(true)
++    } else {
++        Some(false)
++    }
+ }
+ 
+ /// SSE2 scan for the next inline mark special used by mark collection.
+@@ -208,6 +216,7 @@ pub unsafe fn next_mark_special_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: b
+ #[allow(dead_code)]
+ pub fn has_inline_specials_simd<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+     _input: &[u8],
++    _first: &mut usize,
+ ) -> Option<bool> {
+     None
+ }
+@@ -257,10 +266,15 @@ mod tests {
+                     }
+                     // SAFETY: this test only compiles for NEON-enabled AArch64 or
+                     // x86-64, whose SIMD path has no caller-controlled precondition.
++                    let mut first = 0;
+                     let simd =
+-                        unsafe { has_inline_specials_simd::<HIGHLIGHT, SUPERSCRIPT>(&input) }
++                        unsafe { has_inline_specials_simd::<HIGHLIGHT, SUPERSCRIPT>(&input, &mut first) }
+                             .expect("SIMD implementation is compiled for this target");
+                     assert_eq!(simd, scalar_inline::<HIGHLIGHT, SUPERSCRIPT>(&input));
++                    if simd {
++                        let exact = scalar_mark::<HIGHLIGHT, SUPERSCRIPT>(&input).unwrap();
++                        assert!(first <= exact && exact - first < 16);
++                    }
+                 }
+             }
+         }

@@ -126,6 +126,12 @@ raw-HTML semantics in both parsers. See the
 feature matrix. Secure-default numbers remain separate because pulldown-cmark
 does not expose an equivalent trust boundary.
 
+A separate [direct Bun Markdown comparison](benchmarks/bun-comparison/README.md)
+builds Bun's md4c-derived Rust parser with its original native support routines,
+without a JavaScript runtime. It compares four native Rust APIs with fresh HTML
+outputs and shared options. See the [exploratory results and provenance](docs/reports/2026-09-05-bun-comparison.md);
+those measurements use a different compiler and allocator from the tables above.
+
 ## What you get
 
 **CommonMark conformance**: With `RenderPolicy::Trusted`, `Options::commonmark()`

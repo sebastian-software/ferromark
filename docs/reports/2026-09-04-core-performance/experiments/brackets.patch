@@ -1,0 +1,66 @@
+diff --git a/src/inline/marks.rs b/src/inline/marks.rs
+index 4107533..1f28d08 100644
+--- a/src/inline/marks.rs
++++ b/src/inline/marks.rs
+@@ -40,6 +40,7 @@ impl MarkSummary {
+     const HIGHLIGHT: u8 = 1 << 4;
+     const SUPERSCRIPT: u8 = 1 << 5;
+     const LESS_THAN: u8 = 1 << 6;
++    const BRACKETS: u8 = 1 << 7;
+ 
+     #[inline]
+     fn record(&mut self, bit: u8) {
+@@ -91,6 +92,11 @@ impl MarkSummary {
+     #[inline]
+     /// Return whether the input contains a less-than sign that may start HTML.
+     #[must_use]
++    pub(crate) const fn has_brackets(self) -> bool {
++        self.0 & Self::BRACKETS != 0
++    }
++
++    #[inline]
+     pub const fn has_less_than(self) -> bool {
+         self.0 & Self::LESS_THAN != 0
+     }
+@@ -469,6 +475,7 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+             }
+ 
+             b'[' => {
++                summary.record(MarkSummary::BRACKETS);
+                 // Check for image: ![
+                 let is_image = pos > 0 && text[pos - 1] == b'!' && !is_escaped(text, pos - 1);
+                 buffer.push(Mark::new(
+@@ -485,6 +492,7 @@ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+             }
+ 
+             b']' => {
++                summary.record(MarkSummary::BRACKETS);
+                 buffer.push(Mark::new(
+                     offset_to_u32(pos),
+                     offset_to_u32(pos + 1),
+diff --git a/src/inline/mod.rs b/src/inline/mod.rs
+index 4212cf8..f70e0b3 100644
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -476,11 +476,16 @@ impl InlineParser {
+         });
+ 
+         // Fourth: collect bracket positions and detect inline delimiter candidates in one pass
+-        Self::collect_brackets(
+-            self.mark_buffer.marks(),
+-            &mut self.open_brackets,
+-            &mut self.close_brackets,
+-        );
++        if summary.has_brackets() {
++            Self::collect_brackets(
++                self.mark_buffer.marks(),
++                &mut self.open_brackets,
++                &mut self.close_brackets,
++            );
++        } else {
++            self.open_brackets.clear();
++            self.close_brackets.clear();
++        }
+         let has_brackets = !self.open_brackets.is_empty() && !self.close_brackets.is_empty();
+         self.open_brackets
+             .retain(|&(pos, _)| !pos_in_spans(pos, &self.html_spans));

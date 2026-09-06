@@ -1,0 +1,287 @@
+    Finished `bench` profile [optimized + debuginfo] target(s) in 0.04s
+     Running benches/search.rs (target/release/deps/search-916ddd0e3c376e03)
+Gnuplot not found, using plotters backend
+Benchmarking four/8/find/absent
+Benchmarking four/8/find/absent: Warming up for 100.00 ms
+Benchmarking four/8/find/absent: Collecting 30 samples in estimated 300.00 ms (62M iterations)
+Benchmarking four/8/find/absent: Analyzing
+four/8/find/absent      time:   [4.7979 ns 4.8238 ns 4.8483 ns]
+                        thrpt:  [1.5367 GiB/s 1.5445 GiB/s 1.5529 GiB/s]
+                 change:
+                        time:   [−2.0637% −1.2624% −0.4383%] (p = 0.00 < 0.05)
+                        thrpt:  [+0.4402% +1.2785% +2.1071%]
+                        Change within noise threshold.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+Benchmarking four/8/embedded_find/absent
+Benchmarking four/8/embedded_find/absent: Warming up for 100.00 ms
+Benchmarking four/8/embedded_find/absent: Collecting 30 samples in estimated 300.00 ms (63M iterations)
+Benchmarking four/8/embedded_find/absent: Analyzing
+four/8/embedded_find/absent
+                        time:   [4.7150 ns 4.7435 ns 4.7722 ns]
+                        thrpt:  [1.5612 GiB/s 1.5707 GiB/s 1.5802 GiB/s]
+                 change:
+                        time:   [−1.5604% −0.8159% −0.0759%] (p = 0.04 < 0.05)
+                        thrpt:  [+0.0760% +0.8226% +1.5852%]
+                        Change within noise threshold.
+Found 3 outliers among 30 measurements (10.00%)
+  2 (6.67%) high mild
+  1 (3.33%) high severe
+Benchmarking four/8/find/last
+Benchmarking four/8/find/last: Warming up for 100.00 ms
+Benchmarking four/8/find/last: Collecting 30 samples in estimated 300.00 ms (41M iterations)
+Benchmarking four/8/find/last: Analyzing
+four/8/find/last        time:   [7.2221 ns 7.2439 ns 7.2722 ns]
+                        thrpt:  [1.0245 GiB/s 1.0285 GiB/s 1.0316 GiB/s]
+                 change:
+                        time:   [−1.0268% −0.5677% −0.0894%] (p = 0.03 < 0.05)
+                        thrpt:  [+0.0894% +0.5709% +1.0374%]
+                        Change within noise threshold.
+Found 2 outliers among 30 measurements (6.67%)
+  1 (3.33%) high mild
+  1 (3.33%) high severe
+Benchmarking four/8/embedded_find/last
+Benchmarking four/8/embedded_find/last: Warming up for 100.00 ms
+Benchmarking four/8/embedded_find/last: Collecting 30 samples in estimated 300.00 ms (41M iterations)
+Benchmarking four/8/embedded_find/last: Analyzing
+four/8/embedded_find/last
+                        time:   [7.2363 ns 7.2611 ns 7.2838 ns]
+                        thrpt:  [1.0229 GiB/s 1.0261 GiB/s 1.0296 GiB/s]
+                 change:
+                        time:   [−6.1544% −3.5596% −1.3702%] (p = 0.00 < 0.05)
+                        thrpt:  [+1.3892% +3.6910% +6.5580%]
+                        Performance has improved.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high severe
+
+Benchmarking four/64/find/absent
+Benchmarking four/64/find/absent: Warming up for 100.00 ms
+Benchmarking four/64/find/absent: Collecting 30 samples in estimated 300.00 ms (77M iterations)
+Benchmarking four/64/find/absent: Analyzing
+four/64/find/absent     time:   [3.8416 ns 3.8518 ns 3.8641 ns]
+                        thrpt:  [15.425 GiB/s 15.474 GiB/s 15.516 GiB/s]
+                 change:
+                        time:   [−0.6365% −0.0871% +0.4573%] (p = 0.77 > 0.05)
+                        thrpt:  [−0.4552% +0.0872% +0.6405%]
+                        No change in performance detected.
+Benchmarking four/64/embedded_find/absent
+Benchmarking four/64/embedded_find/absent: Warming up for 100.00 ms
+Benchmarking four/64/embedded_find/absent: Collecting 30 samples in estimated 300.00 ms (77M iterations)
+Benchmarking four/64/embedded_find/absent: Analyzing
+four/64/embedded_find/absent
+                        time:   [3.8420 ns 3.8592 ns 3.8751 ns]
+                        thrpt:  [15.381 GiB/s 15.445 GiB/s 15.514 GiB/s]
+                 change:
+                        time:   [−0.8282% −0.2854% +0.2658%] (p = 0.30 > 0.05)
+                        thrpt:  [−0.2651% +0.2863% +0.8351%]
+                        No change in performance detected.
+Benchmarking four/64/find/last
+Benchmarking four/64/find/last: Warming up for 100.00 ms
+Benchmarking four/64/find/last: Collecting 30 samples in estimated 300.00 ms (32M iterations)
+Benchmarking four/64/find/last: Analyzing
+four/64/find/last       time:   [9.4895 ns 9.5219 ns 9.5574 ns]
+                        thrpt:  [6.2365 GiB/s 6.2597 GiB/s 6.2811 GiB/s]
+                 change:
+                        time:   [−14.725% −6.8961% −0.2026%] (p = 0.08 > 0.05)
+                        thrpt:  [+0.2030% +7.4069% +17.267%]
+                        No change in performance detected.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+Benchmarking four/64/embedded_find/last
+Benchmarking four/64/embedded_find/last: Warming up for 100.00 ms
+Benchmarking four/64/embedded_find/last: Collecting 30 samples in estimated 300.00 ms (31M iterations)
+Benchmarking four/64/embedded_find/last: Analyzing
+four/64/embedded_find/last
+                        time:   [9.4785 ns 9.5200 ns 9.5683 ns]
+                        thrpt:  [6.2294 GiB/s 6.2610 GiB/s 6.2884 GiB/s]
+                 change:
+                        time:   [−0.3552% +0.3610% +1.0087%] (p = 0.30 > 0.05)
+                        thrpt:  [−0.9987% −0.3597% +0.3564%]
+                        No change in performance detected.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+
+Benchmarking four/1024/find/absent
+Benchmarking four/1024/find/absent: Warming up for 100.00 ms
+Benchmarking four/1024/find/absent: Collecting 30 samples in estimated 300.01 ms (5.5M iterations)
+Benchmarking four/1024/find/absent: Analyzing
+four/1024/find/absent   time:   [46.502 ns 46.769 ns 47.030 ns]
+                        thrpt:  [20.278 GiB/s 20.391 GiB/s 20.508 GiB/s]
+                 change:
+                        time:   [−0.4333% +0.3691% +1.0879%] (p = 0.34 > 0.05)
+                        thrpt:  [−1.0762% −0.3678% +0.4352%]
+                        No change in performance detected.
+Benchmarking four/1024/embedded_find/absent
+Benchmarking four/1024/embedded_find/absent: Warming up for 100.00 ms
+Benchmarking four/1024/embedded_find/absent: Collecting 30 samples in estimated 300.02 ms (6.5M iterations)
+Benchmarking four/1024/embedded_find/absent: Analyzing
+four/1024/embedded_find/absent
+                        time:   [46.320 ns 46.533 ns 46.743 ns]
+                        thrpt:  [20.403 GiB/s 20.495 GiB/s 20.589 GiB/s]
+                 change:
+                        time:   [−1.5033% −0.5657% +0.4239%] (p = 0.25 > 0.05)
+                        thrpt:  [−0.4221% +0.5690% +1.5262%]
+                        No change in performance detected.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+Benchmarking four/1024/find/last
+Benchmarking four/1024/find/last: Warming up for 100.00 ms
+Benchmarking four/1024/find/last: Collecting 30 samples in estimated 300.01 ms (5.8M iterations)
+Benchmarking four/1024/find/last: Analyzing
+four/1024/find/last     time:   [50.389 ns 50.573 ns 50.780 ns]
+                        thrpt:  [18.780 GiB/s 18.857 GiB/s 18.926 GiB/s]
+                 change:
+                        time:   [+0.2170% +0.9833% +1.7129%] (p = 0.01 < 0.05)
+                        thrpt:  [−1.6841% −0.9737% −0.2165%]
+                        Change within noise threshold.
+Benchmarking four/1024/embedded_find/last
+Benchmarking four/1024/embedded_find/last: Warming up for 100.00 ms
+Benchmarking four/1024/embedded_find/last: Collecting 30 samples in estimated 300.02 ms (5.9M iterations)
+Benchmarking four/1024/embedded_find/last: Analyzing
+four/1024/embedded_find/last
+                        time:   [50.678 ns 51.007 ns 51.274 ns]
+                        thrpt:  [18.600 GiB/s 18.697 GiB/s 18.818 GiB/s]
+                 change:
+                        time:   [−1.3770% −0.3418% +0.5904%] (p = 0.51 > 0.05)
+                        thrpt:  [−0.5869% +0.3430% +1.3962%]
+                        No change in performance detected.
+
+Benchmarking twelve/8/find/absent
+Benchmarking twelve/8/find/absent: Warming up for 100.00 ms
+Benchmarking twelve/8/find/absent: Collecting 30 samples in estimated 300.00 ms (85M iterations)
+Benchmarking twelve/8/find/absent: Analyzing
+twelve/8/find/absent    time:   [3.4920 ns 3.5031 ns 3.5128 ns]
+                        thrpt:  [2.1210 GiB/s 2.1269 GiB/s 2.1336 GiB/s]
+                 change:
+                        time:   [+0.4782% +0.9722% +1.4795%] (p = 0.00 < 0.05)
+                        thrpt:  [−1.4579% −0.9629% −0.4759%]
+                        Change within noise threshold.
+Benchmarking twelve/8/embedded_find/absent
+Benchmarking twelve/8/embedded_find/absent: Warming up for 100.00 ms
+Benchmarking twelve/8/embedded_find/absent: Collecting 30 samples in estimated 300.00 ms (86M iterations)
+Benchmarking twelve/8/embedded_find/absent: Analyzing
+twelve/8/embedded_find/absent
+                        time:   [3.4791 ns 3.4916 ns 3.5061 ns]
+                        thrpt:  [2.1251 GiB/s 2.1339 GiB/s 2.1415 GiB/s]
+                 change:
+                        time:   [−0.0856% +0.4976% +1.0933%] (p = 0.12 > 0.05)
+                        thrpt:  [−1.0815% −0.4952% +0.0857%]
+                        No change in performance detected.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+Benchmarking twelve/8/find/last
+Benchmarking twelve/8/find/last: Warming up for 100.00 ms
+Benchmarking twelve/8/find/last: Collecting 30 samples in estimated 300.00 ms (78M iterations)
+Benchmarking twelve/8/find/last: Analyzing
+twelve/8/find/last      time:   [3.8080 ns 3.8175 ns 3.8271 ns]
+                        thrpt:  [1.9468 GiB/s 1.9517 GiB/s 1.9566 GiB/s]
+                 change:
+                        time:   [−1.0381% −0.2012% +0.5810%] (p = 0.64 > 0.05)
+                        thrpt:  [−0.5777% +0.2016% +1.0489%]
+                        No change in performance detected.
+Benchmarking twelve/8/embedded_find/last
+Benchmarking twelve/8/embedded_find/last: Warming up for 100.00 ms
+Benchmarking twelve/8/embedded_find/last: Collecting 30 samples in estimated 300.00 ms (79M iterations)
+Benchmarking twelve/8/embedded_find/last: Analyzing
+twelve/8/embedded_find/last
+                        time:   [3.7970 ns 3.8094 ns 3.8197 ns]
+                        thrpt:  [1.9505 GiB/s 1.9558 GiB/s 1.9622 GiB/s]
+                 change:
+                        time:   [−0.6145% +0.1664% +0.8896%] (p = 0.68 > 0.05)
+                        thrpt:  [−0.8818% −0.1662% +0.6183%]
+                        No change in performance detected.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+
+Benchmarking twelve/64/find/absent
+Benchmarking twelve/64/find/absent: Warming up for 100.00 ms
+Benchmarking twelve/64/find/absent: Collecting 30 samples in estimated 300.00 ms (30M iterations)
+Benchmarking twelve/64/find/absent: Analyzing
+twelve/64/find/absent   time:   [9.9091 ns 9.9399 ns 9.9713 ns]
+                        thrpt:  [5.9776 GiB/s 5.9965 GiB/s 6.0152 GiB/s]
+                 change:
+                        time:   [+0.3245% +0.8463% +1.3925%] (p = 0.00 < 0.05)
+                        thrpt:  [−1.3734% −0.8392% −0.3235%]
+                        Change within noise threshold.
+Benchmarking twelve/64/embedded_find/absent
+Benchmarking twelve/64/embedded_find/absent: Warming up for 100.00 ms
+Benchmarking twelve/64/embedded_find/absent: Collecting 30 samples in estimated 300.00 ms (30M iterations)
+Benchmarking twelve/64/embedded_find/absent: Analyzing
+twelve/64/embedded_find/absent
+                        time:   [9.9194 ns 9.9616 ns 10.010 ns]
+                        thrpt:  [5.9547 GiB/s 5.9834 GiB/s 6.0089 GiB/s]
+                 change:
+                        time:   [−0.4975% +0.1977% +0.8637%] (p = 0.58 > 0.05)
+                        thrpt:  [−0.8563% −0.1974% +0.5000%]
+                        No change in performance detected.
+Benchmarking twelve/64/find/last
+Benchmarking twelve/64/find/last: Warming up for 100.00 ms
+Benchmarking twelve/64/find/last: Collecting 30 samples in estimated 300.00 ms (21M iterations)
+Benchmarking twelve/64/find/last: Analyzing
+twelve/64/find/last     time:   [13.874 ns 13.914 ns 13.954 ns]
+                        thrpt:  [4.2714 GiB/s 4.2838 GiB/s 4.2962 GiB/s]
+                 change:
+                        time:   [−1.0084% −0.1274% +0.6449%] (p = 0.78 > 0.05)
+                        thrpt:  [−0.6408% +0.1275% +1.0187%]
+                        No change in performance detected.
+Found 1 outliers among 30 measurements (3.33%)
+  1 (3.33%) high mild
+Benchmarking twelve/64/embedded_find/last
+Benchmarking twelve/64/embedded_find/last: Warming up for 100.00 ms
+Benchmarking twelve/64/embedded_find/last: Collecting 30 samples in estimated 300.00 ms (22M iterations)
+Benchmarking twelve/64/embedded_find/last: Analyzing
+twelve/64/embedded_find/last
+                        time:   [13.596 ns 13.631 ns 13.667 ns]
+                        thrpt:  [4.3613 GiB/s 4.3728 GiB/s 4.3841 GiB/s]
+                 change:
+                        time:   [−0.5707% +0.0231% +0.5598%] (p = 0.93 > 0.05)
+                        thrpt:  [−0.5567% −0.0231% +0.5740%]
+                        No change in performance detected.
+
+Benchmarking twelve/1024/find/absent
+Benchmarking twelve/1024/find/absent: Warming up for 100.00 ms
+Benchmarking twelve/1024/find/absent: Collecting 30 samples in estimated 300.06 ms (2.1M iterations)
+Benchmarking twelve/1024/find/absent: Analyzing
+twelve/1024/find/absent time:   [143.05 ns 143.60 ns 144.25 ns]
+                        thrpt:  [6.6114 GiB/s 6.6410 GiB/s 6.6666 GiB/s]
+                 change:
+                        time:   [−0.2268% +0.5153% +1.2895%] (p = 0.20 > 0.05)
+                        thrpt:  [−1.2731% −0.5127% +0.2273%]
+                        No change in performance detected.
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high mild
+Benchmarking twelve/1024/embedded_find/absent
+Benchmarking twelve/1024/embedded_find/absent: Warming up for 100.00 ms
+Benchmarking twelve/1024/embedded_find/absent: Collecting 30 samples in estimated 300.03 ms (2.2M iterations)
+Benchmarking twelve/1024/embedded_find/absent: Analyzing
+twelve/1024/embedded_find/absent
+                        time:   [138.10 ns 138.49 ns 138.97 ns]
+                        thrpt:  [6.8626 GiB/s 6.8861 GiB/s 6.9058 GiB/s]
+                 change:
+                        time:   [+0.2691% +1.2516% +2.1635%] (p = 0.01 < 0.05)
+                        thrpt:  [−2.1177% −1.2362% −0.2684%]
+                        Change within noise threshold.
+Benchmarking twelve/1024/find/last
+Benchmarking twelve/1024/find/last: Warming up for 100.00 ms
+Benchmarking twelve/1024/find/last: Collecting 30 samples in estimated 300.00 ms (2.1M iterations)
+Benchmarking twelve/1024/find/last: Analyzing
+twelve/1024/find/last   time:   [141.69 ns 142.13 ns 142.64 ns]
+                        thrpt:  [6.6861 GiB/s 6.7098 GiB/s 6.7305 GiB/s]
+                 change:
+                        time:   [+0.4187% +1.0397% +1.7073%] (p = 0.00 < 0.05)
+                        thrpt:  [−1.6786% −1.0290% −0.4169%]
+                        Change within noise threshold.
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high mild
+Benchmarking twelve/1024/embedded_find/last
+Benchmarking twelve/1024/embedded_find/last: Warming up for 100.00 ms
+Benchmarking twelve/1024/embedded_find/last: Collecting 30 samples in estimated 300.06 ms (2.1M iterations)
+Benchmarking twelve/1024/embedded_find/last: Analyzing
+twelve/1024/embedded_find/last
+                        time:   [141.37 ns 141.88 ns 142.40 ns]
+                        thrpt:  [6.6969 GiB/s 6.7218 GiB/s 6.7458 GiB/s]
+                 change:
+                        time:   [−0.4772% +0.1298% +0.7217%] (p = 0.68 > 0.05)
+                        thrpt:  [−0.7165% −0.1296% +0.4795%]
+                        No change in performance detected.
+

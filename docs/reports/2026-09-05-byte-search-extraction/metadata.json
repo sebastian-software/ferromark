@@ -1,0 +1,34 @@
+{
+  "baseline_head": "617a29dbe8833e5bdbb207186cfe573051cfd18c",
+  "baseline_note": "HEAD plus the retained uncommitted core-performance changes preceding this extraction; not a clean HEAD benchmark.",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+  "machine": "Apple M1 Pro (same host as preceding core-performance and Bun comparison reports)",
+  "config": "# Platform-specific build configuration\n\n[target.aarch64-apple-darwin]\nrustflags = [\n    \"-C\", \"target-cpu=apple-m1\",\n    \"-C\", \"target-feature=+neon\",\n]\n\n[target.x86_64-apple-darwin]\nrustflags = [\n    \"-C\", \"target-cpu=native\",\n]\n\n# Faster incremental builds during development\n[profile.dev]\nopt-level = 1\n\n[profile.dev.package.\"*\"]\nopt-level = 2\n\n# Alias for quick benchmark runs\n[alias]\nb = \"bench\"\nt = \"test\"\n",
+  "binary_sha256": {
+    "target/byte-search-extraction/baseline": "d6649f37faaad1ed2e2728961eee54a525410adeb8d39d583456022855478ebd",
+    "target/byte-search-extraction/final": "700655e1e4a310ec2b7a668675a28cc3a62f42ed6bd7ca0d080a4a20eee23b1b"
+  },
+  "source_sha256": {
+    "src/byte_search.rs": "83cebc21c4d83ee074749eec1f37fe7f7097237cf19d6538f885b167813cd0ab",
+    "src/escape.rs": "4ca42975e60f2f3cdd82ab4442dcc5a0471beb07c72d54f10db8fd57fe9e350a",
+    "src/inline/simd.rs": "083b211ac43dd8950d89c9400260ebf370bc4a873c60bc1daf18fbe453220001",
+    "src/inline/marks.rs": "dfdd8ff797f69ef07a5a0f579f2f26d031ae402b150fa48243f3d2a761e1a975",
+    "src/inline/mod.rs": "9847764bc5304717ae1240a31d6282c1d5860e42a571efb99fc9323407ae21fd",
+    "src/lib.rs": "c26bdd239e6c5c6c999eb4005e08ef39cabb1309901c34c6b1e67151f1e4027c",
+    "src/block/mod.rs": "bf658ffd78f9cd3d59ab821c8ccbc4bf4b1249b896595cdecb211f716adadc0e",
+    "src/block/parser.rs": "be3da5aca9d156498a6563666566d6e67040361440fbf6439d7951dbb66d6412",
+    "src/render.rs": "730816189afaa446838831848b4de4fa0db8e0fd0336db1a9f32ba1c544ffa1d",
+    "Cargo.toml": "3e0779c29d476f45059d1a9fec0261181bf1bd3f3f9b5299b618c8ba65236ad3",
+    "Cargo.lock": "9f9c10a4ff36e8979b13e6ef824eaaa65413911568647b20454f392c9fd54453",
+    ".cargo/config.toml": "8ce65489399ce1ac31ea4a1d5d67b662c83dded17fc8a025228413a6ca15e34c",
+    "examples/core_performance.rs": "da01390b1cf1530aa30ebf7c521e9795ab0254449f87e3bdc5c01f014f143d5c",
+    "scripts/compare-core-performance.py": "fc078f396e03d31696d7ef37a48f8c20f993cf14720aa284b5e4bff6778d7f78",
+    "crates/ferro-byte-search/Cargo.toml": "db226d644e4ec5552ccfc29674a9a30b6a13097e9a49436a893ec602ab556a7f",
+    "crates/ferro-byte-search/tests/search.rs": "0a6cd4fafba68361509968a64b5821f1edf0f0b1569ce4f61ab17969ff533d57",
+    "crates/ferro-byte-search/benches/search.rs": "250eb9df61a62aab90b7f4dec6ad58f8d8e3335aa6f8af9aa20efa1b1846777a",
+    "crates/ferro-byte-search/src/lib.rs": "4fcad56e00e599f4215c778091d7963992da5c6532954045af024354491f2e55",
+    "scripts/test-contributing-ci-contract.rb": "1d90b9cbaff6b093c92ca5769f6c26d121ca137331535ecec82bba04a152313c",
+    ".github/workflows/ci.yml": "0ee254be1c3f85def7d2c8181419fce53f9624702067b05ecbb520109183bfdf",
+    "CONTRIBUTING.md": "49d06d6179a87755ad280fb796cb04ae80d0a4bc643b383d6596d9ebe306b4de"
+  }
+}

@@ -1,0 +1,19 @@
+[package]
+name = "ferro-byte-search"
+version = "0.0.0"
+edition = "2024"
+# Derived from the repository MSRV in the root Cargo.toml.
+rust-version = "1.94"
+publish = false
+license = "MIT"
+description = "Allocation-free byte-set search with safe APIs and native SIMD"
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+criterion = "0.8.2"
+
+[[bench]]
+name = "search"
+harness = false

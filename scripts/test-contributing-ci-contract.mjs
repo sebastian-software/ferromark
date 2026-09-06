@@ -106,6 +106,8 @@ function validate(root) {
   const expectedCommands = [
     testCommand.replace("${{ matrix.args }}", allFeatureArgs[0]),
     ciCommand(jobs.clippy, "cargo clippy "),
+    ciCommand(testJob, "cargo test -p ferro-byte-search "),
+    ciCommand(jobs.clippy, "cargo clippy -p ferro-byte-search "),
     ciCommand(jobs.fmt, "cargo fmt "),
   ];
   const requiredChecks = markdownSection(contributing, "Required local checks");
@@ -180,6 +182,14 @@ describe("CONTRIBUTING CI contract", () => {
   for (const [label, [original, replacement]] of Object.entries({
     "required all-features test": [requiredTest, "cargo test --locked"],
     "required clippy command": [requiredClippy, "cargo clippy"],
+    "required byte-search test": [
+      "cargo test -p ferro-byte-search --locked",
+      "cargo test -p ferro-byte-search",
+    ],
+    "required byte-search clippy": [
+      "cargo clippy -p ferro-byte-search --all-targets --locked -- -D warnings",
+      "cargo clippy -p ferro-byte-search",
+    ],
     "required fmt command": [requiredFmt, "cargo fmt"],
   })) {
     it(`rejects a weakened ${label}`, () => {

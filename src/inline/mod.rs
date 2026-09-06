@@ -1655,90 +1655,19 @@ impl InlineParser {
 
 #[inline]
 fn has_inline_specials(input: &[u8]) -> bool {
-    #[cfg(any(
-        target_arch = "x86_64",
-        all(target_arch = "aarch64", target_feature = "neon")
-    ))]
-    {
-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false, false>(input) } {
-            return result;
-        }
-    }
-    for &b in input {
-        match b {
-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' => {
-                return true;
-            }
-            _ => {}
-        }
-    }
-    false
+    simd::has_inline_specials::<false, false>(input)
 }
-
 #[inline]
 fn has_inline_specials_highlight(input: &[u8]) -> bool {
-    #[cfg(any(
-        target_arch = "x86_64",
-        all(target_arch = "aarch64", target_feature = "neon")
-    ))]
-    {
-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true, false>(input) } {
-            return result;
-        }
-    }
-    for &b in input {
-        match b {
-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' => {
-                return true;
-            }
-            _ => {}
-        }
-    }
-    false
+    simd::has_inline_specials::<true, false>(input)
 }
-
 #[inline]
 fn has_inline_specials_superscript(input: &[u8]) -> bool {
-    #[cfg(any(
-        target_arch = "x86_64",
-        all(target_arch = "aarch64", target_feature = "neon")
-    ))]
-    {
-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<false, true>(input) } {
-            return result;
-        }
-    }
-    for &b in input {
-        match b {
-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'^' => {
-                return true;
-            }
-            _ => {}
-        }
-    }
-    false
+    simd::has_inline_specials::<false, true>(input)
 }
-
 #[inline]
 fn has_inline_specials_highlight_superscript(input: &[u8]) -> bool {
-    #[cfg(any(
-        target_arch = "x86_64",
-        all(target_arch = "aarch64", target_feature = "neon")
-    ))]
-    {
-        if let Some(result) = unsafe { simd::has_inline_specials_simd::<true, true>(input) } {
-            return result;
-        }
-    }
-    for &b in input {
-        match b {
-            b'*' | b'_' | b'`' | b'[' | b']' | b'<' | b'\\' | b'\n' | b'~' | b'$' | b'=' | b'^' => {
-                return true;
-            }
-            _ => {}
-        }
-    }
-    false
+    simd::has_inline_specials::<true, true>(input)
 }
 
 /// Check if text might contain autolink literal triggers.
