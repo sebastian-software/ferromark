@@ -9,6 +9,10 @@ cd ferromark
 
 The minimum supported Rust version (MSRV) is Rust 1.94.
 
+`rust-toolchain.toml` tracks stable, so rustup selects and installs the current
+stable toolchain in this checkout. CI keeps the MSRV honest with a dedicated
+matrix row that overrides the file.
+
 Run the [required local checks](#required-local-checks) below.
 
 ## Required local checks
