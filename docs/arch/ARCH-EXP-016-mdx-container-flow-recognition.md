@@ -5,7 +5,7 @@
 
 ## Question
 
-Can Ferromark recognise flow JSX below Markdown block-container prefixes
+Can Ferromark recognize flow JSX below Markdown block-container prefixes
 (blockquotes and lists) without materially slowing the existing MDX renderer?
 
 This is a narrower question than complete `@mdx-js/mdx` compatibility. The
@@ -25,7 +25,7 @@ line it:
 4. accepts it only when the tag owns the rest of the line.
 
 It deliberately does **not** track list continuation indentation or container
-state across lines, recognise multiline tags/expressions/ESM, alter output, or
+state across lines, recognize multiline tags/expressions/ESM, alter output, or
 claim compatibility. It is therefore an inexpensive screening probe, not a
 candidate implementation. A correct implementation has additional state and
 semantic work, though a fused or selectively invoked design could avoid part of

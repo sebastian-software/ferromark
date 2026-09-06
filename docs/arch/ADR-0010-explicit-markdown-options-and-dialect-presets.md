@@ -8,7 +8,7 @@
 Ferromark introduced `Profile::Essentials`, `Profile::Extended`, and
 `Profile::Full` as convenience layers over the individual `Options` fields.
 The names looked like performance tiers even though they selected syntax, and
-their feature groupings were project-specific rather than recognised Markdown
+their feature groupings were project-specific rather than recognized Markdown
 dialects. Because the API is still alpha and has no known users, retaining this
 extra abstraction has more migration and explanation cost than removing it.
 
@@ -44,7 +44,7 @@ requires an explicit caller choice.
 
 ## Consequences
 
-- Callers can begin with a recognised syntax contract or a minimal surface,
+- Callers can begin with a recognized syntax contract or a minimal surface,
   then override only the options relevant to their document.
 - Adding a future option requires assigning it deliberately in all three
   constructors, which makes dialect drift visible during compilation and
