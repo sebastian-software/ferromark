@@ -186,3 +186,9 @@ The native addon is built with Cargo's workspace-level `release-node` profile. I
 keeps the optimized release settings while enabling panic unwinding, allowing
 N-API to translate a Rust panic into a JavaScript exception instead of aborting
 the Node.js process.
+
+<!-- ferramenta-family:start -->
+**ferromark** is part of the [Ferramenta](https://ferramenta.dev) family — Rust-native developer tools that keep the APIs the ecosystem already knows.
+
+Siblings: [ferroni](https://sebastian-software.github.io/ferroni/) · [ferriki](https://github.com/sebastian-software/ferriki) · [ferrolex](https://github.com/sebastian-software/ferrolex) · [ferrocat](https://ferrocat.dev) · [palamedes](https://palamedes.dev) · [ferrovia](https://github.com/sebastian-software/ferrovia) · [ferralk](https://github.com/sebastian-software/ferralk) · [ferrugo](https://github.com/sebastian-software/ferrugo).
+<!-- ferramenta-family:end -->

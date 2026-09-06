@@ -109,6 +109,9 @@ jobs:
       - run: node --test ./scripts/test-migration-guide-contract.mjs
       - run: node --test ./scripts/test-node-options-docs-contract.mjs
       - run: node --test ./scripts/test-readme-structure-contract.mjs
+      # Renders the Ferramenta family block from the registry pinned in the
+      # script and fails on drift; `--write` regenerates it.
+      - run: node ./scripts/check-readme-family.mjs
       - run: ./scripts/check-workflow-pins.sh
 
   rustsec:
