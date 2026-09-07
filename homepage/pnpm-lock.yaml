@@ -22,12 +22,12 @@ importers:
 
   .:
     dependencies:
-      '@ferramenta/family':
-        specifier: github:sebastian-software/ferramenta#3225743e20818805a27e3e1a77cf1726bfb6f939&path:/packages/family
-        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/3225743e20818805a27e3e1a77cf1726bfb6f939#path:/packages/family(react@19.2.8)
       ardo:
         specifier: ^4.2.0
         version: 4.2.0(@react-router/dev@8.3.0(@typescript/typescript6@6.0.2)(react-router@8.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(yaml@2.9.0)))(@types/node@26.1.1)(@types/react@19.2.17)(@typescript/typescript6@6.0.2)(esbuild@0.28.1)(lightningcss@1.33.0)(lucide-react@1.27.0(react@19.2.8))(mermaid@11.16.0)(react-dom@19.2.8(react@19.2.8))(react-router@8.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rollup@4.59.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(yaml@2.9.0))
+      ferramenta-family:
+        specifier: github:sebastian-software/ferramenta#f6de99cd094d0fabbf0be23a9c0b5c074ff89976&path:/packages/family
+        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/f6de99cd094d0fabbf0be23a9c0b5c074ff89976#path:/packages/family(react@19.2.8)
       isbot:
         specifier: '*'
         version: 5.2.1
@@ -401,13 +401,6 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
-
-  '@ferramenta/family@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/3225743e20818805a27e3e1a77cf1726bfb6f939#path:/packages/family':
-    resolution: {gitHosted: true, integrity: sha512-FAH+mDjmmeYNFb3kNSHwD5NO0RrFeV8ElKwYnIL7ijhAm1h6eqgZ+xcDadtr46sSe6ijOSaRx1WXYXh1QHXV2A==, path: /packages/family, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/3225743e20818805a27e3e1a77cf1726bfb6f939}
-    version: 0.1.0
-    hasBin: true
-    peerDependencies:
-      react: '>=19.0.0 <20.0.0'
 
   '@floating-ui/core@1.8.0':
     resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
@@ -1503,6 +1496,13 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  ferramenta-family@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/f6de99cd094d0fabbf0be23a9c0b5c074ff89976#path:/packages/family:
+    resolution: {gitHosted: true, integrity: sha512-HbEaEFYUi/CTvGiQnrHvuKXoTrPrXoM/+C7yWNAdc6wCdpT2OBji5OFfDAabr7XhEFcI5pQooLWC5RePLaHD7Q==, path: /packages/family, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/f6de99cd094d0fabbf0be23a9c0b5c074ff89976}
+    version: 0.1.0
+    hasBin: true
+    peerDependencies:
+      react: '>=19.0.0 <20.0.0'
 
   find-up-simple@1.0.1:
     resolution: {integrity: sha512-afd4O7zpqHeRyg4PfDQsXmlDe2PfdHtJt6Akt8jOWaApLOZk5JXs6VMR29lz03pRe9mpykrRCYIYxaJYcfpncQ==}
@@ -2753,10 +2753,6 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
-  '@ferramenta/family@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/3225743e20818805a27e3e1a77cf1726bfb6f939#path:/packages/family(react@19.2.8)':
-    dependencies:
-      react: 19.2.8
-
   '@floating-ui/core@1.8.0':
     dependencies:
       '@floating-ui/utils': 0.2.12
@@ -3921,6 +3917,10 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
       picomatch: 4.0.5
+
+  ferramenta-family@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/f6de99cd094d0fabbf0be23a9c0b5c074ff89976#path:/packages/family(react@19.2.8):
+    dependencies:
+      react: 19.2.8
 
   find-up-simple@1.0.1: {}
 
