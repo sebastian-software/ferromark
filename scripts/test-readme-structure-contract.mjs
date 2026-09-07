@@ -10,6 +10,8 @@ import { ContractError, escapeRegExp, readRepositoryFile, readYaml } from "./lib
 
 const MIGRATION_GUIDE = "[0.4–0.7 migration guide](docs/migration-0.4.md)";
 const PROJECT_STRUCTURE_FILES = ["highlight.rs", "events.rs", "strict.rs"];
+const CANONICAL_HOMEPAGE = "https://sebastian-software.github.io/ferromark/";
+const TAGLINE = "Markdown to HTML with a secure default and every GFM extension included.";
 
 // The family block is generated from the registry in sebastian-software/ferramenta
 // and inserted between these markers; the company footer below it belongs to
@@ -19,7 +21,8 @@ const FAMILY_START = "<!-- ferramenta-family:start -->";
 const FAMILY_END = "<!-- ferramenta-family:end -->";
 const BRANDING_START = "<!-- sebastian-software-branding:start -->";
 const FAMILY_CHECK_COMMAND = "node ./scripts/check-readme-family.mjs";
-const FAMILY_TABLE_ROW = /^\| (\*\*)?\[[a-z0-9-]+\]\(https:\/\/[^)]+\)(\*\*)? \| .+ \|$/;
+const FAMILY_TABLE_ROW =
+  /^\| (?<openingEmphasis>\*\*)?\[(?<name>[a-z0-9-]+)\]\(https:\/\/[^)]+\)(?<closingEmphasis>\*\*)? \| (?<job>.+) \|$/;
 
 function failContract(message) {
   throw new ContractError(`README structure contract: ${message}`);
@@ -66,15 +69,20 @@ function validateGithubFamilyBlock(document) {
   if (rows.length === 0) {
     failContract("the github family block must list the family");
   }
-  for (const row of rows) {
-    if (!FAMILY_TABLE_ROW.test(row)) {
+  const parsedRows = rows.map((row) => {
+    const match = row.match(FAMILY_TABLE_ROW);
+    if (!match || match.groups.openingEmphasis !== match.groups.closingEmphasis) {
       failContract(`family rows must link a lowercase tool name: ${JSON.stringify(row)}`);
     }
-  }
+    return match.groups;
+  });
 
-  const current = rows.filter((row) => row.startsWith("| **["));
-  if (current.length !== 1 || !current[0].startsWith(`| **[${FAMILY_CURRENT_TOOL}](`)) {
+  const current = parsedRows.filter(({ openingEmphasis }) => openingEmphasis === "**");
+  if (current.length !== 1 || current[0].name !== FAMILY_CURRENT_TOOL) {
     failContract(`the github family block must bold ${FAMILY_CURRENT_TOOL} and no other tool`);
+  }
+  if (current[0].job !== TAGLINE) {
+    failContract(`the ${FAMILY_CURRENT_TOOL} registry job must match the canonical tagline`);
   }
 }
 
@@ -136,6 +144,82 @@ function section(document, heading) {
     : document.slice(contentStart, contentStart + following);
 }
 
+function cargoPackageField(cargoToml, field) {
+  const packageHeader = cargoToml.match(/^\[package\]$\n/m);
+  if (packageHeader?.index === undefined) {
+    failContract("Cargo.toml must declare a [package] table");
+  }
+  const packageStart = packageHeader.index + packageHeader[0].length;
+  const followingTable = cargoToml.slice(packageStart).search(/^\[/m);
+  const packageTable =
+    followingTable === -1
+      ? cargoToml.slice(packageStart)
+      : cargoToml.slice(packageStart, packageStart + followingTable);
+  const value = packageTable.match(new RegExp(`^${escapeRegExp(field)} = "([^"]+)"$`, "m"))?.[1];
+  if (!value) {
+    failContract(`Cargo.toml must declare package ${field}`);
+  }
+  return value;
+}
+
+function validateBrandMetadata(document, cargoToml, nodePackage) {
+  const header = document.slice(0, document.indexOf("## Quick start\n"));
+  if (!header.includes(`[Documentation site](${CANONICAL_HOMEPAGE})`)) {
+    failContract("README header must link the canonical homepage");
+  }
+  if (!header.includes(TAGLINE)) {
+    failContract("README header must state the canonical tagline");
+  }
+  if (cargoPackageField(cargoToml, "homepage") !== CANONICAL_HOMEPAGE) {
+    failContract("Cargo.toml homepage must match the canonical homepage");
+  }
+  if (cargoPackageField(cargoToml, "description") !== TAGLINE) {
+    failContract("Cargo.toml description must match the canonical tagline");
+  }
+  if (nodePackage.homepage !== CANONICAL_HOMEPAGE) {
+    failContract("the npm package homepage must match the canonical homepage");
+  }
+  if (nodePackage.description !== TAGLINE) {
+    failContract("the npm package description must match the canonical tagline");
+  }
+}
+
+function validateEvidenceBackedBadges(document, cargoToml) {
+  const rustVersion = cargoPackageField(cargoToml, "rust-version");
+  const header = document.slice(0, document.indexOf("## Quick start\n"));
+  const allowedBadges = new Set([
+    "[![Powered by Sebastian Software](https://img.shields.io/badge/Powered%20by-Sebastian%20Software-00718d?style=flat-square)](https://oss.sebastian-software.com)",
+    "[![CI](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml)",
+    "[![crates.io](https://img.shields.io/crates/v/ferromark.svg)](https://crates.io/crates/ferromark)",
+    "[![coverage gate ≥ 90%](https://img.shields.io/badge/coverage%20gate-%E2%89%A5%2090%25-brightgreen.svg)](https://github.com/sebastian-software/ferromark/blob/main/.github/workflows/ci.yml)",
+    "[![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)",
+    "[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)",
+    `[![Rust ${rustVersion}+](https://img.shields.io/badge/rust-${rustVersion}%2B-orange.svg)](#minimum-supported-rust-version)`,
+  ]);
+  const badgeRows = header.split("\n").filter((line) => line.startsWith("[!["));
+  const badgePattern = /^\[!\[[^\]]+\]\([^\s)]+\)\]\([^\s)]+\)$/;
+  if (badgeRows.length !== allowedBadges.size) {
+    failContract("README header must contain only the allowed evidence-backed badge rows");
+  }
+  for (const badge of badgeRows) {
+    if (!badgePattern.test(badge) || !allowedBadges.delete(badge)) {
+      failContract(`README header must not include an unexpected claim badge: ${badge}`);
+    }
+  }
+  if (allowedBadges.size !== 0) {
+    failContract("README header must retain every allowed evidence-backed badge row");
+  }
+}
+
+function validateMdxEvidence(document) {
+  if (/\b\d+(?:\.\d+)?%\+? of real-world (?:MDX |\.mdx )?(?:files|patterns)/i.test(document)) {
+    failContract("README must not make an unmeasured MDX coverage percentage claim");
+  }
+  if (!document.includes("`tests/mdx_segment_tests.rs` exercises that supported set.")) {
+    failContract("README MDX coverage must point to the supporting fixture tests");
+  }
+}
+
 function lockedBenchmarkVersion(packageName) {
   const lockfile = readRepositoryFile("benchmarks/md4c-comparison/Cargo.lock");
   const match = lockfile.match(
@@ -160,6 +244,8 @@ function validate(
   document,
   {
     contributing = readRepositoryFile("CONTRIBUTING.md"),
+    cargoToml = readRepositoryFile("Cargo.toml"),
+    nodePackage = JSON.parse(readRepositoryFile("node/ferromark/package.json")),
     performancePlan = readRepositoryFile("docs/arch/ARCH-PLAN-001-performance-opportunities.md"),
     nodeReadme = readRepositoryFile("node/ferromark/README.md"),
     workflow = readYaml(".github", "workflows", "ci.yml"),
@@ -199,6 +285,10 @@ function validate(
   if (!document.includes(MIGRATION_GUIDE)) {
     failContract("README must preserve the migration guide link");
   }
+
+  validateBrandMetadata(document, cargoToml, nodePackage);
+  validateEvidenceBackedBadges(document, cargoToml);
+  validateMdxEvidence(document);
 
   const benchmarks = section(document, "Benchmarks");
   if (
@@ -311,6 +401,89 @@ describe("README structure contract", () => {
   it("rejects a missing migration guide link", () => {
     assert.throws(
       () => validate(document.replace(MIGRATION_GUIDE, "migration guide")),
+      ContractError,
+    );
+  });
+
+  it("rejects a README header without the canonical homepage", () => {
+    assert.throws(
+      () => validate(document.replace(CANONICAL_HOMEPAGE, "https://example.com/")),
+      ContractError,
+    );
+  });
+
+  it("rejects a Cargo description that drifts from the canonical tagline", () => {
+    assert.throws(
+      () =>
+        validate(document, {
+          cargoToml: readRepositoryFile("Cargo.toml").replace(TAGLINE, "A different tagline."),
+        }),
+      ContractError,
+    );
+  });
+
+  it("rejects a canonical Cargo description outside the package table", () => {
+    assert.throws(
+      () =>
+        validate(document, {
+          cargoToml: readRepositoryFile("Cargo.toml")
+            .replace(`description = "${TAGLINE}"\n`, "")
+            .replace("[workspace]", `[workspace]\ndescription = "${TAGLINE}"`),
+        }),
+      ContractError,
+    );
+  });
+
+  it("rejects an npm homepage that drifts from the canonical homepage", () => {
+    assert.throws(
+      () =>
+        validate(document, {
+          nodePackage: {
+            ...JSON.parse(readRepositoryFile("node/ferromark/package.json")),
+            homepage: "https://example.com/",
+          },
+        }),
+      ContractError,
+    );
+  });
+
+  it("rejects a Rust badge without the MSRV policy link", () => {
+    assert.throws(
+      () =>
+        validate(document.replace("#minimum-supported-rust-version", "https://www.rust-lang.org")),
+      ContractError,
+    );
+  });
+
+  it("rejects an unexpected claim badge", () => {
+    assert.throws(
+      () =>
+        validate(
+          document.replace(
+            "[![CI](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml)",
+            "[![clippy](https://img.shields.io/badge/clippy--strict-passing-brightgreen.svg)](https://doc.rust-lang.org/clippy/)",
+          ),
+        ),
+      ContractError,
+    );
+  });
+
+  it("rejects a required badge replaced with a plain link", () => {
+    assert.throws(
+      () =>
+        validate(
+          document.replace(
+            "[![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)",
+            "[docs.rs](https://docs.rs/ferromark)",
+          ),
+        ),
+      ContractError,
+    );
+  });
+
+  it("rejects an unmeasured MDX coverage percentage", () => {
+    assert.throws(
+      () => validate(document.replace("block-level patterns", "90%+ of real-world MDX patterns")),
       ContractError,
     );
   });
@@ -432,6 +605,19 @@ describe("README structure contract", () => {
             .replace(`**[${FAMILY_CURRENT_TOOL}](`, `[${FAMILY_CURRENT_TOOL}](`)
             .replace("| [ferriki](", "| **[ferriki](")
             .replace(") | Shiki-compatible", ")** | Shiki-compatible"),
+        ),
+      ContractError,
+    );
+  });
+
+  it("rejects a registry job that drifts from the canonical tagline", () => {
+    assert.throws(
+      () =>
+        validate(
+          document.replace(
+            `| **[${FAMILY_CURRENT_TOOL}](https://sebastian-software.github.io/ferromark/)** | ${TAGLINE} |`,
+            "| **[ferromark](https://sebastian-software.github.io/ferromark/)** | Markdown to HTML — CommonMark & GFM |",
+          ),
         ),
       ContractError,
     );
