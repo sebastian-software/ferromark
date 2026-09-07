@@ -2,11 +2,15 @@
  * Site chrome — the seam between Ardo's documentation shell and the shared
  * family chrome from @ferramenta/family.
  *
- * Nothing here restyles the family header or footer: those come from
- * `@ferramenta/family/chrome.css`, which root.tsx loads *after* this file so it
- * keeps winning the ties. What this file owns is the integration — handing the
- * scrolling back to the document, and the documentation affordances that ride
- * in the header's one slot (guide links, search, the small-screen menu).
+ * The family header and footer come from `@ferramenta/family/chrome.css`, which
+ * root.tsx loads *after* this file so the package keeps winning the ties. That
+ * includes the chrome's own link colors and the tool switcher's
+ * narrow-viewport flyout: the package ships both, so this file does not.
+ *
+ * What this file owns is the integration — handing the scrolling back to the
+ * document, the documentation affordances the site puts in the header's `nav`
+ * and `actions` slots (guide links, search, the small-screen menu), and the one
+ * place the bar itself has to give way, at phone width.
  */
 
 :root {
@@ -62,22 +66,13 @@
 }
 
 /*
- * ── Chrome link colors ──
+ * ── The documentation affordances in the header slots ──
  *
- * Ardo paints every <a> in the brand color, which outranks the color the chrome
- * links inherit from their iron band. Named element by element so the search
- * popover, which also lives in the header, keeps Ardo's own colors.
- */
-
-.site-header .lockup,
-.site-header .ghlink,
-.flyout a,
-.site-footer a {
-  color: inherit;
-}
-
-/*
- * ── The documentation affordances in the header slot ──
+ * The guide links go in `nav`, between the lockup and the family navigation;
+ * search and the small-screen guide menu go in `actions`, just before the theme
+ * toggle. The family chrome styles neither slot's contents, so everything below
+ * is ours — and because `chrome.css` loads last, nothing below may reuse one of
+ * its class names.
  */
 
 .ferromark-nav {
