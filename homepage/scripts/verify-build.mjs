@@ -19,7 +19,7 @@ const guidePage = await readFile(new URL("guide/quick-start/index.html", outputD
 const requiredFragments = [
   "/ferromark/assets/",
   "/ferromark/favicon.ico",
-  // The shared chrome from @ferramenta/family: the header carries the tool
+  // The shared chrome from ferramenta-family: the header carries the tool
   // switcher, the footer the family columns. `aria-current="page"` is how both
   // mark this site's own entry.
   'class="site-header"',

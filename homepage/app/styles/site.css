@@ -1,8 +1,8 @@
 /*
  * Site chrome — the seam between Ardo's documentation shell and the shared
- * family chrome from @ferramenta/family.
+ * family chrome from ferramenta-family.
  *
- * The family header and footer come from `@ferramenta/family/chrome.css`, which
+ * The family header and footer come from `ferramenta-family/chrome.css`, which
  * root.tsx loads *after* this file so the package keeps winning the ties. That
  * includes the chrome's own link colors and the tool switcher's
  * narrow-viewport flyout: the package ships both, so this file does not.
