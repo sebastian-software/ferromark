@@ -14,22 +14,53 @@ const expectedPages = [
 await Promise.all(expectedPages.map((page) => access(new URL(page, outputDirectory))))
 
 const homepage = await readFile(new URL("index.html", outputDirectory), "utf8")
+const guidePage = await readFile(new URL("guide/quick-start/index.html", outputDirectory), "utf8")
+
 const requiredFragments = [
   "/ferromark/assets/",
   "/ferromark/favicon.ico",
-  'class="ferramenta-family"',
-  'aria-current="true"',
+  // The shared chrome from @ferramenta/family: the header carries the tool
+  // switcher, the footer the family columns. `aria-current="page"` is how both
+  // mark this site's own entry.
+  'class="site-header"',
+  'class="site-footer"',
+  'aria-current="page"',
+  "https://ferramenta.dev",
   "652/652 CommonMark spec tests pass in trusted mode",
   "CommonMark tests passed in trusted mode",
   "Fine-grained",
   "Parsing and rendering controls for precise output",
 ]
 
-for (const fragment of requiredFragments) {
-  if (!homepage.includes(fragment)) {
-    throw new Error(`Prerendered homepage is missing ${JSON.stringify(fragment)}`)
+// The family chrome replaces Ardo's own header and footer (`handle.chrome` in
+// app/root.tsx). If either comes back, the page carries two of each.
+const forbiddenFragments = ['class="ardo-header', 'class="ardo-footer']
+
+// Every page carries the family chrome, and the guide keeps its navigation:
+// the sidebar rail, plus the header menu that stands in for it once the rail is
+// hidden — without that menu a narrow viewport has no way into the guide.
+const requiredGuideFragments = [
+  'class="site-header"',
+  'class="site-footer"',
+  'class="ardo-sidebar',
+  'class="ferromark-guide-menu"',
+]
+
+function check(page, label, required, forbidden = []) {
+  for (const fragment of required) {
+    if (!page.includes(fragment)) {
+      throw new Error(`Prerendered ${label} is missing ${JSON.stringify(fragment)}`)
+    }
+  }
+  for (const fragment of forbidden) {
+    if (page.includes(fragment)) {
+      throw new Error(`Prerendered ${label} still contains ${JSON.stringify(fragment)}`)
+    }
   }
 }
+
+check(homepage, "homepage", requiredFragments, forbiddenFragments)
+check(guidePage, "guide page", requiredGuideFragments, forbiddenFragments)
 
 if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {
   throw new Error("Prerendered homepage contains a nav nested directly inside a paragraph")

@@ -105,7 +105,7 @@ function validateFamilyDriftGate(workflow, contributing) {
   if (!/^[0-9a-f]{40}$/.test(FAMILY_GENERATOR_REVISION)) {
     failContract("the family generator must be pinned to a full commit SHA, not a branch");
   }
-  if (!FAMILY_GENERATOR_SPEC.includes("&path:/packages/ardo-config")) {
+  if (!FAMILY_GENERATOR_SPEC.includes("&path:/packages/family")) {
     failContract("the family generator spec must select the generator package");
   }
 
