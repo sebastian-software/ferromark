@@ -141,6 +141,48 @@ jobs:
         with:
           node-version: "24"
 
+      # The marker guard needs `node`, so it sits below the toolchain setup
+      # rather than beside the pending guard it complements.
+      # `.standards/blocked.json` records an agent run that pushed a result it
+      # could not validate. `blocking: true` is the CLI/stamp alignment class:
+      # every verdict of that run was computed against the wrong manifest, so
+      # the pull request must not merge. A non-blocking marker is context for
+      # the reviewer — the failures it lists are reported by this workflow's own
+      # lanes. The marker is parsed rather than matched line by line: JSON may
+      # put `"blocking":` and `true` on separate lines, and a guard whose whole
+      # purpose is to fail closed must fail on a marker it cannot read at all.
+      # `node` rather than `jq`, which the Forgejo node image may lack; the
+      # schema is `BlockedState` in @sebastian-software/standards.
+      - name: "Guard: no blocking agent findings for this PR"
+        run: |
+          node -e "
+          const { existsSync, readFileSync } = require('node:fs');
+          const file = '.standards/blocked.json';
+          if (!existsSync(file)) { process.exit(0); }
+          const raw = readFileSync(file, 'utf8');
+          console.log(raw);
+          const fail = (detail) => { console.error('Refusing to pass ' + file + ': ' + detail); process.exit(1); };
+          let state;
+          try { state = JSON.parse(raw); } catch (error) { fail('it is not valid JSON — ' + error.message); }
+          if (typeof state !== 'object' || state === null || Array.isArray(state)) { fail('it is not a JSON object.'); }
+          const orNull = (value, type) => value === null || typeof value === type;
+          const broken = [
+            ['schemaVersion must be 1', state.schemaVersion !== 1],
+            ['blocking must be a boolean', typeof state.blocking !== 'boolean'],
+            ['reason must be a string', typeof state.reason !== 'string'],
+            ['detectedAt must be a string', typeof state.detectedAt !== 'string'],
+            ['expectedStandardsVersion must be a number', typeof state.expectedStandardsVersion !== 'number'],
+            ['observedStandardsVersion must be a number or null', !orNull(state.observedStandardsVersion, 'number')],
+            ['expectedCliVersion must be a string or null', !orNull(state.expectedCliVersion, 'string')],
+            ['observedCliVersion must be a string or null', !orNull(state.observedCliVersion, 'string')],
+            ['failedChecks must be an array of strings', !Array.isArray(state.failedChecks) || !state.failedChecks.every((entry) => typeof entry === 'string')],
+            ['retry must be a string', typeof state.retry !== 'string'],
+          ].filter((entry) => entry[1]).map((entry) => entry[0]);
+          if (broken.length > 0) { fail('it does not match the documented schema — ' + broken.join('; ')); }
+          if (state.blocking) { fail('the agent could not validate its result.'); }
+          console.log('The agent marker is non-blocking; its findings are reviewer context.');
+          "
+
       # This repository has no root package.json, so there is no lockfile to
       # hold the CLI version: the pin lives here and Renovate's custom manager
       # in renovate.json moves it. An unpinned `dlx` would execute whatever was
@@ -149,7 +191,7 @@ jobs:
       # minimum-release-age=0 stays: pnpm 11 defaults minimumReleaseAge to 1440
       # (24h), so without the bypass a pin raised on the day of a standards
       # release cannot resolve at all.
-      - run: pnpm --config.minimum-release-age=0 dlx @sebastian-software/standards@0.9.0 check
+      - run: pnpm --config.minimum-release-age=0 dlx @sebastian-software/standards@0.10.0 check
 
   rustsec:
     runs-on: ubuntu-latest
