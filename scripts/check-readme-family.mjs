@@ -17,11 +17,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // `pnpm install` in scripts/.
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-export const FAMILY_GENERATOR_REVISION = "d63a0b163ef3e5e68cd1c77e5c8871ac72c36b60";
+export const FAMILY_GENERATOR_REVISION = "5b84af1676b12b4b45661d5be4a42b11275a72da";
 
 export const FAMILY_GENERATOR_SPEC =
-  `github:sebastian-software/ferramenta#${FAMILY_GENERATOR_REVISION}` +
-  "&path:/packages/ardo-config";
+  `github:sebastian-software/ferramenta#${FAMILY_GENERATOR_REVISION}` + "&path:/packages/family";
 
 // The tool this repository publishes, lowercase as the registry spells it.
 export const FAMILY_CURRENT_TOOL = "ferromark";
