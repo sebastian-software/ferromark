@@ -10,6 +10,8 @@ import { ContractError, escapeRegExp, readRepositoryFile, readYaml } from "./lib
 
 const MIGRATION_GUIDE = "[0.4–0.7 migration guide](docs/migration-0.4.md)";
 const PROJECT_STRUCTURE_FILES = ["highlight.rs", "events.rs", "strict.rs"];
+const CANONICAL_HOMEPAGE = "https://sebastian-software.github.io/ferromark/";
+const TAGLINE = "Markdown to HTML with a secure default and every GFM extension included.";
 
 // The family block is generated from the registry in sebastian-software/ferramenta
 // and inserted between these markers; the company footer below it belongs to
@@ -136,6 +138,69 @@ function section(document, heading) {
     : document.slice(contentStart, contentStart + following);
 }
 
+function cargoPackageField(cargoToml, field) {
+  const value = cargoToml.match(new RegExp(`^${escapeRegExp(field)} = "([^"]+)"$`, "m"))?.[1];
+  if (!value) {
+    failContract(`Cargo.toml must declare package ${field}`);
+  }
+  return value;
+}
+
+function validateBrandMetadata(document, cargoToml, nodePackage) {
+  const header = document.slice(0, document.indexOf("## Quick start\n"));
+  if (!header.includes(`[Documentation site](${CANONICAL_HOMEPAGE})`)) {
+    failContract("README header must link the canonical homepage");
+  }
+  if (!header.includes(TAGLINE)) {
+    failContract("README header must state the canonical tagline");
+  }
+  if (cargoPackageField(cargoToml, "homepage") !== CANONICAL_HOMEPAGE) {
+    failContract("Cargo.toml homepage must match the canonical homepage");
+  }
+  if (cargoPackageField(cargoToml, "description") !== TAGLINE) {
+    failContract("Cargo.toml description must match the canonical tagline");
+  }
+  if (nodePackage.homepage !== CANONICAL_HOMEPAGE) {
+    failContract("the npm package homepage must match the canonical homepage");
+  }
+  if (nodePackage.description !== TAGLINE) {
+    failContract("the npm package description must match the canonical tagline");
+  }
+}
+
+function validateEvidenceBackedBadges(document, cargoToml) {
+  const rustVersion = cargoPackageField(cargoToml, "rust-version");
+  const header = document.slice(0, document.indexOf("## Quick start\n"));
+  const requiredBadgeLinks = [
+    "https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml",
+    "https://crates.io/crates/ferromark",
+    "https://github.com/sebastian-software/ferromark/blob/main/.github/workflows/ci.yml",
+    "https://docs.rs/ferromark",
+    "#license",
+    "#minimum-supported-rust-version",
+  ];
+  for (const link of requiredBadgeLinks) {
+    if (!header.includes(`](${link})`)) {
+      failContract(`README header must retain the evidence-backed ${link} badge link`);
+    }
+  }
+  if (!header.includes(`rust-${rustVersion}%2B`)) {
+    failContract("Rust badge must state the declared MSRV");
+  }
+  if (/clippy(?:--|%2D%2D)strict/i.test(header)) {
+    failContract("README header must not claim an unsourced clippy-strict result");
+  }
+}
+
+function validateMdxEvidence(document) {
+  if (/\b\d+(?:\.\d+)?%\+? of real-world (?:MDX |\.mdx )?(?:files|patterns)/i.test(document)) {
+    failContract("README must not make an unmeasured MDX coverage percentage claim");
+  }
+  if (!document.includes("`tests/mdx_segment_tests.rs` exercises that supported set.")) {
+    failContract("README MDX coverage must point to the supporting fixture tests");
+  }
+}
+
 function lockedBenchmarkVersion(packageName) {
   const lockfile = readRepositoryFile("benchmarks/md4c-comparison/Cargo.lock");
   const match = lockfile.match(
@@ -160,6 +225,8 @@ function validate(
   document,
   {
     contributing = readRepositoryFile("CONTRIBUTING.md"),
+    cargoToml = readRepositoryFile("Cargo.toml"),
+    nodePackage = JSON.parse(readRepositoryFile("node/ferromark/package.json")),
     performancePlan = readRepositoryFile("docs/arch/ARCH-PLAN-001-performance-opportunities.md"),
     nodeReadme = readRepositoryFile("node/ferromark/README.md"),
     workflow = readYaml(".github", "workflows", "ci.yml"),
@@ -199,6 +266,10 @@ function validate(
   if (!document.includes(MIGRATION_GUIDE)) {
     failContract("README must preserve the migration guide link");
   }
+
+  validateBrandMetadata(document, cargoToml, nodePackage);
+  validateEvidenceBackedBadges(document, cargoToml);
+  validateMdxEvidence(document);
 
   const benchmarks = section(document, "Benchmarks");
   if (
@@ -311,6 +382,64 @@ describe("README structure contract", () => {
   it("rejects a missing migration guide link", () => {
     assert.throws(
       () => validate(document.replace(MIGRATION_GUIDE, "migration guide")),
+      ContractError,
+    );
+  });
+
+  it("rejects a README header without the canonical homepage", () => {
+    assert.throws(
+      () => validate(document.replace(CANONICAL_HOMEPAGE, "https://example.com/")),
+      ContractError,
+    );
+  });
+
+  it("rejects a Cargo description that drifts from the canonical tagline", () => {
+    assert.throws(
+      () =>
+        validate(document, {
+          cargoToml: readRepositoryFile("Cargo.toml").replace(TAGLINE, "A different tagline."),
+        }),
+      ContractError,
+    );
+  });
+
+  it("rejects an npm homepage that drifts from the canonical homepage", () => {
+    assert.throws(
+      () =>
+        validate(document, {
+          nodePackage: {
+            ...JSON.parse(readRepositoryFile("node/ferromark/package.json")),
+            homepage: "https://example.com/",
+          },
+        }),
+      ContractError,
+    );
+  });
+
+  it("rejects a Rust badge without the MSRV policy link", () => {
+    assert.throws(
+      () =>
+        validate(document.replace("#minimum-supported-rust-version", "https://www.rust-lang.org")),
+      ContractError,
+    );
+  });
+
+  it("rejects a decorative clippy badge", () => {
+    assert.throws(
+      () =>
+        validate(
+          document.replace(
+            TAGLINE,
+            `${TAGLINE}\n\n[![clippy](https://img.shields.io/badge/clippy--strict-passing-brightgreen.svg)](https://doc.rust-lang.org/clippy/)`,
+          ),
+        ),
+      ContractError,
+    );
+  });
+
+  it("rejects an unmeasured MDX coverage percentage", () => {
+    assert.throws(
+      () => validate(document.replace("block-level patterns", "90%+ of real-world MDX patterns")),
       ContractError,
     );
   });
