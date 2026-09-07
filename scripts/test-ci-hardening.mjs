@@ -7,18 +7,14 @@ const CHECKOUT_ACTION = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90
 const RUST_TOOLCHAIN_ACTION = "dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c";
 const INSTALL_ACTION = "taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b";
 const RUST_CACHE_ACTION = "Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae";
-const CODECOV_ACTION = "codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f";
 const CARGO_DENY_ACTION =
   "EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25";
 const RUSTDOC_COMMAND = "RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features --locked";
 const COVERAGE_COMMAND = "cargo llvm-cov --all-features --locked --no-report";
-const COVERAGE_REPORT_PREFIX =
-  "cargo llvm-cov report --lcov --output-path lcov.info --fail-under-lines ";
-const CODECOV_INPUTS = {
-  files: "lcov.info",
-  fail_ci_if_error: false,
-  token: "${{ secrets.CODECOV_TOKEN }}",
-};
+const COVERAGE_REPORT_COMMAND =
+  'cargo llvm-cov report --lcov --output-path lcov.info --fail-under-lines "$COVERAGE_FLOOR"';
+// Coverage is gated by this repository's own CI, not by an external service.
+const EXTERNAL_COVERAGE_SERVICE = /codecov/i;
 
 function failContract(message) {
   throw new ContractError(`CI hardening contract: ${message}`);
@@ -32,10 +28,22 @@ function readDependencyPolicy() {
   return readRepositoryFile("deny.toml");
 }
 
+function readReadme() {
+  return readRepositoryFile("README.md");
+}
+
 function validate(
   workflow,
-  { contributing = readContributing(), dependencyPolicy = readDependencyPolicy() } = {},
+  {
+    contributing = readContributing(),
+    dependencyPolicy = readDependencyPolicy(),
+    readme = readReadme(),
+  } = {},
 ) {
+  if (EXTERNAL_COVERAGE_SERVICE.test(JSON.stringify(workflow))) {
+    failContract("coverage must stay in this workflow, not in an external coverage service");
+  }
+
   assertDeepEqual(workflow.permissions, { contents: "read" }, () =>
     failContract("top-level permissions must grant contents: read only"),
   );
@@ -55,13 +63,17 @@ function validate(
     failContract("coverage job must run on ubuntu-latest");
   }
 
+  const threshold = coverage.env?.COVERAGE_FLOOR;
+  if (typeof threshold !== "string" || !/^\d+$/.test(threshold)) {
+    failContract("the coverage job must carry the floor as a plain percentage in COVERAGE_FLOOR");
+  }
+
   const steps = coverage.steps;
   const expectedActions = [
     CHECKOUT_ACTION,
     RUST_TOOLCHAIN_ACTION,
     INSTALL_ACTION,
     RUST_CACHE_ACTION,
-    CODECOV_ACTION,
   ];
   const actualActions = steps.map((step) => step.uses).filter((uses) => uses !== undefined);
   assertDeepEqual(actualActions, expectedActions, () =>
@@ -81,27 +93,37 @@ function validate(
   );
 
   const commands = steps.map((step) => step.run).filter((run) => run !== undefined);
-  if (commands.length !== 2 || commands[0] !== COVERAGE_COMMAND) {
+  if (commands.length !== 3 || commands[0] !== COVERAGE_COMMAND) {
     failContract("coverage must run cargo llvm-cov for all features with the lockfile");
   }
 
-  const reportCommand = commands[1];
-  if (!reportCommand.startsWith(COVERAGE_REPORT_PREFIX)) {
-    failContract("coverage must report lcov.info and fail under a line coverage floor");
+  // The run summary is the transparency half of the gate: it states the
+  // measured percentage and the floor, and it runs before the gate can fail.
+  const summaryCommand = commands[1];
+  for (const fragment of ["$GITHUB_STEP_SUMMARY", "Line coverage:", "$COVERAGE_FLOOR"]) {
+    if (!summaryCommand.includes(fragment)) {
+      failContract("coverage must summarize the measured percentage and the floor for the run");
+    }
   }
 
-  const threshold = reportCommand.slice(COVERAGE_REPORT_PREFIX.length);
-  if (!/^\d+$/.test(threshold)) {
-    failContract("the coverage floor must be a plain percentage");
+  if (commands[2] !== COVERAGE_REPORT_COMMAND) {
+    failContract("coverage must report lcov.info and fail under the line coverage floor");
   }
-
-  const upload = steps.find((step) => step.uses === CODECOV_ACTION).with;
-  assertDeepEqual(upload, CODECOV_INPUTS, () =>
-    failContract(`coverage must upload lcov.info as ${JSON.stringify(CODECOV_INPUTS)}`),
-  );
 
   if (!contributing.includes(`${threshold}% line coverage`)) {
     failContract(`CONTRIBUTING.md must document the ${threshold}% line coverage floor`);
+  }
+  if (!contributing.includes(`--fail-under-lines ${threshold}`)) {
+    failContract(`CONTRIBUTING.md must show how to run the ${threshold}% gate locally`);
+  }
+
+  const badge = `[![coverage gate ≥ ${threshold}%](`;
+  if (!readme.includes(badge)) {
+    failContract(`README.md must carry a coverage gate badge for ${threshold}%`);
+  }
+  const badgeLine = readme.split("\n").find((line) => line.startsWith(badge));
+  if (!badgeLine.endsWith("/.github/workflows/ci.yml)")) {
+    failContract("the coverage gate badge must link the CI workflow file");
   }
 
   const dependencyJob = jobs["cargo-deny"];
@@ -181,33 +203,63 @@ describe("CI hardening contract", () => {
     });
   });
 
-  it("rejects a missing coverage upload", () => {
+  it("rejects a reintroduced external coverage service", () => {
     assertRejected((copy) => {
-      copy.jobs.coverage.steps = copy.jobs.coverage.steps.filter(
-        (step) => step.uses !== CODECOV_ACTION,
-      );
-    });
-  });
-
-  it("rejects a mutable coverage upload action", () => {
-    assertRejected((copy) => {
-      const step = copy.jobs.coverage.steps.find((candidate) => candidate.uses === CODECOV_ACTION);
-      step.uses = "codecov/codecov-action@v7";
+      copy.jobs.coverage.steps.push({
+        uses: "codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f",
+        with: { files: "lcov.info" },
+      });
     });
   });
 
   it("rejects coverage without a floor", () => {
     assertRejected((copy) => {
-      const step = copy.jobs.coverage.steps.find((candidate) =>
-        candidate.run?.startsWith(COVERAGE_REPORT_PREFIX),
+      const step = copy.jobs.coverage.steps.find(
+        (candidate) => candidate.run === COVERAGE_REPORT_COMMAND,
       );
       step.run = "cargo llvm-cov report --lcov --output-path lcov.info";
+    });
+  });
+
+  it("rejects a floor that is not a plain percentage", () => {
+    assertRejected((copy) => {
+      copy.jobs.coverage.env.COVERAGE_FLOOR = "ninety";
+    });
+  });
+
+  it("rejects a coverage run that stays silent about the measurement", () => {
+    assertRejected((copy) => {
+      const step = copy.jobs.coverage.steps.find((candidate) =>
+        candidate.run?.includes("$GITHUB_STEP_SUMMARY"),
+      );
+      step.run = "cargo llvm-cov report --summary-only";
     });
   });
 
   it("rejects an undocumented coverage floor", () => {
     assertRejected(() => {}, {
       contributing: readContributing().replace(/\d+% line coverage/g, "an unstated% line coverage"),
+    });
+  });
+
+  it("rejects a local gate command with a different floor", () => {
+    assertRejected(() => {}, {
+      contributing: readContributing().replace(/--fail-under-lines \d+/g, "--fail-under-lines 1"),
+    });
+  });
+
+  it("rejects a README without the coverage gate badge", () => {
+    assertRejected(() => {}, {
+      readme: readReadme().replace(/\[!\[coverage gate [^\]]+\]\([^\n]+\)/g, ""),
+    });
+  });
+
+  it("rejects a coverage gate badge that does not link the workflow", () => {
+    assertRejected(() => {}, {
+      readme: readReadme().replace(
+        /(\[!\[coverage gate [^\]]+\]\([^)]+\)\]\()[^)]+\)/,
+        "$1https://example.com/coverage)",
+      ),
     });
   });
 
