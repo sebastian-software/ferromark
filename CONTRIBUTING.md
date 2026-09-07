@@ -137,10 +137,16 @@ blocks together with the pin. The company footer below the block belongs to
 ## Coverage and dependency policy
 
 CI measures coverage with `cargo llvm-cov` across all features and fails below a
-floor of 90% line coverage. The same job uploads `lcov.info` to
-Codecov, which feeds the coverage badge in the README. The floor itself lives in
-`.github/workflows/ci.yml`; `scripts/test-ci-hardening.mjs` checks that this
-document states the same number, so raise them together.
+floor of 90% line coverage. The floor itself lives in the `COVERAGE_FLOOR`
+environment variable of the coverage job in `.github/workflows/ci.yml`, and
+nowhere else; the job writes `Line coverage: X% (gate: ≥ 90%)` into the run
+summary before the gate can fail it, so both numbers are visible on a red run.
+`scripts/test-ci-hardening.mjs` checks that this document and the README badge
+state the same number, so raise them together. The same gate runs locally:
+
+```bash
+cargo llvm-cov --all-features --locked --fail-under-lines 90
+```
 
 Dependencies follow `deny.toml`: a permissive license allow-list, crates.io as
 the only registry, and `yanked = "deny"`. Duplicate versions are reported but do

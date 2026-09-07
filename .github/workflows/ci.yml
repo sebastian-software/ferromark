@@ -58,6 +58,11 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    # The line-coverage floor lives here and nowhere else: the gate below and
+    # the run summary both read it, CONTRIBUTING.md documents the same number,
+    # and scripts/test-ci-hardening.mjs checks that they agree.
+    env:
+      COVERAGE_FLOOR: "90"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
@@ -69,14 +74,13 @@ jobs:
           tool: cargo-llvm-cov
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       - run: cargo llvm-cov --all-features --locked --no-report
-      # The floor is documented in CONTRIBUTING.md and checked against this
-      # command by scripts/test-ci-hardening.mjs.
-      - run: cargo llvm-cov report --lcov --output-path lcov.info --fail-under-lines 90
-      - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
-        with:
-          files: lcov.info
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+      # The measured percentage and the floor reach the run summary before the
+      # gate below can fail the job, so a red run states both numbers.
+      - name: Summarize line coverage
+        run: |
+          percent=$(cargo llvm-cov report --json --summary-only | jq -r '.data[0].totals.lines.percent')
+          printf 'Line coverage: %.2f%% (gate: ≥ %s%%)\n' "$percent" "$COVERAGE_FLOOR" >> "$GITHUB_STEP_SUMMARY"
+      - run: cargo llvm-cov report --lcov --output-path lcov.info --fail-under-lines "$COVERAGE_FLOOR"
 
   fmt:
     runs-on: ubuntu-latest
