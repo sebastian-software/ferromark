@@ -9,19 +9,19 @@ import {
   ArdoSidebarSection,
   ArdoThemeToggle,
 } from "ardo/ui"
-import { MarkDefs, SiteFooter, SiteHeader } from "@ferramenta/family"
-import bigShouldersFont from "@ferramenta/family/fonts/big-shoulders.woff2?url"
+import { MarkDefs, SiteFooter, SiteHeader } from "ferramenta-family"
+import bigShouldersFont from "ferramenta-family/fonts/big-shoulders.woff2?url"
 import config from "virtual:ardo/config"
 import { NavLink } from "react-router"
 import type { LinksFunction, MetaFunction } from "react-router"
 import "ardo/ui/styles.css"
-import "@ferramenta/family/tokens.css"
-import "@ferramenta/family/fonts.css"
-import "@ferramenta/family/theme.css"
+import "ferramenta-family/tokens.css"
+import "ferramenta-family/fonts.css"
+import "ferramenta-family/theme.css"
 import "./styles/site.css"
 // Last on purpose, as the package README requires: the shared chrome has to win
 // the selector ties the site stylesheet would otherwise take.
-import "@ferramenta/family/chrome.css"
+import "ferramenta-family/chrome.css"
 
 export const links: LinksFunction = () => [
   {
