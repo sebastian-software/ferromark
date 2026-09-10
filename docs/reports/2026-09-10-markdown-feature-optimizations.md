@@ -36,3 +36,21 @@ comparison; warmed buffers should not repeatedly pay initialization costs.
 
 Validation: `cargo test --locked --all-features` passed. Evidence is in
 `2026-09-10-markdown-feature-costs/optimizations/lazy-{comparison,counts,gfm-guard}.json`.
+
+## 2. Initialize heading IDs at the first heading — retained
+
+Hypothesis: the ID tracker accounts for three allocations even when a document
+has no headings. Initialize it on the first heading, keep its storage on Renderer
+reuse, and continue sharing the document registry with nested footnotes. The
+constructor no longer needs options; the MDX caller follows that private change.
+
+Compared with experiment 1 in seven paired >=100 ms windows: default tiny owned
+improves another 15.1%, empty default 23.6%, and plain 1 KiB default 4.1%.
+Heading-ID syntax improves 2.8% owned / 3.2% retained; most controls remain within
+3%. The plain 16 KiB CommonMark retained control moves +3.9%, although this
+workload never initializes the tracker; the final combined run rechecks it.
+
+All-feature tests and all 292 exact HTML comparisons passed. A new regression
+covers first headings appearing only inside footnotes, shared duplicate-ID
+resolution, empty/plain documents, and repeated Renderer reuse. Evidence:
+`optimizations/heading-comparison.json`. Baseline for this step: `950f014`.

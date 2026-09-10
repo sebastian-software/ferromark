@@ -1248,7 +1248,7 @@ pub fn try_render_with_options<'a>(
     let mut body_writer = HtmlWriter::with_capacity_for(input.len());
     let mut inline_parser = crate::InlineParser::new();
     let mut inline_events = Vec::with_capacity(64);
-    let mut render_state = crate::RenderState::new(options);
+    let mut render_state = crate::RenderState::new();
     let mut footnote_numbers = crate::FootnoteNumbers::new(0);
     let mut markdown_started = false;
     let mut parsed_markdown = parsed_markdown.into_iter();
