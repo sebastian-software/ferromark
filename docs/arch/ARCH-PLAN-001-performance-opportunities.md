@@ -10,6 +10,14 @@ This plan retains its February 2026 execution log below and is supplemented by
 the checked-in evidence under [`docs/reports`](../reports/). Use both sources to
 avoid re-running low-yield micro-optimizations without new profiling evidence.
 
+[ARCH-EXP-018](ARCH-EXP-018-neon-position-and-match-cache.md) summarizes the
+rejected NEON localization and match-cache experiments. Consult it before
+revisiting those implementations; the original evidence remains in PR #284.
+
+The [September comparison and documentation proposal](../plans/2026-09-11-benchmark-comparability-and-documentation.md)
+audits the current benchmark contracts and identifies the next targeted profiles.
+Use it alongside the historical workstreams below when planning new measurements.
+
 ## Baseline and guardrails
 
 - Benchmark setup: follow [Running benchmarks](../../CONTRIBUTING.md#running-benchmarks)

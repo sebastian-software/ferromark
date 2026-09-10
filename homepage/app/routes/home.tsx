@@ -1,6 +1,6 @@
-import { Link } from "react-router"
-import { BenchmarkTable, benchmarkEnvironment, headlineThroughput } from "../components/benchmarks"
-import "../styles/home.css"
+import { Link } from "react-router";
+import { BenchmarkTable, benchmarkEnvironment, headlineThroughput } from "../components/benchmarks";
+import "../styles/home.css";
 
 export default function HomePage() {
   const featureColumns = [
@@ -29,7 +29,7 @@ export default function HomePage() {
         "Segment-level control for custom pipelines",
       ],
     },
-  ]
+  ];
 
   const mdxExamples = [
     {
@@ -47,7 +47,7 @@ export default function HomePage() {
       text: "Inspect and route each MDX block when you need low-level pipeline control.",
       link: "/guide/mdx-examples#segment",
     },
-  ]
+  ];
 
   return (
     <main className="landing">
@@ -55,9 +55,9 @@ export default function HomePage() {
         <p className="eyebrow">Rust Markdown Engine</p>
         <h1>Markdown to HTML at {headlineThroughput}</h1>
         <p className="lead">
-          In our published Apple Silicon benchmark, ferromark turns Markdown into HTML faster than
-          pulldown-cmark, md4c, and comrak while passing the complete CommonMark suite in trusted
-          rendering mode.
+          Measured on a mixed Markdown document on Apple Silicon, with the benchmark conditions
+          documented below. Ferromark passes the complete CommonMark suite in trusted rendering
+          mode.
         </p>
         <div className="hero-actions">
           <Link className="button button-primary" to="/guide/quick-start">
@@ -91,8 +91,11 @@ export default function HomePage() {
           <p className="eyebrow">Proof</p>
           <h2>Benchmark numbers you can verify</h2>
           <p>
-            {benchmarkEnvironment}. Non-PGO binaries. Same GFM settings for all parsers. The relative
-            ranking has not been re-measured on x86-64.
+            {benchmarkEnvironment}. Non-PGO binaries with tables, strikethrough, and task lists
+            enabled. Rendering policies and output-buffer reuse differ between parsers; these
+            historical results are not an equal-work ranking and have not been re-measured on
+            x86-64. See the <Link to="/guide/benchmarks">benchmark guide</Link> for the conditions,
+            native Bun comparison, and individual feature costs.
           </p>
         </div>
         <BenchmarkTable id="commonmark-50k" variant="panel" />
@@ -122,8 +125,8 @@ export default function HomePage() {
           <p className="eyebrow">MDX Included</p>
           <h2>Use MDX without a JavaScript parsing toolchain</h2>
           <p>
-            Opt into the <code>mdx</code> feature and choose your control level from high-level render output down to
-            per-segment handling.
+            Opt into the <code>mdx</code> feature and choose your control level from high-level
+            render output down to per-segment handling.
           </p>
         </div>
         <div className="mdx-cards">
@@ -156,7 +159,10 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
 
       <section className="final-cta">
         <h2>Ship faster Markdown pipelines with less overhead</h2>
-        <p>Start with quick docs, inspect the benchmark setup, then plug ferromark into your production workload.</p>
+        <p>
+          Start with quick docs, inspect the benchmark setup, then plug ferromark into your
+          production workload.
+        </p>
         <div className="hero-actions">
           <Link className="button button-primary" to="/guide/getting-started">
             Read Getting Started
@@ -167,5 +173,5 @@ ferromark::to_html_into("# Reuse me", &mut buffer);
         </div>
       </section>
     </main>
-  )
+  );
 }

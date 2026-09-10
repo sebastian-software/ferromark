@@ -1,0 +1,965 @@
+Analysis of sampling profile-harness (pid 98416) every 1 millisecond
+Process:         profile-harness [98416]
+Path:            /Users/USER/*/profile-harness
+Load Address:    0x102984000
+Identifier:      profile-harness
+Version:         0
+Code Type:       ARM64
+Platform:        macOS
+Parent Process:  Python [98379]
+Target Type:     live task
+
+Date/Time:       2026-09-10 22:20:18.466 +0200
+Launch Time:     2026-09-10 22:20:18.178 +0200
+OS Version:      macOS 26.6.2 (25G83)
+Report Version:  7
+Analysis Tool:   /usr/bin/sample
+
+Physical footprint:         1968K
+Physical footprint (peak):  1968K
+Idle exit:                  untracked
+----
+
+Call graph:
+    3317 Thread_12607611   DispatchQueue_1: com.apple.main-thread  (serial)
+      3317 start  (in dyld) + 6992  [0x185f9c4e4]
+        3317 main  (in profile-harness) + 860  [0x102986274]
+          3317 _RINvNtNtCsa9BKTri5B3M_3std3sys9backtrace28___rust_begin_short_backtraceFEuuECshcIqbURS6pw_15profile_harness  (in profile-harness) + 12  [0x1029848c8]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/sys/backtrace.rs:166
+            3317 _RNvCshcIqbURS6pw_15profile_harness4main  (in profile-harness) + 3736  [0x102985768]  /Users/sebastian/Workspace/ferromark/examples/profile_harness.rs:120
+              3295 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 1892  [0x1029c8448]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1989 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 14340  [0x102999a0c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1723
+              + ! 1314 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4704  [0x10299c3ec]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1804
+              + ! : 742 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 184  [0x10299d08c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2322
+              + ! : | 140 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 7736,7584,...  [0x1029a1c58,0x1029a1bc0,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:392
+              + ! : | 93 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 50188,51892,...  [0x1029ac22c,0x1029ac8d4,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:725
+              + ! : | 79 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 28200  [0x1029a6c48]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:516
+              + ! : | + 41 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 256  [0x1029b3784]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:119
+              + ! : | + ! 34 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_text  (in profile-harness) + 2488,2384,...  [0x1029b5cd8,0x1029b5c70,...]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:126
+              + ! : | + ! 5 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_text  (in profile-harness) + 40,48,...  [0x1029b5348,0x1029b5350,...]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:125
+              + ! : | + ! 1 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_text  (in profile-harness) + 2704  [0x1029b5db0]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:0
+              + ! : | + ! 1 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_text  (in profile-harness) + 24  [0x1029b5338]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:124
+              + ! : | + 19 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 60  [0x1029b36c0]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:82
+              + ! : | + ! 18 _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 52,0,...  [0x1029885ac,0x102988578,...]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:91
+              + ! : | + ! 1 _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 528  [0x102988788]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:0
+              + ! : | + 9 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 220,232,...  [0x1029b3760,0x1029b376c,...]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:97
+              + ! : | + 5 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 88,108,...  [0x1029b36dc,0x1029b36f0,...]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:90
+              + ! : | + 3 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 12,20  [0x1029b3690,0x1029b3698]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:79
+              + ! : | + 1 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 256  [0x1029b3784]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:121
+              + ! : | + 1 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 60  [0x1029b36c0]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:82
+              + ! : | 74 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 29156,27036,...  [0x1029a7004,0x1029a67bc,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:516
+              + ! : | 57 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 1212,1580,...  [0x1029a02dc,0x1029a044c,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:359
+              + ! : | 54 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 17796,17824,...  [0x1029a43a4,0x1029a43c0,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:436
+              + ! : | 42 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 12632,12616,...  [0x1029a2f78,0x1029a2f68,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:430
+              + ! : | 16 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 22372,22280,...  [0x1029a5584,0x1029a5528,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:479
+              + ! : | 16 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 54592  [0x1029ad360]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:725
+              + ! : | + 14 _RINvNtNtNtNtCsgtPOCBgevO_4core5slice4sort6shared9smallsort25insertion_sort_shift_leftNtNtCsi5vgREsHWBB_9ferromark6inline9EmitPointNCINvMB8_SB1l_20sort_unstable_by_keyTmbENCNvMB1n_NtB1n_12InlineParser11emit_eventss_0E0EB1p_  (in profile-harness) + 148,288,...  [0x1029b40ac,0x1029b4138,...]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/sort/shared/smallsort.rs:596
+              + ! : | + 1 _RINvNtNtNtNtCsgtPOCBgevO_4core5slice4sort6shared9smallsort25insertion_sort_shift_leftNtNtCsi5vgREsHWBB_9ferromark6inline9EmitPointNCINvMB8_SB1l_20sort_unstable_by_keyTmbENCNvMB1n_NtB1n_12InlineParser11emit_eventss_0E0EB1p_  (in profile-harness) + 96  [0x1029b4078]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/sort/shared/smallsort.rs:0
+              + ! : | + 1 _RINvNtNtNtNtCsgtPOCBgevO_4core5slice4sort6shared9smallsort25insertion_sort_shift_leftNtNtCsi5vgREsHWBB_9ferromark6inline9EmitPointNCINvMB8_SB1l_20sort_unstable_by_keyTmbENCNvMB1n_NtB1n_12InlineParser11emit_eventss_0E0EB1p_  (in profile-harness) + 348  [0x1029b4174]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/sort/shared/smallsort.rs:602
+              + ! : | 15 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 28216  [0x1029a6c58]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:516
+              + ! : | + 8 _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE3geteECsi5vgREsHWBB_9ferromark  (in profile-harness) + 420  [0x1029b3c3c]  /rust/deps/hashbrown-0.17.1/src/map.rs:1288
+              + ! : | + ! 7 _platform_memcmp  (in libsystem_platform.dylib) + 0,260,...  [0x18636ef10,0x18636f014,...]
+              + ! : | + ! 1 DYLD-STUB$$memcmp  (in profile-harness) + 8  [0x1029f8ec4]
+              + ! : | + 5 _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE3geteECsi5vgREsHWBB_9ferromark  (in profile-harness) + 336,340,...  [0x1029b3be8,0x1029b3bec,...]  /rust/deps/hashbrown-0.17.1/src/map.rs:1288
+              + ! : | + 2 _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE3geteECsi5vgREsHWBB_9ferromark  (in profile-harness) + 208,328  [0x1029b3b68,0x1029b3be0]  /rust/deps/hashbrown-0.17.1/src/map.rs:1287
+              + ! : | 13 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 8804  [0x1029a2084]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:392
+              + ! : | + 6 _RNvNtNtCsi5vgREsHWBB_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile-harness) + 424,464,...  [0x1029b2d8c,0x1029b2db4,...]  /Users/sebastian/Workspace/ferromark/src/inline/marks.rs:543
+              + ! : | + 2 _RNvNtNtCsi5vgREsHWBB_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile-harness) + 12,216  [0x1029b2bf0,0x1029b2cbc]  /Users/sebastian/Workspace/ferromark/src/inline/marks.rs:541
+              + ! : | + 1 _RNvNtNtCsi5vgREsHWBB_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile-harness) + 964  [0x1029b2fa8]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/ops/range.rs:0
+              + ! : | + 1 _RNvNtNtCsi5vgREsHWBB_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile-harness) + 1000  [0x1029b2fcc]  /Users/sebastian/Workspace/ferromark/src/inline/marks.rs:0
+              + ! : | + 1 _RNvNtNtCsi5vgREsHWBB_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile-harness) + 688  [0x1029b2e94]  /Users/sebastian/Workspace/ferromark/src/inline/marks.rs:544
+              + ! : | + 1 _RNvNtNtCsi5vgREsHWBB_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile-harness) + 972  [0x1029b2fb0]  /Users/sebastian/Workspace/ferromark/src/inline/marks.rs:552
+              + ! : | + 1 _RNvNtNtCsi5vgREsHWBB_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile-harness) + 1144  [0x1029b305c]  /Users/sebastian/Workspace/ferromark/src/inline/marks.rs:577
+              + ! : | 12 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 33084,33148,...  [0x1029a7f5c,0x1029a7f9c,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:626
+              + ! : | 11 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 23680,23924,...  [0x1029a5aa0,0x1029a5b94,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:495
+              + ! : | 9 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 24,36  [0x10299fe38,0x10299fe44]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:329
+              + ! : | 8 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 32684,32568,...  [0x1029a7dcc,0x1029a7d58,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:624
+              + ! : | 7 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 23104,22644,...  [0x1029a5860,0x1029a5694,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:488
+              + ! : | 6 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 2920  [0x1029a0988]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:365
+              + ! : | 5 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 1664,1672  [0x1029a04a0,0x1029a04a8]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:0
+              + ! : | 5 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 644  [0x1029a00a4]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:356
+              + ! : | 5 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 29816  [0x1029a7298]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:556
+              + ! : | 4 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 24232  [0x1029a5cc8]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:516
+              + ! : | + 2 DYLD-STUB$$bzero  (in profile-harness) + 0,4  [0x1029f8df0,0x1029f8df4]
+              + ! : | + 1 __bzero  (in libsystem_platform.dylib) + 0  [0x186371030]
+              + ! : | + 1 _platform_memset  (in libsystem_platform.dylib) + 188  [0x18637114c]
+              + ! : | 4 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 24312  [0x1029a5d18]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:516
+              + ! : | + 2 DYLD-STUB$$bzero  (in profile-harness) + 4  [0x1029f8df4]
+              + ! : | + 2 _platform_memset  (in libsystem_platform.dylib) + 200,208  [0x186371158,0x186371160]
+              + ! : | 4 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 32336  [0x1029a7c70]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:613
+              + ! : | 4 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 34624  [0x1029a8560]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:624
+              + ! : | + 4 _RINvNtNtNtNtCsgtPOCBgevO_4core5slice4sort6shared9smallsort25insertion_sort_shift_leftTmmENCINvMB8_SB1l_20sort_unstable_by_keyB1l_NCNvNtCsi5vgREsHWBB_9ferromark6inline25normalize_link_boundaries0E0EB29_  (in profile-harness) + 72,40,...  [0x1029b3fcc,0x1029b3fac,...]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/sort/shared/smallsort.rs:596
+              + ! : | 3 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 3060  [0x1029a0a14]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:383
+              + ! : | 3 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 20120,20020  [0x1029a4cb8,0x1029a4c54]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:448
+              + ! : | 3 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 24028,25716,...  [0x1029a5bfc,0x1029a6294,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:497
+              + ! : | 3 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 64  [0x10299fe60]  /Users/sebastian/Workspace/ferromark/src/range.rs:0
+              + ! : | 2 _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE3geteECsi5vgREsHWBB_9ferromark  (in profile-harness) + 532  [0x1029b3cac]  /rust/deps/hashbrown-0.17.1/src/map.rs:1293
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 68  [0x10299fe64]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:350
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 22052,22100  [0x1029a5444,0x1029a5474]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:471
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 24136  [0x1029a5c68]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:510
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 30104  [0x1029a73b8]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:596
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 31888  [0x1029a7ab0]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:604
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 32492  [0x1029a7d0c]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:620
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 35048  [0x1029a8708]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:648
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 36976  [0x1029a8e90]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:676
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 47228  [0x1029ab69c]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:743
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 47260  [0x1029ab6bc]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:744
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 284  [0x1029b37a0]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:121
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 3108  [0x1029a0a44]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:0
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 1544  [0x1029a0428]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/iter/macros.rs:0
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 21152  [0x1029a50c0]  /Users/sebastian/Workspace/ferromark/src/inline/code_span.rs:0
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 3288  [0x1029a0af8]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:389
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 11816  [0x1029a2c48]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:399
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 11884  [0x1029a2c8c]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:428
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 11888  [0x1029a2c90]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:429
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 13264  [0x1029a31f0]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:434
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 20000  [0x1029a4c40]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:446
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 20236  [0x1029a4d2c]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:452
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 29416  [0x1029a7108]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:540
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 29544  [0x1029a7188]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:548
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 30724  [0x1029a7624]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:599
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 31844  [0x1029a7a84]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:600
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 32172  [0x1029a7bcc]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:605
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 32368  [0x1029a7c90]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:614
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 34712  [0x1029a85b8]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:626
+              + ! : | + 1 _RINvNvMs2_NtCslJsSqIQKwiA_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalECsi5vgREsHWBB_9ferromark  (in profile-harness) + 88  [0x1029f37dc]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:668
+              + ! : | +   1 _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsi5vgREsHWBB_9ferromark  (in profile-harness) + 260  [0x1029f39e4]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:559
+              + ! : | +     1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 516  [0x186189140]
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 34780  [0x1029a85fc]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:626
+              + ! : | + 1 _RINvNvMs2_NtCslJsSqIQKwiA_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalECsi5vgREsHWBB_9ferromark  (in profile-harness) + 88  [0x1029f37dc]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:668
+              + ! : | +   1 _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsi5vgREsHWBB_9ferromark  (in profile-harness) + 260  [0x1029f39e4]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:559
+              + ! : | +     1 DYLD-STUB$$malloc  (in profile-harness) + 4  [0x1029f8eb4]
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 32744  [0x1029a7e08]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:634
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 35900  [0x1029a8a5c]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:662
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 38100  [0x1029a92f4]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:690
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 47116  [0x1029ab62c]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:737
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 47148  [0x1029ab64c]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:740
+              + ! : 97 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 496,460,...  [0x10299d1c4,0x10299d1a0,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : 84 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 4868  [0x10299e2d8]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 33 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 28,560,...  [0x1029adb80,0x1029add94,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | 27 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 96  [0x1029adbc4]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | + 20 _platform_memmove  (in libsystem_platform.dylib) + 452,0,...  [0x186371524,0x186371360,...]
+              + ! : | + 7 DYLD-STUB$$memcpy  (in profile-harness) + 4,8  [0x1029f8ecc,0x1029f8ed0]
+              + ! : | 19 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 72  [0x1029adbac]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | + 14 _platform_memset  (in libsystem_platform.dylib) + 200,180,...  [0x186371158,0x186371144,...]
+              + ! : | + 4 DYLD-STUB$$bzero  (in profile-harness) + 4  [0x1029f8df4]
+              + ! : | + 1 __bzero  (in libsystem_platform.dylib) + 0  [0x186371030]
+              + ! : | 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 12  [0x1029adb70]  /Users/sebastian/Workspace/ferromark/src/escape.rs:88
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 356  [0x1029adcc8]  /Users/sebastian/Workspace/ferromark/src/escape.rs:92
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 1028  [0x1029adf68]  /Users/sebastian/Workspace/ferromark/src/escape.rs:96
+              + ! : 74 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 6748  [0x10299ea30]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 63 _platform_memmove  (in libsystem_platform.dylib) + 452,428,...  [0x186371524,0x18637150c,...]
+              + ! : | 11 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! : 49 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 1688  [0x10299d66c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 36 _RNvNtCsi5vgREsHWBB_9ferromark6escape31url_escape_link_destination_raw  (in profile-harness) + 644,664,...  [0x1029b145c,0x1029b1470,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:215
+              + ! : | 5 _RNvNtCsi5vgREsHWBB_9ferromark6escape31url_escape_link_destination_raw  (in profile-harness) + 308,276,...  [0x1029b130c,0x1029b12ec,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:209
+              + ! : | 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape31url_escape_link_destination_raw  (in profile-harness) + 424,352  [0x1029b1380,0x1029b1338]  /Users/sebastian/Workspace/ferromark/src/escape.rs:210
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape31url_escape_link_destination_raw  (in profile-harness) + 2888,3128  [0x1029b1d20,0x1029b1e10]  /Users/sebastian/Workspace/ferromark/src/escape.rs:211
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape31url_escape_link_destination_raw  (in profile-harness) + 2816  [0x1029b1cd8]  /Users/sebastian/Workspace/ferromark/src/escape.rs:217
+              + ! : | + 2 _platform_memmove  (in libsystem_platform.dylib) + 12,428  [0x18637136c,0x18637150c]
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape31url_escape_link_destination_raw  (in profile-harness) + 20  [0x1029b11ec]  /Users/sebastian/Workspace/ferromark/src/escape.rs:206
+              + ! : 42 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 1668  [0x10299d658]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 10 _RNvNtCsi5vgREsHWBB_9ferromark6render11is_safe_url  (in profile-harness) + 32  [0x1029af34c]  /Users/sebastian/Workspace/ferromark/src/render.rs:48
+              + ! : | + 9 _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 128,0,...  [0x1029885f8,0x102988578,...]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:91
+              + ! : | + 1 _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 528  [0x102988788]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:0
+              + ! : | 5 _RNvNtCsi5vgREsHWBB_9ferromark6render11is_safe_url  (in profile-harness) + 396,148,...  [0x1029af4b8,0x1029af3c0,...]  /Users/sebastian/Workspace/ferromark/src/render.rs:51
+              + ! : | 5 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 388  [0x1029b22a0]  /Users/sebastian/Workspace/ferromark/src/render.rs:72
+              + ! : | 4 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 80  [0x1029b216c]  /Users/sebastian/Workspace/ferromark/src/render.rs:92
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 112  [0x1029b218c]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/str/validations.rs:0
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 100  [0x1029b2180]  /Users/sebastian/Workspace/ferromark/src/render.rs:63
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 312  [0x1029b2254]  /Users/sebastian/Workspace/ferromark/src/render.rs:66
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 508,620  [0x1029b2318,0x1029b2388]  /Users/sebastian/Workspace/ferromark/src/render.rs:78
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 276,288  [0x1029b2230,0x1029b223c]  /Users/sebastian/Workspace/ferromark/src/render.rs:89
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 292  [0x1029b2240]  /Users/sebastian/Workspace/ferromark/src/render.rs:90
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 296  [0x1029b2244]  /Users/sebastian/Workspace/ferromark/src/render.rs:91
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render11is_safe_url  (in profile-harness) + 8  [0x1029af334]  /Users/sebastian/Workspace/ferromark/src/render.rs:47
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 320  [0x1029b225c]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:0
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 444  [0x1029b22d8]  /Users/sebastian/Workspace/ferromark/src/render.rs:103
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 116  [0x1029b2190]  /Users/sebastian/Workspace/ferromark/src/render.rs:64
+              + ! : 40 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 1804  [0x10299d6e0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 17 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16write_link_title  (in profile-harness) + 240  [0x1029af7a0]  /Users/sebastian/Workspace/ferromark/src/render.rs:266
+              + ! : | + 6 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 2544  [0x1029af28c]  /Users/sebastian/Workspace/ferromark/src/escape.rs:59
+              + ! : | + ! 5 _platform_memmove  (in libsystem_platform.dylib) + 452,428,...  [0x186371524,0x18637150c,...]
+              + ! : | + ! 1 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! : | + 4 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 220  [0x1029ae978]  /Users/sebastian/Workspace/ferromark/src/escape.rs:50
+              + ! : | + ! 3 _platform_memmove  (in libsystem_platform.dylib) + 444,452,...  [0x18637151c,0x186371524,...]
+              + ! : | + ! 1 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! : | + 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 152,204,...  [0x1029ae934,0x1029ae968,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:50
+              + ! : | + 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 204  [0x1029ae968]  /Users/sebastian/Workspace/ferromark/src/escape.rs:50
+              + ! : | + ! 1 _platform_memset  (in libsystem_platform.dylib) + 200  [0x186371158]
+              + ! : | + 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 2496  [0x1029af25c]  /Users/sebastian/Workspace/ferromark/src/escape.rs:58
+              + ! : | + 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 2508  [0x1029af268]  /Users/sebastian/Workspace/ferromark/src/escape.rs:59
+              + ! : | + 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 2552  [0x1029af294]  /Users/sebastian/Workspace/ferromark/src/escape.rs:61
+              + ! : | 12 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16write_link_title  (in profile-harness) + 268,256,...  [0x1029af7bc,0x1029af7b0,...]  /Users/sebastian/Workspace/ferromark/src/render.rs:266
+              + ! : | 11 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16write_link_title  (in profile-harness) + 52,60,...  [0x1029af6e4,0x1029af6ec,...]  /Users/sebastian/Workspace/ferromark/src/render.rs:265
+              + ! : 38 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 6468  [0x10299e918]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 23 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 124  [0x1029ae628]  /Users/sebastian/Workspace/ferromark/src/escape.rs:27
+              + ! : | + 10 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 168,1452,...  [0x1029adc0c,0x1029ae110,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | + 7 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 96  [0x1029adbc4]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | + ! 6 _platform_memmove  (in libsystem_platform.dylib) + 452,444,...  [0x186371524,0x18637151c,...]
+              + ! : | + ! 1 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! : | + 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 1052  [0x1029adf80]  /Users/sebastian/Workspace/ferromark/src/escape.rs:97
+              + ! : | + 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 72  [0x1029adbac]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | + ! 1 __bzero  (in libsystem_platform.dylib) + 0  [0x186371030]
+              + ! : | + ! 1 _platform_memset  (in libsystem_platform.dylib) + 180  [0x186371144]
+              + ! : | + 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 12  [0x1029adb70]  /Users/sebastian/Workspace/ferromark/src/escape.rs:88
+              + ! : | 6 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 200  [0x1029ae674]  /Users/sebastian/Workspace/ferromark/src/escape.rs:30
+              + ! : | + 6 _platform_memmove  (in libsystem_platform.dylib) + 452,428,...  [0x186371524,0x18637150c,...]
+              + ! : | 4 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 344,100,...  [0x1029ae704,0x1029ae610,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:32
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 648  [0x1029ae834]  /Users/sebastian/Workspace/ferromark/src/escape.rs:38
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 124  [0x1029ae628]  /Users/sebastian/Workspace/ferromark/src/escape.rs:27
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 204  [0x1029ae678]  /Users/sebastian/Workspace/ferromark/src/escape.rs:30
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 592  [0x1029ae7fc]  /Users/sebastian/Workspace/ferromark/src/escape.rs:35
+              + ! : 31 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 6288  [0x10299e864]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 12 _RNvNtCsi5vgREsHWBB_9ferromark6escape27url_encode_then_html_escape  (in profile-harness) + 188  [0x1029afc98]  /Users/sebastian/Workspace/ferromark/src/escape.rs:284
+              + ! : | 7 _RNvNtCsi5vgREsHWBB_9ferromark6escape27url_encode_then_html_escape  (in profile-harness) + 672,664  [0x1029afe7c,0x1029afe74]  /Users/sebastian/Workspace/ferromark/src/escape.rs:299
+              + ! : | 6 _RNvNtCsi5vgREsHWBB_9ferromark6escape27url_encode_then_html_escape  (in profile-harness) + 692  [0x1029afe90]  /Users/sebastian/Workspace/ferromark/src/escape.rs:305
+              + ! : | 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape27url_encode_then_html_escape  (in profile-harness) + 176  [0x1029afc8c]  /Users/sebastian/Workspace/ferromark/src/escape.rs:0
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape27url_encode_then_html_escape  (in profile-harness) + 200,208  [0x1029afca4,0x1029afcac]  /Users/sebastian/Workspace/ferromark/src/escape.rs:285
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape27url_encode_then_html_escape  (in profile-harness) + 108  [0x1029afc48]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/iter/macros.rs:0
+              + ! : 21 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 1352  [0x10299d51c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 10 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 124  [0x1029ae628]  /Users/sebastian/Workspace/ferromark/src/escape.rs:27
+              + ! : | + 4 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 72  [0x1029adbac]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | + ! 3 _platform_memset  (in libsystem_platform.dylib) + 200,208  [0x186371158,0x186371160]
+              + ! : | + ! 1 DYLD-STUB$$bzero  (in profile-harness) + 4  [0x1029f8df4]
+              + ! : | + 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 96  [0x1029adbc4]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | + ! 3 _platform_memmove  (in libsystem_platform.dylib) + 0,428,...  [0x186371360,0x18637150c,...]
+              + ! : | + 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 72,140  [0x1029adbac,0x1029adbf0]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | 7 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 1068  [0x1029adf90]  /Users/sebastian/Workspace/ferromark/src/escape.rs:97
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 20  [0x1029ae5c0]  /Users/sebastian/Workspace/ferromark/src/escape.rs:21
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 28  [0x1029ae5c8]  /Users/sebastian/Workspace/ferromark/src/escape.rs:22
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 640  [0x1029ae82c]  /Users/sebastian/Workspace/ferromark/src/escape.rs:36
+              + ! : | + 1 _platform_memmove  (in libsystem_platform.dylib) + 460  [0x18637152c]
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 620  [0x1029ae818]  /Users/sebastian/Workspace/ferromark/src/escape.rs:36
+              + ! : 19 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 464,388,...  [0x10299d1a4,0x10299d158,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2341
+              + ! : 18 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 1068  [0x1029adf90]  /Users/sebastian/Workspace/ferromark/src/escape.rs:97
+              + ! : 11 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 6264  [0x10299e84c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 3 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 80  [0x1029b216c]  /Users/sebastian/Workspace/ferromark/src/render.rs:92
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6render11is_safe_url  (in profile-harness) + 32  [0x1029af34c]  /Users/sebastian/Workspace/ferromark/src/render.rs:48
+              + ! : | + 2 _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 128  [0x1029885f8]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:91
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render11is_safe_url  (in profile-harness) + 64  [0x1029af36c]  /Users/sebastian/Workspace/ferromark/src/render.rs:48
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render11is_safe_url  (in profile-harness) + 376  [0x1029af4a4]  /Users/sebastian/Workspace/ferromark/src/render.rs:51
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 320  [0x1029b225c]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:0
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 376  [0x1029b2294]  /Users/sebastian/Workspace/ferromark/src/render.rs:72
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 284  [0x1029b2238]  /Users/sebastian/Workspace/ferromark/src/render.rs:89
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness) + 292  [0x1029b2240]  /Users/sebastian/Workspace/ferromark/src/render.rs:90
+              + ! : 10 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 8824  [0x10299f24c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 9 _RNvNtCsi5vgREsHWBB_9ferromark6render26decode_entities_commonmark  (in profile-harness) + 40  [0x1029ae31c]  /Users/sebastian/Workspace/ferromark/src/render.rs:13
+              + ! : | + 7 _RINvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity20decode_html_entitieseECsi5vgREsHWBB_9ferromark  (in profile-harness) + 52  [0x1029b0fe4]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:226
+              + ! : | + ! 5 _RNvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity19find_decoded_entity  (in profile-harness) + 728,632,...  [0x1029c98a0,0x1029c9840,...]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:178
+              + ! : | + ! 1 _RNvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity19find_decoded_entity  (in profile-harness) + 796  [0x1029c98e4]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:178
+              + ! : | + ! : 1 _platform_memcmp  (in libsystem_platform.dylib) + 180  [0x18636efc4]
+              + ! : | + ! 1 _RNvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity19find_decoded_entity  (in profile-harness) + 840  [0x1029c9910]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:178
+              + ! : | + !   1 DYLD-STUB$$memcmp  (in profile-harness) + 8  [0x1029f8ec4]
+              + ! : | + 1 _RINvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity20decode_html_entitieseECsi5vgREsHWBB_9ferromark  (in profile-harness) + 112  [0x1029b1020]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:231
+              + ! : | + ! 1 _malloc_zone_malloc  (in libsystem_malloc.dylib) + 44  [0x1861930e8]
+              + ! : | + 1 _RINvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity20decode_html_entitieseECsi5vgREsHWBB_9ferromark  (in profile-harness) + 300  [0x1029b10dc]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:237
+              + ! : | +   1 _RNvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity19find_decoded_entity  (in profile-harness) + 796  [0x1029c98e4]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:178
+              + ! : | +     1 _platform_memcmp  (in libsystem_platform.dylib) + 168  [0x18636efb8]
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render26decode_entities_commonmark  (in profile-harness) + 148  [0x1029ae388]  /Users/sebastian/Workspace/ferromark/src/render.rs:16
+              + ! : 8 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 88,96  [0x10299d02c,0x10299d034]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2320
+              + ! : 7 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 6364  [0x10299e8b0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 640  [0x1029ae82c]  /Users/sebastian/Workspace/ferromark/src/escape.rs:36
+              + ! : | + 2 _platform_memmove  (in libsystem_platform.dylib) + 428  [0x18637150c]
+              + ! : | + 1 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! : | 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 124  [0x1029ae628]  /Users/sebastian/Workspace/ferromark/src/escape.rs:27
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 648  [0x1029ae834]  /Users/sebastian/Workspace/ferromark/src/escape.rs:38
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 1068  [0x1029adf90]  /Users/sebastian/Workspace/ferromark/src/escape.rs:97
+              + ! : 6 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 140  [0x10299d060]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2332
+              + ! : 4 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 51720,51736  [0x1029ac828,0x1029ac838]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:759
+              + ! : 3 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 168  [0x10299d07c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2322
+              + ! : 2 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 32  [0x10299cff4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2309
+              + ! : 2 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 184  [0x10299d08c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2340
+              + ! : 2 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 11568  [0x10299fd04]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2355
+              + ! : 1 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 2668  [0x10299da40]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 1 _RNvNtCsi5vgREsHWBB_9ferromark6render11is_safe_url  (in profile-harness) + 32  [0x1029af34c]  /Users/sebastian/Workspace/ferromark/src/render.rs:48
+              + ! : |   1 _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 80  [0x1029885c8]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:91
+              + ! : 1 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 8796  [0x10299f230]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 1 _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 524  [0x102988784]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:94
+              + ! : 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16write_link_title  (in profile-harness) + 508  [0x1029af8ac]  /Users/sebastian/Workspace/ferromark/src/render.rs:304
+              + ! : 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 668  [0x1029ae848]  /Users/sebastian/Workspace/ferromark/src/escape.rs:38
+              + ! 86 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 5232  [0x10299c5fc]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1857
+              + ! : 24 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 184  [0x10299d08c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2322
+              + ! : | 15 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 1580,1212,...  [0x1029a044c,0x1029a02dc,...]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:359
+              + ! : | 3 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 24  [0x10299fe38]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:329
+              + ! : | 2 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 2940,2948  [0x1029a099c,0x1029a09a4]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:367
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 1648  [0x1029a0490]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/iter/macros.rs:0
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 2920  [0x1029a0988]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:365
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 51708  [0x1029ac81c]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:759
+              + ! : | 1 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 64  [0x10299fe60]  /Users/sebastian/Workspace/ferromark/src/range.rs:0
+              + ! : 13 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 6748  [0x10299ea30]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 11 _platform_memmove  (in libsystem_platform.dylib) + 428,460,...  [0x18637150c,0x18637152c,...]
+              + ! : | 2 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! : 12 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 4868  [0x10299e2d8]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : | 5 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 32,124,...  [0x1029adb84,0x1029adbe0,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | 4 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 96  [0x1029adbc4]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | + 4 _platform_memmove  (in libsystem_platform.dylib) + 452,428,...  [0x186371524,0x18637150c,...]
+              + ! : | 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 72  [0x1029adbac]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : |   2 _platform_memset  (in libsystem_platform.dylib) + 200,208  [0x186371158,0x186371160]
+              + ! : |   1 __bzero  (in libsystem_platform.dylib) + 0  [0x186371030]
+              + ! : 9 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 496,4852,...  [0x10299d1c4,0x10299e2c8,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2342
+              + ! : 6 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 168,176  [0x10299d07c,0x10299d084]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2322
+              + ! : 5 _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness) + 51736,51720  [0x1029ac838,0x1029ac828]  /Users/sebastian/Workspace/ferromark/src/inline/mod.rs:759
+              + ! : 4 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 1068  [0x1029adf90]  /Users/sebastian/Workspace/ferromark/src/escape.rs:97
+              + ! : 3 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 88  [0x10299d02c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2320
+              + ! : 3 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 324,388,...  [0x10299d118,0x10299d158,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2341
+              + ! : 2 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 32,48  [0x10299cff4,0x10299d004]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2309
+              + ! : 2 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 140  [0x10299d060]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2332
+              + ! : 2 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 11568  [0x10299fd04]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2355
+              + ! : 1 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 184  [0x10299d08c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2340
+              + ! 56 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 160,168  [0x10299b22c,0x10299b234]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1774
+              + ! 55 _RNvMs3_Csi5vgREsHWBB_9ferromarkNtB5_14ParagraphState8add_text  (in profile-harness) + 64  [0x1029b8468]  /Users/sebastian/Workspace/ferromark/src/lib.rs:999
+              + ! : 51 _platform_memmove  (in libsystem_platform.dylib) + 452,428,...  [0x186371524,0x18637150c,...]
+              + ! : 4 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! 54 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 100  [0x10299b1f0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1768
+              + ! 54 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 124  [0x1029ae628]  /Users/sebastian/Workspace/ferromark/src/escape.rs:27
+              + ! : 21 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 140,32,...  [0x1029adbf0,0x1029adb84,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : 17 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 72  [0x1029adbac]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | 10 _platform_memset  (in libsystem_platform.dylib) + 200,180,...  [0x186371158,0x186371144,...]
+              + ! : | 4 DYLD-STUB$$bzero  (in profile-harness) + 4  [0x1029f8df4]
+              + ! : | 3 __bzero  (in libsystem_platform.dylib) + 0  [0x186371030]
+              + ! : 15 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 96  [0x1029adbc4]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+              + ! : | 13 _platform_memmove  (in libsystem_platform.dylib) + 428,452,...  [0x18637150c,0x186371524,...]
+              + ! : | 2 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! : 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 1052  [0x1029adf80]  /Users/sebastian/Workspace/ferromark/src/escape.rs:97
+              + ! 24 _RNvMs3_Csi5vgREsHWBB_9ferromarkNtB5_14ParagraphState8add_text  (in profile-harness) + 28,48,...  [0x1029b8444,0x1029b8458,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:999
+              + ! 16 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness) + 176  [0x1029b7774]  /Users/sebastian/Workspace/ferromark/src/render.rs:515
+              + ! : 11 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter20unescape_backslashes  (in profile-harness) + 56  [0x1029b97e4]  /Users/sebastian/Workspace/ferromark/src/render.rs:561
+              + ! : | 4 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 88,104,...  [0x186188f94,0x186188fa4,...]
+              + ! : | 2 DYLD-STUB$$malloc  (in profile-harness) + 4  [0x1029f8eb4]
+              + ! : | 2 _malloc_zone_malloc  (in libsystem_malloc.dylib) + 0,64  [0x1861930bc,0x1861930fc]
+              + ! : | 2 _xzm_xzone_malloc  (in libsystem_malloc.dylib) + 0  [0x186183950]
+              + ! : | 1 <deduplicated_symbol>  (in libsystem_malloc.dylib) + 164  [0x186183200]
+              + ! : 2 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter20unescape_backslashes  (in profile-harness) + 140,144  [0x1029b9838,0x1029b983c]  /Users/sebastian/Workspace/ferromark/src/render.rs:564
+              + ! : 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter20unescape_backslashes  (in profile-harness) + 124  [0x1029b9828]  /Users/sebastian/Workspace/ferromark/src/render.rs:0
+              + ! : 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter20unescape_backslashes  (in profile-harness) + 24  [0x1029b97c4]  /Users/sebastian/Workspace/ferromark/src/render.rs:560
+              + ! : 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter20unescape_backslashes  (in profile-harness) + 92  [0x1029b9808]  /Users/sebastian/Workspace/ferromark/src/render.rs:568
+              + ! 16 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness) + 272  [0x1029b77d4]  /Users/sebastian/Workspace/ferromark/src/render.rs:515
+              + ! : 9 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              + ! : | 8 mach_absolute_time  (in libsystem_kernel.dylib) + 108  [0x18632410c]
+              + ! : | 1 DYLD-STUB$$mach_absolute_time  (in libsystem_malloc.dylib) + 8  [0x18619bb98]
+              + ! : 5 _xzm_free  (in libsystem_malloc.dylib) + 28,196,...  [0x186184134,0x1861841dc,...]
+              + ! : 2 _free  (in libsystem_malloc.dylib) + 0,44  [0x186193cd0,0x186193cfc]
+              + ! 15 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 14340  [0x102999a0c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:0
+              + ! 14 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 84  [0x10299b1e0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1759
+              + ! 13 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 14320,14348  [0x1029999f8,0x102999a14]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1722
+              + ! 12 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 40  [0x10299b1b4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1741
+              + ! 11 _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness) + 11608,11600  [0x10299fd2c,0x10299fd24]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2355
+              + ! 11 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 36  [0x10299b1b0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1739
+              + ! 10 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 64  [0x10299b1cc]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1752
+              + ! 10 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 72,76  [0x10299b1d4,0x10299b1d8]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1757
+              + ! 10 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 640  [0x1029ae82c]  /Users/sebastian/Workspace/ferromark/src/escape.rs:36
+              + ! : 8 _platform_memmove  (in libsystem_platform.dylib) + 12,428,...  [0x18637136c,0x18637150c,...]
+              + ! : 2 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! 9 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 68  [0x10299b1d0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1755
+              + ! 9 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2512  [0x10299bb5c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2043
+              + ! 8 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 5400  [0x10299c6a4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1875
+              + ! : 7 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter11heading_end  (in profile-harness) + 20,64  [0x1029b71bc,0x1029b71e8]  /Users/sebastian/Workspace/ferromark/src/render.rs:497
+              + ! : 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter11heading_end  (in profile-harness) + 88  [0x1029b7200]  /Users/sebastian/Workspace/ferromark/src/render.rs:498
+              + ! 7 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness) + 240  [0x1029b77b4]  /Users/sebastian/Workspace/ferromark/src/render.rs:515
+              + ! : 3 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 152,176,...  [0x1029ae934,0x1029ae94c,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:50
+              + ! : 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 204  [0x1029ae968]  /Users/sebastian/Workspace/ferromark/src/escape.rs:50
+              + ! : | 1 DYLD-STUB$$bzero  (in profile-harness) + 4  [0x1029f8df4]
+              + ! : | 1 _platform_memset  (in libsystem_platform.dylib) + 200  [0x186371158]
+              + ! : 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 2544  [0x1029af28c]  /Users/sebastian/Workspace/ferromark/src/escape.rs:59
+              + ! :   2 _platform_memmove  (in libsystem_platform.dylib) + 436,452  [0x186371514,0x186371524]
+              + ! 7 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 5196,4364,...  [0x10299c5d8,0x10299c298,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:0
+              + ! 7 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1540,1556  [0x10299b790,0x10299b7a0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1798
+              + ! 7 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1248,1252  [0x10299b66c,0x10299b670]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2075
+              + ! 7 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 204,148,...  [0x1029ae678,0x1029ae640,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:30
+              + ! 6 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4808  [0x10299c454]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1819
+              + ! : 6 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter13paragraph_end  (in profile-harness) + 16  [0x1029b61f4]  /Users/sebastian/Workspace/ferromark/src/render.rs:470
+              + ! 6 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 0,4,...  [0x1029ae5ac,0x1029ae5b0,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:21
+              + ! 6 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 200  [0x1029ae674]  /Users/sebastian/Workspace/ferromark/src/escape.rs:30
+              + ! : 5 _platform_memmove  (in libsystem_platform.dylib) + 452,420,...  [0x186371524,0x186371504,...]
+              + ! : 1 DYLD-STUB$$memcpy  (in profile-harness) + 4  [0x1029f8ecc]
+              + ! 5 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness) + 220  [0x1029b77a0]  /Users/sebastian/Workspace/ferromark/src/render.rs:515
+              + ! : 2 _RNvNtCsi5vgREsHWBB_9ferromark6render26decode_entities_commonmark  (in profile-harness) + 40  [0x1029ae31c]  /Users/sebastian/Workspace/ferromark/src/render.rs:13
+              + ! : | 2 _RINvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity20decode_html_entitieseECsi5vgREsHWBB_9ferromark  (in profile-harness) + 52  [0x1029b0fe4]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:226
+              + ! : |   1 _RNvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity19find_decoded_entity  (in profile-harness) + 108  [0x1029c9634]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:0
+              + ! : |   1 _RNvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity19find_decoded_entity  (in profile-harness) + 24  [0x1029c95e0]  /Users/sebastian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/html-escape-0.2.14/src/decode/html_entity/mod.rs:49
+              + ! : 1 _RNvNtCsi5vgREsHWBB_9ferromark6render26decode_entities_commonmark  (in profile-harness) + 68  [0x1029ae338]  /Users/sebastian/Workspace/ferromark/src/render.rs:16
+              + ! : 1 _RNvNtCsi5vgREsHWBB_9ferromark6render26decode_entities_commonmark  (in profile-harness) + 248  [0x1029ae3ec]  /Users/sebastian/Workspace/ferromark/src/render.rs:18
+              + ! : | 1 _RNvXst_NtNtCsgtPOCBgevO_4core3str7patternReNtB5_7Pattern15is_contained_in  (in profile-harness) + 108  [0x1029b24cc]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/str/pattern.rs:1006
+              + ! : 1 _RNvNtCsi5vgREsHWBB_9ferromark6render26decode_entities_commonmark  (in profile-harness) + 236  [0x1029ae3e0]  /Users/sebastian/Workspace/ferromark/src/render.rs:18
+              + ! 5 _RNvMs3_Csi5vgREsHWBB_9ferromarkNtB5_14ParagraphState8add_text  (in profile-harness) + 0  [0x1029b8428]  /Users/sebastian/Workspace/ferromark/src/lib.rs:996
+              + ! 5 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 172  [0x10299b238]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1777
+              + ! 5 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 280  [0x10299b2a4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1790
+              + ! : 5 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter15paragraph_start  (in profile-harness) + 16  [0x1029b5f40]  /Users/sebastian/Workspace/ferromark/src/render.rs:464
+              + ! 5 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4676  [0x10299c3d0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1801
+              + ! 5 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4508  [0x10299c328]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1852
+              + ! : 5 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter13heading_start  (in profile-harness) + 28,52,...  [0x1029b7064,0x1029b707c,...]  /Users/sebastian/Workspace/ferromark/src/render.rs:477
+              + ! 5 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 108,124,...  [0x1029ae618,0x1029ae628,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:27
+              + ! 4 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness) + 76,60  [0x1029b7710,0x1029b7700]  /Users/sebastian/Workspace/ferromark/src/render.rs:508
+              + ! 4 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 88  [0x10299b1e4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1762
+              + ! 4 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1108  [0x10299b5e0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2067
+              + ! 4 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1308  [0x10299b6a8]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2084
+              + ! 4 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 3440  [0x10299befc]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2207
+              + ! 4 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 100,288,...  [0x1029ae610,0x1029ae6cc,...]  /Users/sebastian/Workspace/ferromark/src/escape.rs:32
+              + ! 4 _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 1068,1072  [0x1029adf90,0x1029adf94]  /Users/sebastian/Workspace/ferromark/src/escape.rs:97
+              + ! 3 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter15paragraph_start  (in profile-harness) + 68  [0x1029b5f74]  /Users/sebastian/Workspace/ferromark/src/render.rs:465
+              + ! 3 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness) + 192  [0x1029b7784]  /Users/sebastian/Workspace/ferromark/src/render.rs:515
+              + ! : 3 _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 0,112,...  [0x102988578,0x1029885e8,...]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:91
+              + ! 3 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 260  [0x10299b290]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1788
+              + ! 3 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4776  [0x10299c434]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1818
+              + ! 3 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2808  [0x10299bc84]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2012
+              + ! 3 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2172  [0x10299ba08]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2093
+              + ! 2 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 14328  [0x102999a00]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1723
+              + ! 2 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter13heading_start  (in profile-harness) + 112  [0x1029b70b8]  /Users/sebastian/Workspace/ferromark/src/render.rs:480
+              + ! 2 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter14blockquote_end  (in profile-harness) + 16  [0x1029b7fcc]  /Users/sebastian/Workspace/ferromark/src/render.rs:647
+              + ! 2 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter8ul_start  (in profile-harness) + 16  [0x1029b80b4]  /Users/sebastian/Workspace/ferromark/src/render.rs:669
+              + ! 2 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 224  [0x10299b26c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1781
+              + ! 2 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4724  [0x10299c400]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1815
+              + ! 2 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 5400  [0x10299c6a4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1876
+              + ! 2 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2284  [0x10299ba78]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1976
+              + ! 2 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2672  [0x10299bbfc]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2048
+              + ! 2 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2572  [0x10299bb98]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2053
+              + ! 2 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4000  [0x10299c12c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2068
+              + ! 2 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2152  [0x10299b9f4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2089
+              + ! 2 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 620,644  [0x1029ae818,0x1029ae830]  /Users/sebastian/Workspace/ferromark/src/escape.rs:36
+              + ! 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter11heading_end  (in profile-harness) + 128  [0x1029b7228]  /Users/sebastian/Workspace/ferromark/src/render.rs:500
+              + ! 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter13paragraph_end  (in profile-harness) + 72  [0x1029b622c]  /Users/sebastian/Workspace/ferromark/src/render.rs:471
+              + ! 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter14blockquote_end  (in profile-harness) + 0  [0x1029b7fbc]  /Users/sebastian/Workspace/ferromark/src/render.rs:646
+              + ! 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16blockquote_start  (in profile-harness) + 16  [0x1029b7f58]  /Users/sebastian/Workspace/ferromark/src/render.rs:641
+              + ! 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness) + 176  [0x1029b7774]  /Users/sebastian/Workspace/ferromark/src/render.rs:515
+              + ! 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter6ol_end  (in profile-harness) + 72  [0x1029b82b4]  /Users/sebastian/Workspace/ferromark/src/render.rs:697
+              + ! 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter8ul_start  (in profile-harness) + 4  [0x1029b80a8]  /Users/sebastian/Workspace/ferromark/src/render.rs:668
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 12  [0x10299b198]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1738
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 44  [0x10299b1b8]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1743
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 104  [0x10299b1f4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1769
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4800  [0x10299c44c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1819
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1872  [0x10299b8dc]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1841
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1920  [0x10299b90c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1845
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1464  [0x10299b744]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1918
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2272  [0x10299ba6c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1968
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1616  [0x10299b7dc]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2007
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2868  [0x10299bcc0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2022
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 5776  [0x10299c81c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2027
+              + ! : 1 _RNvMs3_NtCslJsSqIQKwiA_5alloc7raw_vecINtB5_6RawVecINtNtCsgtPOCBgevO_4core6option6OptionNtNtNtCsi5vgREsHWBB_9ferromark5block5event11CalloutTypeEE8grow_oneB1t_  (in profile-harness) + 60  [0x1029f4064]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:188
+              + ! :   1 _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsi5vgREsHWBB_9ferromark  (in profile-harness) + 260  [0x1029f39e4]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:559
+              + ! :     1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 468  [0x186189110]
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1368  [0x10299b6e4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2036
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 2740  [0x10299bc40]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2058
+              + ! 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1124  [0x10299b5f0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2069
+              + ! : 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter6ol_end  (in profile-harness) + 16  [0x1029b827c]  /Users/sebastian/Workspace/ferromark/src/render.rs:696
+              + ! 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness) + 2572  [0x1029af2a8]  /Users/sebastian/Workspace/ferromark/src/escape.rs:61
+              + 296 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 9564  [0x102998764]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 72 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 712,1224,...  [0x1029964d0,0x1029966d0,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 63 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2800  [0x1029bfb84]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1224
+              + ! : 18 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 824,888,...  [0x1029c6b2c,0x1029c6b6c,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2389
+              + ! : 16 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 588,1572,...  [0x1029c6a40,0x1029c6e18,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2383
+              + ! : 7 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 28  [0x1029c6810]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2347
+              + ! : 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 60,108  [0x1029c6830,0x1029c6860]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2357
+              + ! : 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 1240,1264,...  [0x1029c6ccc,0x1029c6ce4,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2407
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 1104  [0x1029c6c44]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2393
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 1064  [0x1029c6c1c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 1144  [0x1029c6c6c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2401
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 1228  [0x1029c6cc0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2404
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 1364  [0x1029c6d48]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2413
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 324  [0x1029c6938]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2369
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 328  [0x1029c693c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2377
+              + ! 35 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 484,336,...  [0x1029ba118,0x1029ba084,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3188
+              + ! 18 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2732  [0x1029bfb40]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1213
+              + ! : 11 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20try_html_block_start  (in profile-harness) + 48  [0x1029c5c58]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2649
+              + ! : | 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21peek_html_block_start  (in profile-harness) + 56,20  [0x1029c6f20,0x1029c6efc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2730
+              + ! : | 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21peek_html_block_start  (in profile-harness) + 1148,1200,...  [0x1029c7364,0x1029c7398,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2765
+              + ! : | 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21peek_html_block_start  (in profile-harness) + 1412,1468  [0x1029c746c,0x1029c74a4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2766
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21peek_html_block_start  (in profile-harness) + 84  [0x1029c6f3c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2731
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21peek_html_block_start  (in profile-harness) + 1316  [0x1029c740c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2767
+              + ! : 6 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20try_html_block_start  (in profile-harness) + 1372  [0x1029c6184]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2671
+              + ! : | 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 224  [0x1029bb4d4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2705
+              + ! : | 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 620  [0x1029bb660]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2721
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 28  [0x1029bb410]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2678
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 516  [0x1029bb5f8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2720
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 1644  [0x1029bba60]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2725
+              + ! 15 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 348,352,...  [0x1029bf1f0,0x1029bf1f4,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! 14 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 712,720,...  [0x1029ba1fc,0x1029ba204,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3208
+              + ! 11 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 108,52,...  [0x1029bf100,0x1029bf0c8,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1056
+              + ! 8 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 128  [0x1029bf114]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1070
+              + ! 7 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2780  [0x1029bfb70]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1219
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_code_fence  (in profile-harness) + 392,756  [0x1029c6344,0x1029c64b0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2533
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_code_fence  (in profile-harness) + 816,836  [0x1029c64ec,0x1029c6500]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2541
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_code_fence  (in profile-harness) + 32  [0x1029c61dc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2508
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_code_fence  (in profile-harness) + 784  [0x1029c64cc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2540
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_code_fence  (in profile-harness) + 1012  [0x1029c65b0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2565
+              + ! 6 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2484  [0x1029bfa48]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1184
+              + ! 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 596  [0x1029ba188]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2400  [0x1029bf9f4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1179
+              + ! 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2584,2564  [0x1029bfaac,0x1029bfa98]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1197
+              + ! 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 1996  [0x1029ba700]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:0
+              + ! 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 608,612  [0x1029ba194,0x1029ba198]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3203
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 648  [0x1029ba1bc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3206
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2704,2688  [0x1029bfb24,0x1029bfb14]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1213
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness) + 1384,1392  [0x1029c6d5c,0x1029c6d64]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2416
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 0,24  [0x1029b9f34,0x1029b9f4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3185
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 324  [0x1029bf1d8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1089
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 1068  [0x1029bf4c0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1129
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_code_fence  (in profile-harness) + 160  [0x1029c625c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2601
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 1992  [0x1029ba6fc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3217
+              + ! : 1 _RNvMs3_NtCslJsSqIQKwiA_5alloc7raw_vecINtB5_6RawVecNtNtCsi5vgREsHWBB_9ferromark5range5RangeE8grow_oneBQ_  (in profile-harness) + 60  [0x1029f4310]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:188
+              + ! :   1 _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsi5vgREsHWBB_9ferromark  (in profile-harness) + 228  [0x1029f39c4]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:556
+              + ! :     1 _realloc  (in libsystem_malloc.dylib) + 452  [0x186193f14]
+              + ! :       1 _malloc_zone_realloc  (in libsystem_malloc.dylib) + 148  [0x1861936f8]
+              + ! :         1 xzm_realloc  (in libsystem_malloc.dylib) + 880  [0x186183ef4]
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 1884  [0x1029ba690]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3217
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20try_html_block_start  (in profile-harness) + 1404  [0x1029c61a4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2673
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 504  [0x1029bf28c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1090
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 520  [0x1029bf29c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1091
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 552  [0x1029bf2bc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1092
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 636  [0x1029bf310]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1118
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2528  [0x1029bfa74]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1195
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2788  [0x1029bfb78]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1224
+              + 181 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 1616  [0x102996858]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 91 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 2476,2908,...  [0x102996bb4,0x102996d64,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 65 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 1616  [0x102996858]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! : 17 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 52  [0x1029ba814]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1243
+              + ! : 10 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 600,612,...  [0x1029baa38,0x1029baa44,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1282
+              + ! : 9 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 76,124,...  [0x1029ba82c,0x1029ba85c,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! : 8 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 916,640,...  [0x1029bab74,0x1029baa60,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1292
+              + ! : 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 184,176  [0x1029ba898,0x1029ba890]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1252
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 192  [0x1029ba8a0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1253
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 220  [0x1029ba8bc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1254
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 1280,1296,...  [0x1029bace0,0x1029bacf0,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1303
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 2636  [0x1029bb22c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1397
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 288  [0x1029ba900]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1260
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 356  [0x1029ba944]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1261
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 380  [0x1029ba95c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1263
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 1464  [0x1029bad98]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1265
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 1568  [0x1029bae00]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1311
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 2760  [0x1029bb2a8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1404
+              + ! 21 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 2928,2920,...  [0x1029bb350,0x1029bb348,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1411
+              + ! 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness) + 20,12  [0x1029ba7f4,0x1029ba7ec]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1242
+              + 112 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 3460,3452,...  [0x10299bf10,0x10299bf08,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2207
+              + 110 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 7672  [0x102998000]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 72 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 1160,4788,...  [0x102996690,0x1029974bc,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 18 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 204  [0x1029b9de4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3824
+              + ! : 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 196,60  [0x1029c0260,0x1029c01d8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3836
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 524  [0x1029c03a8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3848
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 744  [0x1029c0484]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3861
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 128  [0x1029c021c]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/iter/macros.rs:0
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 44  [0x1029c01c8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3831
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 212  [0x1029c0270]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3838
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 488  [0x1029c0384]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3845
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 184  [0x1029c0254]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3858
+              + ! 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 24,28  [0x1029bfcc4,0x1029bfcc8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4197
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 72  [0x1029bfcf4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4210
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 52  [0x1029bfce0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4206
+              + ! 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 928,920  [0x1029c053c,0x1029c0534]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3862
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 0  [0x1029b9d18]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3796
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 104  [0x1029b9d80]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3814
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 264  [0x1029bfdb4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4256
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 116  [0x1029b9d8c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3820
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 188  [0x1029b9dd4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3822
+              + 100 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 9412  [0x1029986cc]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 31 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in profile-harness) + 1000  [0x1029c2d44]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! : 8 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 56  [0x1029c3664]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2070
+              + ! : | 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 104  [0x1029b9d80]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3814
+              + ! : | 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 204  [0x1029b9de4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3824
+              + ! : | + 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 468  [0x1029c0370]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! : | + 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 204  [0x1029c0268]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3838
+              + ! : | 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 936  [0x1029c0544]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3862
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 0  [0x1029b9d18]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3796
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+              + ! : |   1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 24  [0x1029bfcc4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4197
+              + ! : 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 68  [0x1029c3670]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2077
+              + ! : 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1432,1428,...  [0x1029c3bc4,0x1029c3bc0,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2120
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1512,1508  [0x1029c3c14,0x1029c3c10]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2132
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1048,1052  [0x1029c3a44,0x1029c3a48]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2081
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1100,1120  [0x1029c3a78,0x1029c3a8c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2085
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1204  [0x1029c3ae0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2095
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1644,1668  [0x1029c3c98,0x1029c3cb0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2148
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 432  [0x1029b9ec8]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/vec/set_len_on_drop.rs:0
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 48  [0x1029c365c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2070
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1388  [0x1029c3b98]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2117
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1556  [0x1029c3c40]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2134
+              + ! 30 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in profile-harness) + 36,84,...  [0x1029c2980,0x1029c29b0,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1816
+              + ! 14 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 9432,9496,...  [0x1029986e0,0x102998720,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 14 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in profile-harness) + 116,412,...  [0x1029c29d0,0x1029c2af8,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1833
+              + ! 7 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness) + 1704,1700  [0x1029c3cd4,0x1029c3cd0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2149
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in profile-harness) + 980  [0x1029c2d30]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1827
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in profile-harness) + 756,768  [0x1029c2c50,0x1029c2c5c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1837
+              + 96 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 4672  [0x102997448]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 61 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 468,344,...  [0x1029ba108,0x1029ba08c,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3188
+              + ! 12 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 7656,4692,...  [0x102997ff0,0x10299745c,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 8 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 1740,712,...  [0x1029ba600,0x1029ba1fc,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3208
+              + ! 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 1996  [0x1029ba700]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:0
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 44  [0x1029b9f60]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3187
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 1848  [0x1029ba66c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3209
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 1884  [0x1029ba690]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3217
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 596  [0x1029ba188]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 612  [0x1029ba198]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3203
+              + 54 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 6512  [0x102997b78]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 16 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 932  [0x1029bbfe0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1626
+              + ! : 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+              + ! : | + 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 248  [0x1029c46e0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4268
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 24  [0x1029bfcc4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4197
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 36  [0x1029bfcd0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4200
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 64  [0x1029bfcec]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4206
+              + ! : | 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 108  [0x1029bfd18]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4235
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 188,160  [0x1029b9dd4,0x1029b9db8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3822
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 204  [0x1029b9de4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3824
+              + ! : | 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 196  [0x1029c0260]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3836
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 928,936  [0x1029c053c,0x1029c0544]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3862
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 44  [0x1029b9d44]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 0  [0x1029b9d18]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3796
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 104  [0x1029b9d80]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3814
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 128  [0x1029b9d98]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3820
+              + ! 10 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 308  [0x1029bbd70]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1633
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 128  [0x1029bc9fc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2201
+              + ! : 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 2276,2288  [0x1029bd260,0x1029bd26c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2237
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 436  [0x1029b9ecc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3827
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 40  [0x1029bc9a4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2200
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 408  [0x1029bcb14]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2222
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 2188  [0x1029bd208]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2234
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 2248  [0x1029bd244]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2236
+              + ! 6 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 6536,8096,...  [0x102997b90,0x1029981a8,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 812,820  [0x1029bbf68,0x1029bbf70]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1624
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 264,280,...  [0x1029bbd44,0x1029bbd54,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1598
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 348  [0x1029bbd98]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1609
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 44  [0x1029bbc68]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1595
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 652  [0x1029bbec8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1617
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 432  [0x1029b9ec8]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/vec/set_len_on_drop.rs:0
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 976  [0x1029bcd4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2251
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 180  [0x1029bbcf0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 284  [0x1029bbd58]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1599
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 440  [0x1029bbdf4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1615
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 508  [0x1029bbe38]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1616
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 740  [0x1029bbf20]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1618
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 916  [0x1029bbfd0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1625
+              + 49 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 13676  [0x102999774]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1699
+              + ! 42 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 13552,13568,...  [0x1029996f8,0x102999708,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1699
+              + ! 7 _RNvMs3_NtCslJsSqIQKwiA_5alloc7raw_vecINtB5_6RawVecNtCsi5vgREsHWBB_9ferromark14FootnoteTargetE8grow_oneBO_  (in profile-harness) + 60  [0x1029f384c]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:188
+              + !   7 _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsi5vgREsHWBB_9ferromark  (in profile-harness) + 228  [0x1029f39c4]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:556
+              + !     5 _realloc  (in libsystem_malloc.dylib) + 452  [0x186193f14]
+              + !     | 4 _malloc_zone_realloc  (in libsystem_malloc.dylib) + 148  [0x1861936f8]
+              + !     | + 2 xzm_realloc  (in libsystem_malloc.dylib) + 880  [0x186183ef4]
+              + !     | + ! 2 _platform_memmove  (in libsystem_platform.dylib) + 180  [0x186371414]
+              + !     | + 1 xzm_realloc  (in libsystem_malloc.dylib) + 904  [0x186183f0c]
+              + !     | + ! 1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              + !     | + !   1 mach_absolute_time  (in libsystem_kernel.dylib) + 108  [0x18632410c]
+              + !     | + 1 xzm_realloc  (in libsystem_malloc.dylib) + 888  [0x186183efc]
+              + !     | 1 _malloc_zone_realloc  (in libsystem_malloc.dylib) + 124  [0x1861936e0]
+              + !     2 _realloc  (in libsystem_malloc.dylib) + 252  [0x186193e4c]
+              + !       2 xzm_malloc_zone_size  (in libsystem_malloc.dylib) + 572,708  [0x18618e748,0x18618e7d0]
+              + 43 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4384,4376,...  [0x10299c2ac,0x10299c2a4,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:0
+              + 31 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 3176  [0x102996e70]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 18 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 756,1576,...  [0x1029964fc,0x102996830,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 96  [0x1029bd794]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1650
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 436  [0x1029b9ecc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3827
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 128  [0x1029bc9fc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2201
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 880  [0x1029bccec]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2249
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 956  [0x1029bcd38]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2251
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 976  [0x1029bcd4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2251
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 1584  [0x1029bdd64]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1698
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 1424  [0x1029bdcc4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1701
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 12  [0x1029bd740]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1640
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 44  [0x1029bd760]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1648
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 196  [0x1029bd7f8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1684
+              + 31 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 9164  [0x1029985d4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 14 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 28,68,...  [0x1029bd3b0,0x1029bd3d8,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2296
+              + ! 5 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 9164,9272,...  [0x1029985d4,0x102998640,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 132,124,...  [0x1029bd418,0x1029bd410,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2309
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 80,176  [0x1029bd3e4,0x1029bd444]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 112  [0x1029bd404]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2305
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 100  [0x1029bd3f8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:17
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 116  [0x1029bd408]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2306
+              + 25 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 1936  [0x102996998]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 11 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 1576,688,...  [0x102996830,0x1029964b8,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 7 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 224  [0x1029bb4d4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2705
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 1388  [0x1029bdca0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1697
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 184  [0x1029bb4ac]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2688
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 440  [0x1029bb5ac]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2714
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 516  [0x1029bb5f8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2720
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 328  [0x1029bb53c]  /Users/sebastian/Workspace/ferromark/src/cursor.rs:0
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 1424  [0x1029bdcc4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1701
+              + 19 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 672  [0x1029964a8]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 6 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 712,1032,...  [0x1029964d0,0x102996610,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile-harness) + 740,864,...  [0x1029bc3c8,0x1029bc444,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3165
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile-harness) + 1184,1308  [0x1029bc584,0x1029bc600]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile-harness) + 20  [0x1029bc0f8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3107
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile-harness) + 36  [0x1029bc108]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3115
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile-harness) + 200  [0x1029bc1ac]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3118
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile-harness) + 452  [0x1029bc2a8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3160
+              + 19 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 9284  [0x10299864c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 7 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 9396,9284  [0x1029986bc,0x10299864c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 7 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_blockquote  (in profile-harness) + 24  [0x1029c2228]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1705
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_blockquote  (in profile-harness) + 672,236  [0x1029c24b0,0x1029c22fc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_blockquote  (in profile-harness) + 260  [0x1029c2314]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1715
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_blockquote  (in profile-harness) + 688  [0x1029c24c0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1725
+              + !   1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 0  [0x1029b9d18]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3796
+              + 16 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 12992  [0x1029994c8]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 16 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+              + !   4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 1492  [0x1029c4bbc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4282
+              + !   : 2 _RNvMNtCsi5vgREsHWBB_9ferromark8link_refNtB2_12LinkRefStore6insert  (in profile-harness) + 216  [0x1029c5220]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:37
+              + !   : | 2 _RNvMs3_NtCslJsSqIQKwiA_5alloc7raw_vecINtB5_6RawVecNtNtCsi5vgREsHWBB_9ferromark8footnote11FootnoteDefE8grow_oneBQ_  (in profile-harness) + 60  [0x1029f5070]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:188
+              + !   : |   2 _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsi5vgREsHWBB_9ferromark  (in profile-harness) + 260  [0x1029f39e4]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:559
+              + !   : |     1 _malloc_zone_malloc  (in libsystem_malloc.dylib) + 44  [0x1861930e8]
+              + !   : |     1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 420  [0x1861890e0]
+              + !   : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 1888  [0x1029c4d48]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4287
+              + !   : 1 _RNvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB5_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE6insertCsi5vgREsHWBB_9ferromark  (in profile-harness) + 760  [0x1029c5734]  /rust/deps/hashbrown-0.17.1/src/map.rs:1812
+              + !   :   1 _RINvMs6_NtCs9nAj5kJTqSU_9hashbrown3rawINtB6_8RawTableTNtNtCslJsSqIQKwiA_5alloc6string6StringjEE14reserve_rehashNCINvNtB8_3map11make_hasherBQ_jNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE0ECsi5vgREsHWBB_9ferromark  (in profile-harness) + 788  [0x1029f335c]  /rust/deps/hashbrown-0.17.1/src/raw.rs:962
+              + !   :     1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              + !   :       1 mach_absolute_time  (in libsystem_kernel.dylib) + 112  [0x186324110]
+              + !   3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 760  [0x1029c48e0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4268
+              + !   : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 784,912,...  [0x1029c48f8,0x1029c4978,...]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4268
+              + !   3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 1392  [0x1029c4b58]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4279
+              + !   : 1 <deduplicated_symbol>  (in libsystem_malloc.dylib) + 112  [0x1861831cc]
+              + !   : 1 _xzm_xzone_malloc  (in libsystem_malloc.dylib) + 180  [0x186183a04]
+              + !   : 1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 276  [0x186189050]
+              + !   2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 1164  [0x1029c4a74]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4272
+              + !   : 2 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness) + 256  [0x1029b3784]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:119
+              + !   :   2 _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_text  (in profile-harness) + 2624  [0x1029b5d60]  /Users/sebastian/Workspace/ferromark/src/link_ref.rs:126
+              + !   :     1 _RINvNvMs2_NtCslJsSqIQKwiA_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalECsi5vgREsHWBB_9ferromark  (in profile-harness) + 88  [0x1029f37dc]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:668
+              + !   :     | 1 _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsi5vgREsHWBB_9ferromark  (in profile-harness) + 260  [0x1029f39e4]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:559
+              + !   :     |   1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 268  [0x186189048]
+              + !   :     1 _RINvNvMs2_NtCslJsSqIQKwiA_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalECsi5vgREsHWBB_9ferromark  (in profile-harness) + 60  [0x1029f37c0]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:668
+              + !   2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 1280  [0x1029c4ae8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4278
+              + !   : 1 _malloc_zone_malloc  (in libsystem_malloc.dylib) + 100  [0x186193120]
+              + !   : 1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 276  [0x186189050]
+              + !   1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 1184  [0x1029c4a88]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4276
+              + !   : 1 _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE3geteECsi5vgREsHWBB_9ferromark  (in profile-harness) + 208  [0x1029b3b68]  /rust/deps/hashbrown-0.17.1/src/map.rs:1287
+              + !   1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness) + 1412  [0x1029c4b6c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4279
+              + !     1 _platform_memmove  (in libsystem_platform.dylib) + 12  [0x18637136c]
+              + 15 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 3160  [0x102996e60]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 8 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+              + ! : 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 24,28  [0x1029bfcc4,0x1029bfcc8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4197
+              + ! : 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 72  [0x1029bfcf4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4210
+              + ! : 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness) + 52  [0x1029bfce0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:4206
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 36  [0x1029b9d3c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3802
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 204  [0x1029b9de4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3824
+              + !   1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 128  [0x1029c021c]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/iter/macros.rs:0
+              + !   1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness) + 520  [0x1029c03a4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3845
+              + 11 _RNvMs3_Csi5vgREsHWBB_9ferromarkNtB5_14ParagraphState8add_text  (in profile-harness) + 80  [0x1029b8478]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1000
+              + 10 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 6488  [0x102997b60]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 2 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 6488,6492  [0x102997b60,0x102997b64]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser17would_start_block  (in profile-harness) + 700  [0x1029bc974]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/option.rs:0
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser17would_start_block  (in profile-harness) + 408  [0x1029bc850]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1547
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser17would_start_block  (in profile-harness) + 4  [0x1029bc6bc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1518
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser17would_start_block  (in profile-harness) + 56  [0x1029bc6f0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1519
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser17would_start_block  (in profile-harness) + 368  [0x1029bc828]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1546
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser17would_start_block  (in profile-harness) + 628  [0x1029bc92c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1568
+              + 9 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in profile-harness) + 588  [0x1029c2ba8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1857
+              + 8 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 3136  [0x102996e48]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 3 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 2188  [0x1029bd208]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2234
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 2136  [0x1029bd1d4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2229
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 132  [0x1029bca00]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2201
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 216  [0x1029bca54]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2203
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness) + 812  [0x1029bcca8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2248
+              + 8 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 7768  [0x102998060]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 96  [0x1029bd3f4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2307
+              + ! 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 124,140  [0x1029bd410,0x1029bd420]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2309
+              + ! 1 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 7656  [0x102997ff0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 28  [0x1029bd3b0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2296
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 112  [0x1029bd404]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2305
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 336  [0x1029bd4e4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2336
+              + 8 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness) + 192  [0x1029bd454]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2341
+              + 8 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 1632,1636  [0x10299b7ec,0x10299b7f0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2007
+              + 7 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness) + 1972  [0x1029ba6e8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3219
+              + 6 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 3980,3984,...  [0x10299c118,0x10299c11c,...]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2038
+              + 5 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 432  [0x1029b9ec8]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/vec/set_len_on_drop.rs:0
+              + 4 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 9256  [0x102998630]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 1 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 1604  [0x10299684c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19start_indented_code  (in profile-harness) + 16  [0x1029c30a4]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2605
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19start_indented_code  (in profile-harness) + 188  [0x1029c3150]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2625
+              + ! 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19start_indented_code  (in profile-harness) + 292  [0x1029c31b8]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2641
+              + 4 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_blockquote  (in profile-harness) + 248,868  [0x1029c2308,0x1029c2574]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1740
+              + 3 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness) + 404  [0x1029b7858]  /Users/sebastian/Workspace/ferromark/src/render.rs:522
+              + 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 436  [0x1029b9ecc]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3827
+              + 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness) + 1436  [0x1029bdcd0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1701
+              + 2 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2476  [0x1029bfa40]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1238
+              + 1 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 17780  [0x10299a77c]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1734
+              + ! 1 _xzm_free  (in libsystem_malloc.dylib) + 128  [0x186184198]
+              + 1 _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 17800  [0x10299a790]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1734
+              + ! 1 _xzm_free  (in libsystem_malloc.dylib) + 960  [0x1861844d8]
+              + 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter14blockquote_end  (in profile-harness) + 76  [0x1029b8008]  /Users/sebastian/Workspace/ferromark/src/render.rs:648
+              + 1 _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter14code_block_end  (in profile-harness) + 76  [0x1029b7930]  /Users/sebastian/Workspace/ferromark/src/render.rs:630
+              + 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness) + 1124  [0x1029bc0a0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:1635
+              + 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness) + 1644  [0x1029bba60]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:2725
+              + 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile-harness) + 1320  [0x1029bc60c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3182
+              + 1 _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness) + 2908  [0x1029bfbf0]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:0
+              + 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4524  [0x10299c338]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2031
+              + 1 _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness) + 4184  [0x10299c1e4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:2060
+              + 1 _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness) + 660  [0x1029ae840]  /Users/sebastian/Workspace/ferromark/src/escape.rs:38
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 1552  [0x186184728]
+              2 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 828  [0x1029c8020]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 2 _malloc_zone_malloc  (in libsystem_malloc.dylib) + 44,64  [0x1861930e8,0x1861930fc]
+              2 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2016  [0x1029c84c4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 2 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              +   2 mach_absolute_time  (in libsystem_kernel.dylib) + 108,112  [0x18632410c,0x186324110]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 712  [0x1029c7fac]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_malloc_large_huge  (in libsystem_malloc.dylib) + 464  [0x186183458]
+              +   1 xzm_segment_group_alloc_chunk  (in libsystem_malloc.dylib) + 504  [0x18616c5f4]
+              +     1 _xzm_segment_group_find_and_allocate_chunk  (in libsystem_malloc.dylib) + 528  [0x18616cc30]
+              +       1 _xzm_segment_group_span_mark_smaller  (in libsystem_malloc.dylib) + 240  [0x18616e148]
+              +         1 _xzm_reclaim_mark_used_locked  (in libsystem_malloc.dylib) + 60  [0x18616ea9c]
+              +           1 mach_vm_reclaim_try_cancel  (in libsystem_kernel.dylib) + 244  [0x1863372e8]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 796  [0x1029c8000]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 824  [0x186189274]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 908  [0x1029c8070]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 472  [0x186189114]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 1020  [0x1029c80e0]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 96  [0x186188f9c]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 1056  [0x1029c8104]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 176  [0x186188fec]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 1164  [0x1029c8170]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 472  [0x186189114]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 1220  [0x1029c81a8]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 824  [0x186189274]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 1824  [0x1029c8404]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _RNvMs8_Csi5vgREsHWBB_9ferromarkNtB5_11RenderState3new  (in profile-harness) + 68  [0x1029960d4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1407
+              +   1 _xzm_xzone_malloc  (in libsystem_malloc.dylib) + 336  [0x186183aa0]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2080  [0x1029c8504]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              +   1 mach_absolute_time  (in libsystem_kernel.dylib) + 108  [0x18632410c]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2144  [0x1029c8544]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _free  (in libsystem_malloc.dylib) + 12  [0x186193cdc]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2176  [0x1029c8564]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 128  [0x186184198]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2256  [0x1029c85b4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              +   1 mach_absolute_time  (in libsystem_kernel.dylib) + 108  [0x18632410c]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2288  [0x1029c85d4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              +   1 mach_absolute_time  (in libsystem_kernel.dylib) + 112  [0x186324110]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2304  [0x1029c85e4]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              +   1 mach_absolute_time  (in libsystem_kernel.dylib) + 108  [0x18632410c]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2368  [0x1029c8624]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 304  [0x186184248]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2480  [0x1029c8694]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 1240  [0x1861845f0]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2608  [0x1029c8714]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+              + 1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+              +   1 mach_absolute_time  (in libsystem_kernel.dylib) + 108  [0x18632410c]
+              1 _RNvCsi5vgREsHWBB_9ferromark25to_html_into_with_options  (in profile-harness) + 2624  [0x1029c8724]  /Users/sebastian/Workspace/ferromark/src/lib.rs:913
+                1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+                  1 mach_absolute_time  (in libsystem_kernel.dylib) + 112  [0x186324110]
+
+Total number in stack (recursive counted multiple, when >=5):
+        19       _platform_memmove  (in libsystem_platform.dylib) + 0  [0x186371360]
+        14       _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness) + 0  [0x102996208]  /Users/sebastian/Workspace/ferromark/src/lib.rs:1681
+        13       _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib) + 0  [0x186188f3c]
+        11       DYLD-STUB$$memcpy  (in profile-harness) + 0  [0x1029f8ec8]
+        10       _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x186184530]
+        10       mach_absolute_time  (in libsystem_kernel.dylib) + 0  [0x1863240a0]
+        9       _platform_memset  (in libsystem_platform.dylib) + 0  [0x186371090]
+        7       _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 0  [0x1029adb64]  /Users/sebastian/Workspace/ferromark/src/escape.rs:97
+        7       _xzm_free  (in libsystem_malloc.dylib) + 0  [0x186184118]
+        6       DYLD-STUB$$bzero  (in profile-harness) + 0  [0x1029f8df0]
+        6       _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness) + 52  [0x1029b9d4c]  /Users/sebastian/Workspace/ferromark/src/block/parser.rs:3808
+        5       _RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsi5vgREsHWBB_9ferromark  (in profile-harness) + 260  [0x1029f39e4]  /Users/sebastian/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/raw_vec/mod.rs:559
+        5       _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 0  [0x1029adb64]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+        5       _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 72  [0x1029adbac]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+        5       _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness) + 96  [0x1029adbc4]  /Users/sebastian/Workspace/ferromark/src/escape.rs:90
+        5       _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness) + 0  [0x102988578]  /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/str/converts.rs:91
+        5       __bzero  (in libsystem_platform.dylib) + 0  [0x186371030]
+        5       _malloc_zone_malloc  (in libsystem_malloc.dylib) + 0  [0x1861930bc]
+
+Sort by top of stack, same collapsed (when >= 5):
+        _RNvMNtCsi5vgREsHWBB_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document  (in profile-harness)        634
+        _RNvMsb_Csi5vgREsHWBB_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_  (in profile-harness)        443
+        _RINvCsi5vgREsHWBB_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_  (in profile-harness)        390
+        _platform_memmove  (in libsystem_platform.dylib)        208
+        _RNvCsi5vgREsHWBB_9ferromark21render_inline_content  (in profile-harness)        178
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line  (in profile-harness)        159
+        _RNvNtCsi5vgREsHWBB_9ferromark6escape17first_text_escape  (in profile-harness)        116
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser16match_containers  (in profile-harness)        90
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent  (in profile-harness)        66
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading  (in profile-harness)        65
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser13try_list_item  (in profile-harness)        57
+        _RNvNtCsi5vgREsHWBB_9ferromark6escape31url_escape_link_destination_raw  (in profile-harness)        47
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break  (in profile-harness)        41
+        _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_text_into  (in profile-harness)        41
+        _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_text  (in profile-harness)        41
+        _RNvMs3_Csi5vgREsHWBB_9ferromarkNtB5_14ParagraphState8add_text  (in profile-harness)        40
+        _RNvNtNtCsgtPOCBgevO_4core3str8converts9from_utf8  (in profile-harness)        36
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15close_paragraph  (in profile-harness)        35
+        _platform_memset  (in libsystem_platform.dylib)        35
+        DYLD-STUB$$memcpy  (in profile-harness)        33
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser20emit_paragraph_items  (in profile-harness)        33
+        _RNvNtCsi5vgREsHWBB_9ferromark6render22is_safe_normalized_url  (in profile-harness)        33
+        _RNvNtCsi5vgREsHWBB_9ferromark6escape27url_encode_then_html_escape  (in profile-harness)        31
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser15start_list_item  (in profile-harness)        29
+        _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16write_link_title  (in profile-harness)        24
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser19close_top_container  (in profile-harness)        23
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21close_containers_from  (in profile-harness)        21
+        _RNvNtCsi5vgREsHWBB_9ferromark8link_ref20normalize_label_into  (in profile-harness)        21
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21extract_link_ref_defs  (in profile-harness)        20
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21parse_html_block_line  (in profile-harness)        19
+        mach_absolute_time  (in libsystem_kernel.dylib)        18
+        _RINvNtNtNtNtCsgtPOCBgevO_4core5slice4sort6shared9smallsort25insertion_sort_shift_leftNtNtCsi5vgREsHWBB_9ferromark6inline9EmitPointNCINvMB8_SB1l_20sort_unstable_by_keyTmbENCNvMB1n_NtB1n_12InlineParser11emit_eventss_0E0EB1p_  (in profile-harness)        16
+        _xzm_xzone_malloc_tiny  (in libsystem_malloc.dylib)        16
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_blockquote  (in profile-harness)        15
+        DYLD-STUB$$bzero  (in profile-harness)        14
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser29parse_fence_line_in_container  (in profile-harness)        14
+        _RNvNtNtCsi5vgREsHWBB_9ferromark6inline5marks35compute_emphasis_flags_with_context  (in profile-harness)        13
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers  (in profile-harness)        12
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser21peek_html_block_start  (in profile-harness)        11
+        _xzm_free  (in libsystem_malloc.dylib)        11
+        _RINvMs1_NtCs9nAj5kJTqSU_9hashbrown3mapINtB6_7HashMapNtNtCslJsSqIQKwiA_5alloc6string6StringjNtCsfRGhmGGjhIA_10rustc_hash13FxBuildHasherE3geteECsi5vgREsHWBB_9ferromark  (in profile-harness)        10
+        _RNvNtCsi5vgREsHWBB_9ferromark6escape16escape_full_into  (in profile-harness)        10
+        _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter11heading_end  (in profile-harness)        9
+        _platform_memcmp  (in libsystem_platform.dylib)        9
+        _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter15paragraph_start  (in profile-harness)        8
+        _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter16code_block_start  (in profile-harness)        8
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser14try_code_fence  (in profile-harness)        8
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser17would_start_block  (in profile-harness)        8
+        _RNvNtCsi5vgREsHWBB_9ferromark6render11is_safe_url  (in profile-harness)        8
+        _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter13heading_start  (in profile-harness)        7
+        _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter13paragraph_end  (in profile-harness)        7
+        _RNvNtNtCsaVVhDVIEQcj_11html_escape6decode11html_entity19find_decoded_entity  (in profile-harness)        7
+        __bzero  (in libsystem_platform.dylib)        7
+        _malloc_zone_malloc  (in libsystem_malloc.dylib)        7
+        _RNvMNtCsi5vgREsHWBB_9ferromark6renderNtB2_10HtmlWriter20unescape_backslashes  (in profile-harness)        5
+        _RNvMNtNtCsi5vgREsHWBB_9ferromark5block6parserNtB2_11BlockParser32extract_link_ref_defs_from_bytes  (in profile-harness)        5
+
+Binary Images:
+       0x102984000 -        0x102a0c21f +profile-harness (0) <D05ED95E-369D-379E-99CB-94A177B49668> /Users/*/profile-harness
+       0x185ef4000 -        0x185f46b4b  libobjc.A.dylib (951.7) <03BD9E32-CF0A-37B0-898A-3CE8DE06D842> /usr/lib/libobjc.A.dylib
+       0x185f47000 -        0x185f7bd58  libdyld.dylib (1387) <957F93B3-8805-39C7-9C51-EDD1715F550E> /usr/lib/system/libdyld.dylib
+       0x185f7c000 -        0x18602f4ff  dyld (1.0.0 - 1387) <74E52480-C2BD-3C8D-812D-95FE2B74A096> /usr/lib/dyld
+       0x186030000 -        0x186033228  libsystem_blocks.dylib (96) <E0AC1231-27AA-3A13-8FAC-41D5802B1F3C> /usr/lib/system/libsystem_blocks.dylib
+       0x186034000 -        0x18608855f  libxpc.dylib (3102.160.5) <33E44C2D-D65E-37A6-B85F-1A4CF524A050> /usr/lib/system/libxpc.dylib
+       0x186089000 -        0x1860a99ff  libsystem_trace.dylib (1861.160.4) <93F1DD8C-6CD9-32B9-B222-D23DA5D161B4> /usr/lib/system/libsystem_trace.dylib
+       0x1860aa000 -        0x1861585f7  libcorecrypto.dylib (1922.160.10) <0642DDAD-4771-3C82-805C-E7C6701C1461> /usr/lib/system/libcorecrypto.dylib
+       0x186159000 -        0x1861a9257  libsystem_malloc.dylib (812.160.5) <D969A907-3E43-3951-9365-8C2DB3812E9D> /usr/lib/system/libsystem_malloc.dylib
+       0x1861aa000 -        0x1861f123f  libdispatch.dylib (1542.160.2) <B2000CD5-F580-314A-A141-E036719D854E> /usr/lib/system/libdispatch.dylib
+       0x1861f2000 -        0x1861f4ffb  libsystem_featureflags.dylib (103) <FEE12F9C-344B-33B3-8EDD-283580EF1C67> /usr/lib/system/libsystem_featureflags.dylib
+       0x1861f5000 -        0x1862761e7  libsystem_c.dylib (1752.160.4) <D77CEB62-AFF6-3CEC-BA9B-4F057FBE2EB5> /usr/lib/system/libsystem_c.dylib
+       0x186277000 -        0x186307ae7  libc++.1.dylib (2100.43) <F0FD393C-15BC-3C75-A19D-897F7B225C78> /usr/lib/libc++.1.dylib
+       0x186308000 -        0x18632275f  libc++abi.dylib (2100.43) <F38A9C58-22AB-3798-BBAE-8DCD9CC0CE27> /usr/lib/libc++abi.dylib
+       0x186323000 -        0x1863602e7  libsystem_kernel.dylib (12377.161.14) <C6A4A4CB-92E6-3BAF-AAE0-E8306259209A> /usr/lib/system/libsystem_kernel.dylib
+       0x186361000 -        0x18636db3b  libsystem_pthread.dylib (539.100.4) <A373F0B0-9880-326A-88B4-DD8BE4E33072> /usr/lib/system/libsystem_pthread.dylib
+       0x18636e000 -        0x186376963  libsystem_platform.dylib (375.120.2) <EDB83A19-EC17-32DE-9350-6145970A85D6> /usr/lib/system/libsystem_platform.dylib
+       0x186377000 -        0x1863a66eb  libsystem_info.dylib (600) <9B5FB84B-31AD-3EA7-8F89-8C700D369DC8> /usr/lib/system/libsystem_info.dylib
+       0x18a344000 -        0x18a34de5f  libsystem_darwin.dylib (1752.160.4) <8E07D22E-CE5A-38A0-B091-5B0338C326F5> /usr/lib/system/libsystem_darwin.dylib
+       0x18a7af000 -        0x18a7c11b6  libsystem_notify.dylib (348.160.3) <15799128-6CBD-30D6-A2BB-B9D02B4470C0> /usr/lib/system/libsystem_notify.dylib
+       0x18ca80000 -        0x18ca9af7b  libsystem_networkextension.dylib (2226.161.1) <9C7B1EEB-47BE-3791-93A9-CFC693CB9417> /usr/lib/system/libsystem_networkextension.dylib
+       0x18cb1d000 -        0x18cb34fdf  libsystem_asl.dylib (406) <54439739-33EE-3273-839F-CBA67D7F5CB1> /usr/lib/system/libsystem_asl.dylib
+       0x18e6d6000 -        0x18e6de387  libsystem_symptoms.dylib (2169.160.3) <229122B9-B8B1-3F2F-870E-8650AE3C4FB5> /usr/lib/system/libsystem_symptoms.dylib
+       0x19297b000 -        0x1929b35b7  libsystem_containermanager.dylib (725.160.3) <14B2A47F-19C8-392F-8FDB-FE8AE375DD41> /usr/lib/system/libsystem_containermanager.dylib
+       0x193d8d000 -        0x193d915d7  libsystem_configuration.dylib (1405.160.3) <D8D6280B-783D-3550-BDBA-2861AE40604F> /usr/lib/system/libsystem_configuration.dylib
+       0x193d92000 -        0x193d9899f  libsystem_sandbox.dylib (2680.160.6) <54688162-B50D-3D31-A1E8-7B9766D3530D> /usr/lib/system/libsystem_sandbox.dylib
+       0x1953ed000 -        0x1953f01fb  libquarantine.dylib (196.160.2) <EEE5AADB-52E1-3C4C-881A-70405770B1F1> /usr/lib/system/libquarantine.dylib
+       0x195b8c000 -        0x195b92d03  libsystem_coreservices.dylib (191.5.1) <D4ACD2AC-5702-3C45-85A0-300B2C2D19E1> /usr/lib/system/libsystem_coreservices.dylib
+       0x19611b000 -        0x196158a77  libsystem_m.dylib (3312.100.1) <B54FBE99-DB0B-32C7-ABDD-C2206DF606A4> /usr/lib/system/libsystem_m.dylib
+       0x19615a000 -        0x19615d527  libmacho.dylib (1387) <949131E5-BDA2-39BA-AA50-62651BB51802> /usr/lib/system/libmacho.dylib
+       0x196177000 -        0x1961843a7  libcommonCrypto.dylib (600035) <3B110564-5278-3CB0-85F1-2CE8431FF935> /usr/lib/system/libcommonCrypto.dylib
+       0x196185000 -        0x19618eca3  libunwind.dylib (2100.2) <05FD0014-55B1-3B8A-A6BA-6C7A389C4123> /usr/lib/system/libunwind.dylib
+       0x196197000 -        0x1961a1bef  libcopyfile.dylib (240.160.2.0.1) <D0009B8A-8ECC-3D56-9206-7E1839707F93> /usr/lib/system/libcopyfile.dylib
+       0x1961a2000 -        0x1961a5987  libcompiler_rt.dylib (103.3) <6FB345CA-7F5C-3263-A23F-143F7539FD8A> /usr/lib/system/libcompiler_rt.dylib
+       0x1961a6000 -        0x1961aa78b  libsystem_collections.dylib (1752.160.4) <C8160BD2-5941-3DC0-BB40-F8C2B8156EC4> /usr/lib/system/libsystem_collections.dylib
+       0x1961ab000 -        0x1961ae4cf  libsystem_secinit.dylib (168.100.7) <ECABC024-8F02-374A-BB7E-29437CEA2ABD> /usr/lib/system/libsystem_secinit.dylib
+       0x1961af000 -        0x1961b1bf7  libremovefile.dylib (85.100.6) <7460B5AE-469A-36A0-A7EC-6C7D69628E86> /usr/lib/system/libremovefile.dylib
+       0x1961b2000 -        0x1961b2f27  libkeymgr.dylib (31) <7E863FCA-F3FF-32C7-8A8C-F983E946AFC3> /usr/lib/system/libkeymgr.dylib
+       0x1961b3000 -        0x1961bbe37  libsystem_dnssd.dylib (2881.160.4) <305F4398-E688-3384-B351-02D865EC8A04> /usr/lib/system/libsystem_dnssd.dylib
+       0x1961bc000 -        0x1961c109b  libcache.dylib (95) <9CD7B1E1-3E47-339C-A193-2392E3E0ED23> /usr/lib/system/libcache.dylib
+       0x1961c2000 -        0x1961c3ce3  libSystem.B.dylib (1356) <4FED5EE2-5D3E-35B1-A170-9859C4B683BB> /usr/lib/libSystem.B.dylib
+       0x28a185000 -        0x28a18c349  libRosetta.dylib (367.9) <0C7397C6-D747-31F2-8BC1-4096213BDE5C> /usr/lib/libRosetta.dylib
+       0x28bd98000 -        0x28bd9ba4b  libsystem_darwindirectory.dylib (122) <971A4F65-493D-39F3-846D-0D33FA2769FD> /usr/lib/system/libsystem_darwindirectory.dylib
+       0x28bd9c000 -        0x28bda639b  libsystem_eligibility.dylib (319.160.17) <750CA446-92EA-3A56-9A7B-CC0841686C50> /usr/lib/system/libsystem_eligibility.dylib
+       0x28bda7000 -        0x28bdae88b  libsystem_sanitizers.dylib (26.1) <D88EC709-9AA8-3083-B22B-D3CB39678D71> /usr/lib/system/libsystem_sanitizers.dylib
+       0x28bdaf000 -        0x28bdafbb7  libsystem_trial.dylib (474.2.18.2) <7194FF5B-A6C5-3D67-B00A-90209F10D603> /usr/lib/system/libsystem_trial.dylib

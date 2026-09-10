@@ -294,9 +294,32 @@ function validate(
   if (
     !benchmarks.includes("benchmarks/bun-comparison/README.md") ||
     !benchmarks.includes("docs/reports/2026-09-05-bun-comparison.md") ||
-    !benchmarks.includes("different compiler and allocator from the tables above")
+    !benchmarks
+      .replace(/\s+/g, " ")
+      .includes("different compiler and allocator from the tables above")
   ) {
     failContract("Benchmarks must link and distinguish the exploratory Bun comparison");
+  }
+  for (const disclosure of [
+    "### Native Bun Markdown comparison",
+    "benchmarks/bun-comparison/PROVENANCE.md",
+    "limited output-equivalence gate",
+    "### Fine-grained feature and document benchmarks",
+    "docs/reports/2026-09-10-markdown-feature-costs-final.md",
+    "docs/reports/2026-09-10-markdown-feature-optimizations.md",
+    "docs/reports/2026-09-10-gfm-profiling.md",
+    "**Activation:**",
+    "**Actual syntax:**",
+    "**Lifecycle:**",
+    "requested bytes are not peak memory",
+    "Comrak uses fresh owned output",
+    "not an equal-work parser ranking",
+  ]) {
+    if (!benchmarks.replace(/\s+/g, " ").includes(disclosure)) {
+      failContract(
+        `Benchmarks must preserve the evidence or disclosure ${JSON.stringify(disclosure)}`,
+      );
+    }
   }
   if (!benchmarks.includes("These rankings are Apple Silicon results only")) {
     failContract("Benchmarks must scope published rankings to Apple Silicon");
@@ -501,6 +524,23 @@ describe("README structure contract", () => {
     );
   });
 
+  for (const disclosure of [
+    "benchmarks/bun-comparison/PROVENANCE.md",
+    "limited output-equivalence gate",
+    "docs/reports/2026-09-10-markdown-feature-costs-final.md",
+    "docs/reports/2026-09-10-markdown-feature-optimizations.md",
+    "**Activation:**",
+    "**Actual syntax:**",
+    "**Lifecycle:**",
+    "requested bytes are not peak memory",
+    "Comrak uses fresh owned output",
+    "not an equal-work parser ranking",
+  ]) {
+    it(`rejects a missing benchmark disclosure: ${disclosure}`, () => {
+      assert.throws(() => validate(document.replaceAll(disclosure, "omitted")), ContractError);
+    });
+  }
+
   it("rejects a dropped x86-64 benchmark caveat", () => {
     assert.throws(
       () => validate(document.replace("has not been re-measured", "has been re-measured")),
@@ -538,7 +578,7 @@ describe("README structure contract", () => {
       () =>
         validate(
           document.replace(
-            "different compiler and allocator from the tables above",
+            /different compiler and allocator\s+from the tables above/,
             "the same configuration",
           ),
         ),

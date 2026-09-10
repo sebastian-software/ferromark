@@ -160,7 +160,7 @@ impl MarkBuffer {
     /// Create a new mark buffer.
     pub fn new() -> Self {
         Self {
-            marks: Vec::with_capacity(64),
+            marks: Vec::new(),
             limit_exceeded: false,
             code_span_limit_exceeded: false,
         }

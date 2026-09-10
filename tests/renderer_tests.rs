@@ -81,3 +81,78 @@ fn renderer_keeps_its_configuration() {
         "<h1>Title</h1>\n<p><mark>mark</mark></p>\n"
     );
 }
+
+#[test]
+fn strikethrough_openers_do_not_leak_between_cells_or_documents() {
+    let options = Options::gfm();
+    let mut renderer = Renderer::with_options(options.clone());
+    let many_openers = "~~open ".repeat(256);
+    for _ in 0..3 {
+        for input in [
+            many_openers.as_str(),
+            "plain",
+            "close~~",
+            "~~closed~~ then ~~open",
+            "| ~~open | close~~ |\n| --- | --- |\n| ~~yes~~ | no~~ |",
+            "~~outside [inside~~](/url)",
+            "[~~inside](/url) outside~~",
+            "`~~code~~` and ~~strike~~",
+            "",
+        ] {
+            assert_eq!(
+                renderer.render(input),
+                to_html_with_options(input, &options),
+                "strikethrough state leaked into {input:?}",
+            );
+        }
+    }
+    assert_eq!(renderer.render("close~~"), "<p>close~~</p>\n");
+    assert_eq!(
+        renderer.render("| ~~open | close~~ |\n| --- | --- |\n"),
+        "<table>\n<thead>\n<tr>\n<th>~~open</th>\n<th>close~~</th>\n</tr>\n</thead>\n</table>\n",
+        "strikethrough must not span table cells",
+    );
+}
+
+#[test]
+fn inline_extension_openers_do_not_cross_features_paragraphs_or_documents() {
+    let options = ferromark::options!(Options::default();
+        highlight: true, subscript: true, superscript: true,
+    );
+    let mut renderer = Renderer::with_options(options.clone());
+    let cases = [
+        (
+            "~~open ~open ^open ==open",
+            "<p>~~open ~open ^open ==open</p>\n",
+        ),
+        (
+            "close~~ close~ close^ close==",
+            "<p>close~~ close~ close^ close==</p>\n",
+        ),
+        (
+            "~~strike~~ ~sub~ ^sup^ ==mark==",
+            "<p><del>strike</del> <sub>sub</sub> <sup>sup</sup> <mark>mark</mark></p>\n",
+        ),
+        ("==open\n\nclose==", "<p>==open</p>\n<p>close==</p>\n"),
+        (
+            "`~sub~ ^sup^ ==mark==`",
+            "<p><code>~sub~ ^sup^ ==mark==</code></p>\n",
+        ),
+    ];
+    for _ in 0..3 {
+        for (input, expected) in cases {
+            assert_eq!(renderer.render(input), expected, "{input}");
+        }
+        for input in [
+            "| ==open | close== |\n| --- | --- |\n| ^open | close^ |\n| ~open | close~ |",
+            "==outside [inside==](/url) ^outside [inside^](/url) ~outside [inside~](/url)",
+            "[==inside](/url) outside== [^inside](/url) outside^ [~inside](/url) outside~",
+            "",
+        ] {
+            assert_eq!(
+                renderer.render(input),
+                to_html_with_options(input, &options)
+            );
+        }
+    }
+}

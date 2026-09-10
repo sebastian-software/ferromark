@@ -37,7 +37,7 @@ use marks::{
     Mark, MarkBuffer, MarkSummary, collect_marks, collect_marks_highlight,
     collect_marks_highlight_superscript, collect_marks_superscript, flags,
 };
-use math::{MathSpan, resolve_math_spans};
+use math::{MathSpan, resolve_math_spans_into};
 use memchr::memchr;
 use strikethrough::{StrikethroughMatch, resolve_strikethrough_into};
 use subscript::{SubscriptMatch, resolve_subscript_into};
@@ -74,6 +74,8 @@ pub struct InlineParser {
     emphasis_stacks: EmphasisStacks,
     emphasis_matches: Vec<EmphasisMatch>,
     strikethrough_matches: Vec<StrikethroughMatch>,
+    // Shared by sequential extension resolvers; each clears its opener stack.
+    extension_openers: Vec<usize>,
     subscript_matches: Vec<SubscriptMatch>,
     superscript_matches: Vec<SuperscriptMatch>,
     highlight_matches: Vec<HighlightMatch>,
@@ -95,42 +97,43 @@ impl InlineParser {
     pub fn new() -> Self {
         Self {
             mark_buffer: MarkBuffer::new(),
-            open_brackets: Vec::with_capacity(32),
-            close_brackets: Vec::with_capacity(32),
-            autolinks: Vec::with_capacity(8),
-            html_spans: Vec::with_capacity(8),
-            html_ranges: Vec::with_capacity(8),
-            link_dest_ranges: Vec::with_capacity(8),
-            autolink_ranges: Vec::with_capacity(8),
-            code_spans: Vec::with_capacity(8),
-            link_boundaries: Vec::with_capacity(16),
-            resolved_links: Vec::with_capacity(8),
-            link_formed_opens: Vec::with_capacity(32),
-            link_inactive_opens: Vec::with_capacity(32),
-            link_used_closes: Vec::with_capacity(32),
-            ref_links: Vec::with_capacity(8),
-            ref_label_buf: String::with_capacity(64),
-            ref_formed_opens: Vec::with_capacity(32),
-            ref_used_closes: Vec::with_capacity(32),
-            ref_occupied: Vec::with_capacity(8),
-            ref_matching_closes: Vec::with_capacity(32),
-            ref_matching_stack: Vec::with_capacity(32),
-            ref_candidates: Vec::with_capacity(32),
-            ref_candidate_prefix: Vec::with_capacity(33),
+            open_brackets: Vec::new(),
+            close_brackets: Vec::new(),
+            autolinks: Vec::new(),
+            html_spans: Vec::new(),
+            html_ranges: Vec::new(),
+            link_dest_ranges: Vec::new(),
+            autolink_ranges: Vec::new(),
+            code_spans: Vec::new(),
+            link_boundaries: Vec::new(),
+            resolved_links: Vec::new(),
+            link_formed_opens: Vec::new(),
+            link_inactive_opens: Vec::new(),
+            link_used_closes: Vec::new(),
+            ref_links: Vec::new(),
+            ref_label_buf: String::new(),
+            ref_formed_opens: Vec::new(),
+            ref_used_closes: Vec::new(),
+            ref_occupied: Vec::new(),
+            ref_matching_closes: Vec::new(),
+            ref_matching_stack: Vec::new(),
+            ref_candidates: Vec::new(),
+            ref_candidate_prefix: Vec::new(),
             ref_work_budget: ReferenceResolutionBudget::new(),
             autolink_literals: Vec::new(),
             emphasis_stacks: EmphasisStacks::default(),
-            emphasis_matches: Vec::with_capacity(16),
-            strikethrough_matches: Vec::with_capacity(8),
+            emphasis_matches: Vec::new(),
+            strikethrough_matches: Vec::new(),
+            extension_openers: Vec::new(),
             subscript_matches: Vec::new(),
             superscript_matches: Vec::new(),
             highlight_matches: Vec::new(),
-            al_code_span_ranges: Vec::with_capacity(8),
-            al_link_ranges: Vec::with_capacity(8),
-            emit_points: Vec::with_capacity(64),
-            emit_suppress_ranges: Vec::with_capacity(8),
-            html_code_ranges: Vec::with_capacity(8),
-            html_autolink_ranges: Vec::with_capacity(8),
+            al_code_span_ranges: Vec::new(),
+            al_link_ranges: Vec::new(),
+            emit_points: Vec::new(),
+            emit_suppress_ranges: Vec::new(),
+            html_code_ranges: Vec::new(),
+            html_autolink_ranges: Vec::new(),
             footnote_refs: Vec::new(),
             inline_footnotes: Vec::new(),
             inline_footnote_brackets: Vec::new(),
@@ -462,7 +465,7 @@ impl InlineParser {
 
         // Math spans (after code spans, before links; gated on math option)
         if math && summary.has_math() {
-            self.math_spans = resolve_math_spans(self.mark_buffer.marks_mut(), text);
+            resolve_math_spans_into(self.mark_buffer.marks_mut(), text, &mut self.math_spans);
         } else {
             self.math_spans.clear();
         }
@@ -641,6 +644,7 @@ impl InlineParser {
                 self.mark_buffer.marks_mut(),
                 &self.link_boundaries,
                 &mut self.strikethrough_matches,
+                &mut self.extension_openers,
             );
         } else {
             self.strikethrough_matches.clear();
@@ -655,6 +659,7 @@ impl InlineParser {
                 &self.link_boundaries,
                 &self.link_dest_ranges,
                 &mut self.subscript_matches,
+                &mut self.extension_openers,
             );
         } else {
             self.subscript_matches.clear();
@@ -669,6 +674,7 @@ impl InlineParser {
                 &self.link_boundaries,
                 &self.link_dest_ranges,
                 &mut self.superscript_matches,
+                &mut self.extension_openers,
             );
         } else {
             self.superscript_matches.clear();
@@ -683,6 +689,7 @@ impl InlineParser {
                 &self.link_boundaries,
                 &self.link_dest_ranges,
                 &mut self.highlight_matches,
+                &mut self.extension_openers,
             );
         } else {
             self.highlight_matches.clear();
@@ -1675,6 +1682,25 @@ fn has_inline_specials_highlight_superscript(input: &[u8]) -> bool {
 /// instead of matching common letters like 'h' and 'w'.
 #[inline]
 fn has_autolink_candidates(input: &[u8]) -> bool {
+    // The literal resolver rejects inputs shorter than four bytes. Short cells
+    // otherwise pay for multiple search setups despite containing few bytes.
+    if input.len() < 4 {
+        return false;
+    }
+    if input.len() <= 16 {
+        for (index, &byte) in input.iter().enumerate() {
+            match byte {
+                b'@' => return true,
+                b':' if input[index..].starts_with(b"://") => return true,
+                b'.' if index >= 3 && input[index - 3..index].eq_ignore_ascii_case(b"www") => {
+                    return true;
+                }
+                _ => {}
+            }
+        }
+        return false;
+    }
+
     // Deliberately three separate single-byte passes: `@` and `:` are rare,
     // so their passes run at full single-needle SIMD speed. Folding the
     // needles into one memchr2/memchr3 pass executes fewer instructions but

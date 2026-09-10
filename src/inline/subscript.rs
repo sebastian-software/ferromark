@@ -25,10 +25,11 @@ pub fn resolve_subscript_into(
     link_boundaries: &[(u32, u32)],
     link_dest_ranges: &[(u32, u32)],
     matches: &mut Vec<SubscriptMatch>,
+    openers: &mut Vec<usize>,
 ) {
     matches.clear();
 
-    let mut openers: Vec<usize> = Vec::new();
+    openers.clear();
 
     for i in 0..marks.len() {
         let mark = &marks[i];

@@ -1,0 +1,1603 @@
+{
+  "exact_html_pairs": 292,
+  "catalog_sha256": "7d0d75f5d4dcc12ccb6510e0d16439c741d4ea29320b80c0d4551f9a05f098e3",
+  "binary_sha256": {
+    "before": "49e1366dbef2ffe50ac44edce3adf61423fad97364614a8f7d1e23d7473d13ab",
+    "after": "73307b60cceb9390c3667a8257d19c49ab1595c7897672947c5a792d5d7aa206"
+  },
+  "rounds": 7,
+  "window_ms": 100,
+  "filters": [
+    "lifecycle/presets/light-1k",
+    "lifecycle/presets/readme",
+    "syntax/math/"
+  ],
+  "summary": [
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "before_ns": 7335.183396834701,
+      "after_ns": 7205.927203341013,
+      "paired_change_percent": -2.2536467307514463,
+      "paired_min_percent": -3.8553745063920064,
+      "paired_max_percent": 0.20301990343085663
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "before_ns": 6418.238770533881,
+      "after_ns": 6392.21466002045,
+      "paired_change_percent": -0.37899620575615467,
+      "paired_min_percent": -4.394102121811139,
+      "paired_max_percent": 0.06290017420340632
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "before_ns": 7341.054137323944,
+      "after_ns": 7156.613486842105,
+      "paired_change_percent": -2.423666089976484,
+      "paired_min_percent": -5.290668342287197,
+      "paired_max_percent": -1.6851576032262616
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "before_ns": 6415.392628205128,
+      "after_ns": 6391.567612474438,
+      "paired_change_percent": -0.21252221173800878,
+      "paired_min_percent": -1.5420278713374813,
+      "paired_max_percent": -0.10295506991561121
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "before_ns": 7567.251210653753,
+      "after_ns": 7426.736935866983,
+      "paired_change_percent": -2.0953927943925366,
+      "paired_min_percent": -4.192558659197266,
+      "paired_max_percent": -0.7300421085830844
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "before_ns": 6621.907574152542,
+      "after_ns": 6574.222857518402,
+      "paired_change_percent": -0.6140655893146163,
+      "paired_min_percent": -5.409199478653259,
+      "paired_max_percent": 31.611083278992712
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "before_ns": 7967.061464968153,
+      "after_ns": 7845.49482434128,
+      "paired_change_percent": -1.0232049746780714,
+      "paired_min_percent": -3.669748881848911,
+      "paired_max_percent": 1.9963498553424497
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "before_ns": 6967.169543429844,
+      "after_ns": 6965.090200445435,
+      "paired_change_percent": -0.0724157964286598,
+      "paired_min_percent": -0.897057113261368,
+      "paired_max_percent": 1.2009511972244091
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "before_ns": 121483.87379807692,
+      "after_ns": 119400.05896226416,
+      "paired_change_percent": -0.1319681753175872,
+      "paired_min_percent": -3.0965395934222983,
+      "paired_max_percent": 2.7567672682292432
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "before_ns": 109735.47149122808,
+      "after_ns": 109747.57894736843,
+      "paired_change_percent": -0.8538158465701828,
+      "paired_min_percent": -3.7208541422013464,
+      "paired_max_percent": 0.9041629716598276
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "before_ns": 146728.56104651163,
+      "after_ns": 145811.10755813954,
+      "paired_change_percent": -1.4635587865700073,
+      "paired_min_percent": -2.3451312459050078,
+      "paired_max_percent": 3.8321589046234283
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "before_ns": 134509.5864361702,
+      "after_ns": 133096.35505319148,
+      "paired_change_percent": -0.06839265157801977,
+      "paired_min_percent": -1.911544921795938,
+      "paired_max_percent": 3.4981484675035146
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "before_ns": 131263.07552083334,
+      "after_ns": 129480.01658163265,
+      "paired_change_percent": -1.9105021068718364,
+      "paired_min_percent": -3.040922032718918,
+      "paired_max_percent": 1.2840069983089286
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "before_ns": 119541.47051886792,
+      "after_ns": 117053.5300925926,
+      "paired_change_percent": -2.0045862839266126,
+      "paired_min_percent": -5.5171890733822675,
+      "paired_max_percent": 0.7825891233963045
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "before_ns": 125795.5725,
+      "after_ns": 122649.66299019608,
+      "paired_change_percent": -1.2103198523643388,
+      "paired_min_percent": -4.610489259505379,
+      "paired_max_percent": 1.161304077329972
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "before_ns": 115399.71590909091,
+      "after_ns": 113294.27120535714,
+      "paired_change_percent": -1.683251921336626,
+      "paired_min_percent": -5.959105463667513,
+      "paired_max_percent": 2.721389493392401
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 495.1498108611265,
+      "after_ns": 485.86109977456465,
+      "paired_change_percent": -2.0765219062782725,
+      "paired_min_percent": -3.9778665875148222,
+      "paired_max_percent": -0.193260868357914
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 143.42823171011565,
+      "after_ns": 143.96717285145002,
+      "paired_change_percent": 0.47957935087792336,
+      "paired_min_percent": -0.5045956671475449,
+      "paired_max_percent": 1.297068518206701
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 597.5183257648183,
+      "after_ns": 587.8226041568702,
+      "paired_change_percent": -2.1023242118189622,
+      "paired_min_percent": -5.526356473909788,
+      "paired_max_percent": -0.6617319164480384
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 202.76155717761557,
+      "after_ns": 178.10675866294312,
+      "paired_change_percent": -11.984525215355923,
+      "paired_min_percent": -12.479768046812767,
+      "paired_max_percent": -11.389139484138378
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 2156.8233048654242,
+      "after_ns": 2125.632225433526,
+      "paired_change_percent": -1.1795039632634174,
+      "paired_min_percent": -2.299203745783196,
+      "paired_max_percent": -0.9331013024713841
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 1748.2260206935123,
+      "after_ns": 1846.142664648553,
+      "paired_change_percent": 5.334383695132505,
+      "paired_min_percent": 3.374102371312415,
+      "paired_max_percent": 6.288353134831093
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 3199.759819600819,
+      "after_ns": 2760.507477924945,
+      "paired_change_percent": -12.96855386406185,
+      "paired_min_percent": -15.118016109543708,
+      "paired_max_percent": -11.366946596459249
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 2725.7220889664195,
+      "after_ns": 2332.205177238806,
+      "paired_change_percent": -14.449236566207347,
+      "paired_min_percent": -15.37784091215837,
+      "paired_max_percent": -12.984040699539301
+    }
+  ],
+  "samples": [
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 0,
+      "before": 7335.183396834701,
+      "after": 7350.075279083431
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6407.752177254099,
+      "after": 6373.837283384301
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 0,
+      "before": 7364.893183156655,
+      "after": 7206.422235023041
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6491.98740913811,
+      "after": 6391.87915388548
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 0,
+      "before": 7751.732884138785,
+      "after": 7426.736935866983
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6941.627358490566,
+      "after": 6566.140887605042
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 0,
+      "before": 8006.16533290653,
+      "after": 7787.003191158157
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6951.186388888889,
+      "after": 6929.831832039911
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 0,
+      "before": 119053.16391509434,
+      "after": 119245.97051886792
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 0,
+      "before": 111843.47098214286,
+      "after": 107681.93855932204
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 0,
+      "before": 146728.56104651163,
+      "after": 146584.3023255814
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 0,
+      "before": 135542.9960106383,
+      "after": 137940.50135869565
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 0,
+      "before": 131273.4375,
+      "after": 128026.9987244898
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 0,
+      "before": 120279.24639423077,
+      "after": 119619.7429245283
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 0,
+      "before": 125366.0425,
+      "after": 122649.66299019608
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 0,
+      "before": 112563.5703125,
+      "after": 113302.12946428571
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 495.1498108611265,
+      "after": 484.8679165696998
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 143.48768308921439,
+      "after": 144.41734252969175
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 600.4459242002114,
+      "after": 587.8226041568702
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 201.68505760108425,
+      "after": 177.67757519117606
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 2153.242163279366,
+      "after": 2111.6483741554052
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1744.6877267652806,
+      "after": 1837.7560643928257
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 3180.796755725191,
+      "after": 2756.1303461199295
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 2722.300114329268,
+      "after": 2311.333179297597
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 1,
+      "before": 118688.92452830188,
+      "after": 121638.421875
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 1,
+      "before": 109049.11961206897,
+      "after": 108118.04094827586
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 1,
+      "before": 147759.81104651163,
+      "after": 144723.89914772726
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 1,
+      "before": 133187.4454787234,
+      "after": 133096.35505319148
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 1,
+      "before": 128902.47576530612,
+      "after": 126439.79125
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 1,
+      "before": 119541.47051886792,
+      "after": 115612.31136363637
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 1,
+      "before": 121499.24879807692,
+      "after": 122086.23798076923
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 1,
+      "before": 116629.29282407407,
+      "after": 109679.2302631579
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 500.1439945586941,
+      "after": 489.7333013398104
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 144.27006342043305,
+      "after": 143.54208293142253
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 603.4511368024715,
+      "after": 570.102275836906
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 202.35345371839284,
+      "after": 178.10235303336847
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 2165.661469161469,
+      "after": 2125.632225433526
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1767.9699165723982,
+      "after": 1838.0209864745664
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 3208.2785723447923,
+      "after": 2745.816425120773
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 2754.580514543852,
+      "after": 2330.985505219985
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 1,
+      "before": 7497.811076139089,
+      "after": 7245.893105446118
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6695.953760706638,
+      "after": 6401.726714431935
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 1,
+      "before": 7583.705757575757,
+      "after": 7182.4770378874855
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6428.4563206577595,
+      "after": 6370.104633401222
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 1,
+      "before": 7558.3276904474005,
+      "after": 7477.254037081339
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6627.538003177966,
+      "after": 6573.886041009464
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 1,
+      "before": 7927.7005703422055,
+      "after": 7847.66115119197
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6979.916573660715,
+      "after": 6980.294363839285
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 497.7415485386637,
+      "after": 483.29825239715433
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 143.6567190337187,
+      "after": 145.5200451105937
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 592.5404993837694,
+      "after": 588.2913980139307
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 204.1118635903465,
+      "after": 180.86527874236768
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 2164.4556353878115,
+      "after": 2140.3165439917834
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1757.1667662355917,
+      "after": 1850.474726169331
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 3199.759819600819,
+      "after": 2784.7972438752786
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 2728.0833969882146,
+      "after": 2332.205177238806
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 2,
+      "before": 7313.578216374269,
+      "after": 7148.756
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 2,
+      "before": 6418.238770533881,
+      "after": 6411.936474358974
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 2,
+      "before": 7304.657126168225,
+      "after": 7181.562141216992
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 2,
+      "before": 6375.475152905199,
+      "after": 6368.911278004073
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 2,
+      "before": 7567.251210653753,
+      "after": 7408.687574052133
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 2,
+      "before": 6614.842328042328,
+      "after": 6574.222857518402
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 2,
+      "before": 7962.360668789809,
+      "after": 7845.49482434128
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 2,
+      "before": 6962.143861358574,
+      "after": 6958.43756952169
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 2,
+      "before": 121738.63100961539,
+      "after": 121577.97475961539
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 2,
+      "before": 109735.47149122808,
+      "after": 110727.65899122808
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 2,
+      "before": 144415.4247159091,
+      "after": 149949.65327380953
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 2,
+      "before": 134265.0159574468,
+      "after": 138961.80555555556
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 2,
+      "before": 132095.16015625,
+      "after": 130999.56640625
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 2,
+      "before": 122019.83173076923,
+      "after": 117546.39351851853
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 2,
+      "before": 126024.89625,
+      "after": 124499.5919117647
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 2,
+      "before": 113155.64508928571,
+      "after": 116235.05092592593
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 3,
+      "before": 7267.808284883721,
+      "after": 7229.214884393064
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 3,
+      "before": 6438.385041194645,
+      "after": 6442.434796601442
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 3,
+      "before": 7329.798065650645,
+      "after": 7152.3556207093825
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 3,
+      "before": 6426.724691675231,
+      "after": 6417.81898100616
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 3,
+      "before": 7547.782795536791,
+      "after": 7428.703978622328
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 3,
+      "before": 6609.575911733616,
+      "after": 8698.934457579971
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 3,
+      "before": 7996.107017263427,
+      "after": 8155.737288135593
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 3,
+      "before": 6970.13768115942,
+      "after": 6965.090200445435
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 3,
+      "before": 122582.36397058824,
+      "after": 119400.05896226416
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 3,
+      "before": 113485.30580357143,
+      "after": 111650.4375
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 3,
+      "before": 151448.90922619047,
+      "after": 148354.71220930232
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 3,
+      "before": 134761.85771276595,
+      "after": 133053.2460106383
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 3,
+      "before": 130458.11588541667,
+      "after": 130409.125
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 3,
+      "before": 122804.43259803922,
+      "after": 116029.07986111111
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 3,
+      "before": 125795.5725,
+      "after": 124891.5955882353
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 3,
+      "before": 115898.4375,
+      "after": 115001.61022727273
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 493.64950438354,
+      "after": 485.86109977456465
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 142.6715008446139,
+      "after": 143.23955086629692
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 594.2102267325791,
+      "after": 576.7236805683706
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 202.76155717761557,
+      "after": 177.4573851537435
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 2156.8233048654242,
+      "after": 2107.2335426500335
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 1745.7435946662943,
+      "after": 1846.142664648553
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 3130.5617175763646,
+      "after": 2774.7124389702617
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 2684.752657860825,
+      "after": 2336.163280082212
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 4,
+      "before": 121859.72596153847,
+      "after": 125219.115
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 4,
+      "before": 109084.09698275862,
+      "after": 109747.57894736843
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 4,
+      "before": 149312.68601190476,
+      "after": 145811.10755813954
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 4,
+      "before": 134509.5864361702,
+      "after": 133059.8404255319
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 4,
+      "before": 133540.8909574468,
+      "after": 129480.01658163265
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 4,
+      "before": 119140.82075471699,
+      "after": 117053.5300925926
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 4,
+      "before": 121651.34134615384,
+      "after": 123064.08333333333
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 4,
+      "before": 115848.48522727273,
+      "after": 111995.53571428571
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 492.325763095707,
+      "after": 483.34106507617355
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 143.3076863549859,
+      "after": 143.70097455970938
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 597.5183257648183,
+      "after": 593.23366908694
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 203.46885376652125,
+      "after": 179.08132109395146
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 2158.8289882596687,
+      "after": 2136.311132946001
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1730.0690734846387,
+      "after": 1838.8619263018534
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 3144.2391222334004,
+      "after": 2760.507477924945
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 2690.1882261187607,
+      "after": 2326.6867556754746
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 4,
+      "before": 7449.707613230035,
+      "after": 7162.49348510882
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 4,
+      "before": 6430.150977366256,
+      "after": 6379.868176020408
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 4,
+      "before": 7426.808120546319,
+      "after": 7156.613486842105
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 4,
+      "before": 6412.753717948718,
+      "after": 6399.125191914022
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 4,
+      "before": 7659.756196450428,
+      "after": 7378.817216981132
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 4,
+      "before": 6621.907574152542,
+      "after": 6590.451593782929
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 4,
+      "before": 8102.5914022020725,
+      "after": 7805.246644818976
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 4,
+      "before": 7029.058426966292,
+      "after": 6966.003758351893
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 516.8284634942947,
+      "after": 496.269716730189
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 143.28003140689117,
+      "after": 143.96717285145002
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 602.0566485262955,
+      "after": 583.4242450760757
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 202.9857040206554,
+      "after": 178.10675866294312
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 2153.9258054789802,
+      "after": 2133.8274957337885
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 1748.2260206935123,
+      "after": 1850.5595396684428
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 3203.6001729882114,
+      "after": 2791.4433619919605
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 2725.7220889664195,
+      "after": 2341.489138576779
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 5,
+      "before": 7338.841255868545,
+      "after": 7117.12236916951
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 5,
+      "before": 6368.701692973524,
+      "after": 6348.524746192893
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 5,
+      "before": 7289.287077505827,
+      "after": 7112.619098407281
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 5,
+      "before": 6404.147412909836,
+      "after": 6391.567612474438
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 5,
+      "before": 7496.4841127098325,
+      "after": 7441.7566220238095
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 5,
+      "before": 6571.663799894958,
+      "after": 6558.455797481637
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 5,
+      "before": 7914.299841772152,
+      "after": 7833.3203320802
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 5,
+      "before": 6967.169543429844,
+      "after": 6917.10453539823
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 5,
+      "before": 121483.87379807692,
+      "after": 117722.07754629629
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 5,
+      "before": 108393.36314655172,
+      "after": 106995.80720338984
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 5,
+      "before": 145078.59943181818,
+      "after": 145593.2659883721
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 5,
+      "before": 134126.66223404257,
+      "after": 131562.77083333334
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 5,
+      "before": 131263.07552083334,
+      "after": 128396.36479591837
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 5,
+      "before": 117984.08018867925,
+      "after": 115618.9875
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 5,
+      "before": 125925.57375,
+      "after": 120524.68990384616
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 5,
+      "before": 115399.71590909091,
+      "after": 110173.70175438597
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 6,
+      "before": 7329.840782532239,
+      "after": 7205.927203341013
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6416.533076923077,
+      "after": 6392.21466002045
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 6,
+      "before": 7341.054137323944,
+      "after": 7144.610142857143
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6415.392628205128,
+      "after": 6356.924288617886
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 6,
+      "before": 7689.00868696187,
+      "after": 7415.715228351127
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6732.575349838536,
+      "after": 6589.353925184405
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 6,
+      "before": 7967.061464968153,
+      "after": 7979.6084183673465
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6894.182400771775,
+      "after": 6976.978166852678
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 6,
+      "before": 119700.17688679245,
+      "after": 117122.73379629629
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 6,
+      "before": 110729.16666666667,
+      "after": 109827.0926724138
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 6,
+      "before": 146309.53197674418,
+      "after": 144168.2059659091
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 6,
+      "before": 136017.04076086957,
+      "after": 136069.1489361702
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 6,
+      "before": 129890.4655612245,
+      "after": 131558.26822916666
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 6,
+      "before": 119191.92216981133,
+      "after": 120124.70518867925
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 6,
+      "before": 127605.28316326531,
+      "after": 121722.05528846153
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 6,
+      "before": 115233.94886363637,
+      "after": 113294.27120535714
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 492.44664453986763,
+      "after": 491.49493787843045
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 143.42823171011565,
+      "after": 144.32985261176796
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 594.970151118515,
+      "after": 591.0330437352246
+    },
+    {
+      "id": "syntax/math/small",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 202.50475473043028,
+      "after": 178.36096683979224
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 2143.137212889955,
+      "after": 2117.858824525745
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1798.9650899280575,
+      "after": 1859.6640136864028
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 3244.686235080436,
+      "after": 2754.1540473568284
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 2745.5556653491435,
+      "after": 2348.843832205938
+    }
+  ]
+}

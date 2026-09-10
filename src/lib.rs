@@ -669,7 +669,7 @@ impl Renderer {
     #[must_use]
     pub fn with_options(options: Options) -> Self {
         Self {
-            render_state: RenderState::new(&options),
+            render_state: RenderState::new(),
             block_scratch: block::BlockScratch::default(),
             options,
             block_events: Vec::with_capacity(64),
@@ -1400,7 +1400,7 @@ struct RenderState {
 }
 
 impl RenderState {
-    fn new(options: &Options) -> Self {
+    fn new() -> Self {
         Self {
             para_state: ParagraphState::new(),
             heading_state: HeadingState::new(),
@@ -1412,7 +1412,7 @@ impl RenderState {
             blockquote_depth: 0,
             in_table_head: false,
             pending_task: block::TaskState::None,
-            heading_id_tracker: options.heading_ids.then(HeadingIdTracker::new),
+            heading_id_tracker: None,
             callout_stack: Vec::new(),
             pending_footnote_backref: None,
             definition_description_stack: Vec::new(),
@@ -1435,7 +1435,7 @@ impl RenderState {
         self.pending_task = block::TaskState::None;
         match (options.heading_ids, self.heading_id_tracker.as_mut()) {
             (true, Some(tracker)) => tracker.reset(),
-            (true, None) => self.heading_id_tracker = Some(HeadingIdTracker::new()),
+            (true, None) => {}
             (false, _) => self.heading_id_tracker = None,
         }
         self.callout_stack.clear();
@@ -1635,7 +1635,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     let mut events = Vec::with_capacity((input.len() / 16).max(64));
     let mut inline_parser = InlineParser::new();
     let mut inline_events = Vec::with_capacity(64);
-    let mut render_state = RenderState::new(options);
+    let mut render_state = RenderState::new();
     let mut footnote_numbers = FootnoteNumbers::new(0);
     render_to_writer_with_state(
         input,
@@ -1842,7 +1842,8 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
 
                 // Emit heading open tag (deferred from HeadingStart)
                 let mut collected_id = None;
-                if let Some(tracker) = heading_id_tracker.as_mut() {
+                if options.heading_ids {
+                    let tracker = heading_id_tracker.get_or_insert_with(HeadingIdTracker::new);
                     let id = tracker.make_id(content);
                     writer.heading_start_with_id(*level, id);
                     if headings.is_some() {
@@ -2226,15 +2227,15 @@ fn write_footnote_backref(writer: &mut HtmlWriter, label: &str, number: usize) {
     writer.write_str(" <a href=\"#user-content-fnref-");
     writer.write_string(label);
     writer.write_str("\" class=\"data-footnote-backref\" aria-label=\"Back to reference ");
-    writer.write_string(&number.to_string());
+    writer.write_usize(number);
     writer.write_str("\">↩</a>");
 }
 
 fn write_inline_footnote_backref(writer: &mut HtmlWriter, definition_index: usize, number: usize) {
     writer.write_str(" <a href=\"#user-content-inline-fnref-");
-    writer.write_string(&(definition_index + 1).to_string());
+    writer.write_usize(definition_index + 1);
     writer.write_str("\" class=\"data-footnote-backref\" aria-label=\"Back to reference ");
-    writer.write_string(&number.to_string());
+    writer.write_usize(number);
     writer.write_str("\">↩</a>");
 }
 
@@ -2717,8 +2718,7 @@ fn render_inline_event(
                     writer.write_str("\" id=\"user-content-fnref-");
                     writer.write_string(&def.label);
                     writer.write_str("\" data-footnote-ref>");
-                    let num_str = number.to_string();
-                    writer.write_string(&num_str);
+                    writer.write_usize(number);
                     writer.write_str("</a></sup>");
                 }
             }
@@ -2728,11 +2728,11 @@ fn render_inline_event(
                 let (number, definition_index) =
                     footnote_numbers.register_inline(range.slice(text));
                 writer.write_str("<sup><a href=\"#user-content-inline-fn-");
-                writer.write_string(&(definition_index + 1).to_string());
+                writer.write_usize(definition_index + 1);
                 writer.write_str("\" id=\"user-content-inline-fnref-");
-                writer.write_string(&(definition_index + 1).to_string());
+                writer.write_usize(definition_index + 1);
                 writer.write_str("\" data-footnote-ref>");
-                writer.write_string(&number.to_string());
+                writer.write_usize(number);
                 writer.write_str("</a></sup>");
             }
         }
@@ -2795,7 +2795,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
             inline_footnotes: false,
             ..self.options.clone()
         };
-        let mut nested_state = RenderState::new(&nested_options);
+        let mut nested_state = RenderState::new();
         self.writer
             .write_str("<section data-footnotes class=\"footnotes\">\n<ol>\n");
 
@@ -2847,13 +2847,11 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         .footnote_numbers
                         .inline_definitions
                         .get(definition_index)
-                        .cloned()
                     else {
                         continue;
                     };
                     self.writer.write_str("<li id=\"user-content-inline-fn-");
-                    self.writer
-                        .write_string(&(definition_index + 1).to_string());
+                    self.writer.write_usize(definition_index + 1);
                     self.writer.write_str("\">\n<p>");
 
                     let mut nested_numbers = FootnoteNumbers::new(0);
@@ -2865,7 +2863,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     // Reuse the parent's idle inline parser and event buffer
                     // instead of allocating fresh ones per inline footnote.
                     render_inline_content(
-                        &content,
+                        content,
                         &mut *self.writer,
                         &mut *self.inline_parser,
                         &mut *self.inline_events,

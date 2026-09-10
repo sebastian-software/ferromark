@@ -20,4 +20,5 @@ onlyBuiltDependencies:
   - '@napi-rs/cli'
 
 overrides:
-  js-yaml@<4.3.1: 4.3.1
+  # GHSA-2883-xcg3-v3hh: count empty YAML merge sources toward the work limit.
+  js-yaml@>=4.0.0 <4.3.2: 4.3.2

@@ -66,18 +66,35 @@ types and panic with the same error if this limit is exceeded.
 
 ## Benchmarks
 
-Numbers, not adjectives. Apple M1 Pro (10-core), macOS 26.6.2, rustc 1.97.1,
-September 2026. All parsers run with GFM tables, strikethrough, and task lists
-enabled; Ferromark's non-GFM extras (heading IDs, callouts) are disabled. Output
-buffers are reused where APIs allow and binaries are non-PGO. Ferromark also
-keeps its secure default rendering in this published product lane, so it
-performs URL and raw-HTML safety work that pulldown-cmark does not.
+The repository measures several different questions:
+
+| Measurement | What it tells you | Evidence |
+| --- | --- | --- |
+| Published mixed-document comparison | Throughput under the historical configurations disclosed below | [Four-parser harness](benchmarks/md4c-comparison/benches/comparison.rs) |
+| Native Bun comparison | Direct parser/renderer performance with trusted shared syntax and fresh output | [Bun study](docs/reports/2026-09-05-bun-comparison.md) |
+| Feature and lightweight-document costs | Unused-option overhead, syntax actually used, and fresh versus retained parser state | [Feature study](docs/reports/2026-09-10-markdown-feature-costs-final.md) |
+| GFM profiling and optimization | Where time and allocations go, and which changes improve complete rendering | [GFM study](docs/reports/2026-09-10-gfm-profiling.md) |
+
+### Published mixed-document comparison
+
+Apple M1 Pro (10-core), macOS 26.6.2, rustc 1.97.1, September 2026.
+All parsers run with GFM tables, strikethrough, and task lists enabled;
+Ferromark's non-GFM extras (heading IDs, callouts) are disabled. Binaries are
+non-PGO. Every call creates fresh parser state; output buffers are reused for
+Ferromark, pulldown-cmark, and md4c, while Comrak uses fresh owned output.
+Ferromark retains its Untrusted URL/raw-HTML policy, Comrak uses its default
+raw-HTML omission, and pulldown-cmark and md4c preserve raw HTML. These are
+historical configurations, not matched rendering policies and lifecycles.
+
+Comrak also supports output-buffer reuse; this run did not use that API. The
+figures below preserve the original measurement and have not been refreshed
+for the subsequent optimizations. They are not an equal-work parser ranking.
 
 These rankings are Apple Silicon results only. Ferromark also uses baseline
 SSE2 for inline scanning on x86-64, but this comparison has not been re-measured
 there; do not infer the same relative ordering on x86-64 from these tables.
 
-**CommonMark 5 KB** (wiki-style, mixed content with tables)
+**Mixed Markdown 5 KB** (wiki-style, mixed content with tables)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
 | **ferromark** | **248.2 MiB/s** | **baseline** |
@@ -85,7 +102,7 @@ there; do not infer the same relative ordering on x86-64 from these tables.
 | md4c (C) | 247.4 MiB/s | 1.00x |
 | comrak | 69.0 MiB/s | 0.28x |
 
-**CommonMark 50 KB** (same style, scaled)
+**Mixed Markdown 50 KB** (same style, scaled)
 | Parser | Throughput | vs ferromark |
 |--------|----------:|------------:|
 | **ferromark** | **267.5 MiB/s** | **baseline** |
@@ -99,7 +116,8 @@ comrak. The locked competitor versions were pulldown-cmark 0.13.4, comrak
 0.54.0, and md4c @ 65c6c9d.
 
 The fixtures are synthetic wiki-style documents with paragraphs, lists, code
-blocks, and tables. Nothing cherry-picked. The cross-parser harness is isolated
+blocks, and tables; their historical `commonmark-*` filenames do not mean that
+the run used an extension-free CommonMark configuration. The cross-parser harness is isolated
 from the library build, uses its committed Cargo lockfile, and verifies md4c at
 `65c6c9d` for the published numbers:
 
@@ -112,8 +130,10 @@ MD4C_DIR=../md4c cargo bench --locked \
 
 `MD4C_DIR` is required deliberately; normal `cargo build`, `cargo test`, and package consumers never inspect or compile a sibling C checkout.
 
-For strict, named feature intersections between the two closest Rust parsers,
-use the md4c-independent harness:
+### Shared syntax and options parity
+
+The md4c-independent Ferromark/pulldown-cmark harness selects named feature
+intersections:
 
 ```bash
 cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
@@ -123,14 +143,65 @@ cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 It provides CommonMark, GFM-overlap, and extended-overlap lanes with trusted
 raw-HTML semantics in both parsers. See the
 [parity benchmark README](benchmarks/pulldown-comparison/README.md) for the exact
-feature matrix. Secure-default numbers remain separate because pulldown-cmark
-does not expose an equivalent trust boundary.
+feature matrix. GFM overlap means tables, strikethrough, and task lists, without
+bare autolinks or tag filtering. Its semantic spot checks do not establish exact
+output equivalence for every timed fixture. Secure-default numbers remain
+separate because pulldown-cmark does not expose an equivalent trust boundary.
 
-A separate [direct Bun Markdown comparison](benchmarks/bun-comparison/README.md)
-builds Bun's md4c-derived Rust parser with its original native support routines,
-without a JavaScript runtime. It compares four native Rust APIs with fresh HTML
-outputs and shared options. See the [exploratory results and provenance](docs/reports/2026-09-05-bun-comparison.md);
-those measurements use a different compiler and allocator from the tables above.
+Matching options requires matching behavior, not flag names. The
+[comparison plan](docs/plans/2026-09-11-benchmark-comparability-and-documentation.md)
+records remaining output-parity gates, adapter corrections, and publication runs.
+The two-parser directory's Rust 1.93 pin also needs updating to meet the root
+crate's MSRV before replaying its pinned publication environment.
+
+### Native Bun Markdown comparison
+
+The [direct Bun harness](benchmarks/bun-comparison/README.md) compares Ferromark,
+Bun `bun_md`, pulldown-cmark, and Comrak without a JavaScript runtime. Bun's
+parser descends from md4c through Zig and Rust ports; it still calls C++ Highway
+search routines and C mimalloc. The [provenance investigation](benchmarks/bun-comparison/PROVENANCE.md)
+documents that ancestry and the pinned source revision.
+
+The macOS-only experiment uses trusted CommonMark and the shared GFM subset,
+fresh parser state and owned HTML output, and a different compiler and allocator
+from the tables above. All four parsers share the Bun-native support environment.
+Only inputs passing the limited output-equivalence gate are timed; mismatches
+and exclusions remain visible in the [exploratory report](docs/reports/2026-09-05-bun-comparison.md).
+
+That historical run favored Ferromark on mixed CommonMark inputs, Bun on the tiny
+input, and pulldown-cmark on the shared GFM table/strikethrough input. Its short
+timing windows and earlier Ferromark snapshot do not establish current rankings.
+Use the report's results and reproduction instructions as a separate experiment;
+do not combine them with the throughput tables above.
+
+### Fine-grained feature and document benchmarks
+
+The [feature-cost study](docs/reports/2026-09-10-markdown-feature-costs-final.md)
+covers 140 scenarios and 292 input/configuration pairs, including tiny sentences,
+lightweight documents, core CommonMark constructs, all boolean Markdown options,
+and link-base rewriting. It separates three kinds of work:
+
+- **Activation:** turn an option off/on on plain input with identical HTML to
+  measure detection and setup without using the feature.
+- **Actual syntax:** render input that uses the feature. Changed output includes
+  additional work and cannot be treated as avoidable overhead.
+- **Lifecycle:** compare fresh owned output with a retained `Renderer`; the
+  [GFM study](docs/reports/2026-09-10-gfm-profiling.md) also measures fresh parser
+  state with reused output. Small documents expose fixed per-call costs.
+
+The reports include latency, allocation calls and cumulatively requested bytes,
+CPU profiles, frozen inputs, and reproduction commands. Allocation counting runs
+separately from timing; requested bytes are not peak memory. In these local M1 Pro
+measurements, most unused boolean options cost little, while literal-autolink
+detection is a measurable exception. Reference links and footnotes retain more
+allocation work than many inline extensions. Feature-heavy documents differ in
+syntax density, block count, and output size, so their costs are not additive.
+
+See the [measured optimizations and tradeoffs](docs/reports/2026-09-10-markdown-feature-optimizations.md)
+for paired before/after results, including the confirmed retained-Renderer
+inline-code slowdown. These internal studies guide optimization; they do not
+replace cross-parser comparisons. Choose syntax presets for document semantics,
+then measure the workload and API lifecycle your application actually uses.
 
 ## What you get
 

@@ -1,0 +1,43 @@
+{
+  "baseline_production_revision": "99fbf0107c8a08851ba48d6173da99003c5ca22f",
+  "baseline_probe_revision": "bfb3687",
+  "final_production_revision": "41d5201c804e760f400a2d25e2ebe06394ec6f04",
+  "machine": "Apple M1 Pro",
+  "os": "macOS 26.6.2",
+  "rust": "1.97.1",
+  "llvm": "22.1.6",
+  "profile": "release-debug: opt-level 3, fat LTO, one codegen unit, debug symbols",
+  "target_cpu": "apple-m1",
+  "target_features": "+neon",
+  "allocator": "System",
+  "catalog_sha256": "7d0d75f5d4dcc12ccb6510e0d16439c741d4ea29320b80c0d4551f9a05f098e3",
+  "binary_sha256": {
+    "baseline": "7840dea2da91055f92efb1a4760d8c4f3b225bc5280fef7fb0fd5aeb8bd534c3",
+    "final": "b64127e371dc110d72ea8f18db25becd3e22ecb661e2998f61c009b70217af35",
+    "gfm-baseline": "1a914a9a652f2e2fb4061d3fc345e0c440fee2a11c250e3836402c008595b811",
+    "gfm-final": "bd695e90719ce7cd6776ecaa601d5c4a7d614ea3bd8bbc985548bd6de9210316"
+  },
+  "validation": {
+    "cargo test --locked --all-features": {
+      "status": "passed",
+      "tests": 979
+    },
+    "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings": "passed",
+    "cargo fmt --all --check": "passed",
+    "cargo check --lib --locked --all-features --target x86_64-unknown-linux-gnu": "passed; compile only",
+    "cargo check --lib --locked --all-features --target x86_64-pc-windows-msvc": "passed; compile only",
+    "native x86 performance": "not measured; no executable x86 environment"
+  },
+  "method_notes": [
+    "Timing and allocation counting use separate builds.",
+    "Heavy builds/tests/profiling do not run concurrently with timed probes.",
+    "Catalog and baseline report regenerate byte for byte.",
+    "Requested bytes are cumulative allocations, not live or peak memory."
+  ],
+  "exact_html_pairs": {
+    "feature_catalog": 292,
+    "gfm_guard": 90
+  },
+  "final_matrix_rows": 2920,
+  "known_performance_tradeoff": "Dense inline-code retained Renderer: +4.8%, confirmed in nine >=500 ms paired windows; fresh owned lane -9.0%."
+}

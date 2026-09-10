@@ -185,6 +185,11 @@ impl HtmlWriter {
         self.out.extend_from_slice(s.as_bytes());
     }
 
+    /// Write a decimal number directly into the output buffer.
+    pub(crate) fn write_usize(&mut self, number: usize) {
+        crate::push_decimal(&mut self.out, number);
+    }
+
     /// Write a single byte.
     #[inline]
     pub fn write_byte(&mut self, b: u8) {
@@ -1270,6 +1275,16 @@ mod tests {
         writer.ol_start(Some(1));
         writer.ol_end();
         assert_eq!(writer.as_str().unwrap(), "<ol>\n</ol>\n");
+    }
+
+    #[test]
+    fn decimal_output_handles_zero_digit_boundaries_and_usize_max() {
+        let mut writer = HtmlWriter::new();
+        for number in [0, 1, 9, 10, 99, 100, 999, 1000, usize::MAX] {
+            writer.clear();
+            writer.write_usize(number);
+            assert_eq!(writer.as_str().unwrap(), number.to_string());
+        }
     }
 
     #[test]

@@ -1,0 +1,6365 @@
+{
+  "exact_html_pairs": 292,
+  "catalog_sha256": "7d0d75f5d4dcc12ccb6510e0d16439c741d4ea29320b80c0d4551f9a05f098e3",
+  "binary_sha256": {
+    "before": "7840dea2da91055f92efb1a4760d8c4f3b225bc5280fef7fb0fd5aeb8bd534c3",
+    "after": "b64127e371dc110d72ea8f18db25becd3e22ecb661e2998f61c009b70217af35"
+  },
+  "rounds": 7,
+  "window_ms": 150,
+  "filters": [
+    "lifecycle/",
+    "syntax/heading_ids/medium",
+    "syntax/allow_link_refs/medium",
+    "syntax/footnotes/medium",
+    "syntax/inline_footnotes/medium",
+    "syntax/tables/medium",
+    "syntax/highlight/medium",
+    "syntax/subscript/medium",
+    "syntax/superscript/medium",
+    "syntax/math/medium",
+    "core/emphasis/medium",
+    "core/links/medium",
+    "core/inline_code/medium"
+  ],
+  "summary": [
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "owned",
+      "before_ns": 985.6880322224558,
+      "after_ns": 228.6348463602,
+      "paired_change_percent": -76.8573757906861,
+      "paired_min_percent": -86.55655752125108,
+      "paired_max_percent": -71.58131651999533
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "before_ns": 46.44476735545174,
+      "after_ns": 46.70831631077055,
+      "paired_change_percent": 1.3033499222996792,
+      "paired_min_percent": -48.397012160543674,
+      "paired_max_percent": 13.278688047005648
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "owned",
+      "before_ns": 920.5933756382561,
+      "after_ns": 228.69467178123628,
+      "paired_change_percent": -75.25495399013266,
+      "paired_min_percent": -89.28124182005791,
+      "paired_max_percent": -74.56018260906664
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "renderer",
+      "before_ns": 46.46319471633965,
+      "after_ns": 46.90196849704331,
+      "paired_change_percent": 0.8988020795757334,
+      "paired_min_percent": -26.26376273787895,
+      "paired_max_percent": 3.069335070329471
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "owned",
+      "before_ns": 923.4388358120752,
+      "after_ns": 228.03896824528118,
+      "paired_change_percent": -75.30546048079698,
+      "paired_min_percent": -78.70495150427887,
+      "paired_max_percent": -74.49280351479841
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "renderer",
+      "before_ns": 46.43619080935163,
+      "after_ns": 46.882839731055626,
+      "paired_change_percent": 0.06465579976726588,
+      "paired_min_percent": -7.715752068389348,
+      "paired_max_percent": 10.058419765522375
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "owned",
+      "before_ns": 972.516856846473,
+      "after_ns": 227.7515942328248,
+      "paired_change_percent": -76.85176575618814,
+      "paired_min_percent": -78.09527270820449,
+      "paired_max_percent": -76.34162946649195
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "renderer",
+      "before_ns": 45.28013747011519,
+      "after_ns": 45.761708873117065,
+      "paired_change_percent": 0.5512678483780675,
+      "paired_min_percent": -4.280040513576678,
+      "paired_max_percent": 4.039003761357174
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "owned",
+      "before_ns": 1072.5177876916036,
+      "after_ns": 384.2973335792753,
+      "paired_change_percent": -64.49113417790717,
+      "paired_min_percent": -76.2191367447571,
+      "paired_max_percent": -61.841446914789614
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "before_ns": 90.43265103357803,
+      "after_ns": 90.75746928788554,
+      "paired_change_percent": -0.3357959179167924,
+      "paired_min_percent": -7.3094802770531935,
+      "paired_max_percent": 5.335760959475722
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "owned",
+      "before_ns": 1080.6283137390503,
+      "after_ns": 379.8763751012966,
+      "paired_change_percent": -64.67522871240323,
+      "paired_min_percent": -65.37328129132919,
+      "paired_max_percent": -63.710008883791126
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "renderer",
+      "before_ns": 89.86339515077736,
+      "after_ns": 89.83010065731479,
+      "paired_change_percent": -0.19151115587087153,
+      "paired_min_percent": -3.4886433969516184,
+      "paired_max_percent": 1.0032025068328343
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "owned",
+      "before_ns": 1090.9458415755178,
+      "after_ns": 384.43627496206994,
+      "paired_change_percent": -64.7549582894909,
+      "paired_min_percent": -70.02123200066022,
+      "paired_max_percent": -58.34094310428182
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "renderer",
+      "before_ns": 96.24111056645998,
+      "after_ns": 94.71054745115471,
+      "paired_change_percent": -0.7013296903913613,
+      "paired_min_percent": -43.98345049783609,
+      "paired_max_percent": 0.24641686084219128
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "owned",
+      "before_ns": 1136.270414192219,
+      "after_ns": 377.5468020095039,
+      "paired_change_percent": -66.89000490730336,
+      "paired_min_percent": -80.30271485984152,
+      "paired_max_percent": -65.70771998692804
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "renderer",
+      "before_ns": 88.83546319634617,
+      "after_ns": 89.39335833953125,
+      "paired_change_percent": 0.6836560059986896,
+      "paired_min_percent": -37.991497795217455,
+      "paired_max_percent": 4.4449278992834795
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "before_ns": 2195.901024590164,
+      "after_ns": 1528.9983182485323,
+      "paired_change_percent": -30.394657372257495,
+      "paired_min_percent": -44.63028056393724,
+      "paired_max_percent": -27.25272476871009
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "before_ns": 1285.5070787056081,
+      "after_ns": 1244.5759491570423,
+      "paired_change_percent": -3.184045442190786,
+      "paired_min_percent": -6.17042164328645,
+      "paired_max_percent": 23.6646320647105
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "before_ns": 2168.4818744218314,
+      "after_ns": 1524.379928060478,
+      "paired_change_percent": -30.121553510302356,
+      "paired_min_percent": -53.75911489312155,
+      "paired_max_percent": -27.928707910804462
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "before_ns": 1265.9048997434513,
+      "after_ns": 1210.8406383184813,
+      "paired_change_percent": -4.814720738857947,
+      "paired_min_percent": -39.450674251166106,
+      "paired_max_percent": 4.67528250078213
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "before_ns": 2270.33330811138,
+      "after_ns": 1602.822735042735,
+      "paired_change_percent": -29.849840266646808,
+      "paired_min_percent": -30.53083477909686,
+      "paired_max_percent": -28.158667344520804
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "before_ns": 1352.7400357091328,
+      "after_ns": 1330.4993170852845,
+      "paired_change_percent": -1.4004138446564451,
+      "paired_min_percent": -3.6509071082967415,
+      "paired_max_percent": 34.00888963775106
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "owned",
+      "before_ns": 2242.7655166228174,
+      "after_ns": 1536.058998197903,
+      "paired_change_percent": -31.14775829805755,
+      "paired_min_percent": -32.45147129236287,
+      "paired_max_percent": 77.0963305196652
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "before_ns": 1276.049458962842,
+      "after_ns": 1236.4077129763946,
+      "paired_change_percent": -4.220496975672616,
+      "paired_min_percent": -11.707167683803743,
+      "paired_max_percent": 185.5698369234345
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "before_ns": 7812.727864583333,
+      "after_ns": 7279.242284549689,
+      "paired_change_percent": -7.122316981956955,
+      "paired_min_percent": -14.247587589177968,
+      "paired_max_percent": 111.87406175362385
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "before_ns": 6434.843985929993,
+      "after_ns": 6428.309587045922,
+      "paired_change_percent": -0.18098057356388253,
+      "paired_min_percent": -11.330231064940921,
+      "paired_max_percent": 224.2452137770811
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "before_ns": 7837.11664578112,
+      "after_ns": 7378.944138473643,
+      "paired_change_percent": -7.5621485402065485,
+      "paired_min_percent": -9.00294866896899,
+      "paired_max_percent": 468.32792700883476
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "before_ns": 6470.061939268461,
+      "after_ns": 6388.224838215259,
+      "paired_change_percent": -1.297170802306058,
+      "paired_min_percent": -2.2679534521700684,
+      "paired_max_percent": 119.59088642574866
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "before_ns": 8097.982351036269,
+      "after_ns": 7512.296774839743,
+      "paired_change_percent": -7.778311628181056,
+      "paired_min_percent": -8.679346063235194,
+      "paired_max_percent": 1.78489262772068
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "before_ns": 6739.033315373563,
+      "after_ns": 6677.476540242165,
+      "paired_change_percent": -1.234832936106267,
+      "paired_min_percent": -3.3491147746928407,
+      "paired_max_percent": 0.10735323858170887
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "before_ns": 8551.041191886965,
+      "after_ns": 7978.143601190476,
+      "paired_change_percent": -6.178889214134209,
+      "paired_min_percent": -19.514940164697247,
+      "paired_max_percent": -4.82213558381237
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "before_ns": 7040.315737612613,
+      "after_ns": 6980.300176711309,
+      "paired_change_percent": -0.1505443249512295,
+      "paired_min_percent": -7.767798487068978,
+      "paired_max_percent": 0.8464752790480423
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "before_ns": 20705.154249448122,
+      "after_ns": 20691.91093061674,
+      "paired_change_percent": -0.07542950164245443,
+      "paired_min_percent": -4.1169755659437595,
+      "paired_max_percent": 3.113746918347049
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "before_ns": 20455.224128540303,
+      "after_ns": 18920.28931451613,
+      "paired_change_percent": -6.7513432257782835,
+      "paired_min_percent": -25.331010170997526,
+      "paired_max_percent": -0.17000918081638838
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "owned",
+      "before_ns": 20323.113906926406,
+      "after_ns": 20376.20322668113,
+      "paired_change_percent": -0.3460423248767053,
+      "paired_min_percent": -2.5692488958890647,
+      "paired_max_percent": 0.7176652105077119
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "before_ns": 20383.58247282609,
+      "after_ns": 18772.734375,
+      "paired_change_percent": -7.902674124990316,
+      "paired_min_percent": -20.855913313474005,
+      "paired_max_percent": -1.0171085111282951
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "owned",
+      "before_ns": 22885.08643292683,
+      "after_ns": 21774.682134570765,
+      "paired_change_percent": -4.000798901241942,
+      "paired_min_percent": -19.148476306203776,
+      "paired_max_percent": 0.7946561395804963
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "before_ns": 21090.35,
+      "after_ns": 20568.690652412282,
+      "paired_change_percent": -3.427091481089084,
+      "paired_min_percent": -29.83230116824772,
+      "paired_max_percent": -1.6512815869053399
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "owned",
+      "before_ns": 20696.82117290749,
+      "after_ns": 20608.379120879123,
+      "paired_change_percent": -0.4868744112086598,
+      "paired_min_percent": -6.570936106313264,
+      "paired_max_percent": 1.166062028522985
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "renderer",
+      "before_ns": 20460.148965141612,
+      "after_ns": 18875.70208752515,
+      "paired_change_percent": -7.744063253478339,
+      "paired_min_percent": -10.214342810872367,
+      "paired_max_percent": 0.8659049033012511
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "before_ns": 124432.8396381579,
+      "after_ns": 125180.50986842105,
+      "paired_change_percent": 1.0438494366396656,
+      "paired_min_percent": -10.385130662185894,
+      "paired_max_percent": 28.551600891903895
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "before_ns": 114429.75152439025,
+      "after_ns": 113847.546686747,
+      "paired_change_percent": -0.39188985785145736,
+      "paired_min_percent": -3.9949716367592703,
+      "paired_max_percent": 2.8668588551572505
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "before_ns": 156636.89270833333,
+      "after_ns": 153332.8296370968,
+      "paired_change_percent": -2.1740222137082266,
+      "paired_min_percent": -11.63576243308524,
+      "paired_max_percent": 4.22754063298596
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "before_ns": 142605.86268939395,
+      "after_ns": 140719.02145522388,
+      "paired_change_percent": -2.384341044428484,
+      "paired_min_percent": -28.400160556241904,
+      "paired_max_percent": 7.261411711958066
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "before_ns": 140076.41417910447,
+      "after_ns": 139408.04963235295,
+      "paired_change_percent": 0.7489422284675751,
+      "paired_min_percent": -10.113620372660758,
+      "paired_max_percent": 11.60997026558559
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "before_ns": 126678.68083333333,
+      "after_ns": 125431.5975,
+      "paired_change_percent": -1.6620248419938144,
+      "paired_min_percent": -45.49277078222834,
+      "paired_max_percent": 8.467317771729599
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "before_ns": 136707.38949275363,
+      "after_ns": 128616.65239726027,
+      "paired_change_percent": -3.9860685069920576,
+      "paired_min_percent": -14.887890176760843,
+      "paired_max_percent": 28.742856604846658
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "before_ns": 123437.56825657895,
+      "after_ns": 119335.97072784811,
+      "paired_change_percent": -2.3310560463367658,
+      "paired_min_percent": -7.053252593441572,
+      "paired_max_percent": 13.74274776544706
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 3521.1521310552007,
+      "after_ns": 2757.346956777418,
+      "paired_change_percent": -21.4707893159613,
+      "paired_min_percent": -22.365260228267637,
+      "paired_max_percent": 19.037208727276344
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 2384.3503624109867,
+      "after_ns": 2359.1456341217918,
+      "paired_change_percent": -0.17941357373614242,
+      "paired_min_percent": -7.909638137896269,
+      "paired_max_percent": 15.26976957428845
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 4196.044239373602,
+      "after_ns": 3516.222581552306,
+      "paired_change_percent": -16.36705658332389,
+      "paired_min_percent": -17.157804977297253,
+      "paired_max_percent": 27.241503085128404
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 2991.328568580542,
+      "after_ns": 2991.5884053924697,
+      "paired_change_percent": 0.3382800397072394,
+      "paired_min_percent": -0.880762507208388,
+      "paired_max_percent": 17.294390497860725
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 5410.263704558569,
+      "after_ns": 4824.497363683127,
+      "paired_change_percent": -10.776645319453005,
+      "paired_min_percent": -25.18960362000534,
+      "paired_max_percent": -9.77997548663292
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 4292.63487293956,
+      "after_ns": 4281.456906392694,
+      "paired_change_percent": -0.5872038187070605,
+      "paired_min_percent": -20.390512035073517,
+      "paired_max_percent": 3.5739087942644687
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 8776.39242282507,
+      "after_ns": 8488.70899321267,
+      "paired_change_percent": -2.738748371807742,
+      "paired_min_percent": -13.603373182585866,
+      "paired_max_percent": 6.5261240439398405
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 7770.852734051367,
+      "after_ns": 7897.139835858586,
+      "paired_change_percent": 2.5330642848191642,
+      "paired_min_percent": -7.636495274931709,
+      "paired_max_percent": 4.849062339141708
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 6886.770374449339,
+      "after_ns": 6556.048698462613,
+      "paired_change_percent": -5.218811961918912,
+      "paired_min_percent": -12.403986691087255,
+      "paired_max_percent": 2.564430891571523
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 5946.742588776157,
+      "after_ns": 5909.966721802142,
+      "paired_change_percent": -0.6184203608110672,
+      "paired_min_percent": -22.444211836501193,
+      "paired_max_percent": 1.008707746359816
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 12241.228785900783,
+      "after_ns": 10920.750218277066,
+      "paired_change_percent": -11.118652709468101,
+      "paired_min_percent": -27.777275354801834,
+      "paired_max_percent": -8.064931925223783
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 10191.55625,
+      "after_ns": 9408.7601554664,
+      "paired_change_percent": -8.250647782878195,
+      "paired_min_percent": -11.876673430377437,
+      "paired_max_percent": -6.80321947294753
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 4312.824632014719,
+      "after_ns": 3692.9892716535433,
+      "paired_change_percent": -14.127619390639111,
+      "paired_min_percent": -15.759944545794424,
+      "paired_max_percent": -13.493681885372022
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 3132.3661460073504,
+      "after_ns": 3013.4166331940874,
+      "paired_change_percent": -2.8003469973139183,
+      "paired_min_percent": -5.0979192014127594,
+      "paired_max_percent": -2.242602693531315
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 12343.917927631579,
+      "after_ns": 9040.379636319845,
+      "paired_change_percent": -26.776339829956886,
+      "paired_min_percent": -30.028787072021313,
+      "paired_max_percent": -24.581245850892962
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 10070.256578947368,
+      "after_ns": 7581.053354890865,
+      "paired_change_percent": -24.849044775346773,
+      "paired_min_percent": -25.3757282389372,
+      "paired_max_percent": -24.350710164431575
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 5598.694029850746,
+      "after_ns": 4812.018984094408,
+      "paired_change_percent": -13.785874007912568,
+      "paired_min_percent": -15.83345677700546,
+      "paired_max_percent": -12.891775461764631
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 4447.537416982922,
+      "after_ns": 4417.254209844559,
+      "paired_change_percent": -0.21741360440502566,
+      "paired_min_percent": -4.64853911866313,
+      "paired_max_percent": 0.44085828970645835
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 8025.685201026518,
+      "after_ns": 7114.662367223065,
+      "paired_change_percent": -10.85063931200848,
+      "paired_min_percent": -16.71702339851233,
+      "paired_max_percent": -9.581117226924828
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 6452.694855471438,
+      "after_ns": 6456.7837465564735,
+      "paired_change_percent": 0.7517157009320652,
+      "paired_min_percent": -7.526059732727452,
+      "paired_max_percent": 1.9084925614665238
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 2195.6503659250584,
+      "after_ns": 1442.268900938317,
+      "paired_change_percent": -34.35101263961749,
+      "paired_min_percent": -35.42018434003948,
+      "paired_max_percent": -30.86738819883845
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 1222.6565923317685,
+      "after_ns": 1166.900350031114,
+      "paired_change_percent": -4.30455317299967,
+      "paired_min_percent": -6.800597221412108,
+      "paired_max_percent": 2.2906007768356496
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 4371.263111888112,
+      "after_ns": 3358.5103644340975,
+      "paired_change_percent": -23.71062010375494,
+      "paired_min_percent": -31.926426547779318,
+      "paired_max_percent": -22.227165216273782
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 3306.3853578984485,
+      "after_ns": 2785.9809863339274,
+      "paired_change_percent": -15.864097386641662,
+      "paired_min_percent": -19.179253144967067,
+      "paired_max_percent": -13.507190003249326
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 2950.687165670233,
+      "after_ns": 2266.3186941020062,
+      "paired_change_percent": -22.875012403100303,
+      "paired_min_percent": -24.645818953972864,
+      "paired_max_percent": -18.80784725770438
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 1880.7448345035104,
+      "after_ns": 1865.5724607043373,
+      "paired_change_percent": -0.21780420700547864,
+      "paired_min_percent": -4.3304412565795865,
+      "paired_max_percent": 2.5176419914288983
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 4037.161213947482,
+      "after_ns": 2923.8855628313067,
+      "paired_change_percent": -27.432175594967013,
+      "paired_min_percent": -28.862990546394172,
+      "paired_max_percent": -22.250869837743103
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 2970.7732493662866,
+      "after_ns": 2410.343685732648,
+      "paired_change_percent": -17.653967395483782,
+      "paired_min_percent": -20.538864062251115,
+      "paired_max_percent": -12.757234242369787
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 2108.8449027215474,
+      "after_ns": 1400.7910970416854,
+      "paired_change_percent": -33.4246577881378,
+      "paired_min_percent": -35.21124339952042,
+      "paired_max_percent": -31.68641502800601
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 1104.0847856806406,
+      "after_ns": 1093.8849025784623,
+      "paired_change_percent": -0.8998527752138608,
+      "paired_min_percent": -3.36469952700319,
+      "paired_max_percent": 2.218973851861228
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 4207.628841408703,
+      "after_ns": 3296.9070411392404,
+      "paired_change_percent": -22.14877856973343,
+      "paired_min_percent": -22.91233392601315,
+      "paired_max_percent": -20.66571845053662
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 3153.737806929028,
+      "after_ns": 2728.473188300349,
+      "paired_change_percent": -13.273307918077993,
+      "paired_min_percent": -19.428258552117683,
+      "paired_max_percent": -11.797365812016757
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "before_ns": 2812.4648507798443,
+      "after_ns": 2203.9263193464976,
+      "paired_change_percent": -21.97099317540654,
+      "paired_min_percent": -25.009302844125315,
+      "paired_max_percent": -20.431579699913527
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "before_ns": 1810.9708083832336,
+      "after_ns": 1770.389798904834,
+      "paired_change_percent": -2.7394657964333935,
+      "paired_min_percent": -42.16883507551663,
+      "paired_max_percent": -1.105368279002339
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "before_ns": 3839.0000255832992,
+      "after_ns": 2861.078787763198,
+      "paired_change_percent": -25.321243480874468,
+      "paired_min_percent": -36.10650838709311,
+      "paired_max_percent": -24.286051429520427
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "before_ns": 2762.804452710666,
+      "after_ns": 2350.3031774880924,
+      "paired_change_percent": -14.606655776140599,
+      "paired_min_percent": -50.38920345316823,
+      "paired_max_percent": -12.42605088468447
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "before_ns": 1566.652746449457,
+      "after_ns": 775.0496869058444,
+      "paired_change_percent": -50.494155408509066,
+      "paired_min_percent": -66.10809949252689,
+      "paired_max_percent": -48.10579562367114
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "before_ns": 371.19113513085483,
+      "after_ns": 374.35405186871105,
+      "paired_change_percent": 0.3073286052247992,
+      "paired_min_percent": -41.57971091545117,
+      "paired_max_percent": 4.341861458638552
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "before_ns": 9661.646047888775,
+      "after_ns": 9412.014669007021,
+      "paired_change_percent": -2.573267996096451,
+      "paired_min_percent": -4.716861747153911,
+      "paired_max_percent": -0.37858175915396197
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "before_ns": 8438.845409540954,
+      "after_ns": 8423.812331536388,
+      "paired_change_percent": 0.2802908475401322,
+      "paired_min_percent": -16.093279538770478,
+      "paired_max_percent": 13.266631635084035
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "before_ns": 1652.2861674008811,
+      "after_ns": 885.0614261776645,
+      "paired_change_percent": -47.23351009033888,
+      "paired_min_percent": -47.54144118571965,
+      "paired_max_percent": -45.31417706966955
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "before_ns": 458.477364418798,
+      "after_ns": 460.50897067491894,
+      "paired_change_percent": 0.48747799126256375,
+      "paired_min_percent": -1.0284031794152937,
+      "paired_max_percent": 16.907068970516036
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "before_ns": 12419.47094370861,
+      "after_ns": 11944.191242038216,
+      "paired_change_percent": -3.7741419163124568,
+      "paired_min_percent": -5.416294509768327,
+      "paired_max_percent": -0.3749415155949176
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "before_ns": 11246.278027577937,
+      "after_ns": 11184.3619636472,
+      "paired_change_percent": -0.5505471568363118,
+      "paired_min_percent": -1.8555102240481403,
+      "paired_max_percent": 4.197571493237118
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "before_ns": 1516.4437772925764,
+      "after_ns": 746.3257244069416,
+      "paired_change_percent": -50.50389119378025,
+      "paired_min_percent": -51.78648554312461,
+      "paired_max_percent": -49.18232699638959
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "before_ns": 353.36954411820136,
+      "after_ns": 354.37199973540976,
+      "paired_change_percent": 0.7669758825241235,
+      "paired_min_percent": -0.5695995180242441,
+      "paired_max_percent": 2.254435643045327
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "before_ns": 6169.575822368421,
+      "after_ns": 5640.047166265785,
+      "paired_change_percent": -8.95796834592889,
+      "paired_min_percent": -10.88364052935371,
+      "paired_max_percent": -3.050608871346494
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "before_ns": 5013.126636825227,
+      "after_ns": 5239.277828212291,
+      "paired_change_percent": 4.460057168800646,
+      "paired_min_percent": -1.507749573983197,
+      "paired_max_percent": 6.102879551669593
+    }
+  ],
+  "samples": [
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 0,
+      "before": 980.6599764644351,
+      "after": 278.6906547265161
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 0,
+      "before": 46.44476735545174,
+      "after": 52.61202312673969
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 0,
+      "before": 919.2177235513286,
+      "after": 228.2990122366979
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 0,
+      "before": 47.05031460942009,
+      "after": 46.90196849704331
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 0,
+      "before": 927.9186522664291,
+      "after": 227.12398856533747
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 0,
+      "before": 46.25466276155375,
+      "after": 46.400097377850805
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "owned",
+      "round": 0,
+      "before": 971.6083985387087,
+      "after": 224.5563381757647
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 0,
+      "before": 45.538206689107795,
+      "after": 44.85230450435365
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 0,
+      "before": 1072.5177876916036,
+      "after": 377.88683494558643
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 0,
+      "before": 89.71366626794259,
+      "after": 89.3019730951315
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 0,
+      "before": 1073.7750758790517,
+      "after": 377.51922767174034
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 0,
+      "before": 89.3533634830015,
+      "after": 89.1822418237857
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 0,
+      "before": 1074.7625386908173,
+      "after": 378.800505050505
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 0,
+      "before": 94.32052912089017,
+      "after": 94.37027269158371
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "owned",
+      "round": 0,
+      "before": 1127.642380322348,
+      "after": 374.97708433325334
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 0,
+      "before": 88.60090597002231,
+      "after": 88.39829098109472
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 0,
+      "before": 2195.901024590164,
+      "after": 1528.9983182485323
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1251.433128670582,
+      "after": 1210.787162598476
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 0,
+      "before": 2114.549856224628,
+      "after": 1514.8204778639522
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1252.1005859375,
+      "after": 1193.5421308084024
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 0,
+      "before": 2266.1152579748673,
+      "after": 1589.6834732112582
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1343.5327995127543,
+      "after": 1322.28601022567
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 0,
+      "before": 2264.6732940821257,
+      "after": 1560.5295439414115
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1275.1734987078346,
+      "after": 1221.3548397602917
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 0,
+      "before": 7734.134583676834,
+      "after": 7279.242284549689
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6363.772388059701,
+      "after": 6372.402895720109
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 0,
+      "before": 7792.525384136213,
+      "after": 7203.243039554532
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6481.554898064962,
+      "after": 6334.55625
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 0,
+      "before": 8047.547854077253,
+      "after": 7421.584503560127
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6739.033315373563,
+      "after": 6655.817512420156
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 0,
+      "before": 8551.041191886965,
+      "after": 7859.960027242247
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 0,
+      "before": 7002.4874906646755,
+      "after": 6929.0619918699185
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 0,
+      "before": 20541.011351203502,
+      "after": 20525.51736870897
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 0,
+      "before": 20145.447693133046,
+      "after": 18785.359375
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 0,
+      "before": 20250.416306695464,
+      "after": 20298.154491341993
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 0,
+      "before": 20376.293519522776,
+      "after": 18579.331683168315
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 0,
+      "before": 26790.34964285714,
+      "after": 21660.405889145495
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 0,
+      "before": 20837.071805555555,
+      "after": 20441.82325708061
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 0,
+      "before": 20514.032887554586,
+      "after": 20610.651236263737
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 0,
+      "before": 20257.33450323974,
+      "after": 18864.87676056338
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 0,
+      "before": 122408.88798701299,
+      "after": 122458.36688311688
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 0,
+      "before": 113687.97063253012,
+      "after": 113242.4390060241
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 0,
+      "before": 151228.91532258064,
+      "after": 157622.17916666667
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 0,
+      "before": 140411.06902985074,
+      "after": 150606.89484126985
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 0,
+      "before": 132000.83246527778,
+      "after": 139408.04963235295
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 0,
+      "before": 122746.85470779221,
+      "after": 133140.2209507042
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 0,
+      "before": 135802.1580357143,
+      "after": 174835.5775862069
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 0,
+      "before": 127895.69256756757,
+      "after": 145472.075
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 3548.884793716881,
+      "after": 2757.346956777418
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 2388.1826763881813,
+      "after": 2752.8526680857312
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 4214.824438202248,
+      "after": 3515.31838207724
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 3018.1713268426133,
+      "after": 2991.5884053924697
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 5347.553805587229,
+      "after": 4803.240010245901
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 4261.485568181818,
+      "after": 4244.8352761430515
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 8659.250923361034,
+      "after": 8455.83250676285
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 7654.381377551021,
+      "after": 8025.547102224124
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 6992.589485458613,
+      "after": 6454.015743289745
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6102.846820104099,
+      "after": 5820.952630353818
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 14885.048809523809,
+      "after": 10750.387815005728
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 10137.483108108108,
+      "after": 9408.7601554664
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 4274.625655195989,
+      "after": 3670.722812255286
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 3148.4173942243115,
+      "after": 2987.913619343531
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 12262.97998366013,
+      "after": 8968.388981835564
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 10084.556989247312,
+      "after": 7556.082947219984
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 5534.135324483776,
+      "after": 4657.890399900646
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 4354.634753831862,
+      "after": 4316.890653775322
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 7820.990148040033,
+      "after": 7071.651913650076
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 6382.067945881552,
+      "after": 6430.042952674897
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 2171.975735464443,
+      "after": 1425.8800760456274
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1188.5402827079108,
+      "after": 1142.2472130847952
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 4302.131135321101,
+      "after": 3327.91430092264
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 3244.6141652249134,
+      "after": 2766.7645507524344
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 2959.5992542613635,
+      "after": 2355.8403894472362
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1857.5499678026551,
+      "after": 1865.5724607043373
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 3992.0400436355894,
+      "after": 2901.0924350247524
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 2970.4171088058283,
+      "after": 2392.1110969387755
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 2087.476110307213,
+      "after": 1408.37378886886
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1102.7396127381792,
+      "after": 1092.8165797295721
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 4227.925636834986,
+      "after": 3278.6831512237763
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 3148.582668737408,
+      "after": 2709.003756139844
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 0,
+      "before": 2812.4648507798443,
+      "after": 2203.9263193464976
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 0,
+      "before": 1798.0831775028769,
+      "after": 1746.7074329359166
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 0,
+      "before": 3806.5515631343887,
+      "after": 2843.1593579442088
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 0,
+      "before": 2727.2245127981387,
+      "after": 2328.868215971187
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 0,
+      "before": 1544.9063169385402,
+      "after": 775.0496869058444
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 0,
+      "before": 367.2264664120642,
+      "after": 374.35405186871105
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 0,
+      "before": 9607.501921106557,
+      "after": 9335.450310945274
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 0,
+      "before": 8359.008299910873,
+      "after": 8382.437835120643
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 0,
+      "before": 1652.2861674008811,
+      "after": 869.3864579469584
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 0,
+      "before": 458.477364418798,
+      "after": 457.340906873506
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 0,
+      "before": 12522.16146528705,
+      "after": 11843.924321338383
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 0,
+      "before": 11279.594200721154,
+      "after": 11070.300177095633
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 0,
+      "before": 1516.4437772925764,
+      "after": 741.8308128263966
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 0,
+      "before": 353.36954411820136,
+      "after": 357.0024822931343
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 0,
+      "before": 6298.5260241773,
+      "after": 5613.017093058049
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 0,
+      "before": 5056.123652291105,
+      "after": 4979.889969463622
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 3570.0527693186145,
+      "after": 3347.0840101749377
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 2388.7380573248406,
+      "after": 2359.1456341217918
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 4188.775932335864,
+      "after": 3503.1966053418005
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 3002.578330131284,
+      "after": 3039.79773095624
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 5395.587600690449,
+      "after": 4814.124262063655
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 4292.63487293956,
+      "after": 4281.456906392694
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 8776.39242282507,
+      "after": 8516.977917801998
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 7701.335437192119,
+      "after": 7682.157299344799
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 6848.583592037984,
+      "after": 6560.893793706294
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 5872.527943018159,
+      "after": 5931.764587286528
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 12112.615067829458,
+      "after": 10975.079239766083
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 10253.031079234972,
+      "after": 9274.053103363007
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 4312.824632014719,
+      "after": 3671.9229395066563
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 3132.3661460073504,
+      "after": 3023.339245404708
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 12211.415608723959,
+      "after": 9013.671229586937
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 9971.653095111584,
+      "after": 7542.53125
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 5509.596540834313,
+      "after": 4767.338141840366
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 4397.865853658536,
+      "after": 4417.254209844559
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 7970.4536958368735,
+      "after": 7068.819093820648
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6428.848612063057,
+      "after": 6415.590800273598
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 2185.0147838499183,
+      "after": 1441.8429474857758
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1195.1790551306565,
+      "after": 1166.8037647790916
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 4371.263111888112,
+      "after": 3334.8095216927454
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 3285.4327259985985,
+      "after": 2764.228478773585
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 2933.4625704005007,
+      "after": 2262.4326435810813
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1863.0248733359824,
+      "after": 1858.9671267842982
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 4023.217422779923,
+      "after": 2923.038263715711
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 2931.274910128165,
+      "after": 2424.7303626842513
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 2076.9359908063802,
+      "after": 1382.7272434006784
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1101.1911777660325,
+      "after": 1102.27155831178
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 4146.752432551968,
+      "after": 3289.79625
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 3139.4872572815534,
+      "after": 2722.7734465737512
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 1,
+      "before": 2818.049613014728,
+      "after": 2175.666444315545
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1815.1485358180057,
+      "after": 1761.69331313416
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 1,
+      "before": 3816.543498168498,
+      "after": 2850.147226443769
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 1,
+      "before": 2762.804452710666,
+      "after": 2345.459182716358
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 1,
+      "before": 1574.4341204869856,
+      "after": 763.010234394075
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 1,
+      "before": 372.02825148809524,
+      "after": 373.1716007244358
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 1,
+      "before": 9752.826143451144,
+      "after": 9347.439431704885
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 1,
+      "before": 8396.500111906893,
+      "after": 8377.457645089286
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 1,
+      "before": 1654.2679296047988,
+      "after": 870.9404958197863
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 1,
+      "before": 458.36210826733156,
+      "after": 463.76891231758594
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 1,
+      "before": 12398.826287978864,
+      "after": 11930.876987913485
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 1,
+      "before": 11168.173363095239,
+      "after": 11163.569568452382
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 1,
+      "before": 1510.031224834917,
+      "after": 751.808089414595
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 1,
+      "before": 351.67473930004877,
+      "after": 354.37199973540976
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 1,
+      "before": 6144.328186435125,
+      "after": 5537.563643742621
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 1,
+      "before": 5005.78533769354,
+      "after": 5244.146427572707
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 1,
+      "before": 989.6924746648369,
+      "after": 225.45496356684222
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 1,
+      "before": 45.861127655046914,
+      "after": 46.458858626704725
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 1,
+      "before": 913.8056347465887,
+      "after": 226.12162475880368
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 1,
+      "before": 46.46319471633965,
+      "after": 46.367559251492416
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 1,
+      "before": 905.6542998937404,
+      "after": 226.1811414354644
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 1,
+      "before": 46.29129273609781,
+      "after": 50.947465274381294
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "owned",
+      "round": 1,
+      "before": 971.9675513166079,
+      "after": 229.951684755948
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 1,
+      "before": 44.999474106731434,
+      "after": 46.52933888706907
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 1,
+      "before": 1064.2805511408787,
+      "after": 396.63859098024284
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 1,
+      "before": 89.4546979065285,
+      "after": 94.22778675384198
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 1,
+      "before": 1080.6283137390503,
+      "after": 383.5851949592897
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 1,
+      "before": 91.2258586170658,
+      "after": 89.83010065731479
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 1,
+      "before": 1069.1857823012886,
+      "after": 379.54856837779846
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 1,
+      "before": 94.65940718396608,
+      "after": 94.89266392364064
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "owned",
+      "round": 1,
+      "before": 1116.6682795378752,
+      "after": 369.72881255669046
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 1,
+      "before": 88.83546319634617,
+      "after": 88.8797046833523
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 1,
+      "before": 2200.401651607604,
+      "after": 1531.5971087879777
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1311.5866501119194,
+      "after": 1268.9676248646454
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 1,
+      "before": 2271.906681608917,
+      "after": 1568.8199778279786
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1265.9048997434513,
+      "after": 1204.9551140012845
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 1,
+      "before": 2270.33330811138,
+      "after": 1600.9217922998123
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1363.1051904623437,
+      "after": 1826.6821303331385
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 1,
+      "before": 2230.599794789436,
+      "after": 3950.3103851512737
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 1,
+      "before": 1276.049458962842,
+      "after": 3644.012359022556
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 1,
+      "before": 7801.686876039934,
+      "after": 16529.750869565218
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6414.164030437756,
+      "after": 20797.619872505544
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 1,
+      "before": 7828.261946994991,
+      "after": 44490.198844178085
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6421.917808219178,
+      "after": 14101.946240601505
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 1,
+      "before": 8030.576680222603,
+      "after": 8173.913851351352
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6674.115880782918,
+      "after": 6681.280760327635
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 1,
+      "before": 8458.47892245266,
+      "after": 7978.143601190476
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 1,
+      "before": 6902.532468727005,
+      "after": 6960.960699703044
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 1,
+      "before": 20114.873394004284,
+      "after": 20609.28337912088
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 1,
+      "before": 20057.186030982906,
+      "after": 18876.13707243461
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 1,
+      "before": 20101.467746252678,
+      "after": 20245.728987068964
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 1,
+      "before": 20042.991052350426,
+      "after": 18485.928272637797
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 1,
+      "before": 22927.869565217392,
+      "after": 21584.72212643678
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 1,
+      "before": 21090.35,
+      "after": 20239.26333512931
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 1,
+      "before": 20370.842462039047,
+      "after": 20608.379120879123
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 1,
+      "before": 20460.148965141612,
+      "after": 18875.70208752515
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 1,
+      "before": 122790.34821428571,
+      "after": 124072.09457236843
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 1,
+      "before": 112406.52901785714,
+      "after": 115629.06554878049
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 1,
+      "before": 155002.77459016393,
+      "after": 151632.97983870967
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 1,
+      "before": 194073.64625,
+      "after": 138956.41911764705
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 1,
+      "before": 141727.30037313432,
+      "after": 135376.26517857143
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 1,
+      "before": 144088.5018939394,
+      "after": 118641.53671875
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 1,
+      "before": 135182.92410714287,
+      "after": 124239.85773026316
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 1,
+      "before": 126366.11083333334,
+      "after": 117453.18984375
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 6448.966450033761,
+      "after": 4824.497363683127
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 5388.288721264368,
+      "after": 4289.589061070448
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 9789.568110647182,
+      "after": 8457.856627592426
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 8195.98628715035,
+      "after": 7570.100181598063
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 6965.991038261515,
+      "after": 6462.301473121985
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 5825.900970496895,
+      "after": 5874.79765820802
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 12241.228785900783,
+      "after": 10839.176169168592
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 10159.003724268689,
+      "after": 9467.864404641776
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 4289.628345150961,
+      "after": 3691.487253937008
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 3144.8430164319248,
+      "after": 3005.796970182751
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 12890.986263736264,
+      "after": 9019.979447115385
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 10021.314636752137,
+      "after": 7581.053354890865
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 5680.9556708055725,
+      "after": 4812.018984094408
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 4600.142848380766,
+      "after": 4386.303408559402
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 8315.937610815603,
+      "after": 7060.101703689759
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 6940.788490007402,
+      "after": 6418.420602327174
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 2173.528410407974,
+      "after": 1442.268900938317
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1219.8054254488682,
+      "after": 1167.2982523032867
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 4362.030058139535,
+      "after": 3331.9164889836534
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 3290.1251754385967,
+      "after": 2785.9809863339274
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 2935.4005165936132,
+      "after": 2273.4097053831233
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1892.4790320952766,
+      "after": 1840.1266560353288
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 4114.209658841597,
+      "after": 2926.725713951311
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 3014.749959807074,
+      "after": 2395.554563745529
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 2097.744798657718,
+      "after": 1370.662390350877
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1110.398710470212,
+      "after": 1094.1809356400981
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 4172.860119047619,
+      "after": 3296.9070411392404
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 3153.737806929028,
+      "after": 2735.3238404317385
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 2787.01415725327,
+      "after": 2208.2775111869996
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1810.9708083832336,
+      "after": 1786.2534292246141
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 3839.0000255832992,
+      "after": 2883.840222239311
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 2742.7374232231646,
+      "after": 2344.728760315079
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 2,
+      "before": 1540.6939092029581,
+      "after": 755.5739442295294
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 2,
+      "before": 371.19113513085483,
+      "after": 372.018553331217
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 2,
+      "before": 9644.032117163411,
+      "after": 9412.014669007021
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 2,
+      "before": 8438.845409540954,
+      "after": 8419.764082136446
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 2,
+      "before": 1649.8589543374978,
+      "after": 885.5981982620194
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 2,
+      "before": 460.60100901542694,
+      "after": 459.78433668464936
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 2,
+      "before": 12419.47094370861,
+      "after": 11944.191242038216
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 2,
+      "before": 11246.278027577937,
+      "after": 11184.3619636472
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 2,
+      "before": 1525.1186869713729,
+      "after": 735.3133186274509
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 2,
+      "before": 352.3987417305668,
+      "after": 351.9871245541581
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 2,
+      "before": 6169.575822368421,
+      "after": 5640.047166265785
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 2,
+      "before": 5013.126636825227,
+      "after": 5319.071717243335
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 2,
+      "before": 983.7072185499948,
+      "after": 228.4967432366561
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 2,
+      "before": 46.16466887107417,
+      "after": 46.40623437662421
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 2,
+      "before": 927.6961087472788,
+      "after": 229.2625758094493
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 2,
+      "before": 46.39278605149471,
+      "after": 46.80976537729867
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 2,
+      "before": 923.4388358120752,
+      "after": 228.03896824528118
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 2,
+      "before": 46.43619080935163,
+      "after": 46.46621449990087
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "owned",
+      "round": 2,
+      "before": 989.9066888396156,
+      "after": 226.2856776490466
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 2,
+      "before": 45.28013747011519,
+      "after": 45.205671730492895
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 2,
+      "before": 1078.0803869150282,
+      "after": 375.4355928640077
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 2,
+      "before": 90.43265103357803,
+      "after": 90.12898188294334
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 2,
+      "before": 1096.0299421323357,
+      "after": 379.8763751012966
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 2,
+      "before": 89.77403846153847,
+      "after": 90.6746538658697
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 2,
+      "before": 1090.9458415755178,
+      "after": 384.43627496206994
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 2,
+      "before": 95.37947200687746,
+      "after": 94.71054745115471
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "owned",
+      "round": 2,
+      "before": 1138.5052975106253,
+      "after": 377.5468020095039
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 2,
+      "before": 89.14978699327698,
+      "after": 89.75926486639156
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 2,
+      "before": 2194.3635911537563,
+      "after": 1510.9484085414988
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1273.783542798913,
+      "after": 1322.775580205982
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 2,
+      "before": 2168.4818744218314,
+      "after": 1489.9512255680916
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1251.2007707193382,
+      "after": 1309.6979414024306
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 2,
+      "before": 2312.759512210163,
+      "after": 1608.0463363916995
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1343.916866757454,
+      "after": 1333.01525842457
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 2,
+      "before": 2236.5380933921756,
+      "after": 1513.532001614205
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 2,
+      "before": 1274.6643439836846,
+      "after": 1322.4417489421721
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 2,
+      "before": 7880.214863445378,
+      "after": 7217.3086027713625
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 2,
+      "before": 6439.9646720467035,
+      "after": 6428.309587045922
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 2,
+      "before": 7862.127619446773,
+      "after": 7159.712929389313
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 2,
+      "before": 6425.347816780822,
+      "after": 6388.224838215259
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 2,
+      "before": 8097.982351036269,
+      "after": 7452.469320889595
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 2,
+      "before": 6722.853181003584,
+      "after": 6677.476540242165
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 2,
+      "before": 8512.827075771325,
+      "after": 7987.391769591141
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 2,
+      "before": 7040.315737612613,
+      "after": 7042.259055930931
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 2,
+      "before": 20604.470054945054,
+      "after": 20328.418154761905
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 2,
+      "before": 20455.224128540303,
+      "after": 20420.448369565216
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 2,
+      "before": 20261.87338012959,
+      "after": 20184.122983870966
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 2,
+      "before": 20472.41743995633,
+      "after": 20264.19073974082
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 2,
+      "before": 22336.495535714286,
+      "after": 21365.959567198177
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 2,
+      "before": 21143.012105855854,
+      "after": 20418.421739130434
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 2,
+      "before": 20794.01094789357,
+      "after": 20141.2732027897
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 2,
+      "before": 20387.86222826087,
+      "after": 20564.401726973683
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 2,
+      "before": 124432.8396381579,
+      "after": 125786.35416666667
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 2,
+      "before": 114908.28201219512,
+      "after": 113847.546686747
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 2,
+      "before": 156636.89270833333,
+      "after": 153332.8296370968
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 2,
+      "before": 142605.86268939395,
+      "after": 139205.6525735294
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 2,
+      "before": 138234.83455882352,
+      "after": 136923.19565217392
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 2,
+      "before": 124912.14391447368,
+      "after": 122836.07305194806
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 2,
+      "before": 131792.67881944444,
+      "after": 128616.65239726027
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 2,
+      "before": 119579.11392405063,
+      "after": 124420.33305921052
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 2,
+      "before": 3504.370445627803,
+      "after": 2751.954450396243
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 2,
+      "before": 2337.0195507228314,
+      "after": 2332.826620427967
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 2,
+      "before": 4174.422361976848,
+      "after": 3516.222581552306
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 2,
+      "before": 2979.635049253257,
+      "after": 2969.2126147878403
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 6882.78384079237,
+      "after": 6575.382012622721
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 5942.779309252218,
+      "after": 5848.079995324189
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 12193.538036410924,
+      "after": 10837.780889145497
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 10191.55625,
+      "after": 9371.180944055945
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 4320.7709389400925,
+      "after": 3725.036427294398
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 3098.2182129874423,
+      "after": 3028.737487891508
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 12346.254769736843,
+      "after": 9040.379636319845
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 10047.811830835119,
+      "after": 7551.02657004831
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 5573.947792806183,
+      "after": 4739.209607124811
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 4434.831776253548,
+      "after": 4411.856617647059
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 7980.609521276596,
+      "after": 7114.662367223065
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 6459.030991735537,
+      "after": 6456.7837465564735
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 2214.963412473423,
+      "after": 1430.4192887109077
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 1252.0470252403845,
+      "after": 1166.900350031114
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 4988.365757978723,
+      "after": 3395.758828323071
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 3542.896439365319,
+      "after": 2863.39536259542
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 2964.727236800506,
+      "after": 2407.125866495507
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 1901.378612350436,
+      "after": 1949.2485187110187
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 4053.19682230869,
+      "after": 3151.325273109244
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 3012.0521201413426,
+      "after": 2627.797575672646
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 2108.8449027215474,
+      "after": 1440.6275545482483
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 1104.0847856806406,
+      "after": 1128.5841383772722
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 4207.628841408703,
+      "after": 3325.109884751773
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 3137.262838742054,
+      "after": 2767.1484651711926
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 2801.2399163429936,
+      "after": 2228.902350249584
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 1790.177857074661,
+      "after": 1770.389798904834
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 3778.800130995566,
+      "after": 2861.078787763198
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 2777.648456013033,
+      "after": 2350.3031774880924
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 3,
+      "before": 2294.6640663240332,
+      "after": 777.7052623392783
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 3,
+      "before": 643.7119481255149,
+      "after": 376.0583809667068
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 3,
+      "before": 10455.009197324414,
+      "after": 9961.860867834395
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 3,
+      "before": 10744.353164375716,
+      "after": 9015.234375
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 3,
+      "before": 1719.101897689769,
+      "after": 920.1020331325301
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 3,
+      "before": 466.31810494901765,
+      "after": 545.1588285747514
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 3,
+      "before": 12603.42809139785,
+      "after": 12556.172607095046
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 3,
+      "before": 12025.140224358975,
+      "after": 11819.79101070529
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 3,
+      "before": 1545.8204554822753,
+      "after": 785.5499842899036
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 3,
+      "before": 358.15155718760747,
+      "after": 366.22585354896677
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 3,
+      "before": 6231.988870431894,
+      "after": 5673.729280096793
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 3,
+      "before": 5036.5953947368425,
+      "after": 5043.850591715976
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 3,
+      "before": 1706.3209834425036,
+      "after": 229.38827991191584
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 3,
+      "before": 90.8736837582424,
+      "after": 46.893535979031824
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 3,
+      "before": 2163.8112739441494,
+      "after": 231.9336979243976
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 3,
+      "before": 64.70579572356388,
+      "after": 47.71161905707044
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 3,
+      "before": 1087.177382884972,
+      "after": 231.51495091986666
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 3,
+      "before": 51.34273119218826,
+      "after": 47.38125334825941
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "owned",
+      "round": 3,
+      "before": 1052.2735804062395,
+      "after": 230.49765815159935
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 3,
+      "before": 48.01072713422441,
+      "after": 45.955848562016854
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 3,
+      "before": 1615.994043002413,
+      "after": 384.2973335792753
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 3,
+      "before": 96.41589920399852,
+      "after": 89.36839806773877
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 3,
+      "before": 1082.6122257505774,
+      "after": 382.43029267795225
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 3,
+      "before": 92.44845635945882,
+      "after": 89.39348229780498
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 3,
+      "before": 1292.1859926267916,
+      "after": 387.38144084955167
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 3,
+      "before": 167.99966069732858,
+      "after": 94.10761309798647
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "owned",
+      "round": 3,
+      "before": 1954.4881566604129,
+      "after": 384.9811052480289
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 3,
+      "before": 144.59655901042632,
+      "after": 89.6621604820199
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 3,
+      "before": 2780.630634638197,
+      "after": 1539.627380952381
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 3,
+      "before": 1400.6611984613087,
+      "after": 1732.1225175503419
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 3,
+      "before": 3306.6995946422276,
+      "after": 1529.0471603881278
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 3,
+      "before": 2005.0858105218135,
+      "after": 1214.0659389564992
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 3,
+      "before": 2331.4031887120836,
+      "after": 1619.6063331318016
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 3,
+      "before": 1370.4205342786142,
+      "after": 1325.893544053175
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 3,
+      "before": 2273.522747938894,
+      "after": 1535.7311660661644
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 3,
+      "before": 1400.3489077669904,
+      "after": 1236.4077129763946
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 3,
+      "before": 8606.517603211008,
+      "after": 7380.2964693155
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 3,
+      "before": 7313.834584633385,
+      "after": 6485.160226486861
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 3,
+      "before": 8097.827180483592,
+      "after": 7378.944138473643
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 3,
+      "before": 6631.4551803394625,
+      "after": 6545.433879972086
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 3,
+      "before": 8328.217473357015,
+      "after": 7647.940456769984
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 3,
+      "before": 6822.965909090909,
+      "after": 6820.977272727273
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 3,
+      "before": 8649.014068265682,
+      "after": 8231.946883230905
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 3,
+      "before": 7156.09706331045,
+      "after": 7153.202898550725
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 3,
+      "before": 20705.154249448122,
+      "after": 20691.91093061674
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 3,
+      "before": 20667.039509911894,
+      "after": 18920.28931451613
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 3,
+      "before": 20968.59305245536,
+      "after": 20429.857706971678
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 3,
+      "before": 20682.716134361235,
+      "after": 18668.830765407554
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 3,
+      "before": 22885.08643292683,
+      "after": 21969.500146370025
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 3,
+      "before": 22020.919014084506,
+      "after": 20699.083747240617
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 3,
+      "before": 22193.834958628842,
+      "after": 21163.386427765236
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 3,
+      "before": 22328.180803571428,
+      "after": 20047.503872863246
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 3,
+      "before": 126375.72916666667,
+      "after": 137140.7382246377
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 3,
+      "before": 117696.25625,
+      "after": 119906.71123417722
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 3,
+      "before": 166610.79166666666,
+      "after": 155085.38217213115
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 3,
+      "before": 158102.90729166666,
+      "after": 153177.4616935484
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 3,
+      "before": 146014.1826923077,
+      "after": 147875.8134765625
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 3,
+      "before": 241846.225,
+      "after": 131823.67621527778
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 3,
+      "before": 163208.7370689655,
+      "after": 156703.125
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 3,
+      "before": 154345.3881048387,
+      "after": 165022.3157327586
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 3675.233584868679,
+      "after": 4374.895473635091
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 3111.7751825423165,
+      "after": 2865.6450259383582
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 4225.944034474989,
+      "after": 5377.154709002293
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 3021.506405091847,
+      "after": 3544.057521706304
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 3,
+      "before": 5723.195660463697,
+      "after": 4887.202546899427
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 3,
+      "before": 4416.564855157795,
+      "after": 4374.933154456369
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 3,
+      "before": 9359.772642215568,
+      "after": 9305.503844246032
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 3,
+      "before": 7928.696904057481,
+      "after": 8214.41051882662
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 4451.451530612245,
+      "after": 3749.905237904838
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 3174.208509647935,
+      "after": 3085.319656959526
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 12343.917927631579,
+      "after": 9184.018425563174
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 10266.818791028447,
+      "after": 7701.397424055829
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 5628.420093037215,
+      "after": 4902.816812598014
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 4458.32837018545,
+      "after": 4461.468987868697
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 8085.457112068965,
+      "after": 7299.1934338521405
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 6452.694855471438,
+      "after": 6575.844056802244
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 2258.998208263069,
+      "after": 1465.1084739803093
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1233.5776480263157,
+      "after": 1179.4640756698957
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 4506.539175072046,
+      "after": 3358.5103644340975
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 3388.9601102276833,
+      "after": 2830.2465288258377
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 3004.3238745594363,
+      "after": 2266.3186941020062
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1976.8798492515286,
+      "after": 1891.272228666532
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 4126.028844038716,
+      "after": 2981.3452106518284
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 2970.7732493662866,
+      "after": 2481.3766704154536
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 2109.148861079865,
+      "after": 1434.4053606946145
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1092.0193483577918,
+      "after": 1093.8849025784623
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 4270.139600409836,
+      "after": 3324.3558356965614
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 3155.251093539704,
+      "after": 2744.8854288641687
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 2803.709386214115,
+      "after": 2187.7065883107794
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1831.986982219617,
+      "after": 1781.8003254465982
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 3882.9634575569357,
+      "after": 2881.89215196681
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 2768.859051978736,
+      "after": 2369.212670540677
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 4,
+      "before": 1566.652746449457,
+      "after": 788.7314713552621
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 4,
+      "before": 366.68728243438807,
+      "after": 382.6083362241358
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 4,
+      "before": 9716.318523316062,
+      "after": 9679.53431372549
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 4,
+      "before": 8469.665085817525,
+      "after": 8583.319018755717
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 4,
+      "before": 1687.1630601043728,
+      "after": 885.0614261776645
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 4,
+      "before": 463.48334610440975,
+      "after": 465.74272540983605
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 4,
+      "before": 12592.033724832214,
+      "after": 12086.219394329897
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 4,
+      "before": 11288.435770156439,
+      "after": 11314.865425211097
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 4,
+      "before": 1525.1384516837481,
+      "after": 770.861381762868
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 4,
+      "before": 356.1527110321772,
+      "after": 359.1800508581718
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 4,
+      "before": 6294.697315436241,
+      "after": 5755.639963167588
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 4,
+      "before": 5102.887275571273,
+      "after": 5330.478965321206
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 4,
+      "before": 1005.2298300632572,
+      "after": 232.6365620114643
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 4,
+      "before": 46.59613525549586,
+      "after": 47.3100133981288
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 4,
+      "before": 920.5933756382561,
+      "after": 234.19727367540156
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 4,
+      "before": 46.71656631984413,
+      "after": 47.331352361767436
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 4,
+      "before": 926.1870678158649,
+      "after": 229.7429944617345
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 4,
+      "before": 47.082383738449174,
+      "after": 46.882839731055626
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "owned",
+      "round": 4,
+      "before": 988.248168546432,
+      "after": 230.0172159453359
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 4,
+      "before": 45.697404145178744,
+      "after": 47.5431240174451
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 4,
+      "before": 1078.9014528193325,
+      "after": 383.10566923422687
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 4,
+      "before": 92.49071890846669,
+      "after": 90.82069742603608
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 4,
+      "before": 1094.4020295902883,
+      "after": 378.95551232821344
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 4,
+      "before": 93.4975821531864,
+      "after": 90.23578492708985
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 4,
+      "before": 1109.7979329427083,
+      "after": 384.27474945690045
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 4,
+      "before": 96.24111056645998,
+      "after": 95.34122920310784
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "owned",
+      "round": 4,
+      "before": 1174.3330410821643,
+      "after": 386.9444080440794
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 4,
+      "before": 89.72131870208918,
+      "after": 93.70936662868338
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 4,
+      "before": 2194.8784673455057,
+      "after": 1596.7142796321525
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1285.5070787056081,
+      "after": 1244.5759491570423
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 4,
+      "before": 2181.4736941600745,
+      "after": 1524.379928060478
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1281.4838624248223,
+      "after": 1210.8406383184813
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 4,
+      "before": 2307.2083692175197,
+      "after": 1602.822735042735
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1371.2474403978354,
+      "after": 1321.1844701240136
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 4,
+      "before": 2244.532933325353,
+      "after": 1529.1674380198988
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 4,
+      "before": 1291.7330445715072,
+      "after": 1218.078066129661
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 4,
+      "before": 7974.593909438776,
+      "after": 7325.927734375
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 4,
+      "before": 6528.036925887265,
+      "after": 6432.623885459534
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 4,
+      "before": 7970.258974086661,
+      "after": 7382.804281496063
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 4,
+      "before": 6586.637903792135,
+      "after": 6492.961175554016
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 4,
+      "before": 8275.032656663725,
+      "after": 7638.288019136808
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 4,
+      "before": 6805.983944121916,
+      "after": 6689.571059201141
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 4,
+      "before": 8637.850598526704,
+      "after": 7984.929042553192
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 4,
+      "before": 7066.681942351168,
+      "after": 7056.043453724605
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 4,
+      "before": 21026.5379764574,
+      "after": 21681.25115473441
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 4,
+      "before": 20350.184110629067,
+      "after": 18994.512272267206
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 4,
+      "before": 20650.251785714285,
+      "after": 20578.793174342107
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 4,
+      "before": 20383.58247282609,
+      "after": 18772.734375
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 4,
+      "before": 22491.481864508394,
+      "after": 22127.677918632075
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 4,
+      "before": 20981.287332214764,
+      "after": 20634.8271978022
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 4,
+      "before": 20696.82117290749,
+      "after": 20612.683104395604
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 4,
+      "before": 20599.871984649122,
+      "after": 18946.81717171717
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 4,
+      "before": 129705.33647260274,
+      "after": 125180.50986842105
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 4,
+      "before": 117301.6975308642,
+      "after": 115397.51600609756
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 4,
+      "before": 164645.19298245615,
+      "after": 154208.50409836066
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 4,
+      "before": 150779.2658730159,
+      "after": 147870.9716796875
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 4,
+      "before": 140076.41417910447,
+      "after": 141125.5055970149
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 4,
+      "before": 126678.68083333333,
+      "after": 127579.28631756757
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 4,
+      "before": 136707.38949275363,
+      "after": 133568.661971831
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 4,
+      "before": 122184.15178571429,
+      "after": 119335.97072784811
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 3521.1521310552007,
+      "after": 2739.9729690239624
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 2384.3503624109867,
+      "after": 2399.61127463527
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 4257.067776895143,
+      "after": 3548.952829295988
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 2991.328568580542,
+      "after": 3047.2905427364317
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 5475.00273642732,
+      "after": 4862.954389263486
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 4276.608099635203,
+      "after": 4251.49569356301
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 8793.214034676663,
+      "after": 8461.969314079422
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 7816.54734375,
+      "after": 8014.545512820513
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 4,
+      "before": 7484.414473684211,
+      "after": 6556.048698462613
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 4,
+      "before": 7743.032617671346,
+      "after": 6005.169974391805
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 4,
+      "before": 12330.332210906701,
+      "after": 10923.415090221188
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 4,
+      "before": 10451.254523942094,
+      "after": 9436.58306086519
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 5605.569149731022,
+      "after": 4871.497564935065
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 4447.537416982922,
+      "after": 4456.719344106464
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 8025.685201026518,
+      "after": 7196.167929777436
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 6449.772180192572,
+      "after": 6539.694473500697
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 2215.62278473535,
+      "after": 1445.2715527208263
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 1222.6565923317685,
+      "after": 1161.493170837463
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 4352.512766945219,
+      "after": 3385.0725631768955
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 3306.3853578984485,
+      "after": 2859.78560536749
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 2950.687165670233,
+      "after": 2223.466148921034
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 1877.234522022022,
+      "after": 1878.7181551793228
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 4029.17627309841,
+      "after": 2923.8855628313067
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 2994.3641608112425,
+      "after": 2407.3525032092425
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 2130.965909090909,
+      "after": 1380.626316080106
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 1117.6892063066284,
+      "after": 1080.0823228686636
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 4280.019825422181,
+      "after": 3299.367390921886
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 3276.919127927298,
+      "after": 2728.473188300349
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 3191.669503063308,
+      "after": 2393.455211258616
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 3150.3748739919356,
+      "after": 1821.8984891177613
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 4661.991581759444,
+      "after": 2978.709200285896
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 4898.169442267503,
+      "after": 2430.020876522415
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 5,
+      "before": 1604.87588796645,
+      "after": 832.8375732877321
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 5,
+      "before": 371.0393819012942,
+      "after": 384.1935573928367
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 5,
+      "before": 9661.646047888775,
+      "after": 9587.244951431492
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 5,
+      "before": 8688.670528266914,
+      "after": 9841.364441238195
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 5,
+      "before": 1639.5357907851023,
+      "after": 896.5936394281342
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 5,
+      "before": 452.7631809291544,
+      "after": 460.50897067491894
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 5,
+      "before": 12344.935526315789,
+      "after": 12060.07993251928
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 5,
+      "before": 11160.086578478002,
+      "after": 11097.972115384615
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 5,
+      "before": 1507.8472680122227,
+      "after": 746.3257244069416
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 5,
+      "before": 353.70842058102244,
+      "after": 351.6936991221818
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 5,
+      "before": 6139.874631630649,
+      "after": 5952.5710714285715
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 5,
+      "before": 4982.3215661530285,
+      "after": 5239.277828212291
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 5,
+      "before": 985.6880322224558,
+      "after": 227.42988270826257
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 5,
+      "before": 47.24098549516001,
+      "after": 46.70831631077055
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 5,
+      "before": 944.7118412434502,
+      "after": 228.5435737183394
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 5,
+      "before": 45.798742672203225,
+      "after": 47.20445954281111
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 5,
+      "before": 905.8607608695652,
+      "after": 231.05968415734213
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 5,
+      "before": 46.050846104725416,
+      "after": 47.53682985913922
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "owned",
+      "round": 5,
+      "before": 968.4780433323003,
+      "after": 224.18556607044644
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 5,
+      "before": 44.70356346708628,
+      "after": 45.761708873117065
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 5,
+      "before": 1063.9600235447633,
+      "after": 405.9917503897454
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 5,
+      "before": 90.53614859971029,
+      "after": 92.07259359470449
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 5,
+      "before": 1063.7954300465221,
+      "after": 375.8852838585518
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 5,
+      "before": 89.56259971244603,
+      "after": 89.58301441921797
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 5,
+      "before": 1057.3659707341828,
+      "after": 384.7870280114919
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 5,
+      "before": 121.44583673376859,
+      "after": 94.18116291451935
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "owned",
+      "round": 5,
+      "before": 1136.270414192219,
+      "after": 374.8384036024149
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 5,
+      "before": 88.12493772559783,
+      "after": 88.84455078087981
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 5,
+      "before": 2273.4760244907857,
+      "after": 1518.7716871861332
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 5,
+      "before": 1264.6646799973023,
+      "after": 1233.0345541820095
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 5,
+      "before": 2128.9671605358767,
+      "after": 1534.3741407528642
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 5,
+      "before": 1232.4294975023006,
+      "after": 1219.2494960988297
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 5,
+      "before": 2258.013833694605,
+      "after": 1622.1872296712802
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 5,
+      "before": 1352.7400357091328,
+      "after": 1333.7960769668516
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 5,
+      "before": 2242.7655166228174,
+      "after": 1618.2518122195374
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 5,
+      "before": 1251.5963572954213,
+      "after": 1243.3928796419098
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 5,
+      "before": 7754.272107438017,
+      "after": 7273.912286656323
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 5,
+      "before": 6404.049607240438,
+      "after": 6394.402564758009
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 5,
+      "before": 7837.11664578112,
+      "after": 7131.545057034221
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 5,
+      "before": 6453.9333275980725,
+      "after": 6381.779719387755
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 5,
+      "before": 8103.003025064822,
+      "after": 7512.296774839743
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 5,
+      "before": 6880.418346774193,
+      "after": 6649.985239361702
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 5,
+      "before": 9698.538779731127,
+      "after": 7805.8747400166385
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 5,
+      "before": 7568.181244955609,
+      "after": 6980.300176711309
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 5,
+      "before": 21656.761258660506,
+      "after": 20962.86160714286
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 5,
+      "before": 21410.851883561645,
+      "after": 18897.00176056338
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 5,
+      "before": 20842.754722222224,
+      "after": 20602.442023026317
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 5,
+      "before": 23765.11724683544,
+      "after": 18808.68499498998
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 5,
+      "before": 23506.31515625,
+      "after": 23693.109532828283
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 5,
+      "before": 29851.00873015873,
+      "after": 20945.76590401786
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 5,
+      "before": 21818.071802325583,
+      "after": 20384.42024456522
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 5,
+      "before": 20943.039620535714,
+      "after": 18829.22828815261
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 5,
+      "before": 136520.61267605633,
+      "after": 122342.76866883117
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 5,
+      "before": 114429.75152439025,
+      "after": 109858.31540697675
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 5,
+      "before": 149374.58630952382,
+      "after": 151296.74899193548
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 5,
+      "before": 136755.6992753623,
+      "after": 140719.02145522388
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 5,
+      "before": 149153.35615079364,
+      "after": 134068.5519366197
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 5,
+      "before": 132915.7860915493,
+      "after": 116986.52932098765
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 5,
+      "before": 142823.78503787878,
+      "after": 122946.90178571429
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 5,
+      "before": 123437.56825657895,
+      "after": 118678.59968354431
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 3504.6234818759344,
+      "after": 2761.6109720176732
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 2347.507589509264,
+      "after": 2333.107831550137
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 4196.044239373602,
+      "after": 3476.0951520207636
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 2973.291197685479,
+      "after": 2983.3492483296213
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 5335.678256541524,
+      "after": 4813.85023100616
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 4234.186879232506,
+      "after": 4385.512856474988
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 8692.925567655237,
+      "after": 9260.236673247779
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 7770.852734051367,
+      "after": 7655.646224489796
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 6886.770374449339,
+      "after": 6527.362778357689
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 5946.742588776157,
+      "after": 5909.966721802142
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 12254.055890992167,
+      "after": 10920.750218277066
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 10765.128659586682,
+      "after": 9486.589484327604
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 5,
+      "before": 4343.686081519222,
+      "after": 3718.806822689409
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 5,
+      "before": 3089.049629324547,
+      "after": 3003.5375760730303
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 5,
+      "before": 12126.537629198967,
+      "after": 9145.683601364522
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 5,
+      "before": 10162.806947453955,
+      "after": 7583.92067502021
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 2195.6503659250584,
+      "after": 1517.9104439857535
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1228.8492545871559,
+      "after": 1256.9972851588684
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 4585.699388753056,
+      "after": 3376.5895075621174
+    },
+    {
+      "id": "syntax/highlight/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 3380.1773612112474,
+      "after": 2778.427462962963
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 2889.36344375963,
+      "after": 2192.836836412535
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1880.7448345035104,
+      "after": 1830.949362917399
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 4037.161213947482,
+      "after": 2920.672702492212
+    },
+    {
+      "id": "syntax/subscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 2927.091457227599,
+      "after": 2410.343685732648
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 2111.7193271396395,
+      "after": 1400.7910970416854
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1109.1100570803264,
+      "after": 1088.7267521193821
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 4182.039613068689,
+      "after": 3249.75448440208
+    },
+    {
+      "id": "syntax/superscript/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 3366.6975089766606,
+      "after": 2712.6068122649694
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 2833.035158610272,
+      "after": 2192.1335632452656
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1786.9005503144654,
+      "after": 1754.8086749017407
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 3848.2049907673368,
+      "after": 2858.5905868902437
+    },
+    {
+      "id": "syntax/math/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 2707.582082009818,
+      "after": 2371.136554754679
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 6,
+      "before": 1549.5673958849777,
+      "after": 767.1264268472302
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 6,
+      "before": 386.6823906991132,
+      "after": 364.45830741719794
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 6,
+      "before": 9470.672853535354,
+      "after": 9226.967059980334
+    },
+    {
+      "id": "core/emphasis/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 6,
+      "before": 8307.508469884853,
+      "after": 8423.812331536388
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 6,
+      "before": 1649.1443051890942,
+      "after": 870.1955633933544
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 6,
+      "before": 456.21540450121654,
+      "after": 451.5236707763437
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 6,
+      "before": 12176.782305194805,
+      "after": 11785.931611180904
+    },
+    {
+      "id": "core/links/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 6,
+      "before": 11092.420212765957,
+      "after": 11558.032481527094
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "owned",
+      "round": 6,
+      "before": 1476.0278947575566,
+      "after": 724.3281153430161
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "plain-control",
+      "lane": "renderer",
+      "round": 6,
+      "before": 345.91927256291046,
+      "after": 347.3461061094439
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "owned",
+      "round": 6,
+      "before": 6135.934759489529,
+      "after": 5570.976307189542
+    },
+    {
+      "id": "core/inline_code/medium",
+      "variant": "syntax",
+      "lane": "renderer",
+      "round": 6,
+      "before": 4915.406872379455,
+      "after": 4901.719583115525
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 6,
+      "before": 969.0027454780362,
+      "after": 228.6348463602
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 6,
+      "before": 45.82241226569564,
+      "after": 46.67126780967173
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 6,
+      "before": 910.6681034482758,
+      "after": 228.69467178123628
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 6,
+      "before": 45.96294351102373,
+      "after": 46.692433497855895
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 6,
+      "before": 919.4912526971361,
+      "after": 226.94217793081745
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 6,
+      "before": 48.95375911189089,
+      "after": 45.87272012770955
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "owned",
+      "round": 6,
+      "before": 972.516856846473,
+      "after": 227.7515942328248
+    },
+    {
+      "id": "lifecycle/presets/empty",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 6,
+      "before": 45.15162738279858,
+      "after": 45.40053378757942
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 6,
+      "before": 1068.9568250484551,
+      "after": 387.06264450270425
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 6,
+      "before": 90.06463332917035,
+      "after": 90.75746928788554
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 6,
+      "before": 1067.9675931199454,
+      "after": 387.56534466721786
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 6,
+      "before": 89.86339515077736,
+      "after": 90.68969165659009
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 6,
+      "before": 1103.5070400776835,
+      "after": 459.7106256742179
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 6,
+      "before": 96.71140703336152,
+      "after": 96.87681416820807
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "owned",
+      "round": 6,
+      "before": 1122.9865269461077,
+      "after": 385.0976843294311
+    },
+    {
+      "id": "lifecycle/presets/tiny",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 6,
+      "before": 88.23683517021337,
+      "after": 89.39335833953125
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 6,
+      "before": 2145.122554907344,
+      "after": 1516.3667010350962
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1316.788825491573,
+      "after": 1235.5374028070637
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 6,
+      "before": 2141.335065083352,
+      "after": 1501.1986771533782
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1302.2605642361111,
+      "after": 1194.7778609659742
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 6,
+      "before": 2251.448426993276,
+      "after": 1582.2439356226798
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1340.322328448892,
+      "after": 1330.4993170852845
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 6,
+      "before": 2230.949872115156,
+      "after": 1536.058998197903
+    },
+    {
+      "id": "lifecycle/presets/plain-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 6,
+      "before": 1281.338979431461,
+      "after": 1220.574713578961
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 6,
+      "before": 7812.727864583333,
+      "after": 7256.280621130031
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6434.843985929993,
+      "after": 6339.823487153482
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 6,
+      "before": 7822.317191409508,
+      "after": 7892.985848063973
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6470.061939268461,
+      "after": 6367.774439918534
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 6,
+      "before": 8085.926239224138,
+      "after": 7384.120718503937
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6714.786864710093,
+      "after": 6587.5706197331465
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 6,
+      "before": 8475.739103432701,
+      "after": 7952.032574152542
+    },
+    {
+      "id": "lifecycle/presets/light-1k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 6,
+      "before": 7033.504501125281,
+      "after": 6927.2083179468245
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 6,
+      "before": 21593.77981651376,
+      "after": 20704.769177704195
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 6,
+      "before": 25351.625844594593,
+      "after": 18929.8029233871
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 6,
+      "before": 20323.113906926406,
+      "after": 20376.20322668113
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 6,
+      "before": 19845.676929175475,
+      "after": 19139.248469387756
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 6,
+      "before": 22050.23107394366,
+      "after": 21774.682134570765
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 6,
+      "before": 21015.205536912752,
+      "after": 20568.690652412282
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "owned",
+      "round": 6,
+      "before": 20567.965323464912,
+      "after": 20467.82516339869
+    },
+    {
+      "id": "lifecycle/presets/plain-16k",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 6,
+      "before": 20289.3436825054,
+      "after": 18765.791625
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "owned",
+      "round": 6,
+      "before": 120228.67167721518,
+      "after": 154555.88217213115
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "commonmark",
+      "lane": "renderer",
+      "round": 6,
+      "before": 110013.02107558139,
+      "after": 110790.68602941177
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "owned",
+      "round": 6,
+      "before": 168257.16183035713,
+      "after": 148679.158203125
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "minimal",
+      "lane": "renderer",
+      "round": 6,
+      "before": 139010.79963235295,
+      "after": 134361.42142857143
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "owned",
+      "round": 6,
+      "before": 129490.7602739726,
+      "after": 144524.59903846154
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "gfm",
+      "lane": "renderer",
+      "round": 6,
+      "before": 116766.07484567902,
+      "after": 125431.5975
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "owned",
+      "round": 6,
+      "before": 145778.68557692308,
+      "after": 124075.31496710527
+    },
+    {
+      "id": "lifecycle/presets/readme",
+      "variant": "default",
+      "lane": "renderer",
+      "round": 6,
+      "before": 118712.94778481012,
+      "after": 110797.33455882352
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 3510.565822725571,
+      "after": 2725.4186409883723
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 2347.0516583229037,
+      "after": 2348.415711870774
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 4178.850796568628,
+      "after": 3750.225
+    },
+    {
+      "id": "syntax/heading_ids/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 2986.6979133482,
+      "after": 2976.6799007936506
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 5410.263704558569,
+      "after": 4852.554574275362
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 4309.301039751838,
+      "after": 4206.517777030058
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 8727.739825581395,
+      "after": 8488.70899321267
+    },
+    {
+      "id": "syntax/allow_link_refs/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 7684.217598280098,
+      "after": 7897.139835858586
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 6866.116123718887,
+      "after": 7042.192926646707
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6150.032418032787,
+      "after": 6153.885047572178
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 12007.37900128041,
+      "after": 11038.992058823529
+    },
+    {
+      "id": "syntax/footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 10125.08436825054,
+      "after": 9289.69931930693
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 4269.039940828402,
+      "after": 3692.9892716535433
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 3093.51457852194,
+      "after": 3013.4166331940874
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 12443.602868037135,
+      "after": 9078.369494191675
+    },
+    {
+      "id": "syntax/inline_footnotes/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 10070.256578947368,
+      "after": 7586.143962378641
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "owned",
+      "round": 6,
+      "before": 5598.694029850746,
+      "after": 4826.865124806999
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "off",
+      "lane": "renderer",
+      "round": 6,
+      "before": 4538.574927431059,
+      "after": 4528.707448092709
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "owned",
+      "round": 6,
+      "before": 8623.664407169117,
+      "after": 7182.044410413476
+    },
+    {
+      "id": "syntax/tables/medium",
+      "variant": "on",
+      "lane": "renderer",
+      "round": 6,
+      "before": 6471.869953416149,
+      "after": 6575.19210203366
+    }
+  ]
+}

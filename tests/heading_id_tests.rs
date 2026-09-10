@@ -177,3 +177,17 @@ fn test_heading_mixed_case() {
     let html = html_with_ids("# Hello WORLD FoO");
     assert!(html.contains("id=\"hello-world-foo\""), "Got: {html}");
 }
+
+#[test]
+fn heading_ids_initialize_after_plain_documents_and_inside_footnotes() {
+    let options = ferromark::options!(Options::default(); footnotes: true,);
+    let mut renderer = Renderer::with_options(options.clone());
+    for _ in 0..2 {
+        assert_eq!(renderer.render("Plain text."), "<p>Plain text.</p>\n");
+        let html = renderer.render("Note[^a] and note[^b].\n\n[^a]: # First\n\n[^b]: # First");
+        assert!(html.contains("<h1 id=\"first\">First</h1>"), "{html}");
+        assert!(html.contains("<h1 id=\"first-1\">First</h1>"), "{html}");
+        assert_eq!(renderer.render(""), "");
+        assert_eq!(renderer.render("# First"), "<h1 id=\"first\">First</h1>\n");
+    }
+}

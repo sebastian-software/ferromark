@@ -23,11 +23,12 @@ pub fn resolve_strikethrough_into(
     marks: &mut [Mark],
     link_boundaries: &[(u32, u32)],
     matches: &mut Vec<StrikethroughMatch>,
+    openers: &mut Vec<usize>,
 ) {
     matches.clear();
 
-    // Collect indices of tilde marks that can open
-    let mut openers: Vec<usize> = Vec::new();
+    // Retain allocation between inline inputs, but never retain unmatched openers.
+    openers.clear();
 
     for i in 0..marks.len() {
         let mark = &marks[i];

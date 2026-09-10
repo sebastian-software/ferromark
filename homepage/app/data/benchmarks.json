@@ -11,14 +11,14 @@
     "comrak": "0.54.0",
     "md4c": "65c6c9d"
   },
-  "conditions": "All parsers run with GFM tables, strikethrough, and task lists enabled; ferromark's non-GFM extras (heading IDs, callouts) are disabled. Output buffers are reused where APIs allow and binaries are non-PGO. ferromark also keeps its secure default rendering in this published product lane, so it performs URL and raw-HTML safety work that pulldown-cmark does not.",
+  "conditions": "All parsers run with GFM tables, strikethrough, and task lists enabled; Ferromark's non-GFM extras (heading IDs, callouts) are disabled. Binaries are non-PGO. Every call creates fresh parser state; output buffers are reused for Ferromark, pulldown-cmark, and md4c, while Comrak uses fresh owned output. Ferromark retains its Untrusted URL/raw-HTML policy, Comrak uses its default raw-HTML omission, and pulldown-cmark and md4c preserve raw HTML. These are historical configurations, not matched rendering policies and lifecycles.",
   "scope": "These rankings are Apple Silicon results only. ferromark also uses baseline SSE2 for inline scanning on x86-64, but this comparison has not been re-measured there; do not infer the same relative ordering on x86-64 from these tables.",
   "summary": "On this Apple Silicon run, ferromark was 9–11% faster than pulldown-cmark, within 1% of md4c at 5 KB and 6% faster at 50 KB, and 3.6–3.8x faster than comrak.",
   "headline": { "table": "commonmark-50k", "parser": "ferromark" },
   "tables": [
     {
       "id": "commonmark-5k",
-      "label": "CommonMark 5 KB",
+      "label": "Mixed Markdown 5 KB",
       "description": "wiki-style, mixed content with tables",
       "rows": [
         { "parser": "ferromark", "throughput": "248.2 MiB/s", "ratio": "baseline" },
@@ -29,7 +29,7 @@
     },
     {
       "id": "commonmark-50k",
-      "label": "CommonMark 50 KB",
+      "label": "Mixed Markdown 50 KB",
       "description": "same style, scaled",
       "rows": [
         { "parser": "ferromark", "throughput": "267.5 MiB/s", "ratio": "baseline" },
