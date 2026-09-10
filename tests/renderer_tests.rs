@@ -81,3 +81,30 @@ fn renderer_keeps_its_configuration() {
         "<h1>Title</h1>\n<p><mark>mark</mark></p>\n"
     );
 }
+
+#[test]
+fn strikethrough_openers_do_not_leak_between_cells_or_documents() {
+    let options = Options::gfm();
+    let mut renderer = Renderer::with_options(options.clone());
+    let many_openers = "~~open ".repeat(256);
+    for _ in 0..3 {
+        for input in [
+            many_openers.as_str(),
+            "plain",
+            "close~~",
+            "~~closed~~ then ~~open",
+            "| ~~open | close~~ |\n| --- | --- |\n| ~~yes~~ | no~~ |",
+            "~~outside [inside~~](/url)",
+            "[~~inside](/url) outside~~",
+            "`~~code~~` and ~~strike~~",
+            "",
+        ] {
+            assert_eq!(
+                renderer.render(input),
+                to_html_with_options(input, &options),
+                "strikethrough state leaked into {input:?}",
+            );
+        }
+    }
+    assert_eq!(renderer.render("close~~"), "<p>close~~</p>\n");
+}
