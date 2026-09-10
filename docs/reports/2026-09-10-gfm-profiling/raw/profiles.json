@@ -1,0 +1,56 @@
+[
+  {
+    "case": "plain",
+    "preset": "commonmark",
+    "sample_seconds": 4,
+    "profile": "plain-commonmark.sample.txt"
+  },
+  {
+    "case": "plain",
+    "preset": "gfm",
+    "sample_seconds": 4,
+    "profile": "plain-gfm.sample.txt"
+  },
+  {
+    "case": "commonmark-50k",
+    "preset": "commonmark",
+    "sample_seconds": 4,
+    "profile": "commonmark-50k-commonmark.sample.txt"
+  },
+  {
+    "case": "commonmark-50k",
+    "preset": "gfm",
+    "sample_seconds": 4,
+    "profile": "commonmark-50k-gfm.sample.txt"
+  },
+  {
+    "case": "gfm-overlap-tables",
+    "preset": "cm+tables",
+    "sample_seconds": 4,
+    "profile": "gfm-overlap-tables-cm+tables.sample.txt"
+  },
+  {
+    "case": "gfm-overlap-tables",
+    "preset": "gfm",
+    "sample_seconds": 4,
+    "profile": "gfm-overlap-tables-gfm.sample.txt"
+  },
+  {
+    "case": "tables-5k",
+    "preset": "gfm",
+    "sample_seconds": 4,
+    "profile": "tables-5k-gfm.sample.txt"
+  },
+  {
+    "case": "autolinks",
+    "preset": "gfm",
+    "sample_seconds": 4,
+    "profile": "autolinks-gfm.sample.txt"
+  },
+  {
+    "case": "tasks",
+    "preset": "gfm",
+    "sample_seconds": 4,
+    "profile": "tasks-gfm.sample.txt"
+  }
+]
