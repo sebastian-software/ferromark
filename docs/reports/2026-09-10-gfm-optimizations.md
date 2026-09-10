@@ -37,3 +37,14 @@ case nevertheless changed by +0.85% to +1.72%, and the tables fixture showed
 is preserved in history; its implementation is reverted, with tests retained.
 
 [Paired measurements](2026-09-10-gfm-profiling/optimizations/table-prescan-comparison.json).
+
+## 3. Special-case a single text event — rejected
+
+Bypassing general renderer setup for exactly one text event reduced the table
+fixture's elapsed time by 3.16% / 3.65% and helped prose/tasks. However, the URL
+fixture regressed by 2.61% / 2.64%, and full-GFM README rendering by 2.85% / 1.22%.
+All-feature tests and exact-output checks passed. The tradeoff does not justify
+retaining this branch; preserve and revert it before trying a text-event shortcut
+inside the existing render loop, which also benefits mixed inline content.
+
+[Paired measurements](2026-09-10-gfm-profiling/optimizations/single-text-comparison.json).

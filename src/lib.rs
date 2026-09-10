@@ -2336,6 +2336,14 @@ fn render_inline_content(
     #[cfg(feature = "profiling")]
     profiling::record_inline_events(inline_events, inline_events.capacity());
 
+    // Plain table cells and paragraphs commonly produce exactly one text event.
+    // No image/link context can exist in that case; preserve the same entity
+    // decoding and escaping while avoiding the general event renderer setup.
+    if let [InlineEvent::Text(range)] = inline_events.as_slice() {
+        writer.write_text_with_entities(range.slice(text));
+        return;
+    }
+
     let mut image_state = None;
     let link_base = normalized_link_base(options);
     for event in inline_events.iter() {
