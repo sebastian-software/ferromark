@@ -116,3 +116,18 @@ All-feature tests and all 292 exact HTML comparisons passed. A new regression
 checks math-to-plain transitions, unmatched delimiters, code precedence, cells,
 paragraph boundaries, and repeated documents. Evidence:
 `optimizations/math-{comparison,counts}.json`.
+
+## 6. Borrow inline-footnote content during emission — retained
+
+Hypothesis: cloning an already-owned inline-note definition adds one allocation
+and copy per note during emission. Borrow its bytes instead; nested rendering
+uses separate numbering state and disables nested notes, so it does not mutate
+the parent definition store. Rust verifies the disjoint field borrows.
+
+Compared with `cddefb8`, seven paired >=100 ms windows measure another 10.7%
+improvement for medium inline notes with a retained Renderer and 8.9% for fresh
+owned rendering. Small retained notes improve 9.4%. Medium retained allocation
+calls fall from 35 to 19, leaving 752 cumulatively requested bytes for 16 notes.
+All-feature tests and all 292 exact HTML comparisons passed; the existing inline
+note suite covers formatting, links, multiline content, and mixed numbering.
+Evidence: `optimizations/borrow-comparison.json` and `final-counts.json`.

@@ -2847,7 +2847,6 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         .footnote_numbers
                         .inline_definitions
                         .get(definition_index)
-                        .cloned()
                     else {
                         continue;
                     };
@@ -2864,7 +2863,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     // Reuse the parent's idle inline parser and event buffer
                     // instead of allocating fresh ones per inline footnote.
                     render_inline_content(
-                        &content,
+                        content,
                         &mut *self.writer,
                         &mut *self.inline_parser,
                         &mut *self.inline_events,
