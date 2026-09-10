@@ -1678,6 +1678,25 @@ fn has_inline_specials_highlight_superscript(input: &[u8]) -> bool {
 /// instead of matching common letters like 'h' and 'w'.
 #[inline]
 fn has_autolink_candidates(input: &[u8]) -> bool {
+    // The literal resolver rejects inputs shorter than four bytes. Short cells
+    // otherwise pay for multiple search setups despite containing few bytes.
+    if input.len() < 4 {
+        return false;
+    }
+    if input.len() <= 16 {
+        for (index, &byte) in input.iter().enumerate() {
+            match byte {
+                b'@' => return true,
+                b':' if input[index..].starts_with(b"://") => return true,
+                b'.' if index >= 3 && input[index - 3..index].eq_ignore_ascii_case(b"www") => {
+                    return true;
+                }
+                _ => {}
+            }
+        }
+        return false;
+    }
+
     // Deliberately three separate single-byte passes: `@` and `:` are rare,
     // so their passes run at full single-needle SIMD speed. Folding the
     // needles into one memchr2/memchr3 pass executes fewer instructions but

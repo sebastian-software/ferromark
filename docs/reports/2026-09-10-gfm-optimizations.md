@@ -59,3 +59,18 @@ experiments do not establish a broadly beneficial table optimization; a deeper
 pipeline change would need a separate hypothesis and profile.
 
 [Paired measurements](2026-09-10-gfm-profiling/optimizations/text-loop-comparison.json).
+
+## 5. Scan short autolink candidates once — retained
+
+Inputs shorter than four bytes cannot reach the literal resolver. For inputs
+up to 16 bytes, one scalar scan now checks the same candidate patterns; longer
+inputs retain the existing three-pass SIMD searches. This targets short cells
+and list text, not the remaining negative-detection cost of long prose.
+
+Full-GFM table/strike rendering improves by 2.02% / 2.06%; the tables fixture
+by 2.09% / 5.75%; tasks by 3.59% / 3.24%. The URL fixture changes by +1.17% /
++0.62%, so no URL-heavy speedup is claimed for this step. All-feature tests and
+90 exact-output checks passed, including new short email/URL/mixed-case WWW
+cases around scan-length boundaries. Native x86 performance remains unmeasured.
+
+[Paired measurements](2026-09-10-gfm-profiling/optimizations/short-autolink-comparison.json).

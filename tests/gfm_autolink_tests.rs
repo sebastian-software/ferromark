@@ -154,3 +154,26 @@ fn repeated_angle_autolinks_keep_gfm_output_flat() {
     assert_eq!(html.matches("<a href=").count(), 8192);
     assert!(!html.contains("<a href=\"https://example.com\"><a href="));
 }
+
+#[test]
+fn short_autolinks_survive_candidate_scan_boundaries() {
+    let options = Options::gfm();
+    for padding in [0, 1, 3, 7, 8, 12, 15, 16, 17, 31, 32, 63, 64, 65] {
+        let prefix = if padding == 0 {
+            String::new()
+        } else {
+            format!("{} ", "x".repeat(padding))
+        };
+        for (text, href) in [
+            ("a@b.co", "mailto:a@b.co"),
+            ("www.a.co", "http://www.a.co"),
+            ("WwW.a.co", "http://WwW.a.co"),
+            ("http://a.co", "http://a.co"),
+            ("ftp://a.co", "ftp://a.co"),
+        ] {
+            let input = format!("{prefix}{text}");
+            let expected = format!("<p>{prefix}<a href=\"{href}\">{text}</a></p>\n");
+            assert_eq!(to_html_with_options(&input, &options), expected);
+        }
+    }
+}
