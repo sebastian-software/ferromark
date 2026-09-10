@@ -10,6 +10,23 @@ policy, output, and allocation lifecycle. Profile the remaining costs before
 choosing another optimization. This follows [ADR-0010](../arch/ADR-0010-explicit-markdown-options-and-dialect-presets.md):
 syntax presets are contracts, not performance tiers.
 
+## Delivery status
+
+- **Already merged in [PR #283](https://github.com/sebastian-software/ferromark/pull/283):**
+  the native Bun comparison, its md4c-to-Zig-to-Rust provenance, limited output
+  equivalence gate, historical measurements, and shared byte-search work.
+- **Implemented in [PR #293](https://github.com/sebastian-software/ferromark/pull/293):**
+  Ferromark GFM and feature-cost profiling, measured allocation/scan
+  optimizations, before/after evidence, and this comparison audit and plan.
+- **Still open:** implement consistent cross-parser task contracts and output
+  gates, correct the adapters, measure the updated implementations, and update
+  README/homepage explanations and results. The internal before/after checks in
+  #293 do not establish cross-parser parity or complete this follow-up.
+
+Bun remains part of the comparison work. Reuse its existing harness and report
+its environment separately; do not drop it from the capability matrix merely
+because its harness was merged earlier.
+
 ## Findings in the current presentation
 
 The audit uses the committed adapters and their locked comparison versions:
@@ -95,6 +112,13 @@ and input hashes, output sizes, toolchain, target CPU, allocator, build flags,
 lifecycle, timer boundaries, and correctness outcomes. Use repeated alternating
 runs and the existing publication protocol, not the short optimization probes,
 for public competitor claims. Publish native x86 results only after native runs.
+
+For each eligible parser/input/configuration/lifecycle combination, report
+latency per document and input throughput, repeated-run variation, and output
+size. Measure allocation calls and cumulatively requested bytes separately from
+uninstrumented timing; do not label cumulative bytes as peak memory. Keep
+activation cost on identical-output inputs separate from the cost of rendering
+additional syntax. CPU profiles explain candidate bottlenecks, not rankings.
 
 Generate README and homepage figures from the same reviewed run artifact. Keep
 the current benchmark-number contract, and extend it to cover configuration
