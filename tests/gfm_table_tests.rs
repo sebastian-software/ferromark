@@ -475,3 +475,26 @@ fn cmark_regression_bare_pipe_dash() {
         "Bare pipe+dash should not be table: {result}"
     );
 }
+
+#[test]
+fn cell_splitting_preserves_escapes_and_code_across_scan_lengths() {
+    let options = Options::gfm();
+    for padding in [0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 257] {
+        let prefix = "x".repeat(padding);
+        for (source, html) in [
+            ("plain", "plain"),
+            (r"a\|b", "a|b"),
+            ("`a|b`", "<code>a|b</code>"),
+            ("``a`|b``", "<code>a`|b</code>"),
+            (r"`a\|b`", "<code>a|b</code>"),
+            (r"a\*b", "a*b"),
+            ("ü &amp; 字", "ü &amp; 字"),
+        ] {
+            let input = format!("| A | B |\n| --- | --- |\n| {prefix}{source} | end |\n");
+            let expected = format!(
+                "<table>\n<thead>\n<tr>\n<th>A</th>\n<th>B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>{prefix}{html}</td>\n<td>end</td>\n</tr>\n</tbody>\n</table>\n"
+            );
+            assert_eq!(to_html_with_options(&input, &options), expected);
+        }
+    }
+}

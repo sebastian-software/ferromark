@@ -26,3 +26,14 @@ cell or document boundaries; allocation stays lazy when strikethrough is absent.
 [Timing windows](2026-09-10-gfm-profiling/optimizations/strike-comparison.json)
 and [allocation counts](2026-09-10-gfm-profiling/optimizations/strike-counts.json)
 are retained with the experiment.
+
+## 2. Preclassify table rows before splitting — rejected
+
+A row-level backslash/backtick scan selected a single-byte pipe search for
+ordinary rows. All-feature tests and all 90 exact-output comparisons passed,
+including added escape/code tests across scan lengths. The target table/strike
+case nevertheless changed by +0.85% to +1.72%, and the tables fixture showed
++0.09% / -1.17%. This does not justify the extra scan and branch. The experiment
+is preserved in history; its implementation is reverted, with tests retained.
+
+[Paired measurements](2026-09-10-gfm-profiling/optimizations/table-prescan-comparison.json).
