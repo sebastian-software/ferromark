@@ -3314,20 +3314,12 @@ impl<'a> BlockParser<'a> {
             return (cells, false);
         }
 
-        // Ordinary rows need only a pipe search. Detect escape/code syntax once
-        // per row instead of asking a three-byte search for every cell.
-        let plain_row = memchr::memchr2(b'\\', b'`', &line[pos..scan_end]).is_none();
         let mut cell_start = pos;
         let mut truncated = false;
         loop {
             // Jump straight to the next byte that can affect cell structure;
             // everything in between is plain cell content.
-            let next = if plain_row {
-                memchr::memchr(b'|', &line[pos..scan_end])
-            } else {
-                memchr::memchr3(b'|', b'\\', b'`', &line[pos..scan_end])
-            };
-            let Some(offset) = next else {
+            let Some(offset) = memchr::memchr3(b'|', b'\\', b'`', &line[pos..scan_end]) else {
                 // End of line - emit last cell
                 let (s, e) = Self::trim_cell(&line[cell_start..scan_end], cell_start);
                 cells.push(TableCell {
