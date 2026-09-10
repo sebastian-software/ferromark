@@ -2339,6 +2339,14 @@ fn render_inline_content(
     let mut image_state = None;
     let link_base = normalized_link_base(options);
     for event in inline_events.iter() {
+        // Ordinary text needs neither image state nor link/security context.
+        // Keep the established entity decoder and HTML escaping behavior.
+        if let InlineEvent::Text(range) = event
+            && image_state.is_none()
+        {
+            writer.write_text_with_entities(range.slice(text));
+            continue;
+        }
         render_inline_event(
             text,
             event,

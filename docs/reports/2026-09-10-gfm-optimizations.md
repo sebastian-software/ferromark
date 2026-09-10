@@ -48,3 +48,14 @@ retaining this branch; preserve and revert it before trying a text-event shortcu
 inside the existing render loop, which also benefits mixed inline content.
 
 [Paired measurements](2026-09-10-gfm-profiling/optimizations/single-text-comparison.json).
+
+## 4. Shortcut ordinary text inside the render loop — rejected
+
+A direct text write outside image state retained the existing entity/HTML writer
+and passed all-feature tests plus exact-output comparison. It helped tasks but
+regressed the shared table/strike input by 5.63% in the fresh-parser lane and
+mixed GFM by 3.46% / 2.04%. The implementation is reverted. The two event-renderer
+experiments do not establish a broadly beneficial table optimization; a deeper
+pipeline change would need a separate hypothesis and profile.
+
+[Paired measurements](2026-09-10-gfm-profiling/optimizations/text-loop-comparison.json).
