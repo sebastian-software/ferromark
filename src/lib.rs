@@ -2227,15 +2227,15 @@ fn write_footnote_backref(writer: &mut HtmlWriter, label: &str, number: usize) {
     writer.write_str(" <a href=\"#user-content-fnref-");
     writer.write_string(label);
     writer.write_str("\" class=\"data-footnote-backref\" aria-label=\"Back to reference ");
-    writer.write_string(&number.to_string());
+    writer.write_usize(number);
     writer.write_str("\">↩</a>");
 }
 
 fn write_inline_footnote_backref(writer: &mut HtmlWriter, definition_index: usize, number: usize) {
     writer.write_str(" <a href=\"#user-content-inline-fnref-");
-    writer.write_string(&(definition_index + 1).to_string());
+    writer.write_usize(definition_index + 1);
     writer.write_str("\" class=\"data-footnote-backref\" aria-label=\"Back to reference ");
-    writer.write_string(&number.to_string());
+    writer.write_usize(number);
     writer.write_str("\">↩</a>");
 }
 
@@ -2718,8 +2718,7 @@ fn render_inline_event(
                     writer.write_str("\" id=\"user-content-fnref-");
                     writer.write_string(&def.label);
                     writer.write_str("\" data-footnote-ref>");
-                    let num_str = number.to_string();
-                    writer.write_string(&num_str);
+                    writer.write_usize(number);
                     writer.write_str("</a></sup>");
                 }
             }
@@ -2729,11 +2728,11 @@ fn render_inline_event(
                 let (number, definition_index) =
                     footnote_numbers.register_inline(range.slice(text));
                 writer.write_str("<sup><a href=\"#user-content-inline-fn-");
-                writer.write_string(&(definition_index + 1).to_string());
+                writer.write_usize(definition_index + 1);
                 writer.write_str("\" id=\"user-content-inline-fnref-");
-                writer.write_string(&(definition_index + 1).to_string());
+                writer.write_usize(definition_index + 1);
                 writer.write_str("\" data-footnote-ref>");
-                writer.write_string(&number.to_string());
+                writer.write_usize(number);
                 writer.write_str("</a></sup>");
             }
         }
@@ -2853,8 +2852,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                         continue;
                     };
                     self.writer.write_str("<li id=\"user-content-inline-fn-");
-                    self.writer
-                        .write_string(&(definition_index + 1).to_string());
+                    self.writer.write_usize(definition_index + 1);
                     self.writer.write_str("\">\n<p>");
 
                     let mut nested_numbers = FootnoteNumbers::new(0);

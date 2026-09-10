@@ -81,3 +81,22 @@ CommonMark. Evidence: `optimizations/openers-{comparison,counts}.json`.
 
 The comparison driver now accepts explicit timing filters and records them;
 exact HTML checks always cover the complete catalog.
+
+## 4. Write footnote numbers without temporary Strings — retained
+
+Hypothesis: decimal formatting allocates repeatedly for visible numbers, element
+IDs, and backreferences. Reuse the existing stack-based decimal helper to write
+numbers directly into HtmlWriter's output buffer. This introduces no dependency
+or public API and does not change HTML escaping (the output is decimal digits).
+
+Compared with `db74d79`, seven paired >=100 ms windows measure 16.2% less time for
+medium inline footnotes with a retained Renderer and 14.2% less for fresh owned
+rendering. Reference footnotes improve 6.6% retained. Inline-note allocation calls
+fall from 131 to 35 retained (six temporary strings per note removed); reference
+notes fall from 106 to 74 (two per note). The small inline-note workload improves
+11.9% retained and 5.9% fresh owned.
+
+All-feature tests and all 292 HTML comparisons passed. New checks cover zero,
+decimal boundaries, usize::MAX, and mixed reference/inline numbering through 101,
+including target IDs and backreferences. Evidence:
+`optimizations/numbers-{comparison,counts}.json`.

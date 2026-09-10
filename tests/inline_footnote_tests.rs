@@ -142,3 +142,19 @@ fn malformed_candidate_runs_remain_bounded_and_literal() {
     assert!(!html.contains("data-footnote-ref>"), "{html}");
     assert!(html.starts_with("<p>^[^[^["));
 }
+
+#[test]
+fn mixed_footnote_numbers_and_inline_ids_cross_decimal_boundaries() {
+    let input = format!(
+        "Reference[^r].\n\n{}\n\n[^r]: Reference content.",
+        "Inline.^[Content.]\n\n".repeat(100)
+    );
+    let options = ferromark::options!(Options::default(); footnotes: true, inline_footnotes: true,);
+    let html = to_html_with_options(&input, &options);
+    for index in [1, 9, 10, 99, 100] {
+        let number = index + 1;
+        assert!(html.contains(&format!("href=\"#user-content-inline-fn-{index}\" id=\"user-content-inline-fnref-{index}\" data-footnote-ref>{number}</a>")));
+        assert!(html.contains(&format!("<li id=\"user-content-inline-fn-{index}\">")));
+        assert!(html.contains(&format!("href=\"#user-content-inline-fnref-{index}\" class=\"data-footnote-backref\" aria-label=\"Back to reference {number}\"")));
+    }
+}
