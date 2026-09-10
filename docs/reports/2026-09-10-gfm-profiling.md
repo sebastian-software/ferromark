@@ -1,5 +1,8 @@
 # GFM profiling before optimization — 2026-09-10
 
+Subsequent implementations, rejected experiments, and final measurements are
+recorded in the [optimization log](2026-09-10-gfm-optimizations.md).
+
 The measurements identify three separate costs: repeated table-cell processing,
 a temporary strikethrough allocation, and autolink detection on text without
 links. No production implementation was changed. The next bounded experiment

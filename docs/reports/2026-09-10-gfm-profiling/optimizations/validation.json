@@ -1,0 +1,43 @@
+{
+  "production_commit": "321512b",
+  "baseline_production_commit": "9c766f11a07cfe65af441d1a147cbfe5703d60b1",
+  "baseline_probe_commit": "7fd58cf",
+  "host": "aarch64-apple-darwin; Apple M1 Pro",
+  "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+  "checks": [
+    {
+      "command": "cargo test --locked --all-features",
+      "result": "passed; 974 tests including doctests",
+      "local_log_sha256": "f84cbb8b87737c358ccb98f3d5cbccc5a4f390e5e7ca7797b810cc698808c882"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+      "result": "passed",
+      "local_log_sha256": "69ff97726e829b26ce1aef6e345b3013f15516f5f9680a4c9ce2402cb4152fa5"
+    },
+    {
+      "command": "cargo check --lib --locked --all-features --target x86_64-unknown-linux-gnu",
+      "result": "passed; compilation only",
+      "local_log_sha256": "1088ac524f62a23f0d9ce10767ad2d977dbac126b933bfca7424955a54bdff6d"
+    },
+    {
+      "command": "cargo check --lib --locked --all-features --target x86_64-pc-windows-msvc",
+      "result": "passed; compilation only",
+      "local_log_sha256": "389478cf9c20fdd0680e8e952a111a3adb21c970730016c6048396599ec79843"
+    },
+    {
+      "command": "cargo test --locked --all-features --test renderer_tests strikethrough_openers_do_not_leak_between_cells_or_documents",
+      "result": "passed; includes final explicit cross-cell assertion",
+      "local_log_sha256": "b3281eeffdbcef96e11138163c772209a7f53e3d51009584ecbca57639ae1761"
+    }
+  ],
+  "format_and_whitespace": [
+    "cargo fmt --all --check: passed",
+    "git diff --check: passed"
+  ],
+  "limitations": [
+    "No native x86 execution or performance measurement.",
+    "Linux all-target cross-check requires missing x86_64-linux-gnu-gcc for benchmark dependency alloca."
+  ],
+  "final_exact_output_configurations": 90
+}

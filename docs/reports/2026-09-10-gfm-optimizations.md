@@ -95,3 +95,42 @@ retained changes.
 [Paired measurements](2026-09-10-gfm-profiling/optimizations/url-comparison.json),
 [long-URL measurements](2026-09-10-gfm-profiling/optimizations/url-long-guard.json),
 and [guard runner](2026-09-10-gfm-profiling/optimizations/long-url-guard.py).
+
+## Combined result and final validation
+
+The final run compares all three retained changes against the original baseline
+using seven alternating **250 ms** windows and all three API lifecycles. It again
+verifies all 90 input/preset outputs byte-for-byte. The table is generated from
+[the recorded windows](2026-09-10-gfm-profiling/optimizations/final-comparison.json).
+Values are median paired changes in elapsed time; negative is faster.
+
+| Input / preset | Fresh owned HTML | Fresh parser, reused output | Retained Renderer |
+| --- | ---: | ---: | ---: |
+| commonmark-50k / commonmark | -0.16% | -0.36% | +0.41% |
+| gfm-overlap-tables / overlap | -4.18% | -5.15% | -6.03% |
+| gfm-overlap-tables / gfm | -7.42% | -6.87% | -7.94% |
+| tables-5k / gfm | -4.17% | -4.36% | -4.29% |
+| autolinks / gfm | -5.17% | -4.81% | -3.88% |
+| tasks / gfm | -0.15% | -2.11% | -3.14% |
+| mixed-gfm / gfm | -5.51% | -6.28% | -4.08% |
+| readme / gfm | -1.67% | -1.58% | -1.11% |
+
+On the table/strike input, allocation calls change from 130 to 51 for owned HTML,
+127 to 48 for fresh parser/reused output, and 80 to zero for a warmed Renderer.
+The retained opener scratch keeps its high-water capacity, bounded by the existing
+inline-mark limit. [Final allocation counts](2026-09-10-gfm-profiling/optimizations/final-counts.json)
+were collected separately from timing.
+
+Validation covers the full `cargo test --locked --all-features` suite (974 tests
+including doctests), workspace Clippy with all targets/features and warnings
+denied, `cargo fmt --all --check`, and the explicit cross-cell reuse assertion.
+Library checks also passed for x86-64 Linux and Windows. The broader Linux
+all-target cross-check could not build the benchmark dependency `alloca` because
+this host lacks `x86_64-linux-gnu-gcc`; no native x86 execution or performance
+measurement is claimed. The results above are local ARM64 measurements, not a
+new comparison against Bun or other parsers.
+
+No public API, Markdown dialect, dependency, or production unsafe code was added.
+The table-splitting and event-renderer experiments remain in Git history with
+their measured rejection reasons. Production changes are limited to the three
+retained optimizations described above.

@@ -527,6 +527,7 @@ mod tests {
         assert!(attr_out.windows(6).any(|w| w == b"&quot;"));
         assert!(attr_out.windows(5).any(|w| w == b"&amp;"));
     }
+
     #[test]
     fn link_destination_encoding_preserves_every_byte_at_scan_boundaries() {
         for padding in [0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129] {

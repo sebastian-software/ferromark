@@ -107,4 +107,9 @@ fn strikethrough_openers_do_not_leak_between_cells_or_documents() {
         }
     }
     assert_eq!(renderer.render("close~~"), "<p>close~~</p>\n");
+    assert_eq!(
+        renderer.render("| ~~open | close~~ |\n| --- | --- |\n"),
+        "<table>\n<thead>\n<tr>\n<th>~~open</th>\n<th>close~~</th>\n</tr>\n</thead>\n</table>\n",
+        "strikethrough must not span table cells",
+    );
 }
