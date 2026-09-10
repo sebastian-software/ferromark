@@ -1,0 +1,142 @@
+{
+  "rounds": 9,
+  "window_ms": 500,
+  "binary_sha256": {
+    "inline-code": {
+      "before": "7840dea2da91055f92efb1a4760d8c4f3b225bc5280fef7fb0fd5aeb8bd534c3",
+      "after": "b64127e371dc110d72ea8f18db25becd3e22ecb661e2998f61c009b70217af35"
+    },
+    "readme-commonmark": {
+      "before": "1a914a9a652f2e2fb4061d3fc345e0c440fee2a11c250e3836402c008595b811",
+      "after": "bd695e90719ce7cd6776ecaa601d5c4a7d614ea3bd8bbc985548bd6de9210316"
+    }
+  },
+  "summary": [
+    {
+      "case": "inline-code",
+      "before_ns": 4979.694889260675,
+      "after_ns": 5235.38499958117,
+      "paired_change_percent": 4.823799519285665,
+      "paired_min_percent": 0.04215516297809696,
+      "paired_max_percent": 6.681425367739968
+    },
+    {
+      "case": "readme-commonmark",
+      "before_ns": 108702.58246527778,
+      "after_ns": 108185.27422145329,
+      "paired_change_percent": -0.44979780619329723,
+      "paired_min_percent": -1.7411049992418604,
+      "paired_max_percent": 1.716090368920975
+    }
+  ],
+  "samples": [
+    {
+      "case": "inline-code",
+      "round": 0,
+      "before": 4977.366270504857,
+      "after": 5217.464440734558
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 0,
+      "before": 108542.67925347222,
+      "after": 110405.36971830984
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 1,
+      "after": 108185.27422145329,
+      "before": 108702.58246527778
+    },
+    {
+      "case": "inline-code",
+      "round": 1,
+      "after": 5280.396023399223,
+      "before": 4974.707418019739
+    },
+    {
+      "case": "inline-code",
+      "round": 2,
+      "before": 4987.014909446307,
+      "after": 5251.278456821236
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 2,
+      "before": 109245.28157665503,
+      "after": 108051.12241379311
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 3,
+      "after": 107907.6599137931,
+      "before": 109819.73684210525
+    },
+    {
+      "case": "inline-code",
+      "round": 3,
+      "after": 5249.156732868661,
+      "before": 4963.308837541686
+    },
+    {
+      "case": "inline-code",
+      "round": 4,
+      "before": 4956.190037266096,
+      "after": 5287.334175689393
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 4,
+      "before": 109689.80263157893,
+      "after": 109322.27928321678
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 5,
+      "after": 108818.84765624999,
+      "before": 107764.41271551725
+    },
+    {
+      "case": "inline-code",
+      "round": 5,
+      "after": 5161.696170520231,
+      "before": 4981.358672696844
+    },
+    {
+      "case": "inline-code",
+      "round": 6,
+      "before": 4996.414538369305,
+      "after": 5235.38499958117
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 6,
+      "before": 108004.14870689657,
+      "after": 106701.4364334471
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 7,
+      "after": 108308.71539792388,
+      "before": 108798.08680555555
+    },
+    {
+      "case": "inline-code",
+      "round": 7,
+      "after": 4981.7940877570545,
+      "before": 4979.694889260675
+    },
+    {
+      "case": "inline-code",
+      "round": 8,
+      "before": 4992.1991413738015,
+      "after": 5076.187002598668
+    },
+    {
+      "case": "readme-commonmark",
+      "round": 8,
+      "before": 107308.09439212327,
+      "after": 108137.12867647057
+    }
+  ]
+}

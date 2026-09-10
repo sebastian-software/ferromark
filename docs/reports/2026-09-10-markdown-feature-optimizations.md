@@ -131,3 +131,108 @@ calls fall from 35 to 19, leaving 752 cumulatively requested bytes for 16 notes.
 All-feature tests and all 292 exact HTML comparisons passed; the existing inline
 note suite covers formatting, links, multiline content, and mixed numbering.
 Evidence: `optimizations/borrow-comparison.json` and `final-counts.json`.
+
+## Combined result against the original production baseline
+
+Final production: `41d5201c804e760f400a2d25e2ebe06394ec6f04`. The feature comparison
+uses seven paired >=150 ms windows per row, while the independent GFM guard uses
+seven >=200 ms windows. Both alternate old/new binary order. All 292 feature
+and 90 GFM HTML configurations match exactly. The earlier retained heading-ID
+outlier is absent in this combined comparison (+0.3%); the plain 16 KiB retained
+controls improve rather than reproduce their earlier slowdown.
+
+| Workload | Fresh owned before → after (µs) | Fresh owned change | Retained Renderer change |
+| --- | ---: | ---: | ---: |
+| 17 B sentence / CommonMark | 1.073 → 0.384 | -64.5% | -0.3% |
+| 17 B sentence / default | 1.136 → 0.378 | -66.9% | +0.7% |
+| Plain 1 KiB / default | 2.243 → 1.536 | -31.1% | -4.2% |
+| Light 1 KiB / CommonMark | 7.813 → 7.279 | -7.1% | -0.2% |
+| Light 1 KiB / default | 8.551 → 7.978 | -6.2% | -0.2% |
+| README / default | 136.707 → 128.617 | -4.0% | -2.3% |
+| Heading ids | 4.196 → 3.516 | -16.4% | +0.3% |
+| Tables | 8.026 → 7.115 | -10.9% | +0.8% |
+| Highlight | 4.371 → 3.359 | -23.7% | -15.9% |
+| Subscript | 4.037 → 2.924 | -27.4% | -17.7% |
+| Superscript | 4.208 → 3.297 | -22.1% | -13.3% |
+| Math | 3.839 → 2.861 | -25.3% | -14.6% |
+| Footnotes | 12.241 → 10.921 | -11.1% | -8.3% |
+| Inline footnotes | 12.344 → 9.040 | -26.8% | -24.8% |
+
+The GFM guard's larger cases mostly move within 3%. Two retained controls merit
+a longer recheck: inline code is +4.5% in the feature comparison and CommonMark
+README is +3.5% in the GFM harness (the feature harness's CommonMark README is
+-0.4%). The recheck and its outcome are recorded below rather than omitting these
+outliers. Synthetic controls can also improve from allocation/layout differences
+without their parsing algorithm changing, as with retained plain paragraphs.
+
+## Reproduction and verification
+
+The original production revision predates the new probe. Use `bfb3687` to build
+a baseline probe with identical production code, and `41d5201` for the final
+probe. In separate checkouts, build without profiling and preserve both binaries:
+
+```sh
+cargo build --locked --profile release-debug --example feature_cost_probe --example gfm_optimization_probe
+```
+
+Use the committed `2026-09-10-markdown-feature-costs/catalog.json` for exact replay;
+regenerating the catalog reads the checkout's README, which may change later.
+Pass the saved binaries to `scripts/compare-feature-probes.py` with the filters
+and windows in `combined-comparison.json`, and to `scripts/compare-gfm-probes.py`
+with `--window-ms 200`. Build the profiling-feature probe separately for counts.
+The CPU-capture helper used `profile_harness` built at `321512b` (production
+identical to the study baseline) and saved as `target/gfm-profile/profile-url`.
+
+Validation on the final production code:
+
+- `cargo test --locked --all-features`: 979 tests passed, including doctests.
+- Workspace/all-target/all-feature Clippy with `-D warnings`: passed.
+- `cargo fmt --all --check`: passed.
+- All-feature library compile checks for x86_64 Linux and Windows MSVC: passed.
+- Catalog and original baseline report regenerate byte for byte.
+- Native x86 execution/performance was unavailable; all timing claims are M1 Pro.
+
+Raw measurements and binary/catalog hashes live in the adjacent data directory;
+`validation.json` records versions, revisions, and check results. These changes
+add no unsafe parser code and no dependencies. The durable design summary is
+[ARCH-EXP-017](../arch/ARCH-EXP-017-markdown-feature-costs-and-lazy-scratch.md).
+
+## Longer control recheck and accepted limitation
+
+Nine paired >=500 ms windows per binary, alternating order, using the same
+retained executables and input catalog:
+
+| Retained control | Before → after (µs) | Paired median change | Range across pairs |
+| --- | ---: | ---: | ---: |
+| inline-code | 4.980 → 5.235 | +4.8% | +0.0% to +6.7% |
+| readme-commonmark | 108.703 → 108.185 | -0.4% | -1.7% to +1.7% |
+
+The README slowdown does not reproduce. The inline-code control **does reproduce**
+and is retained as a known local trade-off: about 0.26 µs extra per complete
+32-paragraph document with a warmed Renderer, while fresh owned rendering of the
+same workload improves 9.0%. This is not classified as noise. The cause has not
+been isolated; changed buffer capacities/code layout are hypotheses, not findings.
+The larger mixed CommonMark/GFM controls do not show this consistent regression.
+The overall changes are retained for their substantial fresh-call and targeted
+feature gains, without claiming every workload improves.
+
+Evidence: `control-recheck.json`; `recheck-controls.py` reproduces the capture
+against the saved binaries. The original outlier measurements remain preserved.
+
+## What the current feature costs mean
+
+The [final feature tables](2026-09-10-markdown-feature-costs-final.md) are regenerated
+from five complete measurement rounds on the final implementation. Most unused
+boolean options add little detection overhead; autolink detection is a measurable
+exception. Link-base rewriting also clones configuration for a fresh parser.
+
+In these deliberately syntax-dense, retained-renderer workloads, plain paragraphs
+cost about 1.2 µs/KiB; math, inline code, strikethrough, and highlight about
+3.3–3.7; emphasis and links about 5.7–5.9; tables, entities, and lists about
+8.4–9.1; reference links and footnotes about 10.5–11.7. These groups compare
+*different documents*. They include syntax density, block count, HTML expansion,
+and actual parsing work; they are not independently summable feature prices.
+
+Small documents benefit especially from reducing initialization costs. Reusing a
+Renderer is still valuable: the final 17-byte default workload takes about
+0.37 µs fresh versus 0.09 µs retained, with nine versus zero new allocation calls.

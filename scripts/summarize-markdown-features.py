@@ -1,20 +1,42 @@
 #!/usr/bin/env python3
 """Render measured feature-cost tables from saved probe output."""
+import argparse
 import json
 import pathlib
 import statistics as st
-import sys
-folder=pathlib.Path(sys.argv[1]);out=pathlib.Path(sys.argv[2])
-rows=json.loads((folder/'baseline-timings.json').read_text())
-counts=json.loads((folder/'baseline-counts.json').read_text())
-def group(id,variant,lane): return [r for r in rows if r['id']==id and r['variant']==variant and r['lane']==lane]
-def ns(id,v,l): return st.median(r['ns'] for r in group(id,v,l))
-def delta(id,l):
- a=sorted(group(id,'off',l),key=lambda r:r['round']);b=sorted(group(id,'on',l),key=lambda r:r['round'])
- return st.median((y['ns']/x['ns']-1)*100 for x,y in zip(a,b,strict=True))
-def kib(id,v,l):
- r=group(id,v,l)[0];return ns(id,v,l)/1000*1024/max(1,r['input_bytes'])
-text='''# Markdown feature costs and light documents — 2026-09-10
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("folder", type=pathlib.Path)
+parser.add_argument("output", type=pathlib.Path)
+parser.add_argument("--snapshot", choices=["baseline", "final"], default="baseline")
+parser.add_argument("--revision", default="99fbf0107c8a08851ba48d6173da99003c5ca22f")
+args = parser.parse_args()
+rows = json.loads((args.folder / f"{args.snapshot}-timings.json").read_text())
+counts = json.loads((args.folder / f"{args.snapshot}-counts.json").read_text())
+
+
+def group(case_id, variant, lane):
+    return [row for row in rows
+            if (row["id"], row["variant"], row["lane"]) == (case_id, variant, lane)]
+
+
+def ns(case_id, variant, lane):
+    return st.median(row["ns"] for row in group(case_id, variant, lane))
+
+
+def delta(case_id, lane):
+    before = sorted(group(case_id, "off", lane), key=lambda row: row["round"])
+    after = sorted(group(case_id, "on", lane), key=lambda row: row["round"])
+    return st.median((y["ns"] / x["ns"] - 1) * 100
+                     for x, y in zip(before, after, strict=True))
+
+
+def kib(case_id, variant, lane):
+    row = group(case_id, variant, lane)[0]
+    return ns(case_id, variant, lane) / 1000 * 1024 / max(1, row["input_bytes"])
+
+
+text = '''# Markdown feature costs and light documents — 2026-09-10
 
 Baseline production: `99fbf0107c8a08851ba48d6173da99003c5ca22f`, including the
 previous GFM optimizations. Apple M1 Pro, macOS 26.6.2, Rust 1.97.1 / LLVM 22.1.6,
@@ -59,11 +81,13 @@ identical HTML. The inputs contain 17 bytes, about 1 KiB, or about 16 KiB of pro
 | Option | 17 B fresh owned | 1 KiB retained Renderer | 16 KiB retained Renderer |
 | --- | ---: | ---: | ---: |
 '''
-features=list(dict.fromkeys(r['feature'] for r in rows if r['group']=='activation'))
+features = list(dict.fromkeys(r['feature'] for r in rows if r['group'] == 'activation'))
 for f in features:
- for size in ['tiny','1k','16k']: assert all(r['same_html_as_control'] for r in group(f'activation/{f}/{size}','on','owned'))
- text+=f'| {f} | {delta(f"activation/{f}/tiny","owned"):+.1f}% | {delta(f"activation/{f}/1k","renderer"):+.1f}% | {delta(f"activation/{f}/16k","renderer"):+.1f}% |\n'
-text+='''
+    for size in ['tiny', '1k', '16k']:
+        assert all(r['same_html_as_control']
+                   for r in group(f'activation/{f}/{size}', 'on', 'owned'))
+    text += f'| {f} | {delta(f"activation/{f}/tiny","owned"):+.1f}% | {delta(f"activation/{f}/1k","renderer"):+.1f}% | {delta(f"activation/{f}/16k","renderer"):+.1f}% |\n'
+text += '''
 ## Features actually used
 
 Small is one syntax unit; medium repeats it 16 times (except front matter).
@@ -75,9 +99,10 @@ comparison and must not be used as a universal ranking.
 | --- | ---: | ---: | ---: | ---: |
 '''
 for f in features:
- id=f'syntax/{f}/medium'; count=next(r['allocation_calls'] for r in counts if r['id']==id and r['variant']=='on' and r['lane']=='renderer')
- text+=f'| {f} | {ns(f"syntax/{f}/small","on","owned")/1000:.3f} | {kib(id,"on","renderer"):.2f} | {delta(id,"renderer"):+.1f}% | {count} |\n'
-text+='''
+    id = f'syntax/{f}/medium'
+    count = next(r['allocation_calls'] for r in counts if r['id']==id and r['variant']=='on' and r['lane']=='renderer')
+    text += f'| {f} | {ns(f"syntax/{f}/small","on","owned")/1000:.3f} | {kib(id,"on","renderer"):.2f} | {delta(id,"renderer"):+.1f}% | {count} |\n'
+text += '''
 ## CommonMark workload comparison
 
 Medium repeats each syntax unit 32 times. The plain control is a single ASCII
@@ -88,18 +113,20 @@ expansion. Use these figures to choose profiling targets, not to sum feature cos
 | --- | ---: | ---: | ---: |
 '''
 for f in dict.fromkeys(r['feature'] for r in rows if r['group']=='core'):
- id=f'core/{f}/medium';text+=f'| {f} | {ns(f"core/{f}/small","syntax","owned")/1000:.3f} | {kib(id,"syntax","renderer"):.2f} | {kib(id,"plain-control","renderer"):.2f} |\n'
-text+='''
+    id = f'core/{f}/medium'
+    text += f'| {f} | {ns(f"core/{f}/small","syntax","owned")/1000:.3f} | {kib(id,"syntax","renderer"):.2f} | {kib(id,"plain-control","renderer"):.2f} |\n'
+text += '''
 ## Fixed per-call cost
 
 | Input / preset | Fresh owned (µs) | Retained Renderer (µs) | Owned allocation calls |
 | --- | ---: | ---: | ---: |
 '''
 for size in ['empty','tiny','plain-1k','light-1k','plain-16k','readme']:
- for v in ['commonmark','default']:
-  id=f'lifecycle/presets/{size}';count=next(r['allocation_calls'] for r in counts if r['id']==id and r['variant']==v and r['lane']=='owned')
-  text+=f'| {size} / {v} | {ns(id,v,"owned")/1000:.3f} | {ns(id,v,"renderer")/1000:.3f} | {count} |\n'
-text+='''
+    for v in ['commonmark', 'default']:
+        id = f'lifecycle/presets/{size}'
+        count = next(r['allocation_calls'] for r in counts if r['id']==id and r['variant']==v and r['lane']=='owned')
+        text += f'| {size} / {v} | {ns(id,v,"owned")/1000:.3f} | {ns(id,v,"renderer")/1000:.3f} | {count} |\n'
+text += '''
 ## Reproduction and evidence
 
 The adjacent directory preserves the full catalog, all timing windows, allocation
@@ -117,4 +144,9 @@ Always preserve an uninstrumented binary before building allocation counters.
 before/after binaries. Requested bytes are cumulative, not peak/live memory.
 The report tables are generated by `scripts/summarize-markdown-features.py`.
 '''
-out.write_text(text)
+if args.snapshot == 'final':
+    text = text.replace('Baseline production: `99fbf0107c8a08851ba48d6173da99003c5ca22f`, including the\nprevious GFM optimizations.',f'Final production: `{args.revision}`, including the\nmeasured lightweight-document and feature optimizations.')
+    text = text.replace('Values below describe this baseline. Follow-up optimizations and measurements\nare recorded separately.', 'Values below describe the final optimized implementation. See the\n[optimization log](2026-09-10-markdown-feature-optimizations.md) for paired\nbefore/after comparisons and the original baseline study for earlier costs.')
+    text = text.replace('The adjacent directory preserves the full catalog, all timing windows, allocation\ncounts, and four CPU profiles.', 'The `2026-09-10-markdown-feature-costs/` directory preserves the full catalog,\nfinal timing windows and allocation counts, plus four baseline CPU profiles.')
+    text = text.replace('# Markdown feature costs and light documents —', '# Final Markdown feature costs and light documents —')
+args.output.write_text(text)
