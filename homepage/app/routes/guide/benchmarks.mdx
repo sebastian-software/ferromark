@@ -15,11 +15,15 @@ import {
 
 {benchmarks.scope}
 
-## CommonMark 5 KB
+These historical results predate the latest allocation optimizations. Comrak
+supports output-buffer reuse, but this run used its owned-output function.
+The tables preserve the original measurements; they are not an equal-work ranking.
+
+## Mixed Markdown 5 KB
 
 <BenchmarkTable id="commonmark-5k" />
 
-## CommonMark 50 KB
+## Mixed Markdown 50 KB
 
 <BenchmarkTable id="commonmark-50k" />
 
@@ -27,7 +31,9 @@ import {
 
 This page and the
 [repository README](https://github.com/sebastian-software/ferromark#benchmarks)
-render the same source file, so the published figures cannot drift apart.
+use the same benchmark data, checked against each other at build time. The
+historical `commonmark-*` fixture names refer to mixed documents containing
+tables, not an extension-free CommonMark configuration.
 
 ## Reproduce locally
 
@@ -61,9 +67,37 @@ cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 ```
 
-These lanes are designed for like-for-like parser comparison. ferromark's
-secure-default result stays separate because pulldown-cmark has no equivalent
-URL/raw-HTML trust boundary.
+These are selected feature intersections. The semantic spot checks do not prove
+output equivalence for every timed fixture; GFM overlap excludes bare autolinks
+and tag filtering. Ferromark's secure-default result stays separate because
+pulldown-cmark has no equivalent URL/raw-HTML trust boundary. The directory's
+Rust 1.93 pin also needs updating to the root crate's MSRV before replaying the
+pinned publication environment.
+
+The [comparison plan](https://github.com/sebastian-software/ferromark/blob/main/docs/plans/2026-09-11-benchmark-comparability-and-documentation.md)
+tracks full output gates, adapter corrections, and new measurements. Equivalent
+syntax, rendering policy, and allocation lifecycle matter more than matching
+option names.
+
+## Native Bun Markdown comparison
+
+The [Bun harness](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/bun-comparison/README.md)
+compares Ferromark, Bun's native Rust Markdown parser, pulldown-cmark, and Comrak
+without a JavaScript runtime. Bun's md4c-derived parser retains C++ Highway
+search routines and C mimalloc; its
+[provenance](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/bun-comparison/PROVENANCE.md)
+documents the C-to-Zig-to-Rust history.
+
+This macOS-only experiment uses trusted CommonMark or the shared GFM subset,
+fresh parser state and owned output, and a pinned nightly compiler with shared
+Bun-native support. It times only inputs passing a limited output-equivalence
+gate and retains mismatches. These conditions differ from the tables above.
+
+The [exploratory report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-05-bun-comparison.md)
+includes results, exclusions, and reproduction instructions. That earlier run
+favored Ferromark on mixed CommonMark inputs, Bun on the tiny input, and
+pulldown-cmark on the shared table/strikethrough input. Its short windows and
+earlier Ferromark snapshot do not establish current rankings.
 
 ## Option costs
 
@@ -73,3 +107,27 @@ extension flags. Because the document stays constant, differences between
 lanes show what each configuration costs on identical input — a mix of
 features the corpus actually uses (tables, task lists, strikethrough) and
 enabled-but-unused paths. It is not a comparison of different documents.
+
+For finer attribution, the [feature-cost study](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-markdown-feature-costs-final.md)
+separates 140 scenarios and 292 input/configuration pairs:
+
+| Measurement | Interpretation |
+| --- | --- |
+| Option off/on without matching syntax | Identical HTML isolates detection and setup costs. |
+| Option off/on with matching syntax | Changed HTML includes the work of interpreting and rendering the feature. |
+| Tiny and lightweight documents | Fresh owned output versus a retained Renderer exposes fixed setup costs. |
+| Core Markdown constructs | Different structures and output sizes are workload comparisons, not additive feature prices. |
+
+The local M1 Pro study finds little cost for most unused boolean options, with
+literal-autolink detection a measurable exception. Reference links and footnotes
+retain more allocation work than many inline extensions. Choose options for
+document semantics, then measure the inputs and lifecycle your application uses.
+
+Reports include latency, allocation calls and cumulatively requested bytes,
+CPU profiles, frozen inputs, and reproduction commands. Counters run separately
+from timing; cumulative bytes are not peak memory. The
+[GFM profile](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-gfm-profiling.md)
+also covers fresh parser state with reused output. The
+[optimization report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-markdown-feature-optimizations.md)
+records paired gains and the confirmed retained-Renderer inline-code slowdown.
+These internal studies guide optimization and do not replace cross-parser tests.

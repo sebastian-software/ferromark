@@ -18,21 +18,28 @@ syntax presets are contracts, not performance tiers.
 - **Implemented in [PR #293](https://github.com/sebastian-software/ferromark/pull/293):**
   Ferromark GFM and feature-cost profiling, measured allocation/scan
   optimizations, before/after evidence, and this comparison audit and plan.
+  README and homepage now explain the native Bun and granular feature studies,
+  distinguish the measurement questions, and disclose the historical comparison's
+  unequal policies/lifecycles. Its labels are corrected; measured figures are unchanged.
 - **Still open:** implement consistent cross-parser task contracts and output
-  gates, correct the adapters, measure the updated implementations, and update
-  README/homepage explanations and results. The internal before/after checks in
+  gates, correct the adapters, measure the updated implementations, and refresh
+  README/homepage results from that run. The internal before/after checks in
   #293 do not establish cross-parser parity or complete this follow-up.
 
 Bun remains part of the comparison work. Reuse its existing harness and report
 its environment separately; do not drop it from the capability matrix merely
 because its harness was merged earlier.
 
-## Findings in the current presentation
+## Findings before the documentation update
 
 The audit uses the committed adapters and their locked comparison versions:
 pulldown-cmark 0.13.4, Comrak 0.54.0, and md4c revision
 `65c6c9d72cebd9a731aaa5597414ce04d9ea5de3`. These are not claims about every
 version or possible configuration of those libraries.
+
+The README/homepage wording and labels identified below have since been
+corrected in #293. The adapter, parity-gate, and publication-environment work
+remains open; the table preserves the audit that motivated those changes.
 
 | Finding | Evidence | Consequence |
 | --- | --- | --- |
