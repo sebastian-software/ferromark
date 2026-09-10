@@ -30,8 +30,8 @@ impl MathSpan {
 /// Resolve math spans in mark buffer.
 /// Similar to code span resolution: `$` matches `$`, `$$` matches `$$`.
 /// Marks everything between as IN_CODE to prevent further inline parsing.
-pub fn resolve_math_spans(marks: &mut [Mark], text: &[u8]) -> Vec<MathSpan> {
-    let mut spans = Vec::new();
+pub fn resolve_math_spans_into(marks: &mut [Mark], text: &[u8], spans: &mut Vec<MathSpan>) {
+    spans.clear();
     let len = marks.len();
 
     for i in 0..len {
@@ -94,8 +94,6 @@ pub fn resolve_math_spans(marks: &mut [Mark], text: &[u8]) -> Vec<MathSpan> {
             }
         }
     }
-
-    spans
 }
 
 #[cfg(test)]
@@ -108,7 +106,8 @@ mod tests {
         let text = b"hello $x^2$ world";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        let spans = resolve_math_spans(buffer.marks_mut(), text);
+        let mut spans = Vec::new();
+        resolve_math_spans_into(buffer.marks_mut(), text, &mut spans);
         assert_eq!(spans.len(), 1);
         assert!(!spans[0].is_display);
         let (start, end) = spans[0].content_range();
@@ -120,7 +119,8 @@ mod tests {
         let text = b"hello $$E=mc^2$$ world";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        let spans = resolve_math_spans(buffer.marks_mut(), text);
+        let mut spans = Vec::new();
+        resolve_math_spans_into(buffer.marks_mut(), text, &mut spans);
         assert_eq!(spans.len(), 1);
         assert!(spans[0].is_display);
         let (start, end) = spans[0].content_range();
@@ -132,7 +132,8 @@ mod tests {
         let text = b"hello $ world";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        let spans = resolve_math_spans(buffer.marks_mut(), text);
+        let mut spans = Vec::new();
+        resolve_math_spans_into(buffer.marks_mut(), text, &mut spans);
         assert_eq!(spans.len(), 0);
     }
 
@@ -141,7 +142,8 @@ mod tests {
         let text = b"hello \\$x\\$ world";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        let spans = resolve_math_spans(buffer.marks_mut(), text);
+        let mut spans = Vec::new();
+        resolve_math_spans_into(buffer.marks_mut(), text, &mut spans);
         assert_eq!(spans.len(), 0);
     }
 
@@ -150,7 +152,8 @@ mod tests {
         let text = b"$a$ and $b$";
         let mut buffer = MarkBuffer::new();
         collect_marks(text, &mut buffer);
-        let spans = resolve_math_spans(buffer.marks_mut(), text);
+        let mut spans = Vec::new();
+        resolve_math_spans_into(buffer.marks_mut(), text, &mut spans);
         assert_eq!(spans.len(), 2);
     }
 }

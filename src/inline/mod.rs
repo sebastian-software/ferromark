@@ -37,7 +37,7 @@ use marks::{
     Mark, MarkBuffer, MarkSummary, collect_marks, collect_marks_highlight,
     collect_marks_highlight_superscript, collect_marks_superscript, flags,
 };
-use math::{MathSpan, resolve_math_spans};
+use math::{MathSpan, resolve_math_spans_into};
 use memchr::memchr;
 use strikethrough::{StrikethroughMatch, resolve_strikethrough_into};
 use subscript::{SubscriptMatch, resolve_subscript_into};
@@ -465,7 +465,7 @@ impl InlineParser {
 
         // Math spans (after code spans, before links; gated on math option)
         if math && summary.has_math() {
-            self.math_spans = resolve_math_spans(self.mark_buffer.marks_mut(), text);
+            resolve_math_spans_into(self.mark_buffer.marks_mut(), text, &mut self.math_spans);
         } else {
             self.math_spans.clear();
         }

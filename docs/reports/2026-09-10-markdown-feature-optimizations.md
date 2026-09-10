@@ -100,3 +100,19 @@ All-feature tests and all 292 HTML comparisons passed. New checks cover zero,
 decimal boundaries, usize::MAX, and mixed reference/inline numbering through 101,
 including target IDs and backreferences. Evidence:
 `optimizations/numbers-{comparison,counts}.json`.
+
+## 5. Retain resolved-math storage — retained
+
+Hypothesis: math resolution replaces and drops its span vector for every parsed
+paragraph. Fill the existing parser-owned vector instead, clearing it before
+resolution; preserve the existing code/math/link precedence and matching rules.
+
+Compared with `37657c8`, seven paired >=100 ms windows show 13.0% less time for
+medium math with fresh owned rendering and 14.5% less with a retained Renderer.
+The medium retained workload drops from 16 allocation calls to zero. Small
+retained math improves 12.0%; small fresh calls still allocate their first vector.
+
+All-feature tests and all 292 exact HTML comparisons passed. A new regression
+checks math-to-plain transitions, unmatched delimiters, code precedence, cells,
+paragraph boundaries, and repeated documents. Evidence:
+`optimizations/math-{comparison,counts}.json`.

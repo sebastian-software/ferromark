@@ -121,3 +121,31 @@ fn test_math_html_entities_escaped() {
     let html = math_html("$a < b$");
     assert!(html.contains("a &lt; b"), "Got: {html}");
 }
+
+#[test]
+fn reused_renderer_clears_math_spans_between_cells_and_documents() {
+    let options = ferromark::options!(Options::default(); math: true,);
+    let mut renderer = ferromark::Renderer::with_options(options.clone());
+    for _ in 0..3 {
+        for input in [
+            "$x$ and $$y$$",
+            "$unmatched",
+            "plain",
+            "`$code$` and $*math*$",
+            "| $x$ | plain |\n| --- | --- |\n| $open | close$ |",
+            "$open\n\nclose$",
+            "",
+        ] {
+            assert_eq!(
+                renderer.render(input),
+                to_html_with_options(input, &options),
+                "{input}"
+            );
+        }
+        assert_eq!(renderer.render("$unmatched"), "<p>$unmatched</p>\n");
+        assert_eq!(
+            renderer.render("$x$\n\nplain"),
+            "<p><code class=\"language-math math-inline\">x</code></p>\n<p>plain</p>\n"
+        );
+    }
+}
