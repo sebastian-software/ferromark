@@ -206,14 +206,15 @@ fn push_attr_escape(out: &mut Vec<u8>, b: u8) {
 fn url_escape_link_destination_raw(out: &mut Vec<u8>, input: &[u8]) {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
 
-    if input.is_ascii()
-        && memchr2(b'\\', b' ', input).is_none()
-        && memchr3(b'"', b'<', b'>', input).is_none()
-        && memchr2(b'&', b'\'', input).is_none()
-        && !input
-            .iter()
-            .any(|&b| matches!(b, 0x00..=0x08 | 0x0B | 0x0C | 0x0E..=0x1F | 0x7F))
-    {
+    // One eligibility scan instead of separate ASCII, punctuation and control
+    // scans. The fallback below retains all escaping and backslash semantics.
+    if input.iter().all(|&byte| {
+        !matches!(
+            byte,
+            b'\\' | b' ' | b'"' | b'<' | b'>' | b'&' | b'\''
+                | 0x00..=0x08 | 0x0B | 0x0C | 0x0E..=0x1F | 0x7F..=0xFF
+        )
+    }) {
         out.extend_from_slice(input);
         return;
     }
@@ -525,5 +526,52 @@ mod tests {
         assert!(attr_out.windows(5).any(|w| w == b"&#39;"));
         assert!(attr_out.windows(6).any(|w| w == b"&quot;"));
         assert!(attr_out.windows(5).any(|w| w == b"&amp;"));
+    }
+    #[test]
+    fn link_destination_encoding_preserves_every_byte_at_scan_boundaries() {
+        for padding in [0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129] {
+            for byte in 0u8..=255 {
+                let mut input = vec![b'x'; padding];
+                input.push(byte);
+                input.extend_from_slice(b"tail");
+                let encoded = match byte {
+                    b'\\' => b"%5C".to_vec(),
+                    b' ' => b"%20".to_vec(),
+                    b'"' => b"%22".to_vec(),
+                    b'<' => b"&lt;".to_vec(),
+                    b'>' => b"&gt;".to_vec(),
+                    b'&' => b"&amp;".to_vec(),
+                    b'\'' => b"&#39;".to_vec(),
+                    0..=8 | 11 | 12 | 14..=31 | 127..=255 => format!("%{byte:02X}").into_bytes(),
+                    _ => vec![byte],
+                };
+                let mut expected = vec![b'x'; padding];
+                expected.extend_from_slice(&encoded);
+                expected.extend_from_slice(b"tail");
+                let mut output = Vec::new();
+                url_escape_link_destination_raw(&mut output, &input);
+                assert_eq!(output, expected, "padding={padding}, byte={byte}");
+            }
+        }
+    }
+
+    #[test]
+    fn link_destination_fast_path_preserves_backslashes_and_entities() {
+        for (input, expected) in [
+            (r"a\&b", "a&amp;b"),
+            (r"a\'b", "a&#39;b"),
+            (r#"a\"b"#, "a%22b"),
+            (r"a\ b", "a%5C%20b"),
+            (r"a\?b", "a?b"),
+            (r"a\\b", r"a\b"),
+            ("a&amp;b", "a&amp;b"),
+            ("a&#32;b", "a%20b"),
+            ("a&#x22;b", "a%22b"),
+            ("https://example.org/ü", "https://example.org/%C3%BC"),
+        ] {
+            let mut output = Vec::new();
+            url_escape_link_destination(&mut output, input.as_bytes());
+            assert_eq!(output, expected.as_bytes(), "{input}");
+        }
     }
 }

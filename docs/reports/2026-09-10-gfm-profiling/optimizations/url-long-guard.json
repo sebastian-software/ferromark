@@ -1,0 +1,159 @@
+{
+  "recipe": "('https://example.org/' + 'a' * path_length + '\\n\\n') * 8",
+  "before": "original profiling baseline; strikethrough/short-input changes do not target these inputs",
+  "policy": "GFM / Untrusted, fresh parser, reused output; seven alternating fixed-iteration windows calibrated to 250 ms; output lengths checked",
+  "binary_sha256": {
+    "target/gfm-profile/profile-harness": "dd03a64333ebc1d8a94bf9d66a7da911054dd2df80a7ea6bfb5d8ea668edcef5",
+    "target/gfm-profile/profile-url": "776060ce32cf50eb12b41978da75b898252201972b4fae2c83d403507b3c3b4e"
+  },
+  "results": [
+    {
+      "path_length": 32,
+      "iterations": 27189,
+      "input_bytes": 432,
+      "input_sha256": "ef1f7bcbbff2cf2bb1492bc9f8d929f948308d75900dae10af9c745f5807c9d7",
+      "paired_change_percent": -0.9757968091971159,
+      "samples": [
+        {
+          "before": 2816.4959358564124,
+          "after": 3520.7789179447573
+        },
+        {
+          "after": 2781.544595240722,
+          "before": 3086.9024973334804
+        },
+        {
+          "before": 2967.3167457427635,
+          "after": 2787.6362499540255
+        },
+        {
+          "after": 3699.553716576557,
+          "before": 2836.513259038582
+        },
+        {
+          "before": 2824.543013718783,
+          "after": 2790.9739968369563
+        },
+        {
+          "after": 2811.7329802493655,
+          "before": 2804.801574166023
+        },
+        {
+          "before": 2809.4557357754975,
+          "after": 2782.0411563499947
+        }
+      ]
+    },
+    {
+      "path_length": 256,
+      "iterations": 37525,
+      "input_bytes": 2224,
+      "input_sha256": "6dcc695d36459c0c1b02e9e6f02f0f1420f444da044f83db64e48eb333a6ca33",
+      "paired_change_percent": 1.0936279624919498,
+      "samples": [
+        {
+          "before": 5875.798347768155,
+          "after": 5940.057721518987
+        },
+        {
+          "after": 5936.934283810793,
+          "before": 5872.465023317788
+        },
+        {
+          "before": 5917.890286475683,
+          "after": 5993.622038640906
+        },
+        {
+          "after": 6071.3568554297135,
+          "before": 5921.522318454364
+        },
+        {
+          "before": 5930.195416389074,
+          "after": 5943.959573617588
+        },
+        {
+          "after": 6016.778814123917,
+          "before": 5953.964023984011
+        },
+        {
+          "before": 5974.297135243171,
+          "after": 5985.680639573618
+        }
+      ]
+    },
+    {
+      "path_length": 4096,
+      "iterations": 4304,
+      "input_bytes": 32944,
+      "input_sha256": "5f71c06ebe8b570961442a1bcf411d83ab6a2e63da29239799b3c40f43303b46",
+      "paired_change_percent": -2.0135458868432154,
+      "samples": [
+        {
+          "before": 59160.91612453532,
+          "after": 57072.732574349444
+        },
+        {
+          "after": 58651.63220260223,
+          "before": 58123.93517657993
+        },
+        {
+          "before": 58557.930762081785,
+          "after": 57031.08526951673
+        },
+        {
+          "after": 57104.7376858736,
+          "before": 58111.4563197026
+        },
+        {
+          "before": 59413.5687732342,
+          "after": 58217.24930297398
+        },
+        {
+          "after": 57453.65752788104,
+          "before": 59340.942611524166
+        },
+        {
+          "before": 58354.369888475834,
+          "after": 57283.53461895911
+        }
+      ]
+    },
+    {
+      "path_length": 16384,
+      "iterations": 1022,
+      "input_bytes": 131248,
+      "input_sha256": "d696090482b45f8b8cbeb20ad2966af2238c53ff824dc9ac5b72039fca59ab16",
+      "paired_change_percent": -1.8210807101781468,
+      "samples": [
+        {
+          "before": 224026.66340508807,
+          "after": 220076.81017612523
+        },
+        {
+          "after": 223913.16046966732,
+          "before": 240738.29843444226
+        },
+        {
+          "before": 223323.1409001957,
+          "after": 249571.38845401173
+        },
+        {
+          "after": 220768.42857142858,
+          "before": 224153.45694716243
+        },
+        {
+          "before": 223346.01272015655,
+          "after": 219278.70156555774
+        },
+        {
+          "after": 219713.71526418786,
+          "before": 227968.40410958903
+        },
+        {
+          "before": 224641.02250489237,
+          "after": 220080.0313111546
+        }
+      ]
+    }
+  ]
+}

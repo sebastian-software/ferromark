@@ -74,3 +74,24 @@ by 2.09% / 5.75%; tasks by 3.59% / 3.24%. The URL fixture changes by +1.17% /
 cases around scan-length boundaries. Native x86 performance remains unmeasured.
 
 [Paired measurements](2026-09-10-gfm-profiling/optimizations/short-autolink-comparison.json).
+
+## 6. Combine URL destination eligibility scans — retained
+
+One scan now tests whether a destination can be copied unchanged. The existing
+backslash handling, percent encoding, HTML escaping, and entity decoding remain
+unchanged. The URL-heavy fixture improves by 5.06% / 4.94% against experiment 5.
+Other probe changes range from -2.06% to +2.11%; no benefit is inferred from
+small changes on unrelated inputs.
+
+All-feature tests and all 90 exact-output comparisons passed. New tests cover
+all 256 byte values at 14 scan-boundary positions, escaped punctuation,
+entities, and UTF-8 destinations. An additional fixed-iteration guard measured
+32-, 256-, 4,096-, and 16,384-byte URL paths against the original profile binary;
+changes ranged from -2.01% to +1.09%, with no large long-URL regression. This
+additional guard checks output length, while the normal probe checks exact HTML;
+it is not an isolated estimate of this step because its baseline precedes all
+retained changes.
+
+[Paired measurements](2026-09-10-gfm-profiling/optimizations/url-comparison.json),
+[long-URL measurements](2026-09-10-gfm-profiling/optimizations/url-long-guard.json),
+and [guard runner](2026-09-10-gfm-profiling/optimizations/long-url-guard.py).
