@@ -21,3 +21,21 @@ The archived Python scripts document the local capture/summary procedure and
 its original paths. CPU captures use the existing `profile_harness` example.
 The output-equivalence JSON was obtained by a separate verification invocation;
 the archived timing probe checks API equivalence within each configuration.
+
+## Paired optimization measurements
+
+`examples/gfm_optimization_probe.rs` is the runnable follow-up probe. Build it
+without features under `release-debug`, and retain a copy of the executable
+before changing parser code. Build and copy each candidate identically. Then:
+
+```sh
+python3 scripts/compare-gfm-probes.py target/gfm-profile/baseline target/gfm-profile/candidate target/gfm-profile/comparison.json
+```
+
+The driver first requires identical HTML for all 90 input/preset combinations,
+then alternates binary order over seven 150 ms windows per case and API lane.
+It includes the repository README as a real-world document. Negative paired
+percentage changes mean less elapsed time. Raw windows and executable hashes
+are saved with the summary. Do not run builds or other CPU-intensive checks
+concurrently with this comparison. Use the separate `profiling` build and
+`counts` mode to verify allocation changes.
