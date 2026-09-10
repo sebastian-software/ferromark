@@ -74,7 +74,8 @@ pub struct InlineParser {
     emphasis_stacks: EmphasisStacks,
     emphasis_matches: Vec<EmphasisMatch>,
     strikethrough_matches: Vec<StrikethroughMatch>,
-    strikethrough_openers: Vec<usize>,
+    // Shared by sequential extension resolvers; each clears its opener stack.
+    extension_openers: Vec<usize>,
     subscript_matches: Vec<SubscriptMatch>,
     superscript_matches: Vec<SuperscriptMatch>,
     highlight_matches: Vec<HighlightMatch>,
@@ -123,7 +124,7 @@ impl InlineParser {
             emphasis_stacks: EmphasisStacks::default(),
             emphasis_matches: Vec::new(),
             strikethrough_matches: Vec::new(),
-            strikethrough_openers: Vec::new(),
+            extension_openers: Vec::new(),
             subscript_matches: Vec::new(),
             superscript_matches: Vec::new(),
             highlight_matches: Vec::new(),
@@ -643,7 +644,7 @@ impl InlineParser {
                 self.mark_buffer.marks_mut(),
                 &self.link_boundaries,
                 &mut self.strikethrough_matches,
-                &mut self.strikethrough_openers,
+                &mut self.extension_openers,
             );
         } else {
             self.strikethrough_matches.clear();
@@ -658,6 +659,7 @@ impl InlineParser {
                 &self.link_boundaries,
                 &self.link_dest_ranges,
                 &mut self.subscript_matches,
+                &mut self.extension_openers,
             );
         } else {
             self.subscript_matches.clear();
@@ -672,6 +674,7 @@ impl InlineParser {
                 &self.link_boundaries,
                 &self.link_dest_ranges,
                 &mut self.superscript_matches,
+                &mut self.extension_openers,
             );
         } else {
             self.superscript_matches.clear();
@@ -686,6 +689,7 @@ impl InlineParser {
                 &self.link_boundaries,
                 &self.link_dest_ranges,
                 &mut self.highlight_matches,
+                &mut self.extension_openers,
             );
         } else {
             self.highlight_matches.clear();

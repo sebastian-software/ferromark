@@ -54,3 +54,30 @@ All-feature tests and all 292 exact HTML comparisons passed. A new regression
 covers first headings appearing only inside footnotes, shared duplicate-ID
 resolution, empty/plain documents, and repeated Renderer reuse. Evidence:
 `optimizations/heading-comparison.json`. Baseline for this step: `950f014`.
+
+## 3. Reuse opener scratch across inline extensions — retained
+
+Hypothesis: highlight, subscript, and superscript each allocate an opener stack
+for every parsed paragraph. Their resolution phases run sequentially, so they
+can share the existing strikethrough scratch buffer, clearing it before each use.
+Matching, link boundaries, and precedence remain unchanged.
+
+All three medium workloads drop from 16 retained-renderer allocation calls to
+zero. Compared with `9b5ce86`, seven paired >=100 ms windows measure:
+
+| Feature | Medium fresh owned | Medium retained Renderer |
+| --- | ---: | ---: |
+| Highlight | -11.4% | -13.4% |
+| Subscript | -11.8% | -15.5% |
+| Superscript | -11.3% | -13.5% |
+
+Single-unit retained workloads improve 13–14%; fresh single-unit calls still need
+one stack allocation, so stay unchanged. Light/README/strikethrough controls
+stay within 1.7%. All-feature tests and 292 exact HTML comparisons passed. Added
+regressions cover mixed feature phases, unmatched openers, document/paragraph
+boundaries, code spans, links, and table cells. Allocation output also confirms
+experiment 2 leaves nine fresh allocations for tiny default rendering, matching
+CommonMark. Evidence: `optimizations/openers-{comparison,counts}.json`.
+
+The comparison driver now accepts explicit timing filters and records them;
+exact HTML checks always cover the complete catalog.
