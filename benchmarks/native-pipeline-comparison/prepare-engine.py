@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import tomllib
 
-from common import HERE, REPO, capture, local_hashes, sha, source_hashes, write_json
+from common import HERE, REPO, capture, local_hashes, sha, source_hashes, validate_worker_command, write_json
 
 
 class Build:
@@ -66,6 +66,8 @@ def main():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     workers[args.engine] = module.build(ctx)
+    for command in workers.values():
+        validate_worker_command(command)
     if upstream != source_hashes(source, adapter["revision"]):
         raise ValueError("Upstream source changed during the build")
     binaries = {str(f.relative_to(work)): sha(f) for f in work.rglob("*")
