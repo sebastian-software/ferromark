@@ -84,14 +84,6 @@ def check_switches(rows):
         raise ValueError("Trusted URL policy does not match")
 
 
-def check_fixed_dialect(rows):
-    """A fixed dialect must remain visible even when individual flags request off."""
-    for row in rows[:8]:
-        html = row["html"]
-        if not all(token in html for token in ("<table>", "<del>old</del>", 'type="checkbox"', 'href="http')):
-            raise ValueError("Fixed-dialect capability changed; review the adapter contract")
-
-
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("work", type=Path)
@@ -153,12 +145,7 @@ def main():
             if filename == "catalog":
                 rows = responses
             elif filename == "probes":
-                if engine == "ferromark" or not build.get("adapter", {}).get("fixed_dialect"):
-                    check_switches(responses)
-                else:
-                    # Preserve every effective output; fixed syntax cannot satisfy
-                    # the independently switchable comparison contract.
-                    check_fixed_dialect(responses)
+                check_switches(responses)
         verified[engine] = rows
         print(f"{engine}: workload, feature and spec outputs retained", flush=True)
     for engine in (("ferromark", "satteri") if "satteri" in engines else ()):
@@ -172,10 +159,6 @@ def main():
         for index, case in enumerate(corpus):
             outputs = {parser: verified[parser][index]["html"] for parser in ("ferromark", engine)}
             reviews.append({"case": case["case"], **workload_review(case["case"], outputs, parsers=set(outputs))})
-        if build.get("adapter", {}).get("fixed_dialect"):
-            for review in reviews:
-                review["comparable"] = False
-                review["configuration_exclusion"] = "Fixed extended dialect cannot match the requested feature switches"
         write_json(folder / "verification.json", reviews)
         selected = [r["case"] for r in reviews if r["comparable"] and (not args.case or r["case"] in args.case)]
         excluded = [r["case"] for r in reviews if not r["comparable"]]

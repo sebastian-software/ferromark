@@ -61,12 +61,21 @@ def worker_env():
     return env
 
 
+def validate_worker_command(command):
+    if (not isinstance(command, list) or not command
+            or not all(isinstance(arg, str) for arg in command)
+            or not Path(command[0]).is_absolute()):
+        raise ValueError("Registered worker commands require an absolute executable path")
+    return command
+
+
 class Worker:
     def __init__(self, work, engine, input_file):
         info = json.loads((work / "build-info.json").read_text())
         command = info.get("workers", {}).get(engine)
         if command is None:
             command = [str(work / ("goldmark-driver" if engine == "goldmark" else "rust-driver"))]
+        validate_worker_command(command)
         env = worker_env()
         # Runtime settings are selected and recorded by the native adapter build.
         for key in list(env):
