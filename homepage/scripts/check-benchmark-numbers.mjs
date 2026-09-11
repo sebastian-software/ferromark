@@ -77,7 +77,10 @@ for (const table of [...benchmarks.tables, ...benchmarks.featureTables]) {
     `${table.id}: pulldown-cmark must appear directly after ferromark`,
   );
   for (const row of table.rows) {
-    check(row.winner === (row.medianNs === fastest), `${table.id}/${row.parser}: winner must follow the unrounded measured time`);
+    check(
+      row.winner === (row.medianNs === fastest),
+      `${table.id}/${row.parser}: winner must follow the unrounded measured time`,
+    );
   }
 }
 const readme = await readFile(readmeUrl, "utf8");
@@ -160,13 +163,17 @@ if (!section) {
   const featureMatrix = featureTables[0];
   if (featureMatrix) {
     check(
-      JSON.stringify(featureMatrix.header.slice(2)) === JSON.stringify(benchmarks.featureTables[0].rows.map((row) => row.parser)),
+      JSON.stringify(featureMatrix.header.slice(2)) ===
+        JSON.stringify(benchmarks.featureTables[0].rows.map((row) => row.parser)),
       "README feature parser columns must follow the same order as the data",
     );
     benchmarks.featureTables.forEach((table, index) => {
       table.rows.forEach((row, column) => {
         const cell = featureMatrix.rawRows[index]?.[column + 2] ?? "";
-        check(/^\*\*.*\*\*$/.test(cell) === row.winner, `README feature ${table.id}/${row.parser}: bold must identify the measured winner`);
+        check(
+          /^\*\*.*\*\*$/.test(cell) === row.winner,
+          `README feature ${table.id}/${row.parser}: bold must identify the measured winner`,
+        );
       });
     });
   }
@@ -215,6 +222,19 @@ const provenance = spawnSync("python3", ["benchmarks/bun-comparison/publish.py",
 check(
   provenance.status === 0,
   `Published tables must agree with verified raw samples: ${provenance.stderr || provenance.error || provenance.stdout}`,
+);
+
+const nativeProvenance = spawnSync(
+  "python3",
+  ["benchmarks/native-pipeline-comparison/publish.py", "--check"],
+  {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  },
+);
+check(
+  nativeProvenance.status === 0,
+  `Native pairs must agree with verified raw samples: ${nativeProvenance.stderr || nativeProvenance.error || nativeProvenance.stdout}`,
 );
 
 if (failures.length > 0) {

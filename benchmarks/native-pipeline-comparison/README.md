@@ -177,3 +177,16 @@ these Markdown adapters' measurement contract.
 Adapters must expose the independently selectable syntax required by the
 comparison lanes. Document limitations explicitly; do not patch upstream syntax
 or substitute an older release to obtain convenient feature switches.
+
+## Public overview
+
+`publish.py` verifies the complete archived reports, raw samples and checksums
+before generating `homepage/app/data/native-benchmarks.json`. Each candidate
+retains its own measured Ferromark baseline, workload coverage, specification
+diagnostics and runtime disclosures. The homepage renders those values directly.
+
+The five-parser publisher incorporates this overview into `README.md.src` while
+keeping the two allocation environments separate. Run the native publisher,
+`python3 benchmarks/bun-comparison/publish.py`, then `mise run readme:write`.
+The homepage build checks both datasets against the archives and the generated
+README. See [README themes](../../docs/readme-theme.md#benchmark-content).

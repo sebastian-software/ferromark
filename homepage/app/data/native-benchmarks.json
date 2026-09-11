@@ -1,0 +1,596 @@
+{
+  "note": "Generated from verified native archives by benchmarks/native-pipeline-comparison/publish.py. Do not hand-edit figures.",
+  "conditions": "Each candidate is paired with its own measured Ferromark baseline. These system-allocator runs are separate from the shared-mimalloc five-parser experiment; do not combine their times into one ranking.",
+  "scope": "Trusted Markdown-to-HTML only, with independently selected syntax and fresh document state and owned output. No Node.js wrappers, WASM, per-document process startup, cached documents or MDX compilation are timed. The three-extension overlap is not full GFM.",
+  "ratioExplanation": "Candidate / Ferromark is the elapsed-time ratio within that pair: below 1 means the candidate took less time. Bold identifies the lower unrounded time in each pair.",
+  "engines": [
+    {
+      "id": "goldmark",
+      "label": "Goldmark",
+      "version": "2.0.2",
+      "runtime": "Go",
+      "source": "docs/reports/2026-09-11-native-pipeline-comparison",
+      "report": "docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md",
+      "ferromarkRevision": "4d5f811ff0a1f07016daffae6161aa7d3cf8efab",
+      "cpu": "Apple M1 Pro",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6",
+      "protocol": {
+        "mode": "measurement",
+        "samples": 80,
+        "window_ms": 63,
+        "warmup_ms": 3000,
+        "runs": 3,
+        "timer_check_batch": 16,
+        "statistic": "median of run medians",
+        "selected_cases": [
+          "commonmark/5k",
+          "tables/tables-commonmark-inline",
+          "gfm_overlap/features"
+        ],
+        "GOGC": "100",
+        "GOMAXPROCS": "1",
+        "GOMEMLIMIT": "unset"
+      },
+      "eligible": 18,
+      "total": 18,
+      "excluded": [],
+      "specMismatches": 0,
+      "specTotal": 652,
+      "notes": "Fresh AST and HTML buffer; normal automatic Go GC remains enabled.",
+      "rows": [
+        {
+          "case": "commonmark/5k",
+          "label": "CommonMark · 5 KiB",
+          "bytes": 5120,
+          "ferromarkNs": 25160.91918789809,
+          "candidateNs": 155864.78485576925,
+          "ferromarkTime": "25.16",
+          "candidateTime": "155.86",
+          "ratio": "6.19×",
+          "ferromarkRunMediansNs": [
+            25160.91918789809,
+            25140.50059713376,
+            25171.51831210191
+          ],
+          "candidateRunMediansNs": [
+            155254.35697115384,
+            155864.78485576925,
+            156094.75
+          ]
+        },
+        {
+          "case": "tables/tables-commonmark-inline",
+          "label": "Tables + inline CommonMark",
+          "bytes": 4800,
+          "ferromarkNs": 34070.346174568964,
+          "candidateNs": 378301.60795454547,
+          "ferromarkTime": "34.07",
+          "candidateTime": "378.30",
+          "ratio": "11.10×",
+          "ferromarkRunMediansNs": [
+            34070.346174568964,
+            33861.945512820515,
+            34726.39117324561
+          ],
+          "candidateRunMediansNs": [
+            380636.5994318182,
+            378301.60795454547,
+            375089.25284090906
+          ]
+        },
+        {
+          "case": "gfm_overlap/features",
+          "label": "Tables + strikethrough + tasks",
+          "bytes": 5050,
+          "ferromarkNs": 37823.26369047619,
+          "candidateNs": 453794.5625,
+          "ferromarkTime": "37.82",
+          "candidateTime": "453.79",
+          "ratio": "12.00×",
+          "ferromarkRunMediansNs": [
+            37916.35336538461,
+            37823.26369047619,
+            37791.493154761905
+          ],
+          "candidateRunMediansNs": [
+            454439.8125,
+            453794.5625,
+            451097.65972222225
+          ]
+        }
+      ]
+    },
+    {
+      "id": "satteri",
+      "label": "Sätteri",
+      "version": "b3d38e1e341c",
+      "runtime": "Rust",
+      "source": "docs/reports/2026-09-11-native-pipeline-comparison",
+      "report": "docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md",
+      "ferromarkRevision": "4d5f811ff0a1f07016daffae6161aa7d3cf8efab",
+      "cpu": "Apple M1 Pro",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6",
+      "protocol": {
+        "mode": "measurement",
+        "samples": 80,
+        "window_ms": 63,
+        "warmup_ms": 3000,
+        "runs": 3,
+        "timer_check_batch": 16,
+        "statistic": "median of run medians",
+        "selected_cases": [
+          "commonmark/5k",
+          "tables/tables-commonmark-inline",
+          "gfm_overlap/features"
+        ],
+        "GOGC": "100",
+        "GOMAXPROCS": "1",
+        "GOMEMLIMIT": "unset"
+      },
+      "eligible": 18,
+      "total": 18,
+      "excluded": [],
+      "specMismatches": 0,
+      "specTotal": 652,
+      "notes": "Full native Markdown-to-MDAST-to-HTML pipeline, including source positions. MDX compilation is outside timing.",
+      "rows": [
+        {
+          "case": "commonmark/5k",
+          "label": "CommonMark · 5 KiB",
+          "bytes": 5120,
+          "ferromarkNs": 25240.686305732484,
+          "candidateNs": 39362.62376237624,
+          "ferromarkTime": "25.24",
+          "candidateTime": "39.36",
+          "ratio": "1.56×",
+          "ferromarkRunMediansNs": [
+            25240.686305732484,
+            25243.706730769234,
+            25066.06032436709
+          ],
+          "candidateRunMediansNs": [
+            39362.62376237624,
+            39397.40875,
+            39199.15439356436
+          ]
+        },
+        {
+          "case": "tables/tables-commonmark-inline",
+          "label": "Tables + inline CommonMark",
+          "bytes": 4800,
+          "ferromarkNs": 34055.88873922414,
+          "candidateNs": 64588.20030737705,
+          "ferromarkTime": "34.06",
+          "candidateTime": "64.59",
+          "ratio": "1.90×",
+          "ferromarkRunMediansNs": [
+            34055.88873922414,
+            34302.457065217386,
+            34036.68292025862
+          ],
+          "candidateRunMediansNs": [
+            64588.20030737705,
+            64703.46670081967,
+            64236.36945564517
+          ]
+        },
+        {
+          "case": "gfm_overlap/features",
+          "label": "Tables + strikethrough + tasks",
+          "bytes": 5050,
+          "ferromarkNs": 38015.6875,
+          "candidateNs": 77532.06678921569,
+          "ferromarkTime": "38.02",
+          "candidateTime": "77.53",
+          "ratio": "2.04×",
+          "ferromarkRunMediansNs": [
+            38131.097355769234,
+            38015.6875,
+            37922.10036057692
+          ],
+          "candidateRunMediansNs": [
+            77650.6844362745,
+            77532.06678921569,
+            77156.90144230769
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rushdown",
+      "label": "Rushdown",
+      "version": "0.18.0",
+      "runtime": "Rust",
+      "source": "docs/reports/2026-09-11-native-rushdown",
+      "report": "docs/reports/2026-09-11-native-rushdown/REPORT.md",
+      "ferromarkRevision": "5ee645dea61c8fbf36ac36a6f5cb1bf1c4795e4c",
+      "cpu": "Apple M1 Pro",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6",
+      "protocol": {
+        "mode": "measurement",
+        "samples": 80,
+        "window_ms": 63,
+        "warmup_ms": 3000,
+        "runs": 3,
+        "timer_check_batch": 16,
+        "statistic": "median of run medians",
+        "selected_cases": [
+          "commonmark/5k",
+          "tables/tables-commonmark-inline",
+          "gfm_overlap/features"
+        ],
+        "worker_environment": {}
+      },
+      "eligible": 18,
+      "total": 18,
+      "excluded": [],
+      "specMismatches": 0,
+      "specTotal": 652,
+      "notes": "Fresh arena AST and owned HTML; full default entity support is retained.",
+      "rows": [
+        {
+          "case": "commonmark/5k",
+          "label": "CommonMark · 5 KiB",
+          "bytes": 5120,
+          "ferromarkNs": 24925.286590189877,
+          "candidateNs": 56612.295535714286,
+          "ferromarkTime": "24.93",
+          "candidateTime": "56.61",
+          "ratio": "2.27×",
+          "ferromarkRunMediansNs": [
+            24968.131922468354,
+            24925.286590189877,
+            24871.232900943396
+          ],
+          "candidateRunMediansNs": [
+            56757.06830357143,
+            56612.295535714286,
+            56509.52410714286
+          ]
+        },
+        {
+          "case": "tables/tables-commonmark-inline",
+          "label": "Tables + inline CommonMark",
+          "bytes": 4800,
+          "ferromarkNs": 32946.16953125,
+          "candidateNs": 97281.78963414635,
+          "ferromarkTime": "32.95",
+          "candidateTime": "97.28",
+          "ratio": "2.95×",
+          "ferromarkRunMediansNs": [
+            32874.414322916666,
+            32946.16953125,
+            33029.427083333336
+          ],
+          "candidateRunMediansNs": [
+            97022.54801829268,
+            97281.78963414635,
+            97451.06097560975
+          ]
+        },
+        {
+          "case": "gfm_overlap/features",
+          "label": "Tables + strikethrough + tasks",
+          "bytes": 5050,
+          "ferromarkNs": 37116.29935747664,
+          "candidateNs": 109647.24392361111,
+          "ferromarkTime": "37.12",
+          "candidateTime": "109.65",
+          "ratio": "2.95×",
+          "ferromarkRunMediansNs": [
+            37116.29935747664,
+            37185.87824292453,
+            37038.35689252336
+          ],
+          "candidateRunMediansNs": [
+            109647.24392361111,
+            109739.1484375,
+            109581.45138888889
+          ]
+        }
+      ]
+    },
+    {
+      "id": "markdig",
+      "label": "Markdig",
+      "version": "1.3.2",
+      "runtime": ".NET (warmed JIT)",
+      "source": "docs/reports/2026-09-11-native-markdig",
+      "report": "docs/reports/2026-09-11-native-markdig/REPORT.md",
+      "ferromarkRevision": "5ee645dea61c8fbf36ac36a6f5cb1bf1c4795e4c",
+      "cpu": "Apple M1 Pro",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6",
+      "protocol": {
+        "mode": "measurement",
+        "samples": 80,
+        "window_ms": 63,
+        "warmup_ms": 3000,
+        "runs": 3,
+        "timer_check_batch": 16,
+        "statistic": "median of run medians",
+        "selected_cases": [
+          "commonmark/5k",
+          "tables/tables-commonmark-inline",
+          "gfm_overlap/features"
+        ],
+        "worker_environment": {
+          "DOTNET_TieredCompilation": "1",
+          "DOTNET_TieredPGO": "1",
+          "DOTNET_gcServer": "0",
+          "DOTNET_gcConcurrent": "1"
+        }
+      },
+      "eligible": 18,
+      "total": 18,
+      "excluded": [],
+      "specMismatches": 0,
+      "specTotal": 652,
+      "notes": "Direct .NET API with tiered JIT/PGO and normal concurrent GC. Startup and warmup are outside timing; GC within a sampled window is included. The measured package lock targets macOS ARM64.",
+      "rows": [
+        {
+          "case": "commonmark/5k",
+          "label": "CommonMark · 5 KiB",
+          "bytes": 5120,
+          "ferromarkNs": 25009.07357594937,
+          "candidateNs": 63760.45866935484,
+          "ferromarkTime": "25.01",
+          "candidateTime": "63.76",
+          "ratio": "2.55×",
+          "ferromarkRunMediansNs": [
+            25009.07357594937,
+            24906.864190251574,
+            25568.553992982823
+          ],
+          "candidateRunMediansNs": [
+            63760.45866935484,
+            62763.8685515873,
+            64216.81804435484
+          ]
+        },
+        {
+          "case": "tables/tables-commonmark-inline",
+          "label": "Tables + inline CommonMark",
+          "bytes": 4800,
+          "ferromarkNs": 32969.36822916666,
+          "candidateNs": 246865.884765625,
+          "ferromarkTime": "32.97",
+          "candidateTime": "246.87",
+          "ratio": "7.49×",
+          "ferromarkRunMediansNs": [
+            32928.298437499994,
+            32969.36822916666,
+            33101.310661764706
+          ],
+          "candidateRunMediansNs": [
+            250740.72265625,
+            246865.884765625,
+            243908.625
+          ]
+        },
+        {
+          "case": "gfm_overlap/features",
+          "label": "Tables + strikethrough + tasks",
+          "bytes": 5050,
+          "ferromarkNs": 37133.65216121495,
+          "candidateNs": 248476.158203125,
+          "ferromarkTime": "37.13",
+          "candidateTime": "248.48",
+          "ratio": "6.69×",
+          "ferromarkRunMediansNs": [
+            37133.65216121495,
+            37120.32710280374,
+            37283.755896226416
+          ],
+          "candidateRunMediansNs": [
+            250979.57421875,
+            245584.71323529413,
+            248476.158203125
+          ]
+        }
+      ]
+    },
+    {
+      "id": "markdown-rs",
+      "label": "markdown-rs",
+      "version": "1.0.0",
+      "runtime": "Rust",
+      "source": "docs/reports/2026-09-11-native-markdown-rs",
+      "report": "docs/reports/2026-09-11-native-markdown-rs/REPORT.md",
+      "ferromarkRevision": "5ee645dea61c8fbf36ac36a6f5cb1bf1c4795e4c",
+      "cpu": "Apple M1 Pro",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6",
+      "protocol": {
+        "mode": "measurement",
+        "samples": 80,
+        "window_ms": 63,
+        "warmup_ms": 3000,
+        "runs": 3,
+        "timer_check_batch": 16,
+        "statistic": "median of run medians",
+        "selected_cases": [
+          "commonmark/5k",
+          "tables/tables-commonmark-inline",
+          "gfm_overlap/features"
+        ],
+        "worker_environment": {}
+      },
+      "eligible": 18,
+      "total": 18,
+      "excluded": [],
+      "specMismatches": 0,
+      "specTotal": 652,
+      "notes": "Direct native events-to-HTML API. MDX support is available upstream but is not measured here.",
+      "rows": [
+        {
+          "case": "commonmark/5k",
+          "label": "CommonMark · 5 KiB",
+          "bytes": 5120,
+          "ferromarkNs": 25187.41719745223,
+          "candidateNs": 652560.2678571428,
+          "ferromarkTime": "25.19",
+          "candidateTime": "652.56",
+          "ratio": "25.91×",
+          "ferromarkRunMediansNs": [
+            25158.821058917198,
+            25187.41719745223,
+            25264.96574519231
+          ],
+          "candidateRunMediansNs": [
+            651949.7767857143,
+            652687.3125,
+            652560.2678571428
+          ]
+        },
+        {
+          "case": "tables/tables-commonmark-inline",
+          "label": "Tables + inline CommonMark",
+          "bytes": 4800,
+          "ferromarkNs": 33367.73996759721,
+          "candidateNs": 1825706.6041666667,
+          "ferromarkTime": "33.37",
+          "candidateTime": "1825.71",
+          "ratio": "54.71×",
+          "ferromarkRunMediansNs": [
+            33422.007680084746,
+            33367.73996759721,
+            33267.75866596639
+          ],
+          "candidateRunMediansNs": [
+            1825706.6041666667,
+            1830006.0833333335,
+            1821633.6875
+          ]
+        },
+        {
+          "case": "gfm_overlap/features",
+          "label": "Tables + strikethrough + tasks",
+          "bytes": 5050,
+          "ferromarkNs": 37427.53773584906,
+          "candidateNs": 1541902.78125,
+          "ferromarkTime": "37.43",
+          "candidateTime": "1541.90",
+          "ratio": "41.20×",
+          "ferromarkRunMediansNs": [
+            37473.39327830189,
+            37343.28331367925,
+            37427.53773584906
+          ],
+          "candidateRunMediansNs": [
+            1543707.03125,
+            1541902.78125,
+            1533392.375
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ox-content",
+      "label": "Ox Content",
+      "version": "3.2.0",
+      "runtime": "Rust",
+      "source": "docs/reports/2026-09-11-native-ox-content",
+      "report": "docs/reports/2026-09-11-native-ox-content/REPORT.md",
+      "ferromarkRevision": "e7c79ab88d905d8fb7a3c6ce8fdc5f6ced91cc09",
+      "cpu": "Apple M1 Pro",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6",
+      "protocol": {
+        "mode": "measurement",
+        "samples": 80,
+        "window_ms": 63,
+        "warmup_ms": 3000,
+        "runs": 3,
+        "timer_check_batch": 16,
+        "statistic": "median of run medians",
+        "selected_cases": [
+          "commonmark/short",
+          "tables/tables-commonmark-inline",
+          "gfm_overlap/features"
+        ],
+        "worker_environment": {}
+      },
+      "eligible": 10,
+      "total": 18,
+      "excluded": [
+        "commonmark/2k",
+        "commonmark/5k",
+        "commonmark/10k",
+        "commonmark/50k",
+        "tables/neutral",
+        "strikethrough/neutral",
+        "task_lists/neutral",
+        "gfm_overlap/neutral"
+      ],
+      "specMismatches": 52,
+      "specTotal": 652,
+      "notes": "Generated heading IDs cannot be disabled; affected workloads are excluded. Specification differences include more than heading IDs. Native renderer scratch reuse is retained; every call creates a fresh arena, AST and owned HTML.",
+      "rows": [
+        {
+          "case": "commonmark/short",
+          "label": "CommonMark · short",
+          "bytes": 18,
+          "ferromarkNs": 490.1874166322833,
+          "candidateNs": 290.3485512877528,
+          "ferromarkTime": "0.49",
+          "candidateTime": "0.29",
+          "ratio": "0.59×",
+          "ferromarkRunMediansNs": [
+            490.1874166322833,
+            489.2010731146726,
+            490.57112044322673
+          ],
+          "candidateRunMediansNs": [
+            289.27073960764096,
+            291.34788664216615,
+            290.3485512877528
+          ]
+        },
+        {
+          "case": "tables/tables-commonmark-inline",
+          "label": "Tables + inline CommonMark",
+          "bytes": 4800,
+          "ferromarkNs": 32901.83385416667,
+          "candidateNs": 37252.00235849057,
+          "ferromarkTime": "32.90",
+          "candidateTime": "37.25",
+          "ratio": "1.13×",
+          "ferromarkRunMediansNs": [
+            32792.2479338843,
+            32990.49453125,
+            32901.83385416667
+          ],
+          "candidateRunMediansNs": [
+            37037.67523364486,
+            37252.00235849057,
+            37325.26297169812
+          ]
+        },
+        {
+          "case": "gfm_overlap/features",
+          "label": "Tables + strikethrough + tasks",
+          "bytes": 5050,
+          "ferromarkNs": 37036.580023364484,
+          "candidateNs": 35205.217633928565,
+          "ferromarkTime": "37.04",
+          "candidateTime": "35.21",
+          "ratio": "0.95×",
+          "ferromarkRunMediansNs": [
+            37036.580023364484,
+            36657.672743055555,
+            37142.01469372686
+          ],
+          "candidateRunMediansNs": [
+            35205.217633928565,
+            34787.14364035088,
+            35315.01116071429
+          ]
+        }
+      ]
+    }
+  ]
+}

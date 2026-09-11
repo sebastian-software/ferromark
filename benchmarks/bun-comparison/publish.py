@@ -6,6 +6,8 @@ import hashlib
 import json
 from pathlib import Path
 import statistics
+import subprocess
+import sys
 import tomllib
 from datetime import datetime, timezone
 
@@ -196,6 +198,9 @@ Five native Markdown-to-HTML implementations, measured together: Ferromark,
 pulldown-cmark, Bun, Comrak, and C-md4c. {env['machine']}, {env['os']},
 rustc {env['rustc']}, {env['date']}. The [full report]({data["report"]})
 links raw timings, output differences, options, and source hashes.
+The [additional native comparisons](#additional-native-engine-comparisons) cover
+Goldmark, Sätteri, Rushdown, Markdig, markdown-rs, and Ox Content, with a separate
+report for cmark and cmark-gfm. Each experiment retains its own conditions.
 
 {data['conditions']}
 
@@ -299,6 +304,7 @@ extended syntax intersections. Those diagnostics and the stable-toolchain
 Criterion suites use different environments/lifecycles and remain separate from
 the verified five-parser tables above.
 '''
+    text += "\n" + subprocess.check_output([sys.executable, str(REPO / "benchmarks/native-pipeline-comparison/publish.py"), "--readme"], text=True)
     return text.rstrip() + "\n\n"
 
 
@@ -334,7 +340,7 @@ def main():
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     data = data_for(args.folder.resolve())
-    readme = REPO / "README.md"
+    readme = REPO / "README.md.src"
     original = readme.read_text()
     start = original.index("## Benchmarks\n")
     end = original.index("\n## ", start + 1) + 1
@@ -346,6 +352,12 @@ def main():
     start = report_text.index(start_marker) + len(start_marker)
     end = report_text.index(end_marker)
     outputs[report] = report_text[:start] + "\n" + native_report_section(data) + "\n" + report_text[end:]
+    if args.check:
+        rendered = REPO / "README.md"
+        rendered_text = rendered.read_text()
+        rendered_start = rendered_text.index("## Benchmarks\n")
+        rendered_end = rendered_text.index("\n## ", rendered_start + 1) + 1
+        outputs[rendered] = rendered_text[:rendered_start] + readme_section(data) + rendered_text[rendered_end:]
     for path, content in outputs.items():
         if args.check:
             if path.read_text() != content:

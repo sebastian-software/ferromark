@@ -75,6 +75,9 @@ Five native Markdown-to-HTML implementations, measured together: Ferromark,
 pulldown-cmark, Bun, Comrak, and C-md4c. Apple M1 Pro, macOS 26.6.2,
 rustc 1.99.0-nightly, September 2026. The [full report](docs/reports/2026-09-11-native-optimization-publication.md)
 links raw timings, output differences, options, and source hashes.
+The [additional native comparisons](#additional-native-engine-comparisons) cover
+Goldmark, Sätteri, Rushdown, Markdig, markdown-rs, and Ox Content, with a separate
+report for cmark and cmark-gfm. Each experiment retains its own conditions.
 
 All five parsers render trusted input with fresh parser state and owned HTML output. The feature set is named per table; bare autolinks, tag filtering, heading IDs, and other extensions are disabled. All parsers use Bun's pinned mimalloc, including md4c's C allocation calls. Rust uses the same pinned nightly compiler and generic CPU target; Bun retains its native Highway support. No PGO is used.
 
@@ -212,6 +215,61 @@ The [two-parser harness](benchmarks/pulldown-comparison/README.md) also covers
 extended syntax intersections. Those diagnostics and the stable-toolchain
 Criterion suites use different environments/lifecycles and remain separate from
 the verified five-parser tables above.
+
+### Additional native engine comparisons
+
+Each candidate is paired with its own measured Ferromark baseline. These system-allocator runs are separate from the shared-mimalloc five-parser experiment; do not combine their times into one ranking.
+
+Trusted Markdown-to-HTML only, with independently selected syntax and fresh document state and owned output. No Node.js wrappers, WASM, per-document process startup, cached documents or MDX compilation are timed. The three-extension overlap is not full GFM.
+
+Apple M1 Pro, macOS 26.6.2, September 2026. Three process runs per pair, three seconds of warmup and at least five seconds of sampling per engine/workload in each run. Values are medians of run medians; the linked archives retain exact toolchains, source revisions, options and run variation.
+
+| Engine | Runtime | Admitted workloads | Spec mismatches | Evidence |
+| --- | --- | ---: | ---: | --- |
+| Goldmark | Go | 18/18 | 0/652 | [2.0.2](docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md) |
+| Sätteri | Rust | 18/18 | 0/652 | [b3d38e1e341c](docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md) |
+| Rushdown | Rust | 18/18 | 0/652 | [0.18.0](docs/reports/2026-09-11-native-rushdown/REPORT.md) |
+| Markdig | .NET (warmed JIT) | 18/18 | 0/652 | [1.3.2](docs/reports/2026-09-11-native-markdig/REPORT.md) |
+| markdown-rs | Rust | 18/18 | 0/652 | [1.0.0](docs/reports/2026-09-11-native-markdown-rs/REPORT.md) |
+| Ox Content | Rust | 10/18 | 52/652 | [3.2.0](docs/reports/2026-09-11-native-ox-content/REPORT.md) |
+
+Admission checks comparable Markdown work. Spec mismatches are normalized output diagnostics, not a conformance certification. Only the workloads below received full timing runs.
+
+Candidate / Ferromark is the elapsed-time ratio within that pair: below 1 means the candidate took less time. Bold identifies the lower unrounded time in each pair.
+
+| Native pair | Input | Bytes | Ferromark µs | Candidate µs | Candidate / Ferromark |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Goldmark | CommonMark · 5 KiB | 5120 | **25.16** | 155.86 | 6.19× |
+| Goldmark | Tables + inline CommonMark | 4800 | **34.07** | 378.30 | 11.10× |
+| Goldmark | Tables + strikethrough + tasks | 5050 | **37.82** | 453.79 | 12.00× |
+| Sätteri | CommonMark · 5 KiB | 5120 | **25.24** | 39.36 | 1.56× |
+| Sätteri | Tables + inline CommonMark | 4800 | **34.06** | 64.59 | 1.90× |
+| Sätteri | Tables + strikethrough + tasks | 5050 | **38.02** | 77.53 | 2.04× |
+| Rushdown | CommonMark · 5 KiB | 5120 | **24.93** | 56.61 | 2.27× |
+| Rushdown | Tables + inline CommonMark | 4800 | **32.95** | 97.28 | 2.95× |
+| Rushdown | Tables + strikethrough + tasks | 5050 | **37.12** | 109.65 | 2.95× |
+| Markdig | CommonMark · 5 KiB | 5120 | **25.01** | 63.76 | 2.55× |
+| Markdig | Tables + inline CommonMark | 4800 | **32.97** | 246.87 | 7.49× |
+| Markdig | Tables + strikethrough + tasks | 5050 | **37.13** | 248.48 | 6.69× |
+| markdown-rs | CommonMark · 5 KiB | 5120 | **25.19** | 652.56 | 25.91× |
+| markdown-rs | Tables + inline CommonMark | 4800 | **33.37** | 1825.71 | 54.71× |
+| markdown-rs | Tables + strikethrough + tasks | 5050 | **37.43** | 1541.90 | 41.20× |
+| Ox Content | CommonMark · short | 18 | 0.49 | **0.29** | 0.59× |
+| Ox Content | Tables + inline CommonMark | 4800 | **32.90** | 37.25 | 1.13× |
+| Ox Content | Tables + strikethrough + tasks | 5050 | 37.04 | **35.21** | 0.95× |
+
+- **Goldmark:** Fresh AST and HTML buffer; normal automatic Go GC remains enabled.
+- **Sätteri:** Full native Markdown-to-MDAST-to-HTML pipeline, including source positions. MDX compilation is outside timing.
+- **Rushdown:** Fresh arena AST and owned HTML; full default entity support is retained.
+- **Markdig:** Direct .NET API with tiered JIT/PGO and normal concurrent GC. Startup and warmup are outside timing; GC within a sampled window is included. The measured package lock targets macOS ARM64.
+- **markdown-rs:** Direct native events-to-HTML API. MDX support is available upstream but is not measured here.
+- **Ox Content:** Generated heading IDs cannot be disabled; affected workloads are excluded. Specification differences include more than heading IDs. Native renderer scratch reuse is retained; every call creates a fresh arena, AST and owned HTML.
+
+Ox Content's short CommonMark case is a different document from the other engines' 5 KiB case. Its heading-ID exclusions prevent a corresponding 5 KiB result; no missing time is estimated.
+
+The [native cmark and cmark-gfm report](docs/reports/2026-09-11-native-cmark-comparison.md) additionally covers the C CommonMark reference parser and GitHub's fork, each with its own Ferromark baseline.
+
+Reproduce these pairs with the [native harness](benchmarks/native-pipeline-comparison/README.md) and each engine's adapter README. Regenerate this overview with `python3 benchmarks/native-pipeline-comparison/publish.py`, then `python3 benchmarks/bun-comparison/publish.py` and `mise run readme:write`.
 
 ## What you get
 
@@ -638,277 +696,18 @@ What makes this fast in practice:
 - **Operational safety.** Enforced limits cap block nesting (32), inline marks (4,096), document-wide reference-link resolution work, code-span backtick runs (32), link-destination parenthesis depth (32), ordered-list marker digits (9), and table columns (128). Footnote numbering has no arbitrary count cap; its definition-index lookup stays O(1) per reference.
 - **Small dependency surface.** Minimal crates, straightforward integration.
 
-<details>
-<summary><strong>Detailed parser comparison</strong></summary>
+### Comparison coverage
 
-<br>
+The [benchmark overview](#benchmarks) covers Ferromark, pulldown-cmark, Bun's native
+parser, Comrak, MD4C, cmark, cmark-gfm, Goldmark, Sätteri, Rushdown, Markdig,
+markdown-rs, and Ox Content. Each comparison states the measured pipeline and
+feature settings. Arena allocation, source-position tracking, garbage collection,
+and rendering conventions are retained where they are part of the native API.
 
-How Ferromark compares to the other three top-tier parsers across architecture, features, and output. Ratings use a 4-level heatmap focused on end-to-end Markdown-to-HTML throughput. Scoring is relative per row, so each row has at least one top mark.
-
-Legend: 🟩 strongest &nbsp; 🟨 close behind &nbsp; 🟧 notable tradeoffs &nbsp; 🟥 weakest
-
-Ferromark optimization backlog: [docs/arch/ARCH-PLAN-001-performance-opportunities.md](docs/arch/ARCH-PLAN-001-performance-opportunities.md)
-
-<table>
-  <thead>
-    <tr>
-      <th>Feature</th>
-      <th>ferromark</th>
-      <th>md4c</th>
-      <th>pulldown-cmark</th>
-      <th>comrak</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td colspan="5"><b>Performance-critical architecture and memory</b></td></tr>
-    <tr>
-      <td><b>Parser model (streaming, no AST)</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Streaming parsers emit output as they scan, avoiding intermediate trees. Ferromark and md4c stream directly; pulldown-cmark uses a pull iterator; comrak builds an AST.</small></td></tr>
-    <tr>
-      <td><b>API overhead profile</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Measures overhead on straight Markdown-to-HTML throughput. md4c callbacks and Ferromark streaming events are lean; pulldown-cmark pull iterators are close; comrak's AST model adds more overhead for this workload.</small></td></tr>
-    <tr>
-      <td><b>Parse/render separation</b></td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-    </tr>
-    <tr><td colspan="5"><small>Clear separation lets renderers be swapped or tuned. md4c and pulldown-cmark separate parse and render clearly; Ferromark is mostly separated; comrak leans on AST-based renderers.</small></td></tr>
-    <tr>
-      <td><b>Inline parsing pipeline</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Multi-phase inline parsing (collect, resolve, emit) keeps the hot path linear. Ferromark uses this approach; md4c and pulldown-cmark are optimized byte scanners; comrak does more AST bookkeeping.</small></td></tr>
-    <tr>
-      <td><b>Emphasis matching efficiency</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Stack-based algorithms reduce rescans on text-heavy documents. Ferromark uses modulo-3 stacks; md4c and pulldown-cmark are optimized; comrak pays AST overhead.</small></td></tr>
-    <tr>
-      <td><b>Link reference processing cost</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-    </tr>
-    <tr><td colspan="5"><small>Link labels need normalization. Ferromark, md4c, and pulldown-cmark minimize allocations; comrak handles more feature paths.</small></td></tr>
-    <tr>
-      <td><b>Zero-copy text handling</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Text slices that point directly into input reduce allocation and copy costs. Ferromark uses ranges; md4c and pulldown-cmark borrow slices; comrak allocates AST nodes.</small></td></tr>
-    <tr>
-      <td><b>Allocation pressure (hot path)</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Fewer allocations in tight loops means better CPU utilization. Streaming parsers allocate less during parse/render; AST parsers allocate many nodes.</small></td></tr>
-    <tr>
-      <td><b>Output buffer reuse</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Reusing buffers avoids repeated allocations across runs. Ferromark, md4c, and pulldown-cmark allow reuse; comrak allocates internally.</small></td></tr>
-    <tr>
-      <td><b>Memory locality</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>A small working set fits in cache. Streaming parsers keep it small; AST-based parsing expands it.</small></td></tr>
-    <tr>
-      <td><b>Cache friendliness</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Linear scans and contiguous buffers work well for CPU caches. Ferromark and md4c favor linear scans; pulldown-cmark is close; comrak traverses AST allocations.</small></td></tr>
-    <tr>
-      <td><b>SIMD availability</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>SIMD accelerates scanning for special characters. Ferromark uses baseline NEON on AArch64 and SSE2 on x86-64, but the published comparison above measures Apple Silicon only. pulldown-cmark also has SIMD paths; md4c relies on C compiler optimizations; comrak is not SIMD-focused.</small></td></tr>
-    <tr>
-      <td><b>Hot-path control</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Performance headroom from low-level control in inner loops. md4c (C) and Ferromark use tighter tuning; pulldown-cmark is mostly safe-Rust hot loops; comrak prioritizes flexibility.</small></td></tr>
-    <tr>
-      <td><b>Dependency footprint</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Fewer dependencies simplify builds. md4c and Ferromark are minimal; pulldown-cmark is moderate; comrak is heavier.</small></td></tr>
-    <tr>
-      <td><b>Throughput ceiling (architectural)</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Streaming architectures with fewer allocations generally allow higher throughput ceilings. Ferromark and md4c lead; pulldown-cmark is close; comrak trades throughput for flexibility.</small></td></tr>
-    <tr><td colspan="5">&nbsp;</td></tr>
-    <tr><td colspan="5"><b>Feature coverage and extensibility</b></td></tr>
-    <tr>
-      <td><b>Extension breadth</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>comrak has the broadest catalog; Ferromark implements all 5 GFM extensions plus footnotes, front matter, heading IDs, math, highlight, subscript, superscript, and callouts; pulldown-cmark supports common GFM features; md4c supports common GFM features.</small></td></tr>
-    <tr>
-      <td><b>Spec compliance (CommonMark)</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>All four target CommonMark. Beyond CommonMark and GFM, Ferromark, pulldown-cmark, and comrak also support footnotes, heading IDs, math spans, and callouts.</small></td></tr>
-    <tr>
-      <td><b>Extension configuration surface</b></td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟨</td>
-    </tr>
-    <tr><td colspan="5"><small>Fine-grained flags let you disable features to reduce work. md4c has many flags; Ferromark, pulldown-cmark, and comrak use option structs.</small></td></tr>
-    <tr>
-      <td><b>Raw HTML control</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>md4c and comrak expose explicit switches; Ferromark defaults to <code>RenderPolicy::Untrusted</code> and requires an explicit trusted policy for raw HTML passthrough; pulldown-cmark is more fixed.</small></td></tr>
-    <tr>
-      <td><b>GFM tables</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>All four support GFM tables.</small></td></tr>
-    <tr>
-      <td><b>Task lists, strikethrough</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>All four support both.</small></td></tr>
-    <tr>
-      <td><b>Footnotes</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟥</td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>Ferromark, pulldown-cmark, and comrak support footnotes; md4c does not.</small></td></tr>
-    <tr>
-      <td><b>Permissive autolinks</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-      <td align="center">🟨</td>
-    </tr>
-    <tr><td colspan="5"><small>Ferromark and md4c support GFM autolink literals (URL, www, email); comrak has relaxed autolinks; pulldown-cmark focuses on spec defaults.</small></td></tr>
-    <tr>
-      <td><b>Output safety toggles</b></td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>md4c and comrak provide explicit unsafe/escape switches; Ferromark uses an untrusted-by-default rendering policy with URL scheme checks; pulldown-cmark is more fixed.</small></td></tr>
-    <tr><td colspan="5">&nbsp;</td></tr>
-    <tr><td colspan="5"><b>Rendering and output</b></td></tr>
-    <tr>
-      <td><b>Output streaming</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>Incremental output lowers peak memory and removes extra passes. Ferromark and md4c stream to buffers; pulldown-cmark streams events; comrak renders after AST work.</small></td></tr>
-    <tr>
-      <td><b>Output customization hooks</b></td>
-      <td align="center">🟧</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>Callbacks and ASTs are great for custom rendering but add indirection. md4c callbacks and comrak AST are very flexible; pulldown-cmark iterators are easy to transform; Ferromark is lower level.</small></td></tr>
-    <tr>
-      <td><b>Output formats</b></td>
-      <td align="center">🟥</td>
-      <td align="center">🟧</td>
-      <td align="center">🟨</td>
-      <td align="center">🟩</td>
-    </tr>
-    <tr><td colspan="5"><small>comrak emits HTML, XML, and CommonMark; pulldown-cmark provides HTML plus event streams; md4c has HTML and callbacks; Ferromark targets HTML only.</small></td></tr>
-    <tr>
-      <td><b>Source position support</b></td>
-      <td align="center">🟥</td>
-      <td align="center">🟥</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-    </tr>
-    <tr><td colspan="5"><small>pulldown-cmark has strong source map support; comrak can emit source positions; Ferromark and md4c skip this for speed.</small></td></tr>
-    <tr>
-      <td><b>Source map tooling</b></td>
-      <td align="center">🟥</td>
-      <td align="center">🟥</td>
-      <td align="center">🟩</td>
-      <td align="center">🟨</td>
-    </tr>
-    <tr><td colspan="5"><small>pulldown-cmark exposes event ranges; comrak can emit source position attributes; Ferromark and md4c keep this minimal.</small></td></tr>
-    <tr>
-      <td><b>IO friendliness</b></td>
-      <td align="center">🟩</td>
-      <td align="center">🟩</td>
-      <td align="center">🟧</td>
-      <td align="center">🟥</td>
-    </tr>
-    <tr><td colspan="5"><small>md4c and Ferromark stream into buffers; pulldown-cmark recommends buffered output; comrak often builds strings after AST work.</small></td></tr>
-  </tbody>
-</table>
-
-</details>
+Architecture alone does not establish a speed ranking. The published timings
+show results for specific documents, and the native pair reports retain output
+and specification differences alongside them. MDX-capable engines are measured
+on Markdown here; their different MDX compilation stages need a separate contract.
 
 ## Building
 

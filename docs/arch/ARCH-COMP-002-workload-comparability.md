@@ -73,3 +73,18 @@ differences. All 210 parser/case combinations were exercised, with five short
 sample windows each. The [verification](../reports/2026-09-11-benchmark-refresh/workload-screening/verification.json)
 records both the unchanged HTML diagnostics and workload decisions. It also
 preserves spec diagnostics; a timing admission is not a correctness certification.
+
+## Publishing independent native pairs
+
+The public overview retains the separately measured Ferromark baseline for each
+native competitor. System-allocator pairs and the shared-mimalloc five-parser
+experiment remain distinct datasets. Their absolute times are not combined into
+one engine ranking, and a missing workload is never filled from another input
+or run. Heading-ID exclusions and specification diagnostics stay visible beside
+the native results, including cases where a competitor takes less time.
+
+The native publisher verifies archived reports, checksums and raw timing windows
+before producing homepage data and the additional README section. The existing
+five-parser publisher assembles the benchmark section in `README.md.src`; mdtheme
+alone composes the generated root README. This preserves both measurement
+provenance and generated-file ownership.

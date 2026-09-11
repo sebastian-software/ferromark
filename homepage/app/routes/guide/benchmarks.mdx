@@ -8,7 +8,13 @@ import {
   benchmarkCompetitors,
   benchmarkEnvironment,
   benchmarks,
-} from "../../components/benchmarks"
+} from "../../components/benchmarks";
+
+import {
+  NativeComparisonTable,
+  NativeComparisonCoverage,
+  nativeBenchmarks,
+} from "../../components/native-benchmarks";
 
 # Benchmarks
 
@@ -69,8 +75,8 @@ preserves the actual differences and small reproductions.
 
 ## What the comparison guarantees
 
-Every displayed input/configuration pair passes a workload review across all
-five parsers. HTML equality is not required: known renderer differences and small
+Every input/configuration pair in the five-parser tables above passes a workload
+review across those five parsers. HTML equality is not required: known renderer differences and small
 bugs are disclosed. The separate HTML comparator retains text, URL values,
 code whitespace, classes, and checkbox states so output fidelity stays inspectable.
 No normalization is included in the timed parser calls.
@@ -82,7 +88,7 @@ outside the timer; fresh parser setup, parsing, owned output, and destruction
 are inside it. The [full report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-native-optimization-publication.md)
 records run variation, output sizes, mismatches, exact options, and source hashes.
 
-This page and the [repository README](https://github.com/sebastian-software/ferromark#benchmarks)
+The five-parser tables on this page and in the [repository README](https://github.com/sebastian-software/ferromark#benchmarks)
 are generated from the same raw measurements and checked at build time.
 Historical stable-toolchain/System-allocator results and the
 [September 5 Bun experiment](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-05-bun-comparison.md)
@@ -111,6 +117,37 @@ python3 benchmarks/bun-comparison/run.py "$BUN_BENCH_DIR" /private/tmp/new-bench
 
 Ordinary library builds, tests, and package installs do not build Bun or md4c.
 
+## Additional native engine comparisons
+
+{nativeBenchmarks.conditions}
+
+{nativeBenchmarks.scope}
+
+These Apple M1 Pro / macOS measurements use three process runs per pair, three
+seconds of warmup and at least five seconds of sampling per engine/workload in
+each run. Values are medians of run medians. Each engine link leads to the raw
+samples, exact compiler/runtime settings, source revisions and run variation.
+
+{nativeBenchmarks.ratioExplanation}
+
+<NativeComparisonTable />
+
+Ox Content's short CommonMark case is a different document from the other
+engines' 5 KiB case. Its heading-ID exclusions prevent a corresponding 5 KiB
+result; no missing time is estimated.
+
+<NativeComparisonCoverage />
+
+The [native cmark and cmark-gfm report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-native-cmark-comparison.md)
+also measures the C CommonMark reference parser and GitHub's fork, with a separate
+Ferromark baseline for each. Core cmark has no GFM extensions; cmark-gfm's
+CommonMark and table measurements retain the fork's own behavior and diagnostics.
+
+Use the [native harness](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/native-pipeline-comparison/README.md)
+and the linked adapter READMEs to reproduce the Rust, Go and .NET comparisons.
+This overview is generated from their verified archives, independently of the
+five-parser publication. The build checks both datasets against the README.
+
 ## Feature and lifecycle costs
 
 `cargo bench --bench options` keeps its document constant while changing
@@ -118,12 +155,12 @@ presets and individual flags. That mixes syntax actually used with enabled
 but unused detection paths. The [feature study](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-benchmark-refresh.md#feature-and-lifecycle-costs)
 replays 140 scenarios and 292 input/configuration pairs to separate these questions:
 
-| Measurement | Interpretation |
-| --- | --- |
-| Option off/on without matching syntax | Identical HTML isolates detection and setup costs. |
-| Option off/on with matching syntax | Changed HTML includes additional parsing and rendering work. |
+| Measurement                           | Interpretation                                                        |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| Option off/on without matching syntax | Identical HTML isolates detection and setup costs.                    |
+| Option off/on with matching syntax    | Changed HTML includes additional parsing and rendering work.          |
 | Fresh output versus retained Renderer | Measures the value of keeping parser state and buffers between calls. |
-| Different core Markdown constructs | Compares workloads with different structures and output sizes. |
+| Different core Markdown constructs    | Compares workloads with different structures and output sizes.        |
 
 Allocation counters run separately from uninstrumented timings; cumulatively
 requested bytes are not peak memory. The
