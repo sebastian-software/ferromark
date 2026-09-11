@@ -134,22 +134,25 @@ fn inline_mark_collection_is_bounded() {
 
 #[test]
 fn ordinary_large_document_resolves_all_reference_links() {
-    let input = include_str!("../benches/fixtures/commonmark-1m.md");
-    let references = input.matches("[Civic Charter][charter]").count();
+    let unix_input = include_str!("../benches/fixtures/commonmark-1m.md").replace("\r\n", "\n");
+    let windows_input = unix_input.replace('\n', "\r\n");
+    let references = unix_input.matches("[Civic Charter][charter]").count();
     assert!(references > 500, "exercise the full long-document fixture");
-    for options in [Options::commonmark(), Options::gfm()] {
-        let parsed = parse_with_options(input, &options);
-        assert!(
-            !parsed
-                .resource_limits
-                .contains(ResourceLimit::ReferenceResolutionWork),
-            "ordinary references must fit the document budget"
-        );
-        let html = to_html_with_options(input, &options);
-        assert_eq!(
-            html.matches("href=\"https://example.org/charter\"").count(),
-            references
-        );
+    for input in [&unix_input, &windows_input] {
+        for options in [Options::commonmark(), Options::gfm()] {
+            let parsed = parse_with_options(input, &options);
+            assert!(
+                !parsed
+                    .resource_limits
+                    .contains(ResourceLimit::ReferenceResolutionWork),
+                "ordinary references must fit the document budget"
+            );
+            let html = to_html_with_options(input, &options);
+            assert_eq!(
+                html.matches("href=\"https://example.org/charter\"").count(),
+                references
+            );
+        }
     }
 }
 

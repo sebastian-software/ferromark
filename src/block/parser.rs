@@ -471,8 +471,8 @@ impl<'a> BlockParser<'a> {
                 }
             }
             let newline_start = self.cursor.offset();
-            if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                parser_cursor_bump!(self.cursor);
+            if self.at_line_ending() {
+                self.consume_line_ending();
             }
             let ws_end = self.cursor.offset();
 
@@ -559,9 +559,9 @@ impl<'a> BlockParser<'a> {
         self.line_indent_bytes = indent_bytes;
 
         // Check for blank line AFTER container matching (e.g., ">>" followed by newline)
-        if self.cursor.is_eof() || self.cursor.at(b'\n') {
+        if self.cursor.is_eof() || self.at_line_ending() {
             if !self.cursor.is_eof() {
-                parser_cursor_bump!(self.cursor);
+                self.consume_line_ending();
             }
             self.close_table(events);
             let definition_candidate_start = events.len();
@@ -664,8 +664,8 @@ impl<'a> BlockParser<'a> {
                 self.handle_blank_line_containers(events, false);
                 return;
             };
-            if first == b'\n' {
-                parser_cursor_bump!(self.cursor);
+            if self.at_line_ending() {
+                self.consume_line_ending();
                 self.close_table(events);
                 self.close_paragraph(events);
                 self.handle_blank_line_containers(events, false);
@@ -846,8 +846,8 @@ impl<'a> BlockParser<'a> {
                 }
                 return true;
             };
-            if first == b'\n' {
-                parser_cursor_bump!(self.cursor);
+            if self.at_line_ending() {
+                self.consume_line_ending();
                 let definition_candidate_start = events.len();
                 let had_paragraph = self.in_paragraph;
                 self.close_paragraph(events);
@@ -902,6 +902,20 @@ impl<'a> BlockParser<'a> {
         }
     }
 
+    #[inline]
+    fn at_line_ending(&self) -> bool {
+        self.cursor.at(b'\n') || (self.cursor.at(b'\r') && self.cursor.peek_ahead(1) == Some(b'\n'))
+    }
+
+    #[inline]
+    fn consume_line_ending(&mut self) {
+        debug_assert!(self.at_line_ending());
+        if self.cursor.at(b'\r') {
+            parser_cursor_bump!(self.cursor);
+        }
+        parser_cursor_bump!(self.cursor);
+    }
+
     /// Check if line is blank after consuming whitespace.
     fn is_blank_line(&self) -> bool {
         let slice = self.cursor.remaining_slice();
@@ -916,11 +930,11 @@ impl<'a> BlockParser<'a> {
 
     #[inline]
     fn is_blank_line_scalar(slice: &[u8]) -> bool {
-        for &b in slice {
+        for (i, &b) in slice.iter().enumerate() {
             if b == b' ' || b == b'\t' {
                 continue;
             }
-            return b == b'\n';
+            return b == b'\n' || (b == b'\r' && slice.get(i + 1) == Some(&b'\n'));
         }
         true // EOF is treated as blank
     }
@@ -939,7 +953,8 @@ impl<'a> BlockParser<'a> {
         while pos + 16 <= len {
             let v = vld1q_u8(ptr.add(pos));
             let nl_mask = vceqq_u8(v, vdupq_n_u8(b'\n'));
-            if vmaxvq_u8(nl_mask) != 0 {
+            let cr_mask = vceqq_u8(v, vdupq_n_u8(b'\r'));
+            if vmaxvq_u8(vorrq_u8(nl_mask, cr_mask)) != 0 {
                 break;
             }
             let space_mask = vceqq_u8(v, vdupq_n_u8(b' '));
@@ -951,13 +966,7 @@ impl<'a> BlockParser<'a> {
             pos += 16;
         }
 
-        for &b in &slice[pos..] {
-            if b == b' ' || b == b'\t' {
-                continue;
-            }
-            return Some(b == b'\n');
-        }
-        Some(true)
+        Some(Self::is_blank_line_scalar(&slice[pos..]))
     }
 
     /// Calculate the column that a tab at the given column would expand to.
@@ -1060,8 +1069,8 @@ impl<'a> BlockParser<'a> {
         };
 
         // Check for blank line (can happen after container markers)
-        if first == b'\n' {
-            parser_cursor_bump!(self.cursor);
+        if self.at_line_ending() {
+            self.consume_line_ending();
             self.close_table(events);
             self.close_paragraph(events);
             return;
@@ -1414,10 +1423,11 @@ impl<'a> BlockParser<'a> {
     /// before its next newline or end of input.
     #[inline]
     fn is_blank_remaining_line(remaining: &[u8]) -> bool {
-        for &byte in remaining {
+        for (i, &byte) in remaining.iter().enumerate() {
             match byte {
                 b' ' | b'\t' => {}
                 b'\n' => return true,
+                b'\r' if remaining.get(i + 1) == Some(&b'\n') => return true,
                 _ => return false,
             }
         }
@@ -2562,6 +2572,9 @@ impl<'a> BlockParser<'a> {
 
         // Trim trailing whitespace from info string
         let mut info_end = line_end;
+        if info_end > info_content_start && self.input[info_end - 1] == b'\r' {
+            info_end -= 1;
+        }
         while info_end > info_content_start
             && (self.input[info_end - 1] == b' ' || self.input[info_end - 1] == b'\t')
         {
@@ -2685,14 +2698,14 @@ impl<'a> BlockParser<'a> {
         let content_start = self.cursor.offset();
 
         // Blank line handling for types 6/7 (end on blank line)
-        if (self.cursor.is_eof() || self.cursor.at(b'\n'))
+        if (self.cursor.is_eof() || self.at_line_ending())
             && matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
         {
             self.html_block = None;
             events.push(BlockEvent::HtmlBlockEnd);
 
             if !self.cursor.is_eof() {
-                parser_cursor_bump!(self.cursor);
+                self.consume_line_ending();
             }
 
             self.close_paragraph(events);
@@ -3140,11 +3153,11 @@ impl<'a> BlockParser<'a> {
             if closing_len >= fence_len {
                 // Check that rest of line is only spaces/tabs
                 temp_cursor.skip_whitespace();
-                if temp_cursor.is_eof() || temp_cursor.at(b'\n') {
+                if Self::is_blank_line_scalar(temp_cursor.remaining_slice()) {
                     // Valid closing fence
                     self.cursor = temp_cursor;
-                    if !self.cursor.is_eof() && self.cursor.at(b'\n') {
-                        parser_cursor_bump!(self.cursor);
+                    if self.at_line_ending() {
+                        self.consume_line_ending();
                     }
 
                     self.fence_state = None;
