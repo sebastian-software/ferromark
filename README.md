@@ -218,9 +218,9 @@ the verified five-parser tables above.
 
 ### Additional native engine comparisons
 
-Each candidate is paired with its own measured Ferromark baseline. These system-allocator runs are separate from the shared-mimalloc five-parser experiment; do not combine their times into one ranking.
+Native Rust, Go and .NET implementations, measured on Apple Silicon using system allocators or normal managed-runtime GC. These runs have different allocation settings from the five-parser mimalloc tables above.
 
-Trusted Markdown-to-HTML only, with independently selected syntax and fresh document state and owned output. No Node.js wrappers, WASM, per-document process startup, cached documents or MDX compilation are timed. The three-extension overlap is not full GFM.
+Trusted Markdown-to-HTML with the same named syntax per document. Runtime setup, Node.js wrappers, WASM and MDX compilation are outside these measurements.
 
 Apple M1 Pro, macOS 26.6.2, September 2026. Three process runs per pair, three seconds of warmup and at least five seconds of sampling per engine/workload in each run. Values are medians of run medians; the linked archives retain exact toolchains, source revisions, options and run variation.
 
@@ -235,28 +235,62 @@ Apple M1 Pro, macOS 26.6.2, September 2026. Three process runs per pair, three s
 
 Admission checks comparable Markdown work. Spec mismatches are normalized output diagnostics, not a conformance certification. Only the workloads below received full timing runs.
 
-Candidate / Ferromark is the elapsed-time ratio within that pair: below 1 means the candidate took less time. Bold identifies the lower unrounded time in each pair.
+Ferromark appears once per document: its time is the median of the independently measured Ferromark reference medians. Each other engine retains its own measured time. Relative speed uses that single Ferromark value; above 1 means faster. The archives retain the original paired comparisons.
 
-| Native pair | Input | Bytes | Ferromark µs | Candidate µs | Candidate / Ferromark |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Goldmark | CommonMark · 5 KiB | 5120 | **25.16** | 155.86 | 6.19× |
-| Goldmark | Tables + inline CommonMark | 4800 | **34.07** | 378.30 | 11.10× |
-| Goldmark | Tables + strikethrough + tasks | 5050 | **37.82** | 453.79 | 12.00× |
-| Sätteri | CommonMark · 5 KiB | 5120 | **25.24** | 39.36 | 1.56× |
-| Sätteri | Tables + inline CommonMark | 4800 | **34.06** | 64.59 | 1.90× |
-| Sätteri | Tables + strikethrough + tasks | 5050 | **38.02** | 77.53 | 2.04× |
-| Rushdown | CommonMark · 5 KiB | 5120 | **24.93** | 56.61 | 2.27× |
-| Rushdown | Tables + inline CommonMark | 4800 | **32.95** | 97.28 | 2.95× |
-| Rushdown | Tables + strikethrough + tasks | 5050 | **37.12** | 109.65 | 2.95× |
-| Markdig | CommonMark · 5 KiB | 5120 | **25.01** | 63.76 | 2.55× |
-| Markdig | Tables + inline CommonMark | 4800 | **32.97** | 246.87 | 7.49× |
-| Markdig | Tables + strikethrough + tasks | 5050 | **37.13** | 248.48 | 6.69× |
-| markdown-rs | CommonMark · 5 KiB | 5120 | **25.19** | 652.56 | 25.91× |
-| markdown-rs | Tables + inline CommonMark | 4800 | **33.37** | 1825.71 | 54.71× |
-| markdown-rs | Tables + strikethrough + tasks | 5050 | **37.43** | 1541.90 | 41.20× |
-| Ox Content | CommonMark · short | 18 | 0.49 | **0.29** | 0.59× |
-| Ox Content | Tables + inline CommonMark | 4800 | **32.90** | 37.25 | 1.13× |
-| Ox Content | Tables + strikethrough + tasks | 5050 | 37.04 | **35.21** | 0.95× |
+#### Native CommonMark · 5 KiB
+
+5,120 input bytes. Bold marks the lowest measured time in this overview.
+
+| Engine | Time / document | Throughput | Relative speed |
+| --- | ---: | ---: | ---: |
+| **Ferromark** | **25.16 µs** | **194.1 MiB/s** | **baseline** |
+| Goldmark | 155.86 µs | 31.3 MiB/s | 0.16× |
+| Sätteri | 39.36 µs | 124.0 MiB/s | 0.64× |
+| Rushdown | 56.61 µs | 86.3 MiB/s | 0.44× |
+| Markdig | 63.76 µs | 76.6 MiB/s | 0.39× |
+| markdown-rs | 652.56 µs | 7.5 MiB/s | 0.04× |
+
+Not measured for this document: Ox Content.
+
+#### Native CommonMark · short
+
+18 input bytes. Bold marks the lowest measured time in this overview.
+
+| Engine | Time / document | Throughput | Relative speed |
+| --- | ---: | ---: | ---: |
+| Ferromark | 0.49 µs | 35.0 MiB/s | baseline |
+| **Ox Content** | **0.29 µs** | **59.1 MiB/s** | **1.69×** |
+
+Not measured for this document: Goldmark, Sätteri, Rushdown, Markdig, markdown-rs.
+
+#### Native Tables + inline CommonMark
+
+4,800 input bytes. Bold marks the lowest measured time in this overview.
+
+| Engine | Time / document | Throughput | Relative speed |
+| --- | ---: | ---: | ---: |
+| **Ferromark** | **33.17 µs** | **138.0 MiB/s** | **baseline** |
+| Goldmark | 378.30 µs | 12.1 MiB/s | 0.09× |
+| Sätteri | 64.59 µs | 70.9 MiB/s | 0.51× |
+| Rushdown | 97.28 µs | 47.1 MiB/s | 0.34× |
+| Markdig | 246.87 µs | 18.5 MiB/s | 0.13× |
+| markdown-rs | 1825.71 µs | 2.5 MiB/s | 0.02× |
+| Ox Content | 37.25 µs | 122.9 MiB/s | 0.89× |
+
+#### Native Tables + strikethrough + tasks
+
+5,050 input bytes. Bold marks the lowest measured time in this overview.
+
+| Engine | Time / document | Throughput | Relative speed |
+| --- | ---: | ---: | ---: |
+| Ferromark | 37.28 µs | 129.2 MiB/s | baseline |
+| Goldmark | 453.79 µs | 10.6 MiB/s | 0.08× |
+| Sätteri | 77.53 µs | 62.1 MiB/s | 0.48× |
+| Rushdown | 109.65 µs | 43.9 MiB/s | 0.34× |
+| Markdig | 248.48 µs | 19.4 MiB/s | 0.15× |
+| markdown-rs | 1541.90 µs | 3.1 MiB/s | 0.02× |
+| **Ox Content** | **35.21 µs** | **136.8 MiB/s** | **1.06×** |
+
 
 - **Goldmark:** Fresh AST and HTML buffer; normal automatic Go GC remains enabled.
 - **Sätteri:** Full native Markdown-to-MDAST-to-HTML pipeline, including source positions. MDX compilation is outside timing.

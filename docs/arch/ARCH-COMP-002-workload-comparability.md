@@ -76,8 +76,11 @@ preserves spec diagnostics; a timing admission is not a correctness certificatio
 
 ## Publishing independent native pairs
 
-The public overview retains the separately measured Ferromark baseline for each
-native competitor. System-allocator pairs and the shared-mimalloc five-parser
+The archives retain the separately measured Ferromark baseline for each native
+competitor. The public overview shows Ferromark once per document: the median of
+those reference medians, with candidate times preserved and relative speeds
+calculated against the overview reference. This descriptive aggregation is
+disclosed beside the tables; the original paired ratios remain in the reports. System-allocator pairs and the shared-mimalloc five-parser
 experiment remain distinct datasets. Their absolute times are not combined into
 one engine ranking, and a missing workload is never filled from another input
 or run. Heading-ID exclusions and specification diagnostics stay visible beside

@@ -70,6 +70,9 @@ function pipeTables(markdown) {
 }
 
 const benchmarks = JSON.parse(await readFile(dataUrl, "utf8"));
+const nativeBenchmarks = JSON.parse(
+  await readFile(new URL("app/data/native-benchmarks.json", homepageRoot), "utf8"),
+);
 for (const table of [...benchmarks.tables, ...benchmarks.featureTables]) {
   const fastest = Math.min(...table.rows.map((row) => row.medianNs));
   check(
@@ -178,7 +181,11 @@ if (!section) {
     });
   }
 
-  const known = new Set(tables.flatMap((table) => table.rows.map((row) => row.throughput)));
+  const known = new Set(
+    [...tables, ...nativeBenchmarks.tables].flatMap((table) =>
+      table.rows.map((row) => row.throughput),
+    ),
+  );
   for (const [figure] of section.matchAll(/\d+(?:\.\d+)?\s*MiB\/s/g)) {
     check(
       known.has(normalize(figure)),

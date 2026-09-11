@@ -7,80 +7,61 @@ const sourceUrl = (path: string) =>
   `https://github.com/sebastian-software/ferromark/blob/main/${path}`;
 
 export function NativeComparisonTable({ selectedCase }: { selectedCase?: string }) {
-  return (
-    <div
-      className="native-benchmark-table"
-      role="region"
-      aria-label="Native engine timings"
-      tabIndex={0}
-    >
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Native pair</th>
-            {!selectedCase && <th scope="col">Input</th>}
-            <th scope="col">Bytes</th>
-            <th scope="col">Ferromark µs</th>
-            <th scope="col">Candidate µs</th>
-            <th scope="col">Candidate / Ferromark</th>
-          </tr>
-        </thead>
-        <tbody>
-          {nativeBenchmarks.engines.flatMap((engine) => {
-            const rows = engine.rows.filter((row) => !selectedCase || row.case === selectedCase);
-            if (!rows.length) {
+  const tables = nativeBenchmarks.tables.filter(
+    (table) => !selectedCase || table.case === selectedCase,
+  );
+  return tables.map((table) => (
+    <div key={table.case}>
+      {!selectedCase && <h3>Native {table.label}</h3>}
+      <p>
+        {table.bytes.toLocaleString("en-US")} input bytes. Lower time and higher throughput are
+        better.
+      </p>
+      <div
+        className="native-benchmark-table"
+        role="region"
+        aria-label={`Native engine timings: ${table.label}`}
+        tabIndex={0}
+      >
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Engine</th>
+              <th scope="col">Time / document</th>
+              <th scope="col">Throughput</th>
+              <th scope="col">Relative speed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row) => {
+              const cell = (value: string) => (row.winner ? <strong>{value}</strong> : value);
               return (
-                <tr key={engine.id}>
+                <tr key={row.id} className={row.winner ? "is-highlight" : undefined}>
                   <th scope="row">
-                    <a href={sourceUrl(engine.report)}>{engine.label}</a>
+                    <a href={sourceUrl(row.report)}>{cell(row.label)}</a>
                   </th>
-                  <td colSpan={4}>
-                    Not measured{engine.id === "ox-content" ? " — heading-ID mismatch" : ""}
-                  </td>
+                  <td>{cell(row.latency)}</td>
+                  <td>{cell(row.throughput)}</td>
+                  <td>{cell(row.relativeSpeed)}</td>
                 </tr>
               );
-            }
-            return rows.map((row) => (
-              <tr key={`${engine.id}/${row.case}`}>
-                <th scope="row">
-                  <a href={sourceUrl(engine.report)}>{engine.label}</a>
-                </th>
-                {!selectedCase && <td>{row.label}</td>}
-                <td>{row.bytes.toLocaleString("en-US")}</td>
-                <td>
-                  {row.ferromarkNs <= row.candidateNs ? (
-                    <strong>{row.ferromarkTime}</strong>
-                  ) : (
-                    row.ferromarkTime
-                  )}
-                </td>
-                <td>
-                  {row.candidateNs <= row.ferromarkNs ? (
-                    <strong>{row.candidateTime}</strong>
-                  ) : (
-                    row.candidateTime
-                  )}
-                </td>
-                <td>{row.ratio}</td>
-              </tr>
-            ));
-          })}
-        </tbody>
-      </table>
+            })}
+          </tbody>
+        </table>
+      </div>
+      {table.unmeasured.length > 0 && (
+        <p className="native-benchmark-note">
+          Not measured for this document: {table.unmeasured.join(", ")}.
+        </p>
+      )}
     </div>
-  );
+  ));
 }
 
 export function NativeBenchmarkExplorer() {
   const selectorId = useId();
   const [selectedCase, setSelectedCase] = useState("gfm_overlap/features");
-  const cases = [
-    ...new Map(
-      nativeBenchmarks.engines.flatMap((engine) =>
-        engine.rows.map((row) => [row.case, row.label] as const),
-      ),
-    ).entries(),
-  ];
+  const cases = nativeBenchmarks.tables.map((table) => [table.case, table.label]);
   return (
     <>
       <div className="native-benchmark-selector">
@@ -98,7 +79,10 @@ export function NativeBenchmarkExplorer() {
         </select>
       </div>
       <NativeComparisonTable selectedCase={selectedCase} />
-      <p className="native-benchmark-note">{nativeBenchmarks.ratioExplanation}</p>
+      <p className="native-benchmark-note">
+        Ferromark: median across reference runs for this document. Relative speed uses this single
+        baseline. Bold marks the fastest result; original measurements are linked in the guide.
+      </p>
     </>
   );
 }

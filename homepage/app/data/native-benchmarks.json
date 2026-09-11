@@ -1,8 +1,8 @@
 {
   "note": "Generated from verified native archives by benchmarks/native-pipeline-comparison/publish.py. Do not hand-edit figures.",
-  "conditions": "Each candidate is paired with its own measured Ferromark baseline. These system-allocator runs are separate from the shared-mimalloc five-parser experiment; do not combine their times into one ranking.",
-  "scope": "Trusted Markdown-to-HTML only, with independently selected syntax and fresh document state and owned output. No Node.js wrappers, WASM, per-document process startup, cached documents or MDX compilation are timed. The three-extension overlap is not full GFM.",
-  "ratioExplanation": "Candidate / Ferromark is the elapsed-time ratio within that pair: below 1 means the candidate took less time. Bold identifies the lower unrounded time in each pair.",
+  "conditions": "Native Rust, Go and .NET implementations, measured on Apple Silicon using system allocators or normal managed-runtime GC. These runs have different allocation settings from the five-parser mimalloc tables above.",
+  "scope": "Trusted Markdown-to-HTML with the same named syntax per document. Runtime setup, Node.js wrappers, WASM and MDX compilation are outside these measurements.",
+  "ratioExplanation": "Ferromark appears once per document: its time is the median of the independently measured Ferromark reference medians. Each other engine retains its own measured time. Relative speed uses that single Ferromark value; above 1 means faster. The archives retain the original paired comparisons.",
   "engines": [
     {
       "id": "goldmark",
@@ -43,6 +43,8 @@
           "case": "commonmark/5k",
           "label": "CommonMark · 5 KiB",
           "bytes": 5120,
+          "inputSha256": "6625d678ba4179533bf8183f63ae205bbf30c162572ed389fee5e13132128092",
+          "flags": 0,
           "ferromarkNs": 25160.91918789809,
           "candidateNs": 155864.78485576925,
           "ferromarkTime": "25.16",
@@ -63,6 +65,8 @@
           "case": "tables/tables-commonmark-inline",
           "label": "Tables + inline CommonMark",
           "bytes": 4800,
+          "inputSha256": "5720d6f794571dde7d7de61a99fd8620dec547635ace5d8b451c6e40ff43790b",
+          "flags": 1,
           "ferromarkNs": 34070.346174568964,
           "candidateNs": 378301.60795454547,
           "ferromarkTime": "34.07",
@@ -83,6 +87,8 @@
           "case": "gfm_overlap/features",
           "label": "Tables + strikethrough + tasks",
           "bytes": 5050,
+          "inputSha256": "d7fffe9907c756e62d7446d968f5959a4f9b3cd2c131f774c7cf253d1bf2d772",
+          "flags": 7,
           "ferromarkNs": 37823.26369047619,
           "candidateNs": 453794.5625,
           "ferromarkTime": "37.82",
@@ -140,6 +146,8 @@
           "case": "commonmark/5k",
           "label": "CommonMark · 5 KiB",
           "bytes": 5120,
+          "inputSha256": "6625d678ba4179533bf8183f63ae205bbf30c162572ed389fee5e13132128092",
+          "flags": 0,
           "ferromarkNs": 25240.686305732484,
           "candidateNs": 39362.62376237624,
           "ferromarkTime": "25.24",
@@ -160,6 +168,8 @@
           "case": "tables/tables-commonmark-inline",
           "label": "Tables + inline CommonMark",
           "bytes": 4800,
+          "inputSha256": "5720d6f794571dde7d7de61a99fd8620dec547635ace5d8b451c6e40ff43790b",
+          "flags": 1,
           "ferromarkNs": 34055.88873922414,
           "candidateNs": 64588.20030737705,
           "ferromarkTime": "34.06",
@@ -180,6 +190,8 @@
           "case": "gfm_overlap/features",
           "label": "Tables + strikethrough + tasks",
           "bytes": 5050,
+          "inputSha256": "d7fffe9907c756e62d7446d968f5959a4f9b3cd2c131f774c7cf253d1bf2d772",
+          "flags": 7,
           "ferromarkNs": 38015.6875,
           "candidateNs": 77532.06678921569,
           "ferromarkTime": "38.02",
@@ -235,6 +247,8 @@
           "case": "commonmark/5k",
           "label": "CommonMark · 5 KiB",
           "bytes": 5120,
+          "inputSha256": "6625d678ba4179533bf8183f63ae205bbf30c162572ed389fee5e13132128092",
+          "flags": 0,
           "ferromarkNs": 24925.286590189877,
           "candidateNs": 56612.295535714286,
           "ferromarkTime": "24.93",
@@ -255,6 +269,8 @@
           "case": "tables/tables-commonmark-inline",
           "label": "Tables + inline CommonMark",
           "bytes": 4800,
+          "inputSha256": "5720d6f794571dde7d7de61a99fd8620dec547635ace5d8b451c6e40ff43790b",
+          "flags": 1,
           "ferromarkNs": 32946.16953125,
           "candidateNs": 97281.78963414635,
           "ferromarkTime": "32.95",
@@ -275,6 +291,8 @@
           "case": "gfm_overlap/features",
           "label": "Tables + strikethrough + tasks",
           "bytes": 5050,
+          "inputSha256": "d7fffe9907c756e62d7446d968f5959a4f9b3cd2c131f774c7cf253d1bf2d772",
+          "flags": 7,
           "ferromarkNs": 37116.29935747664,
           "candidateNs": 109647.24392361111,
           "ferromarkTime": "37.12",
@@ -335,6 +353,8 @@
           "case": "commonmark/5k",
           "label": "CommonMark · 5 KiB",
           "bytes": 5120,
+          "inputSha256": "6625d678ba4179533bf8183f63ae205bbf30c162572ed389fee5e13132128092",
+          "flags": 0,
           "ferromarkNs": 25009.07357594937,
           "candidateNs": 63760.45866935484,
           "ferromarkTime": "25.01",
@@ -355,6 +375,8 @@
           "case": "tables/tables-commonmark-inline",
           "label": "Tables + inline CommonMark",
           "bytes": 4800,
+          "inputSha256": "5720d6f794571dde7d7de61a99fd8620dec547635ace5d8b451c6e40ff43790b",
+          "flags": 1,
           "ferromarkNs": 32969.36822916666,
           "candidateNs": 246865.884765625,
           "ferromarkTime": "32.97",
@@ -375,6 +397,8 @@
           "case": "gfm_overlap/features",
           "label": "Tables + strikethrough + tasks",
           "bytes": 5050,
+          "inputSha256": "d7fffe9907c756e62d7446d968f5959a4f9b3cd2c131f774c7cf253d1bf2d772",
+          "flags": 7,
           "ferromarkNs": 37133.65216121495,
           "candidateNs": 248476.158203125,
           "ferromarkTime": "37.13",
@@ -430,6 +454,8 @@
           "case": "commonmark/5k",
           "label": "CommonMark · 5 KiB",
           "bytes": 5120,
+          "inputSha256": "6625d678ba4179533bf8183f63ae205bbf30c162572ed389fee5e13132128092",
+          "flags": 0,
           "ferromarkNs": 25187.41719745223,
           "candidateNs": 652560.2678571428,
           "ferromarkTime": "25.19",
@@ -450,6 +476,8 @@
           "case": "tables/tables-commonmark-inline",
           "label": "Tables + inline CommonMark",
           "bytes": 4800,
+          "inputSha256": "5720d6f794571dde7d7de61a99fd8620dec547635ace5d8b451c6e40ff43790b",
+          "flags": 1,
           "ferromarkNs": 33367.73996759721,
           "candidateNs": 1825706.6041666667,
           "ferromarkTime": "33.37",
@@ -470,6 +498,8 @@
           "case": "gfm_overlap/features",
           "label": "Tables + strikethrough + tasks",
           "bytes": 5050,
+          "inputSha256": "d7fffe9907c756e62d7446d968f5959a4f9b3cd2c131f774c7cf253d1bf2d772",
+          "flags": 7,
           "ferromarkNs": 37427.53773584906,
           "candidateNs": 1541902.78125,
           "ferromarkTime": "37.43",
@@ -534,6 +564,8 @@
           "case": "commonmark/short",
           "label": "CommonMark · short",
           "bytes": 18,
+          "inputSha256": "dfd5cdb7333abac35a50d62361b5f851163c89e6742c66603a6af211e0dd4925",
+          "flags": 0,
           "ferromarkNs": 490.1874166322833,
           "candidateNs": 290.3485512877528,
           "ferromarkTime": "0.49",
@@ -554,6 +586,8 @@
           "case": "tables/tables-commonmark-inline",
           "label": "Tables + inline CommonMark",
           "bytes": 4800,
+          "inputSha256": "5720d6f794571dde7d7de61a99fd8620dec547635ace5d8b451c6e40ff43790b",
+          "flags": 1,
           "ferromarkNs": 32901.83385416667,
           "candidateNs": 37252.00235849057,
           "ferromarkTime": "32.90",
@@ -574,6 +608,8 @@
           "case": "gfm_overlap/features",
           "label": "Tables + strikethrough + tasks",
           "bytes": 5050,
+          "inputSha256": "d7fffe9907c756e62d7446d968f5959a4f9b3cd2c131f774c7cf253d1bf2d772",
+          "flags": 7,
           "ferromarkNs": 37036.580023364484,
           "candidateNs": 35205.217633928565,
           "ferromarkTime": "37.04",
@@ -591,6 +627,294 @@
           ]
         }
       ]
+    }
+  ],
+  "tables": [
+    {
+      "case": "commonmark/5k",
+      "label": "CommonMark · 5 KiB",
+      "bytes": 5120,
+      "referenceMediansNs": [
+        25160.91918789809,
+        25240.686305732484,
+        24925.286590189877,
+        25009.07357594937,
+        25187.41719745223
+      ],
+      "rows": [
+        {
+          "id": "ferromark",
+          "label": "Ferromark",
+          "medianNs": 25160.91918789809,
+          "latency": "25.16 µs",
+          "throughput": "194.1 MiB/s",
+          "relativeSpeed": "baseline",
+          "winner": true,
+          "report": "benchmarks/native-pipeline-comparison/README.md#public-overview"
+        },
+        {
+          "id": "goldmark",
+          "label": "Goldmark",
+          "medianNs": 155864.78485576925,
+          "latency": "155.86 µs",
+          "throughput": "31.3 MiB/s",
+          "relativeSpeed": "0.16×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md"
+        },
+        {
+          "id": "satteri",
+          "label": "Sätteri",
+          "medianNs": 39362.62376237624,
+          "latency": "39.36 µs",
+          "throughput": "124.0 MiB/s",
+          "relativeSpeed": "0.64×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md"
+        },
+        {
+          "id": "rushdown",
+          "label": "Rushdown",
+          "medianNs": 56612.295535714286,
+          "latency": "56.61 µs",
+          "throughput": "86.3 MiB/s",
+          "relativeSpeed": "0.44×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-rushdown/REPORT.md"
+        },
+        {
+          "id": "markdig",
+          "label": "Markdig",
+          "medianNs": 63760.45866935484,
+          "latency": "63.76 µs",
+          "throughput": "76.6 MiB/s",
+          "relativeSpeed": "0.39×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-markdig/REPORT.md"
+        },
+        {
+          "id": "markdown-rs",
+          "label": "markdown-rs",
+          "medianNs": 652560.2678571428,
+          "latency": "652.56 µs",
+          "throughput": "7.5 MiB/s",
+          "relativeSpeed": "0.04×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-markdown-rs/REPORT.md"
+        }
+      ],
+      "unmeasured": [
+        "Ox Content"
+      ]
+    },
+    {
+      "case": "commonmark/short",
+      "label": "CommonMark · short",
+      "bytes": 18,
+      "referenceMediansNs": [
+        490.1874166322833
+      ],
+      "rows": [
+        {
+          "id": "ferromark",
+          "label": "Ferromark",
+          "medianNs": 490.1874166322833,
+          "latency": "0.49 µs",
+          "throughput": "35.0 MiB/s",
+          "relativeSpeed": "baseline",
+          "winner": false,
+          "report": "benchmarks/native-pipeline-comparison/README.md#public-overview"
+        },
+        {
+          "id": "ox-content",
+          "label": "Ox Content",
+          "medianNs": 290.3485512877528,
+          "latency": "0.29 µs",
+          "throughput": "59.1 MiB/s",
+          "relativeSpeed": "1.69×",
+          "winner": true,
+          "report": "docs/reports/2026-09-11-native-ox-content/REPORT.md"
+        }
+      ],
+      "unmeasured": [
+        "Goldmark",
+        "Sätteri",
+        "Rushdown",
+        "Markdig",
+        "markdown-rs"
+      ]
+    },
+    {
+      "case": "tables/tables-commonmark-inline",
+      "label": "Tables + inline CommonMark",
+      "bytes": 4800,
+      "referenceMediansNs": [
+        34070.346174568964,
+        34055.88873922414,
+        32946.16953125,
+        32969.36822916666,
+        33367.73996759721,
+        32901.83385416667
+      ],
+      "rows": [
+        {
+          "id": "ferromark",
+          "label": "Ferromark",
+          "medianNs": 33168.55409838194,
+          "latency": "33.17 µs",
+          "throughput": "138.0 MiB/s",
+          "relativeSpeed": "baseline",
+          "winner": true,
+          "report": "benchmarks/native-pipeline-comparison/README.md#public-overview"
+        },
+        {
+          "id": "goldmark",
+          "label": "Goldmark",
+          "medianNs": 378301.60795454547,
+          "latency": "378.30 µs",
+          "throughput": "12.1 MiB/s",
+          "relativeSpeed": "0.09×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md"
+        },
+        {
+          "id": "satteri",
+          "label": "Sätteri",
+          "medianNs": 64588.20030737705,
+          "latency": "64.59 µs",
+          "throughput": "70.9 MiB/s",
+          "relativeSpeed": "0.51×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md"
+        },
+        {
+          "id": "rushdown",
+          "label": "Rushdown",
+          "medianNs": 97281.78963414635,
+          "latency": "97.28 µs",
+          "throughput": "47.1 MiB/s",
+          "relativeSpeed": "0.34×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-rushdown/REPORT.md"
+        },
+        {
+          "id": "markdig",
+          "label": "Markdig",
+          "medianNs": 246865.884765625,
+          "latency": "246.87 µs",
+          "throughput": "18.5 MiB/s",
+          "relativeSpeed": "0.13×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-markdig/REPORT.md"
+        },
+        {
+          "id": "markdown-rs",
+          "label": "markdown-rs",
+          "medianNs": 1825706.6041666667,
+          "latency": "1825.71 µs",
+          "throughput": "2.5 MiB/s",
+          "relativeSpeed": "0.02×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-markdown-rs/REPORT.md"
+        },
+        {
+          "id": "ox-content",
+          "label": "Ox Content",
+          "medianNs": 37252.00235849057,
+          "latency": "37.25 µs",
+          "throughput": "122.9 MiB/s",
+          "relativeSpeed": "0.89×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-ox-content/REPORT.md"
+        }
+      ],
+      "unmeasured": []
+    },
+    {
+      "case": "gfm_overlap/features",
+      "label": "Tables + strikethrough + tasks",
+      "bytes": 5050,
+      "referenceMediansNs": [
+        37823.26369047619,
+        38015.6875,
+        37116.29935747664,
+        37133.65216121495,
+        37427.53773584906,
+        37036.580023364484
+      ],
+      "rows": [
+        {
+          "id": "ferromark",
+          "label": "Ferromark",
+          "medianNs": 37280.594948532,
+          "latency": "37.28 µs",
+          "throughput": "129.2 MiB/s",
+          "relativeSpeed": "baseline",
+          "winner": false,
+          "report": "benchmarks/native-pipeline-comparison/README.md#public-overview"
+        },
+        {
+          "id": "goldmark",
+          "label": "Goldmark",
+          "medianNs": 453794.5625,
+          "latency": "453.79 µs",
+          "throughput": "10.6 MiB/s",
+          "relativeSpeed": "0.08×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md"
+        },
+        {
+          "id": "satteri",
+          "label": "Sätteri",
+          "medianNs": 77532.06678921569,
+          "latency": "77.53 µs",
+          "throughput": "62.1 MiB/s",
+          "relativeSpeed": "0.48×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md"
+        },
+        {
+          "id": "rushdown",
+          "label": "Rushdown",
+          "medianNs": 109647.24392361111,
+          "latency": "109.65 µs",
+          "throughput": "43.9 MiB/s",
+          "relativeSpeed": "0.34×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-rushdown/REPORT.md"
+        },
+        {
+          "id": "markdig",
+          "label": "Markdig",
+          "medianNs": 248476.158203125,
+          "latency": "248.48 µs",
+          "throughput": "19.4 MiB/s",
+          "relativeSpeed": "0.15×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-markdig/REPORT.md"
+        },
+        {
+          "id": "markdown-rs",
+          "label": "markdown-rs",
+          "medianNs": 1541902.78125,
+          "latency": "1541.90 µs",
+          "throughput": "3.1 MiB/s",
+          "relativeSpeed": "0.02×",
+          "winner": false,
+          "report": "docs/reports/2026-09-11-native-markdown-rs/REPORT.md"
+        },
+        {
+          "id": "ox-content",
+          "label": "Ox Content",
+          "medianNs": 35205.217633928565,
+          "latency": "35.21 µs",
+          "throughput": "136.8 MiB/s",
+          "relativeSpeed": "1.06×",
+          "winner": true,
+          "report": "docs/reports/2026-09-11-native-ox-content/REPORT.md"
+        }
+      ],
+      "unmeasured": []
     }
   ]
 }

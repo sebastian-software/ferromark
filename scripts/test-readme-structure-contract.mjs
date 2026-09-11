@@ -318,7 +318,7 @@ function validate(
     "### Additional native engine comparisons",
     "benchmarks/native-pipeline-comparison/README.md",
     "docs/reports/2026-09-11-native-cmark-comparison.md",
-    "Each candidate is paired with its own measured Ferromark baseline",
+    "Ferromark appears once per document",
     "Generated heading IDs cannot be disabled",
     "### Fine-grained feature and document benchmarks",
     "docs/reports/2026-09-10-markdown-feature-costs-final.md",

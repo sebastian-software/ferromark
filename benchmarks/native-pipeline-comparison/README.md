@@ -181,9 +181,12 @@ or substitute an older release to obtain convenient feature switches.
 ## Public overview
 
 `publish.py` verifies the complete archived reports, raw samples and checksums
-before generating `homepage/app/data/native-benchmarks.json`. Each candidate
-retains its own measured Ferromark baseline, workload coverage, specification
-diagnostics and runtime disclosures. The homepage renders those values directly.
+before generating `homepage/app/data/native-benchmarks.json`. The archive
+retains each measured Ferromark baseline, workload coverage, specification
+diagnostics and runtime disclosures. The public overview shows one Ferromark row
+per document, using the median of the independently measured reference medians.
+Candidate rows retain their own measured times; relative speeds use the single
+overview reference. The homepage renders those generated values directly.
 
 The five-parser publisher incorporates this overview into `README.md.src` while
 keeping the two allocation environments separate. Run the native publisher,

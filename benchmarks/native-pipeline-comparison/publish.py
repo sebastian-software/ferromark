@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import statistics
 from pathlib import Path
 
 from common import HERE, REPO
@@ -27,9 +28,32 @@ NOTES = {
     "ox-content": "Generated heading IDs cannot be disabled; affected workloads are excluded. Specification differences include more than heading IDs. Native renderer scratch reuse is retained; every call creates a fresh arena, AST and owned HTML.",
 }
 CASES = {"commonmark/5k": "CommonMark · 5 KiB", "commonmark/short": "CommonMark · short", "tables/tables-commonmark-inline": "Tables + inline CommonMark", "gfm_overlap/features": "Tables + strikethrough + tasks"}
-CONDITIONS = "Each candidate is paired with its own measured Ferromark baseline. These system-allocator runs are separate from the shared-mimalloc five-parser experiment; do not combine their times into one ranking."
-SCOPE = "Trusted Markdown-to-HTML only, with independently selected syntax and fresh document state and owned output. No Node.js wrappers, WASM, per-document process startup, cached documents or MDX compilation are timed. The three-extension overlap is not full GFM."
-RATIO = "Candidate / Ferromark is the elapsed-time ratio within that pair: below 1 means the candidate took less time. Bold identifies the lower unrounded time in each pair."
+CONDITIONS = "Native Rust, Go and .NET implementations, measured on Apple Silicon using system allocators or normal managed-runtime GC. These runs have different allocation settings from the five-parser mimalloc tables above."
+SCOPE = "Trusted Markdown-to-HTML with the same named syntax per document. Runtime setup, Node.js wrappers, WASM and MDX compilation are outside these measurements."
+RATIO = "Ferromark appears once per document: its time is the median of the independently measured Ferromark reference medians. Each other engine retains its own measured time. Relative speed uses that single Ferromark value; above 1 means faster. The archives retain the original paired comparisons."
+
+
+def overview_tables(engines):
+    tables = []
+    for case, label in CASES.items():
+        measured = [(engine, row) for engine in engines for row in engine["rows"] if row["case"] == case]
+        sizes = {row["bytes"] for _, row in measured}
+        inputs = {(row["inputSha256"], row["flags"]) for _, row in measured}
+        if len(sizes) != 1 or len(inputs) != 1:
+            raise ValueError(f"{case}: overview requires the same measured input size")
+        # Summarize repeat reference measurements; never transplant another document's baseline.
+        references = [row["ferromarkNs"] for _, row in measured]
+        baseline = statistics.median(references)
+        size = sizes.pop()
+        values = [("ferromark", "Ferromark", baseline, "benchmarks/native-pipeline-comparison/README.md#public-overview")]
+        values += [(engine["id"], engine["label"], row["candidateNs"], engine["report"]) for engine, row in measured]
+        fastest = min(value[2] for value in values)
+        rows = [{"id": name, "label": name_label, "medianNs": ns, "latency": f"{ns/1000:.2f} µs",
+                 "throughput": f"{size/ns*1e9/1048576:.1f} MiB/s", "relativeSpeed": "baseline" if name == "ferromark" else f"{baseline/ns:.2f}×",
+                 "winner": ns == fastest, "report": report} for name, name_label, ns, report in values]
+        tables.append({"case": case, "label": label, "bytes": size, "referenceMediansNs": references,
+                       "rows": rows, "unmeasured": [e["label"] for e in engines if e["id"] not in {v[0] for v in values}]})
+    return tables
 
 
 def validate_protocol(metadata):
@@ -69,12 +93,14 @@ def data_for():
                 raise ValueError(f"{engine}: summary differs from raw samples")
             reviews = {r["case"]: r for r in load(folder / engine / "verification.json")}
             values = {(r["case"], r["engine"]): r for r in computed}
+            corpus = {row["case"]: row for row in load(folder / "catalog.json")}
             rows = []
             for case in pair["selected"]:
                 if not reviews[case]["comparable"]:
                     raise ValueError(f"{engine}/{case}: excluded workload cannot be published")
                 baseline, candidate = (values[case, name] for name in ("ferromark", engine))
                 rows.append({"case": case, "label": CASES[case], "bytes": baseline["bytes"],
+                    "inputSha256": hashlib.sha256(corpus[case]["input"].encode()).hexdigest(), "flags": corpus[case]["flags"],
                     "ferromarkNs": baseline["median_ns"], "candidateNs": candidate["median_ns"],
                     "ferromarkTime": f"{baseline['median_ns']/1000:.2f}", "candidateTime": f"{candidate['median_ns']/1000:.2f}",
                     "ratio": f"{candidate['median_ns']/baseline['median_ns']:.2f}×",
@@ -88,7 +114,7 @@ def data_for():
                 "specMismatches": sum(r["mismatch"] for r in spec), "specTotal": len(spec),
                 "notes": NOTES[engine], "rows": rows})
     return {"note": "Generated from verified native archives by benchmarks/native-pipeline-comparison/publish.py. Do not hand-edit figures.",
-        "conditions": CONDITIONS, "scope": SCOPE, "ratioExplanation": RATIO, "engines": engines}
+        "conditions": CONDITIONS, "scope": SCOPE, "ratioExplanation": RATIO, "engines": engines, "tables": overview_tables(engines)}
 
 
 def readme_section(data):
@@ -97,16 +123,18 @@ def readme_section(data):
         "| Engine | Runtime | Admitted workloads | Spec mismatches | Evidence |", "| --- | --- | ---: | ---: | --- |"]
     for engine in data["engines"]:
         lines.append(f"| {engine['label']} | {engine['runtime']} | {engine['eligible']}/{engine['total']} | {engine['specMismatches']}/{engine['specTotal']} | [{engine['version']}]({engine['report']}) |")
-    lines += ["", "Admission checks comparable Markdown work. Spec mismatches are normalized output diagnostics, not a conformance certification. Only the workloads below received full timing runs.", "", data["ratioExplanation"], "",
-        "| Native pair | Input | Bytes | Ferromark µs | Candidate µs | Candidate / Ferromark |", "| --- | --- | ---: | ---: | ---: | ---: |"]
-    for engine in data["engines"]:
-        for row in engine["rows"]:
-            a, b = row["ferromarkTime"], row["candidateTime"]
-            if row["ferromarkNs"] <= row["candidateNs"]:
-                a = f"**{a}**"
-            if row["candidateNs"] <= row["ferromarkNs"]:
-                b = f"**{b}**"
-            lines.append(f"| {engine['label']} | {row['label']} | {row['bytes']} | {a} | {b} | {row['ratio']} |")
+    lines += ["", "Admission checks comparable Markdown work. Spec mismatches are normalized output diagnostics, not a conformance certification. Only the workloads below received full timing runs.", "", data["ratioExplanation"], ""]
+    for table in data["tables"]:
+        lines += [f"#### Native {table['label']}", "", f"{table['bytes']:,} input bytes. Bold marks the lowest measured time in this overview.", "",
+            "| Engine | Time / document | Throughput | Relative speed |", "| --- | ---: | ---: | ---: |"]
+        for row in table["rows"]:
+            cells = [row["label"], row["latency"], row["throughput"], row["relativeSpeed"]]
+            if row["winner"]:
+                cells = [f"**{cell}**" for cell in cells]
+            lines.append("| " + " | ".join(cells) + " |")
+        if table["unmeasured"]:
+            lines += ["", "Not measured for this document: " + ", ".join(table["unmeasured"]) + "."]
+        lines += [""]
     lines += [""] + [f"- **{e['label']}:** {e['notes']}" for e in data["engines"]]
     lines += ["", "Ox Content's short CommonMark case is a different document from the other engines' 5 KiB case. Its heading-ID exclusions prevent a corresponding 5 KiB result; no missing time is estimated.", "",
         "The [native cmark and cmark-gfm report](docs/reports/2026-09-11-native-cmark-comparison.md) additionally covers the C CommonMark reference parser and GitHub's fork, each with its own Ferromark baseline.", "",

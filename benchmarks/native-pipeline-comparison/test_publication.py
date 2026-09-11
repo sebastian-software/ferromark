@@ -1,7 +1,8 @@
 """Public pairs must retain their own baseline and complete archived measurements."""
 import copy
 import unittest
-from publish import data_for, validate_protocol
+from publish import data_for, overview_tables, validate_protocol
+import statistics
 
 
 class PublicationTests(unittest.TestCase):
@@ -17,6 +18,22 @@ class PublicationTests(unittest.TestCase):
         overlap = [next(r for r in e["rows"] if r["case"] == "gfm_overlap/features") for e in engines.values()]
         self.assertEqual(len({r["ferromarkNs"] for r in overlap}), len(engines))
         self.assertTrue(any(r["candidateNs"] < r["ferromarkNs"] for r in overlap))
+
+    def test_overview_uses_one_median_reference_and_keeps_candidate_times(self):
+        for table in self.data["tables"]:
+            baseline = table["rows"][0]
+            self.assertEqual(baseline["id"], "ferromark")
+            self.assertEqual(sum(r["id"] == "ferromark" for r in table["rows"]), 1)
+            self.assertEqual(baseline["medianNs"], statistics.median(table["referenceMediansNs"]))
+            for row in table["rows"][1:]:
+                engine = next(e for e in self.data["engines"] if e["id"] == row["id"])
+                original = next(r for r in engine["rows"] if r["case"] == table["case"])
+                self.assertEqual(row["medianNs"], original["candidateNs"])
+                self.assertEqual(row["relativeSpeed"], f"{baseline['medianNs']/original['candidateNs']:.2f}×")
+        broken = copy.deepcopy(self.data["engines"])
+        broken[0]["rows"][0]["inputSha256"] = "different document of the same size"
+        with self.assertRaises(ValueError):
+            overview_tables(broken)
 
     def test_publication_rejects_incomplete_or_shortened_runs(self):
         metadata = {"started_unix": 1, "finished_unix": 2, "protocol": self.data["engines"][0]["protocol"]}
