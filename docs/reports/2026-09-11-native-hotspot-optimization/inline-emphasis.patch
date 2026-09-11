@@ -1,0 +1,53 @@
+--- a/src/inline/emphasis.rs
++++ b/src/inline/emphasis.rs
+@@ -2,6 +2,8 @@
+ //!
+ //! Uses the "modulo-3" stack optimization from md4c to efficiently
+ //! match emphasis openers and closers according to CommonMark rules.
++
++use smallvec::SmallVec;
+ 
+ use super::{
+     link_boundary_for,
+@@ -26,7 +28,7 @@
+ /// Reusable emphasis stacks to avoid per-parse allocations.
+ #[derive(Default)]
+ pub struct EmphasisStacks {
+-    stacks: [Vec<OpenerEntry>; 6],
++    stacks: [SmallVec<[OpenerEntry; 1]>; 6],
+     order: usize,
+ }
+ 
+@@ -36,15 +38,6 @@
+             stack.clear();
+         }
+         self.order = 0;
+-    }
+-
+-    pub fn reserve_for_marks(&mut self, marks_len: usize) {
+-        let target_per_stack = (marks_len / 6).max(8);
+-        for stack in &mut self.stacks {
+-            if stack.capacity() < target_per_stack {
+-                stack.reserve(target_per_stack - stack.capacity());
+-            }
+-        }
+     }
+ }
+ 
+@@ -75,7 +68,6 @@
+     stacks: &mut EmphasisStacks,
+     matches: &mut Vec<EmphasisMatch>,
+ ) {
+-    stacks.reserve_for_marks(marks.len());
+     stacks.clear();
+     matches.clear();
+     let target_matches = (marks.len() / 4).max(8);
+@@ -181,7 +173,7 @@
+ /// Emphasis resolver with 6 stacks (2 chars x 3 modulo classes).
+ struct EmphasisResolver<'a> {
+     /// Stacks indexed by: (is_underscore ? 3 : 0) + (run_length % 3)
+-    stacks: &'a mut [Vec<OpenerEntry>; 6],
++    stacks: &'a mut [SmallVec<[OpenerEntry; 1]>; 6],
+     /// Global order counter.
+     order: &'a mut usize,
+     /// Link boundaries (start, text_end) - emphasis can't cross these.

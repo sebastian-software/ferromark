@@ -1,0 +1,8 @@
+{
+  "revision": "c5ca4ac9f18e7173ebf44a75dd26a660686f287c",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+  "flags": "# Platform-specific build configuration\n\n[target.aarch64-apple-darwin]\nrustflags = [\n    \"-C\", \"target-cpu=apple-m1\",\n    \"-C\", \"target-feature=+neon\",\n]\n\n[target.x86_64-apple-darwin]\nrustflags = [\n    \"-C\", \"target-cpu=native\",\n]\n\n# Faster incremental builds during development\n[profile.dev]\nopt-level = 1\n\n[profile.dev.package.\"*\"]\nopt-level = 2\n\n# Alias for quick benchmark runs\n[alias]\nb = \"bench\"\nt = \"test\"\n",
+  "allocator": "System",
+  "profile": "opt3 fat LTO CGU1 debug=true panic=abort",
+  "timing_features": []
+}

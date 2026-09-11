@@ -1,0 +1,26 @@
+--- a/src/inline/emphasis.rs
++++ b/src/inline/emphasis.rs
+@@ -37,15 +37,6 @@
+         }
+         self.order = 0;
+     }
+-
+-    pub fn reserve_for_marks(&mut self, marks_len: usize) {
+-        let target_per_stack = (marks_len / 6).max(8);
+-        for stack in &mut self.stacks {
+-            if stack.capacity() < target_per_stack {
+-                stack.reserve(target_per_stack - stack.capacity());
+-            }
+-        }
+-    }
+ }
+ 
+ /// Resolve emphasis marks using modulo-3 stacks.
+@@ -75,7 +66,6 @@
+     stacks: &mut EmphasisStacks,
+     matches: &mut Vec<EmphasisMatch>,
+ ) {
+-    stacks.reserve_for_marks(marks.len());
+     stacks.clear();
+     matches.clear();
+     let target_matches = (marks.len() / 4).max(8);

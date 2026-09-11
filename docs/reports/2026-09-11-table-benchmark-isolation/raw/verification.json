@@ -1,0 +1,58 @@
+[
+  {
+    "case": "tables-plain",
+    "config": "tables",
+    "input_bytes": 4560,
+    "input_sha256": "ff127f55f2f1af10ba2ce315ed1b5bd7cfc267efcea2134dd19e9cbd25e80c62",
+    "normalized_equal": true,
+    "exact_equal": false
+  },
+  {
+    "case": "tables-inline",
+    "config": "overlap",
+    "input_bytes": 5200,
+    "input_sha256": "1eb7fcc6a5d22a13c697e8a07199556ed13e282f7d19e1b58294c1f358ffb604",
+    "normalized_equal": true,
+    "exact_equal": false
+  },
+  {
+    "case": "tables-disabled-syntax",
+    "config": "tables",
+    "input_bytes": 5200,
+    "input_sha256": "1eb7fcc6a5d22a13c697e8a07199556ed13e282f7d19e1b58294c1f358ffb604",
+    "normalized_equal": true,
+    "exact_equal": false
+  },
+  {
+    "case": "short-cells",
+    "config": "tables",
+    "input_bytes": 3057,
+    "input_sha256": "f2846f14be9813174c509f222bdc65193dcc96638eef370daaafd1e896410601",
+    "normalized_equal": true,
+    "exact_equal": false
+  },
+  {
+    "case": "long-cells",
+    "config": "tables",
+    "input_bytes": 53153,
+    "input_sha256": "6bf484250107b2abb701b0df44e4ef842307661b4c0e064169b4c832a0146ec7",
+    "normalized_equal": true,
+    "exact_equal": false
+  },
+  {
+    "case": "eight-columns",
+    "config": "tables",
+    "input_bytes": 5909,
+    "input_sha256": "41d005a3bd83fe0d866ed7666582c18e40fff8db1e48cd561cf11162d95704e1",
+    "normalized_equal": true,
+    "exact_equal": false
+  },
+  {
+    "case": "nine-columns",
+    "config": "tables",
+    "input_bytes": 6622,
+    "input_sha256": "795a717234dc48acd91f8e49f2f47a3cff027af55495671367846335c8d438b1",
+    "normalized_equal": true,
+    "exact_equal": false
+  }
+]

@@ -67,8 +67,8 @@ types and panic with the same error if this limit is exceeded.
 ## Benchmarks
 
 Five native Markdown-to-HTML implementations, measured together: Ferromark,
-Bun, pulldown-cmark, Comrak, and C-md4c. Apple M1 Pro, macOS 26.6.2,
-rustc 1.99.0-nightly, September 2026. The [full report](docs/reports/2026-09-11-benchmark-refresh.md)
+pulldown-cmark, Bun, Comrak, and C-md4c. Apple M1 Pro, macOS 26.6.2,
+rustc 1.99.0-nightly, September 2026. The [full report](docs/reports/2026-09-11-native-optimization-publication.md)
 links raw timings, output differences, options, and source hashes.
 
 All five parsers render trusted input with fresh parser state and owned HTML output. The feature set is named per table; bare autolinks, tag filtering, heading IDs, and other extensions are disabled. All parsers use Bun's pinned mimalloc, including md4c's C allocation calls. Rust uses the same pinned nightly compiler and generic CPU target; Bun retains its native Highway support. No PGO is used.
@@ -86,11 +86,11 @@ claim about typical usage. Tiny inputs diagnose per-call overhead; 50 KiB and
 
 | Parser | Time / document | Throughput | vs ferromark |
 | --- | ---: | ---: | ---: |
-| **ferromark** | **9.784 µs** | **199.6 MiB/s** | **baseline** |
-| Bun (native) | 14.764 µs | 132.3 MiB/s | 0.66x |
-| pulldown-cmark | 10.130 µs | 192.8 MiB/s | 0.97x |
-| comrak | 22.264 µs | 87.7 MiB/s | 0.44x |
-| md4c (C) | 12.091 µs | 161.5 MiB/s | 0.81x |
+| **ferromark** | **9.343 µs** | **209.0 MiB/s** | **baseline** |
+| pulldown-cmark | 10.235 µs | 190.8 MiB/s | 0.91x |
+| Bun (native) | 15.092 µs | 129.4 MiB/s | 0.62x |
+| comrak | 23.209 µs | 84.2 MiB/s | 0.40x |
+| md4c (C) | 12.064 µs | 161.9 MiB/s | 0.77x |
 
 ### CommonMark · 5 KiB
 
@@ -98,11 +98,11 @@ claim about typical usage. Tiny inputs diagnose per-call overhead; 50 KiB and
 
 | Parser | Time / document | Throughput | vs ferromark |
 | --- | ---: | ---: | ---: |
-| **ferromark** | **24.886 µs** | **196.2 MiB/s** | **baseline** |
-| Bun (native) | 37.232 µs | 131.1 MiB/s | 0.67x |
-| pulldown-cmark | 27.590 µs | 177.0 MiB/s | 0.90x |
-| comrak | 57.654 µs | 84.7 MiB/s | 0.43x |
-| md4c (C) | 29.823 µs | 163.7 MiB/s | 0.83x |
+| **ferromark** | **23.702 µs** | **206.0 MiB/s** | **baseline** |
+| pulldown-cmark | 27.761 µs | 175.9 MiB/s | 0.85x |
+| Bun (native) | 38.063 µs | 128.3 MiB/s | 0.62x |
+| comrak | 60.006 µs | 81.4 MiB/s | 0.39x |
+| md4c (C) | 29.981 µs | 162.9 MiB/s | 0.79x |
 
 ### CommonMark · 10 KiB
 
@@ -110,11 +110,11 @@ claim about typical usage. Tiny inputs diagnose per-call overhead; 50 KiB and
 
 | Parser | Time / document | Throughput | vs ferromark |
 | --- | ---: | ---: | ---: |
-| **ferromark** | **50.629 µs** | **192.9 MiB/s** | **baseline** |
-| Bun (native) | 75.236 µs | 129.8 MiB/s | 0.67x |
-| pulldown-cmark | 55.587 µs | 175.7 MiB/s | 0.91x |
-| comrak | 118.706 µs | 82.3 MiB/s | 0.43x |
-| md4c (C) | 60.192 µs | 162.2 MiB/s | 0.84x |
+| **ferromark** | **48.134 µs** | **202.9 MiB/s** | **baseline** |
+| pulldown-cmark | 55.991 µs | 174.4 MiB/s | 0.86x |
+| Bun (native) | 76.926 µs | 126.9 MiB/s | 0.63x |
+| comrak | 124.042 µs | 78.7 MiB/s | 0.39x |
+| md4c (C) | 60.749 µs | 160.8 MiB/s | 0.79x |
 
 Every displayed case passed the five-parser workload check and three alternating-order measurement runs. Speed ratios apply to these inputs, feature sets, and allocation lifecycle. Locked versions: pulldown-cmark 0.13.4,
 comrak 0.54.0, md4c @ 65c6c9d, and bun @ 76e9dcc.
@@ -125,24 +125,29 @@ Time per complete document (microseconds, lower is faster). Each row uses the
 same input and selected options for all five parsers. Input sizes and syntax
 density differ between rows, so these are not additive feature prices.
 
-| Input / feature set | Bytes | ferromark | Bun (native) | pulldown-cmark | comrak | md4c (C) |
+| Input / feature set | Bytes | ferromark | pulldown-cmark | Bun (native) | comrak | md4c (C) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Tables only | 5200 | 46.178 µs | 48.093 µs | 35.228 µs | 135.257 µs | 48.208 µs |
-| Strikethrough only | 4700 | 25.492 µs | 36.596 µs | 33.794 µs | 72.102 µs | 28.158 µs |
-| GFM subset: tables + strikethrough | 5200 | 48.186 µs | 54.136 µs | 43.635 µs | 151.253 µs | 56.118 µs |
-| CommonMark links and images | 4760 | 26.667 µs | 38.253 µs | 28.600 µs | 57.406 µs | 41.000 µs |
-| CommonMark entities and inline markup | 5800 | 56.133 µs | 64.853 µs | 63.527 µs | 95.446 µs | 57.269 µs |
+| Tables: plain text | 4560 | **27.041 µs** | 29.770 µs | 41.330 µs | 125.882 µs | 40.765 µs |
+| Tables: emphasis and strong | 4800 | **33.943 µs** | 36.953 µs | 48.958 µs | 145.088 µs | 50.563 µs |
+| Tables: link column | 6360 | **38.854 µs** | 44.639 µs | 62.992 µs | 165.829 µs | 68.207 µs |
+| Strikethrough only | 4700 | **22.837 µs** | 33.947 µs | 38.083 µs | 75.156 µs | 28.142 µs |
+| CommonMark links and images | 4760 | **24.974 µs** | 28.614 µs | 38.640 µs | 58.349 µs | 41.225 µs |
+| CommonMark entities and inline markup | 5800 | **52.624 µs** | 63.644 µs | 66.153 µs | 99.031 µs | 58.013 µs |
 
-The tables-only and GFM-subset rows use identical table/strikethrough input.
-The first leaves strikethrough literal; the second renders it and also enables
-unused task-list parsing. Neither enables the full five-extension GFM preset.
-The GFM-subset row was remeasured for all five parsers after correcting the md4c
-task-list flag; its [replacement evidence](docs/reports/2026-09-11-benchmark-refresh/native-corrected/summary.json)
-remains separate from the original run.
+**Bold marks the lowest measured time in each row**, including exact ties.
+The three table cases use identical CommonMark-plus-tables options and cover
+plain text, emphasis/strong formatting, and a Markdown link column. CommonMark
+inline parsing remains active in all three. Table strikethrough is outside this
+comparison. The [profiling baseline](docs/reports/2026-09-11-commonmark-table-costs.md)
+and [optimization experiments](docs/reports/2026-09-11-native-hotspot-optimization.md)
+explain the table and short-document changes included in this run.
+The earlier [mixed-syntax figures](docs/reports/2026-09-11-benchmark-refresh.md)
+and [md4c flag correction](docs/reports/2026-09-11-benchmark-refresh/native-corrected/summary.json)
+remain historical evidence; none of their samples are mixed into this run.
 Task-list rendering conventions and the recorded Bun alignment bug are accepted
 for workload comparisons; the [output audit](docs/reports/2026-09-11-output-parity-audit.md)
 identifies agreeing groups, renderer conventions, a Bun table bug, and Ferromark's
-former reference-resolution limit. Ordinary HTML flow whitespace is accepted. 34 of
+former reference-resolution limit. Ordinary HTML flow whitespace is accepted. 36 of
 42 archived input/configuration pairs had matching HTML under the
 revised whitespace check. HTML agreement is a diagnostic, not the timing gate.
 The [workload contract](docs/arch/ARCH-COMP-002-workload-comparability.md) accepts
@@ -160,7 +165,7 @@ differences; output fidelity remains visible rather than blocking timing.
 
 Each displayed result is the median of three run medians. Each run has 80
 alternating-order windows totaling at least five seconds per parser/input,
-after three seconds of warmup. The [raw evidence](docs/reports/2026-09-11-benchmark-refresh/native/summary.json)
+after three seconds of warmup. The [raw evidence](docs/reports/2026-09-11-native-optimization-publication/native/summary.json)
 retains individual run medians and the complete samples. The [September 5 study](docs/reports/2026-09-05-bun-comparison.md)
 and former stable/System-allocator comparisons are historical experiments;
 their numbers are not mixed into these tables.
@@ -170,7 +175,7 @@ Follow the harness README to prepare Bun and the pinned md4c checkout:
 ```bash
 git -C "$MD4C_DIR" checkout --detach 65c6c9d
 python3 benchmarks/bun-comparison/prepare.py "$BUN_BENCH_DIR" "$BUN_BENCH_WORK" \
-  --md4c "$MD4C_DIR" --lockfile docs/reports/2026-09-11-benchmark-refresh/native/Cargo.lock
+  --md4c "$MD4C_DIR" --lockfile docs/reports/2026-09-11-native-optimization-publication/native/Cargo.lock
 python3 benchmarks/bun-comparison/run.py "$BUN_BENCH_DIR" /private/tmp/new-benchmark-run
 ```
 

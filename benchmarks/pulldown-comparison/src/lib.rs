@@ -17,6 +17,8 @@ pub use model::{ParserKind, RunConfig};
 pub enum ParityConfig {
     /// CommonMark with trusted raw HTML and no extensions.
     CommonMark,
+    /// CommonMark plus tables only.
+    TablesOnly,
     /// CommonMark plus tables, strikethrough, and task lists.
     GfmOverlap,
     /// GFM overlap plus footnotes, math, superscript, and callouts.
@@ -27,6 +29,7 @@ pub enum ParityConfig {
 pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
     let (tables, strikethrough, task_lists, footnotes, math, superscript, callouts) = match config {
         ParityConfig::CommonMark => (false, false, false, false, false, false, false),
+        ParityConfig::TablesOnly => (true, false, false, false, false, false, false),
         ParityConfig::GfmOverlap => (true, true, true, false, false, false, false),
         ParityConfig::ExtendedOverlap => (true, true, true, true, true, true, true),
     };
@@ -62,6 +65,7 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
 pub fn pulldown_options(config: ParityConfig) -> PulldownOptions {
     match config {
         ParityConfig::CommonMark => PulldownOptions::empty(),
+        ParityConfig::TablesOnly => PulldownOptions::ENABLE_TABLES,
         ParityConfig::GfmOverlap => {
             PulldownOptions::ENABLE_TABLES
                 | PulldownOptions::ENABLE_STRIKETHROUGH

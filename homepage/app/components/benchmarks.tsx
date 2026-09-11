@@ -54,8 +54,8 @@ export function BenchmarkTable({
       </thead>
       <tbody>
         {table.rows.map((row) => {
-          const leader = row.parser === benchmarks.headline.parser;
-          const cell = (value: string) => (leader && !isPanel ? <strong>{value}</strong> : value);
+          const leader = row.winner;
+          const cell = (value: string) => (leader ? <strong>{value}</strong> : value);
           return (
             <tr key={row.parser} className={leader ? "is-highlight" : undefined}>
               <td>{cell(row.parser)}</td>
@@ -92,7 +92,7 @@ export function FeatureBenchmarkTable() {
               <th scope="row">{table.label}</th>
               <td>{table.inputBytes.toLocaleString("en-US")}</td>
               {table.rows.map((row) => (
-                <td key={row.parser}>{row.latency}</td>
+                <td key={row.parser}>{row.winner ? <strong>{row.latency}</strong> : row.latency}</td>
               ))}
             </tr>
           ))}

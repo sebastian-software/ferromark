@@ -1,0 +1,24 @@
+{
+  "baseline": "baseline",
+  "candidate": "final-singlepass",
+  "rounds": 7,
+  "window_ms": 200,
+  "warmup_renders_per_window": 32,
+  "initial_warmup_ms": 300,
+  "clock_batch": 16,
+  "lanes": [
+    [
+      "baseline",
+      0
+    ],
+    [
+      "final-singlepass",
+      0
+    ],
+    [
+      "baseline",
+      2
+    ]
+  ],
+  "order": "rotating cases and rotating/reversing baseline, candidate, pulldown"
+}

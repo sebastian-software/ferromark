@@ -1,0 +1,698 @@
+[
+  {
+    "case": "commonmark/tiny",
+    "parsers": {
+      "ferromark": {
+        "before": {
+          "median_ns": 397.85946214176727,
+          "process_medians_ns": [
+            398.0212673677331,
+            397.6976569158014
+          ]
+        },
+        "after": {
+          "median_ns": 289.55901175411947,
+          "process_medians_ns": [
+            290.7022994705868,
+            288.4157240376521
+          ]
+        }
+      },
+      "pulldown-cmark": {
+        "before": {
+          "median_ns": 279.86807727588354,
+          "process_medians_ns": [
+            279.2005478782803,
+            280.53560667348677
+          ]
+        },
+        "after": {
+          "median_ns": 285.6165790233274,
+          "process_medians_ns": [
+            285.6070397707899,
+            285.62611827586494
+          ]
+        }
+      },
+      "bun_md": {
+        "before": {
+          "median_ns": 334.94755152226026,
+          "process_medians_ns": [
+            333.7991938161295,
+            336.09590922839095
+          ]
+        },
+        "after": {
+          "median_ns": 338.35981438523936,
+          "process_medians_ns": [
+            339.044168369026,
+            337.67546040145265
+          ]
+        }
+      },
+      "comrak": {
+        "before": {
+          "median_ns": 636.9501439518938,
+          "process_medians_ns": [
+            637.0415735634922,
+            636.8587143402955
+          ]
+        },
+        "after": {
+          "median_ns": 644.2730413883763,
+          "process_medians_ns": [
+            643.8346179840371,
+            644.7114647927156
+          ]
+        }
+      },
+      "md4c": {
+        "before": {
+          "median_ns": 897.396268864562,
+          "process_medians_ns": [
+            896.8645422345768,
+            897.9279954945471
+          ]
+        },
+        "after": {
+          "median_ns": 870.5409833852473,
+          "process_medians_ns": [
+            874.5464999078179,
+            866.5354668626766
+          ]
+        }
+      }
+    },
+    "paired_change_percent": -27.220885202961952,
+    "after_vs_pulldown_percent": 1.3803234897194372
+  },
+  {
+    "case": "commonmark/short-100b",
+    "parsers": {
+      "ferromark": {
+        "before": {
+          "median_ns": 637.2468794097982,
+          "process_medians_ns": [
+            639.6658142469878,
+            634.8279445726087
+          ]
+        },
+        "after": {
+          "median_ns": 526.1858439797876,
+          "process_medians_ns": [
+            525.7375620571961,
+            526.6341259023791
+          ]
+        }
+      },
+      "pulldown-cmark": {
+        "before": {
+          "median_ns": 538.7808095767753,
+          "process_medians_ns": [
+            548.4246756755476,
+            529.1369434780029
+          ]
+        },
+        "after": {
+          "median_ns": 532.1747435523403,
+          "process_medians_ns": [
+            531.4382865444045,
+            532.911200560276
+          ]
+        }
+      },
+      "bun_md": {
+        "before": {
+          "median_ns": 838.3684412789576,
+          "process_medians_ns": [
+            849.4330191364065,
+            827.3038634215086
+          ]
+        },
+        "after": {
+          "median_ns": 829.8152371996412,
+          "process_medians_ns": [
+            828.2553343158488,
+            831.3751400834335
+          ]
+        }
+      },
+      "comrak": {
+        "before": {
+          "median_ns": 1200.6270923982686,
+          "process_medians_ns": [
+            1219.8526219512196,
+            1181.4015628453176
+          ]
+        },
+        "after": {
+          "median_ns": 1187.0494088201963,
+          "process_medians_ns": [
+            1185.3582275395563,
+            1188.740590100836
+          ]
+        }
+      },
+      "md4c": {
+        "before": {
+          "median_ns": 1175.1111934812645,
+          "process_medians_ns": [
+            1176.8268436571557,
+            1173.3955433053734
+          ]
+        },
+        "after": {
+          "median_ns": 1132.5943632624737,
+          "process_medians_ns": [
+            1131.5366836665717,
+            1133.6520428583758
+          ]
+        }
+      }
+    },
+    "paired_change_percent": -17.42680198978368,
+    "after_vs_pulldown_percent": -1.1253633595190826
+  },
+  {
+    "case": "gfm_overlap/tiny",
+    "parsers": {
+      "ferromark": {
+        "before": {
+          "median_ns": 396.61531041817557,
+          "process_medians_ns": [
+            396.33865098549757,
+            396.89196985085357
+          ]
+        },
+        "after": {
+          "median_ns": 287.12765792021037,
+          "process_medians_ns": [
+            288.106871502324,
+            286.14844433809674
+          ]
+        }
+      },
+      "pulldown-cmark": {
+        "before": {
+          "median_ns": 280.73914190700333,
+          "process_medians_ns": [
+            280.97563653782026,
+            280.5026472761864
+          ]
+        },
+        "after": {
+          "median_ns": 286.0963868085852,
+          "process_medians_ns": [
+            286.7760135729169,
+            285.4167600442535
+          ]
+        }
+      },
+      "bun_md": {
+        "before": {
+          "median_ns": 334.69851004584945,
+          "process_medians_ns": [
+            334.85576509070484,
+            334.54125500099406
+          ]
+        },
+        "after": {
+          "median_ns": 336.137881090722,
+          "process_medians_ns": [
+            336.32070666826223,
+            335.9550555131817
+          ]
+        }
+      },
+      "comrak": {
+        "before": {
+          "median_ns": 644.6921927187395,
+          "process_medians_ns": [
+            646.9009379042691,
+            642.48344753321
+          ]
+        },
+        "after": {
+          "median_ns": 643.2937702800866,
+          "process_medians_ns": [
+            645.6551273968817,
+            640.9324131632915
+          ]
+        }
+      },
+      "md4c": {
+        "before": {
+          "median_ns": 898.7836259566013,
+          "process_medians_ns": [
+            899.8804435929401,
+            897.6868083202626
+          ]
+        },
+        "after": {
+          "median_ns": 863.0393501297428,
+          "process_medians_ns": [
+            864.8035819053252,
+            861.2751183541606
+          ]
+        }
+      }
+    },
+    "paired_change_percent": -27.60529582703019,
+    "after_vs_pulldown_percent": 0.36046282273225483
+  },
+  {
+    "case": "gfm_overlap/short-100b",
+    "parsers": {
+      "ferromark": {
+        "before": {
+          "median_ns": 632.2920971011705,
+          "process_medians_ns": [
+            631.3235214326903,
+            633.2606727696507
+          ]
+        },
+        "after": {
+          "median_ns": 522.7241651578161,
+          "process_medians_ns": [
+            525.9293856232368,
+            519.5189446923954
+          ]
+        }
+      },
+      "pulldown-cmark": {
+        "before": {
+          "median_ns": 527.940675749657,
+          "process_medians_ns": [
+            529.4703571039513,
+            526.4109943953625
+          ]
+        },
+        "after": {
+          "median_ns": 531.5075455681038,
+          "process_medians_ns": [
+            532.0158723298248,
+            530.9992188063826
+          ]
+        }
+      },
+      "bun_md": {
+        "before": {
+          "median_ns": 825.3845951714973,
+          "process_medians_ns": [
+            827.3514266631547,
+            823.4177636798397
+          ]
+        },
+        "after": {
+          "median_ns": 826.2160454469079,
+          "process_medians_ns": [
+            830.5683016439721,
+            821.8637892498435
+          ]
+        }
+      },
+      "comrak": {
+        "before": {
+          "median_ns": 1189.4910460895235,
+          "process_medians_ns": [
+            1191.95614871306,
+            1187.025943465987
+          ]
+        },
+        "after": {
+          "median_ns": 1192.7067910213705,
+          "process_medians_ns": [
+            1206.2509671205344,
+            1179.1626149222066
+          ]
+        }
+      },
+      "md4c": {
+        "before": {
+          "median_ns": 1169.1492986183669,
+          "process_medians_ns": [
+            1170.754144038788,
+            1167.5444531979458
+          ]
+        },
+        "after": {
+          "median_ns": 1126.9414057224817,
+          "process_medians_ns": [
+            1130.7641404735862,
+            1123.1186709713772
+          ]
+        }
+      }
+    },
+    "paired_change_percent": -17.32771861546435,
+    "after_vs_pulldown_percent": -1.6525410567595156
+  },
+  {
+    "case": "tables/tables-plain",
+    "parsers": {
+      "ferromark": {
+        "before": {
+          "median_ns": 30395.729737547754,
+          "process_medians_ns": [
+            30166.729292168675,
+            30624.730182926833
+          ]
+        },
+        "after": {
+          "median_ns": 26703.825306201008,
+          "process_medians_ns": [
+            26567.529934210528,
+            26840.120678191488
+          ]
+        }
+      },
+      "pulldown-cmark": {
+        "before": {
+          "median_ns": 29233.75145157201,
+          "process_medians_ns": [
+            28843.36099137931,
+            29624.141911764706
+          ]
+        },
+        "after": {
+          "median_ns": 29713.181801470586,
+          "process_medians_ns": [
+            29678.538602941175,
+            29747.825
+          ]
+        }
+      },
+      "bun_md": {
+        "before": {
+          "median_ns": 40616.12676411291,
+          "process_medians_ns": [
+            40331.653225806454,
+            40900.600302419356
+          ]
+        },
+        "after": {
+          "median_ns": 40710.01335685483,
+          "process_medians_ns": [
+            40492.88054435483,
+            40927.14616935483
+          ]
+        }
+      },
+      "comrak": {
+        "before": {
+          "median_ns": 122025.82440476191,
+          "process_medians_ns": [
+            121047.30803571429,
+            123004.34077380953
+          ]
+        },
+        "after": {
+          "median_ns": 123539.52678571428,
+          "process_medians_ns": [
+            123064.54464285713,
+            124014.50892857142
+          ]
+        }
+      },
+      "md4c": {
+        "before": {
+          "median_ns": 40129.02942588326,
+          "process_medians_ns": [
+            39840.19494047619,
+            40417.86391129032
+          ]
+        },
+        "after": {
+          "median_ns": 40476.05288338454,
+          "process_medians_ns": [
+            40345.90163370456,
+            40606.204133064515
+          ]
+        }
+      }
+    },
+    "paired_change_percent": -12.144520146113585,
+    "after_vs_pulldown_percent": -10.128018316505694
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "parsers": {
+      "ferromark": {
+        "before": {
+          "median_ns": 38238.21241747991,
+          "process_medians_ns": [
+            38624.278846153844,
+            37852.14598880597
+          ]
+        },
+        "after": {
+          "median_ns": 33536.41479166667,
+          "process_medians_ns": [
+            33560.71166666667,
+            33512.11791666667
+          ]
+        }
+      },
+      "pulldown-cmark": {
+        "before": {
+          "median_ns": 37042.00950410988,
+          "process_medians_ns": [
+            37664.937033582086,
+            36419.08197463768
+          ]
+        },
+        "after": {
+          "median_ns": 36796.605458759586,
+          "process_medians_ns": [
+            36707.22010869565,
+            36885.990808823524
+          ]
+        }
+      },
+      "bun_md": {
+        "before": {
+          "median_ns": 49153.97790771116,
+          "process_medians_ns": [
+            49869.10365196079,
+            48438.85216346154
+          ]
+        },
+        "after": {
+          "median_ns": 48238.26893028846,
+          "process_medians_ns": [
+            48223.73317307692,
+            48252.8046875
+          ]
+        }
+      },
+      "comrak": {
+        "before": {
+          "median_ns": 143273.32986111112,
+          "process_medians_ns": [
+            145159.72222222222,
+            141386.9375
+          ]
+        },
+        "after": {
+          "median_ns": 143857.13194444444,
+          "process_medians_ns": [
+            144380.640625,
+            143333.62326388888
+          ]
+        }
+      },
+      "md4c": {
+        "before": {
+          "median_ns": 50902.717053571425,
+          "process_medians_ns": [
+            51718.299107142855,
+            50087.134999999995
+          ]
+        },
+        "after": {
+          "median_ns": 50264.1140625,
+          "process_medians_ns": [
+            50284.088125,
+            50244.14
+          ]
+        }
+      }
+    },
+    "paired_change_percent": -12.287771149926385,
+    "after_vs_pulldown_percent": -8.860031044838712
+  },
+  {
+    "case": "tables/tables-links",
+    "parsers": {
+      "ferromark": {
+        "before": {
+          "median_ns": 43048.20582353156,
+          "process_medians_ns": [
+            42839.09322033898,
+            43257.31842672414
+          ]
+        },
+        "after": {
+          "median_ns": 38763.288611778844,
+          "process_medians_ns": [
+            38998.41231971154,
+            38528.164903846155
+          ]
+        }
+      },
+      "pulldown-cmark": {
+        "before": {
+          "median_ns": 44522.56597548559,
+          "process_medians_ns": [
+            44556.2108983396,
+            44488.92105263158
+          ]
+        },
+        "after": {
+          "median_ns": 44865.21622415414,
+          "process_medians_ns": [
+            45138.55580357143,
+            44591.87664473684
+          ]
+        }
+      },
+      "bun_md": {
+        "before": {
+          "median_ns": 62867.107440929874,
+          "process_medians_ns": [
+            63191.048437499994,
+            62543.166444359755
+          ]
+        },
+        "after": {
+          "median_ns": 63497.900781250006,
+          "process_medians_ns": [
+            63985.8078125,
+            63009.99375
+          ]
+        }
+      },
+      "comrak": {
+        "before": {
+          "median_ns": 162601.6845703125,
+          "process_medians_ns": [
+            162980.712890625,
+            162222.65625
+          ]
+        },
+        "after": {
+          "median_ns": 164830.525390625,
+          "process_medians_ns": [
+            165938.55859375,
+            163722.4921875
+          ]
+        }
+      },
+      "md4c": {
+        "before": {
+          "median_ns": 68170.90709459459,
+          "process_medians_ns": [
+            68402.69510135135,
+            67939.11908783784
+          ]
+        },
+        "after": {
+          "median_ns": 68376.89991554053,
+          "process_medians_ns": [
+            68941.5464527027,
+            67812.25337837837
+          ]
+        }
+      }
+    },
+    "paired_change_percent": -9.94898684335666,
+    "after_vs_pulldown_percent": -13.600575514646007
+  },
+  {
+    "case": "commonmark/publication-5k",
+    "parsers": {
+      "ferromark": {
+        "before": {
+          "median_ns": 24755.801676858864,
+          "process_medians_ns": [
+            24624.936274509804,
+            24886.66707920792
+          ]
+        },
+        "after": {
+          "median_ns": 23654.806603773584,
+          "process_medians_ns": [
+            23642.67629716981,
+            23666.936910377357
+          ]
+        }
+      },
+      "pulldown-cmark": {
+        "before": {
+          "median_ns": 27760.95175137363,
+          "process_medians_ns": [
+            27743.203296703297,
+            27778.700206043955
+          ]
+        },
+        "after": {
+          "median_ns": 27644.4167239011,
+          "process_medians_ns": [
+            27588.985233516483,
+            27699.848214285714
+          ]
+        }
+      },
+      "bun_md": {
+        "before": {
+          "median_ns": 38215.20857007576,
+          "process_medians_ns": [
+            38230.68560606061,
+            38199.73153409091
+          ]
+        },
+        "after": {
+          "median_ns": 38258.12807765151,
+          "process_medians_ns": [
+            38224.47111742424,
+            38291.785037878784
+          ]
+        }
+      },
+      "comrak": {
+        "before": {
+          "median_ns": 58727.22856104651,
+          "process_medians_ns": [
+            58833.726744186046,
+            58620.73037790698
+          ]
+        },
+        "after": {
+          "median_ns": 59308.06959440753,
+          "process_medians_ns": [
+            59110.22238372093,
+            59505.91680509413
+          ]
+        }
+      },
+      "md4c": {
+        "before": {
+          "median_ns": 30229.29235692771,
+          "process_medians_ns": [
+            30299.1344126506,
+            30159.45030120482
+          ]
+        },
+        "after": {
+          "median_ns": 29895.407180059523,
+          "process_medians_ns": [
+            29883.479166666664,
+            29907.33519345238
+          ]
+        }
+      }
+    },
+    "paired_change_percent": -4.445011209333893,
+    "after_vs_pulldown_percent": -14.431883877217555
+  }
+]

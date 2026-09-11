@@ -1,0 +1,331 @@
+diff --git a/src/block/parser.rs b/src/block/parser.rs
+index ea48001..a293bc5 100644
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -275,7 +275,7 @@ impl<'a> BlockParser<'a> {
+             input,
+             options,
+             BlockScratch {
+-                link_ref_label_buf: String::with_capacity(64),
++                link_ref_label_buf: String::new(),
+                 ..BlockScratch::default()
+             },
+         )
+@@ -3499,76 +3499,72 @@ impl<'a> BlockParser<'a> {
+         (base + s, base + e)
+     }
+ 
+-    /// Quick pre-filter: a valid delimiter row contains only `-`, `:`, `|`, spaces, and tabs,
+-    /// and must have at least one `-`.
+-    #[inline]
+-    fn could_be_delimiter_row(line: &[u8]) -> bool {
+-        let mut has_dash = false;
+-        for &b in line {
+-            match b {
+-                b'-' => has_dash = true,
+-                b':' | b'|' | b' ' | b'\t' => {}
+-                _ => return false,
+-            }
+-        }
+-        has_dash
+-    }
+-
+     /// Check if a line is a valid GFM table delimiter row.
+-    /// Returns column alignments if valid.
++    /// Consume delimiter syntax directly without the content-cell splitter.
+     fn is_delimiter_row(line: &[u8]) -> Option<(SmallVec<[Alignment; 8]>, bool)> {
+-        if !Self::could_be_delimiter_row(line) {
+-            return None;
++        let mut start = 0;
++        let mut end = line.len();
++        while start < end && matches!(line[start], b' ' | b'\t') {
++            start += 1;
++        }
++        while end > start && matches!(line[end - 1], b' ' | b'\t') {
++            end -= 1;
++        }
++        if start < end && line[start] == b'|' {
++            start += 1;
+         }
+-        let (cells, truncated) = Self::split_table_cells(line);
+-        if cells.is_empty() {
++        if end > start && line[end - 1] == b'|' {
++            end -= 1;
++        }
++        if start >= end {
+             return None;
+         }
+-
+         let mut alignments = SmallVec::new();
+-        for cell_range in &cells {
+-            let cell = &line[cell_range.start as usize..cell_range.end as usize];
+-            if cell.is_empty() {
+-                return None;
++        let mut truncated = false;
++        loop {
++            while start < end && matches!(line[start], b' ' | b'\t') {
++                start += 1;
+             }
+-
+-            let mut i = 0;
+-            let left_colon = cell[i] == b':';
+-            if left_colon {
+-                i += 1;
++            let left_colon = start < end && line[start] == b':';
++            start += usize::from(left_colon);
++            let dash_start = start;
++            while start < end && line[start] == b'-' {
++                start += 1;
+             }
+-
+-            // Must have at least one dash
+-            let dash_start = i;
+-            while i < cell.len() && cell[i] == b'-' {
+-                i += 1;
+-            }
+-            if i == dash_start {
+-                return None; // No dashes
++            if start == dash_start {
++                return None;
+             }
+-            let right_colon = i < cell.len() && cell[i] == b':';
+-            if right_colon {
+-                i += 1;
++            let right_colon = start < end && line[start] == b':';
++            start += usize::from(right_colon);
++            while start < end && matches!(line[start], b' ' | b'\t') {
++                start += 1;
+             }
+-
+-            // Must consume entire cell (after trimming)
+-            if i != cell.len() {
++            if start < end && line[start] != b'|' {
+                 return None;
+             }
+-
+-            let alignment = match (left_colon, right_colon) {
++            alignments.push(match (left_colon, right_colon) {
+                 (true, true) => Alignment::Center,
+                 (true, false) => Alignment::Left,
+                 (false, true) => Alignment::Right,
+                 (false, false) => Alignment::None,
+-            };
+-            alignments.push(alignment);
+-
++            });
++            if start == end {
++                break;
++            }
++            start += 1;
+             if alignments.len() >= limits::MAX_TABLE_COLUMNS {
++                // Preserve byte validation beyond the cap without collecting
++                // or interpreting additional alignment cells.
++                if line[start..end]
++                    .iter()
++                    .any(|&b| !matches!(b, b'-' | b':' | b'|' | b' ' | b'\t'))
++                {
++                    return None;
++                }
++                truncated = start < end;
+                 break;
+             }
+         }
+-
+         Some((alignments, truncated))
+     }
+ 
+diff --git a/src/byte_search.rs b/src/byte_search.rs
+index deaa7cb..626a321 100644
+--- a/src/byte_search.rs
++++ b/src/byte_search.rs
+@@ -56,9 +56,9 @@ impl<const N: usize> ByteSet<N> {
+         {
+             let len = input.len();
+             if len < 16 {
+-                // Building many comparison vectors costs more than the few
+-                // scalar table probes needed for a short input.
+-                if N > 5 {
++                // Short NEON loads need a padded copy; scalar lookup avoids
++                // that setup. Large sets also favor scalar lookup on SSE2.
++                if N > 5 || cfg!(target_arch = "aarch64") {
+                     return self.find_scalar(input);
+                 }
+                 let mut padded = [0; 16];
+diff --git a/src/inline/emphasis.rs b/src/inline/emphasis.rs
+index f49b22a..aebf21f 100644
+--- a/src/inline/emphasis.rs
++++ b/src/inline/emphasis.rs
+@@ -37,15 +37,6 @@ impl EmphasisStacks {
+         }
+         self.order = 0;
+     }
+-
+-    pub fn reserve_for_marks(&mut self, marks_len: usize) {
+-        let target_per_stack = (marks_len / 6).max(8);
+-        for stack in &mut self.stacks {
+-            if stack.capacity() < target_per_stack {
+-                stack.reserve(target_per_stack - stack.capacity());
+-            }
+-        }
+-    }
+ }
+ 
+ /// Resolve emphasis marks using modulo-3 stacks.
+@@ -75,7 +66,6 @@ pub fn resolve_emphasis_with_stacks_into(
+     stacks: &mut EmphasisStacks,
+     matches: &mut Vec<EmphasisMatch>,
+ ) {
+-    stacks.reserve_for_marks(marks.len());
+     stacks.clear();
+     matches.clear();
+     let target_matches = (marks.len() / 4).max(8);
+diff --git a/src/lib.rs b/src/lib.rs
+index 82b90cd..8be3ee6 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -978,7 +978,7 @@ struct ParagraphState {
+ impl ParagraphState {
+     fn new() -> Self {
+         Self {
+-            content: Vec::with_capacity(256),
++            content: Vec::new(),
+             in_paragraph: false,
+         }
+     }
+@@ -1032,7 +1032,7 @@ struct HeadingState {
+ impl HeadingState {
+     fn new() -> Self {
+         Self {
+-            content: Vec::with_capacity(64),
++            content: Vec::new(),
+             in_heading: false,
+             level: 0,
+         }
+@@ -1294,7 +1294,7 @@ struct CellState {
+ impl CellState {
+     fn new() -> Self {
+         Self {
+-            content: Vec::with_capacity(64),
++            content: Vec::new(),
+             pending: None,
+             in_cell: false,
+         }
+@@ -1719,9 +1719,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+         );
+ 
+         // Render events to HTML
+-        for event in events.iter() {
+-            context.render_block_event(input, event);
+-        }
++        context.render_events(input, events);
+ 
+         // Render footnote section at document end
+         if !context.footnote_numbers.is_empty() {
+@@ -1734,6 +1732,86 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+ }
+ 
+ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
++    /// Render a fresh document's single-range paragraph or ordinary table cells
++    /// directly, preserving block parsing and the full inline parser. The caller
++    /// resets document state first; other event shapes keep the stateful path.
++    fn render_events(&mut self, input: &[u8], mut events: &[BlockEvent]) {
++        if let [
++            BlockEvent::ParagraphStart,
++            BlockEvent::Text(range),
++            BlockEvent::ParagraphEnd,
++        ] = events
++        {
++            let text = range.slice(input);
++            let mut end = text.len();
++            while end > 0 && matches!(text[end - 1], b' ' | b'\t') {
++                end -= 1;
++            }
++            self.writer.paragraph_start();
++            if end > 0 {
++                render_inline_content(
++                    &text[..end],
++                    self.writer,
++                    self.inline_parser,
++                    self.inline_events,
++                    self.link_refs,
++                    self.footnote_store,
++                    self.footnote_numbers,
++                    self.options,
++                );
++            }
++            self.writer.paragraph_end();
++            return;
++        }
++        while let Some(event) = events.first() {
++            if let [
++                BlockEvent::TableCellStart { alignment, colspan },
++                BlockEvent::Text(range),
++                BlockEvent::TableCellEnd,
++                ..,
++            ] = events
++            {
++                let text = range.slice(input);
++                if !self.para_state.in_paragraph
++                    && !self.heading_state.in_heading
++                    && !self.cell_state.in_cell
++                    && memchr::memchr(b'\\', text).is_none()
++                {
++                    if *self.in_table_head {
++                        self.writer.th_start(*alignment, *colspan);
++                    } else {
++                        self.writer.td_start(*alignment, *colspan);
++                    }
++                    let mut end = text.len();
++                    while end > 0 && matches!(text[end - 1], b' ' | b'\t') {
++                        end -= 1;
++                    }
++                    if end > 0 {
++                        render_inline_content(
++                            &text[..end],
++                            self.writer,
++                            self.inline_parser,
++                            self.inline_events,
++                            self.link_refs,
++                            self.footnote_store,
++                            self.footnote_numbers,
++                            self.options,
++                        );
++                    }
++                    if *self.in_table_head {
++                        self.writer.th_end();
++                    } else {
++                        self.writer.td_end();
++                    }
++                    events = &events[3..];
++                    continue;
++                }
++            }
++            self.render_block_event(input, event);
++            events = &events[1..];
++        }
++    }
++
+     /// Render a single block event using the context's explicit state boundary.
+     fn render_block_event(&mut self, input: &[u8], event: &BlockEvent) {
+         let writer = &mut *self.writer;
+diff --git a/src/render.rs b/src/render.rs
+index 6ef9845..57579cf 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -131,10 +131,14 @@ impl HtmlWriter {
+ 
+     /// Create with pre-allocated capacity based on expected input size.
+     ///
+-    /// Typical HTML is ~1.25x input size; we reserve extra for safety.
++    /// Typical HTML is ~1.25x input size; a small minimum accommodates wrappers.
+     #[inline]
+     pub fn with_capacity_for(input_len: usize) -> Self {
+-        let capacity = input_len + input_len / 4;
++        let capacity = if input_len == 0 {
++            0
++        } else {
++            (input_len + input_len / 4).max(64)
++        };
+         Self {
+             out: Vec::with_capacity(capacity),
+         }

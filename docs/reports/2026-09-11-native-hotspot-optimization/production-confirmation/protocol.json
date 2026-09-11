@@ -1,0 +1,24 @@
+{
+  "rounds": 2,
+  "windows_per_process": 20,
+  "window_ms": 40,
+  "warmup_ms": 250,
+  "cases": [
+    "commonmark/tiny",
+    "commonmark/short-100b",
+    "gfm_overlap/tiny",
+    "gfm_overlap/short-100b",
+    "tables/tables-plain",
+    "tables/tables-commonmark-inline",
+    "tables/tables-links",
+    "commonmark/publication-5k"
+  ],
+  "driver_sha256": "52c77a37d9f88195d15f8ad42c1cd84b37aaa342432572a77455e200217a0e40",
+  "binaries": {
+    "before": "7a51e64eea1c6641577aa9cb2f2fabb80bb8e4525eb8e904700a2c4b4b174095",
+    "after": "721746b775f17db1fedda502d6d96eb4fd8486b6529d2d3b70a5eac89dc810c7"
+  },
+  "order": "case-by-case before/after, reversing each round; alternating all five parsers inside every process",
+  "statistic": "median of two process medians; paired changes between process medians",
+  "scope": "focused diagnostic, not the publication protocol"
+}

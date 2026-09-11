@@ -76,6 +76,27 @@ fn parity_benches(c: &mut Criterion) {
         ParityConfig::GfmOverlap,
     );
 
+    // CommonMark emphasis remains enabled in every case; vary the cell content.
+    for (name, input, config) in [
+        (
+            "tables-only/plain",
+            include_str!("../../../benches/fixtures/tables-plain.md"),
+            ParityConfig::TablesOnly,
+        ),
+        (
+            "tables-links/column",
+            include_str!("../../../benches/fixtures/tables-links.md"),
+            ParityConfig::TablesOnly,
+        ),
+        (
+            "tables-commonmark-inline/mixed",
+            include_str!("../../../benches/fixtures/tables-commonmark-inline.md"),
+            ParityConfig::TablesOnly,
+        ),
+    ] {
+        bench_pair(c, &format!("parity/{name}"), input, config);
+    }
+
     let extended = EXTENDED_SECTION.repeat(128);
     bench_pair(
         c,

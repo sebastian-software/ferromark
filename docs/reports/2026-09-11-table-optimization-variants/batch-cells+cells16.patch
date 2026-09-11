@@ -1,0 +1,108 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -3289,7 +3289,7 @@
+     /// Split a table line by unescaped `|` outside backtick code spans.
+     /// Returns source-relative cells trimmed of whitespace. Leading and
+     /// trailing pipes are stripped and every cell has a span of one.
+-    fn split_table_cells(line: &[u8]) -> (SmallVec<[TableCell; 8]>, bool) {
++    fn split_table_cells(line: &[u8]) -> (SmallVec<[TableCell; 16]>, bool) {
+         let mut cells = SmallVec::new();
+         let len = line.len();
+         if len == 0 {
+@@ -3372,7 +3372,7 @@
+     /// Unlike ordinary GFM splitting, the final pipe is significant here:
+     /// one pipe closes a one-column cell, `||` closes a two-column cell, and
+     /// so on. Whitespace between pipes preserves an explicit empty cell.
+-    fn split_merged_table_cells(line: &[u8]) -> (SmallVec<[TableCell; 8]>, bool) {
++    fn split_merged_table_cells(line: &[u8]) -> (SmallVec<[TableCell; 16]>, bool) {
+         let mut cells = SmallVec::new();
+         let len = line.len();
+         if len == 0 {
+@@ -3472,7 +3472,7 @@
+         next
+     }
+ 
+-    fn table_cells(&self, line: &[u8]) -> (SmallVec<[TableCell; 8]>, bool) {
++    fn table_cells(&self, line: &[u8]) -> (SmallVec<[TableCell; 16]>, bool) {
+         if self.options.merged_table_cells {
+             Self::split_merged_table_cells(line)
+         } else {
+@@ -3629,7 +3629,7 @@
+     /// Start a table from the last paragraph line (header) and delimiter row.
+     fn start_table(
+         &mut self,
+-        header_cells: SmallVec<[TableCell; 8]>,
++        header_cells: SmallVec<[TableCell; 16]>,
+         alignments: SmallVec<[Alignment; 8]>,
+         dash_counts: Option<SmallVec<[u16; 8]>>,
+         events: &mut Vec<BlockEvent>,
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1719,9 +1719,7 @@
+         );
+ 
+         // Render events to HTML
+-        for event in events.iter() {
+-            context.render_block_event(input, event);
+-        }
++        context.render_events(input, events);
+ 
+         // Render footnote section at document end
+         if !context.footnote_numbers.is_empty() {
+@@ -1734,6 +1732,56 @@
+ }
+ 
+ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
++    fn render_events(&mut self, input: &[u8], mut events: &[BlockEvent]) {
++        while let Some(event) = events.first() {
++            if let [
++                BlockEvent::TableCellStart { alignment, colspan },
++                BlockEvent::Text(range),
++                BlockEvent::TableCellEnd,
++                ..,
++            ] = events
++            {
++                let text = range.slice(input);
++                if !self.para_state.in_paragraph
++                    && !self.heading_state.in_heading
++                    && !self.cell_state.in_cell
++                    && memchr::memchr(b'\\', text).is_none()
++                {
++                    if *self.in_table_head {
++                        self.writer.th_start(*alignment, *colspan);
++                    } else {
++                        self.writer.td_start(*alignment, *colspan);
++                    }
++                    let mut end = text.len();
++                    while end > 0 && matches!(text[end - 1], b' ' | b'\t') {
++                        end -= 1;
++                    }
++                    if end > 0 {
++                        render_inline_content(
++                            &text[..end],
++                            self.writer,
++                            self.inline_parser,
++                            self.inline_events,
++                            self.link_refs,
++                            self.footnote_store,
++                            self.footnote_numbers,
++                            self.options,
++                        );
++                    }
++                    if *self.in_table_head {
++                        self.writer.th_end();
++                    } else {
++                        self.writer.td_end();
++                    }
++                    events = &events[3..];
++                    continue;
++                }
++            }
++            self.render_block_event(input, event);
++            events = &events[1..];
++        }
++    }
++
+     /// Render a single block event using the context's explicit state boundary.
+     fn render_block_event(&mut self, input: &[u8], event: &BlockEvent) {
+         let writer = &mut *self.writer;
