@@ -1,0 +1,80 @@
+[
+  {
+    "ferromark_limits": "ResourceLimitReport(0)",
+    "flags": 1,
+    "input": "| A | B |\n| --- | ---: |\n| one | two |\n",
+    "outputs": {
+      "bun_md": "<table>\n<thead>\n<tr><th>A</th><th align=\"right\">B</th></tr>\n</thead>\n<tbody>\n<tr><td>one</td><td align=\"right\">two</td></tr>\n</tbody>\n</table>\n",
+      "comrak": "<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n",
+      "ferromark": "<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n",
+      "md4c": "<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n",
+      "pulldown-cmark": "<table><thead><tr><th>A</th><th style=\"text-align: right\">B</th></tr></thead><tbody>\n<tr><td>one</td><td style=\"text-align: right\">two</td></tr>\n</tbody></table>\n"
+    },
+    "name": "one-table"
+  },
+  {
+    "ferromark_limits": "ResourceLimitReport(0)",
+    "flags": 1,
+    "input": "| A | B |\n| --- | ---: |\n| one | two |\n\n| C | D |\n| :---: | --- |\n| three | four |\n",
+    "outputs": {
+      "bun_md": "<table>\n<thead>\n<tr><th align=\"center\">A</th><th>B</th></tr>\n</thead>\n<tbody>\n<tr><td align=\"center\">one</td><td>two</td></tr>\n</tbody>\n</table>\n<table>\n<thead>\n<tr><th align=\"center\">C</th><th>D</th></tr>\n</thead>\n<tbody>\n<tr><td align=\"center\">three</td><td>four</td></tr>\n</tbody>\n</table>\n",
+      "comrak": "<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n<table>\n<thead>\n<tr>\n<th align=\"center\">C</th>\n<th>D</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"center\">three</td>\n<td>four</td>\n</tr>\n</tbody>\n</table>\n",
+      "ferromark": "<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n<table>\n<thead>\n<tr>\n<th align=\"center\">C</th>\n<th>D</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"center\">three</td>\n<td>four</td>\n</tr>\n</tbody>\n</table>\n",
+      "md4c": "<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n<table>\n<thead>\n<tr>\n<th align=\"center\">C</th>\n<th>D</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"center\">three</td>\n<td>four</td>\n</tr>\n</tbody>\n</table>\n",
+      "pulldown-cmark": "<table><thead><tr><th>A</th><th style=\"text-align: right\">B</th></tr></thead><tbody>\n<tr><td>one</td><td style=\"text-align: right\">two</td></tr>\n</tbody></table>\n<table><thead><tr><th style=\"text-align: center\">C</th><th>D</th></tr></thead><tbody>\n<tr><td style=\"text-align: center\">three</td><td>four</td></tr>\n</tbody></table>\n"
+    },
+    "name": "two-tables"
+  },
+  {
+    "ferromark_limits": "ResourceLimitReport(0)",
+    "flags": 1,
+    "input": "| C | D |\n| :---: | --- |\n| three | four |\n\n| A | B |\n| --- | ---: |\n| one | two |\n",
+    "outputs": {
+      "bun_md": "<table>\n<thead>\n<tr><th>C</th><th align=\"right\">D</th></tr>\n</thead>\n<tbody>\n<tr><td>three</td><td align=\"right\">four</td></tr>\n</tbody>\n</table>\n<table>\n<thead>\n<tr><th>A</th><th align=\"right\">B</th></tr>\n</thead>\n<tbody>\n<tr><td>one</td><td align=\"right\">two</td></tr>\n</tbody>\n</table>\n",
+      "comrak": "<table>\n<thead>\n<tr>\n<th align=\"center\">C</th>\n<th>D</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"center\">three</td>\n<td>four</td>\n</tr>\n</tbody>\n</table>\n<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n",
+      "ferromark": "<table>\n<thead>\n<tr>\n<th align=\"center\">C</th>\n<th>D</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"center\">three</td>\n<td>four</td>\n</tr>\n</tbody>\n</table>\n<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n",
+      "md4c": "<table>\n<thead>\n<tr>\n<th align=\"center\">C</th>\n<th>D</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"center\">three</td>\n<td>four</td>\n</tr>\n</tbody>\n</table>\n<table>\n<thead>\n<tr>\n<th>A</th>\n<th align=\"right\">B</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>one</td>\n<td align=\"right\">two</td>\n</tr>\n</tbody>\n</table>\n",
+      "pulldown-cmark": "<table><thead><tr><th style=\"text-align: center\">C</th><th>D</th></tr></thead><tbody>\n<tr><td style=\"text-align: center\">three</td><td>four</td></tr>\n</tbody></table>\n<table><thead><tr><th>A</th><th style=\"text-align: right\">B</th></tr></thead><tbody>\n<tr><td>one</td><td style=\"text-align: right\">two</td></tr>\n</tbody></table>\n"
+    },
+    "name": "two-tables-reversed"
+  },
+  {
+    "ferromark_limits": "ResourceLimitReport(0)",
+    "flags": 4,
+    "input": "- [x] A\n\n- [ ] B\n",
+    "outputs": {
+      "bun_md": "<ul>\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled checked>\n<p>A</p>\n</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled>\n<p>B</p>\n</li>\n</ul>\n",
+      "comrak": "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> \n<p>A</p>\n</li>\n<li><input type=\"checkbox\" disabled=\"\" /> \n<p>B</p>\n</li>\n</ul>\n",
+      "ferromark": "<ul>\n<li>\n<p><input type=\"checkbox\" checked=\"\" disabled=\"\" /> A</p>\n</li>\n<li>\n<p><input type=\"checkbox\" disabled=\"\" /> B</p>\n</li>\n</ul>\n",
+      "md4c": "<ul>\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled checked><p>A</p>\n</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled><p>B</p>\n</li>\n</ul>\n",
+      "pulldown-cmark": "<ul>\n<li>\n<p><input disabled=\"\" type=\"checkbox\" checked=\"\"/>\nA</p>\n</li>\n<li>\n<p><input disabled=\"\" type=\"checkbox\"/>\nB</p>\n</li>\n</ul>\n"
+    },
+    "name": "tasks-loose"
+  },
+  {
+    "ferromark_limits": "ResourceLimitReport(0)",
+    "flags": 4,
+    "input": "- [x] A\n- [ ] B\n",
+    "outputs": {
+      "bun_md": "<ul>\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled checked>A</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled>B</li>\n</ul>\n",
+      "comrak": "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> A</li>\n<li><input type=\"checkbox\" disabled=\"\" /> B</li>\n</ul>\n",
+      "ferromark": "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> A</li>\n<li><input type=\"checkbox\" disabled=\"\" /> B</li>\n</ul>\n",
+      "md4c": "<ul>\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled checked>A</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled>B</li>\n</ul>\n",
+      "pulldown-cmark": "<ul>\n<li><input disabled=\"\" type=\"checkbox\" checked=\"\"/>\nA</li>\n<li><input disabled=\"\" type=\"checkbox\"/>\nB</li>\n</ul>\n"
+    },
+    "name": "tasks-tight"
+  },
+  {
+    "name": "reference-limit",
+    "flags": 0,
+    "input_sha256": "329d82fd34b7d128b499c92c68fca2a0c0414ec7fafda14f83bda859f6d15bb4",
+    "ferromark_limits": "ResourceLimitReport(4)",
+    "resolved_charter_links": {
+      "bun_md": 564,
+      "comrak": 564,
+      "ferromark": 404,
+      "md4c": 564,
+      "pulldown-cmark": 564
+    }
+  }
+]

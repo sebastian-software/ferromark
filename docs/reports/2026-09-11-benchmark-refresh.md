@@ -109,34 +109,39 @@ Before timing, all five parsers render every benchmark case and all 652 stored
 CommonMark examples. Exact outputs and hashes are archived. A limited HTML
 comparator permits entity spelling, void-tag slashes, attribute order, boolean
 attribute serialization, equivalent table-alignment attributes/styles, and
-newline-only formatting outside code. It preserves visible text, URLs, code
+ordinary HTML flow whitespace at known block boundaries (with literal/code text preserved). It preserves visible text, URLs, code
 whitespace, IDs, classes, checkbox values, and substantive markup differences.
 This is neither a browser DOM equivalence proof nor official conformance testing.
 
-**32 of 42 input/configuration pairs pass**, including all eight public cases.
-The gate excludes a whole case when any parser differs from Ferromark after
-normalization; it does not publish an artificially favorable subset of parsers.
+The original run admitted **32 of 42** cases. A subsequent
+[output audit](2026-09-11-output-parity-audit.md) found overly strict whitespace
+handling and an incorrect md4c task-list flag in our adapter. Fresh verification
+with the corrected flag and revised flow-whitespace comparison admits **34 of 42**.
+The generated [grouping evidence](2026-09-11-benchmark-refresh/parity-groups.json)
+shows which parsers agree, independently of Ferromark as a reference.
 
-| Excluded case | Implementations differing from Ferromark |
-| --- | --- |
-| `commonmark/commonmark-5k` | md4c |
-| `commonmark/commonmark-50k` | md4c |
-| `commonmark/commonmark-1m` | Bun, pulldown-cmark, Comrak, md4c |
-| `gfm_overlap/tasks` | Bun, pulldown-cmark, Comrak, md4c |
-| `gfm_overlap/gfm-features` | Bun, pulldown-cmark, md4c |
-| `gfm_overlap/commonmark-5k` | Bun, md4c |
-| `gfm_overlap/commonmark-50k` | Bun, md4c |
-| `gfm_overlap/commonmark-1m` | Bun, pulldown-cmark, Comrak, md4c |
-| `gfm_overlap/tables-5k` | Bun |
-| `task_lists/tasks` | Bun, pulldown-cmark, Comrak, md4c |
+| Cause among the original ten exclusions | Cases | Outcome |
+| --- | --- | --- |
+| Whitespace before nested lists | CommonMark 5k and 50k | All five now agree; no new timings collected for these two cases. |
+| Bun borrows the last table's alignment | GFM overlap 5k, 50k, tables-5k | Other four agree; a minimized two-table example reproduces it. |
+| Ferromark's reference-resolution work limit | CommonMark and GFM overlap 1m | Other four agree; Ferromark reports the limit and preserves remaining reference syntax literally. |
+| Task-list renderer conventions | GFM overlap tasks, mixed features, task-only tasks | Same tasks and states after correcting md4c; paragraph placement and classes differ. |
 
-Task-list output has differences in list/paragraph structure and checkbox
-attributes/classes. Older mixed fixtures also expose newline, extension, or
-other output differences. The comparator deliberately remains conservative;
-not every exclusion establishes a parser bug. Original output makes each
-exclusion inspectable without broadening normalization just to obtain a ratio.
+The [audit](2026-09-11-output-parity-audit.md) distinguishes comparable task
+workloads from identical HTML contracts. Whitespace alone no longer excludes a
+case. Missing links and wrong table alignment must not be normalized away.
 
-On the stored spec corpus, exact/normalized matches were Ferromark 652/652,
+**Measurement correction:** original `gfm_overlap/*` and `task_lists/*` timings
+used the wrong md4c option and are historical, not matched-option comparisons.
+The one affected public row (`gfm_overlap/gfm-tables`) was remeasured for all five
+parsers with the same three-run protocol. Its complete
+[replacement run](2026-09-11-benchmark-refresh/native-corrected/metadata.json)
+and [publication source map](2026-09-11-benchmark-refresh/publication-sources.json)
+remain separate from the immutable original run. The other seven public cases
+are unaffected. All public rows below are generated from their valid source;
+output eligibility does not imply fresh timing coverage of every admitted case.
+
+Under the original comparator, stored-spec exact/normalized matches were Ferromark 652/652,
 Comrak 652/652, pulldown-cmark 630/652, Bun 649/649, and md4c 541/644 out of 652.
 The mismatch example numbers and all output are retained in `verification.json`
 and `spec.jsonl.gz`. These counts describe this comparator and these pinned
@@ -182,11 +187,11 @@ The main README and homepage tables also report input throughput.
 | Strikethrough only | pulldown-cmark | 33.794 µs | 34.013, 33.794, 33.575 | 1.3% | 7300 |
 | Strikethrough only | comrak | 72.102 µs | 72.144, 71.906, 72.102 | 0.3% | 7300 |
 | Strikethrough only | md4c (C) | 28.158 µs | 28.224, 28.045, 28.158 | 0.6% | 7300 |
-| GFM subset: tables + strikethrough | ferromark | 49.196 µs | 50.445, 48.980, 49.196 | 3.0% | 13360 |
-| GFM subset: tables + strikethrough | Bun (native) | 53.780 µs | 53.898, 53.706, 53.780 | 0.4% | 12880 |
-| GFM subset: tables + strikethrough | pulldown-cmark | 43.498 µs | 43.854, 43.498, 43.432 | 1.0% | 12480 |
-| GFM subset: tables + strikethrough | comrak | 151.005 µs | 151.738, 150.854, 151.005 | 0.6% | 13360 |
-| GFM subset: tables + strikethrough | md4c (C) | 56.793 µs | 56.717, 56.793, 56.843 | 0.2% | 13360 |
+| GFM subset: tables + strikethrough | ferromark | 48.186 µs | 48.021, 48.222, 48.186 | 0.4% | 13360 |
+| GFM subset: tables + strikethrough | Bun (native) | 54.136 µs | 54.132, 54.136, 54.181 | 0.1% | 12880 |
+| GFM subset: tables + strikethrough | pulldown-cmark | 43.635 µs | 43.551, 43.635, 43.677 | 0.3% | 12480 |
+| GFM subset: tables + strikethrough | comrak | 151.253 µs | 151.253, 151.046, 151.290 | 0.2% | 13360 |
+| GFM subset: tables + strikethrough | md4c (C) | 56.118 µs | 56.074, 56.138, 56.118 | 0.1% | 13360 |
 | CommonMark links and images | ferromark | 26.667 µs | 26.800, 26.632, 26.667 | 0.6% | 7350 |
 | CommonMark links and images | Bun (native) | 38.253 µs | 38.374, 38.212, 38.253 | 0.4% | 7350 |
 | CommonMark links and images | pulldown-cmark | 28.600 µs | 28.714, 28.600, 28.562 | 0.5% | 7350 |
@@ -287,8 +292,9 @@ See the [native harness instructions](../../benchmarks/bun-comparison/README.md)
 for pinned source setup, native support builds, and lockfile replay. The initial
 Bun lockfile resolution updated the local Ferromark package from 0.7 to 0.8;
 the recorded resolved lockfile was then rebuilt successfully with `--locked`
-before verification and timing. No comparator source was changed to make an
-excluded case pass.
+before verification and timing. Production parser sources remain unchanged.
+The later output audit deliberately corrected the adapter and whitespace
+comparator, retaining the original run and its verification as historical evidence.
 
 ```bash
 python3 benchmarks/bun-comparison/run.py "$BUN_BENCH_DIR" /private/tmp/new-benchmark-run

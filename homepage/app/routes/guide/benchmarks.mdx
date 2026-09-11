@@ -50,16 +50,27 @@ rows, so these are workload measurements rather than additive feature prices.
 The tables-only and GFM-subset cases use identical table/strikethrough input.
 The first keeps strikethrough literal. The second renders strikethrough and
 also enables unused task-list parsing. Neither enables bare autolinks or tag
-filtering, so neither is the full GFM preset. Task-list fixtures fail the shared
-output gate and are excluded from speed ratios; their differences remain in
-the report.
+filtering, so neither is the full GFM preset. The GFM-subset row was remeasured
+for all five parsers after correcting our md4c task-list flag; its
+[replacement evidence](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-09-11-benchmark-refresh/native-corrected)
+is retained separately.
+
+The revised check admits {benchmarks.verification.eligible} of {benchmarks.verification.total}
+input/configuration pairs, including cases without published timings.
+The [output audit](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-output-parity-audit.md)
+identifies agreeing parser groups, a Bun table-alignment bug, and Ferromark's
+reference-resolution limit. Task lists perform comparable work but differ in
+checkbox placement and CSS classes; they remain outside these equivalent-HTML
+speed ratios and can be studied separately with those differences disclosed.
 
 ## What the comparison guarantees
 
 Every displayed input/configuration pair passes an output-equivalence gate
 across all five parsers before timing. The limited comparator allows documented
 serialization differences, including entity spelling, attribute order, and
-void-element slashes. It preserves visible text, URL values, code whitespace,
+void-element slashes. Ordinary HTML flow whitespace is normalized while retaining
+inline word separators and literal text; arbitrary CSS whitespace rules are
+outside this check. It preserves visible text, URL values, code whitespace,
 classes, IDs, and checkbox attributes. This is a corpus check, not proof that
 the parsers agree on arbitrary Markdown.
 

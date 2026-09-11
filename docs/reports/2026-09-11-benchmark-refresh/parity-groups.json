@@ -1,0 +1,307 @@
+{
+  "normalization": "HTML flow whitespace; preserve markup, attributes, word boundaries, and literal text",
+  "cases": [
+    {
+      "case": "commonmark/commonmark-5k",
+      "original_gate_mismatches": [
+        "md4c"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md",
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md",
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ]
+    },
+    {
+      "case": "commonmark/commonmark-50k",
+      "original_gate_mismatches": [
+        "md4c"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md",
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md",
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ]
+    },
+    {
+      "case": "commonmark/commonmark-1m",
+      "original_gate_mismatches": [
+        "bun_md",
+        "comrak",
+        "md4c",
+        "pulldown-cmark"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md",
+          "comrak",
+          "md4c",
+          "pulldown-cmark"
+        ],
+        [
+          "ferromark"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md",
+          "comrak",
+          "md4c",
+          "pulldown-cmark"
+        ],
+        [
+          "ferromark"
+        ]
+      ]
+    },
+    {
+      "case": "gfm_overlap/tasks",
+      "original_gate_mismatches": [
+        "bun_md",
+        "comrak",
+        "md4c",
+        "pulldown-cmark"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak"
+        ],
+        [
+          "ferromark",
+          "pulldown-cmark"
+        ],
+        [
+          "md4c"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md",
+          "md4c"
+        ],
+        [
+          "comrak"
+        ],
+        [
+          "ferromark",
+          "pulldown-cmark"
+        ]
+      ]
+    },
+    {
+      "case": "gfm_overlap/gfm-features",
+      "original_gate_mismatches": [
+        "bun_md",
+        "md4c",
+        "pulldown-cmark"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak",
+          "ferromark",
+          "pulldown-cmark"
+        ],
+        [
+          "md4c"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md",
+          "md4c"
+        ],
+        [
+          "comrak",
+          "ferromark",
+          "pulldown-cmark"
+        ]
+      ]
+    },
+    {
+      "case": "gfm_overlap/commonmark-5k",
+      "original_gate_mismatches": [
+        "bun_md",
+        "md4c"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ]
+    },
+    {
+      "case": "gfm_overlap/commonmark-50k",
+      "original_gate_mismatches": [
+        "bun_md",
+        "md4c"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ]
+    },
+    {
+      "case": "gfm_overlap/commonmark-1m",
+      "original_gate_mismatches": [
+        "bun_md",
+        "comrak",
+        "md4c",
+        "pulldown-cmark"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md",
+          "comrak",
+          "md4c",
+          "pulldown-cmark"
+        ],
+        [
+          "ferromark"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md",
+          "comrak",
+          "md4c",
+          "pulldown-cmark"
+        ],
+        [
+          "ferromark"
+        ]
+      ]
+    },
+    {
+      "case": "gfm_overlap/tables-5k",
+      "original_gate_mismatches": [
+        "bun_md"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak",
+          "ferromark",
+          "md4c",
+          "pulldown-cmark"
+        ]
+      ]
+    },
+    {
+      "case": "task_lists/tasks",
+      "original_gate_mismatches": [
+        "bun_md",
+        "comrak",
+        "md4c",
+        "pulldown-cmark"
+      ],
+      "original_outputs_flow_groups": [
+        [
+          "bun_md"
+        ],
+        [
+          "comrak"
+        ],
+        [
+          "ferromark",
+          "pulldown-cmark"
+        ],
+        [
+          "md4c"
+        ]
+      ],
+      "corrected_outputs_flow_groups": [
+        [
+          "bun_md",
+          "md4c"
+        ],
+        [
+          "comrak"
+        ],
+        [
+          "ferromark",
+          "pulldown-cmark"
+        ]
+      ]
+    }
+  ]
+}

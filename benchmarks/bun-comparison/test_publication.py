@@ -38,6 +38,10 @@ class PublicationTests(unittest.TestCase):
         ]
 
     def write(self):
+        flags = {"commonmark": 0, "tables": 0x100, "strikethrough": 0x200, "gfm_overlap": 0xB00}
+        (self.folder / "options.jsonl").write_text("\n".join(json.dumps({
+            "lane":lane, "md4c_parser_flags":flag, "md4c_renderer_flags":0
+        }) for lane, flag in flags.items()))
         for filename, data in [("metadata.json", self.metadata),
                                ("verification.json", self.verification),
                                ("summary.json", self.summary)]:
@@ -82,6 +86,13 @@ class PublicationTests(unittest.TestCase):
         self.summary[0]["median_ns"] = 500
         self.write()
         with self.assertRaisesRegex(ValueError, "disagrees with raw samples"):
+            load_publication(self.folder)
+
+    def test_wrong_effective_options_are_rejected_even_when_html_matches(self):
+        self.write()
+        path = self.folder / "options.jsonl"
+        path.write_text(path.read_text().replace('"md4c_parser_flags": 2816', '"md4c_parser_flags": 8960'))
+        with self.assertRaisesRegex(ValueError, "options do not match"):
             load_publication(self.folder)
 
     def test_lost_sample_is_rejected(self):

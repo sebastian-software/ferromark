@@ -1,6 +1,7 @@
 import unittest
 
 from run import CanonicalHTML, PARSERS, mismatches
+from audit import groups
 
 
 def canonical(html):
@@ -16,6 +17,12 @@ class VerificationTests(unittest.TestCase):
         del outputs["md4c"]
         with self.assertRaises(ValueError):
             mismatches(outputs)
+
+    def test_agreement_groups_do_not_treat_ferromark_as_an_oracle(self):
+        outputs = {name: "<p>linked</p>" for name in PARSERS}
+        outputs["ferromark"] = "<p>literal</p>"
+        self.assertCountEqual(groups(outputs),
+                              [["bun_md", "comrak", "md4c", "pulldown-cmark"], ["ferromark"]])
 
     def test_serialization_only_differences_are_accepted(self):
         self.assertEqual(canonical('<p>A &amp; B<br />C</p>\n'), canonical('<p>A &#38; B<br>C</p>'))

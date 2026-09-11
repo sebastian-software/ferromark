@@ -97,13 +97,28 @@ links/images, and entities. None of these measurements is an additive feature pr
 Before timing, all 652 stored CommonMark examples and every benchmark input
 are rendered. Exact outputs and hashes are retained. A limited HTML tokenizer
 also normalizes entity spelling, void-tag slashes, attribute order, boolean
-attributes, equivalent table alignment attributes/styles, and newline-only
-formatting outside code. It preserves different alignments, URLs, code text,
+attributes, equivalent table alignment attributes/styles, and ordinary flow
+formatting at known HTML block boundaries. ASCII flow whitespace is collapsed,
+while separators between inline words and non-breaking spaces are retained.
+Literal text in pre/code/textarea/script/style is preserved. It preserves different alignments, URLs, code text,
 and substantive text differences. This is a serialization check, not a full
 browser-DOM equivalence test or the official CommonMark conformance harness.
 Only benchmark cases matching across **all five** parsers after this check
 enter the timing allowlist. Spec mismatches are reported without suppressing
-them or rewriting parser output.
+them or rewriting parser output. This assumes default HTML flow, not arbitrary
+CSS whitespace rules. The [exclusion audit](../../docs/reports/2026-09-11-output-parity-audit.md)
+groups agreeing parsers and distinguishes harmless serialization, renderer
+conventions, resource limits, and parser bugs. `audit.py` reproduces its groups
+from archived output without treating one parser as the correctness oracle.
+
+A native `selftest` checks actual md4c task-list and wiki-link behavior before
+verification. `render <configuration bits>` accepts Markdown on standard input
+and emits all five HTML results plus Ferromark's resource-limit report. This
+provides a small reproduction loop for output differences.
+
+Use repeated `--case configuration/input` arguments for a targeted correction:
+all cases are verified, but only the selected cases are measured, three times
+each in publication mode. Selection never bypasses the equivalence gate.
 
 Results include original output, excluded cases, spec diagnostics, compiler and
 machine details, executable/source/fixture hashes, the effective Cargo lockfile,
@@ -116,7 +131,12 @@ harness, so ordinary builds and CI acquire no Bun dependency.
 After a complete publication run, `publish.py` generates README tables and the
 homepage data from the same raw samples. It rejects short screening protocols,
 missing samples, edited summaries, and cases that fail the output gate. The
-original outputs are checked again rather than trusting the saved pass flag.
+original outputs and recorded md4c options are checked again rather than trusting
+the saved pass flag. A sibling `publication-sources.json` may replace a complete
+public case from a corrected run; it never replaces individual parser cells.
+The September 11 correction replaces the GFM-subset case after fixing the md4c
+task flag. Historical GFM/task-lane samples remain archived but must not be reused
+as matched-option comparisons.
 
 ```bash
 python3 benchmarks/bun-comparison/publish.py docs/reports/2026-09-11-benchmark-refresh/native

@@ -304,6 +304,8 @@ function validate(
     "### Native Bun Markdown comparison",
     "benchmarks/bun-comparison/PROVENANCE.md",
     "limited output-equivalence gate",
+    "docs/reports/2026-09-11-output-parity-audit.md",
+    "native-corrected/summary.json",
     "### Fine-grained feature and document benchmarks",
     "docs/reports/2026-09-10-markdown-feature-costs-final.md",
     "docs/reports/2026-09-10-markdown-feature-optimizations.md",
@@ -532,6 +534,8 @@ describe("README structure contract", () => {
   for (const disclosure of [
     "benchmarks/bun-comparison/PROVENANCE.md",
     "limited output-equivalence gate",
+    "docs/reports/2026-09-11-output-parity-audit.md",
+    "native-corrected/summary.json",
     "docs/reports/2026-09-10-markdown-feature-costs-final.md",
     "docs/reports/2026-09-10-markdown-feature-optimizations.md",
     "**Activation:**",

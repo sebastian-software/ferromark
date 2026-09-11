@@ -129,16 +129,22 @@ density differ between rows, so these are not additive feature prices.
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Tables only | 5200 | 46.178 µs | 48.093 µs | 35.228 µs | 135.257 µs | 48.208 µs |
 | Strikethrough only | 4700 | 25.492 µs | 36.596 µs | 33.794 µs | 72.102 µs | 28.158 µs |
-| GFM subset: tables + strikethrough | 5200 | 49.196 µs | 53.780 µs | 43.498 µs | 151.005 µs | 56.793 µs |
+| GFM subset: tables + strikethrough | 5200 | 48.186 µs | 54.136 µs | 43.635 µs | 151.253 µs | 56.118 µs |
 | CommonMark links and images | 4760 | 26.667 µs | 38.253 µs | 28.600 µs | 57.406 µs | 41.000 µs |
 | CommonMark entities and inline markup | 5800 | 56.133 µs | 64.853 µs | 63.527 µs | 95.446 µs | 57.269 µs |
 
 The tables-only and GFM-subset rows use identical table/strikethrough input.
 The first leaves strikethrough literal; the second renders it and also enables
 unused task-list parsing. Neither enables the full five-extension GFM preset.
+The GFM-subset row was remeasured for all five parsers after correcting the md4c
+task-list flag; its [replacement evidence](docs/reports/2026-09-11-benchmark-refresh/native-corrected/summary.json)
+remains separate from the original run.
 Task-list output differs between implementations and is excluded from speed
-ratios; the report preserves those differences. 32 of
-42 input/configuration pairs passed the shared output gate.
+ratios; the [output audit](docs/reports/2026-09-11-output-parity-audit.md)
+identifies agreeing groups, renderer conventions, a Bun table bug, and Ferromark's
+reference-resolution limit. Ordinary HTML flow whitespace is accepted. 34 of
+42 input/configuration pairs passed the revised shared output gate;
+this eligibility count includes cases without published timings.
 
 ### Native Bun Markdown comparison
 
