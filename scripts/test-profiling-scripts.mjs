@@ -61,6 +61,28 @@ fi
 exit 0
 `;
 
+// A freshly written executable may take longer than the production 100 ms
+// startup pause to reach its first instruction (for example on macOS). This
+// test-only clock waits for the requested early exit before advancing the pause.
+const FAKE_SLEEP = `#!/bin/sh
+if [ "\${FAKE_WAIT_FOR_HARNESS_EXIT:-0}" -eq 1 ] && [ "$1" = "0.1" ]; then
+  attempts=0
+  while [ "$attempts" -lt 200 ]; do
+    if [ -f "$FAKE_CHILD_PID" ]; then
+      state=$(ps -o stat= -p "$(cat "$FAKE_CHILD_PID")" 2>/dev/null || true)
+      case "$state" in ""|*Z*) break ;; esac
+    fi
+    attempts=$((attempts + 1))
+    /bin/sleep 0.01
+  done
+  if [ "$attempts" -eq 200 ]; then
+    echo 'fake harness did not exit before the test deadline' >&2
+    exit 1
+  fi
+fi
+exec /bin/sleep "$@"
+`;
+
 function requireText(document, text) {
   assert.ok(document.includes(text), `Profiling script contract: missing ${JSON.stringify(text)}`);
 }
@@ -80,10 +102,12 @@ function createFixture() {
     harness: path.join(directory, "fake-profile-harness"),
     cargo: path.join(directory, "cargo"),
     sample: path.join(directory, "sample"),
+    sleep: path.join(directory, "sleep"),
   };
   writeFileSync(files.harness, FAKE_HARNESS);
   writeFileSync(files.cargo, FAKE_CARGO);
   writeFileSync(files.sample, FAKE_SAMPLE);
+  writeFileSync(files.sleep, FAKE_SLEEP);
   for (const file of Object.values(files)) {
     chmodSync(file, 0o755);
   }
@@ -228,8 +252,13 @@ describe("profiling script contract", () => {
     withFixture((fixture) => {
       const result = runProfile(SIMPLE_SCRIPT, ["non-pgo", "0.1", "1"], fixture, {
         FAKE_HARNESS_STATUS: "23",
+        FAKE_WAIT_FOR_HARNESS_EXIT: "1",
       });
-      assert.notEqual(result.status, 0, "early benchmark exit was not rejected");
+      assert.notEqual(
+        result.status,
+        0,
+        `early benchmark exit was not rejected: ${result.stdout} ${result.stderr}`,
+      );
       requireText(result.stderr, "Profiling child exited before sampling");
       assert.ok(
         !processAlive(readFileSync(path.join(fixture.directory, "child.pid"), "utf8")),

@@ -296,14 +296,17 @@ function validate(
     !benchmarks.includes("docs/reports/2026-09-05-bun-comparison.md") ||
     !benchmarks
       .replace(/\s+/g, " ")
-      .includes("different compiler and allocator from the tables above")
+      .includes("all five parsers share the measured allocator environment")
   ) {
-    failContract("Benchmarks must link and distinguish the exploratory Bun comparison");
+    failContract("Benchmarks must link Bun provenance and disclose the shared allocator");
   }
   for (const disclosure of [
     "### Native Bun Markdown comparison",
     "benchmarks/bun-comparison/PROVENANCE.md",
-    "limited output-equivalence gate",
+    "limited HTML comparison",
+    "docs/reports/2026-09-11-output-parity-audit.md",
+    "native-corrected/summary.json",
+    "docs/arch/ARCH-COMP-002-workload-comparability.md",
     "### Fine-grained feature and document benchmarks",
     "docs/reports/2026-09-10-markdown-feature-costs-final.md",
     "docs/reports/2026-09-10-markdown-feature-optimizations.md",
@@ -312,8 +315,8 @@ function validate(
     "**Actual syntax:**",
     "**Lifecycle:**",
     "requested bytes are not peak memory",
-    "Comrak uses fresh owned output",
-    "not an equal-work parser ranking",
+    "All five parsers render trusted input with fresh parser state and owned HTML output",
+    "Every displayed case passed the five-parser workload check",
   ]) {
     if (!benchmarks.replace(/\s+/g, " ").includes(disclosure)) {
       failContract(
@@ -321,7 +324,7 @@ function validate(
       );
     }
   }
-  if (!benchmarks.includes("These rankings are Apple Silicon results only")) {
+  if (!benchmarks.includes("These measurements are Apple Silicon results only")) {
     failContract("Benchmarks must scope published rankings to Apple Silicon");
   }
   if (!benchmarks.includes("has not been re-measured") || !benchmarks.includes("x86-64")) {
@@ -345,13 +348,18 @@ function validate(
   ) {
     failContract(`README and CONTRIBUTING must check out pinned md4c revision ${shortRevision}`);
   }
-  for (const instructions of [benchmarks, contributing]) {
-    if (
-      !instructions.includes("cargo bench --locked") ||
-      !instructions.includes("--manifest-path benchmarks/md4c-comparison/Cargo.toml")
-    ) {
-      failContract("README and CONTRIBUTING must use the locked isolated benchmark manifest");
-    }
+  if (
+    !contributing.includes("cargo bench --locked") ||
+    !contributing.includes("--manifest-path benchmarks/md4c-comparison/Cargo.toml")
+  ) {
+    failContract("CONTRIBUTING must preserve the locked isolated benchmark manifest");
+  }
+  if (
+    !benchmarks.includes("benchmarks/bun-comparison/prepare.py") ||
+    !benchmarks.includes('--md4c "$MD4C_DIR" --lockfile') ||
+    !benchmarks.includes("benchmarks/bun-comparison/run.py")
+  ) {
+    failContract("README must reproduce the pinned five-parser measurement");
   }
   if (performancePlan.includes("PERF_ATTEMPTS.md")) {
     failContract("Performance plan must not reference the removed PERF_ATTEMPTS.md");
@@ -516,7 +524,7 @@ describe("README structure contract", () => {
       () =>
         validate(
           document.replace(
-            "These rankings are Apple Silicon results only",
+            "These measurements are Apple Silicon results only",
             "These rankings apply everywhere",
           ),
         ),
@@ -526,15 +534,18 @@ describe("README structure contract", () => {
 
   for (const disclosure of [
     "benchmarks/bun-comparison/PROVENANCE.md",
-    "limited output-equivalence gate",
+    "limited HTML comparison",
+    "docs/reports/2026-09-11-output-parity-audit.md",
+    "native-corrected/summary.json",
+    "docs/arch/ARCH-COMP-002-workload-comparability.md",
     "docs/reports/2026-09-10-markdown-feature-costs-final.md",
     "docs/reports/2026-09-10-markdown-feature-optimizations.md",
     "**Activation:**",
     "**Actual syntax:**",
     "**Lifecycle:**",
     "requested bytes are not peak memory",
-    "Comrak uses fresh owned output",
-    "not an equal-work parser ranking",
+    "All five parsers render trusted input with fresh parser state and owned HTML output",
+    "Every displayed case passed the five-parser workload check",
   ]) {
     it(`rejects a missing benchmark disclosure: ${disclosure}`, () => {
       assert.throws(() => validate(document.replaceAll(disclosure, "omitted")), ContractError);
@@ -578,8 +589,8 @@ describe("README structure contract", () => {
       () =>
         validate(
           document.replace(
-            /different compiler and allocator\s+from the tables above/,
-            "the same configuration",
+            /all five parsers share the measured allocator environment/,
+            "an unspecified allocator",
           ),
         ),
       ContractError,

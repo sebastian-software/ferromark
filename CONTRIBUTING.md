@@ -58,7 +58,21 @@ pnpm test
 
 ## Running benchmarks
 
-Comparison benchmarks need the md4c C sources:
+The current README/homepage tables come from the
+[five-parser native harness](benchmarks/bun-comparison/README.md), including Bun.
+It verifies output and repeats the public cases before generating figures:
+
+```bash
+python3 benchmarks/bun-comparison/publish.py --check
+python3 -m unittest discover -s benchmarks/bun-comparison -p 'test_*.py'
+```
+
+Follow that harness's setup instructions for pinned Bun/md4c sources and the
+recorded lockfile. Ordinary library builds do not acquire either dependency.
+
+The older four-parser Criterion suite remains a diagnostic with historical
+adapter policies/lifecycles; its results do not feed the current public tables.
+It needs the md4c C sources:
 
 ```bash
 git clone https://github.com/mity/md4c.git ../md4c
@@ -83,6 +97,13 @@ cargo bench --bench parsing
 cargo bench --bench options
 ```
 
+For pull requests, CI builds and measures the PR base and proposed changes on
+the same runner with the same toolchain and sampling settings. The comparison
+fails if any existing case takes more than 20% longer or is missing from the
+new results. Historical main-branch measurements remain available for trends;
+they do not gate PRs because different hosted runners can have different speeds.
+The benchmark job summary includes both revisions and all measured ratios.
+
 To focus on large-corpus or fixed-budget pathological parsing cases:
 
 ```bash
@@ -105,6 +126,7 @@ install it once and then run the contracts that cover what you touched:
 ```bash
 (cd scripts && pnpm install --frozen-lockfile)
 node --test ./scripts/test-readme-structure-contract.mjs
+python3 -m unittest discover -s scripts -p 'test_ci_benchmarks.py'
 ./scripts/check-workflow-pins.sh
 ```
 

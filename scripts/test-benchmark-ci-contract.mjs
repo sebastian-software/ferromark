@@ -87,6 +87,7 @@ function validate(
       CHECKOUT_ACTION,
       RUST_TOOLCHAIN_ACTION,
       RUST_CACHE_ACTION,
+      CHECKOUT_ACTION,
       CACHE_RESTORE_ACTION,
       BENCHMARK_ACTION,
       CACHE_SAVE_ACTION,
@@ -94,18 +95,44 @@ function validate(
     "workflow actions must remain pinned and ordered",
   );
 
-  const restoreInputs = steps.find((step) => step.uses === CACHE_RESTORE_ACTION).with;
+  const restore = steps.find((step) => step.uses === CACHE_RESTORE_ACTION);
+  if (restore.if !== "github.event_name != 'pull_request'") {
+    failContract("pull requests must not use historical runner timings");
+  }
+  const restoreInputs = restore.with;
   if (restoreInputs.key !== CACHE_KEY) {
     failContract("benchmark history cache key changed");
   }
   if (!restoreInputs["restore-keys"].includes("ferromark-benchmark-${{ runner.os }}-main-")) {
-    failContract("pull requests must restore the latest main benchmark history");
+    failContract("main must restore the latest benchmark history");
+  }
+
+  const base = steps.find((step) => step.with?.path === ".benchmark-base");
+  if (
+    base?.if !== "github.event_name == 'pull_request'" ||
+    base.with.ref !== "${{ github.event.pull_request.base.sha }}"
+  ) {
+    failContract("pull requests must check out their base revision on the same runner");
+  }
+  const pairedComparison = steps.find(
+    (step) => step.name === "Compare with PR base measured on this runner",
+  );
+  if (
+    pairedComparison?.if !== "github.event_name == 'pull_request'" ||
+    pairedComparison["continue-on-error"] ||
+    !pairedComparison.run.includes("python3 scripts/compare-ci-benchmarks.py") ||
+    !pairedComparison.run.includes("benchmark-base-output.txt benchmark-output.txt")
+  ) {
+    failContract("pull requests must fail when the same-runner comparison fails");
   }
 
   const command = steps.find((step) => step.name === "Run representative benchmarks").run;
   for (const fragment of [
     "set -o pipefail",
     "cargo bench --locked --bench parsing",
+    "cargo bench --manifest-path .benchmark-base/Cargo.toml --locked --bench parsing",
+    "tee benchmark-base-output.txt",
+    "tee benchmark-output.txt",
     "--output-format bencher",
     "--warm-up-time 1",
     "--measurement-time 3",
@@ -116,7 +143,11 @@ function validate(
     }
   }
 
-  const compare = steps.find((step) => step.uses === BENCHMARK_ACTION).with;
+  const history = steps.find((step) => step.uses === BENCHMARK_ACTION);
+  if (history.if !== "github.event_name != 'pull_request'") {
+    failContract("historical comparisons must not gate pull requests");
+  }
+  const compare = history.with;
   assertDeepEqual(
     compare,
     {
@@ -128,10 +159,10 @@ function validate(
         "${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}",
       "alert-threshold": "120%",
       "fail-threshold": "120%",
-      "fail-on-alert": "${{ github.event_name == 'pull_request' }}",
+      "fail-on-alert": false,
       "summary-always": true,
     },
-    "comparison must fail pull requests at a 20% regression",
+    "main must record history with the 20% alert threshold",
   );
 
   const save = steps.find((step) => step.uses === CACHE_SAVE_ACTION);
@@ -213,6 +244,21 @@ describe("benchmark CI contract", () => {
         (candidate) => candidate.uses === CACHE_SAVE_ACTION,
       );
       step.if = "always()";
+    });
+  });
+
+  it("rejects a comparison against a moving base revision", () => {
+    assertRejected((copy) => {
+      copy.jobs.benchmark.steps.find((step) => step.with?.path === ".benchmark-base").with.ref =
+        "main";
+    });
+  });
+
+  it("rejects an advisory-only pull request comparison", () => {
+    assertRejected((copy) => {
+      copy.jobs.benchmark.steps.find(
+        (step) => step.name === "Compare with PR base measured on this runner",
+      )["continue-on-error"] = true;
     });
   });
 

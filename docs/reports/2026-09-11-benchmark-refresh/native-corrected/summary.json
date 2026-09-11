@@ -1,0 +1,67 @@
+[
+  {
+    "bytes": 5200,
+    "case": "gfm_overlap/gfm-tables",
+    "output_bytes": 13360,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      48020.84908536585,
+      48222.1162347561,
+      48185.626143292684
+    ],
+    "median_ns": 48185.626143292684,
+    "mib_per_second": 102.91671691813835
+  },
+  {
+    "bytes": 5200,
+    "case": "gfm_overlap/gfm-tables",
+    "output_bytes": 12880,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      54132.40239726027,
+      54135.737585616436,
+      54181.025684931505
+    ],
+    "median_ns": 54135.737585616436,
+    "mib_per_second": 91.60504070845258
+  },
+  {
+    "bytes": 5200,
+    "case": "gfm_overlap/gfm-tables",
+    "output_bytes": 12480,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      43550.50927197802,
+      43635.45913461539,
+      43676.92582417582
+    ],
+    "median_ns": 43635.45913461539,
+    "mib_per_second": 113.64854509754686
+  },
+  {
+    "bytes": 5200,
+    "case": "gfm_overlap/gfm-tables",
+    "output_bytes": 13360,
+    "parser": "comrak",
+    "run_medians_ns": [
+      151253.28009259258,
+      151046.44212962964,
+      151290.3645833333
+    ],
+    "median_ns": 151253.28009259258,
+    "mib_per_second": 32.786769597834095
+  },
+  {
+    "bytes": 5200,
+    "case": "gfm_overlap/gfm-tables",
+    "output_bytes": 13360,
+    "parser": "md4c",
+    "run_medians_ns": [
+      56073.81514084507,
+      56137.81910211268,
+      56118.45290492958
+    ],
+    "median_ns": 56118.45290492958,
+    "mib_per_second": 88.36855238532208
+  }
+]

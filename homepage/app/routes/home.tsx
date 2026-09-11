@@ -55,7 +55,7 @@ export default function HomePage() {
         <p className="eyebrow">Rust Markdown Engine</p>
         <h1>Markdown to HTML at {headlineThroughput}</h1>
         <p className="lead">
-          Measured on a mixed Markdown document on Apple Silicon, with the benchmark conditions
+          Measured on a 5 KiB CommonMark document on Apple Silicon, with the benchmark conditions
           documented below. Ferromark passes the complete CommonMark suite in trusted rendering
           mode.
         </p>
@@ -91,14 +91,14 @@ export default function HomePage() {
           <p className="eyebrow">Proof</p>
           <h2>Benchmark numbers you can verify</h2>
           <p>
-            {benchmarkEnvironment}. Non-PGO binaries with tables, strikethrough, and task lists
-            enabled. Rendering policies and output-buffer reuse differ between parsers; these
-            historical results are not an equal-work ranking and have not been re-measured on
-            x86-64. See the <Link to="/guide/benchmarks">benchmark guide</Link> for the conditions,
-            native Bun comparison, and individual feature costs.
+            {benchmarkEnvironment}. Five native parsers render the same 5 KiB CommonMark document
+            with trusted input, fresh state, and owned output. The output gate, shared allocator,
+            and three measurement runs are documented in the{" "}
+            <Link to="/guide/benchmarks">benchmark guide</Link>, alongside Bun and individual
+            feature sets. These Apple Silicon results do not establish x86-64 performance.
           </p>
         </div>
-        <BenchmarkTable id="commonmark-50k" variant="panel" />
+        <BenchmarkTable id="commonmark-5k" variant="panel" />
       </section>
 
       <section className="panel">

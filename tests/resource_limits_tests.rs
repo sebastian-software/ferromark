@@ -133,6 +133,30 @@ fn inline_mark_collection_is_bounded() {
 }
 
 #[test]
+fn ordinary_large_document_resolves_all_reference_links() {
+    let unix_input = include_str!("../benches/fixtures/commonmark-1m.md").replace("\r\n", "\n");
+    let windows_input = unix_input.replace('\n', "\r\n");
+    let references = unix_input.matches("[Civic Charter][charter]").count();
+    assert!(references > 500, "exercise the full long-document fixture");
+    for input in [&unix_input, &windows_input] {
+        for options in [Options::commonmark(), Options::gfm()] {
+            let parsed = parse_with_options(input, &options);
+            assert!(
+                !parsed
+                    .resource_limits
+                    .contains(ResourceLimit::ReferenceResolutionWork),
+                "ordinary references must fit the document budget"
+            );
+            let html = to_html_with_options(input, &options);
+            assert_eq!(
+                html.matches("href=\"https://example.org/charter\"").count(),
+                references
+            );
+        }
+    }
+}
+
+#[test]
 fn reference_link_resolution_budget_is_shared_across_paragraphs() {
     let paragraphs = limits::MAX_REFERENCE_RESOLUTION_WORK / 3 + 2;
     let markdown = format!("[x]: /safe\n\n{}", "[x]\n\n".repeat(paragraphs));
@@ -216,14 +240,21 @@ fn exhausted_reference_budget_keeps_completed_candidates_in_the_current_paragrap
     );
     let html = to_html(&markdown);
 
-    // The final paragraph has budget for its bracket structure and exactly
-    // three labels. Its completed candidates still resolve; only the final
-    // candidate falls back to literal text.
+    // Eight bracket records are charged first, then one unit per label.
+    // The remainder depends on the configured budget modulo three. Completed
+    // candidates must survive even when later candidates exhaust the budget.
+    let completed_candidates = limits::MAX_REFERENCE_RESOLUTION_WORK - completed_paragraphs * 3 - 8;
+    assert!((1..4).contains(&completed_candidates));
     assert_eq!(
         html.matches("<a href=\"/safe\">").count(),
-        completed_paragraphs + 3
+        completed_paragraphs + completed_candidates
     );
-    assert!(html.ends_with("<a href=\"/safe\">x</a> [x]</p>\n"));
+    let suffix = format!(
+        "{}{}[x]</p>\n",
+        "<a href=\"/safe\">x</a> ".repeat(completed_candidates),
+        "[x] ".repeat(3 - completed_candidates)
+    );
+    assert!(html.ends_with(&suffix));
 }
 
 #[test]
@@ -260,6 +291,11 @@ fn nested_reference_brackets_remain_bounded_and_literal_after_exhaustion() {
     // allowance. The second cannot re-run quadratic nesting work.
     assert_eq!(html.matches("<a href=\"/safe\">").count(), 0);
     assert!(html.contains(&nested));
+    assert!(
+        parse(&markdown)
+            .resource_limits
+            .contains(ResourceLimit::ReferenceResolutionWork)
+    );
 }
 
 #[test]

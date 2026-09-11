@@ -103,7 +103,9 @@ pub const MAX_INLINE_MARKS: usize = 4096;
 /// reference-style links. Once exhausted, remaining reference links are left
 /// as literal text. The limit is shared by all paragraphs so independently
 /// bounded pathological paragraphs cannot multiply expensive work.
-pub const MAX_REFERENCE_RESOLUTION_WORK: usize = MAX_INLINE_MARKS * 8;
+// Keep this independent of the per-paragraph mark cap: ordinary long documents
+// must not lose links merely because they contain many small paragraphs.
+pub const MAX_REFERENCE_RESOLUTION_WORK: usize = 262_144;
 
 /// Maximum backtick run length for code spans (prevents O(n^2) matching)
 /// Longer runs are treated as literal text

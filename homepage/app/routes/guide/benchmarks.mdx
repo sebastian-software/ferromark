@@ -4,6 +4,7 @@ title: Benchmarks
 
 import {
   BenchmarkTable,
+  FeatureBenchmarkTable,
   benchmarkCompetitors,
   benchmarkEnvironment,
   benchmarks,
@@ -15,119 +16,131 @@ import {
 
 {benchmarks.scope}
 
-These historical results predate the latest allocation optimizations. Comrak
-supports output-buffer reuse, but this run used its owned-output function.
-The tables preserve the original measurements; they are not an equal-work ranking.
+## Document sizes
 
-## Mixed Markdown 5 KB
+The main cases use 2, 5, and 10 KiB of synthetic CommonMark with headings,
+emphasis, links, lists, quotes, and fenced code. These are controlled examples,
+not an estimate of the typical document distribution. Tiny inputs diagnose
+per-call overhead; 50 KiB and 1 MiB belong in the detailed long-document and
+stress results. Time per document is often more useful for an application than
+throughput alone.
+
+### CommonMark · 2 KiB
+
+<BenchmarkTable id="commonmark-2k" />
+
+### CommonMark · 5 KiB
 
 <BenchmarkTable id="commonmark-5k" />
 
-## Mixed Markdown 50 KB
+### CommonMark · 10 KiB
 
-<BenchmarkTable id="commonmark-50k" />
+<BenchmarkTable id="commonmark-10k" />
 
 {benchmarks.summary} Locked competitor versions: {benchmarkCompetitors}.
 
-This page and the
-[repository README](https://github.com/sebastian-software/ferromark#benchmarks)
-use the same benchmark data, checked against each other at build time. The
-historical `commonmark-*` fixture names refer to mixed documents containing
-tables, not an extension-free CommonMark configuration.
+## Feature sets
 
-## Reproduce locally
+Time per complete document, in microseconds; lower is faster. Compare parsers
+within a row. Syntax density, input size, and output expansion differ between
+rows, so these are workload measurements rather than additive feature prices.
 
-The published four-parser lane requires the pinned md4c checkout and the
-harness's own locked manifest, exactly as in the repository README:
+<FeatureBenchmarkTable />
+
+The tables-only and GFM-subset cases use identical table/strikethrough input.
+The first keeps strikethrough literal. The second renders strikethrough and
+also enables unused task-list parsing. Neither enables bare autolinks or tag
+filtering, so neither is the full GFM preset. The GFM-subset row was remeasured
+for all five parsers after correcting our md4c task-list flag; its
+[replacement evidence](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-09-11-benchmark-refresh/native-corrected)
+is retained separately.
+
+The archived output check found matching HTML in {benchmarks.verification.htmlEquivalent}
+of {benchmarks.verification.total} input/configuration pairs. This is a fidelity
+diagnostic, not the admission rule for timing. The
+[workload contract](https://github.com/sebastian-software/ferromark/blob/main/docs/arch/ARCH-COMP-002-workload-comparability.md)
+accepts the recorded Bun alignment bug and task-list renderer conventions:
+the parsers still implement the tested features. Missing feature output and
+unfinished work remain excluded. The
+[output audit](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-output-parity-audit.md)
+preserves the actual differences and small reproductions.
+
+## What the comparison guarantees
+
+Every displayed input/configuration pair passes a workload review across all
+five parsers. HTML equality is not required: known renderer differences and small
+bugs are disclosed. The separate HTML comparator retains text, URL values,
+code whitespace, classes, and checkbox states so output fidelity stays inspectable.
+No normalization is included in the timed parser calls.
+
+Each displayed result is the median of three run medians, with alternating
+parser order. Each run uses 80 windows totaling at least five seconds of
+sampling per parser/input after three seconds of warmup. Options are constructed
+outside the timer; fresh parser setup, parsing, owned output, and destruction
+are inside it. The [full report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-benchmark-refresh.md)
+records run variation, output sizes, mismatches, exact options, and source hashes.
+
+This page and the [repository README](https://github.com/sebastian-software/ferromark#benchmarks)
+are generated from the same raw measurements and checked at build time.
+Historical stable-toolchain/System-allocator results and the
+[September 5 Bun experiment](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-05-bun-comparison.md)
+retain their original conditions; their figures are not mixed into these tables.
+
+## Native Bun and reproduction
+
+The [five-parser harness](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/bun-comparison/README.md)
+builds Bun's native Markdown parser without JavaScript. Its
+[provenance](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/bun-comparison/PROVENANCE.md)
+traces md4c through Zig and Rust ports. Bun retains C++ Highway searches and C
+mimalloc. The harness also binds C-md4c's allocation calls to the same mimalloc;
+this is a controlled benchmark environment, not the normal library build.
+
+Follow the harness README to prepare the pinned Bun checkout and native build
+support. Then use the measured lockfile and a pinned md4c checkout:
 
 ```bash
 git clone https://github.com/mity/md4c.git ../md4c
 git -C ../md4c checkout --detach 65c6c9d
-MD4C_DIR=../md4c cargo bench --locked \
-  --manifest-path benchmarks/md4c-comparison/Cargo.toml --bench comparison
+python3 benchmarks/bun-comparison/prepare.py "$BUN_BENCH_DIR" "$BUN_BENCH_WORK" \
+  --md4c ../md4c \
+  --lockfile docs/reports/2026-09-11-benchmark-refresh/native/Cargo.lock
+python3 benchmarks/bun-comparison/run.py "$BUN_BENCH_DIR" /private/tmp/new-benchmark-run
 ```
 
-`MD4C_DIR` is required deliberately: an ordinary `cargo build`, `cargo test`, or
-package install never inspects or compiles a sibling C checkout.
+Ordinary library builds, tests, and package installs do not build Bun or md4c.
 
-## Feature-parity lanes
+## Feature and lifecycle costs
 
-The focused two-parser harness separates three explicit shared surfaces:
-
-| Lane | Shared features | Raw HTML |
-| --- | --- | --- |
-| CommonMark | CommonMark only | trusted/preserved |
-| GFM overlap | CommonMark, tables, strikethrough, task lists | trusted/preserved |
-| Extended overlap | GFM overlap, footnotes, math, superscript, callouts | trusted/preserved |
-
-Run semantic guardrails before measuring:
-
-```bash
-cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
-cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
-```
-
-These are selected feature intersections. The semantic spot checks do not prove
-output equivalence for every timed fixture; GFM overlap excludes bare autolinks
-and tag filtering. Ferromark's secure-default result stays separate because
-pulldown-cmark has no equivalent URL/raw-HTML trust boundary. The directory's
-Rust 1.93 pin also needs updating to the root crate's MSRV before replaying the
-pinned publication environment.
-
-The [comparison plan](https://github.com/sebastian-software/ferromark/blob/main/docs/plans/2026-09-11-benchmark-comparability-and-documentation.md)
-tracks full output gates, adapter corrections, and new measurements. Equivalent
-syntax, rendering policy, and allocation lifecycle matter more than matching
-option names.
-
-## Native Bun Markdown comparison
-
-The [Bun harness](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/bun-comparison/README.md)
-compares Ferromark, Bun's native Rust Markdown parser, pulldown-cmark, and Comrak
-without a JavaScript runtime. Bun's md4c-derived parser retains C++ Highway
-search routines and C mimalloc; its
-[provenance](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/bun-comparison/PROVENANCE.md)
-documents the C-to-Zig-to-Rust history.
-
-This macOS-only experiment uses trusted CommonMark or the shared GFM subset,
-fresh parser state and owned output, and a pinned nightly compiler with shared
-Bun-native support. It times only inputs passing a limited output-equivalence
-gate and retains mismatches. These conditions differ from the tables above.
-
-The [exploratory report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-05-bun-comparison.md)
-includes results, exclusions, and reproduction instructions. That earlier run
-favored Ferromark on mixed CommonMark inputs, Bun on the tiny input, and
-pulldown-cmark on the shared table/strikethrough input. Its short windows and
-earlier Ferromark snapshot do not establish current rankings.
-
-## Option costs
-
-`cargo bench --bench options` renders one shared corpus under the dialect
-presets (`minimal`, `commonmark`, `gfm`, `default`) and under individual
-extension flags. Because the document stays constant, differences between
-lanes show what each configuration costs on identical input — a mix of
-features the corpus actually uses (tables, task lists, strikethrough) and
-enabled-but-unused paths. It is not a comparison of different documents.
-
-For finer attribution, the [feature-cost study](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-markdown-feature-costs-final.md)
-separates 140 scenarios and 292 input/configuration pairs:
+`cargo bench --bench options` keeps its document constant while changing
+presets and individual flags. That mixes syntax actually used with enabled
+but unused detection paths. The [feature study](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-benchmark-refresh.md#feature-and-lifecycle-costs)
+replays 140 scenarios and 292 input/configuration pairs to separate these questions:
 
 | Measurement | Interpretation |
 | --- | --- |
 | Option off/on without matching syntax | Identical HTML isolates detection and setup costs. |
-| Option off/on with matching syntax | Changed HTML includes the work of interpreting and rendering the feature. |
-| Tiny and lightweight documents | Fresh owned output versus a retained Renderer exposes fixed setup costs. |
-| Core Markdown constructs | Different structures and output sizes are workload comparisons, not additive feature prices. |
+| Option off/on with matching syntax | Changed HTML includes additional parsing and rendering work. |
+| Fresh output versus retained Renderer | Measures the value of keeping parser state and buffers between calls. |
+| Different core Markdown constructs | Compares workloads with different structures and output sizes. |
 
-The local M1 Pro study finds little cost for most unused boolean options, with
-literal-autolink detection a measurable exception. Reference links and footnotes
-retain more allocation work than many inline extensions. Choose options for
-document semantics, then measure the inputs and lifecycle your application uses.
+Allocation counters run separately from uninstrumented timings; cumulatively
+requested bytes are not peak memory. The
+[earlier feature study](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-markdown-feature-costs-final.md)
+found most unused options inexpensive, with literal-autolink detection a
+measurable exception. Its [GFM CPU profiles](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-gfm-profiling.md)
+and [optimization decisions](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-markdown-feature-optimizations.md)
+explain the hypotheses behind the rerun. Choose options for semantics and
+measure the actual application workload.
 
-Reports include latency, allocation calls and cumulatively requested bytes,
-CPU profiles, frozen inputs, and reproduction commands. Counters run separately
-from timing; cumulative bytes are not peak memory. The
-[GFM profile](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-gfm-profiling.md)
-also covers fresh parser state with reused output. The
-[optimization report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-10-markdown-feature-optimizations.md)
-records paired gains and the confirmed retained-Renderer inline-code slowdown.
-These internal studies guide optimization and do not replace cross-parser tests.
+## Other comparison surfaces
+
+The [two-parser harness](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/pulldown-comparison/README.md)
+covers CommonMark, shared GFM, and extended syntax intersections including
+footnotes, math, superscript, and callouts. Its semantic spot checks do not
+establish equivalent output for every timed fixture. Its stable compiler and
+lifecycle diagnostics remain separate from the five-parser publication tables.
+
+A matched untrusted-input pipeline and native x86 measurements remain open in
+the [comparison plan](https://github.com/sebastian-software/ferromark/blob/main/docs/plans/2026-09-11-benchmark-comparability-and-documentation.md).
+Ferromark's secure-default output should not be ranked against an unchecked
+HTML passthrough operation as if both performed the same task.

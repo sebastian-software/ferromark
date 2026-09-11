@@ -107,6 +107,9 @@ jobs:
         run: pnpm format:check
         working-directory: scripts
       - run: cargo fmt --check
+      - run: python3 -m unittest discover -s benchmarks/bun-comparison -p "test_*.py"
+      - run: python3 -m unittest discover -s scripts -p "test_ci_benchmarks.py"
+      - run: python3 benchmarks/bun-comparison/publish.py --check
       - run: ./scripts/test-check-workflow-pins.sh
       - run: node ./scripts/test-publish-verification.mjs
       - run: node --test ./scripts/test-release-version-sync.mjs
