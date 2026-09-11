@@ -1,0 +1,25 @@
+[package]
+name = "ferromark-cmark-comparison"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+ferromark = { path = "../.." }
+serde_json = "1"
+# Keep entity decoding identical to the root lockfile.
+html-escape = "=0.2.14"
+
+[build-dependencies]
+cc = "1"
+
+[features]
+cmark-gfm = []
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
