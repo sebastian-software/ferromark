@@ -57,10 +57,13 @@ def _review_tasks(tokens):
         return token[0] == "start" and token[1] == "input" and dict(token[2]).get("type") == "checkbox"
     result = []
     for token in tokens:
-        if token[0] == "start" and (token[1] == "li" or checkbox(token)):
+        if token[0] == "start" and (token[1] in ("ul", "ol", "li") or checkbox(token)):
             attrs = dict(token[2])
             if "class" in attrs:
-                keep = [c for c in attrs["class"].split() if c not in ("task-list-item", "task-list-item-checkbox")]
+                # Sätteri also labels the enclosing list. Only this reviewed
+                # presentation class is ignored there; list structure remains.
+                ignored = ("contains-task-list",) if token[1] in ("ul", "ol") else ("task-list-item", "task-list-item-checkbox")
+                keep = [c for c in attrs["class"].split() if c not in ignored]
                 if keep:
                     attrs["class"] = " ".join(keep)
                 else:

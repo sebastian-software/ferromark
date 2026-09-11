@@ -1,0 +1,74 @@
+[
+  {
+    "case": "commonmark/5k",
+    "engine": "ferromark",
+    "run_medians_ns": [
+      25240.686305732484,
+      25243.706730769234,
+      25066.06032436709
+    ],
+    "median_ns": 25240.686305732484,
+    "bytes": 5120,
+    "output_bytes": 7735
+  },
+  {
+    "case": "commonmark/5k",
+    "engine": "satteri",
+    "run_medians_ns": [
+      39362.62376237624,
+      39397.40875,
+      39199.15439356436
+    ],
+    "median_ns": 39362.62376237624,
+    "bytes": 5120,
+    "output_bytes": 7735
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "engine": "ferromark",
+    "run_medians_ns": [
+      34055.88873922414,
+      34302.457065217386,
+      34036.68292025862
+    ],
+    "median_ns": 34055.88873922414,
+    "bytes": 4800,
+    "output_bytes": 12160
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "engine": "satteri",
+    "run_medians_ns": [
+      64588.20030737705,
+      64703.46670081967,
+      64236.36945564517
+    ],
+    "median_ns": 64588.20030737705,
+    "bytes": 4800,
+    "output_bytes": 12160
+  },
+  {
+    "case": "gfm_overlap/features",
+    "engine": "ferromark",
+    "run_medians_ns": [
+      38131.097355769234,
+      38015.6875,
+      37922.10036057692
+    ],
+    "median_ns": 38015.6875,
+    "bytes": 5050,
+    "output_bytes": 15300
+  },
+  {
+    "case": "gfm_overlap/features",
+    "engine": "satteri",
+    "run_medians_ns": [
+      77650.6844362745,
+      77532.06678921569,
+      77156.90144230769
+    ],
+    "median_ns": 77532.06678921569,
+    "bytes": 5050,
+    "output_bytes": 18300
+  }
+]
