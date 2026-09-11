@@ -1,0 +1,82 @@
+[
+  {
+    "bytes": 92,
+    "case": "switches/0",
+    "engine": "goldmark-v2",
+    "flags": 0,
+    "html": "<p>| A |\n| --- |\n| B |</p>\n<p>~~old~~</p>\n<ul>\n<li>[x] done</li>\n<li>[ ] pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "flags=0; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 92,
+    "case": "switches/1",
+    "engine": "goldmark-v2",
+    "flags": 1,
+    "html": "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p>~~old~~</p>\n<ul>\n<li>[x] done</li>\n<li>[ ] pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "flags=1; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 92,
+    "case": "switches/2",
+    "engine": "goldmark-v2",
+    "flags": 2,
+    "html": "<p>| A |\n| --- |\n| B |</p>\n<p><del>old</del></p>\n<ul>\n<li>[x] done</li>\n<li>[ ] pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "flags=2; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 92,
+    "case": "switches/3",
+    "engine": "goldmark-v2",
+    "flags": 3,
+    "html": "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p><del>old</del></p>\n<ul>\n<li>[x] done</li>\n<li>[ ] pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "flags=3; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 92,
+    "case": "switches/4",
+    "engine": "goldmark-v2",
+    "flags": 4,
+    "html": "<p>| A |\n| --- |\n| B |</p>\n<p>~~old~~</p>\n<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n<li><input disabled=\"\" type=\"checkbox\"> pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "flags=4; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 92,
+    "case": "switches/5",
+    "engine": "goldmark-v2",
+    "flags": 5,
+    "html": "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p>~~old~~</p>\n<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n<li><input disabled=\"\" type=\"checkbox\"> pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "flags=5; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 92,
+    "case": "switches/6",
+    "engine": "goldmark-v2",
+    "flags": 6,
+    "html": "<p>| A |\n| --- |\n| B |</p>\n<p><del>old</del></p>\n<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n<li><input disabled=\"\" type=\"checkbox\"> pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "flags=6; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 92,
+    "case": "switches/7",
+    "engine": "goldmark-v2",
+    "flags": 7,
+    "html": "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p><del>old</del></p>\n<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n<li><input disabled=\"\" type=\"checkbox\"> pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "flags=7; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 9,
+    "case": "dialect/single-tilde",
+    "engine": "goldmark-v2",
+    "flags": 2,
+    "html": "<p><del>single</del></p>\n",
+    "options": "flags=2; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  },
+  {
+    "bytes": 25,
+    "case": "policy/trusted-urls",
+    "engine": "goldmark-v2",
+    "flags": 0,
+    "html": "<p><a href=\"javascript:alert\">link</a></p>\n",
+    "options": "flags=0; trusted HTML and URLs; no linkify, tagfilter, typography or extra extensions"
+  }
+]

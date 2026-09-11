@@ -1,0 +1,53 @@
+[
+  {
+    "case": "commonmark/5k",
+    "engine": "ferromark",
+    "count": 119360,
+    "elapsed_ns": 3000253958,
+    "ns_per_render": 25136.17592158177
+  },
+  {
+    "allocated_bytes": 2354728272,
+    "case": "commonmark/5k",
+    "count": 16096,
+    "elapsed_ns": 3001834333,
+    "engine": "goldmark-v1",
+    "gc_cycles": 1126,
+    "heap_bytes_after": 3617728,
+    "ns_per_render": 186495.67178180916
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "engine": "ferromark",
+    "count": 88736,
+    "elapsed_ns": 3000465458,
+    "ns_per_render": 33813.39544266138
+  },
+  {
+    "allocated_bytes": 2507424656,
+    "case": "tables/tables-commonmark-inline",
+    "count": 7552,
+    "elapsed_ns": 3002829542,
+    "engine": "goldmark-v1",
+    "gc_cycles": 1186,
+    "heap_bytes_after": 2923768,
+    "ns_per_render": 397620.4372351695
+  },
+  {
+    "case": "gfm_overlap/features",
+    "engine": "ferromark",
+    "count": 78288,
+    "elapsed_ns": 3000582500,
+    "ns_per_render": 38327.48952585326
+  },
+  {
+    "allocated_bytes": 2483826072,
+    "case": "gfm_overlap/features",
+    "count": 6752,
+    "elapsed_ns": 3000265833,
+    "engine": "goldmark-v1",
+    "gc_cycles": 1143,
+    "heap_bytes_after": 3640528,
+    "ns_per_render": 444352.16720971564
+  }
+]

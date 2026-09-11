@@ -113,6 +113,7 @@ jobs:
       - run: python3 -m unittest discover -s scripts -p "test_ci_benchmarks.py"
       - run: python3 benchmarks/bun-comparison/publish.py --check
       - run: python3 docs/reports/2026-09-11-native-cmark-comparison/render.py --check
+      - run: python3 benchmarks/native-pipeline-comparison/report.py docs/reports/2026-09-11-native-pipeline-comparison --check
       - run: ./scripts/test-check-workflow-pins.sh
       - run: node ./scripts/test-publish-verification.mjs
       - run: node --test ./scripts/test-release-version-sync.mjs

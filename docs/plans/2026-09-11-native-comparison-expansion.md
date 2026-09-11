@@ -4,6 +4,11 @@
 **Base:** main `223cff7495435c8fc44713fd4852ff91e0327bf2`, after PR #295.
 **Status:** Native cmark/cmark-gfm adapters implemented and [measured](../reports/2026-09-11-native-cmark-comparison.md). The [native pipeline harness](../../benchmarks/native-pipeline-comparison/README.md) now adds Goldmark v1/v2 and Sätteri Markdown, plus untimed MDX stage diagnostics.
 
+The [Goldmark/Sätteri report](../reports/2026-09-11-native-pipeline-comparison/REPORT.md)
+records completed native measurements for steps 2 and 3 on the post-#297 main
+baseline. Step 4 now has executable native output-stage probes; an equal-work
+MDX performance comparison remains contingent on a shared processing contract.
+
 ## Scope
 
 Compare native parsing and rendering APIs only. Node.js wrappers, JS bindings,

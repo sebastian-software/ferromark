@@ -1,0 +1,44 @@
+[
+  {
+    "case": "commonmark/5k",
+    "engine": "ferromark",
+    "count": 117744,
+    "elapsed_ns": 3000090000,
+    "ns_per_render": 25479.76966979209
+  },
+  {
+    "case": "commonmark/5k",
+    "engine": "satteri",
+    "count": 75200,
+    "elapsed_ns": 3000335333,
+    "ns_per_render": 39898.07623670213
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "engine": "ferromark",
+    "count": 85936,
+    "elapsed_ns": 3000159417,
+    "ns_per_render": 34911.55530860175
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "engine": "satteri",
+    "count": 45344,
+    "elapsed_ns": 3000782584,
+    "ns_per_render": 66178.16213832039
+  },
+  {
+    "case": "gfm_overlap/features",
+    "engine": "ferromark",
+    "count": 79088,
+    "elapsed_ns": 3000529166,
+    "ns_per_render": 37939.120549261585
+  },
+  {
+    "case": "gfm_overlap/features",
+    "engine": "satteri",
+    "count": 38384,
+    "elapsed_ns": 3000324916,
+    "ns_per_render": 78166.03053355565
+  }
+]

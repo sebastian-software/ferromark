@@ -1,0 +1,74 @@
+[
+  {
+    "case": "commonmark/5k",
+    "engine": "ferromark",
+    "run_medians_ns": [
+      25956.705797697367,
+      25534.786491935483,
+      24954.69066455696
+    ],
+    "median_ns": 25534.786491935483,
+    "bytes": 5120,
+    "output_bytes": 7735
+  },
+  {
+    "case": "commonmark/5k",
+    "engine": "goldmark-v1",
+    "run_medians_ns": [
+      171407.6577785326,
+      168638.07421875,
+      169736.4348958333
+    ],
+    "median_ns": 169736.4348958333,
+    "bytes": 5120,
+    "output_bytes": 7735
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "engine": "ferromark",
+    "run_medians_ns": [
+      34675.335800438595,
+      34369.21413043478,
+      34424.34320652174
+    ],
+    "median_ns": 34424.34320652174,
+    "bytes": 4800,
+    "output_bytes": 12160
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "engine": "goldmark-v1",
+    "run_medians_ns": [
+      400178.90625,
+      388429.8039772727,
+      386444.4829545454
+    ],
+    "median_ns": 388429.8039772727,
+    "bytes": 4800,
+    "output_bytes": 12160
+  },
+  {
+    "case": "gfm_overlap/features",
+    "engine": "ferromark",
+    "run_medians_ns": [
+      38326.94902912622,
+      37913.136418269234,
+      38162.87289663461
+    ],
+    "median_ns": 38162.87289663461,
+    "bytes": 5050,
+    "output_bytes": 15300
+  },
+  {
+    "case": "gfm_overlap/features",
+    "engine": "goldmark-v1",
+    "run_medians_ns": [
+      446463.3958333333,
+      455327.39930555556,
+      439375.86805555556
+    ],
+    "median_ns": 446463.3958333333,
+    "bytes": 5050,
+    "output_bytes": 15100
+  }
+]
