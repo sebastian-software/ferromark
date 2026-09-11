@@ -21,12 +21,22 @@ int bench_cmark_init(void) {
   return 1;
 }
 
-char *bench_cmark_render(const char *input, size_t len, unsigned flags) {
+int bench_cmark_options(unsigned flags) {
+  int options = CMARK_OPT_UNSAFE;
+#ifdef BENCH_GFM
+  if (flags & 2u) options |= CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE;
+#else
+  (void)flags;
+#endif
+  return options;
+}
+
+char *bench_cmark_render(const char *input, size_t len, unsigned flags, int options) {
   if (flags & ~7u) return NULL;
 #ifndef BENCH_GFM
   if (flags) return NULL;
 #endif
-  cmark_parser *parser = cmark_parser_new(CMARK_OPT_UNSAFE);
+  cmark_parser *parser = cmark_parser_new(options);
   if (!parser) return NULL;
 #ifdef BENCH_GFM
   for (unsigned i = 0; i < 3; i++) {
@@ -44,10 +54,10 @@ char *bench_cmark_render(const char *input, size_t len, unsigned flags) {
     return NULL;
   }
 #ifdef BENCH_GFM
-  char *html = cmark_render_html(doc, CMARK_OPT_UNSAFE,
+  char *html = cmark_render_html(doc, options,
                                cmark_parser_get_syntax_extensions(parser));
 #else
-  char *html = cmark_render_html(doc, CMARK_OPT_UNSAFE);
+  char *html = cmark_render_html(doc, options);
 #endif
   cmark_node_free(doc);
   cmark_parser_free(parser);

@@ -78,6 +78,9 @@ Raw HTML and arbitrary URL schemes are preserved. Bare autolinks, GFM tag
 filtering, heading IDs, footnotes, smart punctuation, and other extensions remain
 off. The overlap lane is **not full GFM**. The cmark-gfm registry is initialized
 before timing; attaching selected descriptors to a fresh parser is timed.
+Strikethrough enables `CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE` to match Ferromark;
+an executable negative test ensures `~single~` remains literal. The actual
+native option bits are retained in each verification row.
 
 Inputs include short prose, 2/5/10/50-KiB core Markdown, isolated extension
 fixtures, neutral extension controls, and the exact `tables-plain`,
