@@ -1,0 +1,106 @@
+[
+  {
+    "case": "commonmark/5k",
+    "parser": "ferromark",
+    "bytes": 5120,
+    "output_bytes": 7735,
+    "run_medians_ns": [
+      25221.428742038217,
+      25029.840783227846,
+      25046.51226265823
+    ],
+    "median_ns": 25046.51226265823,
+    "mib_per_second": 194.94979775207148
+  },
+  {
+    "case": "commonmark/5k",
+    "parser": "cmark-gfm",
+    "bytes": 5120,
+    "output_bytes": 7735,
+    "run_medians_ns": [
+      75951.296875,
+      75784.35516826922,
+      75267.00058962264
+    ],
+    "median_ns": 75784.35516826922,
+    "mib_per_second": 64.43034963032086
+  },
+  {
+    "case": "tables/tables-plain",
+    "parser": "ferromark",
+    "bytes": 4560,
+    "output_bytes": 11120,
+    "run_medians_ns": [
+      26723.571368243243,
+      26695.127744932433,
+      26853.65306122449
+    ],
+    "median_ns": 26723.571368243243,
+    "mib_per_second": 162.73105203222613
+  },
+  {
+    "case": "tables/tables-plain",
+    "parser": "cmark-gfm",
+    "bytes": 4560,
+    "output_bytes": 11120,
+    "run_medians_ns": [
+      210861.63651315786,
+      210344.29769736843,
+      214647.40953947365
+    ],
+    "median_ns": 210861.63651315786,
+    "mib_per_second": 20.623736753276766
+  },
+  {
+    "case": "tables/tables-links",
+    "parser": "ferromark",
+    "bytes": 6360,
+    "output_bytes": 14200,
+    "run_medians_ns": [
+      38231.49241213125,
+      39086.07920792079,
+      38347.0370145631
+    ],
+    "median_ns": 38347.0370145631,
+    "mib_per_second": 158.17046438399655
+  },
+  {
+    "case": "tables/tables-links",
+    "parser": "cmark-gfm",
+    "bytes": 6360,
+    "output_bytes": 14200,
+    "run_medians_ns": [
+      255534.912109375,
+      264166.5791666666,
+      257897.4609375
+    ],
+    "median_ns": 257897.4609375,
+    "mib_per_second": 23.518527985095822
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "parser": "ferromark",
+    "bytes": 4800,
+    "output_bytes": 12160,
+    "run_medians_ns": [
+      33224.47268907563,
+      33479.88400423729,
+      33316.19826680672
+    ],
+    "median_ns": 33316.19826680672,
+    "mib_per_second": 137.39973216904366
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "parser": "cmark-gfm",
+    "bytes": 4800,
+    "output_bytes": 12160,
+    "run_medians_ns": [
+      238011.9485294118,
+      241616.3474264706,
+      242986.2132352941
+    ],
+    "median_ns": 241616.3474264706,
+    "mib_per_second": 18.94588990980041
+  }
+]

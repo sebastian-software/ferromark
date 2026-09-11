@@ -1,0 +1,28 @@
+[
+  {
+    "case": "commonmark/5k",
+    "parser": "ferromark",
+    "bytes": 5120,
+    "output_bytes": 7735,
+    "run_medians_ns": [
+      24941.884295886077,
+      25323.167067307695,
+      25799.955678104576
+    ],
+    "median_ns": 25323.167067307695,
+    "mib_per_second": 192.81997733623646
+  },
+  {
+    "case": "commonmark/5k",
+    "parser": "cmark",
+    "bytes": 5120,
+    "output_bytes": 7735,
+    "run_medians_ns": [
+      79039.166875,
+      80608.33801020408,
+      81892.45790816327
+    ],
+    "median_ns": 80608.33801020408,
+    "mib_per_second": 60.574533857550726
+  }
+]

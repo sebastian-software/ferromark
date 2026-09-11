@@ -102,6 +102,9 @@ allocators; upstream allocation strategies are preserved.
 
 ## Evidence
 
+The first [measured report](../../docs/reports/2026-09-11-native-cmark-comparison.md)
+contains targeted CommonMark and realistic-table results with archived raw data.
+
 `build-info.json` records release commits, hashes of all tracked upstream files,
 local code/adapter/lockfile hashes, commands, compiler settings, and executable
 hashes. The runner rejects changed local build inputs or executables. Each
