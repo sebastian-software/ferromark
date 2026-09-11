@@ -201,7 +201,10 @@ function validateEvidenceBackedBadges(document, cargoToml) {
     "[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)",
     `[![Rust ${rustVersion}+](https://img.shields.io/badge/rust-${rustVersion}%2B-orange.svg)](#minimum-supported-rust-version)`,
   ]);
-  const badgeRows = header.split("\n").filter((line) => line.startsWith("[!["));
+  const badgeRows = header
+    .split("\n")
+    .filter((line) => line.startsWith("[!["))
+    .flatMap((line) => line.split(/(?<=\))\s+(?=\[!\[)/u));
   const badgePattern = /^\[!\[[^\]]+\]\([^\s)]+\)\]\([^\s)]+\)$/;
   if (badgeRows.length !== allowedBadges.size) {
     failContract("README header must contain only the allowed evidence-backed badge rows");
