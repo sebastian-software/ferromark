@@ -32,3 +32,11 @@ Published subpackage READMEs retain their compact registry family blocks and
 existing regeneration command. The root README uses native theme composition.
 
 See the [living decision](adr/readme-theme-composition.md).
+
+## Theme badge placement
+
+The project pins mdtheme 0.4.0 and uses one `mdtheme:badges:start` /
+`mdtheme:badges:end` comment pair in `README.md.src`. Sebastian's
+`badges-prepend.md` places its badge before the authored project badges.
+Ferramenta's header and footer stay unchanged. Upgrade the CLI and lockfile
+before adopting this theme revision. Keep badge markup outside raw HTML blocks.
