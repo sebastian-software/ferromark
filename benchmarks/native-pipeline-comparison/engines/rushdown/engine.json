@@ -1,0 +1,9 @@
+{
+  "name": "rushdown",
+  "label": "Rushdown",
+  "version": "0.18.0",
+  "repository": "https://github.com/yuin/rushdown",
+  "revision": "e5eb4e4446541ea0ed53111c1b37e779283ff57c",
+  "stages": "Native Parser::parse to a fresh arena, then html::Renderer::render to a fresh String; immutable parser/renderer configuration reused; full default html-entities support",
+  "boundary": "CommonMark plus independently selected table, double-tilde strikethrough and task-list workloads. Normal native single-tilde behavior is retained in diagnostics. No cached AST, alternate parser, Node binding or MDX compilation is measured."
+}
