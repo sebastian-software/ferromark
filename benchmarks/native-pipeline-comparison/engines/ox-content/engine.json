@@ -1,0 +1,10 @@
+{
+  "name": "ox-content",
+  "label": "Ox Content",
+  "version": "3.2.0",
+  "repository": "https://github.com/ubugeeei-prod/ox-content",
+  "revision": "5c97078779cf099245a78aacca8fa7cc5e993316",
+  "stages": "Native Parser::parse in a fresh allocator arena, then HtmlRenderer::render to moved owned HTML; immutable configuration and the normal renderer scratch storage are reused, but no arena, AST or output buffer is reused",
+  "boundary": "Parser syntax switches are independent. Renderer autolinking and external-link target rewriting are disabled, while native generated heading IDs are retained. Workloads differing through heading IDs remain excluded by the existing output review. MDX is disabled at runtime; no NAPI, MDAST serialization, incremental update, borrowed HTML output or site generation is timed.",
+  "configuration_notes": "CommonMark parser options disable extensions; table/strike/task lanes enable only their named syntax, and GFM overlap enables those three together. Raw HTML and arbitrary URL schemes are preserved. Bare autolinks, tag filtering, footnotes, math, typography, heading attributes and MDX are off. The native HTML renderer still generates heading IDs; affected workloads are excluded without changing the shared output projection. No full-GFM or MDX-throughput claim is made."
+}

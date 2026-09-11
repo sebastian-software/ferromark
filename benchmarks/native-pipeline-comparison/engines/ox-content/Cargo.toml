@@ -1,0 +1,24 @@
+[package]
+name = "ferromark-ox-content-comparison"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[[bin]]
+name = "ox-content-driver"
+path = "main.rs"
+
+[dependencies]
+ox_content_allocator = { git = "https://github.com/ubugeeei-prod/ox-content", rev = "5c97078779cf099245a78aacca8fa7cc5e993316" }
+ox_content_parser = { git = "https://github.com/ubugeeei-prod/ox-content", rev = "5c97078779cf099245a78aacca8fa7cc5e993316" }
+ox_content_renderer = { git = "https://github.com/ubugeeei-prod/ox-content", rev = "5c97078779cf099245a78aacca8fa7cc5e993316" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
