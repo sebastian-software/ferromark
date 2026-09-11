@@ -1,0 +1,9 @@
+{
+  "name": "markdown-rs",
+  "label": "markdown-rs",
+  "version": "1.0.0",
+  "repository": "https://github.com/wooorm/markdown-rs",
+  "revision": "1506572f9b406431402928f3a8b3df0b4ae2d8f5",
+  "stages": "Native markdown::to_html_with_options: fresh Markdown parsing to events and compilation to owned HTML; normal full entity support; no intermediate MDAST serialization",
+  "boundary": "Uses the stable release, not an alpha despite GitHub's release ordering. CommonMark and independently selected table/strikethrough/task constructs are measured. The public single-tilde switch is disabled to match Ferromark. MDX, math, footnotes, frontmatter, bare autolinks and tag filtering remain off. MDX parsing support is not presented as equivalent to full compilation."
+}
