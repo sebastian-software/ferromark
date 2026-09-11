@@ -174,8 +174,6 @@ The same output review, capability probes, monotonic windows, interleaving and
 report validation apply. No upstream implementation is patched. MDX is outside
 these Markdown adapters' measurement contract.
 
-[MD4X](engines/md4x/README.md) exposes a fixed extended dialect in its current
-release. Its native outputs are captured with `--verify-only`, but the existing
-independently switchable lanes cannot admit it for timing. Its report contains
-diagnostics without a speed ratio. Other adapters must document any comparable
-limitation explicitly rather than silently dropping syntax or using an old release.
+Adapters must expose the independently selectable syntax required by the
+comparison lanes. Document limitations explicitly; do not patch upstream syntax
+or substitute an older release to obtain convenient feature switches.
