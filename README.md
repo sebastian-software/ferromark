@@ -116,7 +116,7 @@ claim about typical usage. Tiny inputs diagnose per-call overhead; 50 KiB and
 | comrak | 118.706 µs | 82.3 MiB/s | 0.43x |
 | md4c (C) | 60.192 µs | 162.2 MiB/s | 0.84x |
 
-Every displayed case passed the five-parser output-equivalence gate and three alternating-order measurement runs. Speed ratios apply to these inputs, feature sets, and allocation lifecycle. Locked versions: pulldown-cmark 0.13.4,
+Every displayed case passed the five-parser workload check and three alternating-order measurement runs. Speed ratios apply to these inputs, feature sets, and allocation lifecycle. Locked versions: pulldown-cmark 0.13.4,
 comrak 0.54.0, md4c @ 65c6c9d, and bun @ 76e9dcc.
 
 ### Feature-set comparisons
@@ -139,12 +139,14 @@ unused task-list parsing. Neither enables the full five-extension GFM preset.
 The GFM-subset row was remeasured for all five parsers after correcting the md4c
 task-list flag; its [replacement evidence](docs/reports/2026-09-11-benchmark-refresh/native-corrected/summary.json)
 remains separate from the original run.
-Task-list output differs between implementations and is excluded from speed
-ratios; the [output audit](docs/reports/2026-09-11-output-parity-audit.md)
+Task-list rendering conventions and the recorded Bun alignment bug are accepted
+for workload comparisons; the [output audit](docs/reports/2026-09-11-output-parity-audit.md)
 identifies agreeing groups, renderer conventions, a Bun table bug, and Ferromark's
-reference-resolution limit. Ordinary HTML flow whitespace is accepted. 34 of
-42 input/configuration pairs passed the revised shared output gate;
-this eligibility count includes cases without published timings.
+former reference-resolution limit. Ordinary HTML flow whitespace is accepted. 34 of
+42 archived input/configuration pairs had matching HTML under the
+revised whitespace check. HTML agreement is a diagnostic, not the timing gate.
+The [workload contract](docs/arch/ARCH-COMP-002-workload-comparability.md) accepts
+reviewed rendering differences while excluding missing features or unfinished work.
 
 ### Native Bun Markdown comparison
 
@@ -152,8 +154,9 @@ The [five-parser harness](benchmarks/bun-comparison/README.md) builds Bun's nati
 parser without JavaScript. Its [provenance](benchmarks/bun-comparison/PROVENANCE.md)
 traces md4c through Zig and Rust ports. Bun retains C++ Highway search routines
 and C mimalloc; all five parsers share the measured allocator environment.
-The limited output-equivalence gate preserves text, URLs, code whitespace, and
-semantic attributes, while allowing documented serialization differences.
+The limited HTML comparison records text, URLs, code whitespace, and attributes.
+Workload admission separately accepts documented table-alignment and task-rendering
+differences; output fidelity remains visible rather than blocking timing.
 
 Each displayed result is the median of three run medians. Each run has 80
 alternating-order windows totaling at least five seconds per parser/input,

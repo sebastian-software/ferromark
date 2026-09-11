@@ -55,24 +55,23 @@ for all five parsers after correcting our md4c task-list flag; its
 [replacement evidence](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-09-11-benchmark-refresh/native-corrected)
 is retained separately.
 
-The revised check admits {benchmarks.verification.eligible} of {benchmarks.verification.total}
-input/configuration pairs, including cases without published timings.
-The [output audit](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-output-parity-audit.md)
-identifies agreeing parser groups, a Bun table-alignment bug, and Ferromark's
-reference-resolution limit. Task lists perform comparable work but differ in
-checkbox placement and CSS classes; they remain outside these equivalent-HTML
-speed ratios and can be studied separately with those differences disclosed.
+The archived output check found matching HTML in {benchmarks.verification.htmlEquivalent}
+of {benchmarks.verification.total} input/configuration pairs. This is a fidelity
+diagnostic, not the admission rule for timing. The
+[workload contract](https://github.com/sebastian-software/ferromark/blob/main/docs/arch/ARCH-COMP-002-workload-comparability.md)
+accepts the recorded Bun alignment bug and task-list renderer conventions:
+the parsers still implement the tested features. Missing feature output and
+unfinished work remain excluded. The
+[output audit](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-output-parity-audit.md)
+preserves the actual differences and small reproductions.
 
 ## What the comparison guarantees
 
-Every displayed input/configuration pair passes an output-equivalence gate
-across all five parsers before timing. The limited comparator allows documented
-serialization differences, including entity spelling, attribute order, and
-void-element slashes. Ordinary HTML flow whitespace is normalized while retaining
-inline word separators and literal text; arbitrary CSS whitespace rules are
-outside this check. It preserves visible text, URL values, code whitespace,
-classes, IDs, and checkbox attributes. This is a corpus check, not proof that
-the parsers agree on arbitrary Markdown.
+Every displayed input/configuration pair passes a workload review across all
+five parsers. HTML equality is not required: known renderer differences and small
+bugs are disclosed. The separate HTML comparator retains text, URL values,
+code whitespace, classes, and checkbox states so output fidelity stays inspectable.
+No normalization is included in the timed parser calls.
 
 Each displayed result is the median of three run medians, with alternating
 parser order. Each run uses 80 windows totaling at least five seconds of

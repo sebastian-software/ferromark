@@ -303,9 +303,10 @@ function validate(
   for (const disclosure of [
     "### Native Bun Markdown comparison",
     "benchmarks/bun-comparison/PROVENANCE.md",
-    "limited output-equivalence gate",
+    "limited HTML comparison",
     "docs/reports/2026-09-11-output-parity-audit.md",
     "native-corrected/summary.json",
+    "docs/arch/ARCH-COMP-002-workload-comparability.md",
     "### Fine-grained feature and document benchmarks",
     "docs/reports/2026-09-10-markdown-feature-costs-final.md",
     "docs/reports/2026-09-10-markdown-feature-optimizations.md",
@@ -315,7 +316,7 @@ function validate(
     "**Lifecycle:**",
     "requested bytes are not peak memory",
     "All five parsers render trusted input with fresh parser state and owned HTML output",
-    "Every displayed case passed the five-parser output-equivalence gate",
+    "Every displayed case passed the five-parser workload check",
   ]) {
     if (!benchmarks.replace(/\s+/g, " ").includes(disclosure)) {
       failContract(
@@ -533,9 +534,10 @@ describe("README structure contract", () => {
 
   for (const disclosure of [
     "benchmarks/bun-comparison/PROVENANCE.md",
-    "limited output-equivalence gate",
+    "limited HTML comparison",
     "docs/reports/2026-09-11-output-parity-audit.md",
     "native-corrected/summary.json",
+    "docs/arch/ARCH-COMP-002-workload-comparability.md",
     "docs/reports/2026-09-10-markdown-feature-costs-final.md",
     "docs/reports/2026-09-10-markdown-feature-optimizations.md",
     "**Activation:**",
@@ -543,7 +545,7 @@ describe("README structure contract", () => {
     "**Lifecycle:**",
     "requested bytes are not peak memory",
     "All five parsers render trusted input with fresh parser state and owned HTML output",
-    "Every displayed case passed the five-parser output-equivalence gate",
+    "Every displayed case passed the five-parser workload check",
   ]) {
     it(`rejects a missing benchmark disclosure: ${disclosure}`, () => {
       assert.throws(() => validate(document.replaceAll(disclosure, "omitted")), ContractError);

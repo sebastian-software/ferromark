@@ -1,5 +1,13 @@
 # Benchmark refresh: five native parsers and feature costs
 
+**Follow-up:** performance admission now follows the
+[workload contract](../arch/ARCH-COMP-002-workload-comparability.md), accepting the
+known Bun alignment and task-renderer differences. HTML agreement remains a
+separate diagnostic. [ADR-0014](../arch/ADR-0014-reference-resolution-budget.md)
+increases the production reference budget. Public figures below retain their
+recorded measurement revisions; the later full-matrix screening validates
+coverage and is not substituted for publication timing samples.
+
 **Date:** 2026-09-11
 
 **Measured Ferromark revision:** `8adecc1d017e406eccbd582eb08992054af0411b`
@@ -103,7 +111,7 @@ ranking. All current claims are scoped to this Apple Silicon machine; no native
 x86-64 comparison was performed. No fresh CPU samples were taken in this refresh;
 the earlier profiles retain their historical context.
 
-## Output gate and exclusions
+## Historical HTML gate and follow-up review
 
 Before timing, all five parsers render every benchmark case and all 652 stored
 CommonMark examples. Exact outputs and hashes are archived. A limited HTML
@@ -129,7 +137,8 @@ shows which parsers agree, independently of Ferromark as a reference.
 
 The [audit](2026-09-11-output-parity-audit.md) distinguishes comparable task
 workloads from identical HTML contracts. Whitespace alone no longer excludes a
-case. Missing links and wrong table alignment must not be normalized away.
+case. The subsequent workload policy accepts the alignment discrepancy for timing
+while retaining it in the HTML diagnostics; missing link work remains ineligible.
 
 **Measurement correction:** original `gfm_overlap/*` and `task_lists/*` timings
 used the wrong md4c option and are historical, not matched-option comparisons.
@@ -157,7 +166,7 @@ These are results for the named inputs and contracts, not a universal parser ran
 
 Latencies are medians of three run medians. Spread is the range of those
 run medians divided by their median; it is not a confidence interval.
-Output byte counts may differ because of the accepted serialization differences.
+Output byte counts may differ because of accepted serialization or renderer differences.
 The main README and homepage tables also report input throughput.
 
 | Input / configuration | Parser | Time / document | Run medians (µs) | Spread | Output bytes |

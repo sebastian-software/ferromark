@@ -103,9 +103,14 @@ while separators between inline words and non-breaking spaces are retained.
 Literal text in pre/code/textarea/script/style is preserved. It preserves different alignments, URLs, code text,
 and substantive text differences. This is a serialization check, not a full
 browser-DOM equivalence test or the official CommonMark conformance harness.
-Only benchmark cases matching across **all five** parsers after this check
-enter the timing allowlist. Spec mismatches are reported without suppressing
-them or rewriting parser output. This assumes default HTML flow, not arbitrary
+HTML agreement is recorded separately from admission to timing. All five parsers
+must perform comparable Markdown work with the requested options. The workload
+review accepts table-alignment differences, task classes, checkbox spacing, and
+checkbox placement inside or immediately before the first list-item paragraph.
+Missing feature output, changed checkbox states, missing content, and unreviewed
+differences remain ineligible. Parsers render their original HTML during timing;
+all review transformations happen outside the timer. Spec mismatches are reported
+without suppressing them or rewriting parser output. This assumes default HTML flow, not arbitrary
 CSS whitespace rules. The [exclusion audit](../../docs/reports/2026-09-11-output-parity-audit.md)
 groups agreeing parsers and distinguishes harmless serialization, renderer
 conventions, resource limits, and parser bugs. `audit.py` reproduces its groups
@@ -118,7 +123,9 @@ provides a small reproduction loop for output differences.
 
 Use repeated `--case configuration/input` arguments for a targeted correction:
 all cases are verified, but only the selected cases are measured, three times
-each in publication mode. Selection never bypasses the equivalence gate.
+each in publication mode. Selection never bypasses workload review. See the
+[workload contract](../../docs/arch/ARCH-COMP-002-workload-comparability.md) for
+accepted differences and the separate HTML-fidelity diagnostics.
 
 Results include original output, excluded cases, spec diagnostics, compiler and
 machine details, executable/source/fixture hashes, the effective Cargo lockfile,
@@ -130,7 +137,7 @@ harness, so ordinary builds and CI acquire no Bun dependency.
 
 After a complete publication run, `publish.py` generates README tables and the
 homepage data from the same raw samples. It rejects short screening protocols,
-missing samples, edited summaries, and cases that fail the output gate. The
+missing samples, edited summaries, and cases that fail workload review. The
 original outputs and recorded md4c options are checked again rather than trusting
 the saved pass flag. A sibling `publication-sources.json` may replace a complete
 public case from a corrected run; it never replaces individual parser cells.

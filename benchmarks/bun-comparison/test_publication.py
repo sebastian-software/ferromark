@@ -8,6 +8,7 @@ import unittest
 
 from prepare import BUN_REV, MD4C_REV
 from publish import CASES, ORDER, load_publication
+from run import mismatches
 
 
 class PublicationTests(unittest.TestCase):
@@ -73,7 +74,7 @@ class PublicationTests(unittest.TestCase):
     def test_a_parser_output_difference_prevents_publication(self):
         self.verification["cases"][0]["mismatches"] = ["md4c"]
         self.write()
-        with self.assertRaisesRegex(ValueError, "not output-equivalent"):
+        with self.assertRaisesRegex(ValueError, "verification disagrees"):
             load_publication(self.folder)
 
     def test_missing_parser_verification_prevents_publication(self):
@@ -94,6 +95,41 @@ class PublicationTests(unittest.TestCase):
         path.write_text(path.read_text().replace('"md4c_parser_flags": 2816', '"md4c_parser_flags": 8960'))
         with self.assertRaisesRegex(ValueError, "options do not match"):
             load_publication(self.folder)
+
+    def test_publication_accepts_reviewed_renderer_differences_but_not_missing_tasks(self):
+        case = "gfm_overlap/gfm-tables"
+        first = '<ul><li><p><input type="checkbox" checked disabled> A</p></li></ul>'
+        rendered = '<ul><li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" checked disabled><p>A</p></li></ul>'
+        for other, comparable in [(rendered, True), ('<ul><li><p>[x] A</p></li></ul>', False)]:
+            with self.subTest(comparable=comparable):
+                self.write()
+                outputs = {parser: first for parser in ORDER}
+                outputs['bun_md'] = other
+                path = self.folder / 'verify.jsonl'
+                records = [json.loads(line) for line in path.read_text().splitlines()]
+                next(r for r in records if r['case'] == case)['outputs'] = outputs
+                path.write_text('\n'.join(json.dumps(r) for r in records))
+                path = self.folder / 'verification.json'
+                verification = json.loads(path.read_text())
+                record = next(r for r in verification['cases'] if r['case'] == case)
+                record['mismatches'] = mismatches(outputs)
+                record['output_sha256'] = {p: hashlib.sha256(h.encode()).hexdigest() for p, h in outputs.items()}
+                path.write_text(json.dumps(verification))
+                for filename in ['summary.json', *[f'samples-{i}.jsonl' for i in range(3)]]:
+                    path = self.folder / filename
+                    jsonl = filename.endswith('.jsonl')
+                    rows = [json.loads(line) for line in path.read_text().splitlines()] if jsonl else json.loads(path.read_text())
+                    for row in rows:
+                        if row['case'] == case:
+                            row['output_bytes'] = len(outputs[row['parser']].encode())
+                    path.write_text('\n'.join(json.dumps(r) for r in rows) if jsonl else json.dumps(rows))
+                if comparable:
+                    _, tables, _ = load_publication(self.folder)
+                    review = next(t for t in tables if t['case'] == case)['outputReview']
+                    self.assertEqual(review['accepted_differences'], ['task-presentation'])
+                else:
+                    with self.assertRaisesRegex(ValueError, 'not comparable Markdown work'):
+                        load_publication(self.folder)
 
     def test_lost_sample_is_rejected(self):
         self.samples[2][0]["ns_per_render"].pop()

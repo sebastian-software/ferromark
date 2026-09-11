@@ -1,5 +1,11 @@
 # Output parity audit: ten exclusions, four causes
 
+**Historical audit:** the subsequent [workload contract](../arch/ARCH-COMP-002-workload-comparability.md)
+supersedes this report's strict timing-exclusion policy. Bun alignment and task
+renderer differences are now admitted. [ADR-0014](../arch/ADR-0014-reference-resolution-budget.md)
+raises Ferromark's reference budget; the captured outputs below retain the old
+limit and are not rewritten.
+
 The original 32/42 gate was too strict about ordinary HTML whitespace and also
 concealed an adapter configuration error. After correcting the md4c task-list
 flag and normalizing HTML flow whitespace, **34/42 cases agree across all five

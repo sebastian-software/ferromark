@@ -28,6 +28,76 @@ def mismatches(outputs):
     return [name for name, html in outputs.items() if CanonicalHTML(html).tokens != reference]
 
 
+def workload_review(case, outputs):
+    """Separate workload eligibility from HTML fidelity; never hide the raw diff."""
+    if set(outputs) != PARSERS:
+        raise ValueError("Every case must include all five parser outputs")
+    streams = [CanonicalHTML(html).tokens for html in outputs.values()]
+    def equal(items):
+        return all(item == items[0] for item in items[1:])
+    if equal(streams):
+        return {"comparable": True, "html_equivalent": True, "accepted_differences": []}
+    lane = case.split("/")[0]
+    reviews = []
+    if lane in ("tables", "gfm_overlap"):
+        reviews.append(("table-alignment", _review_alignment))
+    if lane in ("task_lists", "gfm_overlap"):
+        reviews.append(("task-presentation", _review_tasks))
+    for name, transform in reviews:
+        if equal([transform(tokens) for tokens in streams]):
+            return {"comparable": True, "html_equivalent": False, "accepted_differences": [name]}
+    if len(reviews) == 2 and equal([_review_tasks(_review_alignment(tokens)) for tokens in streams]):
+        return {"comparable": True, "html_equivalent": False,
+                "accepted_differences": [name for name, _ in reviews]}
+    return {"comparable": False, "html_equivalent": False, "accepted_differences": []}
+
+
+def _review_alignment(tokens):
+    result = []
+    for token in tokens:
+        if token[0] == "start" and token[1] in ("td", "th"):
+            attrs = dict(token[2])
+            if "style" in attrs:
+                styles = [s for s in attrs["style"].split(";") if not s.startswith("text-align:")]
+                if styles:
+                    attrs["style"] = ";".join(styles)
+                else:
+                    del attrs["style"]
+            token = ("start", token[1], sorted(attrs.items()))
+        result.append(token)
+    return result
+
+
+def _review_tasks(tokens):
+    def checkbox(token):
+        return token[0] == "start" and token[1] == "input" and dict(token[2]).get("type") == "checkbox"
+    result = []
+    for token in tokens:
+        if token[0] == "start" and (token[1] == "li" or checkbox(token)):
+            attrs = dict(token[2])
+            if "class" in attrs:
+                keep = [c for c in attrs["class"].split() if c not in ("task-list-item", "task-list-item-checkbox")]
+                if keep:
+                    attrs["class"] = " ".join(keep)
+                else:
+                    del attrs["class"]
+            token = ("start", token[1], sorted(attrs.items()))
+        if token[0] == "text" and result and checkbox(result[-1]):
+            # Space beside a checkbox is a renderer convention, not a word boundary.
+            text = token[1].lstrip(" ")
+            if not text:
+                continue
+            token = ("text", text)
+        result.append(token)
+    # Both conventions implement the same task: checkbox inside the first
+    # paragraph, or immediately before that paragraph in the same list item.
+    for i in range(len(result) - 2):
+        if (result[i][0:2] == ("start", "li") and checkbox(result[i + 1])
+                and result[i + 2][0:2] == ("start", "p")):
+            result[i + 1], result[i + 2] = result[i + 2], result[i + 1]
+    return result
+
+
 class CanonicalHTML(HTMLParser):
     """Limited serialization normalization; not a browser DOM or sanitizer."""
     VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
@@ -174,9 +244,10 @@ def main():
         outputs = row["outputs"]
         reference = outputs["ferromark"]
         differences = mismatches(outputs)
-        cases.append({"case": row["case"], "bytes": row["bytes"], "exact": all(h == reference for h in outputs.values()),
+        review = workload_review(row["case"], outputs)
+        cases.append({"case": row["case"], "workload": review, "bytes": row["bytes"], "exact": all(h == reference for h in outputs.values()),
                       "mismatches": differences, "output_sha256": {k: hashlib.sha256(v.encode()).hexdigest() for k, v in outputs.items()}})
-        if not differences:
+        if review["comparable"]:
             allowed.append(row["case"])
     spec = {}
     for line in (result / "spec.jsonl").read_text().splitlines():
@@ -191,13 +262,13 @@ def main():
                 counts["mismatched_examples"].append(row["example"])
     (result / "verification.json").write_text(json.dumps({"cases": cases, "spec": spec}, indent=2) + "\n")
     (result / "allowlist.json").write_text(json.dumps(allowed, indent=2) + "\n")
-    print(f"Verified {len(allowed)}/{len(cases)} benchmark cases; excluded differences recorded.", flush=True)
+    print(f"Admitted {len(allowed)}/{len(cases)} benchmark workloads; HTML differences recorded.", flush=True)
     if args.verify_only:
         return
     if not allowed:
         raise SystemExit("No comparable output; no timings collected")
     if not set(headline_cases).issubset(allowed):
-        raise SystemExit("A headline case failed output parity; refusing publication")
+        raise SystemExit("A headline case failed workload eligibility; refusing publication")
     if args.case:
         allowed = [case for case in allowed if case in args.case]
         (result / "allowlist.json").write_text(json.dumps(allowed, indent=2) + "\n")
