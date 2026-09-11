@@ -1,0 +1,26 @@
+[tools."github:sebastian-software/mdtheme"]
+version = "0.3.1"
+version_prefix = "mdtheme-v"
+
+[settings]
+auto_install = false
+not_found_auto_install = false
+not_found_system_fallback = false
+
+[tasks."readme:check"]
+description = "Check the README with the project's installed mdtheme version"
+shell = "bash -c"
+env = { MISE_OFFLINE = "true" }
+run = 'binary=$(mise which mdtheme) && "$binary" --check'
+
+[tasks."readme:write"]
+description = "Generate the README with the project's installed mdtheme version"
+shell = "bash -c"
+env = { MISE_OFFLINE = "true" }
+run = 'binary=$(mise which mdtheme) && "$binary" --write'
+
+[tasks."readme:pre-push"]
+description = "Guard pushes with the project's installed mdtheme version"
+shell = "bash -c"
+env = { MISE_OFFLINE = "true" }
+run = 'binary=$(mise which mdtheme) && "$binary" pre-push'

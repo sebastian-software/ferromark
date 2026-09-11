@@ -196,7 +196,7 @@ jobs:
       # minimum-release-age=0 stays: pnpm 11 defaults minimumReleaseAge to 1440
       # (24h), so without the bypass a pin raised on the day of a standards
       # release cannot resolve at all.
-      - run: pnpm --config.minimum-release-age=0 dlx @sebastian-software/standards@0.10.0 check
+      - run: pnpm --config.minimum-release-age=0 dlx @sebastian-software/standards@0.11.0 check
 
   rustsec:
     runs-on: ubuntu-latest

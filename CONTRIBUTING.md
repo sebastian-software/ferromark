@@ -153,9 +153,9 @@ python3 -m unittest discover -s scripts -p 'test_ci_benchmarks.py'
 contract legitimately changes, update it in the same pull request as the change
 it describes.
 
-## The Ferramenta family block
+More from Ferramenta block
 
-The `## The Ferramenta family` section of `README.md` and the closing two lines
+The `More from Ferramenta` section of `README.md` and the closing two lines
 of `node/ferromark/README.md` are generated from the registry in
 [sebastian-software/ferramenta](https://github.com/sebastian-software/ferramenta),
 which owns the family's tool names, jobs, groups, and links. Never hand-edit the
@@ -219,3 +219,20 @@ Breaking changes: add `!` after the type (e.g., `feat!:`) or include `BREAKING C
 1. Fork the repo and create a branch from `main`
 2. Run the required local checks before submitting
 3. Keep PRs focused -- one change per PR
+
+### Shared registry theme presentation
+
+The pinned Ferramenta generator supplies the compact family icon,
+“More from Ferramenta”, and visible descriptions for related tools. The current
+project is omitted from those links. Registry READMEs retain plain Markdown
+with descriptions; repository READMEs include the small icon.
+Keep theme branding subordinate to the project content. Regenerate through
+the existing family command after updating the pin, then run its check mode.
+
+The shared [living decision](https://github.com/sebastian-software/ferramenta/blob/main/docs/adr/0004-successor-copy-register.md)
+owns the family wording and hierarchy; the
+[composition decision](https://github.com/sebastian-software/ferramenta/blob/main/docs/adr/0001-decentralized-homepages-with-shared-family-package.md)
+owns membership and current-project exclusion.
+
+For the generated project README, see [README themes](docs/readme-theme.md).
+Edit `README.md.src`, then run `mise run readme:write`.

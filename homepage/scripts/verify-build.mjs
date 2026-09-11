@@ -20,11 +20,9 @@ const requiredFragments = [
   "/ferromark/assets/",
   "/ferromark/favicon.ico",
   // The shared chrome from ferramenta-family: the header carries the tool
-  // switcher, the footer the family columns. `aria-current="page"` is how both
-  // mark this site's own entry.
+  // switcher and the footer carry sibling links, excluding this site.
   'class="site-header"',
   'class="site-footer"',
-  'aria-current="page"',
   "https://ferramenta.dev",
   "652/652 CommonMark spec tests pass in trusted mode",
   "CommonMark tests passed in trusted mode",
@@ -58,6 +56,9 @@ function check(page, label, required, forbidden = []) {
     }
   }
 }
+
+const footer = homepage.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] ?? ""
+check(footer, "family footer", ["ferramenta.dev", "ferriki"], ["https://sebastian-software.github.io/ferromark/"])
 
 check(homepage, "homepage", requiredFragments, forbiddenFragments)
 check(guidePage, "guide page", requiredGuideFragments, forbiddenFragments)
