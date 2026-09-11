@@ -239,3 +239,16 @@
     width: auto;
   }
 }
+
+/* Keep the five-parser feature matrix readable on narrow guide pages. */
+.feature-benchmark-table {
+  overflow-x: auto;
+}
+
+.feature-benchmark-table table {
+  min-width: 720px;
+}
+
+.feature-benchmark-table td {
+  white-space: nowrap;
+}

@@ -111,6 +111,22 @@ and Ferromark's local source patch. Existing result directories are never
 overwritten. Rebuild after source changes. The root package excludes this
 harness, so ordinary builds and CI acquire no Bun dependency.
 
+## Generate and check public tables
+
+After a complete publication run, `publish.py` generates README tables and the
+homepage data from the same raw samples. It rejects short screening protocols,
+missing samples, edited summaries, and cases that fail the output gate. The
+original outputs are checked again rather than trusting the saved pass flag.
+
+```bash
+python3 benchmarks/bun-comparison/publish.py docs/reports/2026-09-11-benchmark-refresh/native
+python3 benchmarks/bun-comparison/publish.py --check
+python3 -m unittest discover -s benchmarks/bun-comparison -p 'test_*.py'
+```
+
+Raw JSONL files may be gzip-compressed after the run; the generator reads either
+form. Normal CI checks the archived evidence without compiling or running Bun.
+
 ## Historical results
 
 The [September 5 report](../../docs/reports/2026-09-05-bun-comparison.md) used four

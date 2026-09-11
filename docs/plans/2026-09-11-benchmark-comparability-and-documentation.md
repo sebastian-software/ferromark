@@ -1,6 +1,6 @@
 # Benchmark comparability and documentation
 
-**Status:** Proposed follow-up; no new cross-parser ranking or measurement.
+**Status:** Native comparison and publication refresh implemented; targeted profiling and additional application contracts remain follow-ups.
 **Date:** 2026-09-11
 
 ## Objective
@@ -21,14 +21,20 @@ syntax presets are contracts, not performance tiers.
   README and homepage now explain the native Bun and granular feature studies,
   distinguish the measurement questions, and disclose the historical comparison's
   unequal policies/lifecycles. Its labels are corrected; measured figures are unchanged.
-- **Still open:** implement consistent cross-parser task contracts and output
-  gates, correct the adapters, measure the updated implementations, and refresh
-  README/homepage results from that run. The internal before/after checks in
-  #293 do not establish cross-parser parity or complete this follow-up.
+- **Implemented in this follow-up:** the shared native harness now includes C-md4c,
+  explicit per-feature configurations, fresh owned output for all five parsers,
+  a complete per-fixture output gate, and repeated publication measurements.
+  README/homepage use generated 2/5/10-KiB and feature-set tables, with Bun in
+  every public comparison. The [refresh report](../reports/2026-09-11-benchmark-refresh.md)
+  retains conditions, variability, exclusions, and the separate feature replay.
+- **Still open:** a matched untrusted-input pipeline, cross-parser retained-buffer
+  and retained-state comparisons, native x86 results, and broader real-document
+  sampling. Task-list cases with different output remain excluded. The targeted
+  CPU investigations at the end of this plan are not completed by a timing rerun.
 
-Bun remains part of the comparison work. Reuse its existing harness and report
-its environment separately; do not drop it from the capability matrix merely
-because its harness was merged earlier.
+Bun is part of the main five-parser publication environment. Its original
+nightly/native-support conditions now apply to all five adapters; these results
+remain separate from stable/System-allocator diagnostics.
 
 ## Findings before the documentation update
 
@@ -38,8 +44,8 @@ pulldown-cmark 0.13.4, Comrak 0.54.0, and md4c revision
 version or possible configuration of those libraries.
 
 The README/homepage wording and labels identified below have since been
-corrected in #293. The adapter, parity-gate, and publication-environment work
-remains open; the table preserves the audit that motivated those changes.
+corrected in #293. The native adapter, parity-gate, and publication-environment work is now
+implemented in the refresh; the table preserves the audit that motivated it.
 
 | Finding | Evidence | Consequence |
 | --- | --- | --- |
@@ -170,6 +176,8 @@ Confirm apparent regressions with longer alternating runs. Retain changes only
 with repeatable benefits and an explicit assessment of their regressions; record
 rejected ideas compactly, following [ARCH-EXP-018](../arch/ARCH-EXP-018-neon-position-and-match-cache.md).
 
-Implementation order: establish comparison contracts and output gates; correct
-the adapters and publication environment; run targeted profiles; measure the
-corrected cross-parser suite; then refresh public results and explanatory copy.
+The comparison contracts, native adapters, output gate, repeated cross-parser
+measurements, and public documentation refresh are delivered by the linked report.
+Resume targeted CPU profiling as a separate investigation, beginning with a fresh
+recorded production revision and preserving the frozen controls. A new timing
+snapshot does not establish which implementation change would help.

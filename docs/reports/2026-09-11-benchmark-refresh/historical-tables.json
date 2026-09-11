@@ -1,0 +1,42 @@
+{
+  "note": "Single source for the published cross-parser benchmark figures. The README benchmark tables and every homepage figure come from this file; homepage/scripts/check-benchmark-numbers.mjs fails the homepage build when the two disagree. Do not hand-edit these numbers: replace them from a measured run, together with the README table.",
+  "run": {
+    "date": "September 2026",
+    "machine": "Apple M1 Pro (10-core)",
+    "os": "macOS 26.6.2",
+    "rustc": "1.97.1"
+  },
+  "competitors": {
+    "pulldown-cmark": "0.13.4",
+    "comrak": "0.54.0",
+    "md4c": "65c6c9d"
+  },
+  "conditions": "All parsers run with GFM tables, strikethrough, and task lists enabled; Ferromark's non-GFM extras (heading IDs, callouts) are disabled. Binaries are non-PGO. Every call creates fresh parser state; output buffers are reused for Ferromark, pulldown-cmark, and md4c, while Comrak uses fresh owned output. Ferromark retains its Untrusted URL/raw-HTML policy, Comrak uses its default raw-HTML omission, and pulldown-cmark and md4c preserve raw HTML. These are historical configurations, not matched rendering policies and lifecycles.",
+  "scope": "These rankings are Apple Silicon results only. ferromark also uses baseline SSE2 for inline scanning on x86-64, but this comparison has not been re-measured there; do not infer the same relative ordering on x86-64 from these tables.",
+  "summary": "On this Apple Silicon run, ferromark was 9–11% faster than pulldown-cmark, within 1% of md4c at 5 KB and 6% faster at 50 KB, and 3.6–3.8x faster than comrak.",
+  "headline": { "table": "commonmark-50k", "parser": "ferromark" },
+  "tables": [
+    {
+      "id": "commonmark-5k",
+      "label": "Mixed Markdown 5 KB",
+      "description": "wiki-style, mixed content with tables",
+      "rows": [
+        { "parser": "ferromark", "throughput": "248.2 MiB/s", "ratio": "baseline" },
+        { "parser": "pulldown-cmark", "throughput": "228.7 MiB/s", "ratio": "0.92x" },
+        { "parser": "md4c (C)", "throughput": "247.4 MiB/s", "ratio": "1.00x" },
+        { "parser": "comrak", "throughput": "69.0 MiB/s", "ratio": "0.28x" }
+      ]
+    },
+    {
+      "id": "commonmark-50k",
+      "label": "Mixed Markdown 50 KB",
+      "description": "same style, scaled",
+      "rows": [
+        { "parser": "ferromark", "throughput": "267.5 MiB/s", "ratio": "baseline" },
+        { "parser": "pulldown-cmark", "throughput": "240.3 MiB/s", "ratio": "0.90x" },
+        { "parser": "md4c (C)", "throughput": "252.5 MiB/s", "ratio": "0.94x" },
+        { "parser": "comrak", "throughput": "70.6 MiB/s", "ratio": "0.26x" }
+      ]
+    }
+  ]
+}

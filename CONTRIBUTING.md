@@ -58,7 +58,21 @@ pnpm test
 
 ## Running benchmarks
 
-Comparison benchmarks need the md4c C sources:
+The current README/homepage tables come from the
+[five-parser native harness](benchmarks/bun-comparison/README.md), including Bun.
+It verifies output and repeats the public cases before generating figures:
+
+```bash
+python3 benchmarks/bun-comparison/publish.py --check
+python3 -m unittest discover -s benchmarks/bun-comparison -p 'test_*.py'
+```
+
+Follow that harness's setup instructions for pinned Bun/md4c sources and the
+recorded lockfile. Ordinary library builds do not acquire either dependency.
+
+The older four-parser Criterion suite remains a diagnostic with historical
+adapter policies/lifecycles; its results do not feed the current public tables.
+It needs the md4c C sources:
 
 ```bash
 git clone https://github.com/mity/md4c.git ../md4c

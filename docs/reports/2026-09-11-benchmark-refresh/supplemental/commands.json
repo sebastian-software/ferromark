@@ -1,0 +1,357 @@
+[
+  {
+    "name": "resolve-legacy-lock",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "metadata",
+      "--offline",
+      "--manifest-path",
+      "benchmarks/md4c-comparison/Cargo.toml",
+      "--format-version",
+      "1"
+    ],
+    "started_unix": 1789115549.621689,
+    "finished_unix": 1789115565.6691651,
+    "exit_code": 0,
+    "output": "resolve-legacy-lock.log"
+  },
+  {
+    "name": "feature-html",
+    "command": [
+      "target/publication-20260911/feature-cost-probe",
+      "html",
+      "/Users/sebastian/Workspace/ferromark/docs/reports/2026-09-11-benchmark-refresh/supplemental/catalog.json",
+      "all",
+      "all"
+    ],
+    "started_unix": 1789115565.756356,
+    "finished_unix": 1789115566.069716,
+    "exit_code": 0,
+    "output": "feature-html.json"
+  },
+  {
+    "name": "feature-timings",
+    "command": [
+      "target/publication-20260911/feature-cost-probe",
+      "measure",
+      "/Users/sebastian/Workspace/ferromark/docs/reports/2026-09-11-benchmark-refresh/supplemental/catalog.json",
+      "all",
+      "all",
+      "60",
+      "5"
+    ],
+    "started_unix": 1789115566.070155,
+    "finished_unix": 1789115741.812265,
+    "exit_code": 0,
+    "output": "final-timings.json"
+  },
+  {
+    "name": "feature-counts",
+    "command": [
+      "target/publication-20260911/feature-count-probe",
+      "counts",
+      "/Users/sebastian/Workspace/ferromark/docs/reports/2026-09-11-benchmark-refresh/supplemental/catalog.json",
+      "all",
+      "all"
+    ],
+    "started_unix": 1789115741.812763,
+    "finished_unix": 1789115742.2684538,
+    "exit_code": 0,
+    "output": "final-counts.json"
+  },
+  {
+    "name": "gfm-html",
+    "command": [
+      "target/publication-20260911/gfm-probe",
+      "html",
+      "all",
+      "all",
+      "all"
+    ],
+    "started_unix": 1789115742.268841,
+    "finished_unix": 1789115742.569837,
+    "exit_code": 0,
+    "output": "gfm-html.json"
+  },
+  {
+    "name": "gfm-timings",
+    "command": [
+      "target/publication-20260911/gfm-probe",
+      "measure",
+      "all",
+      "all",
+      "all",
+      "75",
+      "5"
+    ],
+    "started_unix": 1789115742.570254,
+    "finished_unix": 1789115845.909605,
+    "exit_code": 0,
+    "output": "gfm-timings.json"
+  },
+  {
+    "name": "gfm-fixtures",
+    "command": [
+      "target/publication-20260911/gfm-probe",
+      "fixtures"
+    ],
+    "started_unix": 1789115845.910052,
+    "finished_unix": 1789115845.914926,
+    "exit_code": 0,
+    "output": "gfm-fixtures.log"
+  },
+  {
+    "name": "build-root",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--features",
+      "mdx",
+      "--no-run"
+    ],
+    "started_unix": 1789115845.92149,
+    "finished_unix": 1789115890.346207,
+    "exit_code": 0,
+    "output": "build-root.log"
+  },
+  {
+    "name": "root-parsing",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--features",
+      "mdx",
+      "--bench",
+      "parsing",
+      "--",
+      "--sample-size",
+      "80",
+      "--measurement-time",
+      "5",
+      "--warm-up-time",
+      "3",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789115890.346661,
+    "finished_unix": 1789116156.4953809,
+    "exit_code": 0,
+    "output": "root-parsing.log"
+  },
+  {
+    "name": "root-options",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--features",
+      "mdx",
+      "--bench",
+      "options",
+      "--",
+      "--sample-size",
+      "80",
+      "--measurement-time",
+      "5",
+      "--warm-up-time",
+      "3",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789116156.4958332,
+    "finished_unix": 1789116273.513417,
+    "exit_code": 0,
+    "output": "root-options.log"
+  },
+  {
+    "name": "root-footnotes",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--features",
+      "mdx",
+      "--bench",
+      "footnotes",
+      "--",
+      "--sample-size",
+      "80",
+      "--measurement-time",
+      "5",
+      "--warm-up-time",
+      "3",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789116273.513891,
+    "finished_unix": 1789116300.7205608,
+    "exit_code": 0,
+    "output": "root-footnotes.log"
+  },
+  {
+    "name": "root-fenced_code_renderer",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--features",
+      "mdx",
+      "--bench",
+      "fenced_code_renderer",
+      "--",
+      "--sample-size",
+      "80",
+      "--measurement-time",
+      "5",
+      "--warm-up-time",
+      "3",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789116300.721136,
+    "finished_unix": 1789116338.315551,
+    "exit_code": 0,
+    "output": "root-fenced_code_renderer.log"
+  },
+  {
+    "name": "root-mdx",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--features",
+      "mdx",
+      "--bench",
+      "mdx",
+      "--",
+      "--sample-size",
+      "80",
+      "--measurement-time",
+      "5",
+      "--warm-up-time",
+      "3",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789116338.315933,
+    "finished_unix": 1789116515.018487,
+    "exit_code": 0,
+    "output": "root-mdx.log"
+  },
+  {
+    "name": "byte-search",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "-p",
+      "ferro-byte-search",
+      "--bench",
+      "search",
+      "--",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789116515.019347,
+    "finished_unix": 1789116641.39556,
+    "exit_code": 0,
+    "output": "byte-search.log"
+  },
+  {
+    "name": "pulldown-comparison",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--manifest-path",
+      "benchmarks/pulldown-comparison/Cargo.toml",
+      "--bench",
+      "comparison",
+      "--",
+      "--sample-size",
+      "80",
+      "--measurement-time",
+      "5",
+      "--warm-up-time",
+      "3",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789116641.395961,
+    "finished_unix": 1789116744.712755,
+    "exit_code": 0,
+    "output": "pulldown-comparison.log"
+  },
+  {
+    "name": "pulldown-profiling",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--manifest-path",
+      "benchmarks/pulldown-comparison/Cargo.toml",
+      "--bench",
+      "profiling",
+      "--",
+      "--sample-size",
+      "80",
+      "--measurement-time",
+      "5",
+      "--warm-up-time",
+      "3",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789116744.713225,
+    "finished_unix": 1789117042.3410208,
+    "exit_code": 0,
+    "output": "pulldown-profiling.log"
+  },
+  {
+    "name": "legacy-md4c",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "bench",
+      "--locked",
+      "--manifest-path",
+      "benchmarks/md4c-comparison/Cargo.toml",
+      "--bench",
+      "comparison",
+      "--",
+      "--sample-size",
+      "30",
+      "--measurement-time",
+      "1",
+      "--warm-up-time",
+      "1",
+      "--save-baseline",
+      "refresh-20260911",
+      "--noplot"
+    ],
+    "started_unix": 1789117042.341475,
+    "finished_unix": 1789117285.527168,
+    "exit_code": 0,
+    "output": "legacy-md4c.log"
+  }
+]
