@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.9.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.8.0...ferromark-v0.9.0) (2026-09-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* **msrv:** ferromark now requires Rust 1.94 or newer.
+
+### Features
+
+* **site:** render the shared Ferramenta chrome on the documentation site ([7eb306e](https://github.com/sebastian-software/ferromark/commit/7eb306e5e22ad33eb3fea8e9c40dbef332f90940))
+* **site:** render the shared Ferramenta chrome on the documentation site ([50797b6](https://github.com/sebastian-software/ferromark/commit/50797b611c4f08f036a1b4c4b20aa0c2601c82a2))
+* **site:** use the header slots and bump the family pin ([a31cf9a](https://github.com/sebastian-software/ferromark/commit/a31cf9aca074a64d8b6fea46f670ad24272fbe60))
+* **site:** use the header slots and bump the family pin ([7dad975](https://github.com/sebastian-software/ferromark/commit/7dad975ac24e75bbbbd7ed418fd5ce67a1aa339d))
+
+
+### Bug Fixes
+
+* **benchmarks:** admit comparable work despite renderer differences ([f53155b](https://github.com/sebastian-software/ferromark/commit/f53155bc3586128b3ab9484b9f5b3be184295528))
+* **benchmarks:** correct md4c task flags and compare HTML flow whitespace ([409c293](https://github.com/sebastian-software/ferromark/commit/409c293fab3f660865d959d644bb6a33f2cc60fe))
+* **ci:** measure benchmark base and head on the same runner ([58f472d](https://github.com/sebastian-software/ferromark/commit/58f472d2c9d040fe20f8a68f3bd3fc5abbff89d1))
+* **deps:** update js-yaml overrides to patched releases ([336f94b](https://github.com/sebastian-software/ferromark/commit/336f94b5b6e100cbd0df6aa0b0d9eee9e320bbed))
+* **parser:** increase the bounded reference-resolution allowance ([b3d3d59](https://github.com/sebastian-software/ferromark/commit/b3d3d59fb6f6c0e5e47d8ebf6c74b2214c717dec))
+* **parser:** recognize CRLF blank lines and closing code fences ([57ae0b3](https://github.com/sebastian-software/ferromark/commit/57ae0b3bd49049d7695f7e6bcf9dcf4887265c5f))
+* **site:** keep the header-height variable true on the phone bar ([60bd129](https://github.com/sebastian-software/ferromark/commit/60bd129aaa57d46c608ab11b200c7f9cd5b1777f))
+
+
+### Performance Improvements
+
+* **footnotes:** borrow stored inline content while rendering ([41d5201](https://github.com/sebastian-software/ferromark/commit/41d5201c804e760f400a2d25e2ebe06394ec6f04))
+* **footnotes:** write decimal numbers without temporary strings ([37657c8](https://github.com/sebastian-software/ferromark/commit/37657c8805991e7f28ddf039610d49c13f12e374))
+* **inline:** allocate scratch buffers only when needed ([950f014](https://github.com/sebastian-software/ferromark/commit/950f0145e20adce8bbbd48ae81f2db2334c61d41))
+* **inline:** reuse opener storage across extension resolvers ([db74d79](https://github.com/sebastian-software/ferromark/commit/db74d79fceaca17e96b57b66acff2ba344b70363))
+* **inline:** reuse strikethrough opener scratch ([1b21c95](https://github.com/sebastian-software/ferromark/commit/1b21c95c6ffd4f83856cfaccb2d58ccaf4caf6cd))
+* **inline:** scan short autolink candidates once ([520f115](https://github.com/sebastian-software/ferromark/commit/520f115860fbf158d16fdd9c67cbd957a5896ec2))
+* **markdown:** reuse parser buffers and share byte-set scanning ([dc7716b](https://github.com/sebastian-software/ferromark/commit/dc7716be5728f233353c8cec789597cd0e33c85a))
+* **markdown:** share byte scanning and retain parser scratch buffers ([74c00fb](https://github.com/sebastian-software/ferromark/commit/74c00fb2f180deb8a5c0b8b7a039b83579d7a98b))
+* **math:** retain resolved span storage across paragraphs ([cddefb8](https://github.com/sebastian-software/ferromark/commit/cddefb816a9e4ae100ad41d544d05bb00f090b44))
+* reduce Markdown rendering overhead and document feature costs ([7f3856e](https://github.com/sebastian-software/ferromark/commit/7f3856e58cced50f0e2a8e505a11dcf03e7ed515))
+* **render:** combine URL destination eligibility scans ([321512b](https://github.com/sebastian-software/ferromark/commit/321512b05a8a69d86662637bc2bf27fbd3c4ef98))
+* **render:** initialize heading ID storage on demand ([9b5ce86](https://github.com/sebastian-software/ferromark/commit/9b5ce86d3dd7a58fd9f528200c577016e2871a6a))
+
+
+### Reverts
+
+* drop table row prescan after paired measurements ([d491964](https://github.com/sebastian-software/ferromark/commit/d49196481bff354a3bbf9a15f59b78b1971c970e))
+* drop text-event shortcut with GFM regressions ([81f66de](https://github.com/sebastian-software/ferromark/commit/81f66de2fc832d53efbe11645f2e6cd803d13ce6))
+* remove single-text branch with mixed-content regressions ([d2048b4](https://github.com/sebastian-software/ferromark/commit/d2048b4da3240dac347ff8c09e21c21ca2ee9411))
+
+
+### Miscellaneous Chores
+
+* **msrv:** require Rust 1.94 ([992ae40](https://github.com/sebastian-software/ferromark/commit/992ae404f90adbb0c744c5feefddfca8703b2cd6))
+
 ## [0.8.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.7.0...ferromark-v0.8.0) (2026-09-04)
 
 
