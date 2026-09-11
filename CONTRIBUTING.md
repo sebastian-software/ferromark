@@ -75,7 +75,7 @@ cmark and cmark-gfm through their C APIs. It reuses the workload-review policy
 and realistic table fixtures, but measures a separate system-allocator
 environment. Its results do not replace or mix with the Bun/mimalloc tables.
 The [native pipeline harness](benchmarks/native-pipeline-comparison/README.md)
-adds Goldmark v1/v2 and Sätteri Markdown, with separate native MDX stage
+adds Goldmark and Sätteri Markdown, with separate native MDX stage
 diagnostics. See the [expansion plan](docs/plans/2026-09-11-native-comparison-expansion.md)
 for scope and comparison boundaries.
 

@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-11
 **Base:** main `223cff7495435c8fc44713fd4852ff91e0327bf2`, after PR #295.
-**Status:** Native cmark/cmark-gfm adapters implemented and [measured](../reports/2026-09-11-native-cmark-comparison.md). The [native pipeline harness](../../benchmarks/native-pipeline-comparison/README.md) now adds Goldmark v1/v2 and Sätteri Markdown, plus untimed MDX stage diagnostics.
+**Status:** Native cmark/cmark-gfm adapters implemented and [measured](../reports/2026-09-11-native-cmark-comparison.md). The [native pipeline harness](../../benchmarks/native-pipeline-comparison/README.md) now adds Goldmark and Sätteri Markdown, plus untimed MDX stage diagnostics.
 
 The [Goldmark/Sätteri report](../reports/2026-09-11-native-pipeline-comparison/REPORT.md)
 records completed native measurements for steps 2 and 3 on the post-#297 main
@@ -32,8 +32,9 @@ adding more syntax or changing public comparison tables.
    controls. These are system-allocator results, separate from Bun's pinned
    nightly/mimalloc environment. Public figures require a deliberate later
    publication integration, not copying numbers between environments.
-2. **Goldmark:** pin a released Go version and library revision; assess v1/v2
-   independently instead of silently changing generations. Use a long-lived
+2. **Goldmark:** use the latest stable library release with a pinned Go toolchain
+   and exact library revision. Keep one candidate per engine; display the engine
+   name and retain the version in build provenance. Use a long-lived
    native Go driver, with parsing, rendering, fresh output, and normal GC inside
    its measurement windows. Exchange fixture/results outside timing. Interleave
    measurement windows with a native Ferromark process and record scheduler,
@@ -78,7 +79,7 @@ as a speed win. Continue reporting HTML fidelity separately from admission under
 
 - [cmark](https://github.com/commonmark/cmark): C CommonMark reference implementation.
 - [cmark-gfm](https://github.com/github/cmark-gfm): GitHub's extension fork.
-- [Goldmark](https://github.com/yuin/goldmark): native Go API, GFM bundle, v2 migration.
+- [Goldmark](https://github.com/yuin/goldmark): native Go API and GFM bundle.
 - [Sätteri](https://github.com/bruits/satteri): native Rust Markdown/MDX pipeline.
 - [Astro 7](https://astro.build/blog/astro-7/): Sätteri integration and native compiler stages.
 

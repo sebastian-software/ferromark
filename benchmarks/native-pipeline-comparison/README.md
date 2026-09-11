@@ -1,6 +1,6 @@
 # Native Goldmark and Sätteri comparisons
 
-Compare native Markdown-to-HTML work in Goldmark v1, Goldmark v2, and Sätteri
+Compare native Markdown-to-HTML work in Goldmark and Sätteri
 with independent Ferromark baselines. Persistent native workers expose small
 JSON control messages; each worker's monotonic timer surrounds only fresh
 parsing/rendering calls. There are no Node.js bindings, JavaScript plugins,
@@ -13,8 +13,7 @@ comparison. Its figures do not update the README/homepage publication tables.
 
 | Engine | Pinned source | Native measured stages |
 | --- | --- | --- |
-| Goldmark v1 | v1.8.6, `e3e8a533aa19da2f296fcdb97b7674ae7d1d93a4` | `Markdown.Convert`, fresh AST and `bytes.Buffer` |
-| Goldmark v2 | v2.0.2, `4dd635b1d163b39e2983acca140cc29d4bb994be` | `Parser.Parse` followed by `Renderer.Render`, fresh AST and `bytes.Buffer` |
+| Goldmark | v2.0.2, `4dd635b1d163b39e2983acca140cc29d4bb994be` | `Parser.Parse` followed by `Renderer.Render`, fresh AST and `bytes.Buffer` |
 | Sätteri | release `satteri-v0.10.5`, `b3d38e1e341c809b20b76a655e9b1601d11bd1f0` | `satteri_pulldown_cmark::parse` to MDAST arena, then `satteri_ast::mdast_to_html` |
 
 The Sätteri release tag names the JavaScript package's release train; native
@@ -35,8 +34,8 @@ position-free shortcut is used.
 
 Requirements: Python 3.11+, the repository's Rust toolchain with Clippy, Git, a C
 toolchain for Sätteri's native stack dependency, and **Go 1.27.1**. The script
-rejects a different Go version and records the actual Rust compiler. Goldmark
-module versions and checksums are committed in `goldmark/go.mod` and `go.sum`;
+rejects a different Go version and records the actual Rust compiler. The Goldmark
+module version and checksums are committed in `goldmark/go.mod` and `go.sum`;
 Go automatic toolchain switching and cgo are disabled.
 
 ```sh

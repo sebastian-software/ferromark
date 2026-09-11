@@ -14,10 +14,10 @@ sys.path.insert(0, str(REPO / "benchmarks/bun-comparison"))
 from workload import CanonicalHTML, workload_review
 sys.path.insert(0, str(HERE))
 
-ENGINES = ("goldmark-v1", "goldmark-v2", "satteri")
+ENGINES = ("goldmark", "satteri")
 SATTERI = "b3d38e1e341c809b20b76a655e9b1601d11bd1f0"
 GO_VERSION = "go1.27.1"
-GO_MODULES = {"github.com/yuin/goldmark": "v1.8.6", "github.com/yuin/goldmark/v2": "v2.0.2"}
+GO_MODULES = {"github.com/yuin/goldmark/v2": "v2.0.2"}
 
 
 def catalog():
@@ -63,7 +63,7 @@ def worker_env():
 
 class Worker:
     def __init__(self, work, engine, input_file):
-        binary = work / ("goldmark-driver" if engine.startswith("goldmark-") else "rust-driver")
+        binary = work / ("goldmark-driver" if engine == "goldmark" else "rust-driver")
         self.engine = engine
         self.process = subprocess.Popen([str(binary), engine, str(input_file)], stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=None, text=True, bufsize=1, env=worker_env())

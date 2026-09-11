@@ -10,12 +10,9 @@ import (
 	"runtime"
 	"time"
 
-	v1 "github.com/yuin/goldmark"
-	e1 "github.com/yuin/goldmark/extension"
-	h1 "github.com/yuin/goldmark/renderer/html"
-	e2 "github.com/yuin/goldmark/v2/extension"
-	p2 "github.com/yuin/goldmark/v2/parser"
-	h2 "github.com/yuin/goldmark/v2/renderer/html"
+	"github.com/yuin/goldmark/v2/extension"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/renderer/html"
 )
 
 type fixture struct {
@@ -30,43 +27,23 @@ func renderer(engine string, flags uint32) func([]byte) []byte {
 	if flags > 7 {
 		panic("unknown flags")
 	}
-	if engine == "goldmark-v1" {
-		ext := []v1.Extender{}
-		if flags&1 != 0 {
-			ext = append(ext, e1.Table)
-		}
-		if flags&2 != 0 {
-			ext = append(ext, e1.Strikethrough)
-		}
-		if flags&4 != 0 {
-			ext = append(ext, e1.TaskList)
-		}
-		md := v1.New(v1.WithExtensions(ext...), v1.WithRendererOptions(h1.WithUnsafe()))
-		return func(source []byte) []byte {
-			var out bytes.Buffer
-			if err := md.Convert(source, &out); err != nil {
-				panic(err)
-			}
-			return out.Bytes()
-		}
-	}
-	if engine != "goldmark-v2" {
+	if engine != "goldmark" {
 		panic("unknown engine")
 	}
-	pe, he := []p2.Extension{}, []h2.Extension{}
+	pe, he := []parser.Extension{}, []html.Extension{}
 	if flags&1 != 0 {
-		pe = append(pe, e2.TableParser)
-		he = append(he, e2.TableHTMLRenderer)
+		pe = append(pe, extension.TableParser)
+		he = append(he, extension.TableHTMLRenderer)
 	}
 	if flags&2 != 0 {
-		pe = append(pe, e2.StrikethroughParser)
-		he = append(he, e2.StrikethroughHTMLRenderer)
+		pe = append(pe, extension.StrikethroughParser)
+		he = append(he, extension.StrikethroughHTMLRenderer)
 	}
 	if flags&4 != 0 {
-		pe = append(pe, e2.TaskListItemParser)
-		he = append(he, e2.TaskListItemHTMLRenderer)
+		pe = append(pe, extension.TaskListItemParser)
+		he = append(he, extension.TaskListItemHTMLRenderer)
 	}
-	p, r := p2.New(p2.WithExtensions(pe...)), h2.New(h2.WithUnsafe(), h2.WithExtensions(he...))
+	p, r := parser.New(parser.WithExtensions(pe...)), html.New(html.WithUnsafe(), html.WithExtensions(he...))
 	return func(source []byte) []byte {
 		var out bytes.Buffer
 		doc := p.Parse(source)

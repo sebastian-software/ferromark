@@ -18,7 +18,7 @@ class ProtocolTests(unittest.TestCase):
         case = {"case": "commonmark/x", "flags": 0, "input": "hello"}
         row = {"case": case["case"], "flags": 0, "bytes": 5, "engine": "satteri", "html": "<p>hello</p>", "options": "core"}
         verify_row(row, case, "satteri")
-        for key, value in (("case", "other"), ("flags", 1), ("bytes", 6), ("engine", "goldmark-v1")):
+        for key, value in (("case", "other"), ("flags", 1), ("bytes", 6), ("engine", "goldmark")):
             with self.assertRaises(ValueError):
                 verify_row({**row, key: value}, case, "satteri")
 
