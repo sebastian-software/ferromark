@@ -1,20 +1,17 @@
 # Native Goldmark and Sätteri comparison
 
-Measured Ferromark revision: `e352ecab4c443942f550e4d6eb0929ddb59c6a4e`.
+Measured Ferromark revision: `4d5f811ff0a1f07016daffae6161aa7d3cf8efab`.
 
 Environment: Apple M1 Pro, macOS-26.6.2-arm64-arm-64bit-Mach-O. Each pair has an independent Ferromark baseline.
 
 | Native pair | Input | Bytes | Ferromark µs | Competitor µs | Competitor / Ferromark | Run-median range, Ferromark / competitor µs |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| goldmark-v1 | `commonmark/5k` | 5,120 | 25.53 | 169.74 | 6.65× | 24.95–25.96 / 168.64–171.41 |
-| goldmark-v1 | `tables/tables-commonmark-inline` | 4,800 | 34.42 | 388.43 | 11.28× | 34.37–34.68 / 386.44–400.18 |
-| goldmark-v1 | `gfm_overlap/features` | 5,050 | 38.16 | 446.46 | 11.70× | 37.91–38.33 / 439.38–455.33 |
-| goldmark-v2 | `commonmark/5k` | 5,120 | 25.38 | 160.75 | 6.33× | 25.35–25.41 / 159.92–162.85 |
-| goldmark-v2 | `tables/tables-commonmark-inline` | 4,800 | 34.36 | 397.43 | 11.57× | 34.32–34.41 / 394.35–401.50 |
-| goldmark-v2 | `gfm_overlap/features` | 5,050 | 38.23 | 460.00 | 12.03× | 37.97–38.24 / 454.81–461.94 |
-| satteri | `commonmark/5k` | 5,120 | 25.44 | 39.90 | 1.57× | 25.21–25.62 / 39.37–39.94 |
-| satteri | `tables/tables-commonmark-inline` | 4,800 | 34.18 | 65.19 | 1.91× | 34.10–34.49 / 64.83–66.51 |
-| satteri | `gfm_overlap/features` | 5,050 | 37.97 | 77.93 | 2.05× | 37.77–38.21 / 77.87–78.19 |
+| Goldmark | `commonmark/5k` | 5,120 | 25.16 | 155.86 | 6.19× | 25.14–25.17 / 155.25–156.09 |
+| Goldmark | `tables/tables-commonmark-inline` | 4,800 | 34.07 | 378.30 | 11.10× | 33.86–34.73 / 375.09–380.64 |
+| Goldmark | `gfm_overlap/features` | 5,050 | 37.82 | 453.79 | 12.00× | 37.79–37.92 / 451.10–454.44 |
+| Sätteri | `commonmark/5k` | 5,120 | 25.24 | 39.36 | 1.56× | 25.07–25.24 / 39.20–39.40 |
+| Sätteri | `tables/tables-commonmark-inline` | 4,800 | 34.06 | 64.59 | 1.90× | 34.04–34.30 / 64.24–64.70 |
+| Sätteri | `gfm_overlap/features` | 5,050 | 38.02 | 77.53 | 2.04× | 37.92–38.13 / 77.16–77.65 |
 
 Smaller times are better. These are selected workload observations, not a general engine ranking. The ranges describe observed run medians, not confidence intervals.
 
@@ -30,11 +27,9 @@ CommonMark disables extensions. Table lanes enable tables alone; gfm_overlap ena
 
 ## Output and capability diagnostics
 
-- **goldmark-v1:** 18/18 admitted workloads; 0 normalized mismatches against the 652 stored CommonMark examples. Excluded: none. Admitted renderer differences: none.
-  Recorded Go GC cycles during sampled windows: 18,513.
-- **goldmark-v2:** 18/18 admitted workloads; 0 normalized mismatches against the 652 stored CommonMark examples. Excluded: none. Admitted renderer differences: none.
-  Recorded Go GC cycles during sampled windows: 21,285.
-- **satteri:** 18/18 admitted workloads; 0 normalized mismatches against the 652 stored CommonMark examples. Excluded: none. Admitted renderer differences: task_lists/features, gfm_overlap/features.
+- **Goldmark:** 18/18 admitted workloads; 0 normalized mismatches against the 652 stored CommonMark examples. Excluded: none. Admitted renderer differences: none.
+  Recorded Go GC cycles during sampled windows: 21,149.
+- **Sätteri:** 18/18 admitted workloads; 0 normalized mismatches against the 652 stored CommonMark examples. Excluded: none. Admitted renderer differences: task_lists/features, gfm_overlap/features.
 
 Full original outputs, effective options, all eight feature-switch probes, and specification diagnostics are archived. Workload admission uses the shared ARCH-COMP-002 review; it is distinct from HTML fidelity and specification conformance.
 
