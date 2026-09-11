@@ -109,6 +109,7 @@ jobs:
       - run: cargo fmt --check
       - run: python3 -m unittest discover -s benchmarks/bun-comparison -p "test_*.py"
       - run: python3 -m unittest discover -s benchmarks/cmark-comparison -p "test_*.py"
+      - run: python3 -m unittest discover -s benchmarks/native-pipeline-comparison -p "test_*.py"
       - run: python3 -m unittest discover -s scripts -p "test_ci_benchmarks.py"
       - run: python3 benchmarks/bun-comparison/publish.py --check
       - run: python3 docs/reports/2026-09-11-native-cmark-comparison/render.py --check

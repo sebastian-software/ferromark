@@ -34,6 +34,21 @@ class WorkloadTests(unittest.TestCase):
         self.assertFalse(self.review('commonmark', '<p><a href="/a">A</a></p>', '<p>[A]</p>')['comparable'])
         self.assertFalse(self.review('tables', '<table><tr><td>A</td></tr></table>', '<p>| A |</p>')['comparable'])
 
+    def test_task_container_class_is_reviewed_without_erasing_unknown_classes(self):
+        first = '<ul><li><input type="checkbox" checked disabled> A</li></ul>'
+        for tag in ('ul', 'ol'):
+            baseline = first.replace('ul', tag)
+            other = baseline.replace('<' + tag + '>', '<' + tag + ' class="contains-task-list">')
+            self.assertEqual(self.review('task_lists', baseline, other)['accepted_differences'], ['task-presentation'])
+            unknown = other.replace('contains-task-list', 'contains-task-list custom')
+            self.assertFalse(self.review('task_lists', baseline, unknown)['comparable'])
+        self.assertFalse(self.review('task_lists', first, first.replace('ul', 'ol'))['comparable'])
+
+    def test_task_container_class_cannot_hide_missing_checkboxes(self):
+        first = '<ul><li><input type="checkbox" checked disabled> A</li></ul>'
+        other = '<ul class="contains-task-list"><li>[x] A</li></ul>'
+        self.assertFalse(self.review('task_lists', first, other)['comparable'])
+
     def test_unreviewed_differences_are_not_silently_accepted(self):
         self.assertFalse(self.review('tables', '<td style="color:red">A</td>', '<td style="color:blue">A</td>')['comparable'])
         self.assertFalse(self.review('commonmark', '<p><a href="/a">A</a></p>', '<p><a href="/b">A</a></p>')['comparable'])

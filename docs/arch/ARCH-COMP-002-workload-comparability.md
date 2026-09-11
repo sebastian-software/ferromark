@@ -23,6 +23,12 @@ are accepted with explicit disclosure:
   renderer task classes, and spacing beside a checkbox are admitted. The same
   list structure, task labels, checkbox count, and checked states must remain.
 
+The native Sätteri follow-up also reviews its `contains-task-list` class on
+`ul`/`ol` as task presentation. The projection ignores exactly that class on
+those list containers; unknown classes, list type, content, checkbox count,
+and checked states remain significant. Positive and negative contracts cover
+this extension of the reviewed renderer conventions.
+
 The workload projection is only a review mechanism outside the timer. Parsers
 render their own original HTML during measurements; normalization does not add
 work to any candidate's timed path. Output byte counts are retained. CSS/layout

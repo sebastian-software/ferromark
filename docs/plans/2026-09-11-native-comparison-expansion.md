@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-11
 **Base:** main `223cff7495435c8fc44713fd4852ff91e0327bf2`, after PR #295.
-**Status:** Native cmark/cmark-gfm adapters implemented and [measured](../reports/2026-09-11-native-cmark-comparison.md); Goldmark and Sätteri are subsequent work.
+**Status:** Native cmark/cmark-gfm adapters implemented and [measured](../reports/2026-09-11-native-cmark-comparison.md). The [native pipeline harness](../../benchmarks/native-pipeline-comparison/README.md) now adds Goldmark v1/v2 and Sätteri Markdown, plus untimed MDX stage diagnostics.
 
 ## Scope
 
