@@ -94,6 +94,7 @@ def main():
     args = p.parse_args()
     work, result = args.work.resolve(), args.result.resolve()
     build = validate_build(work)
+    engines = tuple(build.get("engines", ENGINES))
     corpus = catalog()
     if args.case and not set(args.case) <= {r["case"] for r in corpus}:
         p.error("Unknown requested case")
@@ -102,7 +103,10 @@ def main():
         "samples": 5 if args.screening else 80, "window_ms": 20 if args.screening else 63,
         "warmup_ms": 50 if args.screening else 3000, "runs": 1 if args.screening else 3,
         "timer_check_batch": 16, "statistic": "median of run medians",
-        "selected_cases": args.case, "GOGC": "100", "GOMAXPROCS": "1", "GOMEMLIMIT": "unset"}
+        "selected_cases": args.case}
+    if "goldmark" in engines:
+        protocol.update(GOGC="100", GOMAXPROCS="1", GOMEMLIMIT="unset")
+    protocol["worker_environment"] = build.get("worker_environment", {})
     metadata = {"schema": "native-pipeline-pairs-v1", "build": build, "protocol": protocol,
         "ferromark_revision": capture(["git", "rev-parse", "HEAD"], cwd=REPO),
         "platform": platform.platform(), "machine": platform.machine(),
@@ -116,12 +120,15 @@ def main():
     spec = json.loads((REPO / "tests/spec.json").read_text())
     spec_cases = [{"case": str(r["example"]), "flags": 0, "input": r["markdown"]} for r in spec]
     write_json(result / "spec-input.json", spec_cases)
-    for name in ("Cargo.lock", "goldmark/go.mod", "goldmark/go.sum"):
-        (result / Path(name).name).write_bytes((HERE / name).read_bytes())
+    if "adapter" in build:
+        write_json(result / "dependency-locks.json", build["dependency_locks"])
+    else:
+        for name in ("Cargo.lock", "goldmark/go.mod", "goldmark/go.sum"):
+            (result / Path(name).name).write_bytes((HERE / name).read_bytes())
     (result / "ferromark.patch").write_text(capture(["git", "diff", "HEAD", "--", "src", "crates", "Cargo.toml", "Cargo.lock"], cwd=REPO) + "\n")
     verified = {}
     # Verify every engine and diagnostic before starting any timed process.
-    for engine in ("ferromark", *ENGINES):
+    for engine in ("ferromark", *engines):
         rows = []
         for filename, inputs, operation in (("catalog", corpus, "verify"), ("probes", probe_cases, "verify"),
                                              ("spec-input", spec_cases, "verify")):
@@ -141,11 +148,11 @@ def main():
                 check_switches(responses)
         verified[engine] = rows
         print(f"{engine}: workload, feature and spec outputs retained", flush=True)
-    for engine in ("ferromark", "satteri"):
+    for engine in (("ferromark", "satteri") if "satteri" in engines else ()):
         with Worker(work, engine, result / "mdx-input.json") as worker:
             rows = [worker.request("mdx", index) for index in range(len(mdx))]
         write_json(result / f"{engine}-mdx-outputs.json", rows)
-    for engine in ENGINES:
+    for engine in engines:
         folder = result / engine
         folder.mkdir()
         reviews = []
@@ -162,7 +169,7 @@ def main():
         print(f"{engine}: admitted {metadata['pairs'][engine]['eligible']}/{len(corpus)}", flush=True)
     write_json(result / "metadata.json", metadata)
     if not args.verify_only:
-        for engine in ENGINES:
+        for engine in engines:
             selected = metadata["pairs"][engine]["selected"]
             indices = [i for i, c in enumerate(corpus) if c["case"] in selected]
             runs = []

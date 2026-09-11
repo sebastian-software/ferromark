@@ -150,3 +150,30 @@ Only results with `finished_unix` completed final build validation. The report
 generator recomputes all run medians, checks every window and saved summary,
 and refuses screening or incomplete runs. It also reads gzip-compressed JSON
 archives. Use `report.py RESULT --check` to verify a saved report.
+
+## Additional engine adapters
+
+`engines/*/engine.json` registers independent native adapters. Each engine keeps
+its own source pin, build entry point, dependency lock and README in its directory;
+adding a candidate does not alter the Goldmark/Sätteri build or archived reports.
+List the available adapters with `python3 benchmarks/native-pipeline-comparison/prepare-engine.py --help`.
+
+```sh
+python3 benchmarks/native-pipeline-comparison/prepare-engine.py ENGINE /tmp/engine-build \
+  --source /tmp/clean-pinned-upstream
+python3 benchmarks/native-pipeline-comparison/run.py /tmp/engine-build /tmp/engine-verify --verify-only
+python3 benchmarks/native-pipeline-comparison/run.py /tmp/engine-build /tmp/engine-screen --screening
+python3 benchmarks/native-pipeline-comparison/run.py /tmp/engine-build /tmp/engine-measured \
+  --case commonmark/5k --case tables/tables-commonmark-inline --case gfm_overlap/features
+python3 benchmarks/native-pipeline-comparison/report.py /tmp/engine-measured
+```
+
+Each prepared build contains one competitor and a separately compiled Ferromark
+worker with the root's direct dependency versions/checksums and system allocator.
+The same output review, capability probes, monotonic windows, interleaving and
+report validation apply. No upstream implementation is patched. MDX is outside
+these Markdown adapters' measurement contract.
+
+Adapters must expose the independently selectable syntax required by the
+comparison lanes. Document limitations explicitly; do not patch upstream syntax
+or substitute an older release to obtain convenient feature switches.
