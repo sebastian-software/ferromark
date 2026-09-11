@@ -70,6 +70,13 @@ python3 -m unittest discover -s benchmarks/bun-comparison -p 'test_*.py'
 Follow that harness's setup instructions for pinned Bun/md4c sources and the
 recorded lockfile. Ordinary library builds do not acquire either dependency.
 
+The [native cmark pair harness](benchmarks/cmark-comparison/README.md) adds
+cmark and cmark-gfm through their C APIs. It reuses the workload-review policy
+and realistic table fixtures, but measures a separate system-allocator
+environment. Its results do not replace or mix with the Bun/mimalloc tables.
+See the [expansion plan](docs/plans/2026-09-11-native-comparison-expansion.md)
+for the subsequent Goldmark and Sätteri adapters.
+
 The older four-parser Criterion suite remains a diagnostic with historical
 adapter policies/lifecycles; its results do not feed the current public tables.
 It needs the md4c C sources:
