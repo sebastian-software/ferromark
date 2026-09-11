@@ -27,6 +27,7 @@ def render(folder):
         "| --- | --- | ---: | ---: | ---: | ---: | --- |"]
     diagnostics = []
     for engine in ENGINES:
+        label = {"goldmark": "Goldmark", "satteri": "Sätteri"}[engine]
         pair = metadata["pairs"][engine]
         runs = [load(folder / engine / f"samples-{i}.json") for i in range(protocol["runs"])]
         outputs = load(folder / "ferromark-catalog-outputs.json") + load(folder / f"{engine}-catalog-outputs.json")
@@ -37,13 +38,13 @@ def render(folder):
         for case in pair["selected"]:
             a, b = (rows[case, name] for name in ("ferromark", engine))
             ranges = [f"{min(r['run_medians_ns'])/1000:.2f}–{max(r['run_medians_ns'])/1000:.2f}" for r in (a, b)]
-            lines.append(f"| {engine} | `{case}` | {a['bytes']:,} | {a['median_ns']/1000:.2f} | {b['median_ns']/1000:.2f} | {b['median_ns']/a['median_ns']:.2f}× | {' / '.join(ranges)} |")
+            lines.append(f"| {label} | `{case}` | {a['bytes']:,} | {a['median_ns']/1000:.2f} | {b['median_ns']/1000:.2f} | {b['median_ns']/a['median_ns']:.2f}× | {' / '.join(ranges)} |")
         mismatches = [r["case"] for r in load(folder / f"{engine}-spec-input-outputs.json") if r["mismatch"]]
         reviews = load(folder / engine / "verification.json")
         differences = [r["case"] for r in reviews if r["comparable"] and not r["html_equivalent"]]
-        diagnostics.append(f"- **{engine}:** {pair['eligible']}/{pair['total']} admitted workloads; {len(mismatches)} normalized mismatches against the 652 stored CommonMark examples. "
+        diagnostics.append(f"- **{label}:** {pair['eligible']}/{pair['total']} admitted workloads; {len(mismatches)} normalized mismatches against the 652 stored CommonMark examples. "
                            f"Excluded: {', '.join(pair['excluded']) or 'none'}. Admitted renderer differences: {', '.join(differences) or 'none'}.")
-        if engine.startswith("goldmark-"):
+        if engine == "goldmark":
             gc = sum(r["gc_cycles"] for run in runs for r in run if r["engine"] == engine)
             diagnostics.append(f"  Recorded Go GC cycles during sampled windows: {gc:,}.")
     lines += ["", "Smaller times are better. These are selected workload observations, not a general engine ranking. The ranges describe observed run medians, not confidence intervals.",
