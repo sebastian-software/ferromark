@@ -159,5 +159,3 @@ class CanonicalHTML(HTMLParser):
 
     def handle_pi(self, text):
         self.tokens.append(("pi", text))
-
-

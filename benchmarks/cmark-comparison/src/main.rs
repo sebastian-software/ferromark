@@ -17,7 +17,8 @@ static INIT: Once = Once::new();
 
 unsafe extern "C" {
     fn bench_cmark_init() -> i32;
-    fn bench_cmark_render(input: *const u8, len: usize, flags: u32) -> *mut c_char;
+    fn bench_cmark_options(flags: u32) -> i32;
+    fn bench_cmark_render(input: *const u8, len: usize, flags: u32, options: i32) -> *mut c_char;
     fn bench_cmark_free(html: *mut c_char);
 }
 
@@ -45,6 +46,7 @@ impl Output {
 
 struct Renderers {
     flags: u32,
+    native_options: i32,
     ferro: ferromark::Options,
 }
 impl Renderers {
@@ -64,7 +66,13 @@ impl Renderers {
             strikethrough: flags & 2 != 0,
             task_lists: flags & 4 != 0,
         );
-        Self { flags, ferro }
+        // Only computes upstream option constants; no pointers or allocations.
+        let native_options = unsafe { bench_cmark_options(flags) };
+        Self {
+            flags,
+            native_options,
+            ferro,
+        }
     }
 
     fn render(&self, index: usize, input: &str) -> Output {
@@ -74,7 +82,9 @@ impl Renderers {
             assert_eq!(index, 1);
             // The borrowed input lives through this synchronous call. The
             // result has unique ownership and is freed by COutput::drop.
-            let ptr = unsafe { bench_cmark_render(input.as_ptr(), input.len(), self.flags) };
+            let ptr = unsafe {
+                bench_cmark_render(input.as_ptr(), input.len(), self.flags, self.native_options)
+            };
             Output::C(COutput(NonNull::new(ptr).expect("cmark rendering failed")))
         }
     }
@@ -102,7 +112,8 @@ fn main() {
                 json!({"case":case["case"], "flags":flags, "bytes":input.len(),
                     "outputs":{"ferromark":outputs[0].text(), COMPETITOR:outputs[1].text()},
                     "ferromark_options":format!("{:?}", renderers.ferro),
-                    "cmark_options":{"unsafe_html":true,"extensions":extension_names(flags)},
+                "cmark_options":{"bits":renderers.native_options,"unsafe_html":true,
+                    "double_tilde_only":flags & 2 != 0,"extensions":extension_names(flags)},
                 })
             );
             continue;
@@ -198,6 +209,7 @@ mod tests {
                 out.contains("<script>x</script>"),
                 "tag filtering must stay disabled"
             );
+            assert_eq!(cmark(flags, "~single~\n"), "<p>~single~</p>\n");
         }
     }
 
