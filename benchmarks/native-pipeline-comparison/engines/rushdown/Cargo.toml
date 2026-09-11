@@ -1,0 +1,22 @@
+[package]
+name = "ferromark-rushdown-comparison"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[[bin]]
+name = "rushdown-driver"
+path = "main.rs"
+
+[dependencies]
+rushdown = { git = "https://github.com/yuin/rushdown", rev = "e5eb4e4446541ea0ed53111c1b37e779283ff57c" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"

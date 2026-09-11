@@ -1,0 +1,10 @@
+{
+  "name": "markdig",
+  "label": "Markdig",
+  "version": "1.3.2",
+  "repository": "https://github.com/xoofx/markdig",
+  "revision": "fc705234fa211d179ee1d5e7656b51ab99f70ca9",
+  "worker_environment": {"DOTNET_TieredCompilation": "1", "DOTNET_TieredPGO": "1", "DOTNET_gcServer": "0", "DOTNET_gcConcurrent": "1"},
+  "stages": "Native .NET Markdown.ToHtml with immutable pipeline configuration; complete parse/render to a fresh owned HTML string; normal workstation concurrent GC and tiered JIT/PGO enabled",
+  "boundary": "This is a warmed .NET engine-core comparison, not AOT and not a Node wrapper. GC within a render window is timed; GC may also progress between windows. Collection/allocation counters are retained outside timing. Startup, fixture decoding and JIT warmup are excluded; timings measure steady-state render-window latency, not total process CPU."
+}
