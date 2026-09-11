@@ -18,6 +18,8 @@ def load(path):
 def render(folder):
     metadata = load(folder / "metadata.json")
     protocol = metadata["protocol"]
+    if "adapter" in metadata["build"]:
+        return render_engine(folder, metadata)
     if protocol["mode"] != "measurement" or metadata["finished_unix"] <= metadata["started_unix"]:
         raise ValueError("Only completed full measurements can produce this report")
     lines = ["# Native Goldmark and Sätteri comparison", "",
@@ -70,6 +72,61 @@ def render(folder):
         "Regenerate or verify this report from the repository root:", "", "```sh",
         f"python3 benchmarks/native-pipeline-comparison/report.py docs/reports/{folder.name} --check",
         "```", ""]
+    return "\n".join(lines)
+
+
+def render_engine(folder, metadata):
+    protocol = metadata["protocol"]
+    adapter = metadata["build"]["adapter"]
+    engine, label = adapter["name"], adapter["label"]
+    diagnostic = adapter.get("fixed_dialect", False)
+    if metadata["finished_unix"] <= metadata["started_unix"]:
+        raise ValueError("Incomplete run")
+    if protocol["mode"] != ("verify" if diagnostic else "measurement"):
+        raise ValueError("Expected verification for a fixed dialect or a full measurement")
+    pair = metadata["pairs"][engine]
+    if diagnostic and pair["selected"]:
+        raise ValueError("Fixed-dialect diagnostics must not admit timing")
+    lines = [f"# Native {label} {'diagnostics' if diagnostic else 'comparison'}", "",
+        f"Ferromark revision: `{metadata['ferromark_revision']}`. "
+        f"{label} source: `{adapter['revision']}` (release `{adapter['version']}`).", "",
+        f"Environment: {metadata['cpu']}, {metadata['platform']}.", "",
+        adapter["stages"] + ".", "", adapter["boundary"], ""]
+    if not diagnostic:
+        runs = [load(folder / engine / f"samples-{i}.json") for i in range(protocol["runs"])]
+        outputs = load(folder / "ferromark-catalog-outputs.json") + load(folder / f"{engine}-catalog-outputs.json")
+        computed = summarize(runs, pair["selected"], engine, protocol, outputs)
+        if not computed or computed != load(folder / engine / "summary.json"):
+            raise ValueError("Missing measurement or summary differs from raw samples")
+        rows = {(r["case"], r["engine"]): r for r in computed}
+        lines += ["| Input | Bytes | Ferromark µs | " + label + " µs | Competitor / Ferromark | Run-median ranges µs (Ferromark / competitor) |",
+                  "| --- | ---: | ---: | ---: | ---: | --- |"]
+        for case in pair["selected"]:
+            a, b = (rows[case, name] for name in ("ferromark", engine))
+            ranges = [f"{min(r['run_medians_ns'])/1000:.2f}–{max(r['run_medians_ns'])/1000:.2f}" for r in (a,b)]
+            lines.append(f"| `{case}` | {a['bytes']:,} | {a['median_ns']/1000:.2f} | {b['median_ns']/1000:.2f} | {b['median_ns']/a['median_ns']:.2f}× | {' / '.join(ranges)} |")
+        lines += ["", f"{protocol['runs']} fresh process runs; {protocol['warmup_ms']} ms warmup per engine/case; "
+            f"{protocol['samples']} alternating windows of at least {protocol['window_ms']} ms. Each window checks its native monotonic timer after 16 calls. "
+            "Values are medians of run medians, with observed ranges rather than confidence intervals. Smaller times are better; selected workloads are not a general engine ranking.", "",
+            "Fresh parse/render state and owned HTML are produced each time. Rust/Zig destruction is timed; managed runtimes retain automatic GC. "
+            "Startup, configuration, IPC, JSON, fixture loading and output review are outside timing. No Node.js bindings, WASM or per-document CLI launch is used. "
+            "These system-allocator results are separate from the published Bun/mimalloc comparison.", ""]
+    mismatches = {name: sum(r["mismatch"] for r in load(folder / f"{name}-spec-input-outputs.json")) for name in ("ferromark", engine)}
+    reviews = load(folder / engine / "verification.json")
+    differences = [r["case"] for r in reviews if r["comparable"] and not r["html_equivalent"]]
+    lines += ["## Workload and capability evidence", "",
+        f"Admitted workloads: {pair['eligible']}/{pair['total']}. Excluded: {', '.join(pair['excluded']) or 'none'}.", "",
+        f"Admitted renderer differences: {', '.join(differences) or 'none'}.", "",
+        f"Normalized mismatches against the 652 stored CommonMark examples: Ferromark {mismatches['ferromark']}; {label} {mismatches[engine]}. "
+        "This is diagnostic evidence, not a conformance certification.", "",
+        "Original HTML, effective options, all eight feature-switch combinations, single-tilde and trusted-URL probes, and spec outputs are retained. "
+        "Admission follows ARCH-COMP-002 independently of HTML fidelity. Fixed-dialect engines are excluded when the required switches cannot be matched; no parser source is patched to remove native behavior.", "",
+        "For configurable engines, CommonMark disables extensions; table/strike/task lanes enable only their named syntax; GFM overlap enables those three together. "
+        "Raw HTML and arbitrary URL schemes are preserved. Bare autolinks, tag filtering, footnotes, math, heading IDs, typography and MDX stay off. No full-GFM or MDX-throughput claim is made.", "",
+        "## Reproduction", "",
+        "See the engine adapter README. Metadata records upstream hashes, compiler versions, build commands, dependency locks, local source hashes and executable hashes. "
+        "The archive retains raw evidence; report generation rechecks every timed window and recomputes summaries.", "",
+        "```sh", f"python3 benchmarks/native-pipeline-comparison/report.py docs/reports/{folder.name} --check", "```", ""]
     return "\n".join(lines)
 
 

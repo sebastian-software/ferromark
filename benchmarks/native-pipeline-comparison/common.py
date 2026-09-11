@@ -47,8 +47,8 @@ def local_hashes():
     paths += list((REPO / "crates").rglob("Cargo.toml"))
     paths += [REPO / name for name in ("Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "tests/spec.json",
         "benchmarks/cmark-comparison/support.py", "benchmarks/bun-comparison/workload.py")]
-    paths += [p for p in HERE.rglob("*") if p.is_file() and "target" not in p.relative_to(HERE).parts
-              and p.suffix in (".py", ".rs", ".toml", ".lock", ".go", ".mod", ".sum")]
+    paths += [p for p in HERE.rglob("*") if p.is_file() and not {"target", "obj", "bin"}.intersection(p.relative_to(HERE).parts)
+              and p.suffix in (".py", ".rs", ".toml", ".lock", ".go", ".mod", ".sum", ".json", ".zig", ".cs", ".csproj")]
     paths += list((REPO / "benches/fixtures").glob("tables-*.md"))
     return {str(p.relative_to(REPO)): sha(p) for p in sorted(paths)}
 
@@ -61,12 +61,30 @@ def worker_env():
     return env
 
 
+def validate_worker_command(command):
+    if (not isinstance(command, list) or not command
+            or not all(isinstance(arg, str) for arg in command)
+            or not Path(command[0]).is_absolute()):
+        raise ValueError("Registered worker commands require an absolute executable path")
+    return command
+
+
 class Worker:
     def __init__(self, work, engine, input_file):
-        binary = work / ("goldmark-driver" if engine == "goldmark" else "rust-driver")
+        info = json.loads((work / "build-info.json").read_text())
+        command = info.get("workers", {}).get(engine)
+        if command is None:
+            command = [str(work / ("goldmark-driver" if engine == "goldmark" else "rust-driver"))]
+        validate_worker_command(command)
+        env = worker_env()
+        # Runtime settings are selected and recorded by the native adapter build.
+        for key in list(env):
+            if key.startswith(("DOTNET_", "COMPlus_")):
+                env.pop(key)
+        env.update(info.get("worker_environment", {}))
         self.engine = engine
-        self.process = subprocess.Popen([str(binary), engine, str(input_file)], stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=None, text=True, bufsize=1, env=worker_env())
+        self.process = subprocess.Popen([*command, engine, str(input_file)], stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=None, text=True, bufsize=1, env=env)
 
     def request(self, op, index, **fields):
         proc = self.process
