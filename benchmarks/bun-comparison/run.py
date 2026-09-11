@@ -6,6 +6,7 @@ from html.parser import HTMLParser
 import json
 from pathlib import Path
 import platform
+import re
 import statistics
 import subprocess
 import time
@@ -31,12 +32,40 @@ class CanonicalHTML(HTMLParser):
     """Limited serialization normalization; not a browser DOM or sanitizer."""
     VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
+    BLOCK = {"p", "div", "blockquote", "ul", "ol", "li", "pre", "h1", "h2", "h3", "h4", "h5", "h6",
+             "table", "thead", "tbody", "tfoot", "tr", "td", "th", "hr"}
+    LITERAL = {"pre", "code", "textarea", "script", "style"}
+
     def __init__(self, text):
         super().__init__(convert_charrefs=True)
         self.tokens = []
         self.literal = 0
         self.feed(text)
         self.close()
+        # Default HTML flow only: retain word separators, trim at known block
+        # boundaries, and never alter literal/code text or non-breaking spaces.
+        raw, self.tokens = self.tokens, []
+        literal = 0
+        for i, token in enumerate(raw):
+            kind, value = token[:2]
+            if kind == "text" and not literal:
+                value = re.sub(r"[ \t\r\n\f]+", " ", value)
+                before = raw[i - 1] if i else None
+                after = raw[i + 1] if i + 1 < len(raw) else None
+                def boundary(t):
+                    return t is None or (t[0] in ("start", "end") and t[1] in self.BLOCK)
+                if boundary(before):
+                    value = value.lstrip(" ")
+                if boundary(after):
+                    value = value.rstrip(" ")
+                if not value:
+                    continue
+                token = ("text", value)
+            self.tokens.append(token)
+            if kind == "start" and value in self.LITERAL:
+                literal += 1
+            elif kind == "end" and value in self.LITERAL:
+                literal = max(0, literal - 1)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -63,8 +92,6 @@ class CanonicalHTML(HTMLParser):
             self.literal -= 1
 
     def handle_data(self, text):
-        if not self.literal and "\n" in text and not text.strip():
-            return
         if self.tokens and self.tokens[-1][0] == "text":
             self.tokens[-1] = ("text", self.tokens[-1][1] + text)
         else:
@@ -93,6 +120,7 @@ def main():
     p.add_argument("bun", type=Path)
     p.add_argument("result", type=Path, help="New output directory; existing results are never overwritten")
     p.add_argument("--verify-only", action="store_true")
+    p.add_argument("--case", action="append", help="Measure only named cases, each in three publication runs")
     p.add_argument("--screening", action="store_true", help="Short smoke run, never used for publication")
     args = p.parse_args()
     bun, result = args.bun.resolve(), args.result.resolve()
@@ -129,11 +157,13 @@ def main():
         raise SystemExit("Native adapter changed; rerun prepare.py")
     metadata["native_archives_sha256"] = stamp["archives"]
     metadata["md4c_source_sha256"] = stamp["md4c_source_sha256"]
+    headline_cases = args.case or HEADLINE_CASES
     samples, window_ms, warmup_ms = (5, 20, 50) if args.screening else (80, 63, 3000)
     metadata["protocol"] = {"samples":samples, "window_ms":window_ms, "warmup_ms":warmup_ms,
         "headline_runs":1 if args.screening else 3, "mode":"screening" if args.screening else "publication",
-        "headline_cases":HEADLINE_CASES, "statistic":"median of run medians", "timer_check_batch":16}
+        "headline_cases":headline_cases, "selected_cases":args.case, "statistic":"median of run medians", "timer_check_batch":16}
     (result / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+    subprocess.run([binary, "selftest"], check=True)
     for mode in ("verify", "spec", "catalog", "options"):
         with (result / f"{mode}.jsonl").open("w") as out:
             subprocess.run([binary, mode], stdout=out, check=True)
@@ -166,9 +196,12 @@ def main():
         return
     if not allowed:
         raise SystemExit("No comparable output; no timings collected")
-    if not set(HEADLINE_CASES).issubset(allowed):
+    if not set(headline_cases).issubset(allowed):
         raise SystemExit("A headline case failed output parity; refusing publication")
-    (result / "headline-allowlist.json").write_text(json.dumps(HEADLINE_CASES) + "\n")
+    if args.case:
+        allowed = [case for case in allowed if case in args.case]
+        (result / "allowlist.json").write_text(json.dumps(allowed, indent=2) + "\n")
+    (result / "headline-allowlist.json").write_text(json.dumps(headline_cases) + "\n")
     collected = {}
     for repetition in range(1 if args.screening else 3):
         allowlist = "allowlist.json" if repetition == 0 else "headline-allowlist.json"

@@ -34,7 +34,17 @@ class VerificationTests(unittest.TestCase):
     def test_literal_and_inline_whitespace_is_preserved(self):
         self.assertNotEqual(canonical('<pre><code>\n</code></pre>'), canonical('<pre><code>\n\n</code></pre>'))
         self.assertNotEqual(canonical('<p><em>a</em> <em>b</em></p>'), canonical('<p><em>a</em><em>b</em></p>'))
-        self.assertNotEqual(canonical('<p>a \nb</p>'), canonical('<p>a\nb</p>'))
+        self.assertEqual(canonical('<p>a \nb</p>'), canonical('<p>a\nb</p>'))
+
+    def test_flow_whitespace_respects_block_and_inline_boundaries(self):
+        self.assertEqual(canonical('<li>parent\n<ul><li>child</li></ul></li>'),
+                         canonical('<li>parent<ul><li>child</li></ul></li>'))
+        self.assertEqual(canonical('<p>a\n b</p>'), canonical('<p>a b</p>'))
+        self.assertNotEqual(canonical('<p><em>a</em>\n<em>b</em></p>'),
+                            canonical('<p><em>a</em><em>b</em></p>'))
+        self.assertNotEqual(canonical('<p>a&nbsp;b</p>'), canonical('<p>a b</p>'))
+        self.assertNotEqual(canonical('<code>a  b</code>'), canonical('<code>a b</code>'))
+        self.assertNotEqual(canonical('<textarea>a  b</textarea>'), canonical('<textarea>a b</textarea>'))
 
     def test_markup_and_comments_are_preserved(self):
         self.assertNotEqual(canonical('<p>hi</p>'), canonical('<div>hi</div>'))

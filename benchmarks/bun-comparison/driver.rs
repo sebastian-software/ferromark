@@ -2,6 +2,7 @@
 use serde_json::json;
 use std::{
     hint::black_box,
+    io::Read,
     time::{Duration, Instant},
 };
 
@@ -85,7 +86,7 @@ impl Renderers {
             comrak,
             md4c_flags: (if tables { 0x0100 } else { 0 })
                 | (if strike { 0x0200 } else { 0 })
-                | (if tasks { 0x2000 } else { 0 }),
+                | (if tasks { 0x0800 } else { 0 }), // MD_FLAG_TASKLISTS in pinned md4c.h
         }
     }
 
@@ -186,6 +187,45 @@ fn main() {
     bun_core::StackCheck::configure_thread();
     let args: Vec<_> = std::env::args().collect();
     let mode = args.get(1).map(String::as_str).unwrap_or("verify");
+    if mode == "selftest" {
+        // Exercise the FFI configuration, not just duplicated numeric constants.
+        let enabled = String::from_utf8(
+            Renderers::new(7).render(4, "- [x] Done\n- [ ] Pending\n\n[[page]]\n"),
+        )
+        .unwrap();
+        assert_eq!(
+            enabled.matches("type=\"checkbox\"").count(),
+            2,
+            "md4c must render task checkboxes"
+        );
+        assert!(
+            enabled.contains("[[page]]"),
+            "md4c wiki links must remain disabled"
+        );
+        let disabled = String::from_utf8(Renderers::new(0).render(4, "- [x] Done\n")).unwrap();
+        assert!(!disabled.contains("checkbox"));
+        println!("md4c option behavior verified");
+        return;
+    }
+    if mode == "render" {
+        let flags = args
+            .get(2)
+            .expect("render requires configuration bits")
+            .parse()
+            .unwrap();
+        let r = Renderers::new(flags);
+        let mut input = String::new();
+        std::io::stdin().read_to_string(&mut input).unwrap();
+        println!(
+            "{}",
+            json!({"flags":flags, "input":input,
+            "ferromark_limits":format!("{:?}", ferromark::parse_with_options(&input, &r.ferro).resource_limits),
+            "outputs":PARSERS.iter().enumerate().map(|(p,name)|
+                ((*name).to_owned(), json!(String::from_utf8(r.render(p,&input)).unwrap())))
+                .collect::<serde_json::Map<_,_>>() })
+        );
+        return;
+    }
     if mode == "catalog" {
         println!("{}", json!(corpora()));
         return;
