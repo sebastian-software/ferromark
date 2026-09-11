@@ -47,15 +47,17 @@ rows, so these are workload measurements rather than additive feature prices.
 
 <FeatureBenchmarkTable />
 
-The tables-only and GFM-subset cases use identical table/strikethrough input.
-The first keeps strikethrough literal. The second renders strikethrough and
-also enables unused task-list parsing. Neither enables bare autolinks or tag
-filtering, so neither is the full GFM preset. The GFM-subset row was remeasured
-for all five parsers after correcting our md4c task-list flag; its
-[replacement evidence](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-09-11-benchmark-refresh/native-corrected)
-is retained separately.
+**Bold marks the lowest measured time in each row**, including exact ties.
+Ferromark is followed directly by pulldown-cmark in every comparison.
+The three table cases cover plain text, emphasis/strong formatting, and a Markdown
+link column with identical CommonMark-plus-tables settings. CommonMark inline
+parsing is always active; table strikethrough is outside this comparison.
+The [optimization experiments](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-table-optimization-variants.md)
+document the cell-rendering change included in this fresh run. The
+[earlier publication](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-benchmark-refresh.md)
+retains the old mixed-syntax cases and md4c flag-correction evidence separately.
 
-The archived output check found matching HTML in {benchmarks.verification.htmlEquivalent}
+The output check for this run found matching HTML in {benchmarks.verification.htmlEquivalent}
 of {benchmarks.verification.total} input/configuration pairs. This is a fidelity
 diagnostic, not the admission rule for timing. The
 [workload contract](https://github.com/sebastian-software/ferromark/blob/main/docs/arch/ARCH-COMP-002-workload-comparability.md)
@@ -77,7 +79,7 @@ Each displayed result is the median of three run medians, with alternating
 parser order. Each run uses 80 windows totaling at least five seconds of
 sampling per parser/input after three seconds of warmup. Options are constructed
 outside the timer; fresh parser setup, parsing, owned output, and destruction
-are inside it. The [full report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-benchmark-refresh.md)
+are inside it. The [full report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-native-optimization-publication.md)
 records run variation, output sizes, mismatches, exact options, and source hashes.
 
 This page and the [repository README](https://github.com/sebastian-software/ferromark#benchmarks)
@@ -103,7 +105,7 @@ git clone https://github.com/mity/md4c.git ../md4c
 git -C ../md4c checkout --detach 65c6c9d
 python3 benchmarks/bun-comparison/prepare.py "$BUN_BENCH_DIR" "$BUN_BENCH_WORK" \
   --md4c ../md4c \
-  --lockfile docs/reports/2026-09-11-benchmark-refresh/native/Cargo.lock
+  --lockfile docs/reports/2026-09-11-native-optimization-publication/native/Cargo.lock
 python3 benchmarks/bun-comparison/run.py "$BUN_BENCH_DIR" /private/tmp/new-benchmark-run
 ```
 

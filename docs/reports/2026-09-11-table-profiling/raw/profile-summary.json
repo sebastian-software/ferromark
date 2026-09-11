@@ -1,0 +1,1155 @@
+[
+  {
+    "file": "fixture-tables-ferro-reuse.sample.txt",
+    "samples": 4103,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNvMsb_Csibqk7AE9gB5_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_",
+        "image": "timing",
+        "samples": 807,
+        "percent": 19.668535218133073
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document",
+        "image": "timing",
+        "samples": 603,
+        "percent": 14.696563490129174
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser17split_table_cells",
+        "image": "timing",
+        "samples": 440,
+        "percent": 10.723860589812332
+      },
+      {
+        "symbol": "_RNvCsibqk7AE9gB5_9ferromark21render_inline_content",
+        "image": "timing",
+        "samples": 401,
+        "percent": 9.773336582988058
+      },
+      {
+        "symbol": "_platform_memmove",
+        "image": "libsystem_platform.dylib",
+        "samples": 307,
+        "percent": 7.482330002437241
+      },
+      {
+        "symbol": "_RNvMs6_Csibqk7AE9gB5_9ferromarkNtB5_9CellState8add_text",
+        "image": "timing",
+        "samples": 284,
+        "percent": 6.921764562515233
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser5parse",
+        "image": "timing",
+        "samples": 151,
+        "percent": 3.6802339751401414
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser14emit_table_row",
+        "image": "timing",
+        "samples": 142,
+        "percent": 3.4608822812576165
+      },
+      {
+        "symbol": "_RNvNtCsibqk7AE9gB5_9ferromark6escape17first_text_escape",
+        "image": "timing",
+        "samples": 134,
+        "percent": 3.265902997806483
+      },
+      {
+        "symbol": "_RINvCsibqk7AE9gB5_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_",
+        "image": "timing",
+        "samples": 132,
+        "percent": 3.2171581769436997
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter8td_start",
+        "image": "timing",
+        "samples": 104,
+        "percent": 2.534730684864733
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser16is_delimiter_row",
+        "image": "timing",
+        "samples": 75,
+        "percent": 1.827930782354375
+      },
+      {
+        "symbol": "_platform_memset",
+        "image": "libsystem_platform.dylib",
+        "samples": 75,
+        "percent": 1.827930782354375
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter6td_end",
+        "image": "timing",
+        "samples": 60,
+        "percent": 1.4623446258834998
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "image": "timing",
+        "samples": 46,
+        "percent": 1.1211308798440165
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "image": "libsystem_kernel.dylib",
+        "samples": 41,
+        "percent": 0.9992688276870583
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser16match_containers",
+        "image": "timing",
+        "samples": 22,
+        "percent": 0.5361930294906166
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser23advance_table_cell_scan",
+        "image": "timing",
+        "samples": 22,
+        "percent": 0.5361930294906166
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser11start_table",
+        "image": "timing",
+        "samples": 19,
+        "percent": 0.4630757981964416
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter8th_start",
+        "image": "timing",
+        "samples": 16,
+        "percent": 0.38995856690226666
+      },
+      {
+        "symbol": "_xzm_free",
+        "image": "libsystem_malloc.dylib",
+        "samples": 16,
+        "percent": 0.38995856690226666
+      },
+      {
+        "symbol": "_RINvNtNtNtNtCsgtPOCBgevO_4core5slice4sort6shared9smallsort25insertion_sort_shift_leftNtNtCsibqk7AE9gB5_9ferromark6inline9EmitPointNCINvMB8_SB1l_20sort_unstable_by_keyTmbENCNvMB1n_NtB1n_12InlineParser11emit_eventss_0E0EB1p_",
+        "image": "timing",
+        "samples": 15,
+        "percent": 0.36558615647087495
+      },
+      {
+        "symbol": "DYLD-STUB$$bzero",
+        "image": "timing",
+        "samples": 13,
+        "percent": 0.31684133560809163
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line",
+        "image": "timing",
+        "samples": 13,
+        "percent": 0.31684133560809163
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser15try_atx_heading",
+        "image": "timing",
+        "samples": 12,
+        "percent": 0.2924689251767
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent",
+        "image": "timing",
+        "samples": 12,
+        "percent": 0.2924689251767
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "image": "libsystem_malloc.dylib",
+        "samples": 12,
+        "percent": 0.2924689251767
+      },
+      {
+        "symbol": "_RNvNtNtCsibqk7AE9gB5_9ferromark6inline5marks35compute_emphasis_flags_with_context",
+        "image": "timing",
+        "samples": 10,
+        "percent": 0.24372410431391664
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser27would_start_block_for_table",
+        "image": "timing",
+        "samples": 9,
+        "percent": 0.21935169388252498
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter6th_end",
+        "image": "timing",
+        "samples": 7,
+        "percent": 0.17060687301974164
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers",
+        "image": "timing",
+        "samples": 6,
+        "percent": 0.14623446258835
+      },
+      {
+        "symbol": "_malloc_zone_malloc",
+        "image": "libsystem_malloc.dylib",
+        "samples": 6,
+        "percent": 0.14623446258835
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser13try_list_item",
+        "image": "timing",
+        "samples": 5,
+        "percent": 0.12186205215695832
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser14try_blockquote",
+        "image": "timing",
+        "samples": 5,
+        "percent": 0.12186205215695832
+      },
+      {
+        "symbol": "_RNvMs3_Csibqk7AE9gB5_9ferromarkNtB5_14ParagraphState8add_text",
+        "image": "timing",
+        "samples": 5,
+        "percent": 0.12186205215695832
+      },
+      {
+        "symbol": "_free",
+        "image": "libsystem_malloc.dylib",
+        "samples": 5,
+        "percent": 0.12186205215695832
+      },
+      {
+        "symbol": "xzm_realloc",
+        "image": "libsystem_malloc.dylib",
+        "samples": 5,
+        "percent": 0.12186205215695832
+      }
+    ],
+    "unlisted_samples": 66
+  },
+  {
+    "file": "fixture-tables-pull-reuse.sample.txt",
+    "samples": 4123,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNvXsl_NtCsdxlyCI4HO6p_14pulldown_cmark5parseNtB5_6ParserNtNtNtNtCsgtPOCBgevO_4core4iter6traits8iterator8Iterator4nextCsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 973,
+        "percent": 23.599320882852293
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark4htmlINtB2_10HtmlWriterNtNtB4_5parse6ParserINtCsjUvM7QkCWne_21pulldown_cmark_escape9FmtWriterQNtNtCslJsSqIQKwiA_5alloc6string6StringEE3runCsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 587,
+        "percent": 14.237205918020859
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass10parse_line",
+        "image": "timing",
+        "samples": 536,
+        "percent": 13.000242541838468
+      },
+      {
+        "symbol": "_platform_memmove",
+        "image": "libsystem_platform.dylib",
+        "samples": 422,
+        "percent": 10.235265583313122
+      },
+      {
+        "symbol": "_RINvCsjUvM7QkCWne_21pulldown_cmark_escape18escape_html_scalarQINtB2_9FmtWriterQNtNtCslJsSqIQKwiA_5alloc6string6StringEECsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 397,
+        "percent": 9.628910987145282
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass21parse_table_row_inner",
+        "image": "timing",
+        "samples": 305,
+        "percent": 7.397526073247636
+      },
+      {
+        "symbol": "_RNvMs1_NtCsdxlyCI4HO6p_14pulldown_cmark4treeINtB5_4TreeNtNtB7_5parse4ItemE6appendB7_",
+        "image": "timing",
+        "samples": 184,
+        "percent": 4.462769827795294
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass11parse_block",
+        "image": "timing",
+        "samples": 101,
+        "percent": 2.4496725685180696
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark8scanners15scan_table_head",
+        "image": "timing",
+        "samples": 97,
+        "percent": 2.352655833131215
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark4htmlINtB2_10HtmlWriterNtNtB4_5parse6ParserINtCsjUvM7QkCWne_21pulldown_cmark_escape9FmtWriterQNtNtCslJsSqIQKwiA_5alloc6string6StringEE5writeCsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 63,
+        "percent": 1.5280135823429541
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "image": "libsystem_kernel.dylib",
+        "samples": 54,
+        "percent": 1.3097259277225322
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass15parse_paragraph",
+        "image": "timing",
+        "samples": 46,
+        "percent": 1.1156924569488236
+      },
+      {
+        "symbol": "_RNvMs2_NtCsdxlyCI4HO6p_14pulldown_cmark5parseNtB5_6Parser14make_code_spanCsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 43,
+        "percent": 1.042929905408683
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark5parse15scan_containers",
+        "image": "timing",
+        "samples": 43,
+        "percent": 1.042929905408683
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "image": "timing",
+        "samples": 42,
+        "percent": 1.0186757215619695
+      },
+      {
+        "symbol": "_RNvMs2_NtCsdxlyCI4HO6p_14pulldown_cmark5parseNtB5_6Parser19handle_inline_pass1CsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 33,
+        "percent": 0.8003880669415474
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark9firstpass33scan_paragraph_interrupt_no_table",
+        "image": "timing",
+        "samples": 29,
+        "percent": 0.7033713315546932
+      },
+      {
+        "symbol": "_xzm_free",
+        "image": "libsystem_malloc.dylib",
+        "samples": 23,
+        "percent": 0.5578462284744118
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "image": "libsystem_malloc.dylib",
+        "samples": 13,
+        "percent": 0.3153043900072763
+      },
+      {
+        "symbol": "xzm_realloc",
+        "image": "libsystem_malloc.dylib",
+        "samples": 12,
+        "percent": 0.2910502061605627
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass3pop",
+        "image": "timing",
+        "samples": 10,
+        "percent": 0.2425418384671356
+      },
+      {
+        "symbol": "_RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsdxlyCI4HO6p_14pulldown_cmark",
+        "image": "timing",
+        "samples": 10,
+        "percent": 0.2425418384671356
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark8scanners15scan_code_fence",
+        "image": "timing",
+        "samples": 9,
+        "percent": 0.21828765462042202
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass11finish_list",
+        "image": "timing",
+        "samples": 7,
+        "percent": 0.1697792869269949
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark9firstpass19delim_run_can_close",
+        "image": "timing",
+        "samples": 7,
+        "percent": 0.1697792869269949
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "image": "libsystem_malloc.dylib",
+        "samples": 6,
+        "percent": 0.14552510308028135
+      },
+      {
+        "symbol": "_RNvNtCsgtPOCBgevO_4core3fmt5write",
+        "image": "timing",
+        "samples": 6,
+        "percent": 0.14552510308028135
+      },
+      {
+        "symbol": "_realloc",
+        "image": "libsystem_malloc.dylib",
+        "samples": 5,
+        "percent": 0.1212709192335678
+      }
+    ],
+    "unlisted_samples": 60
+  },
+  {
+    "file": "long-tables-ferro-retained.sample.txt",
+    "samples": 4117,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNvMsb_Csibqk7AE9gB5_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_",
+        "image": "timing",
+        "samples": 846,
+        "percent": 20.548943405392276
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document",
+        "image": "timing",
+        "samples": 824,
+        "percent": 20.014573718727227
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser17split_table_cells",
+        "image": "timing",
+        "samples": 684,
+        "percent": 16.614039349040564
+      },
+      {
+        "symbol": "_RNvCsibqk7AE9gB5_9ferromark21render_inline_content",
+        "image": "timing",
+        "samples": 306,
+        "percent": 7.432596550886568
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser14emit_table_row",
+        "image": "timing",
+        "samples": 304,
+        "percent": 7.384017488462472
+      },
+      {
+        "symbol": "_RNvMs6_Csibqk7AE9gB5_9ferromarkNtB5_9CellState8add_text",
+        "image": "timing",
+        "samples": 288,
+        "percent": 6.995384989069711
+      },
+      {
+        "symbol": "_RNvNtCsibqk7AE9gB5_9ferromark6escape17first_text_escape",
+        "image": "timing",
+        "samples": 281,
+        "percent": 6.825358270585378
+      },
+      {
+        "symbol": "_RINvCsibqk7AE9gB5_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_",
+        "image": "timing",
+        "samples": 187,
+        "percent": 4.542142336652903
+      },
+      {
+        "symbol": "_platform_memmove",
+        "image": "libsystem_platform.dylib",
+        "samples": 99,
+        "percent": 2.404663589992713
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser5parse",
+        "image": "timing",
+        "samples": 90,
+        "percent": 2.186057809084285
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter8td_start",
+        "image": "timing",
+        "samples": 77,
+        "percent": 1.8702939033276658
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter6td_end",
+        "image": "timing",
+        "samples": 54,
+        "percent": 1.3116346854505707
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser16match_containers",
+        "image": "timing",
+        "samples": 23,
+        "percent": 0.5586592178770949
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "image": "timing",
+        "samples": 20,
+        "percent": 0.48579062424095215
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser27would_start_block_for_table",
+        "image": "timing",
+        "samples": 16,
+        "percent": 0.38863249939276173
+      }
+    ],
+    "unlisted_samples": 18
+  },
+  {
+    "file": "published-tables-ferro-reuse.sample.txt",
+    "samples": 4128,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document",
+        "image": "timing",
+        "samples": 884,
+        "percent": 21.414728682170544
+      },
+      {
+        "symbol": "_RNvMsb_Csibqk7AE9gB5_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_",
+        "image": "timing",
+        "samples": 737,
+        "percent": 17.853682170542637
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser17split_table_cells",
+        "image": "timing",
+        "samples": 373,
+        "percent": 9.035852713178295
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser5parse",
+        "image": "timing",
+        "samples": 366,
+        "percent": 8.866279069767442
+      },
+      {
+        "symbol": "_RNvCsibqk7AE9gB5_9ferromark21render_inline_content",
+        "image": "timing",
+        "samples": 246,
+        "percent": 5.959302325581396
+      },
+      {
+        "symbol": "_platform_memmove",
+        "image": "libsystem_platform.dylib",
+        "samples": 202,
+        "percent": 4.8934108527131785
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser16is_delimiter_row",
+        "image": "timing",
+        "samples": 158,
+        "percent": 3.8275193798449614
+      },
+      {
+        "symbol": "_RNvNtNtCsibqk7AE9gB5_9ferromark6inline5marks35compute_emphasis_flags_with_context",
+        "image": "timing",
+        "samples": 146,
+        "percent": 3.5368217054263567
+      },
+      {
+        "symbol": "_RNvMs6_Csibqk7AE9gB5_9ferromarkNtB5_9CellState8add_text",
+        "image": "timing",
+        "samples": 133,
+        "percent": 3.2218992248062017
+      },
+      {
+        "symbol": "_RINvCsibqk7AE9gB5_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_",
+        "image": "timing",
+        "samples": 124,
+        "percent": 3.003875968992248
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser14emit_table_row",
+        "image": "timing",
+        "samples": 102,
+        "percent": 2.4709302325581395
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser11start_table",
+        "image": "timing",
+        "samples": 93,
+        "percent": 2.252906976744186
+      },
+      {
+        "symbol": "_RNvNtCsibqk7AE9gB5_9ferromark6escape17first_text_escape",
+        "image": "timing",
+        "samples": 87,
+        "percent": 2.1075581395348837
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser20parse_paragraph_line",
+        "image": "timing",
+        "samples": 53,
+        "percent": 1.2839147286821706
+      },
+      {
+        "symbol": "_platform_memset",
+        "image": "libsystem_platform.dylib",
+        "samples": 48,
+        "percent": 1.1627906976744187
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser30parse_line_content_with_indent",
+        "image": "timing",
+        "samples": 44,
+        "percent": 1.065891472868217
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "image": "timing",
+        "samples": 32,
+        "percent": 0.7751937984496124
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser16match_containers",
+        "image": "timing",
+        "samples": 32,
+        "percent": 0.7751937984496124
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter8th_start",
+        "image": "timing",
+        "samples": 31,
+        "percent": 0.750968992248062
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser28handle_blank_line_containers",
+        "image": "timing",
+        "samples": 28,
+        "percent": 0.6782945736434108
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter8td_start",
+        "image": "timing",
+        "samples": 23,
+        "percent": 0.5571705426356589
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter6th_end",
+        "image": "timing",
+        "samples": 22,
+        "percent": 0.5329457364341085
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "image": "libsystem_kernel.dylib",
+        "samples": 22,
+        "percent": 0.5329457364341085
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter6td_end",
+        "image": "timing",
+        "samples": 16,
+        "percent": 0.3875968992248062
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser13try_list_item",
+        "image": "timing",
+        "samples": 13,
+        "percent": 0.31492248062015504
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser18try_thematic_break",
+        "image": "timing",
+        "samples": 12,
+        "percent": 0.29069767441860467
+      },
+      {
+        "symbol": "_RINvNtNtNtNtCsgtPOCBgevO_4core5slice4sort6shared9smallsort25insertion_sort_shift_leftNtNtCsibqk7AE9gB5_9ferromark6inline9EmitPointNCINvMB8_SB1l_20sort_unstable_by_keyTmbENCNvMB1n_NtB1n_12InlineParser11emit_eventss_0E0EB1p_",
+        "image": "timing",
+        "samples": 11,
+        "percent": 0.26647286821705424
+      },
+      {
+        "symbol": "DYLD-STUB$$bzero",
+        "image": "timing",
+        "samples": 10,
+        "percent": 0.24224806201550386
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "image": "libsystem_malloc.dylib",
+        "samples": 6,
+        "percent": 0.14534883720930233
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser14try_blockquote",
+        "image": "timing",
+        "samples": 6,
+        "percent": 0.14534883720930233
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "image": "libsystem_malloc.dylib",
+        "samples": 6,
+        "percent": 0.14534883720930233
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser11table_cells",
+        "image": "timing",
+        "samples": 5,
+        "percent": 0.12112403100775193
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser27would_start_block_for_table",
+        "image": "timing",
+        "samples": 5,
+        "percent": 0.12112403100775193
+      },
+      {
+        "symbol": "_xzm_free",
+        "image": "libsystem_malloc.dylib",
+        "samples": 5,
+        "percent": 0.12112403100775193
+      }
+    ],
+    "unlisted_samples": 47
+  },
+  {
+    "file": "published-tables-pull-reuse.sample.txt",
+    "samples": 4093,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNvXsl_NtCsdxlyCI4HO6p_14pulldown_cmark5parseNtB5_6ParserNtNtNtNtCsgtPOCBgevO_4core4iter6traits8iterator8Iterator4nextCsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 939,
+        "percent": 22.941607622770583
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark4htmlINtB2_10HtmlWriterNtNtB4_5parse6ParserINtCsjUvM7QkCWne_21pulldown_cmark_escape9FmtWriterQNtNtCslJsSqIQKwiA_5alloc6string6StringEE3runCsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 541,
+        "percent": 13.217688736867823
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass10parse_line",
+        "image": "timing",
+        "samples": 520,
+        "percent": 12.704617639872954
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass21parse_table_row_inner",
+        "image": "timing",
+        "samples": 264,
+        "percent": 6.4500366479355
+      },
+      {
+        "symbol": "_platform_memmove",
+        "image": "libsystem_platform.dylib",
+        "samples": 240,
+        "percent": 5.8636696799413635
+      },
+      {
+        "symbol": "_RINvCsjUvM7QkCWne_21pulldown_cmark_escape18escape_html_scalarQINtB2_9FmtWriterQNtNtCslJsSqIQKwiA_5alloc6string6StringEECsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 230,
+        "percent": 5.619350109943807
+      },
+      {
+        "symbol": "_RNvMs1_NtCsdxlyCI4HO6p_14pulldown_cmark4treeINtB5_4TreeNtNtB7_5parse4ItemE6appendB7_",
+        "image": "timing",
+        "samples": 217,
+        "percent": 5.301734668946983
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark8scanners15scan_table_head",
+        "image": "timing",
+        "samples": 187,
+        "percent": 4.568775958954312
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass11parse_block",
+        "image": "timing",
+        "samples": 172,
+        "percent": 4.202296603957977
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass15parse_paragraph",
+        "image": "timing",
+        "samples": 104,
+        "percent": 2.540923527974591
+      },
+      {
+        "symbol": "_RNvMs2_NtCsdxlyCI4HO6p_14pulldown_cmark5parseNtB5_6Parser19handle_inline_pass1CsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 86,
+        "percent": 2.1011483019789887
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark5parse15scan_containers",
+        "image": "timing",
+        "samples": 73,
+        "percent": 1.7835328609821646
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "image": "libsystem_malloc.dylib",
+        "samples": 66,
+        "percent": 1.612509161983875
+      },
+      {
+        "symbol": "_xzm_free",
+        "image": "libsystem_malloc.dylib",
+        "samples": 61,
+        "percent": 1.4903493769850964
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "image": "libsystem_kernel.dylib",
+        "samples": 42,
+        "percent": 1.0261421939897386
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark9firstpass19delim_run_can_close",
+        "image": "timing",
+        "samples": 34,
+        "percent": 0.8306865379916931
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark9firstpass33scan_paragraph_interrupt_no_table",
+        "image": "timing",
+        "samples": 34,
+        "percent": 0.8306865379916931
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass3pop",
+        "image": "timing",
+        "samples": 31,
+        "percent": 0.7573906669924261
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark9firstpass17count_header_cols",
+        "image": "timing",
+        "samples": 27,
+        "percent": 0.6596628389934034
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "image": "timing",
+        "samples": 25,
+        "percent": 0.610798924993892
+      },
+      {
+        "symbol": "_free",
+        "image": "libsystem_malloc.dylib",
+        "samples": 24,
+        "percent": 0.5863669679941363
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark9firstpass18delim_run_can_open",
+        "image": "timing",
+        "samples": 22,
+        "percent": 0.537503053994625
+      },
+      {
+        "symbol": "_malloc_zone_malloc",
+        "image": "libsystem_malloc.dylib",
+        "samples": 22,
+        "percent": 0.537503053994625
+      },
+      {
+        "symbol": "_RNvMs4_NtCslJsSqIQKwiA_5alloc7raw_vecNtB5_11RawVecInner11finish_growCsdxlyCI4HO6p_14pulldown_cmark",
+        "image": "timing",
+        "samples": 17,
+        "percent": 0.41534326899584656
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark8scanners15scan_code_fence",
+        "image": "timing",
+        "samples": 17,
+        "percent": 0.41534326899584656
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "image": "libsystem_malloc.dylib",
+        "samples": 14,
+        "percent": 0.3420473979965795
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark10puncttable14is_punctuation",
+        "image": "timing",
+        "samples": 10,
+        "percent": 0.2443195699975568
+      },
+      {
+        "symbol": "_xzm_xzone_malloc",
+        "image": "libsystem_malloc.dylib",
+        "samples": 9,
+        "percent": 0.21988761299780113
+      },
+      {
+        "symbol": "_RNvMs1_NtCsdxlyCI4HO6p_14pulldown_cmark5parseNtB5_6Parser7new_ext",
+        "image": "timing",
+        "samples": 8,
+        "percent": 0.19545565599804543
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass11finish_list",
+        "image": "timing",
+        "samples": 7,
+        "percent": 0.17102369899828976
+      },
+      {
+        "symbol": "xzm_realloc",
+        "image": "libsystem_malloc.dylib",
+        "samples": 6,
+        "percent": 0.1465917419985341
+      },
+      {
+        "symbol": "DYLD-STUB$$malloc",
+        "image": "timing",
+        "samples": 5,
+        "percent": 0.1221597849987784
+      },
+      {
+        "symbol": "_RNvMs3_NtCslJsSqIQKwiA_5alloc7raw_vecINtB5_6RawVecNtCsdxlyCI4HO6p_14pulldown_cmark9AlignmentE8grow_oneBO_",
+        "image": "timing",
+        "samples": 5,
+        "percent": 0.1221597849987784
+      },
+      {
+        "symbol": "_xzm_free_outlined",
+        "image": "libsystem_malloc.dylib",
+        "samples": 5,
+        "percent": 0.1221597849987784
+      }
+    ],
+    "unlisted_samples": 29
+  },
+  {
+    "file": "short-tables-ferro-retained.sample.txt",
+    "samples": 4131,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNvMsb_Csibqk7AE9gB5_9ferromarkINtB5_13RenderContextNtB5_26DisabledFencedCodeRendererE18render_block_eventB5_",
+        "image": "timing",
+        "samples": 1062,
+        "percent": 25.70806100217865
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser17split_table_cells",
+        "image": "timing",
+        "samples": 532,
+        "percent": 12.878237714839022
+      },
+      {
+        "symbol": "_RNvCsibqk7AE9gB5_9ferromark21render_inline_content",
+        "image": "timing",
+        "samples": 475,
+        "percent": 11.49842653110627
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser14emit_table_row",
+        "image": "timing",
+        "samples": 306,
+        "percent": 7.407407407407407
+      },
+      {
+        "symbol": "_platform_memmove",
+        "image": "libsystem_platform.dylib",
+        "samples": 287,
+        "percent": 6.947470346163157
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6inlineNtB2_12InlineParser30parse_with_options_in_document",
+        "image": "timing",
+        "samples": 274,
+        "percent": 6.63277656741709
+      },
+      {
+        "symbol": "_RNvMs6_Csibqk7AE9gB5_9ferromarkNtB5_9CellState8add_text",
+        "image": "timing",
+        "samples": 256,
+        "percent": 6.197046719922537
+      },
+      {
+        "symbol": "_RNvNtCsibqk7AE9gB5_9ferromark6escape17first_text_escape",
+        "image": "timing",
+        "samples": 211,
+        "percent": 5.1077221011861536
+      },
+      {
+        "symbol": "_RINvCsibqk7AE9gB5_9ferromark27render_to_writer_with_stateNtB2_26DisabledFencedCodeRendererEB2_",
+        "image": "timing",
+        "samples": 174,
+        "percent": 4.212055192447349
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter8td_start",
+        "image": "timing",
+        "samples": 110,
+        "percent": 2.662793512466715
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser5parse",
+        "image": "timing",
+        "samples": 103,
+        "percent": 2.4933430162188333
+      },
+      {
+        "symbol": "_platform_memset",
+        "image": "libsystem_platform.dylib",
+        "samples": 91,
+        "percent": 2.2028564512224644
+      },
+      {
+        "symbol": "_RNvMNtCsibqk7AE9gB5_9ferromark6renderNtB2_10HtmlWriter6td_end",
+        "image": "timing",
+        "samples": 81,
+        "percent": 1.9607843137254901
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "image": "timing",
+        "samples": 61,
+        "percent": 1.476640038731542
+      },
+      {
+        "symbol": "DYLD-STUB$$bzero",
+        "image": "timing",
+        "samples": 26,
+        "percent": 0.6293875574921327
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser16match_containers",
+        "image": "timing",
+        "samples": 25,
+        "percent": 0.6051803437424352
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser27would_start_block_for_table",
+        "image": "timing",
+        "samples": 19,
+        "percent": 0.45993706124425077
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser11table_cells",
+        "image": "timing",
+        "samples": 11,
+        "percent": 0.2662793512466715
+      },
+      {
+        "symbol": "_RNvMNtNtCsibqk7AE9gB5_9ferromark5block6parserNtB2_11BlockParser16is_delimiter_row",
+        "image": "timing",
+        "samples": 9,
+        "percent": 0.2178649237472767
+      },
+      {
+        "symbol": "__bzero",
+        "image": "libsystem_platform.dylib",
+        "samples": 7,
+        "percent": 0.16945049624788186
+      }
+    ],
+    "unlisted_samples": 11
+  },
+  {
+    "file": "short-tables-pull-reuse.sample.txt",
+    "samples": 4109,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNvXsl_NtCsdxlyCI4HO6p_14pulldown_cmark5parseNtB5_6ParserNtNtNtNtCsgtPOCBgevO_4core4iter6traits8iterator8Iterator4nextCsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 1262,
+        "percent": 30.71306887320516
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark4htmlINtB2_10HtmlWriterNtNtB4_5parse6ParserINtCsjUvM7QkCWne_21pulldown_cmark_escape9FmtWriterQNtNtCslJsSqIQKwiA_5alloc6string6StringEE3runCsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 763,
+        "percent": 18.56899488926746
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass10parse_line",
+        "image": "timing",
+        "samples": 481,
+        "percent": 11.706011194937942
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass21parse_table_row_inner",
+        "image": "timing",
+        "samples": 404,
+        "percent": 9.832075930883427
+      },
+      {
+        "symbol": "_RINvCsjUvM7QkCWne_21pulldown_cmark_escape18escape_html_scalarQINtB2_9FmtWriterQNtNtCslJsSqIQKwiA_5alloc6string6StringEECsdjtyugOzzad_21ferromark_table_probe",
+        "image": "timing",
+        "samples": 308,
+        "percent": 7.4957410562180575
+      },
+      {
+        "symbol": "_platform_memmove",
+        "image": "libsystem_platform.dylib",
+        "samples": 293,
+        "percent": 7.130688732051594
+      },
+      {
+        "symbol": "_RNvMs1_NtCsdxlyCI4HO6p_14pulldown_cmark4treeINtB5_4TreeNtNtB7_5parse4ItemE6appendB7_",
+        "image": "timing",
+        "samples": 248,
+        "percent": 6.035531759552202
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark9firstpass33scan_paragraph_interrupt_no_table",
+        "image": "timing",
+        "samples": 62,
+        "percent": 1.5088829398880506
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "image": "libsystem_kernel.dylib",
+        "samples": 61,
+        "percent": 1.484546118276953
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark5parse15scan_containers",
+        "image": "timing",
+        "samples": 43,
+        "percent": 1.0464833292771965
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass15parse_paragraph",
+        "image": "timing",
+        "samples": 39,
+        "percent": 0.9491360428328061
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "image": "timing",
+        "samples": 30,
+        "percent": 0.7301046483329278
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass3pop",
+        "image": "timing",
+        "samples": 24,
+        "percent": 0.5840837186663421
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark8scanners15scan_code_fence",
+        "image": "timing",
+        "samples": 19,
+        "percent": 0.4623996106108542
+      },
+      {
+        "symbol": "_RNvNtCsdxlyCI4HO6p_14pulldown_cmark8scanners15scan_table_head",
+        "image": "timing",
+        "samples": 7,
+        "percent": 0.17035775127768313
+      },
+      {
+        "symbol": "_RNvMNtCsdxlyCI4HO6p_14pulldown_cmark9firstpassNtB2_9FirstPass11parse_block",
+        "image": "timing",
+        "samples": 6,
+        "percent": 0.14602092966658553
+      }
+    ],
+    "unlisted_samples": 59
+  }
+]

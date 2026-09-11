@@ -1,0 +1,11 @@
+--- a/src/byte_search.rs
++++ b/src/byte_search.rs
+@@ -58,7 +58,7 @@
+             if len < 16 {
+                 // Building many comparison vectors costs more than the few
+                 // scalar table probes needed for a short input.
+-                if N > 5 {
++                if N > 5 || cfg!(target_arch = "aarch64") {
+                     return self.find_scalar(input);
+                 }
+                 let mut padded = [0; 16];

@@ -1,0 +1,15 @@
+{
+  "baseline": "baseline",
+  "candidate": "batch-cells",
+  "rounds": 9,
+  "window_ms": 350,
+  "lanes": [
+    "ferro-owned",
+    "ferro-reuse",
+    "ferro-retained",
+    "pull-reuse"
+  ],
+  "warmup_renders": 32,
+  "clock_batch": 16,
+  "order": "rotating cases; alternating baseline/candidate"
+}

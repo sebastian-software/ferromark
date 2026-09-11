@@ -30,6 +30,12 @@ pub enum Corpus {
     UnsafeUrls,
     /// Reference definitions and reference links.
     References,
+    /// Plain-text table cells for isolated table measurements.
+    TablesPlain,
+    /// Table cells mixing plain text, CommonMark emphasis, and strong emphasis.
+    TablesCommonMarkInline,
+    /// Plain and emphasized labels with a Markdown link column.
+    TablesLinks,
     /// Table-heavy input.
     Tables,
     /// Nested lists and blockquotes.
@@ -50,7 +56,7 @@ pub enum Corpus {
 
 impl Corpus {
     /// All corpus selectors accepted by the diagnostic runner.
-    pub const ALL: [Self; 18] = [
+    pub const ALL: [Self; 21] = [
         Self::CommonMark5K,
         Self::CommonMark20K,
         Self::CommonMark50K,
@@ -63,6 +69,9 @@ impl Corpus {
         Self::UnsafeUrls,
         Self::References,
         Self::Tables,
+        Self::TablesPlain,
+        Self::TablesCommonMarkInline,
+        Self::TablesLinks,
         Self::Containers,
         Self::Lists,
         Self::Blockquotes,
@@ -85,7 +94,10 @@ impl Corpus {
             Self::RepeatedHeadings => "repeated-headings",
             Self::UnsafeUrls => "unsafe-urls",
             Self::References => "references",
+            Self::TablesLinks => "tables-links",
             Self::Tables => "tables",
+            Self::TablesPlain => "tables-plain",
+            Self::TablesCommonMarkInline => "tables-commonmark-inline",
             Self::Containers => "containers",
             Self::Lists => "lists",
             Self::Blockquotes => "blockquotes",
@@ -125,7 +137,16 @@ impl Corpus {
                 20_000,
             )),
             Self::References => Cow::Owned(reference_corpus()),
+            Self::TablesLinks => {
+                Cow::Borrowed(include_str!("../../../benches/fixtures/tables-links.md"))
+            }
             Self::Tables => Cow::Borrowed(TABLES_5K),
+            Self::TablesPlain => {
+                Cow::Borrowed(include_str!("../../../benches/fixtures/tables-plain.md"))
+            }
+            Self::TablesCommonMarkInline => Cow::Borrowed(include_str!(
+                "../../../benches/fixtures/tables-commonmark-inline.md"
+            )),
             Self::Containers => Cow::Owned(repeat_to_at_least(
                 "> - first item\n>   - nested item\n>     1. ordered child\n>     2. second child\n>\n> continuation\n\n",
                 20_000,
@@ -227,7 +248,9 @@ fn unique_headings_corpus() -> String {
     for index in 0..512 {
         output.push_str("# Unique heading ");
         output.push_str(&index.to_string());
-        output.push_str(" with inline `code`\n\nParagraph content keeps ordinary block rendering present.\n\n");
+        output.push_str(
+            " with inline `code`\n\nParagraph content keeps ordinary block rendering present.\n\n",
+        );
     }
     output
 }

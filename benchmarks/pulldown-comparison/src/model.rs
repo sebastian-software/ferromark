@@ -46,6 +46,8 @@ impl FromStr for ParserKind {
 pub enum RunConfig {
     /// Trusted CommonMark parity configuration.
     CommonMark,
+    /// Trusted CommonMark plus tables only.
+    TablesOnly,
     /// Trusted GFM-overlap parity configuration.
     GfmOverlap,
     /// Trusted extended-overlap parity configuration.
@@ -68,8 +70,9 @@ pub enum RunConfig {
 
 impl RunConfig {
     /// All configurations accepted by the diagnostic runner.
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 11] = [
         Self::CommonMark,
+        Self::TablesOnly,
         Self::GfmOverlap,
         Self::ExtendedOverlap,
         Self::MinimalSecure,
@@ -85,6 +88,7 @@ impl RunConfig {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::CommonMark => "commonmark",
+            Self::TablesOnly => "tables-only",
             Self::GfmOverlap => "gfm-overlap",
             Self::ExtendedOverlap => "extended-overlap",
             Self::MinimalSecure => "minimal-secure",
@@ -114,7 +118,7 @@ impl RunConfig {
             ParserKind::Ferromark => true,
             ParserKind::PulldownCmark => matches!(
                 self,
-                Self::CommonMark | Self::GfmOverlap | Self::ExtendedOverlap
+                Self::CommonMark | Self::TablesOnly | Self::GfmOverlap | Self::ExtendedOverlap
             ),
         }
     }
@@ -123,6 +127,7 @@ impl RunConfig {
     pub fn ferromark_options(self) -> Options {
         match self {
             Self::CommonMark => ferromark_options(ParityConfig::CommonMark),
+            Self::TablesOnly => ferromark_options(ParityConfig::TablesOnly),
             Self::GfmOverlap => ferromark_options(ParityConfig::GfmOverlap),
             Self::ExtendedOverlap => ferromark_options(ParityConfig::ExtendedOverlap),
             Self::MinimalSecure => Options::minimal(),
@@ -140,6 +145,7 @@ impl RunConfig {
     pub fn pulldown_options(self) -> Option<pulldown_cmark::Options> {
         let parity = match self {
             Self::CommonMark => ParityConfig::CommonMark,
+            Self::TablesOnly => ParityConfig::TablesOnly,
             Self::GfmOverlap => ParityConfig::GfmOverlap,
             Self::ExtendedOverlap => ParityConfig::ExtendedOverlap,
             _ => return None,

@@ -90,6 +90,18 @@ cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
 ```
 
+The table comparison uses plain cells, mixed plain/emphasis/strong cells, and a
+Markdown link column, with identical options: CommonMark plus tables. CommonMark
+inline parsing is always active. The fixtures live in
+`benches/fixtures/tables-plain.md`, `tables-commonmark-inline.md`, and
+`tables-links.md`; semantic tests check plain text, rendered emphasis, and links. Strikethrough
+is outside this table comparison. Run just these cases:
+
+```bash
+cargo bench --locked --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bench comparison -- 'parity/tables-'
+cargo run --release --locked --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bin profile_driver -- --parser ferromark --config tables-only --corpus tables-plain --seconds 5
+```
+
 Ferromark-only and options-cost benchmarks also work without md4c:
 
 ```bash

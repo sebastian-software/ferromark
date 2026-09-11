@@ -1,0 +1,97 @@
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -134,7 +134,11 @@
+     /// Typical HTML is ~1.25x input size; we reserve extra for safety.
+     #[inline]
+     pub fn with_capacity_for(input_len: usize) -> Self {
+-        let capacity = input_len + input_len / 4;
++        let capacity = if input_len == 0 {
++            0
++        } else {
++            (input_len + input_len / 4).max(64)
++        };
+         Self {
+             out: Vec::with_capacity(capacity),
+         }
+--- a/src/byte_search.rs
++++ b/src/byte_search.rs
+@@ -58,7 +58,7 @@
+             if len < 16 {
+                 // Building many comparison vectors costs more than the few
+                 // scalar table probes needed for a short input.
+-                if N > 5 {
++                if N > 5 || cfg!(target_arch = "aarch64") {
+                     return self.find_scalar(input);
+                 }
+                 let mut padded = [0; 16];
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -978,7 +978,7 @@
+ impl ParagraphState {
+     fn new() -> Self {
+         Self {
+-            content: Vec::with_capacity(256),
++            content: Vec::new(),
+             in_paragraph: false,
+         }
+     }
+@@ -1736,6 +1736,33 @@
+     /// public event stream and the full inline parser. Escaped, empty, and other
+     /// cell shapes keep the general stateful path.
+     fn render_events(&mut self, input: &[u8], mut events: &[BlockEvent]) {
++        if let [
++            BlockEvent::ParagraphStart,
++            BlockEvent::Text(range),
++            BlockEvent::ParagraphEnd,
++        ] = events
++        {
++            let text = range.slice(input);
++            let mut end = text.len();
++            while end > 0 && matches!(text[end - 1], b' ' | b'\t') {
++                end -= 1;
++            }
++            self.writer.paragraph_start();
++            if end > 0 {
++                render_inline_content(
++                    &text[..end],
++                    self.writer,
++                    self.inline_parser,
++                    self.inline_events,
++                    self.link_refs,
++                    self.footnote_store,
++                    self.footnote_numbers,
++                    self.options,
++                );
++            }
++            self.writer.paragraph_end();
++            return;
++        }
+         while let Some(event) = events.first() {
+             if let [
+                 BlockEvent::TableCellStart { alignment, colspan },
+--- a/src/inline/emphasis.rs
++++ b/src/inline/emphasis.rs
+@@ -37,15 +37,6 @@
+         }
+         self.order = 0;
+     }
+-
+-    pub fn reserve_for_marks(&mut self, marks_len: usize) {
+-        let target_per_stack = (marks_len / 6).max(8);
+-        for stack in &mut self.stacks {
+-            if stack.capacity() < target_per_stack {
+-                stack.reserve(target_per_stack - stack.capacity());
+-            }
+-        }
+-    }
+ }
+ 
+ /// Resolve emphasis marks using modulo-3 stacks.
+@@ -75,7 +66,6 @@
+     stacks: &mut EmphasisStacks,
+     matches: &mut Vec<EmphasisMatch>,
+ ) {
+-    stacks.reserve_for_marks(marks.len());
+     stacks.clear();
+     matches.clear();
+     let target_matches = (marks.len() / 4).max(8);

@@ -1,0 +1,23 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1632,9 +1632,9 @@
+     resource_limits: Option<&mut ResourceLimitReport>,
+     shared_link_refs: Option<&LinkRefStore>,
+ ) {
+-    let mut events = Vec::with_capacity((input.len() / 16).max(64));
++    let mut events = Vec::with_capacity((input.len() / 16).max(8));
+     let mut inline_parser = InlineParser::new();
+-    let mut inline_events = Vec::with_capacity(64);
++    let mut inline_events = Vec::with_capacity(16);
+     let mut render_state = RenderState::new();
+     let mut footnote_numbers = FootnoteNumbers::new(0);
+     render_to_writer_with_state(
+@@ -1672,7 +1672,7 @@
+ ) {
+     // Parse blocks
+     events.clear();
+-    events.reserve((input.len() / 16).max(64));
++    events.reserve((input.len() / 16).max(8));
+     let mut parser = if let Some(scratch) = block_scratch.as_deref_mut() {
+         BlockParser::with_scratch(input, options.clone(), std::mem::take(scratch))
+     } else {

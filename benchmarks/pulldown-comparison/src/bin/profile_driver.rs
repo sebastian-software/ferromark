@@ -10,8 +10,8 @@ use std::{
 };
 
 use ferromark_pulldown_comparison::{
-    Corpus, CountingAllocator, MeasurementWindow, ParserKind, RunConfig, RunMetadata,
-    RunMeasurement, render_ferromark_config_into, render_pulldown_config_into,
+    Corpus, CountingAllocator, MeasurementWindow, ParserKind, RunConfig, RunMeasurement,
+    RunMetadata, render_ferromark_config_into, render_pulldown_config_into,
 };
 
 #[global_allocator]

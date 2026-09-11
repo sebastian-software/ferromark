@@ -7,6 +7,67 @@ use ferromark::to_html;
 use ferromark::to_html_with_options;
 use ferromark::{BlockEvent, BlockParser, Options, RenderPolicy};
 
+#[test]
+fn delimiter_grammar_matches_two_column_tables_exhaustively() {
+    let options = ferromark::options!(Options::commonmark(); tables: true);
+    let alphabet = b"-:| \t";
+    for len in 0..=6 {
+        for mut encoded in 0..alphabet.len().pow(len) {
+            let fragment: String = (0..len)
+                .map(|_| {
+                    let byte = alphabet[encoded % alphabet.len()];
+                    encoded /= alphabet.len();
+                    char::from(byte)
+                })
+                .collect();
+            let cells: Vec<_> = fragment.split('|').collect();
+            let expected = cells.len() == 2
+                && cells.iter().all(|cell| {
+                    let cell = cell.trim_matches([' ', '\t']);
+                    let cell = cell.strip_prefix(':').unwrap_or(cell);
+                    let cell = cell.strip_suffix(':').unwrap_or(cell);
+                    !cell.is_empty() && cell.bytes().all(|byte| byte == b'-')
+                });
+            let input = format!("| H | H |\n|{fragment}|\n| 1 | 2 |\n");
+            let mut events = Vec::new();
+            BlockParser::new_with_options(input.as_bytes(), options.clone()).parse(&mut events);
+            assert_eq!(
+                events
+                    .iter()
+                    .any(|event| matches!(event, BlockEvent::TableStart)),
+                expected,
+                "delimiter fragment: {fragment:?}",
+            );
+        }
+    }
+}
+
+#[test]
+fn delimiter_column_limit_still_validates_the_remaining_byte_set() {
+    let options = ferromark::options!(Options::commonmark(); tables: true);
+    let columns = ferromark::limits::MAX_TABLE_COLUMNS;
+    let header = std::iter::repeat_n("H", columns + 1)
+        .collect::<Vec<_>>()
+        .join("|");
+    let prefix = std::iter::repeat_n("-", columns)
+        .collect::<Vec<_>>()
+        .join("|");
+    // Beyond the column limit, the existing contract checks the byte set,
+    // without interpreting additional alignment cells.
+    for (tail, expected_table) in [(":", true), ("x", false), ("é", false)] {
+        let input = format!("|{header}|\n|{prefix}|{tail}|\n");
+        let mut events = Vec::new();
+        BlockParser::new_with_options(input.as_bytes(), options.clone()).parse(&mut events);
+        assert_eq!(
+            events
+                .iter()
+                .any(|event| matches!(event, BlockEvent::TableStart)),
+            expected_table,
+            "tail: {tail:?}",
+        );
+    }
+}
+
 // === GFM Spec Examples ===
 
 /// Example 198: Basic table with header, delimiter, and body rows.

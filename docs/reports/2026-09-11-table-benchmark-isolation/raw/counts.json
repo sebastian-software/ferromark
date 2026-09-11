@@ -1,0 +1,807 @@
+[
+  {
+    "allocations": {
+      "allocated_bytes": 87516,
+      "allocations": 8,
+      "deallocated_bytes": 87516,
+      "deallocations": 8,
+      "reallocations": 4
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "ferro-owned",
+    "output_bytes": 11120,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 320,
+      "inline_fast_paths": 320,
+      "inline_input_bytes": 2080,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-plain"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 156054,
+      "allocations": 85,
+      "deallocated_bytes": 156054,
+      "deallocations": 85,
+      "reallocations": 19
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "pull-owned",
+    "output_bytes": 10240,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "tables-plain"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 70416,
+      "allocations": 7,
+      "deallocated_bytes": 70416,
+      "deallocations": 7,
+      "reallocations": 3
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "ferro-reuse",
+    "output_bytes": 11120,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 320,
+      "inline_fast_paths": 320,
+      "inline_input_bytes": 2080,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-plain"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 119200,
+      "allocations": 84,
+      "deallocated_bytes": 119200,
+      "deallocations": 84,
+      "reallocations": 8
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "pull-reuse",
+    "output_bytes": 10240,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "tables-plain"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 0,
+      "allocations": 0,
+      "deallocated_bytes": 0,
+      "deallocations": 0,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "ferro-retained",
+    "output_bytes": 11120,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 320,
+      "inline_fast_paths": 320,
+      "inline_input_bytes": 2080,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-plain"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 126972,
+      "allocations": 21,
+      "deallocated_bytes": 126972,
+      "deallocations": 21,
+      "reallocations": 5
+    },
+    "config": "overlap",
+    "corpus": "fixture",
+    "lane": "ferro-owned",
+    "output_bytes": 13360,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 720,
+      "inline_fast_paths": 160,
+      "inline_input_bytes": 2720,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-inline"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 294998,
+      "allocations": 86,
+      "deallocated_bytes": 294998,
+      "deallocations": 86,
+      "reallocations": 20
+    },
+    "config": "overlap",
+    "corpus": "fixture",
+    "lane": "pull-owned",
+    "output_bytes": 12480,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "tables-inline"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 81472,
+      "allocations": 20,
+      "deallocated_bytes": 81472,
+      "deallocations": 20,
+      "reallocations": 3
+    },
+    "config": "overlap",
+    "corpus": "fixture",
+    "lane": "ferro-reuse",
+    "output_bytes": 13360,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 720,
+      "inline_fast_paths": 160,
+      "inline_input_bytes": 2720,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-inline"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 258144,
+      "allocations": 85,
+      "deallocated_bytes": 258144,
+      "deallocations": 85,
+      "reallocations": 9
+    },
+    "config": "overlap",
+    "corpus": "fixture",
+    "lane": "pull-reuse",
+    "output_bytes": 12480,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "tables-inline"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 0,
+      "allocations": 0,
+      "deallocated_bytes": 0,
+      "deallocations": 0,
+      "reallocations": 0
+    },
+    "config": "overlap",
+    "corpus": "fixture",
+    "lane": "ferro-retained",
+    "output_bytes": 13360,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 720,
+      "inline_fast_paths": 160,
+      "inline_input_bytes": 2720,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-inline"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 100876,
+      "allocations": 19,
+      "deallocated_bytes": 100876,
+      "deallocations": 19,
+      "reallocations": 4
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "ferro-owned",
+    "output_bytes": 12800,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 480,
+      "inline_fast_paths": 160,
+      "inline_input_bytes": 2720,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-disabled-syntax"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 170582,
+      "allocations": 86,
+      "deallocated_bytes": 170582,
+      "deallocations": 86,
+      "reallocations": 19
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "pull-owned",
+    "output_bytes": 11920,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "tables-disabled-syntax"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 81376,
+      "allocations": 18,
+      "deallocated_bytes": 81376,
+      "deallocations": 18,
+      "reallocations": 3
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "ferro-reuse",
+    "output_bytes": 12800,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 480,
+      "inline_fast_paths": 160,
+      "inline_input_bytes": 2720,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-disabled-syntax"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 133728,
+      "allocations": 85,
+      "deallocated_bytes": 133728,
+      "deallocations": 85,
+      "reallocations": 8
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "pull-reuse",
+    "output_bytes": 11920,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "tables-disabled-syntax"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 0,
+      "allocations": 0,
+      "deallocated_bytes": 0,
+      "deallocations": 0,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "fixture",
+    "lane": "ferro-retained",
+    "output_bytes": 12800,
+    "pipeline": {
+      "block_events": 1760,
+      "inline_events": 480,
+      "inline_fast_paths": 160,
+      "inline_input_bytes": 2720,
+      "inline_parses": 320,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1440
+    },
+    "case": "tables-disabled-syntax"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 59319,
+      "allocations": 8,
+      "deallocated_bytes": 59319,
+      "deallocations": 8,
+      "reallocations": 4
+    },
+    "config": "tables",
+    "corpus": "short",
+    "lane": "ferro-owned",
+    "output_bytes": 6818,
+    "pipeline": {
+      "block_events": 1420,
+      "inline_events": 404,
+      "inline_fast_paths": 404,
+      "inline_input_bytes": 1616,
+      "inline_parses": 404,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1016
+    },
+    "case": "short-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 120958,
+      "allocations": 6,
+      "deallocated_bytes": 120958,
+      "deallocations": 6,
+      "reallocations": 13
+    },
+    "config": "tables",
+    "corpus": "short",
+    "lane": "pull-owned",
+    "output_bytes": 6308,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "short-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 47856,
+      "allocations": 7,
+      "deallocated_bytes": 47856,
+      "deallocations": 7,
+      "reallocations": 3
+    },
+    "config": "tables",
+    "corpus": "short",
+    "lane": "ferro-reuse",
+    "output_bytes": 6818,
+    "pipeline": {
+      "block_events": 1420,
+      "inline_events": 404,
+      "inline_fast_paths": 404,
+      "inline_input_bytes": 1616,
+      "inline_parses": 404,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1016
+    },
+    "case": "short-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 102536,
+      "allocations": 5,
+      "deallocated_bytes": 102536,
+      "deallocations": 5,
+      "reallocations": 3
+    },
+    "config": "tables",
+    "corpus": "short",
+    "lane": "pull-reuse",
+    "output_bytes": 6308,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "short-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 0,
+      "allocations": 0,
+      "deallocated_bytes": 0,
+      "deallocations": 0,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "short",
+    "lane": "ferro-retained",
+    "output_bytes": 6818,
+    "pipeline": {
+      "block_events": 1420,
+      "inline_events": 404,
+      "inline_fast_paths": 404,
+      "inline_input_bytes": 1616,
+      "inline_parses": 404,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1016
+    },
+    "case": "short-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 121609,
+      "allocations": 8,
+      "deallocated_bytes": 121609,
+      "deallocations": 8,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "long",
+    "lane": "ferro-owned",
+    "output_bytes": 56914,
+    "pipeline": {
+      "block_events": 1420,
+      "inline_events": 404,
+      "inline_fast_paths": 404,
+      "inline_input_bytes": 51712,
+      "inline_parses": 404,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1016
+    },
+    "case": "long-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 243616,
+      "allocations": 6,
+      "deallocated_bytes": 243616,
+      "deallocations": 6,
+      "reallocations": 12
+    },
+    "config": "tables",
+    "corpus": "long",
+    "lane": "pull-owned",
+    "output_bytes": 56404,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "long-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 55168,
+      "allocations": 7,
+      "deallocated_bytes": 55168,
+      "deallocations": 7,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "long",
+    "lane": "ferro-reuse",
+    "output_bytes": 56914,
+    "pipeline": {
+      "block_events": 1420,
+      "inline_events": 404,
+      "inline_fast_paths": 404,
+      "inline_input_bytes": 51712,
+      "inline_parses": 404,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1016
+    },
+    "case": "long-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 90104,
+      "allocations": 5,
+      "deallocated_bytes": 90104,
+      "deallocations": 5,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "long",
+    "lane": "pull-reuse",
+    "output_bytes": 56404,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "long-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 0,
+      "allocations": 0,
+      "deallocated_bytes": 0,
+      "deallocations": 0,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "long",
+    "lane": "ferro-retained",
+    "output_bytes": 56914,
+    "pipeline": {
+      "block_events": 1420,
+      "inline_events": 404,
+      "inline_fast_paths": 404,
+      "inline_input_bytes": 51712,
+      "inline_parses": 404,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1016
+    },
+    "case": "long-cells"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 112734,
+      "allocations": 8,
+      "deallocated_bytes": 112734,
+      "deallocations": 8,
+      "reallocations": 4
+    },
+    "config": "tables",
+    "corpus": "cols8",
+    "lane": "ferro-owned",
+    "output_bytes": 12474,
+    "pipeline": {
+      "block_events": 2632,
+      "inline_events": 808,
+      "inline_fast_paths": 808,
+      "inline_input_bytes": 3232,
+      "inline_parses": 808,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1824
+    },
+    "case": "eight-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 321022,
+      "allocations": 6,
+      "deallocated_bytes": 321022,
+      "deallocations": 6,
+      "reallocations": 15
+    },
+    "config": "tables",
+    "corpus": "cols8",
+    "lane": "pull-owned",
+    "output_bytes": 11560,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "eight-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 90576,
+      "allocations": 7,
+      "deallocated_bytes": 90576,
+      "deallocations": 7,
+      "reallocations": 3
+    },
+    "config": "tables",
+    "corpus": "cols8",
+    "lane": "ferro-reuse",
+    "output_bytes": 12474,
+    "pipeline": {
+      "block_events": 2632,
+      "inline_events": 808,
+      "inline_fast_paths": 808,
+      "inline_input_bytes": 3232,
+      "inline_parses": 808,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1824
+    },
+    "case": "eight-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 284168,
+      "allocations": 5,
+      "deallocated_bytes": 284168,
+      "deallocations": 5,
+      "reallocations": 4
+    },
+    "config": "tables",
+    "corpus": "cols8",
+    "lane": "pull-reuse",
+    "output_bytes": 11560,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "eight-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 0,
+      "allocations": 0,
+      "deallocated_bytes": 0,
+      "deallocations": 0,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "cols8",
+    "lane": "ferro-retained",
+    "output_bytes": 12474,
+    "pipeline": {
+      "block_events": 2632,
+      "inline_events": 808,
+      "inline_fast_paths": 808,
+      "inline_input_bytes": 3232,
+      "inline_parses": 808,
+      "paragraph_copied_bytes": 0,
+      "table_events": 1824
+    },
+    "case": "eight-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 145567,
+      "allocations": 111,
+      "deallocated_bytes": 145567,
+      "deallocations": 111,
+      "reallocations": 4
+    },
+    "config": "tables",
+    "corpus": "cols9",
+    "lane": "ferro-owned",
+    "output_bytes": 13888,
+    "pipeline": {
+      "block_events": 2935,
+      "inline_events": 909,
+      "inline_fast_paths": 909,
+      "inline_input_bytes": 3636,
+      "inline_parses": 909,
+      "paragraph_copied_bytes": 0,
+      "table_events": 2026
+    },
+    "case": "nine-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 353774,
+      "allocations": 6,
+      "deallocated_bytes": 353774,
+      "deallocations": 6,
+      "reallocations": 16
+    },
+    "config": "tables",
+    "corpus": "cols9",
+    "lane": "pull-owned",
+    "output_bytes": 12873,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "nine-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 120736,
+      "allocations": 110,
+      "deallocated_bytes": 120736,
+      "deallocations": 110,
+      "reallocations": 3
+    },
+    "config": "tables",
+    "corpus": "cols9",
+    "lane": "ferro-reuse",
+    "output_bytes": 13888,
+    "pipeline": {
+      "block_events": 2935,
+      "inline_events": 909,
+      "inline_fast_paths": 909,
+      "inline_input_bytes": 3636,
+      "inline_parses": 909,
+      "paragraph_copied_bytes": 0,
+      "table_events": 2026
+    },
+    "case": "nine-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 316920,
+      "allocations": 5,
+      "deallocated_bytes": 316920,
+      "deallocations": 5,
+      "reallocations": 5
+    },
+    "config": "tables",
+    "corpus": "cols9",
+    "lane": "pull-reuse",
+    "output_bytes": 12873,
+    "pipeline": {
+      "block_events": 0,
+      "inline_events": 0,
+      "inline_fast_paths": 0,
+      "inline_input_bytes": 0,
+      "inline_parses": 0,
+      "paragraph_copied_bytes": 0,
+      "table_events": 0
+    },
+    "case": "nine-columns"
+  },
+  {
+    "allocations": {
+      "allocated_bytes": 19600,
+      "allocations": 103,
+      "deallocated_bytes": 19600,
+      "deallocations": 103,
+      "reallocations": 0
+    },
+    "config": "tables",
+    "corpus": "cols9",
+    "lane": "ferro-retained",
+    "output_bytes": 13888,
+    "pipeline": {
+      "block_events": 2935,
+      "inline_events": 909,
+      "inline_fast_paths": 909,
+      "inline_input_bytes": 3636,
+      "inline_parses": 909,
+      "paragraph_copied_bytes": 0,
+      "table_events": 2026
+    },
+    "case": "nine-columns"
+  }
+]

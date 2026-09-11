@@ -81,3 +81,72 @@ fn extended_overlap_should_list_every_pulldown_feature_explicitly() {
 
     assert_eq!(options, expected);
 }
+
+#[test]
+fn plain_table_benchmark_should_contain_only_table_structure_and_text() {
+    let input = include_str!("../../../benches/fixtures/tables-plain.md");
+    let options = pulldown_options(ParityConfig::TablesOnly);
+    assert_eq!(options, PulldownOptions::ENABLE_TABLES);
+    let mut tables = 0;
+    let mut cells = 0;
+    for event in pulldown_cmark::Parser::new_ext(input, options) {
+        use pulldown_cmark::{Event, Tag, TagEnd};
+        match event {
+            Event::Start(Tag::Table(_)) => tables += 1,
+            Event::Start(Tag::TableCell) => cells += 1,
+            Event::Start(Tag::TableHead | Tag::TableRow)
+            | Event::End(
+                TagEnd::Table | TagEnd::TableHead | TagEnd::TableRow | TagEnd::TableCell,
+            ) => {}
+            Event::Text(text) => {
+                assert!(text.chars().all(|ch| ch.is_ascii_alphabetic() || ch == ' '))
+            }
+            other => panic!("plain table benchmark contains unrelated syntax: {other:?}"),
+        }
+    }
+    assert_eq!((tables, cells), (80, 320));
+    let (ferromark, pulldown) = render_both(input, ParityConfig::TablesOnly);
+    for html in [ferromark, pulldown] {
+        assert_eq!(html.matches("<table>").count(), 80);
+        assert_eq!(html.matches("<td>").count(), 160);
+        assert_eq!(html.matches("<th>").count(), 160);
+    }
+}
+
+#[test]
+fn ordinary_table_options_should_render_commonmark_emphasis() {
+    let input = include_str!("../../../benches/fixtures/tables-commonmark-inline.md");
+    let config = ParityConfig::TablesOnly;
+    let options = ferromark_options(config);
+    assert!(options.tables);
+    assert!(!options.strikethrough && !options.task_lists);
+    assert_eq!(pulldown_options(config), PulldownOptions::ENABLE_TABLES);
+    assert!(!input.contains('~'));
+    let (ferromark, pulldown) = render_both(input, config);
+    for html in [ferromark, pulldown] {
+        assert_eq!(html.matches("<table>").count(), 80);
+        assert_eq!(html.matches("<th>").count(), 160);
+        assert_eq!(html.matches("<td>").count(), 160);
+        assert_eq!(html.matches("<em>").count(), 40);
+        assert_eq!(html.matches("<strong>").count(), 40);
+        assert!(!html.contains("<del>"));
+    }
+}
+
+#[test]
+fn table_link_column_should_render_links_with_ordinary_table_options() {
+    let input = include_str!("../../../benches/fixtures/tables-links.md");
+    let (ferromark, pulldown) = render_both(input, ParityConfig::TablesOnly);
+    for html in [ferromark, pulldown] {
+        assert_eq!(html.matches("<table>").count(), 80);
+        assert_eq!(html.matches("<th>").count(), 160);
+        assert_eq!(html.matches("<td>").count(), 160);
+        assert_eq!(
+            html.matches("<a href=\"https://example.com/guide\">Guide</a>")
+                .count(),
+            80
+        );
+        assert_eq!(html.matches("<em>").count(), 20);
+        assert_eq!(html.matches("<strong>").count(), 20);
+    }
+}

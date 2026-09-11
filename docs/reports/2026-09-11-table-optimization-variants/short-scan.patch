@@ -1,0 +1,17 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -3332,7 +3332,13 @@
+         loop {
+             // Jump straight to the next byte that can affect cell structure;
+             // everything in between is plain cell content.
+-            let Some(offset) = memchr::memchr3(b'|', b'\\', b'`', &line[pos..scan_end]) else {
++            let tail = &line[pos..scan_end];
++            let boundary = if tail.len() <= 32 {
++                tail.iter().position(|&b| matches!(b, b'|' | b'\\' | b'`'))
++            } else {
++                memchr::memchr3(b'|', b'\\', b'`', tail)
++            };
++            let Some(offset) = boundary else {
+                 // End of line - emit last cell
+                 let (s, e) = Self::trim_cell(&line[cell_start..scan_end], cell_start);
+                 cells.push(TableCell {

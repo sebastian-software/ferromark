@@ -50,24 +50,36 @@ function pipeTables(markdown) {
       current = null;
       continue;
     }
-    const cells = trimmed
+    const rawCells = trimmed
       .slice(1, trimmed.endsWith("|") ? -1 : undefined)
       .split("|")
-      .map((cell) => cell.replaceAll("*", "").trim());
+      .map((cell) => cell.trim());
+    const cells = rawCells.map((cell) => cell.replaceAll("*", ""));
     if (cells.every((cell) => /^:?-{2,}:?$/.test(cell))) {
       continue;
     }
     if (!current) {
-      current = { header: cells, rows: [] };
+      current = { header: cells, rows: [], rawRows: [] };
       tables.push(current);
       continue;
     }
     current.rows.push(cells);
+    current.rawRows.push(rawCells);
   }
   return tables;
 }
 
 const benchmarks = JSON.parse(await readFile(dataUrl, "utf8"));
+for (const table of [...benchmarks.tables, ...benchmarks.featureTables]) {
+  const fastest = Math.min(...table.rows.map((row) => row.medianNs));
+  check(
+    table.rows[0]?.parser === "ferromark" && table.rows[1]?.parser === "pulldown-cmark",
+    `${table.id}: pulldown-cmark must appear directly after ferromark`,
+  );
+  for (const row of table.rows) {
+    check(row.winner === (row.medianNs === fastest), `${table.id}/${row.parser}: winner must follow the unrounded measured time`);
+  }
+}
 const readme = await readFile(readmeUrl, "utf8");
 const section = readmeSection(readme, "Benchmarks");
 
@@ -121,6 +133,10 @@ if (!section) {
       const expected = [row.parser, row.latency, row.throughput, row.ratio];
       const actual = readmeRow;
       check(
+        readmeTable.rawRows[rowIndex].every((cell) => /^\*\*.*\*\*$/.test(cell) === row.winner),
+        `README ${table.id}/${row.parser}: bold must identify the measured winner`,
+      );
+      check(
         expected.every((value, cell) => value.toLowerCase() === (actual[cell] ?? "").toLowerCase()),
         `README table ${index + 1} (${table.id}) row ${rowIndex + 1} is ${JSON.stringify(actual)}, benchmarks.json says ${JSON.stringify(expected)}`,
       );
@@ -140,6 +156,20 @@ if (!section) {
       JSON.stringify(featureTables[0].rows) === JSON.stringify(expectedFeatures),
     "README feature matrix must match every measured feature-set row",
   );
+
+  const featureMatrix = featureTables[0];
+  if (featureMatrix) {
+    check(
+      JSON.stringify(featureMatrix.header.slice(2)) === JSON.stringify(benchmarks.featureTables[0].rows.map((row) => row.parser)),
+      "README feature parser columns must follow the same order as the data",
+    );
+    benchmarks.featureTables.forEach((table, index) => {
+      table.rows.forEach((row, column) => {
+        const cell = featureMatrix.rawRows[index]?.[column + 2] ?? "";
+        check(/^\*\*.*\*\*$/.test(cell) === row.winner, `README feature ${table.id}/${row.parser}: bold must identify the measured winner`);
+      });
+    });
+  }
 
   const known = new Set(tables.flatMap((table) => table.rows.map((row) => row.throughput)));
   for (const [figure] of section.matchAll(/\d+(?:\.\d+)?\s*MiB\/s/g)) {

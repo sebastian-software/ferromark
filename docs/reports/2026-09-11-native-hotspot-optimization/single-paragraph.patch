@@ -1,0 +1,36 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1736,6 +1736,33 @@
+     /// public event stream and the full inline parser. Escaped, empty, and other
+     /// cell shapes keep the general stateful path.
+     fn render_events(&mut self, input: &[u8], mut events: &[BlockEvent]) {
++        if let [
++            BlockEvent::ParagraphStart,
++            BlockEvent::Text(range),
++            BlockEvent::ParagraphEnd,
++        ] = events
++        {
++            let text = range.slice(input);
++            let mut end = text.len();
++            while end > 0 && matches!(text[end - 1], b' ' | b'\t') {
++                end -= 1;
++            }
++            self.writer.paragraph_start();
++            if end > 0 {
++                render_inline_content(
++                    &text[..end],
++                    self.writer,
++                    self.inline_parser,
++                    self.inline_events,
++                    self.link_refs,
++                    self.footnote_store,
++                    self.footnote_numbers,
++                    self.options,
++                );
++            }
++            self.writer.paragraph_end();
++            return;
++        }
+         while let Some(event) = events.first() {
+             if let [
+                 BlockEvent::TableCellStart { alignment, colspan },

@@ -1,0 +1,72 @@
+[
+  {
+    "case": [
+      "published",
+      "tables"
+    ],
+    "lane": "ferro-reuse",
+    "seconds": 5,
+    "interval_ms": 1,
+    "file": "published-tables-ferro-reuse.sample.txt"
+  },
+  {
+    "case": [
+      "published",
+      "tables"
+    ],
+    "lane": "pull-reuse",
+    "seconds": 5,
+    "interval_ms": 1,
+    "file": "published-tables-pull-reuse.sample.txt"
+  },
+  {
+    "case": [
+      "fixture",
+      "tables"
+    ],
+    "lane": "ferro-reuse",
+    "seconds": 5,
+    "interval_ms": 1,
+    "file": "fixture-tables-ferro-reuse.sample.txt"
+  },
+  {
+    "case": [
+      "fixture",
+      "tables"
+    ],
+    "lane": "pull-reuse",
+    "seconds": 5,
+    "interval_ms": 1,
+    "file": "fixture-tables-pull-reuse.sample.txt"
+  },
+  {
+    "case": [
+      "short",
+      "tables"
+    ],
+    "lane": "ferro-retained",
+    "seconds": 5,
+    "interval_ms": 1,
+    "file": "short-tables-ferro-retained.sample.txt"
+  },
+  {
+    "case": [
+      "short",
+      "tables"
+    ],
+    "lane": "pull-reuse",
+    "seconds": 5,
+    "interval_ms": 1,
+    "file": "short-tables-pull-reuse.sample.txt"
+  },
+  {
+    "case": [
+      "long",
+      "tables"
+    ],
+    "lane": "ferro-retained",
+    "seconds": 5,
+    "interval_ms": 1,
+    "file": "long-tables-ferro-retained.sample.txt"
+  }
+]

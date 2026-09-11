@@ -1,0 +1,11 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -275,7 +275,7 @@
+             input,
+             options,
+             BlockScratch {
+-                link_ref_label_buf: String::with_capacity(64),
++                link_ref_label_buf: String::new(),
+                 ..BlockScratch::default()
+             },
+         )

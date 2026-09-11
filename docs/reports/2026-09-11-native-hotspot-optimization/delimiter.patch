@@ -1,0 +1,98 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -3520,55 +3520,64 @@
+         if !Self::could_be_delimiter_row(line) {
+             return None;
+         }
+-        let (cells, truncated) = Self::split_table_cells(line);
+-        if cells.is_empty() {
++        let mut start = 0;
++        let mut end = line.len();
++        while start < end && matches!(line[start], b' ' | b'\t') {
++            start += 1;
++        }
++        while end > start && matches!(line[end - 1], b' ' | b'\t') {
++            end -= 1;
++        }
++        if start < end && line[start] == b'|' {
++            start += 1;
++        }
++        if end > start && line[end - 1] == b'|' {
++            end -= 1;
++        }
++        if start >= end {
+             return None;
+         }
+-
+         let mut alignments = SmallVec::new();
+-        for cell_range in &cells {
+-            let cell = &line[cell_range.start as usize..cell_range.end as usize];
+-            if cell.is_empty() {
++        let mut truncated = false;
++        loop {
++            let cell_end = line[start..end]
++                .iter()
++                .position(|&b| b == b'|')
++                .map_or(end, |n| start + n);
++            let (s, e) = Self::trim_cell(&line[start..cell_end], start);
++            if s == e {
+                 return None;
+             }
+-
+-            let mut i = 0;
+-            let left_colon = cell[i] == b':';
+-            if left_colon {
++            let mut i = s;
++            let left = line[i] == b':';
++            i += usize::from(left);
++            let dash_start = i;
++            while i < e && line[i] == b'-' {
+                 i += 1;
+             }
+-
+-            // Must have at least one dash
+-            let dash_start = i;
+-            while i < cell.len() && cell[i] == b'-' {
+-                i += 1;
+-            }
+             if i == dash_start {
+-                return None; // No dashes
+-            }
+-            let right_colon = i < cell.len() && cell[i] == b':';
+-            if right_colon {
+-                i += 1;
+-            }
+-
+-            // Must consume entire cell (after trimming)
+-            if i != cell.len() {
+                 return None;
+             }
+-
+-            let alignment = match (left_colon, right_colon) {
++            let right = i < e && line[i] == b':';
++            i += usize::from(right);
++            if i != e {
++                return None;
++            }
++            alignments.push(match (left, right) {
+                 (true, true) => Alignment::Center,
+                 (true, false) => Alignment::Left,
+                 (false, true) => Alignment::Right,
+                 (false, false) => Alignment::None,
+-            };
+-            alignments.push(alignment);
+-
++            });
++            if cell_end == end {
++                break;
++            }
++            start = cell_end + 1;
+             if alignments.len() >= limits::MAX_TABLE_COLUMNS {
++                truncated = start < end;
+                 break;
+             }
+         }
+-
+         Some((alignments, truncated))
+     }
+ 

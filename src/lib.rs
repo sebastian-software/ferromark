@@ -978,7 +978,7 @@ struct ParagraphState {
 impl ParagraphState {
     fn new() -> Self {
         Self {
-            content: Vec::with_capacity(256),
+            content: Vec::new(),
             in_paragraph: false,
         }
     }
@@ -1032,7 +1032,7 @@ struct HeadingState {
 impl HeadingState {
     fn new() -> Self {
         Self {
-            content: Vec::with_capacity(64),
+            content: Vec::new(),
             in_heading: false,
             level: 0,
         }
@@ -1294,7 +1294,7 @@ struct CellState {
 impl CellState {
     fn new() -> Self {
         Self {
-            content: Vec::with_capacity(64),
+            content: Vec::new(),
             pending: None,
             in_cell: false,
         }
@@ -1719,9 +1719,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
         );
 
         // Render events to HTML
-        for event in events.iter() {
-            context.render_block_event(input, event);
-        }
+        context.render_events(input, events);
 
         // Render footnote section at document end
         if !context.footnote_numbers.is_empty() {
@@ -1734,6 +1732,86 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
 }
 
 impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
+    /// Render a fresh document's single-range paragraph or ordinary table cells
+    /// directly, preserving block parsing and the full inline parser. The caller
+    /// resets document state first; other event shapes keep the stateful path.
+    fn render_events(&mut self, input: &[u8], mut events: &[BlockEvent]) {
+        if let [
+            BlockEvent::ParagraphStart,
+            BlockEvent::Text(range),
+            BlockEvent::ParagraphEnd,
+        ] = events
+        {
+            let text = range.slice(input);
+            let mut end = text.len();
+            while end > 0 && matches!(text[end - 1], b' ' | b'\t') {
+                end -= 1;
+            }
+            self.writer.paragraph_start();
+            if end > 0 {
+                render_inline_content(
+                    &text[..end],
+                    self.writer,
+                    self.inline_parser,
+                    self.inline_events,
+                    self.link_refs,
+                    self.footnote_store,
+                    self.footnote_numbers,
+                    self.options,
+                );
+            }
+            self.writer.paragraph_end();
+            return;
+        }
+        while let Some(event) = events.first() {
+            if let [
+                BlockEvent::TableCellStart { alignment, colspan },
+                BlockEvent::Text(range),
+                BlockEvent::TableCellEnd,
+                ..,
+            ] = events
+            {
+                let text = range.slice(input);
+                if !self.para_state.in_paragraph
+                    && !self.heading_state.in_heading
+                    && !self.cell_state.in_cell
+                    && memchr::memchr(b'\\', text).is_none()
+                {
+                    if *self.in_table_head {
+                        self.writer.th_start(*alignment, *colspan);
+                    } else {
+                        self.writer.td_start(*alignment, *colspan);
+                    }
+                    let mut end = text.len();
+                    while end > 0 && matches!(text[end - 1], b' ' | b'\t') {
+                        end -= 1;
+                    }
+                    if end > 0 {
+                        render_inline_content(
+                            &text[..end],
+                            self.writer,
+                            self.inline_parser,
+                            self.inline_events,
+                            self.link_refs,
+                            self.footnote_store,
+                            self.footnote_numbers,
+                            self.options,
+                        );
+                    }
+                    if *self.in_table_head {
+                        self.writer.th_end();
+                    } else {
+                        self.writer.td_end();
+                    }
+                    events = &events[3..];
+                    continue;
+                }
+            }
+            self.render_block_event(input, event);
+            events = &events[1..];
+        }
+    }
+
     /// Render a single block event using the context's explicit state boundary.
     fn render_block_event(&mut self, input: &[u8], event: &BlockEvent) {
         let writer = &mut *self.writer;

@@ -1,0 +1,464 @@
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+index 2c22069..4e58918 100644
+--- a/CONTRIBUTING.md
++++ b/CONTRIBUTING.md
+@@ -90,6 +90,16 @@ cargo test --manifest-path benchmarks/pulldown-comparison/Cargo.toml
+ cargo bench --manifest-path benchmarks/pulldown-comparison/Cargo.toml
+ ```
+ 
++The table comparison separates plain cells, enabled inline formatting, and
++intentionally disabled strikethrough syntax. The plain and inline fixtures live
++in `benches/fixtures/tables-plain.md` and `tables-inline.md`; semantic tests reject
++inline markup accidentally added to the plain fixture. Run just these cases:
++
++```bash
++cargo bench --locked --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bench comparison -- 'parity/tables-'
++cargo run --release --locked --manifest-path benchmarks/pulldown-comparison/Cargo.toml --bin profile_driver -- --parser ferromark --config tables-only --corpus tables-plain --seconds 5
++```
++
+ Ferromark-only and options-cost benchmarks also work without md4c:
+ 
+ ```bash
+diff --git a/README.md b/README.md
+index f241326..e39d1b1 100644
+--- a/README.md
++++ b/README.md
+@@ -127,14 +127,18 @@ density differ between rows, so these are not additive feature prices.
+ 
+ | Input / feature set | Bytes | ferromark | Bun (native) | pulldown-cmark | comrak | md4c (C) |
+ | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+-| Tables only | 5200 | 46.178 µs | 48.093 µs | 35.228 µs | 135.257 µs | 48.208 µs |
++| Tables + inactive strikethrough (historical) | 5200 | 46.178 µs | 48.093 µs | 35.228 µs | 135.257 µs | 48.208 µs |
+ | Strikethrough only | 4700 | 25.492 µs | 36.596 µs | 33.794 µs | 72.102 µs | 28.158 µs |
+ | GFM subset: tables + strikethrough | 5200 | 48.186 µs | 54.136 µs | 43.635 µs | 151.253 µs | 56.118 µs |
+ | CommonMark links and images | 4760 | 26.667 µs | 38.253 µs | 28.600 µs | 57.406 µs | 41.000 µs |
+ | CommonMark entities and inline markup | 5800 | 56.133 µs | 64.853 µs | 63.527 µs | 95.446 µs | 57.269 µs |
+ 
+-The tables-only and GFM-subset rows use identical table/strikethrough input.
+-The first leaves strikethrough literal; the second renders it and also enables
++The historical inactive-strikethrough and GFM-subset rows use identical mixed input.
++The first measures tables plus literal inactive syntax, not isolated table cost.
++New dedicated `tables/tables-plain` and `gfm_overlap/tables-inline` benchmarks
++separate plain cells from enabled inline formatting; the
++[focused remeasurement](docs/reports/2026-09-11-table-benchmark-isolation.md) records
++their current Ferromark/pulldown comparison. The GFM-subset row also enables
+ unused task-list parsing. Neither enables the full five-extension GFM preset.
+ The GFM-subset row was remeasured for all five parsers after correcting the md4c
+ task-list flag; its [replacement evidence](docs/reports/2026-09-11-benchmark-refresh/native-corrected/summary.json)
+diff --git a/benchmarks/bun-comparison/README.md b/benchmarks/bun-comparison/README.md
+index f84ac80..5b4d5bf 100644
+--- a/benchmarks/bun-comparison/README.md
++++ b/benchmarks/bun-comparison/README.md
+@@ -91,7 +91,20 @@ The headline size cases are 2, 5, and 10 KiB of synthetic CommonMark with headin
+ emphasis, links, lists, a quote, and fenced code. They are controlled examples,
+ not a claim about a population's typical document size. Tiny inputs diagnose
+ per-call overhead; 50 KiB and 1 MiB inputs remain long-document/stress cases.
+-Feature-set tables cover tables alone, strikethrough alone, their GFM combination,
++The historical published table row includes literal inactive strikethrough and
++is labeled accordingly. New targeted cases use shared fixtures:
++
++- `tables/tables-plain`: 80 tables with plain cell text; tables alone enabled.
++- `gfm_overlap/tables-inline`: the same table layout with strong emphasis and
++  strikethrough; all used syntax enabled.
++- `tables/tables-disabled-syntax`: the inline fixture with strikethrough disabled;
++  an explicitly named negative-syntax diagnostic.
++
++The old `tables/gfm-tables` identifier remains for historical evidence and is not
++a plain-text table benchmark. Public figures retain their original run and source
++revision; new focused measurements are recorded separately.
++
++Feature-set tables cover table workloads, strikethrough, their GFM combination,
+ links/images, and entities. None of these measurements is an additive feature price.
+ 
+ Before timing, all 652 stored CommonMark examples and every benchmark input
+diff --git a/benchmarks/bun-comparison/driver.rs b/benchmarks/bun-comparison/driver.rs
+index 2b8f899..403213c 100644
+--- a/benchmarks/bun-comparison/driver.rs
++++ b/benchmarks/bun-comparison/driver.rs
+@@ -154,6 +154,19 @@ fn corpora() -> Vec<(String, String)> {
+             "Text &amp; &lt; &quot; &#169; café **bold** and `code`.\n\n".repeat(100),
+         ),
+     ];
++    // Dedicated table workloads. The old gfm-tables corpus remains a historical
++    // mixed workload and must not be presented as a plain-text table measurement.
++    for (name, fixture) in [
++        ("tables-plain", "tables-plain"),
++        ("tables-inline", "tables-inline"),
++        ("tables-disabled-syntax", "tables-inline"),
++    ] {
++        result.push((
++            name.into(),
++            std::fs::read_to_string(repo.join("benches/fixtures").join(format!("{fixture}.md")))
++                .unwrap(),
++        ));
++    }
+     // CommonMark-only inputs for the headline, separate from the historical table-containing fixtures.
+     let unit = "## Project notes\n\nA paragraph with **strong emphasis**, *emphasis*, and `inline code`.\n\nRead the [documentation](https://example.com/guide?a=1&b=2) for details &amp; examples.\n\n- First item\n- Second item with a [link](/relative)\n\n> A quoted paragraph with a useful explanation.\n\n```rust\nlet answer = 42;\n```\n\n";
+     for (name, bytes) in [
+@@ -286,7 +299,21 @@ fn main() {
+     for (lane, flags) in CONFIGURATIONS {
+         let r = Renderers::new(flags);
+         for (name, input) in corpora() {
+-            if flags == 1 && !["gfm-tables", "light-1k"].contains(&name.as_str()) {
++            if (name == "tables-plain" || name == "tables-disabled-syntax") && flags != 1 {
++                continue;
++            }
++            if name == "tables-inline" && flags != 7 {
++                continue;
++            }
++            if flags == 1
++                && ![
++                    "gfm-tables",
++                    "tables-plain",
++                    "tables-disabled-syntax",
++                    "light-1k",
++                ]
++                .contains(&name.as_str())
++            {
+                 continue;
+             }
+             if flags == 2 && !["strikethrough", "light-1k"].contains(&name.as_str()) {
+diff --git a/benchmarks/bun-comparison/publish.py b/benchmarks/bun-comparison/publish.py
+index fc9bce4..d91dcbc 100644
+--- a/benchmarks/bun-comparison/publish.py
++++ b/benchmarks/bun-comparison/publish.py
+@@ -21,7 +21,7 @@ CASES = [
+     ("commonmark/publication-2k", "commonmark-2k", "CommonMark · 2 KiB", "size"),
+     ("commonmark/publication-5k", "commonmark-5k", "CommonMark · 5 KiB", "size"),
+     ("commonmark/publication-10k", "commonmark-10k", "CommonMark · 10 KiB", "size"),
+-    ("tables/gfm-tables", "tables", "Tables only", "feature"),
++    ("tables/gfm-tables", "tables", "Tables + inactive strikethrough (historical)", "feature"),
+     ("strikethrough/strikethrough", "strikethrough", "Strikethrough only", "feature"),
+     ("gfm_overlap/gfm-tables", "gfm-overlap", "GFM subset: tables + strikethrough", "feature"),
+     ("commonmark/links", "links", "CommonMark links and images", "feature"),
+@@ -197,8 +197,12 @@ density differ between rows, so these are not additive feature prices.
+     for table in data["featureTables"]:
+         text += "| " + " | ".join([table["label"], str(table["inputBytes"]), *[r["latency"] for r in table["rows"]]]) + " |\n"
+     text += f'''
+-The tables-only and GFM-subset rows use identical table/strikethrough input.
+-The first leaves strikethrough literal; the second renders it and also enables
++The historical inactive-strikethrough and GFM-subset rows use identical mixed input.
++The first measures tables plus literal inactive syntax, not isolated table cost.
++New dedicated `tables/tables-plain` and `gfm_overlap/tables-inline` benchmarks
++separate plain cells from enabled inline formatting; the
++[focused remeasurement](docs/reports/2026-09-11-table-benchmark-isolation.md) records
++their current Ferromark/pulldown comparison. The GFM-subset row also enables
+ unused task-list parsing. Neither enables the full five-extension GFM preset.
+ The GFM-subset row was remeasured for all five parsers after correcting the md4c
+ task-list flag; its [replacement evidence](docs/reports/2026-09-11-benchmark-refresh/native-corrected/summary.json)
+diff --git a/benchmarks/bun-comparison/run.py b/benchmarks/bun-comparison/run.py
+index 1fcb3b4..6c16806 100644
+--- a/benchmarks/bun-comparison/run.py
++++ b/benchmarks/bun-comparison/run.py
+@@ -18,6 +18,7 @@ HEADLINE_CASES = [
+     "commonmark/publication-2k", "commonmark/publication-5k", "commonmark/publication-10k",
+     "tables/gfm-tables", "strikethrough/strikethrough", "gfm_overlap/gfm-tables",
+     "commonmark/links", "commonmark/entities",
++    "tables/tables-plain", "gfm_overlap/tables-inline",
+ ]
+ 
+ 
+diff --git a/benchmarks/pulldown-comparison/benches/comparison.rs b/benchmarks/pulldown-comparison/benches/comparison.rs
+index 6c9e93b..a5586e9 100644
+--- a/benchmarks/pulldown-comparison/benches/comparison.rs
++++ b/benchmarks/pulldown-comparison/benches/comparison.rs
+@@ -76,6 +76,27 @@ fn parity_benches(c: &mut Criterion) {
+         ParityConfig::GfmOverlap,
+     );
+ 
++    // Keep actual table work separate from intentionally disabled syntax.
++    for (name, input, config) in [
++        (
++            "tables-only/plain",
++            include_str!("../../../benches/fixtures/tables-plain.md"),
++            ParityConfig::TablesOnly,
++        ),
++        (
++            "tables-inline/enabled",
++            include_str!("../../../benches/fixtures/tables-inline.md"),
++            ParityConfig::GfmOverlap,
++        ),
++        (
++            "tables-disabled-syntax/literal-strikethrough",
++            include_str!("../../../benches/fixtures/tables-inline.md"),
++            ParityConfig::TablesOnly,
++        ),
++    ] {
++        bench_pair(c, &format!("parity/{name}"), input, config);
++    }
++
+     let extended = EXTENDED_SECTION.repeat(128);
+     bench_pair(
+         c,
+diff --git a/benchmarks/pulldown-comparison/src/bin/profile_driver.rs b/benchmarks/pulldown-comparison/src/bin/profile_driver.rs
+index ba152c9..12ef7a3 100644
+--- a/benchmarks/pulldown-comparison/src/bin/profile_driver.rs
++++ b/benchmarks/pulldown-comparison/src/bin/profile_driver.rs
+@@ -10,8 +10,8 @@ use std::{
+ };
+ 
+ use ferromark_pulldown_comparison::{
+-    Corpus, CountingAllocator, MeasurementWindow, ParserKind, RunConfig, RunMetadata,
+-    RunMeasurement, render_ferromark_config_into, render_pulldown_config_into,
++    Corpus, CountingAllocator, MeasurementWindow, ParserKind, RunConfig, RunMeasurement,
++    RunMetadata, render_ferromark_config_into, render_pulldown_config_into,
+ };
+ 
+ #[global_allocator]
+diff --git a/benchmarks/pulldown-comparison/src/corpus.rs b/benchmarks/pulldown-comparison/src/corpus.rs
+index 44ebd4f..714adb9 100644
+--- a/benchmarks/pulldown-comparison/src/corpus.rs
++++ b/benchmarks/pulldown-comparison/src/corpus.rs
+@@ -30,6 +30,10 @@ pub enum Corpus {
+     UnsafeUrls,
+     /// Reference definitions and reference links.
+     References,
++    /// Plain-text table cells for isolated table measurements.
++    TablesPlain,
++    /// Table cells with emphasis and strikethrough.
++    TablesInline,
+     /// Table-heavy input.
+     Tables,
+     /// Nested lists and blockquotes.
+@@ -50,7 +54,7 @@ pub enum Corpus {
+ 
+ impl Corpus {
+     /// All corpus selectors accepted by the diagnostic runner.
+-    pub const ALL: [Self; 18] = [
++    pub const ALL: [Self; 20] = [
+         Self::CommonMark5K,
+         Self::CommonMark20K,
+         Self::CommonMark50K,
+@@ -63,6 +67,8 @@ impl Corpus {
+         Self::UnsafeUrls,
+         Self::References,
+         Self::Tables,
++        Self::TablesPlain,
++        Self::TablesInline,
+         Self::Containers,
+         Self::Lists,
+         Self::Blockquotes,
+@@ -86,6 +92,8 @@ impl Corpus {
+             Self::UnsafeUrls => "unsafe-urls",
+             Self::References => "references",
+             Self::Tables => "tables",
++            Self::TablesPlain => "tables-plain",
++            Self::TablesInline => "tables-inline",
+             Self::Containers => "containers",
+             Self::Lists => "lists",
+             Self::Blockquotes => "blockquotes",
+@@ -126,6 +134,12 @@ impl Corpus {
+             )),
+             Self::References => Cow::Owned(reference_corpus()),
+             Self::Tables => Cow::Borrowed(TABLES_5K),
++            Self::TablesPlain => {
++                Cow::Borrowed(include_str!("../../../benches/fixtures/tables-plain.md"))
++            }
++            Self::TablesInline => {
++                Cow::Borrowed(include_str!("../../../benches/fixtures/tables-inline.md"))
++            }
+             Self::Containers => Cow::Owned(repeat_to_at_least(
+                 "> - first item\n>   - nested item\n>     1. ordered child\n>     2. second child\n>\n> continuation\n\n",
+                 20_000,
+@@ -227,7 +241,9 @@ fn unique_headings_corpus() -> String {
+     for index in 0..512 {
+         output.push_str("# Unique heading ");
+         output.push_str(&index.to_string());
+-        output.push_str(" with inline `code`\n\nParagraph content keeps ordinary block rendering present.\n\n");
++        output.push_str(
++            " with inline `code`\n\nParagraph content keeps ordinary block rendering present.\n\n",
++        );
+     }
+     output
+ }
+diff --git a/benchmarks/pulldown-comparison/src/lib.rs b/benchmarks/pulldown-comparison/src/lib.rs
+index 35a6d38..db1a249 100644
+--- a/benchmarks/pulldown-comparison/src/lib.rs
++++ b/benchmarks/pulldown-comparison/src/lib.rs
+@@ -17,6 +17,8 @@ pub use model::{ParserKind, RunConfig};
+ pub enum ParityConfig {
+     /// CommonMark with trusted raw HTML and no extensions.
+     CommonMark,
++    /// CommonMark plus tables only.
++    TablesOnly,
+     /// CommonMark plus tables, strikethrough, and task lists.
+     GfmOverlap,
+     /// GFM overlap plus footnotes, math, superscript, and callouts.
+@@ -27,6 +29,7 @@ pub enum ParityConfig {
+ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
+     let (tables, strikethrough, task_lists, footnotes, math, superscript, callouts) = match config {
+         ParityConfig::CommonMark => (false, false, false, false, false, false, false),
++        ParityConfig::TablesOnly => (true, false, false, false, false, false, false),
+         ParityConfig::GfmOverlap => (true, true, true, false, false, false, false),
+         ParityConfig::ExtendedOverlap => (true, true, true, true, true, true, true),
+     };
+@@ -62,6 +65,7 @@ pub fn ferromark_options(config: ParityConfig) -> FerromarkOptions {
+ pub fn pulldown_options(config: ParityConfig) -> PulldownOptions {
+     match config {
+         ParityConfig::CommonMark => PulldownOptions::empty(),
++        ParityConfig::TablesOnly => PulldownOptions::ENABLE_TABLES,
+         ParityConfig::GfmOverlap => {
+             PulldownOptions::ENABLE_TABLES
+                 | PulldownOptions::ENABLE_STRIKETHROUGH
+diff --git a/benchmarks/pulldown-comparison/src/model.rs b/benchmarks/pulldown-comparison/src/model.rs
+index 8d8885b..a5bdaee 100644
+--- a/benchmarks/pulldown-comparison/src/model.rs
++++ b/benchmarks/pulldown-comparison/src/model.rs
+@@ -46,6 +46,8 @@ impl FromStr for ParserKind {
+ pub enum RunConfig {
+     /// Trusted CommonMark parity configuration.
+     CommonMark,
++    /// Trusted CommonMark plus tables only.
++    TablesOnly,
+     /// Trusted GFM-overlap parity configuration.
+     GfmOverlap,
+     /// Trusted extended-overlap parity configuration.
+@@ -68,8 +70,9 @@ pub enum RunConfig {
+ 
+ impl RunConfig {
+     /// All configurations accepted by the diagnostic runner.
+-    pub const ALL: [Self; 10] = [
++    pub const ALL: [Self; 11] = [
+         Self::CommonMark,
++        Self::TablesOnly,
+         Self::GfmOverlap,
+         Self::ExtendedOverlap,
+         Self::MinimalSecure,
+@@ -85,6 +88,7 @@ impl RunConfig {
+     pub const fn as_str(self) -> &'static str {
+         match self {
+             Self::CommonMark => "commonmark",
++            Self::TablesOnly => "tables-only",
+             Self::GfmOverlap => "gfm-overlap",
+             Self::ExtendedOverlap => "extended-overlap",
+             Self::MinimalSecure => "minimal-secure",
+@@ -114,7 +118,7 @@ impl RunConfig {
+             ParserKind::Ferromark => true,
+             ParserKind::PulldownCmark => matches!(
+                 self,
+-                Self::CommonMark | Self::GfmOverlap | Self::ExtendedOverlap
++                Self::CommonMark | Self::TablesOnly | Self::GfmOverlap | Self::ExtendedOverlap
+             ),
+         }
+     }
+@@ -123,6 +127,7 @@ impl RunConfig {
+     pub fn ferromark_options(self) -> Options {
+         match self {
+             Self::CommonMark => ferromark_options(ParityConfig::CommonMark),
++            Self::TablesOnly => ferromark_options(ParityConfig::TablesOnly),
+             Self::GfmOverlap => ferromark_options(ParityConfig::GfmOverlap),
+             Self::ExtendedOverlap => ferromark_options(ParityConfig::ExtendedOverlap),
+             Self::MinimalSecure => Options::minimal(),
+@@ -140,6 +145,7 @@ impl RunConfig {
+     pub fn pulldown_options(self) -> Option<pulldown_cmark::Options> {
+         let parity = match self {
+             Self::CommonMark => ParityConfig::CommonMark,
++            Self::TablesOnly => ParityConfig::TablesOnly,
+             Self::GfmOverlap => ParityConfig::GfmOverlap,
+             Self::ExtendedOverlap => ParityConfig::ExtendedOverlap,
+             _ => return None,
+diff --git a/benchmarks/pulldown-comparison/tests/parity_semantics.rs b/benchmarks/pulldown-comparison/tests/parity_semantics.rs
+index d1a52a0..8db01c0 100644
+--- a/benchmarks/pulldown-comparison/tests/parity_semantics.rs
++++ b/benchmarks/pulldown-comparison/tests/parity_semantics.rs
+@@ -81,3 +81,53 @@ fn extended_overlap_should_list_every_pulldown_feature_explicitly() {
+ 
+     assert_eq!(options, expected);
+ }
++
++#[test]
++fn plain_table_benchmark_should_contain_only_table_structure_and_text() {
++    let input = include_str!("../../../benches/fixtures/tables-plain.md");
++    let options = pulldown_options(ParityConfig::TablesOnly);
++    assert_eq!(options, PulldownOptions::ENABLE_TABLES);
++    let mut tables = 0;
++    let mut cells = 0;
++    for event in pulldown_cmark::Parser::new_ext(input, options) {
++        use pulldown_cmark::{Event, Tag, TagEnd};
++        match event {
++            Event::Start(Tag::Table(_)) => tables += 1,
++            Event::Start(Tag::TableCell) => cells += 1,
++            Event::Start(Tag::TableHead | Tag::TableRow)
++            | Event::End(
++                TagEnd::Table | TagEnd::TableHead | TagEnd::TableRow | TagEnd::TableCell,
++            ) => {}
++            Event::Text(text) => {
++                assert!(text.chars().all(|ch| ch.is_ascii_alphabetic() || ch == ' '))
++            }
++            other => panic!("plain table benchmark contains unrelated syntax: {other:?}"),
++        }
++    }
++    assert_eq!((tables, cells), (80, 320));
++    let (ferromark, pulldown) = render_both(input, ParityConfig::TablesOnly);
++    for html in [ferromark, pulldown] {
++        assert_eq!(html.matches("<table>").count(), 80);
++        assert_eq!(html.matches("<td>").count(), 160);
++        assert_eq!(html.matches("<th>").count(), 160);
++    }
++}
++
++#[test]
++fn table_inline_benchmarks_should_separate_enabled_and_literal_strikethrough() {
++    let input = include_str!("../../../benches/fixtures/tables-inline.md");
++    for config in [ParityConfig::TablesOnly, ParityConfig::GfmOverlap] {
++        let (ferromark, pulldown) = render_both(input, config);
++        for html in [ferromark, pulldown] {
++            assert_eq!(html.matches("<table>").count(), 80);
++            assert_eq!(html.matches("<strong>table</strong>").count(), 80);
++            if config == ParityConfig::GfmOverlap {
++                assert_eq!(html.matches("<del>pending</del>").count(), 80);
++                assert!(!html.contains("~~"));
++            } else {
++                assert_eq!(html.matches("~~pending~~").count(), 80);
++                assert!(!html.contains("<del>"));
++            }
++        }
++    }
++}
+diff --git a/homepage/app/data/benchmarks.json b/homepage/app/data/benchmarks.json
+index 6768c5a..7fcd363 100644
+--- a/homepage/app/data/benchmarks.json
++++ b/homepage/app/data/benchmarks.json
+@@ -289,7 +289,7 @@
+     {
+       "id": "tables",
+       "case": "tables/gfm-tables",
+-      "label": "Tables only",
++      "label": "Tables + inactive strikethrough (historical)",
+       "kind": "feature",
+       "description": "5,200 input bytes; fresh parser and owned output",
+       "inputBytes": 5200,
+diff --git a/homepage/app/routes/guide/benchmarks.mdx b/homepage/app/routes/guide/benchmarks.mdx
+index 99620d4..16cee9c 100644
+--- a/homepage/app/routes/guide/benchmarks.mdx
++++ b/homepage/app/routes/guide/benchmarks.mdx
+@@ -47,9 +47,13 @@ rows, so these are workload measurements rather than additive feature prices.
+ 
+ <FeatureBenchmarkTable />
+ 
+-The tables-only and GFM-subset cases use identical table/strikethrough input.
+-The first keeps strikethrough literal. The second renders strikethrough and
+-also enables unused task-list parsing. Neither enables bare autolinks or tag
++The historical inactive-strikethrough and GFM-subset cases use identical mixed input.
++The first includes literal inactive syntax and does not isolate table cost.
++The dedicated `tables/tables-plain` and `gfm_overlap/tables-inline` benchmarks now
++separate plain cells from enabled inline formatting. Their
++[focused remeasurement](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-11-table-benchmark-isolation.md)
++records the current Ferromark/pulldown comparison. The GFM-subset case also enables
++unused task-list parsing. Neither enables bare autolinks or tag
+ filtering, so neither is the full GFM preset. The GFM-subset row was remeasured
+ for all five parsers after correcting our md4c task-list flag; its
+ [replacement evidence](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-09-11-benchmark-refresh/native-corrected)
+diff --git a/scripts/test-readme-structure-contract.mjs b/scripts/test-readme-structure-contract.mjs
+index e5a65ed..9f492b6 100644
+--- a/scripts/test-readme-structure-contract.mjs
++++ b/scripts/test-readme-structure-contract.mjs
+@@ -306,6 +306,8 @@ function validate(
+     "limited HTML comparison",
+     "docs/reports/2026-09-11-output-parity-audit.md",
+     "native-corrected/summary.json",
++    "literal inactive syntax, not isolated table cost",
++    "docs/reports/2026-09-11-table-benchmark-isolation.md",
+     "docs/arch/ARCH-COMP-002-workload-comparability.md",
+     "### Fine-grained feature and document benchmarks",
+     "docs/reports/2026-09-10-markdown-feature-costs-final.md",

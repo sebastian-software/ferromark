@@ -1,0 +1,111 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index 82b90cd..da4861d 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1719,9 +1719,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+         );
+ 
+         // Render events to HTML
+-        for event in events.iter() {
+-            context.render_block_event(input, event);
+-        }
++        context.render_events(input, events);
+ 
+         // Render footnote section at document end
+         if !context.footnote_numbers.is_empty() {
+@@ -1734,6 +1732,59 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+ }
+ 
+ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
++    /// Render ordinary single-range table cells together while preserving the
++    /// public event stream and the full inline parser. Escaped, empty, and other
++    /// cell shapes keep the general stateful path.
++    fn render_events(&mut self, input: &[u8], mut events: &[BlockEvent]) {
++        while let Some(event) = events.first() {
++            if let [
++                BlockEvent::TableCellStart { alignment, colspan },
++                BlockEvent::Text(range),
++                BlockEvent::TableCellEnd,
++                ..,
++            ] = events
++            {
++                let text = range.slice(input);
++                if !self.para_state.in_paragraph
++                    && !self.heading_state.in_heading
++                    && !self.cell_state.in_cell
++                    && memchr::memchr(b'\\', text).is_none()
++                {
++                    if *self.in_table_head {
++                        self.writer.th_start(*alignment, *colspan);
++                    } else {
++                        self.writer.td_start(*alignment, *colspan);
++                    }
++                    let mut end = text.len();
++                    while end > 0 && matches!(text[end - 1], b' ' | b'\t') {
++                        end -= 1;
++                    }
++                    if end > 0 {
++                        render_inline_content(
++                            &text[..end],
++                            self.writer,
++                            self.inline_parser,
++                            self.inline_events,
++                            self.link_refs,
++                            self.footnote_store,
++                            self.footnote_numbers,
++                            self.options,
++                        );
++                    }
++                    if *self.in_table_head {
++                        self.writer.th_end();
++                    } else {
++                        self.writer.td_end();
++                    }
++                    events = &events[3..];
++                    continue;
++                }
++            }
++            self.render_block_event(input, event);
++            events = &events[1..];
++        }
++    }
++
+     /// Render a single block event using the context's explicit state boundary.
+     fn render_block_event(&mut self, input: &[u8], event: &BlockEvent) {
+         let writer = &mut *self.writer;
+diff --git a/tests/renderer_tests.rs b/tests/renderer_tests.rs
+index 394c0e7..eaa74ad 100644
+--- a/tests/renderer_tests.rs
++++ b/tests/renderer_tests.rs
+@@ -156,3 +156,31 @@ fn inline_extension_openers_do_not_cross_features_paragraphs_or_documents() {
+         }
+     }
+ }
++
++#[test]
++fn table_cells_preserve_inline_content_across_borrowed_escaped_and_empty_cells() {
++    let input = "| A | B | C |\n| --- | --- | --- |\n\
++| *one* | `a\\|b` | [Guide][g] |\n\
++| **two** | plain | [Other](/other) |\n\
++| last |\n\n[g]: /guide\n";
++    let expected = "<table>\n<thead>\n<tr>\n<th>A</th>\n<th>B</th>\n<th>C</th>\n</tr>\n</thead>\n\
++<tbody>\n<tr>\n<td><em>one</em></td>\n<td><code>a|b</code></td>\n<td><a href=\"/guide\">Guide</a></td>\n</tr>\n\
++<tr>\n<td><strong>two</strong></td>\n<td>plain</td>\n<td><a href=\"/other\">Other</a></td>\n</tr>\n\
++<tr>\n<td>last</td>\n<td></td>\n<td></td>\n</tr>\n</tbody>\n</table>\n";
++    for policy in [
++        ferromark::RenderPolicy::Trusted,
++        ferromark::RenderPolicy::Untrusted,
++    ] {
++        let options =
++            ferromark::options!(Options::commonmark(); tables: true, render_policy: policy,);
++        let mut renderer = Renderer::with_options(options.clone());
++        for _ in 0..3 {
++            assert_eq!(renderer.render(input), expected);
++            assert_eq!(to_html_with_options(input, &options), expected);
++            let next =
++                renderer.render("| *open | close* |\n| --- | --- |\n| [Guide][g] | plain |\n");
++            assert!(next.contains("<th>*open</th>\n<th>close*</th>"));
++            assert!(next.contains("<td>[Guide][g]</td>"));
++        }
++    }
++}

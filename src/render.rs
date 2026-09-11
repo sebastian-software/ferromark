@@ -131,10 +131,14 @@ impl HtmlWriter {
 
     /// Create with pre-allocated capacity based on expected input size.
     ///
-    /// Typical HTML is ~1.25x input size; we reserve extra for safety.
+    /// Typical HTML is ~1.25x input size; a small minimum accommodates wrappers.
     #[inline]
     pub fn with_capacity_for(input_len: usize) -> Self {
-        let capacity = input_len + input_len / 4;
+        let capacity = if input_len == 0 {
+            0
+        } else {
+            (input_len + input_len / 4).max(64)
+        };
         Self {
             out: Vec::with_capacity(capacity),
         }

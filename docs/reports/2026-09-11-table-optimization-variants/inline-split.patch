@@ -1,0 +1,10 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -3289,6 +3289,7 @@
+     /// Split a table line by unescaped `|` outside backtick code spans.
+     /// Returns source-relative cells trimmed of whitespace. Leading and
+     /// trailing pipes are stripped and every cell has a span of one.
++    #[inline(always)]
+     fn split_table_cells(line: &[u8]) -> (SmallVec<[TableCell; 8]>, bool) {
+         let mut cells = SmallVec::new();
+         let len = line.len();

@@ -1,0 +1,10 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -2358,6 +2358,7 @@
+ }
+ 
+ #[allow(clippy::too_many_arguments)]
++#[inline(always)]
+ fn render_inline_content(
+     text: &[u8],
+     writer: &mut HtmlWriter,

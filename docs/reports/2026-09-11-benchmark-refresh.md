@@ -160,7 +160,7 @@ adapters; they are not universal feature or compliance scores.
 
 <!-- native-results:start -->
 ferromark has the lowest measured median for: CommonMark · 2 KiB, CommonMark · 5 KiB, CommonMark · 10 KiB, Strikethrough only, CommonMark links and images, CommonMark entities and inline markup.
-pulldown-cmark has the lowest measured median for: Tables only, GFM subset: tables + strikethrough.
+pulldown-cmark has the lowest measured median for: Tables + inactive strikethrough (historical), GFM subset: tables + strikethrough.
 
 These are results for the named inputs and contracts, not a universal parser ranking.
 
@@ -186,11 +186,11 @@ The main README and homepage tables also report input throughput.
 | CommonMark · 10 KiB | pulldown-cmark | 55.587 µs | 55.593, 55.539, 55.587 | 0.1% | 15626 |
 | CommonMark · 10 KiB | comrak | 118.706 µs | 118.706, 118.690, 118.750 | 0.0% | 15626 |
 | CommonMark · 10 KiB | md4c (C) | 60.192 µs | 60.039, 60.192, 60.273 | 0.4% | 15626 |
-| Tables only | ferromark | 46.178 µs | 47.011, 46.136, 46.178 | 1.9% | 12800 |
-| Tables only | Bun (native) | 48.093 µs | 48.456, 48.093, 47.911 | 1.1% | 12320 |
-| Tables only | pulldown-cmark | 35.228 µs | 36.051, 35.228, 35.129 | 2.6% | 11920 |
-| Tables only | comrak | 135.257 µs | 135.915, 135.257, 134.999 | 0.7% | 12800 |
-| Tables only | md4c (C) | 48.208 µs | 48.244, 48.208, 48.125 | 0.2% | 12800 |
+| Tables + inactive strikethrough (historical) | ferromark | 46.178 µs | 47.011, 46.136, 46.178 | 1.9% | 12800 |
+| Tables + inactive strikethrough (historical) | Bun (native) | 48.093 µs | 48.456, 48.093, 47.911 | 1.1% | 12320 |
+| Tables + inactive strikethrough (historical) | pulldown-cmark | 35.228 µs | 36.051, 35.228, 35.129 | 2.6% | 11920 |
+| Tables + inactive strikethrough (historical) | comrak | 135.257 µs | 135.915, 135.257, 134.999 | 0.7% | 12800 |
+| Tables + inactive strikethrough (historical) | md4c (C) | 48.208 µs | 48.244, 48.208, 48.125 | 0.2% | 12800 |
 | Strikethrough only | ferromark | 25.492 µs | 25.809, 25.436, 25.492 | 1.5% | 7300 |
 | Strikethrough only | Bun (native) | 36.596 µs | 36.733, 36.419, 36.596 | 0.9% | 7300 |
 | Strikethrough only | pulldown-cmark | 33.794 µs | 34.013, 33.794, 33.575 | 1.3% | 7300 |

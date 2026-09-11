@@ -1,0 +1,45 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -978,7 +978,7 @@
+ impl ParagraphState {
+     fn new() -> Self {
+         Self {
+-            content: Vec::with_capacity(256),
++            content: Vec::new(),
+             in_paragraph: false,
+         }
+     }
+@@ -1032,7 +1032,7 @@
+ impl HeadingState {
+     fn new() -> Self {
+         Self {
+-            content: Vec::with_capacity(64),
++            content: Vec::new(),
+             in_heading: false,
+             level: 0,
+         }
+@@ -1101,12 +1101,9 @@
+ impl HeadingIdTracker {
+     fn new() -> Self {
+         Self {
+-            arena: Vec::with_capacity(256),
+-            used: std::collections::HashMap::with_capacity_and_hasher(
+-                32,
+-                rustc_hash::FxBuildHasher,
+-            ),
+-            slug_buf: Vec::with_capacity(64),
++            arena: Vec::new(),
++            used: std::collections::HashMap::with_capacity_and_hasher(0, rustc_hash::FxBuildHasher),
++            slug_buf: Vec::new(),
+         }
+     }
+ 
+@@ -1294,7 +1291,7 @@
+ impl CellState {
+     fn new() -> Self {
+         Self {
+-            content: Vec::with_capacity(64),
++            content: Vec::new(),
+             pending: None,
+             in_cell: false,
+         }
