@@ -1,6 +1,6 @@
 import unittest
 
-from run import CanonicalHTML
+from run import CanonicalHTML, PARSERS, mismatches
 
 
 def canonical(html):
@@ -8,6 +8,15 @@ def canonical(html):
 
 
 class VerificationTests(unittest.TestCase):
+    def test_every_timed_candidate_must_participate_in_parity(self):
+        outputs = {name: "<p>ok</p>" for name in PARSERS}
+        self.assertEqual(mismatches(outputs), [])
+        outputs["md4c"] = "<p>different</p>"
+        self.assertEqual(mismatches(outputs), ["md4c"])
+        del outputs["md4c"]
+        with self.assertRaises(ValueError):
+            mismatches(outputs)
+
     def test_serialization_only_differences_are_accepted(self):
         self.assertEqual(canonical('<p>A &amp; B<br />C</p>\n'), canonical('<p>A &#38; B<br>C</p>'))
         self.assertEqual(canonical('<td align="right">1</td>'), canonical('<td style="text-align: right;">1</td>'))

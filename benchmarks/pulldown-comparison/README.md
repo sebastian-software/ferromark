@@ -1,6 +1,6 @@
 # Ferromark / pulldown-cmark parity benchmarks
 
-This isolated harness compares the two leading Rust implementations without
+This isolated harness compares the Ferromark and pulldown-cmark without
 building md4c or comrak. It uses three explicit feature intersections:
 
 | Lane | Shared features | Raw HTML |
@@ -38,7 +38,7 @@ record the Ferromark commit, Rust/LLVM version, machine, and Criterion settings.
 ## Comprehensive profiling
 
 This crate also owns the profiling harness so parity options have one source of
-truth. It pins Rust 1.93.0 locally and keeps generated results under the ignored
+truth. It pins Rust 1.97.1 locally and keeps generated results under the ignored
 `results/` directory.
 
 List every parser, configuration, and corpus selector:

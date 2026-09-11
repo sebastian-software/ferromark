@@ -19,6 +19,7 @@ import urllib.request
 BUN_REV = "76e9dcc6ad272a4fb1ee4a4dbbde4809201b71d1"
 MI_REV = "6a64e1ba7f5b2130d4efccb67ec87fd0003f0f6a"
 HWY_REV = "2607d3b5b0113992fe84d3848859eae13b3b52c1"
+MD4C_REV = "65c6c9d72cebd9a731aaa5597414ce04d9ea5de3"
 TOOLCHAIN = "nightly-2026-07-20"
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -50,13 +51,15 @@ def source_archive(repo, rev, dest):
     return hashlib.sha256(archive.read_bytes()).hexdigest()
 
 
-def prepare(bun, work, lockfile=None):
+def prepare(bun, work, md4c, lockfile=None):
     if sys.platform != "darwin":
         raise SystemExit("The standalone stack adapter currently supports macOS only.")
     if git(bun, "rev-parse", "HEAD") != BUN_REV:
         raise SystemExit(f"Bun checkout must be at {BUN_REV}")
     if git(bun, "diff", "HEAD", "--", "src", "scripts/build"):
         raise SystemExit("Bun parser/dependency/build sources must be unchanged")
+    if git(md4c, "rev-parse", "HEAD") != MD4C_REV or git(md4c, "status", "--porcelain", "--", "src"):
+        raise SystemExit("md4c must be a clean checkout at the pinned revision")
     work.mkdir(parents=True, exist_ok=True)
     native = work / "native"
     native.mkdir(exist_ok=True)
@@ -68,6 +71,13 @@ def prepare(bun, work, lockfile=None):
          "-DMI_NO_PROCESS_DETACH=1", "-DMI_BUILD_RELEASE", "-DMI_CMAKE_BUILD_TYPE=release",
          "-fvisibility=hidden", "-ftls-model=initial-exec", f"-I{mi}/include", "-c", mi / "src/static.c", "-o", native / "mimalloc.o"])
     run(["ar", "rcs", native / "libmimalloc.a", native / "mimalloc.o"])
+    md_objects = []
+    for name in ("md4c", "md4c-html", "entity"):
+        obj = native / f"{name}.o"
+        run(["clang", "-O3", "-DNDEBUG", "-std=c99", f"-I{mi}/include",
+             "-include", HERE / "md4c_alloc.h", "-c", md4c / f"src/{name}.c", "-o", obj])
+        md_objects.append(obj)
+    run(["ar", "rcs", native / "libmd4c.a", *md_objects])
     flags = ["clang++", "-std=c++23", "-O3", "-DNDEBUG", "-DHWY_STATIC_DEFINE",
              "-DHWY_DISABLED_TARGETS=HWY_ALL_SVE-HWY_SVE2_128", "-fno-exceptions", "-fmath-errno", f"-I{hwy}"]
     objs = []
@@ -127,6 +137,7 @@ html-escape = "=0.2.14"
     (driver / "build.rs").write_text(f'''fn main() {{
     println!("cargo:rustc-link-search=native={{}}", {json.dumps(str(native))});
     println!("cargo:rustc-link-lib=static=bun_bench_native");
+    println!("cargo:rustc-link-lib=static=md4c");
     println!("cargo:rustc-link-lib=static=mimalloc");
     println!("cargo:rustc-link-lib=c++");
     println!("cargo:rustc-env=FERROMARK_SOURCE={{}}", {json.dumps(str(REPO))});
@@ -159,6 +170,11 @@ html-escape = "=0.2.14"
         "ferromark_source_sha256": {str(f.relative_to(REPO)): hashlib.sha256(f.read_bytes()).hexdigest()
                                    for f in sorted((REPO / "src").rglob("*.rs"))},
         "archives": archives,
+        "md4c_revision": MD4C_REV,
+        "md4c_source_sha256": {f.name: hashlib.sha256(f.read_bytes()).hexdigest()
+                               for f in sorted((md4c / "src").iterdir()) if f.suffix in (".c", ".h")},
+        "adapter_sha256": {f.name: hashlib.sha256(f.read_bytes()).hexdigest()
+                           for f in sorted(HERE.iterdir()) if f.suffix in (".rs", ".c", ".h")},
     }
     (driver / "build-info.json").write_text(json.dumps(stamp, indent=2) + "\n")
     return binary
@@ -168,6 +184,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("bun", type=Path)
     parser.add_argument("work", type=Path)
+    parser.add_argument("--md4c", type=Path, required=True, help="Clean checkout at MD4C_REV")
     parser.add_argument("--lockfile", type=Path, help="Replay a previously recorded Cargo.lock with --locked")
     args = parser.parse_args()
-    print(prepare(args.bun.resolve(), args.work.resolve(), args.lockfile))
+    print(prepare(args.bun.resolve(), args.work.resolve(), args.md4c.resolve(), args.lockfile))
