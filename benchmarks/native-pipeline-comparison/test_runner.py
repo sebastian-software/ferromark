@@ -55,5 +55,28 @@ class ProtocolTests(unittest.TestCase):
             summarize(broken, ["x"], "satteri", protocol, outputs)
 
 
+
+class FixedDialectTests(unittest.TestCase):
+    def test_fixed_dialect_requires_actual_extended_output(self):
+        from run import check_fixed_dialect
+        good = '<table></table><del>old</del><input type="checkbox"><a href="http://example.com">x</a>'
+        rows = [{"html": good} for _ in range(8)]
+        check_fixed_dialect(rows)
+        for token in ('<table>', '<del>old</del>', 'type="checkbox"', 'href="http'):
+            broken = copy.deepcopy(rows)
+            broken[0]["html"] = broken[0]["html"].replace(token, '')
+            with self.assertRaises(ValueError):
+                check_fixed_dialect(broken)
+
+    def test_fixed_dialect_report_rejects_admitted_timing(self):
+        from pathlib import Path
+        from report import render_engine
+        metadata = {"protocol": {"mode": "verify"}, "started_unix": 1, "finished_unix": 2,
+            "build": {"adapter": {"name": "md4x", "label": "MD4X", "fixed_dialect": True}},
+            "pairs": {"md4x": {"selected": ["commonmark/5k"]}}}
+        with self.assertRaisesRegex(ValueError, "must not admit timing"):
+            render_engine(Path("unused"), metadata)
+
+
 if __name__ == "__main__":
     unittest.main()
