@@ -139,6 +139,11 @@ probe is not a complete MDX compatibility suite and does not execute components.
 
 ## Evidence
 
+The first [measured report](../../docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md)
+contains the three targeted workloads above, with archived raw samples and all
+verification/MDX diagnostics. It records an independent Ferromark baseline for
+each competitor.
+
 Each completed result contains build metadata, source and binary hashes, the
 dependency locks, original HTML and effective options, capability/spec/MDX
 diagnostics, per-pair admission decisions, raw samples, warmups, and summaries.

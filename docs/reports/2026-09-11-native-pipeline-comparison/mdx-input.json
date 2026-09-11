@@ -1,0 +1,27 @@
+[
+  {
+    "case": "mdx/markdown",
+    "flags": 0,
+    "input": "# Heading\n\nSome **strong** content.\n"
+  },
+  {
+    "case": "mdx/root-jsx",
+    "flags": 0,
+    "input": "import Card from './Card'\n\n<Card>\n\n# Heading\n\n</Card>\n"
+  },
+  {
+    "case": "mdx/inline-expression",
+    "flags": 0,
+    "input": "export const name = 'World';\n\nHello {name}!\n"
+  },
+  {
+    "case": "mdx/container-jsx",
+    "flags": 0,
+    "input": "> <Card>\n>\n> # Heading\n>\n> </Card>\n"
+  },
+  {
+    "case": "mdx/invalid-javascript",
+    "flags": 0,
+    "input": "export const = ;\n\n# Heading\n"
+  }
+]

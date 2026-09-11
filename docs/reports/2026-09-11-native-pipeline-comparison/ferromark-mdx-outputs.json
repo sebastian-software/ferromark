@@ -1,0 +1,32 @@
+[
+  {
+    "case": "mdx/markdown",
+    "engine": "ferromark",
+    "stage": "segmentation and JSX module emission",
+    "code": "export function Content() {\n  return (\n    <>\n      <h1>Heading</h1>\n      <p>Some <strong>strong</strong> content.</p>\n    </>\n  );\n}\n"
+  },
+  {
+    "case": "mdx/root-jsx",
+    "engine": "ferromark",
+    "stage": "segmentation and JSX module emission",
+    "code": "import Card from './Card'\n\nexport function Content() {\n  return (\n    <>\n      <Card>\n      <h1>Heading</h1>\n      </Card>\n    </>\n  );\n}\n"
+  },
+  {
+    "case": "mdx/inline-expression",
+    "engine": "ferromark",
+    "stage": "segmentation and JSX module emission",
+    "code": "export const name = 'World';\n\nexport function Content() {\n  return (\n    <>\n      <p>Hello &#123;name&#125;!</p>\n    </>\n  );\n}\n"
+  },
+  {
+    "case": "mdx/container-jsx",
+    "engine": "ferromark",
+    "stage": "segmentation and JSX module emission",
+    "code": "export function Content() {\n  return (\n    <>\n      <blockquote>\n      <Card>\n      <h1>Heading</h1>\n      </Card>\n      </blockquote>\n    </>\n  );\n}\n"
+  },
+  {
+    "case": "mdx/invalid-javascript",
+    "engine": "ferromark",
+    "stage": "segmentation and JSX module emission",
+    "code": "export const = ;\n\nexport function Content() {\n  return (\n    <>\n      <h1>Heading</h1>\n    </>\n  );\n}\n"
+  }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "case": "switches/0",
+    "engine": "satteri",
+    "flags": 0,
+    "bytes": 92,
+    "html": "<p>| A |\n| --- |\n| B |</p>\n<p>~~old~~</p>\n<ul>\n<li>[x] done</li>\n<li>[ ] pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "Options(0x0); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "switches/1",
+    "engine": "satteri",
+    "flags": 1,
+    "bytes": 92,
+    "html": "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p>~~old~~</p>\n<ul>\n<li>[x] done</li>\n<li>[ ] pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "Options(ENABLE_TABLES); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "switches/2",
+    "engine": "satteri",
+    "flags": 2,
+    "bytes": 92,
+    "html": "<p>| A |\n| --- |\n| B |</p>\n<p><del>old</del></p>\n<ul>\n<li>[x] done</li>\n<li>[ ] pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "Options(ENABLE_STRIKETHROUGH); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "switches/3",
+    "engine": "satteri",
+    "flags": 3,
+    "bytes": 92,
+    "html": "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p><del>old</del></p>\n<ul>\n<li>[x] done</li>\n<li>[ ] pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "Options(ENABLE_TABLES | ENABLE_STRIKETHROUGH); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "switches/4",
+    "engine": "satteri",
+    "flags": 4,
+    "bytes": 92,
+    "html": "<p>| A |\n| --- |\n| B |</p>\n<p>~~old~~</p>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" checked disabled> done</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled> pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "Options(ENABLE_TASKLISTS); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "switches/5",
+    "engine": "satteri",
+    "flags": 5,
+    "bytes": 92,
+    "html": "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p>~~old~~</p>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" checked disabled> done</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled> pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "Options(ENABLE_TABLES | ENABLE_TASKLISTS); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "switches/6",
+    "engine": "satteri",
+    "flags": 6,
+    "bytes": 92,
+    "html": "<p>| A |\n| --- |\n| B |</p>\n<p><del>old</del></p>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" checked disabled> done</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled> pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "Options(ENABLE_STRIKETHROUGH | ENABLE_TASKLISTS); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "switches/7",
+    "engine": "satteri",
+    "flags": 7,
+    "bytes": 92,
+    "html": "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p><del>old</del></p>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" checked disabled> done</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled> pending</li>\n</ul>\n<p>www.example.com</p>\n<script>x</script>\n",
+    "options": "Options(ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_TASKLISTS); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "dialect/single-tilde",
+    "engine": "satteri",
+    "flags": 2,
+    "bytes": 9,
+    "html": "<p><del>single</del></p>\n",
+    "options": "Options(ENABLE_STRIKETHROUGH); mdast_to_html default conversion; positions retained"
+  },
+  {
+    "case": "policy/trusted-urls",
+    "engine": "satteri",
+    "flags": 0,
+    "bytes": 25,
+    "html": "<p><a href=\"javascript:alert\">link</a></p>\n",
+    "options": "Options(0x0); mdast_to_html default conversion; positions retained"
+  }
+]
