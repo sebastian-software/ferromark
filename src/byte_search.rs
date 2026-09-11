@@ -56,9 +56,9 @@ impl<const N: usize> ByteSet<N> {
         {
             let len = input.len();
             if len < 16 {
-                // Building many comparison vectors costs more than the few
-                // scalar table probes needed for a short input.
-                if N > 5 {
+                // Short NEON loads need a padded copy; scalar lookup avoids
+                // that setup. Large sets also favor scalar lookup on SSE2.
+                if N > 5 || cfg!(target_arch = "aarch64") {
                     return self.find_scalar(input);
                 }
                 let mut padded = [0; 16];

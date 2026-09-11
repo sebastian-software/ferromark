@@ -1,6 +1,35 @@
 use ferromark::{Options, Renderer, to_html_with_options};
 
 #[test]
+fn single_paragraph_preserves_references_escapes_policy_and_session_reset() {
+    for policy in [
+        ferromark::RenderPolicy::Trusted,
+        ferromark::RenderPolicy::Untrusted,
+    ] {
+        let options = ferromark::options!(Options::commonmark(); render_policy: policy);
+        let mut renderer = Renderer::with_options(options.clone());
+        let raw_html = if matches!(policy, ferromark::RenderPolicy::Trusted) {
+            "<p>A &amp; B <i>raw</i>.</p>\n"
+        } else {
+            "<p>A &amp; B &lt;i&gt;raw&lt;/i&gt;.</p>\n"
+        };
+        for (input, expected) in [
+            (
+                "[target]: /guide \"Guide\"\n\n**bold** with [a link][target] and \\*literal\\*. \t\n",
+                "<p><strong>bold</strong> with <a href=\"/guide\" title=\"Guide\">a link</a> and *literal*.</p>\n",
+            ),
+            ("A &amp; B <i>raw</i>.", raw_html),
+            ("[target] and *em*.", "<p>[target] and <em>em</em>.</p>\n"),
+            ("first\nsecond", "<p>first\nsecond</p>\n"),
+            ("final", "<p>final</p>\n"),
+        ] {
+            assert_eq!(to_html_with_options(input, &options), expected);
+            assert_eq!(renderer.render(input), expected);
+        }
+    }
+}
+
+#[test]
 fn reusable_renderer_matches_fresh_rendering_across_documents() {
     let options = ferromark::options!(Options::default();
         footnotes: true,
@@ -153,6 +182,34 @@ fn inline_extension_openers_do_not_cross_features_paragraphs_or_documents() {
                 renderer.render(input),
                 to_html_with_options(input, &options)
             );
+        }
+    }
+}
+
+#[test]
+fn table_cells_preserve_inline_content_across_borrowed_escaped_and_empty_cells() {
+    let input = "| A | B | C |\n| --- | --- | --- |\n\
+| *one* | `a\\|b` | [Guide][g] |\n\
+| **two** | plain | [Other](/other) |\n\
+| last |\n\n[g]: /guide\n";
+    let expected = "<table>\n<thead>\n<tr>\n<th>A</th>\n<th>B</th>\n<th>C</th>\n</tr>\n</thead>\n\
+<tbody>\n<tr>\n<td><em>one</em></td>\n<td><code>a|b</code></td>\n<td><a href=\"/guide\">Guide</a></td>\n</tr>\n\
+<tr>\n<td><strong>two</strong></td>\n<td>plain</td>\n<td><a href=\"/other\">Other</a></td>\n</tr>\n\
+<tr>\n<td>last</td>\n<td></td>\n<td></td>\n</tr>\n</tbody>\n</table>\n";
+    for policy in [
+        ferromark::RenderPolicy::Trusted,
+        ferromark::RenderPolicy::Untrusted,
+    ] {
+        let options =
+            ferromark::options!(Options::commonmark(); tables: true, render_policy: policy,);
+        let mut renderer = Renderer::with_options(options.clone());
+        for _ in 0..3 {
+            assert_eq!(renderer.render(input), expected);
+            assert_eq!(to_html_with_options(input, &options), expected);
+            let next =
+                renderer.render("| *open | close* |\n| --- | --- |\n| [Guide][g] | plain |\n");
+            assert!(next.contains("<th>*open</th>\n<th>close*</th>"));
+            assert!(next.contains("<td>[Guide][g]</td>"));
         }
     }
 }

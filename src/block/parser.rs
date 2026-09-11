@@ -275,7 +275,7 @@ impl<'a> BlockParser<'a> {
             input,
             options,
             BlockScratch {
-                link_ref_label_buf: String::with_capacity(64),
+                link_ref_label_buf: String::new(),
                 ..BlockScratch::default()
             },
         )
@@ -3499,76 +3499,72 @@ impl<'a> BlockParser<'a> {
         (base + s, base + e)
     }
 
-    /// Quick pre-filter: a valid delimiter row contains only `-`, `:`, `|`, spaces, and tabs,
-    /// and must have at least one `-`.
-    #[inline]
-    fn could_be_delimiter_row(line: &[u8]) -> bool {
-        let mut has_dash = false;
-        for &b in line {
-            match b {
-                b'-' => has_dash = true,
-                b':' | b'|' | b' ' | b'\t' => {}
-                _ => return false,
-            }
-        }
-        has_dash
-    }
-
     /// Check if a line is a valid GFM table delimiter row.
-    /// Returns column alignments if valid.
+    /// Consume delimiter syntax directly without the content-cell splitter.
     fn is_delimiter_row(line: &[u8]) -> Option<(SmallVec<[Alignment; 8]>, bool)> {
-        if !Self::could_be_delimiter_row(line) {
+        let mut start = 0;
+        let mut end = line.len();
+        while start < end && matches!(line[start], b' ' | b'\t') {
+            start += 1;
+        }
+        while end > start && matches!(line[end - 1], b' ' | b'\t') {
+            end -= 1;
+        }
+        if start < end && line[start] == b'|' {
+            start += 1;
+        }
+        if end > start && line[end - 1] == b'|' {
+            end -= 1;
+        }
+        if start >= end {
             return None;
         }
-        let (cells, truncated) = Self::split_table_cells(line);
-        if cells.is_empty() {
-            return None;
-        }
-
         let mut alignments = SmallVec::new();
-        for cell_range in &cells {
-            let cell = &line[cell_range.start as usize..cell_range.end as usize];
-            if cell.is_empty() {
+        let mut truncated = false;
+        loop {
+            while start < end && matches!(line[start], b' ' | b'\t') {
+                start += 1;
+            }
+            let left_colon = start < end && line[start] == b':';
+            start += usize::from(left_colon);
+            let dash_start = start;
+            while start < end && line[start] == b'-' {
+                start += 1;
+            }
+            if start == dash_start {
                 return None;
             }
-
-            let mut i = 0;
-            let left_colon = cell[i] == b':';
-            if left_colon {
-                i += 1;
+            let right_colon = start < end && line[start] == b':';
+            start += usize::from(right_colon);
+            while start < end && matches!(line[start], b' ' | b'\t') {
+                start += 1;
             }
-
-            // Must have at least one dash
-            let dash_start = i;
-            while i < cell.len() && cell[i] == b'-' {
-                i += 1;
-            }
-            if i == dash_start {
-                return None; // No dashes
-            }
-            let right_colon = i < cell.len() && cell[i] == b':';
-            if right_colon {
-                i += 1;
-            }
-
-            // Must consume entire cell (after trimming)
-            if i != cell.len() {
+            if start < end && line[start] != b'|' {
                 return None;
             }
-
-            let alignment = match (left_colon, right_colon) {
+            alignments.push(match (left_colon, right_colon) {
                 (true, true) => Alignment::Center,
                 (true, false) => Alignment::Left,
                 (false, true) => Alignment::Right,
                 (false, false) => Alignment::None,
-            };
-            alignments.push(alignment);
-
+            });
+            if start == end {
+                break;
+            }
+            start += 1;
             if alignments.len() >= limits::MAX_TABLE_COLUMNS {
+                // Preserve byte validation beyond the cap without collecting
+                // or interpreting additional alignment cells.
+                if line[start..end]
+                    .iter()
+                    .any(|&b| !matches!(b, b'-' | b':' | b'|' | b' ' | b'\t'))
+                {
+                    return None;
+                }
+                truncated = start < end;
                 break;
             }
         }
-
         Some((alignments, truncated))
     }
 
