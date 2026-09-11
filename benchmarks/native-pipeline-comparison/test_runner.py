@@ -55,5 +55,45 @@ class ProtocolTests(unittest.TestCase):
             summarize(broken, ["x"], "satteri", protocol, outputs)
 
 
+
+class EngineReportTests(unittest.TestCase):
+    def test_engine_report_rejects_verification_and_screening_runs(self):
+        from pathlib import Path
+        from report import render_engine
+        for mode in ("verify", "screening"):
+            metadata = {"protocol": {"mode": mode}, "started_unix": 1, "finished_unix": 2,
+                "build": {"adapter": {"name": "candidate", "label": "Candidate"}}}
+            with self.subTest(mode=mode), self.assertRaisesRegex(ValueError, "full measurements"):
+                render_engine(Path("unused"), metadata)
+
+
+class WorkerCommandTests(unittest.TestCase):
+    def test_registered_executables_are_independent_of_the_callers_directory(self):
+        from common import validate_worker_command
+        command = ["/tmp/build/engine-driver", "--native"]
+        self.assertEqual(validate_worker_command(command), command)
+        for invalid in ([], "driver", ["driver"], ["./driver"], ["/tmp/driver", 1]):
+            with self.assertRaisesRegex(ValueError, "absolute executable"):
+                validate_worker_command(invalid)
+
+
+class EngineArchiveTests(unittest.TestCase):
+    def test_registered_engine_archives_regenerate_and_match_checksums(self):
+        import hashlib
+        from common import REPO
+        from report import load, render
+        for metadata_path in sorted((REPO / "docs/reports").glob("*/metadata.json.gz")):
+            folder = metadata_path.parent
+            metadata = load(folder / "metadata.json")
+            build = metadata.get("build", {})
+            if not isinstance(build, dict) or "adapter" not in build:
+                continue
+            with self.subTest(archive=folder.name):
+                self.assertEqual((folder / "REPORT.md").read_text(), render(folder))
+                for line in (folder / "SHA256SUMS").read_text().splitlines():
+                    digest, name = line.split("  ", 1)
+                    self.assertEqual(hashlib.sha256((folder / name).read_bytes()).hexdigest(), digest)
+
+
 if __name__ == "__main__":
     unittest.main()
