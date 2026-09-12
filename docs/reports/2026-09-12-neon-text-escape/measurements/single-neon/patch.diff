@@ -1,0 +1,23 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -86,6 +86,12 @@
+ 
+ #[inline]
+ pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    {
++    TEXT_SPECIALS.find(input)
++    }
++    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
++    {
+     if input.len() <= SHORT_SCAN_MAX {
+         return first_escape_short::<false>(input);
+     }
+@@ -94,6 +100,7 @@
+     // second pass never scans past it.
+     let limit = a.unwrap_or(input.len());
+     memchr(b'"', &input[..limit]).or(a)
++    }
+ }
+ 
+ #[inline]

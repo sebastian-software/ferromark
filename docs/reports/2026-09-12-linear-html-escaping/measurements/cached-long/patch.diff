@@ -1,0 +1,46 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -20,6 +20,11 @@
+ #[inline]
+ pub fn escape_text_into(out: &mut Vec<u8>, input: &[u8]) {
+     if input.is_empty() {
++        return;
++    }
++
++    if input.len() > SHORT_SCAN_MAX {
++        escape_cached::<false>(out, input);
+         return;
+     }
+ 
+@@ -43,6 +48,11 @@
+ #[inline]
+ pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
+     if input.is_empty() {
++        return;
++    }
++
++    if input.len() > SHORT_SCAN_MAX {
++        escape_cached::<true>(out, input);
+         return;
+     }
+ 
+@@ -576,3 +586,19 @@
+         }
+     }
+ }
++
++#[inline(never)]
++fn escape_cached<const ATTR: bool>(out: &mut Vec<u8>, input: &[u8]) {
++    let mut start = 0;
++    let mut common = memchr3(b'<', b'>', b'&', input).unwrap_or(input.len());
++    let mut quote = if ATTR { memchr2(b'"', b'\'', input) } else { memchr(b'"', input) }.unwrap_or(input.len());
++    loop {
++        let at = common.min(quote);
++        out.extend_from_slice(&input[start..at]);
++        if at == input.len() { break; }
++        if ATTR { push_attr_escape(out, input[at]); } else { push_text_escape(out, input[at]); }
++        start = at + 1;
++        if at == common { common = memchr3(b'<', b'>', b'&', &input[start..]).map_or(input.len(), |i| start + i); }
++        else { quote = if ATTR { memchr2(b'"', b'\'', &input[start..]) } else { memchr(b'"', &input[start..]) }.map_or(input.len(), |i| start + i); }
++    }
++}

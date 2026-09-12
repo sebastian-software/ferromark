@@ -1,0 +1,42 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -17,14 +17,38 @@
+ /// escape_text_into(&mut out, b"<script>");
+ /// assert_eq!(out, b"&lt;script&gt;");
+ /// ```
+-#[inline]
++#[cfg_attr(all(target_arch = "aarch64", target_feature = "neon"), inline(always))]
++#[cfg_attr(not(all(target_arch = "aarch64", target_feature = "neon")), inline)]
+ pub fn escape_text_into(out: &mut Vec<u8>, input: &[u8]) {
+     if input.is_empty() {
+         return;
+     }
+ 
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    if input.len() > SHORT_SCAN_MAX {
++        escape_text_long_neon(out, input);
++        return;
++    }
++
+     let mut start = 0usize;
+     while let Some(rel) = first_text_escape(&input[start..]) {
++        let pos = start + rel;
++        if pos > start {
++            out.extend_from_slice(&input[start..pos]);
++        }
++        push_text_escape(out, input[pos]);
++        start = pos + 1;
++    }
++    if start < input.len() {
++        out.extend_from_slice(&input[start..]);
++    }
++}
++
++#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++#[inline(never)]
++fn escape_text_long_neon(out: &mut Vec<u8>, input: &[u8]) {
++    let mut start = 0usize;
++    while let Some(rel) = TEXT_SPECIALS.find(&input[start..]) {
+         let pos = start + rel;
+         if pos > start {
+             out.extend_from_slice(&input[start..pos]);
