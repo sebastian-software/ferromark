@@ -1,0 +1,94 @@
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -1089,16 +1089,11 @@
+         }
+ 
+         // Add link events
+-        for link in resolved_links {
++        for (link_index, link) in resolved_links.iter().enumerate() {
+             if link.is_image {
+                 emit_points.push(EmitPoint {
+                     pos: link.start,
+-                    kind: EmitKind::ImageStart {
+-                        url_start: link.url_start,
+-                        url_end: link.url_end,
+-                        title_start: link.title_start,
+-                        title_end: link.title_end,
+-                    },
++                    kind: EmitKind::ImageStart { link_index: link_index as u32 },
+                     end: link.start + 2, // ![
+                 });
+                 emit_points.push(EmitPoint {
+@@ -1109,12 +1104,7 @@
+             } else {
+                 emit_points.push(EmitPoint {
+                     pos: link.start,
+-                    kind: EmitKind::LinkStart {
+-                        url_start: link.url_start,
+-                        url_end: link.url_end,
+-                        title_start: link.title_start,
+-                        title_end: link.title_end,
+-                    },
++                    kind: EmitKind::LinkStart { link_index: link_index as u32 },
+                     end: link.start + 1, // [
+                 });
+                 emit_points.push(EmitPoint {
+@@ -1528,12 +1518,10 @@
+                     events.push(InlineEvent::SoftBreak);
+                     skip_until = point.end;
+                 }
+-                EmitKind::LinkStart {
+-                    url_start,
+-                    url_end,
+-                    title_start,
+-                    title_end,
+-                } => {
++                EmitKind::LinkStart { link_index } => {
++                    let link = &resolved_links[link_index as usize];
++                    let (url_start, url_end, title_start, title_end) =
++                        (link.url_start, link.url_end, link.title_start, link.title_end);
+                     events.push(InlineEvent::LinkStart {
+                         url: Range::from_usize(url_start as usize, url_end as usize),
+                         title: title_start
+@@ -1551,12 +1539,10 @@
+                     events.push(InlineEvent::LinkEnd);
+                     skip_until = point.end;
+                 }
+-                EmitKind::ImageStart {
+-                    url_start,
+-                    url_end,
+-                    title_start,
+-                    title_end,
+-                } => {
++                EmitKind::ImageStart { link_index } => {
++                    let link = &resolved_links[link_index as usize];
++                    let (url_start, url_end, title_start, title_end) =
++                        (link.url_start, link.url_end, link.title_start, link.title_end);
+                     events.push(InlineEvent::ImageStart {
+                         url: Range::from_usize(url_start as usize, url_end as usize),
+                         title: title_start
+@@ -1881,22 +1867,12 @@
+     Escape(u8),
+     HardBreak,
+     SoftBreak,
+-    LinkStart {
+-        url_start: u32,
+-        url_end: u32,
+-        title_start: Option<u32>,
+-        title_end: Option<u32>,
+-    },
++    LinkStart { link_index: u32 },
+     LinkStartRef {
+         def_index: u32,
+     },
+     LinkEnd,
+-    ImageStart {
+-        url_start: u32,
+-        url_end: u32,
+-        title_start: Option<u32>,
+-        title_end: Option<u32>,
+-    },
++    ImageStart { link_index: u32 },
+     ImageStartRef {
+         def_index: u32,
+     },

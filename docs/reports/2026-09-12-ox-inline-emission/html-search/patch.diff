@@ -1,0 +1,24 @@
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -1966,7 +1966,6 @@
+     spans: &mut Vec<HtmlSpan>,
+ ) {
+     spans.clear();
+-    let len = text.len();
+ 
+     code_ranges.clear();
+     code_ranges.reserve(code_spans.len().saturating_sub(code_ranges.capacity()));
+@@ -1990,11 +1989,8 @@
+     let mut autolink_idx = 0usize;
+ 
+     let mut pos = 0usize;
+-    while pos < len {
+-        if text[pos] != b'<' {
+-            pos += 1;
+-            continue;
+-        }
++    while let Some(offset) = memchr(b'<', &text[pos..]) {
++        pos += offset;
+         if is_escaped(text, pos) {
+             pos += 1;
+             continue;

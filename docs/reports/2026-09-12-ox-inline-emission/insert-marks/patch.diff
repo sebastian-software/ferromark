@@ -1,0 +1,78 @@
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -1306,6 +1306,8 @@
+             });
+         }
+ 
++        let mark_points_start = emit_points.len();
++
+         // Add backslash escapes and hard breaks
+         // Note: Hard breaks inside code spans should not be processed
+         for mark in marks {
+@@ -1370,24 +1372,21 @@
+             }
+         }
+ 
+-        // Sort by position (end events come after start events at same position)
+-        emit_points.sort_unstable_by_key(|p| {
+-            (
+-                p.pos,
+-                matches!(
+-                    p.kind,
+-                    EmitKind::CodeSpanEnd
+-                        | EmitKind::StrongEnd
+-                        | EmitKind::EmphasisEnd
+-                        | EmitKind::StrikethroughEnd
+-                        | EmitKind::SubscriptEnd
+-                        | EmitKind::SuperscriptEnd
+-                        | EmitKind::HighlightEnd
+-                        | EmitKind::LinkEnd
+-                        | EmitKind::ImageEnd
+-                ),
+-            )
+-        });
++        let mark_count = emit_points.len() - mark_points_start;
++        if mark_points_start != 0 {
++            if mark_count != 0 && mark_count <= 16 && emit_points.len() <= 128 {
++                emit_points[..mark_points_start].sort_unstable_by_key(emit_point_key);
++                for index in mark_points_start..emit_points.len() {
++                    let point = emit_points[index];
++                    let key = emit_point_key(&point);
++                    let insertion = emit_points[..index].partition_point(|p| emit_point_key(p) <= key);
++                    emit_points.copy_within(insertion..index, insertion + 1);
++                    emit_points[insertion] = point;
++                }
++            } else {
++                emit_points.sort_unstable_by_key(emit_point_key);
++            }
++        }
+ 
+         // Build ranges to suppress (reference labels after link text)
+         suppress_ranges.clear();
+@@ -1852,6 +1851,26 @@
+     content_start: u32,
+     /// End of note content.
+     content_end: u32,
++}
++
++
++#[inline]
++fn emit_point_key(p: &EmitPoint) -> (u32, bool) {
++            (
++                p.pos,
++                matches!(
++                    p.kind,
++                    EmitKind::CodeSpanEnd
++                        | EmitKind::StrongEnd
++                        | EmitKind::EmphasisEnd
++                        | EmitKind::StrikethroughEnd
++                        | EmitKind::SubscriptEnd
++                        | EmitKind::SuperscriptEnd
++                        | EmitKind::HighlightEnd
++                        | EmitKind::LinkEnd
++                        | EmitKind::ImageEnd
++                ),
++            )
+ }
+ 
+ #[derive(Debug, Clone, Copy)]

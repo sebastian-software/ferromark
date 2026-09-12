@@ -1,0 +1,70 @@
+baseline-108-1.txt.gz 4547 samples {'harness/runtime': {'samples': 13, 'pct': 0.29}, 'remaining Ferromark pipeline/render': {'samples': 1741, 'pct': 38.29}, 'visible inline frames': {'samples': 953, 'pct': 20.96}, 'visible block frames': {'samples': 1840, 'pct': 40.47}} allocator 5.5
+  16.41 <ferromark::inline::InlineParser>::parse_with_options_in_document
+  15.15 <ferromark::block::parser::BlockParser>::parse
+  8.69 <ferromark::block::parser::BlockParser>::parse_fence_line_in_container
+  5.5 _platform_memmove
+  5.19 <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event
+  4.95 ferromark::escape::first_text_escape
+baseline-108-2.txt.gz 4536 samples {'harness/runtime': {'samples': 8, 'pct': 0.18}, 'remaining Ferromark pipeline/render': {'samples': 1690, 'pct': 37.26}, 'visible inline frames': {'samples': 947, 'pct': 20.88}, 'visible block frames': {'samples': 1891, 'pct': 41.69}} allocator 4.78
+  16.78 <ferromark::inline::InlineParser>::parse_with_options_in_document
+  16.75 <ferromark::block::parser::BlockParser>::parse
+  9.22 <ferromark::block::parser::BlockParser>::parse_fence_line_in_container
+  5.16 ferromark::escape::first_text_escape
+  5.07 _platform_memmove
+  4.67 ferromark::render_inline_content
+baseline-487-1.txt.gz 4531 samples {'harness/runtime': {'samples': 10, 'pct': 0.22}, 'remaining Ferromark pipeline/render': {'samples': 1374, 'pct': 30.32}, 'visible inline frames': {'samples': 2197, 'pct': 48.49}, 'visible block frames': {'samples': 950, 'pct': 20.97}} allocator 3.64
+  35.93 <ferromark::inline::InlineParser>::parse_with_options_in_document
+  8.78 ferromark::render_inline_content
+  6.0 core::slice::sort::shared::smallsort::small_sort_general::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#1}>::{closure#0}>
+  4.9 <ferromark::block::parser::BlockParser>::parse
+  4.41 <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event
+  4.33 <ferromark::block::parser::BlockParser>::parse_paragraph_line
+baseline-487-2.txt.gz 4542 samples {'harness/runtime': {'samples': 14, 'pct': 0.31}, 'remaining Ferromark pipeline/render': {'samples': 1320, 'pct': 29.06}, 'visible inline frames': {'samples': 2245, 'pct': 49.43}, 'visible block frames': {'samples': 963, 'pct': 21.2}} allocator 3.87
+  36.24 <ferromark::inline::InlineParser>::parse_with_options_in_document
+  8.74 ferromark::render_inline_content
+  5.97 core::slice::sort::shared::smallsort::small_sort_general::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#1}>::{closure#0}>
+  5.37 <ferromark::block::parser::BlockParser>::parse
+  4.27 <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event
+  4.05 <ferromark::block::parser::BlockParser>::parse_paragraph_line
+baseline-613-1.txt.gz 4538 samples {'harness/runtime': {'samples': 10, 'pct': 0.22}, 'remaining Ferromark pipeline/render': {'samples': 736, 'pct': 16.22}, 'visible block frames': {'samples': 3664, 'pct': 80.74}, 'visible inline frames': {'samples': 128, 'pct': 2.82}} allocator 2.53
+  20.89 <ferromark::block::parser::BlockParser>::find_line_end
+  19.94 <ferromark::block::parser::BlockParser>::parse_html_block_line
+  13.95 <ferromark::block::parser::BlockParser>::peek_html_block_start
+  11.77 <ferromark::block::parser::BlockParser>::parse
+  5.71 <ferromark::block::parser::BlockParser>::match_containers
+  3.94 core::str::converts::from_utf8
+baseline-613-2.txt.gz 4534 samples {'harness/runtime': {'samples': 10, 'pct': 0.22}, 'remaining Ferromark pipeline/render': {'samples': 751, 'pct': 16.56}, 'visible block frames': {'samples': 3659, 'pct': 80.7}, 'visible inline frames': {'samples': 114, 'pct': 2.51}} allocator 2.43
+  21.31 <ferromark::block::parser::BlockParser>::find_line_end
+  20.78 <ferromark::block::parser::BlockParser>::parse_html_block_line
+  12.92 <ferromark::block::parser::BlockParser>::peek_html_block_start
+  10.81 <ferromark::block::parser::BlockParser>::parse
+  6.04 <ferromark::block::parser::BlockParser>::match_containers
+  3.93 core::str::converts::from_utf8
+baseline-7-1.txt.gz 4533 samples {'harness/runtime': {'samples': 1, 'pct': 0.02}, 'remaining Ferromark pipeline/render': {'samples': 1593, 'pct': 35.14}, 'visible inline frames': {'samples': 2706, 'pct': 59.7}, 'visible block frames': {'samples': 233, 'pct': 5.14}} allocator 2.27
+  47.14 <ferromark::inline::InlineParser>::parse_with_options_in_document
+  10.59 ferromark::render_inline_content
+  7.28 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#1}>::{closure#0}>
+  4.74 ferromark::escape::url_escape_link_destination_raw
+  4.68 _platform_memmove
+  4.3 ferromark::inline::marks::compute_emphasis_flags_with_context
+baseline-7-2.txt.gz 4543 samples {'harness/runtime': {'samples': 1, 'pct': 0.02}, 'remaining Ferromark pipeline/render': {'samples': 1598, 'pct': 35.17}, 'visible inline frames': {'samples': 2670, 'pct': 58.77}, 'visible block frames': {'samples': 274, 'pct': 6.03}} allocator 1.96
+  45.92 <ferromark::inline::InlineParser>::parse_with_options_in_document
+  10.43 ferromark::render_inline_content
+  7.75 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#1}>::{closure#0}>
+  5.15 ferromark::escape::url_escape_link_destination_raw
+  4.82 _platform_memmove
+  4.09 ferromark::inline::marks::compute_emphasis_flags_with_context
+baseline-79-1.txt.gz 4460 samples {'harness/runtime': {'samples': 9, 'pct': 0.2}, 'remaining Ferromark pipeline/render': {'samples': 1521, 'pct': 34.1}, 'visible inline frames': {'samples': 2175, 'pct': 48.77}, 'visible block frames': {'samples': 755, 'pct': 16.93}} allocator 7.6
+  41.14 <ferromark::inline::InlineParser>::parse_with_options_in_document
+  6.77 ferromark::render_inline_content
+  5.47 <ferromark::block::parser::BlockParser>::parse
+  4.91 _platform_memmove
+  4.48 ferromark::escape::first_text_escape
+  2.98 <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event
+baseline-79-2.txt.gz 4537 samples {'harness/runtime': {'samples': 8, 'pct': 0.18}, 'remaining Ferromark pipeline/render': {'samples': 1495, 'pct': 32.95}, 'visible inline frames': {'samples': 2302, 'pct': 50.74}, 'visible block frames': {'samples': 732, 'pct': 16.13}} allocator 8.2
+  42.21 <ferromark::inline::InlineParser>::parse_with_options_in_document
+  6.19 ferromark::render_inline_content
+  4.92 <ferromark::block::parser::BlockParser>::parse
+  4.72 _platform_memmove
+  4.28 ferromark::escape::first_text_escape
+  3.04 <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event
