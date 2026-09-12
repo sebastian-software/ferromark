@@ -1,0 +1,78 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -2533,6 +2533,7 @@
+     inline_events.clear();
+     inline_events.reserve((text.len() / 8).max(8));
+     let refs = options.allow_link_refs.then_some(link_refs);
++    inline_parser.coalesce_softbreaks = true;
+     inline_parser.parse_with_options_in_document(
+         text,
+         refs,
+@@ -2547,6 +2548,7 @@
+         footnote_store,
+         inline_events,
+     );
++    inline_parser.coalesce_softbreaks = false;
+     #[cfg(feature = "profiling")]
+     profiling::record_inline_events(inline_events, inline_events.capacity());
+ 
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -45,6 +45,7 @@
+ 
+ /// Inline parser state.
+ pub struct InlineParser {
++    pub(crate) coalesce_softbreaks: bool,
+     /// Reusable mark buffer.
+     mark_buffer: MarkBuffer,
+     open_brackets: Vec<(u32, bool)>,
+@@ -96,6 +97,7 @@
+     /// Create a new inline parser.
+     pub fn new() -> Self {
+         Self {
++            coalesce_softbreaks: false,
+             mark_buffer: MarkBuffer::new(),
+             open_brackets: Vec::new(),
+             close_brackets: Vec::new(),
+@@ -752,6 +754,7 @@
+             &mut self.emit_points,
+             &mut self.emit_suppress_ranges,
+             events,
++            self.coalesce_softbreaks,
+         );
+         #[cfg(feature = "profiling")]
+         crate::profiling::record_inline_parse(
+@@ -996,6 +999,7 @@
+         emit_points: &mut Vec<EmitPoint>,
+         suppress_ranges: &mut Vec<(u32, u32)>,
+         events: &mut Vec<InlineEvent>,
++        coalesce_softbreaks: bool,
+     ) {
+         let mut pos = 0u32;
+         let text_len = text.len() as u32;
+@@ -1004,6 +1008,11 @@
+         let mut autolink_idx = 0usize;
+         let mut html_idx = 0usize;
+         let mut autolink_span_idx = 0usize;
++
++        let coalesce_softbreaks = coalesce_softbreaks && code_spans.is_empty()
++            && memchr::memchr2(0, b"\r"[0], text).is_none()
++            && !resolved_links.iter().any(|link| link.is_image)
++            && !resolved_ref_links.iter().any(|link| link.is_image);
+ 
+         // Build sorted list of events to emit
+         let estimated_events = marks.len()
+@@ -1355,6 +1364,13 @@
+                 if in_code || in_link_dest || in_html {
+                     continue;
+                 }
++                // Diagnostic private-render experiment: preserve literal LF in text.
++                let at = mark.pos as usize;
++                if coalesce_softbreaks && mark.end == mark.pos + 1 && at > 0
++                    && at + 1 < text.len()
++                    && !matches!(text[at - 1], b' ' | b'\t' | b'\r' | b'\n')
++                    && !matches!(text[at + 1], b' ' | b'\t' | b'\r' | b'\n')
++                { continue; }
+                 // Soft break (newline without 2+ spaces) - also not in code or link destinations
+                 emit_points.push(EmitPoint {
+                     pos: mark.pos,

@@ -1,0 +1,12 @@
+--- a/src/inline/links.rs
++++ b/src/inline/links.rs
+@@ -789,6 +789,9 @@
+     let content_end = pos;
+     let content = &text[content_start..content_end];
+ 
++    // A valid URI needs a colon; a valid email needs an at sign.
++    if memchr::memchr2(b':', b'@', content).is_none() { return None; }
++
+     // Check if it's a valid URL or email
+     if is_uri_autolink(content) {
+         Some(Autolink {

@@ -1,0 +1,36 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -23,6 +23,25 @@
+         return;
+     }
+ 
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    {
++    let mut start = 0usize;
++    let mut next = first_text_escape(input);
++    while let Some(rel) = next {
++        let pos = start + rel;
++        if pos > start {
++            out.extend_from_slice(&input[start..pos]);
++        }
++        push_text_escape(out, input[pos]);
++        start = pos + 1;
++        next = TEXT_SPECIALS.find(&input[start..]);
++    }
++    if start < input.len() {
++        out.extend_from_slice(&input[start..]);
++    }
++    }
++    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
++    {
+     let mut start = 0usize;
+     while let Some(rel) = first_text_escape(&input[start..]) {
+         let pos = start + rel;
+@@ -34,6 +53,7 @@
+     }
+     if start < input.len() {
+         out.extend_from_slice(&input[start..]);
++    }
+     }
+ }
+ 

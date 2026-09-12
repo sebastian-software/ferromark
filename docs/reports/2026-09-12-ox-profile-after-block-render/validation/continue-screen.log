@@ -1,0 +1,29 @@
+Built softbreak-no-code
+Verified softbreak-no-code 2695 failures 0
+softbreak-no-code timing guards 93 failures 0
+softbreak-no-code 20740 block/MDX/HTML guards; failures 0
+softbreak-no-code 16374 extra event/HTML guards; failures 0
+softbreak-no-code 60000 extra event/HTML guards; failures 0
+softbreak-no-code 12000 fence block/MDX/HTML guards; failures 267
+Traceback (most recent call last):
+  File "/private/tmp/ferromark-ox-round7/experiments/verify-fences.py", line 13, in <module>
+    assert not failed
+           ^^^^^^^^^^
+AssertionError
+Rejected incorrect variant softbreak-no-code
+Built escape-short-copy
+Verified escape-short-copy 2695 failures 0
+escape-short-copy timing guards 93 failures 0
+escape-short-copy 20740 block/MDX/HTML guards; failures 0
+escape-short-copy 16374 extra event/HTML guards; failures 0
+escape-short-copy 60000 extra event/HTML guards; failures 0
+escape-short-copy 12000 fence block/MDX/HTML guards; failures 0
+escape-short-copy median -0.1 ox-large-cm=-0.0% ox-huge-tables=-6.2% short=-2.3% multiline=0.2% inline=1.5% code=1.0% tables=0.3% corpus/vue-docs/src/api/application.md=-0.0% corpus/vue-docs/src/guide/built-ins/suspense.md=-0.3% corpus/vue-docs/src/guide/extras/render-function.md=-0.2% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-3.5% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-0.3% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=0.3%
+Built escape-single-scan
+Verified escape-single-scan 2695 failures 0
+escape-single-scan timing guards 93 failures 0
+escape-single-scan 20740 block/MDX/HTML guards; failures 0
+escape-single-scan 16374 extra event/HTML guards; failures 0
+escape-single-scan 60000 extra event/HTML guards; failures 0
+escape-single-scan 12000 fence block/MDX/HTML guards; failures 0
+escape-single-scan median -1.0 ox-large-cm=-1.5% ox-huge-tables=-0.5% short=2.0% multiline=-2.0% inline=1.5% code=-2.1% tables=-0.8% corpus/vue-docs/src/api/application.md=-0.6% corpus/vue-docs/src/guide/built-ins/suspense.md=-1.3% corpus/vue-docs/src/guide/extras/render-function.md=-2.3% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-1.4% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-1.2% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=0.0%

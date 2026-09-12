@@ -1,0 +1,30 @@
+--- a/src/inline/marks.rs
++++ b/src/inline/marks.rs
+@@ -285,6 +285,7 @@
+     collect_marks_impl::<true, true>(text, buffer)
+ }
+ 
++#[inline(never)]
+ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+     text: &[u8],
+     buffer: &mut MarkBuffer,
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -973,6 +973,7 @@
+ 
+     /// Emit events based on resolved marks.
+     #[allow(clippy::too_many_arguments)]
++    #[inline(never)]
+     fn emit_events(
+         marks: &[Mark],
+         text: &[u8],
+--- a/src/inline/links.rs
++++ b/src/inline/links.rs
+@@ -751,6 +751,7 @@
+ }
+ 
+ /// Find autolinks in text, appending results into the provided buffer.
++#[inline(never)]
+ pub fn find_autolinks_into(text: &[u8], out: &mut Vec<Autolink>) {
+     out.clear();
+     let mut pos = 0;

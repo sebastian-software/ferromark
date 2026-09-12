@@ -1,0 +1,71 @@
+[
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--locked",
+      "--all-features"
+    ],
+    "exit_code": 0,
+    "log": "check-1.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "--all-targets",
+      "--all-features",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "log": "check-2.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "ferro-byte-search",
+      "--locked"
+    ],
+    "exit_code": 0,
+    "log": "check-3.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "-p",
+      "ferro-byte-search",
+      "--all-targets",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "log": "check-4.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "fmt",
+      "--check"
+    ],
+    "exit_code": 0,
+    "log": "check-5.log"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "./scripts/test-benchmark-ci-contract.mjs",
+      "./scripts/test-profiling-scripts.mjs"
+    ],
+    "exit_code": 0,
+    "log": "check-6.log"
+  }
+]
