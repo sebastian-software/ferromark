@@ -33,7 +33,7 @@ for summary_file in root.rglob('summary.json'):
 print(f'Checksums and {checked} paired timing summaries passed')
 
 corpus_checked = 0
-for summary_file in (root / 'corpus').glob('final-*-summary.json'):
+for summary_file in (root / 'corpus').rglob('final-*-summary.json'):
     raw_file = summary_file.with_name(summary_file.name.replace('-summary.json', '-raw.jsonl.gz'))
     raw = [json.loads(line) for line in gzip.decompress(raw_file.read_bytes()).splitlines()]
     for summary in json.loads(summary_file.read_text()):
@@ -47,7 +47,7 @@ for summary_file in (root / 'corpus').glob('final-*-summary.json'):
             corpus_checked += 1
 print(f'{corpus_checked} corpus engine/input summaries passed')
 
-for source in ['baseline', 'production']:
+for source in ['baseline', 'production', 'pre-ci-production']:
     folder = root / 'memory' / source
     summaries = json.loads((folder / 'summary.json').read_text())
     raw = [json.loads(line) for line in gzip.decompress((folder / 'raw.jsonl.gz').read_bytes()).splitlines()]
@@ -69,3 +69,19 @@ for before, after in zip(baseline, production):
     assert before['input_bytes'] == after['input_bytes']
     assert before['html_sha256'] == after['html_sha256']
 print('All raw allocation observations reproduce the summaries; HTML identities match')
+
+metadata = json.loads((root / 'metadata.json').read_text())
+for source in (root / 'production-source').rglob('*.rs'):
+    name = str(source.relative_to(root / 'production-source'))
+    assert hashlib.sha256(source.read_bytes()).hexdigest() == metadata['production_source_hashes'][name]
+checked_sources = 0
+for variant in (root / 'variants').iterdir():
+    record = root / variant.name / 'source.json'
+    if not record.exists():
+        continue
+    expected = json.loads(record.read_text())
+    for source in variant.rglob('*.rs'):
+        name = str(source.relative_to(variant))
+        assert hashlib.sha256(source.read_bytes()).hexdigest() == expected[name], (variant.name, name)
+    checked_sources += 1
+print(f'Production and {checked_sources} exploratory/follow-up source snapshots match their build identities')

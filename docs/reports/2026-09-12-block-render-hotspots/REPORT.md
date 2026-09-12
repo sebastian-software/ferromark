@@ -20,10 +20,10 @@ contains the production change relative to the frozen baseline.
 
 | Document | Baseline µs | Production µs | Relative changes across three pairs |
 | --- | ---: | ---: | --- |
-| Compiler Options | 30.470 | 27.113 | -11.16%, -10.94%, -11.23% |
-| Compiler Options in MSBuild | 17.791 | 16.174 | -9.63%, -9.52%, -7.14% |
-| Vue render function | 44.457 | 38.544 | -12.34%, -13.86%, -13.30% |
-| Vue Suspense | 17.115 | 16.626 | -2.87%, -2.71%, -2.33% |
+| Compiler Options | 30.408 | 27.164 | -10.64%, -10.62%, -10.67% |
+| Compiler Options in MSBuild | 17.810 | 16.162 | -9.35%, -9.49%, -8.57% |
+| Vue render function | 44.071 | 38.435 | -12.73%, -13.50%, -12.59% |
+| Vue Suspense | 17.078 | 16.674 | -2.25%, -2.37%, -2.32% |
 
 0 of 93 inputs are more than 2% slower in all three pairs. Individual changes and all raw observations remain visible in RESULTS.md.
 
@@ -66,7 +66,7 @@ The ranked hypotheses were tested separately before combinations:
 - **Earlier event compaction.** Merging every code/HTML emission adds overhead to
   indented and container cases. The retained version instead defers root HTML
   continuation emission until the block ends and borrows an unindented root
-  fence's complete body. Public block/MDX streams remain line-based. Filtered
+  fence's complete body. Public block/MDX streams retain their existing granularity. Filtered
   trusted HTML retains its original slices for tag-filter lookahead; prefix
   removal and virtual spaces continue through the existing renderer.
 - **UTF-8 validation.** A whole-output `is_ascii` check followed by the standard
@@ -80,8 +80,11 @@ Compaction alone does not remove an input-sized reservation. Uniformly smaller
 reservation ratios and a fixed cap were therefore measured independently. The
 retained adaptive variant starts with 64 slots and parses until 64 events or EOF
 before applying the previous `input.len() / 16` hint. Already-sized reused buffers
-and short inputs skip that initial phase. Event-rich documents retain the hint;
-large compact streams avoid it. Ordinary EOF cleanup runs through the same parser.
+and short inputs skip that initial phase. If input remains after that phase, the parser applies the hint;
+large compact streams avoid it. The threshold is checked between parser calls.
+A single uncompacted block can consume the remaining input and grow its buffer
+naturally before the threshold is checked, which explains additional allocations
+in some large indented fences. Ordinary EOF cleanup runs through the same parser.
 
 The candidate directories preserve source hashes, patches, guards and raw windows.
 `variants/` contains the exact exploratory sources, including the attribution
@@ -155,6 +158,17 @@ normalized outputs support a comparison; unequal outputs remain explicit
 diagnostics. Absolute times from that driver must not be subtracted from the
 optimization driver's times. The pinned build and input provenance are documented
 in the earlier [Ox investigation](../2026-09-12-ox-corpus-profiling/REPORT.md).
+
+## CI compiler follow-up
+
+CI's Clippy 1.98 flags `chunks_exact(4096)` in favor of `as_chunks::<4096>().0`.
+The fixed-size array view retains the same ASCII proof and UTF-8 error contract,
+but it changes several generated instructions. All final production measurements
+and output checks were therefore repeated on the corrected source. The original
+implementation's measurements, source identity and profiles remain archived under
+`pre-ci-production`, `memory/pre-ci-production`, `corpus/pre-ci`, `large/pre-ci`,
+and the `pre-ci-production` profile prefix. The current result tables use the
+corrected production source.
 
 ## Remaining profile costs
 

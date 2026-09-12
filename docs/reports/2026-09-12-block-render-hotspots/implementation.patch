@@ -337,7 +337,7 @@ index bb3c7ab..0400915 100644
      let link_refs = shared_link_refs.unwrap_or(&segment_link_refs);
      let fn_store_ref = footnote_store.as_ref();
 diff --git a/src/render.rs b/src/render.rs
-index 99e58c4..8b01da2 100644
+index 99e58c4..3c0b84e 100644
 --- a/src/render.rs
 +++ b/src/render.rs
 @@ -416,7 +416,30 @@ impl HtmlWriter {
@@ -355,7 +355,7 @@ index 99e58c4..8b01da2 100644
 +    #[inline(never)]
 +    fn into_string_with_ascii_prefix(self) -> Result<String, std::string::FromUtf8Error> {
 +        let mut ascii_prefix = 0;
-+        for chunk in self.out.chunks_exact(4096) {
++        for chunk in self.out.as_chunks::<4096>().0 {
 +            if chunk.iter().fold(0_u8, |bits, byte| bits | byte) & 0x80 != 0 {
 +                break;
 +            }

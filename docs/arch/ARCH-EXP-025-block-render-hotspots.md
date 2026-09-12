@@ -25,13 +25,15 @@ a proof that covers the public byte-oriented writer.
    continuation emission until the block ends; unindented root fences borrow one
    body range. Indented/container code and filtered trusted HTML retain their
    existing boundaries. Public block events, MDX metadata and MDX event streams
-   remain line-based. No public parser mode is added.
+   retain their existing granularity. No public parser mode is added.
 4. Start fresh rendering with a small event buffer. For larger inputs, parse until
    there are 64 events or EOF before applying the existing input-size reservation
    hint. Short inputs and already-sized reused buffers skip this initial phase.
    Large documents with compact event streams therefore avoid a reservation based
-   only on source bytes; event-rich documents retain the reservation strategy
-   established in ARCH-EXP-006.
+   only on source bytes. When input remains after that phase, the parser uses the
+   reservation strategy established in ARCH-EXP-006. The threshold is checked
+   between parser calls: a single uncompacted block can consume the remaining
+   input and grow the buffer naturally before that check, adding allocations.
 5. Keep UTF-8 validation local to `HtmlWriter::into_string`. For larger outputs,
    an OR reduction proves successive 4096-byte blocks are ASCII. Standard UTF-8
    validation checks the remaining suffix. Only those two successful proofs
