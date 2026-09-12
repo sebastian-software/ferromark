@@ -263,7 +263,10 @@ impl<const N: usize> ByteSet<N> {
         // lookup arrays each contain a complete readable 16-byte vector.
         unsafe {
             let v = vld1q_u8(input.as_ptr());
-            if self.nibble_valid {
+            if N == 1 {
+                // A single needle needs one equality instead of two table lookups.
+                vceqq_u8(v, vdupq_n_u8(self.bytes[0]))
+            } else if self.nibble_valid {
                 let lo = vqtbl1q_u8(vld1q_u8(self.low.as_ptr()), vandq_u8(v, vdupq_n_u8(15)));
                 let hi = vqtbl1q_u8(vld1q_u8(self.high.as_ptr()), vshrq_n_u8::<4>(v));
                 vtstq_u8(lo, hi)

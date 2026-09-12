@@ -20,6 +20,7 @@ fn all_bytes_at_vector_and_short_scan_boundaries() {
                 check(b"&<>\"", input);
                 check(b"*_`[]<\\\n~$=^", input);
                 check(&[0, 128, 255], input);
+                check(&[byte], input);
             }
         }
     }

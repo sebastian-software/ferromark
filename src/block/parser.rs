@@ -2723,7 +2723,7 @@ impl<'a> BlockParser<'a> {
             }
             let content_start = self.cursor.offset();
             let rest = self.cursor.remaining_slice();
-            let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
+            let distance = Self::find_html_line_end(rest);
             let line_end = content_start + distance;
             let end = line_end + usize::from(line_end < self.input.len());
             self.cursor = Cursor::new_at(self.input, end);
@@ -2790,8 +2790,10 @@ impl<'a> BlockParser<'a> {
     /// Check if the current line starts an HTML block.
     /// `in_paragraph` controls whether type 7 is allowed to start (it can't interrupt).
     fn peek_html_block_start(&self, in_paragraph: bool) -> Option<HtmlBlockKind> {
-        let line = self.current_line_slice();
-        if line.is_empty() {
+        // Types 1-6 only inspect the opening prefix and tag-name boundary.
+        // Delay finding the newline until type 7 needs a complete tag line.
+        let line = self.cursor.remaining_slice();
+        if line.first() != Some(&b'<') {
             return None;
         }
 
@@ -2836,6 +2838,7 @@ impl<'a> BlockParser<'a> {
         if in_paragraph {
             return None;
         }
+        let line = self.current_line_slice();
         if let Some((_name, tag_end)) = self.parse_html_tag(line)
             && line[tag_end..].iter().all(|&b| Self::is_html_whitespace(b))
         {
@@ -2843,6 +2846,22 @@ impl<'a> BlockParser<'a> {
         }
 
         None
+    }
+
+    /// Find the next LF in a root HTML continuation, retaining raw CR bytes.
+    #[inline]
+    fn find_html_line_end(rest: &[u8]) -> usize {
+        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        if rest.len() >= 128 {
+            // Short HTML lines favor the simple vector loop. Bound its work
+            // so long lines still use memchr's wider scan. A const searcher
+            // avoids constructing its lookup tables on every line.
+            const NEWLINE: crate::byte_search::ByteSet<1> = crate::byte_search::ByteSet::new(b"\n");
+            return NEWLINE.find(&rest[..128]).unwrap_or_else(|| {
+                128 + memchr::memchr(b'\n', &rest[128..]).unwrap_or(rest.len() - 128)
+            });
+        }
+        memchr::memchr(b'\n', rest).unwrap_or(rest.len())
     }
 
     /// Check if an HTML block ends on this line (types 1-5).
