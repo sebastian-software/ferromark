@@ -1,0 +1,29 @@
+--- a/src/byte_search.rs
++++ b/src/byte_search.rs
+@@ -263,7 +263,9 @@
+         // lookup arrays each contain a complete readable 16-byte vector.
+         unsafe {
+             let v = vld1q_u8(input.as_ptr());
+-            if self.nibble_valid {
++            if N == 1 {
++                vceqq_u8(v, vdupq_n_u8(self.bytes[0]))
++            } else if self.nibble_valid {
+                 let lo = vqtbl1q_u8(vld1q_u8(self.low.as_ptr()), vandq_u8(v, vdupq_n_u8(15)));
+                 let hi = vqtbl1q_u8(vld1q_u8(self.high.as_ptr()), vshrq_n_u8::<4>(v));
+                 vtstq_u8(lo, hi)
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2723,7 +2723,12 @@
+             }
+             let content_start = self.cursor.offset();
+             let rest = self.cursor.remaining_slice();
+-            let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
++            let distance = if rest.len() >= 64 {
++                const { crate::byte_search::ByteSet::new(b"\n") }.find(&rest[..64])
++                    .unwrap_or_else(|| 64 + memchr::memchr(b'\n', &rest[64..]).unwrap_or(rest.len() - 64))
++            } else {
++                memchr::memchr(b'\n', rest).unwrap_or(rest.len())
++            };
+             let line_end = content_start + distance;
+             let end = line_end + usize::from(line_end < self.input.len());
+             self.cursor = Cursor::new_at(self.input, end);

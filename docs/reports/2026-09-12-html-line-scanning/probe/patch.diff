@@ -1,0 +1,10 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2696,6 +2696,7 @@
+     }
+ 
+     /// Consume root HTML continuations without repeating general block dispatch.
++    #[inline(never)]
+     fn parse_html_block_run(&mut self, events: &mut Vec<BlockEvent>) {
+         // The opener has already passed through normal block parsing. Keep the
+         // public event stream line-based, including its original source ranges.

@@ -1,0 +1,37 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2701,7 +2701,8 @@
+         // public event stream line-based, including its original source ranges.
+         debug_assert!(self.container_stack.is_empty());
+         debug_assert!(self.pending_html_indent_start.is_none());
+-        while self.html_block.is_some() && !self.cursor.is_eof() {
++        let kind = self.html_block.unwrap();
++        while !self.cursor.is_eof() {
+             self.current_line_start = self.cursor.offset();
+             if self.options.definition_lists {
+                 self.definition_current_line_loose =
+@@ -2709,7 +2710,6 @@
+             }
+             self.partial_tab_cols = 0;
+             self.current_col = 0;
+-            let kind = self.html_block.unwrap();
+             let start = self.cursor.offset();
+             self.skip_indent();
+             if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
+@@ -2719,7 +2719,7 @@
+                 self.cursor = Cursor::new_at(self.input, start);
+                 self.current_col = 0;
+                 self.parse_html_block_line(events);
+-                continue;
++                return;
+             }
+             let content_start = self.cursor.offset();
+             let rest = self.cursor.remaining_slice();
+@@ -2731,6 +2731,7 @@
+             if self.html_block_ends(kind, &self.input[content_start..line_end]) {
+                 self.html_block = None;
+                 events.push(BlockEvent::HtmlBlockEnd);
++                return;
+             }
+         }
+     }

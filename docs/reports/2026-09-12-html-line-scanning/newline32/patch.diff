@@ -1,0 +1,16 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2723,7 +2723,12 @@
+             }
+             let content_start = self.cursor.offset();
+             let rest = self.cursor.remaining_slice();
+-            let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
++            let distance = if rest.len() >= 32 {
++                crate::byte_search::ByteSet::new(b"\n").find(&rest[..32])
++                    .unwrap_or_else(|| 32 + memchr::memchr(b'\n', &rest[32..]).unwrap_or(rest.len() - 32))
++            } else {
++                memchr::memchr(b'\n', rest).unwrap_or(rest.len())
++            };
+             let line_end = content_start + distance;
+             let end = line_end + usize::from(line_end < self.input.len());
+             self.cursor = Cursor::new_at(self.input, end);

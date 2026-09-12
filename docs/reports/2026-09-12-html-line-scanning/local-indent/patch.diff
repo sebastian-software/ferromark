@@ -1,0 +1,22 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2711,7 +2711,18 @@
+             self.current_col = 0;
+             let kind = self.html_block.unwrap();
+             let start = self.cursor.offset();
+-            self.skip_indent();
++            let mut col = 0;
++            let mut count = 0;
++            for &byte in self.cursor.remaining_slice() {
++                match byte {
++                    b' ' => col += 1,
++                    b'\t' => col = Self::tab_column(col),
++                    _ => break,
++                }
++                count += 1;
++            }
++            self.current_col = col;
++            self.cursor = Cursor::new_at(self.input, start + count);
+             if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
+                 && (self.cursor.is_eof() || self.at_line_ending())
+             {

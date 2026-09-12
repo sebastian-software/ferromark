@@ -1,0 +1,35 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2697,6 +2697,14 @@
+ 
+     /// Consume root HTML continuations without repeating general block dispatch.
+     fn parse_html_block_run(&mut self, events: &mut Vec<BlockEvent>) {
++        if matches!(self.html_block, Some(HtmlBlockKind::Type6 | HtmlBlockKind::Type7)) {
++            self.parse_html_block_run_kind::<true>(events);
++        } else {
++            self.parse_html_block_run_kind::<false>(events);
++        }
++    }
++
++    fn parse_html_block_run_kind<const BLANK: bool>(&mut self, events: &mut Vec<BlockEvent>) {
+         // The opener has already passed through normal block parsing. Keep the
+         // public event stream line-based, including its original source ranges.
+         debug_assert!(self.container_stack.is_empty());
+@@ -2712,7 +2720,7 @@
+             let kind = self.html_block.unwrap();
+             let start = self.cursor.offset();
+             self.skip_indent();
+-            if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
++            if BLANK
+                 && (self.cursor.is_eof() || self.at_line_ending())
+             {
+                 // Leave blank-line state transitions in the existing handler.
+@@ -2728,7 +2736,7 @@
+             let end = line_end + usize::from(line_end < self.input.len());
+             self.cursor = Cursor::new_at(self.input, end);
+             events.push(BlockEvent::HtmlBlockText(Range::from_usize(start, end)));
+-            if self.html_block_ends(kind, &self.input[content_start..line_end]) {
++            if !BLANK && self.html_block_ends(kind, &self.input[content_start..line_end]) {
+                 self.html_block = None;
+                 events.push(BlockEvent::HtmlBlockEnd);
+             }
