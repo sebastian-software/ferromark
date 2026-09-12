@@ -62,6 +62,7 @@ for n in [4096,65536]:
 (W/'direct.json').write_text(json.dumps(direct))
 meta=dict(revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=R,text=True).strip(),rustc=subprocess.check_output(['rustc','-Vv'],text=True),cpu=subprocess.check_output(['lscpu'],text=True),driver_sha256=hashlib.sha256((W/'driver/src/main.rs').read_bytes()).hexdigest())
 (W/'native-metadata.json').write_text(json.dumps(meta,indent=2))
+subprocess.run(['cargo','fetch','--locked','--manifest-path',str(W/'driver/Cargo.toml')],check=True)
 sys.path.insert(0,str(W));from experiment import *
 assert build('baseline') and verify('baseline')
 for name in sources:assert build(name) and verify(name)
