@@ -1,0 +1,50 @@
+{
+  "perf": "/usr/lib/linux-tools/6.8.0-139-generic/perf",
+  "runs": [
+    {
+      "candidate": "baseline",
+      "case": "attribute-plain",
+      "returncode": 0
+    },
+    {
+      "candidate": "baseline",
+      "case": "multiline",
+      "returncode": 0
+    },
+    {
+      "candidate": "baseline",
+      "case": "html-short",
+      "returncode": 0
+    },
+    {
+      "candidate": "masked-direct",
+      "case": "attribute-plain",
+      "returncode": 0
+    },
+    {
+      "candidate": "masked-direct",
+      "case": "multiline",
+      "returncode": 0
+    },
+    {
+      "candidate": "masked-direct",
+      "case": "html-short",
+      "returncode": 0
+    },
+    {
+      "candidate": "probe-attr-outlined",
+      "case": "attribute-plain",
+      "returncode": 0
+    },
+    {
+      "candidate": "probe-attr-outlined",
+      "case": "multiline",
+      "returncode": 0
+    },
+    {
+      "candidate": "probe-attr-outlined",
+      "case": "html-short",
+      "returncode": 0
+    }
+  ]
+}

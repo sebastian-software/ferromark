@@ -1,0 +1,921 @@
+0000000000026849 0000000000000001 r unicode_ident::ZERO
+0000000000106ce0 0000000000000001 d std::panicking::default_hook::{closure#0}::FIRST_PANIC
+00000000001076b1 0000000000000001 b std::panic::SHOULD_CAPTURE
+0000000000107730 0000000000000001 b std::sys::pal::unix::stack_overflow::imp::NEED_ALTSTACK
+0000000000107748 0000000000000001 b std::alloc::default_alloc_error_hook::PREV_ALLOC_FAILURE
+0000000000107760 0000000000000001 b std::sys::fs::unix::try_statx::STATX_SAVED_STATE
+0000000000107761 0000000000000001 b std::backtrace_rs::symbolize::gimli::elf::debug_path_exists::DEBUG_PATH_EXISTS
+00000000000e9b30 0000000000000001 t <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::provide
+00000000001076b0 0000000000000001 b completed.0
+00000000000eb4e0 0000000000000003 t <std::panicking::begin_panic::Payload<&str> as core::panic::PanicPayload>::as_str
+000000000005aca0 0000000000000003 t <<core::io::error::OsFunctions>::DEFAULT::{closure#0} as core::ops::function::FnOnce<(i32, &mut core::fmt::Formatter)>>::call_once
+000000000005acc0 0000000000000003 t <<core::io::error::OsFunctions>::DEFAULT::{closure#2} as core::ops::function::FnOnce<(i32,)>>::call_once
+000000000005acb0 0000000000000003 t <<core::io::error::OsFunctions>::DEFAULT::{closure#1} as core::ops::function::FnOnce<(i32,)>>::call_once
+00000000000e9b20 0000000000000003 t <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::cause
+0000000000107668 0000000000000004 d std::rt::cleanup::CLEANUP
+00000000000d42b0 0000000000000005 t core::ptr::drop_glue::<core::result::Result<&core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>, (&core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>, core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>)>>
+0000000000047be0 0000000000000005 t std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>
+00000000000c4ff0 0000000000000005 t <std::sys::backtrace::_print_fmt::{closure#1} as core::ops::function::FnOnce<(&std::backtrace_rs::backtrace::Frame,)>>::call_once::{shim:vtable#0}
+00000000000e86a0 0000000000000007 t std::sys::io::error::unix::is_interrupted
+00000000001076a8 0000000000000008 d DW.ref.rust_eh_personality
+00000000001076d0 0000000000000008 b std::thread::main_thread::MAIN
+00000000001076d8 0000000000000008 b std::panicking::panic_count::GLOBAL_PANIC_COUNT
+0000000000107768 0000000000000008 b std_detect::detect::cache::CACHE
+0000000000000010 0000000000000008 b std::thread::current::id::ID
+0000000000106cd8 0000000000000008 d core::io::error::os_functions::OS_FUNCTIONS
+00000000000f15f8 0000000000000008 D std::sys::args::unix::imp::ARGV_INIT_ARRAY
+00000000001076f0 0000000000000008 b std::sys::args::unix::imp::ARGC
+00000000001076f8 0000000000000008 b std::sys::args::unix::imp::ARGV
+0000000000107700 0000000000000008 b std::sys::pal::unix::stack_overflow::thread_info::THREAD_INFO
+0000000000107708 0000000000000008 b std::sys::pal::unix::stack_overflow::thread_info::THREAD_INFO
+0000000000107710 0000000000000008 b std::sys::pal::unix::stack_overflow::thread_info::THREAD_INFO
+0000000000107718 0000000000000008 b std::sys::pal::unix::stack_overflow::thread_info::LOCK
+0000000000107720 0000000000000008 b std::sys::pal::unix::stack_overflow::thread_info::SPIN_LOCK
+0000000000107728 0000000000000008 b std::sys::pal::unix::stack_overflow::imp::MAIN_ALTSTACK
+0000000000107738 0000000000000008 b std::sys::pal::unix::stack_overflow::imp::PAGE_SIZE
+0000000000107740 0000000000000008 b <std::thread::id::ThreadId>::new::COUNTER
+0000000000107750 0000000000000008 b std::sys::exit::unique_thread_exit::EXITING_THREAD_ID
+0000000000107758 0000000000000008 b std::sys::backtrace::lock::LOCK
+0000000000106cc0 0000000000000008 d memchr::arch::x86_64::memchr::memchr_raw::FN
+0000000000106cb0 0000000000000008 d memchr::arch::x86_64::memchr::memchr_raw::FN
+0000000000106cb8 0000000000000008 d memchr::arch::x86_64::memchr::memchr3_raw::FN
+0000000000106cc8 0000000000000008 d memchr::arch::x86_64::memchr::memrchr_raw::FN
+0000000000106cd0 0000000000000008 d memchr::arch::x86_64::memchr::count_raw::FN
+00000000000ebc80 0000000000000008 t <std::panicking::panic_handler::StaticStrPayload as core::panic::PanicPayload>::as_str
+00000000000eb670 0000000000000009 t std::sys::backtrace::__rust_end_short_backtrace::<std::alloc::rust_oom::{closure#0}, !>
+00000000000eb7d0 0000000000000009 t std::sys::backtrace::__rust_end_short_backtrace::<std::panicking::panic_handler::{closure#0}, !>
+00000000000c4630 0000000000000009 t __rustc::rust_panic
+00000000000ebc90 0000000000000009 t __rustc::__rust_abort
+00000000000b7bb0 0000000000000009 t __rustc::__rust_start_panic
+00000000000ebce0 0000000000000009 t std::alloc::rust_oom
+00000000000c45f0 0000000000000009 t std::process::abort
+000000000005d530 0000000000000009 t core::str::slice_error_fail
+000000000005dca3 0000000000000009 t core::panicking::panic_in_cleanup
+00000000000eb360 000000000000000a t std::sys::pal::unix::abort_internal
+00000000000ebc70 000000000000000b t <std::panicking::panic_handler::StaticStrPayload as core::panic::PanicPayload>::get
+00000000000eb510 000000000000000c t std::sys::personality::gcc::find_eh_action::{closure#0}
+00000000000eb530 000000000000000c t std::sys::personality::gcc::find_eh_action::{closure#1}
+00000000000eb500 000000000000000c t <std::sys::personality::gcc::find_eh_action::{closure#0} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+00000000000eb520 000000000000000c t <std::sys::personality::gcc::find_eh_action::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+00000000001076e0 000000000000000c b std::sys::env::unix::ENV_LOCK
+00000000000f00d0 000000000000000d t core::core_arch::x86::xsave::_xgetbv
+00000000000e9b10 000000000000000d t <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::description
+00000000000eb680 000000000000000e t std::alloc::rust_oom::{closure#0}
+00000000000c48e0 000000000000000e t std::panicking::panic_count::is_zero_slow_path
+00000000000eba60 000000000000000e t <alloc::string::String as core::any::Any>::type_id
+00000000000eb4f0 000000000000000e t <&str as core::any::Any>::type_id
+00000000000e9b00 000000000000000e t <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::type_id
+00000000000e4270 000000000000000f t core::ptr::drop_glue::<std::backtrace_rs::symbolize::gimli::elf::Object>
+0000000000000000 0000000000000010 b std::panicking::panic_count::LOCAL_PANIC_COUNT::{K#0}::{closure#1}::__RUST_STD_INTERNAL_VAL
+000000000005dc93 0000000000000010 t core::panicking::panic_cannot_unwind
+000000000001e840 0000000000000010 r serde_json::ser::Formatter::write_char_escape::HEX_DIGITS
+000000000005ad50 0000000000000010 t <&dyn core::fmt::Debug as core::fmt::Debug>::fmt
+00000000000bddf0 0000000000000010 t <&dyn serde_core::de::Expected as core::fmt::Display>::fmt
+00000000000ea770 0000000000000011 t core::ptr::drop_glue::<std::sys::backtrace::_print_fmt::{closure#0}>
+000000000006c1b0 0000000000000011 t core::ptr::drop_glue::<alloc::string::FromUtf8Error>
+000000000005a930 0000000000000011 t core::ptr::drop_glue::<alloc::string::String>
+00000000000eba40 0000000000000011 t core::ptr::drop_glue::<alloc::string::String>
+00000000000bd640 0000000000000011 t core::ptr::drop_glue::<alloc::string::String>
+00000000000e97f0 0000000000000011 t core::ptr::drop_glue::<std::ffi::os_str::OsString>
+00000000000e9ae0 0000000000000011 t core::ptr::drop_glue::<<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError>
+000000000005ca90 0000000000000011 t core::panicking::panic
+000000000005ec90 0000000000000011 t <core::fmt::builders::FromFn<<core::io::error::repr::Repr as core::fmt::Debug>::fmt::{closure#0}::{closure#0}> as core::fmt::Display>::fmt
+00000000000ebcc0 0000000000000012 t __rustc::__rust_alloc_error_handler
+000000000005a3a6 0000000000000012 t alloc::alloc::handle_alloc_error
+00000000000eb540 0000000000000012 t std::sys::args::unix::imp::ARGV_INIT_ARRAY::init_wrapper
+000000000005ad30 0000000000000012 t <&str as core::fmt::Display>::fmt
+00000000000be6c0 0000000000000012 t <&str as core::fmt::Display>::fmt
+00000000000bd310 0000000000000012 t <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_fmt
+0000000000059a00 0000000000000012 t <std::io::default_write_fmt::Adapter<std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutLock>> as core::fmt::Write>::write_fmt
+00000000000eb190 0000000000000012 t <std::io::default_write_fmt::Adapter<core::io::cursor::Cursor<&mut [u8]>> as core::fmt::Write>::write_fmt
+00000000000eb4c0 0000000000000012 t <std::io::default_write_fmt::Adapter<std::sys::stdio::unix::Stderr> as core::fmt::Write>::write_fmt
+000000000005aac0 0000000000000012 t <alloc::string::String as core::fmt::Write>::write_fmt
+00000000000ebbf0 0000000000000012 t <alloc::string::String as core::fmt::Write>::write_fmt
+00000000000bd7d0 0000000000000012 t <alloc::string::String as core::fmt::Write>::write_fmt
+000000000005be50 0000000000000012 t <core::fmt::builders::PadAdapter as core::fmt::Write>::write_fmt
+000000000005a2a6 0000000000000013 t alloc::raw_vec::handle_error
+000000000005ac30 0000000000000013 t <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::fmt::Display>::fmt
+000000000005db80 0000000000000014 t <core::cell::BorrowMutError as core::fmt::Display>::fmt
+00000000000bb610 0000000000000014 t <() as core::fmt::Debug>::fmt
+000000000005dc40 0000000000000017 t core::panicking::panic_nounwind
+00000000000bd350 0000000000000017 t <&str as serde_core::de::Expected>::fmt
+00000000000ebc10 0000000000000017 t <std::panicking::panic_handler::StaticStrPayload as core::fmt::Display>::fmt
+00000000001076b8 0000000000000018 b std::panicking::HOOK
+000000000005db30 0000000000000018 t core::option::unwrap_failed
+000000000005df00 0000000000000018 t core::panicking::panic_const::panic_const_div_by_zero
+000000000005df20 0000000000000018 t core::panicking::panic_const::panic_const_rem_by_zero
+00000000000e7a70 0000000000000019 t <&std::ffi::os_str::OsStr as core::fmt::Debug>::fmt
+00000000000bb6fa 0000000000000019 t <&str as core::fmt::Debug>::fmt
+00000000000bd330 0000000000000019 t <&str as core::fmt::Debug>::fmt
+00000000000bd233 0000000000000019 t <rustc_demangle::SizeLimitExhausted as core::fmt::Debug>::fmt
+000000000005a910 0000000000000019 t <core::fmt::Error as core::fmt::Debug>::fmt
+00000000000b8fa4 0000000000000019 t <core::fmt::Error as core::fmt::Debug>::fmt
+00000000000bd620 0000000000000019 t <core::fmt::Error as core::fmt::Debug>::fmt
+0000000000058aa0 0000000000000019 t <<alloc::vec::Vec<_> as serde_core::de::Deserialize>::deserialize::VecVisitor<ox_experiment_driver::Case> as serde_core::de::Expected>::fmt
+0000000000058ac0 0000000000000019 t <serde_core::de::impls::BoolVisitor as serde_core::de::Expected>::fmt
+0000000000058ae0 0000000000000019 t <serde_core::de::impls::StringVisitor as serde_core::de::Expected>::fmt
+0000000000058b00 0000000000000019 t <<ox_experiment_driver::Case as serde_core::de::Deserialize>::deserialize::__Visitor as serde_core::de::Expected>::fmt
+0000000000058b20 0000000000000019 t <<u32 as serde_core::de::Deserialize>::deserialize::PrimitiveVisitor as serde_core::de::Expected>::fmt
+000000000005aae0 000000000000001a t <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::fmt::Debug>::fmt
+0000000000055f60 000000000000001a t <&alloc::string::String as core::fmt::Debug>::fmt
+00000000000efa30 000000000000001a t <std::ffi::os_str::OsString as core::fmt::Debug>::fmt
+00000000000bd600 000000000000001a t <alloc::string::String as core::fmt::Debug>::fmt
+00000000000ea810 000000000000001b t std::sys::backtrace::_print_fmt::{closure#0}
+00000000000c4fd0 000000000000001c t core::ptr::drop_glue::<std::backtrace_rs::backtrace::libunwind::Bomb>
+00000000000ebca0 000000000000001c t __rustc::rust_begin_unwind
+00000000000b7bc0 000000000000001c t __rustc::__rust_panic_cleanup
+000000000005a3c0 000000000000001c t alloc::raw_vec::capacity_overflow
+000000000005df40 000000000000001c t core::slice::sort::shared::smallsort::panic_on_ord_violation
+00000000000ebf30 000000000000001c t <std::thread::id::ThreadId>::new::exhausted
+00000000000e86b0 000000000000001d t core::ptr::drop_glue::<core::io::error::Error>
+0000000000047b90 000000000000001d t core::ptr::drop_glue::<core::io::error::Error>
+00000000000ee620 000000000000001e t <<std::sync::once::Once>::call_once<std::rt::cleanup::{closure#0}>::{closure#0} as core::ops::function::FnOnce<(&std::sync::once::OnceState,)>>::call_once::{shim:vtable#0}
+000000000001f200 0000000000000020 r <serde_json::value::Value as core::ops::index::Index<_>>::index::NULL
+00000000000002fc 0000000000000020 r __abi_tag
+000000000005dcb0 0000000000000021 t core::panicking::panic_nounwind_nobacktrace
+00000000000eaf70 0000000000000023 t core::ptr::drop_glue::<std::io::default_write_fmt::Adapter<core::io::cursor::Cursor<&mut [u8]>>>
+0000000000047430 0000000000000023 t core::ptr::drop_glue::<std::io::default_write_fmt::Adapter<std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutLock>>>
+0000000000028fb2 0000000000000023 r core::unicode::unicode_data::default_ignorable_code_point::OFFSETS
+00000000000c45c0 0000000000000025 t core::ptr::drop_glue::<core::result::Result<(), core::io::error::Error>>
+00000000000b1ce0 0000000000000025 t <alloc::boxed::Box<alloc::collections::btree::node::InternalNode<u64, gimli::read::abbrev::Abbreviation>>>::new_uninit_in
+00000000000b1cbb 0000000000000025 t <alloc::boxed::Box<alloc::collections::btree::node::LeafNode<u64, gimli::read::abbrev::Abbreviation>>>::new_uninit_in
+00000000000470c0 0000000000000026 T _start
+00000000000c4600 0000000000000027 t core::ptr::drop_glue::<std::sync::nonpoison::rwlock::RwLockReadGuard<std::panicking::Hook>>
+000000000005a099 0000000000000027 t <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>
+00000000000b7eff 0000000000000027 t <&u8 as core::fmt::Debug>::fmt
+00000000000bb78e 000000000000002b t rustc_demangle::v0::basic_type
+000000000005ad60 000000000000002b t core::panicking::panic_fmt
+0000000000028fd5 000000000000002b r core::unicode::unicode_data::cf::OFFSETS
+0000000000029a54 000000000000002c r core::unicode::unicode_data::cf::SHORT_OFFSET_RUNS
+0000000000047bad 000000000000002d t core::panicking::assert_failed::<alloc::string::String, alloc::string::String>
+000000000005ecb0 000000000000002d t <core::io::error::ErrorKind as core::fmt::Debug>::fmt
+000000000005db50 000000000000002e t core::cell::panic_already_borrowed
+00000000000b1f93 000000000000002f t <alloc::raw_vec::RawVec<gimli::read::abbrev::Abbreviation>>::grow_one
+00000000000b211f 000000000000002f t <alloc::raw_vec::RawVec<gimli::read::abbrev::AttributeSpecification>>::grow_one
+00000000000bc697 000000000000002f t <&core::num::error::IntErrorKind as core::fmt::Debug>::fmt
+0000000000029a24 0000000000000030 r core::unicode::unicode_data::default_ignorable_code_point::SHORT_OFFSET_RUNS
+000000000005fab0 0000000000000030 t <bool as core::fmt::Display>::fmt
+000000000005a275 0000000000000031 t addr2line::line::has_backward_slash_root
+00000000000bb624 0000000000000031 t <core::str::iter::Chars as core::iter::traits::iterator::Iterator>::count
+00000000000eb552 0000000000000032 t core::panicking::assert_failed::<i32, i32>
+000000000005dba0 0000000000000033 t core::option::expect_failed
+000000000005dc60 0000000000000033 t core::panicking::panic_nounwind_fmt
+0000000000057ba0 0000000000000033 t <&bool as core::fmt::Debug>::fmt
+000000000005a6d0 0000000000000035 t alloc::io::error::custom_owner_from_box::drop_box_raw::<core::io::error::Custom>
+000000000009d440 0000000000000036 t core::ptr::drop_glue::<core::option::Option<(alloc::string::String, alloc::string::String)>>
+00000000000bc6c6 0000000000000036 t <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_str
+00000000000e9880 0000000000000037 t core::ptr::drop_glue::<std::backtrace_rs::symbolize::gimli::Library>
+00000000000bd9b0 0000000000000037 t <serde_json::error::Error>::io
+0000000000107670 0000000000000038 d std::io::stdio::stdin::INSTANCE
+00000000000eb870 0000000000000038 t <std::panicking::panic_handler::FormatStringPayload as core::fmt::Display>::fmt
+00000000000b1e0b 0000000000000039 t <alloc::raw_vec::RawVecInner>::deallocate
+00000000000b2a8c 000000000000003b t <gimli::read::abbrev::Attributes as core::ops::deref::Deref>::deref
+00000000000e3cd0 000000000000003c t <core::cell::once::OnceCell<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>>::get_or_init<<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::dwarf_and_unit::{closure#2}>::{closure#0}, !>
+0000000000077710 000000000000003c t <ferromark::render::HtmlWriter>::write_str
+000000000005babb 000000000000003c t core::panicking::panic_bounds_check
+00000000000c4f90 000000000000003c t std::backtrace_rs::backtrace::libunwind::trace::trace_fn
+00000000000b39c0 000000000000003d t memchr::arch::x86_64::memchr::memchr_raw::find_avx2
+00000000000b4460 000000000000003d t memchr::arch::x86_64::memchr::memrchr_raw::find_avx2
+000000000005ec50 000000000000003e t <core::fmt::builders::FromFn<<core::io::error::repr::Repr as core::fmt::Debug>::fmt::{closure#0}> as core::fmt::Debug>::fmt
+00000000000eee00 000000000000003f t core::ptr::drop_glue::<std::sync::reentrant_lock::ReentrantLockGuard<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>
+0000000000106ce8 0000000000000040 d std::io::stdio::STDOUT
+00000000000f1b60 0000000000000040 d core::unicode::unicode_data::conversions::LOWERCASE_LUT
+00000000000ebc30 0000000000000040 t <std::panicking::panic_handler::StaticStrPayload as core::panic::PanicPayload>::take_box
+0000000000059fc0 0000000000000041 t __rustc::__rust_alloc
+000000000005a705 0000000000000043 t <alloc::vec::Vec<_, _>>::insert_mut::assert_failed
+000000000005a748 0000000000000043 t <alloc::vec::Vec<_, _>>::split_off::assert_failed
+000000000006e700 0000000000000043 t <ferromark::range::InputSizeError as core::fmt::Display>::fmt
+00000000000bc653 0000000000000044 t <core::num::error::ParseIntError as core::fmt::Debug>::fmt
+000000000005fa00 0000000000000044 t <u64 as core::fmt::Display>::fmt
+00000000000a4fe0 0000000000000045 t <ferromark::RenderContext<dyn ferromark::FencedCodeRenderer>>::render_block_event::{closure#3}
+00000000000a5030 0000000000000045 t <ferromark::RenderContext<dyn ferromark::FencedCodeRenderer>>::render_block_event::{closure#4}
+0000000000076690 0000000000000045 t <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event::{closure#3}
+00000000000766e0 0000000000000045 t <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event::{closure#4}
+000000000005df60 0000000000000046 t core::slice::copy_from_slice_impl::len_mismatch_fail
+00000000000ef0d0 0000000000000048 t <std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::cleanup::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0}
+00000000000ef080 0000000000000048 t <<std::sync::once::Once>::call_once_force<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::cleanup::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0} as core::ops::function::FnOnce<(&std::sync::once::OnceState,)>>::call_once::{shim:vtable#0}
+00000000000dd4f0 0000000000000049 t core::ptr::drop_glue::<core::result::Result<&core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, (&core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>)>>
+00000000000e05d0 0000000000000049 t core::ptr::drop_glue::<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>
+00000000000bd9f0 000000000000004a t <serde_json::error::Error>::syntax
+00000000000bfc60 000000000000004a t <serde_json::read::SliceRead>::skip_to_escape_slow
+000000000006eed0 000000000000004b t <ferromark::render::HtmlWriter>::paragraph_start
+00000000000aaa30 000000000000004b t ferromark::mdx::splitter::consume_trailing_newline
+00000000000ef030 000000000000004c t core::ptr::drop_glue::<<std::io::buffered::bufwriter::BufWriter<_>>::flush_buf::BufGuard>
+00000000000754d0 000000000000004c t <ferromark::render::HtmlWriter>::paragraph_end
+0000000000076fa0 000000000000004c t <ferromark::render::HtmlWriter>::ul_start
+0000000000077100 000000000000004e t <ferromark::render::HtmlWriter>::ol_end
+0000000000077d70 000000000000004e t <ferromark::render::HtmlWriter>::td_end
+0000000000077dc0 000000000000004e t <ferromark::render::HtmlWriter>::th_end
+0000000000077150 000000000000004e t <ferromark::render::HtmlWriter>::ul_end
+00000000000ebee0 000000000000004e t <std::time::Instant>::elapsed
+0000000000076f50 000000000000004f t <ferromark::render::HtmlWriter>::callout_end
+000000000005ac50 000000000000004f t <alloc::boxed::Box<str> as core::clone::Clone>::clone
+000000000005dbe0 0000000000000051 t core::result::unwrap_failed
+00000000000e3d10 0000000000000052 t <core::cell::once::OnceCell<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>>::get_or_init<<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::dwarf_and_unit::{closure#4}>::{closure#0}, !>
+00000000000a6470 0000000000000052 t ferromark::mdx::jsx_tag::expression_end
+00000000000ef7db 0000000000000053 t <std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize::<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::stdout::{closure#0}>::{closure#0}, !>
+00000000000ef6a6 0000000000000053 t <std::sync::once_lock::OnceLock<std::sync::poison::mutex::Mutex<std::io::buffered::bufreader::BufReader<std::io::stdio::StdinRaw>>>>::initialize::<<std::sync::once_lock::OnceLock<std::sync::poison::mutex::Mutex<std::io::buffered::bufreader::BufReader<std::io::stdio::StdinRaw>>>>::get_or_init<std::io::stdio::stdin::{closure#0}>::{closure#0}, !>
+00000000000d41e0 0000000000000053 t <alloc::sync::Arc<gimli::read::abbrev::Abbreviations>>::drop_slow
+00000000000eb370 0000000000000054 t <std::io::default_write_fmt::Adapter<std::sys::stdio::unix::Stderr> as core::fmt::Write>::write_str
+00000000000b96bb 0000000000000055 t <rustc_demangle::v0::Printer>::skipping_printing::<<rustc_demangle::v0::Printer>::print_path::{closure#0}>
+00000000000bb54d 0000000000000055 t core::unicode::unicode_data::white_space::lookup
+000000000005bb00 0000000000000056 t <core::fmt::Formatter>::pad_integral::write_prefix
+00000000000eeda5 0000000000000057 t <std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize::<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::cleanup::{closure#0}>::{closure#0}, !>
+0000000000047870 0000000000000058 t core::ptr::drop_glue::<serde_json::error::Error>
+00000000000d1260 000000000000005a t core::ptr::drop_glue::<alloc::sync::ArcInner<gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>
+00000000000925f0 000000000000005a t <ferromark::block::parser::BlockParser>::peek_thematic_break
+000000000005a610 000000000000005a t <alloc::raw_vec::RawVec<u8>>::grow_one
+00000000000c4bb0 000000000000005a t std::sys::backtrace::lock
+000000000005fa50 000000000000005a t <i64 as core::fmt::Display>::fmt
+0000000000094b10 000000000000005c t core::ptr::drop_glue::<alloc::vec::drain::Drain<ferromark::range::Range>>
+000000000005a670 000000000000005d t alloc::io::error::custom_owner_from_box::drop_box_raw::<dyn core::error::Error + core::marker::Send + core::marker::Sync>
+0000000000076ef0 000000000000005d t <ferromark::render::HtmlWriter>::blockquote_end
+0000000000076630 000000000000005d t <ferromark::render::HtmlWriter>::code_block_end
+0000000000076e90 000000000000005d t <ferromark::render::HtmlWriter>::blockquote_start
+00000000000945a0 000000000000005e t <ferromark::block::parser::BlockParser>::is_setext_underline_after_indent
+000000000005c330 000000000000005e t core::unicode::unicode_data::white_space::lookup
+00000000000bdab0 000000000000005e t <serde_json::error::Error as serde_core::de::Error>::invalid_type
+000000000005bdf0 000000000000005f t <core::fmt::builders::PadAdapter as core::fmt::Write>::write_char
+0000000000077d10 0000000000000060 t <alloc::vec::Vec<u8>>::extend_trusted::<core::iter::sources::repeat_n::RepeatN<u8>>
+00000000000e53b0 0000000000000060 t core::ptr::drop_glue::<addr2line::Context<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>
+00000000000c4c10 0000000000000060 t core::ptr::drop_glue::<std::sys::backtrace::BacktraceLock>
+0000000000059a20 0000000000000060 t <serde_json::error::Error as serde_core::de::Error>::invalid_length
+00000000000bda40 0000000000000061 t <serde_json::de::ParserNumber>::invalid_type
+0000000000053480 0000000000000061 t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::parse_decimal_overflow
+00000000000c4490 0000000000000061 t <&core::panic::location::Location as core::fmt::Display>::fmt
+000000000005a950 0000000000000061 t <alloc::string::String as core::fmt::Write>::write_str
+00000000000bd660 0000000000000061 t <alloc::string::String as core::fmt::Write>::write_str
+00000000000ec140 0000000000000063 t core::ptr::drop_glue::<core::result::Result<std::sync::poison::mutex::MutexGuard<()>, std::sync::poison::PoisonError<std::sync::poison::mutex::MutexGuard<()>>>>
+00000000000e3bf0 0000000000000063 t core::ptr::drop_glue::<<alloc::collections::btree::map::IntoIter<_, _, _> as core::ops::drop::Drop>::drop::DropGuard<u64, core::result::Result<alloc::sync::Arc<gimli::read::abbrev::Abbreviations>, gimli::read::Error>, alloc::alloc::Global>>
+000000000008d060 0000000000000063 t core::slice::sort::shared::smallsort::insertion_sort_shift_left::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<u32, <ferromark::inline::links::RangeIndex>::from_slices::{closure#3}>::{closure#0}>
+00000000000a69c0 0000000000000063 t <alloc::raw_vec::RawVec<alloc::vec::Vec<ferromark::block::event::BlockEvent>>>::grow_one
+0000000000076c00 0000000000000063 t <alloc::raw_vec::RawVec<core::option::Option<ferromark::block::event::CalloutType>>>::grow_one
+000000000008b560 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::FootnoteTarget>>::grow_one
+00000000000763c0 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::Heading>>::grow_one
+00000000000536f0 0000000000000063 t <alloc::raw_vec::RawVec<ox_experiment_driver::Case>>::grow_one
+0000000000090fa0 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::range::Range>>::grow_one
+000000000008cb30 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::inline::FootnoteRef>>::grow_one
+000000000008cba0 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::inline::InlineFootnote>>::grow_one
+00000000000a0b20 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::footnote::FootnoteDef>>::grow_one
+00000000000bef60 0000000000000063 t <alloc::raw_vec::RawVec<serde_json::value::Value>>::grow_one
+00000000000a6a30 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::mdx::events::MdxEvent>>::grow_one
+00000000000a6aa0 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::mdx::render::ParsedMarkdown>>::grow_one
+000000000008c150 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::inline::math::MathSpan>>::grow_one
+000000000008c300 0000000000000063 t <alloc::raw_vec::RawVec<ferromark::inline::links::Link>>::grow_one
+000000000008c370 0000000000000063 t <alloc::raw_vec::RawVec<usize>>::grow_one
+000000000008c1c0 0000000000000063 t <alloc::raw_vec::RawVec<u32>>::grow_one
+00000000000d6910 0000000000000064 t core::ptr::drop_glue::<alloc::boxed::Box<[alloc::string::String]>>
+00000000000a01d0 0000000000000064 t core::ptr::drop_glue::<alloc::vec::drain::Drain<ferromark::block::event::BlockEvent>>
+00000000000dec60 0000000000000064 t <gimli::read::unit::AttributeValue<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::u8_value
+000000000008c0e0 0000000000000064 t ferromark::inline::find_subsequence
+0000000000079730 0000000000000065 t core::char::methods::encode_utf8_raw::do_panic::runtime
+00000000000c02f0 0000000000000065 t <serde_json::error::Error as serde_core::de::Error>::invalid_value
+00000000000d6820 0000000000000066 t core::ptr::drop_glue::<gimli::read::line::LineRows<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, gimli::read::line::IncompleteLineProgram<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>, usize>>
+0000000000090b70 0000000000000066 t <ferromark::cursor::Cursor>::new_at
+00000000000e3760 0000000000000066 t <alloc::raw_vec::RawVec<alloc::vec::Vec<u8>>>::grow_one
+00000000000e4780 0000000000000066 t <alloc::raw_vec::RawVec<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one
+00000000000e49e0 0000000000000066 t <alloc::raw_vec::RawVec<addr2line::unit::SupUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one
+00000000000e0560 0000000000000066 t <alloc::raw_vec::RawVec<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one
+00000000000df320 0000000000000066 t <alloc::raw_vec::RawVec<addr2line::function::InlinedFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one
+00000000000d67b0 0000000000000066 t <alloc::raw_vec::RawVec<gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>>::grow_one
+00000000000e2650 0000000000000066 t <alloc::raw_vec::RawVec<gimli::read::unit::AttributeValue<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>>::grow_one
+00000000000d6b60 0000000000000066 t <alloc::raw_vec::RawVec<addr2line::line::LineSequence>>::grow_one
+00000000000e3590 0000000000000066 t <alloc::raw_vec::RawVec<gimli::read::line::FileEntryFormat>>::grow_one
+00000000000e9810 0000000000000066 t <alloc::raw_vec::RawVec<std::backtrace_rs::symbolize::gimli::Library>>::grow_one
+00000000000d12c0 0000000000000066 t <alloc::raw_vec::RawVec<std::backtrace_rs::symbolize::gimli::mmap::Mmap>>::grow_one
+00000000000e3c60 0000000000000066 t <alloc::raw_vec::RawVec<&addr2line::function::InlinedFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one
+00000000000e44f0 0000000000000066 t <alloc::raw_vec::RawVec<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)>>::grow_one
+00000000000aced0 0000000000000066 t ferromark::mdx::segment_spanned
+00000000000bfe80 0000000000000067 t <serde_json::read::SliceRead as serde_json::read::Read>::peek_position
+00000000000c0360 0000000000000067 t <serde_json::read::StrRead as serde_json::read::Read>::peek_position
+00000000000982f0 0000000000000068 t core::ptr::drop_glue::<alloc::vec::drain::Drain<(u8, ferromark::range::Range)>>
+00000000000771a0 000000000000006a t <ferromark::render::HtmlWriter>::write_bytes
+00000000000a50f0 000000000000006a t <ferromark::render::HtmlWriter>::write_string
+0000000000077ca0 000000000000006a t <alloc::vec::Vec<u8>>::append_elements
+00000000000d4240 000000000000006b t core::ptr::drop_glue::<core::option::Option<gimli::read::line::IncompleteLineProgram<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>>
+00000000000ef770 000000000000006b t <std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<std::sync::poison::mutex::Mutex<std::io::buffered::bufreader::BufReader<std::io::stdio::StdinRaw>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::poison::mutex::Mutex<std::io::buffered::bufreader::BufReader<std::io::stdio::StdinRaw>>>>::get_or_init<std::io::stdio::stdin::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0}
+00000000000ef700 000000000000006b t <<std::sync::once::Once>::call_once_force<<std::sync::once_lock::OnceLock<std::sync::poison::mutex::Mutex<std::io::buffered::bufreader::BufReader<std::io::stdio::StdinRaw>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::poison::mutex::Mutex<std::io::buffered::bufreader::BufReader<std::io::stdio::StdinRaw>>>>::get_or_init<std::io::stdio::stdin::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0} as core::ops::function::FnOnce<(&std::sync::once::OnceState,)>>::call_once::{shim:vtable#0}
+00000000000b3e00 000000000000006b t memchr::arch::x86_64::memchr::memchr3_raw::detect
+00000000000eee40 000000000000006c t core::ptr::drop_glue::<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>
+00000000000decd0 000000000000006c t <gimli::read::unit::AttributeValue<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::u16_value
+000000000005acc3 000000000000006c t core::panicking::assert_failed_inner
+00000000000eba70 000000000000006c t <alloc::string::String as core::fmt::Write>::write_str
+00000000000a5080 000000000000006e t <ferromark::RenderContext<dyn ferromark::FencedCodeRenderer>>::render_block_event::{closure#5}
+000000000005c560 000000000000006e t <char>::is_assigned
+00000000000bb5a2 000000000000006e t <char>::is_assigned
+00000000000b3950 000000000000006f t memchr::arch::x86_64::memchr::memchr_raw::detect
+00000000000b43f0 000000000000006f t memchr::arch::x86_64::memchr::memrchr_raw::detect
+00000000000b48f0 000000000000006f t memchr::arch::x86_64::memchr::count_raw::detect
+000000000005a2c0 0000000000000070 t <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>
+00000000000ef8a0 0000000000000070 t <std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::stdout::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0}
+00000000000ef830 0000000000000070 t <<std::sync::once::Once>::call_once_force<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<std::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::stdout::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0} as core::ops::function::FnOnce<(&std::sync::once::OnceState,)>>::call_once::{shim:vtable#0}
+00000000000b90a9 0000000000000071 t <rustc_demangle::v0::Parser>::opt_integer_62
+0000000000075de0 0000000000000071 t <alloc::raw_vec::RawVecInner>::try_allocate_in
+000000000005f890 0000000000000071 t <u64 as core::fmt::LowerHex>::fmt
+000000000005f4f0 0000000000000071 t <u8 as core::fmt::UpperHex>::fmt
+000000000005fba0 0000000000000072 t <u32 as core::fmt::UpperHex>::fmt
+00000000000bfef0 0000000000000073 t <serde_json::read::SliceRead as serde_json::read::Read>::position
+00000000000c03d0 0000000000000073 t <serde_json::read::StrRead as serde_json::read::Read>::position
+000000000005f810 0000000000000073 t <u8 as core::fmt::LowerHex>::fmt
+00000000000d6bd0 0000000000000076 t core::ptr::drop_glue::<alloc::vec::Vec<alloc::string::String>>
+00000000000d6890 0000000000000076 t core::ptr::drop_glue::<alloc::vec::Vec<addr2line::line::LineSequence>>
+00000000000ef630 0000000000000076 t core::ptr::drop_glue::<alloc::vec::Vec<std::ffi::os_str::OsString>>
+000000000005a330 0000000000000076 t <alloc::raw_vec::RawVecInner>::finish_grow
+00000000000c3640 0000000000000077 t <serde_json::value::ser::Serializer as serde_core::ser::Serializer>::serialize_seq
+00000000000bd7f0 0000000000000079 t <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>
+00000000000ea790 000000000000007b t <std::sys::backtrace::_print_fmt::{closure#0} as core::ops::function::FnOnce<(&mut core::fmt::Formatter, std::backtrace_rs::types::BytesOrWideString)>>::call_once::{shim:vtable#0}
+00000000000bb713 000000000000007b t <rustc_demangle::v0::Parser>::backref
+00000000000bed80 000000000000007c t <serde_json::de::Deserializer<serde_json::read::StrRead>>::peek_error
+000000000009d480 000000000000007c t <smallvec::SmallVec<[ferromark::block::parser::Container; 8]>>::push
+000000000006ee50 000000000000007d t <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>
+0000000000047bf0 000000000000007d t <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>
+00000000000e03c0 000000000000007e t <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_offset
+00000000000c48f0 0000000000000080 t <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>
+0000000000053400 0000000000000080 t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::parse_long_integer
+00000000000e06c0 0000000000000081 t core::ptr::drop_glue::<alloc::boxed::Box<[addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>]>>
+00000000000ac420 0000000000000081 t ferromark::mdx::splitter::starts_with_word
+000000000008cfd0 0000000000000082 t <smallvec::SmallVec<[(u32, u32); 8]>>::reserve_one_unchecked
+000000000008d890 0000000000000082 t <smallvec::SmallVec<[u8; 32]>>::reserve_one_unchecked
+00000000000bde00 0000000000000083 t <serde_json::error::Error as serde_core::de::Error>::custom::<core::fmt::Arguments>
+00000000000299a0 0000000000000084 r core::unicode::unicode_data::grapheme_extend::SHORT_OFFSET_RUNS
+0000000000055490 0000000000000086 t <std::io::default_write_fmt::Adapter<std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutLock>> as core::fmt::Write>::write_str
+00000000000bf6a0 0000000000000087 t serde_json::read::error::<serde_json::read::SliceRead, ()>
+00000000000b1fc2 0000000000000087 t <alloc::raw_vec::RawVecInner>::grow_amortized
+00000000000be9f0 0000000000000088 t <serde_json::de::Deserializer<serde_json::read::StrRead>>::error
+00000000000bad84 0000000000000089 t <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_const::{closure#2}>
+000000000005a010 0000000000000089 t __rustc::__rust_realloc
+000000000008cc10 000000000000008a t core::slice::sort::shared::smallsort::insertion_sort_shift_left::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<(u32, u32), ferromark::inline::normalize_link_boundaries::{closure#0}>::{closure#0}>
+00000000000d11d0 000000000000008a t <alloc::sync::Arc<gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::drop_slow
+00000000000ba890 000000000000008b t <rustc_demangle::v0::Parser>::hex_nibbles
+00000000000eb7e0 000000000000008e t std::panicking::panic_handler::{closure#0}
+00000000000bba15 000000000000008f t <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_type>
+00000000000eb9b0 000000000000008f t <std::panicking::panic_handler::FormatStringPayload as core::panic::PanicPayload>::get
+00000000000e8610 0000000000000090 t std::sys::io::error::unix::decode_error_kind
+00000000000b3e70 0000000000000091 t memchr::arch::x86_64::memchr::memchr3_raw::find_avx2
+00000000000bf600 0000000000000092 t serde_json::read::error::<serde_json::read::SliceRead, u8>
+000000000005eee0 0000000000000092 t <u8 as core::fmt::Display>::fmt
+00000000000e0620 0000000000000093 t core::ptr::drop_glue::<alloc::vec::Vec<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>
+00000000000e24d0 0000000000000093 t <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_uleb128
+00000000000bae0d 0000000000000094 t <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_const::{closure#3}>
+00000000000bfbc0 0000000000000094 t serde_json::read::error::<serde_json::read::SliceRead, u16>
+00000000000bf340 0000000000000095 t serde_json::read::error::<serde_json::read::SliceRead, serde_json::read::Reference<str>>
+00000000000c0250 0000000000000095 t serde_json::read::error::<serde_json::read::SliceRead, &str>
+00000000000cc3c0 0000000000000095 t std::sys::helpers::small_c_string::run_with_cstr_allocating::<std::path::PathBuf>
+000000000009fa30 0000000000000096 t <ferromark::range::Range>::from_usize
+000000000006b5e0 0000000000000098 t core::slice::sort::unstable::heapsort::heapsort::<usize, <usize as core::cmp::PartialOrd>::lt>
+00000000000e36c0 0000000000000098 t std::backtrace_rs::symbolize::gimli::elf::decompress_zlib
+00000000000aca40 0000000000000099 t <ferromark::mdx::splitter::EsmContinuation>::can_start_function_or_class
+000000000005d8a0 0000000000000099 t <char as core::fmt::Debug>::fmt
+000000000008a820 000000000000009a t ferromark::render::is_safe_url
+000000000006a910 000000000000009d t core::slice::sort::unstable::heapsort::heapsort::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<u32, <ferromark::inline::links::RangeIndex>::from_slices::{closure#3}>::{closure#0}>
+00000000000b9dfc 000000000000009d t <rustc_demangle::v0::Parser>::integer_62
+00000000000e0810 000000000000009e t core::ptr::drop_glue::<core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>
+00000000000aa990 000000000000009f t ferromark::mdx::splitter::flush_markdown
+00000000000ef200 00000000000000a0 t <std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutRaw>>::write_all_cold
+00000000000e9400 00000000000000a1 t std::sys::helpers::small_c_string::run_with_cstr_allocating::<std::sys::fs::unix::File>
+000000000006a9b0 00000000000000a2 t core::slice::sort::shared::pivot::median3_rec::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<u32, <ferromark::inline::links::RangeIndex>::from_slices::{closure#3}>::{closure#0}>
+00000000000944f0 00000000000000a3 t <ferromark::block::parser::BlockParser>::parse_line_content
+00000000000d6ab0 00000000000000a4 t core::slice::sort::shared::smallsort::insertion_sort_shift_left::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}>
+00000000000becd0 00000000000000a4 t <serde_json::de::Deserializer<serde_json::read::StrRead>>::parse_exponent_overflow
+00000000000e3f30 00000000000000a5 t core::ptr::drop_glue::<addr2line::unit::SupUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>
+00000000000d4130 00000000000000a5 t core::ptr::drop_glue::<gimli::read::dwarf::Unit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>
+00000000000bb655 00000000000000a5 t <&mut [u8] as core::fmt::Debug>::fmt
+00000000000677e0 00000000000000a6 t core::slice::sort::shared::pivot::median3_rec::<ferromark::inline::links::AutolinkLiteral, <[ferromark::inline::links::AutolinkLiteral]>::sort_unstable_by_key<u32, ferromark::inline::links::find_autolink_literals_into::{closure#0}>::{closure#0}>
+00000000000471b0 00000000000000a7 t <serde_json::error::Error>::fix_position::<<serde_json::de::Deserializer<serde_json::read::StrRead>>::fix_position::{closure#0}>
+0000000000047260 00000000000000a7 t <serde_json::error::Error>::fix_position::<<serde_json::de::Deserializer<serde_json::read::SliceRead>>::fix_position::{closure#0}>
+00000000000e47f0 00000000000000a7 t core::ptr::drop_glue::<alloc::vec::Vec<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>
+0000000000065330 00000000000000a7 t core::slice::sort::shared::pivot::median3_rec::<(usize, usize), <[(usize, usize)]>::sort_by_key<usize, ferromark::inline::find_html_spans_into::{closure#3}>::{closure#0}>
+000000000006b680 00000000000000a7 t core::slice::sort::shared::pivot::median3_rec::<usize, <usize as core::cmp::PartialOrd>::lt>
+000000000005ce60 00000000000000a9 t <core::fmt::Formatter>::debug_struct_field1_finish
+00000000000eafa0 00000000000000a9 t <std::io::default_write_fmt::Adapter<core::io::cursor::Cursor<&mut [u8]>> as core::fmt::Write>::write_str
+0000000000062bd0 00000000000000ac t core::slice::sort::shared::pivot::median3_rec::<ferromark::inline::links::Link, <[ferromark::inline::links::Link]>::sort_by_key<u32, ferromark::inline::links::resolve_links_into_with_limits::{closure#3}>::{closure#0}>
+0000000000063d50 00000000000000ac t core::slice::sort::shared::pivot::median3_rec::<ferromark::inline::links::RefLink, <[ferromark::inline::links::RefLink]>::sort_by_key<u32, ferromark::inline::links::resolve_reference_links_into::{closure#4}>::{closure#0}>
+00000000000e79c0 00000000000000ac t core::slice::sort::shared::pivot::median3_rec::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+0000000000075520 00000000000000ad t <ferromark::render::HtmlWriter>::heading_start
+00000000000534f0 00000000000000ad t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::parse_exponent_overflow
+00000000000d7620 00000000000000ae t core::ptr::drop_glue::<core::result::Result<addr2line::line::Lines, gimli::read::Error>>
+00000000000e3d70 00000000000000af t core::ptr::drop_glue::<addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>
+0000000000075020 00000000000000b0 t <ferromark::ParagraphState>::finish
+00000000000750d0 00000000000000b0 t <ferromark::HeadingState>::finish
+00000000000e0750 00000000000000b1 t core::ptr::drop_glue::<core::result::Result<&core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, (&core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>)>>
+00000000000d8910 00000000000000b2 t core::slice::sort::shared::pivot::median3_rec::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}>
+00000000000e6460 00000000000000b2 t core::slice::sort::shared::pivot::median3_rec::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_by_key<u64, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}>
+00000000000e1880 00000000000000b3 t core::slice::sort::shared::pivot::median3_rec::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}>
+00000000000e9340 00000000000000b3 t core::slice::sort::shared::pivot::median3_rec::<std::backtrace_rs::symbolize::gimli::elf::ParsedSym, <[std::backtrace_rs::symbolize::gimli::elf::ParsedSym]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::elf::Object>::parse::{closure#3}>::{closure#0}>
+00000000000e3600 00000000000000b3 t <std::backtrace_rs::symbolize::gimli::stash::Stash>::allocate
+000000000006e110 00000000000000b5 t core::ptr::drop_glue::<ferromark::RenderState>
+000000000008c840 00000000000000b5 t core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::links::RefLink, <[ferromark::inline::links::RefLink]>::sort_by_key<u32, ferromark::inline::links::resolve_reference_links_into::{closure#4}>::{closure#0}>
+00000000000e7a90 00000000000000b6 t <std::sys::os_str::bytes::Slice>::try_check_public_boundary::slow_path
+000000000005fae0 00000000000000b6 t <char as core::fmt::Display>::fmt
+000000000009d780 00000000000000b7 t <ferromark::block::parser::BlockParser>::skip_indent_max
+00000000000c9d80 00000000000000b9 t <*mut core::ffi::c_void as core::fmt::Debug>::fmt
+00000000000c4500 00000000000000ba t <std::sys::stdio::unix::Stderr as std::io::Write>::write_fmt
+00000000000e37d0 00000000000000bc t core::ptr::drop_glue::<gimli::read::abbrev::AbbreviationsCache>
+00000000000e7f90 00000000000000bc t <std::path::Component as core::cmp::PartialEq>::eq
+00000000000d7560 00000000000000be t core::ptr::drop_glue::<core::result::Result<&core::result::Result<addr2line::line::Lines, gimli::read::Error>, (&core::result::Result<addr2line::line::Lines, gimli::read::Error>, core::result::Result<addr2line::line::Lines, gimli::read::Error>)>>
+00000000000cc300 00000000000000be t std::sys::fs::unix::canonicalize
+00000000000dd430 00000000000000bf t core::slice::sort::shared::smallsort::insertion_sort_shift_left::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+00000000000cafb0 00000000000000c2 t core::ptr::drop_glue::<std::backtrace_rs::symbolize::gimli::stash::Stash>
+00000000000bd24c 00000000000000c4 t <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_char
+000000000008c230 00000000000000c5 t core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::links::Link, <[ferromark::inline::links::Link]>::sort_by_key<u32, ferromark::inline::links::resolve_links_into_with_limits::{closure#3}>::{closure#0}>
+00000000000ebcf0 00000000000000c5 t <std::sys::pal::unix::time::Timespec>::sub_timespec
+000000000005c9c0 00000000000000c5 t core::slice::index::slice_index_fail
+000000000002f992 00000000000000c8 r itoa::DECIMAL_PAIRS
+000000000005c490 00000000000000c9 t core::unicode::unicode_data::default_ignorable_code_point::lookup_slow
+00000000000669b0 00000000000000ca t core::slice::sort::unstable::ipnsort::<ferromark::inline::links::AutolinkLiteral, <[ferromark::inline::links::AutolinkLiteral]>::sort_unstable_by_key<u32, ferromark::inline::links::find_autolink_literals_into::{closure#0}>::{closure#0}>
+000000000005f740 00000000000000ca t <core::io::error::Error as core::fmt::Display>::fmt
+00000000000e9dc0 00000000000000cc t <std::backtrace_rs::symbolize::Symbol>::name
+00000000000eb1b0 00000000000000cd t <std::sys::stdio::unix::Stderr as std::io::Write>::write_all
+00000000000ef2a0 00000000000000cd t <std::sys::stdio::unix::Stdout as std::io::Write>::write_all
+000000000009fad0 00000000000000ce t <ferromark::link_ref::LinkRefStore>::insert
+000000000006e750 00000000000000ce t <ferromark::block::parser::BlockParser>::parse_for_render
+0000000000075e60 00000000000000d1 t <ferromark::render::HtmlWriter>::heading_end
+00000000000aaff0 00000000000000d2 t ferromark::mdx::splitter::skip_suffix_trivia
+0000000000055f80 00000000000000d2 t <&ferromark::mdx::SpannedSegment as core::fmt::Debug>::fmt
+0000000000056060 00000000000000d2 t <&ferromark::range::Range as core::fmt::Debug>::fmt
+0000000000056140 00000000000000d2 t <&ferromark::link_ref::LinkRefDef as core::fmt::Debug>::fmt
+000000000006c2b0 00000000000000d2 t <&core::str::error::Utf8Error as core::fmt::Debug>::fmt
+00000000000eb590 00000000000000d2 t <&i32 as core::fmt::Debug>::fmt
+000000000006c1d0 00000000000000d2 t <alloc::string::FromUtf8Error as core::fmt::Debug>::fmt
+0000000000078220 00000000000000d2 t <core::str::error::Utf8Error as core::fmt::Debug>::fmt
+000000000005ece0 00000000000000d2 t <i32 as core::fmt::Debug>::fmt
+000000000007a4c0 00000000000000d2 t <smallvec::CollectionAllocErr as core::fmt::Debug>::fmt
+0000000000058b40 00000000000000d2 t <ferromark::range::Range as core::fmt::Debug>::fmt
+00000000000571e0 00000000000000d4 t <&ferromark::block::event::CodeBlockKind as core::fmt::Debug>::fmt
+00000000000eb280 00000000000000d6 t <std::sys::sync::rwlock::futex::RwLock>::wake_writer_or_readers
+00000000000b2049 00000000000000d6 t <alloc::raw_vec::RawVecInner>::finish_grow
+00000000000298c8 00000000000000d8 r core::unicode::unicode_data::cn_planes_0_3::SHORT_OFFSET_RUNS
+0000000000060550 00000000000000d9 t core::ptr::swap_nonoverlapping_bytes
+00000000000ef120 00000000000000da t <std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutRaw>>::write_cold
+00000000000baa61 00000000000000db t <rustc_demangle::v0::Printer>::print_quoted_escaped_chars::<core::iter::sources::once::Once<char>>
+00000000000e8800 00000000000000dc t core::slice::sort::unstable::ipnsort::<std::backtrace_rs::symbolize::gimli::elf::ParsedSym, <[std::backtrace_rs::symbolize::gimli::elf::ParsedSym]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::elf::Object>::parse::{closure#3}>::{closure#0}>
+00000000000bb936 00000000000000df t <rustc_demangle::v0::Printer>::print_backref::<<rustc_demangle::v0::Printer>::print_type>
+0000000000069640 00000000000000df t core::slice::sort::shared::pivot::median3_rec::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<(u32, u32), ferromark::inline::normalize_link_boundaries::{closure#0}>::{closure#0}>
+00000000000e2570 00000000000000e0 t gimli::read::line::parse_directory_v5::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+000000000006c640 00000000000000e2 t <usize as core::fmt::Debug>::fmt
+000000000005f910 00000000000000e2 t <core::num::nonzero::NonZero<usize> as core::fmt::Debug>::fmt
+00000000000eb3d0 00000000000000e2 t <std::io::default_write_fmt::Adapter<std::sys::stdio::unix::Stderr> as core::fmt::Write>::write_char
+000000000005dce0 00000000000000e4 t core::slice::memchr::memchr_aligned
+00000000000930e0 00000000000000e5 t <ferromark::block::parser::BlockParser>::close_table
+00000000000d05f0 00000000000000e7 t core::ptr::drop_glue::<(usize, std::backtrace_rs::symbolize::gimli::Mapping)>
+00000000000c4ac0 00000000000000e7 t <std::sys::sync::mutex::futex::Mutex>::lock_contended
+000000000005c5d0 00000000000000e9 t core::unicode::unicode_data::cf::lookup_slow
+0000000000094b70 00000000000000eb t <ferromark::block::parser::BlockParser>::close_paragraph_as_setext_heading
+00000000000b8fbd 00000000000000ec t <rustc_demangle::v0::Printer>::print_backref::<<rustc_demangle::v0::Printer>::print_path::{closure#1}>
+00000000000ba7a4 00000000000000ec t <rustc_demangle::v0::Printer>::print_backref::<<rustc_demangle::v0::Printer>::print_const::{closure#6}>
+0000000000093b50 00000000000000ec t <ferromark::block::parser::BlockParser>::would_start_block_for_table
+00000000000794a0 00000000000000ed t core::str::pattern::simd_contains::{closure#2}
+00000000000ea680 00000000000000ed t core::str::pattern::simd_contains::{closure#2}
+0000000000069550 00000000000000f0 t core::slice::sort::unstable::heapsort::heapsort::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<(u32, u32), ferromark::inline::normalize_link_boundaries::{closure#0}>::{closure#0}>
+00000000000b4690 00000000000000f0 t <memchr::arch::x86_64::avx2::memchr::One>::rfind_raw
+00000000000d6530 00000000000000f0 t <std::backtrace_rs::symbolize::gimli::elf::Object>::search_symtab
+0000000000063e00 00000000000000f2 t core::slice::sort::stable::driftsort_main::<(usize, usize), <[(usize, usize)]>::sort_by_key<usize, ferromark::inline::find_html_spans_into::{closure#3}>::{closure#0}, alloc::vec::Vec<(usize, usize)>>
+00000000000eb8b0 00000000000000f2 t <std::panicking::panic_handler::FormatStringPayload as core::panic::PanicPayload>::take_box
+00000000000e99e0 00000000000000f4 t <core::io::error::Error>::new::<&str>
+00000000000676e0 00000000000000f4 t core::slice::sort::unstable::heapsort::heapsort::<ferromark::inline::links::AutolinkLiteral, <[ferromark::inline::links::AutolinkLiteral]>::sort_unstable_by_key<u32, ferromark::inline::links::find_autolink_literals_into::{closure#0}>::{closure#0}>
+00000000000bd6d0 00000000000000f4 t <alloc::string::String as core::fmt::Write>::write_char
+00000000000e9240 00000000000000f5 t core::slice::sort::unstable::heapsort::heapsort::<std::backtrace_rs::symbolize::gimli::elf::ParsedSym, <[std::backtrace_rs::symbolize::gimli::elf::ParsedSym]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::elf::Object>::parse::{closure#3}>::{closure#0}>
+00000000000a6370 00000000000000f7 t <ferromark::mdx::expr::ExpressionEndStorage>::get
+00000000000c0450 00000000000000f7 t <serde_json::value::Value as core::fmt::Display>::fmt
+00000000000c36c0 00000000000000f7 t <str as serde_json::value::index::Index>::index_into
+00000000000597e0 00000000000000f7 t <ferromark::block::event::ListKind as core::fmt::Debug>::fmt
+00000000000b3bb0 00000000000000f8 t <memchr::arch::x86_64::avx2::memchr::One>::find_raw
+000000000005a9c0 00000000000000f8 t <alloc::string::String as core::fmt::Write>::write_char
+000000000005c6c0 00000000000000f9 t core::unicode::unicode_data::cn_planes_0_3::lookup_slow
+000000000005c390 00000000000000f9 t core::unicode::unicode_data::grapheme_extend::lookup_slow
+00000000000619c0 00000000000000fa t core::slice::sort::stable::driftsort_main::<ferromark::inline::links::Link, <[ferromark::inline::links::Link]>::sort_by_key<u32, ferromark::inline::links::resolve_links_into_with_limits::{closure#3}>::{closure#0}, alloc::vec::Vec<ferromark::inline::links::Link>>
+0000000000077610 00000000000000fa t <ferromark::ParagraphState>::add_soft_break
+000000000005d430 00000000000000fa t <u32 as core::fmt::Display>::fmt
+0000000000058260 00000000000000fc t <ferromark::mdx::events::MdxEventStream as core::fmt::Debug>::fmt
+0000000000062c80 00000000000000fd t core::slice::sort::stable::driftsort_main::<ferromark::inline::links::RefLink, <[ferromark::inline::links::RefLink]>::sort_by_key<u32, ferromark::inline::links::resolve_reference_links_into::{closure#4}>::{closure#0}, alloc::vec::Vec<ferromark::inline::links::RefLink>>
+0000000000073a40 00000000000000ff t <core::option::Option<ferromark::HeadingIdTracker>>::get_or_insert_with::<<ferromark::HeadingIdTracker>::new>
+00000000000e1940 00000000000000ff t core::ptr::drop_glue::<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>
+000000000002e81a 0000000000000100 r serde_json::ser::ESCAPE
+00000000000302eb 0000000000000100 r core::unicode::unicode_data::white_space::WHITESPACE_MAP
+0000000000029ce6 0000000000000100 r ferromark::generate_slug_into::SLUG_LUT
+00000000000de710 0000000000000103 t core::slice::sort::shared::pivot::median3_rec::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+00000000000ebae0 0000000000000103 t <alloc::string::String as core::fmt::Write>::write_char
+0000000000069720 0000000000000104 t core::slice::sort::unstable::ipnsort::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<u32, <ferromark::inline::links::RangeIndex>::from_slices::{closure#3}>::{closure#0}>
+00000000000b1d05 0000000000000106 t <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_fit
+0000000000076ff0 000000000000010c t <ferromark::render::HtmlWriter>::ol_start
+00000000000e02b0 000000000000010c t <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_sized_offset
+00000000000496d0 000000000000010d t <serde_json::de::MapAccess<serde_json::read::StrRead> as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<serde_json::value::Value>>
+00000000000a0a10 000000000000010d t <ferromark::footnote::FootnoteStore>::insert
+00000000000e3e20 000000000000010f t core::ptr::drop_glue::<addr2line::unit::SupUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>
+00000000000e4670 0000000000000110 t core::slice::sort::stable::driftsort_main::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_by_key<u64, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}, alloc::vec::Vec<addr2line::unit::UnitRange>>
+00000000000dd320 0000000000000110 t core::slice::sort::stable::driftsort_main::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}, alloc::vec::Vec<addr2line::function::InlinedFunctionAddress>>
+00000000000e4560 0000000000000110 t core::slice::sort::stable::driftsort_main::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}, alloc::vec::Vec<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)>>
+0000000000052a10 0000000000000110 t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::f64_from_parts
+00000000000ba513 0000000000000110 t <rustc_demangle::v0::Printer>::print_lifetime_from_index
+000000000005cd50 0000000000000110 t <core::fmt::builders::DebugList>::entry
+000000000005cc30 0000000000000112 t <core::ffi::c_str::CStr>::from_bytes_with_nul
+0000000000047310 0000000000000113 t core::ptr::drop_glue::<alloc::collections::btree::map::BTreeMap<alloc::string::String, serde_json::value::Value>>
+000000000005edc0 0000000000000113 t <i32 as core::fmt::Display>::fmt
+00000000000e0440 0000000000000115 t core::slice::sort::stable::driftsort_main::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}, alloc::vec::Vec<addr2line::function::FunctionAddress>>
+000000000006e5e0 0000000000000116 t core::ptr::drop_glue::<core::option::Option<ferromark::HeadingIdTracker>>
+00000000000ef910 0000000000000116 t std::io::default_read_to_end::small_probe_read::<std::fs::File>
+00000000000e98c0 0000000000000116 t std::io::default_read_to_end::small_probe_read::<&std::fs::File>
+00000000000e7b50 000000000000011a t <std::path::StripPrefixError as core::fmt::Debug>::fmt
+00000000000ebdc0 000000000000011d t <std::sys::pal::unix::time::Timespec>::now
+00000000000598e0 000000000000011e t <std::io::default_write_fmt::Adapter<std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutLock>> as core::fmt::Write>::write_char
+00000000000d6980 0000000000000123 t core::slice::sort::stable::driftsort_main::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}, alloc::vec::Vec<addr2line::line::LineSequence>>
+00000000000784f0 0000000000000123 t <ferromark::render::HtmlWriter>::unescape_backslashes
+000000000008e1d0 0000000000000124 t <core::num::error::TryFromIntError as core::fmt::Debug>::fmt
+0000000000058360 0000000000000125 t <ferromark::limits::ResourceLimitReport as core::fmt::Debug>::fmt
+00000000000bf210 0000000000000126 t <serde_json::read::SliceRead>::skip_to_escape
+000000000005ddd0 0000000000000128 t core::slice::memchr::memrchr
+000000000005ab00 0000000000000129 t <&[u8] as <alloc::ffi::c_str::CString>::new::SpecNewImpl>::spec_new_impl
+00000000000e86d0 000000000000012c t <std::path::Components>::parse_next_component_back
+00000000000eb050 0000000000000133 t <std::io::default_write_fmt::Adapter<core::io::cursor::Cursor<&mut [u8]>> as core::fmt::Write>::write_char
+00000000000e48a0 0000000000000136 t core::ptr::drop_glue::<alloc::vec::Vec<addr2line::unit::SupUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>
+00000000000b4120 0000000000000139 t <memchr::arch::x86_64::avx2::memchr::Three>::find_raw
+000000000009eb90 000000000000013b t <ferromark::block::parser::BlockParser>::advance_table_cell_scan
+00000000000780e0 000000000000013c t <alloc::raw_vec::RawVecInner>::finish_grow
+00000000000bd870 000000000000013c t <alloc::raw_vec::RawVecInner>::finish_grow
+0000000000058490 000000000000013c t <core::option::Option<alloc::string::String> as core::fmt::Debug>::fmt
+00000000000eb68e 000000000000013d t std::alloc::default_alloc_error_hook
+00000000000e84d0 000000000000013f t <<core::io::error::Error>::from_raw_os_error::FUNCTIONS::{closure#0} as core::ops::function::FnOnce<(i32, &mut core::fmt::Formatter)>>::call_once
+00000000000535a0 0000000000000142 t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::end_seq
+0000000000066860 0000000000000144 t core::slice::sort::shared::pivot::median3_rec::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>
+00000000000c5000 0000000000000145 t std::sys::backtrace::_print_fmt::{closure#1}
+00000000000b3cb0 0000000000000146 t <memchr::arch::x86_64::avx2::memchr::One>::find_raw_avx2
+00000000000ba91b 0000000000000146 t <rustc_demangle::v0::HexNibbles>::try_parse_uint
+00000000000b7a5f 0000000000000146 t miniz_oxide::inflate::core::apply_match
+0000000000092f90 0000000000000148 t <ferromark::block::parser::BlockParser>::prepare_definition_lists_for_line
+00000000000bc048 0000000000000149 t <rustc_demangle::v0::Printer>::print_path_maybe_open_generics
+00000000000b9cb2 000000000000014a t <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_generic_arg>
+00000000000c4970 000000000000014a t <alloc::raw_vec::RawVecInner>::finish_grow
+000000000006e970 000000000000014b t core::ptr::drop_glue::<ferromark::footnote::FootnoteStore>
+000000000006e820 000000000000014b t core::ptr::drop_glue::<ferromark::link_ref::LinkRefStore>
+000000000006c4f0 000000000000014d t <&u8 as core::fmt::Debug>::fmt
+0000000000057be0 000000000000014d t <&u8 as core::fmt::Debug>::fmt
+00000000000585d0 000000000000014d t <u8 as core::fmt::Debug>::fmt
+00000000000797a0 000000000000014f t <ferromark::render::HtmlWriter>::decode_info_word
+00000000000b1e44 000000000000014f t <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::Edge>>::insert_fit
+000000000008a420 0000000000000150 t <ferromark::render::HtmlWriter>::write_link_url_with_policy_and_base
+000000000008cca0 0000000000000151 t core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>
+0000000000055520 0000000000000153 t <&core::option::Option<alloc::vec::Vec<u8>> as core::fmt::Debug>::fmt
+0000000000067890 0000000000000154 t core::slice::sort::unstable::ipnsort::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<(u32, u32), ferromark::inline::normalize_link_boundaries::{closure#0}>::{closure#0}>
+0000000000066700 0000000000000154 t core::slice::sort::unstable::heapsort::heapsort::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>
+000000000008d730 0000000000000154 t <smallvec::SmallVec<[u8; 32]>>::try_grow
+000000000006aa60 0000000000000155 t core::slice::sort::unstable::ipnsort::<usize, <usize as core::cmp::PartialOrd>::lt>
+000000000006c390 0000000000000156 t <&core::option::Option<u8> as core::fmt::Debug>::fmt
+0000000000074ec0 0000000000000157 t ferromark::write_inline_footnote_backref
+00000000000bee00 0000000000000157 t <serde_json::de::Deserializer<serde_json::read::StrRead>>::parse_decimal_overflow
+00000000000bc4fb 0000000000000158 t <core::str::iter::SplitInternal<char>>::next
+0000000000079e40 000000000000015a t <ferromark::HeadingIdTracker>::find_entry
+0000000000055680 000000000000015b t <&core::option::Option<ferromark::range::Range> as core::fmt::Debug>::fmt
+00000000000557e0 000000000000015b t <&core::option::Option<ferromark::block::event::CalloutType> as core::fmt::Debug>::fmt
+00000000000653e0 0000000000000160 t core::slice::sort::unstable::ipnsort::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>
+00000000000de5a0 0000000000000165 t core::slice::sort::shared::smallsort::sort4_stable::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+00000000000a0660 000000000000016b t <ferromark::block::parser::BlockParser>::close_waiting_definition_lists
+00000000000e8360 000000000000016d t std::sys::helpers::small_c_string::run_with_cstr_allocating::<std::sys::fs::unix::FileAttr>
+000000000006eac0 000000000000016e t ferromark::block::fixup_list_tight
+0000000000060000 000000000000016f t <hashbrown::raw::RawTableInner>::fallible_with_capacity::<alloc::alloc::Global>
+0000000000060170 000000000000016f t <hashbrown::raw::RawTable<(alloc::string::String, usize)>>::reserve_rehash::<hashbrown::map::make_hasher<alloc::string::String, usize, rustc_hash::FxBuildHasher>::{closure#0}>::{closure#0}
+00000000000b4780 000000000000016f t <memchr::arch::x86_64::avx2::memchr::One>::rfind_raw_avx2
+000000000009a040 0000000000000173 t <ferromark::block::parser::BlockParser>::try_close_fence
+00000000000bbaa4 0000000000000174 t <rustc_demangle::v0::Printer>::in_binder::<<rustc_demangle::v0::Printer>::print_type::{closure#1}>
+00000000000eeeb0 0000000000000175 t <std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutRaw>>::flush_buf
+00000000000a04e0 0000000000000179 t <ferromark::block::parser::BlockParser>::resolve_pending_definition_term_as_paragraph
+000000000005cab0 000000000000017c t <core::fmt::builders::DebugStruct>::field
+000000000009d2c0 000000000000017c t ferromark::footnote::normalize_footnote_label
+00000000000bb7b9 000000000000017d t <rustc_demangle::v0::Printer>::in_binder::<<rustc_demangle::v0::Printer>::print_type::{closure#0}>
+0000000000074770 000000000000017d t core::ptr::drop_glue::<ferromark::block::parser::BlockParser>
+00000000000963e0 000000000000017d t <ferromark::block::parser::BlockParser>::record_block_nesting_limit_if_needed
+000000000005a790 0000000000000180 t alloc::fmt::format::format_inner
+00000000000ba623 0000000000000181 t <rustc_demangle::v0::Printer>::print_const_uint
+00000000000525b0 0000000000000184 t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::parse_decimal
+0000000000075180 000000000000018a t <ferromark::render::HtmlWriter>::col_width
+000000000005f360 000000000000018a t <core::str::lossy::Utf8Chunks as core::iter::traits::iterator::Iterator>::next
+00000000000b4260 000000000000018d t <memchr::arch::x86_64::avx2::memchr::Three>::find_raw_avx2
+00000000000d6620 000000000000018f t <gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize> as core::clone::Clone>::clone
+00000000000ac8a0 0000000000000191 t ferromark::mdx::splitter::is_suffix_identifier_continue_char
+00000000000580c0 0000000000000191 t <ferromark::mdx::Segment as core::fmt::Debug>::fmt
+00000000000cb080 0000000000000192 t <std::backtrace_rs::symbolize::gimli::elf::Object>::build_id
+0000000000079590 0000000000000192 t html_escape::decode::html_entity::write_decoded_entity_to_vec
+00000000000c42f0 0000000000000194 t <std::sys::sync::rwlock::futex::RwLock>::read_contended
+0000000000075c40 000000000000019b t <ferromark::render::HtmlWriter>::heading_start_with_id
+00000000000b37b0 000000000000019c t memchr::arch::x86_64::memchr::memchr_raw::find_sse2
+00000000000490d0 000000000000019d t <core::marker::PhantomData<alloc::string::String> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::SliceRead>>
+000000000006c010 00000000000001a0 t <ferromark::render::HtmlWriter>::into_string_with_ascii_prefix
+0000000000030568 00000000000001a0 r unicode_ident::tables::TRIE_START
+0000000000077750 00000000000001a2 t <ferromark::ParagraphState>::add_text
+0000000000047c70 00000000000001a5 t <serde_json::de::SeqAccess<_> as serde_core::de::SeqAccess>::next_element_seed::has_next_element::<serde_json::read::SliceRead>
+00000000000b3600 00000000000001ac t memchr::arch::x86_64::memchr::memchr_raw::detect
+00000000000b3a00 00000000000001ac t memchr::arch::x86_64::memchr::memchr_raw::find_sse2
+00000000000588e0 00000000000001b2 t <u32 as core::fmt::Debug>::fmt
+0000000000075310 00000000000001b4 t ferromark::write_footnote_backref
+000000000006b730 00000000000001b5 t ferromark::extract_front_matter
+000000000005a0c0 00000000000001b5 t addr2line::line::path_push
+00000000000b911a 00000000000001b7 t <rustc_demangle::v0::Parser>::ident
+0000000000049510 00000000000001bb t <core::marker::PhantomData<u32> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::SliceRead>>
+0000000000092dd0 00000000000001bb t <ferromark::block::parser::BlockParser>::try_thematic_break
+0000000000057f00 00000000000001bc t <&u16 as core::fmt::Debug>::fmt
+0000000000058720 00000000000001bc t <u16 as core::fmt::Debug>::fmt
+00000000000909b0 00000000000001be t <ferromark::block::parser::BlockParser>::remember_definition_term_after_blank
+000000000009ef40 00000000000001c0 t <smallvec::SmallVec<[ferromark::block::event::Alignment; 8]>>::reserve_one_unchecked
+000000000005ad90 00000000000001c0 t core::fmt::write
+0000000000057d30 00000000000001c2 t <&u32 as core::fmt::Debug>::fmt
+000000000005f570 00000000000001c3 t <u32 as core::fmt::Debug>::fmt
+00000000000ca030 00000000000001c6 t <std::sys::fs::unix::File>::open_c
+000000000008ce00 00000000000001c8 t <smallvec::SmallVec<[(u32, u32); 8]>>::try_grow
+0000000000047e20 00000000000001ca t <serde_json::de::MapAccess<_> as serde_core::de::MapAccess>::next_key_seed::has_next_key::<serde_json::read::StrRead>
+00000000000bfcb0 00000000000001cc t <serde_json::read::SliceRead as serde_json::read::Read>::ignore_str
+0000000000066530 00000000000001ce t core::slice::sort::shared::smallsort::sort4_stable::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>
+00000000000497e0 00000000000001d4 t <serde_json::value::ser::Serializer as serde_core::ser::Serializer>::collect_seq::<&alloc::vec::Vec<&str>>
+00000000000baea1 00000000000001d9 t <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_const::{closure#5}>
+000000000006c730 00000000000001d9 t <alloc::vec::Vec<u8> as core::fmt::Debug>::fmt
+00000000000bbc18 00000000000001db t <rustc_demangle::v0::Printer>::print_pat
+000000000005d940 00000000000001e4 t <core::ops::range::Range<usize> as core::fmt::Debug>::fmt
+0000000000078300 00000000000001e5 t <ferromark::render::HtmlWriter>::decode_info_meta
+00000000000d76d0 00000000000001e5 t <gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::attr_string
+00000000000ebf50 00000000000001e7 t std::sys::pal::unix::stack_overflow::imp::make_handler
+00000000000c9e40 00000000000001e7 t <std::backtrace_rs::symbolize::SymbolName as core::fmt::Display>::fmt
+00000000000af600 00000000000001e8 t ferromark::mdx::events::flush_inline_group
+00000000000b44a0 00000000000001ea t memchr::arch::x86_64::memchr::memrchr_raw::find_sse2
+0000000000058c20 00000000000001ed t <alloc::vec::Vec<ferromark::Heading> as core::fmt::Debug>::fmt
+0000000000058e10 00000000000001ed t <alloc::vec::Vec<ferromark::mdx::SpannedSegment> as core::fmt::Debug>::fmt
+0000000000059000 00000000000001ed t <alloc::vec::Vec<ferromark::mdx::events::MdxEvent> as core::fmt::Debug>::fmt
+00000000000591f0 00000000000001ed t <alloc::vec::Vec<ferromark::block::event::BlockEvent> as core::fmt::Debug>::fmt
+00000000000593e0 00000000000001ed t <alloc::vec::Vec<ferromark::inline::event::InlineEvent> as core::fmt::Debug>::fmt
+000000000008c3e0 00000000000001f0 t ferromark::link_ref::normalize_label_into
+0000000000052e10 00000000000001f4 t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::parse_exponent
+000000000005c7c0 00000000000001f7 t core::str::converts::from_utf8
+0000000000076430 00000000000001f9 t <ferromark::render::HtmlWriter>::code_block_start
+0000000000055940 00000000000001fd t <&alloc::vec::Vec<ferromark::link_ref::LinkRefDef> as core::fmt::Debug>::fmt
+00000000000520b0 0000000000000200 t <serde_json::de::Deserializer<serde_json::read::StrRead>>::parse_integer
+000000000002f308 0000000000000200 r serde_json::read::HEX0
+000000000002f508 0000000000000200 r serde_json::read::HEX1
+0000000000055b40 0000000000000202 t <&alloc::vec::Vec<u8> as core::fmt::Debug>::fmt
+00000000000595d0 0000000000000202 t <alloc::vec::Vec<u8> as core::fmt::Debug>::fmt
+00000000000bb349 0000000000000204 t <char>::escape_debug_ext
+00000000000ac210 0000000000000205 t ferromark::mdx::splitter::is_import_clause_continuation
+00000000000b3f10 0000000000000207 t memchr::arch::x86_64::memchr::memchr3_raw::find_sse2
+000000000009e980 000000000000020a t <smallvec::SmallVec<[u16; 8]>>::reserve_one_unchecked
+0000000000055d50 000000000000020a t <&ferromark::Heading as core::fmt::Debug>::fmt
+00000000000a5160 0000000000000215 t ferromark::to_html_with_options
+0000000000076c70 0000000000000218 t <ferromark::render::HtmlWriter>::callout_start
+000000000006ec30 000000000000021a t <ferromark::RenderState>::reset
+00000000000bf3e0 000000000000021d t serde_json::read::parse_escape::<serde_json::read::SliceRead>
+0000000000053760 000000000000021d t <std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutLock>>::write_all_cold
+000000000005a3e0 0000000000000224 t <alloc::string::String>::from_utf8_lossy
+000000000008c900 000000000000022d t <ferromark::footnote::FootnoteStore>::get_index_bytes
+00000000000befd0 0000000000000234 t <serde_json::read::StrRead as serde_json::read::Read>::parse_str
+0000000000095710 0000000000000238 t <ferromark::block::parser::BlockParser>::delimiter_dash_counts
+00000000000a07d0 000000000000023a t <ferromark::block::parser::BlockParser>::would_start_block
+00000000000ccb90 000000000000023a t std::sys::fs::metadata
+00000000000b33c0 000000000000023e t <u64 as itoa::Unsigned>::fmt
+00000000000611f0 0000000000000240 t ferromark::escape::first_escape_avx2::<false>
+0000000000078a10 0000000000000242 t html_escape::decode::html_entity::decode_html_entities::<str>
+00000000000980a0 0000000000000243 t <ferromark::block::parser::BlockParser>::start_indented_code
+00000000000a6770 0000000000000247 t <ferromark::Renderer>::render
+00000000000ee3d0 0000000000000248 t <std::sys::sync::once::futex::Once>::call
+00000000000bab3c 0000000000000248 t <rustc_demangle::v0::Printer>::print_const_str_literal
+00000000000bea80 0000000000000249 t <serde_json::de::Deserializer<serde_json::read::StrRead>>::parse_exponent
+00000000000acf40 000000000000024d t ferromark::mdx::try_segment_spanned
+000000000005be70 0000000000000253 t <u64>::_fmt_inner
+00000000000e29b0 0000000000000254 t <gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::parse
+00000000000bbdf3 0000000000000255 t <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_dyn_trait>
+000000000005c0d0 0000000000000256 t <char>::escape_debug_ext
+000000000009fba0 0000000000000263 t <hashbrown::map::HashMap<alloc::string::String, usize, rustc_hash::FxBuildHasher>>::contains_key::<alloc::string::String>
+00000000000602e0 0000000000000263 t <hashbrown::raw::RawTableInner>::rehash_in_place
+000000000007a5a0 0000000000000267 t <&core::alloc::layout::Layout as core::fmt::Debug>::fmt
+0000000000071910 0000000000000269 t <ferromark::render::HtmlWriter>::td_start
+0000000000071b80 0000000000000269 t <ferromark::render::HtmlWriter>::th_start
+000000000005b850 000000000000026b t <core::fmt::Formatter>::pad_integral
+000000000008c5d0 000000000000026c t <hashbrown::map::HashMap<alloc::string::String, usize, rustc_hash::FxBuildHasher>>::get::<str>
+0000000000060f80 000000000000026c t ferromark::escape::first_escape_x86::<false>
+00000000000e4280 000000000000026f t <gimli::read::aranges::ArangeHeader<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::parse
+000000000009ecd0 0000000000000270 t <smallvec::SmallVec<[ferromark::block::parser::TableCell; 8]>>::reserve_one_unchecked
+00000000000e9b40 0000000000000278 t std::sys::backtrace::_print_fmt::{closure#1}::{closure#0}
+000000000007a240 000000000000027b t <smallvec::SmallVec<[ferromark::SlugEntry; 1]>>::reserve_one_unchecked
+000000000009d500 000000000000027b t <smallvec::SmallVec<[ferromark::block::parser::Container; 8]>>::reserve_one_unchecked
+00000000000e3fe0 0000000000000284 t core::ptr::drop_glue::<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>
+00000000000bd370 0000000000000284 t <serde_json::error::Error as core::fmt::Debug>::fmt
+000000000009dce0 000000000000028e t <smallvec::SmallVec<[ferromark::block::parser::OpenList; 4]>>::reserve_one_unchecked
+000000000005bb60 000000000000028e t <core::fmt::builders::PadAdapter as core::fmt::Write>::write_str
+00000000000c4640 0000000000000292 t std::panic::get_backtrace_style
+0000000000049270 0000000000000299 t <core::marker::PhantomData<bool> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::SliceRead>>
+0000000000079fa0 0000000000000299 t <ferromark::HeadingIdTracker>::record_id
+00000000000a0240 000000000000029b t <smallvec::SmallVec<[ferromark::block::parser::OpenDefinitionList; 2]>>::reserve_one_unchecked
+000000000008e300 000000000000029b t <smallvec::SmallVec<[usize; 8]>>::reserve_one_unchecked
+00000000000a64d0 000000000000029f t <ferromark::block::parser::BlockParser>::new_with_options
+000000000008a570 00000000000002a2 t <ferromark::render::HtmlWriter>::write_link_title
+0000000000061710 00000000000002a4 t ferromark::escape::first_escape_avx2::<true>
+00000000000478d0 00000000000002b1 t core::ptr::drop_glue::<serde_json::value::Value>
+00000000000cc8d0 00000000000002b5 t <std::path::Components>::as_path
+00000000000ef370 00000000000002b6 t std::sys::pal::unix::stack_overflow::imp::signal_handler
+00000000000dd050 00000000000002c2 t addr2line::function::name_attr::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+0000000000052740 00000000000002ca t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::parse_integer
+0000000000077e10 00000000000002cf t <ferromark::render::HtmlWriter>::write_u32
+00000000000bb07a 00000000000002cf t <core::iter::sources::from_fn::FromFn<<rustc_demangle::v0::HexNibbles>::try_parse_str_chars::{closure#2}> as core::iter::traits::iterator::Iterator>::next
+00000000000a0b90 00000000000002d1 t ferromark::parse_with_options
+00000000000bff70 00000000000002d4 t <serde_json::read::SliceRead as serde_json::read::Read>::parse_str
+00000000000bdb10 00000000000002d7 t <serde_json::error::JsonUnexpected as core::fmt::Display>::fmt
+0000000000092310 00000000000002d9 t <ferromark::block::parser::BlockParser>::parse_fence_line_in_container
+0000000000061430 00000000000002dc t ferromark::escape::first_escape_x86::<true>
+00000000000c2d30 00000000000002e2 t <serde_json::ser::PrettyFormatter as serde_json::ser::Formatter>::end_object::<&mut <serde_json::value::Value as core::fmt::Display>::fmt::WriterFormatter>
+00000000000c2a40 00000000000002e2 t <serde_json::ser::PrettyFormatter as serde_json::ser::Formatter>::end_array::<&mut <serde_json::value::Value as core::fmt::Display>::fmt::WriterFormatter>
+00000000000ccdd0 00000000000002e6 t <std::path::Path>::_strip_prefix
+00000000000e26c0 00000000000002e8 t gimli::read::line::parse_file_v5::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+0000000000052b20 00000000000002ea t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::ignore_integer
+00000000000522b0 00000000000002f6 t <serde_json::de::Deserializer<serde_json::read::StrRead>>::parse_exponent
+00000000000906b0 00000000000002f7 t <ferromark::block::parser::BlockParser>::close_paragraph
+0000000000028cb3 00000000000002ff r core::unicode::unicode_data::grapheme_extend::OFFSETS
+00000000000e8050 0000000000000309 t std::sys::fs::unix::try_statx
+00000000000be6e0 000000000000030c t <serde_json::de::Deserializer<serde_json::read::StrRead>>::parse_long_integer
+000000000008d410 0000000000000317 t ferromark::inline::links::trim_autolink_trailing
+000000000008b5d0 0000000000000318 t ferromark::render::is_safe_normalized_url
+00000000000ca200 0000000000000318 t std::backtrace_rs::symbolize::gimli::libs_dl_iterate_phdr::callback
+00000000000c4c70 000000000000031c t <<std::sys::backtrace::BacktraceLock>::print::DisplayBacktrace as core::fmt::Display>::fmt
+00000000000e7c70 000000000000031d t <std::path::Components as core::iter::traits::iterator::Iterator>::next
+000000000008e5a0 000000000000031e t <ferromark::block::parser::BlockParser>::parse
+00000000000ca520 0000000000000320 t std::backtrace_rs::symbolize::gimli::mmap
+000000000005e920 0000000000000321 t <str as core::fmt::Debug>::fmt
+00000000000b7bdc 0000000000000323 t <core::str::pattern::StrSearcher as core::str::pattern::Searcher>::next
+00000000000931d0 0000000000000328 t <ferromark::block::parser::BlockParser>::handle_blank_line_containers
+00000000000e94b0 0000000000000334 t std::env::current_exe
+0000000000051d70 0000000000000338 t <serde_json::de::Deserializer<serde_json::read::StrRead>>::parse_number
+000000000008d0d0 0000000000000338 t ferromark::inline::links::has_underscore_in_last_two_segments
+00000000000e1e10 000000000000033e t <gimli::read::unit::EntriesCursor<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next_entry
+00000000000ec9a0 0000000000000344 t <alloc::collections::btree::node::BalancingContext<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo>>::bulk_steal_left
+0000000000054c60 0000000000000351 t <alloc::collections::btree::map::IntoIter<alloc::string::String, serde_json::value::Value>>::dying_next
+00000000000e3890 0000000000000355 t <alloc::collections::btree::map::IntoIter<u64, core::result::Result<alloc::sync::Arc<gimli::read::abbrev::Abbreviations>, gimli::read::Error>>>::dying_next
+000000000008bd80 0000000000000359 t <ferromark::byte_search::ByteSet<11>>::find
+000000000005d540 000000000000035c t core::str::slice_error_fail_rt
+00000000000bc191 000000000000036a t <rustc_demangle::v0::Printer>::print_type::{closure#0}
+0000000000064fb0 0000000000000374 t core::slice::sort::shared::smallsort::sort8_stable::<(usize, usize), <[(usize, usize)]>::sort_by_key<usize, ferromark::inline::find_html_spans_into::{closure#3}>::{closure#0}>
+00000000000e2150 0000000000000376 t <gimli::read::line::FileEntryFormat>::parse::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+00000000000e7640 0000000000000376 t core::slice::sort::shared::smallsort::sort8_stable::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+00000000000661b0 000000000000037d t core::slice::sort::shared::smallsort::sort8_stable::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>
+0000000000094c60 000000000000037d t <ferromark::block::parser::BlockParser>::is_delimiter_row
+00000000000ed110 0000000000000399 t <alloc::collections::btree::node::BalancingContext<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo>>::bulk_steal_right
+0000000000077900 00000000000003a0 t <ferromark::CellState>::add_text
+0000000000067330 00000000000003a1 t core::slice::sort::shared::smallsort::sort8_stable::<ferromark::inline::links::AutolinkLiteral, <[ferromark::inline::links::AutolinkLiteral]>::sort_unstable_by_key<u32, ferromark::inline::links::find_autolink_literals_into::{closure#0}>::{closure#0}>
+0000000000091ac0 00000000000003a3 t <ferromark::block::parser::BlockParser>::parse_html_block_line
+00000000000b76b4 00000000000003ab t miniz_oxide::inflate::core::transfer
+0000000000078c60 00000000000003b2 t <&str as core::str::pattern::Pattern>::is_contained_in
+0000000000090be0 00000000000003b8 t <ferromark::block::parser::BlockParser>::parse_paragraph_line
+000000000009fe10 00000000000003ba t <hashbrown::map::HashMap<alloc::string::String, usize, rustc_hash::FxBuildHasher>>::insert
+00000000000b72f1 00000000000003c3 t miniz_oxide::inflate::core::init_tree
+00000000000e1a40 00000000000003c5 t core::ptr::drop_glue::<gimli::read::abbrev::Abbreviations>
+00000000000a6b10 00000000000003d4 t <ferromark::mdx::expr::ExpressionEnds>::new
+000000000005ef80 00000000000003d6 t <core::str::lossy::Debug as core::fmt::Debug>::fmt
+000000000005fc20 00000000000003de t <hashbrown::raw::RawTable<(alloc::string::String, usize)>>::reserve_rehash::<hashbrown::map::make_hasher<alloc::string::String, usize, rustc_hash::FxBuildHasher>::{closure#0}>
+00000000000ac4b0 00000000000003e2 t ferromark::mdx::splitter::word_requires_following
+0000000000098360 00000000000003e5 t <ferromark::block::parser::BlockParser>::try_footnote_definition
+0000000000053010 00000000000003e5 t <serde_json::de::Deserializer<serde_json::read::SliceRead>>::peek_invalid_type
+00000000000c9990 00000000000003ea t <std::backtrace_rs::print::BacktraceFrameFmt>::print_raw_with_column
+00000000000b92d1 00000000000003ea t <rustc_demangle::v0::Ident as core::fmt::Display>::fmt
+0000000000078620 00000000000003ee t ferromark::render::decode_entities_commonmark
+00000000000acae0 00000000000003ef t ferromark::mdx::splitter::finish_fence
+0000000000077210 00000000000003f4 t <ferromark::render::HtmlWriter>::write_html_filtered
+000000000008a020 00000000000003f7 t <ferromark::render::HtmlWriter>::write_text_with_entities
+000000000006e1d0 000000000000040a t core::ptr::drop_glue::<ferromark::inline::InlineParser>
+0000000000047460 000000000000040a t core::ptr::drop_glue::<ferromark::inline::InlineParser>
+00000000000e88e0 000000000000040a t core::slice::sort::unstable::quicksort::quicksort::<std::backtrace_rs::symbolize::gimli::elf::ParsedSym, <[std::backtrace_rs::symbolize::gimli::elf::ParsedSym]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::elf::Object>::parse::{closure#3}>::{closure#0}>
+00000000000cb220 000000000000040c t std::backtrace_rs::symbolize::gimli::elf::locate_build_id
+00000000000b5210 0000000000000418 t memchr::arch::x86_64::memchr::count_raw::find_sse2
+00000000000eccf0 000000000000041f t <alloc::collections::btree::node::BalancingContext<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo>>::merge_tracking_child_edge::<alloc::alloc::Global>
+00000000000d1330 0000000000000420 t <std::backtrace_rs::symbolize::gimli::elf::Object>::section
+000000000005af50 0000000000000429 t <core::fmt::Formatter>::pad
+00000000000de820 0000000000000435 t addr2line::function::name_entry::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+0000000000056220 000000000000043f t <&ferromark::mdx::events::MdxEvent as core::fmt::Debug>::fmt
+0000000000053980 000000000000044e t <std::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutLock>>::flush_buf
+00000000000d42c0 000000000000045b t <addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_function_or_location::{closure#0}
+00000000000af7f0 000000000000045c t ferromark::mdx::events::emit_inline_range
+0000000000060630 0000000000000466 t <hashbrown::raw::RawTable<(usize, usize)>>::reserve_rehash::<hashbrown::map::make_hasher<usize, usize, rustc_hash::FxBuildHasher>::{closure#0}>
+00000000000cc460 000000000000046c t <std::path::Components as core::iter::traits::double_ended::DoubleEndedIterator>::next_back
+0000000000075f40 0000000000000473 t ferromark::heading_plain_text
+0000000000079020 000000000000047c t <str>::replace::<char>
+0000000000099bc0 000000000000047c t <ferromark::block::parser::BlockParser>::try_atx_heading
+000000000008b8f0 0000000000000483 t ferromark::inline::marks::compute_emphasis_flags_with_context
+00000000000bf730 0000000000000484 t serde_json::read::parse_unicode_escape::<serde_json::read::SliceRead>
+000000000009d840 000000000000049b t <ferromark::block::parser::BlockParser>::start_list_item
+0000000000091e70 000000000000049d t <ferromark::block::parser::BlockParser>::close_containers_from
+00000000000f00e0 00000000000004ac t <f64 as zmij::private::Sealed>::write_to_zmij_buffer
+000000000005b380 00000000000004c3 t core::str::count::do_count_chars
+0000000000054fc0 00000000000004c6 t ferromark::escape::escape_text_into
+0000000000076730 00000000000004c9 t ferromark::escape::escape_text_into
+0000000000060aa0 00000000000004d2 t <hashbrown::raw::RawTable<(u64, smallvec::SmallVec<[ferromark::SlugEntry; 1]>)>>::reserve_rehash::<hashbrown::map::make_hasher<u64, smallvec::SmallVec<[ferromark::SlugEntry; 1]>, rustc_hash::FxBuildHasher>::{closure#0}>
+00000000000af110 00000000000004e2 t <ferromark::link_ref::LinkRefStore>::merge_first_wins
+000000000009df70 00000000000004f7 t <ferromark::block::parser::BlockParser>::emit_paragraph_items
+00000000000a5380 0000000000000500 t <ferromark::inline::InlineParser>::parse_mdx_in_document
+0000000000094600 0000000000000503 t <ferromark::block::parser::BlockParser>::extract_link_ref_defs
+000000000009e470 000000000000050f t <ferromark::block::parser::BlockParser>::split_table_cells
+000000000009cda0 0000000000000511 t <ferromark::block::parser::BlockParser>::html_block_ends
+000000000005cf10 000000000000051c t <core::str::pattern::StrSearcher>::new
+0000000000059a80 000000000000053c T main
+00000000000798f0 0000000000000542 t ferromark::escape::escape_full_into
+00000000000a5880 0000000000000545 t ferromark::mdx::expr::find_expression_end_from
+00000000000e8cf0 000000000000054b t core::slice::sort::shared::smallsort::small_sort_general::<std::backtrace_rs::symbolize::gimli::elf::ParsedSym, <[std::backtrace_rs::symbolize::gimli::elf::ParsedSym]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::elf::Object>::parse::{closure#3}>::{closure#0}>
+00000000000d0c70 0000000000000557 t <addr2line::lookup::LoopingLookup<core::result::Result<addr2line::frame::FrameIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, addr2line::lookup::MappedLookup<core::result::Result<(core::option::Option<&addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>, core::option::Option<addr2line::frame::Location>), gimli::read::Error>, addr2line::lookup::SimpleLookup<core::result::Result<(addr2line::DebugFile, gimli::read::dwarf::UnitRef<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>), gimli::read::Error>, gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, <addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::dwarf_and_unit::{closure#6}>, <addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_function_or_location::{closure#0}>, <addr2line::Context<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_frames::{closure#0}>>::new_lookup
+000000000008b000 0000000000000559 t ferromark::escape::url_encode_then_html_escape
+00000000000aaa80 000000000000056d t <ferromark::mdx::splitter::EsmContinuation>::finish_word
+00000000000d06e0 000000000000058b t <addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_function_or_location
+00000000000c3d5e 000000000000058e t std::panicking::panic_with_hook
+00000000000a5dd0 0000000000000599 t ferromark::mdx::jsx_tag::parse_jsx_tag_with_expression_ends
+00000000000c37c0 000000000000059e T rust_eh_personality
+00000000000b9710 00000000000005a2 t <rustc_demangle::v0::Printer>::print_type
+00000000000286fe 00000000000005b5 r core::unicode::unicode_data::cn_planes_0_3::OFFSETS
+00000000000748f0 00000000000005cf t ferromark::push_decimal
+00000000000ded40 00000000000005d5 t gimli::read::unit::skip_attributes::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+00000000000d1750 0000000000000600 t <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next
+0000000000062d80 0000000000000615 t core::slice::sort::stable::drift::sort::<ferromark::inline::links::RefLink, <[ferromark::inline::links::RefLink]>::sort_by_key<u32, ferromark::inline::links::resolve_reference_links_into::{closure#4}>::{closure#0}>
+00000000000c3020 0000000000000619 t <&mut serde_json::ser::Serializer<&mut <serde_json::value::Value as core::fmt::Display>::fmt::WriterFormatter> as serde_core::ser::Serializer>::serialize_str
+00000000000e08b0 0000000000000632 t core::slice::sort::stable::drift::sort::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}>
+00000000000d78c0 0000000000000642 t core::slice::sort::stable::drift::sort::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}>
+00000000000e5410 0000000000000642 t core::slice::sort::stable::drift::sort::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_by_key<u64, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}>
+0000000000061ac0 0000000000000645 t core::slice::sort::stable::drift::sort::<ferromark::inline::links::Link, <[ferromark::inline::links::Link]>::sort_by_key<u32, ferromark::inline::links::resolve_links_into_with_limits::{closure#3}>::{closure#0}>
+0000000000093500 000000000000064e t <ferromark::block::parser::BlockParser>::emit_table_row
+00000000000cd0c0 0000000000000653 t <std::backtrace_rs::symbolize::gimli::Mapping>::load_dwarf_package
+0000000000063f00 0000000000000655 t core::slice::sort::stable::drift::sort::<(usize, usize), <[(usize, usize)]>::sort_by_key<usize, ferromark::inline::find_html_spans_into::{closure#3}>::{closure#0}>
+00000000000755d0 000000000000066f t <ferromark::HeadingIdTracker>::make_id
+00000000000efa50 0000000000000674 t std_detect::detect::cache::detect_and_initialize
+00000000000b9e99 000000000000067a t <rustc_demangle::v0::Printer>::print_const
+00000000000dd540 000000000000068e t core::slice::sort::stable::drift::sort::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+00000000000e6520 00000000000006a2 t core::slice::sort::stable::drift::sort::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+00000000000b88d0 00000000000006d4 t <rustc_demangle::v0::Printer>::print_path
+0000000000030708 0000000000000708 r unicode_ident::tables::TRIE_CONTINUE
+000000000006b8f0 0000000000000716 t ferromark::render_to_writer
+0000000000094fe0 000000000000072a t <ferromark::block::parser::BlockParser>::table_cells
+000000000008a8c0 0000000000000738 t ferromark::escape::url_escape_link_destination_raw
+00000000000ea830 0000000000000738 t std::sys::backtrace::output_filename
+00000000000ca840 0000000000000761 t <std::backtrace_rs::symbolize::gimli::elf::Object>::parse
+00000000000ee640 0000000000000765 t <std::sync::once::Once>::call_once::<std::rt::cleanup::{closure#0}>::{closure#0}
+0000000000092650 000000000000077c t <ferromark::block::parser::BlockParser>::close_top_container
+00000000000d9950 00000000000007de t <core::cell::once::OnceCell<core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>>::get_or_init<<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::borrow::{closure#0}>::{closure#0}, !>
+00000000000e9e90 00000000000007e5 t <&str as core::str::pattern::Pattern>::is_contained_in
+00000000000ec1b0 00000000000007e8 t <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo>>::remove_kv::{closure#0}, alloc::alloc::Global>
+0000000000096dd0 0000000000000819 t <ferromark::block::parser::BlockParser>::try_list_item
+00000000000bde90 0000000000000830 t serde_json::error::make_error
+00000000000ab0d0 0000000000000844 t ferromark::mdx::splitter::scan_suffix_identifier_char
+00000000000dc7f0 0000000000000852 t <gimli::read::unit::Attribute<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::value
+0000000000096560 0000000000000868 t <ferromark::block::parser::BlockParser>::try_blockquote
+00000000000b4960 00000000000008a8 t memchr::arch::x86_64::memchr::count_raw::find_avx2
+000000000008d920 00000000000008a9 t ferromark::link_ref::normalize_label_text
+0000000000066a80 00000000000008ab t core::slice::sort::unstable::quicksort::quicksort::<ferromark::inline::links::AutolinkLiteral, <[ferromark::inline::links::AutolinkLiteral]>::sort_unstable_by_key<u32, ferromark::inline::links::find_autolink_literals_into::{closure#0}>::{closure#0}>
+0000000000093c40 00000000000008ab t <ferromark::block::parser::BlockParser>::try_definition_description
+00000000000572c0 00000000000008d6 t <&ferromark::inline::event::InlineEvent as core::fmt::Debug>::fmt
+00000000000b2ad0 00000000000008e3 t html_escape::decode::html_entity::find_decoded_entity
+00000000000ab920 00000000000008e9 t ferromark::mdx::splitter::scan_suffix_group
+00000000000d6c50 0000000000000901 t addr2line::line::render_file::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+000000000009f100 0000000000000923 t <ferromark::block::parser::BlockParser>::extract_link_ref_defs_from_bytes
+00000000000b214e 000000000000093e t <gimli::read::abbrev::Abbreviations>::insert
+0000000000106d28 0000000000000940 d <std::backtrace_rs::symbolize::gimli::Cache>::with_global::MAPPINGS_CACHE
+00000000000e4a50 0000000000000954 t <gimli::read::index::UnitIndex<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse
+0000000000099250 000000000000096f t <ferromark::block::parser::BlockParser>::try_code_fence
+000000000005dfb0 0000000000000970 t <core::io::error::Error as core::fmt::Debug>::fmt
+00000000000e2c10 000000000000097f t gimli::read::line::parse_attribute::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+00000000000e0ef0 0000000000000986 t core::slice::sort::stable::quicksort::quicksort::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}>
+00000000000633a0 00000000000009a1 t core::slice::sort::stable::quicksort::quicksort::<ferromark::inline::links::RefLink, <[ferromark::inline::links::RefLink]>::sort_by_key<u32, ferromark::inline::links::resolve_reference_links_into::{closure#4}>::{closure#0}>
+000000000002e960 00000000000009a8 r serde_json::de::POW10
+00000000000b7f26 00000000000009aa t rustc_demangle::try_demangle
+00000000000ddbd0 00000000000009c3 t core::slice::sort::stable::quicksort::quicksort::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+00000000000d7f10 00000000000009f3 t core::slice::sort::stable::quicksort::quicksort::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}>
+00000000000e5a60 00000000000009f3 t core::slice::sort::stable::quicksort::quicksort::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_by_key<u64, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}>
+000000000006abc0 0000000000000a1f t core::slice::sort::unstable::quicksort::quicksort::<usize, <usize as core::cmp::PartialOrd>::lt>
+0000000000064560 0000000000000a42 t core::slice::sort::stable::quicksort::quicksort::<(usize, usize), <[(usize, usize)]>::sort_by_key<usize, ferromark::inline::find_html_spans_into::{closure#3}>::{closure#0}>
+00000000000e6bd0 0000000000000a66 t core::slice::sort::stable::quicksort::quicksort::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>
+0000000000095950 0000000000000a8b t <ferromark::block::parser::BlockParser>::start_table
+00000000000975f0 0000000000000aa2 t <ferromark::block::parser::BlockParser>::parse_line_content_with_indent
+0000000000091010 0000000000000aa7 t <ferromark::block::parser::BlockParser>::match_containers
+0000000000062110 0000000000000abe t core::slice::sort::stable::quicksort::quicksort::<ferromark::inline::links::Link, <[ferromark::inline::links::Link]>::sort_by_key<u32, ferromark::inline::links::resolve_links_into_with_limits::{closure#3}>::{closure#0}>
+0000000000098750 0000000000000afb t <ferromark::block::parser::BlockParser>::try_html_block_start
+00000000000bc6fc 0000000000000b37 t <&rustc_demangle::DemangleStyle as core::fmt::Display>::fmt
+0000000000056660 0000000000000b7f t <&ferromark::block::event::BlockEvent as core::fmt::Debug>::fmt
+0000000000073b40 0000000000000c2a t <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_footnote_section
+0000000000065540 0000000000000c6c t core::slice::sort::unstable::quicksort::quicksort::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>
+00000000000cb630 0000000000000ccb t <std::backtrace_rs::symbolize::gimli::Mapping>::new_debug
+0000000000053dd0 0000000000000e88 t <alloc::collections::btree::map::BTreeMap<alloc::string::String, serde_json::value::Value>>::insert
+00000000000df390 0000000000000f19 t <gimli::read::rnglists::RngListIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next
+00000000000ed4b0 0000000000000f19 t std::sys::pal::unix::stack_overflow::thread_info::set_current_info
+00000000000d89d0 0000000000000f80 t <core::cell::once::OnceCell<core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>>::get_or_init<<addr2line::function::LazyFunctions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::borrow::{closure#0}>::{closure#0}, !>
+0000000000047ff0 00000000000010d4 t <serde_json::value::Value as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+0000000000069830 00000000000010d5 t core::slice::sort::unstable::quicksort::quicksort::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<u32, <ferromark::inline::links::RangeIndex>::from_slices::{closure#3}>::{closure#0}>
+00000000000c0550 00000000000011ef t <serde_json::value::Value as serde_core::ser::Serialize>::serialize::<&mut serde_json::ser::Serializer<&mut <serde_json::value::Value as core::fmt::Display>::fmt::WriterFormatter>>
+00000000000db500 00000000000012e4 t <addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse_children
+00000000000c1740 00000000000012f5 t <serde_json::value::Value as serde_core::ser::Serialize>::serialize::<&mut serde_json::ser::Serializer<&mut <serde_json::value::Value as core::fmt::Display>::fmt::WriterFormatter, serde_json::ser::PrettyFormatter>>
+00000000000da130 00000000000013c6 t gimli::read::unit::parse_attribute::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>
+000000000006c910 00000000000017fa t ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>
+00000000000679f0 0000000000001b58 t core::slice::sort::unstable::quicksort::quicksort::<(u32, u32), <[(u32, u32)]>::sort_unstable_by_key<(u32, u32), ferromark::inline::normalize_link_boundaries::{closure#0}>::{closure#0}>
+0000000000071df0 0000000000001c48 t <ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event
+00000000000b5628 0000000000001cc9 t miniz_oxide::inflate::core::decompress
+00000000000a32c0 0000000000001d12 t <ferromark::RenderContext<dyn ferromark::FencedCodeRenderer>>::render_block_event
+000000000008e8c0 0000000000001ded t <ferromark::block::parser::BlockParser>::parse_line
+00000000000d4720 0000000000001e0a t <core::cell::once::OnceCell<core::result::Result<addr2line::line::Lines, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<addr2line::line::Lines, gimli::read::Error>>>::get_or_init<<addr2line::line::LazyLines>::borrow<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#0}>::{closure#0}, !>
+0000000000030e40 0000000000001e80 r unicode_ident::tables::LEAF
+00000000000ad190 0000000000001f7a t ferromark::mdx::events::parse_events
+00000000000afc50 000000000000206b t ferromark::mdx::render::render_with_options
+00000000000d1d50 00000000000023dc t <gimli::read::dwarf::Unit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::new
+00000000000a0e70 0000000000002445 t ferromark::render_to_writer_impl::<dyn ferromark::FencedCodeRenderer>
+000000000006ef20 00000000000029e5 t ferromark::render_inline_content
+000000000009a1c0 0000000000002bdd t <ferromark::block::parser::BlockParser>::peek_html_block_start
+00000000000cd713 0000000000002edb t <std::backtrace_rs::symbolize::gimli::Context>::new
+00000000000a6ef0 0000000000003a91 t ferromark::mdx::splitter::split_with_expression_ends
+0000000000032cc0 0000000000004300 r zmij::STATIC_DATA
+00000000000c5145 0000000000004849 t <std::backtrace_rs::symbolize::gimli::Cache>::with_global::<std::backtrace_rs::symbolize::gimli::resolve::{closure#1}>
+00000000000499c0 00000000000083a9 t ox_experiment_driver::main
+000000000007a810 000000000000f80a t <ferromark::inline::InlineParser>::parse_with_options_in_document
+00000000000f36c8 00000000000109a0 d html_escape::decode::html_entity::tables::NAMED_ENTITIES

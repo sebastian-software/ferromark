@@ -1,0 +1,556 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -3,11 +3,13 @@
+ //! Fast-path optimized: scans for first escapable character,
+ //! then bulk-copies segments between escapes.
+ 
+-use memchr::{memchr, memchr2, memchr3};
++#[cfg(not(target_arch = "x86_64"))]
++use memchr::memchr2;
++use memchr::{memchr, memchr3};
+ 
+ /// Escape HTML text content into output buffer.
+ ///
+-/// Escapes `<`, `>`, and `&` to their HTML entity equivalents.
++/// Escapes `<`, `>`, `&`, and `"` to their HTML entity equivalents.
+ ///
+ /// # Example
+ /// ```
+@@ -24,7 +26,7 @@
+     }
+ 
+     let mut start = 0usize;
+-    while let Some(rel) = first_text_escape(&input[start..]) {
++    while let Some(rel) = first_escape::<false>(&input[start..]) {
+         let pos = start + rel;
+         if pos > start {
+             out.extend_from_slice(&input[start..pos]);
+@@ -40,7 +42,8 @@
+ /// Escape HTML text content, checking for quotes as well (for attribute context).
+ ///
+ /// This version handles all 5 escapable characters.
+-#[inline]
++#[cfg_attr(target_arch = "x86_64", inline(never))]
++#[cfg_attr(not(target_arch = "x86_64"), inline)]
+ pub fn escape_full_into(out: &mut Vec<u8>, input: &[u8]) {
+     if input.is_empty() {
+         return;
+@@ -77,33 +80,98 @@
+     escape_full_into(out, input)
+ }
+ 
+-/// Below this length the local short scan beats SIMD memchr passes, whose
+-/// per-call dispatch and setup cost more than the scan itself. Inline text
+-/// segments between escapes are short in practice (median ~17 bytes, >95%
+-/// under 64 on prose corpora); long inputs (code block content) still go
+-/// through memchr, which scans wider per iteration.
++/// Search nearby escapes inline; unmatched prefixes continue in an outlined
++/// backend that bounds the work needed to locate the next escape.
+ const SHORT_SCAN_MAX: usize = 128;
+ 
+ #[inline]
+ pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
+-    if input.len() <= SHORT_SCAN_MAX {
+-        return first_escape_short::<false>(input);
+-    }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    // A '"' is only relevant if it appears before the first <>& hit, so the
+-    // second pass never scans past it.
+-    let limit = a.unwrap_or(input.len());
+-    memchr(b'"', &input[..limit]).or(a)
++    #[cfg(target_arch = "x86_64")]
++    {
++        if input.len() <= SHORT_SCAN_MAX {
++            return first_escape_in_set::<false>(input);
++        }
++        let a = memchr3(b'<', b'>', b'&', input);
++        let limit = a.unwrap_or(input.len());
++        memchr(b'"', &input[..limit]).or(a)
++    }
++    #[cfg(not(target_arch = "x86_64"))]
++    {
++        first_escape::<false>(input)
++    }
+ }
+ 
+ #[inline]
+ fn first_attr_escape(input: &[u8]) -> Option<usize> {
+-    if input.len() <= SHORT_SCAN_MAX {
+-        return first_escape_short::<true>(input);
+-    }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    let limit = a.unwrap_or(input.len());
+-    memchr2(b'"', b'\'', &input[..limit]).or(a)
++    first_escape::<true>(input)
++}
++
++#[inline]
++fn first_escape<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    {
++        let prefix_len = input.len().min(SHORT_SCAN_MAX);
++        if let Some(at) = first_escape_in_set::<ATTR>(&input[..prefix_len]) {
++            return Some(at);
++        }
++        if input.len() > prefix_len {
++            first_escape_long::<ATTR>(&input[prefix_len..]).map(|at| prefix_len + at)
++        } else {
++            None
++        }
++    }
++    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
++    {
++        if input.len() <= SHORT_SCAN_MAX {
++            return first_escape_in_set::<ATTR>(input);
++        }
++        #[cfg(target_arch = "x86_64")]
++        {
++            first_escape_x86::<ATTR>(input)
++        }
++        #[cfg(not(target_arch = "x86_64"))]
++        {
++            first_escape_long::<ATTR>(input)
++        }
++    }
++}
++
++// Keep the long-search loop out of short writes and inline entity probes.
++#[cfg(not(target_arch = "x86_64"))]
++#[inline(never)]
++fn first_escape_long<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    if input.len() >= SHORT_SCAN_MAX * 2 {
++        // The shared NEON scanner stops at any escape in a single pass. Keep
++        // short tails on the bounded memchr window below.
++        let found = first_escape_in_set::<ATTR>(input);
++        #[cfg(test)]
++        tests::record_long_search(input.len(), found);
++        return found;
++    }
++    let mut start = 0;
++    let mut width = SHORT_SCAN_MAX * 2;
++    while start < input.len() {
++        let len = width.min(input.len() - start);
++        let chunk = &input[start..start + len];
++        let common = memchr3(b'<', b'>', b'&', chunk);
++        #[cfg(test)]
++        tests::record_long_search(chunk.len(), common);
++        let limit = common.unwrap_or(chunk.len());
++        let quote = if ATTR {
++            memchr2(b'"', b'\'', &chunk[..limit])
++        } else {
++            memchr(b'"', &chunk[..limit])
++        };
++        if let Some(at) = quote.or(common) {
++            return Some(start + at);
++        }
++        start += len;
++        // Both searches stay within a window. Doubling bounds how far either
++        // can scan past the next escape, while amortizing setup on plain text.
++        width = width.saturating_mul(2);
++    }
++    None
+ }
+ 
+ // Escape policy stays here; the shared scanner knows only byte sets.
+@@ -111,13 +179,187 @@
+ const ATTR_SPECIALS: crate::byte_search::ByteSet<5> = crate::byte_search::ByteSet::new(b"<>&\"'");
+ 
+ #[inline]
+-fn first_escape_short<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++fn first_escape_in_set<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+     if ATTR {
+         ATTR_SPECIALS.find(input)
+     } else {
+         TEXT_SPECIALS.find(input)
+     }
+ }
++
++#[cfg(target_arch = "x86_64")]
++#[inline(never)]
++fn first_escape_x86<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++    let found = if std::is_x86_feature_detected!("avx2") {
++        // SAFETY: the runtime check includes OS support for AVX state.
++        unsafe { first_escape_avx2::<ATTR>(input) }
++    } else {
++        // SAFETY: SSE2 is part of the x86-64 baseline.
++        unsafe { first_escape_sse2::<ATTR>(input) }
++    };
++    #[cfg(test)]
++    tests::record_long_search(input.len(), found);
++    found
++}
++
++#[cfg(target_arch = "x86_64")]
++macro_rules! escape_vector_mask {
++    ($v:expr, $attr:ident, $and:ident, $eq:ident, $or:ident, $clear4:ident, $clear2:ident, $quote:ident, $less:ident, $apos:ident) => {{
++        let v = $v;
++        // Clearing bit 2 pairs '"' with '&'; clearing bit 1 pairs '<' with '>'.
++        // All other bits must still match, so no other byte can be accepted.
++        let common = $or($eq($and(v, $clear4), $quote), $eq($and(v, $clear2), $less));
++        if $attr {
++            $or(common, $eq(v, $apos))
++        } else {
++            common
++        }
++    }};
++}
++
++#[cfg(target_arch = "x86_64")]
++macro_rules! define_escape_scan {
++    ($name:ident, $feature:literal, $width:literal, $load:ident, $set:ident, $and:ident, $eq:ident, $or:ident, $mask:ident) => {
++        /// # Safety
++        /// The caller must establish support for the named CPU feature.
++        #[target_feature(enable = $feature)]
++        unsafe fn $name<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++            use core::arch::x86_64::*;
++            // SAFETY: the caller establishes the CPU feature. Each load below
++            // is guarded by a complete readable vector or four-vector range.
++            // The final overlapping vector ends exactly at input.len().
++            unsafe {
++                let clear4 = $set(!4_i8);
++                let clear2 = $set(!2_i8);
++                let quote = $set(b'"' as i8);
++                let less = $set(b'<' as i8);
++                let apos = $set(b'\'' as i8);
++                let mut pos = 0;
++                // Avoid four-vector setup when an escape occurs immediately.
++                if input.len() >= $width {
++                    let v = $load(input.as_ptr().cast());
++                    let bits = $mask(escape_vector_mask!(
++                        v, ATTR, $and, $eq, $or, clear4, clear2, quote, less, apos
++                    )) as u32;
++                    if bits != 0 {
++                        return Some(bits.trailing_zeros() as usize);
++                    }
++                    pos = $width;
++                }
++                while input.len() - pos >= 4 * $width {
++                    let a = escape_vector_mask!(
++                        $load(input.as_ptr().add(pos).cast()),
++                        ATTR,
++                        $and,
++                        $eq,
++                        $or,
++                        clear4,
++                        clear2,
++                        quote,
++                        less,
++                        apos
++                    );
++                    let b = escape_vector_mask!(
++                        $load(input.as_ptr().add(pos + $width).cast()),
++                        ATTR,
++                        $and,
++                        $eq,
++                        $or,
++                        clear4,
++                        clear2,
++                        quote,
++                        less,
++                        apos
++                    );
++                    let c = escape_vector_mask!(
++                        $load(input.as_ptr().add(pos + 2 * $width).cast()),
++                        ATTR,
++                        $and,
++                        $eq,
++                        $or,
++                        clear4,
++                        clear2,
++                        quote,
++                        less,
++                        apos
++                    );
++                    let d = escape_vector_mask!(
++                        $load(input.as_ptr().add(pos + 3 * $width).cast()),
++                        ATTR,
++                        $and,
++                        $eq,
++                        $or,
++                        clear4,
++                        clear2,
++                        quote,
++                        less,
++                        apos
++                    );
++                    if $mask($or($or(a, b), $or(c, d))) != 0 {
++                        for (i, lanes) in [a, b, c, d].into_iter().enumerate() {
++                            let bits = $mask(lanes) as u32;
++                            if bits != 0 {
++                                return Some(pos + i * $width + bits.trailing_zeros() as usize);
++                            }
++                        }
++                    }
++                    pos += 4 * $width;
++                }
++                while input.len() - pos >= $width {
++                    let v = $load(input.as_ptr().add(pos).cast());
++                    let bits = $mask(escape_vector_mask!(
++                        v, ATTR, $and, $eq, $or, clear4, clear2, quote, less, apos
++                    )) as u32;
++                    if bits != 0 {
++                        return Some(pos + bits.trailing_zeros() as usize);
++                    }
++                    pos += $width;
++                }
++                if pos < input.len() {
++                    if input.len() >= $width {
++                        let last = input.len() - $width;
++                        let v = $load(input.as_ptr().add(last).cast());
++                        let bits = $mask(escape_vector_mask!(
++                            v, ATTR, $and, $eq, $or, clear4, clear2, quote, less, apos
++                        )) as u32;
++                        // Overlapping bytes have already been found clean.
++                        if bits != 0 {
++                            return Some(last + bits.trailing_zeros() as usize);
++                        }
++                    } else {
++                        return first_escape_in_set::<ATTR>(input);
++                    }
++                }
++                None
++            }
++        }
++    };
++}
++
++#[cfg(target_arch = "x86_64")]
++define_escape_scan!(
++    first_escape_sse2,
++    "sse2",
++    16,
++    _mm_loadu_si128,
++    _mm_set1_epi8,
++    _mm_and_si128,
++    _mm_cmpeq_epi8,
++    _mm_or_si128,
++    _mm_movemask_epi8
++);
++#[cfg(target_arch = "x86_64")]
++define_escape_scan!(
++    first_escape_avx2,
++    "avx2",
++    32,
++    _mm256_loadu_si256,
++    _mm256_set1_epi8,
++    _mm256_and_si256,
++    _mm256_cmpeq_epi8,
++    _mm256_or_si256,
++    _mm256_movemask_epi8
++);
+ 
+ /// URL percent-encode special characters, then HTML-escape for href attribute.
+ /// This is specifically for autolink URLs per CommonMark spec.
+@@ -312,6 +554,192 @@
+ mod tests {
+     use super::*;
+ 
++    std::thread_local! {
++        static LONG_SEARCH_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
++    }
++
++    // Count the logical prefix inspected by each long-search window. This is
++    // compiled out of release builds and avoids timing thresholds in tests.
++    pub(super) fn record_long_search(len: usize, found: Option<usize>) {
++        let inspected = found.map_or(len, |at| at + 1);
++        LONG_SEARCH_BYTES.with(|count| count.set(count.get().saturating_add(inspected)));
++    }
++
++    #[test]
++    fn large_writes_match_scalar_escape_oracle() {
++        let alphabet = b"ab<>&\"'\0\x80\xff";
++        for len in [8191, 8192, 8193, 16385] {
++            let input: Vec<u8> = (0..len)
++                .map(|i| alphabet[(i * 17 + i / 31) % alphabet.len()])
++                .collect();
++            for attr in [false, true] {
++                let mut expected = Vec::new();
++                for &byte in &input {
++                    match byte {
++                        b'<' => expected.extend_from_slice(b"&lt;"),
++                        b'>' => expected.extend_from_slice(b"&gt;"),
++                        b'&' => expected.extend_from_slice(b"&amp;"),
++                        b'"' => expected.extend_from_slice(b"&quot;"),
++                        b'\'' if attr => expected.extend_from_slice(b"&#39;"),
++                        _ => expected.push(byte),
++                    }
++                }
++                let mut actual = Vec::new();
++                if attr {
++                    escape_attr_into(&mut actual, &input);
++                } else {
++                    escape_text_into(&mut actual, &input);
++                }
++                assert_eq!(actual, expected, "len={len}, attr={attr}");
++            }
++        }
++    }
++
++    #[cfg(target_arch = "x86_64")]
++    #[test]
++    fn x86_escape_scanners_match_oracle_at_every_alignment() {
++        fn check(input: &[u8]) {
++            let text = input
++                .iter()
++                .position(|&b| matches!(b, b'<' | b'>' | b'&' | b'"'));
++            let attr = input
++                .iter()
++                .position(|&b| matches!(b, b'<' | b'>' | b'&' | b'"' | b'\''));
++            // SAFETY: SSE2 is guaranteed on x86-64.
++            unsafe {
++                assert_eq!(first_escape_sse2::<false>(input), text);
++                assert_eq!(first_escape_sse2::<true>(input), attr);
++            }
++            if std::is_x86_feature_detected!("avx2") {
++                // SAFETY: the runtime check establishes AVX2 support.
++                unsafe {
++                    assert_eq!(first_escape_avx2::<false>(input), text);
++                    assert_eq!(first_escape_avx2::<true>(input), attr);
++                }
++            }
++        }
++        for len in [
++            0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256, 257,
++        ] {
++            for offset in 0..32 {
++                // Escapes outside the slice must never appear in its result.
++                let mut storage = vec![b'<'; offset + len + 32];
++                let input = &mut storage[offset..offset + len];
++                input.fill(b'x');
++                check(input);
++                if len != 0 {
++                    for at in [0, len / 2, len - 1] {
++                        for &byte in b"<>&\"'\0\x80\xff" {
++                            input[at] = byte;
++                            check(input);
++                            input[at] = b'x';
++                        }
++                    }
++                }
++            }
++        }
++        let mut input = vec![b'x'; 161];
++        for at in 0..161 {
++            for byte in 0..=255 {
++                input[at] = byte;
++                check(&input);
++            }
++            input[at] = b'x';
++        }
++    }
++
++    #[test]
++    fn quoted_code_search_work_grows_linearly() {
++        for padding in [0, 255] {
++            let line = format!("{}let s = \"text\";\n", "x".repeat(padding));
++            let mut counts = Vec::new();
++            for repeats in [1024, 2048] {
++                let body = line.repeat(repeats);
++                let input = format!("```\n{body}```\n");
++                LONG_SEARCH_BYTES.with(|count| count.set(0));
++                let actual = crate::to_html(&input);
++                counts.push(LONG_SEARCH_BYTES.with(std::cell::Cell::get));
++                assert_eq!(
++                    actual,
++                    format!("<pre><code>{}</code></pre>\n", body.replace('"', "&quot;"))
++                );
++            }
++            if padding != 0 {
++                assert!(
++                    counts[0] > 0,
++                    "sparse quotes must exercise the counted search"
++                );
++            }
++            assert!(
++                counts[1] <= 2 * counts[0] + 16_384,
++                "padding={padding}, search work: {counts:?}"
++            );
++        }
++    }
++
++    #[test]
++    fn quoted_attribute_search_work_grows_linearly() {
++        for padding in [0, 255] {
++            let item = format!("{}value='x' title=\"y\" ", "x".repeat(padding));
++            let mut counts = Vec::new();
++            for repeats in [1024, 2048] {
++                let input = item.repeat(repeats);
++                let mut actual = Vec::new();
++                LONG_SEARCH_BYTES.with(|count| count.set(0));
++                escape_attr_into(&mut actual, input.as_bytes());
++                counts.push(LONG_SEARCH_BYTES.with(std::cell::Cell::get));
++                let expected = input.replace('\'', "&#39;").replace('"', "&quot;");
++                assert_eq!(actual, expected.as_bytes());
++            }
++            if padding != 0 {
++                assert!(
++                    counts[0] > 0,
++                    "sparse quotes must exercise the counted search"
++                );
++            }
++            assert!(
++                counts[1] <= 2 * counts[0] + 16_384,
++                "padding={padding}, search work: {counts:?}"
++            );
++        }
++    }
++
++    #[test]
++    fn escape_searches_match_scalar_oracle_across_growing_windows() {
++        for len in [
++            127, 128, 129, 383, 384, 385, 895, 896, 897, 1919, 1920, 1921, 3967, 3968, 3969, 8063,
++            8064, 8065,
++        ] {
++            for at in [0, 15, 16, len / 2, len - 1] {
++                for byte in 0u8..=255 {
++                    let mut input = vec![b'x'; len];
++                    input[at] = byte;
++                    for later_ampersand in [false, true] {
++                        if later_ampersand {
++                            input[len - 1] = b'&';
++                        }
++                        let text = input
++                            .iter()
++                            .position(|&b| matches!(b, b'<' | b'>' | b'&' | b'"'));
++                        let attr = input
++                            .iter()
++                            .position(|&b| matches!(b, b'<' | b'>' | b'&' | b'"' | b'\''));
++                        assert_eq!(
++                            first_text_escape(&input),
++                            text,
++                            "len={len}, at={at}, byte={byte}"
++                        );
++                        assert_eq!(
++                            first_attr_escape(&input),
++                            attr,
++                            "len={len}, at={at}, byte={byte}"
++                        );
++                    }
++                }
++            }
++        }
++    }
++
+     #[test]
+     fn test_escape_text_basic() {
+         let mut out = Vec::new();
+@@ -469,8 +897,7 @@
+         }
+     }
+ 
+-    /// Long-input path: a quote before the first `<>&` hit must win, and a
+-    /// quote after it must not mask it (the bounded second pass).
++    /// Long-input searches must return the earliest escape regardless of kind.
+     #[test]
+     fn test_long_input_quote_ordering() {
+         let long = 4 * SHORT_SCAN_MAX;
+@@ -500,7 +927,7 @@
+         assert_eq!(first_text_escape(&single_quote_late), None);
+     }
+ 
+-    /// End-to-end escaping of a long segment goes through the memchr path.
++    /// End-to-end escaping preserves every segment around long-input matches.
+     #[test]
+     fn test_escape_long_input_end_to_end() {
+         let long = 3 * SHORT_SCAN_MAX;

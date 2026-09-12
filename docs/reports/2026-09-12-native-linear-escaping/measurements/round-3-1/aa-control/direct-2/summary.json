@@ -1,0 +1,177 @@
+[
+  {
+    "index": 0,
+    "case": "direct-escape/ci-plain",
+    "baseline_ns": 230.67645593445528,
+    "candidate_ns": 228.51506288388418,
+    "change_pct": -0.9369803440994584
+  },
+  {
+    "index": 1,
+    "case": "direct-escape/ci-html-heavy",
+    "baseline_ns": 11868.500473484848,
+    "candidate_ns": 11781.707001879699,
+    "change_pct": -0.7312926498090677
+  },
+  {
+    "index": 2,
+    "case": "direct-escape/plain-128",
+    "baseline_ns": 26.590326052736817,
+    "candidate_ns": 26.371452651387294,
+    "change_pct": -0.8231316942689193
+  },
+  {
+    "index": 3,
+    "case": "direct-escape/late-quote-128",
+    "baseline_ns": 71.09175453263268,
+    "candidate_ns": 70.2422117329737,
+    "change_pct": -1.1949948418687795
+  },
+  {
+    "index": 4,
+    "case": "direct-escape/plain-512",
+    "baseline_ns": 44.67338000686165,
+    "candidate_ns": 44.761346627612184,
+    "change_pct": 0.1969106003105736
+  },
+  {
+    "index": 5,
+    "case": "direct-escape/late-quote-512",
+    "baseline_ns": 83.10850862963062,
+    "candidate_ns": 84.15733727850487,
+    "change_pct": 1.2619991215921278
+  },
+  {
+    "index": 6,
+    "case": "direct-escape/plain-1024",
+    "baseline_ns": 59.58045927705331,
+    "candidate_ns": 59.64469057161943,
+    "change_pct": 0.10780597421620186
+  },
+  {
+    "index": 7,
+    "case": "direct-escape/late-quote-1024",
+    "baseline_ns": 113.90789018078438,
+    "candidate_ns": 114.3780377337774,
+    "change_pct": 0.4127436231562642
+  },
+  {
+    "index": 8,
+    "case": "direct-escape/plain-4096",
+    "baseline_ns": 193.373193954582,
+    "candidate_ns": 190.75603521943478,
+    "change_pct": -1.3534237510509972
+  },
+  {
+    "index": 9,
+    "case": "direct-escape/late-quote-4096",
+    "baseline_ns": 220.14445090166245,
+    "candidate_ns": 220.84450303865452,
+    "change_pct": 0.3179967217546542
+  },
+  {
+    "index": 10,
+    "case": "direct-escape/plain-8192",
+    "baseline_ns": 306.86848856048704,
+    "candidate_ns": 306.84007731958764,
+    "change_pct": -0.009258441957560315
+  },
+  {
+    "index": 11,
+    "case": "direct-escape/late-quote-8192",
+    "baseline_ns": 330.5992013117529,
+    "candidate_ns": 331.25992421030315,
+    "change_pct": 0.19985616901936343
+  },
+  {
+    "index": 12,
+    "case": "direct-escape/plain-65536",
+    "baseline_ns": 3030.9642684108526,
+    "candidate_ns": 3033.4055528613,
+    "change_pct": 0.0805448112962237
+  },
+  {
+    "index": 13,
+    "case": "direct-escape/late-quote-65536",
+    "baseline_ns": 3130.1247497497498,
+    "candidate_ns": 3160.1260743174926,
+    "change_pct": 0.9584705711854324
+  },
+  {
+    "index": 14,
+    "case": "direct-escape/quotes-4096",
+    "baseline_ns": 26033.66993801653,
+    "candidate_ns": 26007.101756198346,
+    "change_pct": -0.10205315609147503
+  },
+  {
+    "index": 15,
+    "case": "direct-escape/attr-quotes-4096",
+    "baseline_ns": 96553.89962121213,
+    "candidate_ns": 96577.35416666667,
+    "change_pct": 0.024291660457587128
+  },
+  {
+    "index": 16,
+    "case": "direct-escape/quotes-65536",
+    "baseline_ns": 4561305.545454546,
+    "candidate_ns": 4548815.818181818,
+    "change_pct": -0.2738191324449635
+  },
+  {
+    "index": 17,
+    "case": "direct-escape/attr-quotes-65536",
+    "baseline_ns": 17944465.0,
+    "candidate_ns": 18127587.333333332,
+    "change_pct": 1.020494806244332
+  },
+  {
+    "index": 18,
+    "case": "direct-escape/late-quote-reserved-512",
+    "baseline_ns": 47.8897065020841,
+    "candidate_ns": 47.96375949658507,
+    "change_pct": 0.15463238326121065
+  },
+  {
+    "index": 19,
+    "case": "direct-escape/late-quote-reserved-8192",
+    "baseline_ns": 317.1383448345849,
+    "candidate_ns": 317.9851126882377,
+    "change_pct": 0.2670026716871554
+  },
+  {
+    "index": 20,
+    "case": "direct-escape/late-quote-reserved-65536",
+    "baseline_ns": 3193.444777834525,
+    "candidate_ns": 3148.9605991943604,
+    "change_pct": -1.392984120124019
+  },
+  {
+    "index": 21,
+    "case": "direct-escape/html-heavy-65536",
+    "baseline_ns": 157240.40625,
+    "candidate_ns": 156139.88988095237,
+    "change_pct": -0.6998941272753356
+  },
+  {
+    "index": 22,
+    "case": "direct-escape/attr-plain-512",
+    "baseline_ns": 46.884255682244394,
+    "candidate_ns": 46.7502010187443,
+    "change_pct": -0.28592682457975194
+  },
+  {
+    "index": 23,
+    "case": "direct-escape/attr-plain-8192",
+    "baseline_ns": 358.28469276625015,
+    "candidate_ns": 357.8371021296084,
+    "change_pct": -0.12492597246785975
+  },
+  {
+    "index": 24,
+    "case": "direct-escape/attr-plain-65536",
+    "baseline_ns": 3417.9166666666665,
+    "candidate_ns": 3321.2850690754517,
+    "change_pct": -2.827207536497811
+  }
+]

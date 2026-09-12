@@ -1,0 +1,850 @@
+Performance regression check	Set up job	﻿2026-09-12T18:05:26.8353866Z Current runner version: '2.337.0'
+Performance regression check	Set up job	2026-09-12T18:05:26.8379781Z ##[group]Runner Image Provisioner
+Performance regression check	Set up job	2026-09-12T18:05:26.8380795Z Hosted Compute Agent
+Performance regression check	Set up job	2026-09-12T18:05:26.8381472Z Version: 20260828.587
+Performance regression check	Set up job	2026-09-12T18:05:26.8382098Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+Performance regression check	Set up job	2026-09-12T18:05:26.8382898Z Build Date: 2026-08-28T16:44:25Z
+Performance regression check	Set up job	2026-09-12T18:05:26.8383616Z Worker ID: {25779590-d384-4424-b462-6ba8ac5876bd}
+Performance regression check	Set up job	2026-09-12T18:05:26.8384354Z Azure Region: westus3
+Performance regression check	Set up job	2026-09-12T18:05:26.8384946Z ##[endgroup]
+Performance regression check	Set up job	2026-09-12T18:05:26.8386680Z ##[group]Operating System
+Performance regression check	Set up job	2026-09-12T18:05:26.8387438Z Ubuntu
+Performance regression check	Set up job	2026-09-12T18:05:26.8388034Z 24.04.5
+Performance regression check	Set up job	2026-09-12T18:05:26.8388577Z LTS
+Performance regression check	Set up job	2026-09-12T18:05:26.8389110Z ##[endgroup]
+Performance regression check	Set up job	2026-09-12T18:05:26.8389647Z ##[group]Runner Image
+Performance regression check	Set up job	2026-09-12T18:05:26.8390286Z Image: ubuntu-24.04
+Performance regression check	Set up job	2026-09-12T18:05:26.8390887Z Version: 20260907.300.1
+Performance regression check	Set up job	2026-09-12T18:05:26.8391939Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260907.300/images/ubuntu/Ubuntu2404-Readme.md
+Performance regression check	Set up job	2026-09-12T18:05:26.8393753Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260907.300
+Performance regression check	Set up job	2026-09-12T18:05:26.8394781Z ##[endgroup]
+Performance regression check	Set up job	2026-09-12T18:05:26.8396177Z ##[group]GITHUB_TOKEN Permissions
+Performance regression check	Set up job	2026-09-12T18:05:26.8398105Z Contents: read
+Performance regression check	Set up job	2026-09-12T18:05:26.8398731Z Metadata: read
+Performance regression check	Set up job	2026-09-12T18:05:26.8399277Z ##[endgroup]
+Performance regression check	Set up job	2026-09-12T18:05:26.8401397Z Secret source: Actions
+Performance regression check	Set up job	2026-09-12T18:05:26.8402473Z Cache mode: write
+Performance regression check	Set up job	2026-09-12T18:05:26.8403266Z Prepare workflow directory
+Performance regression check	Set up job	2026-09-12T18:05:26.8802194Z Prepare all required actions
+Performance regression check	Set up job	2026-09-12T18:05:26.8850338Z Getting action download info
+Performance regression check	Set up job	2026-09-12T18:05:27.2321680Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+Performance regression check	Set up job	2026-09-12T18:05:27.3634981Z Download action repository 'dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c' (SHA:2c7215f132e9ebf062739d9130488b56d53c060c)
+Performance regression check	Set up job	2026-09-12T18:05:27.5976552Z Download action repository 'Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae' (SHA:42dc69e1aa15d09112580998cf2ef0119e2e91ae)
+Performance regression check	Set up job	2026-09-12T18:05:28.5654392Z Download action repository 'actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9' (SHA:55cc8345863c7cc4c66a329aec7e433d2d1c52a9)
+Performance regression check	Set up job	2026-09-12T18:05:28.6754171Z Download action repository 'benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba' (SHA:52576c92bccf6ac60c8223ec7eb2565637cae9ba)
+Performance regression check	Set up job	2026-09-12T18:05:29.8333957Z Complete job name: Performance regression check
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-09-12T18:05:29.9256362Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9257806Z with:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9258211Z   repository: sebastian-software/ferromark
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9261122Z   token: ***
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9261470Z   ssh-strict: true
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9261813Z   ssh-user: git
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9262162Z   persist-credentials: true
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9262527Z   clean: true
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9262884Z   sparse-checkout-cone-mode: true
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9263301Z   fetch-depth: 1
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9263626Z   fetch-tags: false
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9263974Z   show-progress: true
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9265295Z   lfs: false
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9265864Z   submodules: false
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9266403Z   set-safe-directory: true
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9266808Z   allow-unsafe-pr-checkout: false
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9267561Z env:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9267906Z   CARGO_TERM_COLOR: always
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:29.9268269Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0373029Z Syncing repository: sebastian-software/ferromark
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0375732Z ##[group]Getting Git version info
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0376630Z Working directory is '/home/runner/work/ferromark/ferromark'
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0377974Z [command]/usr/bin/git version
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0419243Z git version 2.55.0
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0448903Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0461287Z Temporarily overriding HOME='/home/runner/work/_temp/4b72ab93-c52c-41c6-a0db-c6e1de6821cb' before making global git config changes
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0463544Z Adding repository directory to the temporary git global config as a safe directory
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0470729Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ferromark/ferromark
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0528348Z Deleting the contents of '/home/runner/work/ferromark/ferromark'
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0532469Z ##[group]Determining repository object format
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0534186Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0535498Z ##[group]Initializing the repository
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0539902Z [command]/usr/bin/git init /home/runner/work/ferromark/ferromark
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0670053Z hint: Using 'master' as the name for the initial branch. This default branch name
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0671352Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0672603Z hint: to use in all of your new repositories, which will suppress this warning,
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0673608Z hint: call:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0674178Z hint:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0675667Z hint: 	git config --global init.defaultBranch <name>
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0676569Z hint:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0677415Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0678772Z hint: 'development'. The just-created branch can be renamed via this command:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0679830Z hint:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0680444Z hint: 	git branch -m <name>
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0681106Z hint:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0681980Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0683418Z Initialized empty Git repository in /home/runner/work/ferromark/ferromark/.git/
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0688598Z [command]/usr/bin/git remote add origin https://github.com/sebastian-software/ferromark
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0746659Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0748267Z ##[group]Disabling automatic garbage collection
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0752100Z [command]/usr/bin/git config --local gc.auto 0
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0792671Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0793893Z ##[group]Setting up auth
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0794727Z Removing SSH command configuration
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0800151Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.0839453Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1229509Z Removing HTTP extra header
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1235670Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1271358Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1490963Z Removing includeIf entries pointing to credentials config files
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1496805Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1539487Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1763735Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1802714Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/ferromark/ferromark/.git.path /home/runner/work/_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1836883Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/ferromark/ferromark/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1875645Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1911761Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1944668Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1945588Z ##[group]Fetching the repository
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:30.1950727Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f56cae28e7445fd9abd3812e281a971d7ebe1da9:refs/remotes/pull/313/merge
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9684310Z From https://github.com/sebastian-software/ferromark
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9685717Z  * [new ref]         f56cae28e7445fd9abd3812e281a971d7ebe1da9 -> pull/313/merge
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9688952Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9689654Z ##[group]Determining the checkout info
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9690607Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9695743Z [command]/usr/bin/git sparse-checkout disable
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9752479Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9787130Z ##[group]Checking out the ref
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:31.9792082Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/313/merge
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3857041Z Note: switching to 'refs/remotes/pull/313/merge'.
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3857725Z 
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3858135Z You are in 'detached HEAD' state. You can look around, make experimental
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3859400Z changes and commit them, and you can discard any commits you make in this
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3860597Z state without impacting any branches by switching back to a branch.
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3861421Z 
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3862047Z If you want to create a new branch to retain commits you create, you may
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3862929Z do so (now or later) by using -c with the switch command. Example:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3863397Z 
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3863590Z   git switch -c <new-branch-name>
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3863916Z 
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3864090Z Or undo this operation with:
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3864640Z 
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3865300Z   git switch -
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3865581Z 
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3866203Z Turn off this advice by setting config variable advice.detachedHead to false
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3866954Z 
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3867833Z HEAD is now at f56cae2 Merge db234354c44e97736d53dd7cb1886e89ccff0ddc into e731dc8162828e0ac2df30b7567107f560159ff8
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3887324Z ##[endgroup]
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3945610Z [command]/usr/bin/git log -1 --format=%H
+Performance regression check	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:05:32.3978060Z f56cae28e7445fd9abd3812e281a971d7ebe1da9
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	﻿2026-09-12T18:05:32.4402447Z ##[group]Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4402904Z with:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4403106Z   toolchain: stable
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4403321Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4403509Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4403745Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4513229Z ##[start-action display=Run : parse toolchain version;id=__dtolnay_rust-toolchain.parse]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4567539Z ##[group]Run : parse toolchain version
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4567956Z ^[[36;1m: parse toolchain version^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4568264Z ^[[36;1mif [[ -z $toolchain ]]; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4568824Z ^[[36;1m  # GitHub does not enforce `required: true` inputs itself. https://github.com/actions/runner/issues/1070^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4569395Z ^[[36;1m  echo "'toolchain' is a required input" >&2^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4569698Z ^[[36;1m  exit 1^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4570040Z ^[[36;1melif [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4570509Z ^[[36;1m  if [[ Linux == macOS ]]; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4571051Z ^[[36;1m    echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4571574Z ^[[36;1m  else^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4571979Z ^[[36;1m    echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4572658Z ^[[36;1m  fi^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4572967Z ^[[36;1melif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4609352Z ^[[36;1m  echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4609983Z ^[[36;1melif [[ $toolchain =~ ^1\.[0-9]+$ ]]; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4610578Z ^[[36;1m  echo "toolchain=1.$((i=${toolchain#1.}, c=($(date +%s)/60/60/24-16569)/7/6, i+9*i*(10*i<=c)+90*i*(100*i<=c)))" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4611125Z ^[[36;1melse^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4611407Z ^[[36;1m  echo "toolchain=$toolchain" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4611713Z ^[[36;1mfi^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4659197Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4659803Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4660143Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4660551Z   toolchain: stable
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4660907Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4785926Z ##[end-action id=__dtolnay_rust-toolchain.parse;outcome=success;conclusion=success;duration_ms=27]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4810212Z ##[start-action display=Run : construct rustup command line;id=__dtolnay_rust-toolchain.flags]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4837253Z ##[group]Run : construct rustup command line
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4837612Z ^[[36;1m: construct rustup command line^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4838075Z ^[[36;1mecho "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4838725Z ^[[36;1mecho "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4839230Z ^[[36;1mecho "downgrade=" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4873717Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4874083Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4874286Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4874516Z   targets: 
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4874710Z   components: 
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.4874929Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5380122Z ##[end-action id=__dtolnay_rust-toolchain.flags;outcome=success;conclusion=success;duration_ms=56]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5384346Z ##[start-action display=Run : set $CARGO_HOME;id=__dtolnay_rust-toolchain.__run]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5411069Z ##[group]Run : set $CARGO_HOME
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5411369Z ^[[36;1m: set $CARGO_HOME^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5411708Z ^[[36;1mecho CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5446571Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5446935Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5447349Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5447588Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5511235Z ##[end-action id=__dtolnay_rust-toolchain.__run;outcome=success;conclusion=success;duration_ms=12]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5513479Z ##[start-action display=Run : install rustup if needed;id=__dtolnay_rust-toolchain.__run_2]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5546287Z ##[group]Run : install rustup if needed
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5546634Z ^[[36;1m: install rustup if needed^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5546938Z ^[[36;1mif ! command -v rustup &>/dev/null; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5547708Z ^[[36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5548462Z ^[[36;1m  echo "$CARGO_HOME/bin" >> $GITHUB_PATH^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5548752Z ^[[36;1mfi^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5581899Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5582271Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5582515Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5582808Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5583061Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5640876Z ##[end-action id=__dtolnay_rust-toolchain.__run_2;outcome=success;conclusion=success;duration_ms=12]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5644822Z ##[start-action display=Run : install rustup if needed on windows;id=__dtolnay_rust-toolchain.__run_3]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5651711Z ##[end-action id=__dtolnay_rust-toolchain.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5655546Z ##[start-action display=rustup toolchain install stable;id=__dtolnay_rust-toolchain.__run_4]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5681560Z ##[group]Run rustup toolchain install stable --profile minimal --no-self-update
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5682125Z ^[[36;1mrustup toolchain install stable --profile minimal --no-self-update^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5713950Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5714315Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5714527Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5714781Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5715291Z   RUSTUP_PERMIT_COPY_RENAME: 1
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.5715560Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.8101667Z info: syncing channel updates for stable-x86_64-unknown-linux-gnu
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.8916530Z 
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9002622Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.98.1 (48a229cea 2026-09-01)
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9003694Z 
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9038452Z ##[end-action id=__dtolnay_rust-toolchain.__run_4;outcome=success;conclusion=success;duration_ms=338]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9044692Z ##[start-action display=Run rustup default stable;id=__dtolnay_rust-toolchain.__run_5]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9075999Z ##[group]Run rustup default stable
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9076511Z ^[[36;1mrustup default stable^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9112282Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9112644Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9112842Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9113111Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9113361Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9212161Z info: using existing install for stable-x86_64-unknown-linux-gnu
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9222162Z info: default toolchain set to stable-x86_64-unknown-linux-gnu
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9222499Z 
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9301814Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.98.1 (48a229cea 2026-09-01)
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9302403Z 
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9303074Z info: note that the toolchain 'stable-x86_64-unknown-linux-gnu' is currently in use (overridden by '/home/runner/work/ferromark/ferromark/rust-toolchain.toml')
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9318124Z ##[end-action id=__dtolnay_rust-toolchain.__run_5;outcome=success;conclusion=success;duration_ms=27]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9322400Z ##[start-action display=Run : create cachekey;id=__dtolnay_rust-toolchain.rustc-version]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9345668Z ##[group]Run : create cachekey
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9345971Z ^[[36;1m: create cachekey^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9346677Z ^[[36;1mDATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9347347Z ^[[36;1mHASH=$(rustc +stable --version --verbose | sed -ne 's/^commit-hash: //p')^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9347862Z ^[[36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9380873Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9381242Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9381435Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9381687Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9381933Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9743389Z ##[end-action id=__dtolnay_rust-toolchain.rustc-version;outcome=success;conclusion=success;duration_ms=42]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9746433Z ##[start-action display=Run : disable incremental compilation;id=__dtolnay_rust-toolchain.__run_6]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9769241Z ##[group]Run : disable incremental compilation
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9769610Z ^[[36;1m: disable incremental compilation^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9769950Z ^[[36;1mif [ -z "${CARGO_INCREMENTAL+set}" ]; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9770279Z ^[[36;1m  echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9770560Z ^[[36;1mfi^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9806117Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9806474Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9806674Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9807112Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9807377Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9865453Z ##[end-action id=__dtolnay_rust-toolchain.__run_6;outcome=success;conclusion=success;duration_ms=11]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9867610Z ##[start-action display=Run : enable colors in Cargo output;id=__dtolnay_rust-toolchain.__run_7]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9889221Z ##[group]Run : enable colors in Cargo output
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9889553Z ^[[36;1m: enable colors in Cargo output^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9901836Z ^[[36;1mif [ -z "${CARGO_TERM_COLOR+set}" ]; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9902284Z ^[[36;1m  echo CARGO_TERM_COLOR=always >> $GITHUB_ENV^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9902596Z ^[[36;1mfi^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9934074Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9934426Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9934627Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9934886Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9935368Z   CARGO_INCREMENTAL: 0
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9935599Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9992699Z ##[end-action id=__dtolnay_rust-toolchain.__run_7;outcome=success;conclusion=success;duration_ms=12]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:32.9997361Z ##[start-action display=Run : enable Cargo sparse registry;id=__dtolnay_rust-toolchain.__run_8]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0019827Z ##[group]Run : enable Cargo sparse registry
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0020171Z ^[[36;1m: enable Cargo sparse registry^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0020544Z ^[[36;1m# implemented in 1.66, stabilized in 1.68, made default in 1.70^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0021284Z ^[[36;1mif [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol ]; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0022034Z ^[[36;1m  if rustc +stable --version --verbose | grep -q '^release: 1\.6[89]\.'; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0022625Z ^[[36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0023174Z ^[[36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0023687Z ^[[36;1m  elif rustc +stable --version --verbose | grep -q '^release: 1\.6[67]\.'; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0024268Z ^[[36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0024793Z ^[[36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0025455Z ^[[36;1m  fi^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0025662Z ^[[36;1mfi^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0057286Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0057815Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0058014Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0058270Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0058532Z   CARGO_INCREMENTAL: 0
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0058754Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0365587Z ##[end-action id=__dtolnay_rust-toolchain.__run_8;outcome=success;conclusion=success;duration_ms=36]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0369689Z ##[start-action display=Run : work around spurious network errors in curl 8.0;id=__dtolnay_rust-toolchain.__run_9]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0392780Z ##[group]Run : work around spurious network errors in curl 8.0
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0393221Z ^[[36;1m: work around spurious network errors in curl 8.0^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0393779Z ^[[36;1m# https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0394398Z ^[[36;1mif rustc +stable --version --verbose | grep -q '^release: 1\.7[01]\.'; then^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0394888Z ^[[36;1m  echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0395546Z ^[[36;1mfi^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0430368Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0430729Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0430925Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0431177Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0431431Z   CARGO_INCREMENTAL: 0
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0431649Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0616942Z ##[end-action id=__dtolnay_rust-toolchain.__run_9;outcome=success;conclusion=success;duration_ms=24]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0621219Z ##[start-action display=Run rustc +stable --version --verbose;id=__dtolnay_rust-toolchain.__run_10]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0644406Z ##[group]Run rustc +stable --version --verbose
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0644771Z ^[[36;1mrustc +stable --version --verbose^[[0m
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0680546Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0680904Z env:
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0681104Z   CARGO_TERM_COLOR: always
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0681359Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0681637Z   CARGO_INCREMENTAL: 0
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0681865Z ##[endgroup]
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0850679Z rustc 1.98.1 (48a229cea 2026-09-01)
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0851300Z binary: rustc
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0851665Z commit-hash: 48a229ceaefd4985c50990b14116b6d856af0985
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0852051Z commit-date: 2026-09-01
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0852322Z host: x86_64-unknown-linux-gnu
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0852616Z release: 1.98.1
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0852846Z LLVM version: 22.1.8
+Performance regression check	Run dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c	2026-09-12T18:05:33.0874004Z ##[end-action id=__dtolnay_rust-toolchain.__run_10;outcome=success;conclusion=success;duration_ms=25]
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	﻿2026-09-12T18:05:33.0994037Z ##[group]Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0994453Z with:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0994648Z   prefix-key: v0-rust
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0994872Z   add-job-id-key: true
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0995458Z   add-rust-environment-hash-key: true
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0995751Z   cache-targets: true
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0995972Z   cache-all-crates: false
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0996212Z   cache-workspace-crates: false
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0996453Z   save-if: true
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0996655Z   cache-provider: github
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0996889Z   cache-bin: true
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0997093Z   lookup-only: false
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0997297Z   cmd-format: {0}
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0997485Z env:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0997672Z   CARGO_TERM_COLOR: always
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0997931Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0998182Z   CARGO_INCREMENTAL: 0
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.0998395Z ##[endgroup]
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.3909425Z (node:2366) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:33.3911088Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8549519Z ##[group]Cache Configuration
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8550059Z Cache Provider:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8550378Z     github
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8550679Z Workspaces:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8551029Z     /home/runner/work/ferromark/ferromark
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8551458Z Cache Paths:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8551845Z     /home/runner/.cargo/bin
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8552257Z     /home/runner/.cargo/.crates.toml
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8552678Z     /home/runner/.cargo/.crates2.json
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8553114Z     /home/runner/.cargo/registry
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8553605Z     /home/runner/.cargo/git
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8554029Z     /home/runner/work/ferromark/ferromark/target
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8554343Z Restore Key:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8554574Z     v0-rust-benchmark-Linux-x64-4e84ecbe
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8554874Z Cache Key:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8555303Z     v0-rust-benchmark-Linux-x64-4e84ecbe-6058488f
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8555636Z .. Prefix:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8555856Z   - v0-rust-benchmark-Linux-x64
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8556125Z .. Environment considered:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8556365Z   - Rust Versions:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8556701Z     - 1.98.1 x86_64-unknown-linux-gnu 48a229ceaefd4985c50990b14116b6d856af0985
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8557461Z     - 1.98.1 x86_64-unknown-linux-gnu 48a229ceaefd4985c50990b14116b6d856af0985
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8557981Z   - CARGO_HOME
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8558195Z   - CARGO_INCREMENTAL
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8558415Z   - CARGO_TERM_COLOR
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8558637Z .. Lockfiles considered:
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8558929Z   - /home/runner/work/ferromark/ferromark/.cargo/config.toml
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8559728Z   - /home/runner/work/ferromark/ferromark/benchmarks/pulldown-comparison/rust-toolchain.toml
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8560271Z   - /home/runner/work/ferromark/ferromark/Cargo.lock
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8560900Z   - /home/runner/work/ferromark/ferromark/Cargo.toml
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8561856Z   - /home/runner/work/ferromark/ferromark/crates/ferro-byte-search/Cargo.toml
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8562699Z   - /home/runner/work/ferromark/ferromark/node/native/Cargo.toml
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8563409Z   - /home/runner/work/ferromark/ferromark/rust-toolchain.toml
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8564282Z ##[endgroup]
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8564495Z 
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:34.8564649Z ... Restoring cache ...
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:35.0539328Z Cache hit for: v0-rust-benchmark-Linux-x64-4e84ecbe-6058488f
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:36.2873471Z Received 25165824 of 91292708 (27.6%), 24.0 MBs/sec
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:36.7661841Z Received 91292708 of 91292708 (100.0%), 58.9 MBs/sec
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:36.7662538Z Cache Size: ~87 MB (91292708 B)
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:36.7698410Z [command]/usr/bin/tar -xf /home/runner/work/_temp/0d822c8e-2d25-4f05-b5dc-c368307fb3a6/cache.tzst -P -C /home/runner/work/ferromark/ferromark --use-compress-program unzstd
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:37.2598154Z Cache restored successfully
+Performance regression check	Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:05:37.2642731Z Restored from cache key "v0-rust-benchmark-Linux-x64-4e84ecbe-6058488f" full match: true.
+Performance regression check	Check benchmark comparator	﻿2026-09-12T18:05:37.2780857Z ##[group]Run python3 -m unittest discover -s scripts -p 'test_ci_benchmarks.py'
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.2781493Z ^[[36;1mpython3 -m unittest discover -s scripts -p 'test_ci_benchmarks.py'^[[0m
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.2819678Z shell: /usr/bin/bash -e {0}
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.2819954Z env:
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.2820166Z   CARGO_TERM_COLOR: always
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.2820428Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.2820703Z   CARGO_INCREMENTAL: 0
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.2820933Z   CACHE_ON_FAILURE: false
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.2821170Z ##[endgroup]
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.4048109Z ......
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.4048551Z ----------------------------------------------------------------------
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.4048976Z Ran 6 tests in 0.065s
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.4049135Z 
+Performance regression check	Check benchmark comparator	2026-09-12T18:05:37.4049216Z OK
+Performance regression check	Check out PR base on the same runner	﻿2026-09-12T18:05:37.4272436Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4272848Z with:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4273087Z   ref: e731dc8162828e0ac2df30b7567107f560159ff8
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4273399Z   path: .benchmark-base
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4273661Z   repository: sebastian-software/ferromark
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4276496Z   token: ***
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4276713Z   ssh-strict: true
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4276924Z   ssh-user: git
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4277144Z   persist-credentials: true
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4277383Z   clean: true
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4277612Z   sparse-checkout-cone-mode: true
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4277877Z   fetch-depth: 1
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4278082Z   fetch-tags: false
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4278296Z   show-progress: true
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4278517Z   lfs: false
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4278716Z   submodules: false
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4278947Z   set-safe-directory: true
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4279204Z   allow-unsafe-pr-checkout: false
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4279461Z env:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4279683Z   CARGO_TERM_COLOR: always
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4279924Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4280179Z   CARGO_INCREMENTAL: 0
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4280406Z   CACHE_ON_FAILURE: false
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.4280635Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5116976Z Syncing repository: sebastian-software/ferromark
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5123659Z ##[group]Getting Git version info
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5124368Z Working directory is '/home/runner/work/ferromark/ferromark/.benchmark-base'
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5180407Z [command]/usr/bin/git version
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5227686Z git version 2.55.0
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5251950Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5264653Z Temporarily overriding HOME='/home/runner/work/_temp/2717f173-19e7-43e7-90ce-925a1c65172e' before making global git config changes
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5266264Z Adding repository directory to the temporary git global config as a safe directory
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5270968Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ferromark/ferromark/.benchmark-base
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5312286Z ##[group]Determining repository object format
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5319822Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5320729Z ##[group]Initializing the repository
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5324886Z [command]/usr/bin/git init /home/runner/work/ferromark/ferromark/.benchmark-base
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5418826Z hint: Using 'master' as the name for the initial branch. This default branch name
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5439571Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5440458Z hint: to use in all of your new repositories, which will suppress this warning,
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5441207Z hint: call:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5441506Z hint:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5441791Z hint: 	git config --global init.defaultBranch <name>
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5442157Z hint:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5442490Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5443459Z hint: 'development'. The just-created branch can be renamed via this command:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5444264Z hint:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5444686Z hint: 	git branch -m <name>
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5445391Z hint:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5446055Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5447202Z Initialized empty Git repository in /home/runner/work/ferromark/ferromark/.benchmark-base/.git/
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5448955Z [command]/usr/bin/git remote add origin https://github.com/sebastian-software/ferromark
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5566947Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5567638Z ##[group]Disabling automatic garbage collection
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5568309Z [command]/usr/bin/git config --local gc.auto 0
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5599086Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5599745Z ##[group]Setting up auth
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5600235Z Removing SSH command configuration
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5601235Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5659577Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5968422Z Removing HTTP extra header
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.5972383Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6017908Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6296510Z Removing includeIf entries pointing to credentials config files
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6305938Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6339695Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6573994Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6616085Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/ferromark/ferromark/.benchmark-base/.git.path /home/runner/work/_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6651769Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/ferromark/ferromark/.benchmark-base/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6685792Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.benchmark-base/.git.path /github/runner_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6721877Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.benchmark-base/.git/worktrees/*.path /github/runner_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6752830Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6753492Z ##[group]Fetching the repository
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:37.6760034Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin e731dc8162828e0ac2df30b7567107f560159ff8
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0537800Z From https://github.com/sebastian-software/ferromark
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0538594Z  * branch            e731dc8162828e0ac2df30b7567107f560159ff8 -> FETCH_HEAD
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0547536Z [command]/usr/bin/git rev-parse --verify --quiet e731dc8162828e0ac2df30b7567107f560159ff8^{object}
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0576776Z e731dc8162828e0ac2df30b7567107f560159ff8
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0581807Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0582399Z ##[group]Determining the checkout info
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0583121Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0587103Z [command]/usr/bin/git sparse-checkout disable
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0630230Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0662885Z ##[group]Checking out the ref
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.0667580Z [command]/usr/bin/git checkout --progress --force e731dc8162828e0ac2df30b7567107f560159ff8
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3978168Z Note: switching to 'e731dc8162828e0ac2df30b7567107f560159ff8'.
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3978846Z 
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3979640Z You are in 'detached HEAD' state. You can look around, make experimental
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3980465Z changes and commit them, and you can discard any commits you make in this
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3981355Z state without impacting any branches by switching back to a branch.
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3981893Z 
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3982466Z If you want to create a new branch to retain commits you create, you may
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3983231Z do so (now or later) by using -c with the switch command. Example:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3983737Z 
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3983923Z   git switch -c <new-branch-name>
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3984231Z 
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3984398Z Or undo this operation with:
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3985463Z 
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3985617Z   git switch -
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3985833Z 
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3986211Z Turn off this advice by setting config variable advice.detachedHead to false
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3986759Z 
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.3987135Z HEAD is now at e731dc8 docs: refresh measurements for the CI-compatible source
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.4007386Z ##[endgroup]
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.4053527Z [command]/usr/bin/git log -1 --format=%H
+Performance regression check	Check out PR base on the same runner	2026-09-12T18:05:40.4081883Z e731dc8162828e0ac2df30b7567107f560159ff8
+Performance regression check	Build both benchmark versions before measuring	﻿2026-09-12T18:05:40.4206174Z ##[group]Run cargo bench --locked --bench parsing --no-run
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4206664Z ^[[36;1mcargo bench --locked --bench parsing --no-run^[[0m
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4207006Z ^[[36;1mif [[ "$IS_PR" == true ]]; then^[[0m
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4207495Z ^[[36;1m  cargo bench --manifest-path .benchmark-base/Cargo.toml --locked --bench parsing --no-run^[[0m
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4207989Z ^[[36;1mfi^[[0m
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4208191Z ^[[36;1mrustc -Vv^[[0m
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4208405Z ^[[36;1mlscpu^[[0m
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4244024Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4244375Z env:
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4244576Z   CARGO_TERM_COLOR: always
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4244831Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4245365Z   CARGO_INCREMENTAL: 0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4245602Z   CACHE_ON_FAILURE: false
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4245832Z   IS_PR: true
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.4246029Z ##[endgroup]
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:40.7840214Z ^[[1m^[[92m    Updating^[[0m crates.io index
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:05:41.3235714Z ^[[1m^[[92m   Compiling^[[0m ferromark v0.9.0 (/home/runner/work/ferromark/ferromark)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.2669677Z ^[[1m^[[92m    Finished^[[0m `bench` profile [optimized + debuginfo] target(s) in 45.81s
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.2712512Z ^[[1m^[[92m  Executable^[[0m benches/parsing.rs (target/release/deps/parsing-5005e94e071eddfd)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.3887212Z ^[[1m^[[92m   Compiling^[[0m proc-macro2 v1.0.107
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.3888722Z ^[[1m^[[92m   Compiling^[[0m unicode-ident v1.0.24
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.3889671Z ^[[1m^[[92m   Compiling^[[0m quote v1.0.47
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.3890591Z ^[[1m^[[92m   Compiling^[[0m serde_core v1.0.229
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.4496605Z ^[[1m^[[92m   Compiling^[[0m crossbeam-utils v0.8.22
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.6460935Z ^[[1m^[[92m   Compiling^[[0m zerocopy v0.8.55
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.6585620Z ^[[1m^[[92m   Compiling^[[0m crossbeam-epoch v0.9.20
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.8656953Z ^[[1m^[[92m   Compiling^[[0m crossbeam-deque v0.8.7
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:26.9736665Z ^[[1m^[[92m   Compiling^[[0m shlex v2.0.1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:27.0986463Z ^[[1m^[[92m   Compiling^[[0m zmij v1.0.23
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:27.2446556Z ^[[1m^[[92m   Compiling^[[0m find-msvc-tools v0.1.9
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:27.4457141Z ^[[1m^[[92m   Compiling^[[0m serde v1.0.229
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:27.5016567Z ^[[1m^[[92m   Compiling^[[0m syn v2.0.119
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:27.5213623Z ^[[1m^[[92m   Compiling^[[0m syn v3.0.3
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:27.5949191Z ^[[1m^[[92m   Compiling^[[0m autocfg v1.5.1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:27.9156486Z ^[[1m^[[92m   Compiling^[[0m num-traits v0.2.19
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:28.0116555Z ^[[1m^[[92m   Compiling^[[0m cc v1.4.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:29.3476419Z ^[[1m^[[92m   Compiling^[[0m either v1.17.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:29.5451518Z ^[[1m^[[92m   Compiling^[[0m memchr v2.8.3
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:29.6398164Z ^[[1m^[[92m   Compiling^[[0m libc v0.2.189
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:29.8623404Z ^[[1m^[[92m   Compiling^[[0m rayon-core v1.13.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:29.9146535Z ^[[1m^[[92m   Compiling^[[0m serde_derive v1.0.229
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:29.9367548Z ^[[1m^[[92m   Compiling^[[0m cfg-if v1.0.4
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:29.9601615Z ^[[1m^[[92m   Compiling^[[0m serde_json v1.0.151
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:30.2401530Z ^[[1m^[[92m   Compiling^[[0m alloca v0.4.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:30.6306535Z ^[[1m^[[92m   Compiling^[[0m anstyle v1.0.14
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:30.7811501Z ^[[1m^[[92m   Compiling^[[0m plotters-backend v0.3.7
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:30.7969402Z ^[[1m^[[92m   Compiling^[[0m regex-syntax v0.8.11
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:31.0637025Z ^[[1m^[[92m   Compiling^[[0m clap_lex v1.1.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:31.0936768Z ^[[1m^[[92m   Compiling^[[0m zerocopy-derive v0.8.55
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:31.3286390Z ^[[1m^[[92m   Compiling^[[0m ciborium-io v0.2.2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:31.3673181Z ^[[1m^[[92m   Compiling^[[0m itoa v1.0.18
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:33.5196543Z ^[[1m^[[92m   Compiling^[[0m regex-automata v0.4.16
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:33.5886531Z ^[[1m^[[92m   Compiling^[[0m clap_builder v4.6.2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:35.5656454Z ^[[1m^[[92m   Compiling^[[0m plotters-svg v0.3.7
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:36.9864258Z ^[[1m^[[92m   Compiling^[[0m half v2.7.1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:37.3445775Z ^[[1m^[[92m   Compiling^[[0m ciborium-ll v0.2.2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:38.5823268Z ^[[1m^[[92m   Compiling^[[0m itertools v0.13.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:38.7476350Z ^[[1m^[[92m   Compiling^[[0m cast v0.3.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:38.8946599Z ^[[1m^[[92m   Compiling^[[0m smallvec v1.15.2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:39.0930180Z ^[[1m^[[92m   Compiling^[[0m same-file v1.0.6
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:39.1890572Z ^[[1m^[[92m   Compiling^[[0m rustc-hash v2.1.3
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:39.2526186Z ^[[1m^[[92m   Compiling^[[0m html-escape v0.2.14
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:39.6434019Z ^[[1m^[[92m   Compiling^[[0m walkdir v2.5.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:39.9727240Z ^[[1m^[[92m   Compiling^[[0m ferromark v0.9.0 (/home/runner/work/ferromark/ferromark/.benchmark-base)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:40.1261644Z ^[[1m^[[92m   Compiling^[[0m page_size v0.6.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:40.1746497Z ^[[1m^[[92m   Compiling^[[0m rayon v1.12.0
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:40.2998528Z ^[[1m^[[92m   Compiling^[[0m criterion-plot v0.8.2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:41.0768618Z ^[[1m^[[92m   Compiling^[[0m ciborium v0.2.2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:41.3686710Z ^[[1m^[[92m   Compiling^[[0m plotters v0.3.7
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:41.8091011Z ^[[1m^[[92m   Compiling^[[0m clap v4.6.4
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:41.8393515Z ^[[1m^[[92m   Compiling^[[0m regex v1.13.1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:42.7556596Z ^[[1m^[[92m   Compiling^[[0m tinytemplate v1.2.1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:42.8553385Z ^[[1m^[[92m   Compiling^[[0m anes v0.1.6
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:42.8996666Z ^[[1m^[[92m   Compiling^[[0m oorandom v11.1.5
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:06:43.2186480Z ^[[1m^[[92m   Compiling^[[0m criterion v0.8.2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1246503Z ^[[1m^[[92m    Finished^[[0m `bench` profile [optimized + debuginfo] target(s) in 1m 06s
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1287169Z ^[[1m^[[92m  Executable^[[0m benches/parsing.rs (.benchmark-base/target/release/deps/parsing-5005e94e071eddfd)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1621636Z rustc 1.98.1 (48a229cea 2026-09-01)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1622306Z binary: rustc
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1622647Z commit-hash: 48a229ceaefd4985c50990b14116b6d856af0985
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1623145Z commit-date: 2026-09-01
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1623439Z host: x86_64-unknown-linux-gnu
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1623783Z release: 1.98.1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.1624106Z LLVM version: 22.1.8
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2377785Z Architecture:                            x86_64
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2378482Z CPU op-mode(s):                          32-bit, 64-bit
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2379001Z Address sizes:                           48 bits physical, 48 bits virtual
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2379890Z Byte Order:                              Little Endian
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2380585Z CPU(s):                                  4
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2381158Z On-line CPU(s) list:                     0-3
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2381864Z Vendor ID:                               AuthenticAMD
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2382380Z Model name:                              AMD EPYC 7763 64-Core Processor
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2383180Z CPU family:                              25
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2383770Z Model:                                   1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2384285Z Thread(s) per core:                      2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2384664Z Core(s) per socket:                      2
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2385326Z Socket(s):                               1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2385930Z Stepping:                                1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2386563Z BogoMIPS:                                4890.84
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2391677Z Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2394473Z Virtualization:                          AMD-V
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2394810Z Hypervisor vendor:                       Microsoft
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2395797Z Virtualization type:                     full
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2396146Z L1d cache:                               64 KiB (2 instances)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2396509Z L1i cache:                               64 KiB (2 instances)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2396859Z L2 cache:                                1 MiB (2 instances)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2397200Z L3 cache:                                32 MiB (1 instance)
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2397513Z NUMA node(s):                            1
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2397810Z NUMA node0 CPU(s):                       0-3
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2398145Z Vulnerability Gather data sampling:      Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2398505Z Vulnerability Ghostwrite:                Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2398863Z Vulnerability Indirect target selection: Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2399222Z Vulnerability Itlb multihit:             Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2399559Z Vulnerability L1tf:                      Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2399913Z Vulnerability Mds:                       Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2400253Z Vulnerability Meltdown:                  Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2400599Z Vulnerability Mmio stale data:           Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2400946Z Vulnerability Old microcode:             Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2401456Z Vulnerability Reg file data sampling:    Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2401786Z Vulnerability Retbleed:                  Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2402204Z Vulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2402635Z Vulnerability Spec store bypass:         Vulnerable
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2403158Z Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2403955Z Vulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2404570Z Vulnerability Srbds:                     Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2404946Z Vulnerability Tsa:                       Vulnerable: No microcode
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2405679Z Vulnerability Tsx async abort:           Not affected
+Performance regression check	Build both benchmark versions before measuring	2026-09-12T18:07:33.2406033Z Vulnerability Vmscape:                   Not affected
+Performance regression check	Run representative benchmarks	﻿2026-09-12T18:07:33.2442022Z ##[group]Run set -o pipefail
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2442366Z ^[[36;1mset -o pipefail^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2442629Z ^[[36;1mmkdir -p .benchmark-cache^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2442913Z ^[[36;1mif [[ "$IS_PR" == true ]]; then^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2443376Z ^[[36;1m  cargo bench --manifest-path .benchmark-base/Cargo.toml --locked --bench parsing -- \^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2443863Z ^[[36;1m    --output-format bencher \^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2444144Z ^[[36;1m    --warm-up-time 1 \^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2444407Z ^[[36;1m    --measurement-time 3 \^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2444743Z ^[[36;1m    --sample-size 30 | tee benchmark-base-output.txt^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2445395Z ^[[36;1mfi^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2458194Z ^[[36;1mcargo bench --locked --bench parsing -- \^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2458805Z ^[[36;1m  --output-format bencher \^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2459272Z ^[[36;1m  --warm-up-time 1 \^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2459702Z ^[[36;1m  --measurement-time 3 \^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2460187Z ^[[36;1m  --sample-size 30 | tee benchmark-output.txt^[[0m
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2495872Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2496252Z env:
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2496465Z   CARGO_TERM_COLOR: always
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2496726Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2496991Z   CARGO_INCREMENTAL: 0
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2497218Z   CACHE_ON_FAILURE: false
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2497441Z   IS_PR: true
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.2497650Z ##[endgroup]
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.3333858Z ^[[1m^[[92m    Finished^[[0m `bench` profile [optimized + debuginfo] target(s) in 0.05s
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.3358349Z ^[[1m^[[92m     Running^[[0m benches/parsing.rs (.benchmark-base/target/release/deps/parsing-5005e94e071eddfd)
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:33.3372189Z Gnuplot not found, using plotters backend
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:38.3273875Z test parsing/tiny ... bench:         689 ns/iter (+/- 5)
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:44.4747818Z test parsing/small ... bench:       2,922 ns/iter (+/- 21)
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:50.3999946Z test parsing/medium ... bench:       5,056 ns/iter (+/- 11)
+Performance regression check	Run representative benchmarks	2026-09-12T18:07:56.3612262Z test parsing/large ... bench:     165,209 ns/iter (+/- 1,269)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:02.1437840Z test parsing/commonmark_5k ... bench:      35,261 ns/iter (+/- 97)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:08.7925708Z test parsing/commonmark_20k ... bench:     119,017 ns/iter (+/- 3,620)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:14.7625570Z test parsing/commonmark_50k ... bench:     306,188 ns/iter (+/- 1,311)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:17.3383249Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:17.3384201Z Warning: Unable to complete 30 samples in 3.0s. You may wish to increase target time to 3.7s, enable flat sampling, or reduce sample count to 10.
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:21.0799543Z test parsing/commonmark_1m ... bench:   7,933,502 ns/iter (+/- 33,638)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:26.9701733Z test parsing/tables_5k ... bench:      38,912 ns/iter (+/- 121)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:32.9679400Z test parsing/thematic_breaks ... bench:     160,531 ns/iter (+/- 1,153)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:34.5742794Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:38.6465759Z test extensions/deflists_5k ... bench:      30,853 ns/iter (+/- 64)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:44.4374665Z test extensions/tables_merged_5k ... bench:      35,465 ns/iter (+/- 111)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:50.6673689Z test extensions/mixed_extended_5k ... bench:      49,677 ns/iter (+/- 141)
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:52.2248870Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:08:56.3955354Z test escaping/plain_text ... bench:         268 ns/iter (+/- 0)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:02.4884335Z test escaping/html_heavy ... bench:      11,075 ns/iter (+/- 21)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:04.0287652Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:08.0528022Z test pathological/emphasis_explosion ... bench:     124,013 ns/iter (+/- 1,419)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:13.7311139Z test pathological/emphasis_many_link_boundaries ... bench:   1,089,209 ns/iter (+/- 10,984)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:19.9594536Z test pathological/deep_nesting ... bench:       3,148 ns/iter (+/- 5)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:25.7755710Z test pathological/bracket_explosion_64k ... bench:     562,435 ns/iter (+/- 1,045)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:32.0556159Z test pathological/heading_collision_suffixes ... bench:     407,947 ns/iter (+/- 2,414)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:38.0454733Z test pathological/unmatched_backticks_64k ... bench:     165,600 ns/iter (+/- 2,212)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:44.4443702Z test pathological/reference_definitions_64k ... bench:     418,219 ns/iter (+/- 710)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:50.6771507Z test pathological/invalid_html_starts_64k ... bench:     384,680 ns/iter (+/- 894)
+Performance regression check	Run representative benchmarks	2026-09-12T18:09:56.4741117Z test pathological/angle_starts_8k ... bench:     279,942 ns/iter (+/- 2,738)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:02.1572646Z test pathological/unmatched_url_parentheses_8k ... bench:      33,234 ns/iter (+/- 637)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:03.6732480Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:08.0250497Z test buffer_reuse/without_reuse ... bench:       4,973 ns/iter (+/- 14)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:13.9178812Z test buffer_reuse/with_reuse ... bench:       4,829 ns/iter (+/- 14)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:15.4952049Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:19.9253120Z test renderer_session/output_buffer_only ... bench:         658 ns/iter (+/- 2)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:26.0378108Z test renderer_session/parser_and_output_buffers ... bench:         358 ns/iter (+/- 2)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:27.6109231Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:27.6938299Z ^[[1m^[[92m    Finished^[[0m `bench` profile [optimized + debuginfo] target(s) in 0.05s
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:27.6960337Z ^[[1m^[[92m     Running^[[0m benches/parsing.rs (target/release/deps/parsing-5005e94e071eddfd)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:27.6973687Z Gnuplot not found, using plotters backend
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:32.2815470Z test parsing/tiny ... bench:         695 ns/iter (+/- 1)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:38.5105974Z test parsing/small ... bench:       3,012 ns/iter (+/- 13)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:44.4693675Z test parsing/medium ... bench:       5,248 ns/iter (+/- 12)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:50.5048382Z test parsing/large ... bench:     171,301 ns/iter (+/- 302)
+Performance regression check	Run representative benchmarks	2026-09-12T18:10:56.3332335Z test parsing/commonmark_5k ... bench:      36,489 ns/iter (+/- 287)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:01.9917628Z test parsing/commonmark_20k ... bench:     124,040 ns/iter (+/- 285)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:08.0522701Z test parsing/commonmark_50k ... bench:     320,435 ns/iter (+/- 2,107)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:10.6628164Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:10.6631576Z Warning: Unable to complete 30 samples in 3.0s. You may wish to increase target time to 3.8s, enable flat sampling, or reduce sample count to 10.
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:14.5523941Z test parsing/commonmark_1m ... bench:   8,244,226 ns/iter (+/- 144,917)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:20.4760227Z test parsing/tables_5k ... bench:      39,359 ns/iter (+/- 96)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:26.3573613Z test parsing/thematic_breaks ... bench:     154,404 ns/iter (+/- 874)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:27.9418979Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:32.0154143Z test extensions/deflists_5k ... bench:      31,182 ns/iter (+/- 86)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:37.7793156Z test extensions/tables_merged_5k ... bench:      34,849 ns/iter (+/- 69)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:44.0618393Z test extensions/mixed_extended_5k ... bench:      50,957 ns/iter (+/- 140)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:45.6272621Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:50.0285088Z test escaping/plain_text ... bench:         318 ns/iter (+/- 0)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:55.9723863Z test escaping/html_heavy ... bench:       5,152 ns/iter (+/- 13)
+Performance regression check	Run representative benchmarks	2026-09-12T18:11:57.5121123Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:01.5344227Z test pathological/emphasis_explosion ... bench:     122,643 ns/iter (+/- 399)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:07.3376919Z test pathological/emphasis_many_link_boundaries ... bench:   1,057,321 ns/iter (+/- 3,316)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:13.5803738Z test pathological/deep_nesting ... bench:       3,110 ns/iter (+/- 79)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:19.3590227Z test pathological/bracket_explosion_64k ... bench:     561,354 ns/iter (+/- 427)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:25.7428667Z test pathological/heading_collision_suffixes ... bench:     435,186 ns/iter (+/- 2,430)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:31.7104344Z test pathological/unmatched_backticks_64k ... bench:     167,982 ns/iter (+/- 373)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:38.0689065Z test pathological/reference_definitions_64k ... bench:     416,035 ns/iter (+/- 662)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:44.0530164Z test pathological/invalid_html_starts_64k ... bench:     336,384 ns/iter (+/- 227)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:49.7296488Z test pathological/angle_starts_8k ... bench:     253,395 ns/iter (+/- 201)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:55.4265229Z test pathological/unmatched_url_parentheses_8k ... bench:      33,240 ns/iter (+/- 209)
+Performance regression check	Run representative benchmarks	2026-09-12T18:12:56.9597632Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:13:01.3821896Z test buffer_reuse/without_reuse ... bench:       5,210 ns/iter (+/- 18)
+Performance regression check	Run representative benchmarks	2026-09-12T18:13:07.2919855Z test buffer_reuse/with_reuse ... bench:       5,000 ns/iter (+/- 11)
+Performance regression check	Run representative benchmarks	2026-09-12T18:13:08.8547134Z 
+Performance regression check	Run representative benchmarks	2026-09-12T18:13:13.3068088Z test renderer_session/output_buffer_only ... bench:         668 ns/iter (+/- 1)
+Performance regression check	Run representative benchmarks	2026-09-12T18:13:19.4563854Z test renderer_session/parser_and_output_buffers ... bench:         368 ns/iter (+/- 1)
+Performance regression check	Run representative benchmarks	2026-09-12T18:13:21.0134968Z 
+Performance regression check	Compare with PR base measured on this runner	﻿2026-09-12T18:13:21.0233863Z ##[group]Run python3 scripts/compare-ci-benchmarks.py benchmark-base-output.txt benchmark-output.txt --base-ref "$BASE_REF" --head-ref "$GITHUB_SHA"
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0235003Z ^[[36;1mpython3 scripts/compare-ci-benchmarks.py benchmark-base-output.txt benchmark-output.txt --base-ref "$BASE_REF" --head-ref "$GITHUB_SHA"^[[0m
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0271001Z shell: /usr/bin/bash -e {0}
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0271270Z env:
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0271470Z   CARGO_TERM_COLOR: always
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0271728Z   CARGO_HOME: /home/runner/.cargo
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0271989Z   CARGO_INCREMENTAL: 0
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0272219Z   CACHE_ON_FAILURE: false
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0272488Z   BASE_REF: e731dc8162828e0ac2df30b7567107f560159ff8
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0272807Z ##[endgroup]
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0604042Z ## Performance comparison on the same runner
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0604478Z 
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0605503Z Base: `e731dc8162828e0ac2df30b7567107f560159ff8`; head: `f56cae28e7445fd9abd3812e281a971d7ebe1da9`. Failure threshold: >20% slower.
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0606520Z 
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0606721Z | Benchmark | Base ns | Head ns | Ratio |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0607260Z | --- | ---: | ---: | ---: |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0607709Z | parsing/tiny | 689 | 695 | 1.009 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0608075Z | parsing/small | 2922 | 3012 | 1.031 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0608418Z | parsing/medium | 5056 | 5248 | 1.038 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0608746Z | parsing/large | 165209 | 171301 | 1.037 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0609111Z | parsing/commonmark_5k | 35261 | 36489 | 1.035 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0609503Z | parsing/commonmark_20k | 119017 | 124040 | 1.042 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0609893Z | parsing/commonmark_50k | 306188 | 320435 | 1.047 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0610283Z | parsing/commonmark_1m | 7933502 | 8244226 | 1.039 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0610663Z | parsing/tables_5k | 38912 | 39359 | 1.011 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0611036Z | parsing/thematic_breaks | 160531 | 154404 | 0.962 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0611426Z | extensions/deflists_5k | 30853 | 31182 | 1.011 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0611843Z | extensions/tables_merged_5k | 35465 | 34849 | 0.983 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0612281Z | extensions/mixed_extended_5k | 49677 | 50957 | 1.026 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0612674Z | escaping/plain_text | 268 | 318 | 1.187 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0613034Z | escaping/html_heavy | 11075 | 5152 | 0.465 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0613702Z | pathological/emphasis_explosion | 124013 | 122643 | 0.989 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0614247Z | pathological/emphasis_many_link_boundaries | 1089209 | 1057321 | 0.971 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0614755Z | pathological/deep_nesting | 3148 | 3110 | 0.988 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0615504Z | pathological/bracket_explosion_64k | 562435 | 561354 | 0.998 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0616035Z | pathological/heading_collision_suffixes | 407947 | 435186 | 1.067 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0616590Z | pathological/unmatched_backticks_64k | 165600 | 167982 | 1.014 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0617124Z | pathological/reference_definitions_64k | 418219 | 416035 | 0.995 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0617660Z | pathological/invalid_html_starts_64k | 384680 | 336384 | 0.874 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0618150Z | pathological/angle_starts_8k | 279942 | 253395 | 0.905 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0618654Z | pathological/unmatched_url_parentheses_8k | 33234 | 33240 | 1.000 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0619145Z | buffer_reuse/without_reuse | 4973 | 5210 | 1.048 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0619551Z | buffer_reuse/with_reuse | 4829 | 5000 | 1.035 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0619981Z | renderer_session/output_buffer_only | 658 | 668 | 1.015 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0620486Z | renderer_session/parser_and_output_buffers | 358 | 368 | 1.028 |
+Performance regression check	Compare with PR base measured on this runner	2026-09-12T18:13:21.0620797Z 
+Performance regression check	Post Check out PR base on the same runner	﻿2026-09-12T18:13:21.0764980Z Post job cleanup.
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.1645884Z [command]/usr/bin/git version
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.1690938Z git version 2.55.0
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.1729737Z Temporarily overriding HOME='/home/runner/work/_temp/85c1aaaa-2380-4be7-b13e-b9f0980714eb' before making global git config changes
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.1731107Z Adding repository directory to the temporary git global config as a safe directory
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.1735550Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ferromark/ferromark/.benchmark-base
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.1772523Z Removing SSH command configuration
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.1779632Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.1817441Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2136520Z Removing HTTP extra header
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2137715Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2172623Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2537115Z Removing includeIf entries pointing to credentials config files
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2538264Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2608299Z includeif.gitdir:/home/runner/work/ferromark/ferromark/.benchmark-base/.git.path
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2625692Z includeif.gitdir:/home/runner/work/ferromark/ferromark/.benchmark-base/.git/worktrees/*.path
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2628514Z includeif.gitdir:/github/workspace/.benchmark-base/.git.path
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2629629Z includeif.gitdir:/github/workspace/.benchmark-base/.git/worktrees/*.path
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2632148Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/ferromark/ferromark/.benchmark-base/.git.path
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2706372Z /home/runner/work/_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2756996Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/ferromark/ferromark/.benchmark-base/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-01d8574e\-0016\-4668\-bc7c\-34a097986698\.config
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2776565Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/ferromark/ferromark/.benchmark-base/.git/worktrees/*.path
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2824965Z /home/runner/work/_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2853371Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/ferromark/ferromark/.benchmark-base/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-01d8574e\-0016\-4668\-bc7c\-34a097986698\.config
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2880381Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.benchmark-base/.git.path
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2908725Z /github/runner_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2916765Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.benchmark-base/.git.path \/github\/runner_temp\/git\-credentials\-01d8574e\-0016\-4668\-bc7c\-34a097986698\.config
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2952853Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.benchmark-base/.git/worktrees/*.path
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2980101Z /github/runner_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.2988072Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.benchmark-base/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-01d8574e\-0016\-4668\-bc7c\-34a097986698\.config
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.3025961Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Performance regression check	Post Check out PR base on the same runner	2026-09-12T18:13:21.3269877Z Removing credentials config '/home/runner/work/_temp/git-credentials-01d8574e-0016-4668-bc7c-34a097986698.config'
+Performance regression check	Post Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	﻿2026-09-12T18:13:21.3459843Z Post job cleanup.
+Performance regression check	Post Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:13:21.6266640Z Cache up-to-date.
+Performance regression check	Post Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:13:21.6269253Z (node:3839) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Performance regression check	Post Run Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae	2026-09-12T18:13:21.6270463Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-09-12T18:13:21.6478385Z Post job cleanup.
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7393734Z [command]/usr/bin/git version
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7448715Z git version 2.55.0
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7486319Z Temporarily overriding HOME='/home/runner/work/_temp/22f9d2de-310b-46b3-b5fd-28665a00df3c' before making global git config changes
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7487676Z Adding repository directory to the temporary git global config as a safe directory
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7491965Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ferromark/ferromark
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7546287Z Removing SSH command configuration
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7547056Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7585482Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7847941Z Removing HTTP extra header
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7857546Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.7923541Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8187608Z Removing includeIf entries pointing to credentials config files
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8194262Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8224037Z includeif.gitdir:/home/runner/work/ferromark/ferromark/.git.path
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8225286Z includeif.gitdir:/home/runner/work/ferromark/ferromark/.git/worktrees/*.path
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8226360Z includeif.gitdir:/github/workspace/.git.path
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8227170Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8233690Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/ferromark/ferromark/.git.path
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8264738Z /home/runner/work/_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8275959Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/ferromark/ferromark/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-4a2077dd\-f742\-4b90\-bfcd\-b49663b464df\.config
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8320837Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/ferromark/ferromark/.git/worktrees/*.path
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8358141Z /home/runner/work/_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8376856Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/ferromark/ferromark/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-4a2077dd\-f742\-4b90\-bfcd\-b49663b464df\.config
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8407791Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8434601Z /github/runner_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8442777Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-4a2077dd\-f742\-4b90\-bfcd\-b49663b464df\.config
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8479829Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8506372Z /github/runner_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8516402Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-4a2077dd\-f742\-4b90\-bfcd\-b49663b464df\.config
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8553825Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Performance regression check	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-09-12T18:13:21.8779257Z Removing credentials config '/home/runner/work/_temp/git-credentials-4a2077dd-f742-4b90-bfcd-b49663b464df.config'
+Performance regression check	Complete job	﻿2026-09-12T18:13:21.8918763Z Cleaning up orphan processes

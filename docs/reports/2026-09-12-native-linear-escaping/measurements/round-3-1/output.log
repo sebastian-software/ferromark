@@ -1,0 +1,314 @@
+/home/runner/work/_temp/escape-linux
+Built baseline
+Verified baseline 2695 failures 0
+Built masked-direct
+Verified masked-direct 2695 failures 0
+Built masked-twin
+Verified masked-twin 2695 failures 0
+Verified baseline 2695 failures 0
+baseline timing guards 93 failures 0
+baseline 20740 block/MDX/HTML guards; failures 0
+baseline 16374 extra event/HTML guards; failures 0
+baseline 60000 extra event/HTML guards; failures 0
+baseline 12000 fence block/MDX/HTML guards; failures 0
+Verified masked-direct 2695 failures 0
+masked-direct timing guards 93 failures 0
+masked-direct 20740 block/MDX/HTML guards; failures 0
+masked-direct 16374 extra event/HTML guards; failures 0
+masked-direct 60000 extra event/HTML guards; failures 0
+masked-direct 12000 fence block/MDX/HTML guards; failures 0
+Verified masked-twin 2695 failures 0
+masked-twin timing guards 93 failures 0
+masked-twin 20740 block/MDX/HTML guards; failures 0
+masked-twin 16374 extra event/HTML guards; failures 0
+masked-twin 60000 extra event/HTML guards; failures 0
+masked-twin 12000 fence block/MDX/HTML guards; failures 0
+aa-control aa-control/screen-1 20 / 26
+aa-control median 0.0 ox-large-cm=-0.4% ox-huge-tables=-0.1% short=0.7% multiline=0.5% inline=0.0% code=0.2% corpus/vue-docs/src/guide/built-ins/suspense.md=-0.6% corpus/vue-docs/src/guide/extras/render-function.md=0.4% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-0.4% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-0.3% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=0.1% tables=0.2%
+aa-control direct 1 direct-escape/ci-plain=+1.0% direct-escape/ci-html-heavy=+0.1% direct-escape/plain-128=-1.8% direct-escape/late-quote-128=+0.1% direct-escape/plain-512=-0.2% direct-escape/late-quote-512=+1.1% direct-escape/plain-1024=-0.1% direct-escape/late-quote-1024=+0.6% direct-escape/plain-4096=+0.7% direct-escape/late-quote-4096=+0.3% direct-escape/plain-8192=-1.1% direct-escape/late-quote-8192=-0.8% direct-escape/plain-65536=+1.2% direct-escape/late-quote-65536=+2.7% direct-escape/quotes-4096=-0.4% direct-escape/attr-quotes-4096=-0.2% direct-escape/quotes-65536=+0.9% direct-escape/attr-quotes-65536=+0.1% direct-escape/late-quote-reserved-512=-0.7% direct-escape/late-quote-reserved-8192=-0.7% direct-escape/late-quote-reserved-65536=+0.2% direct-escape/html-heavy-65536=+0.1% direct-escape/attr-plain-512=+0.1% direct-escape/attr-plain-8192=-0.0% direct-escape/attr-plain-65536=-0.4%
+masked-direct masked-direct/confirm-1 20 / 93
+masked-direct masked-direct/confirm-1 40 / 93
+masked-direct masked-direct/confirm-1 60 / 93
+masked-direct masked-direct/confirm-1 80 / 93
+masked-direct median -0.5 ox-large-cm=0.5% ox-huge-tables=0.1% short=1.8% multiline=8.4% inline=3.4% code=-1.4% tables=1.1% corpus/vue-docs/src/api/application.md=-0.6% corpus/vue-docs/src/guide/built-ins/suspense.md=-1.9% corpus/vue-docs/src/guide/extras/render-function.md=-4.1% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-1.1% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-3.0% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=-1.1%
+masked-direct direct 1 direct-escape/ci-plain=-17.0% direct-escape/ci-html-heavy=-54.6% direct-escape/plain-128=-1.1% direct-escape/late-quote-128=-0.2% direct-escape/plain-512=-27.6% direct-escape/late-quote-512=-21.3% direct-escape/plain-1024=-23.1% direct-escape/late-quote-1024=-21.3% direct-escape/plain-4096=-15.0% direct-escape/late-quote-4096=-34.6% direct-escape/plain-8192=-16.5% direct-escape/late-quote-8192=-16.0% direct-escape/plain-65536=-15.2% direct-escape/late-quote-65536=-18.0% direct-escape/quotes-4096=-84.2% direct-escape/attr-quotes-4096=-85.2% direct-escape/quotes-65536=-98.5% direct-escape/attr-quotes-65536=-98.7% direct-escape/late-quote-reserved-512=-27.6% direct-escape/late-quote-reserved-8192=-18.5% direct-escape/late-quote-reserved-65536=-16.3% direct-escape/html-heavy-65536=-55.1% direct-escape/attr-plain-512=-22.7% direct-escape/attr-plain-8192=-16.9% direct-escape/attr-plain-65536=-16.3%
+masked-direct escape-regime/plain-128 0.0004 0.0004 -0.35
+masked-direct escape-regime/code-plain-128 0.0004 0.0005 12.2
+masked-direct escape-regime/code-late-quote-128 0.0004 0.0005 9.45
+masked-direct escape-regime/code-quotes-128 0.0007 0.0007 2.11
+masked-direct escape-regime/sparse-amp-128 0.0004 0.0004 0.9
+masked-direct escape-regime/plain-512 0.0004 0.0004 -4.16
+masked-direct escape-regime/code-plain-512 0.0004 0.0005 8.5
+masked-direct escape-regime/code-late-quote-512 0.0005 0.0005 8.6
+masked-direct escape-regime/code-quotes-512 0.0019 0.0013 -31.52
+masked-direct escape-regime/sparse-amp-512 0.0008 0.0007 -4.69
+masked-direct escape-regime/plain-4096 0.0011 0.0011 -2.36
+masked-direct escape-regime/code-plain-4096 0.0006 0.0007 4.9
+masked-direct escape-regime/code-late-quote-4096 0.0007 0.0007 1.72
+masked-direct escape-regime/code-quotes-4096 0.029 0.007 -75.88
+masked-direct escape-regime/sparse-amp-4096 0.0038 0.0042 10.74
+masked-direct escape-regime/plain-65536 0.0127 0.0121 -4.29
+masked-direct escape-regime/code-plain-65536 0.005 0.0045 -10.21
+masked-direct escape-regime/code-late-quote-65536 0.005 0.0045 -8.54
+masked-direct escape-regime/code-quotes-65536 4.4921 0.1038 -97.69
+masked-direct escape-regime/sparse-amp-65536 0.0535 0.0605 12.99
+masked-direct escape-regime/plain-1048576 0.2131 0.2018 -5.3
+masked-direct escape-regime/code-plain-1048576 0.0892 0.0778 -12.8
+masked-direct escape-regime/code-late-quote-1048576 0.0888 0.0779 -12.31
+masked-direct escape-regime/code-quotes-1048576 1198.4639 1.692 -99.86
+masked-direct escape-regime/sparse-amp-1048576 0.8702 0.9915 13.94
+masked-direct escape-regime/plain-8388608 1.7054 1.6253 -4.7
+masked-direct escape-regime/code-plain-8388608 0.6901 0.6168 -10.63
+masked-direct attribute-fence/plain-128 0.0007 0.0007 4.94
+masked-direct attribute-fence/double-quotes-128 0.0011 0.0012 3.85
+masked-direct attribute-fence/single-quotes-128 0.0011 0.0011 2.64
+masked-direct attribute-fence/mixed-quotes-128 0.0013 0.0013 2.85
+masked-direct attribute-fence/plain-4096 0.0042 0.0055 28.5
+masked-direct attribute-fence/double-quotes-4096 0.071 0.0157 -77.85
+masked-direct attribute-fence/single-quotes-4096 0.0702 0.0156 -77.74
+masked-direct attribute-fence/mixed-quotes-4096 0.1017 0.0207 -79.67
+masked-direct attribute-fence/plain-65536 0.0592 0.0787 32.96
+masked-direct attribute-fence/double-quotes-65536 12.0226 0.2412 -97.99
+masked-direct attribute-fence/single-quotes-65536 11.8376 0.24 -97.97
+masked-direct attribute-fence/mixed-quotes-65536 17.9887 0.3202 -98.22
+masked-direct attribute-fence/plain-1048576 0.9886 1.2715 28.61
+masked-direct attribute-fence/sparse-quotes-1048576 18.9877 1.2743 -93.29
+masked-twin masked-twin/confirm-1 20 / 93
+masked-twin masked-twin/confirm-1 40 / 93
+masked-twin masked-twin/confirm-1 60 / 93
+masked-twin masked-twin/confirm-1 80 / 93
+masked-twin median -0.6 ox-large-cm=-3.8% ox-huge-tables=-2.3% short=6.1% multiline=0.8% inline=1.2% code=-0.8% tables=4.3% corpus/vue-docs/src/api/application.md=1.7% corpus/vue-docs/src/guide/built-ins/suspense.md=-0.6% corpus/vue-docs/src/guide/extras/render-function.md=-2.6% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=0.0% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-1.9% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=-2.1%
+masked-twin direct 1 direct-escape/ci-plain=+0.6% direct-escape/ci-html-heavy=-25.6% direct-escape/plain-128=+0.1% direct-escape/late-quote-128=+0.3% direct-escape/plain-512=-9.4% direct-escape/late-quote-512=-8.8% direct-escape/plain-1024=-5.9% direct-escape/late-quote-1024=-11.6% direct-escape/plain-4096=-1.0% direct-escape/late-quote-4096=+1.9% direct-escape/plain-8192=-0.2% direct-escape/late-quote-8192=-1.2% direct-escape/plain-65536=+4.9% direct-escape/late-quote-65536=+3.4% direct-escape/quotes-4096=-76.0% direct-escape/attr-quotes-4096=-78.7% direct-escape/quotes-65536=-97.8% direct-escape/attr-quotes-65536=-98.1% direct-escape/late-quote-reserved-512=-5.0% direct-escape/late-quote-reserved-8192=-2.6% direct-escape/late-quote-reserved-65536=+3.6% direct-escape/html-heavy-65536=-25.4% direct-escape/attr-plain-512=+3.4% direct-escape/attr-plain-8192=+12.3% direct-escape/attr-plain-65536=+5.8%
+masked-twin escape-regime/plain-128 0.0004 0.0004 9.73
+masked-twin escape-regime/code-plain-128 0.0004 0.0005 11.11
+masked-twin escape-regime/code-late-quote-128 0.0004 0.0005 11.69
+masked-twin escape-regime/code-quotes-128 0.0007 0.0007 6.74
+masked-twin escape-regime/sparse-amp-128 0.0004 0.0004 1.29
+masked-twin escape-regime/plain-512 0.0004 0.0005 9.99
+masked-twin escape-regime/code-plain-512 0.0004 0.0005 9.99
+masked-twin escape-regime/code-late-quote-512 0.0005 0.0005 10.41
+masked-twin escape-regime/code-quotes-512 0.0019 0.0015 -19.07
+masked-twin escape-regime/sparse-amp-512 0.0008 0.0008 3.24
+masked-twin escape-regime/plain-4096 0.0011 0.0011 4.28
+masked-twin escape-regime/code-plain-4096 0.0006 0.0007 6.67
+masked-twin escape-regime/code-late-quote-4096 0.0007 0.0007 5.47
+masked-twin escape-regime/code-quotes-4096 0.0291 0.0092 -68.36
+masked-twin escape-regime/sparse-amp-4096 0.0038 0.0039 2.29
+masked-twin escape-regime/plain-65536 0.0126 0.0128 1.78
+masked-twin escape-regime/code-plain-65536 0.005 0.0052 4.7
+masked-twin escape-regime/code-late-quote-65536 0.005 0.0052 4.47
+masked-twin escape-regime/code-quotes-65536 4.482 0.1377 -96.93
+masked-twin escape-regime/sparse-amp-65536 0.0536 0.0519 -3.1
+masked-twin escape-regime/plain-1048576 0.2157 0.2319 7.52
+masked-twin escape-regime/code-plain-1048576 0.0903 0.1087 20.38
+masked-twin escape-regime/code-late-quote-1048576 0.0903 0.1074 18.94
+masked-twin escape-regime/code-quotes-1048576 1196.6503 2.2524 -99.81
+masked-twin escape-regime/sparse-amp-1048576 0.8688 0.8499 -2.18
+masked-twin escape-regime/plain-8388608 1.7007 1.8634 9.57
+masked-twin escape-regime/code-plain-8388608 0.6908 0.8626 24.87
+masked-twin attribute-fence/plain-128 0.0007 0.0007 6.11
+masked-twin attribute-fence/double-quotes-128 0.0011 0.0011 1.38
+masked-twin attribute-fence/single-quotes-128 0.0011 0.0011 -0.04
+masked-twin attribute-fence/mixed-quotes-128 0.0013 0.0013 0.89
+masked-twin attribute-fence/plain-4096 0.0043 0.0055 29.33
+masked-twin attribute-fence/double-quotes-4096 0.0731 0.0222 -69.6
+masked-twin attribute-fence/single-quotes-4096 0.0704 0.0216 -69.33
+masked-twin attribute-fence/mixed-quotes-4096 0.1018 0.0271 -73.4
+masked-twin attribute-fence/plain-65536 0.0591 0.0796 34.63
+masked-twin attribute-fence/double-quotes-65536 12.0112 0.3365 -97.2
+masked-twin attribute-fence/single-quotes-65536 12.0655 0.3288 -97.27
+masked-twin attribute-fence/mixed-quotes-65536 17.975 0.4218 -97.65
+masked-twin attribute-fence/plain-1048576 0.993 1.3012 31.03
+masked-twin attribute-fence/sparse-quotes-1048576 18.9535 1.3025 -93.13
+masked-twin masked-twin/confirm-2 20 / 93
+masked-twin masked-twin/confirm-2 40 / 93
+masked-twin masked-twin/confirm-2 60 / 93
+masked-twin masked-twin/confirm-2 80 / 93
+masked-twin median -1.0 ox-large-cm=-3.2% ox-huge-tables=-2.9% short=4.6% multiline=1.2% inline=0.0% code=0.0% tables=-1.0% corpus/vue-docs/src/api/application.md=-1.5% corpus/vue-docs/src/guide/built-ins/suspense.md=-2.4% corpus/vue-docs/src/guide/extras/render-function.md=-1.8% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-0.6% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-2.7% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=-2.3%
+masked-twin direct 2 direct-escape/ci-plain=+0.8% direct-escape/ci-html-heavy=-25.3% direct-escape/plain-128=+0.5% direct-escape/late-quote-128=-0.2% direct-escape/plain-512=-8.4% direct-escape/late-quote-512=-8.7% direct-escape/plain-1024=-4.6% direct-escape/late-quote-1024=-11.1% direct-escape/plain-4096=-0.8% direct-escape/late-quote-4096=-23.6% direct-escape/plain-8192=+0.2% direct-escape/late-quote-8192=-1.6% direct-escape/plain-65536=+5.8% direct-escape/late-quote-65536=+3.0% direct-escape/quotes-4096=-75.7% direct-escape/attr-quotes-4096=-78.1% direct-escape/quotes-65536=-97.8% direct-escape/attr-quotes-65536=-98.1% direct-escape/late-quote-reserved-512=-4.4% direct-escape/late-quote-reserved-8192=-2.7% direct-escape/late-quote-reserved-65536=+4.7% direct-escape/html-heavy-65536=-24.8% direct-escape/attr-plain-512=+5.7% direct-escape/attr-plain-8192=+13.4% direct-escape/attr-plain-65536=+6.1%
+masked-twin escape-regime/plain-128 0.0004 0.0004 4.23
+masked-twin escape-regime/code-plain-128 0.0004 0.0004 4.56
+masked-twin escape-regime/code-late-quote-128 0.0004 0.0004 3.33
+masked-twin escape-regime/code-quotes-128 0.0007 0.0007 1.4
+masked-twin escape-regime/sparse-amp-128 0.0004 0.0004 2.9
+masked-twin escape-regime/plain-512 0.0004 0.0005 3.82
+masked-twin escape-regime/code-plain-512 0.0004 0.0005 3.64
+masked-twin escape-regime/code-late-quote-512 0.0005 0.0005 2.84
+masked-twin escape-regime/code-quotes-512 0.0019 0.0015 -20.92
+masked-twin escape-regime/sparse-amp-512 0.0008 0.0008 0.02
+masked-twin escape-regime/plain-4096 0.0011 0.0011 1.84
+masked-twin escape-regime/code-plain-4096 0.0006 0.0007 2.53
+masked-twin escape-regime/code-late-quote-4096 0.0007 0.0007 -0.13
+masked-twin escape-regime/code-quotes-4096 0.0289 0.0092 -68.3
+masked-twin escape-regime/sparse-amp-4096 0.0038 0.0037 -2.26
+masked-twin escape-regime/plain-65536 0.0127 0.0128 1.09
+masked-twin escape-regime/code-plain-65536 0.005 0.0051 3.14
+masked-twin escape-regime/code-late-quote-65536 0.005 0.0052 4.58
+masked-twin escape-regime/code-quotes-65536 4.4741 0.1369 -96.94
+masked-twin escape-regime/sparse-amp-65536 0.0532 0.0518 -2.55
+masked-twin escape-regime/plain-1048576 0.2137 0.2158 0.97
+masked-twin escape-regime/code-plain-1048576 0.09 0.0918 2.03
+masked-twin escape-regime/code-late-quote-1048576 0.0898 0.0915 1.93
+masked-twin escape-regime/code-quotes-1048576 1231.3213 2.2494 -99.82
+masked-twin escape-regime/sparse-amp-1048576 0.8731 0.851 -2.53
+masked-twin escape-regime/plain-8388608 1.7179 1.7633 2.65
+masked-twin escape-regime/code-plain-8388608 0.6896 0.7162 3.86
+masked-twin attribute-fence/plain-128 0.0006 0.0007 8.01
+masked-twin attribute-fence/double-quotes-128 0.0011 0.0011 2.55
+masked-twin attribute-fence/single-quotes-128 0.0011 0.0011 1.69
+masked-twin attribute-fence/mixed-quotes-128 0.0012 0.0013 2.57
+masked-twin attribute-fence/plain-4096 0.0044 0.0055 26.78
+masked-twin attribute-fence/double-quotes-4096 0.0709 0.0219 -69.1
+masked-twin attribute-fence/single-quotes-4096 0.0704 0.0212 -69.9
+masked-twin attribute-fence/mixed-quotes-4096 0.1014 0.0276 -72.76
+masked-twin attribute-fence/plain-65536 0.0594 0.0799 34.48
+masked-twin attribute-fence/double-quotes-65536 12.0956 0.3429 -97.17
+masked-twin attribute-fence/single-quotes-65536 12.0186 0.3356 -97.21
+masked-twin attribute-fence/mixed-quotes-65536 18.2192 0.4278 -97.65
+masked-twin attribute-fence/plain-1048576 0.9901 1.3058 31.89
+masked-twin attribute-fence/sparse-quotes-1048576 19.2686 1.3195 -93.15
+masked-direct masked-direct/confirm-2 20 / 93
+masked-direct masked-direct/confirm-2 40 / 93
+masked-direct masked-direct/confirm-2 60 / 93
+masked-direct masked-direct/confirm-2 80 / 93
+masked-direct median -0.2 ox-large-cm=-0.0% ox-huge-tables=-0.3% short=5.0% multiline=5.5% inline=3.0% code=1.0% tables=-1.4% corpus/vue-docs/src/api/application.md=0.5% corpus/vue-docs/src/guide/built-ins/suspense.md=-2.2% corpus/vue-docs/src/guide/extras/render-function.md=-2.5% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-0.2% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-0.5% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=3.5%
+masked-direct direct 2 direct-escape/ci-plain=-16.5% direct-escape/ci-html-heavy=-53.3% direct-escape/plain-128=-1.4% direct-escape/late-quote-128=-1.1% direct-escape/plain-512=-27.1% direct-escape/late-quote-512=-21.2% direct-escape/plain-1024=-23.2% direct-escape/late-quote-1024=-19.7% direct-escape/plain-4096=-15.4% direct-escape/late-quote-4096=-16.7% direct-escape/plain-8192=-15.9% direct-escape/late-quote-8192=-16.0% direct-escape/plain-65536=-16.6% direct-escape/late-quote-65536=-14.9% direct-escape/quotes-4096=-83.8% direct-escape/attr-quotes-4096=-85.8% direct-escape/quotes-65536=-98.5% direct-escape/attr-quotes-65536=-98.7% direct-escape/late-quote-reserved-512=-25.7% direct-escape/late-quote-reserved-8192=-18.3% direct-escape/late-quote-reserved-65536=-16.9% direct-escape/html-heavy-65536=-55.3% direct-escape/attr-plain-512=-13.7% direct-escape/attr-plain-8192=-16.9% direct-escape/attr-plain-65536=-17.7%
+masked-direct escape-regime/plain-128 0.0004 0.0004 -0.11
+masked-direct escape-regime/code-plain-128 0.0004 0.0004 4.14
+masked-direct escape-regime/code-late-quote-128 0.0004 0.0004 4.96
+masked-direct escape-regime/code-quotes-128 0.0007 0.0007 -0.69
+masked-direct escape-regime/sparse-amp-128 0.0004 0.0004 0.93
+masked-direct escape-regime/plain-512 0.0004 0.0004 -3.87
+masked-direct escape-regime/code-plain-512 0.0004 0.0004 1.57
+masked-direct escape-regime/code-late-quote-512 0.0005 0.0005 3.07
+masked-direct escape-regime/code-quotes-512 0.0019 0.0013 -32.45
+masked-direct escape-regime/sparse-amp-512 0.0008 0.0007 -4.0
+masked-direct escape-regime/plain-4096 0.0011 0.0011 -3.3
+masked-direct escape-regime/code-plain-4096 0.0006 0.0006 1.17
+masked-direct escape-regime/code-late-quote-4096 0.0007 0.0007 1.55
+masked-direct escape-regime/code-quotes-4096 0.0289 0.0068 -76.39
+masked-direct escape-regime/sparse-amp-4096 0.0038 0.0042 9.65
+masked-direct escape-regime/plain-65536 0.0126 0.0121 -4.4
+masked-direct escape-regime/code-plain-65536 0.005 0.0045 -10.37
+masked-direct escape-regime/code-late-quote-65536 0.005 0.0046 -9.63
+masked-direct escape-regime/code-quotes-65536 4.5242 0.1031 -97.72
+masked-direct escape-regime/sparse-amp-65536 0.0534 0.0607 13.5
+masked-direct escape-regime/plain-1048576 0.2153 0.216 0.32
+masked-direct escape-regime/code-plain-1048576 0.0904 0.0916 1.32
+masked-direct escape-regime/code-late-quote-1048576 0.0903 0.0916 1.42
+masked-direct escape-regime/code-quotes-1048576 1183.3479 1.6865 -99.86
+masked-direct escape-regime/sparse-amp-1048576 0.8759 1.0027 14.47
+masked-direct escape-regime/plain-8388608 1.8962 1.7676 -6.78
+masked-direct escape-regime/code-plain-8388608 0.8761 0.7481 -14.61
+masked-direct attribute-fence/plain-128 0.0006 0.0007 7.32
+masked-direct attribute-fence/double-quotes-128 0.0011 0.0011 -1.19
+masked-direct attribute-fence/single-quotes-128 0.0011 0.0011 -1.44
+masked-direct attribute-fence/mixed-quotes-128 0.0013 0.0013 -0.04
+masked-direct attribute-fence/plain-4096 0.0043 0.0054 28.16
+masked-direct attribute-fence/double-quotes-4096 0.0711 0.0156 -78.05
+masked-direct attribute-fence/single-quotes-4096 0.0703 0.0155 -77.96
+masked-direct attribute-fence/mixed-quotes-4096 0.1021 0.0206 -79.81
+masked-direct attribute-fence/plain-65536 0.0594 0.079 32.93
+masked-direct attribute-fence/double-quotes-65536 11.9651 0.2423 -97.98
+masked-direct attribute-fence/single-quotes-65536 11.9329 0.2409 -97.98
+masked-direct attribute-fence/mixed-quotes-65536 18.228 0.3219 -98.23
+masked-direct attribute-fence/plain-1048576 0.9948 1.275 28.17
+masked-direct attribute-fence/sparse-quotes-1048576 19.3082 1.2841 -93.35
+masked-direct masked-direct/confirm-3 20 / 93
+masked-direct masked-direct/confirm-3 40 / 93
+masked-direct masked-direct/confirm-3 60 / 93
+masked-direct masked-direct/confirm-3 80 / 93
+masked-direct median -0.5 ox-large-cm=-0.2% ox-huge-tables=-0.1% short=3.7% multiline=7.4% inline=2.1% code=-1.1% tables=-0.9% corpus/vue-docs/src/api/application.md=-0.3% corpus/vue-docs/src/guide/built-ins/suspense.md=0.9% corpus/vue-docs/src/guide/extras/render-function.md=-1.3% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-2.5% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=0.1% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=2.4%
+masked-direct direct 3 direct-escape/ci-plain=-16.4% direct-escape/ci-html-heavy=-53.9% direct-escape/plain-128=-2.1% direct-escape/late-quote-128=-0.8% direct-escape/plain-512=-28.4% direct-escape/late-quote-512=-21.2% direct-escape/plain-1024=-23.4% direct-escape/late-quote-1024=-21.8% direct-escape/plain-4096=-15.0% direct-escape/late-quote-4096=+4.9% direct-escape/plain-8192=-16.5% direct-escape/late-quote-8192=-13.9% direct-escape/plain-65536=-16.7% direct-escape/late-quote-65536=-15.9% direct-escape/quotes-4096=-84.0% direct-escape/attr-quotes-4096=-85.3% direct-escape/quotes-65536=-98.6% direct-escape/attr-quotes-65536=-98.7% direct-escape/late-quote-reserved-512=-27.1% direct-escape/late-quote-reserved-8192=-18.7% direct-escape/late-quote-reserved-65536=-16.3% direct-escape/html-heavy-65536=-55.8% direct-escape/attr-plain-512=-22.9% direct-escape/attr-plain-8192=-16.8% direct-escape/attr-plain-65536=-17.4%
+masked-direct escape-regime/plain-128 0.0004 0.0004 4.8
+masked-direct escape-regime/code-plain-128 0.0004 0.0004 2.27
+masked-direct escape-regime/code-late-quote-128 0.0004 0.0004 0.3
+masked-direct escape-regime/code-quotes-128 0.0007 0.0007 -3.97
+masked-direct escape-regime/sparse-amp-128 0.0004 0.0004 2.35
+masked-direct escape-regime/plain-512 0.0004 0.0004 -4.91
+masked-direct escape-regime/code-plain-512 0.0004 0.0004 -0.35
+masked-direct escape-regime/code-late-quote-512 0.0005 0.0005 -0.63
+masked-direct escape-regime/code-quotes-512 0.0019 0.0013 -33.19
+masked-direct escape-regime/sparse-amp-512 0.0008 0.0007 -4.77
+masked-direct escape-regime/plain-4096 0.0011 0.0011 -2.55
+masked-direct escape-regime/code-plain-4096 0.0007 0.0006 -3.2
+masked-direct escape-regime/code-late-quote-4096 0.0007 0.0006 -3.12
+masked-direct escape-regime/code-quotes-4096 0.0289 0.0069 -76.27
+masked-direct escape-regime/sparse-amp-4096 0.0037 0.0041 10.4
+masked-direct escape-regime/plain-65536 0.0126 0.0121 -4.47
+masked-direct escape-regime/code-plain-65536 0.0051 0.0045 -11.76
+masked-direct escape-regime/code-late-quote-65536 0.005 0.0045 -10.62
+masked-direct escape-regime/code-quotes-65536 4.4615 0.1028 -97.7
+masked-direct escape-regime/sparse-amp-65536 0.0533 0.0604 13.48
+masked-direct escape-regime/plain-1048576 0.2153 0.2024 -5.97
+masked-direct escape-regime/code-plain-1048576 0.0906 0.0781 -13.76
+masked-direct escape-regime/code-late-quote-1048576 0.0908 0.0786 -13.38
+masked-direct escape-regime/code-quotes-1048576 1180.4567 1.6913 -99.86
+masked-direct escape-regime/sparse-amp-1048576 0.8756 1.003 14.55
+masked-direct escape-regime/plain-8388608 1.9638 1.7693 -9.9
+masked-direct escape-regime/code-plain-8388608 0.894 0.6417 -28.22
+masked-direct attribute-fence/plain-128 0.0006 0.0007 6.04
+masked-direct attribute-fence/double-quotes-128 0.0011 0.0011 -0.25
+masked-direct attribute-fence/single-quotes-128 0.0011 0.0011 -0.13
+masked-direct attribute-fence/mixed-quotes-128 0.0012 0.0013 1.66
+masked-direct attribute-fence/plain-4096 0.0042 0.0055 28.5
+masked-direct attribute-fence/double-quotes-4096 0.0704 0.0158 -77.6
+masked-direct attribute-fence/single-quotes-4096 0.07 0.0157 -77.63
+masked-direct attribute-fence/mixed-quotes-4096 0.1014 0.0212 -79.09
+masked-direct attribute-fence/plain-65536 0.0591 0.0785 32.89
+masked-direct attribute-fence/double-quotes-65536 12.0077 0.2421 -97.98
+masked-direct attribute-fence/single-quotes-65536 11.9619 0.2397 -98.0
+masked-direct attribute-fence/mixed-quotes-65536 18.2024 0.3202 -98.24
+masked-direct attribute-fence/plain-1048576 0.9829 1.2719 29.39
+masked-direct attribute-fence/sparse-quotes-1048576 19.1158 1.2815 -93.3
+masked-twin masked-twin/confirm-3 20 / 93
+masked-twin masked-twin/confirm-3 40 / 93
+masked-twin masked-twin/confirm-3 60 / 93
+masked-twin masked-twin/confirm-3 80 / 93
+masked-twin median -0.6 ox-large-cm=-0.9% ox-huge-tables=-1.0% short=4.5% multiline=0.3% inline=2.5% code=-2.3% tables=-1.4% corpus/vue-docs/src/api/application.md=-0.4% corpus/vue-docs/src/guide/built-ins/suspense.md=-0.4% corpus/vue-docs/src/guide/extras/render-function.md=-1.6% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-0.6% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-3.1% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=-2.8%
+masked-twin direct 3 direct-escape/ci-plain=+0.4% direct-escape/ci-html-heavy=-25.7% direct-escape/plain-128=-0.2% direct-escape/late-quote-128=-0.0% direct-escape/plain-512=-9.4% direct-escape/late-quote-512=-9.0% direct-escape/plain-1024=-4.8% direct-escape/late-quote-1024=-10.7% direct-escape/plain-4096=-1.3% direct-escape/late-quote-4096=-3.4% direct-escape/plain-8192=+0.6% direct-escape/late-quote-8192=-1.0% direct-escape/plain-65536=+6.4% direct-escape/late-quote-65536=+4.6% direct-escape/quotes-4096=-75.9% direct-escape/attr-quotes-4096=-78.2% direct-escape/quotes-65536=-97.8% direct-escape/attr-quotes-65536=-98.2% direct-escape/late-quote-reserved-512=-2.9% direct-escape/late-quote-reserved-8192=-2.7% direct-escape/late-quote-reserved-65536=+3.1% direct-escape/html-heavy-65536=-25.9% direct-escape/attr-plain-512=+3.5% direct-escape/attr-plain-8192=+12.2% direct-escape/attr-plain-65536=+5.2%
+masked-twin escape-regime/plain-128 0.0004 0.0004 4.89
+masked-twin escape-regime/code-plain-128 0.0004 0.0004 -2.99
+masked-twin escape-regime/code-late-quote-128 0.0004 0.0004 -1.37
+masked-twin escape-regime/code-quotes-128 0.0007 0.0007 -2.91
+masked-twin escape-regime/sparse-amp-128 0.0004 0.0004 -6.14
+masked-twin escape-regime/plain-512 0.0004 0.0005 3.27
+masked-twin escape-regime/code-plain-512 0.0005 0.0005 -2.16
+masked-twin escape-regime/code-late-quote-512 0.0005 0.0005 -0.8
+masked-twin escape-regime/code-quotes-512 0.0019 0.0015 -21.22
+masked-twin escape-regime/sparse-amp-512 0.0008 0.0008 -2.63
+masked-twin escape-regime/plain-4096 0.0011 0.0011 1.43
+masked-twin escape-regime/code-plain-4096 0.0006 0.0006 0.06
+masked-twin escape-regime/code-late-quote-4096 0.0007 0.0007 -1.5
+masked-twin escape-regime/code-quotes-4096 0.029 0.0091 -68.59
+masked-twin escape-regime/sparse-amp-4096 0.0038 0.0037 -3.01
+masked-twin escape-regime/plain-65536 0.0127 0.0128 1.25
+masked-twin escape-regime/code-plain-65536 0.005 0.0052 3.89
+masked-twin escape-regime/code-late-quote-65536 0.005 0.0052 2.85
+masked-twin escape-regime/code-quotes-65536 4.4703 0.1373 -96.93
+masked-twin escape-regime/sparse-amp-65536 0.0535 0.0519 -2.84
+masked-twin escape-regime/plain-1048576 0.232 0.2175 -6.23
+masked-twin escape-regime/code-plain-1048576 0.1074 0.0922 -14.11
+masked-twin escape-regime/code-late-quote-1048576 0.1072 0.0934 -12.93
+masked-twin escape-regime/code-quotes-1048576 1214.9155 2.2678 -99.81
+masked-twin escape-regime/sparse-amp-1048576 0.879 0.8553 -2.7
+masked-twin escape-regime/plain-8388608 1.8552 1.8763 1.13
+masked-twin escape-regime/code-plain-8388608 0.7628 0.817 7.12
+masked-twin attribute-fence/plain-128 0.0006 0.0007 8.1
+masked-twin attribute-fence/double-quotes-128 0.0011 0.0011 1.92
+masked-twin attribute-fence/single-quotes-128 0.0011 0.0011 2.64
+masked-twin attribute-fence/mixed-quotes-128 0.0012 0.0013 2.37
+masked-twin attribute-fence/plain-4096 0.0042 0.0055 30.07
+masked-twin attribute-fence/double-quotes-4096 0.0705 0.0215 -69.57
+masked-twin attribute-fence/single-quotes-4096 0.0698 0.0212 -69.66
+masked-twin attribute-fence/mixed-quotes-4096 0.1014 0.027 -73.4
+masked-twin attribute-fence/plain-65536 0.0591 0.0794 34.42
+masked-twin attribute-fence/double-quotes-65536 11.9944 0.3368 -97.19
+masked-twin attribute-fence/single-quotes-65536 11.87 0.3359 -97.17
+masked-twin attribute-fence/mixed-quotes-65536 18.0477 0.4264 -97.64
+masked-twin attribute-fence/plain-1048576 0.9924 1.3064 31.64
+masked-twin attribute-fence/sparse-quotes-1048576 19.2428 1.3145 -93.17
+aa-control aa-control/screen-2 20 / 26
+aa-control median -0.8 ox-large-cm=-2.9% ox-huge-tables=-0.7% short=-7.1% multiline=0.1% inline=-0.4% code=-0.5% corpus/vue-docs/src/guide/built-ins/suspense.md=-2.6% corpus/vue-docs/src/guide/extras/render-function.md=-1.7% corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md=-0.8% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md=-1.9% corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md=-0.6% tables=0.2%
+aa-control direct 2 direct-escape/ci-plain=-0.9% direct-escape/ci-html-heavy=-0.7% direct-escape/plain-128=-0.8% direct-escape/late-quote-128=-1.2% direct-escape/plain-512=+0.2% direct-escape/late-quote-512=+1.3% direct-escape/plain-1024=+0.1% direct-escape/late-quote-1024=+0.4% direct-escape/plain-4096=-1.4% direct-escape/late-quote-4096=+0.3% direct-escape/plain-8192=-0.0% direct-escape/late-quote-8192=+0.2% direct-escape/plain-65536=+0.1% direct-escape/late-quote-65536=+1.0% direct-escape/quotes-4096=-0.1% direct-escape/attr-quotes-4096=+0.0% direct-escape/quotes-65536=-0.3% direct-escape/attr-quotes-65536=+1.0% direct-escape/late-quote-reserved-512=+0.2% direct-escape/late-quote-reserved-8192=+0.3% direct-escape/late-quote-reserved-65536=-1.4% direct-escape/html-heavy-65536=-0.7% direct-escape/attr-plain-512=-0.3% direct-escape/attr-plain-8192=-0.1% direct-escape/attr-plain-65536=-2.8%
+EVIDENCE /home/runner/work/_temp/escape-linux-evidence

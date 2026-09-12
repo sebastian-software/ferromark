@@ -1,0 +1,27 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 4K of event 'cpu-clock:u'
+# Event count (approx.): 5001002874
+#
+# Overhead  Symbol                                                                                                              IPC   [IPC Coverage]
+# ........  ..................................................................................................................  ....................
+#
+    34.82%  [.] _RNvNtNtCs1dMjQR7ziKy_11html_escape6decode11html_entity19find_decoded_entity                                    -      -            
+    34.70%  [.] _RNvMNtCs6qwzy0hsVK4_9ferromark6renderNtB2_10HtmlWriter16code_block_start                                       -      -            
+     7.56%  [.] _RNvMNtNtCs6qwzy0hsVK4_9ferromark5block6parserNtB2_11BlockParser14try_code_fence                                -      -            
+     5.66%  [.] _RNvNtCs6qwzy0hsVK4_9ferromark6render26decode_entities_commonmark                                               -      -            
+     4.25%  [.] _RNvNtNtCsgxBkk5gSRhY_4core3str8converts9from_utf8                                                              -      -            
+     3.13%  [.] _RNvXst_NtNtCsgxBkk5gSRhY_4core3str7patternReNtB5_7Pattern15is_contained_in                                     -      -            
+     2.27%  [.] 0x0000000000188f07                                                                                              -      -            
+     2.17%  [.] _RNvMNtNtNtNtCs9NcsyDXujss_6memchr4arch6x86_644avx26memchrNtB2_3One13find_raw_avx2                              -      -            
+     1.85%  [.] _RNvMs6_NtNtNtNtCs9NcsyDXujss_6memchr4arch6x86_644avx26memchrNtB5_5Three13find_raw_avx2                         -      -            
+     1.60%  [.] _RNvMNtCs6qwzy0hsVK4_9ferromark6renderNtB2_10HtmlWriter29into_string_with_ascii_prefix                          -      -            
+     1.32%  [.] _RNvMs2_NtNtNtNtCs9NcsyDXujss_6memchr4arch6x86_644avx26memchrNtB5_3Two13find_raw_avx2                           -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

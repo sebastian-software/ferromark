@@ -1,0 +1,39 @@
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  linux-tools-6.8.0-139 linux-tools-6.8.0-139-generic
+The following NEW packages will be installed:
+  linux-tools-6.8.0-139 linux-tools-6.8.0-139-generic linux-tools-generic
+0 upgraded, 3 newly installed, 0 to remove and 50 not upgraded.
+Need to get 5264 kB of archives.
+After this operation, 20.5 MB of additional disk space will be used.
+Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+Get:2 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 linux-tools-6.8.0-139 amd64 6.8.0-139.139 [5250 kB]
+Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 linux-tools-6.8.0-139-generic amd64 6.8.0-139.139 [1810 B]
+Get:4 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 linux-tools-generic amd64 6.8.0-139.139 [11.3 kB]
+Fetched 5264 kB in 0s (69.4 MB/s)
+Selecting previously unselected package linux-tools-6.8.0-139.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 201818 files and directories currently installed.)
+Preparing to unpack .../linux-tools-6.8.0-139_6.8.0-139.139_amd64.deb ...
+Unpacking linux-tools-6.8.0-139 (6.8.0-139.139) ...
+Selecting previously unselected package linux-tools-6.8.0-139-generic.
+Preparing to unpack .../linux-tools-6.8.0-139-generic_6.8.0-139.139_amd64.deb ...
+Unpacking linux-tools-6.8.0-139-generic (6.8.0-139.139) ...
+Selecting previously unselected package linux-tools-generic.
+Preparing to unpack .../linux-tools-generic_6.8.0-139.139_amd64.deb ...
+Unpacking linux-tools-generic (6.8.0-139.139) ...
+Setting up linux-tools-6.8.0-139 (6.8.0-139.139) ...
+Setting up linux-tools-6.8.0-139-generic (6.8.0-139.139) ...
+Setting up linux-tools-generic (6.8.0-139.139) ...
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+kernel.perf_event_paranoid = -1

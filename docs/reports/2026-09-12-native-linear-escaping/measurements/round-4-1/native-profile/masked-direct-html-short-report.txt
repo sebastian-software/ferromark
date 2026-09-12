@@ -1,0 +1,23 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 5K of event 'cpu-clock:u'
+# Event count (approx.): 5024072081
+#
+# Overhead  Symbol                                                                                                              IPC   [IPC Coverage]
+# ........  ..................................................................................................................  ....................
+#
+    42.38%  [.] _RNvMNtNtNtNtCs9NcsyDXujss_6memchr4arch6x86_644avx26memchrNtB2_3One13find_raw_avx2                              -      -            
+    32.26%  [.] _RNvMNtNtCs6qwzy0hsVK4_9ferromark5block6parserNtB2_11BlockParser20try_html_block_start                          -      -            
+    12.42%  [.] _RNvNvNtNtNtCs9NcsyDXujss_6memchr4arch6x86_646memchr10memchr_raw9find_avx2                                      -      -            
+     4.47%  [.] _RNvMNtNtCs6qwzy0hsVK4_9ferromark5block6parserNtB2_11BlockParser15html_block_ends                               -      -            
+     2.91%  [.] 0x0000000000188f07                                                                                              -      -            
+     2.52%  [.] _RNvMNtNtNtNtCs9NcsyDXujss_6memchr4arch6x86_644avx26memchrNtB2_3One8find_raw                                    -      -            
+     1.46%  [.] _RNvMNtCs6qwzy0hsVK4_9ferromark6renderNtB2_10HtmlWriter29into_string_with_ascii_prefix                          -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

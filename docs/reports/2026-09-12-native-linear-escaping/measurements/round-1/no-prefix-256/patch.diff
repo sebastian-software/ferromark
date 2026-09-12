@@ -1,0 +1,245 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -7,7 +7,7 @@
+ 
+ /// Escape HTML text content into output buffer.
+ ///
+-/// Escapes `<`, `>`, and `&` to their HTML entity equivalents.
++/// Escapes `<`, `>`, `&`, and `"` to their HTML entity equivalents.
+ ///
+ /// # Example
+ /// ```
+@@ -77,33 +77,76 @@
+     escape_full_into(out, input)
+ }
+ 
+-/// Below this length the local short scan beats SIMD memchr passes, whose
+-/// per-call dispatch and setup cost more than the scan itself. Inline text
+-/// segments between escapes are short in practice (median ~17 bytes, >95%
+-/// under 64 on prose corpora); long inputs (code block content) still go
+-/// through memchr, which scans wider per iteration.
++/// Search nearby escapes inline; unmatched prefixes continue in an outlined
++/// backend that bounds the work needed to locate the next escape.
+ const SHORT_SCAN_MAX: usize = 128;
+ 
+ #[inline]
+ pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
+-    if input.len() <= SHORT_SCAN_MAX {
+-        return first_escape_short::<false>(input);
+-    }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    // A '"' is only relevant if it appears before the first <>& hit, so the
+-    // second pass never scans past it.
+-    let limit = a.unwrap_or(input.len());
+-    memchr(b'"', &input[..limit]).or(a)
++    first_escape::<false>(input)
+ }
+ 
+ #[inline]
+ fn first_attr_escape(input: &[u8]) -> Option<usize> {
+-    if input.len() <= SHORT_SCAN_MAX {
+-        return first_escape_short::<true>(input);
+-    }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    let limit = a.unwrap_or(input.len());
+-    memchr2(b'"', b'\'', &input[..limit]).or(a)
++    first_escape::<true>(input)
++}
++
++#[inline]
++fn first_escape<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    {
++    let prefix_len = input.len().min(SHORT_SCAN_MAX);
++    if let Some(at) = first_escape_in_set::<ATTR>(&input[..prefix_len]) {
++        return Some(at);
++    }
++    if input.len() > prefix_len {
++        first_escape_long::<ATTR>(&input[prefix_len..]).map(|at| prefix_len + at)
++    } else {
++        None
++    }
++    }
++    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
++    {
++        if input.len() <= SHORT_SCAN_MAX { return first_escape_in_set::<ATTR>(input); }
++        first_escape_long::<ATTR>(input)
++    }
++}
++
++// Keep the long-search loop out of short writes and inline entity probes.
++#[inline(never)]
++fn first_escape_long<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    if input.len() >= SHORT_SCAN_MAX * 2 {
++        // The shared NEON scanner stops at any escape in a single pass. Keep
++        // short tails on the bounded memchr window below.
++        let found = first_escape_in_set::<ATTR>(input);
++        #[cfg(test)]
++        tests::record_long_search(input.len(), found);
++        return found;
++    }
++    let mut start = 0;
++    let mut width = SHORT_SCAN_MAX * 2;
++    while start < input.len() {
++        let len = width.min(input.len() - start);
++        let chunk = &input[start..start + len];
++        let common = memchr3(b'<', b'>', b'&', chunk);
++        #[cfg(test)]
++        tests::record_long_search(chunk.len(), common);
++        let limit = common.unwrap_or(chunk.len());
++        let quote = if ATTR {
++            memchr2(b'"', b'\'', &chunk[..limit])
++        } else {
++            memchr(b'"', &chunk[..limit])
++        };
++        if let Some(at) = quote.or(common) {
++            return Some(start + at);
++        }
++        start += len;
++        // Both searches stay within a window. Doubling bounds how far either
++        // can scan past the next escape, while amortizing setup on plain text.
++        width = width.saturating_mul(2);
++    }
++    None
+ }
+ 
+ // Escape policy stays here; the shared scanner knows only byte sets.
+@@ -111,7 +154,7 @@
+ const ATTR_SPECIALS: crate::byte_search::ByteSet<5> = crate::byte_search::ByteSet::new(b"<>&\"'");
+ 
+ #[inline]
+-fn first_escape_short<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++fn first_escape_in_set<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+     if ATTR {
+         ATTR_SPECIALS.find(input)
+     } else {
+@@ -312,6 +355,109 @@
+ mod tests {
+     use super::*;
+ 
++    std::thread_local! {
++        static LONG_SEARCH_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
++    }
++
++    // Count the logical prefix inspected by each long-search window. This is
++    // compiled out of release builds and avoids timing thresholds in tests.
++    pub(super) fn record_long_search(len: usize, found: Option<usize>) {
++        let inspected = found.map_or(len, |at| at + 1);
++        LONG_SEARCH_BYTES.with(|count| count.set(count.get().saturating_add(inspected)));
++    }
++
++    #[test]
++    fn quoted_code_search_work_grows_linearly() {
++        for padding in [0, 255] {
++            let line = format!("{}let s = \"text\";\n", "x".repeat(padding));
++            let mut counts = Vec::new();
++            for repeats in [128, 256] {
++                let body = line.repeat(repeats);
++                let input = format!("```\n{body}```\n");
++                LONG_SEARCH_BYTES.with(|count| count.set(0));
++                let actual = crate::to_html(&input);
++                counts.push(LONG_SEARCH_BYTES.with(std::cell::Cell::get));
++                assert_eq!(
++                    actual,
++                    format!("<pre><code>{}</code></pre>\n", body.replace('"', "&quot;"))
++                );
++            }
++            if padding != 0 {
++                assert!(
++                    counts[0] > 0,
++                    "sparse quotes must exercise the counted search"
++                );
++            }
++            assert!(
++                counts[1] <= 2 * counts[0] + 16_384,
++                "padding={padding}, search work: {counts:?}"
++            );
++        }
++    }
++
++    #[test]
++    fn quoted_attribute_search_work_grows_linearly() {
++        for padding in [0, 255] {
++            let item = format!("{}value='x' title=\"y\" ", "x".repeat(padding));
++            let mut counts = Vec::new();
++            for repeats in [128, 256] {
++                let input = item.repeat(repeats);
++                let mut actual = Vec::new();
++                LONG_SEARCH_BYTES.with(|count| count.set(0));
++                escape_attr_into(&mut actual, input.as_bytes());
++                counts.push(LONG_SEARCH_BYTES.with(std::cell::Cell::get));
++                let expected = input.replace('\'', "&#39;").replace('"', "&quot;");
++                assert_eq!(actual, expected.as_bytes());
++            }
++            if padding != 0 {
++                assert!(
++                    counts[0] > 0,
++                    "sparse quotes must exercise the counted search"
++                );
++            }
++            assert!(
++                counts[1] <= 2 * counts[0] + 16_384,
++                "padding={padding}, search work: {counts:?}"
++            );
++        }
++    }
++
++    #[test]
++    fn escape_searches_match_scalar_oracle_across_growing_windows() {
++        for len in [
++            127, 128, 129, 383, 384, 385, 895, 896, 897, 1919, 1920, 1921, 3967, 3968, 3969, 8063,
++            8064, 8065,
++        ] {
++            for at in [0, 15, 16, len / 2, len - 1] {
++                for byte in 0u8..=255 {
++                    let mut input = vec![b'x'; len];
++                    input[at] = byte;
++                    for later_ampersand in [false, true] {
++                        if later_ampersand {
++                            input[len - 1] = b'&';
++                        }
++                        let text = input
++                            .iter()
++                            .position(|&b| matches!(b, b'<' | b'>' | b'&' | b'"'));
++                        let attr = input
++                            .iter()
++                            .position(|&b| matches!(b, b'<' | b'>' | b'&' | b'"' | b'\''));
++                        assert_eq!(
++                            first_text_escape(&input),
++                            text,
++                            "len={len}, at={at}, byte={byte}"
++                        );
++                        assert_eq!(
++                            first_attr_escape(&input),
++                            attr,
++                            "len={len}, at={at}, byte={byte}"
++                        );
++                    }
++                }
++            }
++        }
++    }
++
+     #[test]
+     fn test_escape_text_basic() {
+         let mut out = Vec::new();
+@@ -469,8 +615,7 @@
+         }
+     }
+ 
+-    /// Long-input path: a quote before the first `<>&` hit must win, and a
+-    /// quote after it must not mask it (the bounded second pass).
++    /// Long-input searches must return the earliest escape regardless of kind.
+     #[test]
+     fn test_long_input_quote_ordering() {
+         let long = 4 * SHORT_SCAN_MAX;
+@@ -500,7 +645,7 @@
+         assert_eq!(first_text_escape(&single_quote_late), None);
+     }
+ 
+-    /// End-to-end escaping of a long segment goes through the memchr path.
++    /// End-to-end escaping preserves every segment around long-input matches.
+     #[test]
+     fn test_escape_long_input_end_to_end() {
+         let long = 3 * SHORT_SCAN_MAX;

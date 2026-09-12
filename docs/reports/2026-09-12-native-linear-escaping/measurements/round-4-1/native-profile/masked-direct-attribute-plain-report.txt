@@ -1,0 +1,26 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 4K of event 'cpu-clock:u'
+# Event count (approx.): 5002005883
+#
+# Overhead  Symbol                                                                                                              IPC   [IPC Coverage]
+# ........  ..................................................................................................................  ....................
+#
+    52.28%  [.] _RNvMNtCs6qwzy0hsVK4_9ferromark6renderNtB2_10HtmlWriter16code_block_start                                       -      -            
+    25.83%  [.] _RNvNtNtCs1dMjQR7ziKy_11html_escape6decode11html_entity19find_decoded_entity                                    -      -            
+     4.45%  [.] _RNvMNtNtCs6qwzy0hsVK4_9ferromark5block6parserNtB2_11BlockParser14try_code_fence                                -      -            
+     4.37%  [.] _RNvNtCs6qwzy0hsVK4_9ferromark6render26decode_entities_commonmark                                               -      -            
+     3.09%  [.] _RNvNtNtCsgxBkk5gSRhY_4core3str8converts9from_utf8                                                              -      -            
+     2.73%  [.] _RNvXst_NtNtCsgxBkk5gSRhY_4core3str7patternReNtB5_7Pattern15is_contained_in                                     -      -            
+     2.13%  [.] 0x0000000000188f07                                                                                              -      -            
+     1.78%  [.] _RINvNtCs6qwzy0hsVK4_9ferromark6escape17first_escape_avx2Kb1_EB4_                                               -      -            
+     1.38%  [.] _RNvMNtCs6qwzy0hsVK4_9ferromark6renderNtB2_10HtmlWriter29into_string_with_ascii_prefix                          -      -            
+     1.32%  [.] _RNvMNtNtNtNtCs9NcsyDXujss_6memchr4arch6x86_644avx26memchrNtB2_3One13find_raw_avx2                              -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

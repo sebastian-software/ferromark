@@ -1,0 +1,37 @@
+[1m[92m     Locking[0m 5 packages to latest Rust 1.98.1 compatible versions
+[1m[92m   Compiling[0m memchr v2.8.3
+[1m[92m   Compiling[0m html-escape v0.2.14
+[1m[92m   Compiling[0m rustc-hash v2.1.3
+[1m[92m   Compiling[0m unicode-ident v1.0.24
+[1m[92m   Compiling[0m smallvec v1.15.2
+[1m[92m   Compiling[0m ferromark v0.9.0 (/home/runner/work/_temp/escape-linux/source)
+[1m[92m    Finished[0m `test` profile [optimized + debuginfo] target(s) in 7.32s
+[1m[92m     Running[0m unittests src/lib.rs (/home/runner/work/_temp/escape-linux/source/target/debug/deps/ferromark-eb4222fd1db2705c)
+
+running 23 tests
+test escape::tests::link_destination_fast_path_preserves_backslashes_and_entities ... ok
+test escape::tests::large_writes_match_scalar_escape_oracle ... ok
+test escape::tests::link_destination_encoding_preserves_every_byte_at_scan_boundaries ... ok
+test escape::tests::test_escape_at_boundaries ... ok
+test escape::tests::test_escape_attr_all ... ok
+test escape::tests::test_escape_attr_quotes ... ok
+test escape::tests::quoted_attribute_search_work_grows_linearly ... ok
+test escape::tests::test_escape_attr_single_quote ... ok
+test escape::tests::test_escape_consecutive ... ok
+test escape::tests::test_escape_long_input_end_to_end ... ok
+test escape::tests::test_escape_text_basic ... ok
+test escape::tests::test_escape_text_amp ... ok
+test escape::tests::test_escape_text_empty ... ok
+test escape::tests::test_escape_text_gt ... ok
+test escape::tests::test_escape_text_lt ... ok
+test escape::tests::test_escape_unicode ... ok
+test escape::tests::test_escape_text_mixed ... ok
+test escape::tests::test_long_input_quote_ordering ... ok
+test escape::tests::test_scanner_every_position ... ok
+test escape::tests::test_scanner_threshold_boundary ... ok
+test escape::tests::quoted_code_search_work_grows_linearly ... ok
+test escape::tests::x86_escape_scanners_match_oracle_at_every_alignment ... ok
+test escape::tests::escape_searches_match_scalar_oracle_across_growing_windows ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 189 filtered out; finished in 0.13s
+
