@@ -348,6 +348,10 @@ impl<'a> BlockParser<'a> {
     pub fn parse(&mut self, events: &mut Vec<BlockEvent>) {
         while !self.cursor.is_eof() {
             self.parse_line(events);
+            // Container HTML still needs prefix matching on every line.
+            if self.html_block.is_some() && self.container_stack.is_empty() {
+                self.parse_html_block_run(events);
+            }
         }
 
         // Close any open table at end of input
@@ -2687,11 +2691,6 @@ impl<'a> BlockParser<'a> {
 
         // Consume the current line as HTML block content
         self.parse_html_block_line(events);
-        // Container HTML still needs prefix matching on every line. Enter the
-        // root continuation path here so ordinary Markdown pays no extra check.
-        if self.html_block.is_some() && self.container_stack.is_empty() {
-            self.parse_html_block_run(events);
-        }
         true
     }
 

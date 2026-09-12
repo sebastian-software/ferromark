@@ -1,0 +1,569 @@
+[
+  {
+    "index": 0,
+    "case": "ox-large-cm",
+    "baseline_ns": 242230.9875,
+    "candidate_ns": 241558.59375,
+    "change_pct": -0.27758370509882724
+  },
+  {
+    "index": 1,
+    "case": "ox-large-tables",
+    "baseline_ns": 253670.36842105264,
+    "candidate_ns": 253300.30263157896,
+    "change_pct": -0.14588451610533237
+  },
+  {
+    "index": 2,
+    "case": "ox-huge-tables",
+    "baseline_ns": 6179479.125,
+    "candidate_ns": 6115526.0,
+    "change_pct": -1.0349274381600937
+  },
+  {
+    "index": 3,
+    "case": "short",
+    "baseline_ns": 483.234924234615,
+    "candidate_ns": 479.80691530194474,
+    "change_pct": -0.7093876623465944
+  },
+  {
+    "index": 4,
+    "case": "short-reuse",
+    "baseline_ns": 194.97911294347628,
+    "candidate_ns": 195.0923883640601,
+    "change_pct": 0.058096182136524455
+  },
+  {
+    "index": 5,
+    "case": "plain",
+    "baseline_ns": 6785.76483357453,
+    "candidate_ns": 6801.807880434782,
+    "change_pct": 0.23642208732130854
+  },
+  {
+    "index": 6,
+    "case": "multiline",
+    "baseline_ns": 13323.58984375,
+    "candidate_ns": 13419.814107142856,
+    "change_pct": 0.7222097386763604
+  },
+  {
+    "index": 7,
+    "case": "inline",
+    "baseline_ns": 39516.215861344535,
+    "candidate_ns": 39552.19275210084,
+    "change_pct": 0.09104336023100235
+  },
+  {
+    "index": 8,
+    "case": "lists",
+    "baseline_ns": 45039.732142857145,
+    "candidate_ns": 45006.54761904762,
+    "change_pct": -0.07367833295338633
+  },
+  {
+    "index": 9,
+    "case": "code",
+    "baseline_ns": 16956.246164259926,
+    "candidate_ns": 16850.19041218638,
+    "change_pct": -0.6254671644074672
+  },
+  {
+    "index": 10,
+    "case": "tables",
+    "baseline_ns": 41874.279017857145,
+    "candidate_ns": 41822.91703539823,
+    "change_pct": -0.12265759235402518
+  },
+  {
+    "index": 11,
+    "case": "headings",
+    "baseline_ns": 37472.57341269841,
+    "candidate_ns": 37452.62896825397,
+    "change_pct": -0.05322411200529009
+  },
+  {
+    "index": 12,
+    "case": "unique-headings",
+    "baseline_ns": 33727.087230215824,
+    "candidate_ns": 33784.303956834534,
+    "change_pct": 0.1696462141191013
+  },
+  {
+    "index": 13,
+    "case": "long-prose",
+    "baseline_ns": 9962.059978768577,
+    "candidate_ns": 9964.188561571125,
+    "change_pct": 0.02136689406693204
+  },
+  {
+    "index": 14,
+    "case": "late-marker",
+    "baseline_ns": 12669.71418918919,
+    "candidate_ns": 12649.237702156333,
+    "change_pct": -0.1616175923710106
+  },
+  {
+    "index": 15,
+    "case": "long-code",
+    "baseline_ns": 20433.922010869566,
+    "candidate_ns": 20264.412715517243,
+    "change_pct": -0.8295485089066856
+  },
+  {
+    "index": 16,
+    "case": "escape-dense",
+    "baseline_ns": 12939.142906336088,
+    "candidate_ns": 12854.473458904109,
+    "change_pct": -0.654366738545864
+  },
+  {
+    "index": 17,
+    "case": "commonmark/tiny",
+    "baseline_ns": 463.2858607569918,
+    "candidate_ns": 465.7841219572777,
+    "change_pct": 0.5392483155440608
+  },
+  {
+    "index": 18,
+    "case": "commonmark/short-100b",
+    "baseline_ns": 868.7081982023722,
+    "candidate_ns": 855.2165040131339,
+    "change_pct": -1.5530754995931595
+  },
+  {
+    "index": 19,
+    "case": "gfm_overlap/tiny",
+    "baseline_ns": 464.55871568724604,
+    "candidate_ns": 466.59243430874886,
+    "change_pct": 0.4377742904886128
+  },
+  {
+    "index": 20,
+    "case": "gfm_overlap/short-100b",
+    "baseline_ns": 870.6423166202414,
+    "candidate_ns": 853.0697439046579,
+    "change_pct": -2.018345809769362
+  },
+  {
+    "index": 21,
+    "case": "tables/tables-plain",
+    "baseline_ns": 25373.28277027027,
+    "candidate_ns": 25428.026351351353,
+    "change_pct": 0.2157528514411311
+  },
+  {
+    "index": 22,
+    "case": "tables/tables-commonmark-inline",
+    "baseline_ns": 31945.843962585033,
+    "candidate_ns": 32027.901785714286,
+    "change_pct": 0.25686541017779785
+  },
+  {
+    "index": 23,
+    "case": "tables/tables-links",
+    "baseline_ns": 36824.1982421875,
+    "candidate_ns": 36888.22412109375,
+    "change_pct": 0.17386903710749912
+  },
+  {
+    "index": 24,
+    "case": "commonmark/publication-5k",
+    "baseline_ns": 24009.71269132653,
+    "candidate_ns": 23733.00726010101,
+    "change_pct": -1.152472896210377
+  },
+  {
+    "index": 25,
+    "case": "guard/plain",
+    "baseline_ns": 25058.233710106382,
+    "candidate_ns": 25092.844919786097,
+    "change_pct": 0.13812310189187382
+  },
+  {
+    "index": 26,
+    "case": "guard/mixed",
+    "baseline_ns": 32155.001284246577,
+    "candidate_ns": 32239.36943493151,
+    "change_pct": 0.2623795593697187
+  },
+  {
+    "index": 27,
+    "case": "guard/links",
+    "baseline_ns": 37405.2371031746,
+    "candidate_ns": 37347.82142857143,
+    "change_pct": -0.1534963525155697
+  },
+  {
+    "index": 28,
+    "case": "guard/mixed-document",
+    "baseline_ns": 17895.70461026616,
+    "candidate_ns": 17653.127114661653,
+    "change_pct": -1.3555068151122063
+  },
+  {
+    "index": 29,
+    "case": "guard/one-table",
+    "baseline_ns": 17343.83648523985,
+    "candidate_ns": 17331.6323800738,
+    "change_pct": -0.070365660887306
+  },
+  {
+    "index": 30,
+    "case": "guard/long-cells",
+    "baseline_ns": 25026.55418882979,
+    "candidate_ns": 25071.877992021276,
+    "change_pct": 0.18110285119361524
+  },
+  {
+    "index": 31,
+    "case": "guard/wide9",
+    "baseline_ns": 37984.12298387097,
+    "candidate_ns": 38145.85467479675,
+    "change_pct": 0.4257876139313721
+  },
+  {
+    "index": 32,
+    "case": "guard/wide16",
+    "baseline_ns": 58541.15200617284,
+    "candidate_ns": 58584.426697530864,
+    "change_pct": 0.0739218308404066
+  },
+  {
+    "index": 33,
+    "case": "guard/escapes-code",
+    "baseline_ns": 68511.28442028986,
+    "candidate_ns": 68281.58967391304,
+    "change_pct": -0.33526556730090196
+  },
+  {
+    "index": 34,
+    "case": "guard/prose",
+    "baseline_ns": 9837.990172955975,
+    "candidate_ns": 9837.733621593292,
+    "change_pct": -0.002607761932804653
+  },
+  {
+    "index": 35,
+    "case": "guard/links-prose",
+    "baseline_ns": 36466.56976744186,
+    "candidate_ns": 35990.65696564886,
+    "change_pct": -1.305065995590049
+  },
+  {
+    "index": 36,
+    "case": "guard/edge-cases",
+    "baseline_ns": 1332871.734375,
+    "candidate_ns": 1335300.125,
+    "change_pct": 0.18219237173175973
+  },
+  {
+    "index": 37,
+    "case": "guard/references",
+    "baseline_ns": 10378.145741150442,
+    "candidate_ns": 10402.398558758316,
+    "change_pct": 0.23369124131402685
+  },
+  {
+    "index": 38,
+    "case": "guard/empty",
+    "baseline_ns": 144.79182818532817,
+    "candidate_ns": 142.14471579537874,
+    "change_pct": -1.8282194673039265
+  },
+  {
+    "index": 39,
+    "case": "guard/gfm-document",
+    "baseline_ns": 24247.234858247422,
+    "candidate_ns": 24006.271364795917,
+    "change_pct": -0.9937772074226636
+  },
+  {
+    "index": 40,
+    "case": "guard/long-delimiters",
+    "baseline_ns": 13680.036807580174,
+    "candidate_ns": 13684.782069970846,
+    "change_pct": 0.034687497244467735
+  },
+  {
+    "index": 41,
+    "case": "guard/deep-emphasis",
+    "baseline_ns": 38489.13524590164,
+    "candidate_ns": 38354.73831300813,
+    "change_pct": -0.34918148208544775
+  },
+  {
+    "index": 42,
+    "case": "mdx/short",
+    "baseline_ns": 1185.5509955752214,
+    "candidate_ns": 1179.5381289308177,
+    "change_pct": -0.5071790810218357
+  },
+  {
+    "index": 43,
+    "case": "mdx/segments",
+    "baseline_ns": 164975.66594827586,
+    "candidate_ns": 162339.26077586206,
+    "change_pct": -1.5980569966242086
+  },
+  {
+    "index": 44,
+    "case": "mdx/tables-code",
+    "baseline_ns": 147191.650390625,
+    "candidate_ns": 146057.60606060605,
+    "change_pct": -0.770454252676267
+  },
+  {
+    "index": 45,
+    "case": "corpus/vue-docs/src/api/application.md",
+    "baseline_ns": 54080.25,
+    "candidate_ns": 54170.85704022989,
+    "change_pct": 0.167541829466189
+  },
+  {
+    "index": 47,
+    "case": "corpus/vue-docs/src/api/built-in-directives.md",
+    "baseline_ns": 57765.11737804878,
+    "candidate_ns": 57374.20579268293,
+    "change_pct": -0.6767260296685618
+  },
+  {
+    "index": 79,
+    "case": "corpus/vue-docs/src/guide/built-ins/suspense.md",
+    "baseline_ns": 17102.6325,
+    "candidate_ns": 17014.275815217392,
+    "change_pct": -0.5166262257147114
+  },
+  {
+    "index": 108,
+    "case": "corpus/vue-docs/src/guide/extras/render-function.md",
+    "baseline_ns": 44525.00943396227,
+    "candidate_ns": 43844.723714953274,
+    "change_pct": -1.5278732731499267
+  },
+  {
+    "index": 149,
+    "case": "corpus/vite-docs/docs/config/shared-options.md",
+    "baseline_ns": 73351.7666015625,
+    "candidate_ns": 73842.7734375,
+    "change_pct": 0.6693865174435265
+  },
+  {
+    "index": 159,
+    "case": "corpus/vite-docs/docs/guide/api-plugin.md",
+    "baseline_ns": 73797.7294921875,
+    "candidate_ns": 74831.67956349206,
+    "change_pct": 1.401059461340215
+  },
+  {
+    "index": 456,
+    "case": "corpus/rust-book/src/ch02-00-guessing-game-tutorial.md",
+    "baseline_ns": 102711.90081521739,
+    "candidate_ns": 101076.18484042553,
+    "change_pct": -1.592528189829312
+  },
+  {
+    "index": 487,
+    "case": "corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md",
+    "baseline_ns": 64488.441780821915,
+    "candidate_ns": 64231.09332191781,
+    "change_pct": -0.3990613694447087
+  },
+  {
+    "index": 550,
+    "case": "corpus/rust-book/src/ch21-02-multithreaded.md",
+    "baseline_ns": 76333.20766129032,
+    "candidate_ns": 75411.87103174604,
+    "change_pct": -1.2069932048872967
+  },
+  {
+    "index": 612,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md",
+    "baseline_ns": 22698.809782608696,
+    "candidate_ns": 18513.37967519685,
+    "change_pct": -18.43898489610951
+  },
+  {
+    "index": 613,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md",
+    "baseline_ns": 47882.8125,
+    "candidate_ns": 33280.6405141844,
+    "change_pct": -30.495643892713275
+  },
+  {
+    "index": 670,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 5.0.md",
+    "baseline_ns": 105856.36527777778,
+    "candidate_ns": 106026.21527777778,
+    "change_pct": 0.16045327038605173
+  },
+  {
+    "index": 680,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 6.0.md",
+    "baseline_ns": 83352.70394736843,
+    "candidate_ns": 82498.17324561403,
+    "change_pct": -1.0251985374031491
+  },
+  {
+    "index": 142,
+    "case": "corpus/concat/vue-docs/matched",
+    "baseline_ns": 2752441.40625,
+    "candidate_ns": 2734990.90625,
+    "change_pct": -0.6340007805570314
+  },
+  {
+    "index": 143,
+    "case": "corpus/concat/vue-docs/upstream",
+    "baseline_ns": 3080888.0,
+    "candidate_ns": 3056511.71875,
+    "change_pct": -0.7912095879499703
+  },
+  {
+    "index": 177,
+    "case": "corpus/concat/vite-docs/matched",
+    "baseline_ns": 1474522.796875,
+    "candidate_ns": 1474636.71875,
+    "change_pct": 0.007726016528297741
+  },
+  {
+    "index": 178,
+    "case": "corpus/concat/vite-docs/upstream",
+    "baseline_ns": 1754022.5625,
+    "candidate_ns": 1758170.1458333333,
+    "change_pct": 0.23646123043148393
+  },
+  {
+    "index": 554,
+    "case": "corpus/concat/rust-book/matched",
+    "baseline_ns": 4217766.9375,
+    "candidate_ns": 4177988.28125,
+    "change_pct": -0.9431212496909147
+  },
+  {
+    "index": 555,
+    "case": "corpus/concat/rust-book/upstream",
+    "baseline_ns": 4621481.78125,
+    "candidate_ns": 4591757.8125,
+    "change_pct": -0.6431696619598082
+  },
+  {
+    "index": 689,
+    "case": "corpus/concat/typescript-handbook/matched",
+    "baseline_ns": 5430320.3125,
+    "candidate_ns": 5395041.6875,
+    "change_pct": -0.6496601115553391
+  },
+  {
+    "index": 690,
+    "case": "corpus/concat/typescript-handbook/upstream",
+    "baseline_ns": 6117536.4375,
+    "candidate_ns": 6072177.0625,
+    "change_pct": -0.7414647295265864
+  },
+  {
+    "index": 691,
+    "case": "corpus/ox-parser/SIMPLE_MD/1",
+    "baseline_ns": 1613.6280540261528,
+    "candidate_ns": 1604.4402806297057,
+    "change_pct": -0.5693860721820432
+  },
+  {
+    "index": 692,
+    "case": "corpus/ox-parser/LARGE_MD/1",
+    "baseline_ns": 8351.73387455516,
+    "candidate_ns": 8284.3648409894,
+    "change_pct": -0.8066472732208507
+  },
+  {
+    "index": 693,
+    "case": "corpus/ox-parser/LARGE_MD/100",
+    "baseline_ns": 771711.3125,
+    "candidate_ns": 769174.8571428572,
+    "change_pct": -0.32867930222842956
+  },
+  {
+    "index": 694,
+    "case": "html/root-short-lines",
+    "baseline_ns": 91151.59254807692,
+    "candidate_ns": 44757.98630952381,
+    "change_pct": -50.89719767000594
+  },
+  {
+    "index": 695,
+    "case": "html/root-long-lines",
+    "baseline_ns": 4573.203460038986,
+    "candidate_ns": 4551.577669902913,
+    "change_pct": -0.47288056009405777
+  },
+  {
+    "index": 696,
+    "case": "html/separate-blocks",
+    "baseline_ns": 206818.95380434784,
+    "candidate_ns": 167844.1205357143,
+    "change_pct": -18.84490398568789
+  },
+  {
+    "index": 697,
+    "case": "html/comment-long-lines",
+    "baseline_ns": 44193.171144859814,
+    "candidate_ns": 5366.871710526316,
+    "change_pct": -87.85588005682062
+  },
+  {
+    "index": 698,
+    "case": "html/script-long-lines",
+    "baseline_ns": 142832.85984848486,
+    "candidate_ns": 5359.357142857143,
+    "change_pct": -96.24781219913801
+  },
+  {
+    "index": 699,
+    "case": "html/script-candidates",
+    "baseline_ns": 165637.1228448276,
+    "candidate_ns": 59812.69778481012,
+    "change_pct": -63.88931614029305
+  },
+  {
+    "index": 700,
+    "case": "html/comment-short-lines",
+    "baseline_ns": 119276.3015625,
+    "candidate_ns": 92003.88112745098,
+    "change_pct": -22.864911200116687
+  },
+  {
+    "index": 701,
+    "case": "html/processing-long-lines",
+    "baseline_ns": 32998.815996503494,
+    "candidate_ns": 5365.968821510298,
+    "change_pct": -83.73890498956426
+  },
+  {
+    "index": 702,
+    "case": "html/cdata-long-lines",
+    "baseline_ns": 44005.0625,
+    "candidate_ns": 5361.357142857143,
+    "change_pct": -87.81649919743406
+  },
+  {
+    "index": 703,
+    "case": "html/declaration-long-lines",
+    "baseline_ns": 33060.226232394365,
+    "candidate_ns": 5317.327451814059,
+    "change_pct": -83.9162399723574
+  },
+  {
+    "index": 704,
+    "case": "html/container-html",
+    "baseline_ns": 131807.57986111112,
+    "candidate_ns": 132218.46006944444,
+    "change_pct": 0.311727298814124
+  },
+  {
+    "index": 705,
+    "case": "html/custom-tags",
+    "baseline_ns": 285944.85294117645,
+    "candidate_ns": 210613.90489130435,
+    "change_pct": -26.344572135162338
+  }
+]

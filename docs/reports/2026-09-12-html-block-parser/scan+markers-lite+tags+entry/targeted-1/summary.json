@@ -1,0 +1,72 @@
+[
+  {
+    "index": 0,
+    "case": "ox-large-cm",
+    "baseline_ns": 244290.103125,
+    "candidate_ns": 242814.0625,
+    "change_pct": -0.604216301077376
+  },
+  {
+    "index": 1,
+    "case": "ox-large-tables",
+    "baseline_ns": 250558.11184210525,
+    "candidate_ns": 251189.96710526315,
+    "change_pct": 0.2521791286310693
+  },
+  {
+    "index": 2,
+    "case": "ox-huge-tables",
+    "baseline_ns": 6081093.75,
+    "candidate_ns": 6114744.75,
+    "change_pct": 0.5533708471440635
+  },
+  {
+    "index": 10,
+    "case": "tables",
+    "baseline_ns": 41371.77905701754,
+    "candidate_ns": 41372.14418859649,
+    "change_pct": 0.0008825619474572832
+  },
+  {
+    "index": 16,
+    "case": "escape-dense",
+    "baseline_ns": 12829.996243169398,
+    "candidate_ns": 12782.938692098092,
+    "change_pct": -0.3667775904171333
+  },
+  {
+    "index": 79,
+    "case": "corpus/vue-docs/src/guide/built-ins/suspense.md",
+    "baseline_ns": 17126.026459854016,
+    "candidate_ns": 17052.44318181818,
+    "change_pct": -0.4296576220311543
+  },
+  {
+    "index": 108,
+    "case": "corpus/vue-docs/src/guide/extras/render-function.md",
+    "baseline_ns": 44857.142857142855,
+    "candidate_ns": 45077.82738095238,
+    "change_pct": 0.4919718683651819
+  },
+  {
+    "index": 487,
+    "case": "corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md",
+    "baseline_ns": 65198.893229166664,
+    "candidate_ns": 63434.75506756757,
+    "change_pct": -2.705779307324052
+  },
+  {
+    "index": 612,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md",
+    "baseline_ns": 22713.7931763285,
+    "candidate_ns": 18603.827075098816,
+    "change_pct": -18.09458274680842
+  },
+  {
+    "index": 613,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md",
+    "baseline_ns": 47855.57525510204,
+    "candidate_ns": 33204.33538732395,
+    "change_pct": -30.61553390524979
+  }
+]

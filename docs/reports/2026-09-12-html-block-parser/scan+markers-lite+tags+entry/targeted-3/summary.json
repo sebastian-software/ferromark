@@ -1,0 +1,72 @@
+[
+  {
+    "index": 0,
+    "case": "ox-large-cm",
+    "baseline_ns": 241295.83125,
+    "candidate_ns": 240551.953125,
+    "change_pct": -0.3082846981427023
+  },
+  {
+    "index": 1,
+    "case": "ox-large-tables",
+    "baseline_ns": 253689.69407894736,
+    "candidate_ns": 254096.0822368421,
+    "change_pct": 0.16019103943902824
+  },
+  {
+    "index": 2,
+    "case": "ox-huge-tables",
+    "baseline_ns": 6165526.0625,
+    "candidate_ns": 6225015.625,
+    "change_pct": 0.9648740739549799
+  },
+  {
+    "index": 10,
+    "case": "tables",
+    "baseline_ns": 41889.18303571428,
+    "candidate_ns": 41905.25,
+    "change_pct": 0.03835587882441427
+  },
+  {
+    "index": 16,
+    "case": "escape-dense",
+    "baseline_ns": 12942.005165289256,
+    "candidate_ns": 12936.825585399449,
+    "change_pct": -0.04002146362681591
+  },
+  {
+    "index": 79,
+    "case": "corpus/vue-docs/src/guide/built-ins/suspense.md",
+    "baseline_ns": 17173.076923076922,
+    "candidate_ns": 16988.2202166065,
+    "change_pct": -1.076433229167073
+  },
+  {
+    "index": 108,
+    "case": "corpus/vue-docs/src/guide/extras/render-function.md",
+    "baseline_ns": 44624.26297169811,
+    "candidate_ns": 44192.00292056075,
+    "change_pct": -0.9686659730638314
+  },
+  {
+    "index": 487,
+    "case": "corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md",
+    "baseline_ns": 68236.3759057971,
+    "candidate_ns": 68801.13949275362,
+    "change_pct": 0.827657652475855
+  },
+  {
+    "index": 612,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md",
+    "baseline_ns": 22960.17530487805,
+    "candidate_ns": 18712.17231075697,
+    "change_pct": -18.50161393680021
+  },
+  {
+    "index": 613,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md",
+    "baseline_ns": 48268.54846938775,
+    "candidate_ns": 33649.628125,
+    "change_pct": -30.286637588986476
+  }
+]

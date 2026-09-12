@@ -1,0 +1,114 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -348,6 +348,9 @@
+     pub fn parse(&mut self, events: &mut Vec<BlockEvent>) {
+         while !self.cursor.is_eof() {
+             self.parse_line(events);
++            if self.html_block.is_some() && self.container_stack.is_empty() {
++                self.parse_html_block_run(events);
++            }
+         }
+ 
+         // Close any open table at end of input
+@@ -2690,6 +2693,48 @@
+         true
+     }
+ 
++
++    /// Consume root HTML continuations without repeating general block dispatch.
++    fn parse_html_block_run(&mut self, events: &mut Vec<BlockEvent>) {
++        let input = self.input;
++        let offset = self.cursor.offset();
++        let ends = memchr::memchr_iter(b'\n', &input[offset..])
++            .map(|i| offset + i)
++            .chain(std::iter::once(input.len()));
++        for line_end in ends {
++            if self.html_block.is_none() || self.cursor.is_eof() {
++                break;
++            }
++            self.current_line_start = self.cursor.offset();
++            if self.options.definition_lists {
++                self.definition_current_line_loose =
++                    std::mem::take(&mut self.definition_blank_before_next);
++            }
++            self.partial_tab_cols = 0;
++            self.current_col = 0;
++            let kind = self.html_block.unwrap();
++            let start = self.cursor.offset();
++            self.skip_indent();
++            if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
++                && (self.cursor.is_eof() || self.at_line_ending())
++            {
++                // Leave blank-line state transitions in the existing handler.
++                self.cursor = Cursor::new_at(self.input, start);
++                self.current_col = 0;
++                self.parse_html_block_line(events);
++                continue;
++            }
++            let content_start = self.cursor.offset();
++            let end = line_end + usize::from(line_end < self.input.len());
++            self.cursor = Cursor::new_at(self.input, end);
++            events.push(BlockEvent::HtmlBlockText(Range::from_usize(start, end)));
++            if self.html_block_ends(kind, &self.input[content_start..line_end]) {
++                self.html_block = None;
++                events.push(BlockEvent::HtmlBlockEnd);
++            }
++        }
++    }
++
+     /// Parse a single HTML block line after container matching.
+     /// Called when we're inside an HTML block and containers matched.
+     fn parse_html_block_line(&mut self, events: &mut Vec<BlockEvent>) {
+@@ -2803,16 +2848,18 @@
+     /// Check if an HTML block ends on this line (types 1-5).
+     fn html_block_ends(&self, kind: HtmlBlockKind, line: &[u8]) -> bool {
+         match kind {
+-            HtmlBlockKind::Type1 => {
+-                self.contains_ci(line, b"</script")
+-                    || self.contains_ci(line, b"</pre")
+-                    || self.contains_ci(line, b"</style")
+-                    || self.contains_ci(line, b"</textarea")
+-            }
+-            HtmlBlockKind::Type2 => self.contains_bytes(line, b"-->"),
+-            HtmlBlockKind::Type3 => self.contains_bytes(line, b"?>"),
+-            HtmlBlockKind::Type4 => self.contains_bytes(line, b"]]>"),
+-            HtmlBlockKind::Type5 => self.contains_bytes(line, b">"),
++            HtmlBlockKind::Type1 => memchr::memchr_iter(b'<', line).any(|i| {
++                let tail = &line[i..];
++                [b"</script".as_slice(), b"</pre", b"</style", b"</textarea"]
++                    .iter()
++                    .any(|needle| tail.get(..needle.len()).is_some_and(|candidate| {
++                        candidate.eq_ignore_ascii_case(needle)
++                    }))
++            }),
++            HtmlBlockKind::Type2 => memchr::memmem::find(line, b"-->").is_some(),
++            HtmlBlockKind::Type3 => memchr::memmem::find(line, b"?>").is_some(),
++            HtmlBlockKind::Type4 => memchr::memmem::find(line, b"]]>").is_some(),
++            HtmlBlockKind::Type5 => memchr::memchr(b'>', line).is_some(),
+             HtmlBlockKind::Type6 | HtmlBlockKind::Type7 => false,
+         }
+     }
+@@ -3090,23 +3137,6 @@
+             .all(|(&x, &y)| x.eq_ignore_ascii_case(&y))
+     }
+ 
+-    #[inline]
+-    fn contains_bytes(&self, haystack: &[u8], needle: &[u8]) -> bool {
+-        if needle.is_empty() || haystack.len() < needle.len() {
+-            return false;
+-        }
+-        haystack.windows(needle.len()).any(|w| w == needle)
+-    }
+-
+-    #[inline]
+-    fn contains_ci(&self, haystack: &[u8], needle: &[u8]) -> bool {
+-        if needle.is_empty() || haystack.len() < needle.len() {
+-            return false;
+-        }
+-        haystack
+-            .windows(needle.len())
+-            .any(|w| self.eq_ignore_ascii_case(w, needle))
+-    }
+     /// Find end of current line (position of \n or EOF).
+     fn find_line_end(&mut self) -> usize {
+         let remaining = self.cursor.remaining_slice();
