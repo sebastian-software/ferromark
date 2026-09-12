@@ -1,0 +1,83 @@
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -1306,6 +1306,9 @@
+             });
+         }
+ 
++        emit_points.sort_unstable_by_key(emit_point_key);
++        let mark_points_start = emit_points.len();
++
+         // Add backslash escapes and hard breaks
+         // Note: Hard breaks inside code spans should not be processed
+         for mark in marks {
+@@ -1370,23 +1373,17 @@
+             }
+         }
+ 
+-        // Sort by position (end events come after start events at same position)
+-        emit_points.sort_unstable_by_key(|p| {
+-            (
+-                p.pos,
+-                matches!(
+-                    p.kind,
+-                    EmitKind::CodeSpanEnd
+-                        | EmitKind::StrongEnd
+-                        | EmitKind::EmphasisEnd
+-                        | EmitKind::StrikethroughEnd
+-                        | EmitKind::SubscriptEnd
+-                        | EmitKind::SuperscriptEnd
+-                        | EmitKind::HighlightEnd
+-                        | EmitKind::LinkEnd
+-                        | EmitKind::ImageEnd
+-                ),
+-            )
++        let (resolved_points, mark_points) = emit_points.split_at(mark_points_start);
++        let mut left = resolved_points.iter().peekable();
++        let mut right = mark_points.iter().peekable();
++        let ordered_points = std::iter::from_fn(move || {
++            match (left.peek(), right.peek()) {
++                (Some(a), Some(b)) if emit_point_key(a) <= emit_point_key(b) => left.next(),
++                (Some(_), Some(_)) => right.next(),
++                (Some(_), None) => left.next(),
++                (None, Some(_)) => right.next(),
++                (None, None) => None,
++            }
+         });
+ 
+         // Build ranges to suppress (reference labels after link text)
+@@ -1402,7 +1399,7 @@
+         let mut skip_until = 0u32;
+         let mut suppress_idx = 0usize;
+ 
+-        for point in emit_points.iter() {
++        for point in ordered_points {
+             // Skip events inside suppressed ranges (e.g., reference labels)
+             while suppress_idx < suppress_ranges.len()
+                 && point.pos >= suppress_ranges[suppress_idx].1
+@@ -1852,6 +1849,26 @@
+     content_start: u32,
+     /// End of note content.
+     content_end: u32,
++}
++
++
++#[inline]
++fn emit_point_key(p: &EmitPoint) -> (u32, bool) {
++            (
++                p.pos,
++                matches!(
++                    p.kind,
++                    EmitKind::CodeSpanEnd
++                        | EmitKind::StrongEnd
++                        | EmitKind::EmphasisEnd
++                        | EmitKind::StrikethroughEnd
++                        | EmitKind::SubscriptEnd
++                        | EmitKind::SuperscriptEnd
++                        | EmitKind::HighlightEnd
++                        | EmitKind::LinkEnd
++                        | EmitKind::ImageEnd
++                ),
++            )
+ }
+ 
+ #[derive(Debug, Clone, Copy)]

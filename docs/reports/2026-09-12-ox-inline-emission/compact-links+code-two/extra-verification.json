@@ -1,0 +1,62 @@
+{
+  "count": 16374,
+  "hash": "57fa5e867200bfacffcfbe0f07df42b152ffdfad79fa703e512fe6827be0ea68",
+  "failures": [
+    {
+      "index": 8134,
+      "case": {
+        "case": "inline-guard/8134",
+        "input": "^[a]\u00e9***a***\\$a$!__`a`  \n[ref]: /url \"title\"\n\n <~~a~~  \n$a$",
+        "flags": 47,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[InlineFootnote(Range { start: 2, end: 3 }), Text(Range { start: 4, end: 6 }), EmphasisStart, StrongStart, Text(Range { start: 9, end: 10 }), StrongEnd, EmphasisEnd, EscapedChar(36), Text(Range { start: 15, end: 16 }), MathInline(Range { start: 17, end: 57 }), Code(Range { start: 21, end: 22 }), Text(Range { start: 58, end: 60 })]",
+        "html": "<p><sup><a href=\"#user-content-inline-fn-1\" id=\"user-content-inline-fnref-1\" data-footnote-ref>1</a></sup>\u00e9<em><strong>a</strong></em>$a$!__<code>a</code><br />\n[ref]: /url &quot;title&quot;</p>\n<p>&lt;<del>a</del><br />\n<code class=\"language-math math-inline\">a</code></p>\n<section data-footnotes class=\"footnotes\">\n<ol>\n<li id=\"user-content-inline-fn-1\">\n<p>a <a href=\"#user-content-inline-fnref-1\" class=\"data-footnote-backref\" aria-label=\"Back to reference 1\">\u21a9</a></p>\n</li>\n</ol>\n</section>\n",
+        "mdx_events": "[Text(Range { start: 0, end: 6 }), EmphasisStart, StrongStart, Text(Range { start: 9, end: 10 }), StrongEnd, EmphasisEnd, EscapedChar(36), Text(Range { start: 15, end: 20 }), Code(Range { start: 21, end: 22 }), HardBreak, Text(Range { start: 26, end: 45 }), SoftBreak, SoftBreak, Text(Range { start: 48, end: 49 }), StrikethroughStart, Text(Range { start: 51, end: 52 }), StrikethroughEnd, HardBreak, Text(Range { start: 57, end: 60 })]"
+      }
+    },
+    {
+      "index": 15513,
+      "case": {
+        "case": "inline-guard/15513",
+        "input": "![a][ref](`a`)<X>{value}</X>)( **a**`a`\n`]^a^^a^>",
+        "flags": 15,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[Text(Range { start: 0, end: 4 }), LinkStart { url: Range { start: 10, end: 13 }, title: None }, Text(Range { start: 5, end: 8 }), LinkEnd, Code(Range { start: 11, end: 12 }), Html(Range { start: 14, end: 17 }), Text(Range { start: 17, end: 24 }), Html(Range { start: 24, end: 28 }), Text(Range { start: 28, end: 31 }), StrongStart, Text(Range { start: 33, end: 34 }), StrongEnd, Code(Range { start: 37, end: 38 }), SoftBreak, Text(Range { start: 40, end: 49 })]",
+        "html": "<p>![a]<a href=\"`a`\">ref</a><code>a</code><X>{value}</X>)( <strong>a</strong><code>a</code>\n`]^a^^a^&gt;</p>\n",
+        "mdx_events": "[Text(Range { start: 0, end: 4 }), LinkStart { url: Range { start: 10, end: 13 }, title: None }, Text(Range { start: 5, end: 8 }), LinkEnd, Code(Range { start: 11, end: 12 }), MdxJsxOpen(Range { start: 14, end: 17 }), MdxExpression(Range { start: 17, end: 24 }), MdxJsxClose(Range { start: 24, end: 28 }), Text(Range { start: 28, end: 31 }), StrongStart, Text(Range { start: 33, end: 34 }), StrongEnd, Code(Range { start: 37, end: 38 }), SoftBreak, Text(Range { start: 40, end: 49 })]"
+      }
+    },
+    {
+      "index": 15514,
+      "case": {
+        "case": "inline-guard/15514",
+        "input": "![a][ref](`a`)<X>{value}</X>)( **a**`a`\n`]^a^^a^>",
+        "flags": 47,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[Text(Range { start: 0, end: 4 }), LinkStart { url: Range { start: 10, end: 13 }, title: None }, Text(Range { start: 5, end: 8 }), LinkEnd, Code(Range { start: 11, end: 12 }), Html(Range { start: 14, end: 17 }), Text(Range { start: 17, end: 24 }), Html(Range { start: 24, end: 28 }), Text(Range { start: 28, end: 31 }), StrongStart, Text(Range { start: 33, end: 34 }), StrongEnd, Code(Range { start: 37, end: 38 }), SoftBreak, Text(Range { start: 40, end: 42 }), SuperscriptStart, Text(Range { start: 43, end: 47 }), SuperscriptEnd, Text(Range { start: 48, end: 49 })]",
+        "html": "<p>![a]<a href=\"`a`\">ref</a><code>a</code><X>{value}</X>)( <strong>a</strong><code>a</code>\n`]<sup>a^^a</sup>&gt;</p>\n",
+        "mdx_events": "[Text(Range { start: 0, end: 4 }), LinkStart { url: Range { start: 10, end: 13 }, title: None }, Text(Range { start: 5, end: 8 }), LinkEnd, Code(Range { start: 11, end: 12 }), MdxJsxOpen(Range { start: 14, end: 17 }), MdxExpression(Range { start: 17, end: 24 }), MdxJsxClose(Range { start: 24, end: 28 }), Text(Range { start: 28, end: 31 }), StrongStart, Text(Range { start: 33, end: 34 }), StrongEnd, Code(Range { start: 37, end: 38 }), SoftBreak, Text(Range { start: 40, end: 49 })]"
+      }
+    },
+    {
+      "index": 15515,
+      "case": {
+        "case": "inline-guard/15515",
+        "input": "![a][ref](`a`)<X>{value}</X>)( **a**`a`\n`]^a^^a^>",
+        "flags": 31,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[Text(Range { start: 0, end: 4 }), LinkStart { url: Range { start: 10, end: 13 }, title: None }, Text(Range { start: 5, end: 8 }), LinkEnd, Code(Range { start: 11, end: 12 }), Text(Range { start: 14, end: 31 }), StrongStart, Text(Range { start: 33, end: 34 }), StrongEnd, Code(Range { start: 37, end: 38 }), SoftBreak, Text(Range { start: 40, end: 49 })]",
+        "html": "<p>![a]<a href=\"`a`\">ref</a><code>a</code>&lt;X&gt;{value}&lt;/X&gt;)( <strong>a</strong><code>a</code>\n`]^a^^a^&gt;</p>\n",
+        "mdx_events": "[Text(Range { start: 0, end: 4 }), LinkStart { url: Range { start: 10, end: 13 }, title: None }, Text(Range { start: 5, end: 8 }), LinkEnd, Code(Range { start: 11, end: 12 }), MdxJsxOpen(Range { start: 14, end: 17 }), MdxExpression(Range { start: 17, end: 24 }), MdxJsxClose(Range { start: 24, end: 28 }), Text(Range { start: 28, end: 31 }), StrongStart, Text(Range { start: 33, end: 34 }), StrongEnd, Code(Range { start: 37, end: 38 }), SoftBreak, Text(Range { start: 40, end: 49 })]"
+      }
+    }
+  ]
+}

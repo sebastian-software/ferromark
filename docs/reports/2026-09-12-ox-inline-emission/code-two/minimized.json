@@ -1,0 +1,30 @@
+[
+  {
+    "input": "$`a`$",
+    "flags": 47,
+    "baseline": {
+      "events": "[MathInline(Range { start: 1, end: 4 }), Code(Range { start: 2, end: 3 }), Text(Range { start: 4, end: 5 })]",
+      "html": "<p><code class=\"language-math math-inline\">`a`</code><code>a</code>$</p>\n",
+      "mdx_events": "[Text(Range { start: 0, end: 1 }), Code(Range { start: 2, end: 3 }), Text(Range { start: 4, end: 5 })]"
+    },
+    "code-two": {
+      "events": "[MathInline(Range { start: 1, end: 4 }), Code(Range { start: 2, end: 3 })]",
+      "html": "<p><code class=\"language-math math-inline\">`a`</code><code>a</code></p>\n",
+      "mdx_events": "[Text(Range { start: 0, end: 1 }), Code(Range { start: 2, end: 3 }), Text(Range { start: 4, end: 5 })]"
+    }
+  },
+  {
+    "input": "[](`a`)",
+    "flags": 15,
+    "baseline": {
+      "events": "[LinkStart { url: Range { start: 3, end: 6 }, title: None }, LinkEnd, Code(Range { start: 4, end: 5 }), Text(Range { start: 6, end: 7 })]",
+      "html": "<p><a href=\"`a`\"></a><code>a</code>)</p>\n",
+      "mdx_events": "[LinkStart { url: Range { start: 3, end: 6 }, title: None }, LinkEnd, Code(Range { start: 4, end: 5 }), Text(Range { start: 6, end: 7 })]"
+    },
+    "code-two": {
+      "events": "[LinkStart { url: Range { start: 3, end: 6 }, title: None }, LinkEnd, Code(Range { start: 4, end: 5 })]",
+      "html": "<p><a href=\"`a`\"></a><code>a</code></p>\n",
+      "mdx_events": "[LinkStart { url: Range { start: 3, end: 6 }, title: None }, LinkEnd, Code(Range { start: 4, end: 5 })]"
+    }
+  }
+]

@@ -1,0 +1,968 @@
+[
+  {
+    "index": 0,
+    "case": "ox-large-cm",
+    "medians_ns": {
+      "baseline": 247150.76644736843,
+      "code-safe+html-search": 241476.04375,
+      "code-safe+compact-all+compact-code+html-search": 243731.11875
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -2.296057090551995,
+      "code-safe+compact-all+compact-code+html-search": -1.3836281984974774
+    }
+  },
+  {
+    "index": 1,
+    "case": "ox-large-tables",
+    "medians_ns": {
+      "baseline": 257065.7894736842,
+      "code-safe+html-search": 253314.4177631579,
+      "code-safe+compact-all+compact-code+html-search": 255468.20065789475
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.4593041408609286,
+      "code-safe+compact-all+compact-code+html-search": -0.6214707989967705
+    }
+  },
+  {
+    "index": 2,
+    "case": "ox-huge-tables",
+    "medians_ns": {
+      "baseline": 6172651.0625,
+      "code-safe+html-search": 6122703.125,
+      "code-safe+compact-all+compact-code+html-search": 6175135.375
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.8091812900852813,
+      "code-safe+compact-all+compact-code+html-search": 0.040247091158174264
+    }
+  },
+  {
+    "index": 3,
+    "case": "short",
+    "medians_ns": {
+      "baseline": 496.21958690589605,
+      "code-safe+html-search": 487.38259643377,
+      "code-safe+compact-all+compact-code+html-search": 493.6491878159225
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.7808628891954448,
+      "code-safe+compact-all+compact-code+html-search": -0.5179962979697916
+    }
+  },
+  {
+    "index": 4,
+    "case": "short-reuse",
+    "medians_ns": {
+      "baseline": 203.54063639718652,
+      "code-safe+html-search": 201.80184029272493,
+      "code-safe+compact-all+compact-code+html-search": 197.66586021505375
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.8542746722421168,
+      "code-safe+compact-all+compact-code+html-search": -2.886291546553288
+    }
+  },
+  {
+    "index": 5,
+    "case": "plain",
+    "medians_ns": {
+      "baseline": 6785.531204775687,
+      "code-safe+html-search": 6800.301902173913,
+      "code-safe+compact-all+compact-code+html-search": 6776.098085260116
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.21767930840594918,
+      "code-safe+compact-all+compact-code+html-search": -0.13901814361905185
+    }
+  },
+  {
+    "index": 6,
+    "case": "multiline",
+    "medians_ns": {
+      "baseline": 13439.357987106017,
+      "code-safe+html-search": 13343.513316761364,
+      "code-safe+compact-all+compact-code+html-search": 13431.702184813754
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.7131640546863105,
+      "code-safe+compact-all+compact-code+html-search": -0.05696553585080588
+    }
+  },
+  {
+    "index": 7,
+    "case": "inline",
+    "medians_ns": {
+      "baseline": 40236.62286324786,
+      "code-safe+html-search": 39969.698622881355,
+      "code-safe+compact-all+compact-code+html-search": 39869.23993644068
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.6633862918210109,
+      "code-safe+compact-all+compact-code+html-search": -0.9130560684871614
+    }
+  },
+  {
+    "index": 8,
+    "case": "lists",
+    "medians_ns": {
+      "baseline": 46074.98468137255,
+      "code-safe+html-search": 46169.96017156863,
+      "code-safe+compact-all+compact-code+html-search": 45933.68264563107
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.20613244009275444,
+      "code-safe+compact-all+compact-code+html-search": -0.30667842153100366
+    }
+  },
+  {
+    "index": 9,
+    "case": "code",
+    "medians_ns": {
+      "baseline": 16826.398073476703,
+      "code-safe+html-search": 16745.96361607143,
+      "code-safe+compact-all+compact-code+html-search": 16872.23651079137
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.4780254042132892,
+      "code-safe+compact-all+compact-code+html-search": 0.2724197841659226
+    }
+  },
+  {
+    "index": 10,
+    "case": "tables",
+    "medians_ns": {
+      "baseline": 42623.91079545455,
+      "code-safe+html-search": 42332.911036036036,
+      "code-safe+compact-all+compact-code+html-search": 42519.707207207204
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.6827148283388929,
+      "code-safe+compact-all+compact-code+html-search": -0.24447214322355082
+    }
+  },
+  {
+    "index": 11,
+    "case": "headings",
+    "medians_ns": {
+      "baseline": 38102.0877016129,
+      "code-safe+html-search": 37813.634072580644,
+      "code-safe+compact-all+compact-code+html-search": 37950.81502016129
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.7570546561417091,
+      "code-safe+compact-all+compact-code+html-search": -0.3970194038611985
+    }
+  },
+  {
+    "index": 12,
+    "case": "unique-headings",
+    "medians_ns": {
+      "baseline": 34177.158967391304,
+      "code-safe+html-search": 34102.90217391304,
+      "code-safe+compact-all+compact-code+html-search": 34257.66058394161
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.21727023462984052,
+      "code-safe+compact-all+compact-code+html-search": 0.2355421544169678
+    }
+  },
+  {
+    "index": 13,
+    "case": "long-prose",
+    "medians_ns": {
+      "baseline": 10030.682425213676,
+      "code-safe+html-search": 10001.893390191897,
+      "code-safe+compact-all+compact-code+html-search": 10051.375133832977
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.2870097347455913,
+      "code-safe+compact-all+compact-code+html-search": 0.20629412578436757
+    }
+  },
+  {
+    "index": 14,
+    "case": "late-marker",
+    "medians_ns": {
+      "baseline": 12719.759146341463,
+      "code-safe+html-search": 12769.764775815218,
+      "code-safe+compact-all+compact-code+html-search": 12712.292513550135
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.3931334618717086,
+      "code-safe+compact-all+compact-code+html-search": -0.05870105483463117
+    }
+  },
+  {
+    "index": 15,
+    "case": "long-code",
+    "medians_ns": {
+      "baseline": 20392.730978260868,
+      "code-safe+html-search": 20338.29356060606,
+      "code-safe+compact-all+compact-code+html-search": 20388.983423913043
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.2669452056854982,
+      "code-safe+compact-all+compact-code+html-search": -0.01837691259606311
+    }
+  },
+  {
+    "index": 16,
+    "case": "escape-dense",
+    "medians_ns": {
+      "baseline": 13140.617822128852,
+      "code-safe+html-search": 13086.249477715877,
+      "code-safe+compact-all+compact-code+html-search": 13112.03002793296
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.4137426805109423,
+      "code-safe+compact-all+compact-code+html-search": -0.2175528927395587
+    }
+  },
+  {
+    "index": 17,
+    "case": "commonmark/tiny",
+    "medians_ns": {
+      "baseline": 481.6680879482174,
+      "code-safe+html-search": 476.61438847092313,
+      "code-safe+compact-all+compact-code+html-search": 472.343879093199
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.0492078681861083,
+      "code-safe+compact-all+compact-code+html-search": -1.935816195492035
+    }
+  },
+  {
+    "index": 18,
+    "case": "commonmark/short-100b",
+    "medians_ns": {
+      "baseline": 876.5849967277487,
+      "code-safe+html-search": 884.9786317727015,
+      "code-safe+compact-all+compact-code+html-search": 864.3379885693215
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.9575380683317425,
+      "code-safe+compact-all+compact-code+html-search": -1.397127284193178
+    }
+  },
+  {
+    "index": 19,
+    "case": "gfm_overlap/tiny",
+    "medians_ns": {
+      "baseline": 483.96687228990294,
+      "code-safe+html-search": 474.529038870331,
+      "code-safe+compact-all+compact-code+html-search": 473.09159602381675
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.9500990584162436,
+      "code-safe+compact-all+compact-code+html-search": -2.2471117113098127
+    }
+  },
+  {
+    "index": 20,
+    "case": "gfm_overlap/short-100b",
+    "medians_ns": {
+      "baseline": 880.9442761180007,
+      "code-safe+html-search": 886.6296094931921,
+      "code-safe+compact-all+compact-code+html-search": 867.0897332162012
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.6453681043532722,
+      "code-safe+compact-all+compact-code+html-search": -1.5726923118056235
+    }
+  },
+  {
+    "index": 21,
+    "case": "tables/tables-plain",
+    "medians_ns": {
+      "baseline": 25966.836671270717,
+      "code-safe+html-search": 25652.806352459018,
+      "code-safe+compact-all+compact-code+html-search": 25601.703804347828
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.20935146158615,
+      "code-safe+compact-all+compact-code+html-search": -1.4061507435245924
+    }
+  },
+  {
+    "index": 22,
+    "case": "tables/tables-commonmark-inline",
+    "medians_ns": {
+      "baseline": 32705.042100694445,
+      "code-safe+html-search": 32557.436631944445,
+      "code-safe+compact-all+compact-code+html-search": 32728.37109375
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.4513232800481992,
+      "code-safe+compact-all+compact-code+html-search": 0.07133148761504504
+    }
+  },
+  {
+    "index": 23,
+    "case": "tables/tables-links",
+    "medians_ns": {
+      "baseline": 38025.11794354839,
+      "code-safe+html-search": 37674.646,
+      "code-safe+compact-all+compact-code+html-search": 37992.334677419356
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.9216853556343829,
+      "code-safe+compact-all+compact-code+html-search": -0.08621476513945847
+    }
+  },
+  {
+    "index": 24,
+    "case": "commonmark/publication-5k",
+    "medians_ns": {
+      "baseline": 24641.252290575918,
+      "code-safe+html-search": 24278.632409793816,
+      "code-safe+compact-all+compact-code+html-search": 24314.982836787563
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.471596802410835,
+      "code-safe+compact-all+compact-code+html-search": -1.3240782162403986
+    }
+  },
+  {
+    "index": 25,
+    "case": "guard/plain",
+    "medians_ns": {
+      "baseline": 25912.580455801104,
+      "code-safe+html-search": 25653.745560109288,
+      "code-safe+compact-all+compact-code+html-search": 25728.384221311477
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.998877345053728,
+      "code-safe+compact-all+compact-code+html-search": -0.7108370963046728
+    }
+  },
+  {
+    "index": 26,
+    "case": "guard/mixed",
+    "medians_ns": {
+      "baseline": 32785.38374125874,
+      "code-safe+html-search": 32450.736206896552,
+      "code-safe+compact-all+compact-code+html-search": 32585.467447916668
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.0207217246661293,
+      "code-safe+compact-all+compact-code+html-search": -0.6097726197741182
+    }
+  },
+  {
+    "index": 27,
+    "case": "guard/links",
+    "medians_ns": {
+      "baseline": 37915.74243951613,
+      "code-safe+html-search": 37639.1665,
+      "code-safe+compact-all+compact-code+html-search": 37972.4254032258
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.7294488297501456,
+      "code-safe+compact-all+compact-code+html-search": 0.14949717468963897
+    }
+  },
+  {
+    "index": 28,
+    "case": "guard/mixed-document",
+    "medians_ns": {
+      "baseline": 18315.7958984375,
+      "code-safe+html-search": 18060.27644230769,
+      "code-safe+compact-all+compact-code+html-search": 18029.317067307693
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.3950770010033087,
+      "code-safe+compact-all+compact-code+html-search": -1.564108012113452
+    }
+  },
+  {
+    "index": 29,
+    "case": "guard/one-table",
+    "medians_ns": {
+      "baseline": 17554.31833022388,
+      "code-safe+html-search": 17643.141212406015,
+      "code-safe+compact-all+compact-code+html-search": 17496.190998134327
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.5059887858431145,
+      "code-safe+compact-all+compact-code+html-search": -0.3311283924336328
+    }
+  },
+  {
+    "index": 30,
+    "case": "guard/long-cells",
+    "medians_ns": {
+      "baseline": 25324.022849462366,
+      "code-safe+html-search": 25221.522177419356,
+      "code-safe+compact-all+compact-code+html-search": 25231.392809139787
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.4047566717670481,
+      "code-safe+compact-all+compact-code+html-search": -0.3657793268992626
+    }
+  },
+  {
+    "index": 31,
+    "case": "guard/wide9",
+    "medians_ns": {
+      "baseline": 38417.55589430894,
+      "code-safe+html-search": 38448.36526639344,
+      "code-safe+compact-all+compact-code+html-search": 38512.167008196724
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.08019607538090057,
+      "code-safe+compact-all+compact-code+html-search": 0.24627051795815813
+    }
+  },
+  {
+    "index": 32,
+    "case": "guard/wide16",
+    "medians_ns": {
+      "baseline": 59296.64765625,
+      "code-safe+html-search": 59618.73655063291,
+      "code-safe+compact-all+compact-code+html-search": 59889.240506329115
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.5431822996977642,
+      "code-safe+compact-all+compact-code+html-search": 0.9993699028559622
+    }
+  },
+  {
+    "index": 33,
+    "case": "guard/escapes-code",
+    "medians_ns": {
+      "baseline": 68364.16847826086,
+      "code-safe+html-search": 67939.42481884058,
+      "code-safe+compact-all+compact-code+html-search": 67327.97589285714
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.6212957297291655,
+      "code-safe+compact-all+compact-code+html-search": -1.5156954417330781
+    }
+  },
+  {
+    "index": 34,
+    "case": "guard/prose",
+    "medians_ns": {
+      "baseline": 9772.021484375,
+      "code-safe+html-search": 9757.455171517671,
+      "code-safe+compact-all+compact-code+html-search": 9837.624475890985
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.14906140843652382,
+      "code-safe+compact-all+compact-code+html-search": 0.6713349087584586
+    }
+  },
+  {
+    "index": 35,
+    "case": "guard/links-prose",
+    "medians_ns": {
+      "baseline": 36047.1731870229,
+      "code-safe+html-search": 36018.36832061069,
+      "code-safe+compact-all+compact-code+html-search": 35847.18893129771
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.07990880800212707,
+      "code-safe+compact-all+compact-code+html-search": -0.5547848500841224
+    }
+  },
+  {
+    "index": 36,
+    "case": "guard/edge-cases",
+    "medians_ns": {
+      "baseline": 1400029.953125,
+      "code-safe+html-search": 1402309.90625,
+      "code-safe+compact-all+compact-code+html-search": 1369296.875
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.1628503104459167,
+      "code-safe+compact-all+compact-code+html-search": -2.195172900151232
+    }
+  },
+  {
+    "index": 37,
+    "case": "guard/references",
+    "medians_ns": {
+      "baseline": 10610.10548642534,
+      "code-safe+html-search": 10475.138392857143,
+      "code-safe+compact-all+compact-code+html-search": 10426.458333333334
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.2720617503838683,
+      "code-safe+compact-all+compact-code+html-search": -1.7308701909417024
+    }
+  },
+  {
+    "index": 38,
+    "case": "guard/empty",
+    "medians_ns": {
+      "baseline": 143.99656148245992,
+      "code-safe+html-search": 141.557513589008,
+      "code-safe+compact-all+compact-code+html-search": 144.07534346569955
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.693823705470221,
+      "code-safe+compact-all+compact-code+html-search": 0.054711017005226736
+    }
+  },
+  {
+    "index": 39,
+    "case": "guard/gfm-document",
+    "medians_ns": {
+      "baseline": 24833.030423280423,
+      "code-safe+html-search": 24372.13957253886,
+      "code-safe+compact-all+compact-code+html-search": 24613.87434554974
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.8559589501790597,
+      "code-safe+compact-all+compact-code+html-search": -0.8825184602730962
+    }
+  },
+  {
+    "index": 40,
+    "case": "guard/long-delimiters",
+    "medians_ns": {
+      "baseline": 13800.54393382353,
+      "code-safe+html-search": 13789.39963235294,
+      "code-safe+compact-all+compact-code+html-search": 13815.08106617647
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.08075262485325307,
+      "code-safe+compact-all+compact-code+html-search": 0.10533738686422378
+    }
+  },
+  {
+    "index": 41,
+    "case": "guard/deep-emphasis",
+    "medians_ns": {
+      "baseline": 46324.14215686275,
+      "code-safe+html-search": 46438.11881188119,
+      "code-safe+compact-all+compact-code+html-search": 38966.8347107438
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.24604158806114107,
+      "code-safe+compact-all+compact-code+html-search": -15.882231388561152
+    }
+  },
+  {
+    "index": 42,
+    "case": "mdx/short",
+    "medians_ns": {
+      "baseline": 1186.4612281700836,
+      "code-safe+html-search": 1193.487334521385,
+      "code-safe+compact-all+compact-code+html-search": 1166.703599427576
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.592190135208881,
+      "code-safe+compact-all+compact-code+html-search": -1.665257007427079
+    }
+  },
+  {
+    "index": 43,
+    "case": "mdx/segments",
+    "medians_ns": {
+      "baseline": 166704.2025862069,
+      "code-safe+html-search": 166149.33620689655,
+      "code-safe+compact-all+compact-code+html-search": 167593.47098214287
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.33284486575760885,
+      "code-safe+compact-all+compact-code+html-search": 0.5334408983937333
+    }
+  },
+  {
+    "index": 44,
+    "case": "mdx/tables-code",
+    "medians_ns": {
+      "baseline": 149555.98828125,
+      "code-safe+html-search": 149044.921875,
+      "code-safe+compact-all+compact-code+html-search": 149731.12109375
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.3417224626866222,
+      "code-safe+compact-all+compact-code+html-search": 0.1171018389251266
+    }
+  },
+  {
+    "index": 45,
+    "case": "corpus/vue-docs/src/api/application.md",
+    "medians_ns": {
+      "baseline": 54645.46947674418,
+      "code-safe+html-search": 54375.41882183908,
+      "code-safe+compact-all+compact-code+html-search": 54472.43175287356
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.4941867230549346,
+      "code-safe+compact-all+compact-code+html-search": -0.3166552058707417
+    }
+  },
+  {
+    "index": 47,
+    "case": "corpus/vue-docs/src/api/built-in-directives.md",
+    "medians_ns": {
+      "baseline": 60481.537660256414,
+      "code-safe+html-search": 59550.204113924054,
+      "code-safe+compact-all+compact-code+html-search": 59349.61708860759
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.5398642004837093,
+      "code-safe+compact-all+compact-code+html-search": -1.8715142098522208
+    }
+  },
+  {
+    "index": 79,
+    "case": "corpus/vue-docs/src/guide/built-ins/suspense.md",
+    "medians_ns": {
+      "baseline": 20433.627717391304,
+      "code-safe+html-search": 17508.939598880595,
+      "code-safe+compact-all+compact-code+html-search": 17447.955390334573
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -14.313112477925161,
+      "code-safe+compact-all+compact-code+html-search": -14.611562706095448
+    }
+  },
+  {
+    "index": 108,
+    "case": "corpus/vue-docs/src/guide/extras/render-function.md",
+    "medians_ns": {
+      "baseline": 44919.02261904762,
+      "code-safe+html-search": 44498.6975235849,
+      "code-safe+compact-all+compact-code+html-search": 44700.0
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.9357396286812314,
+      "code-safe+compact-all+compact-code+html-search": -0.48759435597056644
+    }
+  },
+  {
+    "index": 149,
+    "case": "corpus/vite-docs/docs/config/shared-options.md",
+    "medians_ns": {
+      "baseline": 75766.5070564516,
+      "code-safe+html-search": 73516.6015625,
+      "code-safe+compact-all+compact-code+html-search": 73493.7333984375
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -2.969525165354736,
+      "code-safe+compact-all+compact-code+html-search": -2.9997075836170284
+    }
+  },
+  {
+    "index": 159,
+    "case": "corpus/vite-docs/docs/guide/api-plugin.md",
+    "medians_ns": {
+      "baseline": 75607.52721774194,
+      "code-safe+html-search": 73821.8173828125,
+      "code-safe+compact-all+compact-code+html-search": 74205.2822265625
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -2.3618148888625567,
+      "code-safe+compact-all+compact-code+html-search": -1.8546367574502454
+    }
+  },
+  {
+    "index": 456,
+    "case": "corpus/rust-book/src/ch02-00-guessing-game-tutorial.md",
+    "medians_ns": {
+      "baseline": 109466.69040697675,
+      "code-safe+html-search": 103296.13858695653,
+      "code-safe+compact-all+compact-code+html-search": 102679.23505434782
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -5.636921877403312,
+      "code-safe+compact-all+compact-code+html-search": -6.200475530405125
+    }
+  },
+  {
+    "index": 487,
+    "case": "corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md",
+    "medians_ns": {
+      "baseline": 72838.38173076924,
+      "code-safe+html-search": 64769.370719178085,
+      "code-safe+compact-all+compact-code+html-search": 64936.17979452055
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -11.077965792013945,
+      "code-safe+compact-all+compact-code+html-search": -10.84895318714989
+    }
+  },
+  {
+    "index": 550,
+    "case": "corpus/rust-book/src/ch21-02-multithreaded.md",
+    "medians_ns": {
+      "baseline": 83385.69078947368,
+      "code-safe+html-search": 76532.80443548386,
+      "code-safe+compact-all+compact-code+html-search": 75748.86592741935
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -8.218300153309876,
+      "code-safe+compact-all+compact-code+html-search": -9.158435685728438
+    }
+  },
+  {
+    "index": 612,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md",
+    "medians_ns": {
+      "baseline": 22857.061589805824,
+      "code-safe+html-search": 22387.735416666666,
+      "code-safe+compact-all+compact-code+html-search": 22391.87767857143
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -2.053309307914175,
+      "code-safe+compact-all+compact-code+html-search": -2.0351868476474078
+    }
+  },
+  {
+    "index": 613,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md",
+    "medians_ns": {
+      "baseline": 46648.85024752475,
+      "code-safe+html-search": 46778.67141089109,
+      "code-safe+compact-all+compact-code+html-search": 46881.875
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.27829445458460444,
+      "code-safe+compact-all+compact-code+html-search": 0.4995294658684868
+    }
+  },
+  {
+    "index": 670,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 5.0.md",
+    "medians_ns": {
+      "baseline": 109030.28052325582,
+      "code-safe+html-search": 106869.19886363637,
+      "code-safe+compact-all+compact-code+html-search": 106549.89346590909
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.9820930930820602,
+      "code-safe+compact-all+compact-code+html-search": -2.2749524677391553
+    }
+  },
+  {
+    "index": 680,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 6.0.md",
+    "medians_ns": {
+      "baseline": 84986.09598214286,
+      "code-safe+html-search": 82808.29714912281,
+      "code-safe+compact-all+compact-code+html-search": 82805.05263157895
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -2.562535445183456,
+      "code-safe+compact-all+compact-code+html-search": -2.5663531491341707
+    }
+  },
+  {
+    "index": 142,
+    "case": "corpus/concat/vue-docs/matched",
+    "medians_ns": {
+      "baseline": 2791466.125,
+      "code-safe+html-search": 2750251.3125,
+      "code-safe+compact-all+compact-code+html-search": 2753253.90625
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.4764575550778036,
+      "code-safe+compact-all+compact-code+html-search": -1.368894231163198
+    }
+  },
+  {
+    "index": 143,
+    "case": "corpus/concat/vue-docs/upstream",
+    "medians_ns": {
+      "baseline": 3112708.34375,
+      "code-safe+html-search": 3079059.90625,
+      "code-safe+compact-all+compact-code+html-search": 3075408.875
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.0810019373502344,
+      "code-safe+compact-all+compact-code+html-search": -1.1982962947650888
+    }
+  },
+  {
+    "index": 177,
+    "case": "corpus/concat/vite-docs/matched",
+    "medians_ns": {
+      "baseline": 1481455.078125,
+      "code-safe+html-search": 1461188.140625,
+      "code-safe+compact-all+compact-code+html-search": 1476055.328125
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.3680426628697284,
+      "code-safe+compact-all+compact-code+html-search": -0.36448962103083904
+    }
+  },
+  {
+    "index": 178,
+    "case": "corpus/concat/vite-docs/upstream",
+    "medians_ns": {
+      "baseline": 1781207.4791666667,
+      "code-safe+html-search": 1761335.9375,
+      "code-safe+compact-all+compact-code+html-search": 1771682.2916666667
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.1156219530339961,
+      "code-safe+compact-all+compact-code+html-search": -0.5347601338647201
+    }
+  },
+  {
+    "index": 554,
+    "case": "corpus/concat/rust-book/matched",
+    "medians_ns": {
+      "baseline": 4460058.59375,
+      "code-safe+html-search": 4293842.4375,
+      "code-safe+compact-all+compact-code+html-search": 4278161.46875
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -3.726770685993297,
+      "code-safe+compact-all+compact-code+html-search": -4.078357294563295
+    }
+  },
+  {
+    "index": 555,
+    "case": "corpus/concat/rust-book/upstream",
+    "medians_ns": {
+      "baseline": 4864997.4375,
+      "code-safe+html-search": 4709221.375,
+      "code-safe+compact-all+compact-code+html-search": 4691552.0625
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -3.2019762497562443,
+      "code-safe+compact-all+compact-code+html-search": -3.565168887100778
+    }
+  },
+  {
+    "index": 689,
+    "case": "corpus/concat/typescript-handbook/matched",
+    "medians_ns": {
+      "baseline": 5506854.125,
+      "code-safe+html-search": 5405614.5625,
+      "code-safe+compact-all+compact-code+html-search": 5411252.625
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -1.8384282605270585,
+      "code-safe+compact-all+compact-code+html-search": -1.7360456229626342
+    }
+  },
+  {
+    "index": 690,
+    "case": "corpus/concat/typescript-handbook/upstream",
+    "medians_ns": {
+      "baseline": 6130398.4375,
+      "code-safe+html-search": 6093414.0625,
+      "code-safe+compact-all+compact-code+html-search": 6049901.0
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.6032948001187699,
+      "code-safe+compact-all+compact-code+html-search": -1.313086552541065
+    }
+  },
+  {
+    "index": 691,
+    "case": "corpus/ox-parser/SIMPLE_MD/1",
+    "medians_ns": {
+      "baseline": 1608.912984728895,
+      "code-safe+html-search": 1620.9532762793915,
+      "code-safe+compact-all+compact-code+html-search": 1598.094708588957
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": 0.7483494548665925,
+      "code-safe+compact-all+compact-code+html-search": -0.6723965958768674
+    }
+  },
+  {
+    "index": 692,
+    "case": "corpus/ox-parser/LARGE_MD/1",
+    "medians_ns": {
+      "baseline": 8305.890486725664,
+      "code-safe+html-search": 8283.200861307421,
+      "code-safe+compact-all+compact-code+html-search": 8338.15774866785
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.2731751093336121,
+      "code-safe+compact-all+compact-code+html-search": 0.3884864843059832
+    }
+  },
+  {
+    "index": 693,
+    "case": "corpus/ox-parser/LARGE_MD/100",
+    "medians_ns": {
+      "baseline": 759327.75,
+      "code-safe+html-search": 758351.9285714285,
+      "code-safe+compact-all+compact-code+html-search": 761741.0714285715
+    },
+    "changes_pct": {
+      "baseline": 0.0,
+      "code-safe+html-search": -0.12851122964642192,
+      "code-safe+compact-all+compact-code+html-search": 0.3178234205942765
+    }
+  }
+]

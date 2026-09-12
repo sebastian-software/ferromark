@@ -1,0 +1,11 @@
+--- 
++++ 
+@@ -8,7 +8,7 @@
+ <p>Output format for worker bundle.</p>
+ <h2 id="workerplugins">worker.plugins</h2>
+ <ul>
+-<li><strong>Type:</strong> [<code>() =&gt; (Plugin | Plugin[])[]</code><img src="./shared-options#plugins" alt="]" /></li>
++<li><strong>Type:</strong> [<code>() =&gt; (Plugin | Plugin[])[]</code><img src="./shared-options#plugins" alt="]`" /></li>
+ </ul>
+ <p>Vite plugins that apply to the worker bundles. Note that <a href="./shared-options#plugins">config.plugins</a> only applies to workers in dev, it should be configured here instead for build.
+ The function should return new plugin instances as they are used in parallel rolldown worker builds. As such, modifying <code>config.worker</code> options in the <code>config</code> hook will be ignored.</p>
