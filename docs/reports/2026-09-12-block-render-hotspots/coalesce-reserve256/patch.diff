@@ -1,0 +1,154 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1712,7 +1712,7 @@
+     resource_limits: Option<&mut ResourceLimitReport>,
+     shared_link_refs: Option<&LinkRefStore>,
+ ) {
+-    let mut events = Vec::with_capacity((input.len() / 16).max(64));
++    let mut events = Vec::with_capacity((input.len() / 256).max(64));
+     let mut inline_parser = InlineParser::new();
+     let mut inline_events = Vec::with_capacity(64);
+     let mut render_state = RenderState::new();
+@@ -1752,13 +1752,13 @@
+ ) {
+     // Parse blocks
+     events.clear();
+-    events.reserve((input.len() / 16).max(64));
++    events.reserve((input.len() / 256).max(64));
+     let mut parser = if let Some(scratch) = block_scratch.as_deref_mut() {
+         BlockParser::with_scratch(input, options.clone(), std::mem::take(scratch))
+     } else {
+         BlockParser::new_with_options(input, options.clone())
+     };
+-    parser.parse(events);
++    parser.parse_for_render(events);
+     let heading_count = parser.heading_count;
+     if let Some(report) = resource_limits.as_deref_mut() {
+         report.extend(parser.resource_limits());
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -164,6 +164,8 @@
+ pub struct BlockParser<'a> {
+     /// Number of emitted ATX/Setext headings, used to size the ID registry.
+     pub(crate) heading_count: usize,
++    coalesce_code: bool,
++    coalesce_html: bool,
+     /// Input bytes.
+     input: &'a [u8],
+     /// Current cursor position.
+@@ -293,6 +295,8 @@
+             input,
+             cursor: Cursor::new(input),
+             heading_count: 0,
++            coalesce_code: false,
++            coalesce_html: false,
+             in_paragraph: false,
+             paragraph_lines: scratch.paragraph_lines,
+             paragraph_comments: scratch.paragraph_comments,
+@@ -344,6 +348,40 @@
+         }
+     }
+ 
++    /// Render-only event compaction. Public block and MDX parsing stays line-based.
++    pub(crate) fn parse_for_render(&mut self, events: &mut Vec<BlockEvent>) {
++        self.coalesce_code = true;
++        self.coalesce_html = self.options.render_policy == crate::RenderPolicy::Untrusted
++            || !self.options.disallowed_raw_html;
++        self.parse(events);
++    }
++
++    #[inline]
++    fn emit_code(coalesce: bool, events: &mut Vec<BlockEvent>, range: Range) {
++        if coalesce {
++            if let Some(BlockEvent::Code(previous)) = events.last_mut() {
++                if previous.end == range.start {
++                    previous.end = range.end;
++                    return;
++                }
++            }
++        }
++        events.push(BlockEvent::Code(range));
++    }
++
++    #[inline]
++    fn emit_html(&self, events: &mut Vec<BlockEvent>, range: Range) {
++        if self.coalesce_html {
++            if let Some(BlockEvent::HtmlBlockText(previous)) = events.last_mut() {
++                if previous.end == range.start {
++                    previous.end = range.end;
++                    return;
++                }
++            }
++        }
++        events.push(BlockEvent::HtmlBlockText(range));
++    }
++
+     /// Parse all blocks and collect events.
+     pub fn parse(&mut self, events: &mut Vec<BlockEvent>) {
+         while !self.cursor.is_eof() {
+@@ -625,7 +663,7 @@
+                     if extra_spaces > 0 {
+                         events.push(BlockEvent::VirtualSpaces(extra_spaces));
+                     }
+-                    events.push(BlockEvent::Code(blank_range));
++                    Self::emit_code(self.coalesce_code, events, blank_range);
+                 }
+ 
+                 // Calculate extra spaces for this line (columns beyond 4)
+@@ -645,10 +683,10 @@
+                 if extra_spaces > 0 {
+                     events.push(BlockEvent::VirtualSpaces(extra_spaces as u8));
+                 }
+-                events.push(BlockEvent::Code(Range::new(
++                Self::emit_code(self.coalesce_code, events, Range::new(
+                     offset_to_u32(text_start),
+                     offset_to_u32(content_end),
+-                )));
++                ));
+                 return;
+             } else {
+                 // Close the code block - discard pending blank lines (trailing blanks)
+@@ -2655,10 +2693,10 @@
+             ));
+         }
+         // Emit the content (including newline) - use Code event to skip inline parsing
+-        events.push(BlockEvent::Code(Range::new(
++        Self::emit_code(self.coalesce_code, events, Range::new(
+             offset_to_u32(text_start),
+             offset_to_u32(content_end),
+-        )));
++        ));
+     }
+ 
+     /// Try to start an HTML block.
+@@ -2727,7 +2765,7 @@
+             let line_end = content_start + distance;
+             let end = line_end + usize::from(line_end < self.input.len());
+             self.cursor = Cursor::new_at(self.input, end);
+-            events.push(BlockEvent::HtmlBlockText(Range::from_usize(start, end)));
++            self.emit_html(events, Range::from_usize(start, end));
+             if self.html_block_ends(kind, &self.input[content_start..line_end]) {
+                 self.html_block = None;
+                 events.push(BlockEvent::HtmlBlockEnd);
+@@ -2774,10 +2812,10 @@
+         };
+ 
+         // Emit the raw HTML line (including any indentation after container markers)
+-        events.push(BlockEvent::HtmlBlockText(Range::from_usize(
++        self.emit_html(events, Range::from_usize(
+             indent_start,
+             content_end,
+-        )));
++        ));
+ 
+         // Check for HTML block end markers (types 1-5)
+         let line = &self.input[content_start..line_end];
+@@ -3266,7 +3304,7 @@
+         self.cursor = Cursor::new_at(self.input, content_end);
+ 
+         // Emit the code line (including newline)
+-        events.push(BlockEvent::Code(Range::from_usize(code_start, content_end)));
++        Self::emit_code(self.coalesce_code, events, Range::from_usize(code_start, content_end));
+     }
+ 
+     /// Parse a paragraph line.

@@ -1,0 +1,128 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1758,7 +1758,7 @@
+     } else {
+         BlockParser::new_with_options(input, options.clone())
+     };
+-    parser.parse(events);
++    parser.parse_for_render(events);
+     let heading_count = parser.heading_count;
+     if let Some(report) = resource_limits.as_deref_mut() {
+         report.extend(parser.resource_limits());
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -164,6 +164,7 @@
+ pub struct BlockParser<'a> {
+     /// Number of emitted ATX/Setext headings, used to size the ID registry.
+     pub(crate) heading_count: usize,
++    coalesce_code: bool,
+     /// Input bytes.
+     input: &'a [u8],
+     /// Current cursor position.
+@@ -293,6 +294,7 @@
+             input,
+             cursor: Cursor::new(input),
+             heading_count: 0,
++            coalesce_code: false,
+             in_paragraph: false,
+             paragraph_lines: scratch.paragraph_lines,
+             paragraph_comments: scratch.paragraph_comments,
+@@ -344,6 +346,12 @@
+         }
+     }
+ 
++    /// Compact unindented root fences only for the internal renderer.
++    pub(crate) fn parse_for_render(&mut self, events: &mut Vec<BlockEvent>) {
++        self.coalesce_code = true;
++        self.parse(events);
++    }
++
+     /// Parse all blocks and collect events.
+     pub fn parse(&mut self, events: &mut Vec<BlockEvent>) {
+         while !self.cursor.is_eof() {
+@@ -2614,6 +2622,9 @@
+         events.push(BlockEvent::CodeBlockStart {
+             kind: CodeBlockKind::Fenced { info },
+         });
++        if self.coalesce_code && indent == 0 && self.container_stack.is_empty() {
++            self.parse_unindented_fence_run(events);
++        }
+ 
+         true
+     }
+@@ -3191,14 +3202,40 @@
+     /// Parse a fenced code line after container matching.
+     /// Called when we're inside a fenced code block and containers matched.
+     /// The cursor is at the content position (past container indent).
+-    fn parse_fence_line_in_container(&mut self, events: &mut Vec<BlockEvent>) {
++    /// An unindented root fence borrows one contiguous range for its entire body.
++    fn parse_unindented_fence_run(&mut self, events: &mut Vec<BlockEvent>) {
+         let fence = self.fence_state.as_ref().unwrap();
+         let fence_char = fence.fence_char;
+         let fence_len = fence.fence_len;
+-        let fence_indent = fence.indent;
+-
+-        let content_pos = self.cursor.offset();
+-
++        let run_start = self.cursor.offset();
++        while !self.cursor.is_eof() {
++            let line_start = self.cursor.offset();
++            self.current_line_start = line_start;
++            if self.options.definition_lists {
++                self.definition_current_line_loose =
++                    std::mem::take(&mut self.definition_blank_before_next);
++            }
++            self.partial_tab_cols = 0;
++            self.current_col = 0;
++            if self.try_close_fence(fence_char, fence_len) {
++                if run_start < line_start {
++                    events.push(BlockEvent::Code(Range::from_usize(run_start, line_start)));
++                }
++                events.push(BlockEvent::CodeBlockEnd);
++                return;
++            }
++            let rest = self.cursor.remaining_slice();
++            let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
++            let end = line_start + distance + usize::from(distance < rest.len());
++            self.cursor = Cursor::new_at(self.input, end);
++        }
++        if self.cursor.offset() > run_start {
++            events.push(BlockEvent::Code(Range::from_usize(run_start, self.cursor.offset())));
++        }
++    }
++
++    /// Check a closing delimiter without changing the cursor on a content line.
++    fn try_close_fence(&mut self, fence_char: u8, fence_len: usize) -> bool {
+         // Check for closing fence (allow up to 3 spaces of indent)
+         let mut temp_cursor = self.cursor;
+         let mut cols = 0usize;
+@@ -3236,10 +3273,25 @@
+                     }
+ 
+                     self.fence_state = None;
+-                    events.push(BlockEvent::CodeBlockEnd);
+-                    return;
+-                }
+-            }
++                    return true;
++                }
++            }
++        }
++
++        false
++    }
++
++    fn parse_fence_line_in_container(&mut self, events: &mut Vec<BlockEvent>) {
++        let fence = self.fence_state.as_ref().unwrap();
++        let fence_char = fence.fence_char;
++        let fence_len = fence.fence_len;
++        let fence_indent = fence.indent;
++
++        let content_pos = self.cursor.offset();
++
++        if self.try_close_fence(fence_char, fence_len) {
++            events.push(BlockEvent::CodeBlockEnd);
++            return;
+         }
+ 
+         // Not a closing fence, emit as code content

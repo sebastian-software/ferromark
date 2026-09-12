@@ -1,0 +1,58 @@
+[
+  {
+    "index": 43,
+    "case": "large/mixed-8mib",
+    "baseline_ns": 50021195.3125,
+    "candidate_ns": 48908539.0625,
+    "change_pct": -2.224369575834495
+  },
+  {
+    "index": 44,
+    "case": "large/plain-8mib",
+    "baseline_ns": 1276187.5,
+    "candidate_ns": 1179654.96875,
+    "change_pct": -7.564133894901803
+  },
+  {
+    "index": 48,
+    "case": "html/root-8388608",
+    "baseline_ns": 4807645.875,
+    "candidate_ns": 4202283.8125,
+    "change_pct": -12.59165251017994
+  },
+  {
+    "index": 49,
+    "case": "html/comment-8388608",
+    "baseline_ns": 5372919.25,
+    "candidate_ns": 4111268.1875,
+    "change_pct": -23.481668042935876
+  },
+  {
+    "index": 50,
+    "case": "html/script-8388608",
+    "baseline_ns": 9518796.875,
+    "candidate_ns": 5258200.5625,
+    "change_pct": -44.759819633192876
+  },
+  {
+    "index": 54,
+    "case": "fence/root-8388608",
+    "baseline_ns": 41749625.0,
+    "candidate_ns": 34235039.0625,
+    "change_pct": -17.99916990272368
+  },
+  {
+    "index": 55,
+    "case": "fence/indented-8388608",
+    "baseline_ns": 35762054.6875,
+    "candidate_ns": 33562888.0625,
+    "change_pct": -6.149441479850648
+  },
+  {
+    "index": 56,
+    "case": "fence/container-8388608",
+    "baseline_ns": 37127070.3125,
+    "candidate_ns": 37064976.5625,
+    "change_pct": -0.16724656558504414
+  }
+]

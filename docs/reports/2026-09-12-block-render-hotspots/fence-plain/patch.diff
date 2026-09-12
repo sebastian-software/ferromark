@@ -1,0 +1,44 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2614,6 +2614,7 @@
+         events.push(BlockEvent::CodeBlockStart {
+             kind: CodeBlockKind::Fenced { info },
+         });
++        if self.container_stack.is_empty() { self.parse_fence_run(events); }
+ 
+         true
+     }
+@@ -3188,6 +3189,33 @@
+         self.cursor.offset()
+     }
+ 
++    /// Consume root fenced-code continuations without general block dispatch.
++    fn parse_fence_run(&mut self, events: &mut Vec<BlockEvent>) {
++        debug_assert!(self.container_stack.is_empty());
++        while self.fence_state.is_some() && !self.cursor.is_eof() {
++            self.current_line_start = self.cursor.offset();
++            if self.options.definition_lists {
++                self.definition_current_line_loose =
++                    std::mem::take(&mut self.definition_blank_before_next);
++            }
++            self.partial_tab_cols = 0;
++            self.current_col = 0;
++            let first = self.cursor.peek().unwrap();
++            if first != self.fence_state.as_ref().unwrap().fence_char
++                && first != b' ' && first != b'\t'
++            {
++                let start = self.cursor.offset();
++                let rest = self.cursor.remaining_slice();
++                let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
++                let end = start + distance + usize::from(distance < rest.len());
++                self.cursor = Cursor::new_at(self.input, end);
++                events.push(BlockEvent::Code(Range::from_usize(start, end)));
++            } else {
++                self.parse_fence_line_in_container(events);
++            }
++        }
++    }
++
+     /// Parse a fenced code line after container matching.
+     /// Called when we're inside a fenced code block and containers matched.
+     /// The cursor is at the content position (past container indent).

@@ -1,0 +1,14 @@
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.42s
+     Running tests/block_render_performance_regressions.rs (target/debug/deps/block_render_performance_regressions-daed813fba283656)
+
+running 6 tests
+test list_fixup_pairs_deeply_nested_starts_and_ends ... ok
+test list_fixup_keeps_raw_parser_events_and_handles_unbalanced_public_input ... ok
+test renderer_reuse_handles_transitions_between_tight_loose_and_absent_lists ... ok
+test fenced_callbacks_receive_complete_unicode_code_and_metadata ... ok
+test root_fences_keep_physical_ranges_and_resume_after_closing_delimiters ... ok
+test writer_string_conversion_preserves_utf8_errors_at_scan_boundaries ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
