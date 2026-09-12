@@ -1,26 +1,26 @@
 ▶ benchmark CI contract
-  ✔ accepts the current workflow (1.014416ms)
-  ✔ rejects a write-scoped token (0.858125ms)
-  ✔ rejects a missing source trigger (0.154542ms)
-  ✔ rejects a mutable benchmark action (0.291083ms)
-  ✔ rejects a relaxed regression threshold (0.3185ms)
-  ✔ rejects a pull request cache write (0.156084ms)
-  ✔ rejects a comparison against a moving base revision (0.137583ms)
-  ✔ rejects an advisory-only pull request comparison (0.303708ms)
-  ✔ rejects a missing bracket stress case (0.629792ms)
-  ✔ rejects an undersized large fixture (0.21825ms)
-✔ benchmark CI contract (4.706ms)
+  ✔ accepts the current workflow (1.12575ms)
+  ✔ rejects a write-scoped token (1.057417ms)
+  ✔ rejects a missing source trigger (0.1925ms)
+  ✔ rejects a mutable benchmark action (0.527292ms)
+  ✔ rejects a relaxed regression threshold (0.37675ms)
+  ✔ rejects a pull request cache write (0.188458ms)
+  ✔ rejects a comparison against a moving base revision (0.151542ms)
+  ✔ rejects an advisory-only pull request comparison (0.163917ms)
+  ✔ rejects a missing bracket stress case (0.784167ms)
+  ✔ rejects an undersized large fixture (0.275792ms)
+✔ benchmark CI contract (5.632458ms)
 ▶ profiling script contract
-  ✔ keeps the documented shared helpers and guards (0.632125ms)
-  ✔ builds from the repository root and forwards the target directory (1228.290708ms)
-  ✔ reports a failing cargo build (202.352708ms)
-  ✔ stops the benchmark child when sampling fails (899.764667ms)
-  ✔ rejects a benchmark that exits before sampling (759.52625ms)
-  ✔ stops every child on SIGTERM (747.801667ms)
-  ✔ rejects an empty or oversized sample budget (46.603667ms)
-  ✔ encodes PGO flags and requires the profile data (939.131542ms)
-  ✔ profiles cross-parser comparisons only with md4c sources (743.469084ms)
-✔ profiling script contract (5568.597292ms)
+  ✔ keeps the documented shared helpers and guards (0.477292ms)
+  ✔ builds from the repository root and forwards the target directory (1374.8705ms)
+  ✔ reports a failing cargo build (201.6475ms)
+  ✔ stops the benchmark child when sampling fails (862.75325ms)
+  ✔ rejects a benchmark that exits before sampling (776.442ms)
+  ✔ stops every child on SIGTERM (792.917459ms)
+  ✔ rejects an empty or oversized sample budget (42.185375ms)
+  ✔ encodes PGO flags and requires the profile data (758.543791ms)
+  ✔ profiles cross-parser comparisons only with md4c sources (814.4045ms)
+✔ profiling script contract (5625.32675ms)
 ℹ tests 19
 ℹ suites 2
 ℹ pass 19
@@ -28,4 +28,4 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 8910.011875
+ℹ duration_ms 9085.598166

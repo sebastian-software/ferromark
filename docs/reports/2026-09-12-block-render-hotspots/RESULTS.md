@@ -8,99 +8,99 @@ Three fresh process pairs; nine alternating 75 ms windows per implementation/inp
 
 | Input | Baseline µs | Production µs | Pair 1 | Pair 2 | Pair 3 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| ox-large-cm | 241.889 | 237.618 | -1.60% | -1.94% | -1.95% |
-| ox-large-tables | 254.027 | 249.919 | -0.92% | -1.29% | -2.14% |
-| ox-huge-tables | 6134.076 | 6189.346 | +1.35% | +0.90% | +0.35% |
-| short | 0.492 | 0.479 | -2.72% | -1.81% | -2.75% |
-| short-reuse | 0.195 | 0.197 | +0.83% | -1.36% | +0.91% |
-| plain | 6.791 | 6.842 | +0.74% | +0.81% | +0.63% |
-| multiline | 13.390 | 13.151 | -1.74% | -1.81% | -1.40% |
-| inline | 39.382 | 38.844 | -1.62% | -1.43% | -1.37% |
-| lists | 45.065 | 44.946 | -0.36% | -0.26% | -0.27% |
-| code | 16.780 | 15.566 | -8.31% | -8.23% | -7.04% |
-| tables | 41.764 | 41.132 | -2.14% | -1.77% | -1.46% |
-| headings | 37.688 | 37.771 | +0.10% | +0.41% | +0.22% |
-| unique-headings | 33.928 | 34.210 | +0.75% | +0.29% | +0.83% |
-| long-prose | 10.050 | 8.449 | -15.97% | -15.99% | -15.92% |
-| late-marker | 12.697 | 11.114 | -12.42% | -13.25% | -12.47% |
-| long-code | 20.235 | 13.305 | -34.07% | -34.03% | -34.39% |
-| escape-dense | 12.878 | 11.925 | -7.72% | -7.50% | -7.40% |
-| commonmark/tiny | 0.460 | 0.461 | -1.01% | +0.38% | +0.13% |
-| commonmark/short-100b | 0.858 | 0.843 | -2.04% | -1.81% | -1.82% |
-| gfm_overlap/tiny | 0.459 | 0.462 | -1.19% | +0.53% | -0.16% |
-| gfm_overlap/short-100b | 0.862 | 0.844 | -2.09% | -1.79% | -1.89% |
-| tables/tables-plain | 25.500 | 24.907 | -2.18% | -2.33% | -2.59% |
-| tables/tables-commonmark-inline | 32.156 | 31.632 | -1.96% | -1.63% | -1.92% |
-| tables/tables-links | 37.487 | 36.732 | -2.01% | -2.08% | -2.17% |
-| commonmark/publication-5k | 24.075 | 23.465 | -1.89% | -2.53% | -2.20% |
-| guard/plain | 25.534 | 24.877 | -2.57% | -2.29% | -2.36% |
-| guard/mixed | 32.476 | 31.859 | -1.90% | -2.26% | -1.63% |
-| guard/links | 37.589 | 36.653 | -2.49% | -1.83% | -1.70% |
-| guard/mixed-document | 17.795 | 17.783 | +0.17% | +0.53% | -0.07% |
-| guard/one-table | 17.454 | 17.018 | -3.17% | -3.94% | -2.14% |
-| guard/long-cells | 25.027 | 23.247 | -7.14% | -6.79% | -6.93% |
-| guard/wide9 | 38.027 | 36.491 | -4.25% | -3.79% | -4.29% |
-| guard/wide16 | 58.679 | 56.024 | -4.52% | -4.45% | -3.89% |
-| guard/escapes-code | 67.871 | 66.493 | -1.69% | -2.06% | -2.12% |
-| guard/prose | 9.812 | 9.817 | -0.21% | +0.03% | +0.05% |
-| guard/links-prose | 35.622 | 35.269 | -1.02% | -1.02% | -0.99% |
-| guard/edge-cases | 1323.057 | 1331.488 | +0.29% | -0.29% | +0.64% |
-| guard/references | 10.309 | 10.224 | -0.98% | -0.65% | -0.83% |
-| guard/empty | 0.142 | 0.137 | -4.50% | -1.65% | -2.56% |
-| guard/gfm-document | 24.062 | 23.596 | -1.94% | -2.14% | -2.42% |
-| guard/long-delimiters | 13.688 | 13.671 | -0.13% | -0.26% | -0.46% |
-| guard/deep-emphasis | 38.508 | 38.459 | -0.13% | -0.22% | -0.57% |
-| mdx/short | 1.176 | 1.168 | -0.62% | +0.44% | -1.38% |
-| mdx/segments | 160.578 | 163.588 | +1.57% | +1.87% | +1.58% |
-| mdx/tables-code | 146.104 | 146.935 | +0.12% | +0.67% | +0.09% |
-| corpus/vue-docs/src/api/application.md | 54.035 | 54.713 | +1.41% | +0.72% | +0.85% |
-| corpus/vue-docs/src/api/built-in-directives.md | 57.723 | 58.390 | +1.01% | +1.44% | +0.93% |
-| corpus/vue-docs/src/guide/built-ins/suspense.md | 17.115 | 16.626 | -2.87% | -2.71% | -2.33% |
-| corpus/vue-docs/src/guide/extras/render-function.md | 44.457 | 38.544 | -12.34% | -13.86% | -13.30% |
-| corpus/vite-docs/docs/config/shared-options.md | 73.862 | 71.656 | -2.74% | -3.17% | -2.99% |
-| corpus/vite-docs/docs/guide/api-plugin.md | 75.088 | 70.942 | -3.96% | -6.25% | -5.00% |
-| corpus/rust-book/src/ch02-00-guessing-game-tutorial.md | 101.536 | 100.122 | -0.87% | -5.19% | -1.32% |
-| corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md | 63.675 | 63.440 | -0.33% | -0.46% | -2.59% |
-| corpus/rust-book/src/ch21-02-multithreaded.md | 75.361 | 73.571 | -3.20% | -3.19% | -1.01% |
-| corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md | 17.791 | 16.174 | -9.63% | -9.52% | -7.14% |
-| corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md | 30.470 | 27.113 | -11.16% | -10.94% | -11.23% |
-| corpus/typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 5.0.md | 106.109 | 97.429 | -7.92% | -7.69% | -8.37% |
-| corpus/typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 6.0.md | 82.781 | 80.509 | -3.74% | -3.58% | -2.24% |
-| corpus/concat/vue-docs/matched | 2743.449 | 2661.034 | -2.73% | -3.99% | -2.60% |
-| corpus/concat/vue-docs/upstream | 3039.273 | 2961.059 | -2.52% | -2.57% | -2.43% |
-| corpus/concat/vite-docs/matched | 1466.965 | 1426.009 | -2.62% | -2.79% | -2.73% |
-| corpus/concat/vite-docs/upstream | 1744.806 | 1703.753 | -1.96% | -2.35% | -1.91% |
-| corpus/concat/rust-book/matched | 4193.051 | 4184.512 | -0.54% | +0.00% | -0.82% |
-| corpus/concat/rust-book/upstream | 4594.566 | 4567.326 | -0.90% | -0.59% | -0.57% |
-| corpus/concat/typescript-handbook/matched | 5384.031 | 5149.362 | -4.36% | -4.93% | -4.36% |
-| corpus/concat/typescript-handbook/upstream | 6041.607 | 5793.940 | -4.19% | -4.10% | -4.50% |
-| corpus/ox-parser/SIMPLE_MD/1 | 1.608 | 1.504 | -6.42% | -6.39% | -5.89% |
-| corpus/ox-parser/LARGE_MD/1 | 8.337 | 8.076 | -3.12% | -3.03% | -3.26% |
-| corpus/ox-parser/LARGE_MD/100 | 759.392 | 736.136 | -2.71% | -3.06% | -3.33% |
-| html/root-short-lines | 41.205 | 35.745 | -13.43% | -13.25% | -13.42% |
-| html/root-long-lines | 4.448 | 2.833 | -36.54% | -36.29% | -36.23% |
-| html/separate-blocks | 166.635 | 156.033 | -6.42% | -5.37% | -6.71% |
-| html/comment-long-lines | 5.286 | 3.631 | -31.54% | -31.31% | -32.33% |
-| html/script-long-lines | 5.256 | 3.595 | -31.70% | -31.14% | -31.39% |
-| html/script-candidates | 59.297 | 57.505 | -2.61% | -2.31% | -3.02% |
-| html/comment-short-lines | 84.655 | 59.963 | -29.60% | -28.57% | -29.08% |
-| html/processing-long-lines | 5.254 | 3.627 | -31.42% | -30.33% | -30.96% |
-| html/cdata-long-lines | 5.250 | 3.630 | -30.98% | -30.67% | -30.98% |
-| html/declaration-long-lines | 5.224 | 3.580 | -31.93% | -31.18% | -31.46% |
-| html/container-html | 132.287 | 133.507 | +1.69% | +0.72% | +1.10% |
-| html/custom-tags | 200.863 | 190.821 | -5.57% | -4.72% | -5.19% |
-| fence/root-short | 258.840 | 211.392 | -18.76% | -18.33% | -18.69% |
-| fence/root-long | 8.301 | 6.291 | -24.25% | -21.74% | -24.03% |
-| fence/root-indented | 227.377 | 214.137 | -6.56% | -5.82% | -6.32% |
-| fence/root-tabs | 237.152 | 193.599 | -18.34% | -18.49% | -18.20% |
-| fence/root-container | 236.651 | 241.683 | +1.82% | +2.13% | +2.11% |
-| fence/root-crlf | 239.239 | 193.507 | -18.69% | -19.28% | -18.52% |
-| utf8/paragraph-0 | 9.973 | 9.982 | -0.01% | +0.42% | -0.17% |
-| utf8/paragraph-32768 | 9.970 | 9.230 | -7.59% | -6.97% | -7.73% |
-| utf8/paragraph-65536 | 9.992 | 8.410 | -15.89% | -15.30% | -16.18% |
-| utf8/html-0 | 5.151 | 5.122 | -0.61% | -0.58% | +3.60% |
-| utf8/html-32768 | 5.132 | 4.354 | -15.35% | -14.96% | -14.71% |
-| utf8/html-65536 | 5.146 | 3.539 | -31.44% | -31.05% | -31.40% |
+| ox-large-cm | 241.334 | 237.873 | -1.20% | -2.05% | -1.85% |
+| ox-large-tables | 254.356 | 249.454 | -1.66% | -2.08% | -1.96% |
+| ox-huge-tables | 6147.594 | 6188.737 | +1.15% | +0.12% | -0.27% |
+| short | 0.486 | 0.472 | -2.95% | +0.10% | -2.89% |
+| short-reuse | 0.196 | 0.196 | +0.18% | -0.08% | -0.37% |
+| plain | 6.812 | 6.863 | +0.69% | +0.92% | +1.26% |
+| multiline | 13.430 | 13.223 | -1.60% | -1.73% | -1.08% |
+| inline | 39.643 | 39.007 | -1.90% | -1.52% | -1.55% |
+| lists | 45.221 | 45.170 | +0.13% | -0.04% | -0.25% |
+| code | 16.832 | 15.608 | -7.42% | -6.78% | -7.27% |
+| tables | 41.950 | 41.210 | -1.67% | -1.64% | -1.81% |
+| headings | 37.655 | 37.949 | +0.88% | +0.42% | +0.78% |
+| unique-headings | 33.916 | 34.271 | +0.72% | +1.05% | +0.97% |
+| long-prose | 9.973 | 8.387 | -16.07% | -16.08% | -14.56% |
+| late-marker | 12.655 | 11.098 | -11.81% | -13.26% | -12.29% |
+| long-code | 20.242 | 13.389 | -34.06% | -34.32% | -33.47% |
+| escape-dense | 12.993 | 12.027 | -7.83% | -7.44% | -7.43% |
+| commonmark/tiny | 0.464 | 0.464 | +0.07% | +0.46% | +0.37% |
+| commonmark/short-100b | 0.854 | 0.852 | +0.10% | +0.55% | -1.96% |
+| gfm_overlap/tiny | 0.463 | 0.465 | -0.28% | +0.51% | +0.43% |
+| gfm_overlap/short-100b | 0.858 | 0.854 | -0.50% | +0.62% | -2.07% |
+| tables/tables-plain | 25.553 | 25.100 | -1.82% | -1.84% | -1.46% |
+| tables/tables-commonmark-inline | 32.405 | 31.995 | -1.39% | -1.26% | -0.96% |
+| tables/tables-links | 37.389 | 36.817 | -1.87% | -1.38% | -1.53% |
+| commonmark/publication-5k | 24.187 | 23.705 | -1.55% | -2.17% | -2.31% |
+| guard/plain | 25.538 | 25.113 | -1.85% | -1.66% | -1.55% |
+| guard/mixed | 32.425 | 32.026 | -1.32% | -1.23% | -0.78% |
+| guard/links | 37.577 | 36.885 | -1.92% | -1.51% | -1.45% |
+| guard/mixed-document | 17.759 | 17.923 | +1.01% | +0.91% | +0.77% |
+| guard/one-table | 17.388 | 17.040 | -2.59% | -1.91% | -2.12% |
+| guard/long-cells | 25.068 | 23.357 | -6.80% | -6.83% | -6.80% |
+| guard/wide9 | 38.000 | 36.635 | -3.85% | -3.59% | -3.86% |
+| guard/wide16 | 58.532 | 56.069 | -4.31% | -4.21% | -3.90% |
+| guard/escapes-code | 67.826 | 66.346 | -1.39% | -1.67% | -2.37% |
+| guard/prose | 9.857 | 9.886 | +0.02% | +0.66% | +0.65% |
+| guard/links-prose | 36.019 | 35.641 | -1.29% | -0.61% | -1.11% |
+| guard/edge-cases | 1332.380 | 1335.102 | +1.19% | +0.06% | -0.01% |
+| guard/references | 10.347 | 10.297 | -0.74% | -0.49% | +0.04% |
+| guard/empty | 0.143 | 0.140 | -2.42% | +0.12% | -2.04% |
+| guard/gfm-document | 24.174 | 23.695 | -1.51% | -2.30% | -1.98% |
+| guard/long-delimiters | 13.689 | 13.674 | +0.24% | +0.12% | -0.19% |
+| guard/deep-emphasis | 38.453 | 38.272 | -0.57% | -0.29% | +0.03% |
+| mdx/short | 1.167 | 1.188 | +2.52% | +1.11% | +1.66% |
+| mdx/segments | 160.767 | 163.583 | +1.75% | +1.97% | +1.56% |
+| mdx/tables-code | 145.859 | 146.212 | +0.24% | +0.25% | +0.58% |
+| corpus/vue-docs/src/api/application.md | 53.910 | 54.550 | +1.30% | +0.75% | +1.09% |
+| corpus/vue-docs/src/api/built-in-directives.md | 57.740 | 58.280 | +0.94% | +0.87% | +0.86% |
+| corpus/vue-docs/src/guide/built-ins/suspense.md | 17.078 | 16.674 | -2.25% | -2.37% | -2.32% |
+| corpus/vue-docs/src/guide/extras/render-function.md | 44.071 | 38.435 | -12.73% | -13.50% | -12.59% |
+| corpus/vite-docs/docs/config/shared-options.md | 74.306 | 71.843 | -2.10% | -3.05% | -4.15% |
+| corpus/vite-docs/docs/guide/api-plugin.md | 74.875 | 71.828 | -5.38% | -4.07% | -4.51% |
+| corpus/rust-book/src/ch02-00-guessing-game-tutorial.md | 100.572 | 99.296 | -0.81% | -0.65% | -1.72% |
+| corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md | 64.060 | 64.067 | -0.85% | +0.50% | +0.01% |
+| corpus/rust-book/src/ch21-02-multithreaded.md | 76.286 | 74.618 | -1.72% | -2.25% | -2.22% |
+| corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md | 17.810 | 16.162 | -9.35% | -9.49% | -8.57% |
+| corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md | 30.408 | 27.164 | -10.64% | -10.62% | -10.67% |
+| corpus/typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 5.0.md | 104.923 | 97.740 | -7.12% | -7.43% | -6.85% |
+| corpus/typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 6.0.md | 82.578 | 79.580 | -2.67% | -3.13% | -3.73% |
+| corpus/concat/vue-docs/matched | 2731.145 | 2660.370 | -2.59% | -2.94% | -2.39% |
+| corpus/concat/vue-docs/upstream | 3050.119 | 2980.753 | -2.27% | -2.28% | -2.28% |
+| corpus/concat/vite-docs/matched | 1474.920 | 1441.466 | -2.35% | -2.27% | -2.48% |
+| corpus/concat/vite-docs/upstream | 1765.079 | 1727.238 | -2.09% | -2.12% | -2.32% |
+| corpus/concat/rust-book/matched | 4240.667 | 4229.073 | -0.27% | -0.22% | -0.11% |
+| corpus/concat/rust-book/upstream | 4662.773 | 4635.477 | -0.59% | -0.66% | -0.37% |
+| corpus/concat/typescript-handbook/matched | 5467.688 | 5221.458 | -4.50% | -4.33% | -4.81% |
+| corpus/concat/typescript-handbook/upstream | 6072.836 | 5853.352 | -3.61% | -3.71% | -4.30% |
+| corpus/ox-parser/SIMPLE_MD/1 | 1.619 | 1.522 | -6.04% | -5.40% | -6.41% |
+| corpus/ox-parser/LARGE_MD/1 | 8.327 | 8.133 | -2.54% | -2.33% | -3.30% |
+| corpus/ox-parser/LARGE_MD/100 | 763.990 | 741.803 | -2.98% | -2.90% | -3.53% |
+| html/root-short-lines | 41.466 | 35.866 | -13.30% | -13.50% | -13.40% |
+| html/root-long-lines | 4.472 | 2.810 | -37.02% | -37.42% | -37.16% |
+| html/separate-blocks | 167.428 | 155.840 | -7.80% | -7.05% | -5.79% |
+| html/comment-long-lines | 5.247 | 3.601 | -31.25% | -31.95% | -31.50% |
+| html/script-long-lines | 5.260 | 3.593 | -31.56% | -31.86% | -31.69% |
+| html/script-candidates | 59.359 | 57.927 | -2.37% | -2.85% | -2.25% |
+| html/comment-short-lines | 84.157 | 59.959 | -28.73% | -28.74% | -28.82% |
+| html/processing-long-lines | 5.248 | 3.603 | -31.01% | -31.92% | -31.41% |
+| html/cdata-long-lines | 5.250 | 3.603 | -31.31% | -32.05% | -31.37% |
+| html/declaration-long-lines | 5.220 | 3.548 | -31.85% | -32.20% | -32.39% |
+| html/container-html | 132.596 | 133.597 | +0.96% | +0.75% | +1.04% |
+| html/custom-tags | 203.158 | 191.830 | -5.59% | -5.58% | -5.03% |
+| fence/root-short | 261.474 | 211.791 | -19.00% | -19.10% | -18.47% |
+| fence/root-long | 8.281 | 6.285 | -24.10% | -24.43% | -24.83% |
+| fence/root-indented | 229.478 | 214.903 | -6.52% | -6.23% | -6.34% |
+| fence/root-tabs | 239.258 | 195.357 | -18.42% | -18.35% | -18.28% |
+| fence/root-container | 237.245 | 243.283 | +1.93% | +2.54% | +2.76% |
+| fence/root-crlf | 239.785 | 195.373 | -18.79% | -17.85% | -18.59% |
+| utf8/paragraph-0 | 10.029 | 10.001 | -0.28% | -0.32% | -0.24% |
+| utf8/paragraph-32768 | 10.026 | 9.253 | -7.19% | -7.80% | -7.75% |
+| utf8/paragraph-65536 | 10.005 | 8.463 | -15.80% | -15.44% | -15.40% |
+| utf8/html-0 | 5.150 | 5.207 | +1.79% | -1.05% | +1.11% |
+| utf8/html-32768 | 5.120 | 4.346 | -14.56% | -15.99% | -15.02% |
+| utf8/html-65536 | 5.137 | 3.525 | -31.19% | -31.95% | -31.74% |
 
 Inputs slower by more than 2% in all three pairs: 0.
 
@@ -144,14 +144,14 @@ The eight inputs of at least 8,000,000 bytes from the memory dataset are also ti
 
 | Input | Baseline ms | Production ms | Pair 1 | Pair 2 | Pair 3 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| large/mixed-8mib | 49.879 | 48.743 | -2.22% | -2.28% | -2.16% |
-| large/plain-8mib | 1.276 | 1.180 | -7.56% | -7.30% | -8.63% |
-| html/root-8388608 | 4.808 | 4.202 | -12.59% | -12.03% | -14.54% |
-| html/comment-8388608 | 5.353 | 4.107 | -23.48% | -22.57% | -24.25% |
-| html/script-8388608 | 9.357 | 5.234 | -44.76% | -44.06% | -44.68% |
-| fence/root-8388608 | 41.750 | 34.110 | -18.00% | -18.51% | -20.24% |
-| fence/indented-8388608 | 35.248 | 33.643 | -6.15% | -4.56% | -4.05% |
-| fence/container-8388608 | 36.422 | 37.065 | -0.17% | +2.08% | +1.49% |
+| large/mixed-8mib | 49.906 | 49.029 | -2.20% | -1.98% | -1.65% |
+| large/plain-8mib | 1.293 | 1.155 | -9.78% | -10.66% | -10.59% |
+| html/root-8388608 | 4.788 | 4.081 | -14.93% | -14.76% | -14.64% |
+| html/comment-8388608 | 5.317 | 4.007 | -24.96% | -24.45% | -24.49% |
+| html/script-8388608 | 9.358 | 5.112 | -45.37% | -45.18% | -45.72% |
+| fence/root-8388608 | 42.607 | 33.588 | -24.29% | -20.77% | -20.78% |
+| fence/indented-8388608 | 35.936 | 34.154 | -4.63% | -7.79% | -3.47% |
+| fence/container-8388608 | 36.544 | 36.945 | +1.10% | -0.99% | +3.37% |
 
 ## Requested allocations
 
@@ -223,30 +223,30 @@ Heading IDs enabled. Ox growing arena is primary; presizing is separate. Three p
 
 | Input | Equal | Ferromark µs | Ox grow µs | Ox presize µs | F/grow |
 | --- | --- | ---: | ---: | ---: | ---: |
-| vue-docs/src/api/application.md | True | 54.948 | 64.059 | 63.735 | 0.858 |
-| vue-docs/src/api/built-in-directives.md | True | 59.110 | 67.928 | 67.065 | 0.870 |
-| vue-docs/src/guide/built-ins/suspense.md | True | 16.876 | 10.487 | 10.540 | 1.609 |
-| vue-docs/src/guide/extras/render-function.md | True | 38.890 | 31.425 | 31.536 | 1.238 |
-| vite-docs/docs/config/shared-options.md | True | 72.843 | 65.905 | 65.161 | 1.105 |
-| vite-docs/docs/guide/api-plugin.md | True | 72.875 | 75.320 | 74.963 | 0.968 |
-| rust-book/src/ch02-00-guessing-game-tutorial.md | True | 100.036 | 70.021 | 69.653 | 1.429 |
-| rust-book/src/ch09-02-recoverable-errors-with-result.md | True | 65.030 | 39.924 | 39.929 | 1.629 |
-| rust-book/src/ch21-02-multithreaded.md | True | 74.669 | 52.081 | 51.360 | 1.434 |
-| typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md | True | 16.270 | 14.325 | 14.302 | 1.136 |
-| typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md | True | 27.256 | 26.648 | 26.296 | 1.023 |
-| typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 5.0.md | True | 99.048 | 73.810 | 73.209 | 1.342 |
-| typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 6.0.md | True | 81.358 | 59.399 | 59.898 | 1.370 |
-| concat/vue-docs/matched | False | 2668.130 | 2990.295 | 2993.382 | n/a |
-| concat/vue-docs/upstream | False | 2983.014 | 3273.043 | 3269.979 | n/a |
-| concat/vite-docs/matched | False | 1453.561 | 1411.112 | 1402.660 | n/a |
-| concat/vite-docs/upstream | False | 1733.034 | 1600.768 | 1598.901 | n/a |
-| concat/rust-book/matched | False | 4231.995 | 3261.372 | 3253.536 | n/a |
-| concat/rust-book/upstream | False | 4651.742 | 3705.076 | 3687.509 | n/a |
-| concat/typescript-handbook/matched | False | 5229.294 | 4878.458 | 4876.138 | n/a |
-| concat/typescript-handbook/upstream | False | 5833.117 | 5723.065 | 5725.047 | n/a |
-| ox-parser/SIMPLE_MD/1 | True | 1.541 | 1.267 | 1.213 | 1.216 |
-| ox-parser/LARGE_MD/1 | True | 8.133 | 7.156 | 7.079 | 1.136 |
-| ox-parser/LARGE_MD/100 | True | 736.238 | 696.480 | 697.364 | 1.057 |
+| vue-docs/src/api/application.md | True | 54.774 | 63.592 | 63.417 | 0.861 |
+| vue-docs/src/api/built-in-directives.md | True | 59.087 | 67.288 | 66.487 | 0.878 |
+| vue-docs/src/guide/built-ins/suspense.md | True | 16.805 | 10.438 | 10.505 | 1.610 |
+| vue-docs/src/guide/extras/render-function.md | True | 38.742 | 31.374 | 31.317 | 1.235 |
+| vite-docs/docs/config/shared-options.md | True | 72.538 | 64.861 | 64.931 | 1.118 |
+| vite-docs/docs/guide/api-plugin.md | True | 72.394 | 74.892 | 74.498 | 0.967 |
+| rust-book/src/ch02-00-guessing-game-tutorial.md | True | 101.969 | 69.760 | 70.100 | 1.462 |
+| rust-book/src/ch09-02-recoverable-errors-with-result.md | True | 65.685 | 40.120 | 40.028 | 1.637 |
+| rust-book/src/ch21-02-multithreaded.md | True | 74.530 | 51.597 | 51.183 | 1.444 |
+| typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md | True | 16.211 | 14.315 | 14.240 | 1.132 |
+| typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md | True | 27.180 | 26.533 | 26.288 | 1.024 |
+| typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 5.0.md | True | 100.465 | 73.583 | 72.130 | 1.365 |
+| typescript-handbook/packages/documentation/copy/en/release-notes/TypeScript 6.0.md | True | 81.694 | 59.222 | 59.266 | 1.379 |
+| concat/vue-docs/matched | False | 2661.653 | 2978.451 | 2978.337 | n/a |
+| concat/vue-docs/upstream | False | 2980.177 | 3257.929 | 3254.224 | n/a |
+| concat/vite-docs/matched | False | 1443.443 | 1390.812 | 1394.893 | n/a |
+| concat/vite-docs/upstream | False | 1724.878 | 1592.719 | 1589.415 | n/a |
+| concat/rust-book/matched | False | 4224.594 | 3255.028 | 3241.460 | n/a |
+| concat/rust-book/upstream | False | 4627.617 | 3686.148 | 3675.139 | n/a |
+| concat/typescript-handbook/matched | False | 5230.964 | 4857.380 | 4852.815 | n/a |
+| concat/typescript-handbook/upstream | False | 5846.122 | 5692.336 | 5684.919 | n/a |
+| ox-parser/SIMPLE_MD/1 | True | 1.538 | 1.258 | 1.194 | 1.223 |
+| ox-parser/LARGE_MD/1 | True | 8.069 | 7.088 | 6.971 | 1.138 |
+| ox-parser/LARGE_MD/100 | True | 733.677 | 686.405 | 685.895 | 1.069 |
 
 Corpus output verification: 594/649 normalized outputs equal. Mismatches remain explicit diagnostics.
 
