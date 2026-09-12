@@ -83,14 +83,34 @@ at=cached.index('/// URL percent-encode');cached=cached[:at]+helper+cached[at:]
 forced=cached
 for fname in ['escape_text_into','escape_full_into']:
  forced=forced.replace('#[inline]\npub fn '+fname,'#[cfg_attr(all(target_arch = "aarch64", target_feature = "neon"), inline)]\n#[cfg_attr(not(all(target_arch = "aarch64", target_feature = "neon")), inline(always))]\npub fn '+fname)
-sources={'threshold-8192':sources['threshold-8192'],'bulk-cached-8192':cached,'bulk-inline-8192':forced}
+xbody="""        if input.len() <= SHORT_SCAN_MAX { return first_escape_in_set::<ATTR>(input); }
+        #[cfg(target_arch = "x86_64")]
+        { first_escape_x86::<ATTR>(input) }
+        #[cfg(not(target_arch = "x86_64"))]
+        { first_escape_long::<ATTR>(input) }
+"""
+simd=base[:first]+'    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]\n    {\n'+arm+'\n    }\n    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]\n    {\n'+xbody+'    }'+base[last:]
+simd=simd.replace('#[inline(never)]\nfn first_escape_long','#[cfg(not(target_arch = "x86_64"))]\n#[inline(never)]\nfn first_escape_long')
+backend=(R/'scripts/escape-x86-backend.rs').read_text()
+at=simd.index('/// URL percent-encode');simd=simd[:at]+backend+'\n'+simd[at:]
+twin=simd.replace('{ first_escape_x86::<ATTR>(input) }',"""{
+            let found = first_escape_x86::<ATTR>(input);
+            let limit = found.unwrap_or(input.len());
+            if ATTR { memchr2(b'\"', b'\\\'', &input[..limit]).or(found) }
+            else { memchr(b'\"', &input[..limit]).or(found) }
+        }""")
+sources={'masked-direct':simd,'masked-twin':twin}
 for name in sources:sources[name]=sources[name].replace('for repeats in [128, 256]', 'for repeats in [1024, 2048]')
-
+sources['masked-direct']=sources['masked-direct'].replace('use memchr::{memchr, memchr2, memchr3};','use memchr::memchr;\n#[cfg(not(target_arch = "x86_64"))]\nuse memchr::{memchr2, memchr3};')
+sources['masked-twin']=sources['masked-twin'].replace('use memchr::{memchr, memchr2, memchr3};','use memchr::{memchr, memchr2};\n#[cfg(not(target_arch = "x86_64"))]\nuse memchr::memchr3;')
 oracle_test='    #[test]\n    fn large_writes_match_scalar_escape_oracle() {\n        let alphabet = b"ab<>&\\"\'\\0\\x80\\xff";\n        for len in [8191, 8192, 8193, 16385] {\n            let input: Vec<u8> = (0..len).map(|i| alphabet[(i * 17 + i / 31) % alphabet.len()]).collect();\n            for attr in [false, true] {\n                let mut expected = Vec::new();\n                for &byte in &input {\n                    match byte {\n                        b\'<\' => expected.extend_from_slice(b"&lt;"),\n                        b\'>\' => expected.extend_from_slice(b"&gt;"),\n                        b\'&\' => expected.extend_from_slice(b"&amp;"),\n                        b\'"\' => expected.extend_from_slice(b"&quot;"),\n                        b\'\\\'\' if attr => expected.extend_from_slice(b"&#39;"),\n                        _ => expected.push(byte),\n                    }\n                }\n                let mut actual = Vec::new();\n                if attr { escape_attr_into(&mut actual, &input); } else { escape_text_into(&mut actual, &input); }\n                assert_eq!(actual, expected, "len={len}, attr={attr}");\n            }\n        }\n    }\n\n'
 for name in sources:
  sources[name]=sources[name].replace("    #[test]\n    fn quoted_code_search_work_grows_linearly", oracle_test+"    #[test]\n    fn quoted_code_search_work_grows_linearly")
+for name in sources:
+ sources[name]=sources[name].replace('    #[test]\n    fn quoted_code_search_work_grows_linearly', (R/'scripts/escape-x86-tests.rs').read_text()+'    #[test]\n    fn quoted_code_search_work_grows_linearly')
 snap=W/'native-sources';snap.mkdir()
 for name,s in sources.items():(snap/f'{name}.rs').write_text(s)
+subprocess.run(['rustfmt','--edition','2024','--config-path',str(R/'rustfmt.toml')]+[str(snap/f'{name}.rs') for name in sources],check=True)
 (W/'variants.py').write_text('''from pathlib import Path
 W=Path(__file__).parent
 def variant(name,files):
@@ -113,6 +133,8 @@ for n in [4096,65536]:
 for n in [512,8192,65536]:add(f'late-quote-reserved-{n}','x'*(n-1)+'"',4)
 add('html-heavy-65536', ("<script>alert('xss')</script> & more <tags> here! "*2000)[:65536],2)
 (W/'direct.json').write_text(json.dumps(direct))
+for n in [512,8192,65536]:add(f'attr-plain-{n}','x'*n,1)
+(W/'direct.json').write_text(json.dumps(direct))
 meta=dict(revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=R,text=True).strip(),rustc=subprocess.check_output(['rustc','-Vv'],text=True),cpu=subprocess.check_output(['lscpu'],text=True),driver_sha256=hashlib.sha256((W/'driver/src/main.rs').read_bytes()).hexdigest())
 (W/'native-metadata.json').write_text(json.dumps(meta,indent=2))
 subprocess.run(['cargo','fetch','--locked','--manifest-path',str(W/'driver/Cargo.toml')],check=True)
@@ -120,7 +142,7 @@ sys.path.insert(0,str(W));from experiment import *
 assert build('baseline') and verify('baseline')
 for name in sources:assert build(name) and verify(name)
 shutil.copy2(W/'bin/baseline',W/'bin/aa-control');(W/'aa-control').mkdir(exist_ok=True)
-subprocess.run([sys.executable,str(W/'verify-all.py'),'baseline','bulk-cached-8192','bulk-inline-8192'],check=True)
+subprocess.run([sys.executable,str(W/'verify-all.py'),'baseline','masked-direct','masked-twin'],check=True)
 meta['binary_sha256']={name:hashlib.sha256((W/'bin'/name).read_bytes()).hexdigest() for name in ['baseline','aa-control']+list(sources)}
 (W/'native-metadata.json').write_text(json.dumps(meta,indent=2))
 with (W/'native-escape-tests.log').open('w') as log:
@@ -142,10 +164,17 @@ def direct_run(name,pair):
  for w in workers.values():w.close()
  (dest/'windows.jsonl.gz').write_bytes(gzip.compress(('\n'.join(json.dumps(x) for x in raw)+'\n').encode(),mtime=0));(dest/'summary.json').write_text(json.dumps(summary,indent=2))
  print(name,'direct',pair,' '.join(f"{r['case']}={r['change_pct']:+.1f}%" for r in summary),flush=True)
-for pair in [0,1]:
- for name in (['aa-control']+list(sources) if pair==0 else list(reversed(sources))+['aa-control']):
-  run(name,rounds=5,ms=50,warm=40,tag=f'{name}/screen-{pair+1}',order=pair,indices=selected)
+from regimes import run_regimes
+run('aa-control',rounds=5,ms=50,warm=40,tag='aa-control/screen-1',order=0,indices=selected)
+direct_run('aa-control',1)
+for pair in [0,1,2]:
+ for name in (list(sources) if pair%2==0 else list(reversed(sources))):
+  run(name,rounds=5,ms=50,warm=40,tag=f'{name}/confirm-{pair+1}',order=pair)
   direct_run(name,pair+1)
+  run_regimes(name,rounds=5,ms=50,tag=f'regime-confirm-{pair+1}')
+  run_regimes(name,rounds=5,ms=50,tag=f'attribute-confirm-{pair+1}',casefile='attributes.json',selection='attribute-selected.json')
+run('aa-control',rounds=5,ms=50,warm=40,tag='aa-control/screen-2',order=1,indices=selected)
+direct_run('aa-control',2)
 # Save the complete reviewable experiment; no target directories or executables.
 archive=Path(os.environ['RUNNER_TEMP'])/'escape-linux-evidence';archive.mkdir()
 for p in W.rglob('*'):

@@ -8,7 +8,11 @@ permissions:
 
 jobs:
   escape-screen:
-    name: Native escape integration screen
+    name: Native escape integration screen (${{ matrix.attempt }})
+    strategy:
+      fail-fast: false
+      matrix:
+        attempt: [1, 2]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -27,7 +31,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: escape-linux-evidence
+          name: escape-linux-evidence-${{ matrix.attempt }}
           path: |
             ${{ runner.temp }}/escape-linux-evidence
             ${{ runner.temp }}/escape-linux-output.log
