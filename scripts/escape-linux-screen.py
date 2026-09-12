@@ -99,10 +99,30 @@ twin=simd.replace('{ first_escape_x86::<ATTR>(input) }',"""{
             if ATTR { memchr2(b'\"', b'\\\'', &input[..limit]).or(found) }
             else { memchr(b'\"', &input[..limit]).or(found) }
         }""")
-sources={'masked-direct':simd,'masked-twin':twin}
-for name in sources:sources[name]=sources[name].replace('for repeats in [128, 256]', 'for repeats in [1024, 2048]')
-sources['masked-direct']=sources['masked-direct'].replace('use memchr::{memchr, memchr2, memchr3};','use memchr::memchr;\n#[cfg(not(target_arch = "x86_64"))]\nuse memchr::{memchr2, memchr3};')
-sources['masked-twin']=sources['masked-twin'].replace('use memchr::{memchr, memchr2, memchr3};','use memchr::{memchr, memchr2};\n#[cfg(not(target_arch = "x86_64"))]\nuse memchr::memchr3;')
+# Preserve the original one-shot text probe used by entity decoding. Only the
+# repeated writer needs the new bound; also isolate the attribute writer to
+# test the large info-string integration cost.
+probe=simd.replace('while let Some(rel) = first_text_escape(&input[start..])', 'while let Some(rel) = first_escape::<false>(&input[start..])')
+old_probe="""    #[cfg(target_arch = "x86_64")]
+    {
+        if input.len() <= SHORT_SCAN_MAX { return first_escape_in_set::<false>(input); }
+        let a = memchr3(b'<', b'>', b'&', input);
+        let limit = a.unwrap_or(input.len());
+        memchr(b'\"', &input[..limit]).or(a)
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    { first_escape::<false>(input) }
+"""
+probe=probe.replace('    first_escape::<false>(input)\n}',old_probe+'}')
+def outline(source, names):
+ for name in names:
+  source=source.replace('#[inline]\npub fn '+name, '#[cfg_attr(target_arch = "x86_64", inline(never))]\n#[cfg_attr(not(target_arch = "x86_64"), inline)]\npub fn '+name)
+ return source
+sources={'masked-direct':simd, 'probe-isolated':probe, 'attr-outlined':outline(simd,['escape_full_into']), 'probe-attr-outlined':outline(probe,['escape_full_into']), 'writers-outlined':outline(probe,['escape_text_into','escape_full_into'])}
+for name in sources:
+ sources[name]=sources[name].replace('for repeats in [128, 256]', 'for repeats in [1024, 2048]')
+ imports='use memchr::{memchr, memchr3};\n#[cfg(not(target_arch = "x86_64"))]\nuse memchr::memchr2;' if name in ['probe-isolated','probe-attr-outlined','writers-outlined'] else 'use memchr::memchr;\n#[cfg(not(target_arch = "x86_64"))]\nuse memchr::{memchr2, memchr3};'
+ sources[name]=sources[name].replace('use memchr::{memchr, memchr2, memchr3};', imports)
 oracle_test='    #[test]\n    fn large_writes_match_scalar_escape_oracle() {\n        let alphabet = b"ab<>&\\"\'\\0\\x80\\xff";\n        for len in [8191, 8192, 8193, 16385] {\n            let input: Vec<u8> = (0..len).map(|i| alphabet[(i * 17 + i / 31) % alphabet.len()]).collect();\n            for attr in [false, true] {\n                let mut expected = Vec::new();\n                for &byte in &input {\n                    match byte {\n                        b\'<\' => expected.extend_from_slice(b"&lt;"),\n                        b\'>\' => expected.extend_from_slice(b"&gt;"),\n                        b\'&\' => expected.extend_from_slice(b"&amp;"),\n                        b\'"\' => expected.extend_from_slice(b"&quot;"),\n                        b\'\\\'\' if attr => expected.extend_from_slice(b"&#39;"),\n                        _ => expected.push(byte),\n                    }\n                }\n                let mut actual = Vec::new();\n                if attr { escape_attr_into(&mut actual, &input); } else { escape_text_into(&mut actual, &input); }\n                assert_eq!(actual, expected, "len={len}, attr={attr}");\n            }\n        }\n    }\n\n'
 for name in sources:
  sources[name]=sources[name].replace("    #[test]\n    fn quoted_code_search_work_grows_linearly", oracle_test+"    #[test]\n    fn quoted_code_search_work_grows_linearly")
@@ -142,7 +162,7 @@ sys.path.insert(0,str(W));from experiment import *
 assert build('baseline') and verify('baseline')
 for name in sources:assert build(name) and verify(name)
 shutil.copy2(W/'bin/baseline',W/'bin/aa-control');(W/'aa-control').mkdir(exist_ok=True)
-subprocess.run([sys.executable,str(W/'verify-all.py'),'baseline','masked-direct','masked-twin'],check=True)
+subprocess.run([sys.executable,str(W/'verify-all.py'),'baseline','probe-attr-outlined','writers-outlined'],check=True)
 meta['binary_sha256']={name:hashlib.sha256((W/'bin'/name).read_bytes()).hexdigest() for name in ['baseline','aa-control']+list(sources)}
 (W/'native-metadata.json').write_text(json.dumps(meta,indent=2))
 with (W/'native-escape-tests.log').open('w') as log:
@@ -165,16 +185,23 @@ def direct_run(name,pair):
  (dest/'windows.jsonl.gz').write_bytes(gzip.compress(('\n'.join(json.dumps(x) for x in raw)+'\n').encode(),mtime=0));(dest/'summary.json').write_text(json.dumps(summary,indent=2))
  print(name,'direct',pair,' '.join(f"{r['case']}={r['change_pct']:+.1f}%" for r in summary),flush=True)
 from regimes import run_regimes
+selected += [3, 17, 694, 695, 696, 697, 698, 699, 700, 701, 702, 703, 704, 705, 706, 707, 708, 709, 710, 711]
+selected=list(dict.fromkeys(selected))
+# Focused integration cases include every large repeatable regression from the
+# full previous round, with quote-heavy and plain stress controls.
+(W/'regime-screen-selected.json').write_text(json.dumps([718,719,720,721,725,728,729,730,731,732,733,734,735,736,737,738,739,740]))
 run('aa-control',rounds=5,ms=50,warm=40,tag='aa-control/screen-1',order=0,indices=selected)
 direct_run('aa-control',1)
-for pair in [0,1,2]:
+for pair in [0,1]:
  for name in (list(sources) if pair%2==0 else list(reversed(sources))):
-  run(name,rounds=5,ms=50,warm=40,tag=f'{name}/confirm-{pair+1}',order=pair)
+  run(name,rounds=5,ms=50,warm=40,tag=f'{name}/screen-{pair+1}',order=pair,indices=selected)
   direct_run(name,pair+1)
-  run_regimes(name,rounds=5,ms=50,tag=f'regime-confirm-{pair+1}')
-  run_regimes(name,rounds=5,ms=50,tag=f'attribute-confirm-{pair+1}',casefile='attributes.json',selection='attribute-selected.json')
+  run_regimes(name,rounds=5,ms=50,tag=f'regime-screen-{pair+1}',selection='regime-screen-selected.json')
+  run_regimes(name,rounds=5,ms=50,tag=f'attribute-screen-{pair+1}',casefile='attributes.json',selection='attribute-selected.json')
 run('aa-control',rounds=5,ms=50,warm=40,tag='aa-control/screen-2',order=1,indices=selected)
 direct_run('aa-control',2)
+# Native sampling happens only after all recorded timings.
+subprocess.run([sys.executable,str(R/'scripts/escape-linux-profile.py'),str(W)],check=True)
 # Save the complete reviewable experiment; no target directories or executables.
 archive=Path(os.environ['RUNNER_TEMP'])/'escape-linux-evidence';archive.mkdir()
 for p in W.rglob('*'):
