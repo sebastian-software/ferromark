@@ -426,7 +426,7 @@ impl HtmlWriter {
     #[inline(never)]
     fn into_string_with_ascii_prefix(self) -> Result<String, std::string::FromUtf8Error> {
         let mut ascii_prefix = 0;
-        for chunk in self.out.chunks_exact(4096) {
+        for chunk in self.out.as_chunks::<4096>().0 {
             if chunk.iter().fold(0_u8, |bits, byte| bits | byte) & 0x80 != 0 {
                 break;
             }
