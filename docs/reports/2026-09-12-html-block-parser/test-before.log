@@ -1,0 +1,14 @@
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.54s
+     Running tests/html_block_performance_regressions.rs (target/debug/deps/html_block_performance_regressions-f8d0791c873414ce)
+
+running 6 tests
+test html_continuations_keep_comments_and_container_markers_as_source ... ok
+test html_end_markers_remain_confined_to_a_physical_line ... ok
+test root_html_retains_each_physical_line_and_resumes_markdown ... ok
+test unterminated_html_retains_trailing_whitespace_and_eof_ranges ... ok
+test all_commonmark_block_tags_interrupt_paragraphs_case_insensitively ... ok
+test reused_html_parser_preserves_policies_and_definition_state ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -1,0 +1,268 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -348,6 +348,10 @@
+     pub fn parse(&mut self, events: &mut Vec<BlockEvent>) {
+         while !self.cursor.is_eof() {
+             self.parse_line(events);
++            // Container HTML still needs prefix matching on every line.
++            if self.html_block.is_some() && self.container_stack.is_empty() {
++                self.parse_html_block_run(events);
++            }
+         }
+ 
+         // Close any open table at end of input
+@@ -2690,6 +2694,46 @@
+         true
+     }
+ 
++    /// Consume root HTML continuations without repeating general block dispatch.
++    fn parse_html_block_run(&mut self, events: &mut Vec<BlockEvent>) {
++        // The opener has already passed through normal block parsing. Keep the
++        // public event stream line-based, including its original source ranges.
++        debug_assert!(self.container_stack.is_empty());
++        debug_assert!(self.pending_html_indent_start.is_none());
++        while self.html_block.is_some() && !self.cursor.is_eof() {
++            self.current_line_start = self.cursor.offset();
++            if self.options.definition_lists {
++                self.definition_current_line_loose =
++                    std::mem::take(&mut self.definition_blank_before_next);
++            }
++            self.partial_tab_cols = 0;
++            self.current_col = 0;
++            let kind = self.html_block.unwrap();
++            let start = self.cursor.offset();
++            self.skip_indent();
++            if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
++                && (self.cursor.is_eof() || self.at_line_ending())
++            {
++                // Leave blank-line state transitions in the existing handler.
++                self.cursor = Cursor::new_at(self.input, start);
++                self.current_col = 0;
++                self.parse_html_block_line(events);
++                continue;
++            }
++            let content_start = self.cursor.offset();
++            let rest = self.cursor.remaining_slice();
++            let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
++            let line_end = content_start + distance;
++            let end = line_end + usize::from(line_end < self.input.len());
++            self.cursor = Cursor::new_at(self.input, end);
++            events.push(BlockEvent::HtmlBlockText(Range::from_usize(start, end)));
++            if self.html_block_ends(kind, &self.input[content_start..line_end]) {
++                self.html_block = None;
++                events.push(BlockEvent::HtmlBlockEnd);
++            }
++        }
++    }
++
+     /// Parse a single HTML block line after container matching.
+     /// Called when we're inside an HTML block and containers matched.
+     fn parse_html_block_line(&mut self, events: &mut Vec<BlockEvent>) {
+@@ -2803,16 +2847,22 @@
+     /// Check if an HTML block ends on this line (types 1-5).
+     fn html_block_ends(&self, kind: HtmlBlockKind, line: &[u8]) -> bool {
+         match kind {
+-            HtmlBlockKind::Type1 => {
+-                self.contains_ci(line, b"</script")
+-                    || self.contains_ci(line, b"</pre")
+-                    || self.contains_ci(line, b"</style")
+-                    || self.contains_ci(line, b"</textarea")
+-            }
+-            HtmlBlockKind::Type2 => self.contains_bytes(line, b"-->"),
+-            HtmlBlockKind::Type3 => self.contains_bytes(line, b"?>"),
+-            HtmlBlockKind::Type4 => self.contains_bytes(line, b"]]>"),
+-            HtmlBlockKind::Type5 => self.contains_bytes(line, b">"),
++            HtmlBlockKind::Type1 => memchr::memchr_iter(b'<', line).any(|i| {
++                let tail = &line[i..];
++                [b"</script".as_slice(), b"</pre", b"</style", b"</textarea"]
++                    .iter()
++                    .any(|needle| {
++                        tail.get(..needle.len())
++                            .is_some_and(|candidate| candidate.eq_ignore_ascii_case(needle))
++                    })
++            }),
++            HtmlBlockKind::Type2 => memchr::memchr_iter(b'-', line)
++                .any(|i| line.get(i + 1..i + 3) == Some(b"->".as_slice())),
++            HtmlBlockKind::Type3 => memchr::memchr_iter(b'?', line)
++                .any(|i| line.get(i + 1..i + 2) == Some(b">".as_slice())),
++            HtmlBlockKind::Type4 => memchr::memchr_iter(b']', line)
++                .any(|i| line.get(i + 1..i + 3) == Some(b"]>".as_slice())),
++            HtmlBlockKind::Type5 => memchr::memchr(b'>', line).is_some(),
+             HtmlBlockKind::Type6 | HtmlBlockKind::Type7 => false,
+         }
+     }
+@@ -3016,68 +3066,88 @@
+             return true;
+         }
+ 
+-        const BLOCK_TAGS: [&[u8]; 56] = [
+-            b"address",
+-            b"article",
+-            b"aside",
+-            b"base",
+-            b"basefont",
+-            b"blockquote",
+-            b"body",
+-            b"caption",
+-            b"center",
+-            b"col",
+-            b"colgroup",
+-            b"dd",
+-            b"details",
+-            b"dialog",
+-            b"dir",
+-            b"div",
+-            b"dl",
+-            b"dt",
+-            b"fieldset",
+-            b"figcaption",
+-            b"figure",
+-            b"footer",
+-            b"form",
+-            b"frame",
+-            b"frameset",
+-            b"head",
+-            b"header",
+-            b"hr",
+-            b"html",
+-            b"iframe",
+-            b"legend",
+-            b"li",
+-            b"link",
+-            b"main",
+-            b"menu",
+-            b"menuitem",
+-            b"nav",
+-            b"noframes",
+-            b"ol",
+-            b"optgroup",
+-            b"option",
+-            b"p",
+-            b"param",
+-            b"section",
+-            b"source",
+-            b"summary",
+-            b"table",
+-            b"tbody",
+-            b"td",
+-            b"tfoot",
+-            b"th",
+-            b"thead",
+-            b"title",
+-            b"tr",
+-            b"track",
+-            b"ul",
+-        ];
+-
+-        BLOCK_TAGS
+-            .iter()
+-            .any(|&t| self.eq_ignore_ascii_case(name, t))
++        // Limit case-insensitive comparisons to tags with the same length and
++        // initial letter, without allocating or folding the complete tag name.
++        let Some(&first) = name.first() else {
++            return false;
++        };
++        match (name.len(), first.to_ascii_lowercase()) {
++            (1, b'p') => self.eq_ignore_ascii_case(name, b"p"),
++            (2, b'd') => {
++                self.eq_ignore_ascii_case(name, b"dd")
++                    || self.eq_ignore_ascii_case(name, b"dl")
++                    || self.eq_ignore_ascii_case(name, b"dt")
++            }
++            (2, b'h') => self.eq_ignore_ascii_case(name, b"hr"),
++            (2, b'l') => self.eq_ignore_ascii_case(name, b"li"),
++            (2, b'o') => self.eq_ignore_ascii_case(name, b"ol"),
++            (2, b't') => {
++                self.eq_ignore_ascii_case(name, b"td")
++                    || self.eq_ignore_ascii_case(name, b"th")
++                    || self.eq_ignore_ascii_case(name, b"tr")
++            }
++            (2, b'u') => self.eq_ignore_ascii_case(name, b"ul"),
++            (3, b'c') => self.eq_ignore_ascii_case(name, b"col"),
++            (3, b'd') => {
++                self.eq_ignore_ascii_case(name, b"dir") || self.eq_ignore_ascii_case(name, b"div")
++            }
++            (3, b'n') => self.eq_ignore_ascii_case(name, b"nav"),
++            (4, b'b') => {
++                self.eq_ignore_ascii_case(name, b"base") || self.eq_ignore_ascii_case(name, b"body")
++            }
++            (4, b'f') => self.eq_ignore_ascii_case(name, b"form"),
++            (4, b'h') => {
++                self.eq_ignore_ascii_case(name, b"head") || self.eq_ignore_ascii_case(name, b"html")
++            }
++            (4, b'l') => self.eq_ignore_ascii_case(name, b"link"),
++            (4, b'm') => {
++                self.eq_ignore_ascii_case(name, b"main") || self.eq_ignore_ascii_case(name, b"menu")
++            }
++            (5, b'a') => self.eq_ignore_ascii_case(name, b"aside"),
++            (5, b'f') => self.eq_ignore_ascii_case(name, b"frame"),
++            (5, b'p') => self.eq_ignore_ascii_case(name, b"param"),
++            (5, b't') => {
++                self.eq_ignore_ascii_case(name, b"table")
++                    || self.eq_ignore_ascii_case(name, b"tbody")
++                    || self.eq_ignore_ascii_case(name, b"tfoot")
++                    || self.eq_ignore_ascii_case(name, b"thead")
++                    || self.eq_ignore_ascii_case(name, b"title")
++                    || self.eq_ignore_ascii_case(name, b"track")
++            }
++            (6, b'c') => self.eq_ignore_ascii_case(name, b"center"),
++            (6, b'd') => self.eq_ignore_ascii_case(name, b"dialog"),
++            (6, b'f') => {
++                self.eq_ignore_ascii_case(name, b"figure")
++                    || self.eq_ignore_ascii_case(name, b"footer")
++            }
++            (6, b'h') => self.eq_ignore_ascii_case(name, b"header"),
++            (6, b'i') => self.eq_ignore_ascii_case(name, b"iframe"),
++            (6, b'l') => self.eq_ignore_ascii_case(name, b"legend"),
++            (6, b'o') => self.eq_ignore_ascii_case(name, b"option"),
++            (6, b's') => self.eq_ignore_ascii_case(name, b"source"),
++            (7, b'a') => {
++                self.eq_ignore_ascii_case(name, b"address")
++                    || self.eq_ignore_ascii_case(name, b"article")
++            }
++            (7, b'c') => self.eq_ignore_ascii_case(name, b"caption"),
++            (7, b'd') => self.eq_ignore_ascii_case(name, b"details"),
++            (7, b's') => {
++                self.eq_ignore_ascii_case(name, b"section")
++                    || self.eq_ignore_ascii_case(name, b"summary")
++            }
++            (8, b'b') => self.eq_ignore_ascii_case(name, b"basefont"),
++            (8, b'c') => self.eq_ignore_ascii_case(name, b"colgroup"),
++            (8, b'f') => {
++                self.eq_ignore_ascii_case(name, b"fieldset")
++                    || self.eq_ignore_ascii_case(name, b"frameset")
++            }
++            (8, b'm') => self.eq_ignore_ascii_case(name, b"menuitem"),
++            (8, b'n') => self.eq_ignore_ascii_case(name, b"noframes"),
++            (8, b'o') => self.eq_ignore_ascii_case(name, b"optgroup"),
++            (10, b'b') => self.eq_ignore_ascii_case(name, b"blockquote"),
++            (10, b'f') => self.eq_ignore_ascii_case(name, b"figcaption"),
++            _ => false,
++        }
+     }
+ 
+     #[inline]
+@@ -3090,23 +3160,6 @@
+             .all(|(&x, &y)| x.eq_ignore_ascii_case(&y))
+     }
+ 
+-    #[inline]
+-    fn contains_bytes(&self, haystack: &[u8], needle: &[u8]) -> bool {
+-        if needle.is_empty() || haystack.len() < needle.len() {
+-            return false;
+-        }
+-        haystack.windows(needle.len()).any(|w| w == needle)
+-    }
+-
+-    #[inline]
+-    fn contains_ci(&self, haystack: &[u8], needle: &[u8]) -> bool {
+-        if needle.is_empty() || haystack.len() < needle.len() {
+-            return false;
+-        }
+-        haystack
+-            .windows(needle.len())
+-            .any(|w| self.eq_ignore_ascii_case(w, needle))
+-    }
+     /// Find end of current line (position of \n or EOF).
+     fn find_line_end(&mut self) -> usize {
+         let remaining = self.cursor.remaining_slice();

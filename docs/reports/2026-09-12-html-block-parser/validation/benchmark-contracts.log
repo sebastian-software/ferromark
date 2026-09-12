@@ -1,0 +1,31 @@
+▶ benchmark CI contract
+  ✔ accepts the current workflow (1.046ms)
+  ✔ rejects a write-scoped token (0.9055ms)
+  ✔ rejects a missing source trigger (0.168167ms)
+  ✔ rejects a mutable benchmark action (0.457083ms)
+  ✔ rejects a relaxed regression threshold (0.607833ms)
+  ✔ rejects a pull request cache write (0.237584ms)
+  ✔ rejects a comparison against a moving base revision (0.175875ms)
+  ✔ rejects an advisory-only pull request comparison (0.45825ms)
+  ✔ rejects a missing bracket stress case (0.23975ms)
+  ✔ rejects an undersized large fixture (0.188667ms)
+✔ benchmark CI contract (5.184875ms)
+▶ profiling script contract
+  ✔ keeps the documented shared helpers and guards (0.451375ms)
+  ✔ builds from the repository root and forwards the target directory (1232.601417ms)
+  ✔ reports a failing cargo build (298.768458ms)
+  ✔ stops the benchmark child when sampling fails (636.25375ms)
+  ✔ rejects a benchmark that exits before sampling (647.814959ms)
+  ✔ stops every child on SIGTERM (896.841792ms)
+  ✔ rejects an empty or oversized sample budget (39.828583ms)
+  ✔ encodes PGO flags and requires the profile data (697.888458ms)
+  ✔ profiles cross-parser comparisons only with md4c sources (719.680917ms)
+✔ profiling script contract (5171.09375ms)
+ℹ tests 19
+ℹ suites 2
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8794.785

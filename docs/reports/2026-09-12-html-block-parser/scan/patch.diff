@@ -1,0 +1,56 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -348,6 +348,9 @@
+     pub fn parse(&mut self, events: &mut Vec<BlockEvent>) {
+         while !self.cursor.is_eof() {
+             self.parse_line(events);
++            if self.html_block.is_some() && self.container_stack.is_empty() {
++                self.parse_html_block_run(events);
++            }
+         }
+ 
+         // Close any open table at end of input
+@@ -2688,6 +2691,43 @@
+         // Consume the current line as HTML block content
+         self.parse_html_block_line(events);
+         true
++    }
++
++
++    /// Consume root HTML continuations without repeating general block dispatch.
++    fn parse_html_block_run(&mut self, events: &mut Vec<BlockEvent>) {
++        while self.html_block.is_some() && !self.cursor.is_eof() {
++            self.current_line_start = self.cursor.offset();
++            if self.options.definition_lists {
++                self.definition_current_line_loose =
++                    std::mem::take(&mut self.definition_blank_before_next);
++            }
++            self.partial_tab_cols = 0;
++            self.current_col = 0;
++            let kind = self.html_block.unwrap();
++            let start = self.cursor.offset();
++            self.skip_indent();
++            if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
++                && (self.cursor.is_eof() || self.at_line_ending())
++            {
++                // Leave blank-line state transitions in the existing handler.
++                self.cursor = Cursor::new_at(self.input, start);
++                self.current_col = 0;
++                self.parse_html_block_line(events);
++                continue;
++            }
++            let content_start = self.cursor.offset();
++            let rest = self.cursor.remaining_slice();
++            let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
++            let line_end = content_start + distance;
++            let end = line_end + usize::from(line_end < self.input.len());
++            self.cursor = Cursor::new_at(self.input, end);
++            events.push(BlockEvent::HtmlBlockText(Range::from_usize(start, end)));
++            if self.html_block_ends(kind, &self.input[content_start..line_end]) {
++                self.html_block = None;
++                events.push(BlockEvent::HtmlBlockEnd);
++            }
++        }
+     }
+ 
+     /// Parse a single HTML block line after container matching.
