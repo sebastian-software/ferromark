@@ -1,0 +1,40 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.47
+   Compiling rustversion v1.0.23
+   Compiling zmij v1.0.23
+   Compiling serde_core v1.0.229
+   Compiling bumpalo v3.20.3
+   Compiling thiserror v2.0.20
+   Compiling itoa v1.0.18
+   Compiling static_assertions v1.1.0
+   Compiling cfg-if v1.0.4
+   Compiling memchr v2.8.3
+   Compiling serde_json v1.0.151
+   Compiling rustc-hash v2.1.3
+   Compiling smallvec v1.16.1
+   Compiling serde v1.0.229
+   Compiling ox_content_allocator v3.2.0 (/private/tmp/ferromark-ox-profile-replay/ox-source/crates/ox_content_allocator)
+   Compiling ox_content_ast v3.2.0 (/private/tmp/ferromark-ox-profile-replay/ox-source/crates/ox_content_ast)
+   Compiling castaway v0.2.4
+   Compiling syn v3.0.5
+   Compiling compact_str v0.10.0
+   Compiling thiserror-impl v2.0.20
+   Compiling serde_derive v1.0.229
+   Compiling ox_content_renderer v3.2.0 (/private/tmp/ferromark-ox-profile-replay/ox-source/crates/ox_content_renderer)
+   Compiling ox_content_parser v3.2.0 (/private/tmp/ferromark-ox-profile-replay/ox-source/crates/ox_content_parser)
+   Compiling corpus-ox v0.0.0 (/private/tmp/ferromark-ox-profile-replay/ox)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.05s
+     Running unittests src/main.rs (ox/target/debug/deps/corpus_ox-f2db9ab1dec91d01)
+
+running 7 tests
+test normalize::text_codec::entity_window_preserves_multibyte_boundaries ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::text_codec::percent_decodes_once ... ok
+test normalize::normalizes_void_checkboxes_without_removing_attributes ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::normalizes_equivalent_markup ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

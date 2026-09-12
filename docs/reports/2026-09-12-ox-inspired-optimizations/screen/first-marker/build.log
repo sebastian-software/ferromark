@@ -1,0 +1,30 @@
+   Compiling ferromark v0.9.0 (/private/tmp/ferromark-ox-experiments/source)
+warning: function `collect_marks` is never used
+   --> /private/tmp/ferromark-ox-experiments/source/src/inline/marks.rs:253:8
+    |
+253 | pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    |        ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `collect_marks_highlight` is never used
+   --> /private/tmp/ferromark-ox-experiments/source/src/inline/marks.rs:263:8
+    |
+263 | pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `collect_marks_superscript` is never used
+   --> /private/tmp/ferromark-ox-experiments/source/src/inline/marks.rs:273:8
+    |
+273 | pub fn collect_marks_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `collect_marks_highlight_superscript` is never used
+   --> /private/tmp/ferromark-ox-experiments/source/src/inline/marks.rs:283:8
+    |
+283 | pub fn collect_marks_highlight_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `ferromark` (lib) generated 4 warnings
+   Compiling ox-experiment-driver v0.0.0 (/private/tmp/ferromark-ox-experiments/driver)
+    Finished `release` profile [optimized] target(s) in 10.88s

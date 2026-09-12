@@ -34,6 +34,19 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             overview_tables(broken)
 
+    def test_ox_archives_retain_every_manifest_file_in_a_fresh_checkout(self):
+        import hashlib
+        from common import REPO
+        manifests = sorted((REPO / "docs/reports").glob("2026-09-12-ox-*/**/SHA256SUMS"))
+        self.assertGreaterEqual(len(manifests), 11)
+        for manifest in manifests:
+            for line in manifest.read_text().splitlines():
+                digest, name = line.split("  ", 1)
+                path = manifest.parent / name
+                with self.subTest(archive=str(manifest.parent.relative_to(REPO)), file=name):
+                    self.assertTrue(path.is_file(), "Archive entry is missing from the checkout")
+                    self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
+
     def test_publication_rejects_incomplete_or_shortened_runs(self):
         metadata = {"started_unix": 1, "finished_unix": 2, "protocol": self.data["engines"][0]["protocol"]}
         validate_protocol(metadata)
