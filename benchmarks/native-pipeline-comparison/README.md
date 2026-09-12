@@ -7,7 +7,7 @@ parsing/rendering calls. There are no Node.js bindings, JavaScript plugins,
 WASM runtimes, cgo calls, or per-document CLI launches.
 
 This system-allocator experiment is separate from the published Bun/mimalloc
-comparison. Its figures do not update the README/homepage publication tables.
+comparison. The README and homepage display it in a separate native overview.
 
 ## Pinned engines
 
@@ -138,7 +138,7 @@ probe is not a complete MDX compatibility suite and does not execute components.
 
 ## Evidence
 
-The first [measured report](../../docs/reports/2026-09-11-native-pipeline-comparison/REPORT.md)
+The current [measured report](../../docs/reports/2026-09-12-ox-corpus-optimizations/native-pipeline/REPORT.md)
 contains the three targeted workloads above, with archived raw samples and all
 verification/MDX diagnostics. It records an independent Ferromark baseline for
 each competitor.
@@ -177,3 +177,19 @@ these Markdown adapters' measurement contract.
 Adapters must expose the independently selectable syntax required by the
 comparison lanes. Document limitations explicitly; do not patch upstream syntax
 or substitute an older release to obtain convenient feature switches.
+
+## Public overview
+
+`publish.py` verifies the complete archived reports, raw samples and checksums
+before generating `homepage/app/data/native-benchmarks.json`. The archive
+retains each measured Ferromark baseline, workload coverage, specification
+diagnostics and runtime disclosures. The public overview shows one Ferromark row
+per document, using the median of the independently measured reference medians.
+Candidate rows retain their own measured times; relative speeds use the single
+overview reference. The homepage renders those generated values directly.
+
+The five-parser publisher incorporates this overview into `README.md.src` while
+keeping the two allocation environments separate. Run the native publisher,
+`python3 benchmarks/bun-comparison/publish.py`, then `mise run readme:write`.
+The homepage build checks both datasets against the archives and the generated
+README. See [README themes](../../docs/readme-theme.md#benchmark-content).

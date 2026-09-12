@@ -178,7 +178,7 @@ There is no universal speed or memory winner implied by the absence of an AST.
 
 ## Measurement protocol and limits
 
-- Native Rust cores only, identical generic aarch64 build target, system
+- Native Rust cores only, identical default aarch64 build target (`apple-m1`), system
   allocator, Rust 1.97.1, Apple M1 Pro, macOS 26.6.2. Ferromark and Ox use
   separate locked dependency workspaces. Ferromark retains its main dependency
   versions; Ox retains its standalone resolution from the preceding audit.
@@ -235,3 +235,12 @@ its isolated patches preserve the next-round evidence. The practical order is
 narrow line scanning, then inline event ordering, then contiguous HTML/code
 ranges. Existing output divergences should receive a separate correctness
 investigation before these corpora are used in public feature or speed claims.
+
+### Build-target clarification
+
+The standalone release commands clear RUSTFLAGS and do not pass target-cpu.
+Rust 1.97.1 defaults `aarch64-apple-darwin` to `apple-m1`, as confirmed by
+its target specification. An earlier descriptor incorrectly said generic. Both
+engines use the same default target; the raw measurements are unchanged. The
+public native harnesses explicitly pass `-C target-cpu=generic` and remain
+separate.

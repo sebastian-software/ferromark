@@ -5,7 +5,7 @@ import gzip
 import json
 from pathlib import Path
 
-from common import ENGINES
+from common import ENGINES, REPO
 from run import summarize
 
 
@@ -13,6 +13,11 @@ def load(path):
     if path.exists():
         return json.loads(path.read_text())
     return json.loads(gzip.decompress(path.with_suffix(path.suffix + ".gz").read_bytes()))
+
+
+def report_path(folder):
+    resolved = folder.resolve()
+    return str(resolved.relative_to(REPO)) if resolved.is_relative_to(REPO) else str(resolved)
 
 
 def render(folder):
@@ -70,7 +75,7 @@ def render(folder):
         "The adjacent metadata pins upstream revisions, dependency checksums, compiler versions, build flags, binary hashes, and local input hashes. The native harness README gives the build/run commands. "
         "The source patch records any uncommitted production changes at measurement time. These system-allocator measurements are separate from the published Bun/mimalloc figures.", "",
         "Regenerate or verify this report from the repository root:", "", "```sh",
-        f"python3 benchmarks/native-pipeline-comparison/report.py docs/reports/{folder.name} --check",
+        f"python3 benchmarks/native-pipeline-comparison/report.py {report_path(folder)} --check",
         "```", ""]
     return "\n".join(lines)
 
@@ -122,7 +127,7 @@ def render_engine(folder, metadata):
         "## Reproduction", "",
         "See the engine adapter README. Metadata records upstream hashes, compiler versions, build commands, dependency locks, local source hashes and executable hashes. "
         "The archive retains raw evidence; report generation rechecks every timed window and recomputes summaries.", "",
-        "```sh", f"python3 benchmarks/native-pipeline-comparison/report.py docs/reports/{folder.name} --check", "```", ""]
+        "```sh", f"python3 benchmarks/native-pipeline-comparison/report.py {report_path(folder)} --check", "```", ""]
     return "\n".join(lines)
 
 

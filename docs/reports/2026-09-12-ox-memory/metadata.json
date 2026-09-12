@@ -12,7 +12,7 @@
     "panic": "abort"
   },
   "allocator": "instrumented System; successful logical requested allocations",
-  "target": "aarch64-apple-darwin; generic CPU; baseline NEON",
+  "target": "aarch64-apple-darwin; default CPU apple-m1; no target-cpu override",
   "cwd": "/private/tmp/ferromark-memory-audit",
   "environment": {
     "RUSTFLAGS": null,

@@ -1,0 +1,87 @@
+[
+  {
+    "name": "build-bun",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/bun-comparison/prepare.py",
+      "/private/tmp/ferromark-bun-publication-20260911",
+      "/private/tmp/ferromark-ox-implementation/build-bun",
+      "--md4c",
+      "/private/tmp/ferromark-md4c-publication-20260911",
+      "--lockfile",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/docs/reports/2026-09-11-native-optimization-publication/native/Cargo.lock"
+    ],
+    "started_unix": 1789199685.7518148,
+    "finished_unix": 1789199716.311889,
+    "exit_code": 0
+  },
+  {
+    "name": "build-native-pipeline",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/prepare.py",
+      "/private/tmp/ferromark-ox-implementation/build-native-pipeline",
+      "--satteri",
+      "/private/tmp/ferromark-satteri-20260911"
+    ],
+    "started_unix": 1789199716.3125381,
+    "finished_unix": 1789199819.43611,
+    "exit_code": 0
+  },
+  {
+    "name": "build-rushdown",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/prepare-engine.py",
+      "rushdown",
+      "/private/tmp/ferromark-ox-implementation/build-rushdown",
+      "--source",
+      "/private/tmp/ferromark-five-engines/rushdown"
+    ],
+    "started_unix": 1789199819.43648,
+    "finished_unix": 1789199866.573323,
+    "exit_code": 0
+  },
+  {
+    "name": "build-markdig",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/prepare-engine.py",
+      "markdig",
+      "/private/tmp/ferromark-ox-implementation/build-markdig",
+      "--source",
+      "/private/tmp/ferromark-five-engines/markdig"
+    ],
+    "started_unix": 1789199866.573685,
+    "finished_unix": 1789199890.675446,
+    "exit_code": 0
+  },
+  {
+    "name": "build-markdown-rs",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/prepare-engine.py",
+      "markdown-rs",
+      "/private/tmp/ferromark-ox-implementation/build-markdown-rs",
+      "--source",
+      "/private/tmp/ferromark-five-engines/markdown-rs"
+    ],
+    "started_unix": 1789199890.675812,
+    "finished_unix": 1789199928.652983,
+    "exit_code": 0
+  },
+  {
+    "name": "build-ox-content",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/prepare-engine.py",
+      "ox-content",
+      "/private/tmp/ferromark-ox-implementation/build-ox-content",
+      "--source",
+      "/private/tmp/ferromark-five-engines/ox-content"
+    ],
+    "started_unix": 1789199928.653413,
+    "finished_unix": 1789199975.139881,
+    "exit_code": 0
+  }
+]

@@ -1,0 +1,20 @@
+sysctl: sysctl fmt -1 1024 1: Operation not permitted
+Traceback (most recent call last):
+  File "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/bun-comparison/run.py", line 144, in <module>
+    main()
+    ~~~~^^
+  File "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/bun-comparison/run.py", line 55, in main
+    "cpu": capture(["sysctl", "-n", "machdep.cpu.brand_string"]),
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/bun-comparison/run.py", line 28, in capture
+    return subprocess.check_output(args, text=True).strip()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 473, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               **kwargs).stdout
+               ^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.

@@ -1,0 +1,53 @@
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.38s
+     Running tests/core_performance_regressions.rs (target/debug/deps/core_performance_regressions-67102f17b60bdd1e)
+
+running 4 tests
+test multiline_html_keeps_policy_filter_and_container_boundaries ... ok
+test text_writer_preserves_entity_and_escape_semantics_across_scan_boundaries ... ok
+test reused_parser_does_not_leak_scratch_between_different_document_shapes ... ok
+test reused_renderer_passes_the_complete_trusted_commonmark_corpus ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/fenced_code_renderer_tests.rs (target/debug/deps/fenced_code_renderer_tests-49415651d2e50a5b)
+
+running 12 tests
+test renderer_receives_info_string_meta_after_the_language ... ok
+test renderer_is_an_explicit_boundary_under_untrusted_policy ... ok
+test renderer_meta_decodes_escapes_and_entities ... ok
+test none_uses_the_existing_escaped_fallback ... ok
+test indented_code_never_invokes_the_renderer ... ok
+test renderer_meta_is_none_without_trailing_info_text ... ok
+test buffer_api_reuses_the_caller_buffer ... ok
+test renderer_receives_decoded_language_and_raw_code ... ok
+test code_language_preserves_plain_escaped_and_entity_spellings ... ok
+test adjacent_code_ranges_preserve_callback_input_and_container_boundaries ... ok
+test renderer_receives_none_for_a_fence_without_info ... ok
+test renderer_reuses_and_clears_its_buffer_between_fences ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mdx_event_tests.rs (target/debug/deps/mdx_event_tests-d31261d1ac8789c4)
+
+running 17 tests
+test multiline_code_keeps_public_line_ranges_between_mdx_nodes ... ok
+test markdown_block_boundaries_remain_ordered_and_balanced ... ok
+test list_item_component_wrappers_promote_around_multiple_blocks ... ok
+test contiguous_multiline_paragraphs_share_one_inline_parse ... ok
+test mixed_prose_code_and_multiline_container_mdx_are_not_promoted ... ok
+test list_and_nested_container_units_promote_with_exact_ranges ... ok
+test links_keep_absolute_urls_and_reference_definitions ... ok
+test reference_consumer_can_collect_translatable_prose_without_code_or_mdx ... ok
+test leading_utf8_bom_is_ignored_with_absolute_event_ranges ... ok
+test fenced_code_info_exposes_its_absolute_source_range ... ok
+test semantic_normalization_does_not_change_mdx_rendering ... ok
+test strict_diagnostics_after_front_matter_keep_absolute_ranges ... ok
+test semantic_stream_composes_flow_blocks_and_inline_mdx_with_absolute_ranges ... ok
+test strict_stream_preserves_inline_mdx_text_recovery ... ok
+test strict_stream_reports_diagnostics_while_permissive_stream_recovers_as_text ... ok
+test tag_only_blockquote_paragraphs_promote_around_markdown_blocks ... ok
+test thematic_breaks_expose_exact_absolute_source_ranges ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

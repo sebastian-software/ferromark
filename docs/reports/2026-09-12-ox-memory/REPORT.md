@@ -100,7 +100,7 @@ and equivalent encoding spellings. This establishes comparable work for the
 selected fixtures, not complete byte-level equivalence or dialect conformance.
 The normalizer/text codec and upstream MIT notice are included.
 
-Builds use the same Rust 1.97.1, generic AArch64 target, release optimization,
+Builds use the same Rust 1.97.1, default AArch64 target (`apple-m1`; no target-cpu override), release optimization,
 fat LTO, one codegen unit, panic abort and system allocator as the preceding
 standalone experiment, outside the repository's Cargo configuration. Source and
 binary hashes, lockfiles and build logs are archived. See [REPRODUCE.md](REPRODUCE.md).

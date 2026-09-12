@@ -1,0 +1,182 @@
+//! Link reference definitions (CommonMark).
+
+use memchr::memchr;
+use rustc_hash::FxBuildHasher as FastHashBuilder;
+use std::borrow::Cow;
+use std::collections::HashMap;
+
+/// A link reference definition (URL + optional title).
+#[derive(Debug, Clone)]
+pub struct LinkRefDef {
+    /// Destination URL bytes after parsing the definition.
+    pub url: Vec<u8>,
+    /// Optional title bytes after parsing the definition.
+    pub title: Option<Vec<u8>>,
+}
+
+/// Store of link reference definitions, keyed by normalized label.
+#[derive(Debug, Default)]
+pub struct LinkRefStore {
+    defs: Vec<LinkRefDef>,
+    by_label: HashMap<String, usize, FastHashBuilder>,
+}
+
+impl LinkRefStore {
+    /// Create an empty link-reference-definition store.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Add a definition if the label is new. First definition wins.
+    pub fn insert(&mut self, label: String, def: LinkRefDef) {
+        if self.by_label.contains_key(&label) {
+            return;
+        }
+        let idx = self.defs.len();
+        self.defs.push(def);
+        self.by_label.insert(label, idx);
+    }
+
+    /// Return the insertion-order index for a normalized label.
+    pub fn get_index(&self, label: &str) -> Option<usize> {
+        self.by_label.get(label).copied()
+    }
+
+    /// Return the definition at an insertion-order index.
+    pub fn get(&self, idx: usize) -> Option<&LinkRefDef> {
+        self.defs.get(idx)
+    }
+
+    /// Return whether the store contains no definitions.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.defs.is_empty()
+    }
+
+    #[cfg(feature = "mdx")]
+    pub(crate) fn merge_first_wins(&mut self, other: Self) {
+        let mut labels = vec![None; other.defs.len()];
+        for (label, index) in other.by_label {
+            labels[index] = Some(label);
+        }
+
+        for (index, definition) in other.defs.into_iter().enumerate() {
+            let label = labels[index]
+                .take()
+                .expect("every link reference definition must have a label");
+            self.insert(label, definition);
+        }
+    }
+
+    #[cfg(feature = "mdx")]
+    pub(crate) fn append_definitions_to(&self, definitions: &mut Vec<LinkRefDef>) {
+        definitions.extend(self.defs.iter().cloned());
+    }
+}
+
+/// Normalize a link label into a reusable buffer.
+pub fn normalize_label_into(bytes: &[u8], out: &mut String) {
+    out.clear();
+
+    let label_str = match std::str::from_utf8(bytes) {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+    if label_str.is_empty() {
+        return;
+    }
+
+    let decoded: Cow<'_, str> = if memchr(b'&', bytes).is_some() {
+        html_escape::decode_html_entities(label_str)
+    } else {
+        Cow::Borrowed(label_str)
+    };
+
+    let decoded_bytes = decoded.as_bytes();
+    if memchr(b'\\', decoded_bytes).is_some() {
+        let mut unescaped = Vec::with_capacity(decoded_bytes.len());
+        let mut i = 0;
+        while i < decoded_bytes.len() {
+            if decoded_bytes[i] == b'\\'
+                && i + 1 < decoded_bytes.len()
+                && is_label_escapable(decoded_bytes[i + 1])
+            {
+                i += 1;
+                unescaped.push(decoded_bytes[i]);
+                i += 1;
+            } else {
+                unescaped.push(decoded_bytes[i]);
+                i += 1;
+            }
+        }
+
+        let Ok(unescaped_str) = std::str::from_utf8(&unescaped) else {
+            return;
+        };
+        normalize_label_text(unescaped_str, out);
+    } else {
+        normalize_label_text(decoded.as_ref(), out);
+    }
+}
+
+#[inline]
+fn normalize_label_text(input: &str, out: &mut String) {
+    if input.is_ascii() {
+        normalize_label_text_ascii(input.as_bytes(), out);
+        return;
+    }
+
+    let mut last_was_space = true;
+
+    for ch in input.chars() {
+        if ch.is_whitespace() {
+            if !last_was_space {
+                out.push(' ');
+                last_was_space = true;
+            }
+            continue;
+        }
+
+        last_was_space = false;
+        if ch == 'ß' || ch == 'ẞ' {
+            out.push('s');
+            out.push('s');
+        } else {
+            for lc in ch.to_lowercase() {
+                out.push(lc);
+            }
+        }
+    }
+
+    if out.ends_with(' ') {
+        out.pop();
+    }
+}
+
+#[inline]
+fn normalize_label_text_ascii(input: &[u8], out: &mut String) {
+    let mut last_was_space = true;
+
+    for &b in input {
+        if b.is_ascii_whitespace() {
+            if !last_was_space {
+                out.push(' ');
+                last_was_space = true;
+            }
+            continue;
+        }
+
+        last_was_space = false;
+        out.push((b.to_ascii_lowercase()) as char);
+    }
+
+    if out.ends_with(' ') {
+        out.pop();
+    }
+}
+
+#[inline]
+fn is_label_escapable(b: u8) -> bool {
+    matches!(b, b'[' | b']' | b'\\')
+}

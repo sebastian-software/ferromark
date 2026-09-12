@@ -46,6 +46,6 @@ ARCH-COMP-002 separately from HTML fidelity. The parent README documents the
 three fresh process runs, warmup and alternating native clock windows. No Node,
 WASM or CLI startup is timed. Public Bun/mimalloc figures remain separate.
 
-The [measured report](../../../../docs/reports/2026-09-11-native-markdown-rs/REPORT.md)
+The [measured report](../../../../docs/reports/2026-09-12-ox-corpus-optimizations/markdown-rs/REPORT.md)
 retains all native verification outputs and raw samples for three selected workloads.
 The common report command with `--check` recomputes the archived summaries.

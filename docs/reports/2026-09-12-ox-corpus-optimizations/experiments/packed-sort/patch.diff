@@ -1,0 +1,25 @@
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -1371,10 +1371,7 @@
+         }
+ 
+         // Sort by position (end events come after start events at same position)
+-        emit_points.sort_unstable_by_key(|p| {
+-            (
+-                p.pos,
+-                matches!(
++        emit_points.sort_unstable_by_key(|p| (u64::from(p.pos) << 1) | u64::from(matches!(
+                     p.kind,
+                     EmitKind::CodeSpanEnd
+                         | EmitKind::StrongEnd
+@@ -1385,9 +1382,7 @@
+                         | EmitKind::HighlightEnd
+                         | EmitKind::LinkEnd
+                         | EmitKind::ImageEnd
+-                ),
+-            )
+-        });
++                )));
+ 
+         // Build ranges to suppress (reference labels after link text)
+         suppress_ranges.clear();

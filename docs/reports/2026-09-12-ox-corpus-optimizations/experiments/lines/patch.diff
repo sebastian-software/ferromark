@@ -1,0 +1,27 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2821,10 +2821,7 @@
+     fn current_line_slice(&self) -> &[u8] {
+         let offset = self.cursor.offset();
+         let slice = &self.input[offset..];
+-        let end = slice
+-            .iter()
+-            .position(|&b| b == b'\n')
+-            .unwrap_or(slice.len());
++        let end = memchr::memchr(b'\n', slice).unwrap_or(slice.len());
+         &slice[..end]
+     }
+ 
+@@ -3112,9 +3109,9 @@
+     }
+     /// Find end of current line (position of \n or EOF).
+     fn find_line_end(&mut self) -> usize {
+-        while !self.cursor.is_eof() && !self.cursor.at(b'\n') {
+-            parser_cursor_bump!(self.cursor);
+-        }
++        let remaining = self.cursor.remaining_slice();
++        let distance = memchr::memchr(b'\n', remaining).unwrap_or(remaining.len());
++        parser_cursor_advance!(self.cursor, distance);
+         self.cursor.offset()
+     }
+ 

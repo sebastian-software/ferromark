@@ -43,6 +43,6 @@ separately from HTML fidelity. The parent README documents three fresh process
 runs, warmup and alternating monotonic-clock windows. No Node/WASM or CLI startup
 is included; these results do not replace the published Bun/mimalloc tables.
 
-The [measured report](../../../../docs/reports/2026-09-11-native-rushdown/REPORT.md)
+The [measured report](../../../../docs/reports/2026-09-12-ox-corpus-optimizations/rushdown/REPORT.md)
 archives all verification outputs, raw samples and run medians for three selected
 workloads. It is reproducible with the common report generator's `--check` mode.

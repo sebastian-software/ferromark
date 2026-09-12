@@ -1,0 +1,59 @@
+[
+  {
+    "name": "root-clippy",
+    "argv": [
+      "cargo",
+      "clippy",
+      "--all-targets",
+      "--all-features",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "started_unix": 1789199610.227678,
+    "finished_unix": 1789199611.772745,
+    "exit_code": 0
+  },
+  {
+    "name": "byte-test",
+    "argv": [
+      "cargo",
+      "test",
+      "-p",
+      "ferro-byte-search",
+      "--locked"
+    ],
+    "started_unix": 1789199611.7733388,
+    "finished_unix": 1789199612.5934,
+    "exit_code": 0
+  },
+  {
+    "name": "byte-clippy",
+    "argv": [
+      "cargo",
+      "clippy",
+      "-p",
+      "ferro-byte-search",
+      "--all-targets",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "started_unix": 1789199612.593769,
+    "finished_unix": 1789199612.751403,
+    "exit_code": 0
+  },
+  {
+    "name": "root-fmt",
+    "argv": [
+      "cargo",
+      "fmt",
+      "--check"
+    ],
+    "started_unix": 1789199612.751748,
+    "finished_unix": 1789199613.019721,
+    "exit_code": 0
+  }
+]
