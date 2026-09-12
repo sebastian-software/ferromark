@@ -1,0 +1,29 @@
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.94s
+     Running unittests src/lib.rs (target/debug/deps/ferromark-33e267682c6bad7b)
+
+running 21 tests
+test escape::tests::test_escape_attr_quotes ... ok
+test escape::tests::test_escape_attr_all ... ok
+test escape::tests::test_escape_attr_single_quote ... ok
+test escape::tests::test_escape_at_boundaries ... ok
+test escape::tests::test_escape_consecutive ... ok
+test escape::tests::link_destination_fast_path_preserves_backslashes_and_entities ... ok
+test escape::tests::test_escape_long_input_end_to_end ... ok
+test escape::tests::test_escape_text_amp ... ok
+test escape::tests::test_escape_text_basic ... ok
+test escape::tests::test_escape_text_empty ... ok
+test escape::tests::test_escape_text_gt ... ok
+test escape::tests::test_escape_text_lt ... ok
+test escape::tests::quoted_attribute_search_work_grows_linearly ... ok
+test escape::tests::test_escape_text_mixed ... ok
+test escape::tests::test_escape_unicode ... ok
+test escape::tests::test_long_input_quote_ordering ... ok
+test escape::tests::quoted_code_search_work_grows_linearly ... ok
+test escape::tests::test_scanner_threshold_boundary ... ok
+test escape::tests::test_scanner_every_position ... ok
+test escape::tests::link_destination_encoding_preserves_every_byte_at_scan_boundaries ... ok
+test escape::tests::escape_searches_match_scalar_oracle_across_growing_windows ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 356 filtered out; finished in 0.16s
+

@@ -1,0 +1,29 @@
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+    Finished `test` profile [optimized + debuginfo] target(s) in 3.97s
+     Running unittests src/lib.rs (target/debug/deps/ferromark-33e267682c6bad7b)
+
+running 2 tests
+test escape::tests::quoted_attribute_search_work_grows_linearly ... FAILED
+test escape::tests::quoted_code_search_work_grows_linearly ... FAILED
+
+failures:
+
+---- escape::tests::quoted_attribute_search_work_grows_linearly stdout ----
+
+thread 'escape::tests::quoted_attribute_search_work_grows_linearly' (16991422) panicked at src/escape.rs:359:9:
+search work: [654772, 2621876]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- escape::tests::quoted_code_search_work_grows_linearly stdout ----
+
+thread 'escape::tests::quoted_code_search_work_grows_linearly' (16991423) panicked at src/escape.rs:344:9:
+search work: [262328, 1049912]
+
+
+failures:
+    escape::tests::quoted_attribute_search_work_grows_linearly
+    escape::tests::quoted_code_search_work_grows_linearly
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 374 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

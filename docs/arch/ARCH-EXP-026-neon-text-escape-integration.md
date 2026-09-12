@@ -3,6 +3,10 @@
 **Status:** Not adopted
 **Date:** 2026-09-12
 
+Follow-up: [ARCH-EXP-027](ARCH-EXP-027-linear-html-escaping.md) adopts a different
+bounded integration for both text and attributes. The five patches evaluated
+here remain unadopted.
+
 ## Decision
 
 Retain the merged escape implementation after testing five integrations of the

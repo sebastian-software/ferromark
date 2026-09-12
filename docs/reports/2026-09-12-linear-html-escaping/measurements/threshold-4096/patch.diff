@@ -1,0 +1,57 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -89,6 +89,7 @@
+     if input.len() <= SHORT_SCAN_MAX {
+         return first_escape_short::<false>(input);
+     }
++    if input.len() > 4096 { return first_escape_long::<false>(input); }
+     let a = memchr3(b'<', b'>', b'&', input);
+     // A '"' is only relevant if it appears before the first <>& hit, so the
+     // second pass never scans past it.
+@@ -101,6 +102,7 @@
+     if input.len() <= SHORT_SCAN_MAX {
+         return first_escape_short::<true>(input);
+     }
++    if input.len() > 4096 { return first_escape_long::<true>(input); }
+     let a = memchr3(b'<', b'>', b'&', input);
+     let limit = a.unwrap_or(input.len());
+     memchr2(b'"', b'\'', &input[..limit]).or(a)
+@@ -576,3 +578,38 @@
+         }
+     }
+ }
++
++// Keep the long-search loop out of short writes and inline entity probes.
++#[inline(never)]
++fn first_escape_long<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    {
++        let found = first_escape_short::<ATTR>(input);
++        found
++    }
++    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
++    {
++        let mut start = 0;
++        let mut width = SHORT_SCAN_MAX * 2;
++        while start < input.len() {
++            let len = width.min(input.len() - start);
++            let chunk = &input[start..start + len];
++            let common = memchr3(b'<', b'>', b'&', chunk);
++            let limit = common.unwrap_or(chunk.len());
++            let quote = if ATTR {
++                memchr2(b'"', b'\'', &chunk[..limit])
++            } else {
++                memchr(b'"', &chunk[..limit])
++            };
++            if let Some(at) = quote.or(common) {
++                return Some(start + at);
++            }
++            start += len;
++            // Both searches stay within a window. Doubling bounds how far either
++            // can scan past the next escape, while amortizing setup on plain text.
++            width = width.saturating_mul(2);
++        }
++        None
++    }
++}
++

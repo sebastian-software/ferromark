@@ -1,0 +1,100 @@
+[
+  {
+    "index": 0,
+    "case": "attribute-fence/plain-128",
+    "baseline_ns": 443.16190729415933,
+    "candidate_ns": 437.4732057709301,
+    "change_pct": -1.2836621175233875
+  },
+  {
+    "index": 1,
+    "case": "attribute-fence/double-quotes-128",
+    "baseline_ns": 886.7474639994325,
+    "candidate_ns": 895.7392963347784,
+    "change_pct": 1.0140240260502864
+  },
+  {
+    "index": 2,
+    "case": "attribute-fence/single-quotes-128",
+    "baseline_ns": 850.3409747967756,
+    "candidate_ns": 849.2989265210449,
+    "change_pct": -0.12254475635256057
+  },
+  {
+    "index": 3,
+    "case": "attribute-fence/mixed-quotes-128",
+    "baseline_ns": 1032.7245858978065,
+    "candidate_ns": 1029.4849495573399,
+    "change_pct": -0.31369799699793033
+  },
+  {
+    "index": 4,
+    "case": "attribute-fence/plain-4096",
+    "baseline_ns": 4662.397016317016,
+    "candidate_ns": 4566.4611872146115,
+    "change_pct": -2.0576503623920828
+  },
+  {
+    "index": 5,
+    "case": "attribute-fence/double-quotes-4096",
+    "baseline_ns": 110483.16777041943,
+    "candidate_ns": 16149.86277042299,
+    "change_pct": -85.38251292361394
+  },
+  {
+    "index": 6,
+    "case": "attribute-fence/single-quotes-4096",
+    "baseline_ns": 110453.09050772627,
+    "candidate_ns": 15841.04117833386,
+    "change_pct": -85.65812771239229
+  },
+  {
+    "index": 7,
+    "case": "attribute-fence/mixed-quotes-4096",
+    "baseline_ns": 169263.6554054054,
+    "candidate_ns": 21976.676625659053,
+    "change_pct": -87.01630508154722
+  },
+  {
+    "index": 8,
+    "case": "attribute-fence/plain-65536",
+    "baseline_ns": 69492.30277777778,
+    "candidate_ns": 68415.98358413133,
+    "change_pct": -1.5488322456204906
+  },
+  {
+    "index": 9,
+    "case": "attribute-fence/double-quotes-65536",
+    "baseline_ns": 23955625.0,
+    "candidate_ns": 253404.6717171717,
+    "change_pct": -98.94219135707304
+  },
+  {
+    "index": 10,
+    "case": "attribute-fence/single-quotes-65536",
+    "baseline_ns": 23972319.333333332,
+    "candidate_ns": 253337.3282828283,
+    "change_pct": -98.94320893710704
+  },
+  {
+    "index": 11,
+    "case": "attribute-fence/mixed-quotes-65536",
+    "baseline_ns": 36190625.0,
+    "candidate_ns": 342851.0273972603,
+    "change_pct": -99.05265237227249
+  },
+  {
+    "index": 12,
+    "case": "attribute-fence/plain-1048576",
+    "baseline_ns": 1111788.888888889,
+    "candidate_ns": 1087569.7391304348,
+    "change_pct": -2.178394657519789
+  },
+  {
+    "index": 13,
+    "case": "attribute-fence/sparse-quotes-1048576",
+    "baseline_ns": 36214729.0,
+    "candidate_ns": 1101857.8043478262,
+    "change_pct": -96.95743186605696
+  }
+]

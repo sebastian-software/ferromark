@@ -2,6 +2,11 @@
 
 Date: September 12, 2026.
 
+Historical rejected experiments. The subsequent
+[linear text and attribute escaping fix](../2026-09-12-linear-html-escaping/REPORT.md)
+uses a different integration and includes the implementation, measurements and
+regression tests. The conclusions below apply to these five exact earlier patches.
+
 **Decision: retain the merged library implementation.** Five ways of integrating
 a shared four-byte escape scan all have repeated unfavorable controls. The
 simplest version improves several real documents, but the longer follow-ups
