@@ -1712,7 +1712,7 @@ fn render_to_writer_impl<R: FencedCodeRenderer + ?Sized>(
     resource_limits: Option<&mut ResourceLimitReport>,
     shared_link_refs: Option<&LinkRefStore>,
 ) {
-    let mut events = Vec::with_capacity((input.len() / 16).max(64));
+    let mut events = Vec::with_capacity(64);
     let mut inline_parser = InlineParser::new();
     let mut inline_events = Vec::with_capacity(64);
     let mut render_state = RenderState::new();
@@ -1752,14 +1752,14 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
 ) {
     // Parse blocks
     events.clear();
-    events.reserve((input.len() / 16).max(64));
     let mut parser = if let Some(scratch) = block_scratch.as_deref_mut() {
         BlockParser::with_scratch(input, options.clone(), std::mem::take(scratch))
     } else {
         BlockParser::new_with_options(input, options.clone())
     };
-    parser.parse(events);
+    parser.parse_for_render(events);
     let heading_count = parser.heading_count;
+    let has_loose_lists = parser.has_loose_lists;
     if let Some(report) = resource_limits.as_deref_mut() {
         report.extend(parser.resource_limits());
     }
@@ -1777,7 +1777,9 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     }
 
     // Fix up list tight status (ListStart gets its tight value from ListEnd)
-    fixup_list_tight(events);
+    if has_loose_lists {
+        fixup_list_tight(events);
+    }
 
     let link_refs = shared_link_refs.unwrap_or(&segment_link_refs);
     let fn_store_ref = footnote_store.as_ref();
