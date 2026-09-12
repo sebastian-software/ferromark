@@ -1,0 +1,25 @@
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -1036,17 +1036,17 @@
+                 kind: EmitKind::CodeSpanStart,
+                 end: span.opener_end,
+             });
+-            emit_points.push(EmitPoint {
+-                pos: span.closer_pos,
+-                kind: EmitKind::CodeSpanEnd,
+-                end: span.closer_end,
+-            });
+             // Code content
+             let (content_start, content_end) = span.content_range();
+             emit_points.push(EmitPoint {
+                 pos: content_start,
+                 kind: EmitKind::CodeContent(content_end),
+                 end: content_end,
++            });
++            emit_points.push(EmitPoint {
++                pos: span.closer_pos,
++                kind: EmitKind::CodeSpanEnd,
++                end: span.closer_end,
+             });
+         }
+ 

@@ -1,0 +1,28 @@
+$ node ./scripts/verify-pack.mjs
+{
+  "main": {
+    "filename": "ferromark-0.9.0.tgz",
+    "files": [
+      "LICENSE-APACHE",
+      "LICENSE-MIT",
+      "README.md",
+      "index.d.mts",
+      "index.mjs",
+      "native-target.mjs",
+      "native.d.ts",
+      "package.json"
+    ],
+    "unpackedSize": 41592
+  },
+  "platforms": [
+    {
+      "filename": "ferromark-darwin-arm64-0.9.0.tgz",
+      "files": [
+        "README.md",
+        "ferromark.darwin-arm64.node",
+        "package.json"
+      ],
+      "unpackedSize": 865323
+    }
+  ]
+}

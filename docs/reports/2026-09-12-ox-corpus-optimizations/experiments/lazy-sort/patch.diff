@@ -1,0 +1,31 @@
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -1371,22 +1371,12 @@
+         }
+ 
+         // Sort by position (end events come after start events at same position)
+-        emit_points.sort_unstable_by_key(|p| {
+-            (
+-                p.pos,
+-                matches!(
+-                    p.kind,
+-                    EmitKind::CodeSpanEnd
+-                        | EmitKind::StrongEnd
+-                        | EmitKind::EmphasisEnd
+-                        | EmitKind::StrikethroughEnd
+-                        | EmitKind::SubscriptEnd
+-                        | EmitKind::SuperscriptEnd
+-                        | EmitKind::HighlightEnd
+-                        | EmitKind::LinkEnd
+-                        | EmitKind::ImageEnd
+-                ),
+-            )
++        emit_points.sort_unstable_by(|a, b| {
++            a.pos.cmp(&b.pos).then_with(|| {
++                let a_end = matches!(a.kind, EmitKind::CodeSpanEnd | EmitKind::StrongEnd | EmitKind::EmphasisEnd | EmitKind::StrikethroughEnd | EmitKind::SubscriptEnd | EmitKind::SuperscriptEnd | EmitKind::HighlightEnd | EmitKind::LinkEnd | EmitKind::ImageEnd);
++                let b_end = matches!(b.kind, EmitKind::CodeSpanEnd | EmitKind::StrongEnd | EmitKind::EmphasisEnd | EmitKind::StrikethroughEnd | EmitKind::SubscriptEnd | EmitKind::SuperscriptEnd | EmitKind::HighlightEnd | EmitKind::LinkEnd | EmitKind::ImageEnd);
++                a_end.cmp(&b_end)
++            })
+         });
+ 
+         // Build ranges to suppress (reference labels after link text)

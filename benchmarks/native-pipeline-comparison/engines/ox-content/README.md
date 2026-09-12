@@ -55,7 +55,7 @@ The parent README documents three fresh process runs with warmup and alternating
 native monotonic-clock windows. No MDX compilation or site-generation speed ratio
 is inferred, and published Bun/mimalloc figures remain unchanged.
 
-The [measured report](../../../../docs/reports/2026-09-11-native-ox-content/REPORT.md)
+The [measured report](../../../../docs/reports/2026-09-12-ox-corpus-optimizations/ox-content/REPORT.md)
 retains the complete verification, all eight exclusions and raw timing samples
 for the three selected admitted workloads. The shared report command with
 `--check` recomputes its summaries from that archive.

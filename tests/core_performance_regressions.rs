@@ -81,3 +81,36 @@ fn reused_parser_does_not_leak_scratch_between_different_document_shapes() {
         }
     }
 }
+
+#[test]
+fn multiline_html_keeps_policy_filter_and_container_boundaries() {
+    use ferromark::RenderPolicy;
+    for newline in ["\n", "\r\n"] {
+        let input = "<div>\nfirst & raw\n<script>unsafe</script>\n</div>\n".replace('\n', newline);
+        let options = ferromark::options!(Options::commonmark();
+            render_policy: RenderPolicy::Trusted,
+        );
+        assert_eq!(
+            to_html_with_options(&input, &options),
+            "<div>\nfirst & raw\n<script>unsafe</script>\n</div>\n".replace('\n', newline)
+        );
+        let filtered = ferromark::options!(options.clone(); disallowed_raw_html: true);
+        assert_eq!(
+            to_html_with_options(&input, &filtered),
+            "<div>\nfirst & raw\n&lt;script>unsafe&lt;/script>\n</div>\n".replace('\n', newline)
+        );
+        let escaped = ferromark::options!(options; render_policy: RenderPolicy::Untrusted);
+        assert_eq!(
+            to_html_with_options(&input, &escaped),
+            "&lt;div&gt;\nfirst &amp; raw\n&lt;script&gt;unsafe&lt;/script&gt;\n&lt;/div&gt;\n"
+                .replace('\n', newline)
+        );
+    }
+    let options = ferromark::options!(Options::commonmark();
+        render_policy: RenderPolicy::Trusted,
+    );
+    assert_eq!(
+        to_html_with_options("> <div>\n> first\n> second\n> </div>\n\nafter", &options),
+        "<blockquote>\n<div>\nfirst\nsecond\n</div>\n</blockquote>\n<p>after</p>\n"
+    );
+}

@@ -101,8 +101,9 @@ Rust 1.97.1, opt-level 3, fat LTO, one codegen unit, panic abort, the repository
 The original audit described the target as generic; subsequent build review
 found that Cargo inherited `.cargo/config.toml` from the repository working
 directory. All audit competitors inherited the same flags. The follow-up
-optimization experiments build outside the repository to explicitly use a
-generic CPU target. The Ferromark direct dependency versions match
+optimization experiments build outside the repository without a target-cpu
+override. Rust 1.97.1 still defaults that target to `apple-m1`; the earlier
+generic-target label was incorrect. The Ferromark direct dependency versions match
 our lockfile, and the complete diagnostic Cargo.lock is archived. This removes
 dependency resolution as a variable between old and current Ferromark.
 

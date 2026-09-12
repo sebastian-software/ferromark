@@ -1,3 +1,4 @@
+import { NativeBenchmarkExplorer, nativeBenchmarks } from "../components/native-benchmarks";
 import { Link } from "react-router";
 import { BenchmarkTable, benchmarkEnvironment, headlineThroughput } from "../components/benchmarks";
 import "../styles/home.css";
@@ -99,6 +100,24 @@ export default function HomePage() {
           </p>
         </div>
         <BenchmarkTable id="commonmark-5k" variant="panel" />
+      </section>
+
+      <section className="panel">
+        <div className="section-head">
+          <p className="eyebrow">More native engines</p>
+          <h2>Compare Rust, Go, and .NET parser cores</h2>
+          <p>{nativeBenchmarks.conditions}</p>
+          <p>{nativeBenchmarks.scope}</p>
+        </div>
+        <NativeBenchmarkExplorer />
+        <p className="native-benchmark-note">
+          Ox Content takes less time on some measured inputs. Its generated heading IDs exclude
+          other documents from comparison. See the{" "}
+          <Link to="/guide/benchmarks#additional-native-engine-comparisons">
+            coverage and output diagnostics
+          </Link>{" "}
+          for every candidate, plus the separate cmark and cmark-gfm results.
+        </p>
       </section>
 
       <section className="panel">

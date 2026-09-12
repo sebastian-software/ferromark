@@ -39,6 +39,6 @@ archives every prototype, raw window, source hash, lockfile and validation log.
 The largest improvements concern long scans; lists, rich inline content and MDX
 benefit less. Empty-input relative differences remain visible in the complete
 table. Allocation counts are cumulative requests, not peak memory. Performance
-was measured on an Apple M1 Pro with a generic target; x86 and scalar paths were
+was measured on an Apple M1 Pro with Rust's default `apple-m1` target; x86 and scalar paths were
 compile-checked only. README/homepage publication figures remain independently
 sourced from the regular comparison suite.

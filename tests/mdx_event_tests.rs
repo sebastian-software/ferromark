@@ -558,3 +558,29 @@ fn semantic_normalization_does_not_change_mdx_rendering() {
         rendered.body
     );
 }
+
+#[test]
+fn multiline_code_keeps_public_line_ranges_between_mdx_nodes() {
+    let input = "<Before />\n\n```txt\nfirst\nsecond\n```\n\n<After />\n";
+    let stream = parse_events_strict(input).unwrap();
+    let code = stream
+        .events
+        .iter()
+        .filter_map(|event| match event {
+            MdxEvent::Block(BlockEvent::Code(range)) => {
+                Some(range.slice_str(input.as_bytes()).unwrap())
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(code, vec!["first\n", "second\n"]);
+    let jsx = stream
+        .events
+        .iter()
+        .filter_map(|event| match event {
+            MdxEvent::FlowJsxSelfClose(range) => Some(range.slice_str(input.as_bytes()).unwrap()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(jsx, vec!["<Before />\n", "<After />\n"]);
+}

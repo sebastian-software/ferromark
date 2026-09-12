@@ -252,3 +252,46 @@
 .feature-benchmark-table td {
   white-space: nowrap;
 }
+
+/* Native pairs retain independent baselines and readable columns on small screens. */
+.native-benchmark-table {
+  overflow-x: auto;
+  margin-block: 1rem;
+}
+
+.native-benchmark-table table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.native-benchmark-table th,
+.native-benchmark-table td {
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--ardo-color-border, #d8e0e8);
+}
+
+.native-benchmark-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+.native-benchmark-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block: 1rem;
+  font-weight: 600;
+}
+
+.native-benchmark-selector select {
+  max-width: 100%;
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.native-benchmark-note {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}

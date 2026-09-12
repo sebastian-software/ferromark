@@ -1,0 +1,85 @@
+[
+  {
+    "name": "node-install",
+    "argv": [
+      "pnpm",
+      "install",
+      "--frozen-lockfile"
+    ],
+    "started_unix": 1789203654.6768909,
+    "finished_unix": 1789203656.151398,
+    "exit_code": 0
+  },
+  {
+    "name": "node-audit",
+    "argv": [
+      "pnpm",
+      "audit",
+      "--audit-level",
+      "high"
+    ],
+    "started_unix": 1789203656.151808,
+    "finished_unix": 1789203656.7430358,
+    "exit_code": 0
+  },
+  {
+    "name": "node-build",
+    "argv": [
+      "pnpm",
+      "build"
+    ],
+    "started_unix": 1789203656.743517,
+    "finished_unix": 1789203675.064398,
+    "exit_code": 0
+  },
+  {
+    "name": "node-test",
+    "argv": [
+      "pnpm",
+      "test"
+    ],
+    "started_unix": 1789203675.06495,
+    "finished_unix": 1789203693.4344902,
+    "exit_code": 0
+  },
+  {
+    "name": "node-typecheck",
+    "argv": [
+      "pnpm",
+      "typecheck"
+    ],
+    "started_unix": 1789203693.43491,
+    "finished_unix": 1789203694.810189,
+    "exit_code": 0
+  },
+  {
+    "name": "node-lint",
+    "argv": [
+      "pnpm",
+      "lint"
+    ],
+    "started_unix": 1789203694.810664,
+    "finished_unix": 1789203695.777866,
+    "exit_code": 0
+  },
+  {
+    "name": "node-pack",
+    "argv": [
+      "pnpm",
+      "pack:check"
+    ],
+    "started_unix": 1789203695.778246,
+    "finished_unix": 1789203696.836638,
+    "exit_code": 0
+  },
+  {
+    "name": "node-smoke",
+    "argv": [
+      "pnpm",
+      "smoke:clean"
+    ],
+    "started_unix": 1789203696.836991,
+    "finished_unix": 1789203698.426948,
+    "exit_code": 0
+  }
+]

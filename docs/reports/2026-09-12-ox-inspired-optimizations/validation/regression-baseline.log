@@ -1,0 +1,61 @@
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.89s
+     Running tests/fenced_code_renderer_tests.rs (target/debug/deps/fenced_code_renderer_tests-49415651d2e50a5b)
+
+running 11 tests
+test renderer_receives_none_for_a_fence_without_info ... ok
+test indented_code_never_invokes_the_renderer ... ok
+test renderer_receives_info_string_meta_after_the_language ... ok
+test renderer_meta_is_none_without_trailing_info_text ... ok
+test none_uses_the_existing_escaped_fallback ... ok
+test buffer_api_reuses_the_caller_buffer ... ok
+test renderer_meta_decodes_escapes_and_entities ... ok
+test code_language_preserves_plain_escaped_and_entity_spellings ... ok
+test renderer_receives_decoded_language_and_raw_code ... ok
+test renderer_is_an_explicit_boundary_under_untrusted_policy ... ok
+test renderer_reuses_and_clears_its_buffer_between_fences ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/renderer_tests.rs (target/debug/deps/renderer_tests-9276885c650811ce)
+
+running 9 tests
+test renderer_keeps_its_configuration ... ok
+test render_into_reuses_and_replaces_the_output_buffer ... ok
+test document_local_ids_references_and_footnotes_do_not_leak ... ok
+test paragraph_fragments_preserve_line_endings_indentation_and_document_reset ... ok
+test single_paragraph_preserves_references_escapes_policy_and_session_reset ... ok
+test reusable_renderer_matches_fresh_rendering_across_documents ... ok
+test inline_extension_openers_do_not_cross_features_paragraphs_or_documents ... ok
+test table_cells_preserve_inline_content_across_borrowed_escaped_and_empty_cells ... ok
+test strikethrough_openers_do_not_leak_between_cells_or_documents ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling ferro-byte-search v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark/crates/ferro-byte-search)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.52s
+     Running unittests src/lib.rs (target/debug/deps/ferro_byte_search-f6ea7b38eb572369)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/search.rs (target/debug/deps/search-8eef128c138cc50c)
+
+running 5 tests
+test nul_padding_empty_sets_and_duplicates ... ok
+test runtime_sets_and_arbitrary_binary_inputs ... ok
+test overlapping_tail_returns_the_earliest_real_match ... ok
+test overlapping_nibbles_preserve_exact_membership ... ok
+test all_bytes_at_vector_and_short_scan_boundaries ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+   Doc-tests ferro_byte_search
+
+running 1 test
+test crates/ferro-byte-search/src/lib.rs - (line 5) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+all doctests ran in 0.53s; merged doctests compilation took 0.21s

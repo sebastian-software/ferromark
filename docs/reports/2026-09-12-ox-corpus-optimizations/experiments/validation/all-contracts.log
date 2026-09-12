@@ -1,0 +1,169 @@
+▶ benchmark CI contract
+  ✔ accepts the current workflow (1.124167ms)
+  ✔ rejects a write-scoped token (1.002458ms)
+  ✔ rejects a missing source trigger (0.18325ms)
+  ✔ rejects a mutable benchmark action (2.808541ms)
+  ✔ rejects a relaxed regression threshold (0.477ms)
+  ✔ rejects a pull request cache write (0.186792ms)
+  ✔ rejects a comparison against a moving base revision (0.150083ms)
+  ✔ rejects an advisory-only pull request comparison (0.147292ms)
+  ✔ rejects a missing bracket stress case (0.168542ms)
+  ✔ rejects an undersized large fixture (1.054417ms)
+✔ benchmark CI contract (8.008292ms)
+▶ CI hardening contract
+  ✔ accepts the current workflow (2.461375ms)
+  ✔ rejects a write-scoped top-level token (1.316334ms)
+  ✔ rejects a missing rustsec checks permission (0.55925ms)
+  ✔ rejects a missing rustdoc warning gate (0.391875ms)
+  ✔ rejects a mutable coverage action (0.780084ms)
+  ✔ rejects coverage without all features (0.490459ms)
+  ✔ rejects a reintroduced external coverage service (0.365083ms)
+  ✔ rejects coverage without a floor (2.441833ms)
+  ✔ rejects a floor that is not a plain percentage (0.481125ms)
+  ✔ rejects a coverage run that stays silent about the measurement (0.509959ms)
+  ✔ rejects an undocumented coverage floor (0.475125ms)
+  ✔ rejects a local gate command with a different floor (0.382667ms)
+  ✔ rejects a README without the coverage gate badge (0.399916ms)
+  ✔ rejects a coverage gate badge that does not link the workflow (0.4145ms)
+  ✔ rejects a missing dependency policy job (0.417125ms)
+  ✔ rejects a mutable cargo-deny action (0.564125ms)
+  ✔ rejects a dependency policy that allows yanked crates (0.43825ms)
+✔ CI hardening contract (13.70075ms)
+▶ CONTRIBUTING CI contract
+  ✔ documents the commands CI runs (30.96525ms)
+  ✔ rejects a weakened required all-features test (17.645166ms)
+  ✔ rejects a weakened required clippy command (9.394958ms)
+  ✔ rejects a weakened required byte-search test (7.472459ms)
+  ✔ rejects a weakened required byte-search clippy (6.825708ms)
+  ✔ rejects a weakened required fmt command (7.184792ms)
+  ✔ rejects a stale MSRV statement (7.869292ms)
+  ✔ rejects a cargo command in the bootstrap section (6.742208ms)
+  ✔ rejects a missing isolated mdx matrix entry (6.790875ms)
+✔ CONTRIBUTING CI contract (102.817916ms)
+▶ docs.rs metadata contract
+  ✔ publishes the mdx feature on docs.rs (0.8735ms)
+  ✔ builds the mdx documentation without rustdoc warnings (983.556042ms)
+  ✔ keeps the docs.rs metadata in the packaged manifest (1843.443ms)
+  ✔ rejects a missing docs.rs table (0.337333ms)
+  ✔ rejects a broader docs.rs feature set (0.102834ms)
+  ✔ rejects default features on docs.rs (0.077708ms)
+  ✔ rejects an undeclared mdx feature (0.466875ms)
+✔ docs.rs metadata contract (2829.535833ms)
+▶ migration guide contract
+  ✔ accepts the current guide (0.706166ms)
+  ✔ compiles every documented example (1289.926ms)
+  ✔ rejects a missing README guide link (0.666375ms)
+  ✔ rejects a stale inline parser argument (0.139584ms)
+  ✔ rejects a fenced-code example without the fallback pattern (0.112125ms)
+  ✔ rejects a stale Rust version (0.265625ms)
+  ✔ rejects a stale Node version (0.11475ms)
+✔ migration guide contract (1292.562625ms)
+▶ native CI matrix
+  ✔ tests the current Node release lines (0.782833ms)
+  ✔ builds on the workspace runtime before testing the floor (0.141791ms)
+  ✔ runs each native target on its own operating system (0.136125ms)
+  ✔ builds, tests, and verifies every platform package (0.126292ms)
+✔ native CI matrix (1.711583ms)
+▶ node options docs contract
+  ✔ accepts the current option documentation (1.604ms)
+  ✔ rejects a stale documented default (0.379375ms)
+  ✔ rejects a README without the Options link (0.245ms)
+  ✔ rejects an undocumented future option (1.60975ms)
+  ✔ rejects a future option missing from the native binding (0.116375ms)
+  ✔ rejects a missing JavaScript option key (0.14825ms)
+✔ node options docs contract (6.206417ms)
+▶ profiling script contract
+  ✔ keeps the documented shared helpers and guards (0.516833ms)
+  ✔ builds from the repository root and forwards the target directory (866.451292ms)
+  ✔ reports a failing cargo build (191.0185ms)
+  ✔ stops the benchmark child when sampling fails (631.368834ms)
+  ✔ rejects a benchmark that exits before sampling (640.8705ms)
+  ✔ stops every child on SIGTERM (787.094875ms)
+  ✔ rejects an empty or oversized sample budget (30.120542ms)
+  ✔ encodes PGO flags and requires the profile data (886.929416ms)
+  ✔ profiles cross-parser comparisons only with md4c sources (652.651583ms)
+✔ profiling script contract (4687.945209ms)
+npm release verification attempt 1/8: registry returned HTTP 404
+npm registry confirmed ferromark@0.7.0 on attempt 2
+npm release verification attempt 1/8: registry returned ferromark@0.6.0
+npm release verification attempt 2/8: registry returned ferromark@0.6.0
+npm release verification attempt 3/8: registry returned ferromark@0.6.0
+npm release verification attempt 4/8: registry returned ferromark@0.6.0
+npm release verification attempt 5/8: registry returned ferromark@0.6.0
+npm release verification attempt 6/8: registry returned ferromark@0.6.0
+npm release verification attempt 7/8: registry returned ferromark@0.6.0
+npm release verification attempt 8/8: registry returned ferromark@0.6.0
+npm release verification attempt 1/8: registry returned wrong-package@0.7.0
+npm release verification attempt 2/8: registry returned wrong-package@0.7.0
+npm release verification attempt 3/8: registry returned wrong-package@0.7.0
+npm release verification attempt 4/8: registry returned wrong-package@0.7.0
+npm release verification attempt 5/8: registry returned wrong-package@0.7.0
+npm release verification attempt 6/8: registry returned wrong-package@0.7.0
+npm release verification attempt 7/8: registry returned wrong-package@0.7.0
+npm release verification attempt 8/8: registry returned wrong-package@0.7.0
+Publish verification workflow and retry contract checks passed
+✔ scripts/test-publish-verification.mjs (76.423833ms)
+▶ README structure contract
+  ✔ accepts the current README (23.8425ms)
+  ✔ rejects an empty Markdown configuration section (7.161917ms)
+  ✔ rejects misowned Markdown configuration content (6.1265ms)
+  ✔ rejects renamed CLI trusted guidance (4.650083ms)
+  ✔ rejects a missing migration guide link (5.08575ms)
+  ✔ rejects a README header without the canonical homepage (4.579ms)
+  ✔ rejects a Cargo description that drifts from the canonical tagline (4.507959ms)
+  ✔ rejects a canonical Cargo description outside the package table (4.625333ms)
+  ✔ rejects an npm homepage that drifts from the canonical homepage (4.805209ms)
+  ✔ rejects a Rust badge without the MSRV policy link (4.28775ms)
+  ✔ rejects an unexpected claim badge (4.142292ms)
+  ✔ rejects a required badge replaced with a plain link (4.068791ms)
+  ✔ rejects an unmeasured MDX coverage percentage (3.737166ms)
+  ✔ rejects an unscoped Apple Silicon benchmark claim (6.63275ms)
+  ✔ rejects a missing benchmark disclosure: benchmarks/bun-comparison/PROVENANCE.md (4.490833ms)
+  ✔ rejects a missing benchmark disclosure: limited HTML comparison (4.225666ms)
+  ✔ rejects a missing benchmark disclosure: docs/reports/2026-09-11-output-parity-audit.md (4.257791ms)
+  ✔ rejects a missing benchmark disclosure: native-corrected/summary.json (4.519791ms)
+  ✔ rejects a missing benchmark disclosure: docs/arch/ARCH-COMP-002-workload-comparability.md (5.287667ms)
+  ✔ rejects a missing benchmark disclosure: docs/reports/2026-09-10-markdown-feature-costs-final.md (5.789083ms)
+  ✔ rejects a missing benchmark disclosure: docs/reports/2026-09-10-markdown-feature-optimizations.md (6.815416ms)
+  ✔ rejects a missing benchmark disclosure: **Activation:** (6.304917ms)
+  ✔ rejects a missing benchmark disclosure: **Actual syntax:** (6.531291ms)
+  ✔ rejects a missing benchmark disclosure: **Lifecycle:** (6.950125ms)
+  ✔ rejects a missing benchmark disclosure: requested bytes are not peak memory (6.608125ms)
+  ✔ rejects a missing benchmark disclosure: All five parsers render trusted input with fresh parser state and owned HTML output (9.09925ms)
+  ✔ rejects a missing benchmark disclosure: Every displayed case passed the five-parser workload check (7.920292ms)
+  ✔ rejects a dropped x86-64 benchmark caveat (12.025125ms)
+  ✔ rejects a stale locked comrak version (8.788292ms)
+  ✔ rejects an unpinned md4c contributor checkout (9.792375ms)
+  ✔ rejects a Bun comparison without its measurement caveat (5.931958ms)
+  ✔ rejects a reference to the removed performance evidence file (7.305791ms)
+  ✔ rejects a non-isolated performance benchmark command (8.209458ms)
+  ✔ rejects a project structure without highlight.rs (13.354791ms)
+  ✔ rejects a project structure without events.rs (6.303083ms)
+  ✔ rejects a project structure without strict.rs (10.083875ms)
+  ✔ rejects a duplicated family block (6.990625ms)
+  ✔ rejects a family footer below the company footer (6.15175ms)
+  ✔ rejects a second, hand-written family description (7.160083ms)
+  ✔ rejects a family block that bolds another tool (8.321791ms)
+  ✔ rejects a footer that links to this project (6.231708ms)
+  ✔ rejects a registry block that carries a table (9.542958ms)
+  ✔ rejects a registry block that repeats the current tool as a sibling (6.466542ms)
+  ✔ rejects an npm package README without a family block (7.155542ms)
+  ✔ rejects CI without the pinned family drift check (7.042667ms)
+  ✔ rejects CONTRIBUTING without the regeneration procedure (6.809208ms)
+✔ README structure contract (322.730041ms)
+▶ release version sync
+  ✔ keeps every published version in step (0.619208ms)
+  ✔ rejects an outdated lockfile specifier (18.694208ms)
+  ✔ rejects a mismatched native package version (15.327375ms)
+  ✔ rejects a mismatched dependency pin (20.511667ms)
+  ✔ rejects a platform package resolved from the registry (14.435125ms)
+  ✔ rejects a missing release updater (16.675417ms)
+✔ release version sync (87.067042ms)
+ℹ tests 122
+ℹ suites 10
+ℹ pass 122
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8222.159584

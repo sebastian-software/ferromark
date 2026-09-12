@@ -1,0 +1,72 @@
+▶ README structure contract
+  ✖ accepts the current README (22.899ms)
+  ✔ rejects an empty Markdown configuration section (10.920042ms)
+  ✔ rejects misowned Markdown configuration content (10.294542ms)
+  ✔ rejects renamed CLI trusted guidance (5.32425ms)
+  ✔ rejects a missing migration guide link (5.986708ms)
+  ✔ rejects a README header without the canonical homepage (5.681666ms)
+  ✔ rejects a Cargo description that drifts from the canonical tagline (8.610625ms)
+  ✔ rejects a canonical Cargo description outside the package table (4.682792ms)
+  ✔ rejects an npm homepage that drifts from the canonical homepage (5.449834ms)
+  ✔ rejects a Rust badge without the MSRV policy link (7.377417ms)
+  ✔ rejects an unexpected claim badge (3.37575ms)
+  ✔ rejects a required badge replaced with a plain link (4.120041ms)
+  ✔ rejects an unmeasured MDX coverage percentage (4.324ms)
+  ✔ rejects an unscoped Apple Silicon benchmark claim (4.771667ms)
+  ✔ rejects a missing benchmark disclosure: benchmarks/bun-comparison/PROVENANCE.md (5.553834ms)
+  ✔ rejects a missing benchmark disclosure: limited HTML comparison (4.865ms)
+  ✔ rejects a missing benchmark disclosure: docs/reports/2026-09-11-output-parity-audit.md (4.443208ms)
+  ✔ rejects a missing benchmark disclosure: native-corrected/summary.json (5.781667ms)
+  ✔ rejects a missing benchmark disclosure: docs/arch/ARCH-COMP-002-workload-comparability.md (5.81775ms)
+  ✔ rejects a missing benchmark disclosure: docs/reports/2026-09-10-markdown-feature-costs-final.md (5.853958ms)
+  ✔ rejects a missing benchmark disclosure: docs/reports/2026-09-10-markdown-feature-optimizations.md (4.977625ms)
+  ✔ rejects a missing benchmark disclosure: **Activation:** (6.703333ms)
+  ✔ rejects a missing benchmark disclosure: **Actual syntax:** (5.345ms)
+  ✔ rejects a missing benchmark disclosure: **Lifecycle:** (4.689875ms)
+  ✔ rejects a missing benchmark disclosure: requested bytes are not peak memory (5.423583ms)
+  ✔ rejects a missing benchmark disclosure: All five parsers render trusted input with fresh parser state and owned HTML output (3.89175ms)
+  ✔ rejects a missing benchmark disclosure: Every displayed case passed the five-parser workload check (5.310167ms)
+  ✔ rejects a dropped x86-64 benchmark caveat (5.32475ms)
+  ✔ rejects a stale locked comrak version (7.057167ms)
+  ✔ rejects an unpinned md4c contributor checkout (6.015541ms)
+  ✔ rejects a Bun comparison without its measurement caveat (4.351208ms)
+  ✔ rejects a reference to the removed performance evidence file (6.654042ms)
+  ✔ rejects a non-isolated performance benchmark command (6.67525ms)
+  ✔ rejects a project structure without highlight.rs (6.5725ms)
+  ✔ rejects a project structure without events.rs (7.962625ms)
+  ✔ rejects a project structure without strict.rs (5.089167ms)
+  ✔ rejects a duplicated family block (6.68525ms)
+  ✔ rejects a family footer below the company footer (5.2475ms)
+  ✔ rejects a second, hand-written family description (4.555042ms)
+  ✔ rejects a family block that bolds another tool (5.830917ms)
+  ✔ rejects a footer that links to this project (4.207833ms)
+  ✔ rejects a registry block that carries a table (3.445417ms)
+  ✔ rejects a registry block that repeats the current tool as a sibling (6.576333ms)
+  ✔ rejects an npm package README without a family block (4.98825ms)
+  ✔ rejects CI without the pinned family drift check (5.684625ms)
+  ✔ rejects CONTRIBUTING without the regeneration procedure (3.975667ms)
+✖ README structure contract (281.717666ms)
+ℹ tests 46
+ℹ suites 1
+ℹ pass 45
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 421.458125
+
+✖ failing tests:
+
+test at scripts/test-readme-structure-contract.mjs:420:3
+✖ accepts the current README (22.899ms)
+  Error [ContractError]: README structure contract: Benchmarks must preserve the evidence or disclosure "docs/reports/2026-09-12-ox-corpus-optimizations/REPORT.md"
+      at failContract (file:///Users/sebastian/Workspace/.codex/15d0/ferromark/scripts/test-readme-structure-contract.mjs:27:9)
+      at validate (file:///Users/sebastian/Workspace/.codex/15d0/ferromark/scripts/test-readme-structure-contract.mjs:338:7)
+      at TestContext.<anonymous> (file:///Users/sebastian/Workspace/.codex/15d0/ferromark/scripts/test-readme-structure-contract.mjs:421:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at node:internal/test_runner/test:1617:71
+      at node:internal/per_context/primordials:466:82
+      at new Promise (<anonymous>)
+      at new SafePromise (node:internal/per_context/primordials:435:3)

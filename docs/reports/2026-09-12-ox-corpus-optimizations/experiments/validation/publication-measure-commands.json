@@ -1,0 +1,182 @@
+[
+  {
+    "name": "measure-bun",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/bun-comparison/run.py",
+      "/private/tmp/ferromark-bun-publication-20260911",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/docs/reports/2026-09-12-ox-corpus-optimizations/bun",
+      "--case",
+      "commonmark/publication-2k",
+      "--case",
+      "commonmark/publication-5k",
+      "--case",
+      "commonmark/publication-10k",
+      "--case",
+      "tables/tables-plain",
+      "--case",
+      "tables/tables-commonmark-inline",
+      "--case",
+      "tables/tables-links",
+      "--case",
+      "strikethrough/strikethrough",
+      "--case",
+      "commonmark/links",
+      "--case",
+      "commonmark/entities"
+    ],
+    "started_unix": 1789200269.1252952,
+    "finished_unix": 1789201366.5633862,
+    "exit_code": 0
+  },
+  {
+    "name": "measure-native-pipeline",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/run.py",
+      "/private/tmp/ferromark-ox-implementation/build-native-pipeline",
+      "/private/tmp/ferromark-ox-implementation/result-native-pipeline",
+      "--case",
+      "commonmark/5k",
+      "--case",
+      "tables/tables-commonmark-inline",
+      "--case",
+      "gfm_overlap/features"
+    ],
+    "started_unix": 1789201366.5640361,
+    "finished_unix": 1789201659.9870121,
+    "exit_code": 0
+  },
+  {
+    "name": "archive-native-pipeline",
+    "argv": [
+      "python3",
+      "/private/tmp/ferromark-five-engines/archive.py",
+      "/private/tmp/ferromark-ox-implementation/result-native-pipeline",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/docs/reports/2026-09-12-ox-corpus-optimizations/native-pipeline"
+    ],
+    "started_unix": 1789201659.987338,
+    "finished_unix": 1789201660.156644,
+    "exit_code": 0
+  },
+  {
+    "name": "measure-rushdown",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/run.py",
+      "/private/tmp/ferromark-ox-implementation/build-rushdown",
+      "/private/tmp/ferromark-ox-implementation/result-rushdown",
+      "--case",
+      "commonmark/5k",
+      "--case",
+      "tables/tables-commonmark-inline",
+      "--case",
+      "gfm_overlap/features"
+    ],
+    "started_unix": 1789201660.157141,
+    "finished_unix": 1789201806.822422,
+    "exit_code": 0
+  },
+  {
+    "name": "archive-rushdown",
+    "argv": [
+      "python3",
+      "/private/tmp/ferromark-five-engines/archive.py",
+      "/private/tmp/ferromark-ox-implementation/result-rushdown",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/docs/reports/2026-09-12-ox-corpus-optimizations/rushdown"
+    ],
+    "started_unix": 1789201806.822839,
+    "finished_unix": 1789201806.967813,
+    "exit_code": 0
+  },
+  {
+    "name": "measure-markdig",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/run.py",
+      "/private/tmp/ferromark-ox-implementation/build-markdig",
+      "/private/tmp/ferromark-ox-implementation/result-markdig",
+      "--case",
+      "commonmark/5k",
+      "--case",
+      "tables/tables-commonmark-inline",
+      "--case",
+      "gfm_overlap/features"
+    ],
+    "started_unix": 1789201806.968236,
+    "finished_unix": 1789201955.398356,
+    "exit_code": 0
+  },
+  {
+    "name": "archive-markdig",
+    "argv": [
+      "python3",
+      "/private/tmp/ferromark-five-engines/archive.py",
+      "/private/tmp/ferromark-ox-implementation/result-markdig",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/docs/reports/2026-09-12-ox-corpus-optimizations/markdig"
+    ],
+    "started_unix": 1789201955.398759,
+    "finished_unix": 1789201955.546368,
+    "exit_code": 0
+  },
+  {
+    "name": "measure-markdown-rs",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/run.py",
+      "/private/tmp/ferromark-ox-implementation/build-markdown-rs",
+      "/private/tmp/ferromark-ox-implementation/result-markdown-rs",
+      "--case",
+      "commonmark/5k",
+      "--case",
+      "tables/tables-commonmark-inline",
+      "--case",
+      "gfm_overlap/features"
+    ],
+    "started_unix": 1789201955.5467362,
+    "finished_unix": 1789202112.142591,
+    "exit_code": 0
+  },
+  {
+    "name": "archive-markdown-rs",
+    "argv": [
+      "python3",
+      "/private/tmp/ferromark-five-engines/archive.py",
+      "/private/tmp/ferromark-ox-implementation/result-markdown-rs",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/docs/reports/2026-09-12-ox-corpus-optimizations/markdown-rs"
+    ],
+    "started_unix": 1789202112.143017,
+    "finished_unix": 1789202112.290884,
+    "exit_code": 0
+  },
+  {
+    "name": "measure-ox-content",
+    "argv": [
+      "python3",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/benchmarks/native-pipeline-comparison/run.py",
+      "/private/tmp/ferromark-ox-implementation/build-ox-content",
+      "/private/tmp/ferromark-ox-implementation/result-ox-content",
+      "--case",
+      "commonmark/short",
+      "--case",
+      "tables/tables-commonmark-inline",
+      "--case",
+      "gfm_overlap/features"
+    ],
+    "started_unix": 1789202112.2913768,
+    "finished_unix": 1789202258.616611,
+    "exit_code": 0
+  },
+  {
+    "name": "archive-ox-content",
+    "argv": [
+      "python3",
+      "/private/tmp/ferromark-five-engines/archive.py",
+      "/private/tmp/ferromark-ox-implementation/result-ox-content",
+      "/Users/sebastian/Workspace/.codex/15d0/ferromark/docs/reports/2026-09-12-ox-corpus-optimizations/ox-content"
+    ],
+    "started_unix": 1789202258.617056,
+    "finished_unix": 1789202258.821394,
+    "exit_code": 0
+  }
+]

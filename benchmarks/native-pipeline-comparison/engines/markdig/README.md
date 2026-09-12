@@ -62,7 +62,7 @@ system allocator. All 18 workloads, the independent feature/policy probes and
 ARCH-COMP-002, separately from HTML fidelity. The parent README documents the
 shared protocol; these results do not replace the published Bun/mimalloc tables.
 
-The [measured report](../../../../docs/reports/2026-09-11-native-markdig/REPORT.md)
+The [measured report](../../../../docs/reports/2026-09-12-ox-corpus-optimizations/markdig/REPORT.md)
 retains the complete verification, runtime configuration, per-window GC counters
 and raw samples for three selected workloads. Verify it with the shared report
 command and `--check`.

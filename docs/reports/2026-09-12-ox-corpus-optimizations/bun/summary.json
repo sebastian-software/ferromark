@@ -1,0 +1,587 @@
+[
+  {
+    "bytes": 4760,
+    "case": "commonmark/links",
+    "output_bytes": 7350,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      24484.997864906836,
+      24535.730590062107,
+      24522.556094720494
+    ],
+    "median_ns": 24522.556094720494,
+    "mib_per_second": 185.11486847291033
+  },
+  {
+    "bytes": 4760,
+    "case": "commonmark/links",
+    "output_bytes": 7350,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      37993.60216346154,
+      38019.88161057692,
+      38010.40414663462
+    ],
+    "median_ns": 38010.40414663462,
+    "mib_per_second": 119.42755800705345
+  },
+  {
+    "bytes": 4760,
+    "case": "commonmark/links",
+    "output_bytes": 7350,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      28313.76935701439,
+      28295.982142857145,
+      28266.415624999994
+    ],
+    "median_ns": 28295.982142857145,
+    "mib_per_second": 160.42877477004873
+  },
+  {
+    "bytes": 4760,
+    "case": "commonmark/links",
+    "output_bytes": 7350,
+    "parser": "comrak",
+    "run_medians_ns": [
+      56868.50803571428,
+      56867.224553571425,
+      56787.09107142857
+    ],
+    "median_ns": 56867.224553571425,
+    "mib_per_second": 79.82611744691974
+  },
+  {
+    "bytes": 4760,
+    "case": "commonmark/links",
+    "output_bytes": 7210,
+    "parser": "md4c",
+    "run_medians_ns": [
+      40873.48324742268,
+      40895.25612113402,
+      40833.10534793814
+    ],
+    "median_ns": 40873.48324742268,
+    "mib_per_second": 111.0619743028628
+  },
+  {
+    "bytes": 5800,
+    "case": "commonmark/entities",
+    "output_bytes": 8400,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      51163.14596341159,
+      51221.74310064936,
+      51171.662186771566
+    ],
+    "median_ns": 51171.662186771566,
+    "mib_per_second": 108.09324533894376
+  },
+  {
+    "bytes": 5800,
+    "case": "commonmark/entities",
+    "output_bytes": 8400,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      64071.32006048388,
+      64140.498991935485,
+      64012.78981854839
+    ],
+    "median_ns": 64071.32006048388,
+    "mib_per_second": 86.33053025807249
+  },
+  {
+    "bytes": 5800,
+    "case": "commonmark/entities",
+    "output_bytes": 7900,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      61591.6142578125,
+      61919.0673828125,
+      62004.61865234375
+    ],
+    "median_ns": 61919.0673828125,
+    "mib_per_second": 89.33130405468012
+  },
+  {
+    "bytes": 5800,
+    "case": "commonmark/entities",
+    "output_bytes": 8400,
+    "parser": "comrak",
+    "run_medians_ns": [
+      95777.71577380953,
+      95415.30208333334,
+      94496.55803571429
+    ],
+    "median_ns": 95415.30208333334,
+    "mib_per_second": 57.97090104399964
+  },
+  {
+    "bytes": 5800,
+    "case": "commonmark/entities",
+    "output_bytes": 8400,
+    "parser": "md4c",
+    "run_medians_ns": [
+      57395.56884057971,
+      57340.03260869565,
+      57773.305706521736
+    ],
+    "median_ns": 57395.56884057971,
+    "mib_per_second": 96.3717434445133
+  },
+  {
+    "bytes": 2048,
+    "case": "commonmark/publication-2k",
+    "output_bytes": 3033,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      8916.145291289591,
+      8922.867788461539,
+      8907.46099040632
+    ],
+    "median_ns": 8916.145291289591,
+    "mib_per_second": 219.05486465188687
+  },
+  {
+    "bytes": 2048,
+    "case": "commonmark/publication-2k",
+    "output_bytes": 3033,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      14814.580357142855,
+      14817.512453007519,
+      14840.284304511279
+    ],
+    "median_ns": 14817.512453007519,
+    "mib_per_second": 131.811935788424
+  },
+  {
+    "bytes": 2048,
+    "case": "commonmark/publication-2k",
+    "output_bytes": 3033,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      10016.619685913705,
+      10011.603109137057,
+      10016.216529187817
+    ],
+    "median_ns": 10016.216529187817,
+    "mib_per_second": 194.99628370737435
+  },
+  {
+    "bytes": 2048,
+    "case": "commonmark/publication-2k",
+    "output_bytes": 3033,
+    "parser": "comrak",
+    "run_medians_ns": [
+      22207.71155196629,
+      22177.800210674155,
+      22191.6330758427
+    ],
+    "median_ns": 22191.6330758427,
+    "mib_per_second": 88.01177422702284
+  },
+  {
+    "bytes": 2048,
+    "case": "commonmark/publication-2k",
+    "output_bytes": 3033,
+    "parser": "md4c",
+    "run_medians_ns": [
+      11901.002360271905,
+      11869.611257530121,
+      11881.192676957831
+    ],
+    "median_ns": 11881.192676957831,
+    "mib_per_second": 164.38795776688775
+  },
+  {
+    "bytes": 5120,
+    "case": "commonmark/publication-5k",
+    "output_bytes": 7735,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      22873.374277456645,
+      22882.35350433526,
+      22788.15173410405
+    ],
+    "median_ns": 22873.374277456645,
+    "mib_per_second": 213.4714555347596
+  },
+  {
+    "bytes": 5120,
+    "case": "commonmark/publication-5k",
+    "output_bytes": 7735,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      37539.707142857136,
+      37570.98244047619,
+      37477.360849056604
+    ],
+    "median_ns": 37539.707142857136,
+    "mib_per_second": 130.0706071418854
+  },
+  {
+    "bytes": 5120,
+    "case": "commonmark/publication-5k",
+    "output_bytes": 7735,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      27162.5863545111,
+      27281.339870689655,
+      27196.5786637931
+    ],
+    "median_ns": 27196.5786637931,
+    "mib_per_second": 179.53774849262587
+  },
+  {
+    "bytes": 5120,
+    "case": "commonmark/publication-5k",
+    "output_bytes": 7735,
+    "parser": "comrak",
+    "run_medians_ns": [
+      57589.86277173913,
+      57516.360507246376,
+      57130.35960144928
+    ],
+    "median_ns": 57516.360507246376,
+    "mib_per_second": 84.89432323147122
+  },
+  {
+    "bytes": 5120,
+    "case": "commonmark/publication-5k",
+    "output_bytes": 7735,
+    "parser": "md4c",
+    "run_medians_ns": [
+      29800.79111842105,
+      29721.84375,
+      29692.052161654137
+    ],
+    "median_ns": 29721.84375,
+    "mib_per_second": 164.2836339855262
+  },
+  {
+    "bytes": 10240,
+    "case": "commonmark/publication-10k",
+    "output_bytes": 15626,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      46653.95220588236,
+      46721.782720588235,
+      46635.37022058823
+    ],
+    "median_ns": 46653.95220588236,
+    "mib_per_second": 209.32042277800213
+  },
+  {
+    "bytes": 10240,
+    "case": "commonmark/publication-10k",
+    "output_bytes": 15626,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      75973.8329326923,
+      75910.63161057692,
+      76055.23858173077
+    ],
+    "median_ns": 75973.8329326923,
+    "mib_per_second": 128.53932233025137
+  },
+  {
+    "bytes": 10240,
+    "case": "commonmark/publication-10k",
+    "output_bytes": 15626,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      54954.62630208333,
+      55179.21701388888,
+      55101.055989583336
+    ],
+    "median_ns": 55101.055989583336,
+    "mib_per_second": 177.23117687338257
+  },
+  {
+    "bytes": 10240,
+    "case": "commonmark/publication-10k",
+    "output_bytes": 15626,
+    "parser": "comrak",
+    "run_medians_ns": [
+      118433.86213235295,
+      118604.24264705883,
+      118147.32720588235
+    ],
+    "median_ns": 118433.86213235295,
+    "mib_per_second": 82.45635854622944
+  },
+  {
+    "bytes": 10240,
+    "case": "commonmark/publication-10k",
+    "output_bytes": 15626,
+    "parser": "md4c",
+    "run_medians_ns": [
+      60407.196969696975,
+      60273.91145833333,
+      60396.83948863637
+    ],
+    "median_ns": 60396.83948863637,
+    "mib_per_second": 161.69099381164466
+  },
+  {
+    "bytes": 4560,
+    "case": "tables/tables-plain",
+    "output_bytes": 11120,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      25500.24375,
+      25549.159879032257,
+      25518.52318548387
+    ],
+    "median_ns": 25518.52318548387,
+    "mib_per_second": 170.41561736167694
+  },
+  {
+    "bytes": 4560,
+    "case": "tables/tables-plain",
+    "output_bytes": 10640,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      40224.75573979592,
+      40186.4930684395,
+      40179.923926767675
+    ],
+    "median_ns": 40186.4930684395,
+    "mib_per_second": 108.21434145563198
+  },
+  {
+    "bytes": 4560,
+    "case": "tables/tables-plain",
+    "output_bytes": 10240,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      29091.883042279413,
+      29150.630055147063,
+      29063.14154411765
+    ],
+    "median_ns": 29091.883042279413,
+    "mib_per_second": 149.48344445398834
+  },
+  {
+    "bytes": 4560,
+    "case": "tables/tables-plain",
+    "output_bytes": 11120,
+    "parser": "comrak",
+    "run_medians_ns": [
+      120965.19981060605,
+      120893.90056818182,
+      120731.61363636363
+    ],
+    "median_ns": 120893.90056818182,
+    "mib_per_second": 35.97166492580729
+  },
+  {
+    "bytes": 4560,
+    "case": "tables/tables-plain",
+    "output_bytes": 11120,
+    "parser": "md4c",
+    "run_medians_ns": [
+      39785.20896464646,
+      39701.8490625,
+      39670.46875
+    ],
+    "median_ns": 39701.8490625,
+    "mib_per_second": 109.53532355549845
+  },
+  {
+    "bytes": 6360,
+    "case": "tables/tables-links",
+    "output_bytes": 14200,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      37466.85849056604,
+      37283.288915094345,
+      37305.33844339623
+    ],
+    "median_ns": 37305.33844339623,
+    "mib_per_second": 162.58714986721796
+  },
+  {
+    "bytes": 6360,
+    "case": "tables/tables-links",
+    "output_bytes": 13720,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      61722.14794921875,
+      61396.875,
+      61546.87548828125
+    ],
+    "median_ns": 61546.87548828125,
+    "mib_per_second": 98.5487663544938
+  },
+  {
+    "bytes": 6360,
+    "case": "tables/tables-links",
+    "output_bytes": 13320,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      43909.273611111115,
+      43899.79756944445,
+      43957.27743055555
+    ],
+    "median_ns": 43909.273611111115,
+    "mib_per_second": 138.13411504053954
+  },
+  {
+    "bytes": 6360,
+    "case": "tables/tables-links",
+    "output_bytes": 14200,
+    "parser": "comrak",
+    "run_medians_ns": [
+      161465.5725,
+      160331.66625,
+      159634.79249999998
+    ],
+    "median_ns": 160331.66625,
+    "mib_per_second": 37.83013545737257
+  },
+  {
+    "bytes": 6360,
+    "case": "tables/tables-links",
+    "output_bytes": 14200,
+    "parser": "md4c",
+    "run_medians_ns": [
+      68349.69881465517,
+      67999.55064655171,
+      67977.66271551725
+    ],
+    "median_ns": 67999.55064655171,
+    "mib_per_second": 89.1971872559915
+  },
+  {
+    "bytes": 4800,
+    "case": "tables/tables-commonmark-inline",
+    "output_bytes": 12160,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      32488.676229508194,
+      32510.245901639348,
+      32450.766393442624
+    ],
+    "median_ns": 32488.676229508194,
+    "mib_per_second": 140.89945328681355
+  },
+  {
+    "bytes": 4800,
+    "case": "tables/tables-commonmark-inline",
+    "output_bytes": 11680,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      47701.69766566265,
+      47650.96310240964,
+      47651.51242469879
+    ],
+    "median_ns": 47651.51242469879,
+    "mib_per_second": 96.0648778143989
+  },
+  {
+    "bytes": 4800,
+    "case": "tables/tables-commonmark-inline",
+    "output_bytes": 11280,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      36254.92173165138,
+      36405.79587155963,
+      36305.27293577981
+    ],
+    "median_ns": 36305.27293577981,
+    "mib_per_second": 126.08737928640161
+  },
+  {
+    "bytes": 4800,
+    "case": "tables/tables-commonmark-inline",
+    "output_bytes": 12160,
+    "parser": "comrak",
+    "run_medians_ns": [
+      139883.71120689652,
+      139910.38146551725,
+      139573.0506465517
+    ],
+    "median_ns": 139883.71120689652,
+    "mib_per_second": 32.72458729651086
+  },
+  {
+    "bytes": 4800,
+    "case": "tables/tables-commonmark-inline",
+    "output_bytes": 12160,
+    "parser": "md4c",
+    "run_medians_ns": [
+      49285.22109375,
+      49289.404296875,
+      49314.437109375
+    ],
+    "median_ns": 49289.404296875,
+    "mib_per_second": 92.8726322431985
+  },
+  {
+    "bytes": 4700,
+    "case": "strikethrough/strikethrough",
+    "output_bytes": 7300,
+    "parser": "ferromark",
+    "run_medians_ns": [
+      21092.239137700533,
+      21048.654920212764,
+      20951.44358254531
+    ],
+    "median_ns": 21048.654920212764,
+    "mib_per_second": 212.94801516295976
+  },
+  {
+    "bytes": 4700,
+    "case": "strikethrough/strikethrough",
+    "output_bytes": 7300,
+    "parser": "bun_md",
+    "run_medians_ns": [
+      37124.172605140186,
+      37155.35318396227,
+      36891.63522196261
+    ],
+    "median_ns": 37124.172605140186,
+    "mib_per_second": 120.73721708989046
+  },
+  {
+    "bytes": 4700,
+    "case": "strikethrough/strikethrough",
+    "output_bytes": 7300,
+    "parser": "pulldown-cmark",
+    "run_medians_ns": [
+      33362.372899159665,
+      33116.39942226891,
+      32985.18880208333
+    ],
+    "median_ns": 33116.39942226891,
+    "mib_per_second": 135.34893180734204
+  },
+  {
+    "bytes": 4700,
+    "case": "strikethrough/strikethrough",
+    "output_bytes": 7300,
+    "parser": "comrak",
+    "run_medians_ns": [
+      72319.19943181818,
+      72215.83806818182,
+      71019.76395089286
+    ],
+    "median_ns": 72215.83806818182,
+    "mib_per_second": 62.06767666225085
+  },
+  {
+    "bytes": 4700,
+    "case": "strikethrough/strikethrough",
+    "output_bytes": 7300,
+    "parser": "md4c",
+    "run_medians_ns": [
+      27664.399256993005,
+      27613.927666083913,
+      27539.262674825175
+    ],
+    "median_ns": 27613.927666083913,
+    "mib_per_second": 162.31915073112202
+  }
+]

@@ -1,0 +1,20 @@
+/private/tmp/ferromark-md4c-publication-20260911/src/md4c.c:2012:36: warning: redefinition of typedef 'MD_FOOTNOTE_DEF' is a C11 feature [-Wtypedef-redefinition]
+ 2012 | typedef struct MD_FOOTNOTE_DEF_tag MD_FOOTNOTE_DEF;
+      |                                    ^
+/private/tmp/ferromark-md4c-publication-20260911/src/md4c.c:146:36: note: previous definition is here
+  146 | typedef struct MD_FOOTNOTE_DEF_tag MD_FOOTNOTE_DEF;
+      |                                    ^
+1 warning generated.
+warning: profile package spec `bun_react_compiler` in profile `release` did not match any packages
+   Compiling bun_core v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/src/bun_core)
+   Compiling ferromark-bun-comparison v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/ferromark-comparison)
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+   Compiling bun_errno v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/src/errno)
+   Compiling bun_ptr v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/src/ptr)
+   Compiling bun_paths v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/src/paths)
+   Compiling bun_collections v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/src/collections)
+   Compiling bun_sys v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/src/sys)
+   Compiling bun_url v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/src/url)
+   Compiling bun_md v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/src/md)
+    Finished `release` profile [optimized + debuginfo] target(s) in 17.51s
+/private/tmp/ferromark-bun-publication-20260911/target/release/ferromark-bun-comparison

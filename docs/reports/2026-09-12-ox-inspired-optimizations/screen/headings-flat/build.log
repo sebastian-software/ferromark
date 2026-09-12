@@ -1,0 +1,12 @@
+   Compiling ferromark v0.9.0 (/private/tmp/ferromark-ox-experiments/source)
+warning: unused import: `smallvec::SmallVec`
+  --> /private/tmp/ferromark-ox-experiments/source/src/lib.rs:47:5
+   |
+47 | use smallvec::SmallVec;
+   |     ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ferromark` (lib) generated 1 warning (run `cargo fix --lib -p ferromark` to apply 1 suggestion)
+   Compiling ox-experiment-driver v0.0.0 (/private/tmp/ferromark-ox-experiments/driver)
+    Finished `release` profile [optimized] target(s) in 11.53s

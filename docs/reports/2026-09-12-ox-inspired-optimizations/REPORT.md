@@ -86,11 +86,12 @@ retained patch are archived. Rust 1.97.1, Apple M1 Pro, macOS 26.6.2, AC power;
 release opt-level 3, fat LTO, one codegen unit, panic abort, system allocator.
 
 All builds in this experiment ran outside the repository Cargo configuration,
-with a generic CPU target and baseline NEON. This differs from the preceding
-audit, whose build review found inherited Apple M1/NEON flags. That report's
-provenance was corrected. Absolute times from the two reports should not be
-subtracted to calculate an improvement. Baseline/candidate/Ox measurements in
-this report use the same build target and timer protocol.
+without a target-cpu override. Rust 1.97.1 defaults aarch64-apple-darwin to
+`apple-m1`; the earlier generic-target descriptor was incorrect. Both baseline
+and candidate, and the separate Ox comparison, used the same default target.
+The preceding audit explicitly inherited Apple M1/NEON flags. Absolute times
+from different harnesses should not be subtracted to calculate an improvement.
+The September 12 corpus-optimization report records the target-specification check.
 
 Screening uses 42 timing cases, five 35 ms windows per engine, and 100 ms warmup.
 Confirmation uses 45 cases including real MDX rendering, three separate process

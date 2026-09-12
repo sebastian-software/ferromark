@@ -1,0 +1,10 @@
+$ node --check scripts/clean-install-smoke.mjs && node --check scripts/publish-platform-packages.mjs && node --check scripts/verify-npm-publish.mjs && node --check scripts/verify-pack.mjs && node --check scripts/verify-platform-artifact.mjs && node --check scripts/verify-release.mjs && pnpm --filter ferromark lint
+ferromark/npm/darwin-x64                 | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["darwin"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-arm64-gnu            | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["glibc"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-arm64-musl           | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["musl"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-x64-gnu              | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["linux"],"libc":["glibc"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-x64-musl             | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["linux"],"libc":["musl"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/win32-arm64-msvc           | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["win32"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/win32-x64-msvc             | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["win32"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+$ node --check index.mjs && node --check native-target.mjs && node --check scripts/build-native.mjs && node --check scripts/verify-package.mjs && node --check scripts/verify-panic-unwind.mjs && node scripts/test-readme-contract.mjs
+Node README package, security, and loader contract checks passed

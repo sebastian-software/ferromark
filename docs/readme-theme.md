@@ -40,3 +40,21 @@ The project pins mdtheme 0.4.0 and uses one `mdtheme:badges:start` /
 `badges-prepend.md` places its badge before the authored project badges.
 Ferramenta's header and footer stay unchanged. Upgrade the CLI and lockfile
 before adopting this theme revision. Keep badge markup outside raw HTML blocks.
+
+## Benchmark content
+
+The benchmark section in `README.md.src` is generated from archived evidence.
+Update it through the publishers before composing the themed README:
+
+```sh
+python3 benchmarks/native-pipeline-comparison/publish.py
+python3 benchmarks/bun-comparison/publish.py
+mise run readme:write
+node homepage/scripts/check-benchmark-numbers.mjs
+mise run readme:check
+```
+
+The first publisher writes the native pair dataset. The second writes the
+five-parser dataset and the complete benchmark section in the README source;
+it never writes the themed README directly. Both validate their underlying
+measurements. The homepage consumes the two datasets separately.

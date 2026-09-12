@@ -1,0 +1,37 @@
+   Compiling unicode-ident v1.0.24
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.151
+   Compiling memchr v2.8.3
+   Compiling rustc-hash v2.1.3
+   Compiling smallvec v1.15.2
+   Compiling html-escape v0.2.14
+   Compiling itoa v1.0.18
+   Compiling ferromark v0.9.0 (/private/tmp/ferromark-ox-profile-round2/source)
+   Compiling syn v3.0.5
+   Compiling serde_derive v1.0.229
+   Compiling corpus-ferro v0.0.0 (/private/tmp/ferromark-ox-profile-round2/ferro)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.87s
+     Running unittests src/main.rs (ferro/target/debug/deps/corpus_ferro-2bdfb10fe954e3c8)
+
+running 1 test
+test normalize::text_codec::entity_window_preserves_multibyte_boundaries ... FAILED
+
+failures:
+
+---- normalize::text_codec::entity_window_preserves_multibyte_boundaries stdout ----
+
+thread 'normalize::text_codec::entity_window_preserves_multibyte_boundaries' (16400389) panicked at src/text_codec.rs:12:35:
+end byte index 40 is not a char boundary; it is inside '└' (bytes 39..42 of string)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    normalize::text_codec::entity_window_preserves_multibyte_boundaries
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--bin corpus-ferro`

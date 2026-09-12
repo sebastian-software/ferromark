@@ -1,0 +1,15 @@
+   Compiling corpus-ferro v0.0.0 (/private/tmp/ferromark-ox-profile-round2/ferro)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.26s
+     Running unittests src/main.rs (ferro/target/debug/deps/corpus_ferro-2bdfb10fe954e3c8)
+
+running 7 tests
+test normalize::text_codec::entity_window_preserves_multibyte_boundaries ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::text_codec::percent_decodes_once ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::normalizes_void_checkboxes_without_removing_attributes ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::normalizes_equivalent_markup ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -101,8 +101,10 @@ The published table rows use three shared fixtures:
 All three use CommonMark plus tables; CommonMark inline parsing is always active.
 Strikethrough is outside the table comparison. The old `tables/gfm-tables` case
 is retained only in archived evidence, not the active driver or headline set.
-The fresh publication includes the retained table and short-document optimizations. Earlier
-figures retain their original run and source revision in archived reports.
+The current publication also includes the Ox-inspired scanning/allocation changes
+and the measured corpus line-scan/range-rendering improvements. It repeats the
+nine displayed cases; other inputs receive output verification. Earlier figures
+retain their original run and source revision in archived reports.
 
 Feature-set tables cover the three table workloads, standalone strikethrough,
 links/images, and entities. None of these measurements is an additive feature price.
@@ -161,7 +163,7 @@ task flag. Historical GFM/task-lane samples remain archived but must not be reus
 as matched-option comparisons.
 
 ```bash
-python3 benchmarks/bun-comparison/publish.py docs/reports/2026-09-11-native-optimization-publication/native
+python3 benchmarks/bun-comparison/publish.py docs/reports/2026-09-12-ox-corpus-optimizations/bun
 python3 benchmarks/bun-comparison/publish.py --check
 python3 -m unittest discover -s benchmarks/bun-comparison -p 'test_*.py'
 ```
