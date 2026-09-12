@@ -24,6 +24,15 @@ for name in meta['binary_sha256']:
   v=json.loads(p.read_text());assert not v.get('failures',v.get('failed',[])),p;total+=v['count']
  if name in ['baseline','production','final','linear']:assert total==111902,(name,total)
  elif name!='aa-control':assert total>=2695,(name,total)
+scope=json.loads((D/'arm-scope.json').read_text())
+assert scope['recorded_linear_text_sha256']==scope['arm_scoped_text_sha256']
+with tempfile.TemporaryDirectory(prefix='ferromark-arm-scope-') as tmp:
+ root=Path(tmp)
+ with tarfile.open(fileobj=io.BytesIO(archive)) as tar:tar.extractall(root,filter='data')
+ subprocess.run(['patch','-p1','-i',str(D/'arm-scoped.patch')],cwd=root,check=True,stdout=subprocess.DEVNULL)
+ actual={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in (root/'src').rglob('*.rs')}
+ assert actual==scope['source_sha256']
+ assert (root/'src/escape.rs').read_bytes()==gzip.decompress((D/'snapshots/arm-scoped-escape.rs.gz').read_bytes())
 sys.dont_write_bytecode=True;sys.path.insert(0,str(D));from results import rows
 runs=json.loads((D/'runs.json').read_text());seen=set();count=0
 for p in (D/'measurements').rglob('windows.jsonl.gz'):

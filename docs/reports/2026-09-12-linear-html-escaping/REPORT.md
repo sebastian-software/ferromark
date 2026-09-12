@@ -2,7 +2,31 @@
 
 Date: September 12, 2026.
 
-## Change
+## Final adoption scope
+
+The PR adopts this optimization only on **ARM64 with NEON**. Other targets keep
+the merged baseline's escaping implementation; the quote-heavy quadratic case
+remains open there. This follows the project's clarified ARM performance
+priority. CI x86 timings are diagnostic observations on shared hosted runners,
+not the acceptance reference for ARM throughput.
+
+The original `linear` snapshot below included a portable growing-window path.
+That non-NEON path is **not adopted**. Native Linux follow-ups found plain-escape
+costs and integration-sensitive document results; experimental x86 SIMD and
+outlining variants are also outside this PR's production implementation. They
+are retained on the experiment branch and in the
+[separate native experiment archive](https://github.com/sebastian-software/ferromark/blob/e10530a2e70b1e5a49e3483b51442b41623fbbb2/docs/reports/2026-09-12-native-linear-escaping/REPORT.md).
+
+The final source is `snapshots/arm-scoped-escape.rs.gz`, with
+`arm-scoped.patch` against the frozen baseline and exact hashes in
+`arm-scope.json`. Rebuilding with the original ARM driver, toolchain, source
+path and build working directory produces **the same 631,900-byte machine-code
+section** as the recorded `linear` executable (SHA-256
+`11a01c3adb7ca8171d9ad7b0c51759c23537fc37106a1f0775d08759707c9b38`).
+The ARM results below therefore apply to the final scoped implementation. No
+new x86 performance or universal cross-platform linearity claim is made.
+
+## Original measured candidate
 
 Fix repeated suffix scans in both text and attribute escaping. The previous
 implementation searched the entire remaining suffix for `<`, `>` or `&` before

@@ -41,7 +41,8 @@ The setup script extracts the frozen baseline revision with `git archive`.
 `final` and `linear` sources additionally have compressed escape-module snapshots;
 the report checker confirms they match their patches and complete source hashes.
 The first two names refer to intermediate experiments that were not adopted.
-The `linear` snapshot is the implementation proposed by this report.
+The `linear` snapshot is the original measured implementation. The final
+ARM-only scope is described below; its NEON machine code is identical.
 
 `check-evidence.py` validates every manifest entry, reconstructs every source
 patch, checks guard summaries, verifies that each requested case has every
@@ -66,3 +67,17 @@ x86, Windows or scalar-target throughput.
 `validation/replay-check.log` records a successful independent setup and replay
 of one short attribute follow-up. Its timings are a tooling smoke check and are
 not included in the recorded comparisons or generated result tables.
+
+## Final ARM-only source
+
+The recorded `linear` candidate remains available for historical replay. The
+production PR uses `snapshots/arm-scoped-escape.rs.gz`; non-NEON targets retain
+the frozen baseline. Apply `arm-scoped.patch` to the baseline to reconstruct it.
+`arm-scope.json` records every resulting source hash and the comparison with the
+original ARM executable's machine-code section. Run `check-arm-scope.py` on an
+ARM64 macOS machine with a fresh destination to rebuild both sources in the same
+harness and verify code identity:
+
+```bash
+python3 docs/reports/2026-09-12-linear-html-escaping/check-arm-scope.py /tmp/arm-scope-replay
+```

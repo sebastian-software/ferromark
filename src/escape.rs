@@ -77,20 +77,47 @@ pub fn escape_attr_into(out: &mut Vec<u8>, input: &[u8]) {
     escape_full_into(out, input)
 }
 
-/// Search nearby escapes inline; unmatched prefixes continue in an outlined
-/// backend that bounds the work needed to locate the next escape.
+/// Keep the shared short scan inline. On NEON, longer writes continue in an
+/// outlined backend that bounds the work needed to locate the next escape.
 const SHORT_SCAN_MAX: usize = 128;
 
 #[inline]
 pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
-    first_escape::<false>(input)
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        first_escape::<false>(input)
+    }
+    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
+    {
+        if input.len() <= SHORT_SCAN_MAX {
+            return first_escape_short::<false>(input);
+        }
+        let a = memchr3(b'<', b'>', b'&', input);
+        // A '"' is only relevant if it appears before the first <>& hit, so the
+        // second pass never scans past it.
+        let limit = a.unwrap_or(input.len());
+        memchr(b'"', &input[..limit]).or(a)
+    }
 }
 
 #[inline]
 fn first_attr_escape(input: &[u8]) -> Option<usize> {
-    first_escape::<true>(input)
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        first_escape::<true>(input)
+    }
+    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
+    {
+        if input.len() <= SHORT_SCAN_MAX {
+            return first_escape_short::<true>(input);
+        }
+        let a = memchr3(b'<', b'>', b'&', input);
+        let limit = a.unwrap_or(input.len());
+        memchr2(b'"', b'\'', &input[..limit]).or(a)
+    }
 }
 
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 #[inline]
 fn first_escape<const ATTR: bool>(input: &[u8]) -> Option<usize> {
     let prefix_len = input.len().min(SHORT_SCAN_MAX);
@@ -105,6 +132,7 @@ fn first_escape<const ATTR: bool>(input: &[u8]) -> Option<usize> {
 }
 
 // Keep the long-search loop out of short writes and inline entity probes.
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 #[inline(never)]
 fn first_escape_long<const ATTR: bool>(input: &[u8]) -> Option<usize> {
     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
@@ -145,8 +173,19 @@ fn first_escape_long<const ATTR: bool>(input: &[u8]) -> Option<usize> {
 const TEXT_SPECIALS: crate::byte_search::ByteSet<4> = crate::byte_search::ByteSet::new(b"<>&\"");
 const ATTR_SPECIALS: crate::byte_search::ByteSet<5> = crate::byte_search::ByteSet::new(b"<>&\"'");
 
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 #[inline]
 fn first_escape_in_set<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+    if ATTR {
+        ATTR_SPECIALS.find(input)
+    } else {
+        TEXT_SPECIALS.find(input)
+    }
+}
+
+#[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
+#[inline]
+fn first_escape_short<const ATTR: bool>(input: &[u8]) -> Option<usize> {
     if ATTR {
         ATTR_SPECIALS.find(input)
     } else {
@@ -347,17 +386,20 @@ pub fn url_encode_then_html_escape(out: &mut Vec<u8>, input: &[u8]) {
 mod tests {
     use super::*;
 
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     std::thread_local! {
         static LONG_SEARCH_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     }
 
     // Count the logical prefix inspected by each long-search window. This is
     // compiled out of release builds and avoids timing thresholds in tests.
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     pub(super) fn record_long_search(len: usize, found: Option<usize>) {
         let inspected = found.map_or(len, |at| at + 1);
         LONG_SEARCH_BYTES.with(|count| count.set(count.get().saturating_add(inspected)));
     }
 
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     #[test]
     fn quoted_code_search_work_grows_linearly() {
         for padding in [0, 255] {
@@ -387,6 +429,7 @@ mod tests {
         }
     }
 
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     #[test]
     fn quoted_attribute_search_work_grows_linearly() {
         for padding in [0, 255] {
@@ -415,7 +458,7 @@ mod tests {
     }
 
     #[test]
-    fn escape_searches_match_scalar_oracle_across_growing_windows() {
+    fn escape_searches_match_scalar_oracle_across_boundaries() {
         for len in [
             127, 128, 129, 383, 384, 385, 895, 896, 897, 1919, 1920, 1921, 3967, 3968, 3969, 8063,
             8064, 8065,
