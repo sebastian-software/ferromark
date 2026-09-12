@@ -1,0 +1,1311 @@
+//! HTML output writer with optimized buffer management.
+//!
+//! Uses md4c's growth strategy: 1.5x + 128-byte alignment.
+
+use crate::escape;
+use crate::{Range, RenderPolicy};
+use memchr::memchr;
+
+/// Decode HTML entities with CommonMark compliance.
+/// - Replaces null bytes (from &#0;) with U+FFFD replacement character
+/// - Handles multi-codepoint entities that html_escape doesn't support
+pub(crate) fn decode_entities_commonmark(input: &str) -> std::borrow::Cow<'_, str> {
+    let decoded = html_escape::decode_html_entities(input);
+
+    // Check if we need to fix null bytes or missing multi-codepoint entities
+    let needs_fixup = decoded.contains('\0') ||
+        // Check for known multi-codepoint entities that html_escape misses
+        input.contains("&ngE;");
+
+    if !needs_fixup {
+        return decoded;
+    }
+
+    // Need to fix up the result
+    let mut result = decoded.into_owned();
+
+    // Replace null bytes with U+FFFD
+    if result.contains('\0') {
+        result = result.replace('\0', "\u{FFFD}");
+    }
+
+    // Fix multi-codepoint entities
+    // &ngE; should be ≧ + combining stroke (U+2267 + U+0338)
+    if input.contains("&ngE;") {
+        result = result.replace('≧', "\u{2267}\u{0338}");
+    }
+
+    std::borrow::Cow::Owned(result)
+}
+
+/// Return whether a URL is safe to place in an untrusted HTML attribute.
+///
+/// Relative URLs and a small allowlist of non-script schemes are accepted.
+/// Entity references and embedded ASCII whitespace/control characters are
+/// normalized before checking the scheme so browser-equivalent spellings of
+/// `javascript:` and similar schemes cannot bypass the boundary.
+fn is_safe_url(url: &[u8]) -> bool {
+    let Ok(url) = std::str::from_utf8(url) else {
+        return false;
+    };
+    if memchr(b'&', url.as_bytes()).is_none() {
+        return is_safe_normalized_url(url);
+    }
+    let decoded = decode_entities_commonmark(url);
+    is_safe_normalized_url(&decoded)
+}
+
+fn is_safe_normalized_url(url: &str) -> bool {
+    let mut scheme = [0u8; 16];
+    let mut scheme_len = 0usize;
+    let mut scheme_overflow = false;
+
+    for ch in url.chars() {
+        match ch {
+            ':' => {
+                let scheme = &scheme[..scheme_len];
+                if scheme_overflow
+                    || scheme.is_empty()
+                    || !scheme[0].is_ascii_alphabetic()
+                    || !scheme
+                        .iter()
+                        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-' | b'.'))
+                {
+                    return !scheme_overflow;
+                }
+                return scheme == b"ftp"
+                    || scheme == b"geo"
+                    || scheme == b"http"
+                    || scheme == b"https"
+                    || scheme == b"irc"
+                    || scheme == b"ircs"
+                    || scheme == b"mailto"
+                    || scheme == b"matrix"
+                    || scheme == b"sms"
+                    || scheme == b"tel"
+                    || scheme == b"xmpp";
+            }
+            '/' | '?' | '#' => return true,
+            ch if ch.is_ascii_whitespace() || ch.is_ascii_control() => {}
+            ch if ch.is_ascii() => {
+                if scheme_len < scheme.len() {
+                    scheme[scheme_len] = ch.to_ascii_lowercase() as u8;
+                    scheme_len += 1;
+                } else {
+                    scheme_overflow = true;
+                }
+            }
+            _ => return true,
+        }
+    }
+
+    true
+}
+
+/// HTML output writer with pre-allocated, reusable buffer.
+///
+/// # Example
+/// ```
+/// use ferromark::HtmlWriter;
+///
+/// let mut writer = HtmlWriter::with_capacity_for(1000);
+/// writer.write_str("<p>");
+/// writer.write_escaped_text(b"Hello <World>");
+/// writer.write_str("</p>");
+///
+/// let html = writer.into_string().expect("writer output is valid UTF-8");
+/// assert_eq!(html, "<p>Hello &lt;World&gt;</p>");
+/// ```
+pub struct HtmlWriter {
+    out: Vec<u8>,
+}
+
+impl HtmlWriter {
+    /// Create a new writer with default capacity.
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            out: Vec::with_capacity(1024),
+        }
+    }
+
+    /// Create with pre-allocated capacity based on expected input size.
+    ///
+    /// Typical HTML is ~1.25x input size; a small minimum accommodates wrappers.
+    #[inline]
+    pub fn with_capacity_for(input_len: usize) -> Self {
+        let capacity = if input_len == 0 {
+            0
+        } else {
+            (input_len + input_len / 4).max(64)
+        };
+        Self {
+            out: Vec::with_capacity(capacity),
+        }
+    }
+
+    /// Create with explicit capacity.
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            out: Vec::with_capacity(capacity),
+        }
+    }
+
+    /// Grow buffer using md4c's strategy: 1.5x + 128-byte alignment.
+    #[cold]
+    #[inline(never)]
+    #[allow(dead_code)]
+    fn grow(&mut self, needed: usize) {
+        let new_cap = ((self.out.len() + needed) * 3 / 2 + 128) & !127;
+        self.out
+            .reserve(new_cap.saturating_sub(self.out.capacity()));
+    }
+
+    /// Ensure capacity for additional bytes.
+    #[inline]
+    #[allow(dead_code)]
+    fn ensure_capacity(&mut self, additional: usize) {
+        if self.out.len() + additional > self.out.capacity() {
+            self.grow(additional);
+        }
+    }
+
+    /// Write raw bytes without escaping.
+    #[inline]
+    pub fn write_bytes(&mut self, bytes: &[u8]) {
+        self.out.extend_from_slice(bytes);
+    }
+
+    /// Write a static string (compile-time known).
+    #[inline]
+    pub fn write_str(&mut self, s: &'static str) {
+        self.out.extend_from_slice(s.as_bytes());
+    }
+
+    /// Write a dynamic string without escaping.
+    #[inline]
+    pub fn write_string(&mut self, s: &str) {
+        self.out.extend_from_slice(s.as_bytes());
+    }
+
+    /// Write a decimal number directly into the output buffer.
+    pub(crate) fn write_usize(&mut self, number: usize) {
+        crate::push_decimal(&mut self.out, number);
+    }
+
+    /// Write a single byte.
+    #[inline]
+    pub fn write_byte(&mut self, b: u8) {
+        self.out.push(b);
+    }
+
+    /// Write text with HTML escaping (for text content).
+    #[inline]
+    pub fn write_escaped_text(&mut self, text: &[u8]) {
+        escape::escape_text_into(&mut self.out, text);
+    }
+
+    /// Write text with entity decoding and HTML escaping (for inline text content).
+    /// First decodes HTML entities, then escapes for output.
+    #[inline]
+    pub fn write_text_with_entities(&mut self, text: &[u8]) {
+        // The escape scan also proves the absence of entities on plain text.
+        // Reuse its prefix instead of scanning every ordinary segment twice.
+        let Some(first) = escape::first_text_escape(text) else {
+            self.out.extend_from_slice(text);
+            return;
+        };
+        if text[first] != b'&' && memchr(b'&', &text[first..]).is_none() {
+            self.out.extend_from_slice(&text[..first]);
+            escape::escape_text_into(&mut self.out, &text[first..]);
+            return;
+        }
+        // Decode the complete input when entities occur: CommonMark fixups and
+        // invalid-UTF-8 fallback must retain their existing whole-input behavior.
+        // First decode HTML entities
+        let text_str = core::str::from_utf8(text).unwrap_or("");
+        let decoded = decode_entities_commonmark(text_str);
+        // Then HTML-escape the result
+        escape::escape_text_into(&mut self.out, decoded.as_bytes());
+    }
+
+    /// Write text with HTML escaping from a range.
+    #[inline]
+    pub fn write_escaped_range(&mut self, input: &[u8], range: Range) {
+        escape::escape_text_into(&mut self.out, range.slice(input));
+    }
+
+    /// Write attribute value with full escaping (including quotes).
+    #[inline]
+    pub fn write_escaped_attr(&mut self, attr: &[u8]) {
+        escape::escape_full_into(&mut self.out, attr);
+    }
+
+    /// Write URL/title with backslash escape processing and HTML attribute escaping.
+    /// Backslash-escaped punctuation characters have the backslash removed.
+    #[inline]
+    pub fn write_escaped_link_attr(&mut self, attr: &[u8]) {
+        let mut pos = 0;
+        while pos < attr.len() {
+            if attr[pos] == b'\\' && pos + 1 < attr.len() && is_link_escapable(attr[pos + 1]) {
+                // Skip backslash, write escaped char (with HTML escaping)
+                pos += 1;
+                escape::escape_full_into(&mut self.out, &attr[pos..pos + 1]);
+                pos += 1;
+            } else {
+                // Find next backslash or end
+                let start = pos;
+                while pos < attr.len()
+                    && !(attr[pos] == b'\\'
+                        && pos + 1 < attr.len()
+                        && is_link_escapable(attr[pos + 1]))
+                {
+                    pos += 1;
+                }
+                escape::escape_full_into(&mut self.out, &attr[start..pos]);
+            }
+        }
+    }
+
+    /// Write link title with entity decoding, backslash escape processing, and HTML escaping.
+    #[inline]
+    pub fn write_link_title(&mut self, title: &[u8]) {
+        if memchr(b'&', title).is_none() {
+            self.write_escaped_link_attr(title);
+            return;
+        }
+
+        // First decode entities
+        let title_str = core::str::from_utf8(title).unwrap_or("");
+        let decoded = decode_entities_commonmark(title_str);
+        let decoded_bytes = decoded.as_bytes();
+
+        if memchr(b'\\', decoded_bytes).is_none() {
+            escape::escape_full_into(&mut self.out, decoded_bytes);
+            return;
+        }
+
+        // Then process backslash escapes and HTML-escape
+        let mut pos = 0;
+        while pos < decoded_bytes.len() {
+            if decoded_bytes[pos] == b'\\'
+                && pos + 1 < decoded_bytes.len()
+                && is_link_escapable(decoded_bytes[pos + 1])
+            {
+                // Skip backslash, write escaped char (with HTML escaping)
+                pos += 1;
+                escape::escape_full_into(&mut self.out, &decoded_bytes[pos..pos + 1]);
+                pos += 1;
+            } else {
+                // Find next backslash or end
+                let start = pos;
+                while pos < decoded_bytes.len()
+                    && !(decoded_bytes[pos] == b'\\'
+                        && pos + 1 < decoded_bytes.len()
+                        && is_link_escapable(decoded_bytes[pos + 1]))
+                {
+                    pos += 1;
+                }
+                escape::escape_full_into(&mut self.out, &decoded_bytes[start..pos]);
+            }
+        }
+    }
+
+    /// Write autolink URL with percent-encoding and HTML escaping.
+    /// Used for autolink hrefs per CommonMark spec.
+    #[inline]
+    pub fn write_url_encoded(&mut self, url: &[u8]) {
+        escape::url_encode_then_html_escape(&mut self.out, url);
+    }
+
+    /// Write an autolink URL after applying the selected trust policy.
+    #[inline]
+    pub fn write_url_encoded_with_policy(&mut self, url: &[u8], policy: RenderPolicy) {
+        if policy == RenderPolicy::Trusted || is_safe_url(url) {
+            self.write_url_encoded(url);
+        }
+    }
+
+    /// Write link destination with backslash escape processing and URL encoding.
+    /// Used for link destinations in `[text](url)` syntax.
+    #[inline]
+    pub fn write_link_url(&mut self, url: &[u8]) {
+        escape::url_escape_link_destination(&mut self.out, url);
+    }
+
+    /// Write a link destination after applying the selected trust policy.
+    #[inline]
+    pub fn write_link_url_with_policy(&mut self, url: &[u8], policy: RenderPolicy) {
+        if policy == RenderPolicy::Trusted || is_safe_url(url) {
+            self.write_link_url(url);
+        }
+    }
+
+    /// Write a link destination with the trust policy, prefixing internal
+    /// absolute paths (`/…` but not `//…` and not already prefixed) with
+    /// `base`. `base` must be normalized: non-empty, no trailing slash.
+    pub fn write_link_url_with_policy_and_base(
+        &mut self,
+        url: &[u8],
+        policy: RenderPolicy,
+        base: Option<&str>,
+    ) {
+        if let Some(base) = base
+            && url.first() == Some(&b'/')
+            && url.get(1) != Some(&b'/')
+            && !Self::has_base_prefix(url, base.as_bytes())
+        {
+            // The base is configuration, not authored URL text, but it
+            // still lands inside an attribute value: escape it.
+            escape::escape_full_into(&mut self.out, base.as_bytes());
+        }
+        self.write_link_url_with_policy(url, policy);
+    }
+
+    /// Whether `url` already lives under `base` as a whole path segment:
+    /// `/docs` and `/docs/page` match a `/docs` base, `/docs-old/page` does
+    /// not.
+    fn has_base_prefix(url: &[u8], base: &[u8]) -> bool {
+        url.strip_prefix(base)
+            .is_some_and(|rest| matches!(rest.first(), None | Some(b'/' | b'?' | b'#')))
+    }
+
+    /// Write a newline.
+    #[inline]
+    pub fn newline(&mut self) {
+        self.out.push(b'\n');
+    }
+
+    /// Current output length.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.out.len()
+    }
+
+    /// Check if output is empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.out.is_empty()
+    }
+
+    /// Clear output for reuse (keeps capacity).
+    #[inline]
+    pub fn clear(&mut self) {
+        self.out.clear();
+    }
+
+    /// Get output as byte slice.
+    #[inline]
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.out
+    }
+
+    /// Get output as a string slice, validating its UTF-8 encoding.
+    #[inline]
+    pub fn as_str(&self) -> Result<&str, std::str::Utf8Error> {
+        std::str::from_utf8(&self.out)
+    }
+
+    /// Take ownership of output buffer.
+    #[inline]
+    pub fn into_vec(self) -> Vec<u8> {
+        self.out
+    }
+
+    /// Take ownership as a string, validating its UTF-8 encoding.
+    #[inline(never)]
+    pub fn into_string(self) -> Result<String, std::string::FromUtf8Error> {
+        String::from_utf8(self.out)
+    }
+
+    /// Get mutable access for crate-internal zero-copy rendering operations.
+    #[inline]
+    pub(crate) fn buffer_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.out
+    }
+
+    // --- HTML Tag Helpers ---
+
+    /// Write opening tag: `<tagname>`
+    #[inline]
+    pub fn open_tag(&mut self, tag: &'static str) {
+        self.write_byte(b'<');
+        self.write_str(tag);
+        self.write_byte(b'>');
+    }
+
+    /// Write closing tag: `</tagname>`
+    #[inline]
+    pub fn close_tag(&mut self, tag: &'static str) {
+        self.write_str("</");
+        self.write_str(tag);
+        self.write_byte(b'>');
+    }
+
+    /// Write self-closing tag: `<tagname />`
+    #[inline]
+    pub fn self_closing_tag(&mut self, tag: &'static str) {
+        self.write_byte(b'<');
+        self.write_str(tag);
+        self.write_str(" />");
+    }
+
+    /// Write opening tag with newline: `<tagname>\n`
+    #[inline]
+    pub fn open_tag_nl(&mut self, tag: &'static str) {
+        self.open_tag(tag);
+        self.newline();
+    }
+
+    /// Write closing tag with newline: `</tagname>\n`
+    #[inline]
+    pub fn close_tag_nl(&mut self, tag: &'static str) {
+        self.close_tag(tag);
+        self.newline();
+    }
+
+    // --- Common HTML Elements ---
+
+    /// Write paragraph start: `<p>`
+    #[inline]
+    pub fn paragraph_start(&mut self) {
+        self.write_str("<p>");
+    }
+
+    /// Write paragraph end: `</p>\n`
+    #[inline]
+    pub fn paragraph_end(&mut self) {
+        self.write_str("</p>\n");
+    }
+
+    /// Write heading start: `<hN>`
+    #[inline]
+    pub fn heading_start(&mut self, level: u8) {
+        debug_assert!((1..=6).contains(&level));
+        self.write_str("<h");
+        self.write_byte(b'0' + level);
+        self.write_byte(b'>');
+    }
+
+    /// Write heading start with ID: `<hN id="slug">`
+    #[inline]
+    pub fn heading_start_with_id(&mut self, level: u8, id: &str) {
+        debug_assert!((1..=6).contains(&level));
+        self.write_str("<h");
+        self.write_byte(b'0' + level);
+        self.write_str(" id=\"");
+        self.write_string(id);
+        self.write_str("\">");
+    }
+
+    /// Write heading end: `</hN>\n`
+    #[inline]
+    pub fn heading_end(&mut self, level: u8) {
+        debug_assert!((1..=6).contains(&level));
+        self.write_str("</h");
+        self.write_byte(b'0' + level);
+        self.write_str(">\n");
+    }
+
+    /// Write code block start with optional language class.
+    /// Processes backslash escapes in the language string.
+    #[inline]
+    pub fn code_block_start(&mut self, lang: Option<&[u8]>) {
+        match lang {
+            Some(l) if !l.is_empty() => {
+                let first = Self::first_word(l);
+                if first.is_empty() {
+                    self.write_str("<pre><code>");
+                    return;
+                }
+                self.write_str("<pre><code class=\"language-");
+                // Decode entities and escape for attribute
+                self.write_info_string_attr(first);
+                self.write_str("\">");
+            }
+            _ => {
+                self.write_str("<pre><code>");
+            }
+        }
+    }
+
+    /// Write fenced code info string with entity decoding and attribute escaping.
+    #[inline]
+    pub fn write_info_string_attr(&mut self, info: &[u8]) {
+        // First unescape backslash escapes
+        let unescaped = Self::unescape_backslashes(info);
+        // Then decode HTML entities
+        let info_str = core::str::from_utf8(&unescaped).unwrap_or("");
+        let decoded = decode_entities_commonmark(info_str);
+        // Then HTML-escape for attribute context
+        escape::escape_full_into(&mut self.out, decoded.as_bytes());
+    }
+
+    /// Decode the language word from a CommonMark fenced-code info string.
+    pub(crate) fn decode_info_word(info: &[u8]) -> String {
+        let first = Self::first_word(info);
+        let unescaped = Self::unescape_backslashes(first);
+        let info_str = core::str::from_utf8(&unescaped).unwrap_or("");
+        decode_entities_commonmark(info_str).into_owned()
+    }
+
+    /// Decode the info-string remainder after the first word — the "meta"
+    /// text tooling conventions put after the language (e.g. `{1-3}` or
+    /// `title="…"`). Returns `None` when nothing but whitespace follows.
+    pub(crate) fn decode_info_meta(info: &[u8]) -> Option<String> {
+        let rest = &info[Self::first_word(info).len()..];
+        let start = rest.iter().position(|&b| !Self::is_html_whitespace(b))?;
+        let end = rest
+            .iter()
+            .rposition(|&b| !Self::is_html_whitespace(b))
+            .map_or(start, |i| i + 1);
+        let rest = &rest[start..end];
+        let unescaped = Self::unescape_backslashes(rest);
+        let meta_str = core::str::from_utf8(&unescaped).unwrap_or("");
+        Some(decode_entities_commonmark(meta_str).into_owned())
+    }
+
+    fn unescape_backslashes(input: &[u8]) -> std::borrow::Cow<'_, [u8]> {
+        if memchr::memchr(b'\\', input).is_none() {
+            return std::borrow::Cow::Borrowed(input);
+        }
+        let mut out = Vec::with_capacity(input.len());
+        let mut i = 0usize;
+        while i < input.len() {
+            if input[i] == b'\\' && i + 1 < input.len() && Self::is_escapable(input[i + 1]) {
+                out.push(input[i + 1]);
+                i += 2;
+            } else {
+                out.push(input[i]);
+                i += 1;
+            }
+        }
+        std::borrow::Cow::Owned(out)
+    }
+
+    #[inline]
+    fn is_escapable(b: u8) -> bool {
+        matches!(
+            b,
+            b'!' | b'"'
+                | b'#'
+                | b'$'
+                | b'%'
+                | b'&'
+                | b'\''
+                | b'('
+                | b')'
+                | b'*'
+                | b'+'
+                | b','
+                | b'-'
+                | b'.'
+                | b'/'
+                | b':'
+                | b';'
+                | b'<'
+                | b'='
+                | b'>'
+                | b'?'
+                | b'@'
+                | b'['
+                | b'\\'
+                | b']'
+                | b'^'
+                | b'_'
+                | b'`'
+                | b'{'
+                | b'|'
+                | b'}'
+                | b'~'
+        )
+    }
+
+    #[inline]
+    fn is_html_whitespace(b: u8) -> bool {
+        matches!(b, b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
+    }
+
+    fn first_word(info: &[u8]) -> &[u8] {
+        let mut end = 0usize;
+        while end < info.len() && !Self::is_html_whitespace(info[end]) {
+            end += 1;
+        }
+        &info[..end]
+    }
+
+    /// Write code block end: `</code></pre>\n`
+    #[inline]
+    pub fn code_block_end(&mut self) {
+        self.write_str("</code></pre>\n");
+    }
+
+    /// Write thematic break: `<hr />\n`
+    #[inline]
+    pub fn thematic_break(&mut self) {
+        self.write_str("<hr />\n");
+    }
+
+    /// Write blockquote start: `<blockquote>\n`
+    #[inline]
+    pub fn blockquote_start(&mut self) {
+        self.write_str("<blockquote>\n");
+    }
+
+    /// Write blockquote end: `</blockquote>\n`
+    #[inline]
+    pub fn blockquote_end(&mut self) {
+        self.write_str("</blockquote>\n");
+    }
+
+    /// Write callout/admonition start.
+    #[inline]
+    pub fn callout_start(&mut self, callout: crate::block::CalloutType) {
+        self.write_str("<div class=\"markdown-alert markdown-alert-");
+        self.write_str(callout.css_suffix());
+        self.write_str("\">\n<p class=\"markdown-alert-title\">");
+        self.write_str(callout.title());
+        self.write_str("</p>\n");
+    }
+
+    /// Write callout/admonition end.
+    #[inline]
+    pub fn callout_end(&mut self) {
+        self.write_str("</div>\n");
+    }
+
+    /// Write list start (unordered): `<ul>\n`
+    #[inline]
+    pub fn ul_start(&mut self) {
+        self.write_str("<ul>\n");
+    }
+
+    /// Write list end (unordered): `</ul>\n`
+    #[inline]
+    pub fn ul_end(&mut self) {
+        self.write_str("</ul>\n");
+    }
+
+    /// Write list start (ordered): `<ol>\n` or `<ol start="N">\n`
+    #[inline]
+    pub fn ol_start(&mut self, start: Option<u32>) {
+        match start {
+            Some(n) if n != 1 => {
+                self.write_str("<ol start=\"");
+                self.write_u32(n);
+                self.write_str("\">\n");
+            }
+            _ => {
+                self.write_str("<ol>\n");
+            }
+        }
+    }
+
+    /// Write list end (ordered): `</ol>\n`
+    #[inline]
+    pub fn ol_end(&mut self) {
+        self.write_str("</ol>\n");
+    }
+
+    /// Write list item start: `<li>`
+    #[inline]
+    pub fn li_start(&mut self) {
+        self.write_str("<li>");
+    }
+
+    /// Write list item end: `</li>\n`
+    #[inline]
+    pub fn li_end(&mut self) {
+        self.write_str("</li>\n");
+    }
+
+    /// Write definition list start: `<dl>\n`
+    #[inline]
+    pub fn dl_start(&mut self) {
+        self.write_str("<dl>\n");
+    }
+
+    /// Write definition list end: `</dl>\n`
+    #[inline]
+    pub fn dl_end(&mut self) {
+        self.write_str("</dl>\n");
+    }
+
+    /// Write definition term start: `<dt>`
+    #[inline]
+    pub fn dt_start(&mut self) {
+        self.write_str("<dt>");
+    }
+
+    /// Write definition term end: `</dt>\n`
+    #[inline]
+    pub fn dt_end(&mut self) {
+        self.write_str("</dt>\n");
+    }
+
+    /// Write definition description start.
+    #[inline]
+    pub fn dd_start(&mut self, tight: bool) {
+        self.write_str("<dd>");
+        if !tight {
+            self.newline();
+        }
+    }
+
+    /// Write definition description end: `</dd>\n`
+    #[inline]
+    pub fn dd_end(&mut self) {
+        self.write_str("</dd>\n");
+    }
+
+    // --- Table Elements ---
+
+    /// Write table start: `<table>\n`
+    #[inline]
+    pub fn table_start(&mut self) {
+        self.write_str("<table>\n");
+    }
+
+    /// Write table end: `</table>\n`
+    #[inline]
+    pub fn table_end(&mut self) {
+        self.write_str("</table>\n");
+    }
+
+    /// Write a table column group start.
+    #[inline]
+    pub fn colgroup_start(&mut self) {
+        self.write_str("<colgroup>\n");
+    }
+
+    /// Write a numeric column-width hint.
+    #[inline]
+    pub fn col_width(&mut self, basis_points: u16) {
+        self.write_str("<col style=\"width: ");
+        self.write_u32(u32::from(basis_points / 100));
+        let fraction = basis_points % 100;
+        if fraction != 0 {
+            self.write_byte(b'.');
+            self.write_byte(b'0' + (fraction / 10) as u8);
+            if !fraction.is_multiple_of(10) {
+                self.write_byte(b'0' + (fraction % 10) as u8);
+            }
+        }
+        self.write_str("%\">\n");
+    }
+
+    /// Write a table column group end.
+    #[inline]
+    pub fn colgroup_end(&mut self) {
+        self.write_str("</colgroup>\n");
+    }
+
+    /// Write thead start: `<thead>\n`
+    #[inline]
+    pub fn thead_start(&mut self) {
+        self.write_str("<thead>\n");
+    }
+
+    /// Write thead end: `</thead>\n`
+    #[inline]
+    pub fn thead_end(&mut self) {
+        self.write_str("</thead>\n");
+    }
+
+    /// Write tbody start: `<tbody>\n`
+    #[inline]
+    pub fn tbody_start(&mut self) {
+        self.write_str("<tbody>\n");
+    }
+
+    /// Write tbody end: `</tbody>\n`
+    #[inline]
+    pub fn tbody_end(&mut self) {
+        self.write_str("</tbody>\n");
+    }
+
+    /// Write tr start: `<tr>\n`
+    #[inline]
+    pub fn tr_start(&mut self) {
+        self.write_str("<tr>\n");
+    }
+
+    /// Write tr end: `</tr>\n`
+    #[inline]
+    pub fn tr_end(&mut self) {
+        self.write_str("</tr>\n");
+    }
+
+    /// Write a table-header cell start with optional alignment and colspan.
+    #[inline]
+    pub fn th_start(&mut self, align: crate::block::Alignment, colspan: u16) {
+        self.write_str("<th");
+        match align {
+            crate::block::Alignment::None => {}
+            crate::block::Alignment::Left => self.write_str(" align=\"left\""),
+            crate::block::Alignment::Center => self.write_str(" align=\"center\""),
+            crate::block::Alignment::Right => self.write_str(" align=\"right\""),
+        }
+        if colspan > 1 {
+            self.write_str(" colspan=\"");
+            self.write_u32(colspan as u32);
+            self.write_str("\"");
+        }
+        self.write_str(">");
+    }
+
+    /// Write th end: `</th>\n`
+    #[inline]
+    pub fn th_end(&mut self) {
+        self.write_str("</th>\n");
+    }
+
+    /// Write a table-data cell start with optional alignment and colspan.
+    #[inline]
+    pub fn td_start(&mut self, align: crate::block::Alignment, colspan: u16) {
+        self.write_str("<td");
+        match align {
+            crate::block::Alignment::None => {}
+            crate::block::Alignment::Left => self.write_str(" align=\"left\""),
+            crate::block::Alignment::Center => self.write_str(" align=\"center\""),
+            crate::block::Alignment::Right => self.write_str(" align=\"right\""),
+        }
+        if colspan > 1 {
+            self.write_str(" colspan=\"");
+            self.write_u32(colspan as u32);
+            self.write_str("\"");
+        }
+        self.write_str(">");
+    }
+
+    /// Write td end: `</td>\n`
+    #[inline]
+    pub fn td_end(&mut self) {
+        self.write_str("</td>\n");
+    }
+
+    /// Write inline code: `<code>escaped_content</code>`
+    #[inline]
+    pub fn inline_code(&mut self, content: &[u8]) {
+        self.write_str("<code>");
+        self.write_escaped_text(content);
+        self.write_str("</code>");
+    }
+
+    /// Write emphasis start: `<em>`
+    #[inline]
+    pub fn em_start(&mut self) {
+        self.write_str("<em>");
+    }
+
+    /// Write emphasis end: `</em>`
+    #[inline]
+    pub fn em_end(&mut self) {
+        self.write_str("</em>");
+    }
+
+    /// Write strong start: `<strong>`
+    #[inline]
+    pub fn strong_start(&mut self) {
+        self.write_str("<strong>");
+    }
+
+    /// Write strong end: `</strong>`
+    #[inline]
+    pub fn strong_end(&mut self) {
+        self.write_str("</strong>");
+    }
+
+    /// Write strikethrough start: `<del>`
+    #[inline]
+    pub fn del_start(&mut self) {
+        self.write_str("<del>");
+    }
+
+    /// Write strikethrough end: `</del>`
+    #[inline]
+    pub fn del_end(&mut self) {
+        self.write_str("</del>");
+    }
+
+    /// Write link start: `<a href="url">`
+    #[inline]
+    pub fn link_start(&mut self, url: &[u8], title: Option<&[u8]>) {
+        self.write_str("<a href=\"");
+        self.write_escaped_attr(url);
+        if let Some(t) = title {
+            self.write_str("\" title=\"");
+            self.write_escaped_attr(t);
+        }
+        self.write_str("\">");
+    }
+
+    /// Write link end: `</a>`
+    #[inline]
+    pub fn link_end(&mut self) {
+        self.write_str("</a>");
+    }
+
+    /// Write line break: `<br />\n`
+    #[inline]
+    pub fn line_break(&mut self) {
+        self.write_str("<br />\n");
+    }
+
+    /// Write raw HTML with GFM disallowed-tag filtering.
+    /// Replaces `<` with `&lt;` before disallowed tag names.
+    pub fn write_html_filtered(&mut self, html: &[u8]) {
+        let mut pos = 0;
+        while pos < html.len() {
+            if let Some(offset) = memchr(b'<', &html[pos..]) {
+                let abs = pos + offset;
+                if abs + 1 < html.len() && is_disallowed_tag_at(html, abs) {
+                    self.out.extend_from_slice(&html[pos..abs]);
+                    self.out.extend_from_slice(b"&lt;");
+                    pos = abs + 1;
+                } else {
+                    // Include the '<' and advance past it
+                    self.out.extend_from_slice(&html[pos..abs + 1]);
+                    pos = abs + 1;
+                }
+            } else {
+                self.out.extend_from_slice(&html[pos..]);
+                break;
+            }
+        }
+    }
+
+    /// Write a u32 as decimal.
+    fn write_u32(&mut self, mut n: u32) {
+        if n == 0 {
+            self.write_byte(b'0');
+            return;
+        }
+
+        let mut buf = [0u8; 10]; // Max digits for u32
+        let mut i = buf.len();
+
+        while n > 0 {
+            i -= 1;
+            buf[i] = b'0' + (n % 10) as u8;
+            n /= 10;
+        }
+
+        self.write_bytes(&buf[i..]);
+    }
+}
+
+/// GFM disallowed raw HTML tag names (lowercase).
+const DISALLOWED_HTML_TAGS: [&[u8]; 9] = [
+    b"title",
+    b"textarea",
+    b"style",
+    b"xmp",
+    b"iframe",
+    b"noembed",
+    b"noframes",
+    b"script",
+    b"plaintext",
+];
+
+/// Check whether `html[pos]` (which must be `b'<'`) starts a disallowed tag.
+#[inline]
+fn is_disallowed_tag_at(html: &[u8], pos: usize) -> bool {
+    let rest = &html[pos + 1..];
+    let rest = if rest.first() == Some(&b'/') {
+        &rest[1..]
+    } else {
+        rest
+    };
+    for tag in &DISALLOWED_HTML_TAGS {
+        if rest.len() >= tag.len() && rest[..tag.len()].eq_ignore_ascii_case(tag) {
+            // Character after tag name must be whitespace, >, /, or end of input
+            if rest.len() == tag.len() {
+                return true;
+            }
+            match rest[tag.len()] {
+                b' ' | b'\t' | b'\n' | b'\r' | b'>' | b'/' => return true,
+                _ => {}
+            }
+        }
+    }
+    false
+}
+
+/// Characters that can be escaped with backslash in CommonMark links.
+#[inline]
+fn is_link_escapable(b: u8) -> bool {
+    matches!(
+        b,
+        b'!' | b'"'
+            | b'#'
+            | b'$'
+            | b'%'
+            | b'&'
+            | b'\''
+            | b'('
+            | b')'
+            | b'*'
+            | b'+'
+            | b','
+            | b'-'
+            | b'.'
+            | b'/'
+            | b':'
+            | b';'
+            | b'<'
+            | b'='
+            | b'>'
+            | b'?'
+            | b'@'
+            | b'['
+            | b'\\'
+            | b']'
+            | b'^'
+            | b'_'
+            | b'`'
+            | b'{'
+            | b'|'
+            | b'}'
+            | b'~'
+    )
+}
+
+impl Default for HtmlWriter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl std::fmt::Write for HtmlWriter {
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        self.out.extend_from_slice(s.as_bytes());
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_writer_new() {
+        let writer = HtmlWriter::new();
+        assert!(writer.is_empty());
+    }
+
+    #[test]
+    fn test_writer_capacity() {
+        let writer = HtmlWriter::with_capacity_for(1000);
+        assert!(writer.out.capacity() >= 1250);
+    }
+
+    #[test]
+    fn test_writer_write_str() {
+        let mut writer = HtmlWriter::new();
+        writer.write_str("<p>");
+        assert_eq!(writer.as_str().unwrap(), "<p>");
+    }
+
+    #[test]
+    fn test_writer_escaped_text() {
+        let mut writer = HtmlWriter::new();
+        writer.write_escaped_text(b"<script>");
+        assert_eq!(writer.as_str().unwrap(), "&lt;script&gt;");
+    }
+
+    #[test]
+    fn test_writer_paragraph() {
+        let mut writer = HtmlWriter::new();
+        writer.paragraph_start();
+        writer.write_escaped_text(b"Hello");
+        writer.paragraph_end();
+        assert_eq!(writer.as_str().unwrap(), "<p>Hello</p>\n");
+    }
+
+    #[test]
+    fn test_writer_heading() {
+        let mut writer = HtmlWriter::new();
+        writer.heading_start(1);
+        writer.write_escaped_text(b"Title");
+        writer.heading_end(1);
+        assert_eq!(writer.as_str().unwrap(), "<h1>Title</h1>\n");
+    }
+
+    #[test]
+    fn test_writer_heading_levels() {
+        for level in 1..=6 {
+            let mut writer = HtmlWriter::new();
+            writer.heading_start(level);
+            writer.heading_end(level);
+            let expected = format!("<h{level}></h{level}>\n");
+            assert_eq!(writer.as_str().unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn test_writer_code_block() {
+        let mut writer = HtmlWriter::new();
+        writer.code_block_start(Some(b"rust"));
+        writer.write_escaped_text(b"fn main() {}");
+        writer.code_block_end();
+        assert_eq!(
+            writer.as_str().unwrap(),
+            "<pre><code class=\"language-rust\">fn main() {}</code></pre>\n"
+        );
+    }
+
+    #[test]
+    fn test_writer_code_block_no_lang() {
+        let mut writer = HtmlWriter::new();
+        writer.code_block_start(None);
+        writer.write_escaped_text(b"code");
+        writer.code_block_end();
+        assert_eq!(writer.as_str().unwrap(), "<pre><code>code</code></pre>\n");
+    }
+
+    #[test]
+    fn test_writer_thematic_break() {
+        let mut writer = HtmlWriter::new();
+        writer.thematic_break();
+        assert_eq!(writer.as_str().unwrap(), "<hr />\n");
+    }
+
+    #[test]
+    fn test_writer_link() {
+        let mut writer = HtmlWriter::new();
+        writer.link_start(b"https://example.com", None);
+        writer.write_escaped_text(b"link");
+        writer.link_end();
+        assert_eq!(
+            writer.as_str().unwrap(),
+            "<a href=\"https://example.com\">link</a>"
+        );
+    }
+
+    #[test]
+    fn test_writer_link_with_title() {
+        let mut writer = HtmlWriter::new();
+        writer.link_start(b"https://example.com", Some(b"My Title"));
+        writer.write_escaped_text(b"link");
+        writer.link_end();
+        assert_eq!(
+            writer.as_str().unwrap(),
+            "<a href=\"https://example.com\" title=\"My Title\">link</a>"
+        );
+    }
+
+    #[test]
+    fn test_writer_link_escape_url() {
+        let mut writer = HtmlWriter::new();
+        writer.link_start(b"https://example.com?a=1&b=2", None);
+        writer.link_end();
+        assert_eq!(
+            writer.as_str().unwrap(),
+            "<a href=\"https://example.com?a=1&amp;b=2\"></a>"
+        );
+    }
+
+    #[test]
+    fn untrusted_url_policy_blocks_script_schemes_after_normalization() {
+        for url in [
+            b"javascript:alert(1)".as_slice(),
+            b"JaVaScRiPt:alert(1)",
+            b"java\tscript:alert(1)",
+            b"javas&#99;ript:alert(1)",
+            b"data:text/html,<script>alert(1)</script>",
+            b"averylongunknownscheme:payload",
+        ] {
+            let mut writer = HtmlWriter::new();
+            writer.write_link_url_with_policy(url, RenderPolicy::Untrusted);
+            assert_eq!(writer.as_bytes(), b"", "URL should be blocked: {url:?}");
+        }
+    }
+
+    #[test]
+    fn untrusted_url_policy_allows_relative_and_safe_schemes() {
+        for url in [
+            b"/guide/getting-started".as_slice(),
+            b"#section",
+            b"https://example.com",
+            b"mailto:team@example.com",
+        ] {
+            let mut writer = HtmlWriter::new();
+            writer.write_link_url_with_policy(url, RenderPolicy::Untrusted);
+            assert!(!writer.is_empty(), "URL should be allowed: {url:?}");
+        }
+    }
+
+    #[test]
+    fn test_writer_clear_reuse() {
+        let mut writer = HtmlWriter::new();
+        writer.write_str("first");
+        let cap1 = writer.out.capacity();
+
+        writer.clear();
+        assert!(writer.is_empty());
+        assert_eq!(writer.out.capacity(), cap1);
+
+        writer.write_str("second");
+        assert_eq!(writer.as_str().unwrap(), "second");
+    }
+
+    #[test]
+    fn test_writer_into_string() {
+        let mut writer = HtmlWriter::new();
+        writer.write_str("<p>Hello</p>");
+        let s = writer.into_string().unwrap();
+        assert_eq!(s, "<p>Hello</p>");
+    }
+
+    #[test]
+    fn writer_string_views_reject_invalid_utf8() {
+        let mut writer = HtmlWriter::new();
+        writer.write_bytes(&[0xff]);
+
+        assert!(writer.as_str().is_err());
+        assert!(writer.into_string().is_err());
+    }
+
+    #[test]
+    fn test_writer_ol_with_start() {
+        let mut writer = HtmlWriter::new();
+        writer.ol_start(Some(5));
+        writer.ol_end();
+        assert_eq!(writer.as_str().unwrap(), "<ol start=\"5\">\n</ol>\n");
+    }
+
+    #[test]
+    fn test_writer_ol_default_start() {
+        let mut writer = HtmlWriter::new();
+        writer.ol_start(Some(1));
+        writer.ol_end();
+        assert_eq!(writer.as_str().unwrap(), "<ol>\n</ol>\n");
+    }
+
+    #[test]
+    fn decimal_output_handles_zero_digit_boundaries_and_usize_max() {
+        let mut writer = HtmlWriter::new();
+        for number in [0, 1, 9, 10, 99, 100, 999, 1000, usize::MAX] {
+            writer.clear();
+            writer.write_usize(number);
+            assert_eq!(writer.as_str().unwrap(), number.to_string());
+        }
+    }
+
+    #[test]
+    fn test_write_u32() {
+        let mut writer = HtmlWriter::new();
+        writer.write_u32(0);
+        assert_eq!(writer.as_str().unwrap(), "0");
+
+        writer.clear();
+        writer.write_u32(42);
+        assert_eq!(writer.as_str().unwrap(), "42");
+
+        writer.clear();
+        writer.write_u32(1234567890);
+        assert_eq!(writer.as_str().unwrap(), "1234567890");
+    }
+}

@@ -1,0 +1,5546 @@
+[
+  {
+    "file": "baseline-108-1.txt.gz",
+    "total_samples": 4529,
+    "stages": {
+      "harness/runtime": {
+        "samples": 15,
+        "pct": 0.33
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1731,
+        "pct": 38.22
+      },
+      "visible inline frames": {
+        "samples": 936,
+        "pct": 20.67
+      },
+      "visible block frames": {
+        "samples": 1847,
+        "pct": 40.78
+      }
+    },
+    "allocation_stack_samples": 230,
+    "allocation_stack_pct": 5.08,
+    "heading_stack_pct": 5.21,
+    "emit_sort_stack_pct": 1.63,
+    "self": [
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 746,
+        "pct": 16.47
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 720,
+        "pct": 15.9
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 409,
+        "pct": 9.03
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 252,
+        "pct": 5.56
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 239,
+        "pct": 5.28
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 195,
+        "pct": 4.31
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 163,
+        "pct": 3.6
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 126,
+        "pct": 2.78
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 125,
+        "pct": 2.76
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 122,
+        "pct": 2.69
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 118,
+        "pct": 2.61
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 99,
+        "pct": 2.19
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 92,
+        "pct": 2.03
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 84,
+        "pct": 1.85
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "samples": 72,
+        "pct": 1.59
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 58,
+        "pct": 1.28
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 53,
+        "pct": 1.17
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 48,
+        "pct": 1.06
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 47,
+        "pct": 1.04
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 43,
+        "pct": 0.95
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::close_paragraph",
+        "samples": 28,
+        "pct": 0.62
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16766326 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4529,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4529,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4529,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4529,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4529,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4514,
+        "pct": 99.67
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4414,
+        "pct": 97.46
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4294,
+        "pct": 94.81
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 1807,
+        "pct": 39.9
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 1735,
+        "pct": 38.31
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 1332,
+        "pct": 29.41
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 914,
+        "pct": 20.18
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 409,
+        "pct": 9.03
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 406,
+        "pct": 8.96
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 281,
+        "pct": 6.2
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 252,
+        "pct": 5.56
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 239,
+        "pct": 5.28
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 231,
+        "pct": 5.1
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 176,
+        "pct": 3.89
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 162,
+        "pct": 3.58
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>",
+        "samples": 143,
+        "pct": 3.16
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 134,
+        "pct": 2.96
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 126,
+        "pct": 2.78
+      },
+      {
+        "symbol": "_realloc",
+        "samples": 125,
+        "pct": 2.76
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 125,
+        "pct": 2.76
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:350",
+        "samples": 692,
+        "pct": 15.28
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 239,
+        "pct": 5.28
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 164,
+        "pct": 3.62
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 155,
+        "pct": 3.42
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:3253",
+        "samples": 151,
+        "pct": 3.33
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:90",
+        "samples": 126,
+        "pct": 2.78
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 121,
+        "pct": 2.67
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "line": "lib.rs:2560",
+        "samples": 103,
+        "pct": 2.27
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 101,
+        "pct": 2.23
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1814",
+        "samples": 94,
+        "pct": 2.08
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "line": "parser.rs:3276",
+        "samples": 75,
+        "pct": 1.66
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "line": "escape.rs:211",
+        "samples": 67,
+        "pct": 1.48
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1423",
+        "samples": 66,
+        "pct": 1.46
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 62,
+        "pct": 1.37
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:92",
+        "samples": 54,
+        "pct": 1.19
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:0",
+        "samples": 53,
+        "pct": 1.17
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 48,
+        "pct": 1.06
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:362",
+        "samples": 44,
+        "pct": 0.97
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:455",
+        "samples": 37,
+        "pct": 0.82
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1255",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "line": "",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:462",
+        "samples": 33,
+        "pct": 0.73
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:3269",
+        "samples": 33,
+        "pct": 0.73
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:482",
+        "samples": 32,
+        "pct": 0.71
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:32",
+        "samples": 32,
+        "pct": 0.71
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "line": "smallsort.rs:596",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:96",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:28",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2419",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:433",
+        "samples": 27,
+        "pct": 0.6
+      }
+    ]
+  },
+  {
+    "file": "baseline-108-2.txt.gz",
+    "total_samples": 4527,
+    "stages": {
+      "harness/runtime": {
+        "samples": 15,
+        "pct": 0.33
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1735,
+        "pct": 38.33
+      },
+      "visible inline frames": {
+        "samples": 930,
+        "pct": 20.54
+      },
+      "visible block frames": {
+        "samples": 1847,
+        "pct": 40.8
+      }
+    },
+    "allocation_stack_samples": 218,
+    "allocation_stack_pct": 4.82,
+    "heading_stack_pct": 5.39,
+    "emit_sort_stack_pct": 1.44,
+    "self": [
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 753,
+        "pct": 16.63
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 690,
+        "pct": 15.24
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 413,
+        "pct": 9.12
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 257,
+        "pct": 5.68
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 222,
+        "pct": 4.9
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 196,
+        "pct": 4.33
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 190,
+        "pct": 4.2
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 126,
+        "pct": 2.78
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 123,
+        "pct": 2.72
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 122,
+        "pct": 2.69
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 113,
+        "pct": 2.5
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 107,
+        "pct": 2.36
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 103,
+        "pct": 2.28
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 91,
+        "pct": 2.01
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 69,
+        "pct": 1.52
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 55,
+        "pct": 1.21
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 54,
+        "pct": 1.19
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "samples": 50,
+        "pct": 1.1
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 42,
+        "pct": 0.93
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::emit_paragraph_items",
+        "samples": 42,
+        "pct": 0.93
+      },
+      {
+        "symbol": "ferromark::escape::escape_full_into",
+        "samples": 38,
+        "pct": 0.84
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::close_paragraph",
+        "samples": 33,
+        "pct": 0.73
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_atx_heading",
+        "samples": 29,
+        "pct": 0.64
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16766553 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4527,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4527,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4527,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4527,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4527,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4512,
+        "pct": 99.67
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4424,
+        "pct": 97.72
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4313,
+        "pct": 95.27
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 1834,
+        "pct": 40.51
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 1719,
+        "pct": 37.97
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 1308,
+        "pct": 28.89
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 912,
+        "pct": 20.15
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 413,
+        "pct": 9.12
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 399,
+        "pct": 8.81
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 300,
+        "pct": 6.63
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 257,
+        "pct": 5.68
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 217,
+        "pct": 4.79
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 196,
+        "pct": 4.33
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 166,
+        "pct": 3.67
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 159,
+        "pct": 3.51
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>",
+        "samples": 135,
+        "pct": 2.98
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 135,
+        "pct": 2.98
+      },
+      {
+        "symbol": "_realloc",
+        "samples": 126,
+        "pct": 2.78
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 126,
+        "pct": 2.78
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 125,
+        "pct": 2.76
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:350",
+        "samples": 662,
+        "pct": 14.62
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 196,
+        "pct": 4.33
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 177,
+        "pct": 3.91
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:3253",
+        "samples": 165,
+        "pct": 3.64
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 151,
+        "pct": 3.34
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:90",
+        "samples": 139,
+        "pct": 3.07
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "line": "lib.rs:2560",
+        "samples": 130,
+        "pct": 2.87
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 121,
+        "pct": 2.67
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1814",
+        "samples": 103,
+        "pct": 2.28
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 98,
+        "pct": 2.16
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "line": "parser.rs:3276",
+        "samples": 81,
+        "pct": 1.79
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 71,
+        "pct": 1.57
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1423",
+        "samples": 55,
+        "pct": 1.21
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 54,
+        "pct": 1.19
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:362",
+        "samples": 51,
+        "pct": 1.13
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "line": "escape.rs:211",
+        "samples": 45,
+        "pct": 0.99
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:32",
+        "samples": 40,
+        "pct": 0.88
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2419",
+        "samples": 40,
+        "pct": 0.88
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:92",
+        "samples": 39,
+        "pct": 0.86
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:0",
+        "samples": 39,
+        "pct": 0.86
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1979",
+        "samples": 38,
+        "pct": 0.84
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:30",
+        "samples": 37,
+        "pct": 0.82
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1254",
+        "samples": 36,
+        "pct": 0.8
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:455",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:3270",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:96",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1255",
+        "samples": 32,
+        "pct": 0.71
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "line": "smallsort.rs:596",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:28",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:433",
+        "samples": 29,
+        "pct": 0.64
+      }
+    ]
+  },
+  {
+    "file": "baseline-613-1.txt.gz",
+    "total_samples": 4450,
+    "stages": {
+      "harness/runtime": {
+        "samples": 16,
+        "pct": 0.36
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1094,
+        "pct": 24.58
+      },
+      "visible block frames": {
+        "samples": 3146,
+        "pct": 70.7
+      },
+      "visible inline frames": {
+        "samples": 194,
+        "pct": 4.36
+      }
+    },
+    "allocation_stack_samples": 187,
+    "allocation_stack_pct": 4.2,
+    "heading_stack_pct": 1.84,
+    "emit_sort_stack_pct": 0.22,
+    "self": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 1754,
+        "pct": 39.42
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 281,
+        "pct": 6.31
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 239,
+        "pct": 5.37
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 239,
+        "pct": 5.37
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 187,
+        "pct": 4.2
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 177,
+        "pct": 3.98
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 162,
+        "pct": 3.64
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 155,
+        "pct": 3.48
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 141,
+        "pct": 3.17
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 136,
+        "pct": 3.06
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 119,
+        "pct": 2.67
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 109,
+        "pct": 2.45
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 102,
+        "pct": 2.29
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "samples": 83,
+        "pct": 1.87
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 71,
+        "pct": 1.6
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 39,
+        "pct": 0.88
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "samples": 37,
+        "pct": 0.83
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 36,
+        "pct": 0.81
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 34,
+        "pct": 0.76
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "samples": 33,
+        "pct": 0.74
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 28,
+        "pct": 0.63
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "samples": 26,
+        "pct": 0.58
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::close_paragraph",
+        "samples": 17,
+        "pct": 0.38
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 16,
+        "pct": 0.36
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_blockquote",
+        "samples": 14,
+        "pct": 0.31
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16766198 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4450,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4450,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4450,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4450,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4450,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4434,
+        "pct": 99.64
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4150,
+        "pct": 93.26
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4011,
+        "pct": 90.13
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 2965,
+        "pct": 66.63
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 2579,
+        "pct": 57.96
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 2415,
+        "pct": 54.27
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 559,
+        "pct": 12.56
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 291,
+        "pct": 6.54
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 281,
+        "pct": 6.31
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 241,
+        "pct": 5.42
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 192,
+        "pct": 4.31
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 187,
+        "pct": 4.2
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 177,
+        "pct": 3.98
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 168,
+        "pct": 3.78
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 155,
+        "pct": 3.48
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 139,
+        "pct": 3.12
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 109,
+        "pct": 2.45
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 86,
+        "pct": 1.93
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "samples": 83,
+        "pct": 1.87
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 71,
+        "pct": 1.6
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2693",
+        "samples": 1672,
+        "pct": 37.57
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 281,
+        "pct": 6.31
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:350",
+        "samples": 229,
+        "pct": 5.15
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 177,
+        "pct": 3.98
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1814",
+        "samples": 157,
+        "pct": 3.53
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "line": "parser.rs:3186",
+        "samples": 133,
+        "pct": 2.99
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 71,
+        "pct": 1.6
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:28",
+        "samples": 64,
+        "pct": 1.44
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2831",
+        "samples": 60,
+        "pct": 1.35
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2869",
+        "samples": 58,
+        "pct": 1.3
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2419",
+        "samples": 56,
+        "pct": 1.26
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:27",
+        "samples": 49,
+        "pct": 1.1
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1979",
+        "samples": 48,
+        "pct": 1.08
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1985",
+        "samples": 43,
+        "pct": 0.97
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2830",
+        "samples": 41,
+        "pct": 0.92
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2888",
+        "samples": 35,
+        "pct": 0.79
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2747",
+        "samples": 31,
+        "pct": 0.7
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1225",
+        "samples": 29,
+        "pct": 0.65
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 28,
+        "pct": 0.63
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "line": "",
+        "samples": 26,
+        "pct": 0.58
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "line": "parser.rs:1653",
+        "samples": 25,
+        "pct": 0.56
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1068",
+        "samples": 25,
+        "pct": 0.56
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1423",
+        "samples": 23,
+        "pct": 0.52
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 23,
+        "pct": 0.52
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2679",
+        "samples": 22,
+        "pct": 0.49
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "line": "render.rs:177",
+        "samples": 22,
+        "pct": 0.49
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 20,
+        "pct": 0.45
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "line": "parser.rs:27",
+        "samples": 19,
+        "pct": 0.43
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "line": "parser.rs:2309",
+        "samples": 19,
+        "pct": 0.43
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 19,
+        "pct": 0.43
+      }
+    ]
+  },
+  {
+    "file": "baseline-613-2.txt.gz",
+    "total_samples": 4520,
+    "stages": {
+      "harness/runtime": {
+        "samples": 24,
+        "pct": 0.53
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1054,
+        "pct": 23.32
+      },
+      "visible block frames": {
+        "samples": 3242,
+        "pct": 71.73
+      },
+      "visible inline frames": {
+        "samples": 200,
+        "pct": 4.42
+      }
+    },
+    "allocation_stack_samples": 178,
+    "allocation_stack_pct": 3.94,
+    "heading_stack_pct": 1.64,
+    "emit_sort_stack_pct": 0.11,
+    "self": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 1854,
+        "pct": 41.02
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 271,
+        "pct": 6.0
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 237,
+        "pct": 5.24
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 232,
+        "pct": 5.13
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 188,
+        "pct": 4.16
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 175,
+        "pct": 3.87
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 157,
+        "pct": 3.47
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 150,
+        "pct": 3.32
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 141,
+        "pct": 3.12
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 139,
+        "pct": 3.08
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 126,
+        "pct": 2.79
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 111,
+        "pct": 2.46
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 90,
+        "pct": 1.99
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 73,
+        "pct": 1.62
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "samples": 66,
+        "pct": 1.46
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 50,
+        "pct": 1.11
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "samples": 47,
+        "pct": 1.04
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 42,
+        "pct": 0.93
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 36,
+        "pct": 0.8
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 33,
+        "pct": 0.73
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 24,
+        "pct": 0.53
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 21,
+        "pct": 0.46
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "samples": 19,
+        "pct": 0.42
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "samples": 18,
+        "pct": 0.4
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16766423 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4520,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4520,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4520,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4520,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4520,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4496,
+        "pct": 99.47
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4259,
+        "pct": 94.23
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4137,
+        "pct": 91.53
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 3079,
+        "pct": 68.12
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 2645,
+        "pct": 58.52
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 2490,
+        "pct": 55.09
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 577,
+        "pct": 12.77
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 291,
+        "pct": 6.44
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 262,
+        "pct": 5.8
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 232,
+        "pct": 5.13
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 188,
+        "pct": 4.16
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 184,
+        "pct": 4.07
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 176,
+        "pct": 3.89
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 150,
+        "pct": 3.32
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 139,
+        "pct": 3.08
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 123,
+        "pct": 2.72
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 90,
+        "pct": 1.99
+      },
+      {
+        "symbol": "_xzm_free",
+        "samples": 74,
+        "pct": 1.64
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 73,
+        "pct": 1.62
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 71,
+        "pct": 1.57
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2693",
+        "samples": 1787,
+        "pct": 39.54
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:350",
+        "samples": 262,
+        "pct": 5.8
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 231,
+        "pct": 5.11
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1814",
+        "samples": 168,
+        "pct": 3.72
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 150,
+        "pct": 3.32
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "line": "parser.rs:3186",
+        "samples": 119,
+        "pct": 2.63
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:28",
+        "samples": 79,
+        "pct": 1.75
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 73,
+        "pct": 1.62
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2831",
+        "samples": 69,
+        "pct": 1.53
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2419",
+        "samples": 51,
+        "pct": 1.13
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2869",
+        "samples": 41,
+        "pct": 0.91
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 41,
+        "pct": 0.91
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1979",
+        "samples": 40,
+        "pct": 0.88
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1985",
+        "samples": 36,
+        "pct": 0.8
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2830",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "line": "render.rs:177",
+        "samples": 33,
+        "pct": 0.73
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2888",
+        "samples": 31,
+        "pct": 0.69
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1068",
+        "samples": 31,
+        "pct": 0.69
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:27",
+        "samples": 31,
+        "pct": 0.69
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2747",
+        "samples": 26,
+        "pct": 0.58
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 25,
+        "pct": 0.55
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2777",
+        "samples": 24,
+        "pct": 0.53
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "line": "lib.rs:2560",
+        "samples": 24,
+        "pct": 0.53
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1225",
+        "samples": 23,
+        "pct": 0.51
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "line": "parser.rs:1829",
+        "samples": 23,
+        "pct": 0.51
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1423",
+        "samples": 22,
+        "pct": 0.49
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 22,
+        "pct": 0.49
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "line": "parser.rs:2309",
+        "samples": 21,
+        "pct": 0.46
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2741",
+        "samples": 20,
+        "pct": 0.44
+      }
+    ]
+  },
+  {
+    "file": "production-108-1.txt.gz",
+    "total_samples": 4564,
+    "stages": {
+      "harness/runtime": {
+        "samples": 4,
+        "pct": 0.09
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1990,
+        "pct": 43.6
+      },
+      "visible inline frames": {
+        "samples": 1032,
+        "pct": 22.61
+      },
+      "visible block frames": {
+        "samples": 1538,
+        "pct": 33.7
+      }
+    },
+    "allocation_stack_samples": 261,
+    "allocation_stack_pct": 5.72,
+    "heading_stack_pct": 5.63,
+    "emit_sort_stack_pct": 2.13,
+    "self": [
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 801,
+        "pct": 17.55
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 419,
+        "pct": 9.18
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "samples": 323,
+        "pct": 7.08
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 298,
+        "pct": 6.53
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 294,
+        "pct": 6.44
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 294,
+        "pct": 6.44
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_close_fence",
+        "samples": 233,
+        "pct": 5.11
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 199,
+        "pct": 4.36
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 132,
+        "pct": 2.89
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 128,
+        "pct": 2.8
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 110,
+        "pct": 2.41
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 94,
+        "pct": 2.06
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 82,
+        "pct": 1.8
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 70,
+        "pct": 1.53
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "samples": 69,
+        "pct": 1.51
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 53,
+        "pct": 1.16
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 49,
+        "pct": 1.07
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 45,
+        "pct": 0.99
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 44,
+        "pct": 0.96
+      },
+      {
+        "symbol": "core::slice::sort::unstable::quicksort::quicksort::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 38,
+        "pct": 0.83
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_atx_heading",
+        "samples": 33,
+        "pct": 0.72
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 32,
+        "pct": 0.7
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::close_paragraph",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string_with_ascii_prefix",
+        "samples": 31,
+        "pct": 0.68
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16809902 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4564,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4564,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4564,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4564,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4563,
+        "pct": 99.98
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4560,
+        "pct": 99.91
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4479,
+        "pct": 98.14
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4307,
+        "pct": 94.37
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 2080,
+        "pct": 45.57
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 1465,
+        "pct": 32.1
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 1308,
+        "pct": 28.66
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 1007,
+        "pct": 22.06
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 906,
+        "pct": 19.85
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 655,
+        "pct": 14.35
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "samples": 548,
+        "pct": 12.01
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 493,
+        "pct": 10.8
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 294,
+        "pct": 6.44
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 294,
+        "pct": 6.44
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 259,
+        "pct": 5.67
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_close_fence",
+        "samples": 233,
+        "pct": 5.11
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_for_render",
+        "samples": 200,
+        "pct": 4.38
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 193,
+        "pct": 4.23
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 188,
+        "pct": 4.12
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>",
+        "samples": 175,
+        "pct": 3.83
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 167,
+        "pct": 3.66
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "line": "parser.rs:2649",
+        "samples": 334,
+        "pct": 7.32
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 294,
+        "pct": 6.44
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "line": "parser.rs:452",
+        "samples": 182,
+        "pct": 3.99
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 173,
+        "pct": 3.79
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:90",
+        "samples": 172,
+        "pct": 3.77
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 159,
+        "pct": 3.48
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "line": "lib.rs:2562",
+        "samples": 137,
+        "pct": 3.0
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 118,
+        "pct": 2.59
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_close_fence",
+        "line": "parser.rs:3307",
+        "samples": 89,
+        "pct": 1.95
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 78,
+        "pct": 1.71
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:0",
+        "samples": 78,
+        "pct": 1.71
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 75,
+        "pct": 1.64
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1816",
+        "samples": 63,
+        "pct": 1.38
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "line": "escape.rs:211",
+        "samples": 61,
+        "pct": 1.34
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "line": "parser.rs:3393",
+        "samples": 59,
+        "pct": 1.29
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:32",
+        "samples": 54,
+        "pct": 1.18
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 53,
+        "pct": 1.16
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:362",
+        "samples": 50,
+        "pct": 1.1
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:92",
+        "samples": 47,
+        "pct": 1.03
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:455",
+        "samples": 40,
+        "pct": 0.88
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "line": "smallsort.rs:596",
+        "samples": 38,
+        "pct": 0.83
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:30",
+        "samples": 38,
+        "pct": 0.83
+      },
+      {
+        "symbol": "core::slice::sort::unstable::quicksort::quicksort::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "line": "quicksort.rs:31",
+        "samples": 37,
+        "pct": 0.81
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "line": "parser.rs:473",
+        "samples": 36,
+        "pct": 0.79
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1981",
+        "samples": 34,
+        "pct": 0.74
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:482",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:433",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "line": "",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1987",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2421",
+        "samples": 30,
+        "pct": 0.66
+      }
+    ]
+  },
+  {
+    "file": "production-108-2.txt.gz",
+    "total_samples": 4532,
+    "stages": {
+      "harness/runtime": {
+        "samples": 11,
+        "pct": 0.24
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1911,
+        "pct": 42.17
+      },
+      "visible inline frames": {
+        "samples": 1073,
+        "pct": 23.68
+      },
+      "visible block frames": {
+        "samples": 1537,
+        "pct": 33.91
+      }
+    },
+    "allocation_stack_samples": 263,
+    "allocation_stack_pct": 5.8,
+    "heading_stack_pct": 5.91,
+    "emit_sort_stack_pct": 1.65,
+    "self": [
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 852,
+        "pct": 18.8
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 433,
+        "pct": 9.55
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "samples": 284,
+        "pct": 6.27
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 283,
+        "pct": 6.24
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 280,
+        "pct": 6.18
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 268,
+        "pct": 5.91
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_close_fence",
+        "samples": 239,
+        "pct": 5.27
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 213,
+        "pct": 4.7
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 129,
+        "pct": 2.85
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 109,
+        "pct": 2.41
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 98,
+        "pct": 2.16
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 96,
+        "pct": 2.12
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 94,
+        "pct": 2.07
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 79,
+        "pct": 1.74
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "samples": 70,
+        "pct": 1.54
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 61,
+        "pct": 1.35
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 56,
+        "pct": 1.24
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 42,
+        "pct": 0.93
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 36,
+        "pct": 0.79
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_atx_heading",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "samples": 32,
+        "pct": 0.71
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "samples": 32,
+        "pct": 0.71
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::emit_paragraph_items",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "ferromark::escape::escape_full_into",
+        "samples": 27,
+        "pct": 0.6
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16810131 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4532,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4532,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4532,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4532,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4532,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4521,
+        "pct": 99.76
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4447,
+        "pct": 98.12
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4310,
+        "pct": 95.1
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 2131,
+        "pct": 47.02
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 1517,
+        "pct": 33.47
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 1321,
+        "pct": 29.15
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 1041,
+        "pct": 22.97
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 921,
+        "pct": 20.32
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 672,
+        "pct": 14.83
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "samples": 536,
+        "pct": 11.83
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 434,
+        "pct": 9.58
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 283,
+        "pct": 6.24
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 280,
+        "pct": 6.18
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 277,
+        "pct": 6.11
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_close_fence",
+        "samples": 239,
+        "pct": 5.27
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 192,
+        "pct": 4.24
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 191,
+        "pct": 4.21
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_for_render",
+        "samples": 179,
+        "pct": 3.95
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>",
+        "samples": 160,
+        "pct": 3.53
+      },
+      {
+        "symbol": "_realloc",
+        "samples": 158,
+        "pct": 3.49
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "line": "parser.rs:2649",
+        "samples": 339,
+        "pct": 7.48
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 283,
+        "pct": 6.24
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 224,
+        "pct": 4.94
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 166,
+        "pct": 3.66
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:90",
+        "samples": 153,
+        "pct": 3.38
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "line": "parser.rs:452",
+        "samples": 142,
+        "pct": 3.13
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "line": "lib.rs:2562",
+        "samples": 141,
+        "pct": 3.11
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 116,
+        "pct": 2.56
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_close_fence",
+        "line": "parser.rs:3307",
+        "samples": 102,
+        "pct": 2.25
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 85,
+        "pct": 1.88
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 76,
+        "pct": 1.68
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1816",
+        "samples": 74,
+        "pct": 1.63
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "line": "escape.rs:211",
+        "samples": 62,
+        "pct": 1.37
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "line": "parser.rs:3393",
+        "samples": 62,
+        "pct": 1.37
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 56,
+        "pct": 1.24
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:0",
+        "samples": 54,
+        "pct": 1.19
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:455",
+        "samples": 53,
+        "pct": 1.17
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:92",
+        "samples": 50,
+        "pct": 1.1
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:362",
+        "samples": 43,
+        "pct": 0.95
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:32",
+        "samples": 41,
+        "pct": 0.9
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:482",
+        "samples": 36,
+        "pct": 0.79
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1981",
+        "samples": 36,
+        "pct": 0.79
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1987",
+        "samples": 33,
+        "pct": 0.73
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:439",
+        "samples": 32,
+        "pct": 0.71
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "line": "",
+        "samples": 32,
+        "pct": 0.71
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "line": "parser.rs:473",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_close_fence",
+        "line": "parser.rs:3346",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "line": "",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_close_fence",
+        "line": "parser.rs:17",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "line": "smallsort.rs:596",
+        "samples": 28,
+        "pct": 0.62
+      }
+    ]
+  },
+  {
+    "file": "production-613-1.txt.gz",
+    "total_samples": 4456,
+    "stages": {
+      "harness/runtime": {
+        "samples": 8,
+        "pct": 0.18
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 900,
+        "pct": 20.2
+      },
+      "visible block frames": {
+        "samples": 3322,
+        "pct": 74.55
+      },
+      "visible inline frames": {
+        "samples": 226,
+        "pct": 5.07
+      }
+    },
+    "allocation_stack_samples": 200,
+    "allocation_stack_pct": 4.49,
+    "heading_stack_pct": 2.06,
+    "emit_sort_stack_pct": 0.18,
+    "self": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 941,
+        "pct": 21.12
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "samples": 886,
+        "pct": 19.88
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "samples": 277,
+        "pct": 6.22
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 262,
+        "pct": 5.88
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 193,
+        "pct": 4.33
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 181,
+        "pct": 4.06
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 171,
+        "pct": 3.84
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 165,
+        "pct": 3.7
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 163,
+        "pct": 3.66
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 144,
+        "pct": 3.23
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 140,
+        "pct": 3.14
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 101,
+        "pct": 2.27
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string_with_ascii_prefix",
+        "samples": 82,
+        "pct": 1.84
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 69,
+        "pct": 1.55
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "samples": 67,
+        "pct": 1.5
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "samples": 54,
+        "pct": 1.21
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 50,
+        "pct": 1.12
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 49,
+        "pct": 1.1
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 44,
+        "pct": 0.99
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 32,
+        "pct": 0.72
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "samples": 31,
+        "pct": 0.7
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "samples": 24,
+        "pct": 0.54
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 24,
+        "pct": 0.54
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_blockquote",
+        "samples": 20,
+        "pct": 0.45
+      },
+      {
+        "symbol": "_xzm_free",
+        "samples": 20,
+        "pct": 0.45
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16809795 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4456,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4456,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4456,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4456,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4456,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4448,
+        "pct": 99.82
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4352,
+        "pct": 97.67
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4225,
+        "pct": 94.82
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 3006,
+        "pct": 67.46
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 2783,
+        "pct": 62.46
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 2589,
+        "pct": 58.1
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "samples": 886,
+        "pct": 19.88
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 630,
+        "pct": 14.14
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "samples": 447,
+        "pct": 10.03
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 341,
+        "pct": 7.65
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_for_render",
+        "samples": 293,
+        "pct": 6.58
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 273,
+        "pct": 6.13
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 209,
+        "pct": 4.69
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 197,
+        "pct": 4.42
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 193,
+        "pct": 4.33
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 181,
+        "pct": 4.06
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 165,
+        "pct": 3.7
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 163,
+        "pct": 3.66
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 115,
+        "pct": 2.58
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string_with_ascii_prefix",
+        "samples": 85,
+        "pct": 1.91
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2731",
+        "samples": 835,
+        "pct": 18.74
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "line": "parser.rs:2918",
+        "samples": 779,
+        "pct": 17.48
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 181,
+        "pct": 4.06
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "line": "parser.rs:3244",
+        "samples": 140,
+        "pct": 3.14
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1816",
+        "samples": 99,
+        "pct": 2.22
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "line": "parser.rs:452",
+        "samples": 93,
+        "pct": 2.09
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "line": "parser.rs:2923",
+        "samples": 89,
+        "pct": 2.0
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string_with_ascii_prefix",
+        "line": "render.rs:430",
+        "samples": 81,
+        "pct": 1.82
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2889",
+        "samples": 75,
+        "pct": 1.68
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2946",
+        "samples": 70,
+        "pct": 1.57
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 69,
+        "pct": 1.55
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2926",
+        "samples": 52,
+        "pct": 1.17
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1981",
+        "samples": 47,
+        "pct": 1.05
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 42,
+        "pct": 0.94
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1097",
+        "samples": 41,
+        "pct": 0.92
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2927",
+        "samples": 39,
+        "pct": 0.88
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "line": "parser.rs:473",
+        "samples": 38,
+        "pct": 0.85
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2421",
+        "samples": 38,
+        "pct": 0.85
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2888",
+        "samples": 35,
+        "pct": 0.79
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1987",
+        "samples": 34,
+        "pct": 0.76
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 33,
+        "pct": 0.74
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 33,
+        "pct": 0.74
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2799",
+        "samples": 29,
+        "pct": 0.65
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "line": "parser.rs:1682",
+        "samples": 29,
+        "pct": 0.65
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "line": "parser.rs:1858",
+        "samples": 29,
+        "pct": 0.65
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "line": "render.rs:177",
+        "samples": 27,
+        "pct": 0.61
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2805",
+        "samples": 26,
+        "pct": 0.58
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2716",
+        "samples": 25,
+        "pct": 0.56
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "line": "",
+        "samples": 24,
+        "pct": 0.54
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "line": "parser.rs:2339",
+        "samples": 23,
+        "pct": 0.52
+      }
+    ]
+  },
+  {
+    "file": "production-613-2.txt.gz",
+    "total_samples": 4522,
+    "stages": {
+      "harness/runtime": {
+        "samples": 18,
+        "pct": 0.4
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 969,
+        "pct": 21.43
+      },
+      "visible block frames": {
+        "samples": 3310,
+        "pct": 73.2
+      },
+      "visible inline frames": {
+        "samples": 225,
+        "pct": 4.98
+      }
+    },
+    "allocation_stack_samples": 234,
+    "allocation_stack_pct": 5.17,
+    "heading_stack_pct": 2.1,
+    "emit_sort_stack_pct": 0.13,
+    "self": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "samples": 945,
+        "pct": 20.9
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 895,
+        "pct": 19.79
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "samples": 271,
+        "pct": 5.99
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 268,
+        "pct": 5.93
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 201,
+        "pct": 4.44
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 197,
+        "pct": 4.36
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 168,
+        "pct": 3.72
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 163,
+        "pct": 3.6
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 148,
+        "pct": 3.27
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 132,
+        "pct": 2.92
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 130,
+        "pct": 2.87
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 122,
+        "pct": 2.7
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string_with_ascii_prefix",
+        "samples": 97,
+        "pct": 2.15
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 87,
+        "pct": 1.92
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "samples": 77,
+        "pct": 1.7
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 52,
+        "pct": 1.15
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "samples": 51,
+        "pct": 1.13
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 41,
+        "pct": 0.91
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 40,
+        "pct": 0.88
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "samples": 39,
+        "pct": 0.86
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_blockquote",
+        "samples": 27,
+        "pct": 0.6
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 26,
+        "pct": 0.57
+      },
+      {
+        "symbol": "_xzm_free",
+        "samples": 25,
+        "pct": 0.55
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 20,
+        "pct": 0.44
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16810044 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4522,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4522,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4522,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4522,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4522,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4504,
+        "pct": 99.6
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4388,
+        "pct": 97.04
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4245,
+        "pct": 93.87
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 2991,
+        "pct": 66.14
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 2778,
+        "pct": 61.43
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 2584,
+        "pct": 57.14
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "samples": 945,
+        "pct": 20.9
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 616,
+        "pct": 13.62
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "samples": 432,
+        "pct": 9.55
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 332,
+        "pct": 7.34
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_for_render",
+        "samples": 293,
+        "pct": 6.48
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 260,
+        "pct": 5.75
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 231,
+        "pct": 5.11
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 201,
+        "pct": 4.44
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 197,
+        "pct": 4.36
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 193,
+        "pct": 4.27
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 163,
+        "pct": 3.6
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 148,
+        "pct": 3.27
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 120,
+        "pct": 2.65
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string_with_ascii_prefix",
+        "samples": 103,
+        "pct": 2.28
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "line": "parser.rs:2918",
+        "samples": 814,
+        "pct": 18.0
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2731",
+        "samples": 795,
+        "pct": 17.58
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 197,
+        "pct": 4.36
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "line": "parser.rs:3244",
+        "samples": 143,
+        "pct": 3.16
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1816",
+        "samples": 116,
+        "pct": 2.57
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "line": "parser.rs:2923",
+        "samples": 99,
+        "pct": 2.19
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string_with_ascii_prefix",
+        "line": "render.rs:430",
+        "samples": 95,
+        "pct": 2.1
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "line": "parser.rs:452",
+        "samples": 90,
+        "pct": 1.99
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 87,
+        "pct": 1.92
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2946",
+        "samples": 66,
+        "pct": 1.46
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2889",
+        "samples": 66,
+        "pct": 1.46
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2926",
+        "samples": 49,
+        "pct": 1.08
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1981",
+        "samples": 48,
+        "pct": 1.06
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2888",
+        "samples": 47,
+        "pct": 1.04
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1987",
+        "samples": 44,
+        "pct": 0.97
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2421",
+        "samples": 39,
+        "pct": 0.86
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 37,
+        "pct": 0.82
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2805",
+        "samples": 36,
+        "pct": 0.8
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 36,
+        "pct": 0.8
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "line": "",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2927",
+        "samples": 33,
+        "pct": 0.73
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_html_line_end",
+        "line": "parser.rs:2911",
+        "samples": 32,
+        "pct": 0.71
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "line": "parser.rs:1682",
+        "samples": 31,
+        "pct": 0.69
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "line": "parser.rs:1858",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1097",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "line": "render.rs:177",
+        "samples": 28,
+        "pct": 0.62
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "line": "parser.rs:2339",
+        "samples": 27,
+        "pct": 0.6
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line",
+        "line": "parser.rs:473",
+        "samples": 25,
+        "pct": 0.55
+      },
+      {
+        "symbol": "_xzm_free",
+        "line": "",
+        "samples": 25,
+        "pct": 0.55
+      }
+    ]
+  },
+  {
+    "file": "utf8-attribution-108-1.txt.gz",
+    "total_samples": 4519,
+    "stages": {
+      "harness/runtime": {
+        "samples": 8,
+        "pct": 0.18
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1696,
+        "pct": 37.53
+      },
+      "visible inline frames": {
+        "samples": 921,
+        "pct": 20.38
+      },
+      "visible block frames": {
+        "samples": 1894,
+        "pct": 41.91
+      }
+    },
+    "allocation_stack_samples": 216,
+    "allocation_stack_pct": 4.78,
+    "heading_stack_pct": 5.13,
+    "emit_sort_stack_pct": 1.62,
+    "self": [
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 763,
+        "pct": 16.88
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 714,
+        "pct": 15.8
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 420,
+        "pct": 9.29
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 243,
+        "pct": 5.38
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 225,
+        "pct": 4.98
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 193,
+        "pct": 4.27
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 187,
+        "pct": 4.14
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 133,
+        "pct": 2.94
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 131,
+        "pct": 2.9
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 124,
+        "pct": 2.74
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 114,
+        "pct": 2.52
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 106,
+        "pct": 2.35
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 82,
+        "pct": 1.81
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 80,
+        "pct": 1.77
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 68,
+        "pct": 1.5
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "samples": 64,
+        "pct": 1.42
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 63,
+        "pct": 1.39
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 41,
+        "pct": 0.91
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 39,
+        "pct": 0.86
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 38,
+        "pct": 0.84
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 36,
+        "pct": 0.8
+      },
+      {
+        "symbol": "ferromark::escape::escape_full_into",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::close_paragraph",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_atx_heading",
+        "samples": 31,
+        "pct": 0.69
+      },
+      {
+        "symbol": "core::slice::sort::unstable::quicksort::quicksort::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 28,
+        "pct": 0.62
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16768354 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4519,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4519,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4519,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4519,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4519,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4511,
+        "pct": 99.82
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4414,
+        "pct": 97.68
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4298,
+        "pct": 95.11
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 1748,
+        "pct": 38.68
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 1743,
+        "pct": 38.57
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 1302,
+        "pct": 28.81
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 906,
+        "pct": 20.05
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 431,
+        "pct": 9.54
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 420,
+        "pct": 9.29
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 267,
+        "pct": 5.91
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 243,
+        "pct": 5.38
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 225,
+        "pct": 4.98
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 181,
+        "pct": 4.01
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 167,
+        "pct": 3.7
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 159,
+        "pct": 3.52
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 151,
+        "pct": 3.34
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>",
+        "samples": 138,
+        "pct": 3.05
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 133,
+        "pct": 2.94
+      },
+      {
+        "symbol": "_realloc",
+        "samples": 132,
+        "pct": 2.92
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 131,
+        "pct": 2.9
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:350",
+        "samples": 686,
+        "pct": 15.18
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 243,
+        "pct": 5.38
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:3253",
+        "samples": 173,
+        "pct": 3.83
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 169,
+        "pct": 3.74
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 162,
+        "pct": 3.58
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "line": "lib.rs:2560",
+        "samples": 130,
+        "pct": 2.88
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 128,
+        "pct": 2.83
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:90",
+        "samples": 121,
+        "pct": 2.68
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 91,
+        "pct": 2.01
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "line": "parser.rs:3276",
+        "samples": 83,
+        "pct": 1.84
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 78,
+        "pct": 1.73
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1423",
+        "samples": 67,
+        "pct": 1.48
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1814",
+        "samples": 64,
+        "pct": 1.42
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "line": "escape.rs:211",
+        "samples": 56,
+        "pct": 1.24
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:362",
+        "samples": 49,
+        "pct": 1.08
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:455",
+        "samples": 45,
+        "pct": 1.0
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:0",
+        "samples": 45,
+        "pct": 1.0
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:27",
+        "samples": 43,
+        "pct": 0.95
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:92",
+        "samples": 40,
+        "pct": 0.89
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:30",
+        "samples": 40,
+        "pct": 0.89
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:32",
+        "samples": 40,
+        "pct": 0.89
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:28",
+        "samples": 38,
+        "pct": 0.84
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 36,
+        "pct": 0.8
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2419",
+        "samples": 36,
+        "pct": 0.8
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "line": "smallsort.rs:596",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1979",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:3269",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1254",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:462",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1985",
+        "samples": 29,
+        "pct": 0.64
+      }
+    ]
+  },
+  {
+    "file": "utf8-attribution-108-2.txt.gz",
+    "total_samples": 4547,
+    "stages": {
+      "harness/runtime": {
+        "samples": 8,
+        "pct": 0.18
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1691,
+        "pct": 37.19
+      },
+      "visible inline frames": {
+        "samples": 910,
+        "pct": 20.01
+      },
+      "visible block frames": {
+        "samples": 1938,
+        "pct": 42.62
+      }
+    },
+    "allocation_stack_samples": 211,
+    "allocation_stack_pct": 4.64,
+    "heading_stack_pct": 4.82,
+    "emit_sort_stack_pct": 1.67,
+    "self": [
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 750,
+        "pct": 16.49
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 724,
+        "pct": 15.92
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 454,
+        "pct": 9.98
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 254,
+        "pct": 5.59
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 229,
+        "pct": 5.04
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 205,
+        "pct": 4.51
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 195,
+        "pct": 4.29
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 136,
+        "pct": 2.99
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 120,
+        "pct": 2.64
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 109,
+        "pct": 2.4
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 103,
+        "pct": 2.27
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 90,
+        "pct": 1.98
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 82,
+        "pct": 1.8
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 80,
+        "pct": 1.76
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_code_fence",
+        "samples": 77,
+        "pct": 1.69
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 63,
+        "pct": 1.39
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 50,
+        "pct": 1.1
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "samples": 49,
+        "pct": 1.08
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 42,
+        "pct": 0.92
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_atx_heading",
+        "samples": 39,
+        "pct": 0.86
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::close_paragraph",
+        "samples": 36,
+        "pct": 0.79
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "core::slice::sort::unstable::quicksort::quicksort::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "samples": 26,
+        "pct": 0.57
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16768556 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4547,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4547,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4547,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4547,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4547,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4539,
+        "pct": 99.82
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4452,
+        "pct": 97.91
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4337,
+        "pct": 95.38
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 1808,
+        "pct": 39.76
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 1794,
+        "pct": 39.45
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 1324,
+        "pct": 29.12
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 893,
+        "pct": 19.64
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 454,
+        "pct": 9.98
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "samples": 389,
+        "pct": 8.56
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 300,
+        "pct": 6.6
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 254,
+        "pct": 5.59
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_text_with_entities",
+        "samples": 246,
+        "pct": 5.41
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "samples": 229,
+        "pct": 5.04
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 161,
+        "pct": 3.54
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global>",
+        "samples": 144,
+        "pct": 3.17
+      },
+      {
+        "symbol": "_realloc",
+        "samples": 142,
+        "pct": 3.12
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 141,
+        "pct": 3.1
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 136,
+        "pct": 2.99
+      },
+      {
+        "symbol": "_malloc_zone_realloc",
+        "samples": 132,
+        "pct": 2.9
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::code_block_start",
+        "samples": 127,
+        "pct": 2.79
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:350",
+        "samples": 693,
+        "pct": 15.24
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 254,
+        "pct": 5.59
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:3253",
+        "samples": 177,
+        "pct": 3.89
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 174,
+        "pct": 3.83
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 164,
+        "pct": 3.61
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "line": "lib.rs:2560",
+        "samples": 137,
+        "pct": 3.01
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:90",
+        "samples": 129,
+        "pct": 2.84
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 109,
+        "pct": 2.4
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1814",
+        "samples": 86,
+        "pct": 1.89
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "line": "parser.rs:3276",
+        "samples": 78,
+        "pct": 1.72
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1423",
+        "samples": 78,
+        "pct": 1.72
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 74,
+        "pct": 1.63
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 70,
+        "pct": 1.54
+      },
+      {
+        "symbol": "ferromark::escape::url_escape_link_destination_raw",
+        "line": "escape.rs:211",
+        "samples": 47,
+        "pct": 1.03
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:30",
+        "samples": 45,
+        "pct": 0.99
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:0",
+        "samples": 44,
+        "pct": 0.97
+      },
+      {
+        "symbol": "ferromark::escape::first_text_escape",
+        "line": "escape.rs:92",
+        "samples": 39,
+        "pct": 0.86
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:482",
+        "samples": 38,
+        "pct": 0.84
+      },
+      {
+        "symbol": "core::slice::sort::shared::smallsort::insertion_sort_shift_left::<ferromark::inline::EmitPoint, <[ferromark::inline::EmitPoint]>::sort_unstable_by_key<(u32, bool), <ferromark::inline::InlineParser>::emit_events::{closure#0}>::{closure#0}>",
+        "line": "smallsort.rs:596",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "line": "parser.rs:3269",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "ferromark::escape::escape_text_into",
+        "line": "escape.rs:32",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:362",
+        "samples": 32,
+        "pct": 0.7
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1979",
+        "samples": 32,
+        "pct": 0.7
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:455",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1254",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:27",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:0",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:349",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:28",
+        "samples": 30,
+        "pct": 0.66
+      }
+    ]
+  },
+  {
+    "file": "utf8-attribution-613-1.txt.gz",
+    "total_samples": 4464,
+    "stages": {
+      "harness/runtime": {
+        "samples": 13,
+        "pct": 0.29
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1076,
+        "pct": 24.1
+      },
+      "visible block frames": {
+        "samples": 3206,
+        "pct": 71.82
+      },
+      "visible inline frames": {
+        "samples": 169,
+        "pct": 3.79
+      }
+    },
+    "allocation_stack_samples": 146,
+    "allocation_stack_pct": 3.27,
+    "heading_stack_pct": 1.64,
+    "emit_sort_stack_pct": 0.07,
+    "self": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 1776,
+        "pct": 39.78
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 275,
+        "pct": 6.16
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 275,
+        "pct": 6.16
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 225,
+        "pct": 5.04
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 192,
+        "pct": 4.3
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 170,
+        "pct": 3.81
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 167,
+        "pct": 3.74
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 159,
+        "pct": 3.56
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 150,
+        "pct": 3.36
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 145,
+        "pct": 3.25
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 137,
+        "pct": 3.07
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 112,
+        "pct": 2.51
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 108,
+        "pct": 2.42
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "samples": 54,
+        "pct": 1.21
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 53,
+        "pct": 1.19
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "samples": 44,
+        "pct": 0.99
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 37,
+        "pct": 0.83
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 35,
+        "pct": 0.78
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 32,
+        "pct": 0.72
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 29,
+        "pct": 0.65
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "samples": 25,
+        "pct": 0.56
+      },
+      {
+        "symbol": "_xzm_free",
+        "samples": 23,
+        "pct": 0.52
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "samples": 21,
+        "pct": 0.47
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 18,
+        "pct": 0.4
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::close_paragraph",
+        "samples": 16,
+        "pct": 0.36
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16768267 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4464,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4464,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4464,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4464,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4464,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4451,
+        "pct": 99.71
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4169,
+        "pct": 93.39
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4031,
+        "pct": 90.3
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 3003,
+        "pct": 67.27
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 2570,
+        "pct": 57.57
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 2426,
+        "pct": 54.35
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 495,
+        "pct": 11.09
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 309,
+        "pct": 6.92
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 275,
+        "pct": 6.16
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string",
+        "samples": 272,
+        "pct": 6.09
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 204,
+        "pct": 4.57
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 201,
+        "pct": 4.5
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 192,
+        "pct": 4.3
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 167,
+        "pct": 3.74
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 159,
+        "pct": 3.56
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 158,
+        "pct": 3.54
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 144,
+        "pct": 3.23
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 108,
+        "pct": 2.42
+      },
+      {
+        "symbol": "<alloc::raw_vec::RawVecInner>::finish_grow",
+        "samples": 55,
+        "pct": 1.23
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 55,
+        "pct": 1.23
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2693",
+        "samples": 1704,
+        "pct": 38.17
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 275,
+        "pct": 6.16
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:350",
+        "samples": 265,
+        "pct": 5.94
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1814",
+        "samples": 167,
+        "pct": 3.74
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 167,
+        "pct": 3.74
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "line": "parser.rs:3186",
+        "samples": 140,
+        "pct": 3.14
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:27",
+        "samples": 77,
+        "pct": 1.72
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:28",
+        "samples": 71,
+        "pct": 1.59
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2869",
+        "samples": 69,
+        "pct": 1.55
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2419",
+        "samples": 56,
+        "pct": 1.25
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2831",
+        "samples": 53,
+        "pct": 1.19
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 53,
+        "pct": 1.19
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2830",
+        "samples": 43,
+        "pct": 0.96
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1985",
+        "samples": 33,
+        "pct": 0.74
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1979",
+        "samples": 33,
+        "pct": 0.74
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2747",
+        "samples": 32,
+        "pct": 0.72
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 32,
+        "pct": 0.72
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 31,
+        "pct": 0.69
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1068",
+        "samples": 30,
+        "pct": 0.67
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "line": "parser.rs:1829",
+        "samples": 27,
+        "pct": 0.6
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1225",
+        "samples": 25,
+        "pct": 0.56
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2888",
+        "samples": 25,
+        "pct": 0.56
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:732",
+        "samples": 25,
+        "pct": 0.56
+      },
+      {
+        "symbol": "_xzm_free",
+        "line": "",
+        "samples": 23,
+        "pct": 0.52
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "line": "render.rs:177",
+        "samples": 22,
+        "pct": 0.49
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "line": "parser.rs:2309",
+        "samples": 21,
+        "pct": 0.47
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "line": "",
+        "samples": 21,
+        "pct": 0.47
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2696",
+        "samples": 20,
+        "pct": 0.45
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 19,
+        "pct": 0.43
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2777",
+        "samples": 18,
+        "pct": 0.4
+      }
+    ]
+  },
+  {
+    "file": "utf8-attribution-613-2.txt.gz",
+    "total_samples": 4533,
+    "stages": {
+      "harness/runtime": {
+        "samples": 21,
+        "pct": 0.46
+      },
+      "remaining Ferromark pipeline/render": {
+        "samples": 1095,
+        "pct": 24.16
+      },
+      "visible block frames": {
+        "samples": 3224,
+        "pct": 71.12
+      },
+      "visible inline frames": {
+        "samples": 193,
+        "pct": 4.26
+      }
+    },
+    "allocation_stack_samples": 162,
+    "allocation_stack_pct": 3.57,
+    "heading_stack_pct": 1.74,
+    "emit_sort_stack_pct": 0.11,
+    "self": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 1674,
+        "pct": 36.93
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 276,
+        "pct": 6.09
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 255,
+        "pct": 5.63
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 246,
+        "pct": 5.43
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 208,
+        "pct": 4.59
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 185,
+        "pct": 4.08
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 184,
+        "pct": 4.06
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 164,
+        "pct": 3.62
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 158,
+        "pct": 3.49
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 151,
+        "pct": 3.33
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 127,
+        "pct": 2.8
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 123,
+        "pct": 2.71
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 120,
+        "pct": 2.65
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "samples": 79,
+        "pct": 1.74
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "samples": 68,
+        "pct": 1.5
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 46,
+        "pct": 1.01
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "samples": 41,
+        "pct": 0.9
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "samples": 37,
+        "pct": 0.82
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "samples": 35,
+        "pct": 0.77
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 30,
+        "pct": 0.66
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_fence_line_in_container",
+        "samples": 26,
+        "pct": 0.57
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::close_paragraph",
+        "samples": 24,
+        "pct": 0.53
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_paragraph_line",
+        "samples": 21,
+        "pct": 0.46
+      },
+      {
+        "symbol": "_xzm_free",
+        "samples": 18,
+        "pct": 0.4
+      }
+    ],
+    "inclusive": [
+      {
+        "symbol": "Thread_16768470 DispatchQueue_1: com.apple.main-thread (serial)",
+        "samples": 4533,
+        "pct": 100.0
+      },
+      {
+        "symbol": "start",
+        "samples": 4533,
+        "pct": 100.0
+      },
+      {
+        "symbol": "main",
+        "samples": 4533,
+        "pct": 100.0
+      },
+      {
+        "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>",
+        "samples": 4533,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ox_experiment_driver::main",
+        "samples": 4533,
+        "pct": 100.0
+      },
+      {
+        "symbol": "ferromark::to_html_with_options",
+        "samples": 4512,
+        "pct": 99.54
+      },
+      {
+        "symbol": "ferromark::render_to_writer",
+        "samples": 4247,
+        "pct": 93.69
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "samples": 4100,
+        "pct": 90.45
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "samples": 2953,
+        "pct": 65.14
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "samples": 2521,
+        "pct": 55.61
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "samples": 2376,
+        "pct": 52.42
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "samples": 549,
+        "pct": 12.11
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "samples": 316,
+        "pct": 6.97
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "samples": 255,
+        "pct": 5.63
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::into_string",
+        "samples": 254,
+        "pct": 5.6
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "samples": 230,
+        "pct": 5.07
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "samples": 215,
+        "pct": 4.74
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "samples": 192,
+        "pct": 4.24
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "samples": 184,
+        "pct": 4.06
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "samples": 167,
+        "pct": 3.68
+      },
+      {
+        "symbol": "_platform_memmove",
+        "samples": 158,
+        "pct": 3.49
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "samples": 151,
+        "pct": 3.33
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "samples": 127,
+        "pct": 2.8
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::handle_blank_line_containers",
+        "samples": 79,
+        "pct": 1.74
+      },
+      {
+        "symbol": "_xzm_free",
+        "samples": 70,
+        "pct": 1.54
+      }
+    ],
+    "lines": [
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_html_block_start",
+        "line": "parser.rs:2693",
+        "samples": 1615,
+        "pct": 35.63
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse",
+        "line": "parser.rs:350",
+        "samples": 267,
+        "pct": 5.89
+      },
+      {
+        "symbol": "core::str::converts::from_utf8",
+        "line": "converts.rs:91",
+        "samples": 255,
+        "pct": 5.63
+      },
+      {
+        "symbol": "ferromark::render_to_writer_with_state::<ferromark::DisabledFencedCodeRenderer>",
+        "line": "lib.rs:1814",
+        "samples": 182,
+        "pct": 4.02
+      },
+      {
+        "symbol": "_platform_memmove",
+        "line": "",
+        "samples": 158,
+        "pct": 3.49
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::find_line_end",
+        "line": "parser.rs:3186",
+        "samples": 129,
+        "pct": 2.85
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:27",
+        "samples": 105,
+        "pct": 2.32
+      },
+      {
+        "symbol": "ferromark::block::fixup_list_tight",
+        "line": "mod.rs:28",
+        "samples": 101,
+        "pct": 2.23
+      },
+      {
+        "symbol": "mach_absolute_time",
+        "line": "",
+        "samples": 68,
+        "pct": 1.5
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2869",
+        "samples": 66,
+        "pct": 1.46
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2831",
+        "samples": 65,
+        "pct": 1.43
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2419",
+        "samples": 62,
+        "pct": 1.37
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1985",
+        "samples": 43,
+        "pct": 0.95
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:1979",
+        "samples": 39,
+        "pct": 0.86
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2888",
+        "samples": 37,
+        "pct": 0.82
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:395",
+        "samples": 37,
+        "pct": 0.82
+      },
+      {
+        "symbol": "<ferromark::HeadingIdTracker>::make_id",
+        "line": "lib.rs:1206",
+        "samples": 34,
+        "pct": 0.75
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::peek_html_block_start",
+        "line": "parser.rs:2830",
+        "samples": 33,
+        "pct": 0.73
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1068",
+        "samples": 31,
+        "pct": 0.68
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2747",
+        "samples": 29,
+        "pct": 0.64
+      },
+      {
+        "symbol": "<ferromark::inline::InlineParser>::parse_with_options_in_document",
+        "line": "mod.rs:500",
+        "samples": 26,
+        "pct": 0.57
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::match_containers",
+        "line": "parser.rs:1423",
+        "samples": 25,
+        "pct": 0.55
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::html_block_ends",
+        "line": "parser.rs:2868",
+        "samples": 24,
+        "pct": 0.53
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_list_item",
+        "line": "parser.rs:1829",
+        "samples": 24,
+        "pct": 0.53
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_html_block_line",
+        "line": "parser.rs:2777",
+        "samples": 23,
+        "pct": 0.51
+      },
+      {
+        "symbol": "ferromark::render_inline_content",
+        "line": "lib.rs:2560",
+        "samples": 21,
+        "pct": 0.46
+      },
+      {
+        "symbol": "<ferromark::render::HtmlWriter>::write_bytes",
+        "line": "render.rs:177",
+        "samples": 21,
+        "pct": 0.46
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::try_thematic_break",
+        "line": "parser.rs:2309",
+        "samples": 20,
+        "pct": 0.44
+      },
+      {
+        "symbol": "<ferromark::block::parser::BlockParser>::parse_line_content_with_indent",
+        "line": "parser.rs:1225",
+        "samples": 19,
+        "pct": 0.42
+      },
+      {
+        "symbol": "<ferromark::RenderContext<ferromark::DisabledFencedCodeRenderer>>::render_block_event",
+        "line": "lib.rs:2116",
+        "samples": 19,
+        "pct": 0.42
+      }
+    ]
+  }
+]

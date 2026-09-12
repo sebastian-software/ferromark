@@ -1,0 +1,45 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1760,6 +1760,7 @@
+     };
+     parser.parse(events);
+     let heading_count = parser.heading_count;
++    let has_lists = parser.has_lists;
+     if let Some(report) = resource_limits.as_deref_mut() {
+         report.extend(parser.resource_limits());
+     }
+@@ -1777,7 +1778,7 @@
+     }
+ 
+     // Fix up list tight status (ListStart gets its tight value from ListEnd)
+-    fixup_list_tight(events);
++    if has_lists { fixup_list_tight(events); }
+ 
+     let link_refs = shared_link_refs.unwrap_or(&segment_link_refs);
+     let fn_store_ref = footnote_store.as_ref();
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -164,6 +164,7 @@
+ pub struct BlockParser<'a> {
+     /// Number of emitted ATX/Setext headings, used to size the ID registry.
+     pub(crate) heading_count: usize,
++    pub(crate) has_lists: bool,
+     /// Input bytes.
+     input: &'a [u8],
+     /// Current cursor position.
+@@ -293,6 +294,7 @@
+             input,
+             cursor: Cursor::new(input),
+             heading_count: 0,
++            has_lists: false,
+             in_paragraph: false,
+             paragraph_lines: scratch.paragraph_lines,
+             paragraph_comments: scratch.paragraph_comments,
+@@ -2114,6 +2116,7 @@
+             }
+ 
+             // Start new list (tight will be determined later)
++            self.has_lists = true;
+             events.push(BlockEvent::ListStart { kind, tight: true });
+             self.open_lists.push(OpenList {
+                 kind,
