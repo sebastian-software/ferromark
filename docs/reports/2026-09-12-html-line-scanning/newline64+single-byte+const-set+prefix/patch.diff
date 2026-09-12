@@ -1,0 +1,48 @@
+--- a/src/byte_search.rs
++++ b/src/byte_search.rs
+@@ -263,7 +263,9 @@
+         // lookup arrays each contain a complete readable 16-byte vector.
+         unsafe {
+             let v = vld1q_u8(input.as_ptr());
+-            if self.nibble_valid {
++            if N == 1 {
++                vceqq_u8(v, vdupq_n_u8(self.bytes[0]))
++            } else if self.nibble_valid {
+                 let lo = vqtbl1q_u8(vld1q_u8(self.low.as_ptr()), vandq_u8(v, vdupq_n_u8(15)));
+                 let hi = vqtbl1q_u8(vld1q_u8(self.high.as_ptr()), vshrq_n_u8::<4>(v));
+                 vtstq_u8(lo, hi)
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2723,7 +2723,12 @@
+             }
+             let content_start = self.cursor.offset();
+             let rest = self.cursor.remaining_slice();
+-            let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
++            let distance = if rest.len() >= 64 {
++                const { crate::byte_search::ByteSet::new(b"\n") }.find(&rest[..64])
++                    .unwrap_or_else(|| 64 + memchr::memchr(b'\n', &rest[64..]).unwrap_or(rest.len() - 64))
++            } else {
++                memchr::memchr(b'\n', rest).unwrap_or(rest.len())
++            };
+             let line_end = content_start + distance;
+             let end = line_end + usize::from(line_end < self.input.len());
+             self.cursor = Cursor::new_at(self.input, end);
+@@ -2790,8 +2795,8 @@
+     /// Check if the current line starts an HTML block.
+     /// `in_paragraph` controls whether type 7 is allowed to start (it can't interrupt).
+     fn peek_html_block_start(&self, in_paragraph: bool) -> Option<HtmlBlockKind> {
+-        let line = self.current_line_slice();
+-        if line.is_empty() {
++        let line = self.cursor.remaining_slice();
++        if line.first() != Some(&b'<') {
+             return None;
+         }
+ 
+@@ -2836,6 +2841,7 @@
+         if in_paragraph {
+             return None;
+         }
++        let line = self.current_line_slice();
+         if let Some((_name, tag_end)) = self.parse_html_tag(line)
+             && line[tag_end..].iter().all(|&b| Self::is_html_whitespace(b))
+         {

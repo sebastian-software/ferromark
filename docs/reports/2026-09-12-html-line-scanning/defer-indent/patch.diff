@@ -1,0 +1,28 @@
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -2711,7 +2711,11 @@
+             self.current_col = 0;
+             let kind = self.html_block.unwrap();
+             let start = self.cursor.offset();
+-            self.skip_indent();
++            // Probe: only blank detection needs indentation during scanning.
++            let blank_ended = matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7);
++            if blank_ended {
++                self.cursor.skip_whitespace();
++            }
+             if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
+                 && (self.cursor.is_eof() || self.at_line_ending())
+             {
+@@ -2731,6 +2735,12 @@
+             if self.html_block_ends(kind, &self.input[content_start..line_end]) {
+                 self.html_block = None;
+                 events.push(BlockEvent::HtmlBlockEnd);
++            }
++            if self.html_block.is_none() || self.cursor.is_eof() {
++                let end_cursor = self.cursor;
++                self.cursor = Cursor::new_at(self.input, start);
++                self.skip_indent();
++                self.cursor = end_cursor;
+             }
+         }
+     }

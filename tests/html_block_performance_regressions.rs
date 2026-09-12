@@ -203,3 +203,68 @@ fn all_commonmark_block_tags_interrupt_paragraphs_case_insensitively() {
         );
     }
 }
+
+#[test]
+fn deep_html_indentation_preserves_raw_lines_and_following_code_columns() {
+    let indent = " \t".repeat(256);
+    for (opening, ending) in [("<div>", ""), ("<custom>", ""), ("<pre>", "</pre>")] {
+        let first = format!("{opening}\n");
+        let content = format!("{indent}<p>raw</p>\r\n");
+        let last = format!("{indent}{ending}\r\n");
+        let html = if ending.is_empty() {
+            format!("{first}{content}")
+        } else {
+            format!("{first}{content}{last}")
+        };
+        let input = format!("{first}{content}{last}    code\n\n# After\n");
+        let options =
+            ferromark::options!(Options::commonmark(); render_policy: RenderPolicy::Trusted);
+        assert_eq!(
+            to_html_with_options(&input, &options),
+            format!("{html}<pre><code>code\n</code></pre>\n<h1>After</h1>\n")
+        );
+        let ranges: Vec<_> = blocks(&input, options)
+            .into_iter()
+            .filter_map(|event| match event {
+                BlockEvent::HtmlBlockText(range) => Some(range),
+                _ => None,
+            })
+            .collect();
+        let mut offset = 0;
+        let expected: Vec<_> = html
+            .split_inclusive('\n')
+            .map(|line| {
+                let range = Range::from_usize(offset, offset + line.len());
+                offset += line.len();
+                range
+            })
+            .collect();
+        assert_eq!(ranges, expected);
+    }
+}
+
+#[test]
+fn root_html_line_scans_preserve_boundaries_and_unterminated_tails() {
+    let options = ferromark::options!(Options::commonmark(); render_policy: RenderPolicy::Trusted);
+    for width in (0..=80).chain([127, 128, 129, 255, 256, 257, 1024, 65536]) {
+        for newline in ["\n", "\r\n"] {
+            let first = "<pre>\n";
+            let body = format!("{}é\0\r{newline}", "x".repeat(width));
+            for tail in ["", "x", "é", "\r", "\t "] {
+                let input = format!("{first}{body}{body}{tail}");
+                let mut expected = vec![BlockEvent::HtmlBlockStart];
+                let mut offset = 0;
+                for line in input.split_inclusive('\n') {
+                    expected.push(BlockEvent::HtmlBlockText(Range::from_usize(
+                        offset,
+                        offset + line.len(),
+                    )));
+                    offset += line.len();
+                }
+                expected.push(BlockEvent::HtmlBlockEnd);
+                assert_eq!(blocks(&input, options.clone()), expected);
+                assert_eq!(to_html_with_options(&input, &options), input);
+            }
+        }
+    }
+}
