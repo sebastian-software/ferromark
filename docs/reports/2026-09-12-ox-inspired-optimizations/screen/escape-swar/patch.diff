@@ -1,0 +1,33 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -107,16 +107,25 @@
+ }
+ 
+ // Escape policy stays here; the shared scanner knows only byte sets.
++#[allow(dead_code)]
+ const TEXT_SPECIALS: crate::byte_search::ByteSet<4> = crate::byte_search::ByteSet::new(b"<>&\"");
++#[allow(dead_code)]
+ const ATTR_SPECIALS: crate::byte_search::ByteSet<5> = crate::byte_search::ByteSet::new(b"<>&\"'");
+ 
+ #[inline]
+ fn first_escape_short<const ATTR: bool>(input: &[u8]) -> Option<usize> {
+-    if ATTR {
+-        ATTR_SPECIALS.find(input)
+-    } else {
+-        TEXT_SPECIALS.find(input)
+-    }
++    const ONES:u64=0x0101010101010101;
++    const HIGH:u64=0x8080808080808080;
++    fn zero(x:u64)->u64 {x.wrapping_sub(ONES)&!x&HIGH}
++    let mut i=0;
++    while input.len()-i>=8 {
++        let x=u64::from_le_bytes(input[i..i+8].try_into().unwrap());
++        let mut m=zero((x|(ONES*2))^(ONES*62))|zero(x^(ONES*38))|zero(x^(ONES*34));
++        if ATTR {m|=zero(x^(ONES*39));}
++        if m!=0 {return Some(i+(m.trailing_zeros()/8) as usize);}
++        i+=8;
++    }
++    input[i..].iter().position(|&b| matches!(b,b'<'|b'>'|b'&'|b'"') || (ATTR && b==b'\'')).map(|n|n+i)
+ }
+ 
+ /// URL percent-encode special characters, then HTML-escape for href attribute.

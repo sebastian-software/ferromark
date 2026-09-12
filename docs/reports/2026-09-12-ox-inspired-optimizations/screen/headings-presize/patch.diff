@@ -1,0 +1,13 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1736,6 +1736,10 @@
+     /// directly, preserving block parsing and the full inline parser. The caller
+     /// resets document state first; other event shapes keep the stateful path.
+     fn render_events(&mut self, input: &[u8], mut events: &[BlockEvent]) {
++        if self.options.heading_ids {
++            let count=events.iter().filter(|e|matches!(e,BlockEvent::HeadingStart{..})).count();
++            if count>0 {let tracker=self.heading_id_tracker.get_or_insert_with(HeadingIdTracker::new);tracker.used.reserve(count);tracker.arena.reserve(count.saturating_mul(16));}
++        }
+         if let [
+             BlockEvent::ParagraphStart,
+             BlockEvent::Text(range),

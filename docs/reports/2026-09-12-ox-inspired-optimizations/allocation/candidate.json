@@ -1,0 +1,272 @@
+[
+  {
+    "calls": 39,
+    "case": "ox-large-cm",
+    "requested_bytes": 581131,
+    "engine": "candidate"
+  },
+  {
+    "calls": 39,
+    "case": "ox-large-tables",
+    "requested_bytes": 581131,
+    "engine": "candidate"
+  },
+  {
+    "calls": 44,
+    "case": "ox-huge-tables",
+    "requested_bytes": 12306587,
+    "engine": "candidate"
+  },
+  {
+    "calls": 10,
+    "case": "short",
+    "requested_bytes": 3312,
+    "engine": "candidate"
+  },
+  {
+    "calls": 1,
+    "case": "short-reuse",
+    "requested_bytes": 64,
+    "engine": "candidate"
+  },
+  {
+    "calls": 4,
+    "case": "plain",
+    "requested_bytes": 15731,
+    "engine": "candidate"
+  },
+  {
+    "calls": 9,
+    "case": "multiline",
+    "requested_bytes": 33851,
+    "engine": "candidate"
+  },
+  {
+    "calls": 19,
+    "case": "inline",
+    "requested_bytes": 41479,
+    "engine": "candidate"
+  },
+  {
+    "calls": 22,
+    "case": "lists",
+    "requested_bytes": 105635,
+    "engine": "candidate"
+  },
+  {
+    "calls": 4,
+    "case": "code",
+    "requested_bytes": 30978,
+    "engine": "candidate"
+  },
+  {
+    "calls": 8,
+    "case": "tables",
+    "requested_bytes": 142013,
+    "engine": "candidate"
+  },
+  {
+    "calls": 12,
+    "case": "headings",
+    "requested_bytes": 100990,
+    "engine": "candidate"
+  },
+  {
+    "calls": 12,
+    "case": "unique-headings",
+    "requested_bytes": 103979,
+    "engine": "candidate"
+  },
+  {
+    "calls": 5,
+    "case": "long-prose",
+    "requested_bytes": 345632,
+    "engine": "candidate"
+  },
+  {
+    "calls": 11,
+    "case": "late-marker",
+    "requested_bytes": 395349,
+    "engine": "candidate"
+  },
+  {
+    "calls": 3,
+    "case": "long-code",
+    "requested_bytes": 160630,
+    "engine": "candidate"
+  },
+  {
+    "calls": 6,
+    "case": "escape-dense",
+    "requested_bytes": 33225,
+    "engine": "candidate"
+  },
+  {
+    "calls": 10,
+    "case": "commonmark/tiny",
+    "requested_bytes": 3312,
+    "engine": "candidate"
+  },
+  {
+    "calls": 18,
+    "case": "commonmark/short-100b",
+    "requested_bytes": 4244,
+    "engine": "candidate"
+  },
+  {
+    "calls": 10,
+    "case": "gfm_overlap/tiny",
+    "requested_bytes": 3312,
+    "engine": "candidate"
+  },
+  {
+    "calls": 18,
+    "case": "gfm_overlap/short-100b",
+    "requested_bytes": 4244,
+    "engine": "candidate"
+  },
+  {
+    "calls": 8,
+    "case": "tables/tables-plain",
+    "requested_bytes": 87068,
+    "engine": "candidate"
+  },
+  {
+    "calls": 16,
+    "case": "tables/tables-commonmark-inline",
+    "requested_bytes": 116288,
+    "engine": "candidate"
+  },
+  {
+    "calls": 21,
+    "case": "tables/tables-links",
+    "requested_bytes": 121666,
+    "engine": "candidate"
+  },
+  {
+    "calls": 42,
+    "case": "commonmark/publication-5k",
+    "requested_bytes": 38308,
+    "engine": "candidate"
+  },
+  {
+    "calls": 8,
+    "case": "guard/plain",
+    "requested_bytes": 87068,
+    "engine": "candidate"
+  },
+  {
+    "calls": 16,
+    "case": "guard/mixed",
+    "requested_bytes": 116288,
+    "engine": "candidate"
+  },
+  {
+    "calls": 21,
+    "case": "guard/links",
+    "requested_bytes": 121666,
+    "engine": "candidate"
+  },
+  {
+    "calls": 65,
+    "case": "guard/mixed-document",
+    "requested_bytes": 45064,
+    "engine": "candidate"
+  },
+  {
+    "calls": 8,
+    "case": "guard/one-table",
+    "requested_bytes": 58868,
+    "engine": "candidate"
+  },
+  {
+    "calls": 4,
+    "case": "guard/long-cells",
+    "requested_bytes": 121160,
+    "engine": "candidate"
+  },
+  {
+    "calls": 110,
+    "case": "guard/wide9",
+    "requested_bytes": 144924,
+    "engine": "candidate"
+  },
+  {
+    "calls": 110,
+    "case": "guard/wide16",
+    "requested_bytes": 238521,
+    "engine": "candidate"
+  },
+  {
+    "calls": 220,
+    "case": "guard/escapes-code",
+    "requested_bytes": 49873,
+    "engine": "candidate"
+  },
+  {
+    "calls": 5,
+    "case": "guard/prose",
+    "requested_bytes": 31500,
+    "engine": "candidate"
+  },
+  {
+    "calls": 17,
+    "case": "guard/links-prose",
+    "requested_bytes": 30086,
+    "engine": "candidate"
+  },
+  {
+    "calls": 1222,
+    "case": "guard/edge-cases",
+    "requested_bytes": 914115,
+    "engine": "candidate"
+  },
+  {
+    "calls": 34,
+    "case": "guard/references",
+    "requested_bytes": 10002,
+    "engine": "candidate"
+  },
+  {
+    "calls": 2,
+    "case": "guard/empty",
+    "requested_bytes": 2560,
+    "engine": "candidate"
+  },
+  {
+    "calls": 42,
+    "case": "guard/gfm-document",
+    "requested_bytes": 38308,
+    "engine": "candidate"
+  },
+  {
+    "calls": 4,
+    "case": "guard/long-delimiters",
+    "requested_bytes": 38516,
+    "engine": "candidate"
+  },
+  {
+    "calls": 23,
+    "case": "guard/deep-emphasis",
+    "requested_bytes": 215363,
+    "engine": "candidate"
+  },
+  {
+    "calls": 22,
+    "case": "mdx/short",
+    "requested_bytes": 6584,
+    "engine": "candidate"
+  },
+  {
+    "calls": 652,
+    "case": "mdx/segments",
+    "requested_bytes": 323031,
+    "engine": "candidate"
+  },
+  {
+    "calls": 460,
+    "case": "mdx/tables-code",
+    "requested_bytes": 355233,
+    "engine": "candidate"
+  }
+]

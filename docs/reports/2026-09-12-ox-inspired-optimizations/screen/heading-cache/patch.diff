@@ -1,0 +1,34 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1086,6 +1086,7 @@
+     used: std::collections::HashMap<u64, SmallVec<[SlugEntry; 1]>, rustc_hash::FxBuildHasher>,
+     /// Reusable buffer holding the id returned by `make_id`.
+     slug_buf: Vec<u8>,
++    slug_cache: std::collections::HashMap<Box<[u8]>,Vec<u8>,rustc_hash::FxBuildHasher>,
+ }
+ 
+ /// One recorded base slug: its bytes in the arena and how often it repeated.
+@@ -1107,11 +1108,13 @@
+                 rustc_hash::FxBuildHasher,
+             ),
+             slug_buf: Vec::with_capacity(64),
++            slug_cache: Default::default(),
+         }
+     }
+ 
+     fn reset(&mut self) {
+         self.arena.clear();
++        self.slug_cache.clear();
+         self.used.clear();
+         self.slug_buf.clear();
+     }
+@@ -1123,7 +1126,8 @@
+     /// buffer and is valid until the next call. Recording a slug appends to
+     /// the arena instead of allocating a per-heading map key.
+     fn make_id(&mut self, raw: &[u8]) -> &str {
+-        generate_slug_into(raw, &mut self.slug_buf);
++        if let Some(slug)=self.slug_cache.get(raw) {self.slug_buf.clear();self.slug_buf.extend_from_slice(slug);} else {generate_slug_into(raw,&mut self.slug_buf);self.slug_cache.insert(raw.to_vec().into_boxed_slice(),self.slug_buf.clone());}
++
+         if self.slug_buf.is_empty() {
+             self.slug_buf.extend_from_slice(b"heading");
+         }

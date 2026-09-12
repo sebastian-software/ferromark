@@ -191,3 +191,20 @@ fn renderer_meta_decodes_escapes_and_entities() {
         vec![(Some("rust".to_owned()), Some("a+b &c".to_owned()))]
     );
 }
+#[test]
+fn code_language_preserves_plain_escaped_and_entity_spellings() {
+    for (language, expected) in [
+        ("rust", "rust"),
+        ("c\\+\\+", "c++"),
+        ("a&amp;b", "a&amp;b"),
+        ("a&quot;b", "a&quot;b"),
+        ("café", "café"),
+    ] {
+        let input = format!("```{language}\nvalue\n```\n");
+        assert_eq!(
+            ferromark::to_html(&input),
+            format!("<pre><code class=\"language-{expected}\">value\n</code></pre>\n"),
+            "{language:?}",
+        );
+    }
+}

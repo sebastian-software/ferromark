@@ -971,6 +971,8 @@ pub fn try_to_html_into_with_renderer(
 struct ParagraphState {
     /// Collected text content (joined with newlines).
     content: Vec<u8>,
+    /// Contiguous source text, copied only when normalization separates it.
+    borrowed: Option<Range>,
     /// Whether we're currently in a paragraph.
     in_paragraph: bool,
 }
@@ -979,6 +981,7 @@ impl ParagraphState {
     fn new() -> Self {
         Self {
             content: Vec::new(),
+            borrowed: None,
             in_paragraph: false,
         }
     }
@@ -986,27 +989,65 @@ impl ParagraphState {
     fn start(&mut self) {
         self.in_paragraph = true;
         self.content.clear();
+        self.borrowed = None;
     }
 
     fn reset(&mut self) {
         self.content.clear();
+        self.borrowed = None;
         self.in_paragraph = false;
     }
 
-    fn add_text(&mut self, text: &[u8]) {
+    fn add_text(&mut self, input: &[u8], range: Range) {
+        if self.borrowed.is_none() && self.content.is_empty() {
+            self.borrowed = Some(range);
+            return;
+        }
+        if let Some(previous) = self.borrowed.as_mut()
+            && previous.end == range.start
+        {
+            previous.end = range.end;
+            return;
+        }
+        self.materialize(input);
         #[cfg(feature = "profiling")]
-        profiling::record_paragraph_copy(text.len());
-        self.content.extend_from_slice(text);
+        profiling::record_paragraph_copy(range.len() as usize);
+        self.content.extend_from_slice(range.slice(input));
     }
 
-    fn add_soft_break(&mut self) {
+    fn materialize(&mut self, input: &[u8]) {
+        if let Some(range) = self.borrowed.take() {
+            #[cfg(feature = "profiling")]
+            profiling::record_paragraph_copy(range.len() as usize);
+            self.content.extend_from_slice(range.slice(input));
+        }
+    }
+
+    fn add_soft_break(&mut self, input: &[u8]) {
+        // Only reuse an actual LF. CRLF, stripped indentation and container
+        // prefixes must still produce the normalized inline input.
+        if let Some(range) = self.borrowed.as_mut()
+            && input.get(range.end as usize) == Some(&b'\n')
+        {
+            range.end += 1;
+            return;
+        }
+        self.materialize(input);
         #[cfg(feature = "profiling")]
         profiling::record_paragraph_copy(1);
         self.content.push(b'\n');
     }
 
-    fn finish(&mut self) -> &[u8] {
+    fn finish<'a>(&'a mut self, input: &'a [u8]) -> &'a [u8] {
         self.in_paragraph = false;
+        if let Some(range) = self.borrowed.take() {
+            let text = range.slice(input);
+            let end = text
+                .iter()
+                .rposition(|&b| !matches!(b, b' ' | b'\t'))
+                .map_or(0, |i| i + 1);
+            return &text[..end];
+        }
         // CommonMark: strip trailing spaces/tabs from paragraph content
         while self
             .content
@@ -1023,6 +1064,8 @@ impl ParagraphState {
 struct HeadingState {
     /// Collected text content (joined with newlines).
     content: Vec<u8>,
+    /// Contiguous source text, copied only when normalization separates it.
+    borrowed: Option<Range>,
     /// Whether we're currently in a heading.
     in_heading: bool,
     /// Current heading level (stored for deferred tag emission).
@@ -1033,6 +1076,7 @@ impl HeadingState {
     fn new() -> Self {
         Self {
             content: Vec::new(),
+            borrowed: None,
             in_heading: false,
             level: 0,
         }
@@ -1041,24 +1085,60 @@ impl HeadingState {
     fn start(&mut self) {
         self.in_heading = true;
         self.content.clear();
+        self.borrowed = None;
     }
 
     fn reset(&mut self) {
         self.content.clear();
+        self.borrowed = None;
         self.in_heading = false;
         self.level = 0;
     }
 
-    fn add_text(&mut self, text: &[u8]) {
-        self.content.extend_from_slice(text);
+    fn add_text(&mut self, input: &[u8], range: Range) {
+        if self.borrowed.is_none() && self.content.is_empty() {
+            self.borrowed = Some(range);
+            return;
+        }
+        if let Some(previous) = self.borrowed.as_mut()
+            && previous.end == range.start
+        {
+            previous.end = range.end;
+            return;
+        }
+        self.materialize(input);
+        self.content.extend_from_slice(range.slice(input));
     }
 
-    fn add_soft_break(&mut self) {
+    fn materialize(&mut self, input: &[u8]) {
+        if let Some(range) = self.borrowed.take() {
+            self.content.extend_from_slice(range.slice(input));
+        }
+    }
+
+    fn add_soft_break(&mut self, input: &[u8]) {
+        // Only reuse an actual LF. CRLF, stripped indentation and container
+        // prefixes must still produce the normalized inline input.
+        if let Some(range) = self.borrowed.as_mut()
+            && input.get(range.end as usize) == Some(&b'\n')
+        {
+            range.end += 1;
+            return;
+        }
+        self.materialize(input);
         self.content.push(b'\n');
     }
 
-    fn finish(&mut self) -> &[u8] {
+    fn finish<'a>(&'a mut self, input: &'a [u8]) -> &'a [u8] {
         self.in_heading = false;
+        if let Some(range) = self.borrowed.take() {
+            let text = range.slice(input);
+            let end = text
+                .iter()
+                .rposition(|&b| !matches!(b, b' ' | b'\t'))
+                .map_or(0, |i| i + 1);
+            return &text[..end];
+        }
         while self
             .content
             .last()
@@ -1679,6 +1759,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
         BlockParser::new_with_options(input, options.clone())
     };
     parser.parse(events);
+    let heading_count = parser.heading_count;
     if let Some(report) = resource_limits.as_deref_mut() {
         report.extend(parser.resource_limits());
     }
@@ -1702,6 +1783,17 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
     let fn_store_ref = footnote_store.as_ref();
     inline_parser.begin_document();
     render_state.reset(options);
+    if options.heading_ids && heading_count > 0 {
+        let tracker = render_state
+            .heading_id_tracker
+            .get_or_insert_with(HeadingIdTracker::new);
+        // Reuse the count from block parsing; a second event scan penalizes
+        // documents with many list/table events but few headings.
+        tracker.used.reserve(heading_count);
+        // A starting estimate only; long slugs still grow the arena normally.
+        tracker.arena.reserve(heading_count.saturating_mul(16));
+    }
+
     footnote_numbers.reset_document(footnote_store.as_ref().map_or(0, FootnoteStore::len));
     {
         let mut context = RenderContext::new(
@@ -1873,7 +1965,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
             }
             BlockEvent::ParagraphEnd => {
                 // Parse all accumulated paragraph content at once
-                let content = para_state.finish();
+                let content = para_state.finish(input);
 
                 // Emit pending task checkbox before paragraph content
                 emit_pending_task_checkbox(pending_task, writer);
@@ -1916,7 +2008,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 heading_state.level = *level;
             }
             BlockEvent::HeadingEnd { level } => {
-                let content = heading_state.finish();
+                let content = heading_state.finish(input);
 
                 // Emit heading open tag (deferred from HeadingStart)
                 let mut collected_id = None;
@@ -1986,9 +2078,9 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
             BlockEvent::HtmlBlockEnd => {}
             BlockEvent::SoftBreak => {
                 if para_state.in_paragraph {
-                    para_state.add_soft_break();
+                    para_state.add_soft_break(input);
                 } else if heading_state.in_heading {
-                    heading_state.add_soft_break();
+                    heading_state.add_soft_break(input);
                 } else {
                     writer.write_str("\n");
                 }
@@ -1997,9 +2089,9 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                 let text = range.slice(input);
                 if para_state.in_paragraph {
                     // Accumulate for later parsing
-                    para_state.add_text(text);
+                    para_state.add_text(input, *range);
                 } else if heading_state.in_heading {
-                    heading_state.add_text(text);
+                    heading_state.add_text(input, *range);
                 } else if cell_state.in_cell {
                     cell_state.add_text(*range, input);
                 } else {
@@ -2415,6 +2507,12 @@ fn render_inline_content(
     #[cfg(feature = "profiling")]
     profiling::record_inline_events(inline_events, inline_events.capacity());
 
+    // Plain text still passes through inline parsing and entity handling, but
+    // needs none of the general emitter's image/link state.
+    if let [InlineEvent::Text(range)] = inline_events.as_slice() {
+        writer.write_text_with_entities(range.slice(text));
+        return;
+    }
     let mut image_state = None;
     let link_base = normalized_link_base(options);
     for event in inline_events.iter() {

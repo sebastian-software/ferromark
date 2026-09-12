@@ -1,0 +1,272 @@
+[
+  {
+    "calls": 146,
+    "case": "ox-large-cm",
+    "requested_bytes": 603963,
+    "engine": "baseline"
+  },
+  {
+    "calls": 146,
+    "case": "ox-large-tables",
+    "requested_bytes": 603963,
+    "engine": "baseline"
+  },
+  {
+    "calls": 2210,
+    "case": "ox-huge-tables",
+    "requested_bytes": 12881823,
+    "engine": "baseline"
+  },
+  {
+    "calls": 10,
+    "case": "short",
+    "requested_bytes": 3312,
+    "engine": "baseline"
+  },
+  {
+    "calls": 1,
+    "case": "short-reuse",
+    "requested_bytes": 64,
+    "engine": "baseline"
+  },
+  {
+    "calls": 5,
+    "case": "plain",
+    "requested_bytes": 15792,
+    "engine": "baseline"
+  },
+  {
+    "calls": 11,
+    "case": "multiline",
+    "requested_bytes": 33977,
+    "engine": "baseline"
+  },
+  {
+    "calls": 20,
+    "case": "inline",
+    "requested_bytes": 41558,
+    "engine": "baseline"
+  },
+  {
+    "calls": 24,
+    "case": "lists",
+    "requested_bytes": 105665,
+    "engine": "baseline"
+  },
+  {
+    "calls": 104,
+    "case": "code",
+    "requested_bytes": 31978,
+    "engine": "baseline"
+  },
+  {
+    "calls": 8,
+    "case": "tables",
+    "requested_bytes": 142013,
+    "engine": "baseline"
+  },
+  {
+    "calls": 18,
+    "case": "headings",
+    "requested_bytes": 122711,
+    "engine": "baseline"
+  },
+  {
+    "calls": 19,
+    "case": "unique-headings",
+    "requested_bytes": 125718,
+    "engine": "baseline"
+  },
+  {
+    "calls": 5,
+    "case": "long-prose",
+    "requested_bytes": 345632,
+    "engine": "baseline"
+  },
+  {
+    "calls": 11,
+    "case": "late-marker",
+    "requested_bytes": 395349,
+    "engine": "baseline"
+  },
+  {
+    "calls": 4,
+    "case": "long-code",
+    "requested_bytes": 160634,
+    "engine": "baseline"
+  },
+  {
+    "calls": 6,
+    "case": "escape-dense",
+    "requested_bytes": 33225,
+    "engine": "baseline"
+  },
+  {
+    "calls": 10,
+    "case": "commonmark/tiny",
+    "requested_bytes": 3312,
+    "engine": "baseline"
+  },
+  {
+    "calls": 18,
+    "case": "commonmark/short-100b",
+    "requested_bytes": 4244,
+    "engine": "baseline"
+  },
+  {
+    "calls": 10,
+    "case": "gfm_overlap/tiny",
+    "requested_bytes": 3312,
+    "engine": "baseline"
+  },
+  {
+    "calls": 18,
+    "case": "gfm_overlap/short-100b",
+    "requested_bytes": 4244,
+    "engine": "baseline"
+  },
+  {
+    "calls": 8,
+    "case": "tables/tables-plain",
+    "requested_bytes": 87068,
+    "engine": "baseline"
+  },
+  {
+    "calls": 16,
+    "case": "tables/tables-commonmark-inline",
+    "requested_bytes": 116288,
+    "engine": "baseline"
+  },
+  {
+    "calls": 21,
+    "case": "tables/tables-links",
+    "requested_bytes": 121666,
+    "engine": "baseline"
+  },
+  {
+    "calls": 62,
+    "case": "commonmark/publication-5k",
+    "requested_bytes": 38861,
+    "engine": "baseline"
+  },
+  {
+    "calls": 8,
+    "case": "guard/plain",
+    "requested_bytes": 87068,
+    "engine": "baseline"
+  },
+  {
+    "calls": 16,
+    "case": "guard/mixed",
+    "requested_bytes": 116288,
+    "engine": "baseline"
+  },
+  {
+    "calls": 21,
+    "case": "guard/links",
+    "requested_bytes": 121666,
+    "engine": "baseline"
+  },
+  {
+    "calls": 69,
+    "case": "guard/mixed-document",
+    "requested_bytes": 45383,
+    "engine": "baseline"
+  },
+  {
+    "calls": 8,
+    "case": "guard/one-table",
+    "requested_bytes": 58868,
+    "engine": "baseline"
+  },
+  {
+    "calls": 4,
+    "case": "guard/long-cells",
+    "requested_bytes": 121160,
+    "engine": "baseline"
+  },
+  {
+    "calls": 110,
+    "case": "guard/wide9",
+    "requested_bytes": 144924,
+    "engine": "baseline"
+  },
+  {
+    "calls": 110,
+    "case": "guard/wide16",
+    "requested_bytes": 238521,
+    "engine": "baseline"
+  },
+  {
+    "calls": 220,
+    "case": "guard/escapes-code",
+    "requested_bytes": 49873,
+    "engine": "baseline"
+  },
+  {
+    "calls": 6,
+    "case": "guard/prose",
+    "requested_bytes": 31545,
+    "engine": "baseline"
+  },
+  {
+    "calls": 18,
+    "case": "guard/links-prose",
+    "requested_bytes": 30142,
+    "engine": "baseline"
+  },
+  {
+    "calls": 1224,
+    "case": "guard/edge-cases",
+    "requested_bytes": 913904,
+    "engine": "baseline"
+  },
+  {
+    "calls": 36,
+    "case": "guard/references",
+    "requested_bytes": 10047,
+    "engine": "baseline"
+  },
+  {
+    "calls": 2,
+    "case": "guard/empty",
+    "requested_bytes": 2560,
+    "engine": "baseline"
+  },
+  {
+    "calls": 62,
+    "case": "guard/gfm-document",
+    "requested_bytes": 38861,
+    "engine": "baseline"
+  },
+  {
+    "calls": 4,
+    "case": "guard/long-delimiters",
+    "requested_bytes": 38516,
+    "engine": "baseline"
+  },
+  {
+    "calls": 23,
+    "case": "guard/deep-emphasis",
+    "requested_bytes": 215363,
+    "engine": "baseline"
+  },
+  {
+    "calls": 24,
+    "case": "mdx/short",
+    "requested_bytes": 6618,
+    "engine": "baseline"
+  },
+  {
+    "calls": 653,
+    "case": "mdx/segments",
+    "requested_bytes": 323039,
+    "engine": "baseline"
+  },
+  {
+    "calls": 561,
+    "case": "mdx/tables-code",
+    "requested_bytes": 355641,
+    "engine": "baseline"
+  }
+]

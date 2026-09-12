@@ -1,0 +1,92 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1083,9 +1083,10 @@
+     /// All assigned IDs seen so far, concatenated.
+     arena: Vec<u8>,
+     /// Maps a slug hash to the entries whose slug has that hash.
+-    used: std::collections::HashMap<u64, SmallVec<[SlugEntry; 1]>, rustc_hash::FxBuildHasher>,
++    used: std::collections::HashMap<u64, usize, rustc_hash::FxBuildHasher>,
+     /// Reusable buffer holding the id returned by `make_id`.
+     slug_buf: Vec<u8>,
++    entries: Vec<SlugEntry>,
+ }
+ 
+ /// One recorded base slug: its bytes in the arena and how often it repeated.
+@@ -1096,6 +1097,7 @@
+     len: usize,
+     /// Next suffix to try when this slug is repeated.
+     next_suffix: usize,
++    next: Option<usize>,
+ }
+ 
+ impl HeadingIdTracker {
+@@ -1107,11 +1109,13 @@
+                 rustc_hash::FxBuildHasher,
+             ),
+             slug_buf: Vec::with_capacity(64),
++            entries: Vec::new(),
+         }
+     }
+ 
+     fn reset(&mut self) {
+         self.arena.clear();
++        self.entries.clear();
+         self.used.clear();
+         self.slug_buf.clear();
+     }
+@@ -1155,40 +1159,21 @@
+         std::str::from_utf8(&self.slug_buf).unwrap_or("heading")
+     }
+ 
+-    fn find_entry(&self, hash: u64, slug: &[u8]) -> Option<&SlugEntry> {
+-        self.used.get(&hash).and_then(|entries| {
+-            entries
+-                .iter()
+-                .find(|entry| &self.arena[entry.start..entry.start + entry.len] == slug)
+-        })
+-    }
+-
+-    fn record_id(&mut self, hash: u64) {
+-        let start = self.arena.len();
+-        let len = self.slug_buf.len();
+-        self.arena.extend_from_slice(&self.slug_buf);
+-        self.used.entry(hash).or_default().push(SlugEntry {
+-            start,
+-            len,
+-            next_suffix: 1,
+-        });
+-    }
+-
+-    fn set_next_suffix(
+-        &mut self,
+-        hash: u64,
+-        base_start: usize,
+-        base_len: usize,
+-        next_suffix: usize,
+-    ) {
+-        if let Some(entry) = self.used.get_mut(&hash).and_then(|entries| {
+-            entries
+-                .iter_mut()
+-                .find(|entry| entry.start == base_start && entry.len == base_len)
+-        }) {
+-            entry.next_suffix = next_suffix;
+-        }
+-    }
++    fn find_entry(&self, hash:u64,slug:&[u8])->Option<&SlugEntry> {
++        let mut index=self.used.get(&hash).copied();
++        while let Some(i)=index {let entry=&self.entries[i];if &self.arena[entry.start..entry.start+entry.len]==slug {return Some(entry);}index=entry.next;}
++        None
++    }
++    fn record_id(&mut self,hash:u64) {
++        let start=self.arena.len();let len=self.slug_buf.len();self.arena.extend_from_slice(&self.slug_buf);
++        let index=self.entries.len();let next=self.used.insert(hash,index);
++        self.entries.push(SlugEntry{start,len,next_suffix:1,next});
++    }
++    fn set_next_suffix(&mut self,hash:u64,base_start:usize,base_len:usize,next_suffix:usize) {
++        let mut index=self.used.get(&hash).copied();
++        while let Some(i)=index {let entry=&mut self.entries[i];if entry.start==base_start && entry.len==base_len {entry.next_suffix=next_suffix;return;}index=entry.next;}
++    }
++
+ }
+ 
+ fn hash_bytes(bytes: &[u8]) -> u64 {

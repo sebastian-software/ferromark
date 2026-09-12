@@ -1,0 +1,491 @@
+diff --git a/src/block/parser.rs b/src/block/parser.rs
+index a293bc5..9e7c477 100644
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -162,6 +162,8 @@ pub(crate) struct BlockScratch {
+ 
+ /// Block parser state.
+ pub struct BlockParser<'a> {
++    /// Number of emitted ATX/Setext headings, used to size the ID registry.
++    pub(crate) heading_count: usize,
+     /// Input bytes.
+     input: &'a [u8],
+     /// Current cursor position.
+@@ -290,6 +292,7 @@ impl<'a> BlockParser<'a> {
+         Self {
+             input,
+             cursor: Cursor::new(input),
++            heading_count: 0,
+             in_paragraph: false,
+             paragraph_lines: scratch.paragraph_lines,
+             paragraph_comments: scratch.paragraph_comments,
+@@ -2411,6 +2414,7 @@ impl<'a> BlockParser<'a> {
+         self.mark_container_has_content();
+ 
+         // Emit heading events
++        self.heading_count += 1;
+         events.push(BlockEvent::HeadingStart { level });
+ 
+         if content_end > content_start {
+@@ -2504,6 +2508,7 @@ impl<'a> BlockParser<'a> {
+         // Mark the current container as having content
+         self.mark_container_has_content();
+ 
++        self.heading_count += 1;
+         events.push(BlockEvent::HeadingStart { level });
+ 
+         self.emit_paragraph_items(events, true);
+diff --git a/src/byte_search.rs b/src/byte_search.rs
+index 626a321..2b65440 100644
+--- a/src/byte_search.rs
++++ b/src/byte_search.rs
+@@ -20,6 +20,12 @@ pub struct ByteSet<const N: usize> {
+     )]
+     bytes: [u8; N],
+     membership: [bool; 256],
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    low: [u8; 16],
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    high: [u8; 16],
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    nibble_valid: bool,
+ }
+ 
+ impl<const N: usize> ByteSet<N> {
+@@ -32,9 +38,60 @@ impl<const N: usize> ByteSet<N> {
+             membership[bytes[i] as usize] = true;
+             i += 1;
+         }
++        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++        let (low, high, nibble_valid) = {
++            // Each high nibble selects a row of allowed low nibbles. Assign
++            // one bit to each distinct nonempty row (at most eight), sharing
++            // bits only for identical rows. The two table lookups intersect
++            // exactly for members of the set, including arbitrary non-ASCII
++            // bytes. More than eight distinct rows use byte comparisons.
++            let mut rows = [0u16; 16];
++            let mut i = 0;
++            while i < N {
++                rows[(bytes[i] >> 4) as usize] |= 1u16 << (bytes[i] & 15);
++                i += 1;
++            }
++            let mut low = [0u8; 16];
++            let mut high = [0u8; 16];
++            let mut groups = 0;
++            let mut h = 0;
++            let mut valid = true;
++            while h < 16 {
++                if rows[h] != 0 {
++                    let mut previous = 0;
++                    while previous < h && rows[previous] != rows[h] {
++                        previous += 1;
++                    }
++                    if previous < h {
++                        high[h] = high[previous];
++                    } else if groups < 8 {
++                        let bit = 1u8 << groups;
++                        groups += 1;
++                        high[h] = bit;
++                        let mut l = 0;
++                        while l < 16 {
++                            if rows[h] & (1 << l) != 0 {
++                                low[l] |= bit;
++                            }
++                            l += 1;
++                        }
++                    } else {
++                        valid = false;
++                    }
++                }
++                h += 1;
++            }
++            (low, high, valid)
++        };
+         Self {
+             bytes: *bytes,
+             membership,
++            #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++            low,
++            #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++            high,
++            #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++            nibble_valid,
+         }
+     }
+ 
+@@ -72,8 +129,17 @@ impl<const N: usize> ByteSet<N> {
+             }
+             let mut pos = 0;
+             while len - pos >= 16 {
+-                if self.chunk_has_match(&input[pos..]) {
+-                    return self.first_in_chunk(&input[pos..pos + 16]).map(|i| pos + i);
++                #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++                {
++                    if let Some(i) = self.first_in_chunk(&input[pos..pos + 16]) {
++                        return Some(pos + i);
++                    }
++                }
++                #[cfg(target_arch = "x86_64")]
++                {
++                    if self.chunk_has_match(&input[pos..]) {
++                        return self.first_in_chunk(&input[pos..pos + 16]).map(|i| pos + i);
++                    }
+                 }
+                 pos += 16;
+             }
+@@ -150,23 +216,64 @@ impl<const N: usize> ByteSet<N> {
+     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+     #[inline]
+     fn chunk_has_match(&self, input: &[u8]) -> bool {
++        use core::arch::aarch64::*;
++        // SAFETY: NEON is enabled by the target-feature cfg.
++        unsafe { vmaxvq_u8(self.neon_matches(input)) != 0 }
++    }
++
++    #[cfg(all(
++        target_arch = "aarch64",
++        target_feature = "neon",
++        target_endian = "little"
++    ))]
++    #[inline]
++    fn first_in_chunk(&self, input: &[u8]) -> Option<usize> {
++        use core::arch::aarch64::*;
++        let lanes = self.neon_matches(input);
++        // Narrow each pair of 0x00/0xff lanes into two four-bit groups.
++        // This preserves lane order and avoids rescanning a matching chunk.
++        // SAFETY: NEON is enabled by the target-feature cfg.
++        let mask = unsafe {
++            vget_lane_u64(
++                vreinterpret_u64_u8(vshrn_n_u16::<4>(vreinterpretq_u16_u8(lanes))),
++                0,
++            )
++        };
++        (mask != 0).then(|| (mask.trailing_zeros() / 4) as usize)
++    }
++
++    #[cfg(all(
++        target_arch = "aarch64",
++        target_feature = "neon",
++        target_endian = "big"
++    ))]
++    #[inline]
++    fn first_in_chunk(&self, input: &[u8]) -> Option<usize> {
++        // The packed integer mask relies on little-endian lane order.
++        self.find_scalar(input)
++    }
++
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    #[inline]
++    fn neon_matches(&self, input: &[u8]) -> core::arch::aarch64::uint8x16_t {
+         use core::arch::aarch64::*;
+         assert!(input.len() >= 16);
+         // SAFETY: a complete readable vector is available. NEON is guaranteed
+-        // by the module's target-feature cfg; vld1q_u8 accepts unaligned input.
++        // by the target-feature cfg; vld1q_u8 accepts unaligned input. The
++        // lookup arrays each contain a complete readable 16-byte vector.
+         unsafe {
+             let v = vld1q_u8(input.as_ptr());
+-            let mut mask = vdupq_n_u8(0);
+-            for &byte in &self.bytes {
+-                mask = vorrq_u8(mask, vceqq_u8(v, vdupq_n_u8(byte)));
++            if self.nibble_valid {
++                let lo = vqtbl1q_u8(vld1q_u8(self.low.as_ptr()), vandq_u8(v, vdupq_n_u8(15)));
++                let hi = vqtbl1q_u8(vld1q_u8(self.high.as_ptr()), vshrq_n_u8::<4>(v));
++                vtstq_u8(lo, hi)
++            } else {
++                let mut mask = vdupq_n_u8(0);
++                for &byte in &self.bytes {
++                    mask = vorrq_u8(mask, vceqq_u8(v, vdupq_n_u8(byte)));
++                }
++                mask
+             }
+-            vmaxvq_u8(mask) != 0
+         }
+     }
+-
+-    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+-    #[inline]
+-    fn first_in_chunk(&self, input: &[u8]) -> Option<usize> {
+-        self.find_scalar(input)
+-    }
+ }
+diff --git a/src/lib.rs b/src/lib.rs
+index 8be3ee6..e25ac05 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -971,6 +971,8 @@ pub fn try_to_html_into_with_renderer(
+ struct ParagraphState {
+     /// Collected text content (joined with newlines).
+     content: Vec<u8>,
++    /// Contiguous source text, copied only when normalization separates it.
++    borrowed: Option<Range>,
+     /// Whether we're currently in a paragraph.
+     in_paragraph: bool,
+ }
+@@ -979,6 +981,7 @@ impl ParagraphState {
+     fn new() -> Self {
+         Self {
+             content: Vec::new(),
++            borrowed: None,
+             in_paragraph: false,
+         }
+     }
+@@ -986,27 +989,65 @@ impl ParagraphState {
+     fn start(&mut self) {
+         self.in_paragraph = true;
+         self.content.clear();
++        self.borrowed = None;
+     }
+ 
+     fn reset(&mut self) {
+         self.content.clear();
++        self.borrowed = None;
+         self.in_paragraph = false;
+     }
+ 
+-    fn add_text(&mut self, text: &[u8]) {
++    fn add_text(&mut self, input: &[u8], range: Range) {
++        if self.borrowed.is_none() && self.content.is_empty() {
++            self.borrowed = Some(range);
++            return;
++        }
++        if let Some(previous) = self.borrowed.as_mut()
++            && previous.end == range.start
++        {
++            previous.end = range.end;
++            return;
++        }
++        self.materialize(input);
+         #[cfg(feature = "profiling")]
+-        profiling::record_paragraph_copy(text.len());
+-        self.content.extend_from_slice(text);
++        profiling::record_paragraph_copy(range.len() as usize);
++        self.content.extend_from_slice(range.slice(input));
+     }
+ 
+-    fn add_soft_break(&mut self) {
++    fn materialize(&mut self, input: &[u8]) {
++        if let Some(range) = self.borrowed.take() {
++            #[cfg(feature = "profiling")]
++            profiling::record_paragraph_copy(range.len() as usize);
++            self.content.extend_from_slice(range.slice(input));
++        }
++    }
++
++    fn add_soft_break(&mut self, input: &[u8]) {
++        // Only reuse an actual LF. CRLF, stripped indentation and container
++        // prefixes must still produce the normalized inline input.
++        if let Some(range) = self.borrowed.as_mut()
++            && input.get(range.end as usize) == Some(&b'\n')
++        {
++            range.end += 1;
++            return;
++        }
++        self.materialize(input);
+         #[cfg(feature = "profiling")]
+         profiling::record_paragraph_copy(1);
+         self.content.push(b'\n');
+     }
+ 
+-    fn finish(&mut self) -> &[u8] {
++    fn finish<'a>(&'a mut self, input: &'a [u8]) -> &'a [u8] {
+         self.in_paragraph = false;
++        if let Some(range) = self.borrowed.take() {
++            let text = range.slice(input);
++            let end = text
++                .iter()
++                .rposition(|&b| !matches!(b, b' ' | b'\t'))
++                .map_or(0, |i| i + 1);
++            return &text[..end];
++        }
+         // CommonMark: strip trailing spaces/tabs from paragraph content
+         while self
+             .content
+@@ -1023,6 +1064,8 @@ impl ParagraphState {
+ struct HeadingState {
+     /// Collected text content (joined with newlines).
+     content: Vec<u8>,
++    /// Contiguous source text, copied only when normalization separates it.
++    borrowed: Option<Range>,
+     /// Whether we're currently in a heading.
+     in_heading: bool,
+     /// Current heading level (stored for deferred tag emission).
+@@ -1033,6 +1076,7 @@ impl HeadingState {
+     fn new() -> Self {
+         Self {
+             content: Vec::new(),
++            borrowed: None,
+             in_heading: false,
+             level: 0,
+         }
+@@ -1041,24 +1085,60 @@ impl HeadingState {
+     fn start(&mut self) {
+         self.in_heading = true;
+         self.content.clear();
++        self.borrowed = None;
+     }
+ 
+     fn reset(&mut self) {
+         self.content.clear();
++        self.borrowed = None;
+         self.in_heading = false;
+         self.level = 0;
+     }
+ 
+-    fn add_text(&mut self, text: &[u8]) {
+-        self.content.extend_from_slice(text);
++    fn add_text(&mut self, input: &[u8], range: Range) {
++        if self.borrowed.is_none() && self.content.is_empty() {
++            self.borrowed = Some(range);
++            return;
++        }
++        if let Some(previous) = self.borrowed.as_mut()
++            && previous.end == range.start
++        {
++            previous.end = range.end;
++            return;
++        }
++        self.materialize(input);
++        self.content.extend_from_slice(range.slice(input));
++    }
++
++    fn materialize(&mut self, input: &[u8]) {
++        if let Some(range) = self.borrowed.take() {
++            self.content.extend_from_slice(range.slice(input));
++        }
+     }
+ 
+-    fn add_soft_break(&mut self) {
++    fn add_soft_break(&mut self, input: &[u8]) {
++        // Only reuse an actual LF. CRLF, stripped indentation and container
++        // prefixes must still produce the normalized inline input.
++        if let Some(range) = self.borrowed.as_mut()
++            && input.get(range.end as usize) == Some(&b'\n')
++        {
++            range.end += 1;
++            return;
++        }
++        self.materialize(input);
+         self.content.push(b'\n');
+     }
+ 
+-    fn finish(&mut self) -> &[u8] {
++    fn finish<'a>(&'a mut self, input: &'a [u8]) -> &'a [u8] {
+         self.in_heading = false;
++        if let Some(range) = self.borrowed.take() {
++            let text = range.slice(input);
++            let end = text
++                .iter()
++                .rposition(|&b| !matches!(b, b' ' | b'\t'))
++                .map_or(0, |i| i + 1);
++            return &text[..end];
++        }
+         while self
+             .content
+             .last()
+@@ -1679,6 +1759,7 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+         BlockParser::new_with_options(input, options.clone())
+     };
+     parser.parse(events);
++    let heading_count = parser.heading_count;
+     if let Some(report) = resource_limits.as_deref_mut() {
+         report.extend(parser.resource_limits());
+     }
+@@ -1702,6 +1783,17 @@ fn render_to_writer_with_state<R: FencedCodeRenderer + ?Sized>(
+     let fn_store_ref = footnote_store.as_ref();
+     inline_parser.begin_document();
+     render_state.reset(options);
++    if options.heading_ids && heading_count > 0 {
++        let tracker = render_state
++            .heading_id_tracker
++            .get_or_insert_with(HeadingIdTracker::new);
++        // Reuse the count from block parsing; a second event scan penalizes
++        // documents with many list/table events but few headings.
++        tracker.used.reserve(heading_count);
++        // A starting estimate only; long slugs still grow the arena normally.
++        tracker.arena.reserve(heading_count.saturating_mul(16));
++    }
++
+     footnote_numbers.reset_document(footnote_store.as_ref().map_or(0, FootnoteStore::len));
+     {
+         let mut context = RenderContext::new(
+@@ -1873,7 +1965,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
+             }
+             BlockEvent::ParagraphEnd => {
+                 // Parse all accumulated paragraph content at once
+-                let content = para_state.finish();
++                let content = para_state.finish(input);
+ 
+                 // Emit pending task checkbox before paragraph content
+                 emit_pending_task_checkbox(pending_task, writer);
+@@ -1916,7 +2008,7 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
+                 heading_state.level = *level;
+             }
+             BlockEvent::HeadingEnd { level } => {
+-                let content = heading_state.finish();
++                let content = heading_state.finish(input);
+ 
+                 // Emit heading open tag (deferred from HeadingStart)
+                 let mut collected_id = None;
+@@ -1986,9 +2078,9 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
+             BlockEvent::HtmlBlockEnd => {}
+             BlockEvent::SoftBreak => {
+                 if para_state.in_paragraph {
+-                    para_state.add_soft_break();
++                    para_state.add_soft_break(input);
+                 } else if heading_state.in_heading {
+-                    heading_state.add_soft_break();
++                    heading_state.add_soft_break(input);
+                 } else {
+                     writer.write_str("\n");
+                 }
+@@ -1997,9 +2089,9 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
+                 let text = range.slice(input);
+                 if para_state.in_paragraph {
+                     // Accumulate for later parsing
+-                    para_state.add_text(text);
++                    para_state.add_text(input, *range);
+                 } else if heading_state.in_heading {
+-                    heading_state.add_text(text);
++                    heading_state.add_text(input, *range);
+                 } else if cell_state.in_cell {
+                     cell_state.add_text(*range, input);
+                 } else {
+@@ -2415,6 +2507,12 @@ fn render_inline_content(
+     #[cfg(feature = "profiling")]
+     profiling::record_inline_events(inline_events, inline_events.capacity());
+ 
++    // Plain text still passes through inline parsing and entity handling, but
++    // needs none of the general emitter's image/link state.
++    if let [InlineEvent::Text(range)] = inline_events.as_slice() {
++        writer.write_text_with_entities(range.slice(text));
++        return;
++    }
+     let mut image_state = None;
+     let link_base = normalized_link_base(options);
+     for event in inline_events.iter() {
+diff --git a/src/render.rs b/src/render.rs
+index 57579cf..99e58c4 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -566,7 +566,10 @@ impl HtmlWriter {
+         Some(decode_entities_commonmark(meta_str).into_owned())
+     }
+ 
+-    fn unescape_backslashes(input: &[u8]) -> Vec<u8> {
++    fn unescape_backslashes(input: &[u8]) -> std::borrow::Cow<'_, [u8]> {
++        if memchr::memchr(b'\\', input).is_none() {
++            return std::borrow::Cow::Borrowed(input);
++        }
+         let mut out = Vec::with_capacity(input.len());
+         let mut i = 0usize;
+         while i < input.len() {
+@@ -578,7 +581,7 @@ impl HtmlWriter {
+                 i += 1;
+             }
+         }
+-        out
++        std::borrow::Cow::Owned(out)
+     }
+ 
+     #[inline]
