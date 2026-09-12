@@ -1,0 +1,11 @@
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -137,7 +137,7 @@
+         let capacity = if input_len == 0 {
+             0
+         } else {
+-            (input_len + input_len / 4).max(64)
++            input_len.saturating_mul(2).max(64)
+         };
+         Self {
+             out: Vec::with_capacity(capacity),

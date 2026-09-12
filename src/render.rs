@@ -566,7 +566,10 @@ impl HtmlWriter {
         Some(decode_entities_commonmark(meta_str).into_owned())
     }
 
-    fn unescape_backslashes(input: &[u8]) -> Vec<u8> {
+    fn unescape_backslashes(input: &[u8]) -> std::borrow::Cow<'_, [u8]> {
+        if memchr::memchr(b'\\', input).is_none() {
+            return std::borrow::Cow::Borrowed(input);
+        }
         let mut out = Vec::with_capacity(input.len());
         let mut i = 0usize;
         while i < input.len() {
@@ -578,7 +581,7 @@ impl HtmlWriter {
                 i += 1;
             }
         }
-        out
+        std::borrow::Cow::Owned(out)
     }
 
     #[inline]

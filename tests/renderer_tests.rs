@@ -1,6 +1,48 @@
 use ferromark::{Options, Renderer, to_html_with_options};
 
 #[test]
+fn paragraph_fragments_preserve_line_endings_indentation_and_document_reset() {
+    let options = Options::commonmark();
+    let mut renderer = Renderer::with_options(options.clone());
+    for (input, expected) in [
+        (
+            "first\nsecond\n\nthird",
+            "<p>first\nsecond</p>\n<p>third</p>\n",
+        ),
+        (
+            "first\r\nsecond\r\n\r\nthird",
+            "<p>first\nsecond</p>\n<p>third</p>\n",
+        ),
+        (
+            "first  \nsecond\n\nthird",
+            "<p>first<br />\nsecond</p>\n<p>third</p>\n",
+        ),
+        (
+            "first\\\nsecond\n\nthird",
+            "<p>first<br />\nsecond</p>\n<p>third</p>\n",
+        ),
+        (
+            "> first\n> second\n\nthird",
+            "<blockquote>\n<p>first\nsecond</p>\n</blockquote>\n<p>third</p>\n",
+        ),
+        (
+            "first\n  second\n\nthird",
+            "<p>first\nsecond</p>\n<p>third</p>\n",
+        ),
+        ("first \t\n\nsecond", "<p>first</p>\n<p>second</p>\n"),
+        (
+            "one &amp; two\n\n*three*",
+            "<p>one &amp; two</p>\n<p><em>three</em></p>\n",
+        ),
+        ("", ""),
+        ("final", "<p>final</p>\n"),
+    ] {
+        assert_eq!(to_html_with_options(input, &options), expected, "{input:?}");
+        assert_eq!(renderer.render(input), expected, "reused: {input:?}");
+    }
+}
+
+#[test]
 fn single_paragraph_preserves_references_escapes_policy_and_session_reset() {
     for policy in [
         ferromark::RenderPolicy::Trusted,

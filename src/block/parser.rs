@@ -162,6 +162,8 @@ pub(crate) struct BlockScratch {
 
 /// Block parser state.
 pub struct BlockParser<'a> {
+    /// Number of emitted ATX/Setext headings, used to size the ID registry.
+    pub(crate) heading_count: usize,
     /// Input bytes.
     input: &'a [u8],
     /// Current cursor position.
@@ -290,6 +292,7 @@ impl<'a> BlockParser<'a> {
         Self {
             input,
             cursor: Cursor::new(input),
+            heading_count: 0,
             in_paragraph: false,
             paragraph_lines: scratch.paragraph_lines,
             paragraph_comments: scratch.paragraph_comments,
@@ -2411,6 +2414,7 @@ impl<'a> BlockParser<'a> {
         self.mark_container_has_content();
 
         // Emit heading events
+        self.heading_count += 1;
         events.push(BlockEvent::HeadingStart { level });
 
         if content_end > content_start {
@@ -2504,6 +2508,7 @@ impl<'a> BlockParser<'a> {
         // Mark the current container as having content
         self.mark_container_has_content();
 
+        self.heading_count += 1;
         events.push(BlockEvent::HeadingStart { level });
 
         self.emit_paragraph_items(events, true);

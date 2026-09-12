@@ -1,0 +1,10 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -2415,6 +2415,7 @@
+     #[cfg(feature = "profiling")]
+     profiling::record_inline_events(inline_events, inline_events.capacity());
+ 
++    if let [InlineEvent::Text(range)]=inline_events.as_slice() {writer.write_text_with_entities(range.slice(text));return;}
+     let mut image_state = None;
+     let link_base = normalized_link_base(options);
+     for event in inline_events.iter() {

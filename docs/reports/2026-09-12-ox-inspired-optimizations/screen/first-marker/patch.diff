@@ -1,0 +1,132 @@
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -34,8 +34,8 @@
+     resolve_reference_links_into,
+ };
+ use marks::{
+-    Mark, MarkBuffer, MarkSummary, collect_marks, collect_marks_highlight,
+-    collect_marks_highlight_superscript, collect_marks_superscript, flags,
++    Mark, MarkBuffer, MarkSummary,  
++      flags,
+ };
+ use math::{MathSpan, resolve_math_spans_into};
+ use memchr::memchr;
+@@ -352,15 +352,12 @@
+         let event_start = events.len();
+         let may_have_inline_footnotes = inline_footnotes && has_inline_footnote_candidate(text);
+         let caret_syntax = superscript || may_have_inline_footnotes;
+-        let has_specials = if highlight && caret_syntax {
+-            has_inline_specials_highlight_superscript(text)
+-        } else if highlight {
+-            has_inline_specials_highlight(text)
+-        } else if caret_syntax {
+-            has_inline_specials_superscript(text)
+-        } else {
+-            has_inline_specials(text)
+-        };
++        let first_special = if highlight && caret_syntax {
++            simd::next_mark_special::<true,true>(text)
++        } else if highlight {simd::next_mark_special::<true,false>(text)}
++        else if caret_syntax {simd::next_mark_special::<false,true>(text)}
++        else {simd::next_mark_special::<false,false>(text)};
++        let has_specials=first_special.is_some();
+ 
+         // Check for potential autolink literal triggers when enabled
+         let may_have_autolinks = autolink_literals && has_autolink_candidates(text);
+@@ -386,13 +383,13 @@
+         self.mark_buffer.reserve_for_text(text.len());
+         let summary = if has_specials {
+             if highlight && caret_syntax {
+-                collect_marks_highlight_superscript(text, &mut self.mark_buffer)
++                marks::collect_marks_from::<true,true>(text, &mut self.mark_buffer,first_special.unwrap())
+             } else if highlight {
+-                collect_marks_highlight(text, &mut self.mark_buffer)
++                marks::collect_marks_from::<true,false>(text, &mut self.mark_buffer,first_special.unwrap())
+             } else if caret_syntax {
+-                collect_marks_superscript(text, &mut self.mark_buffer)
++                marks::collect_marks_from::<false,true>(text, &mut self.mark_buffer,first_special.unwrap())
+             } else {
+-                collect_marks(text, &mut self.mark_buffer)
++                marks::collect_marks_from::<false,false>(text, &mut self.mark_buffer,first_special.unwrap())
+             }
+         } else {
+             self.mark_buffer.clear();
+@@ -1661,18 +1658,22 @@
+ }
+ 
+ #[inline]
++#[allow(dead_code)]
+ fn has_inline_specials(input: &[u8]) -> bool {
+     simd::has_inline_specials::<false, false>(input)
+ }
+ #[inline]
++#[allow(dead_code)]
+ fn has_inline_specials_highlight(input: &[u8]) -> bool {
+     simd::has_inline_specials::<true, false>(input)
+ }
+ #[inline]
++#[allow(dead_code)]
+ fn has_inline_specials_superscript(input: &[u8]) -> bool {
+     simd::has_inline_specials::<false, true>(input)
+ }
+ #[inline]
++#[allow(dead_code)]
+ fn has_inline_specials_highlight_superscript(input: &[u8]) -> bool {
+     simd::has_inline_specials::<true, true>(input)
+ }
+--- a/src/inline/marks.rs
++++ b/src/inline/marks.rs
+@@ -252,7 +252,7 @@
+ /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
+ pub fn collect_marks(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+     assert_input_size(text.len());
+-    collect_marks_impl::<false, false>(text, buffer)
++    collect_marks_impl::<false, false>(text, buffer,0)
+ }
+ 
+ /// Scan text and collect marks with highlight support enabled.
+@@ -262,7 +262,7 @@
+ /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
+ pub fn collect_marks_highlight(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+     assert_input_size(text.len());
+-    collect_marks_impl::<true, false>(text, buffer)
++    collect_marks_impl::<true, false>(text, buffer,0)
+ }
+ 
+ /// Scan text and collect marks with superscript support enabled.
+@@ -272,7 +272,7 @@
+ /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
+ pub fn collect_marks_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+     assert_input_size(text.len());
+-    collect_marks_impl::<false, true>(text, buffer)
++    collect_marks_impl::<false, true>(text, buffer,0)
+ }
+ 
+ /// Scan text and collect marks with highlight and superscript enabled.
+@@ -282,17 +282,18 @@
+ /// Panics when `text` exceeds [`crate::MAX_INPUT_BYTES`].
+ pub fn collect_marks_highlight_superscript(text: &[u8], buffer: &mut MarkBuffer) -> MarkSummary {
+     assert_input_size(text.len());
+-    collect_marks_impl::<true, true>(text, buffer)
++    collect_marks_impl::<true, true>(text, buffer,0)
+ }
+ 
+ fn collect_marks_impl<const HIGHLIGHT: bool, const SUPERSCRIPT: bool>(
+     text: &[u8],
+     buffer: &mut MarkBuffer,
++    from:usize,
+ ) -> MarkSummary {
+     buffer.clear();
+     let mut summary = MarkSummary::default();
+ 
+-    let mut pos = 0;
++    let mut pos = from;
+     let len = text.len();
+ 
+     while pos < len {
+@@ -986,3 +987,5 @@
+         );
+     }
+ }
++
++pub(crate) fn collect_marks_from<const H:bool,const S:bool>(text:&[u8],buffer:&mut MarkBuffer,from:usize)->MarkSummary {assert_input_size(text.len());collect_marks_impl::<H,S>(text,buffer,from)}

@@ -1,0 +1,53 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1679,6 +1679,7 @@
+         BlockParser::new_with_options(input, options.clone())
+     };
+     parser.parse(events);
++    let heading_count=parser.heading_count;
+     if let Some(report) = resource_limits.as_deref_mut() {
+         report.extend(parser.resource_limits());
+     }
+@@ -1702,6 +1703,8 @@
+     let fn_store_ref = footnote_store.as_ref();
+     inline_parser.begin_document();
+     render_state.reset(options);
++    if options.heading_ids && heading_count>0 {let tracker=render_state.heading_id_tracker.get_or_insert_with(HeadingIdTracker::new);tracker.used.reserve(heading_count);tracker.arena.reserve(heading_count.saturating_mul(16));}
++
+     footnote_numbers.reset_document(footnote_store.as_ref().map_or(0, FootnoteStore::len));
+     {
+         let mut context = RenderContext::new(
+--- a/src/block/parser.rs
++++ b/src/block/parser.rs
+@@ -162,6 +162,7 @@
+ 
+ /// Block parser state.
+ pub struct BlockParser<'a> {
++    pub(crate) heading_count: usize,
+     /// Input bytes.
+     input: &'a [u8],
+     /// Current cursor position.
+@@ -290,6 +291,7 @@
+         Self {
+             input,
+             cursor: Cursor::new(input),
++            heading_count: 0,
+             in_paragraph: false,
+             paragraph_lines: scratch.paragraph_lines,
+             paragraph_comments: scratch.paragraph_comments,
+@@ -2411,6 +2413,7 @@
+         self.mark_container_has_content();
+ 
+         // Emit heading events
++        self.heading_count+=1;
+         events.push(BlockEvent::HeadingStart { level });
+ 
+         if content_end > content_start {
+@@ -2504,6 +2507,7 @@
+         // Mark the current container as having content
+         self.mark_container_has_content();
+ 
++        self.heading_count+=1;
+         events.push(BlockEvent::HeadingStart { level });
+ 
+         self.emit_paragraph_items(events, true);

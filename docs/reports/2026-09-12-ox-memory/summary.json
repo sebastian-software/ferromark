@@ -1,0 +1,1037 @@
+[
+  {
+    "case": "ox-large-cm",
+    "input_bytes": 49898,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 39,
+      "live_after_render": 124744,
+      "peak_live_bytes": 357226,
+      "requested_bytes": 581131
+    },
+    "ox-grow": {
+      "allocation_calls": 22,
+      "live_after_render": 99796,
+      "peak_live_bytes": 731305,
+      "requested_bytes": 741686
+    },
+    "ox-presize": {
+      "allocation_calls": 20,
+      "live_after_render": 99796,
+      "peak_live_bytes": 1321161,
+      "requested_bytes": 1331542
+    }
+  },
+  {
+    "case": "ox-large-tables",
+    "input_bytes": 49898,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 39,
+      "live_after_render": 124744,
+      "peak_live_bytes": 357226,
+      "requested_bytes": 581131
+    },
+    "ox-grow": {
+      "allocation_calls": 22,
+      "live_after_render": 99796,
+      "peak_live_bytes": 731305,
+      "requested_bytes": 741686
+    },
+    "ox-presize": {
+      "allocation_calls": 20,
+      "live_after_render": 99796,
+      "peak_live_bytes": 1321161,
+      "requested_bytes": 1331542
+    }
+  },
+  {
+    "case": "ox-huge-tables",
+    "input_bytes": 1072848,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 44,
+      "live_after_render": 2682120,
+      "peak_live_bytes": 7481162,
+      "requested_bytes": 12306587
+    },
+    "ox-grow": {
+      "allocation_calls": 27,
+      "live_after_render": 2145696,
+      "peak_live_bytes": 15318645,
+      "requested_bytes": 15654442
+    },
+    "ox-presize": {
+      "allocation_calls": 25,
+      "live_after_render": 2145696,
+      "peak_live_bytes": 28171925,
+      "requested_bytes": 28507722
+    }
+  },
+  {
+    "case": "short",
+    "input_bytes": 17,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 10,
+      "live_after_render": 64,
+      "peak_live_bytes": 3312,
+      "requested_bytes": 3312
+    },
+    "ox-grow": {
+      "allocation_calls": 14,
+      "live_after_render": 68,
+      "peak_live_bytes": 1841,
+      "requested_bytes": 1876
+    },
+    "ox-presize": {
+      "allocation_calls": 13,
+      "live_after_render": 68,
+      "peak_live_bytes": 20801,
+      "requested_bytes": 20836
+    }
+  },
+  {
+    "case": "plain",
+    "input_bytes": 6300,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 4,
+      "live_after_render": 7875,
+      "peak_live_bytes": 15731,
+      "requested_bytes": 15731
+    },
+    "ox-grow": {
+      "allocation_calls": 13,
+      "live_after_render": 12600,
+      "peak_live_bytes": 37413,
+      "requested_bytes": 37414
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 12600,
+      "peak_live_bytes": 66101,
+      "requested_bytes": 66102
+    }
+  },
+  {
+    "case": "multiline",
+    "input_bytes": 7500,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 9,
+      "live_after_render": 9375,
+      "peak_live_bytes": 26363,
+      "requested_bytes": 33851
+    },
+    "ox-grow": {
+      "allocation_calls": 13,
+      "live_after_render": 15000,
+      "peak_live_bytes": 39813,
+      "requested_bytes": 39814
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 15000,
+      "peak_live_bytes": 76693,
+      "requested_bytes": 76694
+    }
+  },
+  {
+    "case": "inline",
+    "input_bytes": 8100,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 19,
+      "live_after_render": 20250,
+      "peak_live_bytes": 31354,
+      "requested_bytes": 41479
+    },
+    "ox-grow": {
+      "allocation_calls": 22,
+      "live_after_render": 16200,
+      "peak_live_bytes": 270341,
+      "requested_bytes": 280722
+    },
+    "ox-presize": {
+      "allocation_calls": 19,
+      "live_after_render": 16200,
+      "peak_live_bytes": 213045,
+      "requested_bytes": 223426
+    }
+  },
+  {
+    "case": "lists",
+    "input_bytes": 5300,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 22,
+      "live_after_render": 13250,
+      "peak_live_bytes": 57874,
+      "requested_bytes": 105635
+    },
+    "ox-grow": {
+      "allocation_calls": 17,
+      "live_after_render": 21200,
+      "peak_live_bytes": 275341,
+      "requested_bytes": 285942
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 21200,
+      "peak_live_bytes": 156605,
+      "requested_bytes": 167206
+    }
+  },
+  {
+    "case": "code",
+    "input_bytes": 6200,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 4,
+      "live_after_render": 15500,
+      "peak_live_bytes": 23228,
+      "requested_bytes": 30978
+    },
+    "ox-grow": {
+      "allocation_calls": 13,
+      "live_after_render": 12400,
+      "peak_live_bytes": 37213,
+      "requested_bytes": 37214
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 12400,
+      "peak_live_bytes": 65901,
+      "requested_bytes": 65902
+    }
+  },
+  {
+    "case": "tables",
+    "input_bytes": 7500,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 8,
+      "live_after_render": 18750,
+      "peak_live_bytes": 80222,
+      "requested_bytes": 142013
+    },
+    "ox-grow": {
+      "allocation_calls": 16,
+      "live_after_render": 30000,
+      "peak_live_bytes": 153085,
+      "requested_bytes": 168086
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 30000,
+      "peak_live_bytes": 214557,
+      "requested_bytes": 229558
+    }
+  },
+  {
+    "case": "headings",
+    "input_bytes": 4200,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 12,
+      "live_after_render": 21000,
+      "peak_live_bytes": 69264,
+      "requested_bytes": 100990
+    },
+    "ox-grow": {
+      "allocation_calls": 18,
+      "live_after_render": 16800,
+      "peak_live_bytes": 160869,
+      "requested_bytes": 169270
+    },
+    "ox-presize": {
+      "allocation_calls": 15,
+      "live_after_render": 16800,
+      "peak_live_bytes": 144533,
+      "requested_bytes": 152934
+    }
+  },
+  {
+    "case": "unique-headings",
+    "input_bytes": 4388,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 12,
+      "live_after_render": 21940,
+      "peak_live_bytes": 70972,
+      "requested_bytes": 103979
+    },
+    "ox-grow": {
+      "allocation_calls": 18,
+      "live_after_render": 17552,
+      "peak_live_bytes": 161621,
+      "requested_bytes": 170398
+    },
+    "ox-presize": {
+      "allocation_calls": 15,
+      "live_after_render": 17552,
+      "peak_live_bytes": 145285,
+      "requested_bytes": 154062
+    }
+  },
+  {
+    "case": "long-prose",
+    "input_bytes": 65536,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 5,
+      "live_after_render": 81920,
+      "peak_live_bytes": 344096,
+      "requested_bytes": 345632
+    },
+    "ox-grow": {
+      "allocation_calls": 12,
+      "live_after_render": 131072,
+      "peak_live_bytes": 184573,
+      "requested_bytes": 184574
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 131072,
+      "peak_live_bytes": 659709,
+      "requested_bytes": 659710
+    }
+  },
+  {
+    "case": "late-marker",
+    "input_bytes": 65540,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 11,
+      "live_after_render": 81925,
+      "peak_live_bytes": 393813,
+      "requested_bytes": 395349
+    },
+    "ox-grow": {
+      "allocation_calls": 12,
+      "live_after_render": 131080,
+      "peak_live_bytes": 184581,
+      "requested_bytes": 184582
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 131080,
+      "peak_live_bytes": 659717,
+      "requested_bytes": 659718
+    }
+  },
+  {
+    "case": "long-code",
+    "input_bytes": 70712,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 3,
+      "live_after_render": 88390,
+      "peak_live_bytes": 160630,
+      "requested_bytes": 160630
+    },
+    "ox-grow": {
+      "allocation_calls": 12,
+      "live_after_render": 141424,
+      "peak_live_bytes": 199021,
+      "requested_bytes": 199022
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 141424,
+      "peak_live_bytes": 711021,
+      "requested_bytes": 711022
+    }
+  },
+  {
+    "case": "escape-dense",
+    "input_bytes": 2700,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 6,
+      "live_after_render": 13500,
+      "peak_live_bytes": 20412,
+      "requested_bytes": 33225
+    },
+    "ox-grow": {
+      "allocation_calls": 14,
+      "live_after_render": 10800,
+      "peak_live_bytes": 23325,
+      "requested_bytes": 28726
+    },
+    "ox-presize": {
+      "allocation_calls": 13,
+      "live_after_render": 10800,
+      "peak_live_bytes": 35629,
+      "requested_bytes": 41030
+    }
+  },
+  {
+    "case": "commonmark/tiny",
+    "input_bytes": 18,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 10,
+      "live_after_render": 64,
+      "peak_live_bytes": 3312,
+      "requested_bytes": 3312
+    },
+    "ox-grow": {
+      "allocation_calls": 14,
+      "live_after_render": 72,
+      "peak_live_bytes": 1845,
+      "requested_bytes": 1882
+    },
+    "ox-presize": {
+      "allocation_calls": 13,
+      "live_after_render": 72,
+      "peak_live_bytes": 20805,
+      "requested_bytes": 20842
+    }
+  },
+  {
+    "case": "commonmark/short-100b",
+    "input_bytes": 103,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 18,
+      "live_after_render": 256,
+      "peak_live_bytes": 4116,
+      "requested_bytes": 4244
+    },
+    "ox-grow": {
+      "allocation_calls": 14,
+      "live_after_render": 206,
+      "peak_live_bytes": 1979,
+      "requested_bytes": 2152
+    },
+    "ox-presize": {
+      "allocation_calls": 13,
+      "live_after_render": 206,
+      "peak_live_bytes": 20939,
+      "requested_bytes": 21112
+    }
+  },
+  {
+    "case": "gfm_overlap/tiny",
+    "input_bytes": 18,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 10,
+      "live_after_render": 64,
+      "peak_live_bytes": 3312,
+      "requested_bytes": 3312
+    },
+    "ox-grow": {
+      "allocation_calls": 14,
+      "live_after_render": 72,
+      "peak_live_bytes": 1845,
+      "requested_bytes": 1882
+    },
+    "ox-presize": {
+      "allocation_calls": 13,
+      "live_after_render": 72,
+      "peak_live_bytes": 20805,
+      "requested_bytes": 20842
+    }
+  },
+  {
+    "case": "gfm_overlap/short-100b",
+    "input_bytes": 103,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 18,
+      "live_after_render": 256,
+      "peak_live_bytes": 4116,
+      "requested_bytes": 4244
+    },
+    "ox-grow": {
+      "allocation_calls": 14,
+      "live_after_render": 206,
+      "peak_live_bytes": 1979,
+      "requested_bytes": 2152
+    },
+    "ox-presize": {
+      "allocation_calls": 13,
+      "live_after_render": 206,
+      "peak_live_bytes": 20939,
+      "requested_bytes": 21112
+    }
+  },
+  {
+    "case": "tables/tables-plain",
+    "input_bytes": 4560,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 8,
+      "live_after_render": 11400,
+      "peak_live_bytes": 49448,
+      "requested_bytes": 87068
+    },
+    "ox-grow": {
+      "allocation_calls": 16,
+      "live_after_render": 18240,
+      "peak_live_bytes": 79885,
+      "requested_bytes": 89006
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 18240,
+      "peak_live_bytes": 129069,
+      "requested_bytes": 138190
+    }
+  },
+  {
+    "case": "tables/tables-commonmark-inline",
+    "input_bytes": 4800,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 16,
+      "live_after_render": 24000,
+      "peak_live_bytes": 64688,
+      "requested_bytes": 116288
+    },
+    "ox-grow": {
+      "allocation_calls": 17,
+      "live_after_render": 19200,
+      "peak_live_bytes": 146365,
+      "requested_bytes": 155966
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 19200,
+      "peak_live_bytes": 142317,
+      "requested_bytes": 151918
+    }
+  },
+  {
+    "case": "tables/tables-links",
+    "input_bytes": 6360,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 21,
+      "live_after_render": 15900,
+      "peak_live_bytes": 69252,
+      "requested_bytes": 121666
+    },
+    "ox-grow": {
+      "allocation_calls": 22,
+      "live_after_render": 25440,
+      "peak_live_bytes": 148525,
+      "requested_bytes": 171626
+    },
+    "ox-presize": {
+      "allocation_calls": 20,
+      "live_after_render": 25440,
+      "peak_live_bytes": 185421,
+      "requested_bytes": 208522
+    }
+  },
+  {
+    "case": "commonmark/publication-5k",
+    "input_bytes": 5120,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 45,
+      "live_after_render": 12800,
+      "peak_live_bytes": 29352,
+      "requested_bytes": 41772
+    },
+    "ox-grow": {
+      "allocation_calls": 20,
+      "live_after_render": 10240,
+      "peak_live_bytes": 68869,
+      "requested_bytes": 73994
+    },
+    "ox-presize": {
+      "allocation_calls": 19,
+      "live_after_render": 10240,
+      "peak_live_bytes": 146709,
+      "requested_bytes": 151834
+    }
+  },
+  {
+    "case": "guard/plain",
+    "input_bytes": 4560,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 8,
+      "live_after_render": 11400,
+      "peak_live_bytes": 49448,
+      "requested_bytes": 87068
+    },
+    "ox-grow": {
+      "allocation_calls": 16,
+      "live_after_render": 18240,
+      "peak_live_bytes": 79885,
+      "requested_bytes": 89006
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 18240,
+      "peak_live_bytes": 129069,
+      "requested_bytes": 138190
+    }
+  },
+  {
+    "case": "guard/mixed",
+    "input_bytes": 4800,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 16,
+      "live_after_render": 24000,
+      "peak_live_bytes": 64688,
+      "requested_bytes": 116288
+    },
+    "ox-grow": {
+      "allocation_calls": 17,
+      "live_after_render": 19200,
+      "peak_live_bytes": 146365,
+      "requested_bytes": 155966
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 19200,
+      "peak_live_bytes": 142317,
+      "requested_bytes": 151918
+    }
+  },
+  {
+    "case": "guard/links",
+    "input_bytes": 6360,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 21,
+      "live_after_render": 15900,
+      "peak_live_bytes": 69252,
+      "requested_bytes": 121666
+    },
+    "ox-grow": {
+      "allocation_calls": 22,
+      "live_after_render": 25440,
+      "peak_live_bytes": 148525,
+      "requested_bytes": 171626
+    },
+    "ox-presize": {
+      "allocation_calls": 20,
+      "live_after_render": 25440,
+      "peak_live_bytes": 185421,
+      "requested_bytes": 208522
+    }
+  },
+  {
+    "case": "guard/mixed-document",
+    "input_bytes": 5632,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 69,
+      "live_after_render": 14080,
+      "peak_live_bytes": 34268,
+      "requested_bytes": 49040
+    },
+    "ox-grow": {
+      "allocation_calls": 24,
+      "live_after_render": 11264,
+      "peak_live_bytes": 70389,
+      "requested_bytes": 72654
+    },
+    "ox-presize": {
+      "allocation_calls": 21,
+      "live_after_render": 11264,
+      "peak_live_bytes": 61733,
+      "requested_bytes": 63998
+    }
+  },
+  {
+    "case": "guard/one-table",
+    "input_bytes": 3056,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 8,
+      "live_after_render": 7640,
+      "peak_live_bytes": 33656,
+      "requested_bytes": 58868
+    },
+    "ox-grow": {
+      "allocation_calls": 16,
+      "live_after_render": 12224,
+      "peak_live_bytes": 73869,
+      "requested_bytes": 79982
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 12224,
+      "peak_live_bytes": 86189,
+      "requested_bytes": 92302
+    }
+  },
+  {
+    "case": "guard/long-cells",
+    "input_bytes": 53152,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 4,
+      "live_after_render": 66440,
+      "peak_live_bytes": 121160,
+      "requested_bytes": 121160
+    },
+    "ox-grow": {
+      "allocation_calls": 13,
+      "live_after_render": 106304,
+      "peak_live_bytes": 241709,
+      "requested_bytes": 241710
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 106304,
+      "peak_live_bytes": 532541,
+      "requested_bytes": 532542
+    }
+  },
+  {
+    "case": "guard/wide9",
+    "input_bytes": 6621,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 110,
+      "live_after_render": 16552,
+      "peak_live_bytes": 71000,
+      "requested_bytes": 144924
+    },
+    "ox-grow": {
+      "allocation_calls": 16,
+      "live_after_render": 26484,
+      "peak_live_bytes": 149569,
+      "requested_bytes": 162812
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 26484,
+      "peak_live_bytes": 186465,
+      "requested_bytes": 199708
+    }
+  },
+  {
+    "case": "guard/wide16",
+    "input_bytes": 11612,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 110,
+      "live_after_render": 29030,
+      "peak_live_bytes": 123414,
+      "requested_bytes": 238521
+    },
+    "ox-grow": {
+      "allocation_calls": 16,
+      "live_after_render": 46448,
+      "peak_live_bytes": 230973,
+      "requested_bytes": 254198
+    },
+    "ox-presize": {
+      "allocation_calls": 14,
+      "live_after_render": 46448,
+      "peak_live_bytes": 329309,
+      "requested_bytes": 352534
+    }
+  },
+  {
+    "case": "guard/escapes-code",
+    "input_bytes": 6860,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 220,
+      "live_after_render": 17150,
+      "peak_live_bytes": 33208,
+      "requested_bytes": 49873
+    },
+    "ox-grow": {
+      "allocation_calls": 16,
+      "live_after_render": 13720,
+      "peak_live_bytes": 267861,
+      "requested_bytes": 267862
+    },
+    "ox-presize": {
+      "allocation_calls": 13,
+      "live_after_render": 13720,
+      "peak_live_bytes": 185989,
+      "requested_bytes": 185990
+    }
+  },
+  {
+    "case": "guard/prose",
+    "input_bytes": 7050,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 5,
+      "live_after_render": 8812,
+      "peak_live_bytes": 24460,
+      "requested_bytes": 31500
+    },
+    "ox-grow": {
+      "allocation_calls": 13,
+      "live_after_render": 14100,
+      "peak_live_bytes": 38913,
+      "requested_bytes": 38914
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 14100,
+      "peak_live_bytes": 71697,
+      "requested_bytes": 71698
+    }
+  },
+  {
+    "case": "guard/links-prose",
+    "input_bytes": 5800,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 17,
+      "live_after_render": 14500,
+      "peak_live_bytes": 22836,
+      "requested_bytes": 30086
+    },
+    "ox-grow": {
+      "allocation_calls": 21,
+      "live_after_render": 11600,
+      "peak_live_bytes": 134685,
+      "requested_bytes": 145066
+    },
+    "ox-presize": {
+      "allocation_calls": 19,
+      "live_after_render": 11600,
+      "peak_live_bytes": 159293,
+      "requested_bytes": 169674
+    }
+  },
+  {
+    "case": "guard/edge-cases",
+    "input_bytes": 175556,
+    "normalized_equal": false,
+    "ferro": {
+      "allocation_calls": 1225,
+      "live_after_render": 438890,
+      "peak_live_bytes": 658079,
+      "requested_bytes": 917579
+    },
+    "ox-grow": {
+      "allocation_calls": 24,
+      "live_after_render": 351112,
+      "peak_live_bytes": 4795733,
+      "requested_bytes": 4816618
+    },
+    "ox-presize": {
+      "allocation_calls": 21,
+      "live_after_render": 351112,
+      "peak_live_bytes": 4566405,
+      "requested_bytes": 4587290
+    }
+  },
+  {
+    "case": "guard/references",
+    "input_bytes": 876,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 34,
+      "live_after_render": 2190,
+      "peak_live_bytes": 7883,
+      "requested_bytes": 10002
+    },
+    "ox-grow": {
+      "allocation_calls": 26,
+      "live_after_render": 3504,
+      "peak_live_bytes": 68685,
+      "requested_bytes": 75846
+    },
+    "ox-presize": {
+      "allocation_calls": 21,
+      "live_after_render": 3504,
+      "peak_live_bytes": 65644,
+      "requested_bytes": 72342
+    }
+  },
+  {
+    "case": "guard/empty",
+    "input_bytes": 0,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 2,
+      "live_after_render": 0,
+      "peak_live_bytes": 2560,
+      "requested_bytes": 2560
+    },
+    "ox-grow": {
+      "allocation_calls": 11,
+      "live_after_render": 0,
+      "peak_live_bytes": 765,
+      "requested_bytes": 766
+    },
+    "ox-presize": {
+      "allocation_calls": 11,
+      "live_after_render": 0,
+      "peak_live_bytes": 20733,
+      "requested_bytes": 20734
+    }
+  },
+  {
+    "case": "guard/gfm-document",
+    "input_bytes": 5120,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 45,
+      "live_after_render": 12800,
+      "peak_live_bytes": 29352,
+      "requested_bytes": 41772
+    },
+    "ox-grow": {
+      "allocation_calls": 20,
+      "live_after_render": 10240,
+      "peak_live_bytes": 68869,
+      "requested_bytes": 73994
+    },
+    "ox-presize": {
+      "allocation_calls": 19,
+      "live_after_render": 10240,
+      "peak_live_bytes": 146709,
+      "requested_bytes": 151834
+    }
+  },
+  {
+    "case": "guard/long-delimiters",
+    "input_bytes": 16426,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 4,
+      "live_after_render": 20532,
+      "peak_live_bytes": 38516,
+      "requested_bytes": 38516
+    },
+    "ox-grow": {
+      "allocation_calls": 12,
+      "live_after_render": 32852,
+      "peak_live_bytes": 49489,
+      "requested_bytes": 49490
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 32852,
+      "peak_live_bytes": 168273,
+      "requested_bytes": 168274
+    }
+  },
+  {
+    "case": "guard/deep-emphasis",
+    "input_bytes": 3073,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 23,
+      "live_after_render": 7682,
+      "peak_live_bytes": 173698,
+      "requested_bytes": 215363
+    },
+    "ox-grow": {
+      "allocation_calls": 19,
+      "live_after_render": 12292,
+      "peak_live_bytes": 532641,
+      "requested_bytes": 538788
+    },
+    "ox-presize": {
+      "allocation_calls": 16,
+      "live_after_render": 12292,
+      "peak_live_bytes": 442577,
+      "requested_bytes": 448724
+    }
+  },
+  {
+    "case": "large/mixed-1mib",
+    "input_bytes": 1048898,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 44,
+      "live_after_render": 2622244,
+      "peak_live_bytes": 7323174,
+      "requested_bytes": 12046805
+    },
+    "ox-grow": {
+      "allocation_calls": 27,
+      "live_after_render": 2097796,
+      "peak_live_bytes": 14963545,
+      "requested_bytes": 15299342
+    },
+    "ox-presize": {
+      "allocation_calls": 25,
+      "live_after_render": 2097796,
+      "peak_live_bytes": 27546489,
+      "requested_bytes": 27882286
+    }
+  },
+  {
+    "case": "large/plain-1mib",
+    "input_bytes": 1048576,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 5,
+      "live_after_render": 1310720,
+      "peak_live_bytes": 5505056,
+      "requested_bytes": 5506592
+    },
+    "ox-grow": {
+      "allocation_calls": 12,
+      "live_after_render": 2097152,
+      "peak_live_bytes": 2937085,
+      "requested_bytes": 2937086
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 2097152,
+      "peak_live_bytes": 10490109,
+      "requested_bytes": 10490110
+    }
+  },
+  {
+    "case": "large/mixed-8mib",
+    "input_bytes": 8388689,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 47,
+      "live_after_render": 20971722,
+      "peak_live_bytes": 58547708,
+      "requested_bytes": 96300462
+    },
+    "ox-grow": {
+      "allocation_calls": 30,
+      "live_after_render": 16777378,
+      "peak_live_bytes": 119640439,
+      "requested_bytes": 122327364
+    },
+    "ox-presize": {
+      "allocation_calls": 28,
+      "live_after_render": 16777378,
+      "peak_live_bytes": 220279191,
+      "requested_bytes": 222966116
+    }
+  },
+  {
+    "case": "large/plain-8mib",
+    "input_bytes": 8388608,
+    "normalized_equal": true,
+    "ferro": {
+      "allocation_calls": 5,
+      "live_after_render": 10485760,
+      "peak_live_bytes": 44040224,
+      "requested_bytes": 44041760
+    },
+    "ox-grow": {
+      "allocation_calls": 12,
+      "live_after_render": 16777216,
+      "peak_live_bytes": 23490813,
+      "requested_bytes": 23490814
+    },
+    "ox-presize": {
+      "allocation_calls": 12,
+      "live_after_render": 16777216,
+      "peak_live_bytes": 83890429,
+      "requested_bytes": 83890430
+    }
+  }
+]

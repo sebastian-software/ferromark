@@ -69,3 +69,19 @@ fn runtime_sets_and_arbitrary_binary_inputs() {
     let every_byte: [u8; 256] = std::array::from_fn(|i| i as u8);
     check(&every_byte, b"\xff\0\x80abc");
 }
+
+#[test]
+fn overlapping_nibbles_preserve_exact_membership() {
+    let distinct_rows = [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88];
+    let shared_rows: [u8; 16] = std::array::from_fn(|i| (i as u8) << 4 | 3);
+    for len in [1, 15, 16, 17, 31, 32, 33, 65] {
+        for byte in 0..=255 {
+            for pos in 0..len {
+                let mut input = vec![0xfe; len];
+                input[pos] = byte;
+                check(&distinct_rows, &input);
+                check(&shared_rows, &input);
+            }
+        }
+    }
+}

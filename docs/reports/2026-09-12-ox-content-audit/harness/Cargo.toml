@@ -1,0 +1,24 @@
+[package]
+name = "ox-audit"
+version = "0.0.0"
+edition = "2024"
+[workspace]
+[dependencies]
+ferro_old = { package = "ferromark", version = "=0.7.0" }
+ferro = { package = "ferromark", path = "@FERROMARK@" }
+ox_content_allocator = { path = "../ox-current/crates/ox_content_allocator" }
+ox_content_parser = { path = "../ox-current/crates/ox_content_parser" }
+ox_content_renderer = { path = "../ox-current/crates/ox_content_renderer" }
+serde_json = "1"
+[features]
+allocations = []
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+debug = true
+
+[[bin]]
+name = "scan-audit"
+path = "src/scan.rs"
