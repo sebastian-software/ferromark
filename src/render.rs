@@ -416,7 +416,30 @@ impl HtmlWriter {
     /// Take ownership as a string, validating its UTF-8 encoding.
     #[inline]
     pub fn into_string(self) -> Result<String, std::string::FromUtf8Error> {
-        String::from_utf8(self.out)
+        if self.out.len() < 4096 {
+            return String::from_utf8(self.out);
+        }
+        self.into_string_with_ascii_prefix()
+    }
+
+    // Keep the larger validation loop out of the short-output conversion path.
+    #[inline(never)]
+    fn into_string_with_ascii_prefix(self) -> Result<String, std::string::FromUtf8Error> {
+        let mut ascii_prefix = 0;
+        for chunk in self.out.chunks_exact(4096) {
+            if chunk.iter().fold(0_u8, |bits, byte| bits | byte) & 0x80 != 0 {
+                break;
+            }
+            ascii_prefix += 4096;
+        }
+        if ascii_prefix > 0 && std::str::from_utf8(&self.out[ascii_prefix..]).is_ok() {
+            // SAFETY: the prefix is ASCII and the remaining suffix passed UTF-8
+            // validation. ASCII ends on a character boundary, so their concatenation
+            // is valid UTF-8. The owned bytes have not changed since those checks.
+            Ok(unsafe { String::from_utf8_unchecked(self.out) })
+        } else {
+            String::from_utf8(self.out)
+        }
     }
 
     /// Get mutable access for crate-internal zero-copy rendering operations.

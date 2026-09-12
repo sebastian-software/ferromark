@@ -164,6 +164,12 @@ pub(crate) struct BlockScratch {
 pub struct BlockParser<'a> {
     /// Number of emitted ATX/Setext headings, used to size the ID registry.
     pub(crate) heading_count: usize,
+    /// List starts default to tight; only loose lists need post-processing.
+    pub(crate) has_loose_lists: bool,
+    /// Private render mode may batch HTML when tag-filter lookahead allows it.
+    coalesce_html: bool,
+    /// Private render mode may borrow an unindented root fence as one range.
+    coalesce_code: bool,
     /// Input bytes.
     input: &'a [u8],
     /// Current cursor position.
@@ -293,6 +299,9 @@ impl<'a> BlockParser<'a> {
             input,
             cursor: Cursor::new(input),
             heading_count: 0,
+            has_loose_lists: false,
+            coalesce_html: false,
+            coalesce_code: false,
             in_paragraph: false,
             paragraph_lines: scratch.paragraph_lines,
             paragraph_comments: scratch.paragraph_comments,
@@ -342,6 +351,26 @@ impl<'a> BlockParser<'a> {
             link_ref_parse_buf: self.link_ref_parse_buf,
             link_ref_label_buf: self.link_ref_label_buf,
         }
+    }
+
+    /// Compact contiguous root ranges only for the internal renderer.
+    pub(crate) fn parse_for_render(&mut self, events: &mut Vec<BlockEvent>) {
+        self.coalesce_code = true;
+        self.coalesce_html = self.options.render_policy == crate::RenderPolicy::Untrusted
+            || !self.options.disallowed_raw_html;
+        // Reserve by source size only after the document demonstrates enough
+        // event density to need it. Reused buffers and short inputs skip this phase.
+        let capacity_hint = (self.input.len() / 16).max(64);
+        if events.capacity() < capacity_hint {
+            while events.len() < 64 && !self.cursor.is_eof() {
+                self.parse_line(events);
+            }
+            if !self.cursor.is_eof() {
+                events.reserve(capacity_hint.saturating_sub(events.len()));
+            }
+        }
+        // Preserve the ordinary EOF cleanup even when the initial phase consumed everything.
+        self.parse(events);
     }
 
     /// Parse all blocks and collect events.
@@ -2246,6 +2275,7 @@ impl<'a> BlockParser<'a> {
                     // ListItem container and one open list
                     while self.open_lists.len() > remaining_items {
                         let tight = self.open_lists.last().is_none_or(|l| l.tight);
+                        self.has_loose_lists |= !tight;
                         events.push(BlockEvent::ListEnd { kind, tight });
                         self.open_lists.pop();
                     }
@@ -2614,6 +2644,13 @@ impl<'a> BlockParser<'a> {
         events.push(BlockEvent::CodeBlockStart {
             kind: CodeBlockKind::Fenced { info },
         });
+        if self.container_stack.is_empty() {
+            if self.coalesce_code && indent == 0 {
+                self.parse_unindented_fence_run(events);
+            } else {
+                self.parse_fence_run(events);
+            }
+        }
 
         true
     }
@@ -2690,17 +2727,22 @@ impl<'a> BlockParser<'a> {
         // Container HTML still needs prefix matching on every line. Enter the
         // root continuation path here so ordinary Markdown pays no extra check.
         if self.html_block.is_some() && self.container_stack.is_empty() {
-            self.parse_html_block_run(events);
+            if self.coalesce_html {
+                self.parse_html_block_run::<true>(events);
+            } else {
+                self.parse_html_block_run::<false>(events);
+            }
         }
         true
     }
 
     /// Consume root HTML continuations without repeating general block dispatch.
-    fn parse_html_block_run(&mut self, events: &mut Vec<BlockEvent>) {
-        // The opener has already passed through normal block parsing. Keep the
-        // public event stream line-based, including its original source ranges.
+    fn parse_html_block_run<const COALESCE: bool>(&mut self, events: &mut Vec<BlockEvent>) {
+        // The opener has already passed through normal block parsing. Public
+        // events stay line-based; private rendering emits one continuation range.
         debug_assert!(self.container_stack.is_empty());
         debug_assert!(self.pending_html_indent_start.is_none());
+        let run_start = self.cursor.offset();
         while self.html_block.is_some() && !self.cursor.is_eof() {
             self.current_line_start = self.cursor.offset();
             if self.options.definition_lists {
@@ -2715,11 +2757,16 @@ impl<'a> BlockParser<'a> {
             if matches!(kind, HtmlBlockKind::Type6 | HtmlBlockKind::Type7)
                 && (self.cursor.is_eof() || self.at_line_ending())
             {
+                if COALESCE && start > run_start {
+                    events.push(BlockEvent::HtmlBlockText(Range::from_usize(
+                        run_start, start,
+                    )));
+                }
                 // Leave blank-line state transitions in the existing handler.
                 self.cursor = Cursor::new_at(self.input, start);
                 self.current_col = 0;
                 self.parse_html_block_line(events);
-                continue;
+                return;
             }
             let content_start = self.cursor.offset();
             let rest = self.cursor.remaining_slice();
@@ -2727,11 +2774,22 @@ impl<'a> BlockParser<'a> {
             let line_end = content_start + distance;
             let end = line_end + usize::from(line_end < self.input.len());
             self.cursor = Cursor::new_at(self.input, end);
-            events.push(BlockEvent::HtmlBlockText(Range::from_usize(start, end)));
+            if !COALESCE {
+                events.push(BlockEvent::HtmlBlockText(Range::from_usize(start, end)));
+            }
             if self.html_block_ends(kind, &self.input[content_start..line_end]) {
+                if COALESCE {
+                    events.push(BlockEvent::HtmlBlockText(Range::from_usize(run_start, end)));
+                }
                 self.html_block = None;
                 events.push(BlockEvent::HtmlBlockEnd);
             }
+        }
+        if COALESCE && self.html_block.is_some() && self.cursor.offset() > run_start {
+            events.push(BlockEvent::HtmlBlockText(Range::from_usize(
+                run_start,
+                self.cursor.offset(),
+            )));
         }
     }
 
@@ -3188,17 +3246,60 @@ impl<'a> BlockParser<'a> {
         self.cursor.offset()
     }
 
-    /// Parse a fenced code line after container matching.
-    /// Called when we're inside a fenced code block and containers matched.
-    /// The cursor is at the content position (past container indent).
-    fn parse_fence_line_in_container(&mut self, events: &mut Vec<BlockEvent>) {
+    /// Consume root fenced-code continuations without general block dispatch.
+    fn parse_fence_run(&mut self, events: &mut Vec<BlockEvent>) {
+        debug_assert!(self.container_stack.is_empty());
+        while self.fence_state.is_some() && !self.cursor.is_eof() {
+            self.current_line_start = self.cursor.offset();
+            if self.options.definition_lists {
+                self.definition_current_line_loose =
+                    std::mem::take(&mut self.definition_blank_before_next);
+            }
+            self.partial_tab_cols = 0;
+            self.current_col = 0;
+            self.parse_fence_line_in_container(events);
+        }
+    }
+
+    /// An unindented root fence borrows one contiguous range for its entire body.
+    fn parse_unindented_fence_run(&mut self, events: &mut Vec<BlockEvent>) {
+        debug_assert!(self.container_stack.is_empty());
         let fence = self.fence_state.as_ref().unwrap();
+        debug_assert_eq!(fence.indent, 0);
         let fence_char = fence.fence_char;
         let fence_len = fence.fence_len;
-        let fence_indent = fence.indent;
+        let run_start = self.cursor.offset();
+        while !self.cursor.is_eof() {
+            let line_start = self.cursor.offset();
+            self.current_line_start = line_start;
+            if self.options.definition_lists {
+                self.definition_current_line_loose =
+                    std::mem::take(&mut self.definition_blank_before_next);
+            }
+            self.partial_tab_cols = 0;
+            self.current_col = 0;
+            if self.try_close_fence(fence_char, fence_len) {
+                if run_start < line_start {
+                    events.push(BlockEvent::Code(Range::from_usize(run_start, line_start)));
+                }
+                events.push(BlockEvent::CodeBlockEnd);
+                return;
+            }
+            let rest = self.cursor.remaining_slice();
+            let distance = memchr::memchr(b'\n', rest).unwrap_or(rest.len());
+            let end = line_start + distance + usize::from(distance < rest.len());
+            self.cursor = Cursor::new_at(self.input, end);
+        }
+        if self.cursor.offset() > run_start {
+            events.push(BlockEvent::Code(Range::from_usize(
+                run_start,
+                self.cursor.offset(),
+            )));
+        }
+    }
 
-        let content_pos = self.cursor.offset();
-
+    /// Check a closing delimiter without changing the cursor on a content line.
+    fn try_close_fence(&mut self, fence_char: u8, fence_len: usize) -> bool {
         // Check for closing fence (allow up to 3 spaces of indent)
         let mut temp_cursor = self.cursor;
         let mut cols = 0usize;
@@ -3236,10 +3337,26 @@ impl<'a> BlockParser<'a> {
                     }
 
                     self.fence_state = None;
-                    events.push(BlockEvent::CodeBlockEnd);
-                    return;
+                    return true;
                 }
             }
+        }
+
+        false
+    }
+
+    /// Parse one fenced-code line after matching container prefixes.
+    fn parse_fence_line_in_container(&mut self, events: &mut Vec<BlockEvent>) {
+        let fence = self.fence_state.as_ref().unwrap();
+        let fence_char = fence.fence_char;
+        let fence_len = fence.fence_len;
+        let fence_indent = fence.indent;
+
+        let content_pos = self.cursor.offset();
+
+        if self.try_close_fence(fence_char, fence_len) {
+            events.push(BlockEvent::CodeBlockEnd);
+            return;
         }
 
         // Not a closing fence, emit as code content
@@ -4429,6 +4546,7 @@ impl<'a> BlockParser<'a> {
         // Close lists that have no corresponding item
         while self.open_lists.len() > active_items {
             if let Some(open_list) = self.open_lists.pop() {
+                self.has_loose_lists |= !open_list.tight;
                 events.push(BlockEvent::ListEnd {
                     kind: open_list.kind,
                     tight: open_list.tight,
