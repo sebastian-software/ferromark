@@ -1899,6 +1899,47 @@ impl<R: FencedCodeRenderer + ?Sized> RenderContext<'_, '_, R> {
                     continue;
                 }
             }
+            // Keep public events line-based; only batch contiguous ranges during rendering.
+            // Prefix removal and virtual spaces break contiguity and keep the stateful path.
+            if let [BlockEvent::Code(first), BlockEvent::Code(second), ..] = events
+                && first.end == second.start
+            {
+                let mut range = Range::new(first.start, second.end);
+                let mut consumed = 2;
+                while let Some(BlockEvent::Code(next)) = events.get(consumed) {
+                    if next.start != range.end {
+                        break;
+                    }
+                    range.end = next.end;
+                    consumed += 1;
+                }
+                self.render_block_event(input, &BlockEvent::Code(range));
+                events = &events[consumed..];
+                continue;
+            }
+            // Filtered trusted HTML keeps its original slices for tag-filter lookahead.
+            if let [
+                BlockEvent::HtmlBlockText(first),
+                BlockEvent::HtmlBlockText(second),
+                ..,
+            ] = events
+                && first.end == second.start
+                && (self.options.render_policy == RenderPolicy::Untrusted
+                    || !self.options.disallowed_raw_html)
+            {
+                let mut range = Range::new(first.start, second.end);
+                let mut consumed = 2;
+                while let Some(BlockEvent::HtmlBlockText(next)) = events.get(consumed) {
+                    if next.start != range.end {
+                        break;
+                    }
+                    range.end = next.end;
+                    consumed += 1;
+                }
+                self.render_block_event(input, &BlockEvent::HtmlBlockText(range));
+                events = &events[consumed..];
+                continue;
+            }
             self.render_block_event(input, event);
             events = &events[1..];
         }

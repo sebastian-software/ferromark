@@ -208,3 +208,26 @@ fn code_language_preserves_plain_escaped_and_entity_spellings() {
         );
     }
 }
+
+#[test]
+fn adjacent_code_ranges_preserve_callback_input_and_container_boundaries() {
+    for (markdown, code) in [
+        (
+            "```txt\nfirst & <tag>\nsecond\n```",
+            "first & <tag>\nsecond\n",
+        ),
+        ("```txt\r\nfirst\r\nsecond\r\n```", "first\r\nsecond\r\n"),
+        ("> ```txt\n> first\n> second\n> ```", "first\nsecond\n"),
+        ("  ```txt\n  first\n  second\n  ```", "first\nsecond\n"),
+        ("```txt\nfirst\n\nlast", "first\n\nlast"),
+    ] {
+        let mut renderer = RecordingRenderer::default();
+        let html = to_html_with_renderer(markdown, &Options::default(), &mut renderer);
+        assert_eq!(html, to_html(markdown), "{markdown:?}");
+        assert_eq!(
+            renderer.calls,
+            vec![(Some("txt".to_owned()), code.to_owned())],
+            "{markdown:?}",
+        );
+    }
+}
