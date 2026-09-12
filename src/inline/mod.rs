@@ -1022,8 +1022,16 @@ impl InlineParser {
         emit_points.reserve(estimated_events.max(8));
         events.reserve(estimated_events.max(8) + 4);
 
+        // Other resolved constructs can overlap code boundaries or suppress
+        // events within them. Keep the original three-point sequence in those
+        // cases, including its closing-boundary behavior and public event order.
+        let fuse_code = resolved_links.is_empty()
+            && resolved_ref_links.is_empty()
+            && math_spans.is_empty()
+            && footnote_refs.is_empty()
+            && inline_footnotes.is_empty();
         // Add code span events (filter out spans whose opener is inside an autolink)
-        for span in code_spans {
+        for (index, span) in code_spans.iter().enumerate() {
             // Skip code spans whose opener starts inside an autolink
             let inside_autolink = !autolink_ranges.is_empty()
                 && pos_in_ranges_u32(span.opener_pos, autolink_ranges, &mut autolink_span_idx);
@@ -1031,48 +1039,47 @@ impl InlineParser {
                 continue;
             }
 
-            emit_points.push(EmitPoint {
-                pos: span.opener_pos,
-                kind: EmitKind::CodeSpanStart,
-                end: span.opener_end,
-            });
-            emit_points.push(EmitPoint {
-                pos: span.closer_pos,
-                kind: EmitKind::CodeSpanEnd,
-                end: span.closer_end,
-            });
-            // Code content
-            let (content_start, content_end) = span.content_range();
-            emit_points.push(EmitPoint {
-                pos: content_start,
-                kind: EmitKind::CodeContent(content_end),
-                end: content_end,
-            });
+            if fuse_code {
+                emit_points.push(EmitPoint {
+                    pos: span.opener_pos,
+                    kind: EmitKind::CodeSpan {
+                        index: index as u32,
+                    },
+                    end: span.closer_pos,
+                });
+                emit_points.push(EmitPoint {
+                    pos: span.closer_pos,
+                    kind: EmitKind::CodeSpanEnd,
+                    end: span.closer_end,
+                });
+            } else {
+                emit_points.push(EmitPoint {
+                    pos: span.opener_pos,
+                    kind: EmitKind::CodeSpanStart,
+                    end: span.opener_end,
+                });
+                emit_points.push(EmitPoint {
+                    pos: span.closer_pos,
+                    kind: EmitKind::CodeSpanEnd,
+                    end: span.closer_end,
+                });
+                // Code content
+                let (content_start, content_end) = span.content_range();
+                emit_points.push(EmitPoint {
+                    pos: content_start,
+                    kind: EmitKind::CodeContent(content_end),
+                    end: content_end,
+                });
+            }
         }
 
         // Add math span events
-        for span in math_spans {
-            let (content_start, content_end) = span.content_range();
-            // Strip leading/trailing space like code spans
-            let mut cs = content_start as usize;
-            let mut ce = content_end as usize;
-            if ce > cs + 1 {
-                let content = &text[cs..ce];
-                let first_is_space = content[0] == b' ' || content[0] == b'\n';
-                let last_is_space =
-                    content[content.len() - 1] == b' ' || content[content.len() - 1] == b'\n';
-                let not_all_space = content.iter().any(|&b| b != b' ' && b != b'\n');
-                if first_is_space && last_is_space && not_all_space {
-                    cs += 1;
-                    ce -= 1;
-                }
-            }
+        for (index, span) in math_spans.iter().enumerate() {
             if span.is_display {
                 emit_points.push(EmitPoint {
                     pos: span.opener_pos,
                     kind: EmitKind::MathDisplay {
-                        content_start: cs as u32,
-                        content_end: ce as u32,
+                        index: index as u32,
                     },
                     end: span.closer_end,
                 });
@@ -1080,8 +1087,7 @@ impl InlineParser {
                 emit_points.push(EmitPoint {
                     pos: span.opener_pos,
                     kind: EmitKind::MathInline {
-                        content_start: cs as u32,
-                        content_end: ce as u32,
+                        index: index as u32,
                     },
                     end: span.closer_end,
                 });
@@ -1089,15 +1095,12 @@ impl InlineParser {
         }
 
         // Add link events
-        for link in resolved_links {
+        for (link_index, link) in resolved_links.iter().enumerate() {
             if link.is_image {
                 emit_points.push(EmitPoint {
                     pos: link.start,
                     kind: EmitKind::ImageStart {
-                        url_start: link.url_start,
-                        url_end: link.url_end,
-                        title_start: link.title_start,
-                        title_end: link.title_end,
+                        link_index: link_index as u32,
                     },
                     end: link.start + 2, // ![
                 });
@@ -1110,10 +1113,7 @@ impl InlineParser {
                 emit_points.push(EmitPoint {
                     pos: link.start,
                     kind: EmitKind::LinkStart {
-                        url_start: link.url_start,
-                        url_end: link.url_end,
-                        title_start: link.title_start,
-                        title_end: link.title_end,
+                        link_index: link_index as u32,
                     },
                     end: link.start + 1, // [
                 });
@@ -1156,13 +1156,12 @@ impl InlineParser {
             }
         }
         // Add autolink events
-        for autolink in autolinks {
+        for (index, autolink) in autolinks.iter().enumerate() {
             if autolink.is_email {
                 emit_points.push(EmitPoint {
                     pos: autolink.start,
                     kind: EmitKind::AutolinkEmail {
-                        content_start: autolink.content_start,
-                        content_end: autolink.content_end,
+                        index: index as u32,
                     },
                     end: autolink.end,
                 });
@@ -1170,8 +1169,7 @@ impl InlineParser {
                 emit_points.push(EmitPoint {
                     pos: autolink.start,
                     kind: EmitKind::AutolinkUrl {
-                        content_start: autolink.content_start,
-                        content_end: autolink.content_end,
+                        index: index as u32,
                     },
                     end: autolink.end,
                 });
@@ -1191,10 +1189,7 @@ impl InlineParser {
         for al in autolink_literals {
             emit_points.push(EmitPoint {
                 pos: al.start,
-                kind: EmitKind::AutolinkLiteral {
-                    end: al.end,
-                    kind: al.kind,
-                },
+                kind: EmitKind::AutolinkLiteral { kind: al.kind },
                 end: al.end,
             });
         }
@@ -1295,12 +1290,11 @@ impl InlineParser {
             });
         }
 
-        for inline_note in inline_footnotes {
+        for (index, inline_note) in inline_footnotes.iter().enumerate() {
             emit_points.push(EmitPoint {
                 pos: inline_note.start,
                 kind: EmitKind::InlineFootnote {
-                    content_start: inline_note.content_start,
-                    content_end: inline_note.content_end,
+                    index: index as u32,
                 },
                 end: inline_note.end,
             });
@@ -1428,39 +1422,23 @@ impl InlineParser {
             }
 
             match point.kind {
+                EmitKind::CodeSpan { index } => {
+                    let (content_start, content_end) = code_spans[index as usize].content_range();
+                    let range = trim_span_padding(text, content_start, content_end);
+                    events.push(InlineEvent::Code(range));
+                    skip_until = range.end;
+                }
+                EmitKind::CodeSpanEnd => {
+                    skip_until = point.end;
+                }
                 EmitKind::CodeSpanStart => {
                     // Skip the opening backticks
                     pos = point.end;
                 }
-                EmitKind::CodeSpanEnd => {
-                    // Skip the closing backticks
-                    skip_until = point.end;
-                }
                 EmitKind::CodeContent(end) => {
-                    // Emit code content (strip leading/trailing space if single space)
-                    let mut start = point.pos as usize;
-                    let mut end = end as usize;
-
-                    // CommonMark: line endings are converted to spaces first,
-                    // then if the string both begins AND ends with a space,
-                    // and doesn't consist entirely of spaces, strip one space from each end.
-                    // Note: we treat \n as equivalent to space for stripping purposes.
-                    if end > start + 1 {
-                        let content = &text[start..end];
-                        let first_is_space = content[0] == b' ' || content[0] == b'\n';
-                        let last_is_space = content[content.len() - 1] == b' '
-                            || content[content.len() - 1] == b'\n';
-                        let not_all_space = content.iter().any(|&b| b != b' ' && b != b'\n');
-
-                        if first_is_space && last_is_space && not_all_space {
-                            start += 1;
-                            end -= 1;
-                        }
-                    }
-
-                    // Normalize line endings to spaces
-                    events.push(InlineEvent::Code(Range::from_usize(start, end)));
-                    skip_until = end as u32;
+                    let range = trim_span_padding(text, point.pos, end);
+                    events.push(InlineEvent::Code(range));
+                    skip_until = range.end;
                 }
                 EmitKind::EmphasisStart => {
                     events.push(InlineEvent::EmphasisStart);
@@ -1528,12 +1506,14 @@ impl InlineParser {
                     events.push(InlineEvent::SoftBreak);
                     skip_until = point.end;
                 }
-                EmitKind::LinkStart {
-                    url_start,
-                    url_end,
-                    title_start,
-                    title_end,
-                } => {
+                EmitKind::LinkStart { link_index } => {
+                    let link = &resolved_links[link_index as usize];
+                    let (url_start, url_end, title_start, title_end) = (
+                        link.url_start,
+                        link.url_end,
+                        link.title_start,
+                        link.title_end,
+                    );
                     events.push(InlineEvent::LinkStart {
                         url: Range::from_usize(url_start as usize, url_end as usize),
                         title: title_start
@@ -1551,12 +1531,14 @@ impl InlineParser {
                     events.push(InlineEvent::LinkEnd);
                     skip_until = point.end;
                 }
-                EmitKind::ImageStart {
-                    url_start,
-                    url_end,
-                    title_start,
-                    title_end,
-                } => {
+                EmitKind::ImageStart { link_index } => {
+                    let link = &resolved_links[link_index as usize];
+                    let (url_start, url_end, title_start, title_end) = (
+                        link.url_start,
+                        link.url_end,
+                        link.title_start,
+                        link.title_end,
+                    );
                     events.push(InlineEvent::ImageStart {
                         url: Range::from_usize(url_start as usize, url_end as usize),
                         title: title_start
@@ -1574,27 +1556,28 @@ impl InlineParser {
                     events.push(InlineEvent::ImageEnd);
                     skip_until = point.end;
                 }
-                EmitKind::AutolinkLiteral { end, kind } => {
+                EmitKind::AutolinkLiteral { kind } => {
+                    let end = point.end;
                     events.push(InlineEvent::AutolinkLiteral {
                         url: Range::from_usize(point.pos as usize, end as usize),
                         kind,
                     });
                     skip_until = end;
                 }
-                EmitKind::AutolinkUrl {
-                    content_start,
-                    content_end,
-                } => {
+                EmitKind::AutolinkUrl { index } => {
+                    let autolink = &autolinks[index as usize];
+                    let (content_start, content_end) =
+                        (autolink.content_start, autolink.content_end);
                     events.push(InlineEvent::Autolink {
                         url: Range::from_usize(content_start as usize, content_end as usize),
                         is_email: false,
                     });
                     skip_until = point.end;
                 }
-                EmitKind::AutolinkEmail {
-                    content_start,
-                    content_end,
-                } => {
+                EmitKind::AutolinkEmail { index } => {
+                    let autolink = &autolinks[index as usize];
+                    let (content_start, content_end) =
+                        (autolink.content_start, autolink.content_end);
                     events.push(InlineEvent::Autolink {
                         url: Range::from_usize(content_start as usize, content_end as usize),
                         is_email: true,
@@ -1612,33 +1595,25 @@ impl InlineParser {
                     events.push(InlineEvent::FootnoteRef { def_index });
                     skip_until = point.end;
                 }
-                EmitKind::InlineFootnote {
-                    content_start,
-                    content_end,
-                } => {
+                EmitKind::InlineFootnote { index } => {
+                    let inline_note = &inline_footnotes[index as usize];
+                    let (content_start, content_end) =
+                        (inline_note.content_start, inline_note.content_end);
                     events.push(InlineEvent::InlineFootnote(Range::from_usize(
                         content_start as usize,
                         content_end as usize,
                     )));
                     skip_until = point.end;
                 }
-                EmitKind::MathInline {
-                    content_start,
-                    content_end,
-                } => {
-                    events.push(InlineEvent::MathInline(Range::from_usize(
-                        content_start as usize,
-                        content_end as usize,
-                    )));
+                EmitKind::MathInline { index } => {
+                    let (start, end) = math_spans[index as usize].content_range();
+                    events.push(InlineEvent::MathInline(trim_span_padding(text, start, end)));
                     skip_until = point.end;
                 }
-                EmitKind::MathDisplay {
-                    content_start,
-                    content_end,
-                } => {
-                    events.push(InlineEvent::MathDisplay(Range::from_usize(
-                        content_start as usize,
-                        content_end as usize,
+                EmitKind::MathDisplay { index } => {
+                    let (start, end) = math_spans[index as usize].content_range();
+                    events.push(InlineEvent::MathDisplay(trim_span_padding(
+                        text, start, end,
                     )));
                     skip_until = point.end;
                 }
@@ -1854,6 +1829,27 @@ struct InlineFootnote {
     content_end: u32,
 }
 
+/// Strip one padding space from each end of code or math content. A newline
+/// counts as a space for this rule; rendering performs the actual normalization.
+#[inline]
+fn trim_span_padding(text: &[u8], start: u32, end: u32) -> Range {
+    let mut start = start as usize;
+    let mut end = end as usize;
+    if end > start + 1 {
+        let content = &text[start..end];
+        let first_is_space = matches!(content[0], b' ' | b'\n');
+        let last_is_space = matches!(content[content.len() - 1], b' ' | b'\n');
+        let not_all_space = content.iter().any(|&byte| !matches!(byte, b' ' | b'\n'));
+        if first_is_space && last_is_space && not_all_space {
+            start += 1;
+            end -= 1;
+        }
+    }
+    Range::from_usize(start, end)
+}
+
+// Payload indices refer to parser-owned resolution records, which remain
+// unchanged throughout emission. The temporary sort buffer need not copy them.
 #[derive(Debug, Clone, Copy)]
 struct EmitPoint {
     pos: u32,
@@ -1863,9 +1859,11 @@ struct EmitPoint {
 
 #[derive(Debug, Clone, Copy)]
 enum EmitKind {
+    // A combined opener/content point; the closing point remains separate.
+    CodeSpan { index: u32 },
     CodeSpanStart,
+    CodeContent(u32),
     CodeSpanEnd,
-    CodeContent(u32), // end position
     EmphasisStart,
     EmphasisEnd,
     StrongStart,
@@ -1881,56 +1879,20 @@ enum EmitKind {
     Escape(u8),
     HardBreak,
     SoftBreak,
-    LinkStart {
-        url_start: u32,
-        url_end: u32,
-        title_start: Option<u32>,
-        title_end: Option<u32>,
-    },
-    LinkStartRef {
-        def_index: u32,
-    },
+    LinkStart { link_index: u32 },
+    LinkStartRef { def_index: u32 },
     LinkEnd,
-    ImageStart {
-        url_start: u32,
-        url_end: u32,
-        title_start: Option<u32>,
-        title_end: Option<u32>,
-    },
-    ImageStartRef {
-        def_index: u32,
-    },
+    ImageStart { link_index: u32 },
+    ImageStartRef { def_index: u32 },
     ImageEnd,
-    AutolinkUrl {
-        content_start: u32,
-        content_end: u32,
-    },
-    AutolinkEmail {
-        content_start: u32,
-        content_end: u32,
-    },
-    AutolinkLiteral {
-        end: u32,
-        kind: links::AutolinkLiteralKind,
-    },
-    HtmlRaw {
-        end: u32,
-    },
-    FootnoteRef {
-        def_index: u32,
-    },
-    InlineFootnote {
-        content_start: u32,
-        content_end: u32,
-    },
-    MathInline {
-        content_start: u32,
-        content_end: u32,
-    },
-    MathDisplay {
-        content_start: u32,
-        content_end: u32,
-    },
+    AutolinkUrl { index: u32 },
+    AutolinkEmail { index: u32 },
+    AutolinkLiteral { kind: links::AutolinkLiteralKind },
+    HtmlRaw { end: u32 },
+    FootnoteRef { def_index: u32 },
+    InlineFootnote { index: u32 },
+    MathInline { index: u32 },
+    MathDisplay { index: u32 },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1966,7 +1928,6 @@ fn find_html_spans_into(
     spans: &mut Vec<HtmlSpan>,
 ) {
     spans.clear();
-    let len = text.len();
 
     code_ranges.clear();
     code_ranges.reserve(code_spans.len().saturating_sub(code_ranges.capacity()));
@@ -1990,11 +1951,8 @@ fn find_html_spans_into(
     let mut autolink_idx = 0usize;
 
     let mut pos = 0usize;
-    while pos < len {
-        if text[pos] != b'<' {
-            pos += 1;
-            continue;
-        }
+    while let Some(offset) = memchr(b'<', &text[pos..]) {
+        pos += offset;
         if is_escaped(text, pos) {
             pos += 1;
             continue;
