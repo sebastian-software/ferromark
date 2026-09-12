@@ -190,3 +190,11 @@ A fresh reconstruction from the compact experiment archive builds the baseline
 and production drivers and passes all 2,695 guards for each. Validation logs and
 commands are in [the experiment archive](experiments/validation/). GitHub CI is
 reported on the accompanying PR rather than frozen into these measurement data.
+
+The raw report archives remain in Git and are excluded from the published Cargo
+package. `cargo package --allow-dirty --offline --locked` builds the packaged
+crate successfully, and its file list contains no report archives. This is a
+packaging-only adjustment after the measurements; the measured parser sources
+are unchanged. Required local package checks also pass: frozen Node install,
+security audit, native build, 23 package tests, typecheck, lint, pack verification,
+and a clean consumer install. No dependency versions or release versions change.

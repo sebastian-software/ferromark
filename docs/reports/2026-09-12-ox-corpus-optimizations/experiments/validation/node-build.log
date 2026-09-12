@@ -1,0 +1,47 @@
+$ pnpm --filter ferromark build
+ferromark/npm/darwin-x64                 | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["darwin"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-arm64-gnu            | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["glibc"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-arm64-musl           | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["musl"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-x64-gnu              | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["linux"],"libc":["glibc"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-x64-musl             | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["linux"],"libc":["musl"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/win32-arm64-msvc           | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["win32"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/win32-x64-msvc             | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["win32"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+$ node ./scripts/build-native.mjs && node ./scripts/verify-package.mjs
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.47
+   Compiling napi-build v2.3.2
+   Compiling futures-sink v0.3.33
+   Compiling memchr v2.8.3
+   Compiling futures-core v0.3.33
+   Compiling slab v0.4.12
+   Compiling futures-task v0.3.33
+   Compiling pin-project-lite v0.2.17
+   Compiling futures-io v0.3.33
+   Compiling cfg-if v1.0.4
+   Compiling unicode-segmentation v1.13.3
+   Compiling futures-channel v0.3.33
+   Compiling napi v3.11.0
+   Compiling libloading v0.9.0
+   Compiling rustc-hash v2.1.3
+   Compiling semver v1.0.28
+   Compiling ferromark-node v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark/node/native)
+   Compiling smallvec v1.15.2
+   Compiling napi-sys v3.3.0
+   Compiling ctor v1.0.11
+   Compiling nohash-hasher v0.2.0
+   Compiling bitflags v2.13.1
+   Compiling convert_case v0.11.0
+   Compiling html-escape v0.2.14
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+   Compiling syn v2.0.119
+   Compiling napi-derive-backend v6.0.0
+   Compiling futures-macro v0.3.33
+   Compiling futures-util v0.3.33
+   Compiling napi-derive v3.6.0
+   Compiling futures-executor v0.3.33
+   Compiling futures v0.3.33
+    Finished `release-node` profile [optimized] target(s) in 16.24s
+ INFO  Read [/Users/sebastian/Workspace/.codex/15d0/ferromark/node/ferromark/.napi-artifacts/ferromark.darwin-arm64.node]
+ INFO  Write file content to [/Users/sebastian/Workspace/.codex/15d0/ferromark/node/ferromark/npm/darwin-arm64/ferromark.darwin-arm64.node]
+ INFO  Write file content to [/Users/sebastian/Workspace/.codex/15d0/ferromark/node/ferromark/ferromark.darwin-arm64.node]

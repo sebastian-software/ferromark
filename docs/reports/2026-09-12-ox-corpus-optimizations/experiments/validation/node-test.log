@@ -1,0 +1,40 @@
+$ pnpm --filter ferromark test
+ferromark/npm/darwin-x64                 | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["darwin"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-arm64-gnu            | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["glibc"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-arm64-musl           | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["musl"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-x64-gnu              | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["linux"],"libc":["glibc"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/linux-x64-musl             | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["linux"],"libc":["musl"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/win32-arm64-msvc           | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["win32"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+ferromark/npm/win32-x64-msvc             | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["win32"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+$ node --test test/*.test.mjs && node ./scripts/verify-panic-unwind.mjs
+✔ renders Markdown through the native binding (349.498708ms)
+✔ renders UTF-8 HTML directly into Node.js Buffers (0.199708ms)
+✔ rejects non-string Markdown across every public render entry point (0.436375ms)
+✔ reuses a renderer without leaking document state (0.146708ms)
+✔ validates reusable renderer options at construction (0.693375ms)
+✔ maps typed options to the Rust surface (0.159708ms)
+✔ requires trusted rendering before allowHtml passes raw HTML through (0.072875ms)
+✔ rejects unknown option keys across every public render entry point (0.17ms)
+✔ selects the musl optional package on Alpine-style Linux (34.8855ms)
+✔ maps every supported native platform and rejects unsupported targets (0.24325ms)
+✔ does not collect a diagnostic report on non-Linux platforms (34.552ms)
+✔ wraps native dynamic-loader failures with platform guidance (19.190791ms)
+✔ loads the package by name from CommonJS (0.759ms)
+✔ composes with a synchronous Ferriki-compatible highlighter (0.450292ms)
+✔ falls back to escaped code when highlighting fails (0.090291ms)
+✔ uses fallbackLanguage and preserves transform metadata when highlighting fails (0.126417ms)
+✔ validates and surfaces highlighter error observers (0.11225ms)
+✔ surfaces invalid highlighter return values from the native callback (0.063833ms)
+✔ transform returns html, headings, and front matter (0.082958ms)
+✔ transform extracts TOML-style front matter (0.051ms)
+✔ transform omits ids when headingIds is disabled (0.036ms)
+✔ linkBasePath prefixes internal links only (0.072167ms)
+✔ highlighter receives fence meta as Shiki-style __raw (0.062041ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 493.863667
