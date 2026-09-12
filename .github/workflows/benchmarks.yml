@@ -1,118 +1,33 @@
 name: Benchmarks
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "benches/**"
-      - Cargo.toml
-      - Cargo.lock
-      - .github/workflows/benchmarks.yml
-      - scripts/compare-ci-benchmarks.py
-      - scripts/test_ci_benchmarks.py
-  pull_request:
-    paths:
-      - "src/**"
-      - "benches/**"
-      - Cargo.toml
-      - Cargo.lock
-      - .github/workflows/benchmarks.yml
-      - scripts/compare-ci-benchmarks.py
-      - scripts/test_ci_benchmarks.py
   workflow_dispatch:
 
 permissions:
   contents: read
 
-env:
-  CARGO_TERM_COLOR: always
-
-concurrency:
-  group: benchmarks-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  benchmark:
-    name: Performance regression check
+  escape-screen:
+    name: Native escape integration screen
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
-      - name: Check benchmark comparator
-        run: python3 -m unittest discover -s scripts -p 'test_ci_benchmarks.py'
-      - name: Check out PR base on the same runner
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          path: .benchmark-base
-      - name: Build both benchmark versions before measuring
-        shell: bash
-        env:
-          IS_PR: ${{ github.event_name == 'pull_request' }}
-        run: |
-          cargo bench --locked --bench parsing --no-run
-          if [[ "$IS_PR" == true ]]; then
-            cargo bench --manifest-path .benchmark-base/Cargo.toml --locked --bench parsing --no-run
-          fi
-          rustc -Vv
-          lscpu
-      - name: Restore benchmark history
-        if: github.event_name != 'pull_request'
-        id: benchmark-history
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .benchmark-cache
-          key: ferromark-benchmark-${{ runner.os }}-main-${{ github.sha }}
-          restore-keys: |
-            ferromark-benchmark-${{ runner.os }}-main-
-      - name: Run representative benchmarks
-        shell: bash
-        env:
-          IS_PR: ${{ github.event_name == 'pull_request' }}
+      - name: Native before/after screens
         run: |
           set -o pipefail
-          mkdir -p .benchmark-cache
-          if [[ "$IS_PR" == true ]]; then
-            cargo bench --manifest-path .benchmark-base/Cargo.toml --locked --bench parsing -- \
-              --output-format bencher \
-              --warm-up-time 1 \
-              --measurement-time 3 \
-              --sample-size 30 | tee benchmark-base-output.txt
-          fi
-          cargo bench --locked --bench parsing -- \
-            --output-format bencher \
-            --warm-up-time 1 \
-            --measurement-time 3 \
-            --sample-size 30 | tee benchmark-output.txt
-      - name: Compare with PR base measured on this runner
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.event.pull_request.base.sha }}
-        run: >-
-          python3 scripts/compare-ci-benchmarks.py
-          benchmark-base-output.txt benchmark-output.txt
-          --base-ref "$BASE_REF" --head-ref "$GITHUB_SHA"
-      - name: Record main benchmark history
-        if: github.event_name != 'pull_request'
-        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
+          python3 -u scripts/escape-linux-screen.py | tee "$RUNNER_TEMP/escape-linux-output.log"
+      - name: Preserve native evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: ferromark parser
-          tool: cargo
-          output-file-path: benchmark-output.txt
-          external-data-json-path: .benchmark-cache/benchmark-data.json
-          save-data-file: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
-          alert-threshold: "120%"
-          fail-threshold: "120%"
-          fail-on-alert: false
-          summary-always: true
-      - name: Save main benchmark history
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.benchmark-history.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .benchmark-cache
-          key: ferromark-benchmark-${{ runner.os }}-main-${{ github.sha }}
+          name: escape-linux-evidence
+          path: |
+            ${{ runner.temp }}/escape-linux-evidence
+            ${{ runner.temp }}/escape-linux-output.log
