@@ -20,5 +20,6 @@ for name in ['baseline','masked-direct','probe-attr-outlined']:
    status['runs'].append(dict(candidate=name,case=label,returncode=result.returncode))
    if result.returncode==0:
     with (D/(stem+'-report.txt')).open('w') as out:subprocess.run([str(perf),'report','--stdio','--no-children','--percent-limit','0.5','--sort','symbol','-i',str(data)],stdout=out,stderr=subprocess.STDOUT)
+    with (D/(stem+'-annotate.txt')).open('w') as out:subprocess.run([str(perf),'annotate','--stdio','--percent-limit','0.5','-i',str(data)],stdout=out,stderr=subprocess.STDOUT)
 (D/'status.json').write_text(json.dumps(status,indent=2)+'\n')
 print('PROFILE',status,flush=True)
