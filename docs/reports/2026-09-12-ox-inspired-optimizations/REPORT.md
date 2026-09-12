@@ -4,6 +4,11 @@ Date: September 12, 2026. This is a measured implementation experiment against
 frozen `main`, following the [Ox Content audit](../2026-09-12-ox-content-audit/REPORT.md).
 It does not replace the published README or homepage benchmark dataset.
 
+The subsequent [native heap audit](../2026-09-12-ox-memory/REPORT.md) measures
+peak live requested bytes with a growing Ox arena, including large mixed and
+plain documents. It establishes the narrower claims that the allocation totals
+in this report alone could not support.
+
 ## Outcome
 
 Retain five complementary changes: exact NEON nibble classification with direct
