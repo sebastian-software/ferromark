@@ -24,17 +24,36 @@ No document is padded, repeated to hit a size bucket, or chosen by its timing.
 ## Lanes and completed work
 
 - **Previews:** Ferromark's default untrusted HTML API, fresh calls versus a
-  retained `Renderer`. Both return owned HTML; each result is dropped. No speed
-  comparison against a trusted or differently sanitized renderer is implied.
-- **Guide metadata:** `parse()` with its normal untrusted policy, returning HTML,
-  raw front matter, headings, and resource-limit diagnostics. Results are
-  consumed and dropped. This is a complete Ferromark integration example, not a
-  claim that a competitor's HTML-only API offers the same output.
+  retained `Renderer`, plus pulldown-cmark and Comrak application adapters.
+  Every integration escapes user HTML, checks link/image URLs against the same
+  scheme allowlist, renders callouts, generates heading IDs, and returns owned
+  HTML that is dropped after each document. Adapter work is part of the cost.
+- **Guide metadata:** Ferromark `parse()` and the two application adapters return
+  HTML, borrowed raw front matter, and owned heading level/text/ID records.
+  Metadata and rendered IDs must agree for every archived input. Complete
+  results are consumed and dropped. Ferromark's resource-limit report must be
+  empty; other engines do not expose the same diagnostics. Body-only rendering
+  is not eligible for this comparison.
 - **Documentation HTML:** Ferromark, pulldown-cmark, and Comrak render the same
   complete files with trusted CommonMark plus tables, double-tilde strikethrough,
   and task lists. Heading IDs, bare autolinks, footnotes, and other extensions
   are off. Normal allocation and parser APIs are preserved. Each engine is
   measured with both immediate release and retention of all rendered pages.
+
+Protocol 1 measured previews and guide metadata only with Ferromark. Protocol 2
+adds the missing comparisons, preserving the exact original corpus and sampling
+durations. It measures all 13 variants afresh in one alternating run, including
+the Ferromark baselines. The original archive stays immutable and reproducible;
+its timings are not mixed into the new run.
+
+The adapters use public events, ASTs, and rendering hooks. They parse Markdown
+once, include required policy and metadata work inside time and heap scopes,
+and use the engines' own HTML generation. No extra syntax features are silently
+disabled to admit a comparison. Corpus admission checks every preview and guide
+as well as the documentation collection. Tests reject missing metadata, broken
+navigation IDs, omitted content, literal callouts, and unsafe HTML. This is a
+comparison of documented integrations, not an assertion that native defaults
+or every possible integration have the same semantics or cost.
 
 Inputs with renderer differences follow [ARCH-COMP-002](ARCH-COMP-002-workload-comparability.md).
 Raw outputs and reviewed differences are archived before timing; missing

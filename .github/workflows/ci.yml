@@ -43,6 +43,9 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       - run: cargo test --locked ${{ matrix.args }}
       - run: cargo test -p ferro-byte-search --locked
+      - name: Test complete workflow comparison adapters
+        if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable' && matrix.features == 'all'
+        run: cargo test --manifest-path benchmarks/workflows/Cargo.toml --all-features --locked
 
   clippy:
     runs-on: ubuntu-latest
@@ -55,6 +58,7 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       - run: cargo clippy --all-targets --all-features --locked -- -D warnings
       - run: cargo clippy -p ferro-byte-search --all-targets --locked -- -D warnings
+      - run: cargo clippy --manifest-path benchmarks/workflows/Cargo.toml --all-targets --all-features --locked -- -D warnings
 
   coverage:
     runs-on: ubuntu-latest
@@ -107,6 +111,7 @@ jobs:
         run: pnpm format:check
         working-directory: scripts
       - run: cargo fmt --check
+      - run: cargo fmt --manifest-path benchmarks/workflows/Cargo.toml --check
       - run: python3 -m unittest discover -s benchmarks/bun-comparison -p "test_*.py"
       - run: python3 -m unittest discover -s benchmarks/cmark-comparison -p "test_*.py"
       - run: python3 -m unittest discover -s benchmarks/native-pipeline-comparison -p "test_*.py"
