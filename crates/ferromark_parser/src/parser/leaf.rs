@@ -1,0 +1,214 @@
+use ferromark_allocator::Vec as ArenaVec;
+use ferromark_ast::{Node, Span};
+
+use super::Parser;
+use super::line_scan::{line_end, next_line_start};
+use crate::error::ParseResult;
+
+impl<'a> Parser<'a> {
+    /// Cheap recognizer for ATX heading starts used by block dispatch.
+    ///
+    /// The caller has already found the first non-whitespace byte. Up to
+    /// three spaces of indentation are allowed (a tab would reach column
+    /// four), and `is_atx_heading_prefix` validates the marker with byte
+    /// checks and without allocating a trimmed line.
+    pub(super) fn try_parse_heading_start(&self, line_start: usize, trimmed_start: usize) -> bool {
+        let bytes = self.source.as_bytes();
+        trimmed_start - line_start <= 3
+            && bytes[line_start..trimmed_start].iter().all(|&byte| byte == b' ')
+            && is_atx_heading_prefix(&bytes[trimmed_start..])
+    }
+
+    pub(super) fn try_parse_thematic_break_line(line: &str) -> bool {
+        let bytes = line.trim().as_bytes();
+        if bytes.len() < 3 {
+            return false;
+        }
+        let first = bytes[0];
+        if !matches!(first, b'-' | b'*' | b'_') {
+            return false;
+        }
+        let mut count = 0u32;
+        for &b in bytes {
+            if b == first {
+                count += 1;
+            } else if b != b' ' && b != b'\t' {
+                return false;
+            }
+        }
+        count >= 3
+    }
+
+    /// Checks whether a line begins a fenced code block.
+    ///
+    /// `line` is used only for indentation, and `trimmed` is the caller's
+    /// already-sliced view starting at the first non-whitespace byte. This
+    /// avoids recomputing `trim_start` in both `parse_block` and
+    /// `line_starts_block`.
+    pub(super) fn try_parse_fenced_code_at(line: &str, trimmed: &str) -> bool {
+        if Self::indentation_columns(line) > 3 {
+            return false;
+        }
+
+        let bytes = trimmed.as_bytes();
+        if bytes.len() < 3 {
+            return false;
+        }
+        if bytes[0] == b'~' && bytes[1] == b'~' && bytes[2] == b'~' {
+            return true;
+        }
+        if !(bytes[0] == b'`' && bytes[1] == b'`' && bytes[2] == b'`') {
+            return false;
+        }
+        // A backtick fence's info string may not contain backticks
+        // (otherwise ``` x ``` is an inline code span, not a fence).
+        let fence_len = bytes.iter().take_while(|&&byte| byte == b'`').count();
+        !trimmed[fence_len..].contains('`')
+    }
+
+    pub(super) fn indentation_columns(line: &str) -> usize {
+        let mut indent = 0;
+        for &b in line.as_bytes() {
+            match b {
+                b' ' => indent += 1,
+                b'\t' => indent += 4,
+                _ => break,
+            }
+        }
+        indent
+    }
+
+    /// Parses a heading.
+    pub(super) fn parse_heading(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
+        let bytes = self.source.as_bytes();
+        // Step over the (already validated, at most three columns of)
+        // indentation before counting hashes.
+        self.skip_whitespace();
+        let mut depth = 0u8;
+        // `#` is ASCII, so count the leading run with direct byte compares
+        // instead of routing each through `peek()`/`advance()`.
+        while self.position < bytes.len() && bytes[self.position] == b'#' {
+            depth += 1;
+            self.position += 1;
+        }
+
+        self.skip_whitespace();
+
+        let content_start = self.position;
+        // The heading content runs to the end of the line; find it in one
+        // memchr scan rather than a per-char peek/advance walk.
+        let content_end = line_end(bytes, content_start);
+        self.position = next_line_start(bytes, content_start);
+
+        // A closing hash sequence only counts when preceded by a space or
+        // tab (or when the heading is nothing but hashes); an escaped
+        // leading hash keeps the whole run literal.
+        let line = self.source[content_start..content_end].trim_end_matches([' ', '\t']);
+        let without_hashes = line.trim_end_matches('#');
+        let content = if without_hashes.len() == line.len() {
+            line
+        } else if without_hashes.is_empty() {
+            ""
+        } else if without_hashes.ends_with([' ', '\t']) {
+            without_hashes.trim_end_matches([' ', '\t'])
+        } else {
+            line
+        };
+
+        let span = Span::new(start as u32, self.position as u32);
+
+        let (content, id, classes) = self.split_heading_attributes(content);
+
+        // Parse inline content
+        let children = if !content.is_empty() {
+            self.parse_inline_block(content, content_start)?
+        } else {
+            self.allocator.new_vec()
+        };
+
+        Ok(Some(Node::Heading(self.allocator.boxed(ferromark_ast::Heading {
+            depth,
+            id,
+            classes,
+            children,
+            span,
+        }))))
+    }
+
+    pub(super) fn split_heading_attributes(
+        &self,
+        content: &'a str,
+    ) -> (&'a str, Option<&'a str>, ArenaVec<'a, &'a str>) {
+        let mut classes = self.allocator.new_vec();
+        if !self.options.heading_attributes {
+            return (content, None, classes);
+        }
+
+        let trimmed = content.trim_end_matches(char::is_whitespace);
+        if !trimmed.ends_with('}') {
+            return (content, None, classes);
+        }
+
+        let Some(open) = trimmed.rfind('{') else {
+            return (content, None, classes);
+        };
+        if open > 0 && !ends_with_whitespace(&trimmed[..open]) {
+            return (content, None, classes);
+        }
+
+        let mut id = None;
+        let mut has_attribute = false;
+        let attrs = &trimmed[open + 1..trimmed.len() - 1];
+        for token in attrs.split_whitespace() {
+            if let Some(name) = token.strip_prefix('#') {
+                if !name.is_empty() && id.is_none() {
+                    id = Some(name);
+                    has_attribute = true;
+                }
+            } else if let Some(name) = token.strip_prefix('.')
+                && !name.is_empty()
+            {
+                classes.push(name);
+                has_attribute = true;
+            }
+        }
+
+        if !has_attribute {
+            return (content, None, classes);
+        }
+
+        (trimmed[..open].trim_end_matches(char::is_whitespace), id, classes)
+    }
+
+    /// Parses a thematic break.
+    pub(super) fn parse_thematic_break(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
+        // Skip to (and past) the end of the current line. `consume_line`
+        // advances to `line_end + 1`, or to EOF when there's no newline —
+        // exactly the two positions the old peek/advance loop produced.
+        self.consume_line();
+
+        let span = Span::new(start as u32, self.position as u32);
+        Ok(Some(Node::ThematicBreak(ferromark_ast::ThematicBreak { span })))
+    }
+}
+
+fn ends_with_whitespace(value: &str) -> bool {
+    value.chars().next_back().is_some_and(char::is_whitespace)
+}
+
+fn is_atx_heading_prefix(bytes: &[u8]) -> bool {
+    // Count at most six leading hashes with direct byte checks. The following
+    // byte must be whitespace, newline, or EOF, which lets the dispatcher
+    // reject `#not-heading` without materializing a line string.
+    let mut hashes = 0;
+    while hashes < bytes.len() && bytes[hashes] == b'#' {
+        hashes += 1;
+        if hashes > 6 {
+            return false;
+        }
+    }
+    if hashes == 0 {
+        return false;
+    }
+    matches!(bytes.get(hashes), None | Some(b' ' | b'\t' | b'\n' | b'\r'))
+}

@@ -1,0 +1,151 @@
+//! Visitor trait glue for `HtmlRenderer`.
+//!
+//! Each trait method delegates to a focused helper module. The AST-facing behavior
+//! remains concentrated in one impl block, while the larger HTML-writing logic stays
+//! split by block and inline responsibilities.
+
+use ferromark_ast::{
+    BlockQuote, Break, CodeBlock, Definition, DefinitionList, DefinitionListDefinition,
+    DefinitionListTerm, Delete, Document, Emphasis, FootnoteDefinition, FootnoteReference, Heading,
+    Html, Image, InlineCode, InlineMath, Link, List, ListItem, MathBlock, MdxFlowExpression,
+    MdxJsxFlowElement, MdxJsxTextElement, MdxTextExpression, MdxjsEsm, Node, Paragraph, Strong,
+    Subscript, Superscript, Table, Text, ThematicBreak, Visit,
+};
+
+use super::HtmlRenderer;
+
+impl<'a> Visit<'a> for HtmlRenderer {
+    fn visit_document(&mut self, document: &Document<'a>) {
+        self.render_document(document);
+    }
+
+    fn visit_node(&mut self, node: &Node<'a>) {
+        self.render_node(node);
+    }
+
+    fn visit_paragraph(&mut self, paragraph: &Paragraph<'a>) {
+        self.render_paragraph(paragraph);
+    }
+
+    fn visit_heading(&mut self, heading: &Heading<'a>) {
+        self.render_heading(heading);
+    }
+
+    fn visit_thematic_break(&mut self, thematic_break: &ThematicBreak) {
+        self.render_thematic_break(thematic_break);
+    }
+
+    fn visit_block_quote(&mut self, block_quote: &BlockQuote<'a>) {
+        self.render_block_quote(block_quote);
+    }
+
+    fn visit_list(&mut self, list: &List<'a>) {
+        self.render_list(list);
+    }
+
+    fn visit_list_item(&mut self, list_item: &ListItem<'a>) {
+        self.render_list_item(list_item);
+    }
+
+    fn visit_code_block(&mut self, code_block: &CodeBlock<'a>) {
+        self.render_code_block(code_block);
+    }
+
+    fn visit_math_block(&mut self, math_block: &MathBlock<'a>) {
+        self.render_math_block(math_block);
+    }
+
+    fn visit_html(&mut self, html: &Html<'a>) {
+        self.render_html(html);
+    }
+
+    fn visit_table(&mut self, table: &Table<'a>) {
+        self.render_table(table);
+    }
+
+    fn visit_definition_list(&mut self, definition_list: &DefinitionList<'a>) {
+        self.render_definition_list(definition_list);
+    }
+
+    fn visit_definition_list_term(&mut self, definition_list_term: &DefinitionListTerm<'a>) {
+        self.render_definition_list_term(definition_list_term);
+    }
+
+    fn visit_definition_list_definition(
+        &mut self,
+        definition_list_definition: &DefinitionListDefinition<'a>,
+    ) {
+        self.render_definition_list_definition(definition_list_definition);
+    }
+
+    fn visit_text(&mut self, text: &Text<'a>) {
+        self.render_text(text);
+    }
+
+    fn visit_emphasis(&mut self, emphasis: &Emphasis<'a>) {
+        self.render_emphasis(emphasis);
+    }
+
+    fn visit_strong(&mut self, strong: &Strong<'a>) {
+        self.render_strong(strong);
+    }
+
+    fn visit_inline_code(&mut self, inline_code: &InlineCode<'a>) {
+        self.render_inline_code(inline_code);
+    }
+
+    fn visit_inline_math(&mut self, inline_math: &InlineMath<'a>) {
+        self.render_inline_math(inline_math);
+    }
+
+    fn visit_break(&mut self, break_node: &Break) {
+        self.render_break(break_node);
+    }
+
+    fn visit_link(&mut self, link: &Link<'a>) {
+        self.render_link(link);
+    }
+
+    fn visit_image(&mut self, image: &Image<'a>) {
+        self.render_image(image);
+    }
+
+    fn visit_delete(&mut self, delete: &Delete<'a>) {
+        self.render_delete(delete);
+    }
+
+    fn visit_superscript(&mut self, superscript: &Superscript<'a>) {
+        self.render_superscript(superscript);
+    }
+
+    fn visit_subscript(&mut self, subscript: &Subscript<'a>) {
+        self.render_subscript(subscript);
+    }
+
+    fn visit_footnote_reference(&mut self, footnote_ref: &FootnoteReference<'a>) {
+        self.render_footnote_reference(footnote_ref);
+    }
+
+    fn visit_definition(&mut self, definition: &Definition<'a>) {
+        let _ = definition;
+        // Link definitions are lookup metadata for parsers and are not rendered directly.
+    }
+
+    fn visit_footnote_definition(&mut self, footnote_def: &FootnoteDefinition<'a>) {
+        self.render_footnote_definition(footnote_def);
+    }
+
+    fn visit_mdx_jsx_flow_element(&mut self, node: &MdxJsxFlowElement<'a>) {
+        self.render_mdx_jsx_flow_element(node);
+    }
+
+    fn visit_mdx_jsx_text_element(&mut self, node: &MdxJsxTextElement<'a>) {
+        self.render_mdx_jsx_text_element(node);
+    }
+
+    fn visit_mdxjs_esm(&mut self, _node: &MdxjsEsm<'a>) {}
+
+    fn visit_mdx_flow_expression(&mut self, _node: &MdxFlowExpression<'a>) {}
+
+    fn visit_mdx_text_expression(&mut self, _node: &MdxTextExpression<'a>) {}
+}

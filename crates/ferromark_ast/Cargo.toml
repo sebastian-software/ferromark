@@ -1,0 +1,17 @@
+[package]
+name = "ferromark_ast"
+version.workspace = true
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "AST definitions for Ferromark Markdown parser"
+
+[lints]
+workspace = true
+
+[dependencies]
+ferromark_allocator = { workspace = true }
