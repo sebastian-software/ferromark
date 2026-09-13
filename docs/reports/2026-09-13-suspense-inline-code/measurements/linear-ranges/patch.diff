@@ -1,0 +1,63 @@
+--- a/src/inline/code_span.rs
++++ b/src/inline/code_span.rs
+@@ -13,6 +13,7 @@
+ /// - A backslash INSIDE the code span is literal (doesn't escape the closer)
+ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8], html_spans: &[(u32, u32)]) {
+     let len = marks.len();
++    let mut html_idx = 0;
+ 
+     for i in 0..len {
+         if marks[i].ch != b'`' || marks[i].is_resolved() {
+@@ -21,7 +22,8 @@
+ 
+         // Check if this opener is preceded by a backslash (would be escaped)
+         let opener_pos = marks[i].pos as usize;
+-        if pos_in_spans(opener_pos as u32, html_spans) {
++        while html_idx < html_spans.len() && opener_pos as u32 >= html_spans[html_idx].1 { html_idx += 1; }
++        if html_idx < html_spans.len() && opener_pos as u32 >= html_spans[html_idx].0 {
+             continue;
+         }
+         if opener_pos > 0 && text[opener_pos - 1] == b'\\' {
+@@ -77,11 +79,6 @@
+             }
+         }
+     }
+-}
+-
+-#[inline]
+-fn pos_in_spans(pos: u32, spans: &[(u32, u32)]) -> bool {
+-    spans.iter().any(|&(start, end)| pos >= start && pos < end)
+ }
+ 
+ /// Extract code span content ranges from resolved marks.
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -471,11 +471,10 @@
+         }
+ 
+         // Filter autolinks that start inside code spans
++        let mut code_idx = 0;
+         self.autolinks.retain(|al| {
+-            !self
+-                .code_spans
+-                .iter()
+-                .any(|cs| al.start >= cs.opener_pos && al.start < cs.closer_end)
++            while code_idx < self.code_spans.len() && al.start >= self.code_spans[code_idx].closer_end { code_idx += 1; }
++            code_idx == self.code_spans.len() || al.start < self.code_spans[code_idx].opener_pos
+         });
+ 
+         // Fourth: collect bracket positions and detect inline delimiter candidates in one pass
+@@ -1993,10 +1992,10 @@
+     if spans.is_empty() || code_spans.is_empty() {
+         return;
+     }
++    let mut code_idx = 0;
+     spans.retain(|span| {
+-        !code_spans
+-            .iter()
+-            .any(|cs| span.start >= cs.opener_pos && span.start < cs.closer_end)
++        while code_idx < code_spans.len() && span.start >= code_spans[code_idx].closer_end { code_idx += 1; }
++        code_idx == code_spans.len() || span.start < code_spans[code_idx].opener_pos
+     });
+ }
+ 

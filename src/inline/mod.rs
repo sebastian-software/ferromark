@@ -17,6 +17,26 @@ mod strikethrough;
 mod subscript;
 mod superscript;
 
+#[cfg(test)]
+std::thread_local! {
+    static RANGE_PROBES: std::cell::Cell<[usize; 3]> = const { std::cell::Cell::new([0; 3]) };
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug)]
+enum RangeProbe {
+    CodeOpenerInHtml,
+    AutolinkInCode,
+    HtmlInCode,
+}
+
+#[cfg(test)]
+fn record_range_probe(site: RangeProbe) {
+    let mut probes = RANGE_PROBES.get();
+    probes[site as usize] += 1;
+    RANGE_PROBES.set(probes);
+}
+
 pub use event::InlineEvent;
 pub use links::AutolinkLiteralKind;
 
@@ -470,13 +490,7 @@ impl InlineParser {
             self.math_spans.clear();
         }
 
-        // Filter autolinks that start inside code spans
-        self.autolinks.retain(|al| {
-            !self
-                .code_spans
-                .iter()
-                .any(|cs| al.start >= cs.opener_pos && al.start < cs.closer_end)
-        });
+        filter_autolinks_in_code_spans(&mut self.autolinks, &self.code_spans);
 
         // Fourth: collect bracket positions and detect inline delimiter candidates in one pass
         Self::collect_brackets(
@@ -1989,14 +2003,38 @@ fn filter_html_spans_in_link_destinations(spans: &mut Vec<HtmlSpan>, links: &[Li
     });
 }
 
+// Keep the range walk separate from the parser's early text-only return.
+#[inline(never)]
+fn filter_autolinks_in_code_spans(autolinks: &mut Vec<Autolink>, code_spans: &[CodeSpan]) {
+    // Both sequences are ordered and code spans do not overlap.
+    let mut code_idx = 0;
+    autolinks.retain(|al| {
+        while code_idx < code_spans.len() && {
+            #[cfg(test)]
+            record_range_probe(RangeProbe::AutolinkInCode);
+            al.start >= code_spans[code_idx].closer_end
+        } {
+            code_idx += 1;
+        }
+        code_idx == code_spans.len() || al.start < code_spans[code_idx].opener_pos
+    });
+}
+
 fn filter_html_spans_in_code_spans(spans: &mut Vec<HtmlSpan>, code_spans: &[CodeSpan]) {
     if spans.is_empty() || code_spans.is_empty() {
         return;
     }
+    // HTML candidates and extracted code spans have increasing source offsets.
+    let mut code_idx = 0;
     spans.retain(|span| {
-        !code_spans
-            .iter()
-            .any(|cs| span.start >= cs.opener_pos && span.start < cs.closer_end)
+        while code_idx < code_spans.len() && {
+            #[cfg(test)]
+            record_range_probe(RangeProbe::HtmlInCode);
+            span.start >= code_spans[code_idx].closer_end
+        } {
+            code_idx += 1;
+        }
+        code_idx == code_spans.len() || span.start < code_spans[code_idx].opener_pos
     });
 }
 
@@ -2279,6 +2317,84 @@ fn find_subsequence_byte(text: &[u8], start: usize, needle: u8) -> Option<usize>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn code_membership_preserves_html_boundaries_and_other_inline_syntax() {
+        let mut options = crate::Options::commonmark();
+        options.render_policy = crate::RenderPolicy::Trusted;
+        let cases = [
+            (
+                r#"`<span title="`">` tail"#,
+                r#"<p><code>&lt;span title=&quot;</code>&quot;&gt;` tail</p>"#,
+            ),
+            (
+                r#"<span title="`">plain</span> `code`"#,
+                r#"<p><span title="`">plain</span> <code>code</code></p>"#,
+            ),
+            (
+                "`<Widget>` <https://example.test> `b`",
+                r#"<p><code>&lt;Widget&gt;</code> <a href="https://example.test">https://example.test</a> <code>b</code></p>"#,
+            ),
+            (
+                "` <Widget> ` and `` b ` c ``",
+                "<p><code>&lt;Widget&gt;</code> and <code>b ` c</code></p>",
+            ),
+            (
+                "`<Widget>&amp;` &amp;",
+                "<p><code>&lt;Widget&gt;&amp;amp;</code> &amp;</p>",
+            ),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(
+                crate::to_html_with_options(input, &options),
+                format!("{expected}\n"),
+                "{input:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn code_membership_retains_enabled_literal_autolinks() {
+        let mut options = crate::Options::commonmark();
+        options.autolink_literals = true;
+        assert_eq!(
+            crate::to_html_with_options("Visit https://example.test with `<Widget>`.", &options),
+            "<p>Visit <a href=\"https://example.test\">https://example.test</a> with <code>&lt;Widget&gt;</code>.</p>\n"
+        );
+    }
+
+    #[test]
+    fn code_html_membership_work_scales_linearly() {
+        fn measure(repetitions: usize) -> [usize; 3] {
+            let text =
+                vec!["**bold** `<Widget>` `pending` <https://example.test>"; repetitions].join(" ");
+            RANGE_PROBES.set([0; 3]);
+            let html = crate::to_html_with_options(&text, &crate::Options::commonmark());
+            let probes = RANGE_PROBES.get();
+            assert_eq!(html.matches("<code>").count(), repetitions * 2);
+            assert_eq!(html.matches("<a href=").count(), repetitions);
+            assert_eq!(html.matches("<strong>").count(), repetitions);
+            probes
+        }
+
+        let small = measure(64);
+        let large = measure(128);
+        // Each walk must contribute its own probes. A rewrite that bypasses one
+        // counter must not be masked by the two remaining linear walks.
+        for site in [
+            RangeProbe::CodeOpenerInHtml,
+            RangeProbe::AutolinkInCode,
+            RangeProbe::HtmlInCode,
+        ] {
+            let small = small[site as usize];
+            let large = large[site as usize];
+            assert!(small > 0, "the mixed paragraph must exercise {site:?}");
+            assert!(
+                large <= small * 3,
+                "{site:?} probes grew from {small} to {large}"
+            );
+        }
+    }
 
     fn parse_inline(text: &str) -> Vec<InlineEvent> {
         let mut parser = InlineParser::new();

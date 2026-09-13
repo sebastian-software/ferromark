@@ -1,0 +1,303 @@
+--- a/src/inline/code_span.rs
++++ b/src/inline/code_span.rs
+@@ -11,17 +11,28 @@
+ /// Handles backslash escape rules:
+ /// - A backtick preceded by backslash OUTSIDE the code span is escaped (not a delimiter)
+ /// - A backslash INSIDE the code span is literal (doesn't escape the closer)
++///
++/// HTML ranges must be sorted and non-overlapping, as produced by the inline
++/// HTML scanner. Increasing opener positions let us visit each range once.
+ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8], html_spans: &[(u32, u32)]) {
+     let len = marks.len();
++    let mut html_idx = 0;
+ 
+     for i in 0..len {
+         if marks[i].ch != b'`' || marks[i].is_resolved() {
+             continue;
+         }
+ 
+-        // Check if this opener is preceded by a backslash (would be escaped)
++        // Exclude openers inside HTML without restarting the range search.
+         let opener_pos = marks[i].pos as usize;
+-        if pos_in_spans(opener_pos as u32, html_spans) {
++        while html_idx < html_spans.len() && {
++            #[cfg(test)]
++            super::record_range_probe();
++            opener_pos as u32 >= html_spans[html_idx].1
++        } {
++            html_idx += 1;
++        }
++        if html_idx < html_spans.len() && opener_pos as u32 >= html_spans[html_idx].0 {
+             continue;
+         }
+         if opener_pos > 0 && text[opener_pos - 1] == b'\\' {
+@@ -77,11 +88,6 @@
+             }
+         }
+     }
+-}
+-
+-#[inline]
+-fn pos_in_spans(pos: u32, spans: &[(u32, u32)]) -> bool {
+-    spans.iter().any(|&(start, end)| pos >= start && pos < end)
+ }
+ 
+ /// Extract code span content ranges from resolved marks.
+--- a/src/inline/mod.rs
++++ b/src/inline/mod.rs
+@@ -16,6 +16,16 @@
+ mod strikethrough;
+ mod subscript;
+ mod superscript;
++
++#[cfg(test)]
++std::thread_local! {
++    static RANGE_PROBES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
++}
++
++#[cfg(test)]
++fn record_range_probe() {
++    RANGE_PROBES.set(RANGE_PROBES.get() + 1);
++}
+ 
+ pub use event::InlineEvent;
+ pub use links::AutolinkLiteralKind;
+@@ -425,6 +435,29 @@
+             return;
+         }
+ 
++        // Tag names in inline code otherwise pass through HTML/autolink
++        // recognition, code resolution, filtering, and event sorting. Only
++        // bypass those phases when the complete mark sequence proves safe.
++        if summary.has_code()
++            && summary.has_less_than()
++            && !may_have_autolinks
++            && !self.mark_buffer.limit_exceeded()
++            && !self.mark_buffer.code_span_limit_exceeded()
++            && try_emit_tag_code_prose(text, self.mark_buffer.marks(), &mut self.code_spans, events)
++        {
++            #[cfg(feature = "profiling")]
++            crate::profiling::record_inline_parse(
++                text.len(),
++                events.len() - event_start,
++                self.mark_buffer.len(),
++                self.mark_buffer.capacity(),
++                0,
++                self.emit_points.capacity(),
++                false,
++            );
++            return;
++        }
++
+         // Phase 2: Resolve marks by precedence
+         // First: autolinks + raw HTML (skip if no '<' present)
+         let has_lt = summary.has_less_than();
+@@ -471,11 +504,17 @@
+         }
+ 
+         // Filter autolinks that start inside code spans
++        // Both sequences are ordered and code spans do not overlap.
++        let mut code_idx = 0;
+         self.autolinks.retain(|al| {
+-            !self
+-                .code_spans
+-                .iter()
+-                .any(|cs| al.start >= cs.opener_pos && al.start < cs.closer_end)
++            while code_idx < self.code_spans.len() && {
++                #[cfg(test)]
++                record_range_probe();
++                al.start >= self.code_spans[code_idx].closer_end
++            } {
++                code_idx += 1;
++            }
++            code_idx == self.code_spans.len() || al.start < self.code_spans[code_idx].opener_pos
+         });
+ 
+         // Fourth: collect bracket positions and detect inline delimiter candidates in one pass
+@@ -1635,6 +1674,75 @@
+     }
+ }
+ 
++/// Emit text and matched code spans when all '<' markers are inside code.
++/// Other mark families, unequal backtick runs, and HTML crossing a closing
++/// backtick retain the general resolver. Do not append events until the whole
++/// paragraph is eligible: failed attempts may only change reusable scratch.
++/// Keep this uncommon path out of the general inline parser's instruction body.
++#[inline(never)]
++fn try_emit_tag_code_prose(
++    text: &[u8],
++    marks: &[Mark],
++    spans: &mut Vec<CodeSpan>,
++    events: &mut Vec<InlineEvent>,
++) -> bool {
++    spans.clear();
++    let mut i = 0;
++    while i < marks.len() {
++        let opener = marks[i];
++        if opener.ch != b'`' {
++            return false;
++        }
++        let mut j = i + 1;
++        while j < marks.len() && marks[j].ch == b'<' {
++            j += 1;
++        }
++        if j == marks.len() || marks[j].ch != b'`' || marks[j].len() != opener.len() {
++            return false;
++        }
++        let closer = marks[j];
++        for mark in &marks[i + 1..j] {
++            // An HTML attribute/comment may contain backticks and extend into
++            // a later pair. Preserve the existing HTML/code precedence there.
++            if parse_inline_html(text, mark.pos as usize)
++                .is_some_and(|end| end > closer.pos as usize)
++            {
++                return false;
++            }
++        }
++        spans.push(CodeSpan {
++            opener_pos: opener.pos,
++            opener_end: opener.end,
++            closer_pos: closer.pos,
++            closer_end: closer.end,
++        });
++        i = j + 1;
++    }
++    events.reserve(spans.len() * 2 + 1);
++    let mut pos = 0;
++    for span in spans {
++        if span.opener_pos > pos {
++            events.push(InlineEvent::Text(Range::from_usize(
++                pos as usize,
++                span.opener_pos as usize,
++            )));
++        }
++        events.push(InlineEvent::Code(trim_span_padding(
++            text,
++            span.opener_end,
++            span.closer_pos,
++        )));
++        pos = span.closer_end;
++    }
++    if (pos as usize) < text.len() {
++        events.push(InlineEvent::Text(Range::from_usize(
++            pos as usize,
++            text.len(),
++        )));
++    }
++    true
++}
++
+ #[inline]
+ fn has_inline_specials(input: &[u8]) -> bool {
+     simd::has_inline_specials::<false, false>(input)
+@@ -1993,10 +2101,17 @@
+     if spans.is_empty() || code_spans.is_empty() {
+         return;
+     }
++    // HTML candidates and extracted code spans have increasing source offsets.
++    let mut code_idx = 0;
+     spans.retain(|span| {
+-        !code_spans
+-            .iter()
+-            .any(|cs| span.start >= cs.opener_pos && span.start < cs.closer_end)
++        while code_idx < code_spans.len() && {
++            #[cfg(test)]
++            record_range_probe();
++            span.start >= code_spans[code_idx].closer_end
++        } {
++            code_idx += 1;
++        }
++        code_idx == code_spans.len() || span.start < code_spans[code_idx].opener_pos
+     });
+ }
+ 
+@@ -2279,6 +2394,89 @@
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++
++    #[test]
++    fn tag_code_prose_skips_range_membership() {
++        let input = "The `<Suspense>` component has `pending` and `fallback` states.";
++        RANGE_PROBES.set(0);
++        let html = crate::to_html_with_options(input, &crate::Options::commonmark());
++        assert_eq!(
++            html,
++            "<p>The <code>&lt;Suspense&gt;</code> component has <code>pending</code> and <code>fallback</code> states.</p>\n"
++        );
++        assert_eq!(RANGE_PROBES.get(), 0);
++    }
++
++    #[test]
++    fn tag_code_prose_preserves_html_boundaries_and_other_inline_syntax() {
++        let mut options = crate::Options::commonmark();
++        options.render_policy = crate::RenderPolicy::Trusted;
++        let cases = [
++            (
++                r#"`<span title="`">` tail"#,
++                r#"<p><code>&lt;span title=&quot;</code>&quot;&gt;` tail</p>"#,
++            ),
++            (
++                r#"<span title="`">plain</span> `code`"#,
++                r#"<p><span title="`">plain</span> <code>code</code></p>"#,
++            ),
++            (
++                "`<Widget>` <https://example.test> `b`",
++                r#"<p><code>&lt;Widget&gt;</code> <a href="https://example.test">https://example.test</a> <code>b</code></p>"#,
++            ),
++            (
++                "` <Widget> ` and `` b ` c ``",
++                "<p><code>&lt;Widget&gt;</code> and <code>b ` c</code></p>",
++            ),
++            (
++                "`<Widget>&amp;` &amp;",
++                "<p><code>&lt;Widget&gt;&amp;amp;</code> &amp;</p>",
++            ),
++        ];
++        for (input, expected) in cases {
++            assert_eq!(
++                crate::to_html_with_options(input, &options),
++                format!("{expected}\n"),
++                "{input:?}"
++            );
++        }
++    }
++
++    #[test]
++    fn tag_code_prose_retains_enabled_literal_autolinks() {
++        let mut options = crate::Options::commonmark();
++        options.autolink_literals = true;
++        assert_eq!(
++            crate::to_html_with_options("Visit https://example.test with `<Widget>`.", &options),
++            "<p>Visit <a href=\"https://example.test\">https://example.test</a> with <code>&lt;Widget&gt;</code>.</p>\n"
++        );
++    }
++
++    #[test]
++    fn code_html_membership_work_scales_linearly() {
++        fn measure(repetitions: usize) -> usize {
++            let text =
++                vec!["**bold** `<Widget>` `pending` <https://example.test>"; repetitions].join(" ");
++            RANGE_PROBES.set(0);
++            let html = crate::to_html_with_options(&text, &crate::Options::commonmark());
++            let probes = RANGE_PROBES.get();
++            assert_eq!(html.matches("<code>").count(), repetitions * 2);
++            assert_eq!(html.matches("<a href=").count(), repetitions);
++            assert_eq!(html.matches("<strong>").count(), repetitions);
++            probes
++        }
++
++        let small = measure(64);
++        let large = measure(128);
++        assert!(
++            small > 0,
++            "the mixed paragraph must exercise range membership"
++        );
++        assert!(
++            large <= small * 3,
++            "range probes grew from {small} to {large}"
++        );
++    }
+ 
+     fn parse_inline(text: &str) -> Vec<InlineEvent> {
+         let mut parser = InlineParser::new();
