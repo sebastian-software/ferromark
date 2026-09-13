@@ -11,17 +11,28 @@ use super::marks::{Mark, flags};
 /// Handles backslash escape rules:
 /// - A backtick preceded by backslash OUTSIDE the code span is escaped (not a delimiter)
 /// - A backslash INSIDE the code span is literal (doesn't escape the closer)
+///
+/// HTML ranges must be sorted and non-overlapping, as produced by the inline
+/// HTML scanner. Increasing opener positions let us visit each range once.
 pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8], html_spans: &[(u32, u32)]) {
     let len = marks.len();
+    let mut html_idx = 0;
 
     for i in 0..len {
         if marks[i].ch != b'`' || marks[i].is_resolved() {
             continue;
         }
 
-        // Check if this opener is preceded by a backslash (would be escaped)
+        // Exclude openers inside HTML without restarting the range search.
         let opener_pos = marks[i].pos as usize;
-        if pos_in_spans(opener_pos as u32, html_spans) {
+        while html_idx < html_spans.len() && {
+            #[cfg(test)]
+            super::record_range_probe();
+            opener_pos as u32 >= html_spans[html_idx].1
+        } {
+            html_idx += 1;
+        }
+        if html_idx < html_spans.len() && opener_pos as u32 >= html_spans[html_idx].0 {
             continue;
         }
         if opener_pos > 0 && text[opener_pos - 1] == b'\\' {
@@ -77,11 +88,6 @@ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8], html_spans: &[(u32, u
             }
         }
     }
-}
-
-#[inline]
-fn pos_in_spans(pos: u32, spans: &[(u32, u32)]) -> bool {
-    spans.iter().any(|&(start, end)| pos >= start && pos < end)
 }
 
 /// Extract code span content ranges from resolved marks.
