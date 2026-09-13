@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--cmark", type=Path, required=True)
     parser.add_argument("--cmark-gfm", type=Path, required=True)
     parser.add_argument("--dotnet", type=Path, required=True)
+    parser.add_argument("--cmake", default="cmake")
     parser.add_argument("--resume", action="store_true", help="Resume a failed build in the same directory; all steps and hashes are rechecked")
     args = parser.parse_args()
     work = args.build.resolve()
@@ -104,9 +105,9 @@ def main():
                                    ("cmark-gfm", args.cmark_gfm, "587a12bb54d95ac37241377e6ddc93ea0e45439b")):
         source(path, revision)
         native = work / (engine + "-native")
-        run(["cmake", "-S", path.resolve(), "-B", native, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF",
-             "-DCMARK_TESTS=OFF", "-DCMARK_GFM_TESTS=OFF", "-DCMARK_STATIC=ON", "-DCMARK_SHARED=OFF"])
-        run(["cmake", "--build", native, "--config", "Release", "-j", "4"])
+        run([args.cmake, "-S", path.resolve(), "-B", native, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF",
+             "-DBUILD_TESTING=OFF", "-DCMARK_TESTS=OFF", "-DCMARK_GFM_TESTS=OFF", "-DCMARK_STATIC=ON", "-DCMARK_SHARED=OFF"])
+        run([args.cmake, "--build", native, "--config", "Release", "-j", "4"])
         bridge = read(CMARK / "bridge.c")
         bridge_path = work / (engine + "-bridge.c")
         bridge_path.write_text(bridge)

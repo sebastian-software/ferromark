@@ -13,9 +13,10 @@ from support import HERE, ROOT, command, observation, sha, source_hashes, write_
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("build", type=Path)
+    parser.add_argument("--resume", action="store_true", help="Rebuild in an existing directory; rerun all checks and record fresh provenance")
     args = parser.parse_args()
     build = args.build.resolve()
-    build.mkdir(parents=True, exist_ok=False)
+    build.mkdir(parents=True, exist_ok=args.resume)
     root_lock = tomllib.loads((ROOT / "Cargo.lock").read_text())
     bench_lock = tomllib.loads((HERE / "Cargo.lock").read_text())
     for name in ("memchr", "smallvec", "html-escape", "rustc-hash", "unicode-ident"):
