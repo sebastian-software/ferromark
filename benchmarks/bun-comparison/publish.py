@@ -194,6 +194,13 @@ def readme_section(data):
     env = data["run"]
     text = f'''## Benchmarks
 
+Use the measured comparisons to evaluate Ferromark for your workload. Match
+the syntax, trust policy, and allocation lifecycle to your application; the
+[full report]({data["report"]}) retains raw measurements and output audits.
+
+<details>
+<summary>Measured results, methodology, and reproduction</summary>
+
 Five native Markdown-to-HTML implementations, measured together: Ferromark,
 pulldown-cmark, Bun, Comrak, and C-md4c. {env['machine']}, {env['os']},
 rustc {env['rustc']}, {env['date']}. The [full report]({data["report"]})
@@ -305,7 +312,7 @@ Criterion suites use different environments/lifecycles and remain separate from
 the verified five-parser tables above.
 '''
     text += "\n" + subprocess.check_output([sys.executable, str(REPO / "benchmarks/native-pipeline-comparison/publish.py"), "--readme"], text=True)
-    return text.rstrip() + "\n\n"
+    return text.rstrip() + "\n\n</details>\n\n"
 
 
 

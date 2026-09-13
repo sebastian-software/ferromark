@@ -58,3 +58,8 @@ The first publisher writes the native pair dataset. The second writes the
 five-parser dataset and the complete benchmark section in the README source;
 it never writes the themed README directly. Both validate their underlying
 measurements. The homepage consumes the two datasets separately.
+
+The README introduces use cases and integration before benchmark evidence.
+Keep the generated measurements and their methodology together in the
+collapsed details block; change its presentation in the publisher so future
+measurement updates preserve that reading order.

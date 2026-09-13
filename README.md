@@ -11,15 +11,33 @@ Part of [Ferramenta](https://ferramenta.dev), a family of Rust tools.
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Rust 1.94+](https://img.shields.io/badge/rust-1.94%2B-orange.svg)](#minimum-supported-rust-version)
 
-Markdown to HTML with a secure default and every GFM extension included. The
-reproducible benchmark protocol and current CommonMark conformance result are
-documented below.
+Markdown to HTML with a secure default and every GFM extension included.
 
+Build documentation sites, publish Markdown articles, or add formatted content
+to your application. Ferromark gives you HTML, document metadata, and control
+over the Markdown your authors can use. Start with one function; add headings,
+front matter, or custom code-block rendering as your publishing workflow grows.
+
+Available as a **Rust library**, a **native Node.js package**, and a **CLI**.
+
+[Quick start](#quick-start) ·
 [Documentation site](https://sebastian-software.github.io/ferromark/) ·
 [API reference](https://docs.rs/ferromark) ·
 [Node.js package](node/ferromark/README.md)
 
+## What you get
+
+| What you are building | How Ferromark helps |
+| --- | --- |
+| Documentation or a knowledge base | Render the page body, extract front matter, and collect headings for a table of contents in one call. |
+| Comments, descriptions, or other user-authored content | Escape raw HTML and restrict unsafe link and image URL schemes by default. |
+| Articles and technical content | Add footnotes, callouts, math markup, definition lists, and richer tables with explicit options. |
+| A content build or rendering service | Use the same Rust engine from Rust, Node.js, or the command line; reuse a renderer for repeated documents. |
+| Tooling for trusted MDX content | Separate prose, components, expressions, and imports; opt into source-ranged events for downstream processing. |
+
 ## Quick start
+
+### Rust
 
 ```bash
 cargo add ferromark
@@ -27,47 +45,242 @@ cargo add ferromark
 
 ```rust
 let html = ferromark::to_html("# Hello\n\n**World**");
+assert_eq!(html, "<h1 id=\"hello\">Hello</h1>\n<p><strong>World</strong></p>\n");
 ```
 
-One function call, no setup. Using Node.js instead? The same engine ships as a
-native npm package: `npm install ferromark` — see the
-[Node.js package README](node/ferromark/README.md).
+### Node.js
 
-When allocation pressure matters:
+```bash
+npm install ferromark
+```
+
+```js
+import { toHtml } from 'ferromark'
+
+const html = toHtml('# Hello\n\n**World**')
+```
+
+The native package supports Node.js 22.12 and newer on macOS, Linux, and
+Windows, with x64 and arm64 builds. See the [package guide](node/ferromark/README.md)
+for platform requirements, CommonJS, buffer output, and reusable renderers.
+
+Both examples use the untrusted rendering policy. Choose a
+[Markdown preset](#markdown-configuration) when you need a specific dialect.
+
+## CLI
+
+`cargo install ferromark` installs the CLI. Convert a file or pipe Markdown into
+it; HTML goes to standard output unless you select an output file.
+
+```sh
+ferromark --gfm README.md -o README.html
+printf '# Hello\n' | ferromark --no-heading-ids
+```
+
+`--gfm`, `--commonmark`, and `--minimal` select syntax presets. `--trusted`
+preserves raw HTML recognized by the preset and permits arbitrary URL schemes;
+it also disables GFM's disallowed-raw-HTML filter. Use it only for sources you
+trust. Run `ferromark --help` for all options.
+
+## Build a documentation pipeline
+
+A page needs more than its body. `parse()` returns HTML, raw front matter, and
+headings together, so you can pass metadata to your application and build a
+table of contents from the headings that were actually rendered.
+
+```rust
+let page = ferromark::parse("---\ntitle: Getting started\n---\n# Installation\n\nRun `cargo add ferromark`.");
+
+assert_eq!(page.front_matter, Some("title: Getting started\n"));
+assert_eq!(page.headings[0].text, "Installation");
+assert_eq!(page.headings[0].id.as_deref(), Some("installation"));
+assert!(page.html.contains("<h1 id=\"installation\">"));
+```
+
+Front matter is returned as text between `---` or `+++` delimiters; your
+application chooses how to deserialize it. Each heading includes its level,
+plain text, and optional generated ID.
+
+For more control, `parse_with_options()` selects the syntax and
+`parse_with_renderer()` adds a
+[`FencedCodeRenderer`](https://docs.rs/ferromark/latest/ferromark/trait.FencedCodeRenderer.html)
+for syntax highlighting or other code-block output. Return `None` to keep the
+normal escaped code block. Custom `TrustedHtml` is inserted verbatim, so your
+renderer must escape any untrusted values it includes.
+
+Deploying under a subpath? `link_base_path` prefixes internal absolute links
+such as `/guide`. Image sources and autolinks remain unchanged.
+
+## Markdown configuration
+
+Start from the syntax contract you need, then enable individual extensions:
+
+| Preset | Syntax |
+| --- | --- |
+| `Options::commonmark()` | CommonMark, including reference links and raw HTML recognition. |
+| `Options::gfm()` | CommonMark plus tables, strikethrough, task lists, autolink literals, and the disallowed-raw-HTML filter. |
+| `Options::minimal()` | The smallest supported surface, with raw HTML parsing, reference links, and optional extensions disabled. |
+
+```rust
+use ferromark::Options;
+
+let mut options = Options::gfm();
+options.front_matter = true;
+options.heading_ids = true;
+options.footnotes = true;
+
+let page = ferromark::parse_with_options("# Notes\n\nA detail.[^1]\n\n[^1]: More context.", &options);
+assert_eq!(page.headings[0].id.as_deref(), Some("notes"));
+```
+
+Beyond GFM, you can enable reference and inline footnotes, callouts, definition
+lists, front matter, heading IDs, math spans, highlight, superscript, subscript,
+merged table cells, column-width hints, and source-only line comments. Math
+spans emit markup for a downstream math renderer. See the
+[extension guide](docs/markdown-extensions.md) for syntax examples and the
+[`Options` reference](https://docs.rs/ferromark/latest/ferromark/struct.Options.html)
+for all fields and defaults.
+
+Syntax note: `~~text~~` is strikethrough, `~text~` is subscript, and `^text^` is
+superscript. Single-tilde strikethrough is intentionally not supported.
+
+Every preset uses `RenderPolicy::Untrusted`. `allow_html` controls recognition
+of HTML syntax; the render policy independently controls whether that HTML is
+escaped or preserved. `Options::default()` retains Ferromark's existing feature
+mix and is not an alias for a dialect preset.
+
+`Options` is non-exhaustive: start with a preset and mutate its public fields
+as above. External struct literals, including `Options { .. }` updates, are
+not supported. The `ferromark::options!` macro provides a compact alternative.
+
+## Rendering untrusted Markdown
+
+Keep the default policy for content supplied by users. It escapes raw HTML and
+allows relative URLs plus a limited set of non-script schemes, including
+`http`, `https`, `mailto`, and `tel`. URL checks normalize entities and control
+characters first, so spellings such as `javas&#99;ript:` are blocked too.
+
+For trusted sources that need HTML passthrough, make that choice explicit:
+
+```rust
+use ferromark::{Options, RenderPolicy};
+
+let mut options = Options::commonmark();
+options.render_policy = RenderPolicy::Trusted;
+let html = ferromark::to_html_with_options("<aside>Maintainer-authored HTML</aside>", &options);
+assert!(html.contains("<aside>"));
+```
+
+The GFM `disallowed_raw_html` filter applies in trusted mode. It is a narrow
+tag filter, not a general-purpose HTML sanitizer.
+
+### Compatibility you can check
+
+With `RenderPolicy::Trusted`, `Options::commonmark()` passes **652 of 652**
+CommonMark spec examples, enforced by `commonmark_spec_trusted_full_conformance`
+in [the spec tests](tests/commonmark_spec.rs). The same syntax with the
+untrusted policy passes 577 of 652 (88.5%); those differences reflect the
+intentional HTML and URL safety boundary. Run the per-section report with
+`cargo test --test commonmark_spec -- --ignored --nocapture`.
+
+### Input limits and diagnostics
+
+The parser bounds nesting, delimiter counts, table width, and reference-link
+resolution work. When a budget is reached, it can preserve syntax as literal
+text or truncate bounded output. `parse()` and its variants return a
+`resource_limits` report so your pipeline can detect those fallbacks. The
+reference-link budget is shared across a document and resets for the next one.
+
+Source positions use compact `u32` values, limiting each document to
+4,294,967,294 bytes. Use `try_to_html()`, `try_parse()`, or the other fallible
+`try_*` entry points to handle oversized input as an error. Infallible APIs
+panic when this limit is exceeded; `validate_input_size()` lets you preflight
+input before choosing an API.
+
+## MDX support
+
+For trusted component-based content, enable the optional `mdx` feature:
+
+```bash
+cargo add ferromark --features mdx
+```
+
+```rust
+use ferromark::mdx::render;
+
+let output = render("import { Card } from './card'\n\n# Hello\n\n<Card />\n");
+assert!(output.body.contains("<Card />"));
+assert_eq!(output.esm.len(), 1);
+```
+
+Markdown becomes HTML; JSX and expressions pass through, while ESM and front
+matter are returned separately. `to_component()` can package the result as a
+JSX/TSX module for your downstream toolchain. Ferromark does not execute or
+type-check JavaScript, and MDX output is not safe for untrusted input.
+
+For tooling, `segment_spanned()` exposes source ranges, `segment_strict()` adds
+structural diagnostics, and `parse_events()` returns semantic events for
+compiler or localization work. These paths are opt-in and do not add MDX
+processing to ordinary Markdown rendering.
+
+The supported block-level patterns include imports, components wrapping
+content, and expressions between paragraphs.
+`tests/mdx_segment_tests.rs` exercises that supported set. Read the
+[MDX integration guide](docs/mdx.md) for examples, permissive versus strict
+parsing, inline and container behavior, and compatibility limits.
+
+## Trade-offs
+
+Ferromark is a fit when your main output is HTML and you want explicit control
+over syntax and trust. Check these boundaries before integrating:
+
+- **Tree transformations:** Ferromark exposes events and source ranges, but
+  does not build a mutable document AST for editing and reserializing Markdown.
+- **Output formats:** the core renderer produces HTML. MDX APIs can preserve
+  component syntax for downstream processing; there is no Markdown round-trip
+  or general-purpose output-format system.
+- **Source mapping:** parser events and MDX segments carry source ranges;
+  generated HTML does not include an HTML-to-Markdown source map.
+- **MDX compilation:** segmentation and structural diagnostics do not replace
+  a full JavaScript/TypeScript parser or the `@mdx-js/mdx` compiler contract.
+
+Upgrading an existing integration? Start with the
+[migration index](docs/README.md#migrating), including the
+[0.8 migration guide](docs/migration-0.8.md) and
+[0.4–0.7 migration guide](docs/migration-0.4.md).
+
+## How it works
+
+Ferromark parses blocks and inline syntax into compact events that reference
+the input, then writes HTML into an output buffer. It does not retain a full
+document AST. The inline scanner uses NEON on AArch64 and baseline SSE2 (x86-64),
+with scalar fallbacks; `memchr` handles other byte searches. The
+[architecture decisions](docs/arch/ADR-0001-core-architecture-streaming-no-ast.md)
+explain the design and its trade-offs.
+
+For repeated documents, keep a `Renderer` per worker to reuse parser scratch
+space as well as the output buffer:
 
 ```rust
 let mut renderer = ferromark::Renderer::new();
 let mut buffer = Vec::new();
-renderer.render_into("# Reuse me", &mut buffer);
-renderer.render_into("Another document", &mut buffer);
-// Both the output buffer and parser scratch space survive across calls.
+renderer.render_into("# First page", &mut buffer);
+renderer.render_into("# Next page", &mut buffer);
+// Each call replaces the previous output; allocations are retained for reuse.
 ```
 
-Use one `Renderer` per worker when processing many documents with the same
-options. `to_html_into` still reuses its output buffer, but creates fresh parser
-state for every call.
-
-### Input-size limit
-
-Source positions use compact `u32` values, so a document may contain at most
-4,294,967,294 bytes. This keeps both byte offsets and one-based line/column
-values representable. Use the fallible `try_*` entry points when input size
-is not already bounded:
-
-```rust
-fn main() -> Result<(), ferromark::InputSizeError> {
-    let markdown = "# Hello";
-    let html = ferromark::try_to_html(markdown)?;
-    assert!(html.contains("Hello"));
-    Ok(())
-}
-```
-
-`validate_input_size` is available when a caller needs to preflight a shared
-input before selecting an API. The legacy infallible APIs preserve their return
-types and panic with the same error if this limit is exceeded.
+`to_html_into()` reuses only the output buffer and creates fresh parser state
+per call. Measure with your own documents, options, and allocation lifecycle;
+the comparisons below document their specific workloads.
 
 ## Benchmarks
+
+Use the measured comparisons to evaluate Ferromark for your workload. Match
+the syntax, trust policy, and allocation lifecycle to your application; the
+[full report](docs/reports/2026-09-12-ox-corpus-optimizations/REPORT.md) retains raw measurements and output audits.
+
+<details>
+<summary>Measured results, methodology, and reproduction</summary>
 
 Five native Markdown-to-HTML implementations, measured together: Ferromark,
 pulldown-cmark, Bun, Comrak, and C-md4c. Apple M1 Pro, macOS 26.6.2,
@@ -303,463 +516,27 @@ The [native cmark and cmark-gfm report](docs/reports/2026-09-11-native-cmark-com
 
 Reproduce these pairs with the [native harness](benchmarks/native-pipeline-comparison/README.md) and each engine's adapter README. Regenerate this overview with `python3 benchmarks/native-pipeline-comparison/publish.py`, then `python3 benchmarks/bun-comparison/publish.py` and `mise run readme:write`.
 
-## What you get
-
-**CommonMark conformance**: With `RenderPolicy::Trusted`, `Options::commonmark()`
-passes all 652 of 652 spec examples — enforced in CI by
-`commonmark_spec_trusted_full_conformance`. The secure default
-(`RenderPolicy::Untrusted`) intentionally escapes raw HTML and passes 577 of 652
-(88.5%) — every failure is the safety boundary doing its job, not a parsing
-gap. Run `cargo test --test commonmark_spec -- --ignored --nocapture` for the
-per-section report of the secure default.
-
-**All five GFM extensions**: Tables, strikethrough, task lists, autolink literals, disallowed raw HTML.
-
-**Beyond GFM**: Reference and inline footnotes, definition lists, front matter extraction (`---`/`+++`), heading IDs (GitHub-compatible slugs), math spans (`$`/`$$`), highlight/mark syntax (`==text==`), superscript (`^text^`), subscript (`~text~`), and callouts (`> [!NOTE]`, `> [!WARNING]`, ...).
-
-**MDX support** (opt-in via `mdx` feature): Segment and render `.mdx` files without a JavaScript toolchain. Covers the block-level patterns Next.js, Docusaurus, and Astro pages are built from — imports at the top, components wrapping content, expressions between paragraphs. [What it deliberately skips](#mdx-support) is listed with the reason.
-
-Fine-grained options let you turn on exactly what you need:
-
-```text
-allow_html · allow_link_refs · tables · merged_table_cells · table_column_widths · strikethrough · highlight · superscript · subscript · task_lists
-autolink_literals · disallowed_raw_html · footnotes · inline_footnotes · front_matter
-heading_ids · math · callouts · definition_lists · line_comments · indented_code_blocks · link_base_path
-```
-
-Syntax note: Ferromark uses `~~text~~` for strikethrough, `~text~` for subscript, and `^text^` for superscript. Single-tilde strikethrough is intentionally not supported.
-
-### Merged table cells
-
-`merged_table_cells` adds MultiMarkdown/iA-style horizontal spans to GFM pipe
-tables. The number of directly adjacent pipes after a cell is its column span:
-
-```markdown
-| Name | Price | Tax |
-| --- | ---: | ---: |
-| Widget | 10$ | 1$ |
-| Gift | 0$ ||
-```
-
-The last cell renders as `<td colspan="2">0$</td>`. `|||` spans three
-columns, and multiple cells in one row may be merged. Whitespace between pipes
-preserves an explicit empty cell (`| value | | next |`). A merged cell uses
-the alignment of its first covered column; body spans are clamped to the table
-width and ragged rows are padded after the final span.
-
-The flag requires `tables` and is disabled by default. With the flag off,
-consecutive pipes retain standard GFM behavior and create empty cells.
-
-### Inline footnotes
-
-`inline_footnotes` enables Pandoc-style `^[note text]` independently of
-reference footnotes:
-
-```markdown
-The result needs context.^[This note can contain *inline Markdown*.]
-```
-
-The opening caret may be escaped as `\^[literal]`. Balanced brackets, links,
-code spans, and soft line breaks are supported inside a note, but an inline
-note is always one paragraph. The iA Presenter form `[^Footnote text.]` is not
-accepted as an inline note because it is indistinguishable from Ferromark's
-existing `[^label]` reference syntax.
-
-The HTML renderer numbers inline and reference notes together by first
-appearance and emits their definitions in the document-end footnote section.
-Presentation adapters should consume `InlineEvent::InlineFootnote` and flush
-collected notes at their own slide boundary; the core HTML renderer does not
-infer slides.
-
-### Definition lists
-
-Enable `definition_lists` for PHP Markdown Extra-style terms and descriptions:
-
-```markdown
-Term
-: A definition with *inline Markdown*.
-```
-
-Markers may have up to three leading spaces and require whitespace after the
-colon. Continuation paragraphs and nested blocks must be indented to the
-description content; lazy continuation is supported only for paragraph text.
-The option is disabled by default and in every dialect constructor.
-
-### Line comments
-
-Enable `line_comments` to omit source-only note lines from HTML:
-
-```markdown
-Published text.
-
-// Review this wording before publishing.
-```
-
-Only `//` at the physical line start (after at most three spaces) is a
-comment. URLs, trailing `//`, code blocks, raw HTML blocks, and explicit
-container-prefixed lines remain ordinary Markdown. Comment text remains in the
-source and is not suitable for secrets.
-
-### Indented code blocks
-
-Set `indented_code_blocks: false` for dialects that require fenced code blocks
-and interpret four-space indentation as ordinary paragraph content. Fenced code
-blocks remain available.
-
-## CLI
-
-`cargo install ferromark` installs `ferromark`, which reads Markdown from a file
-or standard input and writes HTML to standard output. Use `ferromark --help` for
-the complete interface. `--gfm`, `--commonmark`, and `--minimal` select syntax
-presets; output remains safely untrusted unless `--trusted` is explicitly set.
-`--trusted` also disables GFM's disallowed-raw-HTML filter, so raw HTML parsed
-by the selected syntax preset is preserved; use it only for Markdown you trust.
-
-```sh
-ferromark --gfm README.md -o README.html
-printf '# Hello\n' | ferromark --no-heading-ids
-```
-
-## Markdown configuration
-
-Start from the syntax contract you need, then enable individual extensions:
-
-- `Options::minimal()` keeps the smallest Markdown surface and disables raw
-  HTML parsing, reference links, and every optional extension.
-- `Options::commonmark()` enables CommonMark syntax, including reference links
-  and raw HTML recognition.
-- `Options::gfm()` adds the five GitHub Flavored Markdown extensions: tables,
-  strikethrough, task lists, autolink literals, and disallowed raw HTML.
-
-```rust
-use ferromark::Options;
-
-let mut options = Options::gfm();
-options.front_matter = true;
-options.allow_html = false;
-
-let html = ferromark::to_html_with_options(markdown, &options);
-```
-
-`table_column_widths` is a separate, opt-in extension to GFM pipe tables. When
-enabled, the relative number of dashes in each delimiter cell becomes a numeric
-HTML column-width hint:
-
-```markdown
-| Short | Long |
-| -- | ------ |
-```
-
-The example renders 25% and 75% `<col>` hints. Alignment colons are not counted.
-No preset enables this interpretation because GFM otherwise treats delimiter
-dash counts as formatting only. The extension accepts neither CSS nor arbitrary
-HTML attributes. It composes with `merged_table_cells`: widths describe the
-underlying table columns, while a merged cell spans those columns.
-
-For documentation pipelines, `parse()` / `parse_with_options()` return the
-rendered HTML together with the raw front matter block and a list of headings
-(level, id, plain text) for table-of-contents rendering. Their
-`resource_limits` report identifies any bounded parser operation that fell
-back to literal or truncated output; an empty report means no such fallback
-was used.
-`parse_with_renderer()` adds the opt-in fenced-code renderer to the same pass.
-`link_base_path` prefixes internal absolute link destinations (`/…`) for sites
-deployed under a subpath; image sources and autolinks are not rewritten.
-
-All constructors keep `RenderPolicy::Untrusted`. `allow_html` controls whether
-raw HTML syntax is parsed; `RenderPolicy` independently controls whether parsed
-HTML is preserved or escaped. `Options` is non-exhaustive: Rust therefore
-forbids external `Options { .. }` literals, including struct-update literals.
-Start with a preset and mutate its public fields as above, or use
-`ferromark::options!(Options::default(); field: value,)` for a compact form.
-`Options::default()` retains Ferromark's backward-compatible feature mix.
-Measure the configurations on your corpus with `cargo bench --bench options`.
-
-## Trade-offs
-
-Ferromark is built for one job: turning Markdown into HTML as fast as possible. That focus means some things it deliberately skips:
-
-- **No AST access.** You can't walk a syntax tree or write custom renderers against parsed nodes. If you need that, pulldown-cmark's iterator model or comrak's AST are better fits.
-- **No source maps.** No byte-offset tracking for mapping HTML back to Markdown positions.
-- **HTML only.** No XML, no CommonMark round-tripping, no alternative output formats.
-
-These aren't planned. They'd compromise the streaming architecture that makes Ferromark fast.
-
-## Rendering untrusted Markdown
-
-The default `RenderPolicy::Untrusted` is the browser-facing safety boundary. It escapes all raw HTML and allows relative URLs plus a small set of non-script schemes (`http`, `https`, `mailto`, `tel`, and similar). URL schemes are checked after entity and control-character normalization, so spellings such as `javas&#99;ript:` are blocked too.
-
-Reference-link resolution also has a document-wide work budget. If a document
-uses up that budget while inspecting reference labels, later reference links
-are emitted as literal text instead of being resolved. The budget resets for
-each new render or public inline-parser call, while remaining shared across
-paragraphs of that document. This conservative fallback applies to the default
-untrusted renderer (and trusted rendering as well), so repeated adversarial
-paragraphs cannot accumulate unbounded parser work.
-
-```rust
-let html = ferromark::to_html(user_supplied_markdown);
-```
-
-Trusted documents and MDX can opt into passthrough explicitly:
-
-```rust
-use ferromark::{Options, RenderPolicy};
-
-let mut options = Options::default();
-options.render_policy = RenderPolicy::Trusted;
-let html = ferromark::to_html_with_options(trusted_markdown, &options);
-```
-
-`disallowed_raw_html` implements the narrower GFM tag filter in trusted mode. It is not a general-purpose HTML sanitizer and does not make arbitrary raw HTML safe by itself.
-
-Upgrading from an older release? See the [0.8 migration guide](docs/migration-0.8.md)
-for the `Options`, event-match, and crate-root import migration, the
-[0.4–0.7 migration guide](docs/migration-0.4.md) for `Profile`, inline-parser,
-fenced-renderer, Rust, and Node.js changes, the
-[0.2 migration guide](docs/migration-0.2.md) for the rendering default and the
-fallible UTF-8 and MDX APIs, and the
-[0.3 migration guide](docs/migration-0.3.md) for removed Cargo features and the
-integration APIs. All four guides are indexed under "Migrating" in
-[docs/README.md](docs/README.md).
-
-## MDX support
-
-MDX is the standard for component-driven docs in Next.js, Docusaurus, and Astro. Processing it usually requires a full JavaScript toolchain — Node.js, acorn, babel, the works.
-
-Ferromark takes a different approach: segment `.mdx` files into typed blocks and render them at native speed. No JS runtime. No AST.
-
-```bash
-cargo add ferromark --features mdx
-```
-
-### Render — one call, full output
-
-`render()` assembles the final output automatically: Markdown segments become HTML, JSX and expressions pass through unchanged, ESM and front matter are extracted separately.
-
-```rust
-use ferromark::mdx::render;
-
-let input = r#"---
-title: Hello
----
-
-import { Card } from './card'
-
-# Hello World
-
-<Card title="Example">
-
-Markdown **inside** a component.
-
-</Card>
-
-{new Date().getFullYear()}
-"#;
-
-let output = render(input);
-// output.body        — HTML with JSX/expressions passed through
-// output.esm         — vec!["import { Card } from './card'\n"]
-// output.front_matter — Some("title: Hello\n")
-```
-
-Use `render_with_options()` for custom Markdown settings (heading IDs, math, footnotes, etc.).
-
-### Component — ready-to-use JSX module
-
-`to_component()` wraps the output as a complete JSX/TSX module with a named export. Works with React 19, Preact, Solid, and any JSX framework.
-
-```rust
-let output = render(input);
-let tsx = output.to_component("HelloWorld")?;
-```
-
-```tsx
-import { Card } from './card'
-
-export function HelloWorld() {
-  return (
-    <>
-      <h1 id="hello-world">Hello World</h1>
-      <Card title="Example">
-        <p>Markdown <strong>inside</strong> a component.</p>
-      </Card>
-      {new Date().getFullYear()}
-    </>
-  );
-}
-```
-
-### Segment — low-level control
-
-When you need full control over each block, use `segment()` directly:
-
-```rust
-use ferromark::mdx::{segment, Segment};
-
-for seg in segment(input) {
-    match seg {
-        Segment::Esm(s)              => { /* import/export — pass through */ }
-        Segment::Markdown(s)         => { /* parse with ferromark::to_html(s) */ }
-        Segment::JsxBlockOpen(s)     => { /* <Component> */ }
-        Segment::JsxBlockClose(s)    => { /* </Component> */ }
-        Segment::JsxBlockSelfClose(s)=> { /* <Component /> */ }
-        Segment::Expression(s)       => { /* {expression} */ }
-    }
-}
-```
-
-The segmenter handles JSX attribute parsing (strings, expressions, spreads), brace-depth tracking (with string/comment/template-literal awareness), fragment syntax, member expressions (`<Foo.Bar>`), and multiline tags. ESM continuation only crosses lines when lexical structure or an import/export clause requires it, so a complete semicolonless declaration cannot consume following Markdown prose. Invalid or ambiguous constructs fall back to Markdown — no panics, always valid output.
-
-For source locations, `segment_spanned()` returns the same zero-copy segments
-with contiguous [`Range`](https://docs.rs/ferromark/latest/ferromark/struct.Range.html)
-values into the original UTF-8 input. A range covers the exact segment text,
-including delimiters and a trailing newline when it belongs to that segment.
-
-`segment()` remains deliberately permissive: malformed MDX falls back to a
-Markdown segment. For content pipelines that must reject malformed structure,
-use `segment_strict()`. It reports typed diagnostics with byte ranges; convert
-an offset to a one-based line and Unicode column only when presenting it to a
-user with `source_location()`.
-
-```rust
-use ferromark::mdx::{segment_strict, source_location};
-
-let input = "<Card bad=>\n";
-let diagnostics = segment_strict(input).unwrap_err();
-let location = source_location(input, diagnostics[0].primary_range.start_usize());
-assert_eq!((location.line, location.column), (1, 1));
-```
-
-Strict mode checks MDX structure (flow-expression delimiters, JSX tag shape and
-nesting, ESM placement, and ambiguous/incomplete ESM continuations). It intentionally does not parse or type-check
-JavaScript or TypeScript inside an otherwise well-delimited ESM block or
-expression.
-
-Compiler and localization consumers can opt into a flat semantic event buffer
-without going through HTML. `parse_events()` composes the existing MDX
-segmenter, block parser, and MDX-aware inline parser; ranges in the returned
-events point into the original input.
-
-```rust
-use ferromark::InlineEvent;
-use ferromark::mdx::{MdxEvent, parse_events};
-
-let input = "# Hello {name}\n";
-let stream = parse_events(input);
-let prose = stream.events.iter().filter_map(|event| match event {
-    MdxEvent::Inline(InlineEvent::Text(range)) => {
-        Some(range.slice_str(input.as_bytes()).unwrap())
-    }
-    _ => None,
-}).collect::<Vec<_>>();
-
-assert_eq!(prose, vec!["Hello "]);
-```
-
-The event path is fully opt-in and does not alter the normal Markdown or MDX
-HTML renderer. `parse_events_strict()` applies the same structural diagnostics
-as `segment_strict()` before producing events. Its strict validation covers
-flow constructs; malformed inline MDX retains the documented text fallback.
-Inside blockquotes and list items, a paragraph containing only one JSX tag or
-expression is promoted to the corresponding flow event. Mixed prose remains
-inline MDX, and the surrounding Markdown container events stay balanced.
-
-Full example: `cargo run --features mdx --example mdx_segment`
-
-<details>
-<summary><strong>Scope and coverage</strong></summary>
-
-<br>
-
-The segmenter covers the block-level MDX patterns a typical Docusaurus, Next.js, or Astro page is built from: imports at the top, components wrapping content, expressions between paragraphs. `tests/mdx_segment_tests.rs` exercises that supported set.
-
-What the segmenter deliberately skips — and why that's fine for most use cases:
-
-| What | Our approach | When it matters |
-|---|---|---|
-| **Inline JSX** (`text <em>here</em>`) | Stays in `segment()` Markdown blocks; `parse_events()` and `InlineParser::parse_mdx()` expose typed MDX inline events | Use the opt-in event APIs when a downstream consumer must distinguish prose and components |
-| **JS validation** | Heuristic detection (keyword + brace counting) instead of acorn/swc | Only if you need to report syntax errors in user-authored MDX at parse time |
-| **Markdown grammar** | Standard CommonMark/GFM rules | Official mdxjs disables indented code and HTML syntax — relevant if your content relies on `<div>` being JSX, not HTML |
-| **Container nesting** | `> <Component>` stays Markdown to the renderer; `parse_events()` promotes tag-only or expression-only container paragraphs to semantic flow events | Rendering-level container MDX, multiline constructs across prefixes, and container-local ESM remain out of scope |
-| **TypeScript generics** | `<Component<T>>` not parsed | Only relevant for TSX-heavy content pages — very rare in docs |
-| **Error reporting** | Permissive fallback by default; opt-in structural diagnostics with `segment_strict()` | Use strict mode when broken MDX must fail a content pipeline |
-
-The full `@mdx-js/mdx` compiler exists to produce a React component tree from MDX. It needs a JavaScript parser because it compiles to JSX. Ferromark's segmenter exists to answer a simpler question: *where does the Markdown stop and the JSX start?* That question doesn't need a JS runtime.
-
-For the detailed technical spec, see `src/mdx/mod.rs`.
-
 </details>
-
-## How it works
-
-No AST. Block events stream from the scanner to the HTML writer with nothing in between.
-
-```
-Input bytes (&[u8])
-       │
-       ▼
-   Block parser (line-oriented, memchr-driven)
-       │ emits BlockEvent stream
-       ▼
-   Inline parser (mark collection → resolution → emit)
-       │ emits InlineEvent stream
-       ▼
-   HTML writer (direct buffer writes)
-       │
-       ▼
-   Output (Vec<u8>)
-```
-
-What makes this fast in practice:
-
-- **Block scanning** runs on `memchr` for line boundaries. Container state is a compact stack, not a tree.
-- **Inline parsing** has three phases: collect delimiter marks, resolve precedence (code spans, math, links, emphasis, strikethrough, subscript, superscript, highlight), emit. No backtracking.
-- **Emphasis resolution** uses the CommonMark modulo-3 rule with a delimiter stack instead of expensive rescans.
-- **SIMD scanning**: NEON (AArch64) and baseline SSE2 (x86-64) drive the inline specials scan; the HTML escaper uses both for short scans; memchr covers the remaining byte searches on every architecture.
-- **Zero-copy references**: events carry `Range` pointers into the input, not copied strings.
-- **Compact events**: 24 bytes each, cache-line friendly.
-- **Hot/cold annotation**: `#[inline]` on tight loops, `#[cold]` on error paths, table-driven byte classification.
-
-### Design principles
-
-- **Linear time.** No regex, no backtracking, no quadratic blowup on adversarial input.
-- **Low allocation pressure.** Compact events, range references, reusable output buffers.
-- **Operational safety.** Enforced limits cap block nesting (32), inline marks (4,096), document-wide reference-link resolution work, code-span backtick runs (32), link-destination parenthesis depth (32), ordered-list marker digits (9), and table columns (128). Footnote numbering has no arbitrary count cap; its definition-index lookup stays O(1) per reference.
-- **Small dependency surface.** Minimal crates, straightforward integration.
-
-### Comparison coverage
-
-The [benchmark overview](#benchmarks) covers Ferromark, pulldown-cmark, Bun's native
-parser, Comrak, MD4C, cmark, cmark-gfm, Goldmark, Sätteri, Rushdown, Markdig,
-markdown-rs, and Ox Content. Each comparison states the measured pipeline and
-feature settings. Arena allocation, source-position tracking, garbage collection,
-and rendering conventions are retained where they are part of the native API.
-
-Architecture alone does not establish a speed ranking. The published timings
-show results for specific documents, and the native pair reports retain output
-and specification differences alongside them. MDX-capable engines are measured
-on Markdown here; their different MDX compilation stages need a separate contract.
 
 ## Building
 
+For contributor setup and the required test, lint, and format checks, see
+[CONTRIBUTING.md](CONTRIBUTING.md#required-local-checks).
+
 ```bash
-cargo build            # development
-cargo build --release  # optimized (recommended for benchmarks)
-cargo test             # run tests
-cargo test --test commonmark_spec -- --nocapture  # CommonMark spec
-cargo bench            # benchmarks
+cargo build
+cargo test --locked --all-features
 ```
 
 ### Minimum supported Rust version
 
-Ferromark builds on Rust 1.94 and newer. The floor is declared as
-`rust-version` in `Cargo.toml`, restated for contributors in
-[CONTRIBUTING.md](CONTRIBUTING.md), and exercised on every pull request by the
-dedicated Rust 1.94 rows of the CI test matrix, so the badge above reflects a
-tested version rather than an intention.
+Ferromark supports Rust 1.94 and newer. `rust-version` in `Cargo.toml` is the
+source of truth; the CI test matrix exercises that floor on every pull request.
 
 ## Project structure
+
+<details>
+<summary>Parser, renderer, and integration modules</summary>
 
 ```
 src/
@@ -797,6 +574,8 @@ src/
 ├── escape.rs       # HTML escaping (SSE2/NEON + memchr)
 └── limits.rs       # DoS prevention constants
 ```
+
+</details>
 
 ## License
 

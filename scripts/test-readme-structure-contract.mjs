@@ -149,6 +149,49 @@ function section(document, heading) {
     : document.slice(contentStart, contentStart + following);
 }
 
+function validateReaderJourney(document) {
+  const journey = [
+    "What you get",
+    "Quick start",
+    "CLI",
+    "Build a documentation pipeline",
+    "Markdown configuration",
+    "Rendering untrusted Markdown",
+    "MDX support",
+    "Trade-offs",
+    "How it works",
+    "Benchmarks",
+    "Building",
+  ];
+  let previous = -1;
+  for (const heading of journey) {
+    const position = document.indexOf(`## ${heading}\n`);
+    if (position <= previous) {
+      failContract("use cases, setup, integration, and trust must precede benchmark evidence");
+    }
+    previous = position;
+  }
+
+  const quickStart = section(document, "Quick start");
+  if (
+    !quickStart.includes("cargo add ferromark") ||
+    !quickStart.includes("npm install ferromark")
+  ) {
+    failContract("Quick start must offer both Rust and Node.js entry points");
+  }
+  if (
+    !section(document, "Markdown configuration").includes("docs/markdown-extensions.md") ||
+    !section(document, "MDX support").includes("docs/mdx.md")
+  ) {
+    failContract("the overview must link the detailed extension and MDX guides");
+  }
+
+  const benchmarks = section(document, "Benchmarks");
+  if (!/<details>\s*<summary>[^<]+<\/summary>[\s\S]+<\/details>\s*$/.test(benchmarks)) {
+    failContract("benchmark tables and methodology must remain in a collapsed details block");
+  }
+}
+
 function cargoPackageField(cargoToml, field) {
   const packageHeader = cargoToml.match(/^\[package\]$\n/m);
   if (packageHeader?.index === undefined) {
@@ -269,6 +312,8 @@ function validate(
       failContract(`${JSON.stringify(heading)} must not be empty`);
     }
   }
+
+  validateReaderJourney(document);
 
   const cliStart = document.indexOf("## CLI\n");
   const configurationStart = document.indexOf("## Markdown configuration\n");
@@ -420,6 +465,39 @@ describe("README structure contract", () => {
   it("accepts the current README", () => {
     validate(document);
   });
+
+  it("rejects benchmarks before the integration story", () => {
+    const benchmarks = `## Benchmarks\n${section(document, "Benchmarks")}`;
+    const reordered = document
+      .replace(benchmarks, "")
+      .replace("## What you get\n", `${benchmarks}## What you get\n`);
+    assert.throws(() => validate(reordered), /integration, and trust must precede/);
+  });
+
+  it("rejects a missing Node.js quick start", () => {
+    assert.throws(
+      () => validate(document.replace("npm install ferromark", "see the package guide")),
+      /both Rust and Node.js entry points/,
+    );
+  });
+
+  it("rejects benchmark tables expanded into the main reading flow", () => {
+    const benchmarks = section(document, "Benchmarks");
+    const expanded = benchmarks.replace(/<details>|<summary>[^<]+<\/summary>|<\/details>/g, "");
+    assert.throws(
+      () => validate(document.replace(benchmarks, expanded)),
+      /collapsed details block/,
+    );
+  });
+
+  for (const guide of ["docs/markdown-extensions.md", "docs/mdx.md"]) {
+    it(`rejects a missing detailed guide link: ${guide}`, () => {
+      assert.throws(
+        () => validate(document.replace(guide, "omitted.md")),
+        /detailed extension and MDX guides/,
+      );
+    });
+  }
 
   it("rejects an empty Markdown configuration section", () => {
     assert.throws(
