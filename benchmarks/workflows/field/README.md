@@ -61,6 +61,14 @@ and the repeated workload. RSS is not incremental parser heap, live requested
 allocation size, single-request memory, or a concurrency capacity estimate.
 The parent's precise Rust heap figures remain separately labeled evidence.
 
+The table compares the selected native integrations, not identical scratch
+lifetimes: Ferromark calls fresh `to_html_with_options`; Ox retains HTML-renderer
+scratch while rebuilding its parser and arena/AST for every document. Its owned
+HTML moves out of the renderer and is dropped by the workload. The
+[lifecycle and cache audit](../../../docs/reports/2026-09-13-ox-workflow-study/REPORT.md)
+measures both fresh and reusable renderers, verifies state isolation against
+fresh processes, and checks sensitivity to changing content and input addresses.
+
 ## Reproduce
 
 Use the existing harness instructions to obtain the pinned md4c, cmark and

@@ -128,6 +128,13 @@ def overview(data):
         "CommonMark plus tables, strikethrough, and tasks. Every timed row completes the entire",
         "collection. Native defaults for allocation, GC, and output representation",
         "remain in place; Markdig returns UTF-16 strings, the other workers UTF-8.", "",
+        "**API lifecycle:** Ferromark uses fresh `to_html_with_options` calls.",
+        "Ox retains its `HtmlRenderer` scratch, but creates and drops a fresh parser",
+        "and growing AST arena for each document; owned HTML is moved out and released.",
+        "These are integration choices, not identical scratch lifetimes. The",
+        "[lifecycle and cache audit](docs/reports/2026-09-13-ox-workflow-study/REPORT.md)",
+        "also measures fresh and reusable renderers for both engines and checks",
+        "changed inputs against fresh-process output.", "",
         table(data, ENGINES[:-2]), "",
         f"{LABELS[fastest['engine']]} had the lowest collection time with immediate release in this run: {fastest['median_ns'] / 1000:.1f} µs. Ferromark took {ferro['median_ns'] / 1000:.1f} µs. This result applies to the complete archived workload, not every Markdown application.", "",
         "Bun's native support uses its pinned nightly compiler and shared mimalloc.",
@@ -162,6 +169,7 @@ def report(data):
                  f"`{data['toolchains']['clang'].splitlines()[0]}`.", ""]
     introduction = overview(data).replace("### Render a documentation collection across the native engine field", "## Documentation collection results", 1)
     introduction = introduction.replace(f"]({data['report']})", "](#engine-versions-and-compiler-settings)")
+    introduction = introduction.replace("](docs/reports/2026-09-13-ox-workflow-study/REPORT.md)", "](../2026-09-13-ox-workflow-study/REPORT.md)")
     lines = ["# Practical documentation workflows across the native engine field", "", introduction,
              "\n".join(versions),
              "## Provenance and reproduction", "",

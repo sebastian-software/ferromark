@@ -26,6 +26,8 @@ Application measurements: [complete preview/metadata comparisons and peak heap](
 and [the full native engine field, collection runtime, and process memory](reports/2026-09-13-workflow-engine-field/REPORT.md),
 with the [reproduction harness](../benchmarks/workflows/README.md).
 The [initial workflow run](reports/2026-09-13-practical-workflows/REPORT.md) remains archived separately.
+The [Ox implementation and cache audit](reports/2026-09-13-ox-workflow-study/REPORT.md)
+adds lifecycle controls, state-isolation checks, and CPU profiles of the same documents.
 
 | Area | Contents |
 | --- | --- |

@@ -201,6 +201,8 @@ function validateReaderJourney(document) {
     "benchmarks/workflows/README.md",
     "docs/reports/2026-09-13-workflow-comparisons/REPORT.md",
     "docs/reports/2026-09-13-workflow-engine-field/REPORT.md",
+    "docs/reports/2026-09-13-ox-workflow-study/REPORT.md",
+    "**API lifecycle:**",
     "peak process RSS",
     "UTF-16",
   ]) {

@@ -119,6 +119,7 @@ jobs:
       - run: python3 -m unittest discover -s benchmarks/workflows/field -p "test_*.py"
       - run: python3 benchmarks/workflows/field/publish.py --check
       - run: python3 benchmarks/workflows/publish.py --check
+      - run: python3 docs/reports/2026-09-13-ox-workflow-study/summarize.py --check
       - run: python3 -m unittest discover -s scripts -p "test_ci_benchmarks.py"
       - run: python3 benchmarks/bun-comparison/publish.py --check
       - run: python3 docs/reports/2026-09-11-native-cmark-comparison/render.py --check
