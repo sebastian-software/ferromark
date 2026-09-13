@@ -1,0 +1,26 @@
+[package]
+name = "ferromark-workflows"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+ferromark = { path = "../.." }
+pulldown-cmark = "=0.13.4"
+comrak = { version = "=0.54.0", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+heap = []
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+
+[lints.clippy]
+all = "deny"
