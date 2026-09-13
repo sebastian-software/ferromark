@@ -1,0 +1,67 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -86,24 +86,14 @@
+ 
+ #[inline]
+ pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
+-    if input.len() <= SHORT_SCAN_MAX {
+-        return first_escape_short::<false>(input);
+-    }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    // A '"' is only relevant if it appears before the first <>& hit, so the
+-    // second pass never scans past it.
+-    let limit = a.unwrap_or(input.len());
+-    memchr(b'"', &input[..limit]).or(a)
++    if input.len() <= SHORT_SCAN_MAX { return first_escape_short::<false>(input); }
++    first_text_escape_long(input)
+ }
+ 
+ #[inline]
+ fn first_attr_escape(input: &[u8]) -> Option<usize> {
+-    if input.len() <= SHORT_SCAN_MAX {
+-        return first_escape_short::<true>(input);
+-    }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    let limit = a.unwrap_or(input.len());
+-    memchr2(b'"', b'\'', &input[..limit]).or(a)
++    if input.len() <= SHORT_SCAN_MAX { return first_escape_short::<true>(input); }
++    first_attr_escape_long(input)
+ }
+ 
+ // Escape policy stays here; the shared scanner knows only byte sets.
+@@ -576,3 +566,35 @@
+         }
+     }
+ }
++
++#[inline(never)]
++fn first_text_escape_long(input: &[u8]) -> Option<usize> {
++    let mut start = 0;
++    let mut width = SHORT_SCAN_MAX * 1;
++    while start < input.len() {
++        let len = width.min(input.len() - start);
++        let chunk = &input[start..start + len];
++        let a = memchr3(b'<', b'>', b'&', chunk);
++        let limit = a.unwrap_or(chunk.len());
++        if let Some(at) = memchr(b'"', &chunk[..limit]).or(a) { return Some(start + at); }
++        start += len;
++        width = width.saturating_mul(2);
++    }
++    None
++}
++
++#[inline(never)]
++fn first_attr_escape_long(input: &[u8]) -> Option<usize> {
++    let mut start = 0;
++    let mut width = SHORT_SCAN_MAX * 1;
++    while start < input.len() {
++        let len = width.min(input.len() - start);
++        let chunk = &input[start..start + len];
++        let a = memchr3(b'<', b'>', b'&', chunk);
++        let limit = a.unwrap_or(chunk.len());
++        if let Some(at) = memchr2(b'"', b'\'', &chunk[..limit]).or(a) { return Some(start + at); }
++        start += len;
++        width = width.saturating_mul(2);
++    }
++    None
++}

@@ -1,0 +1,69 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -23,6 +23,7 @@
+         return;
+     }
+ 
++    if input.len() > 1024 { escape_linear::<false>(out, input); return; }
+     let mut start = 0usize;
+     while let Some(rel) = first_text_escape(&input[start..]) {
+         let pos = start + rel;
+@@ -46,6 +47,7 @@
+         return;
+     }
+ 
++    if input.len() > 1024 { escape_linear::<true>(out, input); return; }
+     let mut start = 0usize;
+     while let Some(rel) = first_attr_escape(&input[start..]) {
+         let pos = start + rel;
+@@ -576,3 +578,50 @@
+         }
+     }
+ }
++
++// Keep the long-search loop out of short writes and inline entity probes.
++#[inline]
++fn first_escape_long<const ATTR: bool>(input: &[u8]) -> Option<usize> {
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    {
++        let found = first_escape_short::<ATTR>(input);
++        found
++    }
++    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
++    {
++        let mut start = 0;
++        let mut width = SHORT_SCAN_MAX * 2;
++        while start < input.len() {
++            let len = width.min(input.len() - start);
++            let chunk = &input[start..start + len];
++            let common = memchr3(b'<', b'>', b'&', chunk);
++            let limit = common.unwrap_or(chunk.len());
++            let quote = if ATTR {
++                memchr2(b'"', b'\'', &chunk[..limit])
++            } else {
++                memchr(b'"', &chunk[..limit])
++            };
++            if let Some(at) = quote.or(common) {
++                return Some(start + at);
++            }
++            start += len;
++            // Both searches stay within a window. Doubling bounds how far either
++            // can scan past the next escape, while amortizing setup on plain text.
++            width = width.saturating_mul(2);
++        }
++        None
++    }
++}
++
++
++#[inline(never)]
++fn escape_linear<const ATTR: bool>(out: &mut Vec<u8>, input: &[u8]) {
++    let mut start = 0;
++    while let Some(rel) = first_escape_long::<ATTR>(&input[start..]) {
++        let at = start + rel;
++        out.extend_from_slice(&input[start..at]);
++        if ATTR { push_attr_escape(out, input[at]); } else { push_text_escape(out, input[at]); }
++        start = at + 1;
++    }
++    out.extend_from_slice(&input[start..]);
++}

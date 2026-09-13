@@ -1,0 +1,73 @@
+diff --git a/src/escape.rs b/src/escape.rs
+index 0594e7e..a9b7d09 100644
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -90,6 +90,8 @@ pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
+         return first_escape_short::<false>(input);
+     }
+     let a = memchr3(b'<', b'>', b'&', input);
++    #[cfg(test)]
++    tests::record_common_search(input.len(), a);
+     // A '"' is only relevant if it appears before the first <>& hit, so the
+     // second pass never scans past it.
+     let limit = a.unwrap_or(input.len());
+@@ -102,6 +104,8 @@ fn first_attr_escape(input: &[u8]) -> Option<usize> {
+         return first_escape_short::<true>(input);
+     }
+     let a = memchr3(b'<', b'>', b'&', input);
++    #[cfg(test)]
++    tests::record_common_search(input.len(), a);
+     let limit = a.unwrap_or(input.len());
+     memchr2(b'"', b'\'', &input[..limit]).or(a)
+ }
+@@ -312,6 +316,50 @@ pub fn url_encode_then_html_escape(out: &mut Vec<u8>, input: &[u8]) {
+ mod tests {
+     use super::*;
+ 
++    std::thread_local! {
++        static COMMON_SEARCH_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
++    }
++
++    // Count the logical prefix inspected by the three-byte search. The known
++    // quote-only fixtures require it to read the complete supplied range.
++    pub(super) fn record_common_search(len: usize, found: Option<usize>) {
++        let inspected = found.map_or(len, |at| at + 1);
++        COMMON_SEARCH_BYTES.with(|count| count.set(count.get().saturating_add(inspected)));
++    }
++
++    #[test]
++    fn quoted_code_search_work_grows_linearly() {
++        let mut counts = Vec::new();
++        for repeats in [128, 256] {
++            let body = "let s = \"text\";\n".repeat(repeats);
++            let input = format!("```\n{body}```\n");
++            COMMON_SEARCH_BYTES.with(|count| count.set(0));
++            let actual = crate::to_html(&input);
++            counts.push(COMMON_SEARCH_BYTES.with(std::cell::Cell::get));
++            assert_eq!(
++                actual,
++                format!("<pre><code>{}</code></pre>\n", body.replace('"', "&quot;"))
++            );
++        }
++        assert!(counts[1] <= 2 * counts[0] + 16_384, "search work: {counts:?}");
++    }
++
++    #[test]
++    fn quoted_attribute_search_work_grows_linearly() {
++        let mut counts = Vec::new();
++        for repeats in [128, 256] {
++            let input = "value='x' title=\"y\" ".repeat(repeats);
++            let mut actual = Vec::new();
++            COMMON_SEARCH_BYTES.with(|count| count.set(0));
++            escape_attr_into(&mut actual, input.as_bytes());
++            counts.push(COMMON_SEARCH_BYTES.with(std::cell::Cell::get));
++            let expected = input.replace('\'', "&#39;").replace('"', "&quot;");
++            assert_eq!(actual, expected.as_bytes());
++        }
++        assert!(counts[1] <= 2 * counts[0] + 16_384, "search work: {counts:?}");
++    }
++
++
+     #[test]
+     fn test_escape_text_basic() {
+         let mut out = Vec::new();

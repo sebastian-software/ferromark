@@ -1,0 +1,100 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -77,23 +77,30 @@
+     escape_full_into(out, input)
+ }
+ 
+-/// Below this length the local short scan beats SIMD memchr passes, whose
+-/// per-call dispatch and setup cost more than the scan itself. Inline text
+-/// segments between escapes are short in practice (median ~17 bytes, >95%
+-/// under 64 on prose corpora); long inputs (code block content) still go
+-/// through memchr, which scans wider per iteration.
++/// Crossover for escape paths that combine separate memchr searches. Short
++/// segments use the shared byte-set scanner to avoid repeated setup. NEON text
++/// escaping uses a single byte-set search at every length instead.
+ const SHORT_SCAN_MAX: usize = 128;
+ 
+ #[inline]
+ pub(crate) fn first_text_escape(input: &[u8]) -> Option<usize> {
+-    if input.len() <= SHORT_SCAN_MAX {
+-        return first_escape_short::<false>(input);
+-    }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    // A '"' is only relevant if it appears before the first <>& hit, so the
+-    // second pass never scans past it.
+-    let limit = a.unwrap_or(input.len());
+-    memchr(b'"', &input[..limit]).or(a)
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    {
++        // Find all four bytes together. Searching for <>& before looking for
++        // a quote can repeatedly traverse the remaining suffix in quoted code.
++        TEXT_SPECIALS.find(input)
++    }
++    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
++    {
++        if input.len() <= SHORT_SCAN_MAX {
++            return first_escape_short::<false>(input);
++        }
++        let a = memchr3(b'<', b'>', b'&', input);
++        // A '"' is only relevant if it appears before the first <>& hit, so the
++        // second pass never scans past it.
++        let limit = a.unwrap_or(input.len());
++        memchr(b'"', &input[..limit]).or(a)
++    }
+ }
+ 
+ #[inline]
+@@ -469,8 +476,7 @@
+         }
+     }
+ 
+-    /// Long-input path: a quote before the first `<>&` hit must win, and a
+-    /// quote after it must not mask it (the bounded second pass).
++    /// Long-input searches must return the earliest escape regardless of kind.
+     #[test]
+     fn test_long_input_quote_ordering() {
+         let long = 4 * SHORT_SCAN_MAX;
+@@ -500,7 +506,7 @@
+         assert_eq!(first_text_escape(&single_quote_late), None);
+     }
+ 
+-    /// End-to-end escaping of a long segment goes through the memchr path.
++    /// End-to-end escaping preserves every segment around long-input matches.
+     #[test]
+     fn test_escape_long_input_end_to_end() {
+         let long = 3 * SHORT_SCAN_MAX;
+@@ -526,6 +532,34 @@
+         assert!(attr_out.windows(5).any(|w| w == b"&#39;"));
+         assert!(attr_out.windows(6).any(|w| w == b"&quot;"));
+         assert!(attr_out.windows(5).any(|w| w == b"&amp;"));
++    }
++
++    #[test]
++    fn text_scanner_preserves_every_byte_across_long_scan_boundaries() {
++        for len in [
++            127, 128, 129, 255, 256, 257, 511, 512, 513, 4095, 4096, 4097,
++        ] {
++            for at in [0, 15, 16, len / 2, len - 1] {
++                for byte in 0u8..=255 {
++                    let mut input = vec![b'x'; len];
++                    input[at] = byte;
++                    let expected = input
++                        .iter()
++                        .position(|&candidate| matches!(candidate, b'<' | b'>' | b'&' | b'"'));
++                    assert_eq!(
++                        first_text_escape(&input),
++                        expected,
++                        "len={len}, at={at}, byte={byte}"
++                    );
++                    input[len - 1] = b'&';
++                    assert_eq!(
++                        first_text_escape(&input),
++                        expected.or(Some(len - 1)),
++                        "later ampersand: len={len}, at={at}, byte={byte}"
++                    );
++                }
++            }
++        }
+     }
+ 
+     #[test]

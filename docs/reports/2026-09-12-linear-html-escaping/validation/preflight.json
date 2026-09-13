@@ -1,0 +1,107 @@
+[
+  {
+    "name": "cargo-test",
+    "command": [
+      "cargo",
+      "test",
+      "--locked",
+      "--all-features"
+    ],
+    "exit_code": 0,
+    "seconds": 26.972722250036895
+  },
+  {
+    "name": "cargo-clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "--all-targets",
+      "--all-features",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "seconds": 1.659384792088531
+  },
+  {
+    "name": "byte-search-test",
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "ferro-byte-search",
+      "--locked"
+    ],
+    "exit_code": 0,
+    "seconds": 0.9488961250754073
+  },
+  {
+    "name": "byte-search-clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "-p",
+      "ferro-byte-search",
+      "--all-targets",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "seconds": 0.16934229200705886
+  },
+  {
+    "name": "workspace-clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--all-targets",
+      "--all-features",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "seconds": 14.200188958086073
+  },
+  {
+    "name": "cargo-fmt",
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--check"
+    ],
+    "exit_code": 0,
+    "seconds": 0.28646783297881484
+  },
+  {
+    "name": "cross-x86-check",
+    "command": [
+      "cargo",
+      "check",
+      "--target",
+      "x86_64-unknown-linux-gnu",
+      "--all-features",
+      "--locked"
+    ],
+    "exit_code": 0,
+    "seconds": 0.7526534589705989
+  },
+  {
+    "name": "contracts",
+    "command": [
+      "node",
+      "--test",
+      "./scripts/test-benchmark-ci-contract.mjs",
+      "./scripts/test-profiling-scripts.mjs"
+    ],
+    "exit_code": 0,
+    "seconds": 8.761764290975407
+  }
+]

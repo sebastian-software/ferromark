@@ -1,0 +1,29 @@
+{
+  "baseline_revision": "e731dc8162828e0ac2df30b7567107f560159ff8",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+  "cpu": "Apple M1 Pro",
+  "main_selected_count": 93,
+  "regime_selected_count": 27,
+  "driver_sha256": {
+    "Cargo.toml": "f54ba6577b2e7a0a5457775a58811383b1696aa9d11dc98cc887ffc29c103927",
+    "Cargo.lock": "dee7c3727ced6fd3f9231f32a5e8252e0169fc1f1969a703b43d153ddeba6507",
+    "src/main.rs": "7be7fd3080b29e379dc3e9d9bfdcfa65a8df27f6f9558d0cbffefbafca0e92c6"
+  },
+  "binary_sha256": {
+    "baseline": "072544918c7e5b40f2f5d6fa73551603658d6ca7942383f4cc27599c44023848",
+    "single-neon": "63578b67f3cc66ea2f667508aa3f6f83deb7c0cf1aa7cb09835faa0d68dfa4d7",
+    "direct-neon": "63578b67f3cc66ea2f667508aa3f6f83deb7c0cf1aa7cb09835faa0d68dfa4d7",
+    "outlined-neon": "fc7838f3ca3a103367cc06eef7522790e79d8ef6dfac66325c57a972b8493156",
+    "tail-neon": "ab949619f863bf9223bcecc3fe28255d6b8cead113afe1001ad4d0b80a197bc1",
+    "bulk-neon": "fabffad669923ff3334ebd73b9062abc2d1003d7012d6da615313b48429cb2ca",
+    "bulk-inline-neon": "601dd6c1df27459a1ac92bf3025f661b2d62c6f47920f1189272cffe43a51afd"
+  },
+  "input_sha256": {
+    "cases.json": "2758e0707f5f3fff1dd80354d3fa2aea2417af2935bd2f6b6a78c3d3ba077e22",
+    "verify.json": "ea58ad3f8c6c99f1b66beb5c4a72b0f023b1767d5832cde865a92eaeb92737d0",
+    "blocks.json": "691e54b37962304c269f610cb6d89cc2fd755b6ebc92396dba72d9e30381d78c",
+    "extra.json": "709ec1eb5b686ae6b6334a12fca0ea5015485d9c56187f263860f6069176e2b8",
+    "extended.json": "07d2df57c49b09d354cdc10f86a29eea613190c6961bf783804d1cbb5713a256",
+    "fences.json": "2f856694fb167ca99b5b673938265ca0b502b0a69b64db9e3edad4e3b18583e2"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "baseline_revision": "e731dc8162828e0ac2df30b7567107f560159ff8",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+  "cpu": "Apple M1 Pro",
+  "main_selected_count": 93,
+  "regime_selected_count": 27,
+  "adopted": "linear",
+  "attribute_selected_count": 14,
+  "input_sha256": {
+    "cases.json": "2758e0707f5f3fff1dd80354d3fa2aea2417af2935bd2f6b6a78c3d3ba077e22",
+    "verify.json": "ea58ad3f8c6c99f1b66beb5c4a72b0f023b1767d5832cde865a92eaeb92737d0",
+    "blocks.json": "691e54b37962304c269f610cb6d89cc2fd755b6ebc92396dba72d9e30381d78c",
+    "extra.json": "709ec1eb5b686ae6b6334a12fca0ea5015485d9c56187f263860f6069176e2b8",
+    "extended.json": "07d2df57c49b09d354cdc10f86a29eea613190c6961bf783804d1cbb5713a256",
+    "fences.json": "2f856694fb167ca99b5b673938265ca0b502b0a69b64db9e3edad4e3b18583e2",
+    "attributes.json": "44f52b56fef50f57ee9e10bd007e39dd5f499dfbfdb1b09b08fc93770c7fe7ca"
+  },
+  "driver_sha256": {
+    "Cargo.toml": "f54ba6577b2e7a0a5457775a58811383b1696aa9d11dc98cc887ffc29c103927",
+    "Cargo.lock": "dee7c3727ced6fd3f9231f32a5e8252e0169fc1f1969a703b43d153ddeba6507",
+    "src/main.rs": "7be7fd3080b29e379dc3e9d9bfdcfa65a8df27f6f9558d0cbffefbafca0e92c6"
+  },
+  "binary_sha256": {
+    "aa-control": "6f682af890a45ad464fa428bb79d5e25bdb4f6937f33563271f83d31a15ccf56",
+    "baseline": "6f682af890a45ad464fa428bb79d5e25bdb4f6937f33563271f83d31a15ccf56",
+    "bulk-1024": "2e1c17e5ad8ba7acbb47752944c966670b365600ca210b08295904dca75939dc",
+    "bulk-4096": "0445385609ef4b3edbd5061881c8a022304e7bfcc2b3a1373a07fb1c9c2c00b5",
+    "cached-long": "978655b37385e3d34b6921622cb11d60dbb09f6906b90651eac5a21163a0277e",
+    "early-short": "f0edb8dbacb240809873fd553d8dc33dec792903b1255a397276a4f3990cdbb0",
+    "final": "24ce7078ccff59850a365eb5850476725977cc3e2799643aecd95a08e1857664",
+    "grow-memchr": "f01954eac8165da393a0cb34cf9d60c0c98c1db4eb527fead87882f938031109",
+    "grow-prefix": "b06c67d748996fab101e409f30b77f45f1ee018c03e41232976b25dbd2e1e902",
+    "hybrid-tail": "aceab2d9bebd15a8376f38cf7f2c39a585fa210ff9ce652e78a5afaaf8381c34",
+    "linear": "744885392466229269c833cdb7029bafbf7c6c59d3bb711fef12c8cd18612628",
+    "outlined-growth": "ac1a50f518683945b413604c73e0a1a5a247a980b46a0f8e77ae68f83f7101a2",
+    "outlined-prefix": "39946eb5a626b92f4a8169b1b6702d929236b9449bad342344a8bbca4919b4a8",
+    "production": "acbe7cea7075a246b8bb38dbf292545c1330ae87afa86d68cc206cc52b233a0a",
+    "threshold-1024": "5d42c3f7bc67d4e5848a80f0db29e4d14a0a1d97f1c010672fc655266c2a396b",
+    "threshold-4096": "533a2e3e29867d20cff12ae343bf1bc03da03329e1ef20f8424a8549db84dd38",
+    "wide-1024": "baf7be810119e7d396fb0965d9582adb0c06dc2c8a6bd7cc970a628a8ded4be6",
+    "wide-4096": "e28da10a1b8e9664c70c13a76944eea7389054721eb48dc87dafd753564be3f9"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "count": 16374,
+  "hash": "4c4a63cf203bfaa49db24f7b39ad98d775cc2741d46a0982c043bcfc5f7c6d4a",
+  "failures": [
+    {
+      "index": 11496,
+      "case": {
+        "case": "inline-guard/11496",
+        "input": "==a==``a`b``^[a][a][ref]<!-- x -->`\n***a***__`a`&amp;\\[ref]: /url \"title\"\n\n``~a~`` a ``[a](/b \"title\")^[a]\n",
+        "flags": 15,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[Text(Range { start: 0, end: 5 }), Code(Range { start: 7, end: 10 }), Text(Range { start: 12, end: 24 }), Html(Range { start: 24, end: 34 }), Code(Range { start: 35, end: 45 }), SoftBreak, EmphasisStart, StrongStart, Text(Range { start: 39, end: 40 }), StrongEnd, EmphasisEnd, Text(Range { start: 43, end: 45 }), Text(Range { start: 46, end: 53 }), EscapedChar(91), Text(Range { start: 55, end: 73 }), SoftBreak, SoftBreak, Code(Range { start: 77, end: 80 }), Text(Range { start: 82, end: 87 }), LinkStart { url: Range { start: 91, end: 93 }, title: Some(Range { start: 95, end: 100 }) }, Text(Range { start: 88, end: 89 }), LinkEnd, Text(Range { start: 102, end: 106 }), SoftBreak]",
+        "html": "<p>==a==<code>a`b</code>^[a][a][ref]<!-- x --><code> ***a***__</code><em><strong>a</strong></em>__a`&amp;[ref]: /url &quot;title&quot;</p>\n<p><code>~a~</code> a ``<a href=\"/b\" title=\"title\">a</a>^[a]</p>\n",
+        "mdx_events": "[Text(Range { start: 0, end: 5 }), Code(Range { start: 7, end: 10 }), Text(Range { start: 12, end: 34 }), Code(Range { start: 35, end: 45 }), SoftBreak, EmphasisStart, StrongStart, Text(Range { start: 39, end: 40 }), StrongEnd, EmphasisEnd, Text(Range { start: 43, end: 45 }), Text(Range { start: 46, end: 53 }), EscapedChar(91), Text(Range { start: 55, end: 73 }), SoftBreak, SoftBreak, Code(Range { start: 77, end: 80 }), Text(Range { start: 82, end: 87 }), LinkStart { url: Range { start: 91, end: 93 }, title: Some(Range { start: 95, end: 100 }) }, Text(Range { start: 88, end: 89 }), LinkEnd, Text(Range { start: 102, end: 106 }), SoftBreak]"
+      }
+    },
+    {
+      "index": 11497,
+      "case": {
+        "case": "inline-guard/11497",
+        "input": "==a==``a`b``^[a][a][ref]<!-- x -->`\n***a***__`a`&amp;\\[ref]: /url \"title\"\n\n``~a~`` a ``[a](/b \"title\")^[a]\n",
+        "flags": 47,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[HighlightStart, Text(Range { start: 2, end: 3 }), HighlightEnd, Code(Range { start: 7, end: 10 }), Text(Range { start: 12, end: 24 }), Html(Range { start: 24, end: 34 }), Code(Range { start: 35, end: 45 }), SoftBreak, EmphasisStart, StrongStart, Text(Range { start: 39, end: 40 }), StrongEnd, EmphasisEnd, Text(Range { start: 43, end: 45 }), Text(Range { start: 46, end: 53 }), EscapedChar(91), Text(Range { start: 55, end: 73 }), SoftBreak, SoftBreak, Code(Range { start: 77, end: 80 }), Text(Range { start: 82, end: 87 }), LinkStart { url: Range { start: 91, end: 93 }, title: Some(Range { start: 95, end: 100 }) }, Text(Range { start: 88, end: 89 }), LinkEnd, InlineFootnote(Range { start: 104, end: 105 }), SoftBreak]",
+        "html": "<p><mark>a</mark><code>a`b</code>^[a][a][ref]<!-- x --><code> ***a***__</code><em><strong>a</strong></em>__a`&amp;[ref]: /url &quot;title&quot;</p>\n<p><code>~a~</code> a ``<a href=\"/b\" title=\"title\">a</a><sup><a href=\"#user-content-inline-fn-1\" id=\"user-content-inline-fnref-1\" data-footnote-ref>1</a></sup></p>\n<section data-footnotes class=\"footnotes\">\n<ol>\n<li id=\"user-content-inline-fn-1\">\n<p>a <a href=\"#user-content-inline-fnref-1\" class=\"data-footnote-backref\" aria-label=\"Back to reference 1\">\u21a9</a></p>\n</li>\n</ol>\n</section>\n",
+        "mdx_events": "[Text(Range { start: 0, end: 5 }), Code(Range { start: 7, end: 10 }), Text(Range { start: 12, end: 34 }), Code(Range { start: 35, end: 45 }), SoftBreak, EmphasisStart, StrongStart, Text(Range { start: 39, end: 40 }), StrongEnd, EmphasisEnd, Text(Range { start: 43, end: 45 }), Text(Range { start: 46, end: 53 }), EscapedChar(91), Text(Range { start: 55, end: 73 }), SoftBreak, SoftBreak, Code(Range { start: 77, end: 80 }), Text(Range { start: 82, end: 87 }), LinkStart { url: Range { start: 91, end: 93 }, title: Some(Range { start: 95, end: 100 }) }, Text(Range { start: 88, end: 89 }), LinkEnd, Text(Range { start: 102, end: 106 }), SoftBreak]"
+      }
+    },
+    {
+      "index": 11498,
+      "case": {
+        "case": "inline-guard/11498",
+        "input": "==a==``a`b``^[a][a][ref]<!-- x -->`\n***a***__`a`&amp;\\[ref]: /url \"title\"\n\n``~a~`` a ``[a](/b \"title\")^[a]\n",
+        "flags": 31,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[Text(Range { start: 0, end: 5 }), Code(Range { start: 7, end: 10 }), Text(Range { start: 12, end: 34 }), Code(Range { start: 35, end: 45 }), SoftBreak, EmphasisStart, StrongStart, Text(Range { start: 39, end: 40 }), StrongEnd, EmphasisEnd, Text(Range { start: 43, end: 45 }), Text(Range { start: 46, end: 53 }), EscapedChar(91), Text(Range { start: 55, end: 73 }), SoftBreak, SoftBreak, Code(Range { start: 77, end: 80 }), Text(Range { start: 82, end: 87 }), LinkStart { url: Range { start: 91, end: 93 }, title: Some(Range { start: 95, end: 100 }) }, Text(Range { start: 88, end: 89 }), LinkEnd, Text(Range { start: 102, end: 106 }), SoftBreak]",
+        "html": "<p>==a==<code>a`b</code>^[a][a][ref]&lt;!-- x --&gt;<code> ***a***__</code><em><strong>a</strong></em>__a`&amp;[ref]: /url &quot;title&quot;</p>\n<p><code>~a~</code> a ``<a href=\"/b\" title=\"title\">a</a>^[a]</p>\n",
+        "mdx_events": "[Text(Range { start: 0, end: 5 }), Code(Range { start: 7, end: 10 }), Text(Range { start: 12, end: 34 }), Code(Range { start: 35, end: 45 }), SoftBreak, EmphasisStart, StrongStart, Text(Range { start: 39, end: 40 }), StrongEnd, EmphasisEnd, Text(Range { start: 43, end: 45 }), Text(Range { start: 46, end: 53 }), EscapedChar(91), Text(Range { start: 55, end: 73 }), SoftBreak, SoftBreak, Code(Range { start: 77, end: 80 }), Text(Range { start: 82, end: 87 }), LinkStart { url: Range { start: 91, end: 93 }, title: Some(Range { start: 95, end: 100 }) }, Text(Range { start: 88, end: 89 }), LinkEnd, Text(Range { start: 102, end: 106 }), SoftBreak]"
+      }
+    },
+    {
+      "index": 14448,
+      "case": {
+        "case": "inline-guard/14448",
+        "input": "`__~a~__[`a```a`b```a`\r\n**a**` a\\n b ```a`b``<a x=\"y\">``)  \n``(***a***",
+        "flags": 15,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[Code(Range { start: 1, end: 9 }), Text(Range { start: 10, end: 11 }), Code(Range { start: 14, end: 17 }), Text(Range { start: 20, end: 21 }), Code(Range { start: 22, end: 29 }), SoftBreak, StrongStart, Text(Range { start: 26, end: 27 }), StrongEnd, Text(Range { start: 30, end: 43 }), Code(Range { start: 45, end: 54 }), Text(Range { start: 56, end: 57 }), HardBreak, Text(Range { start: 60, end: 63 }), EmphasisStart, StrongStart, Text(Range { start: 66, end: 67 }), StrongEnd, EmphasisEnd]",
+        "html": "<p><code>__~a~__[</code>a<code>a`b</code>a<code> **a**</code><strong>a</strong> a\\n b ```a`b<code>&lt;a x=&quot;y&quot;&gt;</code>)<br />\n``(<em><strong>a</strong></em></p>\n",
+        "mdx_events": "[Code(Range { start: 1, end: 9 }), Text(Range { start: 10, end: 11 }), Code(Range { start: 14, end: 17 }), Text(Range { start: 20, end: 21 }), Code(Range { start: 22, end: 29 }), SoftBreak, StrongStart, Text(Range { start: 26, end: 27 }), StrongEnd, Text(Range { start: 30, end: 43 }), Code(Range { start: 45, end: 54 }), Text(Range { start: 56, end: 57 }), HardBreak, Text(Range { start: 60, end: 63 }), EmphasisStart, StrongStart, Text(Range { start: 66, end: 67 }), StrongEnd, EmphasisEnd]"
+      }
+    },
+    {
+      "index": 14449,
+      "case": {
+        "case": "inline-guard/14449",
+        "input": "`__~a~__[`a```a`b```a`\r\n**a**` a\\n b ```a`b``<a x=\"y\">``)  \n``(***a***",
+        "flags": 47,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[Code(Range { start: 1, end: 9 }), Text(Range { start: 10, end: 11 }), Code(Range { start: 14, end: 17 }), Text(Range { start: 20, end: 21 }), Code(Range { start: 22, end: 29 }), SoftBreak, StrongStart, Text(Range { start: 26, end: 27 }), StrongEnd, Text(Range { start: 30, end: 43 }), Code(Range { start: 45, end: 54 }), Text(Range { start: 56, end: 57 }), HardBreak, Text(Range { start: 60, end: 63 }), EmphasisStart, StrongStart, Text(Range { start: 66, end: 67 }), StrongEnd, EmphasisEnd]",
+        "html": "<p><code>__~a~__[</code>a<code>a`b</code>a<code> **a**</code><strong>a</strong> a\\n b ```a`b<code>&lt;a x=&quot;y&quot;&gt;</code>)<br />\n``(<em><strong>a</strong></em></p>\n",
+        "mdx_events": "[Code(Range { start: 1, end: 9 }), Text(Range { start: 10, end: 11 }), Code(Range { start: 14, end: 17 }), Text(Range { start: 20, end: 21 }), Code(Range { start: 22, end: 29 }), SoftBreak, StrongStart, Text(Range { start: 26, end: 27 }), StrongEnd, Text(Range { start: 30, end: 43 }), Code(Range { start: 45, end: 54 }), Text(Range { start: 56, end: 57 }), HardBreak, Text(Range { start: 60, end: 63 }), EmphasisStart, StrongStart, Text(Range { start: 66, end: 67 }), StrongEnd, EmphasisEnd]"
+      }
+    },
+    {
+      "index": 14450,
+      "case": {
+        "case": "inline-guard/14450",
+        "input": "`__~a~__[`a```a`b```a`\r\n**a**` a\\n b ```a`b``<a x=\"y\">``)  \n``(***a***",
+        "flags": 31,
+        "reuse": false
+      },
+      "actual": {
+        "events": "[Code(Range { start: 1, end: 9 }), Text(Range { start: 10, end: 11 }), Code(Range { start: 14, end: 17 }), Text(Range { start: 20, end: 21 }), Code(Range { start: 22, end: 29 }), SoftBreak, StrongStart, Text(Range { start: 26, end: 27 }), StrongEnd, Text(Range { start: 30, end: 43 }), Code(Range { start: 45, end: 54 }), Text(Range { start: 56, end: 57 }), HardBreak, Text(Range { start: 60, end: 63 }), EmphasisStart, StrongStart, Text(Range { start: 66, end: 67 }), StrongEnd, EmphasisEnd]",
+        "html": "<p><code>__~a~__[</code>a<code>a`b</code>a<code> **a**</code><strong>a</strong> a\\n b ```a`b<code>&lt;a x=&quot;y&quot;&gt;</code>)<br />\n``(<em><strong>a</strong></em></p>\n",
+        "mdx_events": "[Code(Range { start: 1, end: 9 }), Text(Range { start: 10, end: 11 }), Code(Range { start: 14, end: 17 }), Text(Range { start: 20, end: 21 }), Code(Range { start: 22, end: 29 }), SoftBreak, StrongStart, Text(Range { start: 26, end: 27 }), StrongEnd, Text(Range { start: 30, end: 43 }), Code(Range { start: 45, end: 54 }), Text(Range { start: 56, end: 57 }), HardBreak, Text(Range { start: 60, end: 63 }), EmphasisStart, StrongStart, Text(Range { start: 66, end: 67 }), StrongEnd, EmphasisEnd]"
+      }
+    }
+  ]
+}

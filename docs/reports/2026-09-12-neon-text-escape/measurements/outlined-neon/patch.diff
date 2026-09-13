@@ -1,0 +1,25 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -89,12 +89,21 @@
+     if input.len() <= SHORT_SCAN_MAX {
+         return first_escape_short::<false>(input);
+     }
++    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++    { first_text_escape_long(input) }
++    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
++    {
+     let a = memchr3(b'<', b'>', b'&', input);
+     // A '"' is only relevant if it appears before the first <>& hit, so the
+     // second pass never scans past it.
+     let limit = a.unwrap_or(input.len());
+     memchr(b'"', &input[..limit]).or(a)
+-}
++    }
++}
++
++#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
++#[inline(never)]
++fn first_text_escape_long(input: &[u8]) -> Option<usize> { TEXT_SPECIALS.find(input) }
+ 
+ #[inline]
+ fn first_attr_escape(input: &[u8]) -> Option<usize> {

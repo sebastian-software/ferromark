@@ -1,0 +1,238 @@
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+    Finished `test` profile [optimized + debuginfo] target(s) in 3.39s
+     Running unittests src/lib.rs (target/debug/deps/ferromark-33e267682c6bad7b)
+
+running 2 tests
+test escape::tests::quoted_attribute_search_work_grows_linearly ... ok
+test escape::tests::quoted_code_search_work_grows_linearly ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 374 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/debug/deps/ferromark-142274743e1bbc4f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+     Running tests/autolink_regression_tests.rs (target/debug/deps/autolink_regression_tests-7fec4893987e1a97)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/block_render_performance_regressions.rs (target/debug/deps/block_render_performance_regressions-daed813fba283656)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests/callout_tests.rs (target/debug/deps/callout_tests-d151eb340e5e5756)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+
+     Running tests/commonmark_spec.rs (target/debug/deps/commonmark_spec-f1ef825cc287e29b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.00s
+
+     Running tests/core_performance_regressions.rs (target/debug/deps/core_performance_regressions-67102f17b60bdd1e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+     Running tests/crlf_blank_lines_tests.rs (target/debug/deps/crlf_blank_lines_tests-bec0c4a7db9f9b12)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+     Running tests/definition_list_tests.rs (target/debug/deps/definition_list_tests-04f8a470694143be)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+     Running tests/document_api_tests.rs (target/debug/deps/document_api_tests-add9daeebb5c9e89)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 15 filtered out; finished in 0.00s
+
+     Running tests/fenced_code_renderer_tests.rs (target/debug/deps/fenced_code_renderer_tests-49415651d2e50a5b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+     Running tests/footnote_tests.rs (target/debug/deps/footnote_tests-a6a7edff812df13a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.00s
+
+     Running tests/front_matter_tests.rs (target/debug/deps/front_matter_tests-21a48c5a28775c7a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.00s
+
+     Running tests/gfm_autolink_tests.rs (target/debug/deps/gfm_autolink_tests-5e78d1b2a54333ac)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+
+     Running tests/gfm_disallowed_html_tests.rs (target/debug/deps/gfm_disallowed_html_tests-6f717abdcdc1ba02)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.00s
+
+     Running tests/gfm_strikethrough_tests.rs (target/debug/deps/gfm_strikethrough_tests-8975bea07adbac05)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/gfm_table_tests.rs (target/debug/deps/gfm_table_tests-c8b3b4b9ac3f0f2a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 51 filtered out; finished in 0.00s
+
+     Running tests/gfm_task_list_tests.rs (target/debug/deps/gfm_task_list_tests-c1ce0941f4a02218)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/heading_id_tests.rs (target/debug/deps/heading_id_tests-84294c030862c2fe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.00s
+
+     Running tests/highlight_tests.rs (target/debug/deps/highlight_tests-d0254b3cf91d8a47)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/html_block_performance_regressions.rs (target/debug/deps/html_block_performance_regressions-f8d0791c873414ce)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests/indented_code_options_tests.rs (target/debug/deps/indented_code_options_tests-25489a34ad780ec0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/inline_emission_regressions.rs (target/debug/deps/inline_emission_regressions-b223863a52653c7d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/inline_footnote_tests.rs (target/debug/deps/inline_footnote_tests-cc80561acdf43e42)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+     Running tests/input_size_tests.rs (target/debug/deps/input_size_tests-ec6e43e2e2f7cbc3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/line_comment_tests.rs (target/debug/deps/line_comment_tests-2f8a867c83dc4160)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/math_tests.rs (target/debug/deps/math_tests-4799357b0cf53519)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+     Running tests/mdx_document_state_tests.rs (target/debug/deps/mdx_document_state_tests-c4d9291046a24405)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/mdx_event_tests.rs (target/debug/deps/mdx_event_tests-d31261d1ac8789c4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.00s
+
+     Running tests/mdx_inline_tests.rs (target/debug/deps/mdx_inline_tests-1a71441cbd4ec647)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests/mdx_segment_tests.rs (target/debug/deps/mdx_segment_tests-dd613f5320b02ea2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 181 filtered out; finished in 0.00s
+
+     Running tests/merged_table_cell_tests.rs (target/debug/deps/merged_table_cell_tests-e2c4aedbfc88b532)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+     Running tests/non_exhaustive_api_tests.rs (target/debug/deps/non_exhaustive_api_tests-9b4a380bfb7f0de9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/options_tests.rs (target/debug/deps/options_tests-19439c6106a23c14)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests/renderer_tests.rs (target/debug/deps/renderer_tests-9276885c650811ce)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests/resource_limits_tests.rs (target/debug/deps/resource_limits_tests-f2690331803719e5)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.00s
+
+     Running tests/subscript_tests.rs (target/debug/deps/subscript_tests-34d77ecec28b9e8f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/superscript_tests.rs (target/debug/deps/superscript_tests-2a2a25d55db31d6b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+     Running tests/untrusted_rendering_tests.rs (target/debug/deps/untrusted_rendering_tests-499bb7e9cf82e064)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+

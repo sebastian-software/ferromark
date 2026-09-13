@@ -1,0 +1,170 @@
+[
+  {
+    "index": 0,
+    "case": "ox-large-cm",
+    "baseline_ns": 238976.5625,
+    "candidate_ns": 239096.35267857142,
+    "change_pct": 0.0501263292593368
+  },
+  {
+    "index": 2,
+    "case": "ox-huge-tables",
+    "baseline_ns": 6055221.375,
+    "candidate_ns": 6065304.6875,
+    "change_pct": 0.16652260711111921
+  },
+  {
+    "index": 3,
+    "case": "short",
+    "baseline_ns": 487.56296801872077,
+    "candidate_ns": 488.246875488205,
+    "change_pct": 0.1402705936144777
+  },
+  {
+    "index": 6,
+    "case": "multiline",
+    "baseline_ns": 13246.77780720339,
+    "candidate_ns": 13086.057269874476,
+    "change_pct": -1.2132802381686902
+  },
+  {
+    "index": 7,
+    "case": "inline",
+    "baseline_ns": 38708.17283950617,
+    "candidate_ns": 38959.61882716049,
+    "change_pct": 0.6495940500650166
+  },
+  {
+    "index": 9,
+    "case": "code",
+    "baseline_ns": 15417.590209359605,
+    "candidate_ns": 15790.496212121212,
+    "change_pct": 2.418704853987008
+  },
+  {
+    "index": 10,
+    "case": "tables",
+    "baseline_ns": 41218.44161184211,
+    "candidate_ns": 41074.13392857143,
+    "change_pct": -0.35010465613823927
+  },
+  {
+    "index": 14,
+    "case": "late-marker",
+    "baseline_ns": 11147.770240213524,
+    "candidate_ns": 11059.693462897527,
+    "change_pct": -0.7900842537844621
+  },
+  {
+    "index": 16,
+    "case": "escape-dense",
+    "baseline_ns": 11987.986829501915,
+    "candidate_ns": 12636.130544354839,
+    "change_pct": 5.406610167921366
+  },
+  {
+    "index": 21,
+    "case": "tables/tables-plain",
+    "baseline_ns": 24927.99255952381,
+    "candidate_ns": 25158.958,
+    "change_pct": 0.9265304453404566
+  },
+  {
+    "index": 23,
+    "case": "tables/tables-links",
+    "baseline_ns": 36873.71323529412,
+    "candidate_ns": 37153.125,
+    "change_pct": 0.757753261579408
+  },
+  {
+    "index": 29,
+    "case": "guard/one-table",
+    "baseline_ns": 17039.246263586956,
+    "candidate_ns": 17400.361805555556,
+    "change_pct": 2.1193164086154903
+  },
+  {
+    "index": 42,
+    "case": "mdx/short",
+    "baseline_ns": 1194.0720731474407,
+    "candidate_ns": 1225.5453431372548,
+    "change_pct": 2.635793156677213
+  },
+  {
+    "index": 44,
+    "case": "mdx/tables-code",
+    "baseline_ns": 145858.42897727274,
+    "candidate_ns": 147016.6903409091,
+    "change_pct": 0.7940997114515902
+  },
+  {
+    "index": 79,
+    "case": "corpus/vue-docs/src/guide/built-ins/suspense.md",
+    "baseline_ns": 16683.261303191488,
+    "candidate_ns": 16474.28717105263,
+    "change_pct": -1.2525976087114365
+  },
+  {
+    "index": 108,
+    "case": "corpus/vue-docs/src/guide/extras/render-function.md",
+    "baseline_ns": 39244.1078125,
+    "candidate_ns": 38425.05030487805,
+    "change_pct": -2.0870840319143658
+  },
+  {
+    "index": 487,
+    "case": "corpus/rust-book/src/ch09-02-recoverable-errors-with-result.md",
+    "baseline_ns": 65523.87109375,
+    "candidate_ns": 64484.21556122449,
+    "change_pct": -1.5866820979456464
+  },
+  {
+    "index": 612,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options in MSBuild.md",
+    "baseline_ns": 16210.761981865286,
+    "candidate_ns": 16117.738079896908,
+    "change_pct": -0.5738404035075084
+  },
+  {
+    "index": 613,
+    "case": "corpus/typescript-handbook/packages/documentation/copy/en/project-config/Compiler Options.md",
+    "baseline_ns": 27308.831521739132,
+    "candidate_ns": 27078.19234913793,
+    "change_pct": -0.8445589201339532
+  },
+  {
+    "index": 696,
+    "case": "html/separate-blocks",
+    "baseline_ns": 156398.565625,
+    "candidate_ns": 156520.965625,
+    "change_pct": 0.07826158731756294
+  },
+  {
+    "index": 703,
+    "case": "html/declaration-long-lines",
+    "baseline_ns": 3549.3668416572077,
+    "candidate_ns": 3544.7727465986395,
+    "change_pct": -0.12943421357999307
+  },
+  {
+    "index": 707,
+    "case": "fence/root-long",
+    "baseline_ns": 6273.656688376754,
+    "candidate_ns": 5623.941434352518,
+    "change_pct": -10.356244950858851
+  },
+  {
+    "index": 708,
+    "case": "fence/root-indented",
+    "baseline_ns": 214761.97916666666,
+    "candidate_ns": 220512.15416666667,
+    "change_pct": 2.6774641499916374
+  },
+  {
+    "index": 710,
+    "case": "fence/root-container",
+    "baseline_ns": 242932.49038461538,
+    "candidate_ns": 248826.32211538462,
+    "change_pct": 2.4261191746884236
+  }
+]

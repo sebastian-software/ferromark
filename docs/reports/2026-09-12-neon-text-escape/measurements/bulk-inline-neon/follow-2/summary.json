@@ -1,0 +1,51 @@
+[
+  {
+    "index": 9,
+    "case": "code",
+    "baseline_ns": 15340.179256134968,
+    "candidate_ns": 15821.700906940063,
+    "change_pct": 3.138957131889586
+  },
+  {
+    "index": 16,
+    "case": "escape-dense",
+    "baseline_ns": 11881.090787914693,
+    "candidate_ns": 12531.57546875,
+    "change_pct": 5.474957581310402
+  },
+  {
+    "index": 29,
+    "case": "guard/one-table",
+    "baseline_ns": 16770.302048494985,
+    "candidate_ns": 17130.065496575342,
+    "change_pct": 2.1452413143187465
+  },
+  {
+    "index": 42,
+    "case": "mdx/short",
+    "baseline_ns": 1211.5956505936515,
+    "candidate_ns": 1204.3148181599229,
+    "change_pct": -0.6009292316426884
+  },
+  {
+    "index": 44,
+    "case": "mdx/tables-code",
+    "baseline_ns": 145979.3142857143,
+    "candidate_ns": 145769.9392857143,
+    "change_pct": -0.14342785553178583
+  },
+  {
+    "index": 708,
+    "case": "fence/root-indented",
+    "baseline_ns": 214521.05208333334,
+    "candidate_ns": 220135.52989130435,
+    "change_pct": 2.6172153051859937
+  },
+  {
+    "index": 710,
+    "case": "fence/root-container",
+    "baseline_ns": 242422.99107142858,
+    "candidate_ns": 248424.97619047618,
+    "change_pct": 2.4758316414300596
+  }
+]

@@ -1,0 +1,46 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -27,13 +27,41 @@
+     while let Some(rel) = first_text_escape(&input[start..]) {
+         let pos = start + rel;
+         if pos > start {
+-            out.extend_from_slice(&input[start..pos]);
++            push_short_text_run(out, &input[start..pos]);
+         }
+         push_text_escape(out, input[pos]);
+         start = pos + 1;
+     }
+     if start < input.len() {
+-        out.extend_from_slice(&input[start..]);
++        push_short_text_run(out, &input[start..]);
++    }
++}
++
++// Diagnostic short-copy prototype, independently written for a byte Vec.
++#[inline]
++fn push_short_text_run(out: &mut Vec<u8>, input: &[u8]) {
++    let len = input.len();
++    if len > 16 { out.extend_from_slice(input); return; }
++    out.reserve(len);
++    let old = out.len();
++    // SAFETY: reserve provides len writable bytes. Every write stays in that
++    // range, all len bytes are initialized, and the exclusive output borrow
++    // prevents source aliasing. The source reads stay inside input.
++    unsafe {
++        let dst = out.as_mut_ptr().add(old);
++        let src = input.as_ptr();
++        if len >= 8 {
++            core::ptr::copy_nonoverlapping(src, dst, 8);
++            core::ptr::copy_nonoverlapping(src.add(len - 8), dst.add(len - 8), 8);
++        } else if len >= 4 {
++            core::ptr::copy_nonoverlapping(src, dst, 4);
++            core::ptr::copy_nonoverlapping(src.add(len - 4), dst.add(len - 4), 4);
++        } else if len > 0 {
++            *dst = *src;
++            *dst.add(len / 2) = *src.add(len / 2);
++            *dst.add(len - 1) = *src.add(len - 1);
++        }
++        out.set_len(old + len);
+     }
+ }
+ 

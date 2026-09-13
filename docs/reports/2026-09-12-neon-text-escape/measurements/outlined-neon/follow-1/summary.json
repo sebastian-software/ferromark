@@ -1,0 +1,37 @@
+[
+  {
+    "index": 9,
+    "case": "code",
+    "baseline_ns": 15317.007645259939,
+    "candidate_ns": 15761.792452830188,
+    "change_pct": 2.903862280880265
+  },
+  {
+    "index": 16,
+    "case": "escape-dense",
+    "baseline_ns": 11893.959174584323,
+    "candidate_ns": 12131.267705811139,
+    "change_pct": 1.9952021672809295
+  },
+  {
+    "index": 44,
+    "case": "mdx/tables-code",
+    "baseline_ns": 143754.98392857143,
+    "candidate_ns": 145733.40714285715,
+    "change_pct": 1.3762466943537444
+  },
+  {
+    "index": 708,
+    "case": "fence/root-indented",
+    "baseline_ns": 212385.41666666666,
+    "candidate_ns": 214030.1640625,
+    "change_pct": 0.7744163519544989
+  },
+  {
+    "index": 710,
+    "case": "fence/root-container",
+    "baseline_ns": 243116.31845238095,
+    "candidate_ns": 245327.13392857142,
+    "change_pct": 0.9093653154440551
+  }
+]

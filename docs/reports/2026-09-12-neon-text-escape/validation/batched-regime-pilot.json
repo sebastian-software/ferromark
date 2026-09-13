@@ -1,0 +1,8 @@
+{
+  "status": "excluded pilot and interrupted rerun",
+  "reason": "The original sixteen-render pilot completed, but its raw files were overwritten when the one-render rerun started in the same directory. Its quantitative results are excluded. The directory was then mistakenly moved while the rerun was writing it, interrupting that rerun after 15 of 27 cases.",
+  "partial_results": "batched-pilot/regime-screen contains the first 15 cases of the interrupted one-render rerun, not the original pilot. Excluded from final results.",
+  "copied_binaries": "Copies under batched-pilot were made during the rerun. They do not establish the original pilot identity and are excluded.",
+  "recovery": "Repeat all 27 cases in a fresh, unique directory using the current identical driver for both engines.",
+  "retention": "Excluded scratch runs are not part of this archive; only this incident record is retained."
+}

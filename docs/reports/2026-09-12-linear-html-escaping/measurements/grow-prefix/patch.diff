@@ -1,0 +1,50 @@
+--- a/src/escape.rs
++++ b/src/escape.rs
+@@ -89,11 +89,19 @@
+     if input.len() <= SHORT_SCAN_MAX {
+         return first_escape_short::<false>(input);
+     }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    // A '"' is only relevant if it appears before the first <>& hit, so the
+-    // second pass never scans past it.
+-    let limit = a.unwrap_or(input.len());
+-    memchr(b'"', &input[..limit]).or(a)
++    if let Some(at) = first_escape_short::<false>(&input[..SHORT_SCAN_MAX]) { return Some(at); }
++    let mut start = SHORT_SCAN_MAX;
++    let mut width = SHORT_SCAN_MAX * 2;
++    while start < input.len() {
++        let len = width.min(input.len() - start);
++        let chunk = &input[start..start + len];
++        let a = memchr3(b'<', b'>', b'&', chunk);
++        let limit = a.unwrap_or(chunk.len());
++        if let Some(at) = memchr(b'"', &chunk[..limit]).or(a) { return Some(start + at); }
++        start += len;
++        width = width.saturating_mul(2);
++    }
++    None
+ }
+ 
+ #[inline]
+@@ -101,9 +109,19 @@
+     if input.len() <= SHORT_SCAN_MAX {
+         return first_escape_short::<true>(input);
+     }
+-    let a = memchr3(b'<', b'>', b'&', input);
+-    let limit = a.unwrap_or(input.len());
+-    memchr2(b'"', b'\'', &input[..limit]).or(a)
++    if let Some(at) = first_escape_short::<true>(&input[..SHORT_SCAN_MAX]) { return Some(at); }
++    let mut start = SHORT_SCAN_MAX;
++    let mut width = SHORT_SCAN_MAX * 2;
++    while start < input.len() {
++        let len = width.min(input.len() - start);
++        let chunk = &input[start..start + len];
++        let a = memchr3(b'<', b'>', b'&', chunk);
++        let limit = a.unwrap_or(chunk.len());
++        if let Some(at) = memchr2(b'"', b'\'', &chunk[..limit]).or(a) { return Some(start + at); }
++        start += len;
++        width = width.saturating_mul(2);
++    }
++    None
+ }
+ 
+ // Escape policy stays here; the shared scanner knows only byte sets.
