@@ -88,6 +88,14 @@ CommonMark plus tables, strikethrough, and tasks. Every timed row completes the 
 collection. Native defaults for allocation, GC, and output representation
 remain in place; Markdig returns UTF-16 strings, the other workers UTF-8.
 
+**API lifecycle:** Ferromark uses fresh `to_html_with_options` calls.
+Ox retains its `HtmlRenderer` scratch, but creates and drops a fresh parser
+and growing AST arena for each document; owned HTML is moved out and released.
+These are integration choices, not identical scratch lifetimes. The
+[lifecycle and cache audit](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-13-ox-workflow-study/REPORT.md)
+also measures fresh and reusable renderers for both engines and checks
+changed inputs against fresh-process output.
+
 | Engine | Release each: time | Keep all: time | Release each: peak process RSS | Keep all: peak process RSS |
 | --- | ---: | ---: | ---: | ---: |
 | Ferromark | 137.4 µs | 138.0 µs | 3.0 MiB | 3.1 MiB |
