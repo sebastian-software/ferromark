@@ -19,12 +19,22 @@ mod superscript;
 
 #[cfg(test)]
 std::thread_local! {
-    static RANGE_PROBES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static RANGE_PROBES: std::cell::Cell<[usize; 3]> = const { std::cell::Cell::new([0; 3]) };
 }
 
 #[cfg(test)]
-fn record_range_probe() {
-    RANGE_PROBES.set(RANGE_PROBES.get() + 1);
+#[derive(Clone, Copy, Debug)]
+enum RangeProbe {
+    CodeOpenerInHtml,
+    AutolinkInCode,
+    HtmlInCode,
+}
+
+#[cfg(test)]
+fn record_range_probe(site: RangeProbe) {
+    let mut probes = RANGE_PROBES.get();
+    probes[site as usize] += 1;
+    RANGE_PROBES.set(probes);
 }
 
 pub use event::InlineEvent;
@@ -2001,7 +2011,7 @@ fn filter_autolinks_in_code_spans(autolinks: &mut Vec<Autolink>, code_spans: &[C
     autolinks.retain(|al| {
         while code_idx < code_spans.len() && {
             #[cfg(test)]
-            record_range_probe();
+            record_range_probe(RangeProbe::AutolinkInCode);
             al.start >= code_spans[code_idx].closer_end
         } {
             code_idx += 1;
@@ -2019,7 +2029,7 @@ fn filter_html_spans_in_code_spans(spans: &mut Vec<HtmlSpan>, code_spans: &[Code
     spans.retain(|span| {
         while code_idx < code_spans.len() && {
             #[cfg(test)]
-            record_range_probe();
+            record_range_probe(RangeProbe::HtmlInCode);
             span.start >= code_spans[code_idx].closer_end
         } {
             code_idx += 1;
@@ -2355,10 +2365,10 @@ mod tests {
 
     #[test]
     fn code_html_membership_work_scales_linearly() {
-        fn measure(repetitions: usize) -> usize {
+        fn measure(repetitions: usize) -> [usize; 3] {
             let text =
                 vec!["**bold** `<Widget>` `pending` <https://example.test>"; repetitions].join(" ");
-            RANGE_PROBES.set(0);
+            RANGE_PROBES.set([0; 3]);
             let html = crate::to_html_with_options(&text, &crate::Options::commonmark());
             let probes = RANGE_PROBES.get();
             assert_eq!(html.matches("<code>").count(), repetitions * 2);
@@ -2369,14 +2379,21 @@ mod tests {
 
         let small = measure(64);
         let large = measure(128);
-        assert!(
-            small > 0,
-            "the mixed paragraph must exercise range membership"
-        );
-        assert!(
-            large <= small * 3,
-            "range probes grew from {small} to {large}"
-        );
+        // Each walk must contribute its own probes. A rewrite that bypasses one
+        // counter must not be masked by the two remaining linear walks.
+        for site in [
+            RangeProbe::CodeOpenerInHtml,
+            RangeProbe::AutolinkInCode,
+            RangeProbe::HtmlInCode,
+        ] {
+            let small = small[site as usize];
+            let large = large[site as usize];
+            assert!(small > 0, "the mixed paragraph must exercise {site:?}");
+            assert!(
+                large <= small * 3,
+                "{site:?} probes grew from {small} to {large}"
+            );
+        }
     }
 
     fn parse_inline(text: &str) -> Vec<InlineEvent> {

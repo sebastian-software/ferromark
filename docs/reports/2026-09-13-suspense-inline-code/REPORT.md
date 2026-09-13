@@ -33,6 +33,22 @@ improvement. The focused TypeScript 6.0 loss and heading outliers remain in
 reported distribution.
 <!-- measured-summary:end -->
 
+## Review follow-up: independent complexity guards
+
+Review exposed a hole in the original combined probe count: restoring one
+quadratic search without instrumentation left the whole-render test green.
+The three walks now have independent counters, each with a nonzero coverage
+assertion and a linear-growth bound. In a temporary crate, restoring each old
+search with and without instrumentation produces six expected test failures;
+the corrected source passes. See
+[the negative controls](validation/review-negative-controls.json).
+
+This follow-up changes only test instrumentation and assertions. The timed
+`final` source remains the snapshot at `3927be5`; none of its timings or output
+checks were relabeled as measurements of the review update. The additional
+patch and source hashes in `metadata.json` identify the reviewed tests, and
+`check-evidence.py --check-current` validates that source separately.
+
 ## Document and competing operation
 
 The input is `vue-docs/src/guide/built-ins/suspense.md` from Vue docs commit

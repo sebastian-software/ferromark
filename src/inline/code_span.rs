@@ -27,7 +27,7 @@ pub fn resolve_code_spans(marks: &mut [Mark], text: &[u8], html_spans: &[(u32, u
         let opener_pos = marks[i].pos as usize;
         while html_idx < html_spans.len() && {
             #[cfg(test)]
-            super::record_range_probe();
+            super::record_range_probe(super::RangeProbe::CodeOpenerInHtml);
             opener_pos as u32 >= html_spans[html_idx].1
         } {
             html_idx += 1;

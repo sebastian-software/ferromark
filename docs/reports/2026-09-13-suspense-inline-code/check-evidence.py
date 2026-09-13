@@ -84,8 +84,26 @@ for path in sorted((D/'native').glob('**/*-raw.jsonl.gz')):
         checked += 1
 
 adopted = D/'measurements'/meta['candidate_variant']
+current_source = json.loads((adopted/'source.json').read_text())
+if review := meta.get('review_test_update'):
+    with tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+            tar.extractall(root, filter='data')
+        for patch in [adopted/'patch.diff', D/review['patch']]:
+            subprocess.run(['patch', '-s', '-p1', '-d', str(root)],
+                           input=patch.read_bytes(), check=True)
+        current_source = json.loads((D/review['source']).read_text())
+        for name, digest in current_source.items():
+            assert sha((root/name).read_bytes()) == digest, name
+    controls = json.loads((D/review['negative_controls']).read_text())
+    assert len(controls) == 7 and controls[0]['exit_code'] == 0
+    for row in controls[1:]:
+        assert row['exit_code'] == 101 and 'running 1 test' in row['output']
+        assert 'must exercise' in row['output'] or 'probes grew from' in row['output']
+    assert all(r['exit_code'] == 0 for r in json.loads((D/review['preflight']).read_text()))
 if '--check-current' in sys.argv:
-    for name, digest in json.loads((adopted/'source.json').read_text()).items():
+    for name, digest in current_source.items():
         assert sha((R/name).read_bytes()) == digest, name
 total = 0
 for path in adopted.glob('*verification.json'):

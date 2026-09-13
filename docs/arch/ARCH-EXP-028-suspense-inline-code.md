@@ -23,8 +23,11 @@ separately measured implementation.
 
 The public inline/block/MDX events, syntax options and render policies remain
 unchanged. Release builds contain no work counters. A whole-render test counts
-actual range probes and fails on the old quadratic implementation; boundary
-cases check HTML attributes, code padding, entities and autolinks.
+actual range probes separately for each of the three walks. Each walk must be
+exercised and scale linearly: one missing probe cannot be masked by the other
+two walks. Negative controls restore each quadratic search with and without
+instrumentation; all six fail. Boundary cases check HTML attributes, code
+padding, entities and autolinks.
 
 ## Alternatives and limits
 

@@ -53,7 +53,16 @@ do not declare every baseline behavior correct according to a specification.
 The failing whole-render work test patch and its original output are under
 `validation/`; apply that patch to the baseline to reproduce the quadratic work
 count without relying on wall-clock timing. The current source contains the
-passing version of that test.
+passing version of that test with independent counters for all three walks.
+Reproduce the six negative controls without editing the checkout:
+
+```sh
+python3 docs/reports/2026-09-13-suspense-inline-code/validation/review-guard.py
+```
+
+The script reconstructs the frozen measured source plus the review test patch
+in a temporary standalone crate. It requires the recorded dependencies in the
+local Cargo cache and checks test failures, not compiler errors.
 
 For the native Ox comparison, supply a clean checkout at the pinned revision:
 
