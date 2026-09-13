@@ -9,14 +9,18 @@ from pathlib import Path
 import statistics
 import tomllib
 
-from support import HERE, ROOT, PROTOCOL, VARIANTS, group, read_json, review, sha
+from support import HERE, ROOT, group, read_json, review, sha, variants_for
 
-DEFAULT = ROOT / "docs/reports/2026-09-13-practical-workflows"
+DEFAULT = ROOT / "docs/reports/2026-09-13-workflow-comparisons"
 START = "<!-- workflow-benchmarks:start -->"
 END = "<!-- workflow-benchmarks:end -->"
 LABELS = {
     "preview-fresh": "Fresh `to_html` calls", "preview-reuse": "Retained `Renderer`",
     "guide-metadata": "`parse`: HTML + front matter + headings",
+    "preview-pulldown": "pulldown-cmark + preview adapter",
+    "preview-comrak": "Comrak + preview adapter",
+    "guide-pulldown": "pulldown-cmark + metadata adapter",
+    "guide-comrak": "Comrak + metadata adapter",
     "ferromark-stream": "Ferromark · release each page", "ferromark-retain": "Ferromark · keep all pages",
     "pulldown-stream": "pulldown-cmark · release each page", "pulldown-retain": "pulldown-cmark · keep all pages",
     "comrak-stream": "Comrak · release each page", "comrak-retain": "Comrak · keep all pages",
@@ -29,19 +33,19 @@ def require(condition, message):
 
 
 def summarize(corpus, outputs, windows, memory, warmups, protocol):
-    require(protocol == PROTOCOL, "Publication protocol changed")
-    require(set(outputs) == set(VARIANTS), "Missing variant outputs")
-    require(len(windows) == len(VARIANTS) * 3 * 80, "Incomplete timing windows")
-    require(len(memory) == len(VARIANTS) * 3 * 10, "Incomplete memory observations")
-    require(len(warmups) == len(VARIANTS) * 3, "Incomplete warmup observations")
+    variants = variants_for(protocol)
+    require(set(outputs) == set(variants), "Missing variant outputs")
+    require(len(windows) == len(variants) * 3 * 80, "Incomplete timing windows")
+    require(len(memory) == len(variants) * 3 * 10, "Incomplete memory observations")
+    require(len(warmups) == len(variants) * 3, "Incomplete warmup observations")
     require({(r["round"], r["window"], r["variant"]) for r in windows} ==
-            {(r, w, v) for r in range(3) for w in range(80) for v in VARIANTS}, "Duplicate or missing window")
+            {(r, w, v) for r in range(3) for w in range(80) for v in variants}, "Duplicate or missing window")
     require({(r["round"], r["observation"], r["variant"]) for r in memory} ==
-            {(r, i, v) for r in range(3) for i in range(10) for v in VARIANTS}, "Duplicate or missing memory observation")
+            {(r, i, v) for r in range(3) for i in range(10) for v in variants}, "Duplicate or missing memory observation")
     require({(r["round"], r["variant"]) for r in warmups} ==
-            {(r, v) for r in range(3) for v in VARIANTS}, "Duplicate or missing warmup")
+            {(r, v) for r in range(3) for v in variants}, "Duplicate or missing warmup")
     rows = []
-    for variant in VARIANTS:
+    for variant in variants:
         documents = corpus[group(variant)]
         output_bytes = sum(len(d["html"].encode()) for d in outputs[variant]["outputs"])
         samples = [r for r in windows if r["variant"] == variant]
@@ -74,8 +78,8 @@ def summarize(corpus, outputs, windows, memory, warmups, protocol):
     for round_id in range(3):
         for window in range(80):
             subset = [r for r in windows if r["round"] == round_id and r["window"] == window]
-            offset = (window + round_id) % len(VARIANTS)
-            expected = VARIANTS[offset:] + VARIANTS[:offset]
+            offset = (window + round_id) % len(variants)
+            expected = variants[offset:] + variants[:offset]
             if window % 2:
                 expected.reverse()
             require([r["variant"] for r in sorted(subset, key=lambda r: r["position"])] == expected,
@@ -104,13 +108,13 @@ def load(folder):
     for provenance in corpus["provenance"]:
         text = inputs[provenance["id"]].encode()
         require(len(text) == provenance["bytes"] and hashlib.sha256(text).hexdigest() == provenance["sha256"], "Corpus provenance mismatch")
-    admission = review(outputs, corpus)
+    admission = review(outputs, corpus, run["protocol"])
     require(all(r["comparable"] for r in admission) and admission == read_json(folder / "admission.json"), "Output work is not comparable")
     observations = read_json(folder / "observations.json")
     require(len(observations) == 4 and all("AC Power" in r["power"] for r in observations), "Power observations missing or not on AC")
     rows = summarize(corpus, outputs, read_json(folder / "windows.json.gz"), read_json(folder / "memory.json.gz"),
                      read_json(folder / "warmups.json"), run["protocol"])
-    return {"schema": 1, "report": str((folder / "REPORT.md").relative_to(ROOT)),
+    return {"schema": run["protocol"]["schema"], "report": str((folder / "REPORT.md").relative_to(ROOT)),
             "run": run, "build": build, "rows": rows, "admission": admission,
             "corpus_summary": {name: {"documents": len(corpus[name]),
                 "input_bytes": sum(len(d["input"].encode()) for d in corpus[name]),
@@ -141,19 +145,25 @@ def decisions(data):
               "The metadata row measures a complete HTML-and-metadata operation; it does",
               "not isolate the incremental cost of collecting headings or represent an",
               "end-to-end site build."]
+    if data["schema"] == 2:
+        lines += ["", "Preview and metadata comparisons include the application adapters needed",
+                  "by pulldown-cmark and Comrak. Their escaping, URL checks, heading IDs,",
+                  "and metadata collection are timed and counted in heap usage. These are",
+                  "complete integration costs, not rankings of body-only parser calls."]
     return "\n".join(lines)
 
 
 def overview(data):
     report = data["report"]
     rows = data["rows"]
+    comparative = data["schema"] == 2
     lines = ["## Workflow benchmarks", "",
              "What does the Markdown step cost in an application? These workloads measure",
              "complete sets of documents, including output allocation and release. Time and",
              "memory come from separate runs so allocation tracking does not affect timings.", ""]
     for name, title, explanation in [
-        ("previews", "Preview user-authored comments", "Twelve authored examples, with Ferromark's secure defaults. Both APIs return owned HTML; a retained renderer reuses parser scratch."),
-        ("guides", "Render documentation with metadata", "Three actual guide pages, with the default untrusted policy. Includes HTML, raw front matter, and headings; each result is released."),
+        ("previews", "Preview user-authored comments", "Twelve authored examples. Ferromark uses secure defaults; pulldown-cmark and Comrak use application adapters for matching HTML escaping, URL checks, heading IDs, and callouts. Each returns owned HTML that is released immediately. The retained `Renderer` is Ferromark's scratch-reuse variant." if comparative else "Twelve authored examples, with Ferromark's secure defaults. Both APIs return owned HTML; a retained renderer reuses parser scratch."),
+        ("guides", "Render documentation with metadata", "Three actual guide pages, rendered under the same untrusted policy. Ferromark `parse` and the two application adapters return HTML, raw front matter, and headings with matching navigation IDs; each complete result is released." if comparative else "Three actual guide pages, with the default untrusted policy. Includes HTML, raw front matter, and headings; each result is released."),
         ("documentation", "Render a documentation collection", "Twelve actual documentation files. Trusted CommonMark plus tables, strikethrough, and task lists; equal reviewed HTML work across all three engines. Compare releasing each page with keeping every HTML result until the workload ends."),
     ]:
         subset = [r for r in rows if r["group"] == name]
@@ -179,6 +189,8 @@ def overview(data):
 
 def report(data):
     rows = data["rows"]
+    comparative = data["schema"] == 2
+    variant_count = len(rows)
     os_version = re.search(r"ProductVersion:\s*(\S+)", data["build"]["os"])[1]
     rust_version = data["build"]["rustc"].splitlines()[0].split()[1]
     lines = ["# Practical Markdown workflows: time and memory", "",
@@ -191,11 +203,17 @@ def report(data):
              "guide pages and documentation are verbatim snapshots of this project's real",
              "files. They cover concrete integration choices without claiming to represent",
              "the distribution of all Markdown content or customer traffic.", "",
-             "The secure preview lane compares fresh owned output with a retained renderer.",
-             "The metadata lane includes front matter and heading collection. Only the",
-             "trusted documentation HTML lane compares engines, with identical syntax flags",
-             "and reviewed complete output. It also measures immediate release versus",
-             "retaining every output until the end of the workload.", "",
+             *( ["All three lanes compare Ferromark, pulldown-cmark, and Comrak. Preview",
+                 "and metadata adapters include escaping, an explicit URL allowlist, heading",
+                 "IDs, callout rendering, and (for guides) borrowed raw front matter and",
+                 "owned heading metadata. Each engine parses Markdown once. Adapter work",
+                 "is inside both time and heap scopes; HTML and metadata are reviewed before",
+                 "timing. The documentation lane also compares both output lifetimes.", ""]
+                if comparative else ["The secure preview lane compares fresh owned output with a retained renderer.",
+                 "The metadata lane includes front matter and heading collection. Only the",
+                 "trusted documentation HTML lane compares engines, with identical syntax flags",
+                 "and reviewed complete output. It also measures immediate release versus",
+                 "retaining every output until the end of the workload.", ""]),
              "## Results", "", table(rows), "",
              "Peak heap includes the session and all retained scratch above a baseline that",
              "excludes loaded input and benchmark bookkeeping. Each memory observation",
@@ -222,8 +240,8 @@ def report(data):
               "- `corpus.json`: all exact input text, source paths/revisions, licenses, byte counts, and hashes.",
               "- `build.json`, `Cargo.lock`, and build logs: compiler, CPU flags, dependencies, source/binary hashes, and host.",
               "- `outputs.json.gz` and `admission.json`: original HTML, guide metadata, effective options, and output review.",
-              "- `windows.json.gz`: all 2,160 timed windows with elapsed nanoseconds, completed-workload counts, and output sizes.",
-              "- `warmups.json`: all 27 warmups; `memory.json.gz`: all 270 memory observations.",
+              f"- `windows.json.gz`: all {variant_count * 240:,} timed windows with elapsed nanoseconds, completed-workload counts, and output sizes.",
+              f"- `warmups.json`: all {variant_count * 3} warmups; `memory.json.gz`: all {variant_count * 30} memory observations.",
               "- `observations.json`: power, thermal, load, and process-CPU observations; `run.json`: protocol and completion times.",
               "- `checksums.json`: hashes of every evidence input; the publisher verifies them before generating tables.", "",
               f"Measured source commit: `{data['build']['source_revision']}`.", "",

@@ -9,14 +9,24 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-sys.path.insert(0, str(ROOT / "benchmarks/bun-comparison"))
+sys.path.append(str(ROOT / "benchmarks/bun-comparison"))
 from workload import workload_review
 
-VARIANTS = ["preview-fresh", "preview-reuse", "guide-metadata",
+LEGACY_VARIANTS = ["preview-fresh", "preview-reuse", "guide-metadata",
             "ferromark-stream", "pulldown-stream", "comrak-stream",
             "ferromark-retain", "pulldown-retain", "comrak-retain"]
+VARIANTS = ["preview-fresh", "preview-reuse", "preview-pulldown", "preview-comrak",
+            "guide-metadata", "guide-pulldown", "guide-comrak", *LEGACY_VARIANTS[3:]]
 PROTOCOL = {"rounds": 3, "windows": 80, "window_ms": 63, "warmup_ms": 3000,
-            "memory_observations": 10, "schema": 1}
+            "memory_observations": 10, "schema": 2}
+
+
+def variants_for(protocol):
+    if protocol == PROTOCOL:
+        return VARIANTS
+    if protocol == {**PROTOCOL, "schema": 1}:
+        return LEGACY_VARIANTS
+    raise ValueError("Publication protocol changed")
 
 
 def sha(path):
@@ -39,7 +49,7 @@ def source_hashes():
     paths += list((ROOT / "src").rglob("*.rs"))
     paths += list((ROOT / "crates/ferro-byte-search").rglob("*.rs"))
     paths += [ROOT / "crates/ferro-byte-search/Cargo.toml", ROOT / "benchmarks/bun-comparison/workload.py"]
-    paths += [p for p in HERE.rglob("*") if p.is_file() and p.suffix in (".rs", ".py", ".toml", ".lock", ".json") and "target" not in p.parts]
+    paths += [p for p in HERE.rglob("*") if p.is_file() and p.suffix in (".rs", ".py", ".toml", ".lock", ".json", ".go", ".cs", ".c", ".h", ".sum", ".csproj") and "target" not in p.parts]
     return {str(p.relative_to(ROOT)): sha(p) for p in sorted(set(paths))}
 
 
@@ -89,11 +99,12 @@ class Worker:
 
 
 def group(variant):
-    return "previews" if variant.startswith("preview-") else "guides" if variant == "guide-metadata" else "documentation"
+    return "previews" if variant.startswith("preview-") else "guides" if variant.startswith("guide-") else "documentation"
 
 
-def review(verification, corpus):
-    if set(verification) != set(VARIANTS):
+def review(verification, corpus, protocol=PROTOCOL):
+    variants = variants_for(protocol)
+    if set(verification) != set(variants):
         raise ValueError("Missing workflow variants")
     for variant, row in verification.items():
         if row["variant"] != variant or [d["id"] for d in row["outputs"]] != [d["id"] for d in corpus[group(variant)]]:
@@ -120,4 +131,21 @@ def review(verification, corpus):
         result = workload_review("gfm_overlap/" + document["id"], outputs, parsers=set(outputs))
         results.append({"id": document["id"], **result,
                         "html_sha256": {p: hashlib.sha256(h.encode()).hexdigest() for p, h in outputs.items()}})
+    if protocol["schema"] == 2:
+        for name, reference, others in (
+            ("previews", "preview-fresh", ("preview-pulldown", "preview-comrak")),
+            ("guides", "guide-metadata", ("guide-pulldown", "guide-comrak")),
+        ):
+            for index, document in enumerate(corpus[name]):
+                ref = verification[reference]["outputs"][index]
+                outputs = {"ferromark": ref["html"]}
+                for variant in others:
+                    row = verification[variant]["outputs"][index]
+                    if row["metadata"] != ref["metadata"]:
+                        raise ValueError(f"Complete metadata differs: {variant}/{document['id']}")
+                    outputs[variant.split("-")[1]] = row["html"]
+                result = workload_review("gfm_overlap/" + document["id"], outputs, parsers=set(outputs))
+                results.append({"id": name + "/" + document["id"], **result,
+                                "metadata_equivalent": True,
+                                "html_sha256": {p: hashlib.sha256(h.encode()).hexdigest() for p, h in outputs.items()}})
     return results

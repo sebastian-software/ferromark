@@ -6,6 +6,8 @@ use std::time::{Duration, Instant};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+mod adapters;
+
 #[cfg(feature = "heap")]
 mod heap;
 #[cfg(feature = "heap")]
@@ -39,7 +41,11 @@ impl Session {
             variant,
             "preview-fresh"
                 | "preview-reuse"
+                | "preview-pulldown"
+                | "preview-comrak"
                 | "guide-metadata"
+                | "guide-pulldown"
+                | "guide-comrak"
                 | "ferromark-stream"
                 | "ferromark-retain"
                 | "pulldown-stream"
@@ -57,9 +63,16 @@ impl Session {
         comrak.extension.strikethrough = true;
         comrak.extension.tasklist = true;
         comrak.render.r#unsafe = true;
-        let pulldown = pulldown_cmark::Options::ENABLE_TABLES
+        let mut pulldown = pulldown_cmark::Options::ENABLE_TABLES
             | pulldown_cmark::Options::ENABLE_STRIKETHROUGH
             | pulldown_cmark::Options::ENABLE_TASKLISTS;
+        if variant.starts_with("preview-") || variant.starts_with("guide-") {
+            // Application adapters enforce the explicit URL allowlist before
+            // rendering. Escape raw HTML while letting that policy decide URLs.
+            comrak.render.escape = true;
+            comrak.extension.alerts = true;
+            pulldown |= pulldown_cmark::Options::ENABLE_GFM;
+        }
         Self {
             variant: variant.to_owned(),
             ferro,
@@ -72,7 +85,7 @@ impl Session {
     fn documents<'a>(&self, corpus: &'a Corpus) -> &'a [Document] {
         if self.variant.starts_with("preview-") {
             &corpus.previews
-        } else if self.variant == "guide-metadata" {
+        } else if self.variant.starts_with("guide-") {
             &corpus.guides
         } else {
             &corpus.documentation
@@ -85,6 +98,10 @@ impl Session {
             ferromark::to_html(input)
         } else if self.variant == "preview-reuse" {
             self.renderer.as_mut().unwrap().render(input)
+        } else if self.variant == "preview-pulldown" {
+            adapters::pulldown(input, self.pulldown, false).html
+        } else if self.variant == "preview-comrak" {
+            adapters::comrak(input, &self.comrak, false).html
         } else if self.variant.starts_with("ferromark-") {
             ferromark::to_html_with_options(input, &self.ferro)
         } else if self.variant.starts_with("pulldown-") {
@@ -99,13 +116,22 @@ impl Session {
         }
     }
 
+    fn metadata<'a>(&self, input: &'a str) -> ferromark::ParseResult<'a> {
+        match self.variant.as_str() {
+            "guide-metadata" => ferromark::parse(input),
+            "guide-pulldown" => adapters::pulldown(input, self.pulldown, true),
+            "guide-comrak" => adapters::comrak(input, &self.comrak, true),
+            _ => panic!("not a metadata variant"),
+        }
+    }
+
     fn run(&mut self, corpus: &Corpus) -> usize {
         let retain = self.variant.ends_with("-retain");
         let mut kept = Vec::new();
         let mut bytes = 0;
         for document in self.documents(corpus) {
-            if self.variant == "guide-metadata" {
-                let result = ferromark::parse(black_box(&document.input));
+            if self.variant.starts_with("guide-") {
+                let result = self.metadata(black_box(&document.input));
                 bytes += result.html.len();
                 black_box(&result);
                 drop(result);
@@ -125,8 +151,8 @@ impl Session {
     fn verify(&mut self, corpus: &Corpus) -> Value {
         let mut outputs = Vec::new();
         for document in self.documents(corpus) {
-            let (html, metadata) = if self.variant == "guide-metadata" {
-                let result = ferromark::parse(&document.input);
+            let (html, metadata) = if self.variant.starts_with("guide-") {
+                let result = self.metadata(&document.input);
                 assert!(result.resource_limits.is_empty(), "{}", document.id);
                 assert!(result.front_matter.is_some());
                 assert!(!result.headings.is_empty());
@@ -141,7 +167,9 @@ impl Session {
                 )
             } else {
                 // Check the production resource report outside the measured HTML API.
-                if self.variant.starts_with("ferromark-") || self.variant.starts_with("preview-") {
+                if self.variant.starts_with("ferromark-")
+                    || matches!(self.variant.as_str(), "preview-fresh" | "preview-reuse")
+                {
                     let options = if self.variant.starts_with("preview-") {
                         ferromark::Options::default()
                     } else {
@@ -159,10 +187,21 @@ impl Session {
             };
             outputs.push(json!({"id": document.id, "html": html, "metadata": metadata}));
         }
+        let mut default_options = ferromark::Options::default();
+        default_options.front_matter = self.variant.starts_with("guide-");
+        let adapter = matches!(
+            self.variant.as_str(),
+            "preview-pulldown" | "preview-comrak" | "guide-pulldown" | "guide-comrak"
+        );
         json!({"variant": self.variant, "outputs": outputs,
         "effective_options": {
-            "ferromark": format!("{:?}", if self.variant.starts_with("preview-") || self.variant == "guide-metadata" { ferromark::Options::default() } else { self.ferro.clone() }),
-            "metadata_front_matter": self.variant == "guide-metadata",
+            "ferromark": format!("{:?}", if self.variant.starts_with("preview-") || self.variant.starts_with("guide-") { default_options } else { self.ferro.clone() }),
+            "metadata_front_matter": self.variant.starts_with("guide-"),
+            "application_adapter": adapter.then(|| json!({
+                "url_policy": "relative URLs or http/https/mailto/ftp/geo/irc/ircs/matrix/sms/tel/xmpp; all raw HTML escaped",
+                "heading_slugs": "Comrak Anchorizer via public events/heading hook; generated IDs and metadata must match corpus reference",
+                "callouts": true,
+            })),
             "comrak": format!("{:?}", self.comrak),
             "pulldown": format!("{:?}", self.pulldown),
             "owned_html": true,
@@ -225,5 +264,66 @@ fn main() {
         };
         writeln!(out, "{result}").unwrap();
         out.flush().unwrap();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn previews_escape_user_html_and_enforce_the_same_link_and_image_policy() {
+        let input = "<div onclick=\"bad()\">visible source</div>\n\nInline <script>bad()</script>.\n\n[x](javas&#99;ript:bad) ![alt](data:text/html,bad) [custom](custom:bad)\n\n[docs](https://example.org) [phone](tel:123) [relative](/docs)\n\n> [!NOTE]\n> Keep this callout.\n";
+        for variant in [
+            "preview-fresh",
+            "preview-reuse",
+            "preview-pulldown",
+            "preview-comrak",
+        ] {
+            let html = Session::new(variant).html(input);
+            for forbidden in [
+                "<div onclick=",
+                "<script>",
+                "href=\"javascript:",
+                "src=\"data:",
+                "href=\"custom:",
+            ] {
+                assert!(!html.contains(forbidden), "{variant}: {html}");
+            }
+            for required in [
+                "&lt;div",
+                "visible source",
+                "&lt;script&gt;",
+                "href=\"https://example.org\"",
+                "href=\"tel:123\"",
+                "href=\"/docs\"",
+                "markdown-alert-note",
+                "Keep this callout.",
+                "alt=\"alt\"",
+            ] {
+                assert!(html.contains(required), "{variant}: {html}");
+            }
+        }
+    }
+
+    #[test]
+    fn metadata_includes_raw_front_matter_plain_heading_text_and_working_duplicate_ids() {
+        let input = "---\ntitle: Example\n---\n# Title **bold**\n\n## Repeat\n\n## Repeat\n\n```md\n# Not a heading\n```\n";
+        let reference = ferromark::parse(input);
+        assert_eq!(reference.headings.len(), 3);
+        for variant in ["guide-metadata", "guide-pulldown", "guide-comrak"] {
+            let result = Session::new(variant).metadata(input);
+            assert_eq!(result.front_matter, Some("title: Example\n"), "{variant}");
+            assert_eq!(result.headings, reference.headings, "{variant}");
+            for heading in result.headings {
+                let id = heading.id.unwrap();
+                assert!(
+                    result
+                        .html
+                        .contains(&format!("<h{} id=\"{id}\">", heading.level)),
+                    "{variant}: {id}"
+                );
+            }
+        }
     }
 }

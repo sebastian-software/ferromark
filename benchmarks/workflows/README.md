@@ -26,8 +26,8 @@ their component examples are fenced code, not executed MDX.
 
 | Lane | Work and lifecycle | Compared variants |
 | --- | --- | --- |
-| Preview burst | All 12 comments, default untrusted rendering, owned HTML released after each | `to_html`; retained `Renderer::render` |
-| Guide metadata | All 3 pages, `parse()` defaults including front matter extraction, HTML and heading metadata consumed and released | Ferromark only |
+| Preview burst | All 12 comments, matched untrusted rendering with heading IDs and callouts, owned HTML released after each | Ferromark `to_html`; retained `Renderer::render`; pulldown-cmark + adapter; Comrak + adapter |
+| Guide metadata | All 3 pages, HTML plus raw front matter and heading metadata consumed and released | Ferromark `parse`; pulldown-cmark + adapter; Comrak + adapter |
 | Documentation HTML | All 12 files, fresh owned HTML per page, trusted CommonMark + tables + strikethrough + tasks | Ferromark; pulldown-cmark 0.13.4; Comrak 0.54.0 |
 
 The HTML collection has separate immediate-release and retain-all variants for
@@ -42,6 +42,43 @@ Bare autolinks, heading IDs, footnotes, and other extensions are disabled there.
 Ferromark requires double tildes for strikethrough; the normal behavior of the
 other engines remains unchanged. Output review detects differences on the
 actual corpus rather than silently pretending the grammars are identical.
+
+### Complete preview and metadata integrations
+
+The comparison uses Ferromark 0.9.0 at the archived source revision,
+pulldown-cmark 0.13.4, and Comrak 0.54.0. The four additional variants in
+protocol 2 complete the engine comparison on the **same frozen corpus** as
+the initial protocol 1 run. The original archive remains reproducible.
+
+[`src/adapters.rs`](src/adapters.rs) provides the application work that the
+other engines' HTML-only APIs do not provide in this configuration:
+
+- Escape all user HTML and accept relative URLs or the same explicit scheme
+  allowlist as Ferromark: HTTP(S), mailto, FTP, geo, IRC(S), matrix, SMS, tel,
+  and XMPP. Reject other absolute schemes for links and images. Parsed URL
+  destinations are checked after entity and ASCII whitespace normalization.
+- Generate heading IDs and render recognized callouts. pulldown-cmark's event
+  adapter buffers one heading at a time to generate its ID before HTML output.
+  Comrak uses its public heading hook. Both use Comrak's `Anchorizer`; the
+  generated IDs must match Ferromark on every input admitted to this corpus.
+- For guides, borrow the raw delimited front matter and return owned heading
+  level/text/ID records with the HTML. Comrak's AST is traversed to enforce the
+  URL policy; pulldown-cmark checks destinations in its event stream. Neither
+  adapter parses Markdown a second time or highlights fenced code.
+
+These adapters use public APIs. Their allocations, checks, parsing, HTML
+generation, and destruction are all included in measurement. The shared result
+shape uses Ferromark's public `ParseResult`/`Heading` data containers; the other
+engines do not call Ferromark's parser. Ferromark's resource-limit report must
+be empty; the adapters do not invent equivalent limit diagnostics for engines
+without that API. Metadata and reviewed HTML must agree across all engines.
+
+This measures these particular complete integrations, including adapter costs.
+It does not assert that all possible integrations have the same cost, that the
+engines' default security policies are identical, or that their dialects and
+heading-slug conventions agree outside the archived corpus. The unit tests
+exercise unsafe links/images, raw HTML, callouts, front matter, and repeated
+heading IDs before the complete corpus verification.
 
 `outputs.json.gz` stores original HTML, guide metadata, and effective options.
 Every document must perform comparable work under the existing workload
@@ -61,6 +98,7 @@ one codegen unit, and panic abort apply to both binaries.
 ```sh
 python3 -m unittest discover -s benchmarks/workflows -p 'test_*.py'
 cargo fmt --manifest-path benchmarks/workflows/Cargo.toml --check
+cargo test --manifest-path benchmarks/workflows/Cargo.toml --all-features --locked
 cargo clippy --manifest-path benchmarks/workflows/Cargo.toml --all-targets --all-features --locked -- -D warnings
 python3 benchmarks/workflows/prepare.py /private/tmp/workflow-build
 python3 benchmarks/workflows/run.py /private/tmp/workflow-build /private/tmp/workflow-verify --verify-only
@@ -108,7 +146,7 @@ scaling claim, or extrapolation from sequential heap peaks to retained builds.
 ## Evidence and publication
 
 The archive keeps inputs, dependency lock, build provenance/logs, all original
-outputs, admission decisions, 2,160 timing windows, warmups, 270 memory
+outputs, admission decisions, 3,120 timing windows, 39 warmups, 390 memory
 observations, host observations, completion metadata, and evidence checksums.
 `publish.py --check` recomputes medians and verifies the complete protocol,
 output byte counts, rotation order, corpus/source hashes, and memory balance.

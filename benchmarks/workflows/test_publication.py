@@ -39,7 +39,7 @@ class PublicationTests(unittest.TestCase):
 
     def test_recomputes_complete_measurements(self):
         rows = self.validate()
-        self.assertEqual(len(rows), 9)
+        self.assertEqual(len(rows), len(VARIANTS))
         self.assertEqual(rows[0]["median_ns"], 15_750_000)
         self.assertEqual(rows[0]["heap"]["peak_live_bytes"], 128)
 

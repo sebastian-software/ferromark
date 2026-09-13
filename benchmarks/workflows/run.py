@@ -42,7 +42,7 @@ def main():
     write_json(result / "admission.json", admission)
     if not all(row["comparable"] for row in admission):
         raise ValueError("Review all differing outputs before measuring; corpus cannot be silently filtered")
-    print(f"Admitted all {len(admission)} documentation files; previews and metadata verified", flush=True)
+    print(f"Admitted all {len(admission)} documents across previews, guides, and documentation; complete HTML and metadata verified", flush=True)
     if args.verify_only:
         return
     started = time.time()
