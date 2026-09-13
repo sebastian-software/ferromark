@@ -111,7 +111,12 @@ def load(folder):
     rows = summarize(corpus, outputs, read_json(folder / "windows.json.gz"), read_json(folder / "memory.json.gz"),
                      read_json(folder / "warmups.json"), run["protocol"])
     return {"schema": 1, "report": str((folder / "REPORT.md").relative_to(ROOT)),
-            "run": run, "build": build, "rows": rows, "admission": admission}
+            "run": run, "build": build, "rows": rows, "admission": admission,
+            "corpus_summary": {name: {"documents": len(corpus[name]),
+                "input_bytes": sum(len(d["input"].encode()) for d in corpus[name]),
+                "min_bytes": min(len(d["input"].encode()) for d in corpus[name]),
+                "max_bytes": max(len(d["input"].encode()) for d in corpus[name])}
+                for name in ("previews", "guides", "documentation")}}
 
 
 def table(rows):
@@ -119,6 +124,23 @@ def table(rows):
              "| --- | ---: | ---: | ---: |"]
     for row in rows:
         lines.append(f"| {row['label']} | {row['median_ns'] / 1000:.1f} µs | {row['heap']['peak_live_bytes'] / 1024:.1f} KiB | {row['heap']['requested_bytes'] / 1024:.1f} KiB |")
+    return "\n".join(lines)
+
+
+def decisions(data):
+    rows = {row["variant"]: row for row in data["rows"]}
+    fresh, reuse = rows["preview-fresh"], rows["preview-reuse"]
+    lines = []
+    if reuse["median_ns"] < fresh["median_ns"] and reuse["heap"]["requested_bytes"] < fresh["heap"]["requested_bytes"]:
+        lines.append("Reusing `Renderer` reduced time and allocation traffic for these previews.")
+    if reuse["heap"]["peak_live_bytes"] > fresh["heap"]["peak_live_bytes"]:
+        lines.append("Its peak heap was higher: retained scratch remains part of the worker's memory budget.")
+    lines += ["", "For the documentation collection, compare each engine's two output lifetimes",
+              "before using a memory figure to size your pipeline. Keeping completed HTML",
+              "in memory is application work included in the retained-output rows.", "",
+              "The metadata row measures a complete HTML-and-metadata operation; it does",
+              "not isolate the incremental cost of collecting headings or represent an",
+              "end-to-end site build."]
     return "\n".join(lines)
 
 
@@ -138,6 +160,7 @@ def overview(data):
         example = subset[0]
         lines += [f"### {title}", "", explanation, "",
                   f"{example['documents']} documents · {example['input_bytes']:,} input bytes · {example['output_bytes']:,} HTML bytes (Ferromark).", "", table(subset), ""]
+    lines += [decisions(data), ""]
     os_version = re.search(r"ProductVersion:\s*(\S+)", data["build"]["os"])[1]
     rust_version = data["build"]["rustc"].splitlines()[0].split()[1]
     lines += ["¹ Peak simultaneously live **requested heap**, including retained parser scratch",
@@ -156,8 +179,13 @@ def overview(data):
 
 def report(data):
     rows = data["rows"]
+    os_version = re.search(r"ProductVersion:\s*(\S+)", data["build"]["os"])[1]
+    rust_version = data["build"]["rustc"].splitlines()[0].split()[1]
     lines = ["# Practical Markdown workflows: time and memory", "",
              "Generated from the archived raw observations by `benchmarks/workflows/publish.py`.", "",
+             f"Measured on {data['build']['cpu']} with {data['build']['ram_bytes'] / 2**30:g} GiB of installed RAM, macOS {os_version},",
+             f"Rust {rust_version}, `-C target-cpu=generic`, and the system allocator. Installed",
+             "RAM describes the host; the tables measure requested heap, not process RAM.", "",
              "## Questions and scope", "",
              "The corpus was frozen before timing. Preview comments are authored examples;",
              "guide pages and documentation are verbatim snapshots of this project's real",
@@ -216,12 +244,21 @@ def report(data):
               "releasing pages and retaining every rendered page have different memory",
               "requirements. Do not extrapolate a per-page peak by multiplication, treat",
               "allocation volume as peak memory, or compare rows that deliver different",
-              "outputs or trust policies as a speed ranking.", "",
-              "The documents come from one project; short comments are hand-authored.",
+             "outputs or trust policies as a speed ranking.", "",
+             "The documents come from one project; short comments are hand-authored.",
+              "This was an interactive workstation: desktop, indexing, and backup activity",
+              "are visible in the host observations. Round variation is reported above;",
+              "the process was not CPU-pinned and the host was not an isolated benchmark machine.",
               "All measurements use one Apple Silicon host on AC power, system allocation,",
               "and no PGO. They do not establish x86-64 performance or production p95/p99.",
               "Historical shared-mimalloc comparisons remain separate evidence.", ""]
-    return "\n".join(lines)
+    corpus_lines = ["## Corpus and integration decisions", "",
+                   "| Workload | Documents | Total input | Smallest–largest file |",
+                   "| --- | ---: | ---: | ---: |"]
+    for name, item in data["corpus_summary"].items():
+        corpus_lines.append(f"| {name} | {item['documents']} | {item['input_bytes']:,} bytes | {item['min_bytes']:,}–{item['max_bytes']:,} bytes |")
+    corpus_lines += ["", decisions(data), ""]
+    return "\n".join(lines).replace("## Results\n", "\n".join(corpus_lines) + "\n## Results\n", 1)
 
 
 def main():
