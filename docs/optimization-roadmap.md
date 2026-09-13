@@ -5,6 +5,15 @@ shown to improve this fork. OX-Content already contains SIMD nibble classifiers,
 SWAR line scans, optimized code-span scanning, arena sizing, and an autolink
 first-byte index; importing those same ideas again would not be a new port.
 
+## Measured priority after the initial comparison
+
+The [main-versus-v2 benchmark](reports/2026-09-13-current-ferromark/README.md)
+puts nested lists, GFM tables, and reference-heavy documents ahead of the
+speculative candidates below for investigation. Current Ferromark main is a
+donor candidate for those workloads. The CommonMark mix is roughly tied, while
+v2 already leads the code and escaping diagnostics. Profile the measured gaps
+before deciding which implementation detail to transplant.
+
 ## 1. Combine optional inline marker searches
 
 Donor: [Ferroni's RegSet candidate scanner](../../ferroni/src/regset.rs), especially

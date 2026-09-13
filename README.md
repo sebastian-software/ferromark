@@ -58,6 +58,11 @@ pipe scans, rendering, headings, and sanitized URLs. Run individual suites with
 The [optimization roadmap](docs/optimization-roadmap.md) records candidates for
 later measured ports from the Ferramenta projects. No such port is included yet.
 
+The [current Ferromark comparison](docs/reports/2026-09-13-current-ferromark/README.md)
+measures the initial core against pinned Ferromark main with fresh and reused
+lifecycles. It includes the reproducible harness, frozen inputs, output checks,
+and compressed raw samples.
+
 The source is MIT licensed; the original copyright notice is preserved in
 [LICENSE](LICENSE). CommonMark and GFM specification fixtures carry their own
 [CC-BY-SA attribution](crates/ferromark_renderer/tests/spec_fixtures/README.md).

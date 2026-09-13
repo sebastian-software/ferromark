@@ -1,0 +1,974 @@
+[
+  {
+    "group": "tiny",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 520.4271550288632,
+    "v2_ns_per_document": 525.2724394890183,
+    "main_over_v2_median": 0.9897822199810886,
+    "main_over_v2_min": 0.9701827604496368,
+    "main_over_v2_max": 1.023451302277327,
+    "pairs": 9,
+    "round_medians": [
+      1.02290273647087,
+      0.9880250626380965,
+      0.9848631888418972
+    ]
+  },
+  {
+    "group": "tiny",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 224.49520520065127,
+    "v2_ns_per_document": 221.96716367553745,
+    "main_over_v2_median": 1.0113605903525116,
+    "main_over_v2_min": 0.9959039755546594,
+    "main_over_v2_max": 1.014338804166514,
+    "pairs": 9,
+    "round_medians": [
+      1.0026260930509192,
+      1.0142112993268153,
+      1.0132426629365114
+    ]
+  },
+  {
+    "group": "tiny",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 186.5774931340551,
+    "v2_ns_per_document": 145.36584633155545,
+    "main_over_v2_median": 1.2821471869844236,
+    "main_over_v2_min": 1.2710537153660357,
+    "main_over_v2_max": 1.2918276555191255,
+    "pairs": 9,
+    "round_medians": [
+      1.2809892664663804,
+      1.2764909410312162,
+      1.2853720245796794
+    ]
+  },
+  {
+    "group": "short-authored-prose",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 1560.2813539587492,
+    "v2_ns_per_document": 1076.6357085438676,
+    "main_over_v2_median": 1.453437095625557,
+    "main_over_v2_min": 1.4233956563316024,
+    "main_over_v2_max": 1.458247615933702,
+    "pairs": 9,
+    "round_medians": [
+      1.45727532487575,
+      1.4395301937512834,
+      1.453681718801428
+    ]
+  },
+  {
+    "group": "short-authored-prose",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 931.1400541104051,
+    "v2_ns_per_document": 728.4666621348664,
+    "main_over_v2_median": 1.2811611684427404,
+    "main_over_v2_min": 1.2671095644069967,
+    "main_over_v2_max": 1.3022351454501195,
+    "pairs": 9,
+    "round_medians": [
+      1.2811611684427404,
+      1.2769883694340691,
+      1.2896162142821948
+    ]
+  },
+  {
+    "group": "short-authored-prose",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 819.7156359265734,
+    "v2_ns_per_document": 695.1781212930011,
+    "main_over_v2_median": 1.1833481826126417,
+    "main_over_v2_min": 1.1564912324606094,
+    "main_over_v2_max": 1.191285212366744,
+    "pairs": 9,
+    "round_medians": [
+      1.1703784713535326,
+      1.1770163053103715,
+      1.1901321942554035
+    ]
+  },
+  {
+    "group": "plain-text-10k",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 9093.023255813954,
+    "v2_ns_per_document": 5936.883544303798,
+    "main_over_v2_median": 1.5297168270388788,
+    "main_over_v2_min": 1.4791326322439242,
+    "main_over_v2_max": 1.5465202954330861,
+    "pairs": 9,
+    "round_medians": [
+      1.5356702637677975,
+      1.5280528239501556,
+      1.536969240892897
+    ]
+  },
+  {
+    "group": "plain-text-10k",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 8817.062147556391,
+    "v2_ns_per_document": 5559.485411729858,
+    "main_over_v2_median": 1.584351673485249,
+    "main_over_v2_min": 1.5467785541263814,
+    "main_over_v2_max": 1.5991554666776537,
+    "pairs": 9,
+    "round_medians": [
+      1.5938964233626258,
+      1.584351673485249,
+      1.5832620779114186
+    ]
+  },
+  {
+    "group": "plain-text-10k",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 8436.525854316547,
+    "v2_ns_per_document": 5476.161858974359,
+    "main_over_v2_median": 1.5430717790121828,
+    "main_over_v2_min": 1.5332281070775415,
+    "main_over_v2_max": 1.5524620662436677,
+    "pairs": 9,
+    "round_medians": [
+      1.536125005702924,
+      1.543709790713007,
+      1.545719620083164
+    ]
+  },
+  {
+    "group": "link-heavy",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 46067.095588235294,
+    "v2_ns_per_document": 43238.542045454546,
+    "main_over_v2_median": 1.0638237461332003,
+    "main_over_v2_min": 1.0588058785513983,
+    "main_over_v2_max": 1.0725593284967079,
+    "pairs": 9,
+    "round_medians": [
+      1.0636180869923835,
+      1.0660676591992457,
+      1.0638237461332003
+    ]
+  },
+  {
+    "group": "link-heavy",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 45441.55649038462,
+    "v2_ns_per_document": 42435.337611607145,
+    "main_over_v2_median": 1.063673971205416,
+    "main_over_v2_min": 1.0515092438601057,
+    "main_over_v2_max": 1.0720335866688289,
+    "pairs": 9,
+    "round_medians": [
+      1.0557880031087208,
+      1.0714784526038716,
+      1.0606326350138349
+    ]
+  },
+  {
+    "group": "link-heavy",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 44763.31544811321,
+    "v2_ns_per_document": 42548.87444196428,
+    "main_over_v2_median": 1.0488191482536868,
+    "main_over_v2_min": 1.0252873238743068,
+    "main_over_v2_max": 1.0657998108407127,
+    "pairs": 9,
+    "round_medians": [
+      1.0488191482536868,
+      1.0404700118816712,
+      1.0640303108278324
+    ]
+  },
+  {
+    "group": "nested-lists",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 83217.9859913793,
+    "v2_ns_per_document": 131105.97569444444,
+    "main_over_v2_median": 0.6328613059751756,
+    "main_over_v2_min": 0.6275997783648926,
+    "main_over_v2_max": 0.6393584077575772,
+    "pairs": 9,
+    "round_medians": [
+      0.6328297138817088,
+      0.6328613059751756,
+      0.6347383141812477
+    ]
+  },
+  {
+    "group": "nested-lists",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 81607.66810344828,
+    "v2_ns_per_document": 130568.21527777778,
+    "main_over_v2_median": 0.6286329158761667,
+    "main_over_v2_min": 0.6204620029994267,
+    "main_over_v2_max": 0.6362146490443865,
+    "pairs": 9,
+    "round_medians": [
+      0.6328425923599729,
+      0.6222132569865197,
+      0.6264548302406252
+    ]
+  },
+  {
+    "group": "nested-lists",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 81087.41918103448,
+    "v2_ns_per_document": 131108.57986111112,
+    "main_over_v2_median": 0.6181202280052531,
+    "main_over_v2_min": 0.6104610604538865,
+    "main_over_v2_max": 0.6257868790056298,
+    "pairs": 9,
+    "round_medians": [
+      0.618786415058447,
+      0.6175370964446361,
+      0.6181202280052531
+    ]
+  },
+  {
+    "group": "fenced-code",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 30068.309294871793,
+    "v2_ns_per_document": 19482.685433884297,
+    "main_over_v2_median": 1.5449665254656921,
+    "main_over_v2_min": 1.52357457906003,
+    "main_over_v2_max": 1.5675164700252024,
+    "pairs": 9,
+    "round_medians": [
+      1.5429346965695012,
+      1.5460908857714117,
+      1.5449665254656921
+    ]
+  },
+  {
+    "group": "fenced-code",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 29362.3046875,
+    "v2_ns_per_document": 19113.874237804877,
+    "main_over_v2_median": 1.539221449173734,
+    "main_over_v2_min": 1.4991747099999304,
+    "main_over_v2_max": 1.5428458999522399,
+    "pairs": 9,
+    "round_medians": [
+      1.5398027513404324,
+      1.5373660336086812,
+      1.540011057577089
+    ]
+  },
+  {
+    "group": "fenced-code",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 28777.471036585364,
+    "v2_ns_per_document": 19098.693851626016,
+    "main_over_v2_median": 1.5073406006314094,
+    "main_over_v2_min": 1.492712606733279,
+    "main_over_v2_max": 1.5150071413127888,
+    "pairs": 9,
+    "round_medians": [
+      1.5073406006314094,
+      1.5031723923437539,
+      1.5118075777566382
+    ]
+  },
+  {
+    "group": "escape-heavy",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 60534.989583333336,
+    "v2_ns_per_document": 26551.176264044945,
+    "main_over_v2_median": 2.283967634447515,
+    "main_over_v2_min": 2.2450438053735677,
+    "main_over_v2_max": 2.3105417725015167,
+    "pairs": 9,
+    "round_medians": [
+      2.2859099766949296,
+      2.284653881160611,
+      2.2549801849405546
+    ]
+  },
+  {
+    "group": "escape-heavy",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 59770.76796875,
+    "v2_ns_per_document": 25959.421016483517,
+    "main_over_v2_median": 2.2915370047847268,
+    "main_over_v2_min": 2.2733786668269107,
+    "main_over_v2_max": 2.323041811570743,
+    "pairs": 9,
+    "round_medians": [
+      2.3175477208710995,
+      2.302469224209477,
+      2.2800486211067046
+    ]
+  },
+  {
+    "group": "escape-heavy",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 59603.8734375,
+    "v2_ns_per_document": 26120.558333333334,
+    "main_over_v2_median": 2.286452747443029,
+    "main_over_v2_min": 2.058571102267162,
+    "main_over_v2_max": 2.3099328324527377,
+    "pairs": 9,
+    "round_medians": [
+      2.3041900200222347,
+      2.2890311079686576,
+      2.2778244674453423
+    ]
+  },
+  {
+    "group": "gfm-task-autolink",
+    "mode": "fresh",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 1275.7037540805222,
+    "v2_ns_per_document": 1192.7832061068702,
+    "main_over_v2_median": 1.0640670344222767,
+    "main_over_v2_min": 1.0528022664143764,
+    "main_over_v2_max": 1.0870955165598586,
+    "pairs": 9,
+    "round_medians": [
+      1.0640670344222767,
+      1.061337392725242,
+      1.0812271261567667
+    ]
+  },
+  {
+    "group": "gfm-task-autolink",
+    "mode": "owned",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 885.4461772761617,
+    "v2_ns_per_document": 831.5670450514367,
+    "main_over_v2_median": 1.0623921300559276,
+    "main_over_v2_min": 1.0468159354534798,
+    "main_over_v2_max": 1.0714860725047781,
+    "pairs": 9,
+    "round_medians": [
+      1.0623921300559276,
+      1.0708643577360075,
+      1.0611426731844367
+    ]
+  },
+  {
+    "group": "gfm-task-autolink",
+    "mode": "reuse",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 735.8679378531074,
+    "v2_ns_per_document": 746.0912635264162,
+    "main_over_v2_median": 0.9866267967992453,
+    "main_over_v2_min": 0.9822644440424936,
+    "main_over_v2_max": 0.9912674128621702,
+    "pairs": 9,
+    "round_medians": [
+      0.98798775841286,
+      0.9873884699604341,
+      0.9855977192850849
+    ]
+  },
+  {
+    "group": "reference-heavy",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 86799.10714285714,
+    "v2_ns_per_document": 98168.18489583333,
+    "main_over_v2_median": 0.8847909191814427,
+    "main_over_v2_min": 0.8774734228374417,
+    "main_over_v2_max": 0.8886380210172549,
+    "pairs": 9,
+    "round_medians": [
+      0.8885768237125719,
+      0.8812840060303718,
+      0.8834441546479754
+    ]
+  },
+  {
+    "group": "reference-heavy",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 85622.62834821429,
+    "v2_ns_per_document": 97070.0525,
+    "main_over_v2_median": 0.8778921325933039,
+    "main_over_v2_min": 0.8738846328233019,
+    "main_over_v2_max": 0.8909553264367579,
+    "pairs": 9,
+    "round_medians": [
+      0.8759583767305016,
+      0.8820704856239188,
+      0.8772596691555313
+    ]
+  },
+  {
+    "group": "reference-heavy",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 84952.80022321429,
+    "v2_ns_per_document": 97677.78776041667,
+    "main_over_v2_median": 0.8654404716191952,
+    "main_over_v2_min": 0.8527172198592864,
+    "main_over_v2_max": 0.887062878874711,
+    "pairs": 9,
+    "round_medians": [
+      0.8624773357770272,
+      0.8642036884714722,
+      0.8717691161467209
+    ]
+  },
+  {
+    "group": "commonmark-5k",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 18648.024057539682,
+    "v2_ns_per_document": 16408.808566433567,
+    "main_over_v2_median": 1.1398989893797629,
+    "main_over_v2_min": 1.1207085315496554,
+    "main_over_v2_max": 1.1674318135116126,
+    "pairs": 9,
+    "round_medians": [
+      1.1529010176147831,
+      1.1474857455446519,
+      1.121269676596814
+    ]
+  },
+  {
+    "group": "commonmark-5k",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 16866.868929856115,
+    "v2_ns_per_document": 15836.597339527027,
+    "main_over_v2_median": 1.06486793402039,
+    "main_over_v2_min": 1.055187811207471,
+    "main_over_v2_max": 1.085538631420018,
+    "pairs": 9,
+    "round_medians": [
+      1.0627860626719232,
+      1.0661945130290629,
+      1.06486793402039
+    ]
+  },
+  {
+    "group": "commonmark-5k",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 16208.611637931035,
+    "v2_ns_per_document": 15801.742449664429,
+    "main_over_v2_median": 1.0250238977365547,
+    "main_over_v2_min": 1.0117573004933738,
+    "main_over_v2_max": 1.0306645760912891,
+    "pairs": 9,
+    "round_medians": [
+      1.024685278308627,
+      1.0227473080969918,
+      1.0251721344076694
+    ]
+  },
+  {
+    "group": "commonmark-20k",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 67153.75714285714,
+    "v2_ns_per_document": 63597.2339527027,
+    "main_over_v2_median": 1.0538273020407927,
+    "main_over_v2_min": 1.0334885797001334,
+    "main_over_v2_max": 1.0655653375925584,
+    "pairs": 9,
+    "round_medians": [
+      1.049884197977469,
+      1.0553541112004923,
+      1.0538587276835931
+    ]
+  },
+  {
+    "group": "commonmark-20k",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 64283.18581081081,
+    "v2_ns_per_document": 62956.27713815789,
+    "main_over_v2_median": 1.0271203860064801,
+    "main_over_v2_min": 1.0143405730626818,
+    "main_over_v2_max": 1.0476253678063037,
+    "pairs": 9,
+    "round_medians": [
+      1.0400033509814852,
+      1.0271203860064801,
+      1.0164367486324062
+    ]
+  },
+  {
+    "group": "commonmark-20k",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 62925.78125,
+    "v2_ns_per_document": 62992.42763157895,
+    "main_over_v2_median": 1.000476760278623,
+    "main_over_v2_min": 0.9910818460739274,
+    "main_over_v2_max": 1.0207424008537027,
+    "pairs": 9,
+    "round_medians": [
+      1.0105115791780703,
+      1.000476760278623,
+      1.0003298573213228
+    ]
+  },
+  {
+    "group": "commonmark-50k",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 163270.225,
+    "v2_ns_per_document": 153887.2890625,
+    "main_over_v2_median": 1.0657891378060877,
+    "main_over_v2_min": 1.0198937284648029,
+    "main_over_v2_max": 1.072420263184059,
+    "pairs": 9,
+    "round_medians": [
+      1.062281564318543,
+      1.0583463996638909,
+      1.0681463968854734
+    ]
+  },
+  {
+    "group": "commonmark-50k",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 160456.85833333334,
+    "v2_ns_per_document": 153156.818359375,
+    "main_over_v2_median": 1.0439599079831858,
+    "main_over_v2_min": 1.0338414166548344,
+    "main_over_v2_max": 1.0687365959494524,
+    "pairs": 9,
+    "round_medians": [
+      1.0422509491728584,
+      1.0523374788730198,
+      1.0439599079831858
+    ]
+  },
+  {
+    "group": "commonmark-50k",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 156437.32708333334,
+    "v2_ns_per_document": 153146.484375,
+    "main_over_v2_median": 1.023097378344025,
+    "main_over_v2_min": 1.01727797287064,
+    "main_over_v2_max": 1.0305492969015193,
+    "pairs": 9,
+    "round_medians": [
+      1.0205492472075552,
+      1.023097378344025,
+      1.030158230049381
+    ]
+  },
+  {
+    "group": "tables-plain",
+    "mode": "fresh",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 25629.047554347828,
+    "v2_ns_per_document": 34875.440257352944,
+    "main_over_v2_median": 0.7345646607850113,
+    "main_over_v2_min": 0.7281515260523952,
+    "main_over_v2_max": 0.7426992405754392,
+    "pairs": 9,
+    "round_medians": [
+      0.7345646607850113,
+      0.7417000582802649,
+      0.7343291834952395
+    ]
+  },
+  {
+    "group": "tables-plain",
+    "mode": "owned",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 24751.98717105263,
+    "v2_ns_per_document": 34728.36259191176,
+    "main_over_v2_median": 0.714723864145892,
+    "main_over_v2_min": 0.7047042137641526,
+    "main_over_v2_max": 0.7220702348056103,
+    "pairs": 9,
+    "round_medians": [
+      0.7151389806840516,
+      0.7120877603175356,
+      0.71257056292491
+    ]
+  },
+  {
+    "group": "tables-plain",
+    "mode": "reuse",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 24476.969401041668,
+    "v2_ns_per_document": 34602.61580882353,
+    "main_over_v2_median": 0.7056920082083626,
+    "main_over_v2_min": 0.6988098097616067,
+    "main_over_v2_max": 0.7268111851717173,
+    "pairs": 9,
+    "round_medians": [
+      0.7106491780649604,
+      0.7056920082083626,
+      0.7054703179678582
+    ]
+  },
+  {
+    "group": "tables-commonmark-inline",
+    "mode": "fresh",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 32801.305555555555,
+    "v2_ns_per_document": 41326.84539473684,
+    "main_over_v2_median": 0.793863846647229,
+    "main_over_v2_min": 0.7893062949554616,
+    "main_over_v2_max": 0.7985950614323054,
+    "pairs": 9,
+    "round_medians": [
+      0.7938805181209436,
+      0.7937608732609788,
+      0.793863846647229
+    ]
+  },
+  {
+    "group": "tables-commonmark-inline",
+    "mode": "owned",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 31040.021792763157,
+    "v2_ns_per_document": 40445.60452586207,
+    "main_over_v2_median": 0.76718320817608,
+    "main_over_v2_min": 0.7616243229218509,
+    "main_over_v2_max": 0.7752880648663399,
+    "pairs": 9,
+    "round_medians": [
+      0.76718320817608,
+      0.7671781487522366,
+      0.7680686699392507
+    ]
+  },
+  {
+    "group": "tables-commonmark-inline",
+    "mode": "reuse",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 30835.582386363636,
+    "v2_ns_per_document": 40331.65625,
+    "main_over_v2_median": 0.7591593512697415,
+    "main_over_v2_min": 0.7511015329833235,
+    "main_over_v2_max": 0.7657594641139245,
+    "pairs": 9,
+    "round_medians": [
+      0.7536345907350492,
+      0.7591504931846473,
+      0.7605539198403405
+    ]
+  },
+  {
+    "group": "tables-links",
+    "mode": "fresh",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 41450.68092105263,
+    "v2_ns_per_document": 47309.140625,
+    "main_over_v2_median": 0.8750814394484255,
+    "main_over_v2_min": 0.8607600976861496,
+    "main_over_v2_max": 0.884359212833133,
+    "pairs": 9,
+    "round_medians": [
+      0.8704265694139934,
+      0.8750814394484255,
+      0.8775294749284609
+    ]
+  },
+  {
+    "group": "tables-links",
+    "mode": "owned",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 39548.502604166664,
+    "v2_ns_per_document": 47002.083125,
+    "main_over_v2_median": 0.8391531786605486,
+    "main_over_v2_min": 0.8336631378215504,
+    "main_over_v2_max": 0.8534372487481822,
+    "pairs": 9,
+    "round_medians": [
+      0.836302896355207,
+      0.841474668120151,
+      0.836276726117941
+    ]
+  },
+  {
+    "group": "tables-links",
+    "mode": "reuse",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": true,
+    "main_ns_per_document": 38475.28176229508,
+    "v2_ns_per_document": 45746.870192307695,
+    "main_over_v2_median": 0.8418419959200378,
+    "main_over_v2_min": 0.8349372413694447,
+    "main_over_v2_max": 0.846791790117728,
+    "pairs": 9,
+    "round_medians": [
+      0.840666829124719,
+      0.8418419959200378,
+      0.8457924148061967
+    ]
+  },
+  {
+    "group": "real-readme",
+    "mode": "fresh",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": false,
+    "main_ns_per_document": 104668.81793478261,
+    "v2_ns_per_document": 89899.0636574074,
+    "main_over_v2_median": 1.161242039054252,
+    "main_over_v2_min": 1.1286046858391834,
+    "main_over_v2_max": 1.2059218067909545,
+    "pairs": 9,
+    "round_medians": [
+      1.153028846094743,
+      1.161242039054252,
+      1.1740652413568071
+    ]
+  },
+  {
+    "group": "real-readme",
+    "mode": "owned",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": false,
+    "main_ns_per_document": 102265.22961956522,
+    "v2_ns_per_document": 90297.97716346153,
+    "main_over_v2_median": 1.133645278230137,
+    "main_over_v2_min": 1.104464135841692,
+    "main_over_v2_max": 1.2502194482999962,
+    "pairs": 9,
+    "round_medians": [
+      1.1662978500588699,
+      1.1454051369362461,
+      1.1310504773633263
+    ]
+  },
+  {
+    "group": "real-readme",
+    "mode": "reuse",
+    "profile": "gfm",
+    "documents_per_iteration": 1,
+    "comparable_output": false,
+    "main_ns_per_document": 96082.03125,
+    "v2_ns_per_document": 89983.26504629629,
+    "main_over_v2_median": 1.067776671590722,
+    "main_over_v2_min": 1.0148913802748718,
+    "main_over_v2_max": 1.095818947152677,
+    "pairs": 9,
+    "round_medians": [
+      1.0884838465401274,
+      1.0456716074421313,
+      1.067776671590722
+    ]
+  },
+  {
+    "group": "rotating-commonmark",
+    "mode": "fresh",
+    "profile": "commonmark",
+    "documents_per_iteration": 11,
+    "comparable_output": true,
+    "main_ns_per_document": 52595.4784090909,
+    "v2_ns_per_document": 51773.224431818184,
+    "main_over_v2_median": 1.017042024769712,
+    "main_over_v2_min": 1.0115837789406579,
+    "main_over_v2_max": 1.0312016867704574,
+    "pairs": 9,
+    "round_medians": [
+      1.027170843861307,
+      1.0161395865335556,
+      1.015225424239018
+    ]
+  },
+  {
+    "group": "rotating-commonmark",
+    "mode": "owned",
+    "profile": "commonmark",
+    "documents_per_iteration": 11,
+    "comparable_output": true,
+    "main_ns_per_document": 51053.2909090909,
+    "v2_ns_per_document": 50864.32272727273,
+    "main_over_v2_median": 1.008006125187731,
+    "main_over_v2_min": 0.9921901030784714,
+    "main_over_v2_max": 1.020776741529225,
+    "pairs": 9,
+    "round_medians": [
+      1.0103474724320956,
+      1.008006125187731,
+      1.0038712417451463
+    ]
+  },
+  {
+    "group": "rotating-commonmark",
+    "mode": "reuse",
+    "profile": "commonmark",
+    "documents_per_iteration": 11,
+    "comparable_output": true,
+    "main_ns_per_document": 50160.061931818185,
+    "v2_ns_per_document": 50767.826704545456,
+    "main_over_v2_median": 0.9893153854212957,
+    "main_over_v2_min": 0.9799139599411111,
+    "main_over_v2_max": 0.9981988825963753,
+    "pairs": 9,
+    "round_medians": [
+      0.9892131879663735,
+      0.9927876637569824,
+      0.9938729853314017
+    ]
+  },
+  {
+    "group": "rotating-gfm",
+    "mode": "fresh",
+    "profile": "gfm",
+    "documents_per_iteration": 4,
+    "comparable_output": true,
+    "main_ns_per_document": 25711.9140625,
+    "v2_ns_per_document": 31553.796875,
+    "main_over_v2_median": 0.8125389604806303,
+    "main_over_v2_min": 0.8088152160663503,
+    "main_over_v2_max": 0.8257883487724417,
+    "pairs": 9,
+    "round_medians": [
+      0.8198739028498127,
+      0.8118000553240816,
+      0.8125389604806303
+    ]
+  },
+  {
+    "group": "rotating-gfm",
+    "mode": "owned",
+    "profile": "gfm",
+    "documents_per_iteration": 4,
+    "comparable_output": true,
+    "main_ns_per_document": 24434.1904296875,
+    "v2_ns_per_document": 30977.676398026317,
+    "main_over_v2_median": 0.7883830215717854,
+    "main_over_v2_min": 0.7807629231308402,
+    "main_over_v2_max": 0.7940492125391823,
+    "pairs": 9,
+    "round_medians": [
+      0.7924690836651139,
+      0.7876583744401513,
+      0.7860527049991123
+    ]
+  },
+  {
+    "group": "rotating-gfm",
+    "mode": "reuse",
+    "profile": "gfm",
+    "documents_per_iteration": 4,
+    "comparable_output": true,
+    "main_ns_per_document": 23765.46875,
+    "v2_ns_per_document": 30589.632421875,
+    "main_over_v2_median": 0.7743389636187236,
+    "main_over_v2_min": 0.7655762151385725,
+    "main_over_v2_max": 0.7862922789157383,
+    "pairs": 9,
+    "round_medians": [
+      0.779158673410293,
+      0.7743389636187236,
+      0.7716013530318958
+    ]
+  }
+]

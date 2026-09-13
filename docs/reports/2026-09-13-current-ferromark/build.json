@@ -1,0 +1,45 @@
+{
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "rustflags": "-C target-cpu=generic",
+  "worker_sha256": "1b78827f6d5b864e191fd5d795650c49703fff256bc6542937c6bd77273ea91d",
+  "engines": {
+    "main": {
+      "revision": "a6e9906f7b4a01355d336f209fd12534796419df",
+      "source": "/private/tmp/ferromark-v2-comparison/main",
+      "source_manifest_sha256": "65d8b31e162aa240f843e081b04782a7cd3b933904f16e0dc29d74d2dd725b97",
+      "source_lock_sha256": "b2afe738de90653750c2487dfeb7bcf5ce7eee926d88a56fd2da07e50462f672",
+      "binary": "/private/tmp/ferromark-v2-comparison/build-final/main/target/release/comparison-worker",
+      "binary_sha256": "9a0b9bfe42681d02417bf51ddccaa65d3b86f47bdc39bbe18a8ade3a62f75d5c",
+      "lock_sha256": "cf1e82ccc24dd93e89d456c042798cb719d4043363af78f094ea66f9a9f367ef",
+      "retained_registry_packages": 5,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ]
+    },
+    "v2": {
+      "revision": "d1481ca7687e94d30e56f473d3044a175dc6c9a6",
+      "source": "/private/tmp/ferromark-v2-comparison/fork",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "binary": "/private/tmp/ferromark-v2-comparison/build-final/v2/target/release/comparison-worker",
+      "binary_sha256": "aa0264fe1ef4feb3780e27a73959b9d25797d154d9a5e5679d1293ef32241ab9",
+      "lock_sha256": "d8a6701fc0ae486fa2f300a3621804a61c102c50bd4c399aba961435c11a6402",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline",
+        "--features",
+        "v2"
+      ]
+    }
+  }
+}
