@@ -2,10 +2,14 @@ import copy
 import unittest
 
 from publish import summarize
-from support import PROTOCOL, VARIANTS, group
+from support import PROTOCOL, VARIANTS, command
 
 
 class PublicationTests(unittest.TestCase):
+    def test_host_observations_use_portable_numeric_locale(self):
+        import sys
+        self.assertEqual(command([sys.executable, "-c", "import os; print(os.environ['LC_ALL'])"]), "C")
+
     def setUp(self):
         self.corpus = {g: [{"id": g, "input": "# Hello"}] for g in ("previews", "guides", "documentation")}
         self.outputs = {v: {"outputs": [{"html": "<h1>Hello</h1>\n"}]} for v in VARIANTS}

@@ -44,7 +44,9 @@ def source_hashes():
 
 
 def command(args):
-    return subprocess.check_output(args, cwd=ROOT, text=True, stderr=subprocess.STDOUT).strip()
+    env = os.environ.copy()
+    env["LC_ALL"] = "C"
+    return subprocess.check_output(args, cwd=ROOT, env=env, text=True, stderr=subprocess.STDOUT).strip()
 
 
 def observation():
