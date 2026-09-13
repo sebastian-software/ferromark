@@ -1,0 +1,23 @@
+disallowed-macros = [
+  { path = "std::format", reason = "avoid heap-allocating formatted temporary strings in hot paths; use StringBuilder or direct buffer writes instead" },
+  { path = "std::vec", reason = "prefer ferromark_allocator::Vec or SmallVec over heap-allocated std::Vec literals in allocator-aware code", replacement = "ferromark_allocator::Vec" },
+]
+
+disallowed-methods = [
+  { path = "alloc::string::String::new", reason = "avoid std::String for small rule state; use CompactString, or keep std::String only for explicit output buffers and ABI boundaries" },
+  { path = "alloc::string::ToString::to_string", reason = "prefer borrowed strings, CompactString, or allocator-owned strings instead of creating std::String temporaries" },
+  { path = "std::string::String::new", reason = "avoid std::String for small rule state; use CompactString, or keep std::String only for explicit output buffers and ABI boundaries" },
+  { path = "std::string::ToString::to_string", reason = "prefer borrowed strings, CompactString, or allocator-owned strings instead of creating std::String temporaries" },
+]
+
+disallowed-types = [
+  { path = "alloc::string::String", reason = "prefer CompactString, Cow<str>, arena strings, or direct buffer writes unless an owned API boundary requires std::String" },
+  { path = "alloc::vec::Vec", reason = "prefer SmallVec, slices, iterators, or arena-owned ferromark_allocator::Vec unless an owned API boundary requires std::Vec" },
+  { path = "std::collections::BTreeMap", reason = "avoid tree maps in hot paths unless ordering is required and documented" },
+  { path = "std::collections::BTreeSet", reason = "avoid tree sets in hot paths unless ordering is required and documented" },
+  { path = "std::collections::HashMap", reason = "prefer rustc_hash::FxHashMap for hot paths" },
+  { path = "std::collections::HashSet", reason = "prefer rustc_hash::FxHashSet for hot paths" },
+  { path = "std::boxed::Box", reason = "prefer concrete/static dispatch or arena-owned ferromark_allocator::Box in hot paths" },
+  { path = "std::string::String", reason = "prefer CompactString, Cow<str>, arena strings, or direct buffer writes unless an owned API boundary requires std::String" },
+  { path = "std::vec::Vec", reason = "prefer SmallVec, slices, iterators, or arena-owned ferromark_allocator::Vec unless an owned API boundary requires std::Vec" },
+]

@@ -1,0 +1,20 @@
+[package]
+name = "ferromark"
+version.workspace = true
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "Arena-allocated Markdown parser and HTML renderer"
+
+[lints]
+workspace = true
+
+[dependencies]
+ferromark_allocator.workspace = true
+ferromark_ast.workspace = true
+ferromark_parser.workspace = true
+ferromark_renderer.workspace = true
