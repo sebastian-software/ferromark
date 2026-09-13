@@ -1,0 +1,27 @@
+{
+  "baseline_revision": "39412990e50a6afb6a600d5e29632297c369b508",
+  "cpu": "Apple M1 Pro",
+  "date": "2026-09-13",
+  "profile": "opt-level 3, fat LTO, one codegen unit, panic abort, system allocator, ambient Rust flags removed",
+  "screen": "127 cases; five alternating 20 ms windows after 20 ms warmup per worker; batches of 16 renders; fresh native HTML with drop except explicitly marked reuse/MDX controls",
+  "memory": "123 fresh non-MDX cases; five deterministic samples after first-use initialization; requested live bytes and allocation/reallocation calls through System; no RSS or allocator-internal copying claim; separate instrumented binaries",
+  "source_note": "Every variant is formatted before compiling and frozen by its patch and full source hashes. All 779 HTML/MDX outputs match baseline.",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+  "binaries": {
+    "baseline": "3c0e287a40516409a89d904724478be5ab4ae974dfceea69ef5d53196b6bff85",
+    "baseline-copy": "3c0e287a40516409a89d904724478be5ab4ae974dfceea69ef5d53196b6bff85",
+    "memory-baseline": "539ac6557e42839d8f620688a72b6fd2c6849e40ec0c9f62778321d7d601a6f0",
+    "memory-stable-packed": "efb7631d357f217f0ad54dc487aaf7c471060f6ee28a56f266fe3168447a8ea1",
+    "memory-stable-tuple": "063d4df62dd0eeeebf34ac7bcaf505a25d21656345f4a75b517926525855721f",
+    "memory-unstable-packed": "34b11a071c01cd23c97ff6c62b494225dd6c7f87621e208bdccb532e25c73ca8",
+    "stable-packed": "e9b5f56bf17fbd45b4601fb0551798cd9bc100d90486e84fe687eacfdc4bd60d",
+    "stable-tuple": "226dfe2e5f757b70e0879d98a61da3b3148d26a60e5ddd4277af4b8371b5861f",
+    "unstable-packed": "ffc748cb5cce9416ec6b0636b3b02031aa77cab963f2c722170878f3b8fd0ae2"
+  },
+  "confirmation": "Three fresh process pairs per variant; 17 selected cases; seven alternating 60 ms windows after 40 ms warmup; identical-baseline-binary A/A pair.",
+  "inputs": {
+    "base": "../2026-09-13-suspense-inline-code/inputs/cases.json.gz",
+    "base_sha256": "df13975855f39623202a695740a6817311c59686d8d1e6e07f70e90d753a9533",
+    "additional": "additional-cases.json.gz"
+  }
+}
