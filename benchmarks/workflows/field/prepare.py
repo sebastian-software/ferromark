@@ -37,6 +37,8 @@ def main():
         if key.startswith(("CARGO_PROFILE_", "DOTNET_", "COMPlus_")) or key in (
             "CARGO_ENCODED_RUSTFLAGS", "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER", "LD_PRELOAD", "DYLD_INSERT_LIBRARIES"):
             env.pop(key)
+    for key in ("CFLAGS", "CXXFLAGS", "CPPFLAGS", "LDFLAGS", "CC", "CXX"):
+        env.pop(key, None)
     env.update(RUSTFLAGS="-C target-cpu=generic", LC_ALL="C", GOENV="off", GOTOOLCHAIN="local",
                GOWORK="off", GOFLAGS="", CGO_ENABLED="0", GOEXPERIMENT="", GOARM64="v8.0", GOAMD64="v1")
     commands, workers, locks, upstream, referenced = [], {}, {}, {}, {}
@@ -90,6 +92,7 @@ def main():
     for engine in ("rushdown", "markdown-rs", "ox-content"):
         directory = NATIVE / "engines" / engine
         code = read(directory / "main.rs").split('include!("../worker.rs");')[0]
+        code = re.sub(r'^    pub const NAME:.*\n', '', code, flags=re.M)
         binary = rust(engine, directory / "Cargo.toml", code)
         workers[engine] = {"command": binary, "engine": engine, "units": "utf8", "environment": {},
                            "adapter": json.loads(read(directory / "engine.json"))}
@@ -153,10 +156,17 @@ def main():
         manifest += '\n[[bin]]\nname = "ferromark-workflow-field"\npath = "field.rs"\n'
     (driver / "Cargo.toml").write_text(manifest)
     prefix = read(BUN / "driver.rs").split("fn corpora()", 1)[0]
+    prefix = prefix.replace('use serde_json::json;\n', '')
+    prefix = re.sub(r'use std::\{.*?\n\};\n', '', prefix, count=1, flags=re.S)
+    prefix = re.sub(r'const PARSERS:.*\n', '', prefix)
+    prefix = re.sub(r'const CONFIGURATIONS:.*?\n\];\n', '', prefix, count=1, flags=re.S)
     adapter = '''mod adapter {
         pub struct Renderer(super::Renderers, usize);
         impl Renderer {
-            pub fn new(flags: u32) -> Self { Self(super::Renderers::new(flags), if std::env::args().nth(1).unwrap() == "bun" { 1 } else { 0 }) }
+            pub fn new(flags: u32) -> Self {
+                bun_core::StackCheck::configure_thread();
+                Self(super::Renderers::new(flags), if std::env::args().nth(1).unwrap() == "bun" { 1 } else { 0 })
+            }
             pub fn render(&self, input: &str) -> Vec<u8> { self.0.render(self.1, input) }
             pub fn options(&self) -> String { format!("Bun-native shared mimalloc environment; trusted tables/strikethrough/tasks; all other BOOL_FIELD_SETTERS false; Ferromark: {:?}", self.0.ferro) }
         }
@@ -179,11 +189,14 @@ def main():
         workers[key] = {"command": [str(work / "bun")], "engine": engine, "units": "utf8", "environment": {}}
     if before != source_hashes():
         raise ValueError("Source changed while building the field")
-    binaries = {str(p.relative_to(work)): sha(p) for p in work.iterdir() if p.is_file() and p.name != "build.log"}
+    binaries = {str(p.relative_to(work)): sha(p) for p in work.iterdir() if p.is_file() and p.name not in ("build.log", "build.json")}
     binaries.update({str(p.relative_to(work)): sha(p) for p in (work / "markdig-runtime").iterdir() if p.is_file()})
     write_json(work / "build.json", {"source_revision": command(["git", "rev-parse", "HEAD"]), "source_status": command(["git", "status", "--porcelain"]),
         "source_sha256": before, "referenced_sha256": referenced, "workers": workers, "commands": commands, "locks": locks,
         "upstream": upstream, "binaries": binaries, "environment": {key: env[key] for key in ("RUSTFLAGS", "GOENV", "GOTOOLCHAIN", "GOWORK", "GOFLAGS", "CGO_ENABLED", "GOEXPERIMENT", "GOARM64", "GOAMD64")}, "rustc": command(["rustc", "-Vv"]),
+        "toolchains": {"clang": command(["clang", "--version"]), "go": command(["go", "version"]),
+                       "cmake": command([args.cmake, "--version"]), "dotnet": command([str(dotnet), "--info"]),
+                       "bun_rustc": command(["rustc", "+nightly-2026-07-20", "-Vv"])},
         "cpu": command(["sysctl", "-n", "machdep.cpu.brand_string"]), "os": command(["sw_vers"]), "host_observation": observation()})
     print(f"Built {len(workers)} field workers in {work}")
 
