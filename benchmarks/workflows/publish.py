@@ -7,6 +7,8 @@ import math
 import re
 from pathlib import Path
 import statistics
+import subprocess
+import sys
 import tomllib
 
 from support import HERE, ROOT, group, read_json, review, sha, variants_for
@@ -70,7 +72,10 @@ def summarize(corpus, outputs, windows, memory, warmups, protocol):
         # Counter observations are deterministic, not RSS samples. Do not hide variation in a median.
         for phase in ("cold", "warm"):
             require(all(row[phase] == heaps[0][phase] for row in heaps), "Heap allocation behavior varied; investigate before publication")
-        rows.append({"variant": variant, "label": LABELS[variant], "group": group(variant),
+        label = LABELS[variant]
+        if protocol["schema"] == 2 and variant in ("preview-fresh", "preview-reuse", "guide-metadata"):
+            label = "Ferromark · " + label
+        rows.append({"variant": variant, "label": label, "group": group(variant),
                      "documents": len(documents), "input_bytes": sum(len(d["input"].encode()) for d in documents),
                      "output_bytes": output_bytes, "median_ns": ns, "run_medians_ns": medians,
                      "spread_percent": (max(medians) - min(medians)) / ns * 100,
@@ -142,7 +147,7 @@ def decisions(data):
     lines += ["", "For the documentation collection, compare each engine's two output lifetimes",
               "before using a memory figure to size your pipeline. Keeping completed HTML",
               "in memory is application work included in the retained-output rows.", "",
-              "The metadata row measures a complete HTML-and-metadata operation; it does",
+              "The metadata rows measure complete HTML-and-metadata operations; they do" if data["schema"] == 2 else "The metadata row measures a complete HTML-and-metadata operation; it does",
               "not isolate the incremental cost of collecting headings or represent an",
               "end-to-end site build."]
     if data["schema"] == 2:
@@ -160,12 +165,16 @@ def overview(data):
     lines = ["## Workflow benchmarks", "",
              "What does the Markdown step cost in an application? These workloads measure",
              "complete sets of documents, including output allocation and release. Time and",
-             "memory come from separate runs so allocation tracking does not affect timings.", ""]
+             "exact Rust heap measurements come from separate runs so allocation tracking does not affect timings." if comparative else "memory come from separate runs so allocation tracking does not affect timings.", ""]
     for name, title, explanation in [
         ("previews", "Preview user-authored comments", "Twelve authored examples. Ferromark uses secure defaults; pulldown-cmark and Comrak use application adapters for matching HTML escaping, URL checks, heading IDs, and callouts. Each returns owned HTML that is released immediately. The retained `Renderer` is Ferromark's scratch-reuse variant." if comparative else "Twelve authored examples, with Ferromark's secure defaults. Both APIs return owned HTML; a retained renderer reuses parser scratch."),
         ("guides", "Render documentation with metadata", "Three actual guide pages, rendered under the same untrusted policy. Ferromark `parse` and the two application adapters return HTML, raw front matter, and headings with matching navigation IDs; each complete result is released." if comparative else "Three actual guide pages, with the default untrusted policy. Includes HTML, raw front matter, and headings; each result is released."),
         ("documentation", "Render a documentation collection", "Twelve actual documentation files. Trusted CommonMark plus tables, strikethrough, and task lists; equal reviewed HTML work across all three engines. Compare releasing each page with keeping every HTML result until the workload ends."),
     ]:
+        if comparative and name == "documentation":
+            # The wider field below supplies collection timings and process RSS.
+            # Keep the independent Rust heap/time detail in the complete report.
+            continue
         subset = [r for r in rows if r["group"] == name]
         example = subset[0]
         lines += [f"### {title}", "", explanation, "",
@@ -184,6 +193,8 @@ def overview(data):
               "a production-traffic distribution or a complete site build. No x86-64 run is included.", "",
               f"[Full report, run variation, and source provenance]({report}) ·",
               "[Reproduce the workloads](benchmarks/workflows/README.md).", ""]
+    if comparative:
+        lines += [subprocess.check_output([sys.executable, str(HERE / "field/publish.py"), "--overview"], text=True).rstrip(), ""]
     return "\n".join(lines)
 
 
@@ -299,6 +310,7 @@ def main():
     require(guide_text.count(guide_start) == 1 and guide_text.count(guide_end) == 1, "Benchmark guide workflow markers missing or duplicated")
     guide_overview = overview(data).replace(f"]({data['report']})", f"](https://github.com/sebastian-software/ferromark/blob/main/{data['report']})")
     guide_overview = guide_overview.replace("](benchmarks/workflows/README.md)", "](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/workflows/README.md)")
+    guide_overview = guide_overview.replace("](docs/reports/", "](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/")
     begin, end = guide_text.index(guide_start) + len(guide_start), guide_text.index(guide_end)
     outputs[guide] = guide_text[:begin] + "\n\n" + guide_overview + "\n" + guide_text[end:]
     if args.check:

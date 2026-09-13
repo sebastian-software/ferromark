@@ -1,0 +1,119 @@
+{
+  "mode": "publication",
+  "protocol": {
+    "schema": 1,
+    "rounds": 3,
+    "windows": 80,
+    "window_ms": 63,
+    "warmup_ms": 3000,
+    "memory": "macOS wait4 ru_maxrss; whole warmed worker lifetime, bytes"
+  },
+  "started_unix": 1789303283.390574,
+  "finished_unix": 1789303921.639943,
+  "variants": [
+    [
+      "ferromark",
+      "stream"
+    ],
+    [
+      "ferromark",
+      "retain"
+    ],
+    [
+      "pulldown",
+      "stream"
+    ],
+    [
+      "pulldown",
+      "retain"
+    ],
+    [
+      "comrak",
+      "stream"
+    ],
+    [
+      "comrak",
+      "retain"
+    ],
+    [
+      "md4c",
+      "stream"
+    ],
+    [
+      "md4c",
+      "retain"
+    ],
+    [
+      "cmark-gfm",
+      "stream"
+    ],
+    [
+      "cmark-gfm",
+      "retain"
+    ],
+    [
+      "goldmark",
+      "stream"
+    ],
+    [
+      "goldmark",
+      "retain"
+    ],
+    [
+      "satteri",
+      "stream"
+    ],
+    [
+      "satteri",
+      "retain"
+    ],
+    [
+      "rushdown",
+      "stream"
+    ],
+    [
+      "rushdown",
+      "retain"
+    ],
+    [
+      "markdig",
+      "stream"
+    ],
+    [
+      "markdig",
+      "retain"
+    ],
+    [
+      "markdown-rs",
+      "stream"
+    ],
+    [
+      "markdown-rs",
+      "retain"
+    ],
+    [
+      "ox-content",
+      "stream"
+    ],
+    [
+      "ox-content",
+      "retain"
+    ],
+    [
+      "ferromark-bun",
+      "stream"
+    ],
+    [
+      "ferromark-bun",
+      "retain"
+    ],
+    [
+      "bun",
+      "stream"
+    ],
+    [
+      "bun",
+      "retain"
+    ]
+  ]
+}

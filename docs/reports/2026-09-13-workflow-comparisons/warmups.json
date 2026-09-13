@@ -1,0 +1,314 @@
+[
+  {
+    "round": 0,
+    "variant": "preview-fresh",
+    "elapsed_ns": 3000020375,
+    "iterations": 258440,
+    "ns_per_workload": 11608.1890380746,
+    "output_bytes": 749734440
+  },
+  {
+    "round": 0,
+    "variant": "preview-reuse",
+    "elapsed_ns": 3000016916,
+    "iterations": 417804,
+    "ns_per_workload": 7180.440867009411,
+    "output_bytes": 1212049404
+  },
+  {
+    "round": 0,
+    "variant": "preview-pulldown",
+    "elapsed_ns": 3000056958,
+    "iterations": 202168,
+    "ns_per_workload": 14839.425418463852,
+    "output_bytes": 578402648
+  },
+  {
+    "round": 0,
+    "variant": "preview-comrak",
+    "elapsed_ns": 3000051083,
+    "iterations": 78680,
+    "ns_per_workload": 38129.77990594815,
+    "output_bytes": 228250680
+  },
+  {
+    "round": 0,
+    "variant": "guide-metadata",
+    "elapsed_ns": 3000044500,
+    "iterations": 151612,
+    "ns_per_workload": 19787.645437036645,
+    "output_bytes": 1322814700
+  },
+  {
+    "round": 0,
+    "variant": "guide-pulldown",
+    "elapsed_ns": 3000117709,
+    "iterations": 100000,
+    "ns_per_workload": 30001.17709,
+    "output_bytes": 867500000
+  },
+  {
+    "round": 0,
+    "variant": "guide-comrak",
+    "elapsed_ns": 3000074167,
+    "iterations": 38408,
+    "ns_per_workload": 78110.65837846282,
+    "output_bytes": 335109800
+  },
+  {
+    "round": 0,
+    "variant": "ferromark-stream",
+    "elapsed_ns": 3000473209,
+    "iterations": 22116,
+    "ns_per_workload": 135669.7960300235,
+    "output_bytes": 1400340888
+  },
+  {
+    "round": 0,
+    "variant": "pulldown-stream",
+    "elapsed_ns": 3000196375,
+    "iterations": 17004,
+    "ns_per_workload": 176440.62426487886,
+    "output_bytes": 1069381560
+  },
+  {
+    "round": 0,
+    "variant": "comrak-stream",
+    "elapsed_ns": 3000577375,
+    "iterations": 5552,
+    "ns_per_workload": 540449.8153818444,
+    "output_bytes": 351541536
+  },
+  {
+    "round": 0,
+    "variant": "ferromark-retain",
+    "elapsed_ns": 3000236542,
+    "iterations": 21612,
+    "ns_per_workload": 138822.71617619842,
+    "output_bytes": 1368428616
+  },
+  {
+    "round": 0,
+    "variant": "pulldown-retain",
+    "elapsed_ns": 3000040958,
+    "iterations": 16940,
+    "ns_per_workload": 177098.0494687131,
+    "output_bytes": 1065356600
+  },
+  {
+    "round": 0,
+    "variant": "comrak-retain",
+    "elapsed_ns": 3001232958,
+    "iterations": 5572,
+    "ns_per_workload": 538627.5947595119,
+    "output_bytes": 352807896
+  },
+  {
+    "round": 1,
+    "variant": "preview-reuse",
+    "elapsed_ns": 3000002791,
+    "iterations": 409596,
+    "ns_per_workload": 7324.297090303617,
+    "output_bytes": 1188237996
+  },
+  {
+    "round": 1,
+    "variant": "preview-pulldown",
+    "elapsed_ns": 3000056208,
+    "iterations": 199676,
+    "ns_per_workload": 15024.620925899959,
+    "output_bytes": 571273036
+  },
+  {
+    "round": 1,
+    "variant": "preview-comrak",
+    "elapsed_ns": 3000083916,
+    "iterations": 77132,
+    "ns_per_workload": 38895.450863454855,
+    "output_bytes": 223759932
+  },
+  {
+    "round": 1,
+    "variant": "guide-metadata",
+    "elapsed_ns": 3000048250,
+    "iterations": 148000,
+    "ns_per_workload": 20270.596283783783,
+    "output_bytes": 1291300000
+  },
+  {
+    "round": 1,
+    "variant": "guide-pulldown",
+    "elapsed_ns": 3000013666,
+    "iterations": 96852,
+    "ns_per_workload": 30975.237124685085,
+    "output_bytes": 840191100
+  },
+  {
+    "round": 1,
+    "variant": "guide-comrak",
+    "elapsed_ns": 3000090333,
+    "iterations": 37844,
+    "ns_per_workload": 79275.19112673079,
+    "output_bytes": 330188900
+  },
+  {
+    "round": 1,
+    "variant": "ferromark-stream",
+    "elapsed_ns": 3000488209,
+    "iterations": 21672,
+    "ns_per_workload": 138449.99118678478,
+    "output_bytes": 1372227696
+  },
+  {
+    "round": 1,
+    "variant": "pulldown-stream",
+    "elapsed_ns": 3000663333,
+    "iterations": 16888,
+    "ns_per_workload": 177680.20683325437,
+    "output_bytes": 1062086320
+  },
+  {
+    "round": 1,
+    "variant": "comrak-stream",
+    "elapsed_ns": 3001134375,
+    "iterations": 5536,
+    "ns_per_workload": 542112.4232297688,
+    "output_bytes": 350528448
+  },
+  {
+    "round": 1,
+    "variant": "ferromark-retain",
+    "elapsed_ns": 3000417000,
+    "iterations": 21828,
+    "ns_per_workload": 137457.2567344695,
+    "output_bytes": 1382105304
+  },
+  {
+    "round": 1,
+    "variant": "pulldown-retain",
+    "elapsed_ns": 3000460500,
+    "iterations": 17144,
+    "ns_per_workload": 175015.19482034532,
+    "output_bytes": 1078186160
+  },
+  {
+    "round": 1,
+    "variant": "comrak-retain",
+    "elapsed_ns": 3001871791,
+    "iterations": 5644,
+    "ns_per_workload": 531869.5590007087,
+    "output_bytes": 357366792
+  },
+  {
+    "round": 1,
+    "variant": "preview-fresh",
+    "elapsed_ns": 3000008125,
+    "iterations": 260460,
+    "ns_per_workload": 11518.114585732934,
+    "output_bytes": 755594460
+  },
+  {
+    "round": 2,
+    "variant": "preview-pulldown",
+    "elapsed_ns": 3000020916,
+    "iterations": 201280,
+    "ns_per_workload": 14904.714407790143,
+    "output_bytes": 575862080
+  },
+  {
+    "round": 2,
+    "variant": "preview-comrak",
+    "elapsed_ns": 3000092375,
+    "iterations": 79288,
+    "ns_per_workload": 37837.9121052366,
+    "output_bytes": 230014488
+  },
+  {
+    "round": 2,
+    "variant": "guide-metadata",
+    "elapsed_ns": 3000047542,
+    "iterations": 150240,
+    "ns_per_workload": 19968.36755857295,
+    "output_bytes": 1310844000
+  },
+  {
+    "round": 2,
+    "variant": "guide-pulldown",
+    "elapsed_ns": 3000057208,
+    "iterations": 97864,
+    "ns_per_workload": 30655.370800294288,
+    "output_bytes": 848970200
+  },
+  {
+    "round": 2,
+    "variant": "guide-comrak",
+    "elapsed_ns": 3000067833,
+    "iterations": 38020,
+    "ns_per_workload": 78907.62317201473,
+    "output_bytes": 331724500
+  },
+  {
+    "round": 2,
+    "variant": "ferromark-stream",
+    "elapsed_ns": 3000411834,
+    "iterations": 21744,
+    "ns_per_workload": 137988.0350441501,
+    "output_bytes": 1376786592
+  },
+  {
+    "round": 2,
+    "variant": "pulldown-stream",
+    "elapsed_ns": 3000146625,
+    "iterations": 17108,
+    "ns_per_workload": 175365.12888707037,
+    "output_bytes": 1075922120
+  },
+  {
+    "round": 2,
+    "variant": "comrak-stream",
+    "elapsed_ns": 3001027000,
+    "iterations": 5600,
+    "ns_per_workload": 535897.6785714285,
+    "output_bytes": 354580800
+  },
+  {
+    "round": 2,
+    "variant": "ferromark-retain",
+    "elapsed_ns": 3000359417,
+    "iterations": 21604,
+    "ns_per_workload": 138879.8100814664,
+    "output_bytes": 1367922072
+  },
+  {
+    "round": 2,
+    "variant": "pulldown-retain",
+    "elapsed_ns": 3000031208,
+    "iterations": 16696,
+    "ns_per_workload": 179685.62577862962,
+    "output_bytes": 1050011440
+  },
+  {
+    "round": 2,
+    "variant": "comrak-retain",
+    "elapsed_ns": 3002653000,
+    "iterations": 5508,
+    "ns_per_workload": 545143.9724037764,
+    "output_bytes": 348755544
+  },
+  {
+    "round": 2,
+    "variant": "preview-fresh",
+    "elapsed_ns": 3000025084,
+    "iterations": 253500,
+    "ns_per_workload": 11834.418477317555,
+    "output_bytes": 735403500
+  },
+  {
+    "round": 2,
+    "variant": "preview-reuse",
+    "elapsed_ns": 3000025000,
+    "iterations": 411208,
+    "ns_per_workload": 7295.638703527169,
+    "output_bytes": 1192914408
+  }
+]

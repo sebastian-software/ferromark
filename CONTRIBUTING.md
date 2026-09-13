@@ -62,11 +62,16 @@ For application-oriented latency and peak-heap measurements, see the
 [practical workflow harness](benchmarks/workflows/README.md). It freezes real
 documentation snapshots and authored preview messages, verifies complete
 output work, and measures timing separately from allocation accounting.
-Its publisher updates both the README source and the benchmark guide from the
-archived evidence; follow with `mise run readme:write`.
+The [full native engine field](benchmarks/workflows/field/README.md) adds the
+same complete documentation collection across Rust, C, Go, and .NET, reporting
+whole-process peak RSS separately from the precise Rust heap measurements.
+The workflow publisher updates both the README source and the benchmark guide
+from the archived evidence; follow with `mise run readme:write`.
 
 ```bash
 python3 -m unittest discover -s benchmarks/workflows -p 'test_*.py'
+python3 -m unittest discover -s benchmarks/workflows/field -p 'test_*.py'
+python3 benchmarks/workflows/field/publish.py --check
 python3 benchmarks/workflows/publish.py --check
 ```
 

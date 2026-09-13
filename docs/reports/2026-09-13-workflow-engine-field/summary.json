@@ -1,0 +1,1821 @@
+{
+  "report": "docs/reports/2026-09-13-workflow-engine-field/REPORT.md",
+  "source_revision": "9ad64811e8152ed88d20967f9222f48e64642966",
+  "cpu": "Apple M1 Pro",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83",
+  "rows": [
+    {
+      "engine": "ferromark",
+      "lifetime": "stream",
+      "median_ns": 137397.41847826086,
+      "round_medians_ns": [
+        137433.5597826087,
+        136518.7230603448,
+        137397.41847826086
+      ],
+      "spread_percent": 0.6658325406664304,
+      "median_peak_rss_bytes": 3145728,
+      "peak_rss_observations_bytes": [
+        3391488,
+        3112960,
+        3145728
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "ferromark",
+      "lifetime": "retain",
+      "median_ns": 137992.04613844393,
+      "round_medians_ns": [
+        137992.04613844393,
+        137420.10869565216,
+        138636.6041666667
+      ],
+      "spread_percent": 0.8815692679808846,
+      "median_peak_rss_bytes": 3211264,
+      "peak_rss_observations_bytes": [
+        3178496,
+        3211264,
+        3424256
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "pulldown",
+      "lifetime": "stream",
+      "median_ns": 173506.00824175825,
+      "round_medians_ns": [
+        173506.00824175825,
+        173409.2252747253,
+        173634.73076923078
+      ],
+      "spread_percent": 0.12996984760970026,
+      "median_peak_rss_bytes": 3244032,
+      "peak_rss_observations_bytes": [
+        3244032,
+        3211264,
+        3260416
+      ],
+      "html_utf8_bytes": 62890
+    },
+    {
+      "engine": "pulldown",
+      "lifetime": "retain",
+      "median_ns": 173888.39285714284,
+      "round_medians_ns": [
+        173893.02884615384,
+        173888.39285714284,
+        173376.14423076925
+      ],
+      "spread_percent": 0.29725078649110254,
+      "median_peak_rss_bytes": 3309568,
+      "peak_rss_observations_bytes": [
+        3309568,
+        3309568,
+        3194880
+      ],
+      "html_utf8_bytes": 62890
+    },
+    {
+      "engine": "comrak",
+      "lifetime": "stream",
+      "median_ns": 530806.7708333334,
+      "round_medians_ns": [
+        525824.6541666667,
+        530806.7708333334,
+        532840.6291666667
+      ],
+      "spread_percent": 1.3217568775517567,
+      "median_peak_rss_bytes": 3719168,
+      "peak_rss_observations_bytes": [
+        3588096,
+        3719168,
+        3719168
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "comrak",
+      "lifetime": "retain",
+      "median_ns": 528348.6166666667,
+      "round_medians_ns": [
+        526630.2083333333,
+        528945.8291666666,
+        528348.6166666667
+      ],
+      "spread_percent": 0.4382751767086136,
+      "median_peak_rss_bytes": 3702784,
+      "peak_rss_observations_bytes": [
+        3637248,
+        3719168,
+        3702784
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "md4c",
+      "lifetime": "stream",
+      "median_ns": 195699.07407407407,
+      "round_medians_ns": [
+        196090.34259259258,
+        195038.387345679,
+        195699.07407407407
+      ],
+      "spread_percent": 0.5375371610166231,
+      "median_peak_rss_bytes": 2686976,
+      "peak_rss_observations_bytes": [
+        2686976,
+        2818048,
+        2686976
+      ],
+      "html_utf8_bytes": 63813
+    },
+    {
+      "engine": "md4c",
+      "lifetime": "retain",
+      "median_ns": 196426.375,
+      "round_medians_ns": [
+        196435.37962962964,
+        195170.7160493827,
+        196426.375
+      ],
+      "spread_percent": 0.6438359310183976,
+      "median_peak_rss_bytes": 2785280,
+      "peak_rss_observations_bytes": [
+        2850816,
+        2752512,
+        2785280
+      ],
+      "html_utf8_bytes": 63813
+    },
+    {
+      "engine": "cmark-gfm",
+      "lifetime": "stream",
+      "median_ns": 454063.0964285714,
+      "round_medians_ns": [
+        455607.4392857143,
+        454063.0964285714,
+        453446.725
+      ],
+      "spread_percent": 0.47586212196265126,
+      "median_peak_rss_bytes": 2768896,
+      "peak_rss_observations_bytes": [
+        2768896,
+        2768896,
+        2785280
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "cmark-gfm",
+      "lifetime": "retain",
+      "median_ns": 456018.3035714285,
+      "round_medians_ns": [
+        456018.3035714285,
+        455289.73214285716,
+        457159.52142857143
+      ],
+      "spread_percent": 0.41002505186097155,
+      "median_peak_rss_bytes": 2883584,
+      "peak_rss_observations_bytes": [
+        2867200,
+        2883584,
+        2965504
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "goldmark",
+      "lifetime": "stream",
+      "median_ns": 606382.610576923,
+      "round_medians_ns": [
+        600350.8888888889,
+        606899.2403846155,
+        606382.610576923
+      ],
+      "spread_percent": 1.0799042356271398,
+      "median_peak_rss_bytes": 15433728,
+      "peak_rss_observations_bytes": [
+        15482880,
+        15237120,
+        15433728
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "goldmark",
+      "lifetime": "retain",
+      "median_ns": 606587.9375,
+      "round_medians_ns": [
+        603368.25,
+        610110.375,
+        606587.9375
+      ],
+      "spread_percent": 1.111483526656842,
+      "median_peak_rss_bytes": 15138816,
+      "peak_rss_observations_bytes": [
+        15138816,
+        14778368,
+        15826944
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "satteri",
+      "lifetime": "stream",
+      "median_ns": 288299.15,
+      "round_medians_ns": [
+        288299.15,
+        287914.3954545455,
+        288514.11136363633
+      ],
+      "spread_percent": 0.20801861853939713,
+      "median_peak_rss_bytes": 3948544,
+      "peak_rss_observations_bytes": [
+        3915776,
+        3948544,
+        3948544
+      ],
+      "html_utf8_bytes": 62988
+    },
+    {
+      "engine": "satteri",
+      "lifetime": "retain",
+      "median_ns": 287822.0636363636,
+      "round_medians_ns": [
+        287655.0181818182,
+        287822.0636363636,
+        288492.61363636365
+      ],
+      "spread_percent": 0.29101155205519014,
+      "median_peak_rss_bytes": 4030464,
+      "peak_rss_observations_bytes": [
+        3964928,
+        4030464,
+        4030464
+      ],
+      "html_utf8_bytes": 62988
+    },
+    {
+      "engine": "rushdown",
+      "lifetime": "stream",
+      "median_ns": 384580.1615853659,
+      "round_medians_ns": [
+        384774.51829268294,
+        384580.1615853659,
+        383124.25595238095
+      ],
+      "spread_percent": 0.42910750609159687,
+      "median_peak_rss_bytes": 3506176,
+      "peak_rss_observations_bytes": [
+        3506176,
+        3522560,
+        3391488
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "rushdown",
+      "lifetime": "retain",
+      "median_ns": 385340.44817073166,
+      "round_medians_ns": [
+        385340.44817073166,
+        383960.86389372824,
+        386716.08231707313
+      ],
+      "spread_percent": 0.7150088801796761,
+      "median_peak_rss_bytes": 3457024,
+      "peak_rss_observations_bytes": [
+        3555328,
+        3424256,
+        3457024
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "markdig",
+      "lifetime": "stream",
+      "median_ns": 330195.421875,
+      "round_medians_ns": [
+        330195.421875,
+        324557.07908163266,
+        330919.4869791667
+      ],
+      "spread_percent": 1.92686132999827,
+      "median_peak_rss_bytes": 73711616,
+      "peak_rss_observations_bytes": [
+        73711616,
+        74334208,
+        73072640
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "markdig",
+      "lifetime": "retain",
+      "median_ns": 329535.9166666666,
+      "round_medians_ns": [
+        334499.3489583333,
+        326513.60459183675,
+        329535.9166666666
+      ],
+      "spread_percent": 2.423330496801154,
+      "median_peak_rss_bytes": 73678848,
+      "peak_rss_observations_bytes": [
+        73515008,
+        73678848,
+        73908224
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "markdown-rs",
+      "lifetime": "stream",
+      "median_ns": 3829708.35,
+      "round_medians_ns": [
+        3839827.1,
+        3806437.5,
+        3829708.35
+      ],
+      "spread_percent": 0.8718575136406951,
+      "median_peak_rss_bytes": 5980160,
+      "peak_rss_observations_bytes": [
+        5980160,
+        6193152,
+        5980160
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "markdown-rs",
+      "lifetime": "retain",
+      "median_ns": 3814996.875,
+      "round_medians_ns": [
+        3829627.1,
+        3808236.475,
+        3814996.875
+      ],
+      "spread_percent": 0.5606983623020662,
+      "median_peak_rss_bytes": 5783552,
+      "peak_rss_observations_bytes": [
+        6127616,
+        5783552,
+        5783552
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "ox-content",
+      "lifetime": "stream",
+      "median_ns": 87766.14583333333,
+      "round_medians_ns": [
+        87766.14583333333,
+        87138.3232044199,
+        88437.97031338271
+      ],
+      "spread_percent": 1.480806860803514,
+      "median_peak_rss_bytes": 2670592,
+      "peak_rss_observations_bytes": [
+        2670592,
+        2670592,
+        2670592
+      ],
+      "html_utf8_bytes": 65762
+    },
+    {
+      "engine": "ox-content",
+      "lifetime": "retain",
+      "median_ns": 87364.35290055248,
+      "round_medians_ns": [
+        87427.1408839779,
+        86726.13324175825,
+        87364.35290055248
+      ],
+      "spread_percent": 0.802395506800835,
+      "median_peak_rss_bytes": 2752512,
+      "peak_rss_observations_bytes": [
+        2768896,
+        2752512,
+        2752512
+      ],
+      "html_utf8_bytes": 65762
+    },
+    {
+      "engine": "ferromark-bun",
+      "lifetime": "stream",
+      "median_ns": 128109.96747967479,
+      "round_medians_ns": [
+        128053.35400275374,
+        128109.96747967479,
+        128902.69308943089
+      ],
+      "spread_percent": 0.6629765844034758,
+      "median_peak_rss_bytes": 3244032,
+      "peak_rss_observations_bytes": [
+        3244032,
+        3244032,
+        3244032
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "ferromark-bun",
+      "lifetime": "retain",
+      "median_ns": 129080.83641543382,
+      "round_medians_ns": [
+        129080.83641543382,
+        128280.74085365853,
+        129152.32274590165
+      ],
+      "spread_percent": 0.6752217575024237,
+      "median_peak_rss_bytes": 3276800,
+      "peak_rss_observations_bytes": [
+        3276800,
+        3276800,
+        3276800
+      ],
+      "html_utf8_bytes": 63318
+    },
+    {
+      "engine": "bun",
+      "lifetime": "stream",
+      "median_ns": 331811.7421875,
+      "round_medians_ns": [
+        331811.7421875,
+        330041.125,
+        332920.8984375
+      ],
+      "spread_percent": 0.8678937696763904,
+      "median_peak_rss_bytes": 3096576,
+      "peak_rss_observations_bytes": [
+        3096576,
+        3096576,
+        3096576
+      ],
+      "html_utf8_bytes": 63240
+    },
+    {
+      "engine": "bun",
+      "lifetime": "retain",
+      "median_ns": 332530.4895833334,
+      "round_medians_ns": [
+        332530.4895833334,
+        330226.34375,
+        332879.9921875
+      ],
+      "spread_percent": 0.7980165791188256,
+      "median_peak_rss_bytes": 3145728,
+      "peak_rss_observations_bytes": [
+        3145728,
+        3145728,
+        3145728
+      ],
+      "html_utf8_bytes": 63240
+    }
+  ],
+  "admission": {
+    "ferromark": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "95817377cf93d29d018a322ad2b4a484426073fe19225fc3fd4de603aeef3bd8"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3a82dbe1923a1cafd7acfbf2c1a3a6455090d4b3a2592440485cc98b4b235498"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "pulldown": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6bb2333dd9a3251aa83299525604fb5fccdb89b6892cc4ae5b25de7cde04c48d"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "11aa2abe255fa08228726b1d93b0f85a7b8bd6c35a389adb20a74db16f5229ee"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "731928b79113deb8496bedddc9ce75f084a906083c98dce0bc6ef3ca59f5d80d"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "39537e96767625fc5445cef7617ffa152401580f159412fe3327196c1af31f68"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "819bdb4f16ff606a36ac486fac1b6e335de2ecbaa6f428852ad1cad21c569404"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "07409097d886da3550c345a7e657ac3c7b2e9232c578ad388d3dc9780d65cf2f"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "db66588092682f6ba9ce8b315a0a469f48043ebb723e663d6e84a2654c057f98"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "84ef45ceb414ef836c88224863f5c37b1c6fa7626621f9ce69b997a2da1793ed"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "58d5118b102781aa09a8b6a42ee6397e0c583023ad9c293d7f52d9e119f37ae4"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "adad802059765370c66d25ce5206cb6c675046544e2505d58aa1fcd81241aefe"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "comrak": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "95817377cf93d29d018a322ad2b4a484426073fe19225fc3fd4de603aeef3bd8"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3a82dbe1923a1cafd7acfbf2c1a3a6455090d4b3a2592440485cc98b4b235498"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "md4c": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2b7dbd1eb232203e7885c212b8f3d00cd31a3b5dbf1be671f94d70527988eea4"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3e4f07c29092e936fbf1bd2e592a00ee17c440529c68c1e33dc9c73da67ca148"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "0040af69b3ccad362b54bfe6c1ce1140f9a87491f013cc494bb1ee62aaa9492a"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "276ae27300b6447ed14f432e378ad9e87cc1fd58258232992920db5c95b6fdf5"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "1d31e6f4409a6aca06991b920cc1246f5ec98351331a8a833ef6b4d7f4858e04"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "b046f3b1edf5a0b90e691173ed68889fdee8a2c51b5902ec7b692724f18a7d1a"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "548205068ec8af4558ce038634fe1863e6a1d1c118aa47356b976deb515fb328"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "0bd1c6a40f404f9ab9af591edaf911f389530135b426372eaa7ace4698011dbe"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "dd1208244d360e42e094c96af54b34180c1a7820138a287db3a32c425bfa08a9"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2b6cb2373f937f472a183e51526d0e09f58d2798a9db604a34ac394a2a3e928f"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "cmark": {
+      "admitted": false,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": false,
+          "html_equivalent": false,
+          "accepted_differences": [],
+          "html_sha256": "feb9131d35f7adec39c9c54f9b974b694ad321edfeae9688545cd9cb6d9614b1"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": false,
+          "html_equivalent": false,
+          "accepted_differences": [],
+          "html_sha256": "96711d33e3cc2fb58e3574600a48625d0d69e1b3cc112ad86919e0618cbf89ac"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": false,
+          "html_equivalent": false,
+          "accepted_differences": [],
+          "html_sha256": "3f7ed209e88400ad5d9829ec077e83fdbe67dd8846fbddc5a04e3230527deefa"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 9,
+      "total_documents": 12
+    },
+    "cmark-gfm": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "95817377cf93d29d018a322ad2b4a484426073fe19225fc3fd4de603aeef3bd8"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3a82dbe1923a1cafd7acfbf2c1a3a6455090d4b3a2592440485cc98b4b235498"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "goldmark": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "95817377cf93d29d018a322ad2b4a484426073fe19225fc3fd4de603aeef3bd8"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3a82dbe1923a1cafd7acfbf2c1a3a6455090d4b3a2592440485cc98b4b235498"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "satteri": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6bb2333dd9a3251aa83299525604fb5fccdb89b6892cc4ae5b25de7cde04c48d"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f440b37e8b82625b5b66c394f3d85a20b3765b2d0aeda0e0bea041b1444d2ac6"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "731928b79113deb8496bedddc9ce75f084a906083c98dce0bc6ef3ca59f5d80d"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "39537e96767625fc5445cef7617ffa152401580f159412fe3327196c1af31f68"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "819bdb4f16ff606a36ac486fac1b6e335de2ecbaa6f428852ad1cad21c569404"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "07409097d886da3550c345a7e657ac3c7b2e9232c578ad388d3dc9780d65cf2f"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "db66588092682f6ba9ce8b315a0a469f48043ebb723e663d6e84a2654c057f98"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "84ef45ceb414ef836c88224863f5c37b1c6fa7626621f9ce69b997a2da1793ed"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "0cf494eb1601fbb926567d39e914cf3dbd53fc798134465722ffedba3b5e3106"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "rushdown": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "95817377cf93d29d018a322ad2b4a484426073fe19225fc3fd4de603aeef3bd8"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3a82dbe1923a1cafd7acfbf2c1a3a6455090d4b3a2592440485cc98b4b235498"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "markdig": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "95817377cf93d29d018a322ad2b4a484426073fe19225fc3fd4de603aeef3bd8"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3a82dbe1923a1cafd7acfbf2c1a3a6455090d4b3a2592440485cc98b4b235498"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "markdown-rs": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "95817377cf93d29d018a322ad2b4a484426073fe19225fc3fd4de603aeef3bd8"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3a82dbe1923a1cafd7acfbf2c1a3a6455090d4b3a2592440485cc98b4b235498"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "ox-content": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "b29ae7f0baddeaf1f98fd8bdc9b07e94f89754da3b39a969ecebf977e26be093"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "7102a595f04eb36d8ea5906ac7c8860659442e9c1bf749273c6be7636c0c96d2"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "2df4bbda7b2f1eccf85575d58d375235174cabdce74856d88940b131bb57503c"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "002311d9b0e7cacdefe8601c9678f15f999e0a5a203f9bd8e0ca39f331f789da"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "9651571050cb3f171f9fd19673b52823dfff2645e6ac6d42a5ec43f671edf4ab"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "64f5e45887d0c112e78a8e3d761a2764333889ebaa26e38571db470b9e1d697b"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "f3bd7c32f6b7ca60486bb5f7961ce65a76006e7066074467fe4debcaa9044200"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "2cf37204fed581e67ac38712944fcdaf67675ea1dd93941065f54ff803a8f602"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "1810a2b0b41fc92b8c27a66ae54568add6467e00858dbf28a27dee4a564c9a07"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "2702746ab449cb78011bd8867dd17cccbb5a86d04cac7092769bb2d7401db251"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "49acc6cd531f201cac7aeca15c931b52c0637919b3f3b4a2657875d2ed933dae"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": false,
+          "accepted_differences": [
+            "additional-generated-heading-ids",
+            "existing-task-and-table-presentation"
+          ],
+          "html_sha256": "bf029d77292f7deb1e60bbbfd7b6d5f66601d50626ad26b0a994ea14ea516e72"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "ferromark-bun": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "95817377cf93d29d018a322ad2b4a484426073fe19225fc3fd4de603aeef3bd8"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3a82dbe1923a1cafd7acfbf2c1a3a6455090d4b3a2592440485cc98b4b235498"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "f67b439e731aaf26221e73a11b15213f786da4c3618e82f4f93ab5690f2c6d1d"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    },
+    "bun": {
+      "admitted": true,
+      "documents": [
+        {
+          "id": "CONTRIBUTING.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "9140ccf1f08136b00f9366e7c64bb06005af054c24f5444cc3fe6195c8fe2f39"
+        },
+        {
+          "id": "node/ferromark/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "8c6b30406324930c9f5a49b88638c88638ebe84863472eec12c52ccfce88f3fc"
+        },
+        {
+          "id": "docs/migration-0.2.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "71e1abd3a899a25e839c68849d88677f704f9fc8fe283f4d9a71abaf5f7f3dc2"
+        },
+        {
+          "id": "docs/migration-0.3.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "697d13c8c5f37a9116b9ce903f72cb24c8410e868ec9e8fb1bdfea321c96ccb2"
+        },
+        {
+          "id": "docs/migration-0.4.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "3b85c177876063bda63d6f9eb4d31b52fe3df2ddf83d7b3c638d2ada113afc32"
+        },
+        {
+          "id": "docs/migration-0.8.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "5e8bbf9014ee4ad45206554271835681cddb77a86b2ed9b90ecea6b12a2e4249"
+        },
+        {
+          "id": "docs/releasing.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "da69f50d717fbc0d4b12c00aae2e2ec4fcb5e78367372ce0cda4c1cfa6ee9624"
+        },
+        {
+          "id": "docs/readme-theme.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6c791e8848cacb6508db5cb8e602772503d4782110e998982f0a2424dd7011d6"
+        },
+        {
+          "id": "docs/markdown-extensions.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "a1ebcf7c11ca632d1f844df2fe18b2521962570b8bf663f72d8c1561d1a6ef83"
+        },
+        {
+          "id": "docs/mdx.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "d906b72dd04b72f86aa1a680b5facdc6b42dfdd2c5e32cbfc0045e5a5290c493"
+        },
+        {
+          "id": "docs/README.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "6118e9efacc23780f08e17f33f9043fd9c4ce4741436706dcf72c36d6a701212"
+        },
+        {
+          "id": "docs/adr/readme-theme-composition.md",
+          "comparable": true,
+          "html_equivalent": true,
+          "accepted_differences": [],
+          "html_sha256": "2e3228e19150671cdd0cac49310c92ef7e63cf9f6c20c33e9c7baccb5c450aaf"
+        }
+      ],
+      "complete_documents": 12,
+      "total_documents": 12
+    }
+  },
+  "protocol": {
+    "schema": 1,
+    "rounds": 3,
+    "windows": 80,
+    "window_ms": 63,
+    "warmup_ms": 3000,
+    "memory": "macOS wait4 ru_maxrss; whole warmed worker lifetime, bytes"
+  },
+  "versions": {
+    "ferromark": "0.9.0",
+    "pulldown": "0.13.4",
+    "comrak": "0.54.0",
+    "md4c": "65c6c9d72ceb",
+    "cmark": "0.31.1 · bb3678d7a73c",
+    "cmark-gfm": "0.29.0.gfm.13 · 587a12bb54d9",
+    "goldmark": "v2.0.2",
+    "satteri": "0.2.13 (native crate); fork 0.6.3",
+    "rushdown": "0.18.0",
+    "markdown-rs": "1.0.0",
+    "ox-content": "3.2.0",
+    "markdig": "1.3.2",
+    "bun": "76e9dcc6ad27",
+    "ferromark-bun": "0.9.0"
+  },
+  "toolchains": {
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6",
+    "clang": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+    "go": "go version go1.27.1 darwin/arm64",
+    "cmake": "cmake version 3.31.6\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).",
+    "dotnet": ".NET SDK:\n Version:           10.0.401\n Commit:            e34a38d2ae\n Workload version:  10.0.400-manifests.63b36e85\n MSBuild version:   18.9.11+e34a38d2a\n\nLaufzeitumgebung:\n OS Name:     Mac OS X\n OS Version:  26.6\n OS Platform: Darwin\n RID:         osx-arm64\n Base Path:   /private/tmp/ferromark-five-engines/dotnet/sdk/10.0.401/\n\nInstallierte .NET-Workloads:\nEs sind keine installierten Workloads zum Anzeigen vorhanden.\nFür die Verwendung von workload sets bei der Installation neuer Manifeste konfiguriert.\nEs sind keine Workloadsätze installiert. Führen Sie „dotnet workload restore“ aus, um einen Workloadsatz zu installieren.\n\nHost:\n  Version:      10.0.12\n  Architecture: arm64\n  Commit:       95017c711e\n\n.NET SDKs installed:\n  10.0.401 [/private/tmp/ferromark-five-engines/dotnet/sdk]\n\n.NET runtimes installed:\n  Microsoft.AspNetCore.App 10.0.12 [/private/tmp/ferromark-five-engines/dotnet/shared/Microsoft.AspNetCore.App]\n  Microsoft.NETCore.App 10.0.12 [/private/tmp/ferromark-five-engines/dotnet/shared/Microsoft.NETCore.App]\n\nOther architectures found:\n  None\n\nEnvironment variables:\n  Not set\n\nglobal.json file:\n  Not found\n\nLearn more:\n  https://aka.ms/dotnet/info\n\nDownload .NET:\n  https://aka.ms/dotnet/download",
+    "bun_rustc": "rustc 1.99.0-nightly (9f36de775 2026-07-19)\nbinary: rustc\ncommit-hash: 9f36de775bc636c8e88c31a173c2bcb6995956a0\ncommit-date: 2026-07-19\nhost: aarch64-apple-darwin\nrelease: 1.99.0-nightly\nLLVM version: 22.1.8"
+  },
+  "input_bytes": 53656
+}

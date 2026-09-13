@@ -22,8 +22,10 @@ release it names; when crossing several releases, apply the guides in order.
 Consumer guides: [Markdown extensions](markdown-extensions.md) and
 [MDX integration](mdx.md).
 
-Application measurements: [practical workflows, runtime, and peak heap](reports/2026-09-13-practical-workflows/REPORT.md),
+Application measurements: [complete preview/metadata comparisons and peak heap](reports/2026-09-13-workflow-comparisons/REPORT.md)
+and [the full native engine field, collection runtime, and process memory](reports/2026-09-13-workflow-engine-field/REPORT.md),
 with the [reproduction harness](../benchmarks/workflows/README.md).
+The [initial workflow run](reports/2026-09-13-practical-workflows/REPORT.md) remains archived separately.
 
 | Area | Contents |
 | --- | --- |

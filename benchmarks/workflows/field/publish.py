@@ -3,8 +3,10 @@
 import argparse
 import json
 import math
+import re
 from pathlib import Path
 import statistics
+import tomllib
 
 from common import ENGINES, LABELS, PROTOCOL, ROOT, admission, output_units, read_json, sha
 
@@ -73,12 +75,37 @@ def load(folder):
     require(len(observations) == 4 and all("AC Power" in r["power"] for r in observations), "Missing AC power observations")
     run = read_json(folder / "run.json")
     rows = summarize(build, outputs, reviews, run, read_json(folder / "windows.json.gz"), read_json(folder / "warmups.json"), read_json(folder / "rss.json"))
+    packages = {name: {p["name"]: p["version"] for p in tomllib.loads(lock)["package"]}
+                for name, lock in build["locks"].items() if name not in ("go.mod", "go.sum", "packages.lock.json")}
+    revisions = {v["revision"] for v in build["upstream"].values() if "revision" in v}
+    pins = {"md4c": "65c6c9d72cebd9a731aaa5597414ce04d9ea5de3", "cmark": "bb3678d7a73cb02d35c8876ecd097072636200a8",
+            "cmark-gfm": "587a12bb54d95ac37241377e6ddc93ea0e45439b", "bun": "76e9dcc6ad272a4fb1ee4a4dbbde4809201b71d1"}
+    require(set(pins.values()).issubset(revisions), "Field native source pins changed")
+    versions = {"ferromark": packages["basic"]["ferromark"], "pulldown": packages["basic"]["pulldown-cmark"],
+                "comrak": packages["basic"]["comrak"], "md4c": pins["md4c"][:12], "cmark": "0.31.1 · " + pins["cmark"][:12],
+                "cmark-gfm": "0.29.0.gfm.13 · " + pins["cmark-gfm"][:12],
+                "goldmark": re.search(r"github\.com/yuin/goldmark/v2\s+(\S+)", build["locks"]["go.mod"])[1],
+                "satteri": packages["satteri"]["satteri"] + " (native crate); fork " + packages["satteri"]["satteri-pulldown-cmark"],
+                "rushdown": packages["rushdown"]["rushdown"], "markdown-rs": packages["markdown-rs"]["markdown"],
+                "ox-content": packages["ox-content"]["ox_content_parser"],
+                "markdig": json.loads(build["locks"]["packages.lock.json"])["dependencies"]["net10.0"]["Markdig"]["resolved"],
+                "bun": pins["bun"][:12], "ferromark-bun": packages["bun-Cargo.lock"]["ferromark"]}
     return {"report": str((folder / "REPORT.md").relative_to(ROOT)), "source_revision": build["source_revision"],
-            "cpu": build["cpu"], "os": build["os"], "rows": rows, "admission": reviews, "protocol": PROTOCOL}
+            "cpu": build["cpu"], "os": build["os"], "rows": rows, "admission": reviews, "protocol": PROTOCOL,
+            "versions": versions, "toolchains": {"rustc": build["rustc"], **build["toolchains"]},
+            "input_bytes": sum(len(d["input"].encode()) for d in corpus["documentation"])}
 
 
 def table(data, engines):
     rows = {(r["engine"], r["lifetime"]): r for r in data["rows"]}
+    minimum = {(life, metric): min(rows[e, life][metric] for e in engines if data["admission"][e]["admitted"])
+               for life in ("stream", "retain") for metric in ("median_ns", "median_peak_rss_bytes")}
+
+    def cell(row, metric):
+        value = row[metric]
+        text = f"{value / 1000:.1f} µs" if metric == "median_ns" else f"{value / 2**20:.1f} MiB"
+        return f"**{text}**" if value == minimum[row["lifetime"], metric] else text
+
     result = ["| Engine | Release each: time | Keep all: time | Release each: peak process RSS | Keep all: peak process RSS |",
               "| --- | ---: | ---: | ---: | ---: |"]
     for engine in engines:
@@ -87,25 +114,30 @@ def table(data, engines):
             result.append(f"| {LABELS[engine]} | Not comparable ({count}/12 complete documents) | — | — | — |")
             continue
         a, b = rows[engine, "stream"], rows[engine, "retain"]
-        result.append(f"| {LABELS[engine]} | {a['median_ns'] / 1000:.1f} µs | {b['median_ns'] / 1000:.1f} µs | {a['median_peak_rss_bytes'] / 2**20:.1f} MiB | {b['median_peak_rss_bytes'] / 2**20:.1f} MiB |")
+        result.append(f"| {LABELS[engine]} | {cell(a, 'median_ns')} | {cell(b, 'median_ns')} | {cell(a, 'median_peak_rss_bytes')} | {cell(b, 'median_peak_rss_bytes')} |")
     return "\n".join(result)
 
 
 def overview(data):
+    system_stream = [r for r in data["rows"] if r["lifetime"] == "stream" and r["engine"] not in ("bun", "ferromark-bun")]
+    fastest = min(system_stream, key=lambda r: r["median_ns"])
+    ferro = next(r for r in system_stream if r["engine"] == "ferromark")
     return "\n".join([
-        "### The wider engine field: complete documentation collections", "",
-        "The same twelve documentation files and both output lifetimes, now across",
-        "the published native engine field. Every timed row completes the entire",
+        "### Render a documentation collection across the native engine field", "",
+        f"Twelve actual documentation files, {data['input_bytes']:,} input bytes, with trusted",
+        "CommonMark plus tables, strikethrough, and tasks. Every timed row completes the entire",
         "collection. Native defaults for allocation, GC, and output representation",
         "remain in place; Markdig returns UTF-16 strings, the other workers UTF-8.", "",
         table(data, ENGINES[:-2]), "",
+        f"{LABELS[fastest['engine']]} had the lowest collection time with immediate release in this run: {fastest['median_ns'] / 1000:.1f} µs. Ferromark took {ferro['median_ns'] / 1000:.1f} µs. This result applies to the complete archived workload, not every Markdown application.", "",
         "Bun's native support uses its pinned nightly compiler and shared mimalloc.",
         "This separate environment has its own freshly measured Ferromark baseline:", "",
         table(data, ENGINES[-2:]), "",
+        "Bold marks the lowest unrounded observation in each column and environment.", "",
         "**Process RSS is a different memory measurement from the Rust heap table.**",
         "It includes the runtime/JIT, stacks, input, allocator/GC reserves, and worker",
         "infrastructure. Each cell is the median of three whole-process peaks during",
-        "startup, warmup, and the repeated collection workload. It is not incremental",
+        "startup, warmup, repeated collection work, and shutdown. It is not incremental",
         "parser memory, a single-request peak, or a concurrent-service capacity estimate.", "",
         "Timing still surrounds only completed Markdown work. GC in those windows is",
         "included; OS peak-RSS accounting needs no instrumented allocator. Collection",
@@ -121,7 +153,17 @@ def overview(data):
 
 
 def report(data):
-    lines = ["# Practical documentation workflows across the native engine field", "", overview(data),
+    versions = ["## Engine versions and compiler settings", "", "| Engine | Measured version / revision |", "| --- | --- |"]
+    versions += [f"| {LABELS[e]} | {data['versions'][e]} |" for e in ENGINES]
+    versions += ["", "Full lockfiles and compiler details are in `build.json.gz`. Rust compiler:",
+                 f"`{data['toolchains']['rustc'].splitlines()[0]}`. Bun compiler:",
+                 f"`{data['toolchains']['bun_rustc'].splitlines()[0]}`.",
+                 f"`{data['toolchains']['go']}`; .NET SDK 10.0.401;",
+                 f"`{data['toolchains']['clang'].splitlines()[0]}`.", ""]
+    introduction = overview(data).replace("### Render a documentation collection across the native engine field", "## Documentation collection results", 1)
+    introduction = introduction.replace(f"]({data['report']})", "](#engine-versions-and-compiler-settings)")
+    lines = ["# Practical documentation workflows across the native engine field", "", introduction,
+             "\n".join(versions),
              "## Provenance and reproduction", "",
              f"Measured source: `{data['source_revision']}`. Host: {data['cpu']}.", "",
              "See [the field harness](../../../benchmarks/workflows/field/README.md).",
@@ -151,7 +193,7 @@ def report(data):
               "with cgo and static PGO disabled. Rust and C use generic release builds.",
               "The RSS totals include startup and harness overhead and must not be treated",
               "as intrinsic parser allocation sizes. The exact heap accounting in the",
-              "separate Rust workflow report answers that narrower question.", ""]
+              "[separate Rust workflow report](../2026-09-13-workflow-comparisons/REPORT.md) answers that narrower question.", ""]
     return "\n".join(lines)
 
 

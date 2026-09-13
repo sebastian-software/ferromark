@@ -1,0 +1,518 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling siphasher v1.0.3
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.47
+   Compiling fastrand v2.5.0
+   Compiling tinyvec_macros v0.1.1
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling memchr v2.8.3
+   Compiling tinyvec v1.13.2
+   Compiling entities v1.0.1
+   Compiling jetscii v0.5.3
+   Compiling phf_shared v0.13.1
+   Compiling pulldown-cmark v0.13.4
+   Compiling phf_generator v0.13.1
+   Compiling smallvec v1.15.2
+   Compiling unicode-width v0.2.2
+   Compiling phf_codegen v0.13.1
+   Compiling unicode-normalization v0.1.25
+   Compiling comrak v0.54.0
+   Compiling serde_json v1.0.151
+   Compiling rustc-hash v2.1.3
+   Compiling serde v1.0.229
+   Compiling getopts v0.2.24
+   Compiling caseless v0.2.2
+   Compiling phf v0.13.1
+   Compiling finl_unicode v1.4.0
+   Compiling typed-arena v2.0.2
+   Compiling pulldown-cmark-escape v0.11.0
+   Compiling unicase v2.9.0
+   Compiling itoa v1.0.18
+   Compiling bitflags v2.13.2
+   Compiling html-escape v0.2.14
+   Compiling syn v3.0.5
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+   Compiling serde_derive v1.0.229
+   Compiling ferromark-workflows v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/basic)
+    Finished `release` profile [optimized] target(s) in 16.10s
+   Compiling phf v0.13.1
+   Compiling phf_shared v0.13.1
+   Compiling memchr v2.8.3
+   Compiling rushdown v0.18.0 (https://github.com/yuin/rushdown?rev=e5eb4e4446541ea0ed53111c1b37e779283ff57c#e5eb4e44)
+   Compiling serde_json v1.0.151
+   Compiling ferromark-rushdown-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/rushdown)
+warning: constant `NAME` is never used
+ --> main.rs:7:15
+  |
+7 |     pub const NAME: &str = "rushdown";
+  |               ^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ferromark-rushdown-comparison` (bin "rushdown-driver") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 11.07s
+   Compiling unicode-id v0.3.6
+   Compiling markdown v1.0.0 (https://github.com/wooorm/markdown-rs?rev=1506572f9b406431402928f3a8b3df0b4ae2d8f5#1506572f)
+   Compiling ferromark-markdown-rs-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/markdown-rs)
+warning: constant `NAME` is never used
+ --> main.rs:2:15
+  |
+2 |     pub const NAME: &str = "markdown-rs";
+  |               ^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ferromark-markdown-rs-comparison` (bin "markdown-rs-driver") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 6.53s
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling rustversion v1.0.23
+   Compiling bumpalo v3.20.3
+   Compiling thiserror v2.0.20
+   Compiling static_assertions v1.1.0
+   Compiling cfg-if v1.0.4
+   Compiling smallvec v1.16.1
+   Compiling ox_content_allocator v3.2.0 (https://github.com/ubugeeei-prod/ox-content?rev=5c97078779cf099245a78aacca8fa7cc5e993316#5c970787)
+   Compiling ox_content_ast v3.2.0 (https://github.com/ubugeeei-prod/ox-content?rev=5c97078779cf099245a78aacca8fa7cc5e993316#5c970787)
+   Compiling syn v3.0.5
+   Compiling castaway v0.2.4
+   Compiling thiserror-impl v2.0.20
+   Compiling serde_derive v1.0.229
+   Compiling compact_str v0.10.0
+   Compiling ox_content_parser v3.2.0 (https://github.com/ubugeeei-prod/ox-content?rev=5c97078779cf099245a78aacca8fa7cc5e993316#5c970787)
+   Compiling ox_content_renderer v3.2.0 (https://github.com/ubugeeei-prod/ox-content?rev=5c97078779cf099245a78aacca8fa7cc5e993316#5c970787)
+   Compiling serde v1.0.229
+   Compiling ferromark-ox-content-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/ox-content)
+warning: constant `NAME` is never used
+ --> main.rs:6:15
+  |
+6 |     pub const NAME: &str = "ox-content";
+  |               ^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ferromark-ox-content-comparison` (bin "ox-content-driver") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 11.86s
+   Compiling stable_deref_trait v1.2.1
+   Compiling serde_core v1.0.229
+   Compiling writeable v0.6.4
+   Compiling serde v1.0.229
+   Compiling itoa v1.0.18
+   Compiling icu_locale_fallback_data v2.3.0
+   Compiling litemap v0.8.3
+   Compiling rustc-hash v2.1.3
+   Compiling syn v3.0.5
+   Compiling syn v2.0.119
+   Compiling icu_segmenter_data v2.3.0
+   Compiling phf_shared v0.13.1
+   Compiling dragonbox_ecma v0.1.12
+   Compiling utf8_iter v1.0.4
+   Compiling allocator-api2 v0.2.21
+   Compiling smawk v0.3.3
+   Compiling oxc_data_structures v0.121.0
+   Compiling owo-colors v4.4.0
+   Compiling ryu v1.0.23
+   Compiling hashbrown v0.16.1
+   Compiling unicode-segmentation v1.13.3
+   Compiling phf_generator v0.13.1
+   Compiling phf v0.13.1
+   Compiling autocfg v1.5.1
+   Compiling cow-utils v0.1.3
+   Compiling percent-encoding v2.3.2
+   Compiling num-traits v0.2.19
+   Compiling memchr v2.8.3
+   Compiling unicode-id-start v1.4.0
+   Compiling nonmax v0.5.5
+   Compiling object v0.39.1
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.12
+   Compiling cc v1.4.5
+   Compiling serde_json v1.0.151
+   Compiling hashbrown v0.17.1
+   Compiling equivalent v1.0.2
+   Compiling zmij v1.0.23
+   Compiling libc v0.2.189
+   Compiling oxc_estree v0.121.0
+   Compiling zerovec-derive v0.11.6
+   Compiling displaydoc v0.2.7
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.20
+   Compiling synstructure v0.13.2
+   Compiling zerotrie v0.2.5
+   Compiling indexmap v2.14.2
+   Compiling num-integer v0.1.47
+   Compiling stacker v0.1.25
+   Compiling num-bigint v0.4.8
+   Compiling thiserror v2.0.20
+   Compiling bitflags v2.13.2
+   Compiling vsimd v0.8.0
+   Compiling zerofrom-derive v0.1.7
+   Compiling yoke-derive v0.8.2
+   Compiling oxc-miette-derive v2.7.1
+   Compiling oxc_ast_macros v0.121.0
+   Compiling phf_macros v0.13.1
+   Compiling either v1.18.0
+   Compiling outref v0.5.2
+   Compiling zerofrom v0.1.8
+   Compiling oxc_sourcemap v6.1.1
+   Compiling itertools v0.14.0
+   Compiling base64-simd v0.8.0
+   Compiling satteri-arena v0.3.1 (https://github.com/bruits/satteri?rev=b3d38e1e341c809b20b76a655e9b1601d11bd1f0#b3d38e1e)
+   Compiling ar_archive_writer v0.5.3
+   Compiling json-escape-simd v3.1.1
+   Compiling self_cell v1.3.0
+   Compiling satteri-property-info v0.2.0 (https://github.com/bruits/satteri?rev=b3d38e1e341c809b20b76a655e9b1601d11bd1f0#b3d38e1e)
+   Compiling seq-macro v0.3.6
+   Compiling yoke v0.8.3
+   Compiling compact_str v0.9.1
+   Compiling oxc_allocator v0.121.0
+   Compiling oxc_index v4.1.0
+   Compiling satteri-pulldown-cmark v0.6.3 (https://github.com/bruits/satteri?rev=b3d38e1e341c809b20b76a655e9b1601d11bd1f0#b3d38e1e)
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+   Compiling oxc_str v0.121.0
+   Compiling psm v0.1.32
+   Compiling zerovec v0.11.8
+   Compiling satteri-ast v0.5.3 (https://github.com/bruits/satteri?rev=b3d38e1e341c809b20b76a655e9b1601d11bd1f0#b3d38e1e)
+   Compiling tinystr v0.8.4
+   Compiling potential_utf v0.1.6
+   Compiling icu_collections v2.3.0
+   Compiling icu_locale_core v2.3.0
+   Compiling icu_provider v2.3.1
+   Compiling icu_locale_fallback v2.3.0
+   Compiling icu_segmenter v2.3.0
+   Compiling textwrap v0.16.3
+   Compiling oxc-miette v2.7.1
+   Compiling oxc_span v0.121.0
+   Compiling oxc_diagnostics v0.121.0
+   Compiling oxc_regular_expression v0.121.0
+   Compiling oxc_syntax v0.121.0
+   Compiling oxc_ast v0.121.0
+   Compiling oxc_ecmascript v0.121.0
+   Compiling oxc_ast_visit v0.121.0
+   Compiling oxc_semantic v0.121.0
+   Compiling oxc_parser v0.121.0
+   Compiling oxc_codegen v0.121.0
+   Compiling satteri-mdxjs v0.3.13 (https://github.com/bruits/satteri?rev=b3d38e1e341c809b20b76a655e9b1601d11bd1f0#b3d38e1e)
+   Compiling satteri v0.2.13 (https://github.com/bruits/satteri?rev=b3d38e1e341c809b20b76a655e9b1601d11bd1f0#b3d38e1e)
+   Compiling ferromark-native-pipeline-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/satteri)
+    Finished `release` profile [optimized] target(s) in 37.46s
+   Compiling find-msvc-tools v0.1.11
+   Compiling serde_core v1.0.229
+   Compiling cc v1.4.4
+   Compiling ferromark-cmark-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/md4c)
+   Compiling serde_json v1.0.151
+    Finished `release` profile [optimized] target(s) in 5.63s
+   Compiling ferromark-workflows v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/basic)
+    Finished `release` profile [optimized] target(s) in 9.73s
+   Compiling ferromark-rushdown-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/rushdown)
+warning: constant `NAME` is never used
+ --> main.rs:7:15
+  |
+7 |     pub const NAME: &str = "rushdown";
+  |               ^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ferromark-rushdown-comparison` (bin "rushdown-driver") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 5.98s
+   Compiling ferromark-markdown-rs-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/markdown-rs)
+warning: constant `NAME` is never used
+ --> main.rs:2:15
+  |
+2 |     pub const NAME: &str = "markdown-rs";
+  |               ^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ferromark-markdown-rs-comparison` (bin "markdown-rs-driver") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 4.44s
+   Compiling ferromark-ox-content-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/ox-content)
+warning: constant `NAME` is never used
+ --> main.rs:6:15
+  |
+6 |     pub const NAME: &str = "ox-content";
+  |               ^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ferromark-ox-content-comparison` (bin "ox-content-driver") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 6.35s
+   Compiling ferromark-native-pipeline-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/satteri)
+    Finished `release` profile [optimized] target(s) in 13.16s
+   Compiling ferromark-cmark-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/md4c)
+    Finished `release` profile [optimized] target(s) in 4.70s
+CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- The C compiler identification is AppleClang 21.0.0.21000334
+-- The CXX compiler identification is AppleClang 21.0.0.21000334
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Warning (dev) at CMakeLists.txt:40 (message):
+  'CMARK_SHARED' has been replaced with the standard 'BUILD_SHARED_LIBS' to
+  control the library type.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at CMakeLists.txt:46 (message):
+  'CMARK_STATIC' has been replaced with the standard 'BUILD_SHARED_LIBS' to
+  control the library type.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR - Success
+-- Configuring done (0.9s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMARK_GFM_TESTS
+    CMARK_TESTS
+
+
+-- Build files have been written to: /tmp/ferromark-workflow-field-build/cmark-native
+[ 18%] Building C object src/CMakeFiles/cmark.dir/blocks.c.o
+[ 18%] Building C object src/CMakeFiles/cmark.dir/cmark_ctype.c.o
+[ 18%] Building C object src/CMakeFiles/cmark.dir/cmark.c.o
+[ 18%] Building C object src/CMakeFiles/cmark.dir/buffer.c.o
+[ 22%] Building C object src/CMakeFiles/cmark.dir/commonmark.c.o
+[ 27%] Building C object src/CMakeFiles/cmark.dir/houdini_href_e.c.o
+[ 31%] Building C object src/CMakeFiles/cmark.dir/houdini_html_e.c.o
+[ 36%] Building C object src/CMakeFiles/cmark.dir/houdini_html_u.c.o
+[ 40%] Building C object src/CMakeFiles/cmark.dir/inlines.c.o
+[ 45%] Building C object src/CMakeFiles/cmark.dir/html.c.o
+[ 50%] Building C object src/CMakeFiles/cmark.dir/iterator.c.o
+[ 54%] Building C object src/CMakeFiles/cmark.dir/latex.c.o
+[ 59%] Building C object src/CMakeFiles/cmark.dir/man.c.o
+[ 63%] Building C object src/CMakeFiles/cmark.dir/node.c.o
+[ 68%] Building C object src/CMakeFiles/cmark.dir/references.c.o
+[ 72%] Building C object src/CMakeFiles/cmark.dir/render.c.o
+[ 81%] Building C object src/CMakeFiles/cmark.dir/scanners.c.o
+[ 81%] Building C object src/CMakeFiles/cmark.dir/utf8.c.o
+[ 86%] Building C object src/CMakeFiles/cmark.dir/xml.c.o
+[ 90%] Linking C static library libcmark.a
+[ 90%] Built target cmark
+[ 95%] Building C object src/CMakeFiles/cmark_exe.dir/main.c.o
+[100%] Linking C executable cmark
+[100%] Built target cmark_exe
+   Compiling ferromark-cmark-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/cmark)
+    Finished `release` profile [optimized] target(s) in 3.72s
+CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- The C compiler identification is AppleClang 21.0.0.21000334
+-- The CXX compiler identification is AppleClang 21.0.0.21000334
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test HAVE_FLAG_ADDRESS_SANITIZER
+-- Performing Test HAVE_FLAG_ADDRESS_SANITIZER - Failed
+-- Performing Test HAVE_FLAG_SANITIZE_ADDRESS
+-- Performing Test HAVE_FLAG_SANITIZE_ADDRESS - Success
+-- Checking _FILE_OFFSET_BITS for large files
+-- Checking _FILE_OFFSET_BITS for large files - not needed
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR - Success
+-- Looking for stdbool.h
+-- Looking for stdbool.h - found
+-- Performing Test HAVE___BUILTIN_EXPECT
+-- Performing Test HAVE___BUILTIN_EXPECT - Success
+-- Performing Test HAVE___ATTRIBUTE__
+-- Performing Test HAVE___ATTRIBUTE__ - Success
+-- Configuring done (1.7s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    BUILD_TESTING
+    CMARK_GFM_TESTS
+
+
+-- Build files have been written to: /tmp/ferromark-workflow-field-build/cmark-gfm-native
+[  2%] Building C object extensions/CMakeFiles/libcmark-gfm-extensions_static.dir/core-extensions.c.o
+[ 10%] Building C object extensions/CMakeFiles/libcmark-gfm-extensions_static.dir/table.c.o
+[ 10%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/cmark.c.o
+[ 10%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/node.c.o
+[ 13%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/iterator.c.o
+[ 15%] Building C object extensions/CMakeFiles/libcmark-gfm-extensions_static.dir/strikethrough.c.o
+[ 18%] Building C object extensions/CMakeFiles/libcmark-gfm-extensions_static.dir/autolink.c.o
+[ 21%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/blocks.c.o
+[ 23%] Building C object extensions/CMakeFiles/libcmark-gfm-extensions_static.dir/tagfilter.c.o
+[ 26%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/inlines.c.o
+[ 28%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/scanners.c.o
+[ 31%] Building C object extensions/CMakeFiles/libcmark-gfm-extensions_static.dir/ext_scanners.c.o
+[ 34%] Building C object extensions/CMakeFiles/libcmark-gfm-extensions_static.dir/tasklist.c.o
+[ 36%] Linking C static library libcmark-gfm-extensions.a
+[ 39%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/utf8.c.o
+[ 42%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/buffer.c.o
+[ 42%] Built target libcmark-gfm-extensions_static
+[ 44%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/references.c.o
+[ 47%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/footnotes.c.o
+[ 50%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/map.c.o
+[ 52%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/render.c.o
+[ 55%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/man.c.o
+[ 57%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/xml.c.o
+[ 60%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/html.c.o
+[ 63%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/commonmark.c.o
+[ 65%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/plaintext.c.o
+[ 68%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/latex.c.o
+[ 71%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/houdini_href_e.c.o
+[ 73%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/houdini_html_e.c.o
+[ 76%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/houdini_html_u.c.o
+[ 78%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/cmark_ctype.c.o
+[ 81%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/arena.c.o
+[ 84%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/linked_list.c.o
+[ 86%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/syntax_extension.c.o
+[ 89%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/registry.c.o
+[ 92%] Building C object src/CMakeFiles/libcmark-gfm_static.dir/plugin.c.o
+[ 94%] Linking C static library libcmark-gfm.a
+[ 94%] Built target libcmark-gfm_static
+[ 97%] Building C object src/CMakeFiles/cmark-gfm.dir/main.c.o
+[100%] Linking C executable cmark-gfm
+[100%] Built target cmark-gfm
+   Compiling ferromark-cmark-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/cmark-gfm)
+    Finished `release` profile [optimized] target(s) in 3.74s
+all modules verified
+  Wiederherzustellende Projekte werden ermittelt...
+  "/private/tmp/ferromark-workflow-field-build/sources/markdig/MarkdigDriver.csproj" wiederhergestellt (in 360 ms.).
+  MarkdigDriver -> /private/tmp/ferromark-workflow-field-build/sources/markdig/bin/Release/net10.0/osx-arm64/MarkdigDriver.dll
+  MarkdigDriver -> /private/tmp/ferromark-workflow-field-build/markdig-runtime/
+warning: profile package spec `bun_react_compiler` in profile `release` did not match any packages
+   Compiling ferromark-bun-comparison v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/ferromark-comparison)
+   Compiling ferromark v0.9.0 (/Users/sebastian/Workspace/.codex/15d0/ferromark)
+warning: unused import: `serde_json::json`
+ --> ferromark-comparison/field.rs:2:5
+  |
+2 | use serde_json::json;
+  |     ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `Duration`, `Instant`, `hint::black_box`, and `io::Read`
+ --> ferromark-comparison/field.rs:4:5
+  |
+4 |     hint::black_box,
+  |     ^^^^^^^^^^^^^^^
+5 |     io::Read,
+  |     ^^^^^^^^
+6 |     time::{Duration, Instant},
+  |            ^^^^^^^^  ^^^^^^^
+
+warning: constant `PARSERS` is never used
+  --> ferromark-comparison/field.rs:12:7
+   |
+12 | const PARSERS: [&str; 5] = ["ferromark", "bun_md", "pulldown-cmark", "comrak", "md4c"];
+   |       ^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `CONFIGURATIONS` is never used
+  --> ferromark-comparison/field.rs:36:7
+   |
+36 | const CONFIGURATIONS: [(&str, u32); 5] = [
+   |       ^^^^^^^^^^^^^^
+
+warning: `ferromark-bun-comparison` (bin "ferromark-workflow-field") generated 4 warnings (run `cargo fix --bin "ferromark-workflow-field" -p ferromark-bun-comparison` to apply 2 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 15.78s
+   Compiling ferromark-workflows v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/basic)
+    Finished `release` profile [optimized] target(s) in 9.76s
+   Compiling ferromark-rushdown-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/rushdown)
+    Finished `release` profile [optimized] target(s) in 5.96s
+   Compiling ferromark-markdown-rs-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/markdown-rs)
+    Finished `release` profile [optimized] target(s) in 4.46s
+   Compiling ferromark-ox-content-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/ox-content)
+    Finished `release` profile [optimized] target(s) in 6.36s
+   Compiling ferromark-native-pipeline-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/satteri)
+    Finished `release` profile [optimized] target(s) in 13.24s
+   Compiling ferromark-cmark-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/md4c)
+    Finished `release` profile [optimized] target(s) in 4.86s
+CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Warning (dev) at CMakeLists.txt:40 (message):
+  'CMARK_SHARED' has been replaced with the standard 'BUILD_SHARED_LIBS' to
+  control the library type.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at CMakeLists.txt:46 (message):
+  'CMARK_STATIC' has been replaced with the standard 'BUILD_SHARED_LIBS' to
+  control the library type.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/ferromark-workflow-field-build/cmark-native
+[ 90%] Built target cmark
+[100%] Built target cmark_exe
+   Compiling ferromark-cmark-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/cmark)
+    Finished `release` profile [optimized] target(s) in 3.60s
+CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/ferromark-workflow-field-build/cmark-gfm-native
+[ 21%] Built target libcmark-gfm-extensions_static
+[ 94%] Built target libcmark-gfm_static
+[100%] Built target cmark-gfm
+   Compiling ferromark-cmark-comparison v0.0.0 (/private/tmp/ferromark-workflow-field-build/sources/cmark-gfm)
+    Finished `release` profile [optimized] target(s) in 3.61s
+all modules verified
+  Wiederherzustellende Projekte werden ermittelt...
+  Alle Projekte sind für die Wiederherstellung auf dem neuesten Stand.
+  MarkdigDriver -> /private/tmp/ferromark-workflow-field-build/sources/markdig/bin/Release/net10.0/osx-arm64/MarkdigDriver.dll
+  MarkdigDriver -> /private/tmp/ferromark-workflow-field-build/markdig-runtime/
+warning: profile package spec `bun_react_compiler` in profile `release` did not match any packages
+   Compiling ferromark-bun-comparison v0.0.0 (/private/tmp/ferromark-bun-publication-20260911/ferromark-comparison)
+    Finished `release` profile [optimized + debuginfo] target(s) in 11.44s

@@ -55,6 +55,36 @@ navigation IDs, omitted content, literal callouts, and unsafe HTML. This is a
 comparison of documented integrations, not an assertion that native defaults
 or every possible integration have the same semantics or cost.
 
+## The wider native engine field
+
+The collection comparison also covers the entire existing published native field:
+Bun, md4c, cmark, cmark-gfm, Goldmark, Sätteri, Rushdown, Markdig, markdown-rs,
+and Ox Content, alongside the three initial Rust engines. Every engine must
+complete all twelve files to receive collection timings. Unsupported dialects
+remain visible with their failed documents; the input collection is not trimmed.
+
+For this practical collection, Ox Content's additional generated heading IDs
+are admitted as extra navigation work. They must be nonempty and unique. Only
+the heading `id` is projected out for that reviewed difference; heading levels,
+content, other attributes, links, code, tables, and task states remain material.
+The original HTML is timed and archived. This scoped extension does not change
+the historical microbenchmark admission policy or the metadata lane's exact
+matching of navigation IDs.
+
+Cross-runtime memory uses the kernel's whole-process maximum RSS, including
+startup, runtime/JIT, input, stacks, allocator/GC reserves, and repeated workload
+execution. Record one peak for each of three fresh worker rounds, then report
+the median and range. Do not subtract a baseline or present RSS as incremental
+parser heap. The exact requested-heap experiment remains separate evidence.
+Use each runtime's normal owned output type and GC; native output-length checks
+must distinguish UTF-16 code units from UTF-8 bytes without adding transcoding
+to just one candidate. Keep Bun's native/nightly/mimalloc environment and fresh
+Ferromark baseline in their own panel.
+
+The wider HTML-only adapters do not complete the secure-preview and metadata
+contracts. The published coverage must state which full integrations are measured;
+an absent adapter is not evidence that an engine lacks the underlying capability.
+
 Inputs with renderer differences follow [ARCH-COMP-002](ARCH-COMP-002-workload-comparability.md).
 Raw outputs and reviewed differences are archived before timing; missing
 features, missing content, or resource-limit fallback prevent publication of a

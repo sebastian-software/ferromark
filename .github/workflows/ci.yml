@@ -116,6 +116,8 @@ jobs:
       - run: python3 -m unittest discover -s benchmarks/cmark-comparison -p "test_*.py"
       - run: python3 -m unittest discover -s benchmarks/native-pipeline-comparison -p "test_*.py"
       - run: python3 -m unittest discover -s benchmarks/workflows -p "test_*.py"
+      - run: python3 -m unittest discover -s benchmarks/workflows/field -p "test_*.py"
+      - run: python3 benchmarks/workflows/field/publish.py --check
       - run: python3 benchmarks/workflows/publish.py --check
       - run: python3 -m unittest discover -s scripts -p "test_ci_benchmarks.py"
       - run: python3 benchmarks/bun-comparison/publish.py --check
