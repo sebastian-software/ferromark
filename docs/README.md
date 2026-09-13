@@ -22,6 +22,9 @@ release it names; when crossing several releases, apply the guides in order.
 Consumer guides: [Markdown extensions](markdown-extensions.md) and
 [MDX integration](mdx.md).
 
+Application measurements: [practical workflows, runtime, and peak heap](reports/2026-09-13-practical-workflows/REPORT.md),
+with the [reproduction harness](../benchmarks/workflows/README.md).
+
 | Area | Contents |
 | --- | --- |
 | [arch/](arch/) | Architecture decision records (`ADR-*`), the parser comparison matrix (`ARCH-COMP-*`), performance experiments (`ARCH-EXP-*`), and the optimization backlog (`ARCH-PLAN-001`) |

@@ -273,6 +273,73 @@ the comparisons below document their specific workloads.
 
 <!-- workflow-benchmarks:start -->
 
+## Workflow benchmarks
+
+What does the Markdown step cost in an application? These workloads measure
+complete sets of documents, including output allocation and release. Time and
+memory come from separate runs so allocation tracking does not affect timings.
+
+### Preview user-authored comments
+
+Twelve authored examples, with Ferromark's secure defaults. Both APIs return owned HTML; a retained renderer reuses parser scratch.
+
+12 documents · 2,081 input bytes · 2,901 HTML bytes (Ferromark).
+
+| API / output lifetime | Time / complete workload | Peak live heap¹ | Allocated per workload² |
+| --- | ---: | ---: | ---: |
+| Fresh `to_html` calls | 11.5 µs | 6.9 KiB | 47.2 KiB |
+| Retained `Renderer` | 7.2 µs | 8.4 KiB | 5.6 KiB |
+
+### Render documentation with metadata
+
+Three actual guide pages, with the default untrusted policy. Includes HTML, raw front matter, and headings; each result is released.
+
+3 documents · 6,763 input bytes · 8,725 HTML bytes (Ferromark).
+
+| API / output lifetime | Time / complete workload | Peak live heap¹ | Allocated per workload² |
+| --- | ---: | ---: | ---: |
+| `parse`: HTML + front matter + headings | 20.1 µs | 20.6 KiB | 57.2 KiB |
+
+### Render a documentation collection
+
+Twelve actual documentation files. Trusted CommonMark plus tables, strikethrough, and task lists; equal reviewed HTML work across all three engines. Compare releasing each page with keeping every HTML result until the workload ends.
+
+12 documents · 53,656 input bytes · 63,318 HTML bytes (Ferromark).
+
+| API / output lifetime | Time / complete workload | Peak live heap¹ | Allocated per workload² |
+| --- | ---: | ---: | ---: |
+| Ferromark · release each page | 139.8 µs | 26.0 KiB | 216.9 KiB |
+| pulldown-cmark · release each page | 173.8 µs | 53.4 KiB | 585.6 KiB |
+| Comrak · release each page | 533.3 µs | 144.7 KiB | 1428.9 KiB |
+| Ferromark · keep all pages | 140.6 µs | 73.8 KiB | 217.6 KiB |
+| pulldown-cmark · keep all pages | 174.2 µs | 108.8 KiB | 586.3 KiB |
+| Comrak · keep all pages | 532.3 µs | 157.1 KiB | 1429.6 KiB |
+
+Reusing `Renderer` reduced time and allocation traffic for these previews.
+Its peak heap was higher: retained scratch remains part of the worker's memory budget.
+
+For the documentation collection, compare each engine's two output lifetimes
+before using a memory figure to size your pipeline. Keeping completed HTML
+in memory is application work included in the retained-output rows.
+
+The metadata row measures a complete HTML-and-metadata operation; it does
+not isolate the incremental cost of collecting headings or represent an
+end-to-end site build.
+
+¹ Peak simultaneously live **requested heap**, including retained parser scratch
+and the chosen HTML output lifetime. Loaded inputs, stack, allocator overhead,
+and cached pages are excluded; this is **not process RAM/RSS**. ² Cumulative
+allocation traffic, not simultaneously required memory.
+
+Apple M1 Pro, macOS 26.6.2, Rust 1.97.1, generic CPU target, system allocator.
+Three process rounds per variant; median of round medians. Native, warmed,
+single-threaded API work only: no Node.js bindings, I/O, templates, or syntax
+highlighting. These project snapshots and authored comments are examples, not
+a production-traffic distribution or a complete site build. No x86-64 run is included.
+
+[Full report, run variation, and source provenance](docs/reports/2026-09-13-practical-workflows/REPORT.md) ·
+[Reproduce the workloads](benchmarks/workflows/README.md).
+
 <!-- workflow-benchmarks:end -->
 
 ## Benchmarks

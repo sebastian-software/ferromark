@@ -160,6 +160,7 @@ function validateReaderJourney(document) {
     "MDX support",
     "Trade-offs",
     "How it works",
+    "Workflow benchmarks",
     "Benchmarks",
     "Building",
   ];
@@ -189,6 +190,20 @@ function validateReaderJourney(document) {
   const benchmarks = section(document, "Benchmarks");
   if (!/<details>\s*<summary>[^<]+<\/summary>[\s\S]+<\/details>\s*$/.test(benchmarks)) {
     failContract("benchmark tables and methodology must remain in a collapsed details block");
+  }
+
+  const workflows = section(document, "Workflow benchmarks");
+  for (const disclosure of [
+    "Peak live heap",
+    "allocation traffic",
+    "not process RAM/RSS",
+    "separate runs",
+    "benchmarks/workflows/README.md",
+    "docs/reports/2026-09-13-practical-workflows/REPORT.md",
+  ]) {
+    if (!workflows.includes(disclosure)) {
+      failContract(`workflow benchmarks must preserve ${JSON.stringify(disclosure)}`);
+    }
   }
 }
 
@@ -480,6 +495,16 @@ describe("README structure contract", () => {
       /both Rust and Node.js entry points/,
     );
   });
+
+  for (const disclosure of ["Peak live heap", "allocation traffic", "not process RAM/RSS"]) {
+    it(`rejects a missing workflow memory disclosure: ${disclosure}`, () => {
+      const workflows = section(document, "Workflow benchmarks");
+      assert.throws(
+        () => validate(document.replace(workflows, workflows.replaceAll(disclosure, "omitted"))),
+        /workflow benchmarks must preserve/,
+      );
+    });
+  }
 
   it("rejects benchmark tables expanded into the main reading flow", () => {
     const benchmarks = section(document, "Benchmarks");

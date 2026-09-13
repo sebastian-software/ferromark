@@ -239,6 +239,14 @@ const nativeProvenance = spawnSync(
     encoding: "utf8",
   },
 );
+const workflowProvenance = spawnSync("python3", ["benchmarks/workflows/publish.py", "--check"], {
+  cwd: repositoryRoot,
+  encoding: "utf8",
+});
+check(
+  workflowProvenance.status === 0,
+  `Workflow tables must agree with archived time and heap measurements: ${workflowProvenance.stderr || workflowProvenance.error || workflowProvenance.stdout}`,
+);
 check(
   nativeProvenance.status === 0,
   `Native pairs must agree with verified raw samples: ${nativeProvenance.stderr || nativeProvenance.error || nativeProvenance.stdout}`,
