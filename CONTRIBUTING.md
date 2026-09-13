@@ -58,6 +58,18 @@ pnpm test
 
 ## Running benchmarks
 
+For application-oriented latency and peak-heap measurements, see the
+[practical workflow harness](benchmarks/workflows/README.md). It freezes real
+documentation snapshots and authored preview messages, verifies complete
+output work, and measures timing separately from allocation accounting.
+Its publisher updates both the README source and the benchmark guide from the
+archived evidence; follow with `mise run readme:write`.
+
+```bash
+python3 -m unittest discover -s benchmarks/workflows -p 'test_*.py'
+python3 benchmarks/workflows/publish.py --check
+```
+
 The current README/homepage tables come from the
 [five-parser native harness](benchmarks/bun-comparison/README.md), including Bun.
 It verifies output and repeats the public cases before generating figures:

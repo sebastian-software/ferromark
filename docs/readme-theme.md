@@ -43,6 +43,12 @@ before adopting this theme revision. Keep badge markup outside raw HTML blocks.
 
 ## Benchmark content
 
+The application-workflow tables are generated independently by
+`python3 benchmarks/workflows/publish.py` from their archived time and heap
+observations. That publisher owns the `workflow-benchmarks` block in both
+`README.md.src` and the homepage benchmark guide. Run it before
+`mise run readme:write`; `--check` verifies the source and composed output.
+
 The benchmark section in `README.md.src` is generated from archived evidence.
 Update it through the publishers before composing the themed README:
 
