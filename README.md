@@ -279,43 +279,32 @@ the comparisons below document their specific workloads.
 
 What does the Markdown step cost in an application? These workloads measure
 complete sets of documents, including output allocation and release. Time and
-memory come from separate runs so allocation tracking does not affect timings.
+exact Rust heap measurements come from separate runs so allocation tracking does not affect timings.
 
 ### Preview user-authored comments
 
-Twelve authored examples, with Ferromark's secure defaults. Both APIs return owned HTML; a retained renderer reuses parser scratch.
+Twelve authored examples. Ferromark uses secure defaults; pulldown-cmark and Comrak use application adapters for matching HTML escaping, URL checks, heading IDs, and callouts. Each returns owned HTML that is released immediately. The retained `Renderer` is Ferromark's scratch-reuse variant.
 
 12 documents · 2,081 input bytes · 2,901 HTML bytes (Ferromark).
 
 | API / output lifetime | Time / complete workload | Peak live heap¹ | Allocated per workload² |
 | --- | ---: | ---: | ---: |
-| Fresh `to_html` calls | 11.5 µs | 6.9 KiB | 47.2 KiB |
-| Retained `Renderer` | 7.2 µs | 8.4 KiB | 5.6 KiB |
+| Ferromark · Fresh `to_html` calls | 11.7 µs | 6.9 KiB | 47.2 KiB |
+| Ferromark · Retained `Renderer` | 7.3 µs | 8.4 KiB | 5.6 KiB |
+| pulldown-cmark + preview adapter | 15.1 µs | 17.2 KiB | 202.5 KiB |
+| Comrak + preview adapter | 38.8 µs | 7.9 KiB | 115.4 KiB |
 
 ### Render documentation with metadata
 
-Three actual guide pages, with the default untrusted policy. Includes HTML, raw front matter, and headings; each result is released.
+Three actual guide pages, rendered under the same untrusted policy. Ferromark `parse` and the two application adapters return HTML, raw front matter, and headings with matching navigation IDs; each complete result is released.
 
 3 documents · 6,763 input bytes · 8,725 HTML bytes (Ferromark).
 
 | API / output lifetime | Time / complete workload | Peak live heap¹ | Allocated per workload² |
 | --- | ---: | ---: | ---: |
-| `parse`: HTML + front matter + headings | 20.1 µs | 20.6 KiB | 57.2 KiB |
-
-### Render a documentation collection
-
-Twelve actual documentation files. Trusted CommonMark plus tables, strikethrough, and task lists; equal reviewed HTML work across all three engines. Compare releasing each page with keeping every HTML result until the workload ends.
-
-12 documents · 53,656 input bytes · 63,318 HTML bytes (Ferromark).
-
-| API / output lifetime | Time / complete workload | Peak live heap¹ | Allocated per workload² |
-| --- | ---: | ---: | ---: |
-| Ferromark · release each page | 139.8 µs | 26.0 KiB | 216.9 KiB |
-| pulldown-cmark · release each page | 173.8 µs | 53.4 KiB | 585.6 KiB |
-| Comrak · release each page | 533.3 µs | 144.7 KiB | 1428.9 KiB |
-| Ferromark · keep all pages | 140.6 µs | 73.8 KiB | 217.6 KiB |
-| pulldown-cmark · keep all pages | 174.2 µs | 108.8 KiB | 586.3 KiB |
-| Comrak · keep all pages | 532.3 µs | 157.1 KiB | 1429.6 KiB |
+| Ferromark · `parse`: HTML + front matter + headings | 20.3 µs | 20.6 KiB | 57.2 KiB |
+| pulldown-cmark + metadata adapter | 31.1 µs | 44.2 KiB | 118.0 KiB |
+| Comrak + metadata adapter | 80.4 µs | 71.6 KiB | 223.2 KiB |
 
 Reusing `Renderer` reduced time and allocation traffic for these previews.
 Its peak heap was higher: retained scratch remains part of the worker's memory budget.
@@ -324,9 +313,14 @@ For the documentation collection, compare each engine's two output lifetimes
 before using a memory figure to size your pipeline. Keeping completed HTML
 in memory is application work included in the retained-output rows.
 
-The metadata row measures a complete HTML-and-metadata operation; it does
+The metadata rows measure complete HTML-and-metadata operations; they do
 not isolate the incremental cost of collecting headings or represent an
 end-to-end site build.
+
+Preview and metadata comparisons include the application adapters needed
+by pulldown-cmark and Comrak. Their escaping, URL checks, heading IDs,
+and metadata collection are timed and counted in heap usage. These are
+complete integration costs, not rankings of body-only parser calls.
 
 ¹ Peak simultaneously live **requested heap**, including retained parser scratch
 and the chosen HTML output lifetime. Loaded inputs, stack, allocator overhead,
@@ -339,8 +333,61 @@ single-threaded API work only: no Node.js bindings, I/O, templates, or syntax
 highlighting. These project snapshots and authored comments are examples, not
 a production-traffic distribution or a complete site build. No x86-64 run is included.
 
-[Full report, run variation, and source provenance](docs/reports/2026-09-13-practical-workflows/REPORT.md) ·
+[Full report, run variation, and source provenance](docs/reports/2026-09-13-workflow-comparisons/REPORT.md) ·
 [Reproduce the workloads](benchmarks/workflows/README.md).
+
+### Render a documentation collection across the native engine field
+
+Twelve actual documentation files, 53,656 input bytes, with trusted
+CommonMark plus tables, strikethrough, and tasks. Every timed row completes the entire
+collection. Native defaults for allocation, GC, and output representation
+remain in place; Markdig returns UTF-16 strings, the other workers UTF-8.
+
+| Engine | Release each: time | Keep all: time | Release each: peak process RSS | Keep all: peak process RSS |
+| --- | ---: | ---: | ---: | ---: |
+| Ferromark | 137.4 µs | 138.0 µs | 3.0 MiB | 3.1 MiB |
+| pulldown-cmark | 173.5 µs | 173.9 µs | 3.1 MiB | 3.2 MiB |
+| Comrak | 530.8 µs | 528.3 µs | 3.5 MiB | 3.5 MiB |
+| md4c | 195.7 µs | 196.4 µs | 2.6 MiB | 2.7 MiB |
+| cmark | Not comparable (9/12 complete documents) | — | — | — |
+| cmark-gfm | 454.1 µs | 456.0 µs | 2.6 MiB | 2.8 MiB |
+| Goldmark | 606.4 µs | 606.6 µs | 14.7 MiB | 14.4 MiB |
+| Sätteri | 288.3 µs | 287.8 µs | 3.8 MiB | 3.8 MiB |
+| Rushdown | 384.6 µs | 385.3 µs | 3.3 MiB | 3.3 MiB |
+| Markdig | 330.2 µs | 329.5 µs | 70.3 MiB | 70.3 MiB |
+| markdown-rs | 3829.7 µs | 3815.0 µs | 5.7 MiB | 5.5 MiB |
+| Ox Content | **87.8 µs** | **87.4 µs** | **2.5 MiB** | **2.6 MiB** |
+
+Ox Content had the lowest collection time with immediate release in this run: 87.8 µs. Ferromark took 137.4 µs. This result applies to the complete archived workload, not every Markdown application.
+
+Bun's native support uses its pinned nightly compiler and shared mimalloc.
+This separate environment has its own freshly measured Ferromark baseline:
+
+| Engine | Release each: time | Keep all: time | Release each: peak process RSS | Keep all: peak process RSS |
+| --- | ---: | ---: | ---: | ---: |
+| Ferromark (Bun support) | **128.1 µs** | **129.1 µs** | 3.1 MiB | 3.1 MiB |
+| Bun (native) | 331.8 µs | 332.5 µs | **3.0 MiB** | **3.0 MiB** |
+
+Bold marks the lowest unrounded observation in each column and environment.
+
+**Process RSS is a different memory measurement from the Rust heap table.**
+It includes the runtime/JIT, stacks, input, allocator/GC reserves, and worker
+infrastructure. Each cell is the median of three whole-process peaks during
+startup, warmup, repeated collection work, and shutdown. It is not incremental
+parser memory, a single-request peak, or a concurrent-service capacity estimate.
+
+Timing still surrounds only completed Markdown work. GC in those windows is
+included; OS peak-RSS accounting needs no instrumented allocator. Collection
+timings and the earlier Rust heap measurements are separate fresh runs.
+
+Ox Content's extra generated heading IDs may be admitted as additional output;
+content, heading levels, links, tables, and checkbox states must remain intact.
+cmark's core-only dialect cannot complete the GFM collection. No input is
+removed to obtain a timing row. Full secure-preview and metadata adapters are
+currently measured for Ferromark, pulldown-cmark, and Comrak only; the wider
+HTML-only collection comparison does not establish those additional contracts.
+
+[All engine versions, reviewed output differences, variation, and raw evidence](docs/reports/2026-09-13-workflow-engine-field/REPORT.md).
 
 <!-- workflow-benchmarks:end -->
 

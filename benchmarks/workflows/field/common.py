@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 FIELD = Path(__file__).resolve().parent
-sys.path.insert(0, str(FIELD.parent))
+sys.path.append(str(FIELD.parent))
 from support import ROOT, Worker, read_json, sha, write_json
 from workload import CanonicalHTML, workload_review, _review_tasks, _review_alignment
 

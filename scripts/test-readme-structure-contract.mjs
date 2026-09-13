@@ -199,10 +199,32 @@ function validateReaderJourney(document) {
     "not process RAM/RSS",
     "separate runs",
     "benchmarks/workflows/README.md",
-    "docs/reports/2026-09-13-practical-workflows/REPORT.md",
+    "docs/reports/2026-09-13-workflow-comparisons/REPORT.md",
+    "docs/reports/2026-09-13-workflow-engine-field/REPORT.md",
+    "peak process RSS",
+    "UTF-16",
   ]) {
     if (!workflows.includes(disclosure)) {
       failContract(`workflow benchmarks must preserve ${JSON.stringify(disclosure)}`);
+    }
+  }
+  for (const engine of [
+    "Ferromark",
+    "pulldown-cmark",
+    "Comrak",
+    "md4c",
+    "cmark",
+    "cmark-gfm",
+    "Goldmark",
+    "Sätteri",
+    "Rushdown",
+    "Markdig",
+    "markdown-rs",
+    "Ox Content",
+    "Bun (native)",
+  ]) {
+    if (!workflows.includes(`| ${engine} |`)) {
+      failContract(`workflow benchmarks must show the wider engine field, including ${engine}`);
     }
   }
 }
