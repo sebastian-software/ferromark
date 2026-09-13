@@ -1,0 +1,255 @@
+{
+  "rounds": 3,
+  "pairs_per_round": 3,
+  "window_ms": 75,
+  "warmup_ms": 75,
+  "seed": 20260913,
+  "groups": [
+    {
+      "name": "tiny",
+      "profile": "commonmark",
+      "cases": [
+        "tiny"
+      ]
+    },
+    {
+      "name": "short-authored-prose",
+      "profile": "commonmark",
+      "cases": [
+        "short-authored-prose"
+      ]
+    },
+    {
+      "name": "plain-text-10k",
+      "profile": "commonmark",
+      "cases": [
+        "plain-text-10k"
+      ]
+    },
+    {
+      "name": "link-heavy",
+      "profile": "commonmark",
+      "cases": [
+        "link-heavy"
+      ]
+    },
+    {
+      "name": "nested-lists",
+      "profile": "commonmark",
+      "cases": [
+        "nested-lists"
+      ]
+    },
+    {
+      "name": "fenced-code",
+      "profile": "commonmark",
+      "cases": [
+        "fenced-code"
+      ]
+    },
+    {
+      "name": "escape-heavy",
+      "profile": "commonmark",
+      "cases": [
+        "escape-heavy"
+      ]
+    },
+    {
+      "name": "gfm-task-autolink",
+      "profile": "gfm",
+      "cases": [
+        "gfm-task-autolink"
+      ]
+    },
+    {
+      "name": "reference-heavy",
+      "profile": "commonmark",
+      "cases": [
+        "reference-heavy"
+      ]
+    },
+    {
+      "name": "commonmark-5k",
+      "profile": "commonmark",
+      "cases": [
+        "commonmark-5k"
+      ]
+    },
+    {
+      "name": "commonmark-20k",
+      "profile": "commonmark",
+      "cases": [
+        "commonmark-20k"
+      ]
+    },
+    {
+      "name": "commonmark-50k",
+      "profile": "commonmark",
+      "cases": [
+        "commonmark-50k"
+      ]
+    },
+    {
+      "name": "tables-plain",
+      "profile": "gfm",
+      "cases": [
+        "tables-plain"
+      ]
+    },
+    {
+      "name": "tables-commonmark-inline",
+      "profile": "gfm",
+      "cases": [
+        "tables-commonmark-inline"
+      ]
+    },
+    {
+      "name": "tables-links",
+      "profile": "gfm",
+      "cases": [
+        "tables-links"
+      ]
+    },
+    {
+      "name": "real-readme",
+      "profile": "gfm",
+      "cases": [
+        "real-readme"
+      ]
+    },
+    {
+      "name": "rotating-commonmark",
+      "profile": "commonmark",
+      "cases": [
+        "tiny",
+        "short-authored-prose",
+        "plain-text-10k",
+        "link-heavy",
+        "nested-lists",
+        "fenced-code",
+        "escape-heavy",
+        "reference-heavy",
+        "commonmark-5k",
+        "commonmark-20k",
+        "commonmark-50k"
+      ]
+    },
+    {
+      "name": "rotating-gfm",
+      "profile": "gfm",
+      "cases": [
+        "gfm-task-autolink",
+        "tables-plain",
+        "tables-commonmark-inline",
+        "tables-links"
+      ]
+    }
+  ],
+  "host_before": {
+    "time_utc": "2026-09-13T21:14:59Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      4.93505859375,
+      4.0673828125,
+      3.78857421875
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-13T21:16:39Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      3.81396484375,
+      4.03662109375,
+      3.81298828125
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "observations": [
+    {
+      "round": 0,
+      "before": {
+        "time_utc": "2026-09-13T21:14:59Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          4.93505859375,
+          4.0673828125,
+          3.78857421875
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-13T21:15:32Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          5.21923828125,
+          4.2578125,
+          3.86962890625
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    },
+    {
+      "round": 1,
+      "before": {
+        "time_utc": "2026-09-13T21:15:32Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          5.21923828125,
+          4.2578125,
+          3.86962890625
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-13T21:16:06Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          4.39794921875,
+          4.1513671875,
+          3.84326171875
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    },
+    {
+      "round": 2,
+      "before": {
+        "time_utc": "2026-09-13T21:16:06Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          4.39794921875,
+          4.1513671875,
+          3.84326171875
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-13T21:16:39Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          3.81396484375,
+          4.03662109375,
+          3.81298828125
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    }
+  ]
+}
