@@ -1,0 +1,142 @@
+[
+  {
+    "index": 0,
+    "case": "ox-large-cm",
+    "baseline_ns": 234365.07738095237,
+    "candidate_ns": 233379.71130952382,
+    "change_pct": -0.4204406571320707
+  },
+  {
+    "index": 2,
+    "case": "ox-huge-tables",
+    "baseline_ns": 5923974.0,
+    "candidate_ns": 5929375.0,
+    "change_pct": 0.09117190588614488
+  },
+  {
+    "index": 3,
+    "case": "short",
+    "baseline_ns": 490.26692245346163,
+    "candidate_ns": 464.9741866693116,
+    "change_pct": -5.158972515946337
+  },
+  {
+    "index": 4,
+    "case": "short-reuse",
+    "baseline_ns": 193.41446703387382,
+    "candidate_ns": 195.34809559528276,
+    "change_pct": 0.9997331590869463
+  },
+  {
+    "index": 7,
+    "case": "inline",
+    "baseline_ns": 39459.143382352944,
+    "candidate_ns": 39074.0234375,
+    "change_pct": -0.9759967192424668
+  },
+  {
+    "index": 11,
+    "case": "headings",
+    "baseline_ns": 37575.375,
+    "candidate_ns": 37947.475302419356,
+    "change_pct": 0.9902770163154884
+  },
+  {
+    "index": 12,
+    "case": "unique-headings",
+    "baseline_ns": 33764.48246402878,
+    "candidate_ns": 33527.02767857143,
+    "change_pct": -0.7032679553442556
+  },
+  {
+    "index": 33,
+    "case": "guard/escapes-code",
+    "baseline_ns": 66062.38996478873,
+    "candidate_ns": 65547.49045138889,
+    "change_pct": -0.7794139958821944
+  },
+  {
+    "index": 35,
+    "case": "guard/links-prose",
+    "baseline_ns": 35575.856060606064,
+    "candidate_ns": 35461.270206766916,
+    "change_pct": -0.32208881676365486
+  },
+  {
+    "index": 79,
+    "case": "corpus/vue-docs/src/guide/built-ins/suspense.md",
+    "baseline_ns": 16430.807473776225,
+    "candidate_ns": 16381.995862369338,
+    "change_pct": -0.29707372254705877
+  },
+  {
+    "index": 108,
+    "case": "corpus/vue-docs/src/guide/extras/render-function.md",
+    "baseline_ns": 38393.081300813006,
+    "candidate_ns": 37889.70110887097,
+    "change_pct": -1.3111221472379642
+  },
+  {
+    "index": 698,
+    "case": "html/script-long-lines",
+    "baseline_ns": 3606.6365865384614,
+    "candidate_ns": 3601.976526497696,
+    "change_pct": -0.12920791792992992
+  },
+  {
+    "index": 707,
+    "case": "fence/root-long",
+    "baseline_ns": 5663.109525966183,
+    "candidate_ns": 5660.220597104946,
+    "change_pct": -0.05101312005341141
+  },
+  {
+    "index": 745,
+    "case": "target/tag-code-prose",
+    "baseline_ns": 65179.868055555555,
+    "candidate_ns": 28795.9486196319,
+    "change_pct": -55.82079332365648
+  },
+  {
+    "index": 746,
+    "case": "target/plain-code-prose",
+    "baseline_ns": 19081.49136178862,
+    "candidate_ns": 18639.18849206349,
+    "change_pct": -2.3179680316332885
+  },
+  {
+    "index": 747,
+    "case": "target/html-prose",
+    "baseline_ns": 12783.58446866485,
+    "candidate_ns": 12721.13533197832,
+    "change_pct": -0.4885103770355448
+  },
+  {
+    "index": 748,
+    "case": "target/uri-autolinks",
+    "baseline_ns": 29705.745648734177,
+    "candidate_ns": 29471.566015625,
+    "change_pct": -0.7883311056329445
+  },
+  {
+    "index": 749,
+    "case": "target/email-autolinks",
+    "baseline_ns": 34752.93194444444,
+    "candidate_ns": 34352.113594890514,
+    "change_pct": -1.1533367895251834
+  },
+  {
+    "index": 750,
+    "case": "target/code-and-autolinks",
+    "baseline_ns": 70593.75,
+    "candidate_ns": 40391.93856837607,
+    "change_pct": -42.78255714085727
+  },
+  {
+    "index": 754,
+    "case": "target/dense-code",
+    "baseline_ns": 57193.429969879515,
+    "candidate_ns": 55825.73735119047,
+    "change_pct": -2.391345683252999
+  }
+]
