@@ -1,5 +1,6 @@
 """Complete-document admission and cross-runtime process measurements."""
 import hashlib
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -22,6 +23,7 @@ LABELS = {"ferromark": "Ferromark", "pulldown": "pulldown-cmark", "comrak": "Com
 
 class FieldWorker(Worker):
     def __init__(self, config, corpus, group="documentation", lifetime="stream"):
+        self.engine = config["engine"]
         env = os.environ.copy()
         for key in list(env):
             if key.startswith(("DOTNET_", "COMPlus_")) or key in ("GOGC", "GOMEMLIMIT", "GOMAXPROCS", "LD_PRELOAD", "DYLD_INSERT_LIBRARIES"):
@@ -31,13 +33,22 @@ class FieldWorker(Worker):
         self.process = subprocess.Popen([*config["command"], config["engine"], str(corpus), group, lifetime],
                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, env=env)
 
+    def ask(self, action, **fields):
+        self.process.stdin.write(json.dumps({"action": action, **fields}) + "\n")
+        self.process.stdin.flush()
+        line = self.process.stdout.readline()
+        if not line:
+            # Do not poll/reap here: close() needs wait4's per-child accounting.
+            raise RuntimeError(f"No response from {self.engine} field worker")
+        return json.loads(line)
+
     def close(self):
         self.process.stdin.close()
         _, status, usage = os.wait4(self.process.pid, 0)
         self.process.returncode = os.waitstatus_to_exitcode(status)
         self.process.stdout.close()
         if self.process.returncode:
-            raise RuntimeError(f"Field worker failed: {self.process.returncode}")
+            raise RuntimeError(f"{self.engine} field worker failed: {self.process.returncode}")
         return {"peak_rss_bytes": usage.ru_maxrss, "user_cpu_seconds": usage.ru_utime, "system_cpu_seconds": usage.ru_stime}
 
 
