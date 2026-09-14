@@ -1,0 +1,43 @@
+{
+  "rounds": 2,
+  "pairs": 3,
+  "window_ms": 30,
+  "modes": [
+    "fresh",
+    "reuse",
+    "init",
+    "parse",
+    "render"
+  ],
+  "same_ast": [
+    "current",
+    "control",
+    "skip"
+  ],
+  "seed": 20260914,
+  "host_before": {
+    "time_utc": "2026-09-14T18:41:07Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "cpu": "arm64",
+    "load_average": [
+      3.98974609375,
+      3.7763671875,
+      3.220703125
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "runner_sha256": "ace68cbb9bf2e527a0d288bc859a612beeaf33d014a76bfdbeb1171896a2e068",
+  "host_after": {
+    "time_utc": "2026-09-14T18:42:05Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "cpu": "arm64",
+    "load_average": [
+      4.02880859375,
+      3.8642578125,
+      3.29248046875
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}
