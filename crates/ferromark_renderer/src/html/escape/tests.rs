@@ -102,6 +102,24 @@ fn url_escape_matches_reference_at_every_offset_and_tail() {
 }
 
 #[test]
+fn runs_of_every_length_are_copied_intact() {
+    for len in 0..=200 {
+        let run: String =
+            (0..len).map(|i| char::from(b'a' + u8::try_from(i % 26).unwrap())).collect();
+        for (prefix, suffix) in [("", ""), ("&", ""), ("", "<"), ("'", "\"")] {
+            let source = format!("{prefix}{run}{suffix}");
+            check(&source);
+            let mut out = String::from("existing-content");
+            write_escaped_into(&mut out, &source);
+            assert_eq!(
+                out,
+                format!("existing-content{}", reference(&source, &ESCAPE_FLAG, &ESCAPE_TABLE))
+            );
+        }
+    }
+}
+
+#[test]
 fn commonmark_url_syntax_bytes_are_percent_encoded() {
     for (source, expected) in [
         (r"foo\bar", "foo%5Cbar"),
