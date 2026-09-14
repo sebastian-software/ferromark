@@ -222,61 +222,73 @@ the covered cases.
 
 The [repeatable spec audit](benchmarks/compatibility-audit/README.md) and the
 [106-case live oracle](benchmarks/compatibility-audit/CMARK.md) pass their failure
-gates. The correction report records the short performance check; the full
-six-engine comparison below remains a historical pre-correction measurement.
+gates. The native comparison below reruns the corrected core with explicit
+syntax and renderer settings across all six engines.
 
 ## Native engine comparison
 
-On an Apple M1 Pro, the v2 core **before the correctness fixes** led the geometric
-mean of the 57-document mix in this native Markdown→HTML comparison. This is a
-historical measurement, not a rerun of the corrected core. The corpus spans **37–113,609 UTF-8
-bytes**: comments, project documentation, and Wikipedia-derived prose.
-**Speed relative to v2: higher is faster; v2 = 1.00×.**
+The current local cores, **v2 `33c216b` and v1 `4e15141`**, were rerun with
+explicit syntax and renderer flags on the original **57 documents (37–113,609
+UTF-8 bytes)**. Each scored column uses the same input set and equivalent HTML
+for every included engine. **Speed relative to v2: higher is faster; v2 = 1.00×.**
 
-| Engine | Fresh, all 57 | Reuse, all 57 | Fresh, 14 agreeing outputs |
-| --- | ---: | ---: | ---: |
-| Ferromark v2 | 1.00× | 1.00× | 1.00× |
-| OX-Content original | 0.97× | 0.97× | 1.00× |
-| Ferromark v1 | 0.72× | 0.75× | 0.81× |
-| md4c | 0.38× | 0.36× | 0.26× |
-| pulldown-cmark | 0.51× | 0.48× | 0.46× |
-| Bun native core | 0.23× | 0.20× | 0.17× |
+| Engine | Fresh, 14 agreeing across six | Reuse, same 14 | Fresh, 50 agreeing across five | Reuse, same 50 |
+| --- | ---: | ---: | ---: | ---: |
+| Ferromark v2 | 1.00× | 1.00× | 1.00× | 1.00× |
+| OX-Content original | 1.09× | 1.12× | — | — |
+| Ferromark v1 | 0.78× | 0.82× | 0.66× | 0.69× |
+| md4c | 0.26× | 0.21× | 0.37× | 0.34× |
+| pulldown-cmark | 0.44× | 0.37× | 0.46× | 0.44× |
+| Bun native bun_md | 0.18× | 0.14× | 0.23× | 0.21× |
 
-All engines call their native parser and HTML renderer directly; no JavaScript,
-WASM, process startup, or file I/O is timed. Bun means its original native
-`bun_md` engine, not the full Bun runtime. Reuse retains state where the public
-API permits; Bun still uses its owned-output API. Three process rounds with six
-rotating measurement windows per round use the same Rust compiler, mimalloc,
-and pinned dependency environment. These are configured engine measurements,
-not stock release builds or secure product defaults.
+**OX-Content original leads the smaller all-six fresh aggregate;
+Ferromark v2 leads the broader five-engine fresh aggregate.** On the latter,
+v2 runs at 1.52× v1's speed fresh and
+1.45× with reuse. Individual documents can
+favor v1, including the 310-byte table comment in both lifecycles.
 
-**Output differences matter:** the measured OX and v2 builds are byte-identical on all 57 inputs.
-Only 14 cases agree across all six engines: ten comments and four plain-prose
-views. The other 43 remain in the all-workload diagnostics: 34 differ only in
-heading IDs, and nine have additional differences. The GFM lane uses the shared
-subset of tables, strikethrough, and task lists; MDX and bare URL autolinking are off.
+The all-six subset contains ten comments and four plain-prose views. The broader
+five-engine subset also covers technical docs, linked encyclopedia excerpts,
+references, and READMEs. Both agreeing subsets span 37–80,966 bytes. OX has no
+score in the five-engine columns: its original renderer cannot disable heading
+IDs, callouts, inline TOCs, or fence metadata cleanup. Its 39 heading-ID-only
+differences are not normalized away. The seven cases outside five-engine
+agreement remain measured as diagnostics, including task CSS and link/content
+differences.
 
-Selected size/content groups, fresh lifecycle, with the same speed scale:
+All engines parse and render natively. The CommonMark lane disables optional
+syntax; the extension lane enables only **tables, strikethrough, and task lists**.
+It is not full GFM. Bare URL autolinking, footnotes, frontmatter, line comments,
+definition lists, MDX, and optional renderer extras are off where configurable.
+Raw HTML passes through; these explicit benchmark settings differ from library
+defaults.
 
-| Group | N | OX original | V1 | md4c | pulldown | Bun native |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| <512 B | 12 | 0.99× | 0.79× | 0.28× | 0.59× | 0.29× |
-| 32–128 KiB | 12 | 0.98× | 0.77× | 0.36× | 0.43× | 0.14× |
-| comments | 12 | 1.00× | 0.83× | 0.29× | 0.57× | 0.26× |
-| technical-docs | 22 | 0.98× | 0.71× | 0.44× | 0.50× | 0.22× |
-| plain-prose | 4 | 1.00× | 0.80× | 0.25× | 0.30× | 0.06× |
+Fresh includes parser/renderer setup, complete processing, owned output, and
+destruction. Reuse retains state where the public API permits; Bun's native
+`bun_md` still uses its fresh owned-output API. No JavaScript, WASM, process
+startup, file I/O, or output normalization is timed. One macOS arm64 executable,
+one Rust compiler, shared mimalloc and the same pinned dependency lock; three
+process rounds with six rotating windows per round. Small differences on this
+shared workstation are not established significance.
 
-This is not a win on every document: V1 is about **11% faster fresh / 16% faster
-with reuse on the 310-byte table comment**. V1 and v2 are approximately tied on
-reference documents with reuse. The roughly 3% aggregate gap between v2 and OX
-is small and almost disappears in the strict-agreement subset.
+Selected groups, **fresh**, using only the five-engine agreement subset and
+the same speed scale:
 
-[Full results and per-document timings](docs/reports/2026-09-14-native-engines/README.md),
-[versions and build conditions](docs/reports/2026-09-14-native-engines/PROVENANCE.md),
-[HTML differences](docs/reports/2026-09-14-native-engines/OUTPUT-REVIEW.md), and the
-[reproducible harness](benchmarks/native-comparison/README.md) include raw windows,
-output, source/lock hashes, and all size groups. Small differences and the
-overlapping Wikipedia views should not be treated as independent statistical evidence.
+| Group, five-engine agreement | N | V1 | md4c | pulldown | Bun native |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| <512 B | 10 | 0.81× | 0.25× | 0.56× | 0.29× |
+| 32–128 KiB | 7 | 0.62× | 0.31× | 0.34× | 0.11× |
+| comments | 11 | 0.82× | 0.26× | 0.54× | 0.28× |
+| technical-docs | 21 | 0.61× | 0.41× | 0.43× | 0.22× |
+| plain-prose | 4 | 0.70× | 0.28× | 0.25× | 0.07× |
+
+
+[Full results and per-document timings](docs/reports/2026-09-14-native-matched/README.md),
+[exact flags](docs/reports/2026-09-14-native-matched/FLAGS.md), and
+[HTML differences](docs/reports/2026-09-14-native-matched/OUTPUT-REVIEW.md)
+include raw measurements, source hashes, and reproducible configuration.
+The [older pre-correction six-engine run](docs/reports/2026-09-14-native-engines/README.md)
+is retained as historical evidence.
 
 The historical [two-engine broad Markdown comparison](docs/reports/2026-09-14-broad-markdown/INTERPRETATION.md)
 measures 57 cases from 37 bytes to 114 KB: short comments, real documentation,

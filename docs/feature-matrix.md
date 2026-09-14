@@ -7,18 +7,18 @@ is identical, or that every edge case conforms to a specification. A missing
 built-in feature can often be implemented by a caller using events or hooks.
 
 The comparison uses the same six engines as the native benchmark. Ferromark v2
-is the local core at `40047f7`, including the compatibility corrections,
+is the local core at `33c216b`, including the compatibility corrections,
 [smart-punctuation removal](typography.md), [table extensions](table-layout.md),
 and [line comments](line-comments.md), plus [frontmatter extraction](front-matter.md);
-the other five sources are the exact
-benchmark pins. This avoids mixing newer upstream features into an older timing
-comparison. Feature availability and timed configuration remain separate: the
-benchmark enabled only a shared subset of Markdown extensions.
+the current native benchmark also refreshes v1 to local `4e15141`. The remaining
+four sources retain their original pins. Feature availability and timed
+configuration remain separate: the benchmark enables only a shared subset of
+Markdown extensions and disables optional renderer conveniences where possible.
 
 | Engine | Reviewed source |
 | --- | --- |
-| Ferromark v1 | [0.9.0, `143ec2ce`](https://github.com/sebastian-software/ferromark/tree/143ec2ce151d87d2a3d804a048014afc97733ae0) |
-| Ferromark v2 | Local `40047f7` plus [frontmatter extraction](front-matter.md); [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs), and [table layout](table-layout.md) |
+| Ferromark v1 | 0.9.0, local `4e15141`; original feature review at [published `143ec2ce`](https://github.com/sebastian-software/ferromark/tree/143ec2ce151d87d2a3d804a048014afc97733ae0), benchmark option contract rechecked on the local pin |
+| Ferromark v2 | Local `33c216b`; [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs), and [table layout](table-layout.md) |
 | OX-Content | [3.2.3, `a71a5893`](https://github.com/ubugeeei-prod/ox-content/tree/a71a58939ffe7f154117cea026f6d6e71a139393) — parser/renderer core |
 | pulldown-cmark | [0.13.4 options](https://docs.rs/pulldown-cmark/0.13.4/pulldown_cmark/struct.Options.html) |
 | md4c | [`65c6c9d7` flags and event types](https://github.com/mity/md4c/blob/65c6c9d72cebd9a731aaa5597414ce04d9ea5de3/src/md4c.h) |
@@ -26,7 +26,7 @@ benchmark enabled only a shared subset of Markdown extensions.
 
 The pinned local source exports and registry package were inspected directly.
 Their revision and checksum provenance is in the
-[native benchmark record](reports/2026-09-14-native-engines/PROVENANCE.md).
+[current native benchmark record](reports/2026-09-14-native-matched/README.md).
 
 ## What the labels mean
 

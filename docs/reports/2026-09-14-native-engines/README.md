@@ -1,5 +1,10 @@
 # Six native Markdown engines — 2026-09-14
 
+Historical pre-correction run. The [current comparison with matched flags](../2026-09-14-native-matched/README.md)
+uses the corrected v2 core, current local v1, explicit renderer profiles, and
+separate all-six and configurable-five output-agreement subsets. The original
+measurements below are unchanged.
+
 Ferromark v2 leads the geometric mean of this 57-document Markdown→HTML mix.
 With fresh state, it is **1.39× as fast as current local Ferromark v1, 1.96× as
 fast as pulldown-cmark, 2.62× as fast as md4c, and 4.44× as fast as Bun's native
