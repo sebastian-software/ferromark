@@ -1,0 +1,27 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.32s
+     Running tests/spec_commonmark.rs (target/debug/deps/spec_commonmark-1fddf6632d372811)
+
+running 7 tests
+test normalize::text_codec::percent_decodes_once ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test commonmark_spec_conformance ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/spec_gfm.rs (target/debug/deps/spec_gfm-7980d1c0e3343836)
+
+running 7 tests
+test normalize::text_codec::percent_decodes_once ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test gfm_extension_conformance ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

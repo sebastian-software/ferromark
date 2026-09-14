@@ -1,0 +1,6 @@
+{"input":"foo\\bar","resolved":"https://host.example/base/foo/bar"}
+{"input":"foo%5Cbar","resolved":"https://host.example/base/foo%5Cbar"}
+{"input":"/url\\bar*baz","resolved":"https://host.example/url/bar*baz"}
+{"input":"/url%5Cbar*baz","resolved":"https://host.example/url%5Cbar*baz"}
+{"input":"https://example.com?find=\\*","resolved":"https://example.com/?find=\\*"}
+{"input":"https://example.com?find=%5C*","resolved":"https://example.com/?find=%5C*"}
