@@ -3,7 +3,7 @@ use ferromark_ast::{Node, Span};
 use super::Parser;
 use super::line_scan::{line_end, line_terminator_end, next_line_start};
 use super::prepass::next_fence_run_line;
-use crate::error::{ParseError, ParseResult};
+use crate::error::{ParseErrorKind, ParseResult};
 
 impl<'a> Parser<'a> {
     /// Finds the body end and cursor position after a closing fence.
@@ -74,7 +74,10 @@ impl<'a> Parser<'a> {
         }
 
         let Some(fence_char) = self.peek() else {
-            return Err(ParseError::UnexpectedEof { span: Span::new(start as u32, start as u32) });
+            return Err(ParseErrorKind::UnexpectedEof {
+                span: Span::new(start as u32, start as u32),
+            }
+            .into());
         };
         let mut fence_len = 0;
 

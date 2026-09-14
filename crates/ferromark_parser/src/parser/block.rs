@@ -5,7 +5,7 @@ use super::Parser;
 use super::line_scan::{
     is_line_ending_byte, line_terminator_end, next_line_start as scan_next_line_start,
 };
-use crate::error::{ParseError, ParseResult};
+use crate::error::{ParseErrorKind, ParseResult};
 
 impl<'a> Parser<'a> {
     pub(super) fn parse_block(&mut self) -> ParseResult<Option<Node<'a>>> {
@@ -36,10 +36,11 @@ impl<'a> Parser<'a> {
         // Comments are skipped before enforcing the nesting bound, as before.
         if self.options.max_nesting_depth > 0 && self.nesting_depth > self.options.max_nesting_depth
         {
-            return Err(ParseError::NestingTooDeep {
+            return Err(ParseErrorKind::NestingTooDeep {
                 span: Span::new(self.position as u32, self.position as u32),
                 max_depth: self.options.max_nesting_depth,
-            });
+            }
+            .into());
         }
 
         // Four columns of indentation start an indented code block; no
