@@ -1,0 +1,21 @@
+{
+  "revision": "c57ef4505d84e498c63fd5a02386d76b8c403a1f",
+  "binary": "/private/tmp/ferromark-v2-runtime-profiles-build-02/worker/target/release/runtime-profile-worker",
+  "binary_sha256": "4c3ff74b48b8ec4be85c9babab23235c3508f63ee226c75ac7fd08733a9dad41",
+  "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+  "source_tree_sha256": "1bcd38378177ad3404449b8ec3d4d44018d4b06d9b7de8e524d562131766560e",
+  "source_archive_sha256": "172d4bd8301fc7f6e822fd2adb1854c0a409885d11929a54c144bf8114775225",
+  "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+  "worker_lock_sha256": "ccdb89d0955633f7c503ef7b9ecda8aaec63ac764a8e2ea8bd0c3bc41109b926",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "command": [
+    "cargo",
+    "+1.95",
+    "build",
+    "--release",
+    "--offline"
+  ],
+  "rustflags": "-C target-cpu=generic",
+  "lto": "fat",
+  "registry_versions_unchanged": true
+}

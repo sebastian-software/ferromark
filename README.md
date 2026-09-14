@@ -81,6 +81,11 @@ and scans ASCII URL spans with NEON. The
 [first SIMD study](docs/reports/2026-09-14-simd-round/README.md) remains the historical
 record of the link prototype and its render-only build sensitivity.
 
+The [runtime-profile study](docs/runtime-profiles.md) measures 37 individual
+options, unused-feature overhead, and candidate recipes for comments, articles,
+documentation, and MDX. It separates parser/rendering costs and fresh/reused
+lifecycles, with exact-output checks for tailored-profile comparisons.
+
 ## Features at a glance
 
 **CommonMark** defines everyday Markdown: headings, lists, links, emphasis, and
