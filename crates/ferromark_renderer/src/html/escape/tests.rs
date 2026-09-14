@@ -88,6 +88,20 @@ fn matches_reference_on_fixtures() {
 }
 
 #[test]
+fn url_escape_matches_reference_at_every_offset_and_tail() {
+    for needle in ["é", "中", "🙂", "é中🙂", "&", "[", "%", " ", "`", "a"] {
+        for offset in 0..=40 {
+            for tail in [0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33] {
+                let source = format!("{}{}{}", "u".repeat(offset), needle, "v".repeat(tail));
+                let mut actual = String::new();
+                write_url_escaped_into(&mut actual, &source);
+                assert_eq!(actual, reference_url(&source), "source: {source:?}");
+            }
+        }
+    }
+}
+
+#[test]
 fn commonmark_url_syntax_bytes_are_percent_encoded() {
     for (source, expected) in [
         (r"foo\bar", "foo%5Cbar"),
