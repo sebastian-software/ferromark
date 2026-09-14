@@ -1,10 +1,10 @@
-//! Emphasis and strong emphasis via the CommonMark delimiter stack.
+//! Emphasis, strong emphasis, and GFM strikethrough via the delimiter stack.
 //!
-//! During inline parsing every `*`/`_` run is pushed as a plain text node
+//! During inline parsing every enabled `*`/`_`/`~` run is pushed as a plain text node
 //! plus a [`Delimiter`] record carrying its flanking classification. Once
 //! the inline sequence is complete, [`Parser::process_emphasis`] pairs
 //! closers with openers (nearest matching opener, rule of three), wraps
-//! the nodes between into `Emphasis`/`Strong`, and trims the delimiter
+//! the nodes between into `Emphasis`/`Strong`/`Delete`, and trims the delimiter
 //! text nodes in place. Unpaired runs simply stay literal text.
 
 use ferromark_allocator::Vec;
@@ -25,7 +25,7 @@ pub(in crate::parser) struct Delimiter {
 }
 
 impl<'a> Parser<'a> {
-    /// Records a `*`/`_` run: pushes its text node and the delimiter
+    /// Records a `*`/`_`/`~` run: pushes its text node and the delimiter
     /// entry describing how it may participate in emphasis.
     pub(in crate::parser) fn push_delimiter_run(
         &self,
@@ -39,8 +39,16 @@ impl<'a> Parser<'a> {
         let marker = bytes[*pos];
         let run_len = Self::marker_run_len(bytes, *pos, marker);
 
-        let prev_char = content[..*pos].chars().next_back();
-        let next_char = content[*pos + run_len..].chars().next();
+        let mut before = &content[..*pos];
+        let mut after = &content[*pos + run_len..];
+        if self.options.strikethrough && marker != b'~' {
+            // GFM emphasis looks through adjacent extension markers when
+            // classifying flanking, as cmark-gfm does for strikethrough.
+            before = before.trim_end_matches('~');
+            after = after.trim_start_matches('~');
+        }
+        let prev_char = before.chars().next_back();
+        let next_char = after.chars().next();
         let (can_open, can_close) =
             classify_flanking(marker, prev_char, next_char, self.options.cjk_emphasis);
 
@@ -97,6 +105,19 @@ impl<'a> Parser<'a> {
                 continue;
             };
 
+            let strikethrough = delimiters[closer_idx].marker == b'~';
+            if strikethrough && delimiters[opener_idx].remaining != delimiters[closer_idx].remaining
+            {
+                // cmark-gfm consumes the delimiter records for an unequal
+                // single/double pair, retaining their literal text. Retire
+                // the enclosed records too: they cannot pair across it later.
+                for delimiter in &mut delimiters[opener_idx..=closer_idx] {
+                    delimiter.remaining = 0;
+                }
+                closer_idx += 1;
+                continue;
+            }
+
             let use_delims: u32 =
                 if delimiters[opener_idx].remaining >= 2 && delimiters[closer_idx].remaining >= 2 {
                     2
@@ -119,7 +140,9 @@ impl<'a> Parser<'a> {
                 }
             }
             let span = inner_span(&inner, use_delims);
-            let node = if use_delims == 2 {
+            let node = if strikethrough {
+                Node::Delete(self.allocator.boxed(ferromark_ast::Delete { children: inner, span }))
+            } else if use_delims == 2 {
                 Node::Strong(self.allocator.boxed(ferromark_ast::Strong { children: inner, span }))
             } else {
                 Node::Emphasis(
@@ -171,11 +194,16 @@ fn empty_text<'a>() -> Node<'a> {
 struct OpenersBottom {
     star: [[Option<usize>; 2]; 3],
     underscore: [[Option<usize>; 2]; 3],
+    tilde: [[Option<usize>; 2]; 3],
 }
 
 impl OpenersBottom {
     fn slot(&mut self, closer: &Delimiter) -> &mut Option<usize> {
-        let table = if closer.marker == b'_' { &mut self.underscore } else { &mut self.star };
+        let table = match closer.marker {
+            b'_' => &mut self.underscore,
+            b'~' => &mut self.tilde,
+            _ => &mut self.star,
+        };
         &mut table[closer.orig_len % 3][usize::from(closer.can_open)]
     }
 
@@ -279,7 +307,7 @@ fn classify_flanking(
     let left_flanking = !next_ws && (!next_punct || prev_ws || prev_punct);
     let right_flanking = !prev_ws && (!prev_punct || next_ws || next_punct);
 
-    if marker == b'*' {
+    if matches!(marker, b'*' | b'~') {
         (left_flanking, right_flanking)
     } else {
         (

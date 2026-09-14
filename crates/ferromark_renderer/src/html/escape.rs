@@ -284,33 +284,58 @@ pub(super) fn write_url_escaped_into(out: &mut String, s: &str) {
     // pair when present so the common scanner remains branch-free.
     out.reserve(s.len());
     if let Some((open, close)) = ipv6_authority_brackets(s) {
-        escape_into(
-            out,
-            &s[..open],
-            url_escape_mask,
-            &URL_ESCAPE_FLAG,
-            &URL_ESCAPE_TABLE,
-            &URL_ESCAPE_NIBBLES,
-        );
+        write_url_segment(out, &s[..open]);
         out.push_str(&s[open..=close]);
-        escape_into(
-            out,
-            &s[close + 1..],
-            url_escape_mask,
-            &URL_ESCAPE_FLAG,
-            &URL_ESCAPE_TABLE,
-            &URL_ESCAPE_NIBBLES,
-        );
+        write_url_segment(out, &s[close + 1..]);
     } else {
-        escape_into(
-            out,
-            s,
-            url_escape_mask,
-            &URL_ESCAPE_FLAG,
-            &URL_ESCAPE_TABLE,
-            &URL_ESCAPE_NIBBLES,
-        );
+        write_url_segment(out, s);
     }
+}
+
+/// Escapes URL syntax and UTF-8 bytes while retaining the byte-oriented fast
+/// scanner for ASCII runs. Percent encoding operates on the UTF-8 bytes, as
+/// required by cmark's URI renderer, and leaves existing `%HH` sequences alone.
+fn write_url_segment(out: &mut String, s: &str) {
+    let bytes = s.as_bytes();
+    let mut start = 0;
+    while start < bytes.len() {
+        // Bound the ASCII run once, then let the established vectorized
+        // escaper scan that run. This avoids restarting a scan at every '&'
+        // or other flagged byte when a Unicode suffix is present.
+        let ascii_end = bytes[start..]
+            .iter()
+            .position(|&byte| byte >= 0x80)
+            .map_or(bytes.len(), |offset| start + offset);
+        if start < ascii_end {
+            escape_into(
+                out,
+                &s[start..ascii_end],
+                url_escape_mask,
+                &URL_ESCAPE_FLAG,
+                &URL_ESCAPE_TABLE,
+                &URL_ESCAPE_NIBBLES,
+            );
+        }
+        if ascii_end == bytes.len() {
+            return;
+        }
+        let unicode_end = bytes[ascii_end..]
+            .iter()
+            .position(|&byte| byte < 0x80)
+            .map_or(bytes.len(), |offset| ascii_end + offset);
+        for &byte in &bytes[ascii_end..unicode_end] {
+            push_percent_byte(out, byte);
+        }
+        start = unicode_end;
+    }
+}
+
+#[inline]
+fn push_percent_byte(out: &mut String, byte: u8) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    out.push('%');
+    out.push(HEX[(byte >> 4) as usize] as char);
+    out.push(HEX[(byte & 0x0F) as usize] as char);
 }
 
 /// Returns the bracket pair delimiting an IPv6 host in a URL authority.

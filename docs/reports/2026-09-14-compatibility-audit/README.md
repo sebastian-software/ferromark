@@ -1,5 +1,9 @@
 # CommonMark, GFM, and MDX compatibility audit
 
+Follow-up: the [second correction batch](../2026-09-14-reference-compatibility/README.md)
+closes the remaining Ferromark oracle findings and adds explicit render profiles.
+This report and its raw results describe the earlier state.
+
 Historical findings below describe the pre-fix core. The
 [first correction batch](../2026-09-14-correctness-fixes/README.md) records the
 subsequent fixes and passing audit; this report retains its original results.

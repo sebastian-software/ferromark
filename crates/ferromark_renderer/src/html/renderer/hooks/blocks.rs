@@ -32,9 +32,21 @@ impl HtmlRenderer {
         let depth = heading.depth.clamp(1, 6);
         self.write("<h");
         self.output.push((b'0' + depth) as char);
-        self.write(" id=\"");
-        self.write_heading_id(heading);
-        self.output.push('"');
+        if self.options.heading_ids {
+            self.write(" id=\"");
+            self.write_heading_id(heading);
+            self.output.push('"');
+        }
+        if !heading.classes.is_empty() {
+            self.write(" class=\"");
+            for (index, class_name) in heading.classes.iter().enumerate() {
+                if index > 0 {
+                    self.output.push(' ');
+                }
+                self.write_attribute_escaped(class_name);
+            }
+            self.output.push('"');
+        }
         self.write_source_span_attr(heading.span);
         self.write(">");
         for child in &heading.children {
@@ -51,7 +63,7 @@ impl HtmlRenderer {
         block_quote: &BlockQuote<'_>,
         hooks: &mut H,
     ) {
-        if self.render_callout_block_quote_with_hooks(block_quote, hooks) {
+        if self.options.callouts && self.render_callout_block_quote_with_hooks(block_quote, hooks) {
             return;
         }
 

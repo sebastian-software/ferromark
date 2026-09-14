@@ -148,6 +148,31 @@ pub struct HtmlRendererOptions {
     ///
     /// Default: `false`.
     pub source_spans: bool,
+
+    /// Emit `id` attributes on headings, including explicit IDs from heading
+    /// attributes and generated IDs for ordinary headings.
+    ///
+    /// Default: `true`. The strict CommonMark and GFM profiles disable this
+    /// product convenience because heading IDs are not part of the HTML
+    /// defined by the Markdown specifications.
+    pub heading_ids: bool,
+
+    /// Render GitHub-style `[!NOTE]` block quotes as themed callouts.
+    ///
+    /// Default: `true`; strict profiles disable this product extension.
+    pub callouts: bool,
+
+    /// Interpret standalone `[[toc]]` paragraphs as inline tables of contents.
+    ///
+    /// Default: `true`; strict profiles disable this product extension.
+    pub inline_toc: bool,
+
+    /// Parse and clean VitePress-style fenced-code metadata and annotations.
+    ///
+    /// Default: `true`. When disabled, fenced code uses the plain fence path:
+    /// annotations are not applied and the parser-provided first info token is
+    /// emitted as the language verbatim (after ordinary HTML escaping).
+    pub code_fence_metadata: bool,
 }
 
 const DEFAULT_SOFT_BREAK: &str = "\n";
@@ -182,6 +207,10 @@ pub(super) struct RendererOptions {
     pub(super) semantic_footnotes: bool,
     pub(super) heading_permalinks: bool,
     pub(super) source_spans: bool,
+    pub(super) heading_ids: bool,
+    pub(super) callouts: bool,
+    pub(super) inline_toc: bool,
+    pub(super) code_fence_metadata: bool,
 }
 
 impl RendererOptions {
@@ -206,6 +235,10 @@ impl RendererOptions {
             semantic_footnotes: false,
             heading_permalinks: false,
             source_spans: false,
+            heading_ids: true,
+            callouts: true,
+            inline_toc: true,
+            code_fence_metadata: true,
         }
     }
 
@@ -255,6 +288,10 @@ impl From<HtmlRendererOptions> for RendererOptions {
             semantic_footnotes: options.semantic_footnotes,
             heading_permalinks: options.heading_permalinks,
             source_spans: options.source_spans,
+            heading_ids: options.heading_ids,
+            callouts: options.callouts,
+            inline_toc: options.inline_toc,
+            code_fence_metadata: options.code_fence_metadata,
         }
     }
 }
@@ -300,7 +337,40 @@ impl HtmlRendererOptions {
             semantic_footnotes: false,
             heading_permalinks: false,
             source_spans: false,
+            heading_ids: true,
+            callouts: true,
+            inline_toc: true,
+            code_fence_metadata: true,
         }
+    }
+
+    /// Creates the strict CommonMark HTML profile.
+    ///
+    /// Product conveniences remain available through [`Self::new`] and
+    /// [`Default::default`]. This profile keeps raw HTML passthrough but does
+    /// not add IDs, callouts, TOCs, URL autolinks, link targets, or
+    /// VitePress fence metadata cleanup.
+    #[must_use]
+    pub fn commonmark() -> Self {
+        let mut options = Self::new();
+        options.autolink_urls = false;
+        options.autolink_target_blank = false;
+        options.link_target_blank = false;
+        options.heading_ids = false;
+        options.callouts = false;
+        options.inline_toc = false;
+        options.code_fence_metadata = false;
+        options
+    }
+
+    /// Creates the strict GFM HTML profile.
+    ///
+    /// This adds GFM tag filtering to the strict CommonMark HTML profile.
+    #[must_use]
+    pub fn gfm() -> Self {
+        let mut options = Self::commonmark();
+        options.disallow_raw_html = true;
+        options
     }
 }
 

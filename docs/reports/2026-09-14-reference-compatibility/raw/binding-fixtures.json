@@ -1,0 +1,1541 @@
+{
+  "generator": "cmark_binding_fixtures.py",
+  "cases": [
+    {
+      "id": "binding-1-00-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~x~\n"
+    },
+    {
+      "id": "binding-1-00-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~x~*\n"
+    },
+    {
+      "id": "binding-1-00-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~x~](target)\n"
+    },
+    {
+      "id": "binding-1-00-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~x~\n"
+    },
+    {
+      "id": "binding-1-01-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~x y~\n"
+    },
+    {
+      "id": "binding-1-01-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~x y~*\n"
+    },
+    {
+      "id": "binding-1-01-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~x y~](target)\n"
+    },
+    {
+      "id": "binding-1-01-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~x y~\n"
+    },
+    {
+      "id": "binding-1-02-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~x ~ y~\n"
+    },
+    {
+      "id": "binding-1-02-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~x ~ y~*\n"
+    },
+    {
+      "id": "binding-1-02-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~x ~ y~](target)\n"
+    },
+    {
+      "id": "binding-1-02-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~x ~ y~\n"
+    },
+    {
+      "id": "binding-1-03-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~x ~~ y~\n"
+    },
+    {
+      "id": "binding-1-03-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~x ~~ y~*\n"
+    },
+    {
+      "id": "binding-1-03-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~x ~~ y~](target)\n"
+    },
+    {
+      "id": "binding-1-03-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~x ~~ y~\n"
+    },
+    {
+      "id": "binding-1-04-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~[label](u~v)~\n"
+    },
+    {
+      "id": "binding-1-04-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~[label](u~v)~*\n"
+    },
+    {
+      "id": "binding-1-04-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~[label](u~v)~](target)\n"
+    },
+    {
+      "id": "binding-1-04-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~[label](u~v)~\n"
+    },
+    {
+      "id": "binding-1-05-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~[label](u~~v)~\n"
+    },
+    {
+      "id": "binding-1-05-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~[label](u~~v)~*\n"
+    },
+    {
+      "id": "binding-1-05-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~[label](u~~v)~](target)\n"
+    },
+    {
+      "id": "binding-1-05-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~[label](u~~v)~\n"
+    },
+    {
+      "id": "binding-1-06-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~[x ~ y](u)~\n"
+    },
+    {
+      "id": "binding-1-06-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~[x ~ y](u)~*\n"
+    },
+    {
+      "id": "binding-1-06-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~[x ~ y](u)~](target)\n"
+    },
+    {
+      "id": "binding-1-06-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~[x ~ y](u)~\n"
+    },
+    {
+      "id": "binding-1-07-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~[x ~~ y](u)~\n"
+    },
+    {
+      "id": "binding-1-07-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~[x ~~ y](u)~*\n"
+    },
+    {
+      "id": "binding-1-07-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~[x ~~ y](u)~](target)\n"
+    },
+    {
+      "id": "binding-1-07-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~[x ~~ y](u)~\n"
+    },
+    {
+      "id": "binding-1-08-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~[link](u \"t~t\")~\n"
+    },
+    {
+      "id": "binding-1-08-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~[link](u \"t~t\")~*\n"
+    },
+    {
+      "id": "binding-1-08-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~[link](u \"t~t\")~](target)\n"
+    },
+    {
+      "id": "binding-1-08-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~[link](u \"t~t\")~\n"
+    },
+    {
+      "id": "binding-1-09-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~[link](u \"t~~t\")~\n"
+    },
+    {
+      "id": "binding-1-09-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~[link](u \"t~~t\")~*\n"
+    },
+    {
+      "id": "binding-1-09-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~[link](u \"t~~t\")~](target)\n"
+    },
+    {
+      "id": "binding-1-09-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~[link](u \"t~~t\")~\n"
+    },
+    {
+      "id": "binding-1-10-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~![image](u~v \"t~~t\")~\n"
+    },
+    {
+      "id": "binding-1-10-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~![image](u~v \"t~~t\")~*\n"
+    },
+    {
+      "id": "binding-1-10-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~![image](u~v \"t~~t\")~](target)\n"
+    },
+    {
+      "id": "binding-1-10-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~![image](u~v \"t~~t\")~\n"
+    },
+    {
+      "id": "binding-1-11-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~<span title=\"~\">x</span>~\n"
+    },
+    {
+      "id": "binding-1-11-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~<span title=\"~\">x</span>~*\n"
+    },
+    {
+      "id": "binding-1-11-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~<span title=\"~\">x</span>~](target)\n"
+    },
+    {
+      "id": "binding-1-11-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~<span title=\"~\">x</span>~\n"
+    },
+    {
+      "id": "binding-1-12-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~<span title=\"~~\">x</span>~\n"
+    },
+    {
+      "id": "binding-1-12-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~<span title=\"~~\">x</span>~*\n"
+    },
+    {
+      "id": "binding-1-12-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~<span title=\"~~\">x</span>~](target)\n"
+    },
+    {
+      "id": "binding-1-12-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~<span title=\"~~\">x</span>~\n"
+    },
+    {
+      "id": "binding-1-13-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~<http://example.com/x~y>~\n"
+    },
+    {
+      "id": "binding-1-13-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~<http://example.com/x~y>~*\n"
+    },
+    {
+      "id": "binding-1-13-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~<http://example.com/x~y>~](target)\n"
+    },
+    {
+      "id": "binding-1-13-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~<http://example.com/x~y>~\n"
+    },
+    {
+      "id": "binding-1-14-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~<http://example.com/x~~y>~\n"
+    },
+    {
+      "id": "binding-1-14-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~<http://example.com/x~~y>~*\n"
+    },
+    {
+      "id": "binding-1-14-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~<http://example.com/x~~y>~](target)\n"
+    },
+    {
+      "id": "binding-1-14-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~<http://example.com/x~~y>~\n"
+    },
+    {
+      "id": "binding-1-15-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~`x~y`~\n"
+    },
+    {
+      "id": "binding-1-15-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~`x~y`~*\n"
+    },
+    {
+      "id": "binding-1-15-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~`x~y`~](target)\n"
+    },
+    {
+      "id": "binding-1-15-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~`x~y`~\n"
+    },
+    {
+      "id": "binding-1-16-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~`` x~~ ` y ``~\n"
+    },
+    {
+      "id": "binding-1-16-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~`` x~~ ` y ``~*\n"
+    },
+    {
+      "id": "binding-1-16-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~`` x~~ ` y ``~](target)\n"
+    },
+    {
+      "id": "binding-1-16-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~`` x~~ ` y ``~\n"
+    },
+    {
+      "id": "binding-1-17-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~x\\~y~\n"
+    },
+    {
+      "id": "binding-1-17-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~x\\~y~*\n"
+    },
+    {
+      "id": "binding-1-17-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~x\\~y~](target)\n"
+    },
+    {
+      "id": "binding-1-17-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~x\\~y~\n"
+    },
+    {
+      "id": "binding-1-18-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~x\\~~y~\n"
+    },
+    {
+      "id": "binding-1-18-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~x\\~~y~*\n"
+    },
+    {
+      "id": "binding-1-18-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~x\\~~y~](target)\n"
+    },
+    {
+      "id": "binding-1-18-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~x\\~~y~\n"
+    },
+    {
+      "id": "binding-1-19-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~*em ~ x*~\n"
+    },
+    {
+      "id": "binding-1-19-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~*em ~ x*~*\n"
+    },
+    {
+      "id": "binding-1-19-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~*em ~ x*~](target)\n"
+    },
+    {
+      "id": "binding-1-19-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~*em ~ x*~\n"
+    },
+    {
+      "id": "binding-1-20-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~**bold ~~ x**~\n"
+    },
+    {
+      "id": "binding-1-20-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~**bold ~~ x**~*\n"
+    },
+    {
+      "id": "binding-1-20-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~**bold ~~ x**~](target)\n"
+    },
+    {
+      "id": "binding-1-20-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~**bold ~~ x**~\n"
+    },
+    {
+      "id": "binding-1-21-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~*x*~\n"
+    },
+    {
+      "id": "binding-1-21-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~*x*~*\n"
+    },
+    {
+      "id": "binding-1-21-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~*x*~](target)\n"
+    },
+    {
+      "id": "binding-1-21-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~*x*~\n"
+    },
+    {
+      "id": "binding-1-22-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~**x**~\n"
+    },
+    {
+      "id": "binding-1-22-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~**x**~*\n"
+    },
+    {
+      "id": "binding-1-22-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~**x**~](target)\n"
+    },
+    {
+      "id": "binding-1-22-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~**x**~\n"
+    },
+    {
+      "id": "binding-1-23-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~a [b *c*](u)~\n"
+    },
+    {
+      "id": "binding-1-23-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~a [b *c*](u)~*\n"
+    },
+    {
+      "id": "binding-1-23-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~a [b *c*](u)~](target)\n"
+    },
+    {
+      "id": "binding-1-23-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~a [b *c*](u)~\n"
+    },
+    {
+      "id": "binding-1-24-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~x\ny~\n"
+    },
+    {
+      "id": "binding-1-24-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~x\ny~*\n"
+    },
+    {
+      "id": "binding-1-24-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~x\ny~](target)\n"
+    },
+    {
+      "id": "binding-1-24-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~x\n> y~\n"
+    },
+    {
+      "id": "binding-1-25-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~ x~\n"
+    },
+    {
+      "id": "binding-1-25-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~ x~*\n"
+    },
+    {
+      "id": "binding-1-25-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~ x~](target)\n"
+    },
+    {
+      "id": "binding-1-25-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~ x~\n"
+    },
+    {
+      "id": "binding-1-26-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~x ~\n"
+    },
+    {
+      "id": "binding-1-26-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~x ~*\n"
+    },
+    {
+      "id": "binding-1-26-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~x ~](target)\n"
+    },
+    {
+      "id": "binding-1-26-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~x ~\n"
+    },
+    {
+      "id": "binding-1-27-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~a ~b~ c~\n"
+    },
+    {
+      "id": "binding-1-27-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~a ~b~ c~*\n"
+    },
+    {
+      "id": "binding-1-27-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~a ~b~ c~](target)\n"
+    },
+    {
+      "id": "binding-1-27-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~a ~b~ c~\n"
+    },
+    {
+      "id": "binding-1-28-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~a ~~b~~ c~\n"
+    },
+    {
+      "id": "binding-1-28-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~a ~~b~~ c~*\n"
+    },
+    {
+      "id": "binding-1-28-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~a ~~b~~ c~](target)\n"
+    },
+    {
+      "id": "binding-1-28-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~a ~~b~~ c~\n"
+    },
+    {
+      "id": "binding-1-29-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~a ~~~b~~~ c~\n"
+    },
+    {
+      "id": "binding-1-29-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~a ~~~b~~~ c~*\n"
+    },
+    {
+      "id": "binding-1-29-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~a ~~~b~~~ c~](target)\n"
+    },
+    {
+      "id": "binding-1-29-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~a ~~~b~~~ c~\n"
+    },
+    {
+      "id": "binding-1-30-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~**~x~**~\n"
+    },
+    {
+      "id": "binding-1-30-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~**~x~**~*\n"
+    },
+    {
+      "id": "binding-1-30-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~**~x~**~](target)\n"
+    },
+    {
+      "id": "binding-1-30-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~**~x~**~\n"
+    },
+    {
+      "id": "binding-1-31-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~[x](u) [x]~\n"
+    },
+    {
+      "id": "binding-1-31-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~[x](u) [x]~*\n"
+    },
+    {
+      "id": "binding-1-31-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~[x](u) [x]~](target)\n"
+    },
+    {
+      "id": "binding-1-31-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~[x](u) [x]~\n"
+    },
+    {
+      "id": "binding-2-00-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~x~~\n"
+    },
+    {
+      "id": "binding-2-00-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~x~~*\n"
+    },
+    {
+      "id": "binding-2-00-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~x~~](target)\n"
+    },
+    {
+      "id": "binding-2-00-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~x~~\n"
+    },
+    {
+      "id": "binding-2-01-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~x y~~\n"
+    },
+    {
+      "id": "binding-2-01-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~x y~~*\n"
+    },
+    {
+      "id": "binding-2-01-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~x y~~](target)\n"
+    },
+    {
+      "id": "binding-2-01-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~x y~~\n"
+    },
+    {
+      "id": "binding-2-02-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~x ~ y~~\n"
+    },
+    {
+      "id": "binding-2-02-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~x ~ y~~*\n"
+    },
+    {
+      "id": "binding-2-02-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~x ~ y~~](target)\n"
+    },
+    {
+      "id": "binding-2-02-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~x ~ y~~\n"
+    },
+    {
+      "id": "binding-2-03-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~x ~~ y~~\n"
+    },
+    {
+      "id": "binding-2-03-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~x ~~ y~~*\n"
+    },
+    {
+      "id": "binding-2-03-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~x ~~ y~~](target)\n"
+    },
+    {
+      "id": "binding-2-03-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~x ~~ y~~\n"
+    },
+    {
+      "id": "binding-2-04-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~[label](u~v)~~\n"
+    },
+    {
+      "id": "binding-2-04-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~[label](u~v)~~*\n"
+    },
+    {
+      "id": "binding-2-04-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~[label](u~v)~~](target)\n"
+    },
+    {
+      "id": "binding-2-04-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~[label](u~v)~~\n"
+    },
+    {
+      "id": "binding-2-05-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~[label](u~~v)~~\n"
+    },
+    {
+      "id": "binding-2-05-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~[label](u~~v)~~*\n"
+    },
+    {
+      "id": "binding-2-05-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~[label](u~~v)~~](target)\n"
+    },
+    {
+      "id": "binding-2-05-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~[label](u~~v)~~\n"
+    },
+    {
+      "id": "binding-2-06-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~[x ~ y](u)~~\n"
+    },
+    {
+      "id": "binding-2-06-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~[x ~ y](u)~~*\n"
+    },
+    {
+      "id": "binding-2-06-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~[x ~ y](u)~~](target)\n"
+    },
+    {
+      "id": "binding-2-06-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~[x ~ y](u)~~\n"
+    },
+    {
+      "id": "binding-2-07-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~[x ~~ y](u)~~\n"
+    },
+    {
+      "id": "binding-2-07-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~[x ~~ y](u)~~*\n"
+    },
+    {
+      "id": "binding-2-07-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~[x ~~ y](u)~~](target)\n"
+    },
+    {
+      "id": "binding-2-07-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~[x ~~ y](u)~~\n"
+    },
+    {
+      "id": "binding-2-08-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~[link](u \"t~t\")~~\n"
+    },
+    {
+      "id": "binding-2-08-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~[link](u \"t~t\")~~*\n"
+    },
+    {
+      "id": "binding-2-08-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~[link](u \"t~t\")~~](target)\n"
+    },
+    {
+      "id": "binding-2-08-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~[link](u \"t~t\")~~\n"
+    },
+    {
+      "id": "binding-2-09-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~[link](u \"t~~t\")~~\n"
+    },
+    {
+      "id": "binding-2-09-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~[link](u \"t~~t\")~~*\n"
+    },
+    {
+      "id": "binding-2-09-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~[link](u \"t~~t\")~~](target)\n"
+    },
+    {
+      "id": "binding-2-09-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~[link](u \"t~~t\")~~\n"
+    },
+    {
+      "id": "binding-2-10-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~![image](u~v \"t~~t\")~~\n"
+    },
+    {
+      "id": "binding-2-10-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~![image](u~v \"t~~t\")~~*\n"
+    },
+    {
+      "id": "binding-2-10-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~![image](u~v \"t~~t\")~~](target)\n"
+    },
+    {
+      "id": "binding-2-10-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~![image](u~v \"t~~t\")~~\n"
+    },
+    {
+      "id": "binding-2-11-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~<span title=\"~\">x</span>~~\n"
+    },
+    {
+      "id": "binding-2-11-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~<span title=\"~\">x</span>~~*\n"
+    },
+    {
+      "id": "binding-2-11-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~<span title=\"~\">x</span>~~](target)\n"
+    },
+    {
+      "id": "binding-2-11-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~<span title=\"~\">x</span>~~\n"
+    },
+    {
+      "id": "binding-2-12-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~<span title=\"~~\">x</span>~~\n"
+    },
+    {
+      "id": "binding-2-12-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~<span title=\"~~\">x</span>~~*\n"
+    },
+    {
+      "id": "binding-2-12-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~<span title=\"~~\">x</span>~~](target)\n"
+    },
+    {
+      "id": "binding-2-12-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~<span title=\"~~\">x</span>~~\n"
+    },
+    {
+      "id": "binding-2-13-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~<http://example.com/x~y>~~\n"
+    },
+    {
+      "id": "binding-2-13-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~<http://example.com/x~y>~~*\n"
+    },
+    {
+      "id": "binding-2-13-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~<http://example.com/x~y>~~](target)\n"
+    },
+    {
+      "id": "binding-2-13-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~<http://example.com/x~y>~~\n"
+    },
+    {
+      "id": "binding-2-14-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~<http://example.com/x~~y>~~\n"
+    },
+    {
+      "id": "binding-2-14-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~<http://example.com/x~~y>~~*\n"
+    },
+    {
+      "id": "binding-2-14-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~<http://example.com/x~~y>~~](target)\n"
+    },
+    {
+      "id": "binding-2-14-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~<http://example.com/x~~y>~~\n"
+    },
+    {
+      "id": "binding-2-15-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~`x~y`~~\n"
+    },
+    {
+      "id": "binding-2-15-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~`x~y`~~*\n"
+    },
+    {
+      "id": "binding-2-15-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~`x~y`~~](target)\n"
+    },
+    {
+      "id": "binding-2-15-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~`x~y`~~\n"
+    },
+    {
+      "id": "binding-2-16-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~`` x~~ ` y ``~~\n"
+    },
+    {
+      "id": "binding-2-16-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~`` x~~ ` y ``~~*\n"
+    },
+    {
+      "id": "binding-2-16-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~`` x~~ ` y ``~~](target)\n"
+    },
+    {
+      "id": "binding-2-16-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~`` x~~ ` y ``~~\n"
+    },
+    {
+      "id": "binding-2-17-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~x\\~y~~\n"
+    },
+    {
+      "id": "binding-2-17-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~x\\~y~~*\n"
+    },
+    {
+      "id": "binding-2-17-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~x\\~y~~](target)\n"
+    },
+    {
+      "id": "binding-2-17-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~x\\~y~~\n"
+    },
+    {
+      "id": "binding-2-18-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~x\\~~y~~\n"
+    },
+    {
+      "id": "binding-2-18-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~x\\~~y~~*\n"
+    },
+    {
+      "id": "binding-2-18-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~x\\~~y~~](target)\n"
+    },
+    {
+      "id": "binding-2-18-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~x\\~~y~~\n"
+    },
+    {
+      "id": "binding-2-19-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~*em ~ x*~~\n"
+    },
+    {
+      "id": "binding-2-19-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~*em ~ x*~~*\n"
+    },
+    {
+      "id": "binding-2-19-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~*em ~ x*~~](target)\n"
+    },
+    {
+      "id": "binding-2-19-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~*em ~ x*~~\n"
+    },
+    {
+      "id": "binding-2-20-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~**bold ~~ x**~~\n"
+    },
+    {
+      "id": "binding-2-20-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~**bold ~~ x**~~*\n"
+    },
+    {
+      "id": "binding-2-20-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~**bold ~~ x**~~](target)\n"
+    },
+    {
+      "id": "binding-2-20-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~**bold ~~ x**~~\n"
+    },
+    {
+      "id": "binding-2-21-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~*x*~~\n"
+    },
+    {
+      "id": "binding-2-21-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~*x*~~*\n"
+    },
+    {
+      "id": "binding-2-21-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~*x*~~](target)\n"
+    },
+    {
+      "id": "binding-2-21-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~*x*~~\n"
+    },
+    {
+      "id": "binding-2-22-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~**x**~~\n"
+    },
+    {
+      "id": "binding-2-22-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~**x**~~*\n"
+    },
+    {
+      "id": "binding-2-22-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~**x**~~](target)\n"
+    },
+    {
+      "id": "binding-2-22-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~**x**~~\n"
+    },
+    {
+      "id": "binding-2-23-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~a [b *c*](u)~~\n"
+    },
+    {
+      "id": "binding-2-23-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~a [b *c*](u)~~*\n"
+    },
+    {
+      "id": "binding-2-23-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~a [b *c*](u)~~](target)\n"
+    },
+    {
+      "id": "binding-2-23-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~a [b *c*](u)~~\n"
+    },
+    {
+      "id": "binding-2-24-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~x\ny~~\n"
+    },
+    {
+      "id": "binding-2-24-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~x\ny~~*\n"
+    },
+    {
+      "id": "binding-2-24-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~x\ny~~](target)\n"
+    },
+    {
+      "id": "binding-2-24-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~x\n> y~~\n"
+    },
+    {
+      "id": "binding-2-25-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~ x~~\n"
+    },
+    {
+      "id": "binding-2-25-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~ x~~*\n"
+    },
+    {
+      "id": "binding-2-25-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~ x~~](target)\n"
+    },
+    {
+      "id": "binding-2-25-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~ x~~\n"
+    },
+    {
+      "id": "binding-2-26-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~x ~~\n"
+    },
+    {
+      "id": "binding-2-26-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~x ~~*\n"
+    },
+    {
+      "id": "binding-2-26-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~x ~~](target)\n"
+    },
+    {
+      "id": "binding-2-26-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~x ~~\n"
+    },
+    {
+      "id": "binding-2-27-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~a ~b~ c~~\n"
+    },
+    {
+      "id": "binding-2-27-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~a ~b~ c~~*\n"
+    },
+    {
+      "id": "binding-2-27-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~a ~b~ c~~](target)\n"
+    },
+    {
+      "id": "binding-2-27-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~a ~b~ c~~\n"
+    },
+    {
+      "id": "binding-2-28-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~a ~~b~~ c~~\n"
+    },
+    {
+      "id": "binding-2-28-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~a ~~b~~ c~~*\n"
+    },
+    {
+      "id": "binding-2-28-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~a ~~b~~ c~~](target)\n"
+    },
+    {
+      "id": "binding-2-28-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~a ~~b~~ c~~\n"
+    },
+    {
+      "id": "binding-2-29-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~a ~~~b~~~ c~~\n"
+    },
+    {
+      "id": "binding-2-29-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~a ~~~b~~~ c~~*\n"
+    },
+    {
+      "id": "binding-2-29-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~a ~~~b~~~ c~~](target)\n"
+    },
+    {
+      "id": "binding-2-29-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~a ~~~b~~~ c~~\n"
+    },
+    {
+      "id": "binding-2-30-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~**~x~**~~\n"
+    },
+    {
+      "id": "binding-2-30-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~**~x~**~~*\n"
+    },
+    {
+      "id": "binding-2-30-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~**~x~**~~](target)\n"
+    },
+    {
+      "id": "binding-2-30-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~**~x~**~~\n"
+    },
+    {
+      "id": "binding-2-31-paragraph",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "~~[x](u) [x]~~\n"
+    },
+    {
+      "id": "binding-2-31-emphasis",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "*~~[x](u) [x]~~*\n"
+    },
+    {
+      "id": "binding-2-31-link",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "[~~[x](u) [x]~~](target)\n"
+    },
+    {
+      "id": "binding-2-31-quote",
+      "category": "tilde-combinations",
+      "profile": "gfm",
+      "markdown": "> ~~[x](u) [x]~~\n"
+    }
+  ]
+}

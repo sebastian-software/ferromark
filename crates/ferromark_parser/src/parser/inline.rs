@@ -1,6 +1,5 @@
 use ferromark_allocator::Vec;
 use ferromark_ast::{Node, Span};
-use memchr::memchr2;
 
 use super::Parser;
 use crate::error::ParseResult;
@@ -31,8 +30,7 @@ impl<'a> Parser<'a> {
     /// heading, table cell, list item paragraph) and runs the block-scoped
     /// post-passes on the result — today, the GFM autolink rewrite.
     ///
-    /// Nested inline contexts (link text, image alt, strikethrough
-    /// interiors) call [`Self::parse_inline`] directly instead: the autolink
+    /// Nested inline contexts (link text and image alt) call [`Self::parse_inline`] directly instead: the autolink
     /// pass itself recurses through emphasis-like containers, so running it
     /// per nested sequence both re-scanned the same nodes and — for link
     /// text, which GFM excludes from autolinking — made nested `<a>`s.
@@ -211,7 +209,7 @@ impl<'a> Parser<'a> {
                 if run_len == 1 && self.options.subscript {
                     self.parse_subscript_span(content, offset, children, pos)?;
                 } else if run_len <= 2 {
-                    self.parse_strikethrough(content, offset, children, pos, run_len)?;
+                    self.push_delimiter_run(content, offset, children, delimiters, pos);
                 } else {
                     Self::push_text(
                         children,
@@ -284,80 +282,4 @@ impl<'a> Parser<'a> {
         }
         Ok(())
     }
-
-    fn parse_strikethrough(
-        &self,
-        content: &'a str,
-        offset: usize,
-        children: &mut Vec<'a, Node<'a>>,
-        pos: &mut usize,
-        marker_len: usize,
-    ) -> ParseResult<()> {
-        let bytes = content.as_bytes();
-        let inner_start = *pos + marker_len;
-        let mut inner_end = inner_start;
-
-        while inner_end < content.len() {
-            match memchr2(b'~', b'`', &bytes[inner_end..]) {
-                Some(off) => inner_end += off,
-                None => break,
-            }
-            if bytes[inner_end] == b'`' {
-                if let Some(end) = Self::closed_code_span_end(bytes, inner_end) {
-                    inner_end = end;
-                } else {
-                    inner_end += Self::marker_run_len(bytes, inner_end, b'`');
-                }
-                continue;
-            }
-            let close_len = Self::marker_run_len(bytes, inner_end, b'~');
-            if is_escaped_marker(bytes, inner_end) {
-                inner_end += close_len;
-                continue;
-            }
-            if close_len == marker_len
-                && inner_end.checked_sub(1).is_none_or(|index| bytes[index] != b'~')
-                && bytes.get(inner_end + close_len).is_none_or(|byte| *byte != b'~')
-            {
-                let inner = &content[inner_start..inner_end];
-                if inner.is_empty()
-                    || inner.chars().next().is_some_and(char::is_whitespace)
-                    || inner.chars().next_back().is_some_and(char::is_whitespace)
-                {
-                    break;
-                }
-                let inner_children = self.parse_inline(inner, offset + inner_start)?;
-                let span =
-                    Span::new((offset + *pos) as u32, (offset + inner_end + marker_len) as u32);
-                children.push(Node::Delete(
-                    self.allocator.boxed(ferromark_ast::Delete { children: inner_children, span }),
-                ));
-                *pos = inner_end + marker_len;
-                return Ok(());
-            }
-            inner_end += close_len;
-        }
-
-        Self::push_text(
-            children,
-            &content[*pos..*pos + marker_len],
-            offset + *pos,
-            offset + *pos + marker_len,
-        );
-        *pos += marker_len;
-        Ok(())
-    }
-}
-
-fn is_escaped_marker(bytes: &[u8], pos: usize) -> bool {
-    let mut backslashes = 0;
-    let mut index = pos;
-    while let Some(previous) = index.checked_sub(1) {
-        if bytes[previous] != b'\\' {
-            break;
-        }
-        backslashes += 1;
-        index = previous;
-    }
-    backslashes % 2 == 1
 }

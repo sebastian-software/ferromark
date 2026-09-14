@@ -195,7 +195,7 @@ impl<'a> Parser<'a> {
         if let Some(map) = self.source_map {
             match &mut result {
                 Ok(document) => {
-                    document.span = map.map_span(document.span);
+                    document.span = map.map_document_span(document.span);
                     for node in &mut document.children {
                         Self::remap_node_spans(node, map);
                     }

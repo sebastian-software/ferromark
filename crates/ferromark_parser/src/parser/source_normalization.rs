@@ -1,4 +1,4 @@
-//! CommonMark U+0000 replacement before any syntax or reference parsing.
+//! CommonMark source normalization before any syntax or reference parsing.
 use ferromark_allocator::{Allocator, Vec};
 use ferromark_ast::Span;
 
@@ -9,22 +9,38 @@ use super::spans::SpanMap;
 /// source and remap their stripped-source spans before this final mapping.
 pub(super) struct NulSourceMap<'a> {
     replacements: Vec<'a, u32>,
+    leading_bom: bool,
+    original_len: u32,
 }
 
 pub(super) fn normalize<'a>(
     allocator: &'a Allocator,
     source: &'a str,
 ) -> (&'a str, Option<&'a NulSourceMap<'a>>) {
-    let Some(first) = memchr::memchr(0, source.as_bytes()) else {
-        // Keep ordinary Markdown borrowed, with no map or string allocation.
-        return (source, None);
+    let bytes = source.as_bytes();
+    let leading_bom = bytes.starts_with(b"\xEF\xBB\xBF");
+    let source_start = usize::from(leading_bom) * 3;
+    let first_nul = memchr::memchr(0, &bytes[source_start..]).map(|offset| source_start + offset);
+    let Some(first) = first_nul else {
+        if !leading_bom {
+            // Keep ordinary Markdown borrowed, with no map or string allocation.
+            return (source, None);
+        }
+        let map = allocator.alloc(NulSourceMap {
+            replacements: allocator.new_vec(),
+            leading_bom,
+            original_len: source.len() as u32,
+        });
+        // A BOM-only normalization needs no generated copy: borrow the
+        // caller's post-BOM slice and retain the map solely for span offsets.
+        return (&source[source_start..], Some(map));
     };
     let mut normalized = allocator.new_string();
     normalized.reserve(source.len() + 2);
-    normalized.push_str(&source[..first]);
+    normalized.push_str(&source[source_start..first]);
     let mut replacements = allocator.new_vec();
     let mut start = first;
-    for relative in memchr::memchr_iter(0, &source.as_bytes()[first..]) {
+    for relative in memchr::memchr_iter(0, &bytes[first..]) {
         let offset = first + relative;
         normalized.push_str(&source[start..offset]);
         replacements.push(normalized.len() as u32);
@@ -32,7 +48,11 @@ pub(super) fn normalize<'a>(
         start = offset + 1;
     }
     normalized.push_str(&source[start..]);
-    let map = allocator.alloc(NulSourceMap { replacements });
+    let map = allocator.alloc(NulSourceMap {
+        replacements,
+        leading_bom,
+        original_len: source.len() as u32,
+    });
     (normalized.into_bump_str(), Some(map))
 }
 
@@ -43,12 +63,17 @@ impl NulSourceMap<'_> {
         // error points inside it, so returned offsets remain source boundaries.
         let offset =
             self.replacements.get(count).copied().filter(|&start| start < offset).unwrap_or(offset);
-        offset - 2 * count as u32
+        offset - 2 * count as u32 + u32::from(self.leading_bom) * 3
     }
 }
 
 impl SpanMap for NulSourceMap<'_> {
     fn map_span(&self, span: Span) -> Span {
-        Span::new(self.boundary(span.start), self.boundary(span.end))
+        let start = self.boundary(span.start);
+        let end = if span.start == span.end { start } else { self.boundary(span.end) };
+        Span::new(start, end)
+    }
+    fn map_document_span(&self, _span: Span) -> Span {
+        Span::new(0, self.original_len)
     }
 }

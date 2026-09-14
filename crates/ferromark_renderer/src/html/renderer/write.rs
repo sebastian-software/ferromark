@@ -223,7 +223,7 @@ impl HtmlRenderer {
         &mut self,
         heading: &Heading<'_>,
     ) {
-        if !self.options.heading_permalinks {
+        if !self.options.heading_ids || !self.options.heading_permalinks {
             return;
         }
         if heading_has_permalink_marker(&heading.children, &self.heading_id_scratch) {
