@@ -1,0 +1,46 @@
+{
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "rustflags": "-C target-cpu=generic",
+  "worker_sha256": "0a5ba540d3f244a7ad303e29c2b4690391a623ae2861ee51d5c3612454628dcc",
+  "baseline_revision_expected": "ae963d425a4c15841ced5f7359a4b9adc47ca931",
+  "engines": {
+    "baseline": {
+      "source": "/private/tmp/ferromark-v2-simd-round/baseline",
+      "source_revision": null,
+      "source_tree_sha256": "a2c6b2ab194663056d8be9882f60781ab0c52ee62eeace4f1b27ccd3297d4058",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "binary": "/private/tmp/ferromark-v2-simd-round/build-local/baseline/target/release/simd-round-worker",
+      "binary_sha256": "5578bbe0b5ee8345ca2e76b381528ad836c4b0bcdf9d733c6dc7ed19039b703c",
+      "lock_sha256": "6551f12a28954c0c0804b76d6f16a8aa50a3206e0b5f502d17f1906a6defaac9",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ]
+    },
+    "candidate": {
+      "source": "/private/tmp/ferromark-v2-simd-round/candidate-local",
+      "source_revision": null,
+      "source_tree_sha256": "27cca108c4b668839305a2a49926d3209f762e7c2ebd49b2d7436c384b3639ab",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "binary": "/private/tmp/ferromark-v2-simd-round/build-local/candidate/target/release/simd-round-worker",
+      "binary_sha256": "dd05c60a0f23e83219f87d04900dd973cc9e3ddc586859c4c8bbab88fe379f7d",
+      "lock_sha256": "6551f12a28954c0c0804b76d6f16a8aa50a3206e0b5f502d17f1906a6defaac9",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ]
+    }
+  }
+}

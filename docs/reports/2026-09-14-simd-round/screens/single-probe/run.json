@@ -1,0 +1,58 @@
+{
+  "rounds": 1,
+  "pairs_per_round": 3,
+  "window_ms": 15,
+  "warmup_ms": 15,
+  "seed": 20260914,
+  "modes": [
+    "fresh",
+    "reuse",
+    "parse",
+    "render"
+  ],
+  "case_filter": "^scan-",
+  "cases": [
+    "scan-empty",
+    "scan-short-link",
+    "scan-short-title",
+    "scan-short-entity",
+    "scan-short-reference",
+    "scan-long-clean-links",
+    "scan-many-short-links",
+    "scan-escaped-links",
+    "scan-unicode-links",
+    "scan-long-references",
+    "scan-dense-escapes",
+    "scan-dense-entities",
+    "scan-malformed-entities",
+    "scan-mdx-links",
+    "scan-extension-links"
+  ],
+  "corpus_sha256": "33d42d5e6fcb58e8499d6d176c1da6d2955b7a23a444bc1a68202328bc055df3",
+  "runner_sha256": "2ee2dbbbb5a05441023f95205b4308f6b76f6e11412c0e68c4e7162ac3c3bba1",
+  "worker_sha256": "0a5ba540d3f244a7ad303e29c2b4690391a623ae2861ee51d5c3612454628dcc",
+  "host_before": {
+    "time_utc": "2026-09-14T06:55:34Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      6.5966796875,
+      7.36083984375,
+      5.5244140625
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-14T06:55:42Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      6.228515625,
+      7.271484375,
+      5.50341796875
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}
