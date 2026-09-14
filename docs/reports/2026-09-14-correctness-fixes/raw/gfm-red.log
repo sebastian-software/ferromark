@@ -1,0 +1,32 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests/gfm_extension_audit.rs (target/debug/deps/gfm_extension_audit-ea3f691641a9e319)
+
+running 2 tests
+test gfm_official_strikethrough_examples_491_and_493 ... FAILED
+test gfm_official_extended_autolinks_examples_633_to_635 ... FAILED
+
+failures:
+
+---- gfm_official_strikethrough_examples_491_and_493 stdout ----
+
+thread 'gfm_official_strikethrough_examples_491_and_493' (19593523) panicked at crates/ferromark_renderer/tests/gfm_extension_audit.rs:16:5:
+assertion `left == right` failed
+  left: "<p><del>Hi</del> Hello, ~there~ world!</p>\n"
+ right: "<p><del>Hi</del> Hello, <del>there</del> world!</p>\n"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- gfm_official_extended_autolinks_examples_633_to_635 stdout ----
+
+thread 'gfm_official_extended_autolinks_examples_633_to_635' (19593522) panicked at crates/ferromark_renderer/tests/gfm_extension_audit.rs:25:5:
+assertion `left == right` failed
+  left: "<p>mailto:foo@bar.baz</p>\n<p>mailto:a.b-c_d@a.b</p>\n<p>mailto:a.b-c_d@a.b.</p>\n<p>mailto:a.b-c_d@a.b/</p>\n<p>mailto:a.b-c_d@a.b-</p>\n<p>mailto:a.b-c_d@a.b_</p>\n<p>xmpp:foo@bar.baz</p>\n<p>xmpp:foo@bar.baz.</p>\n"
+ right: "<p><a href=\"mailto:foo@bar.baz\">mailto:foo@bar.baz</a></p>\n<p><a href=\"mailto:a.b-c_d@a.b\">mailto:a.b-c_d@a.b</a>.</p>\n<p><a href=\"mailto:a.b-c_d@a.b\">mailto:a.b-c_d@a.b</a>/</p>\n<p>mailto:a.b-c_d@a.b-</p>\n<p>mailto:a.b-c_d@a.b_</p>\n<p><a href=\"xmpp:foo@bar.baz\">xmpp:foo@bar.baz</a></p>\n<p><a href=\"xmpp:foo@bar.baz\">xmpp:foo@bar.baz</a>.</p>\n"
+
+
+failures:
+    gfm_official_extended_autolinks_examples_633_to_635
+    gfm_official_strikethrough_examples_491_and_493
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p ferromark_renderer --test gfm_extension_audit`

@@ -1,0 +1,11 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/nul_source.rs (target/debug/deps/nul_source-6b8def59221c9e90)
+
+running 3 tests
+test clean_source_remains_borrowed ... ok
+test nul_expansion_keeps_original_spans_through_nested_sources ... ok
+test replaces_literal_nul_before_syntax_and_reference_resolution ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

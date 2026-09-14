@@ -70,29 +70,32 @@ record of the link prototype and its render-only build sensitivity.
 
 ## Correctness and compatibility
 
-The [2026-09-14 compatibility audit](docs/reports/2026-09-14-compatibility-audit/README.md)
-found open issues despite the passing inherited suites:
+The [first correctness fixes](docs/reports/2026-09-14-correctness-fixes/README.md)
+close the concrete syntax and content issues from the
+[2026-09-14 audit](docs/reports/2026-09-14-compatibility-audit/README.md):
 
 | Check | Result |
 | --- | --- |
-| Historical spec suites | 652 CommonMark core examples and 24 GFM extension examples pass under the inherited normalizer |
-| Stricter CommonMark comparison | Seven URL-output differences; backslashes in paths can change link destinations |
-| Current GFM extension examples | 23/28 match; single/triple tildes and extended `mailto:`/`xmpp:` autolinks remain open |
-| CRLF / CR variants | 12 differences in 1,304 inputs, including duplicated list content |
-| Literal NUL | Required replacement is missing in six tested contexts |
+| Configured CommonMark 0.31.2 | 652/652 pass the strengthened spec comparison; the conservative audit separately records 40 heading-ID differences |
+| Current GFM extension examples | 28/28 match, including single/triple tildes and extended `mailto:`/`xmpp:` autolinks |
+| CRLF / CR variants | All 1,304 agree with their LF controls; list-content duplication is fixed |
+| Literal NUL | Replaced with U+FFFD before parsing; nested AST spans retain original source offsets |
+| Regression protection | Code/raw-text whitespace and reserved URL escapes stay significant; parser failures fail the suites directly |
 
 Heading IDs, callouts, TOC, bare-URL autolinking, and fence metadata handling
-also reflect product rendering policies. The inherited normalizer can hide
-significant inline-code whitespace and URL-escape differences. These results
-do not establish full CommonMark, GFM, or MDX compatibility. The audit includes
-frozen official fixtures, minimized reproductions, output comparisons with
-original OX-Content, and a [repeatable check](benchmarks/compatibility-audit/README.md)
-that currently reports the open issues as failures.
+also reflect product rendering policies and remain unchanged. The complete GFM
+website retains ten classified differences from global tagfilter/autolink
+behavior and older HTML-comment rules. MDX remains a bounded syntax/static-output
+feature. These finite tests do not establish unrestricted CommonMark, GFM, or
+MDX compatibility. The [repeatable audit](benchmarks/compatibility-audit/README.md)
+now passes its failure gate; raw results and a targeted v1 comparison are in
+the correction report.
 
 ## Native engine comparison
 
-On an Apple M1 Pro, the current v2 core leads the geometric mean of the 57-document
-mix in this native Markdown→HTML comparison. The corpus spans **37–113,609 UTF-8
+On an Apple M1 Pro, the v2 core **before the correctness fixes** led the geometric
+mean of the 57-document mix in this native Markdown→HTML comparison. This is a
+historical measurement, not a rerun of the corrected core. The corpus spans **37–113,609 UTF-8
 bytes**: comments, project documentation, and Wikipedia-derived prose.
 **Speed relative to v2: higher is faster; v2 = 1.00×.**
 
@@ -113,7 +116,7 @@ rotating measurement windows per round use the same Rust compiler, mimalloc,
 and pinned dependency environment. These are configured engine measurements,
 not stock release builds or secure product defaults.
 
-**Output differences matter:** OX and v2 are byte-identical on all 57 inputs.
+**Output differences matter:** the measured OX and v2 builds are byte-identical on all 57 inputs.
 Only 14 cases agree across all six engines: ten comments and four plain-prose
 views. The other 43 remain in the all-workload diagnostics: 34 differ only in
 heading IDs, and nine have additional differences. The GFM lane uses the shared

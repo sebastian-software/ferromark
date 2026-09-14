@@ -25,6 +25,11 @@ pub(super) static WWW_FINDER: LazyLock<memmem::Finder<'static>> =
 pub(super) static SCHEME_FINDER: LazyLock<memmem::Finder<'static>> =
     LazyLock::new(|| memmem::Finder::new("://"));
 
+pub(super) static MAILTO_FINDER: LazyLock<memmem::Finder<'static>> =
+    LazyLock::new(|| memmem::Finder::new("mailto:"));
+pub(super) static XMPP_FINDER: LazyLock<memmem::Finder<'static>> =
+    LazyLock::new(|| memmem::Finder::new("xmpp:"));
+
 /// Scheme names accepted in front of `://`, longest first so `https://`
 /// is not mistaken for a `ttp`-suffixed shorter name.
 const SCHEMES: [&str; 3] = ["https", "http", "ftp"];
@@ -50,13 +55,14 @@ pub(super) const LONGEST_SCHEME: usize = 5;
 /// does not keep the pass on.
 pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<AutolinkScan> {
     let bytes = content.as_bytes();
-    if memchr::memchr(b'@', bytes).is_some() {
-        return Some(AutolinkScan { may_have_www: true });
-    }
-    if WWW_FINDER.find(bytes).is_some() {
-        return Some(AutolinkScan { may_have_www: true });
-    }
-    has_bare_scheme(bytes).then_some(AutolinkScan { may_have_www: false })
+    let has_at = memchr::memchr(b'@', bytes).is_some();
+    let may_have_www = has_at || WWW_FINDER.find(bytes).is_some();
+    // Both extended schemes require an email separator. Avoid two substring
+    // scans on ordinary prose that cannot contain a valid extended address.
+    let may_have_extended =
+        has_at && (MAILTO_FINDER.find(bytes).is_some() || XMPP_FINDER.find(bytes).is_some());
+    (may_have_www || may_have_extended || has_bare_scheme(bytes))
+        .then_some(AutolinkScan { may_have_www, may_have_extended })
 }
 
 /// True when `://` appears as a bare URL, not only as `](http://…)` /
@@ -228,18 +234,73 @@ fn trim_trailing_punctuation(value: &str, start: usize, mut end: usize) -> usize
 }
 
 pub(super) fn validate_email(value: &str, at: usize) -> Option<Candidate> {
+    let candidate = validate_email_parts(value, at)?;
+    valid_boundary(value, candidate.start).then_some(candidate)
+}
+
+pub(super) fn validate_extended_email(
+    value: &str,
+    start: usize,
+    prefix: &str,
+    xmpp: bool,
+) -> Option<Candidate> {
+    if !valid_boundary(value, start)
+        || !value
+            .get(start..)?
+            .as_bytes()
+            .get(..prefix.len())?
+            .eq_ignore_ascii_case(prefix.as_bytes())
+    {
+        return None;
+    }
+    let body_start = start + prefix.len();
+    let mut at = body_start;
+    while at < value.len() && is_email_local_byte(value.as_bytes()[at]) {
+        at += 1;
+    }
+    if value.as_bytes().get(at) != Some(&b'@') {
+        return None;
+    }
+    let mut candidate = validate_email_parts(value, at)?;
+    // The address must begin immediately after the scheme. Without this
+    // check, a later address in `mailto: prose a@b.example` could make the
+    // malformed prefix into a link.
+    if candidate.start != body_start {
+        return None;
+    }
+    candidate.start = start;
+    candidate.href_prefix = "";
+    if xmpp && value.as_bytes().get(candidate.end) == Some(&b'/') {
+        let resource_start = candidate.end + 1;
+        let mut resource_end = resource_start;
+        while resource_end < value.len() {
+            let byte = value.as_bytes()[resource_end];
+            if !(byte.is_ascii_alphanumeric() || byte == b'@' || byte == b'.') {
+                break;
+            }
+            resource_end += 1;
+        }
+        let end = trim_trailing_punctuation(value, start, resource_end);
+        if end > resource_start {
+            candidate.end = end;
+        }
+    }
+    Some(candidate)
+}
+
+fn validate_email_parts(value: &str, at: usize) -> Option<Candidate> {
     let bytes = value.as_bytes();
     // Local part: alphanumerics plus `.`, `-`, `_`, `+`.
     let mut start = at;
     while start > 0 {
         let byte = bytes[start - 1];
-        if byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-' | b'_' | b'+') {
+        if is_email_local_byte(byte) {
             start -= 1;
         } else {
             break;
         }
     }
-    if start == at || !valid_boundary(value, start) {
+    if start == at {
         return None;
     }
 
@@ -261,4 +322,8 @@ pub(super) fn validate_email(value: &str, at: usize) -> Option<Candidate> {
         return None;
     }
     Some(Candidate { start, end, href_prefix: "mailto:" })
+}
+
+fn is_email_local_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-' | b'_' | b'+')
 }

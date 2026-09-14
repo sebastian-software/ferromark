@@ -106,7 +106,7 @@ pub(in crate::parser) fn parse_destination(content: &str, i: usize) -> Option<(&
             match bytes.get(j)? {
                 b'\\' if is_escape(bytes, j) => j += 2,
                 b'>' => return Some((&content[i + 1..j], j + 1)),
-                b'<' | b'\n' => return None,
+                b'<' | b'\n' | b'\r' => return None,
                 _ => j += 1,
             }
         }

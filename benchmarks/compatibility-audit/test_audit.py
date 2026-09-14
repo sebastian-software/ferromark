@@ -175,5 +175,35 @@ class ConservativeComparatorTests(unittest.TestCase):
         self.assertEqual(VERIFY.classify(code_plain, code_meta), "other")
 
 
+class AuditGateTests(unittest.TestCase):
+    def test_gate_rejects_masked_errors_but_keeps_policy_observations(self):
+        good = dict(error=None, status="exact", spec_equal=True)
+        results = {
+            "commonmark-configured": [good.copy()],
+            "gfm-extensions-configured": [good.copy()],
+            "gfm-public-preset": [dict(good, status="other", spec_equal=False)],
+        }
+        endings = dict(failures=[])
+        self.assertFalse(AUDIT.has_gating_failures(results, endings, []))
+        for lane, change in [
+            ("commonmark-configured", dict(spec_equal=False)),
+            ("gfm-extensions-configured", dict(status="other")),
+            ("gfm-public-preset", dict(error="parse failed")),
+        ]:
+            with self.subTest(lane=lane, change=change):
+                changed = dict(results, **{lane: [dict(good, **change)]})
+                self.assertTrue(AUDIT.has_gating_failures(changed, endings, []))
+        self.assertTrue(AUDIT.has_gating_failures(results, dict(failures=[{}]), []))
+        for probe in [
+            dict(good, kind="normative", status="other"),
+            dict(good, kind="normalizer-counterexample"),
+            dict(good, kind="policy", error="panic"),
+        ]:
+            with self.subTest(probe=probe):
+                self.assertTrue(AUDIT.has_gating_failures(results, endings, [probe]))
+        rejected = dict(good, kind="normalizer-counterexample", status="other", spec_equal=False)
+        self.assertFalse(AUDIT.has_gating_failures(results, endings, [rejected]))
+
+
 if __name__ == "__main__":
     unittest.main()
