@@ -236,11 +236,7 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Err(error) => {
-                    use crate::error::ParseError;
-                    let (ParseError::UnexpectedToken { span, .. }
-                    | ParseError::UnexpectedEof { span }
-                    | ParseError::InvalidSyntax { span, .. }
-                    | ParseError::NestingTooDeep { span, .. }) = error;
+                    let span = error.span_mut();
                     *span = map.map_span(*span);
                 }
             }

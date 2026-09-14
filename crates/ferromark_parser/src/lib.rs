@@ -36,7 +36,7 @@
 mod error;
 mod parser;
 
-pub use error::{ParseError, ParseResult};
+pub use error::{ParseError, ParseErrorKind, ParseResult};
 pub use parser::{Parser, ParserOptions};
 
 /// Parses Markdown source into an AST.
