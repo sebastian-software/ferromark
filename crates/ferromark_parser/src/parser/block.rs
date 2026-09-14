@@ -15,23 +15,6 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
 
-        if self.is_line_comment_at(self.position) {
-            self.position = self.skip_line_comments_from(self.position);
-            return Ok(None);
-        }
-
-        // `max_nesting_depth == 0` means unlimited. Every sub-source parser
-        // is built one level deeper than its parent, so a positive cap
-        // applies to quotes, list items, footnote bodies, and JSX children
-        // alike, however they are combined.
-        if self.options.max_nesting_depth > 0 && self.nesting_depth > self.options.max_nesting_depth
-        {
-            return Err(ParseError::NestingTooDeep {
-                span: Span::new(self.position as u32, self.position as u32),
-                max_depth: self.options.max_nesting_depth,
-            });
-        }
-
         let start = self.position;
         let bytes = self.source.as_bytes();
         let Some(trimmed_start) = self.first_non_whitespace_in_line(start) else {
@@ -42,6 +25,22 @@ impl<'a> Parser<'a> {
             self.position = self.source.len();
             return Ok(None);
         };
+
+        // Dedented comment lines retain their slashes. Reuse the prefix
+        // already needed by block dispatch before consulting physical origins.
+        if bytes[trimmed_start] == b'/' && self.is_line_comment_at(start) {
+            self.position = self.skip_line_comments_from(start);
+            return Ok(None);
+        }
+
+        // Comments are skipped before enforcing the nesting bound, as before.
+        if self.options.max_nesting_depth > 0 && self.nesting_depth > self.options.max_nesting_depth
+        {
+            return Err(ParseError::NestingTooDeep {
+                span: Span::new(self.position as u32, self.position as u32),
+                max_depth: self.options.max_nesting_depth,
+            });
+        }
 
         // Four columns of indentation start an indented code block; no
         // other block construct can begin on such a line. (This runs at
@@ -218,12 +217,6 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            if self.is_line_comment_at(self.position) {
-                first_line_comment.get_or_insert(self.position);
-                self.position = self.skip_line_comments_from(self.position);
-                continue;
-            }
-
             // Check for blank line (paragraph end): scan whitespace and
             // peek the next byte. Cheaper than the prior
             // `skip_whitespace` + `peek` + reset dance.
@@ -234,6 +227,12 @@ impl<'a> Parser<'a> {
             }
             if cursor >= bytes.len() || is_line_ending_byte(bytes[cursor]) {
                 break;
+            }
+
+            if bytes[cursor] == b'/' && self.is_line_comment_at(line_start) {
+                first_line_comment.get_or_insert(line_start);
+                self.position = self.skip_line_comments_from(line_start);
+                continue;
             }
 
             // Setext heading underline: while a paragraph is open this
