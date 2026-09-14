@@ -3,6 +3,7 @@ use ferromark_ast::{Image, Node, Span, Text};
 use memchr::{memchr, memchr3};
 
 use super::Parser;
+use super::byte_class::ByteClass;
 use crate::error::ParseResult;
 
 impl<'a> Parser<'a> {
@@ -33,7 +34,7 @@ impl<'a> Parser<'a> {
 
         *pos += 2;
         let alt_start = *pos;
-        *pos = Self::scan_balanced(content, *pos, b'[', b']');
+        *pos = Self::scan_balanced(content, *pos);
 
         if *pos < content.len() && bytes[*pos] == b']' {
             let close = *pos;
@@ -57,7 +58,7 @@ impl<'a> Parser<'a> {
             if bytes.get(close + 1) == Some(&b'[') && self.has_closer_from(content, close + 2, b']')
             {
                 let label_start = close + 2;
-                let label_end = Self::scan_balanced(content, label_start, b'[', b']');
+                let label_end = Self::scan_balanced(content, label_start);
                 if label_end < content.len() && bytes[label_end] == b']' {
                     well_formed_reference = true;
                     let raw_label = &content[label_start..label_end];
@@ -188,17 +189,27 @@ impl<'a> Parser<'a> {
         last.is_some_and(|last| last >= from)
     }
 
-    /// Scans a balanced delimiter region and returns the matching close byte.
+    /// Scans a bracketed region and returns the index of the `]` that closes
+    /// it, or `content.len()` when the brackets never balance.
     ///
     /// Constructs that bind tighter than brackets are skipped whole:
     /// backslash escapes, code spans (an unmatched opener stays literal),
     /// autolinks, and inline raw HTML. This is what makes
     /// `[not a `link](/foo`)` a code span instead of a link.
-    pub(super) fn scan_balanced(content: &str, mut cursor: usize, open: u8, close: u8) -> usize {
+    ///
+    /// Only the five bytes that can change the verdict are inspected; the
+    /// ordinary text between them is skipped with [`BRACKET_STOP`]. Link
+    /// text is the second-largest scalar walk after destinations on
+    /// link-dense documents, so this matters for every `[`.
+    pub(super) fn scan_balanced(content: &str, mut cursor: usize) -> usize {
         let bytes = content.as_bytes();
         let mut depth = 1;
-        while cursor < bytes.len() {
-            match bytes[cursor] {
+        loop {
+            cursor = BRACKET_STOP.first_in(bytes, cursor);
+            let Some(&byte) = bytes.get(cursor) else {
+                break;
+            };
+            match byte {
                 b'\\' => {
                     // An escaped ASCII punctuation byte (which covers both
                     // delimiters) is inert for bracket matching.
@@ -232,11 +243,11 @@ impl<'a> Parser<'a> {
                         cursor += 1;
                     }
                 }
-                byte if byte == open => {
+                b'[' => {
                     depth += 1;
                     cursor += 1;
                 }
-                byte if byte == close => {
+                b']' => {
                     depth -= 1;
                     // Stop AT the closing delimiter.
                     if depth == 0 {
@@ -250,6 +261,19 @@ impl<'a> Parser<'a> {
         cursor
     }
 }
+
+/// Bytes that can change the outcome of [`Parser::scan_balanced`]: the
+/// escape and code-span markers, the start of an autolink or raw HTML tag,
+/// and the brackets themselves.
+static BRACKET_STOP: ByteClass = ByteClass::from_flags({
+    let mut t = [0u8; 256];
+    t[b'\\' as usize] = 1;
+    t[b'`' as usize] = 1;
+    t[b'<' as usize] = 1;
+    t[b'[' as usize] = 1;
+    t[b']' as usize] = 1;
+    t
+});
 
 /// Flattens inline nodes to their plain-text content (image `alt` rules).
 fn flatten_inline_text(nodes: &[Node<'_>], out: &mut ferromark_allocator::String<'_>) {
@@ -267,5 +291,161 @@ fn flatten_inline_text(nodes: &[Node<'_>], out: &mut ferromark_allocator::String
             Node::Break(_) => out.push('\n'),
             _ => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod scan_balanced_tests {
+    // Owned strings keep the test oracle independent of production arena storage.
+    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+
+    use super::Parser;
+
+    /// The original byte-at-a-time walk, kept as the oracle.
+    fn scalar_scan_balanced(content: &str, mut cursor: usize) -> usize {
+        let bytes = content.as_bytes();
+        let mut depth = 1;
+        while cursor < bytes.len() {
+            match bytes[cursor] {
+                b'\\' => {
+                    let escapes_next =
+                        cursor + 1 < bytes.len() && bytes[cursor + 1].is_ascii_punctuation();
+                    cursor += if escapes_next { 2 } else { 1 };
+                }
+                b'`' => {
+                    let run = Parser::marker_run_len(bytes, cursor, b'`');
+                    cursor += run;
+                    let mut scan = cursor;
+                    while scan < bytes.len() {
+                        let Some(off) = memchr::memchr(b'`', &bytes[scan..]) else {
+                            break;
+                        };
+                        scan += off;
+                        let closer = Parser::marker_run_len(bytes, scan, b'`');
+                        if closer == run {
+                            cursor = scan + closer;
+                            break;
+                        }
+                        scan += closer;
+                    }
+                }
+                b'<' => {
+                    if let Some(end) = super::super::inline::autolink_end(content, cursor) {
+                        cursor = end;
+                    } else if let Some((_, end)) = Parser::parse_inline_html(content, cursor, 0) {
+                        cursor = end;
+                    } else {
+                        cursor += 1;
+                    }
+                }
+                b'[' => {
+                    depth += 1;
+                    cursor += 1;
+                }
+                b']' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return cursor;
+                    }
+                    cursor += 1;
+                }
+                _ => cursor += 1,
+            }
+        }
+        cursor
+    }
+
+    fn check(content: &str, from: usize) {
+        assert_eq!(
+            Parser::scan_balanced(content, from),
+            scalar_scan_balanced(content, from),
+            "input: {content:?} from {from}"
+        );
+    }
+
+    #[test]
+    fn bracket_stop_matches_definition() {
+        for byte in 0..=255u8 {
+            let expected = matches!(byte, b'\\' | b'`' | b'<' | b'[' | b']');
+            assert_eq!(super::BRACKET_STOP.contains(byte), expected, "byte {byte:#x}");
+        }
+    }
+
+    #[test]
+    fn scan_matches_scalar_at_byte_boundaries_and_tails() {
+        let mut needles: Vec<String> = (0..=0x7Fu8).map(|b| char::from(b).to_string()).collect();
+        needles.extend(
+            [
+                "\\]",
+                "\\[",
+                "\\a",
+                "``",
+                "`x`",
+                "`",
+                "<a>",
+                "<http://x.y>",
+                "<",
+                "[[",
+                "]]",
+                "[]",
+                "é",
+                "中",
+            ]
+            .map(str::to_owned),
+        );
+        for offset in 0..=36 {
+            for tail in [0, 1, 7, 8, 15, 16, 17, 31, 32, 33] {
+                for needle in &needles {
+                    let input = format!("{}{}{}]", "t".repeat(offset), needle, "u".repeat(tail));
+                    check(&input, 0);
+                    let unclosed = format!("{}{}{}", "t".repeat(offset), needle, "u".repeat(tail));
+                    check(&unclosed, 0);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn scan_matches_scalar_on_mixed_inputs() {
+        let tokens = [
+            "a",
+            " ",
+            "é",
+            "中",
+            "🙂",
+            "\\",
+            "\\]",
+            "\\[",
+            "[",
+            "]",
+            "`",
+            "``",
+            "`code`",
+            "<",
+            ">",
+            "<b>",
+            "<https://e.x/>",
+            "\n",
+            "(",
+            ")",
+        ];
+        let mut state = 0x2545_f491_4f6c_dd1du64;
+        for _ in 0..3000 {
+            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            let len = (state >> 33) as usize % 80;
+            let mut input = String::new();
+            for _ in 0..len {
+                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                input.push_str(tokens[(state >> 33) as usize % tokens.len()]);
+            }
+            check(&input, 0);
+            let mid = input.len() / 2;
+            if input.is_char_boundary(mid) {
+                check(&input, mid);
+            }
+        }
+        check(&"[x]".repeat(64), 0);
+        check(&format!("{}]", "a".repeat(100)), 0);
+        check(&format!("{}`{}`{}]", "a".repeat(20), "]".repeat(20), "b".repeat(20)), 0);
     }
 }
