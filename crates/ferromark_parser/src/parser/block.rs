@@ -211,6 +211,7 @@ impl<'a> Parser<'a> {
             None => scan_next_line_start(bytes, start),
         };
         self.position = content_end;
+        let mut first_line_comment = None;
 
         loop {
             if self.is_at_end() {
@@ -218,6 +219,7 @@ impl<'a> Parser<'a> {
             }
 
             if self.is_line_comment_at(self.position) {
+                first_line_comment.get_or_insert(self.position);
                 self.position = self.skip_line_comments_from(self.position);
                 continue;
             }
@@ -241,7 +243,8 @@ impl<'a> Parser<'a> {
             if let Some(depth) = self.setext_underline_depth(line_start, cursor) {
                 let heading_end = scan_next_line_start(bytes, line_start);
                 self.position = heading_end;
-                let (raw_content, source_map) = self.without_line_comments(start, content_end);
+                let (raw_content, source_map) =
+                    self.without_line_comments_with_first(start, content_end, first_line_comment);
                 let content = raw_content.trim();
                 let (content, id, classes) = self.split_heading_attributes(content);
                 let offset = if source_map.is_some() {
@@ -280,7 +283,8 @@ impl<'a> Parser<'a> {
             self.position = content_end;
         }
 
-        let (raw_content, source_map) = self.without_line_comments(start, content_end);
+        let (raw_content, source_map) =
+            self.without_line_comments_with_first(start, content_end, first_line_comment);
         let content = raw_content.trim();
         if content.is_empty() {
             return Ok(None);
