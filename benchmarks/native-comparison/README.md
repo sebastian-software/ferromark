@@ -61,9 +61,14 @@ link targets are disabled. This measures configured engine throughput, not
 Ferromark's secure product defaults. Documents mentioning MDX remain ordinary
 Markdown input; this is not an MDX feature benchmark.
 
-OX and v2 generate heading IDs unconditionally. Other engines have heading IDs
-disabled. The harness neither patches that code nor adds a slugifier to an
-engine that lacks one. Every actual HTML output is archived. `verify.py` groups
+V2 uses `HtmlRendererOptions::commonmark()` in both lanes, disabling heading
+IDs, callouts, inline TOC substitution, and fence metadata cleanup. V1 also
+disables its renderer extras. Original OX has no native flags to turn off those
+four behaviors; it remains unchanged. The harness neither replaces its renderer
+through hooks nor adds a slugifier to an engine that lacks one.
+The [current flag contract](../../docs/reports/2026-09-14-native-matched/FLAGS.md)
+lists each adapter's choices and executable guards. Every actual HTML output
+is archived. `verify.py` groups
 agreement without treating an engine as the correctness oracle and distinguishes:
 
 - Exact bytes.
@@ -75,6 +80,11 @@ agreement without treating an engine as the correctness oracle and distinguishes
   and changes to code or content.
 
 Only the first two categories enter the all-six strict-agreement subset.
+The report also publishes a broader subset requiring agreement among the five
+engines with matching renderer options (v2, v1, md4c, pulldown-cmark, and Bun).
+OX gets no score in that subset. Subset membership is decided before timing;
+neither IDs nor task CSS classes are removed to increase agreement. The current
+run admits 14 of 57 inputs for all six engines and 50 for the configurable five.
 All 57 cases are still timed and published as native-workload diagnostics,
 including the mismatches. A throughput result does not establish conformance.
 V1 resource-limit fallbacks cause verification to fail rather than becoming
@@ -115,9 +125,9 @@ recorded with the build.
 ```sh
 python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-build \
   --worker benchmarks/native-comparison/worker.rs --compile \
-  --lockfile docs/reports/2026-09-14-native-engines/Cargo.lock
+  --lockfile docs/reports/2026-09-14-native-matched/Cargo.lock
 python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py'
-BENCH_CPU='Apple M1 Pro' python3 benchmarks/native-comparison/run.py \
+python3 benchmarks/native-comparison/run.py \
   /private/tmp/native-bench-build/build.json \
   docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz \
   /private/tmp/native-bench-results
@@ -126,3 +136,6 @@ python3 benchmarks/native-comparison/report.py /private/tmp/native-bench-results
 
 Use `run.py --verify-only` for behavior/output checks without timing. Build and
 output directories must be new so previous evidence is never overwritten.
+The current source pins are v2 `33c216b` and v1 `4e15141`; other engine pins are
+unchanged. The original pre-correction comparison is preserved separately in
+[`2026-09-14-native-engines`](../../docs/reports/2026-09-14-native-engines/README.md).
