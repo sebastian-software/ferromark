@@ -58,11 +58,15 @@ pipe scans, rendering, headings, and sanitized URLs. Run individual suites with
 The [optimization roadmap](docs/optimization-roadmap.md) records candidates for
 later measured ports from the Ferramenta projects. No such port is included yet.
 
-The [current Ferromark comparison](docs/reports/2026-09-13-current-ferromark/README.md)
-measures the initial core against pinned Ferromark main with fresh and reused
-lifecycles. It includes the reproducible harness, frozen inputs, output checks,
-and compressed raw samples.
+The [broad Markdown comparison](docs/reports/2026-09-14-broad-markdown/INTERPRETATION.md)
+measures 57 cases from 37 bytes to 114 KB: short comments, real documentation,
+and Wikipedia-derived prose. It separates input size, content, output agreement,
+and fresh/reused lifecycles. [Full tables and raw data](docs/reports/2026-09-14-broad-markdown/README.md)
+and the [earlier synthetic diagnostic comparison](docs/reports/2026-09-13-current-ferromark/README.md)
+use the same pinned parser binaries.
 
 The source is MIT licensed; the original copyright notice is preserved in
 [LICENSE](LICENSE). CommonMark and GFM specification fixtures carry their own
 [CC-BY-SA attribution](crates/ferromark_renderer/tests/spec_fixtures/README.md).
+The [benchmark corpus sources](benchmarks/broad-comparison/README.md) retain their
+separate MIT, Apache, CC BY, or CC BY-SA licenses and attribution.

@@ -1,0 +1,612 @@
+{
+  "rounds": 3,
+  "pairs_per_round": 3,
+  "window_ms": 75,
+  "warmup_ms": 75,
+  "seed": 20260914,
+  "groups": [
+    {
+      "name": "comment-ack",
+      "profile": "gfm",
+      "cases": [
+        "comment-ack"
+      ]
+    },
+    {
+      "name": "comment-question",
+      "profile": "gfm",
+      "cases": [
+        "comment-question"
+      ]
+    },
+    {
+      "name": "comment-review",
+      "profile": "gfm",
+      "cases": [
+        "comment-review"
+      ]
+    },
+    {
+      "name": "comment-links",
+      "profile": "gfm",
+      "cases": [
+        "comment-links"
+      ]
+    },
+    {
+      "name": "comment-checklist",
+      "profile": "gfm",
+      "cases": [
+        "comment-checklist"
+      ]
+    },
+    {
+      "name": "comment-quote",
+      "profile": "gfm",
+      "cases": [
+        "comment-quote"
+      ]
+    },
+    {
+      "name": "comment-unicode",
+      "profile": "gfm",
+      "cases": [
+        "comment-unicode"
+      ]
+    },
+    {
+      "name": "comment-inline-code",
+      "profile": "gfm",
+      "cases": [
+        "comment-inline-code"
+      ]
+    },
+    {
+      "name": "comment-reproduction",
+      "profile": "gfm",
+      "cases": [
+        "comment-reproduction"
+      ]
+    },
+    {
+      "name": "comment-table",
+      "profile": "gfm",
+      "cases": [
+        "comment-table"
+      ]
+    },
+    {
+      "name": "comment-review-long",
+      "profile": "gfm",
+      "cases": [
+        "comment-review-long"
+      ]
+    },
+    {
+      "name": "comment-incident",
+      "profile": "gfm",
+      "cases": [
+        "comment-incident"
+      ]
+    },
+    {
+      "name": "guard-angle-link",
+      "profile": "commonmark",
+      "cases": [
+        "guard-angle-link"
+      ]
+    },
+    {
+      "name": "legacy-contributing",
+      "profile": "gfm",
+      "cases": [
+        "legacy-contributing"
+      ]
+    },
+    {
+      "name": "legacy-node-ferromark-readme",
+      "profile": "gfm",
+      "cases": [
+        "legacy-node-ferromark-readme"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-2",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-migration-0-2"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-3",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-migration-0-3"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-4",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-migration-0-4"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-8",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-migration-0-8"
+      ]
+    },
+    {
+      "name": "legacy-docs-releasing",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-releasing"
+      ]
+    },
+    {
+      "name": "legacy-docs-readme-theme",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-readme-theme"
+      ]
+    },
+    {
+      "name": "legacy-docs-markdown-extensions",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-markdown-extensions"
+      ]
+    },
+    {
+      "name": "legacy-docs-mdx",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-mdx"
+      ]
+    },
+    {
+      "name": "legacy-docs-readme",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-readme"
+      ]
+    },
+    {
+      "name": "legacy-docs-adr-readme-theme-composition",
+      "profile": "gfm",
+      "cases": [
+        "legacy-docs-adr-readme-theme-composition"
+      ]
+    },
+    {
+      "name": "rust-book-ch03-04-comments",
+      "profile": "gfm",
+      "cases": [
+        "rust-book-ch03-04-comments"
+      ]
+    },
+    {
+      "name": "rust-book-appendix-02-operators",
+      "profile": "gfm",
+      "cases": [
+        "rust-book-appendix-02-operators"
+      ]
+    },
+    {
+      "name": "rust-book-ch00-00-introduction",
+      "profile": "gfm",
+      "cases": [
+        "rust-book-ch00-00-introduction"
+      ]
+    },
+    {
+      "name": "rust-book-ch17-00-async-await",
+      "profile": "gfm",
+      "cases": [
+        "rust-book-ch17-00-async-await"
+      ]
+    },
+    {
+      "name": "vue-docs-ways-of-using-vue",
+      "profile": "gfm",
+      "cases": [
+        "vue-docs-ways-of-using-vue"
+      ]
+    },
+    {
+      "name": "vue-docs-suspense",
+      "profile": "gfm",
+      "cases": [
+        "vue-docs-suspense"
+      ]
+    },
+    {
+      "name": "vue-docs-slots",
+      "profile": "gfm",
+      "cases": [
+        "vue-docs-slots"
+      ]
+    },
+    {
+      "name": "vue-docs-reactivity-in-depth",
+      "profile": "gfm",
+      "cases": [
+        "vue-docs-reactivity-in-depth"
+      ]
+    },
+    {
+      "name": "vite-docs-philosophy",
+      "profile": "gfm",
+      "cases": [
+        "vite-docs-philosophy"
+      ]
+    },
+    {
+      "name": "vite-docs-performance",
+      "profile": "gfm",
+      "cases": [
+        "vite-docs-performance"
+      ]
+    },
+    {
+      "name": "vite-docs-api-plugin",
+      "profile": "gfm",
+      "cases": [
+        "vite-docs-api-plugin"
+      ]
+    },
+    {
+      "name": "vite-docs-features",
+      "profile": "gfm",
+      "cases": [
+        "vite-docs-features"
+      ]
+    },
+    {
+      "name": "typescript-handbook-the-handbook",
+      "profile": "gfm",
+      "cases": [
+        "typescript-handbook-the-handbook"
+      ]
+    },
+    {
+      "name": "typescript-handbook-advanced-types",
+      "profile": "gfm",
+      "cases": [
+        "typescript-handbook-advanced-types"
+      ]
+    },
+    {
+      "name": "typescript-handbook-compiler-options",
+      "profile": "gfm",
+      "cases": [
+        "typescript-handbook-compiler-options"
+      ]
+    },
+    {
+      "name": "typescript-handbook-typescript-5-0",
+      "profile": "gfm",
+      "cases": [
+        "typescript-handbook-typescript-5-0"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-first-paragraph",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-rainbow-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-lead",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-rainbow-lead"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-article-body",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-rainbow-article-body"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-plain-prose",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-rainbow-plain-prose"
+      ]
+    },
+    {
+      "name": "wiki-tea-first-paragraph",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-tea-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-tea-lead",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-tea-lead"
+      ]
+    },
+    {
+      "name": "wiki-tea-article-body",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-tea-article-body"
+      ]
+    },
+    {
+      "name": "wiki-tea-plain-prose",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-tea-plain-prose"
+      ]
+    },
+    {
+      "name": "wiki-chess-first-paragraph",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-chess-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-chess-lead",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-chess-lead"
+      ]
+    },
+    {
+      "name": "wiki-chess-article-body",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-chess-article-body"
+      ]
+    },
+    {
+      "name": "wiki-chess-plain-prose",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-chess-plain-prose"
+      ]
+    },
+    {
+      "name": "wiki-volcano-first-paragraph",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-volcano-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-volcano-lead",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-volcano-lead"
+      ]
+    },
+    {
+      "name": "wiki-volcano-article-body",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-volcano-article-body"
+      ]
+    },
+    {
+      "name": "wiki-volcano-plain-prose",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-volcano-plain-prose"
+      ]
+    },
+    {
+      "name": "rotating-authored-comments-gfm",
+      "profile": "gfm",
+      "cases": [
+        "comment-ack",
+        "comment-question",
+        "comment-review",
+        "comment-links",
+        "comment-checklist",
+        "comment-quote",
+        "comment-unicode",
+        "comment-inline-code",
+        "comment-reproduction",
+        "comment-table",
+        "comment-review-long",
+        "comment-incident"
+      ]
+    },
+    {
+      "name": "rotating-encyclopedia-commonmark",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-rainbow-first-paragraph",
+        "wiki-rainbow-lead",
+        "wiki-rainbow-article-body",
+        "wiki-tea-first-paragraph",
+        "wiki-tea-lead",
+        "wiki-tea-article-body",
+        "wiki-chess-first-paragraph",
+        "wiki-chess-lead",
+        "wiki-chess-article-body",
+        "wiki-volcano-first-paragraph",
+        "wiki-volcano-lead",
+        "wiki-volcano-article-body"
+      ]
+    },
+    {
+      "name": "rotating-encyclopedia-prose-commonmark",
+      "profile": "commonmark",
+      "cases": [
+        "wiki-rainbow-plain-prose",
+        "wiki-tea-plain-prose",
+        "wiki-chess-plain-prose",
+        "wiki-volcano-plain-prose"
+      ]
+    },
+    {
+      "name": "rotating-external-docs-gfm",
+      "profile": "gfm",
+      "cases": [
+        "rust-book-ch03-04-comments",
+        "rust-book-appendix-02-operators",
+        "rust-book-ch00-00-introduction",
+        "rust-book-ch17-00-async-await",
+        "vue-docs-ways-of-using-vue",
+        "vue-docs-suspense",
+        "vue-docs-slots",
+        "vue-docs-reactivity-in-depth",
+        "vite-docs-philosophy",
+        "vite-docs-performance",
+        "vite-docs-api-plugin",
+        "vite-docs-features",
+        "typescript-handbook-the-handbook",
+        "typescript-handbook-advanced-types",
+        "typescript-handbook-compiler-options",
+        "typescript-handbook-typescript-5-0"
+      ]
+    },
+    {
+      "name": "rotating-legacy-docs-gfm",
+      "profile": "gfm",
+      "cases": [
+        "legacy-contributing",
+        "legacy-node-ferromark-readme",
+        "legacy-docs-migration-0-2",
+        "legacy-docs-migration-0-3",
+        "legacy-docs-migration-0-4",
+        "legacy-docs-migration-0-8",
+        "legacy-docs-releasing",
+        "legacy-docs-readme-theme",
+        "legacy-docs-markdown-extensions",
+        "legacy-docs-mdx",
+        "legacy-docs-readme",
+        "legacy-docs-adr-readme-theme-composition"
+      ]
+    },
+    {
+      "name": "rotating-syntax-guards-commonmark",
+      "profile": "commonmark",
+      "cases": [
+        "guard-angle-link"
+      ]
+    }
+  ],
+  "host_before": {
+    "time_utc": "2026-09-14T06:06:11Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      3.86328125,
+      3.66943359375,
+      3.6416015625
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "corpus_sha256": "e1adeba81ab3017fc8983b9cad3cf416c1d6a0004fade515ea3093f0876f7c69",
+  "runner_sha256": "69d4bb0b8cfb4633f8d643e72806233b775b089d2ce574c998763a7c308951e3",
+  "shared_runner_sha256": "a3f150cb46593cac9a575cc6e7ef49cda6574d8a667b3b2e799b43906cf516a9",
+  "observations": [
+    {
+      "round": 0,
+      "before": {
+        "time_utc": "2026-09-14T06:06:11Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          3.86328125,
+          3.66943359375,
+          3.6416015625
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-14T06:08:07Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          3.939453125,
+          3.78955078125,
+          3.68896484375
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    },
+    {
+      "round": 1,
+      "before": {
+        "time_utc": "2026-09-14T06:08:07Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          3.939453125,
+          3.78955078125,
+          3.68896484375
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-14T06:10:03Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          4.33056640625,
+          4.06689453125,
+          3.81494140625
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    },
+    {
+      "round": 2,
+      "before": {
+        "time_utc": "2026-09-14T06:10:03Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          4.33056640625,
+          4.06689453125,
+          3.81494140625
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-14T06:11:59Z",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "load_average": [
+          3.20166015625,
+          3.755859375,
+          3.72216796875
+        ],
+        "cpu": "Apple M1 Pro",
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    }
+  ],
+  "verification": "Isolated modes and two rotating cycles byte-checked before timing; each timing worker verified before and after its windows; output-length checksum checked for every timed and warmup window.",
+  "host_after": {
+    "time_utc": "2026-09-14T06:11:59Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      3.20166015625,
+      3.755859375,
+      3.72216796875
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t77%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

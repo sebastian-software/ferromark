@@ -1,0 +1,455 @@
+{
+  "category": [
+    {
+      "stratum": "comments",
+      "total": 12,
+      "admitted": 12,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.0060125801701516,
+          "leaders": {
+            "main": 6,
+            "v2": 6
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.3004964480393584,
+          "leaders": {
+            "v2": 11,
+            "main": 1
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.2594144913650074,
+          "leaders": {
+            "v2": 11,
+            "main": 1
+          }
+        }
+      }
+    },
+    {
+      "stratum": "encyclopedia",
+      "total": 12,
+      "admitted": 9,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.7727793642248355,
+          "leaders": {
+            "v2": 9
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.6448267504782985,
+          "leaders": {
+            "v2": 9
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.6175424298779284,
+          "leaders": {
+            "v2": 9
+          }
+        }
+      }
+    },
+    {
+      "stratum": "plain-prose",
+      "total": 4,
+      "admitted": 4,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.3491398622490336,
+          "leaders": {
+            "v2": 4
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.3313805033991883,
+          "leaders": {
+            "v2": 4
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.188355682993959,
+          "leaders": {
+            "v2": 4
+          }
+        }
+      }
+    },
+    {
+      "stratum": "readme",
+      "total": 2,
+      "admitted": 1,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.2173956693555898,
+          "leaders": {
+            "v2": 1
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.1206046656341035,
+          "leaders": {
+            "v2": 1
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.0864955935266607,
+          "leaders": {
+            "v2": 1
+          }
+        }
+      }
+    },
+    {
+      "stratum": "reference",
+      "total": 4,
+      "admitted": 1,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.0935895719891153,
+          "leaders": {
+            "v2": 1
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.0787427261938864,
+          "leaders": {
+            "v2": 1
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.0661719041744644,
+          "leaders": {
+            "v2": 1
+          }
+        }
+      }
+    },
+    {
+      "stratum": "syntax-guard",
+      "total": 1,
+      "admitted": 0,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": null,
+          "leaders": {}
+        },
+        "owned": {
+          "geomean_main_over_v2": null,
+          "leaders": {}
+        },
+        "reuse": {
+          "geomean_main_over_v2": null,
+          "leaders": {}
+        }
+      }
+    },
+    {
+      "stratum": "technical-docs",
+      "total": 22,
+      "admitted": 9,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.4532165691325585,
+          "leaders": {
+            "v2": 9
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.3805910383659254,
+          "leaders": {
+            "v2": 9
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.3406069316402136,
+          "leaders": {
+            "v2": 9
+          }
+        }
+      }
+    }
+  ],
+  "size_bin": [
+    {
+      "stratum": "<512 B",
+      "total": 12,
+      "admitted": 11,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 0.995940386420753,
+          "leaders": {
+            "main": 6,
+            "v2": 5
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.3180311362396804,
+          "leaders": {
+            "v2": 10,
+            "main": 1
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.2758217026417875,
+          "leaders": {
+            "v2": 10,
+            "main": 1
+          }
+        }
+      }
+    },
+    {
+      "stratum": "512 B–2 KiB",
+      "total": 9,
+      "admitted": 8,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.4297518724786018,
+          "leaders": {
+            "v2": 8
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.3079467922995176,
+          "leaders": {
+            "v2": 8
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.2796817632879156,
+          "leaders": {
+            "v2": 8
+          }
+        }
+      }
+    },
+    {
+      "stratum": "2–10 KiB",
+      "total": 19,
+      "admitted": 10,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.6975833654306987,
+          "leaders": {
+            "v2": 10
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.6229997798454643,
+          "leaders": {
+            "v2": 10
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.5860781009434435,
+          "leaders": {
+            "v2": 10
+          }
+        }
+      }
+    },
+    {
+      "stratum": "10–50 KiB",
+      "total": 12,
+      "admitted": 5,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.279217016696074,
+          "leaders": {
+            "v2": 5
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.2504027171059309,
+          "leaders": {
+            "v2": 5
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.149700839755567,
+          "leaders": {
+            "v2": 5
+          }
+        }
+      }
+    },
+    {
+      "stratum": "50–256 KiB",
+      "total": 5,
+      "admitted": 2,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.4436698678511493,
+          "leaders": {
+            "v2": 2
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.4358512132746524,
+          "leaders": {
+            "v2": 2
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.3558197104645275,
+          "leaders": {
+            "v2": 2
+          }
+        }
+      }
+    }
+  ],
+  "collection": [
+    {
+      "stratum": "authored-comments",
+      "total": 12,
+      "admitted": 12,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.0060125801701516,
+          "leaders": {
+            "main": 6,
+            "v2": 6
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.3004964480393584,
+          "leaders": {
+            "v2": 11,
+            "main": 1
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.2594144913650074,
+          "leaders": {
+            "v2": 11,
+            "main": 1
+          }
+        }
+      }
+    },
+    {
+      "stratum": "encyclopedia",
+      "total": 12,
+      "admitted": 9,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.7727793642248355,
+          "leaders": {
+            "v2": 9
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.6448267504782985,
+          "leaders": {
+            "v2": 9
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.6175424298779284,
+          "leaders": {
+            "v2": 9
+          }
+        }
+      }
+    },
+    {
+      "stratum": "encyclopedia-prose",
+      "total": 4,
+      "admitted": 4,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.3491398622490336,
+          "leaders": {
+            "v2": 4
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.3313805033991883,
+          "leaders": {
+            "v2": 4
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.188355682993959,
+          "leaders": {
+            "v2": 4
+          }
+        }
+      }
+    },
+    {
+      "stratum": "external-docs",
+      "total": 16,
+      "admitted": 7,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.32667580486654,
+          "leaders": {
+            "v2": 7
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.2691703783746286,
+          "leaders": {
+            "v2": 7
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.227814888695269,
+          "leaders": {
+            "v2": 7
+          }
+        }
+      }
+    },
+    {
+      "stratum": "legacy-docs",
+      "total": 12,
+      "admitted": 4,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": 1.5187153408160117,
+          "leaders": {
+            "v2": 4
+          }
+        },
+        "owned": {
+          "geomean_main_over_v2": 1.4275096941612007,
+          "leaders": {
+            "v2": 4
+          }
+        },
+        "reuse": {
+          "geomean_main_over_v2": 1.4009076928432163,
+          "leaders": {
+            "v2": 4
+          }
+        }
+      }
+    },
+    {
+      "stratum": "syntax-guards",
+      "total": 1,
+      "admitted": 0,
+      "modes": {
+        "fresh": {
+          "geomean_main_over_v2": null,
+          "leaders": {}
+        },
+        "owned": {
+          "geomean_main_over_v2": null,
+          "leaders": {}
+        },
+        "reuse": {
+          "geomean_main_over_v2": null,
+          "leaders": {}
+        }
+      }
+    }
+  ]
+}
