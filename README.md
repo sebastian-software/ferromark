@@ -1,8 +1,17 @@
 # Ferromark v2
 
-A lean, arena-allocated Markdown parser and HTML renderer, derived from
-[OX-Content](https://github.com/ubugeeei-prod/ox-content). This is a local development
-baseline for Ferromark v2, with a fresh Git history and unpublished packages.
+A lean, arena-allocated Markdown parser and HTML renderer.
+
+Ferromark v2 brings together our work on
+[Ferromark v1](https://github.com/sebastian-software/ferromark) and the
+arena-based AST architecture of [OX-Content](https://github.com/ubugeeei-prod/ox-content).
+In v1, we encountered performance limits that called for a deeper architectural
+change. OX-Content provided the foundation for that rebuild, and we are grateful
+to its authors. V2 combines that foundation with selected v1 features and
+optimizations, alongside new development, to shape a Markdown-to-HTML library
+with its own scope and direction.
+
+This is a local development baseline with a fresh Git history and unpublished packages.
 The API is not compatible with Ferromark v1 and is not a stable v2 release.
 
 ```rust
