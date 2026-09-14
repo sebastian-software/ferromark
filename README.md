@@ -143,7 +143,9 @@ locale-aware document transform; the former English-oriented parser option has
 been removed. See the [typography decision](docs/typography.md).
 
 V2 also supports optional table IDs/classes, inline captions, and generated
-`colgroup` columns for external CSS widths. Horizontal spans use adjacent pipes
+`colgroup` columns for external CSS widths. Optional header-derived classes such
+as `col-name-netto-preis` use the heading slug rules and retain positional classes.
+Horizontal spans use adjacent pipes
 (`||` spans two columns). All table extras are off in the GFM presets.
 [Syntax, options, and a runnable CSS example](docs/table-layout.md).
 
