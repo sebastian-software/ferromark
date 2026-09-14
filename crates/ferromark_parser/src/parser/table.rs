@@ -42,7 +42,11 @@ impl<'a> Parser<'a> {
             return false;
         }
 
-        let header_cells = Self::table_row_cells(first_line).count();
+        let header_cells = if self.options.merged_table_cells {
+            Self::table_row_cells_with_spans(first_line).map(|(_, _, _, span)| span).sum()
+        } else {
+            Self::table_row_cells(first_line).count()
+        };
         let mut delimiter_cells = 0;
         for cell in Self::table_row_cells(second_line) {
             if delimiter_alignment(cell).is_none() {
@@ -75,11 +79,20 @@ impl<'a> Parser<'a> {
         // arena-backed cells immediately, which keeps the table path linear in
         // the input and avoids throwaway row containers.
         let mut children: Vec<'a, TableRow<'a>> = self.allocator.new_vec();
-        children.push(self.parse_table_row(header_line, header_start, column_count)?);
+        children.push(self.parse_table_row(
+            header_line,
+            header_start,
+            column_count,
+            self.options.merged_table_cells,
+        )?);
 
         // Parse body rows
         loop {
             if self.is_at_end() {
+                break;
+            }
+
+            if self.options.table_attributes && self.is_table_attributes_line(self.position) {
                 break;
             }
 
@@ -94,11 +107,17 @@ impl<'a> Parser<'a> {
 
             let row_start = self.position;
             let row_line = self.consume_line();
-            children.push(self.parse_table_row(row_line, row_start, column_count)?);
+            children.push(self.parse_table_row(
+                row_line,
+                row_start,
+                column_count,
+                self.options.merged_table_cells,
+            )?);
         }
 
+        let attributes = self.parse_table_attributes()?;
         let span = Span::new(start as u32, self.position as u32);
-        Ok(Some(Node::Table(self.allocator.boxed(Table { align, children, span }))))
+        Ok(Some(Node::Table(self.allocator.boxed(Table { align, children, attributes, span }))))
     }
 
     /// Parses a table row into arena-backed AST cells without temporary heap
@@ -112,6 +131,7 @@ impl<'a> Parser<'a> {
         line: &'a str,
         line_start: usize,
         column_count: usize,
+        merged: bool,
     ) -> ParseResult<TableRow<'a>> {
         // Every row is truncated or padded to the delimiter's exact width.
         // Reserve it before parsing inline children: those arena allocations
@@ -119,32 +139,73 @@ impl<'a> Parser<'a> {
         // each discarded backing buffer live until the arena is dropped.
         let mut cells: Vec<'a, TableCell<'a>> = self.allocator.new_vec_with_capacity(column_count);
         let line_end = line_start + line.len();
-        for (cell_content, cell_start, cell_end) in
-            Self::table_row_cells_with_offsets(line).take(column_count)
-        {
-            let cell_content = unescape_table_pipes(self.allocator, cell_content);
-            let cell_children = if let Some(source_map) = &cell_content.source_map {
-                let mut children = self.parse_inline_block(cell_content.content, 0)?;
-                let source_offset = (line_start + cell_start) as u32;
-                for child in &mut children {
-                    remap_table_cell_inline_spans(child, source_offset, source_map);
+        let mut logical_columns = 0;
+        if merged {
+            for (cell_content, cell_start, cell_end, requested_span) in
+                Self::table_row_cells_with_spans(line)
+            {
+                if logical_columns >= column_count {
+                    break;
                 }
-                children
-            } else {
-                self.parse_inline_block(cell_content.content, line_start + cell_start)?
-            };
-            cells.push(TableCell {
-                children: cell_children,
-                span: Span::new((line_start + cell_start) as u32, (line_start + cell_end) as u32),
-            });
+                let colspan = requested_span.min(column_count - logical_columns);
+                cells.push(self.parse_table_cell(
+                    cell_content,
+                    line_start,
+                    cell_start,
+                    cell_end,
+                    colspan,
+                )?);
+                logical_columns += colspan;
+            }
+        } else {
+            for (cell_content, cell_start, cell_end) in
+                Self::table_row_cells_with_offsets(line).take(column_count)
+            {
+                cells.push(self.parse_table_cell(
+                    cell_content,
+                    line_start,
+                    cell_start,
+                    cell_end,
+                    1,
+                )?);
+                logical_columns += 1;
+            }
         }
-        while cells.len() < column_count {
+        while logical_columns < column_count {
             cells.push(TableCell {
                 children: self.allocator.new_vec(),
                 span: Span::new(line_end as u32, line_end as u32),
+                colspan: 1,
             });
+            logical_columns += 1;
         }
         Ok(TableRow { children: cells, span: Span::new(line_start as u32, line_end as u32) })
+    }
+
+    fn parse_table_cell(
+        &self,
+        cell_content: &'a str,
+        line_start: usize,
+        cell_start: usize,
+        cell_end: usize,
+        colspan: usize,
+    ) -> ParseResult<TableCell<'a>> {
+        let cell_content = unescape_table_pipes(self.allocator, cell_content);
+        let cell_children = if let Some(source_map) = &cell_content.source_map {
+            let mut children = self.parse_inline_block(cell_content.content, 0)?;
+            let source_offset = (line_start + cell_start) as u32;
+            for child in &mut children {
+                remap_table_cell_inline_spans(child, source_offset, source_map);
+            }
+            children
+        } else {
+            self.parse_inline_block(cell_content.content, line_start + cell_start)?
+        };
+        Ok(TableCell {
+            children: cell_children,
+            span: Span::new((line_start + cell_start) as u32, (line_start + cell_end) as u32),
+            colspan,
+        })
     }
 
     /// Iterates table row cells from a line.
@@ -199,6 +260,81 @@ impl<'a> Parser<'a> {
             let (cell, start, end) = trim_cell(raw, content_start + cell_start);
             cell_start = bytes.len() + 1;
             Some((cell, start, end))
+        })
+    }
+
+    /// Iterates row cells while preserving adjacent unescaped pipe runs as
+    /// horizontal spans. A terminal run is kept intact so `value ||` can
+    /// express a span even though the final pipe is also the usual row
+    /// boundary marker.
+    fn table_row_cells_with_spans(
+        line: &'a str,
+    ) -> impl Iterator<Item = (&'a str, usize, usize, usize)> {
+        let trimmed = line.trim();
+        let trimmed_start = line.len() - line.trim_start().len();
+        let mut content_start = trimmed_start;
+        let mut content_end = trimmed_start + trimmed.len();
+        if line[content_start..content_end].starts_with('|') {
+            content_start += 1;
+        }
+        if content_start < content_end
+            && line[content_start..content_end].ends_with('|')
+            && !is_escaped_table_pipe(
+                &line.as_bytes()[content_start..content_end],
+                content_end - content_start - 1,
+            )
+        {
+            let final_pipe = content_end - 1;
+            let mut run_start = final_pipe;
+            while run_start > content_start
+                && line.as_bytes()[run_start - 1] == b'|'
+                && !is_escaped_table_pipe(line.as_bytes(), run_start - 1)
+            {
+                run_start -= 1;
+            }
+            if run_start == final_pipe {
+                content_end -= 1;
+            }
+        }
+        let content = &line[content_start..content_end];
+        let bytes = content.as_bytes();
+        let mut cell_start = 0;
+
+        std::iter::from_fn(move || {
+            if cell_start > bytes.len() {
+                return None;
+            }
+
+            let mut search_start = cell_start;
+            while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
+                let pipe = search_start + relative;
+                if !is_escaped_table_pipe(bytes, pipe) {
+                    let raw = &content[cell_start..pipe];
+                    let (cell, start, end) = trim_cell(raw, content_start + cell_start);
+                    let mut pipe_count = 1;
+                    while pipe + pipe_count < bytes.len()
+                        && bytes[pipe + pipe_count] == b'|'
+                        && !is_escaped_table_pipe(bytes, pipe + pipe_count)
+                    {
+                        pipe_count += 1;
+                    }
+                    // A preserved terminal run is the complete remainder of
+                    // the row. Mark the iterator finished after yielding it;
+                    // otherwise the next call fabricates an empty cell.
+                    cell_start = if pipe + pipe_count == bytes.len() {
+                        bytes.len() + 1
+                    } else {
+                        pipe + pipe_count
+                    };
+                    return Some((cell, start, end, pipe_count));
+                }
+                search_start = pipe + 1;
+            }
+
+            let raw = &content[cell_start..];
+            let (cell, start, end) = trim_cell(raw, content_start + cell_start);
+            cell_start = bytes.len() + 1;
+            Some((cell, start, end, 1))
         })
     }
 }

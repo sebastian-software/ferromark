@@ -28,6 +28,20 @@ pub struct ParserOptions {
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
     pub tables: bool,
 
+    /// Enable MultiMarkdown-style horizontal spans in pipe tables.
+    ///
+    /// Adjacent closing pipes determine the span: `||` spans two columns.
+    /// Whitespace between pipes preserves an explicit empty cell. Requires
+    /// [`Self::tables`]. Default: `false`, including all presets.
+    pub merged_table_cells: bool,
+
+    /// Enable table IDs, CSS classes, and optional inline captions.
+    ///
+    /// A following `: Caption {#id .class}` or `: {#id .class}` line attaches
+    /// metadata to the table. Only IDs and classes are accepted. Requires
+    /// [`Self::tables`]. Default: `false`, including all presets.
+    pub table_attributes: bool,
+
     /// Enable GFM strikethrough spans.
     ///
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
@@ -130,6 +144,8 @@ impl Default for ParserOptions {
             footnotes: false,
             task_lists: false,
             tables: false,
+            merged_table_cells: false,
+            table_attributes: false,
             strikethrough: false,
             autolinks: false,
             superscript: false,
@@ -173,6 +189,8 @@ impl ParserOptions {
             footnotes: true,
             task_lists: true,
             tables: true,
+            merged_table_cells: false,
+            table_attributes: false,
             strikethrough: true,
             autolinks: true,
             superscript: false,

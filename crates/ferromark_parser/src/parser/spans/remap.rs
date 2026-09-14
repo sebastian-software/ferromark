@@ -41,6 +41,11 @@ impl<'a> Parser<'a> {
             Node::Html(node) => Self::remap_span(&mut node.span, source_map),
             Node::Table(node) => {
                 Self::remap_span(&mut node.span, source_map);
+                if let Some(attributes) = &mut node.attributes {
+                    for child in &mut attributes.caption {
+                        Self::remap_node_spans(child, source_map);
+                    }
+                }
                 for row in &mut node.children {
                     Self::remap_span(&mut row.span, source_map);
                     for cell in &mut row.children {
