@@ -207,8 +207,22 @@ pub struct Table<'a> {
     pub align: Vec<'a, AlignKind>,
     /// Table rows (including header).
     pub children: Vec<'a, TableRow<'a>>,
+    /// Optional table ID, CSS classes, and inline caption.
+    /// Allocated only when the table-attributes extension is used.
+    pub attributes: Option<Box<'a, TableAttributes<'a>>>,
     /// Source span.
     pub span: Span,
+}
+
+/// Presentation metadata attached to a table by the table-attributes extension.
+#[derive(Debug)]
+pub struct TableAttributes<'a> {
+    /// Explicit HTML ID, without the leading `#`.
+    pub id: Option<&'a str>,
+    /// CSS class names, without leading dots.
+    pub classes: Vec<'a, &'a str>,
+    /// Optional caption as inline Markdown nodes.
+    pub caption: Vec<'a, Node<'a>>,
 }
 
 /// Table row.
@@ -225,6 +239,9 @@ pub struct TableRow<'a> {
 pub struct TableCell<'a> {
     /// Inline children.
     pub children: Vec<'a, Node<'a>>,
+    /// Number of logical columns covered by this cell. Parsed cells are at
+    /// least one column wide and never extend beyond the table's width.
+    pub colspan: usize,
     /// Source span.
     pub span: Span,
 }
