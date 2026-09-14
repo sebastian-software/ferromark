@@ -103,30 +103,27 @@ impl<'a> Parser<'a> {
 /// newlines or unescaped angle brackets) or a bare run without whitespace
 /// or control characters and with balanced unescaped parentheses.
 ///
-/// The third value reports whether the destination holds a backslash or an
-/// `&`, the only bytes [`Parser::unescape_link_component`] can rewrite; a
-/// destination without them needs no unescape pass at all.
+/// The third value reports whether the destination may need
+/// [`Parser::unescape_link_component`]: a bare destination without a
+/// backslash or `&` does not, while pointy-bracket destinations always take
+/// that pass.
 pub(in crate::parser) fn parse_destination(content: &str, i: usize) -> Option<(&str, usize, bool)> {
     let bytes = content.as_bytes();
-    let mut escaped = false;
     if bytes.get(i) == Some(&b'<') {
+        // Pointy-bracket destinations are rare and may be entity-dense, so
+        // they keep the plain walk and always take the unescape pass; adding
+        // the escape bookkeeping here measurably slowed dense inputs.
         let mut j = i + 1;
         loop {
             match bytes.get(j)? {
-                b'\\' if is_escape(bytes, j) => {
-                    escaped = true;
-                    j += 2;
-                }
-                b'>' => return Some((&content[i + 1..j], j + 1, escaped)),
+                b'\\' if is_escape(bytes, j) => j += 2,
+                b'>' => return Some((&content[i + 1..j], j + 1, true)),
                 b'<' | b'\n' | b'\r' => return None,
-                b'\\' | b'&' => {
-                    escaped = true;
-                    j += 1;
-                }
                 _ => j += 1,
             }
         }
     }
+    let mut escaped = false;
 
     // Bare destinations are mostly plain URL bytes; only whitespace,
     // control bytes, backslashes, and parentheses need a decision. Jump
