@@ -1,0 +1,13 @@
+pub const SHA: &str = "76e9dcc6ad272a4fb1ee4a4dbbde4809201b71d1";
+pub const REPORTED_NODEJS_VERSION: &str = "24.0.0";
+pub const RELEASE_SAFE: bool = false;
+pub const IS_CANARY: bool = true;
+pub const CANARY_REVISION: &str = "benchmark";
+pub const ENABLE_FUZZILLI: bool = false;
+pub const FALLBACK_HTML_VERSION: &str = "0000000000000000";
+pub const VERSION: crate::Version = crate::Version { major: 1, minor: 4, patch: 3 };
+pub const BASE_PATH: &[u8] = "/private/tmp/ferromark-v2-native-comparison/build-01/bun".as_bytes();
+pub const CODEGEN_PATH: &[u8] = "/private/tmp/ferromark-v2-native-comparison/build-01/codegen".as_bytes();
+pub const ENABLE_LOGS: bool = cfg!(bun_debug);
+pub const ENABLE_ASAN: bool = cfg!(bun_asan);
+pub const ENABLE_TINYCC: bool = true;

@@ -1,0 +1,40 @@
+{
+  "clang": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n",
+  "harness_sha256": {
+    "run.py": "1e0c1da88ba931d31895900ca79f37cdbbcd1052efd9440fef8230bab567fb4c",
+    "test_measurement.py": "6e4e2f74fc8b59a77254cff1cc6601c2963a0548961b5b2960ebef872ed9d8eb",
+    "audit_sources.py": "2f67675d74b1a2a8fb849fbf02664c9d5bdf9aa2af8d9e7b7490218f3ae11f5a",
+    "native.h": "2279d90648c1ccd0bfa7607a3d2d1fdf21b9d6689add25cfbaf08b04304f4617",
+    "stack.c": "7785bd92ca79344b3453d81513f0e7d08d548b3899589c0edcf86e2b2289f922",
+    "test_verify.py": "33a080e41eadc5c180475890bd5082ff1c53d7cf06f5128903ec115b3ad65cd4",
+    "LICENSE-MIT-ferromark-v1": "7b498324470ff4f2984e4e60ebbb38a1732f709a2f383180ef15af592483d69d",
+    "worker.rs": "136940d9b311ec34e23f711338248d5dd93519a6e4e4d991844233ca00ca91af",
+    "README.md": "8c7df7e4da7922560f0bd78367feebe616795d167714fcf85dee8f911b488761",
+    ".gitignore": "32dae3052f331ee34d628ef535709b301259a45df7c7522c4d35dcf49873f00b",
+    "md4c_alloc.h": "1580c5f124387ac54207c2315deb68f0d897df407c8ae76d07c64d2852a642ea",
+    "verify.py": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018",
+    "report.py": "f3dfac508669c3c0db85cab7bd7b037d94b0b88a8c838657441321c178584349",
+    "prepare.py": "768c4ee72506aefce423e4ec5f2239ae0d6f4554ab0ac2a5c3f4e823365c1445"
+  },
+  "native_source_archives": {
+    "mimalloc.tar.gz": "f36343416ad823dfcca61bd18ad4bb7f0d8814ab77e0fd5ef169f4a9cddeb8b8",
+    "highway.tar.gz": "741d705781e0b3e406beda8f1f994fbae01321237ce8023a1ad90fbaf7940c25"
+  },
+  "rust_source_changes": 0,
+  "rust_workspace_tests_passed": 638,
+  "python_contract_tests_passed": 11,
+  "symlink_materialization": "The measured Bun copy dereferenced src/AGENTS.md, src/js/AGENTS.md, and src/cli. Source audit verified each copy against its tracked target; parser code matches pinned Git blobs.",
+  "locked_replay": {
+    "binary_sha256": "3fbc1b0be21a412bd7bd9be763bf6b20deb4a72f3782d78cedd905a3532142b9",
+    "all_57_output_records_identical": true,
+    "behavior_guards_identical": true,
+    "cargo_lock_identical": true,
+    "source_audit_passed": true,
+    "timing_repeated": false
+  },
+  "python": "3.14.7 (main, Aug  5 2026, 10:29:49) [Clang 21.0.0 (clang-2100.1.1.101)]",
+  "raw_summary_reconstructed": true,
+  "timed_engine_windows": 12744,
+  "local_report_links_checked": true,
+  "independent_report_review": "Counts, ratios, native lifecycle qualifications, output agreement, and artifact links reviewed; no must-fix issues."
+}
