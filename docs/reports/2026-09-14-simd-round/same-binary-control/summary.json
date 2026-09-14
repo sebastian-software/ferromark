@@ -1,0 +1,98 @@
+[
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "mode": "render",
+    "baseline_ns_per_document": 95.31355701192545,
+    "candidate_ns_per_document": 95.36619022551803,
+    "baseline_over_candidate_median": 0.9994626286947632,
+    "baseline_over_candidate_min": 0.8875999280023514,
+    "baseline_over_candidate_max": 1.010352103424836,
+    "pairs": 15,
+    "round_medians": [
+      1.0054695171465002,
+      0.9994626286947632,
+      0.9951078615505698
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "mode": "render",
+    "baseline_ns_per_document": 189.7618252474346,
+    "candidate_ns_per_document": 189.53722972768074,
+    "baseline_over_candidate_median": 1.0018126233197402,
+    "baseline_over_candidate_min": 0.9925292166172184,
+    "baseline_over_candidate_max": 1.0084314919699833,
+    "pairs": 15,
+    "round_medians": [
+      1.0009216608791909,
+      0.9992224918942247,
+      1.0020835582222758
+    ]
+  },
+  {
+    "case": "rust-book-appendix-02-operators",
+    "profile": "gfm",
+    "mode": "render",
+    "baseline_ns_per_document": 7987.869339923469,
+    "candidate_ns_per_document": 7991.18431122449,
+    "baseline_over_candidate_median": 0.9998867964578139,
+    "baseline_over_candidate_min": 0.9939780001311511,
+    "baseline_over_candidate_max": 1.0099770064925646,
+    "pairs": 15,
+    "round_medians": [
+      0.9980209272993593,
+      1.002448474360385,
+      0.9998867964578139
+    ]
+  },
+  {
+    "case": "typescript-handbook-advanced-types",
+    "profile": "gfm",
+    "mode": "render",
+    "baseline_ns_per_document": 19945.519904458597,
+    "candidate_ns_per_document": 19926.809713375795,
+    "baseline_over_candidate_median": 0.9999228343203073,
+    "baseline_over_candidate_min": 0.9855306236616695,
+    "baseline_over_candidate_max": 1.016106621877659,
+    "pairs": 15,
+    "round_medians": [
+      0.9973139846613568,
+      0.9954205385709624,
+      1.0045306335614688
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "mode": "render",
+    "baseline_ns_per_document": 22167.95035460993,
+    "candidate_ns_per_document": 22213.781693262412,
+    "baseline_over_candidate_median": 0.9925135890008824,
+    "baseline_over_candidate_min": 0.9686941113172981,
+    "baseline_over_candidate_max": 1.0292421187245455,
+    "pairs": 15,
+    "round_medians": [
+      0.9876094198529253,
+      1.0125385402932847,
+      0.9925135890008824
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "mode": "render",
+    "baseline_ns_per_document": 39321.9078125,
+    "candidate_ns_per_document": 39145.8171875,
+    "baseline_over_candidate_median": 1.0122312376352458,
+    "baseline_over_candidate_min": 0.9630503136622254,
+    "baseline_over_candidate_max": 1.0398202595518438,
+    "pairs": 15,
+    "round_medians": [
+      1.0214118706791486,
+      1.0009371808773146,
+      1.0122312376352458
+    ]
+  }
+]

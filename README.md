@@ -56,7 +56,14 @@ pipe scans, rendering, headings, and sanitized URLs. Run individual suites with
 `cargo bench -p ferromark_parser --bench table_pipes --locked` or
 `cargo bench -p ferromark_renderer --bench renderer --locked`.
 The [optimization roadmap](docs/optimization-roadmap.md) records candidates for
-later measured ports from the Ferramenta projects. No such port is included yet.
+measured ports from the Ferramenta projects.
+
+The [first SIMD study](docs/reports/2026-09-14-simd-round/README.md) measures a
+single-probe link-unescape prototype. It improves parsing/full processing on
+the broad corpus, while two render-only regressions still need explanation.
+The prototype lives on local branch `codex/simd-link-probe`; `main` retains the
+original parser. The study includes exact output/allocation checks, discarded
+variants, repeated measurements, and an A/A control.
 
 The [broad Markdown comparison](docs/reports/2026-09-14-broad-markdown/INTERPRETATION.md)
 measures 57 cases from 37 bytes to 114 KB: short comments, real documentation,
