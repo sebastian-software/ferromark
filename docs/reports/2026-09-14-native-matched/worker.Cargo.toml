@@ -1,0 +1,22 @@
+[package]
+name = "native-comparison-worker"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "native-comparison-worker"
+path = "worker.rs"
+
+[dependencies]
+bun_md.workspace = true
+bun_alloc.workspace = true
+bun_core.workspace = true
+ferromark_v1 = { package = "ferromark", path = "../../sources/ferromark_v1" }
+ferromark_v2 = { package = "ferromark", path = "../../sources/ferromark_v2/crates/ferromark" }
+ox_content_allocator = { package = "ox_content_allocator", path = "../../sources/ox_content/crates/ox_content_allocator" }
+ox_content_parser = { package = "ox_content_parser", path = "../../sources/ox_content/crates/ox_content_parser" }
+ox_content_renderer = { package = "ox_content_renderer", path = "../../sources/ox_content/crates/ox_content_renderer" }
+pulldown-cmark = "=0.13.4"
+html-escape = "=0.2.14"
+serde_json = "1"
