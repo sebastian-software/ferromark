@@ -1,0 +1,44 @@
+{
+  "rounds": 3,
+  "pairs_per_round": 3,
+  "window_ms": 50,
+  "warmup_ms": 50,
+  "seed": 20260914,
+  "modes": [
+    "reuse",
+    "render"
+  ],
+  "case_filter": "^(wiki-chess-article-body|typescript-handbook-typescript-5-0|comment-table)$",
+  "cases": [
+    "comment-table",
+    "typescript-handbook-typescript-5-0",
+    "wiki-chess-article-body"
+  ],
+  "corpus_sha256": "33d42d5e6fcb58e8499d6d176c1da6d2955b7a23a444bc1a68202328bc055df3",
+  "runner_sha256": "2ee2dbbbb5a05441023f95205b4308f6b76f6e11412c0e68c4e7162ac3c3bba1",
+  "worker_sha256": "0a5ba540d3f244a7ad303e29c2b4690391a623ae2861ee51d5c3612454628dcc",
+  "host_before": {
+    "time_utc": "2026-09-14T07:43:21Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      6.33984375,
+      7.1220703125,
+      5.58154296875
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; (no estimate) present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-14T07:43:29Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      6.06005859375,
+      7.03515625,
+      5.56884765625
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; (no estimate) present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

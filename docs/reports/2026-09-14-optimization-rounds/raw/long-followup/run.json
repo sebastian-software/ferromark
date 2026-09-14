@@ -1,0 +1,49 @@
+{
+  "schema": 2,
+  "rounds": 3,
+  "pairs_per_round": 5,
+  "window_ms": 100,
+  "warmup_ms": 50,
+  "seed": 20260914,
+  "modes": [
+    "fresh",
+    "reuse",
+    "render"
+  ],
+  "case_filter": "^(comment-review|comment-ack|comment-unicode|typescript-handbook-compiler-options|wiki-chess-article-body|wiki-volcano-article-body)$",
+  "cases": [
+    "comment-ack",
+    "comment-review",
+    "comment-unicode",
+    "typescript-handbook-compiler-options",
+    "wiki-chess-article-body",
+    "wiki-volcano-article-body"
+  ],
+  "corpus_sha256": "31583750d418c1b9932ea391044f57ea579b9a8bbb6255a0b97f1b6b946b78d3",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "aee2b1ee884ed781cc74be3657c0d138a72c3127f7f5d602db632b0689052022",
+  "host_before": {
+    "time_utc": "2026-09-14T08:11:13Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      4.18603515625,
+      4.83154296875,
+      5.1474609375
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; 3:55 remaining present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-14T08:12:15Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      4.27490234375,
+      4.75,
+      5.0947265625
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; 4:05 remaining present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

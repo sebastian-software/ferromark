@@ -1,0 +1,46 @@
+{
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "rustflags": "-C target-cpu=generic",
+  "worker_sha256": "c053a8f7143b1d64eabc610a458884f082f0c3667e6a3836d54dd7e15eb6551a",
+  "baseline_revision_expected": "ae963d425a4c15841ced5f7359a4b9adc47ca931",
+  "engines": {
+    "baseline": {
+      "source": "/private/tmp/ferromark-v2-simd-round/baseline",
+      "source_revision": null,
+      "source_tree_sha256": "a2c6b2ab194663056d8be9882f60781ab0c52ee62eeace4f1b27ccd3297d4058",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "binary": "/private/tmp/ferromark-v2-rounds-2/allocation-build/baseline/target/release/simd-round-allocation-worker",
+      "binary_sha256": "cbebab3021f445e530898f2e4422b0844f89724e608917f40ff1901caec1ffb9",
+      "lock_sha256": "d3bea6dfb8b08f7fc740fc8b1b90b8c391acb7b095516440462101fa69d9c2f2",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ]
+    },
+    "candidate": {
+      "source": "/private/tmp/ferromark-v2-rounds-2/structure",
+      "source_revision": "4de75d4843747a218771b5ec46df9171d4f54a15",
+      "source_tree_sha256": "24ae241ccb56b6a1152295ffa6e408c0ba2d88699bf5910b82766ce0de7c020a",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "binary": "/private/tmp/ferromark-v2-rounds-2/allocation-build/candidate/target/release/simd-round-allocation-worker",
+      "binary_sha256": "6ab01c54d670944d412bb1040c744b41c8395f33b8b9bd81bbb2827bfc2634fe",
+      "lock_sha256": "d3bea6dfb8b08f7fc740fc8b1b90b8c391acb7b095516440462101fa69d9c2f2",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ]
+    }
+  }
+}

@@ -39,3 +39,11 @@ This is structural and correctness validation. No performance improvement is
 claimed, no timed benchmark result was generated, and x86/other targets were not
 executed in this local run. Re-run the commands above and collect architecture-
 specific differential and performance evidence for each subsequent optimization.
+
+## Subsequent optimization validation
+
+The [2026-09-14 optimization rounds](reports/2026-09-14-optimization-rounds/README.md)
+validate the later core with 638 passing tests, unchanged snapshots/conformance
+baselines, strict Clippy, format checking, and all seven benchmark suites built.
+The tested isolated core was byte-compared with the five promoted local commits.
+Exact differential output checks and timing results are archived in that report.
