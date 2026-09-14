@@ -117,7 +117,7 @@ impl<'a> Parser<'a> {
         }
 
         let dest_start = skip_ws_one_newline(bytes, j + 2)?;
-        let (raw_url, after_dest) = super::inline::parse_link_destination(text, dest_start)?;
+        let (raw_url, after_dest, _) = super::inline::parse_link_destination(text, dest_start)?;
         if raw_url.is_empty() && bytes.get(dest_start) != Some(&b'<') {
             return None;
         }

@@ -27,7 +27,7 @@ impl<'a> Parser<'a> {
         let bytes = content.as_bytes();
         let mut i = skip_ws(bytes, open + 1);
 
-        let (raw_url, after_dest) = parse_destination(content, i)?;
+        let (raw_url, after_dest, escaped) = parse_destination(content, i)?;
         i = skip_ws(bytes, after_dest);
 
         let mut title = None;
@@ -42,7 +42,10 @@ impl<'a> Parser<'a> {
         if bytes.get(i) != Some(&b')') {
             return None;
         }
-        Some(LinkTarget { url: self.unescape_link_component(raw_url), title, end: i + 1 })
+        // The destination scan saw every byte: without a backslash or `&`
+        // there is nothing to unescape, so the URL keeps borrowing the source.
+        let url = if escaped { self.unescape_link_component(raw_url) } else { raw_url };
+        Some(LinkTarget { url, title, end: i + 1 })
     }
 
     /// Removes backslashes that escape ASCII punctuation and decodes
@@ -99,15 +102,27 @@ impl<'a> Parser<'a> {
 /// Parses a destination at `i`: either `<...>` (may contain spaces, no
 /// newlines or unescaped angle brackets) or a bare run without whitespace
 /// or control characters and with balanced unescaped parentheses.
-pub(in crate::parser) fn parse_destination(content: &str, i: usize) -> Option<(&str, usize)> {
+///
+/// The third value reports whether the destination holds a backslash or an
+/// `&`, the only bytes [`Parser::unescape_link_component`] can rewrite; a
+/// destination without them needs no unescape pass at all.
+pub(in crate::parser) fn parse_destination(content: &str, i: usize) -> Option<(&str, usize, bool)> {
     let bytes = content.as_bytes();
+    let mut escaped = false;
     if bytes.get(i) == Some(&b'<') {
         let mut j = i + 1;
         loop {
             match bytes.get(j)? {
-                b'\\' if is_escape(bytes, j) => j += 2,
-                b'>' => return Some((&content[i + 1..j], j + 1)),
+                b'\\' if is_escape(bytes, j) => {
+                    escaped = true;
+                    j += 2;
+                }
+                b'>' => return Some((&content[i + 1..j], j + 1, escaped)),
                 b'<' | b'\n' | b'\r' => return None,
+                b'\\' | b'&' => {
+                    escaped = true;
+                    j += 1;
+                }
                 _ => j += 1,
             }
         }
@@ -126,8 +141,14 @@ pub(in crate::parser) fn parse_destination(content: &str, i: usize) -> Option<(&
             break;
         };
         match byte {
-            b'\\' if is_escape(bytes, j) => j += 2,
-            b'\\' => j += 1,
+            b'\\' if is_escape(bytes, j) => {
+                escaped = true;
+                j += 2;
+            }
+            b'\\' | b'&' => {
+                escaped = true;
+                j += 1;
+            }
             b'(' => {
                 depth += 1;
                 j += 1;
@@ -144,12 +165,13 @@ pub(in crate::parser) fn parse_destination(content: &str, i: usize) -> Option<(&
     if depth > 0 {
         return None;
     }
-    Some((&content[i..j], j))
+    Some((&content[i..j], j, escaped))
 }
 
 /// Bytes that end or shape a bare destination: ASCII whitespace and control
 /// bytes (every byte below `0x21`, plus DEL), backslashes, and parentheses.
-/// Bytes at or above `0x80` never stop the scan.
+/// `&` is included only so the scan can report entity candidates; it never
+/// ends the run. Bytes at or above `0x80` never stop the scan.
 static DESTINATION_STOP: ByteClass = ByteClass::from_flags({
     let mut t = [0u8; 256];
     let mut b = 0;
@@ -159,6 +181,7 @@ static DESTINATION_STOP: ByteClass = ByteClass::from_flags({
     }
     t[0x7F] = 1;
     t[b'\\' as usize] = 1;
+    t[b'&' as usize] = 1;
     t[b'(' as usize] = 1;
     t[b')' as usize] = 1;
     t
@@ -246,7 +269,7 @@ mod tests {
 
     // The original byte-at-a-time destination walk, kept as the oracle for
     // the stop-byte classifier.
-    fn scalar_destination(content: &str, i: usize) -> Option<(&str, usize)> {
+    fn scalar_destination(content: &str, i: usize) -> Option<(&str, usize, bool)> {
         let bytes = content.as_bytes();
         if bytes.get(i) == Some(&b'<') {
             return super::parse_destination(content, i);
@@ -272,7 +295,8 @@ mod tests {
         if depth > 0 {
             return None;
         }
-        Some((&content[i..j], j))
+        let escaped = content[i..j].bytes().any(|byte| matches!(byte, b'\\' | b'&'));
+        Some((&content[i..j], j, escaped))
     }
 
     fn check_destination(content: &str, i: usize) {
@@ -288,7 +312,7 @@ mod tests {
         for byte in 0..=255u8 {
             let expected = byte.is_ascii_whitespace()
                 || byte.is_ascii_control()
-                || matches!(byte, b'\\' | b'(' | b')');
+                || matches!(byte, b'\\' | b'&' | b'(' | b')');
             assert_eq!(super::DESTINATION_STOP.contains(byte), expected, "byte {byte:#x}");
         }
     }
