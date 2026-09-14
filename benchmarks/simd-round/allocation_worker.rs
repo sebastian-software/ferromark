@@ -166,7 +166,6 @@ impl Engine {
                 footnotes: true,
                 superscript: true,
                 subscript: true,
-                smart_punctuation: true,
                 math: true,
                 definition_lists: true,
                 heading_attributes: true,

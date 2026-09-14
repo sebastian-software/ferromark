@@ -83,45 +83,28 @@ fn script_span_closing_delimiters_ignore_code_spans() {
 }
 
 #[test]
-fn smart_punctuation_is_opt_in_and_leaves_code_literal() {
-    let allocator = Allocator::new();
-    let off = parse_with_options(
-        &allocator,
-        "\"Smart\" -- --- ... `\"raw\" --`",
-        ParserOptions::default(),
-    );
-    assert_eq!(flatten_text(&off.children[0]), "\"Smart\" -- --- ... \"raw\" --");
-
-    let allocator = Allocator::new();
-    let on = parse_with_options(
-        &allocator,
-        "\"Smart\" -- --- ... `\"raw\" --`",
-        ParserOptions { smart_punctuation: true, ..ParserOptions::default() },
-    );
-    assert_eq!(
-        flatten_text(&on.children[0]),
-        "\u{201c}Smart\u{201d} \u{2013} \u{2014} \u{2026} \"raw\" --"
-    );
+fn text_punctuation_is_preserved_in_every_profile() {
+    for options in [
+        ParserOptions::commonmark(),
+        ParserOptions::gfm(),
+        ParserOptions::gfm_spec(),
+        ParserOptions::mdx(),
+    ] {
+        let allocator = Allocator::new();
+        let source =
+            "\"Quoted\" -- --- ... '90s 'tis don't 'quoted' „Deutsch“ «Français» `\"raw\" --`";
+        let doc = parse_with_options(&allocator, source, options);
+        assert_eq!(
+            flatten_text(&doc.children[0]),
+            "\"Quoted\" -- --- ... '90s 'tis don't 'quoted' „Deutsch“ «Français» \"raw\" --"
+        );
+    }
 }
 
 #[test]
-fn smart_punctuation_curls_elision_apostrophes_as_closing_quotes() {
+fn link_text_preserves_authored_punctuation() {
     let allocator = Allocator::new();
-    let options = ParserOptions { smart_punctuation: true, ..ParserOptions::default() };
-    let doc =
-        parse_with_options(&allocator, "the '90s\n'tis\nrock 'n' roll\ndon't\n'quoted'\n", options);
-
-    assert_eq!(
-        flatten_text(&doc.children[0]),
-        "the \u{2019}90s\n\u{2019}tis\nrock \u{2019}n\u{2019} roll\ndon\u{2019}t\n\u{2018}quoted\u{2019}"
-    );
-}
-
-#[test]
-fn smart_punctuation_skips_bare_autolink_text() {
-    let allocator = Allocator::new();
-    let options =
-        ParserOptions { autolinks: true, smart_punctuation: true, ..ParserOptions::default() };
+    let options = ParserOptions { autolinks: true, ..ParserOptions::default() };
     let doc = parse_with_options(
         &allocator,
         "https://example.com/a--b and [\"label\"](/x) -- ok",
@@ -140,14 +123,8 @@ fn smart_punctuation_skips_bare_autolink_text() {
     let Node::Link(authored_link) = &paragraph.children[2] else {
         panic!("expected authored link, got {:?}", paragraph.children[2]);
     };
-    assert_eq!(
-        authored_link.children.iter().map(flatten_text).collect::<String>(),
-        "\u{201c}label\u{201d}"
-    );
-    assert_eq!(
-        flatten_text(&doc.children[0]),
-        "https://example.com/a--b and \u{201c}label\u{201d} \u{2013} ok"
-    );
+    assert_eq!(authored_link.children.iter().map(flatten_text).collect::<String>(), "\"label\"");
+    assert_eq!(flatten_text(&doc.children[0]), "https://example.com/a--b and \"label\" -- ok");
 }
 
 #[test]

@@ -5,6 +5,11 @@ v2 parser and renderer. It builds the same worker against two source snapshots
 and measures the parser hot path before and after an optimization. It does not
 modify the library or historical benchmark reports.
 
+The current workers omit smart punctuation from the `extensions` profile after
+its [removal from the core](../../docs/typography.md). Both compared cores use
+that reduced profile. Historical reports retain the original configuration;
+use their original harness revision to reproduce them.
+
 The four stages are deliberately separate:
 
 | Stage | Timed work |
