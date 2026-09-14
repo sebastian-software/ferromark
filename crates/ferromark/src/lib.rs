@@ -16,7 +16,7 @@
 
 pub use ferromark_allocator::Allocator;
 pub use ferromark_ast as ast;
-pub use ferromark_parser::{ParseError, ParseResult, Parser, ParserOptions, parse};
+pub use ferromark_parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
 pub use ferromark_renderer::{
     CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HtmlRenderContext, HtmlRenderControl,
     HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks, RenderError,

@@ -8,7 +8,7 @@
 
 use ferromark_allocator::Allocator;
 use ferromark_ast::Node;
-use ferromark_parser::{ParseError, Parser, ParserOptions};
+use ferromark_parser::{ParseError, ParseErrorKind, Parser, ParserOptions};
 
 const OVER_LIMIT: usize = 500;
 
@@ -19,7 +19,8 @@ fn parse_result(source: &str, options: ParserOptions) -> Result<(), ParseError> 
 
 fn assert_too_deep(label: &str, source: &str, options: ParserOptions) {
     match parse_result(source, options) {
-        Err(ParseError::NestingTooDeep { max_depth: 100, .. }) => {}
+        Err(error)
+            if matches!(error.kind(), ParseErrorKind::NestingTooDeep { max_depth: 100, .. }) => {}
         Err(other) => panic!("{label}: expected NestingTooDeep, got {other}"),
         Ok(()) => panic!("{label}: expected NestingTooDeep, parsed instead"),
     }
@@ -128,7 +129,8 @@ fn a_custom_cap_is_honored_for_every_construct() {
         ("footnotes", nested_footnote_definitions(12)),
     ] {
         match parse_result(&source, options.clone()) {
-            Err(ParseError::NestingTooDeep { max_depth: 3, .. }) => {}
+            Err(error)
+                if matches!(error.kind(), ParseErrorKind::NestingTooDeep { max_depth: 3, .. }) => {}
             other => panic!("{label}: expected the custom cap to bite, got {other:?}"),
         }
     }
