@@ -1,0 +1,64 @@
+[
+  {
+    "name": "nul",
+    "source": "a\u0000b\n",
+    "outputs": {
+      "control": {
+        "arena_capacity": 20416,
+        "ast_debug": "Document { children: [Paragraph(Paragraph { children: [Text(Text { value: \"a\ufffdb\", span: Span { start: 0, end: 3 } })], span: Span { start: 0, end: 4 } })], span: Span { start: 0, end: 4 } }",
+        "children": 1,
+        "document_size": 48,
+        "html": "<p>a\ufffdb</p>\n",
+        "metric": 1,
+        "node_size": 32,
+        "parser_options_size": 32,
+        "parser_size": 256,
+        "renderer_size": 968
+      },
+      "skip": {
+        "arena_capacity": 20416,
+        "ast_debug": "Document { children: [Paragraph(Paragraph { children: [Text(Text { value: \"a\\0b\", span: Span { start: 0, end: 3 } })], span: Span { start: 0, end: 4 } })], span: Span { start: 0, end: 4 } }",
+        "children": 1,
+        "document_size": 48,
+        "html": "<p>a\u0000b</p>\n",
+        "metric": 1,
+        "node_size": 32,
+        "parser_options_size": 32,
+        "parser_size": 256,
+        "renderer_size": 968
+      }
+    },
+    "expected_semantic_failure": true
+  },
+  {
+    "name": "bom",
+    "source": "\ufeffplain\n",
+    "outputs": {
+      "control": {
+        "arena_capacity": 20416,
+        "ast_debug": "Document { children: [Paragraph(Paragraph { children: [Text(Text { value: \"plain\", span: Span { start: 3, end: 8 } })], span: Span { start: 3, end: 9 } })], span: Span { start: 0, end: 9 } }",
+        "children": 1,
+        "document_size": 48,
+        "html": "<p>plain</p>\n",
+        "metric": 1,
+        "node_size": 32,
+        "parser_options_size": 32,
+        "parser_size": 256,
+        "renderer_size": 968
+      },
+      "skip": {
+        "arena_capacity": 20416,
+        "ast_debug": "Document { children: [Paragraph(Paragraph { children: [Text(Text { value: \"\\u{feff}plain\", span: Span { start: 0, end: 8 } })], span: Span { start: 0, end: 9 } })], span: Span { start: 0, end: 9 } }",
+        "children": 1,
+        "document_size": 48,
+        "html": "<p>\ufeffplain</p>\n",
+        "metric": 1,
+        "node_size": 32,
+        "parser_options_size": 32,
+        "parser_size": 256,
+        "renderer_size": 968
+      }
+    },
+    "expected_semantic_failure": true
+  }
+]

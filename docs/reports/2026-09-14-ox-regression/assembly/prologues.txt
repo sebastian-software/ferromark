@@ -1,0 +1,49 @@
+current /private/tmp/ferromark-v2-ox-stages-current/target/release/native-comparison-worker
+__RNvMNtNtCslQ53J8kkxJ4_16ferromark_parser6parser5blockNtB4_6Parser15parse_paragraph:
+000000010008de24	stp	x28, x27, [sp, #-0x60]!
+000000010008de28	stp	x26, x25, [sp, #0x10]
+000000010008de2c	stp	x24, x23, [sp, #0x20]
+000000010008de30	stp	x22, x21, [sp, #0x30]
+000000010008de34	stp	x20, x19, [sp, #0x40]
+000000010008de38	stp	x29, x30, [sp, #0x50]
+000000010008de3c	add	x29, sp, #0x50
+000000010008de40	sub	sp, sp, #0x330
+000000010008de44	ldp	x25, x24, [x1, #0x40]
+000000010008de48	mov	x22, x4
+000000010008de4c	mov	x20, x2
+000000010008de50	mov	x21, x1
+000000010008de54	mov	x19, x0
+000000010008de58	mov	x28, x24
+000000010008de5c	tbnz	w3, #0x0, 0x10008de78
+000000010008de60	mov	x0, x25
+000000010008de64	mov	x1, x24
+000000010008de68	mov	x2, x20
+000000010008de6c	bl	__RNvNtNtCslQ53J8kkxJ4_16ferromark_parser6parser9line_scan15next_line_start
+000000010008de70	ldr	x28, [x21, #0x48]
+000000010008de74	mov	x22, x0
+instruction lines: 483
+
+paragraph /private/tmp/ferromark-v2-ox-paragraph-map-bypass/target/release/native-comparison-worker
+__RNvMNtNtCs1sgFiEAclcX_16ferromark_parser6parser5blockNtB4_6Parser15parse_paragraph:
+000000010008e0bc	sub	sp, sp, #0xd0
+000000010008e0c0	stp	x28, x27, [sp, #0x70]
+000000010008e0c4	stp	x26, x25, [sp, #0x80]
+000000010008e0c8	stp	x24, x23, [sp, #0x90]
+000000010008e0cc	stp	x22, x21, [sp, #0xa0]
+000000010008e0d0	stp	x20, x19, [sp, #0xb0]
+000000010008e0d4	stp	x29, x30, [sp, #0xc0]
+000000010008e0d8	add	x29, sp, #0xc0
+000000010008e0dc	ldp	x24, x23, [x1, #0x40]
+000000010008e0e0	mov	x22, x4
+000000010008e0e4	mov	x20, x2
+000000010008e0e8	mov	x21, x1
+000000010008e0ec	mov	x19, x0
+000000010008e0f0	mov	x25, x23
+000000010008e0f4	tbnz	w3, #0x0, 0x10008e110
+000000010008e0f8	mov	x0, x24
+000000010008e0fc	mov	x1, x23
+000000010008e100	mov	x2, x20
+000000010008e104	bl	__RNvNtNtCs1sgFiEAclcX_16ferromark_parser6parser9line_scan15next_line_start
+000000010008e108	ldr	x25, [x21, #0x48]
+000000010008e10c	mov	x22, x0
+instruction lines: 386
