@@ -1,0 +1,138 @@
+[
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 486.2547934816428,
+    "candidate_ns_per_document": 494.4867484177215,
+    "baseline_over_candidate_median": 0.9806072801490451,
+    "baseline_over_candidate_min": 0.9728590251434491,
+    "baseline_over_candidate_max": 0.9988571544894405,
+    "pairs": 9,
+    "round_medians": [
+      0.9805325347683551,
+      0.9920407771596598,
+      0.9749598656699701
+    ]
+  },
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 160.70571390003084,
+    "candidate_ns_per_document": 170.40522423664123,
+    "baseline_over_candidate_median": 0.9460354631512317,
+    "baseline_over_candidate_min": 0.935335094811401,
+    "baseline_over_candidate_max": 0.9585060918321168,
+    "pairs": 9,
+    "round_medians": [
+      0.9493562309425927,
+      0.9419584864844759,
+      0.9421361437472732
+    ]
+  },
+  {
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "baseline_ns_per_document": 520.9926145833333,
+    "candidate_ns_per_document": 531.0646130648997,
+    "baseline_over_candidate_median": 0.9806428593338932,
+    "baseline_over_candidate_min": 0.9712766222315039,
+    "baseline_over_candidate_max": 0.9888219675718131,
+    "pairs": 9,
+    "round_medians": [
+      0.9826264668559963,
+      0.9853938361969641,
+      0.9775242914704841
+    ]
+  },
+  {
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "baseline_ns_per_document": 198.97633866038456,
+    "candidate_ns_per_document": 207.6765807748538,
+    "baseline_over_candidate_median": 0.9599028352074546,
+    "baseline_over_candidate_min": 0.9476086341589112,
+    "baseline_over_candidate_max": 0.9654674696838695,
+    "pairs": 9,
+    "round_medians": [
+      0.9599028352074546,
+      0.9650039654108241,
+      0.9551056798631514
+    ]
+  },
+  {
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 12626.553931451614,
+    "candidate_ns_per_document": 12745.564278455284,
+    "baseline_over_candidate_median": 0.9846896653118085,
+    "baseline_over_candidate_min": 0.9758371861559583,
+    "baseline_over_candidate_max": 0.9988787347327773,
+    "pairs": 9,
+    "round_medians": [
+      0.9837886592031442,
+      0.9822392554659479,
+      0.9908230809001933
+    ]
+  },
+  {
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 12184.118701550387,
+    "candidate_ns_per_document": 12332.000492125984,
+    "baseline_over_candidate_median": 0.9902460383114775,
+    "baseline_over_candidate_min": 0.9760668227323415,
+    "baseline_over_candidate_max": 1.1013423102935063,
+    "pairs": 9,
+    "round_medians": [
+      0.9785741088584179,
+      1.0849765351493512,
+      0.9851219282179938
+    ]
+  },
+  {
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 47046.070772058825,
+    "candidate_ns_per_document": 48052.12310606061,
+    "baseline_over_candidate_median": 0.9790633114840478,
+    "baseline_over_candidate_min": 0.9566358062534155,
+    "baseline_over_candidate_max": 1.016465880284939,
+    "pairs": 9,
+    "round_medians": [
+      0.9734249812016382,
+      0.9861874488934659,
+      0.9829850029320615
+    ]
+  },
+  {
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 47051.12591911765,
+    "candidate_ns_per_document": 47950.44223484849,
+    "baseline_over_candidate_median": 0.9641284920593589,
+    "baseline_over_candidate_min": 0.615201473245703,
+    "baseline_over_candidate_max": 1.0029051529150568,
+    "pairs": 9,
+    "round_medians": [
+      0.9693625274153005,
+      0.6346100586828974,
+      0.9641284920593589
+    ]
+  }
+]

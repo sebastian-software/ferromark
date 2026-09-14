@@ -5,6 +5,10 @@ and a frozen copy of the official GFM website. It also checks all 652
 CommonMark inputs with CRLF and lone CR, and runs 30 targeted probes.
 It does not modify the production crates or their inherited conformance baselines.
 
+The separate [cmark oracle harness](CMARK.md) compares 106 complex inputs with
+pinned official cmark/cmark-gfm builds. It complements the spec gate and retains
+additional delimiter discrepancies as review cases.
+
 From the repository root, with the pinned Rust toolchain, Python 3.11+, and
 the dependencies already downloaded by the regular workspace build:
 

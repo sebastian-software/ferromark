@@ -1,0 +1,1586 @@
+[
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 309632,
+      "elapsed_ns": 50004917,
+      "checksum": 91341440
+    },
+    "candidate": {
+      "iterations": 292896,
+      "elapsed_ns": 50000333,
+      "checksum": 86404320
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 292640,
+      "elapsed_ns": 50004000,
+      "checksum": 86328800
+    },
+    "baseline": {
+      "iterations": 305312,
+      "elapsed_ns": 50004583,
+      "checksum": 90067040
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 309088,
+      "elapsed_ns": 50002792,
+      "checksum": 91180960
+    },
+    "candidate": {
+      "iterations": 293440,
+      "elapsed_ns": 50003709,
+      "checksum": 86564800
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 102688,
+      "elapsed_ns": 50016084,
+      "checksum": 30292960
+    },
+    "candidate": {
+      "iterations": 101056,
+      "elapsed_ns": 50012791,
+      "checksum": 29811520
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 100480,
+      "elapsed_ns": 50013250,
+      "checksum": 29641600
+    },
+    "baseline": {
+      "iterations": 102464,
+      "elapsed_ns": 50007917,
+      "checksum": 30226880
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 102848,
+      "elapsed_ns": 50010333,
+      "checksum": 30340160
+    },
+    "candidate": {
+      "iterations": 100384,
+      "elapsed_ns": 50012208,
+      "checksum": 29613280
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1056,
+      "elapsed_ns": 50186958,
+      "checksum": 55446336
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50651083,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 51371083,
+      "checksum": 55446336
+    },
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 51306209,
+      "checksum": 57126528
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 50110500,
+      "checksum": 57126528
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50635667,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 95360,
+      "elapsed_ns": 50000750,
+      "checksum": 5435520
+    },
+    "candidate": {
+      "iterations": 93536,
+      "elapsed_ns": 50012458,
+      "checksum": 5331552
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 94624,
+      "elapsed_ns": 50008459,
+      "checksum": 5393568
+    },
+    "baseline": {
+      "iterations": 96000,
+      "elapsed_ns": 50015291,
+      "checksum": 5472000
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 95168,
+      "elapsed_ns": 50015792,
+      "checksum": 5424576
+    },
+    "candidate": {
+      "iterations": 93504,
+      "elapsed_ns": 50010125,
+      "checksum": 5329728
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 250304,
+      "elapsed_ns": 50003541,
+      "checksum": 14267328
+    },
+    "candidate": {
+      "iterations": 240416,
+      "elapsed_ns": 50003292,
+      "checksum": 13703712
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 241184,
+      "elapsed_ns": 50002875,
+      "checksum": 13747488
+    },
+    "baseline": {
+      "iterations": 251264,
+      "elapsed_ns": 50003917,
+      "checksum": 14322048
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 251296,
+      "elapsed_ns": 50001958,
+      "checksum": 14323872
+    },
+    "candidate": {
+      "iterations": 240704,
+      "elapsed_ns": 50002167,
+      "checksum": 13720128
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3968,
+      "elapsed_ns": 50285250,
+      "checksum": 43727360
+    },
+    "candidate": {
+      "iterations": 3904,
+      "elapsed_ns": 50327792,
+      "checksum": 43022080
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 3872,
+      "elapsed_ns": 50374000,
+      "checksum": 42669440
+    },
+    "baseline": {
+      "iterations": 3936,
+      "elapsed_ns": 50376500,
+      "checksum": 43374720
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3968,
+      "elapsed_ns": 50365333,
+      "checksum": 43727360
+    },
+    "candidate": {
+      "iterations": 3904,
+      "elapsed_ns": 50039167,
+      "checksum": 43022080
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4160,
+      "elapsed_ns": 50063291,
+      "checksum": 45843200
+    },
+    "candidate": {
+      "iterations": 4064,
+      "elapsed_ns": 50107209,
+      "checksum": 44785280
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 4064,
+      "elapsed_ns": 50146959,
+      "checksum": 44785280
+    },
+    "baseline": {
+      "iterations": 4160,
+      "elapsed_ns": 50231709,
+      "checksum": 45843200
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4128,
+      "elapsed_ns": 50409958,
+      "checksum": 45490560
+    },
+    "candidate": {
+      "iterations": 4064,
+      "elapsed_ns": 50117250,
+      "checksum": 44785280
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 51429375,
+      "checksum": 57126528
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 51279500,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50743042,
+      "checksum": 55446336
+    },
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 51186125,
+      "checksum": 57126528
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 50686083,
+      "checksum": 57126528
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 51425334,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 289824,
+      "elapsed_ns": 50000166,
+      "checksum": 85498080
+    },
+    "baseline": {
+      "iterations": 309888,
+      "elapsed_ns": 50004500,
+      "checksum": 91416960
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 311296,
+      "elapsed_ns": 50000625,
+      "checksum": 91832320
+    },
+    "candidate": {
+      "iterations": 294976,
+      "elapsed_ns": 50004209,
+      "checksum": 87017920
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 294464,
+      "elapsed_ns": 50000708,
+      "checksum": 86866880
+    },
+    "baseline": {
+      "iterations": 312608,
+      "elapsed_ns": 50000667,
+      "checksum": 92219360
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 93696,
+      "elapsed_ns": 50013792,
+      "checksum": 5340672
+    },
+    "baseline": {
+      "iterations": 96032,
+      "elapsed_ns": 50011000,
+      "checksum": 5473824
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 95008,
+      "elapsed_ns": 50008541,
+      "checksum": 5415456
+    },
+    "candidate": {
+      "iterations": 93632,
+      "elapsed_ns": 50014792,
+      "checksum": 5337024
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 94400,
+      "elapsed_ns": 50011083,
+      "checksum": 5380800
+    },
+    "baseline": {
+      "iterations": 95456,
+      "elapsed_ns": 50005250,
+      "checksum": 5440992
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 240160,
+      "elapsed_ns": 50000292,
+      "checksum": 13689120
+    },
+    "baseline": {
+      "iterations": 248768,
+      "elapsed_ns": 50003917,
+      "checksum": 14179776
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 253216,
+      "elapsed_ns": 50004334,
+      "checksum": 14433312
+    },
+    "candidate": {
+      "iterations": 240768,
+      "elapsed_ns": 50001875,
+      "checksum": 13723776
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 239744,
+      "elapsed_ns": 50004708,
+      "checksum": 13665408
+    },
+    "baseline": {
+      "iterations": 248416,
+      "elapsed_ns": 50000208,
+      "checksum": 14159712
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 100576,
+      "elapsed_ns": 50023041,
+      "checksum": 29669920
+    },
+    "baseline": {
+      "iterations": 101344,
+      "elapsed_ns": 50003833,
+      "checksum": 29896480
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 103008,
+      "elapsed_ns": 50009125,
+      "checksum": 30387360
+    },
+    "candidate": {
+      "iterations": 101120,
+      "elapsed_ns": 50002500,
+      "checksum": 29830400
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 101984,
+      "elapsed_ns": 50009500,
+      "checksum": 30085280
+    },
+    "baseline": {
+      "iterations": 102112,
+      "elapsed_ns": 50015042,
+      "checksum": 30123040
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 51187667,
+      "checksum": 57126528
+    },
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 51336375,
+      "checksum": 57126528
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 50336000,
+      "checksum": 40324608
+    },
+    "candidate": {
+      "iterations": 512,
+      "elapsed_ns": 52878666,
+      "checksum": 26883072
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 672,
+      "elapsed_ns": 51395125,
+      "checksum": 35284032
+    },
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 51191625,
+      "checksum": 57126528
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 4064,
+      "elapsed_ns": 50401584,
+      "checksum": 44785280
+    },
+    "baseline": {
+      "iterations": 3744,
+      "elapsed_ns": 50378667,
+      "checksum": 41258880
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3680,
+      "elapsed_ns": 50323750,
+      "checksum": 40553600
+    },
+    "candidate": {
+      "iterations": 4032,
+      "elapsed_ns": 50063750,
+      "checksum": 44432640
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 4032,
+      "elapsed_ns": 50049625,
+      "checksum": 44432640
+    },
+    "baseline": {
+      "iterations": 4000,
+      "elapsed_ns": 50288792,
+      "checksum": 44080000
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50266250,
+      "checksum": 55446336
+    },
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 51074125,
+      "checksum": 57126528
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 50673458,
+      "checksum": 57126528
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50764875,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 51175208,
+      "checksum": 57126528
+    },
+    "baseline": {
+      "iterations": 1056,
+      "elapsed_ns": 50487916,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 3936,
+      "elapsed_ns": 50084709,
+      "checksum": 43374720
+    },
+    "baseline": {
+      "iterations": 4032,
+      "elapsed_ns": 50066583,
+      "checksum": 44432640
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4000,
+      "elapsed_ns": 50211250,
+      "checksum": 44080000
+    },
+    "candidate": {
+      "iterations": 3968,
+      "elapsed_ns": 50270792,
+      "checksum": 43727360
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 3936,
+      "elapsed_ns": 50043167,
+      "checksum": 43374720
+    },
+    "baseline": {
+      "iterations": 4032,
+      "elapsed_ns": 50353250,
+      "checksum": 44432640
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 50630500,
+      "checksum": 57126528
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50378917,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 51326667,
+      "checksum": 57126528
+    },
+    "baseline": {
+      "iterations": 1120,
+      "elapsed_ns": 50940958,
+      "checksum": 58806720
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1120,
+      "elapsed_ns": 51195000,
+      "checksum": 58806720
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50241625,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 104896,
+      "elapsed_ns": 50009250,
+      "checksum": 30944320
+    },
+    "candidate": {
+      "iterations": 102048,
+      "elapsed_ns": 50008750,
+      "checksum": 30104160
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 102784,
+      "elapsed_ns": 50012584,
+      "checksum": 30321280
+    },
+    "baseline": {
+      "iterations": 104800,
+      "elapsed_ns": 50004625,
+      "checksum": 30916000
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 104480,
+      "elapsed_ns": 50013541,
+      "checksum": 30821600
+    },
+    "candidate": {
+      "iterations": 101856,
+      "elapsed_ns": 50009708,
+      "checksum": 30047520
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3968,
+      "elapsed_ns": 50004625,
+      "checksum": 43727360
+    },
+    "candidate": {
+      "iterations": 3936,
+      "elapsed_ns": 50372583,
+      "checksum": 43374720
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 3936,
+      "elapsed_ns": 50158416,
+      "checksum": 43374720
+    },
+    "baseline": {
+      "iterations": 3968,
+      "elapsed_ns": 50102166,
+      "checksum": 43727360
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3936,
+      "elapsed_ns": 50110291,
+      "checksum": 43374720
+    },
+    "candidate": {
+      "iterations": 3936,
+      "elapsed_ns": 50166541,
+      "checksum": 43374720
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 51369125,
+      "checksum": 57126528
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50721291,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 51196292,
+      "checksum": 55446336
+    },
+    "baseline": {
+      "iterations": 1056,
+      "elapsed_ns": 50549500,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 50816583,
+      "checksum": 57126528
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 50378458,
+      "checksum": 55446336
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 96480,
+      "elapsed_ns": 50008500,
+      "checksum": 5499360
+    },
+    "candidate": {
+      "iterations": 94304,
+      "elapsed_ns": 50004500,
+      "checksum": 5375328
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 94816,
+      "elapsed_ns": 50003208,
+      "checksum": 5404512
+    },
+    "baseline": {
+      "iterations": 96768,
+      "elapsed_ns": 50007208,
+      "checksum": 5515776
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 96960,
+      "elapsed_ns": 50013000,
+      "checksum": 5526720
+    },
+    "candidate": {
+      "iterations": 94176,
+      "elapsed_ns": 50013541,
+      "checksum": 5368032
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4128,
+      "elapsed_ns": 50296042,
+      "checksum": 45490560
+    },
+    "candidate": {
+      "iterations": 4096,
+      "elapsed_ns": 50372167,
+      "checksum": 45137920
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 4064,
+      "elapsed_ns": 50014208,
+      "checksum": 44785280
+    },
+    "baseline": {
+      "iterations": 4128,
+      "elapsed_ns": 50046000,
+      "checksum": 45490560
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4160,
+      "elapsed_ns": 50226000,
+      "checksum": 45843200
+    },
+    "candidate": {
+      "iterations": 4096,
+      "elapsed_ns": 50315625,
+      "checksum": 45137920
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 256032,
+      "elapsed_ns": 50002791,
+      "checksum": 14593824
+    },
+    "candidate": {
+      "iterations": 242624,
+      "elapsed_ns": 50004000,
+      "checksum": 13829568
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 245408,
+      "elapsed_ns": 50002916,
+      "checksum": 13988256
+    },
+    "baseline": {
+      "iterations": 256960,
+      "elapsed_ns": 50006167,
+      "checksum": 14646720
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 253984,
+      "elapsed_ns": 50002250,
+      "checksum": 14477088
+    },
+    "candidate": {
+      "iterations": 243872,
+      "elapsed_ns": 50005875,
+      "checksum": 13900704
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 313504,
+      "elapsed_ns": 50003417,
+      "checksum": 92483680
+    },
+    "candidate": {
+      "iterations": 295360,
+      "elapsed_ns": 50002833,
+      "checksum": 87131200
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 295808,
+      "elapsed_ns": 50003000,
+      "checksum": 87263360
+    },
+    "baseline": {
+      "iterations": 311552,
+      "elapsed_ns": 50002000,
+      "checksum": 91907840
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 311136,
+      "elapsed_ns": 50001333,
+      "checksum": 91785120
+    },
+    "candidate": {
+      "iterations": 292896,
+      "elapsed_ns": 50005250,
+      "checksum": 86404320
+    }
+  }
+]
