@@ -55,30 +55,35 @@ pub(super) const LONGEST_SCHEME: usize = 5;
 /// does not keep the pass on.
 pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<AutolinkScan> {
     let bytes = content.as_bytes();
-    let has_at = memchr::memchr(b'@', bytes).is_some();
+    // One pass over `@` and `:` settles the email separator, `://`,
+    // `mailto:`, and `xmpp:` together; only `www.` still needs its own
+    // substring search, and only when no `@` already keeps the pass on.
+    // Colons are rare in prose, so the per-hit compares stay cheap, while
+    // a pass over `.` would stop at every sentence.
+    let mut has_at = false;
+    let mut has_extended_scheme = false;
+    let mut has_bare_scheme = false;
+    for at in memchr::memchr2_iter(b'@', b':', bytes) {
+        if bytes[at] == b'@' {
+            has_at = true;
+            continue;
+        }
+        if bytes[at + 1..].starts_with(b"//") {
+            has_bare_scheme |= !scheme_is_markdown_destination(bytes, at);
+        }
+        let prefix = &bytes[..at];
+        has_extended_scheme |= prefix.ends_with(b"mailto") || prefix.ends_with(b"xmpp");
+    }
     let may_have_www = has_at || WWW_FINDER.find(bytes).is_some();
-    // Both extended schemes require an email separator. Avoid two substring
-    // scans on ordinary prose that cannot contain a valid extended address.
-    let may_have_extended =
-        has_at && (MAILTO_FINDER.find(bytes).is_some() || XMPP_FINDER.find(bytes).is_some());
-    (may_have_www || may_have_extended || has_bare_scheme(bytes))
+    // Both extended schemes require an email separator.
+    let may_have_extended = has_at && has_extended_scheme;
+    (may_have_www || may_have_extended || has_bare_scheme)
         .then_some(AutolinkScan { may_have_www, may_have_extended })
 }
 
-/// True when `://` appears as a bare URL, not only as `](http://…)` /
-/// `](https://…)` / `](ftp://…)`.
-fn has_bare_scheme(bytes: &[u8]) -> bool {
-    let mut from = 0;
-    while let Some(offset) = SCHEME_FINDER.find(&bytes[from..]) {
-        let at = from + offset;
-        if !scheme_is_markdown_destination(bytes, at) {
-            return true;
-        }
-        from = at + 3;
-    }
-    false
-}
-
+/// True when the `://` at `colon_slash_slash` completes a Markdown link
+/// destination such as `](http://`, which the inline parser already
+/// consumed, rather than a bare URL.
 fn scheme_is_markdown_destination(bytes: &[u8], colon_slash_slash: usize) -> bool {
     for name in SCHEMES {
         let Some(start) = colon_slash_slash.checked_sub(name.len()) else {
@@ -326,4 +331,107 @@ fn validate_email_parts(value: &str, at: usize) -> Option<Candidate> {
 
 fn is_email_local_byte(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-' | b'_' | b'+')
+}
+
+#[cfg(test)]
+mod tests {
+    // Owned strings keep the test oracle independent of production arena storage.
+    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+
+    use super::*;
+
+    /// The original three-search pre-flight, kept as the oracle.
+    fn reference(content: &str) -> Option<(bool, bool)> {
+        let bytes = content.as_bytes();
+        let has_at = memchr::memchr(b'@', bytes).is_some();
+        let may_have_www = has_at || WWW_FINDER.find(bytes).is_some();
+        let may_have_extended =
+            has_at && (MAILTO_FINDER.find(bytes).is_some() || XMPP_FINDER.find(bytes).is_some());
+        let mut has_bare_scheme = false;
+        let mut from = 0;
+        while let Some(offset) = SCHEME_FINDER.find(&bytes[from..]) {
+            let at = from + offset;
+            if !scheme_is_markdown_destination(bytes, at) {
+                has_bare_scheme = true;
+                break;
+            }
+            from = at + 3;
+        }
+        (may_have_www || may_have_extended || has_bare_scheme)
+            .then_some((may_have_www, may_have_extended))
+    }
+
+    fn check(content: &str) {
+        let actual =
+            may_contain_autolink(content).map(|scan| (scan.may_have_www, scan.may_have_extended));
+        assert_eq!(actual, reference(content), "input: {content:?}");
+    }
+
+    #[test]
+    fn preflight_matches_reference_on_fixtures() {
+        for case in [
+            "",
+            "plain prose. With sentences: and colons.",
+            "see www.example.com",
+            "WWW.example.com",
+            "www",
+            "http://example.com",
+            "[text](http://example.com)",
+            "[text](HTTPS://example.com) and http://bare.example",
+            "[text](ftp://x) [y](mailto://z)",
+            "mailto:",
+            "mailto:user@example.com",
+            "xmpp:user@example.com",
+            "user@example.com",
+            "mailto://x",
+            "a:b://c",
+            "://",
+            ":",
+            ".",
+            "@",
+            "www.:",
+            "ends with www",
+            "ends with mailto",
+        ] {
+            check(case);
+        }
+    }
+
+    #[test]
+    fn preflight_matches_reference_on_mixed_inputs() {
+        let tokens = [
+            "www.",
+            "WWW.",
+            "://",
+            "](http://",
+            "](https://",
+            "](ftp://",
+            "](HTTP://",
+            "mailto:",
+            "xmpp:",
+            "mailto://",
+            "@",
+            ".",
+            ":",
+            "a",
+            " ",
+            "www",
+            "http",
+            "mailto",
+            "xmpp",
+            "]",
+            "(",
+        ];
+        let mut state = 0x7a3c_5e1d_9b2f_4681u64;
+        for _ in 0..4000 {
+            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            let len = (state >> 33) as usize % 24;
+            let mut input = String::new();
+            for _ in 0..len {
+                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                input.push_str(tokens[(state >> 33) as usize % tokens.len()]);
+            }
+            check(&input);
+        }
+    }
 }
