@@ -89,6 +89,10 @@ pub struct Parser<'a> {
     /// `None` at the root means inspect physical line prefixes directly.
     comment_lines: Option<std::rc::Rc<rustc_hash::FxHashSet<u32>>>,
 
+    /// Next possible definition-list body marker in this parser's source.
+    /// A cached exhausted suffix avoids rescanning it for every paragraph.
+    definition_marker: std::cell::Cell<Option<(usize, usize)>>,
+
     /// Memoized "this bracket text already contains a link" verdicts,
     /// keyed by the address and length of the bracketed slice.
     ///
@@ -158,6 +162,7 @@ impl<'a> Parser<'a> {
             footnote_labels: None,
             lazy_lines: None,
             comment_lines: None,
+            definition_marker: std::cell::Cell::new(None),
             link_probe_cache: std::cell::RefCell::default(),
             last_closer: std::cell::RefCell::default(),
             definition_region: None,
@@ -208,6 +213,7 @@ impl<'a> Parser<'a> {
             // line, and every block quote and list item builds one of these.
             lazy_lines: (!lazy_lines.is_empty()).then(|| std::rc::Rc::new(lazy_lines)),
             comment_lines: None,
+            definition_marker: std::cell::Cell::new(None),
             link_probe_cache: std::cell::RefCell::default(),
             last_closer: std::cell::RefCell::default(),
             definition_region: None,

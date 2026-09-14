@@ -170,3 +170,60 @@ fn definition_lists_render_native_dl_nodes() {
         )
     );
 }
+
+#[test]
+fn definition_markers_remain_visible_in_dedented_sources_and_all_line_endings() {
+    let list =
+        concat!("<dl class=\"ox-definition-list\">\n", "<dt>Term</dt>\n<dd>body</dd>\n</dl>\n",);
+    for (source, expected) in [
+        ("Term\n: body\n", list.to_string()),
+        ("> Term\n> : body\n", format!("<blockquote>\n{list}</blockquote>\n")),
+        ("- Term\n  : body\n", format!("<ul>\n<li>\n{list}</li>\n</ul>\n")),
+    ] {
+        for ending in ["\n", "\r\n", "\r"] {
+            let source = source.replace('\n', ending);
+            assert_eq!(
+                render(
+                    &source,
+                    ParserOptions { definition_lists: true, ..ParserOptions::commonmark() },
+                    HtmlRendererOptions::commonmark(),
+                ),
+                expected,
+                "{source:?}",
+            );
+        }
+    }
+}
+
+#[test]
+fn definition_term_spans_survive_comments_between_terms() {
+    use ferromark_allocator::Allocator;
+    use ferromark_ast::Node;
+    use ferromark_parser::Parser;
+
+    for ending in ["\n", "\r\n", "\r"] {
+        let source = "Term\n// private note\nSecond **term**\n: body\n".replace('\n', ending);
+        let allocator = Allocator::new();
+        let document = Parser::with_options(
+            &allocator,
+            &source,
+            ParserOptions {
+                definition_lists: true,
+                line_comments: true,
+                ..ParserOptions::commonmark()
+            },
+        )
+        .parse()
+        .unwrap();
+        let Node::DefinitionList(list) = &document.children[0] else {
+            panic!("expected a definition list");
+        };
+        assert_eq!(list.children.len(), 3);
+        for (node, expected) in list.children[..2].iter().zip(["Term", "Second **term**"]) {
+            let Node::DefinitionListTerm(term) = node else {
+                panic!("expected a term");
+            };
+            assert_eq!(&source[term.span.start as usize..term.span.end as usize], expected);
+        }
+    }
+}

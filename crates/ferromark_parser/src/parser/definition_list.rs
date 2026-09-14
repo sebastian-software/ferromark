@@ -12,6 +12,12 @@ mod lines;
 
 use self::lines::{DefinitionBodyLine, has_unclosed_inline_code, trim_line_span};
 
+struct DefinitionTerms {
+    end: usize,
+    count: usize,
+    body_start: usize,
+}
+
 impl<'a> Parser<'a> {
     pub(super) fn parse_definition_list(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
         if !self.options.definition_lists {
@@ -58,12 +64,18 @@ impl<'a> Parser<'a> {
         &self,
         start: usize,
     ) -> ParseResult<Option<(ArenaVec<'a, Node<'a>>, usize)>> {
-        let Some((term_lines, mut cursor)) = self.collect_definition_terms(start) else {
+        let Some(terms) = self.collect_definition_terms(start) else {
             return Ok(None);
         };
 
-        let mut nodes = self.allocator.new_vec_with_capacity(term_lines.len() + 1);
-        for (line_start, line_end) in term_lines {
+        let mut nodes = self.allocator.new_vec_with_capacity(terms.count + 1);
+        let mut line_start = start;
+        while line_start < terms.end {
+            line_start = self.skip_line_comments_from(line_start);
+            if line_start >= terms.end {
+                break;
+            }
+            let line_end = self.line_end_at(line_start);
             let (term_start, term_end) = trim_line_span(self.source, line_start, line_end);
             let value = &self.source[term_start..term_end];
             let term = DefinitionListTerm {
@@ -71,8 +83,10 @@ impl<'a> Parser<'a> {
                 span: Span::new(line_start as u32, line_end as u32),
             };
             nodes.push(Node::DefinitionListTerm(self.allocator.boxed(term)));
+            line_start = self.next_line_start(line_start);
         }
 
+        let mut cursor = terms.body_start;
         let mut parsed_definition = false;
         while let Some((definition, next)) = self.collect_definition_body(cursor)? {
             nodes.push(definition);
@@ -90,16 +104,16 @@ impl<'a> Parser<'a> {
         Ok(Some((nodes, cursor)))
     }
 
-    fn collect_definition_terms(
-        &self,
-        start: usize,
-    ) -> Option<(ArenaVec<'a, (usize, usize)>, usize)> {
-        if start >= self.source.len() || self.is_blank_line_at(start) {
+    fn collect_definition_terms(&self, start: usize) -> Option<DefinitionTerms> {
+        if start >= self.source.len()
+            || self.next_definition_marker(start) == self.source.len()
+            || self.is_blank_line_at(start)
+        {
             return None;
         }
 
-        let mut terms = self.allocator.new_vec();
         let mut cursor = start;
+        let mut count = 0;
 
         while cursor < self.source.len() {
             cursor = self.skip_line_comments_from(cursor);
@@ -112,17 +126,54 @@ impl<'a> Parser<'a> {
             if !self.is_definition_term_line(cursor) {
                 return None;
             }
-            let line_end = self.line_end_at(cursor);
-            terms.push((cursor, line_end));
+            count += 1;
             cursor = self.next_line_start(cursor);
         }
 
-        if terms.is_empty() {
+        if count == 0 {
             return None;
         }
 
-        cursor = self.skip_blank_lines_from(cursor);
-        self.starts_definition_body_at(cursor).then_some((terms, cursor))
+        let end = cursor;
+        let body_start = self.skip_blank_lines_from(cursor);
+        if !self.starts_definition_body_at(body_start) {
+            return None;
+        }
+
+        // Retain source coordinates instead of an arena-allocated temporary
+        // term vector, including during speculative body-continuation probes.
+        // Validate as we scan: delaying rejection of an indented body line
+        // could repeatedly scan its suffix at each continuation probe.
+        Some(DefinitionTerms { end, count, body_start })
+    }
+
+    /// Necessary syntax only: actual term/body and container validation stays
+    /// in the collector. Each sub-parser has its own source and fresh cache.
+    fn next_definition_marker(&self, start: usize) -> usize {
+        if let Some((from, marker)) = self.definition_marker.get()
+            && from <= start
+            && start <= marker
+        {
+            return marker;
+        }
+        let bytes = self.source.as_bytes();
+        let mut marker = bytes.len();
+        for relative in memchr::memchr_iter(b':', &bytes[start..]) {
+            let colon = start + relative;
+            if !matches!(bytes.get(colon + 1), None | Some(b' ' | b'\t' | b'\n' | b'\r')) {
+                continue;
+            }
+            let mut prefix = colon;
+            while prefix > 0 && colon - prefix < 3 && bytes[prefix - 1] == b' ' {
+                prefix -= 1;
+            }
+            if prefix == 0 || matches!(bytes[prefix - 1], b'\n' | b'\r') {
+                marker = colon;
+                break;
+            }
+        }
+        self.definition_marker.set(Some((start, marker)));
+        marker
     }
 
     fn collect_definition_body(&self, start: usize) -> ParseResult<Option<(Node<'a>, usize)>> {
@@ -298,6 +349,13 @@ impl<'a> Parser<'a> {
         }
         let line = self.line_at(line_start);
         let trimmed = &line[trimmed_start - line_start..];
+        // None of the block prefixes rejected below starts with an ASCII
+        // letter. Inline backticks can still disqualify an ordinary term.
+        // Keep Unicode on the general path: thematic-break detection trims
+        // Unicode whitespace, unlike the ASCII indentation scan above.
+        if trimmed.as_bytes()[0].is_ascii_alphabetic() {
+            return !has_unclosed_inline_code(line);
+        }
         !trimmed.starts_with(':')
             && !trimmed.starts_with('>')
             && !trimmed.starts_with(":::")
@@ -313,11 +371,10 @@ impl<'a> Parser<'a> {
         if line_start >= self.source.len() {
             return None;
         }
-        let line_end = self.line_end_at(line_start);
         let bytes = self.source.as_bytes();
         let mut cursor = line_start;
         let mut spaces = 0usize;
-        while cursor < line_end && spaces < 3 && bytes[cursor] == b' ' {
+        while cursor < bytes.len() && spaces < 3 && bytes[cursor] == b' ' {
             cursor += 1;
             spaces += 1;
         }
@@ -325,14 +382,79 @@ impl<'a> Parser<'a> {
             return None;
         }
         let after_colon = cursor + 1;
-        if after_colon < line_end && !matches!(bytes[after_colon], b' ' | b'\t') {
+        if !matches!(bytes.get(after_colon), None | Some(b' ' | b'\t' | b'\n' | b'\r')) {
             return None;
         }
+        // Reject ordinary term/body lines from their prefix before searching
+        // for a line ending. Long prose should not be scanned merely to learn
+        // that its first non-space byte is not a definition marker.
+        let line_end = self.line_end_at(after_colon);
         let mut body_start = after_colon;
         while body_start < line_end && matches!(bytes[body_start], b' ' | b'\t') {
             body_start += 1;
         }
         let (_, body_end) = trim_line_span(self.source, body_start, line_end);
         Some(DefinitionBodyLine { body_start, body_end })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ferromark_allocator::Allocator;
+
+    use super::Parser;
+    use crate::ParserOptions;
+
+    #[test]
+    fn rejected_definition_probes_do_not_allocate_terms() {
+        for source in [
+            "Ordinary prose without definition syntax.\n\nAnother paragraph.\n",
+            "A URL https://example.org and a time 12:34 are not definition markers.\n",
+            "Words: with an inline colon.\n\nMore prose.\n",
+            "Ordinary first paragraph.\n\nLate term\n: real body\n",
+        ] {
+            let allocator = Allocator::new();
+            let mut parser = Parser::with_options(
+                &allocator,
+                source,
+                ParserOptions { definition_lists: true, ..ParserOptions::commonmark() },
+            );
+            assert!(parser.parse_definition_list(0).unwrap().is_none());
+            assert_eq!(parser.position, 0);
+            assert_eq!(allocator.allocated_bytes(), 0, "rejected probe allocated: {source:?}");
+        }
+    }
+
+    #[test]
+    fn marker_cache_handles_forward_and_backward_probes() {
+        let source = "Words: text\r\nTerm\r\n   : body\r\nhttps://example.org\nTerm\n: next\n";
+        let allocator = Allocator::new();
+        let parser = Parser::new(&allocator, source);
+        let first = source.find(": body").unwrap();
+        let second = source.find(": next").unwrap();
+        assert_eq!(parser.next_definition_marker(0), first);
+        assert_eq!(parser.next_definition_marker(first), first);
+        assert_eq!(parser.next_definition_marker(first + 1), second);
+        assert_eq!(parser.next_definition_marker(second + 1), source.len());
+        assert_eq!(parser.next_definition_marker(0), first);
+    }
+
+    #[test]
+    fn marker_preflight_accepts_every_body_prefix() {
+        for indent in ["", " ", "  ", "   ", "    ", "\t", "\u{a0}"] {
+            for after in ["", " ", "\tvalue", "value", "\r", "\n", "\r\nvalue"] {
+                let allocator = Allocator::new();
+                let mut source = allocator.new_string();
+                source.push_str(indent);
+                source.push(':');
+                source.push_str(after);
+                let parser = Parser::new(&allocator, &source);
+                assert_eq!(
+                    parser.next_definition_marker(0) < source.len(),
+                    parser.definition_body_at(0).is_some(),
+                    "{source:?}",
+                );
+            }
+        }
     }
 }
