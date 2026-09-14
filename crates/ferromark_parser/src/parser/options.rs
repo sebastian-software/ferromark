@@ -162,6 +162,15 @@ impl Default for ParserOptions {
 const DEFAULT_MAX_NESTING_DEPTH: usize = 100;
 
 impl ParserOptions {
+    /// Creates the strict CommonMark parser profile.
+    ///
+    /// This is equivalent to [`Default::default`], but names the profile
+    /// explicitly at call sites that compare Markdown dialects.
+    #[must_use]
+    pub fn commonmark() -> Self {
+        Self::default()
+    }
+
     /// Creates new parser options with GFM extensions enabled.
     #[must_use]
     pub fn gfm() -> Self {
@@ -184,6 +193,15 @@ impl ParserOptions {
             mdx: false,
             max_nesting_depth: DEFAULT_MAX_NESTING_DEPTH,
         }
+    }
+
+    /// Creates the strict GFM parser profile.
+    ///
+    /// Unlike the convenience [`Self::gfm`] preset, this follows the GFM
+    /// feature set without Ferromark's semantic footnote extension.
+    #[must_use]
+    pub fn gfm_spec() -> Self {
+        Self { footnotes: false, ..Self::gfm() }
     }
 
     /// Creates parser options with MDX enabled and GFM left off.

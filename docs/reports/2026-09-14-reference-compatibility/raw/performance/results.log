@@ -1,0 +1,11 @@
+Verifying 4 cases across 2 stages...
+Traceback (most recent call last):
+  File "/Users/sebastian/Workspace/ferromark-v2/benchmarks/optimization-rounds/run.py", line 278, in <module>
+    main()
+    ~~~~^^
+  File "/Users/sebastian/Workspace/ferromark-v2/benchmarks/optimization-rounds/run.py", line 196, in main
+    verification[case["name"]] = verify_case(build_data, input_paths[case["name"]], case, args.modes)
+                                 ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sebastian/Workspace/ferromark-v2/benchmarks/optimization-rounds/run.py", line 143, in verify_case
+    raise AssertionError((case["name"], mode, "baseline/candidate output changed"))
+AssertionError: ('wiki-rainbow-article-body', 'fresh', 'baseline/candidate output changed')

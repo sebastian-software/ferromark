@@ -1,0 +1,44 @@
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s
+     Running tests/cmark_regressions.rs (target/debug/deps/cmark_regressions-ef277d00e7527b24)
+
+running 10 tests
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test complex_cmark_oracle_cases_match_reference_output ... ok
+test tilde_binding_combinations_match_reference_output ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/gfm_extension_audit.rs (target/debug/deps/gfm_extension_audit-ea3f691641a9e319)
+
+running 9 tests
+test single_tilde_strikethrough_stays_literal_when_gfm_is_disabled ... ok
+test explicit_subscript_keeps_priority_over_single_tilde_strikethrough ... ok
+test gfm_single_tilde_ignores_escaped_and_code_span_tildes ... ok
+test gfm_extended_autolinks_require_contiguous_addresses ... ok
+test gfm_official_strikethrough_examples_491_and_493 ... ok
+test gfm_strikethrough_keeps_links_images_titles_html_and_unicode_boundaries ... ok
+test gfm_official_extended_autolinks_examples_633_to_635 ... ok
+test gfm_cmark_tilde_binding_cases ... ok
+test gfm_tildes_allow_intraword_strikes_and_classify_adjacent_emphasis ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/profiles.rs (target/debug/deps/profiles-b9f954a2c3f61bcb)
+
+running 5 tests
+test gfm_spec_uses_tagfilter_without_footnotes_or_ids ... ok
+test spec_profiles_disable_product_rendering_extras ... ok
+test existing_defaults_keep_heading_ids_callouts_and_toc ... ok
+test spec_profile_flags_match_normal_hooks_and_incremental_paths ... ok
+test heading_attributes_match_across_renderer_paths_and_disabled_ids ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

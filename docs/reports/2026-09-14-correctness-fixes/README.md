@@ -1,5 +1,9 @@
 # First CommonMark and GFM correctness fixes
 
+Follow-up: the [second correction batch](../2026-09-14-reference-compatibility/README.md)
+closes the remaining Ferromark oracle findings and adds explicit render profiles.
+This report and its raw results describe the earlier state.
+
 The first correction batch fixes line-ending content corruption, literal NUL
 handling, URL escaping, and the five failures in the current GFM extension
 examples. Ferromark v1 already handles several of these cases correctly, so

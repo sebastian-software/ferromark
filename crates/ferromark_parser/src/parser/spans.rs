@@ -8,6 +8,14 @@ mod remap;
 /// Shared traversal for stripped sub-sources and root character replacement.
 pub(in crate::parser) trait SpanMap {
     fn map_span(&self, span: Span) -> Span;
+
+    /// Maps the synthetic parser document span back to the caller's source.
+    /// Most maps have no distinction between a document and node span; the
+    /// root NUL/BOM map overrides this because it strips a leading BOM while
+    /// the document span must continue to cover the complete input.
+    fn map_document_span(&self, span: Span) -> Span {
+        self.map_span(span)
+    }
 }
 
 #[derive(Debug, Default)]

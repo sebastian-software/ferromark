@@ -1,0 +1,13 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running tests/bom_source.rs (target/debug/deps/bom_source-59de6a1a2b66ffdd)
+
+running 5 tests
+test bom_only_input_has_an_original_document_span ... ok
+test embedded_bom_and_nul_remain_content_after_leading_bom ... ok
+test strips_one_leading_bom_and_preserves_original_spans ... ok
+test strips_only_the_first_of_two_boms ... ok
+test bom_before_nested_link_and_nul_keeps_link_source_span ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

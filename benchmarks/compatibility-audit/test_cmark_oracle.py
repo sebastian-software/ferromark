@@ -24,10 +24,20 @@ def load(name: str, path: Path):
 
 
 FIXTURES = load("cmark_fixtures", HERE / "cmark_fixtures.py")
+BINDINGS = load("cmark_binding_fixtures", HERE / "cmark_binding_fixtures.py")
 ORACLE = load("cmark_oracle", HERE / "cmark_oracle.py")
 
 
 class CmarkCorpusTests(unittest.TestCase):
+    def test_binding_combinations_cover_each_context_without_duplicate_inputs(self):
+        cases = BINDINGS.make_cases()
+        self.assertEqual(len(cases), 256)
+        self.assertEqual(len({case['id'] for case in cases}), 256)
+        self.assertEqual(len({case['markdown'] for case in cases}), 256)
+        self.assertEqual({case['profile'] for case in cases}, {'gfm'})
+        for context in ('paragraph', 'emphasis', 'link', 'quote'):
+            self.assertEqual(sum(case['id'].endswith('-'+context) for case in cases), 64)
+
     def test_corpus_is_bounded_and_contains_complex_profiles(self):
         cases = FIXTURES.make_cases()
         self.assertGreaterEqual(len(cases), 100)
@@ -78,7 +88,7 @@ class CmarkCorpusTests(unittest.TestCase):
         command = run.call_args.args[0]
         self.assertEqual(
             command[1:],
-            ["-e", "table", "-e", "strikethrough", "-e", "autolink", "-e", "tasklist", "-e", "tagfilter"],
+            ["--unsafe", "-e", "table", "-e", "strikethrough", "-e", "autolink", "-e", "tasklist", "-e", "tagfilter"],
         )
         self.assertIn("tagfilter", command)
         self.assertNotIn("footnotes", command)

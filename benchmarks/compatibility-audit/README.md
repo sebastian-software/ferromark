@@ -6,8 +6,9 @@ CommonMark inputs with CRLF and lone CR, and runs 30 targeted probes.
 It does not modify the production crates or their inherited conformance baselines.
 
 The separate [cmark oracle harness](CMARK.md) compares 106 complex inputs with
-pinned official cmark/cmark-gfm builds. It complements the spec gate and retains
-additional delimiter discrepancies as review cases.
+pinned official cmark/cmark-gfm builds. An additional 256 generated tilde/inline
+combinations cover the delimiter failure families. Both sets also run as Rust
+regressions against frozen reference output, independently of the spec gate.
 
 From the repository root, with the pinned Rust toolchain, Python 3.11+, and
 the dependencies already downloaded by the regular workspace build:
@@ -41,12 +42,16 @@ for the extended `mailto:`/`xmpp:` autolink failures.
 
 ## Profiles and interpretation
 
-`commonmark` disables renderer bare-URL autolinking and link target attributes.
-`gfm` additionally disables footnotes and enables the renderer tagfilter.
+`commonmark` pairs `ParserOptions::commonmark()` with
+`HtmlRendererOptions::commonmark()`: bare-URL autolinking, link target attributes,
+heading IDs, callouts, inline TOC, and fence metadata cleanup are disabled.
+`gfm` pairs `ParserOptions::gfm_spec()` with `HtmlRendererOptions::gfm()`, adding
+the formal GFM extensions and tagfilter without footnotes.
 `gfm-no-tagfilter` omits that last policy. `default` and `gfm-preset` retain
 the public renderer defaults; the latter also retains GFM's footnotes setting.
-`mdx` enables MDX syntax on the configured CommonMark profile. All still retain
-the renderer's unconditional heading IDs, callouts, TOC, and fence language cleanup.
+`mdx` enables MDX syntax on the configured CommonMark profile. These explicit
+profiles were added in the second correction batch; historical reports retain
+their original configuration and output.
 
 Every example keeps its input, expected HTML, actual HTML, errors, and both
 the current spec normalizer and conservative comparison result. Fields named
