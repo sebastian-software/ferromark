@@ -42,6 +42,12 @@ pub struct ParserOptions {
     /// [`Self::tables`]. Default: `false`, including all presets.
     pub table_attributes: bool,
 
+    /// Omit source-only physical lines beginning with `//` after at most
+    /// three ASCII spaces. Comments do not introduce a paragraph break.
+    /// Explicit container prefixes, code blocks, and raw HTML remain literal.
+    /// Default: `false`, including all presets.
+    pub line_comments: bool,
+
     /// Enable GFM strikethrough spans.
     ///
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
@@ -146,6 +152,7 @@ impl Default for ParserOptions {
             tables: false,
             merged_table_cells: false,
             table_attributes: false,
+            line_comments: false,
             strikethrough: false,
             autolinks: false,
             superscript: false,
@@ -191,6 +198,7 @@ impl ParserOptions {
             tables: true,
             merged_table_cells: false,
             table_attributes: false,
+            line_comments: false,
             strikethrough: true,
             autolinks: true,
             superscript: false,

@@ -16,7 +16,9 @@ impl Parser<'_> {
     }
 
     pub(super) fn skip_blank_lines_from(&self, mut cursor: usize) -> usize {
-        while cursor < self.source.len() && self.is_blank_line_at(cursor) {
+        while cursor < self.source.len()
+            && (self.is_blank_line_at(cursor) || self.is_line_comment_at(cursor))
+        {
             cursor = self.next_line_start(cursor);
         }
         cursor

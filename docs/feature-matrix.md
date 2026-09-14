@@ -9,7 +9,7 @@ built-in feature can often be implemented by a caller using events or hooks.
 The comparison uses the same six engines as the native benchmark. Ferromark v2
 is the local core at `46c761d`, including the compatibility corrections,
 [smart-punctuation removal](typography.md), and [table extensions](table-layout.md)
-with header-derived column names;
+with header-derived column names, plus the subsequent [line-comment extension](line-comments.md);
 the other five sources are the exact
 benchmark pins. This avoids mixing newer upstream features into an older timing
 comparison. Feature availability and timed configuration remain separate: the
@@ -18,7 +18,7 @@ benchmark enabled only a shared subset of Markdown extensions.
 | Engine | Reviewed source |
 | --- | --- |
 | Ferromark v1 | [0.9.0, `143ec2ce`](https://github.com/sebastian-software/ferromark/tree/143ec2ce151d87d2a3d804a048014afc97733ae0) |
-| Ferromark v2 | Local `46c761d`; [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs), and [table layout](table-layout.md) |
+| Ferromark v2 | Local `46c761d` plus [line comments](line-comments.md); [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs), and [table layout](table-layout.md) |
 | OX-Content | [3.2.3, `a71a5893`](https://github.com/ubugeeei-prod/ox-content/tree/a71a58939ffe7f154117cea026f6d6e71a139393) — parser/renderer core |
 | pulldown-cmark | [0.13.4 options](https://docs.rs/pulldown-cmark/0.13.4/pulldown_cmark/struct.Options.html) |
 | md4c | [`65c6c9d7` flags and event types](https://github.com/mity/md4c/blob/65c6c9d72cebd9a731aaa5597414ce04d9ea5de3/src/md4c.h) |
@@ -43,6 +43,13 @@ Ferromark v2's tested behavior. Published syntax names do not guarantee matching
 rendering policies or identical edge cases across libraries.
 
 ## Important distinctions
+
+- **Line comments:** v1 and v2 can omit physical source lines beginning with
+  `//` after at most three ASCII spaces. This is an opt-in source notation,
+  separate from HTML comments and JavaScript comments inside MDX. Code and raw
+  HTML blocks stay opaque; explicit `>` or list prefixes are not stripped for
+  comment recognition. V1 exposes comment events; v2 omits comments from the AST
+  while preserving original source spans for the remaining nodes.
 
 - **Table widths:** v2 can generate CSS-addressable `<col>` elements and table
   IDs/classes. Columns retain positional classes and can also receive names
@@ -106,7 +113,7 @@ The [Bun Markdown documentation](https://bun.com/docs/runtime/markdown) explains
 the public product API, but this matrix is bounded by the pinned native source.
 
 Ferromark v1's [public options and result types](https://github.com/sebastian-software/ferromark/blob/143ec2ce151d87d2a3d804a048014afc97733ae0/src/lib.rs)
-cover its footnotes, frontmatter, column spans/widths, math, marked text,
+cover its footnotes, frontmatter, line comments, column spans/widths, math, marked text,
 super/subscript, callouts, automatic heading IDs, and heading records for a
 caller-built TOC. Its generic block/inline events are public, but the built-in
 HTML renderer's callback is limited to fenced code (`FencedCodeRenderer`).

@@ -14,7 +14,9 @@ use ferromark_ast::{Definition, Node, Span};
 use rustc_hash::FxHashMap;
 
 use super::Parser;
+use super::line_comments::CommentDefinitionRegion;
 use super::line_scan::{is_line_ending_byte, line_end as scan_line_end, line_terminator_end};
+use super::spans::SpanMap;
 
 mod scan;
 
@@ -173,11 +175,36 @@ impl<'a> Parser<'a> {
         // reuse the last one rather than re-scanning to it per definition —
         // that scan is what made a definition-only document quadratic.
         let region_end = self.definition_region_end(start);
-        let parsed = self.parse_reference_definition(&self.source[start..region_end])?;
+        let cached = self.comment_definition_region.as_ref().is_some_and(|region| {
+            region.start <= start && start < region.end && region.end == region_end
+        });
+        if self.options.line_comments && !cached {
+            let (text, map) = self.without_line_comments(start, region_end);
+            self.comment_definition_region = Some(std::rc::Rc::new(CommentDefinitionRegion {
+                start,
+                end: region_end,
+                text,
+                map,
+            }));
+        }
+        let (parsed, end) = if let Some(region) = self.comment_definition_region.as_ref()
+            && region.start <= start
+            && start < region.end
+            && region.end == region_end
+            && let Some(map) = &region.map
+        {
+            let offset = map.generated_line_start(start)?;
+            let parsed = self.parse_reference_definition(&region.text[offset..])?;
+            let span = map.map_span(Span::new(offset as u32, (offset + parsed.consumed) as u32));
+            (parsed, span.end as usize)
+        } else {
+            let parsed = self.parse_reference_definition(&self.source[start..region_end])?;
+            let end = start + parsed.consumed;
+            (parsed, end)
+        };
 
         let identifier =
             self.allocator.alloc_str(Self::normalize_reference_label(parsed.label).as_str());
-        let end = start + parsed.consumed;
         self.position = end;
         Some(Node::Definition(self.allocator.boxed(Definition {
             identifier,
@@ -215,6 +242,10 @@ impl<'a> Parser<'a> {
         let mut joined = self.allocator.new_string();
         let mut line_starts = self.allocator.new_vec();
         while pos < bytes.len() {
+            pos = self.skip_line_comments_from(pos);
+            if pos >= bytes.len() {
+                break;
+            }
             let line_end = scan_line_end(bytes, pos);
             let line = &self.source[pos..line_end];
             let stripped = strip_quote_markers(line);

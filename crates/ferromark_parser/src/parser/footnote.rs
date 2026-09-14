@@ -63,7 +63,8 @@ pub(super) fn normalize_footnote_label(label: &str) -> CompactString {
 
 /// Byte length of the definition body starting at `content_start`:
 /// the remainder of the opening line plus indented continuation lines.
-fn definition_body_len(source: &str, content_start: usize) -> usize {
+fn definition_body_len(parser: &Parser<'_>, content_start: usize) -> usize {
+    let source = parser.source;
     let bytes = source.as_bytes();
     let mut cursor = next_line_start(bytes, content_start);
     // Trailing blank lines only belong to the definition when an indented
@@ -75,6 +76,11 @@ fn definition_body_len(source: &str, content_start: usize) -> usize {
         let next_line = next_line_start(bytes, cursor);
         let line = &source[cursor..current_line_end];
         let trimmed = line.trim_start_matches([' ', '\t']);
+
+        if parser.is_line_comment_at(cursor) {
+            cursor = next_line;
+            continue;
+        }
 
         if trimmed.trim_end().is_empty() {
             cursor = next_line;
@@ -186,7 +192,7 @@ impl<'a> Parser<'a> {
         let identifier =
             self.allocator.alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
         let content_start = start + after_colon;
-        let body_len = definition_body_len(self.source, content_start);
+        let body_len = definition_body_len(self, content_start);
         let body = dedent_body(
             self.allocator,
             &self.source[content_start..content_start + body_len],
@@ -195,8 +201,13 @@ impl<'a> Parser<'a> {
 
         // The body is a full block context (paragraphs, lists, code), so
         // hand it to a sub-parser rather than treating it as inline text.
-        let sub_doc =
-            self.sub_parser_with_lazy_lines(body.text, rustc_hash::FxHashSet::default()).parse()?;
+        let sub_doc = self
+            .sub_parser_with_source_map(
+                body.text,
+                rustc_hash::FxHashSet::default(),
+                &body.source_map,
+            )
+            .parse()?;
         let mut children = sub_doc.children;
         // Sub-parser spans are relative to the dedented body; map them
         // back onto the original source so downstream tooling keeps ranges.

@@ -18,6 +18,7 @@ mod inline_helpers;
 mod inline_html;
 mod inline_link;
 mod leaf;
+mod line_comments;
 mod line_scan;
 mod list;
 mod list_item;
@@ -80,6 +81,10 @@ pub struct Parser<'a> {
     /// during the re-parse.
     lazy_lines: Option<std::rc::Rc<rustc_hash::FxHashSet<u32>>>,
 
+    /// Eligible physical comment lines carried into a stripped sub-source.
+    /// `None` at the root means inspect physical line prefixes directly.
+    comment_lines: Option<std::rc::Rc<rustc_hash::FxHashSet<u32>>>,
+
     /// Memoized "this bracket text already contains a link" verdicts,
     /// keyed by the address and length of the bracketed slice.
     ///
@@ -119,6 +124,9 @@ pub struct Parser<'a> {
     /// block parsing walks forward, so the previous answer stays valid for
     /// any start inside the window.
     definition_region: Option<(usize, usize)>,
+
+    /// Reuse a comment-stripped definition region across consecutive definitions.
+    comment_definition_region: Option<std::rc::Rc<line_comments::CommentDefinitionRegion<'a>>>,
 }
 
 impl<'a> Parser<'a> {
@@ -142,9 +150,11 @@ impl<'a> Parser<'a> {
             definitions: None,
             footnote_labels: None,
             lazy_lines: None,
+            comment_lines: None,
             link_probe_cache: std::cell::RefCell::default(),
             last_closer: std::cell::RefCell::default(),
             definition_region: None,
+            comment_definition_region: None,
         };
         // A single fused pre-pass collects both the reference definitions
         // and the footnote labels (see `prepass.rs`).
@@ -174,7 +184,9 @@ impl<'a> Parser<'a> {
             allocator: self.allocator,
             source,
             source_map: None,
-            options: self.options.clone(),
+            // Line comments are recognized on physical source lines, before
+            // container prefixes are stripped, never on generated sub-sources.
+            options: ParserOptions { line_comments: false, ..self.options.clone() },
             position: 0,
             nesting_depth: self.nesting_depth + 1,
             definitions: self.definitions.clone(),
@@ -182,9 +194,11 @@ impl<'a> Parser<'a> {
             // Most sub-sources are entered without any lazy continuation
             // line, and every block quote and list item builds one of these.
             lazy_lines: (!lazy_lines.is_empty()).then(|| std::rc::Rc::new(lazy_lines)),
+            comment_lines: None,
             link_probe_cache: std::cell::RefCell::default(),
             last_closer: std::cell::RefCell::default(),
             definition_region: None,
+            comment_definition_region: None,
         }
     }
 
