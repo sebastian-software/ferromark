@@ -72,6 +72,72 @@ and scans ASCII URL spans with NEON. The
 [first SIMD study](docs/reports/2026-09-14-simd-round/README.md) remains the historical
 record of the link prototype and its render-only build sensitivity.
 
+## Features at a glance
+
+**CommonMark** defines everyday Markdown: headings, lists, links, emphasis, and
+code. **GFM** (GitHub Flavored Markdown) adds features such as tables and
+checklists. The groups below spell out those names and show useful extras.
+Footnotes and alert boxes are listed separately from the published GFM extensions.
+
+**✓** = built in, possibly requiring an option or Cargo feature. **—** = no
+built-in support. Qualifiers describe narrower support. This is a capability
+inventory, not a claim of identical output or complete specification conformance.
+It covers the native cores from the benchmark, with **v2 updated to the corrected
+local version**; these are not the options enabled during timing.
+[Exact versions, source references, and scope](docs/feature-matrix.md).
+
+| Feature / what it does | Ferromark v1 | Ferromark v2 | OX-Content | pulldown-cmark | md4c | Bun native |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **CommonMark — everyday Markdown** | | | | | | |
+| Headings — `# Title` through `###### Title` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Paragraphs and line breaks | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Bold and italic — `**bold**`, `*italic*` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Numbered, bulleted, and nested lists | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Block quotes — `> quoted text` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Horizontal separators — `---` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Links, images, and reusable reference links | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Inline code, fenced code blocks, and indented code | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Raw HTML inside Markdown — `<details>…</details>` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **GFM — GitHub-style extensions** | | | | | | |
+| Tables with left/center/right column alignment | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Checklists — `- [x] done`, `- [ ] pending` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Crossed-out text — `~~removed~~` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Single-tilde crossed-out text — `~removed~` | — | ✓ | — | ✓ | ✓ | ✓ |
+| Turn bare URLs/emails into links — `www.example.com` | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| GFM HTML tag filter — filter its specified tag list | ✓ | ✓ | ✓ | — | — | ✓ |
+| **Writing extras — beyond CommonMark/GFM** | | | | | | |
+| Reference footnotes — `[^note]` plus a definition | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Inline footnotes — `^[note written here]` | ✓ | — | — | — | — | — |
+| Definition lists — a term followed by `: explanation` | ✓ | ✓ | ✓ | ✓ | — | — |
+| Math notation — `$x^2$`, `$$…$$` | Syntax | Syntax | Syntax | Syntax | Syntax | Syntax |
+| Superscript — `x^2^` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Subscript — `H~2~O` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Highlighted text — `==important==` | ✓ | — | — | — | ✓ | — |
+| Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
+| Smart punctuation — curly quotes and ellipses | — | ✓ | ✓ | ✓ | — | — |
+| Extract frontmatter — metadata between `---` or `+++` | ✓ | — | — | ✓ | — | — |
+| Merged table cells — one cell spans several columns | ✓ | — | — | — | — | — |
+| Table column-width hints | ✓ | — | — | — | — | — |
+| **Documentation and navigation** | | | | | | |
+| Automatic heading IDs — link directly to a section | ✓ | ✓ | ✓ | — | — | ✓ |
+| Explicit heading IDs/classes — `# Title {#id .class}` | — | ✓ | ✓ | ✓ | — | — |
+| Alert boxes — `> [!NOTE]`, `> [!WARNING]` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Table of contents from document headings | Heading data | Rendered TOC | Rendered TOC | — | — | — |
+| **MDX — components and expressions mixed with Markdown** | | | | | | |
+| Recognize JSX, `{expressions}`, and imports/exports | Limited | Limited | Limited | — | — | — |
+| **Application integration** | | | | | | |
+| Inspect/transform the parsed document | Events | Tree (AST) | Tree (AST) | Events | Callbacks | Callbacks |
+| Customize generated output | Code hook / events | HTML hooks | HTML hooks | Event transforms | Renderer callbacks | Renderer callbacks |
+
+Math support preserves formula notation; an application supplies mathematical
+typesetting. “Custom tag” wiki links also need application-side routing/rendering.
+Frontmatter support extracts metadata text, rather than parsing YAML/TOML values.
+“Heading data” lets an application build a TOC; “Rendered TOC” includes HTML for
+an inline `[[toc]]` marker. Trees expose nested document nodes; events/callbacks
+expose elements in sequence. The three MDX entries cover bounded syntax handling,
+not a full MDX compiler or JavaScript runtime. Single-tilde strikethrough and
+subscript compete for the same syntax; enabling subscript gives it priority.
+
 ## Correctness and compatibility
 
 The [second correction batch](docs/reports/2026-09-14-reference-compatibility/README.md)
