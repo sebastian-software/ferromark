@@ -1,0 +1,24 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.72s
+     Running unittests src/lib.rs (target/debug/deps/ferromark_parser-6515b416bb524034)
+
+running 1 test
+test parser::definition_list::tests::rejected_definition_probes_do_not_allocate_terms ... FAILED
+
+failures:
+
+---- parser::definition_list::tests::rejected_definition_probes_do_not_allocate_terms stdout ----
+
+thread 'parser::definition_list::tests::rejected_definition_probes_do_not_allocate_terms' (20133091) panicked at crates/ferromark_parser/src/parser/definition_list.rs:362:13:
+assertion `left == right` failed: rejected probe allocated: "Ordinary prose without definition syntax.\n\nAnother paragraph.\n"
+  left: 448
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    parser::definition_list::tests::rejected_definition_probes_do_not_allocate_terms
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 51 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p ferromark_parser --lib`
