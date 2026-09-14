@@ -1,0 +1,149 @@
+diff --git a/crates/ferromark_parser/src/parser/inline/link_target.rs b/crates/ferromark_parser/src/parser/inline/link_target.rs
+index 45d682d..f912d3d 100644
+--- a/crates/ferromark_parser/src/parser/inline/link_target.rs
++++ b/crates/ferromark_parser/src/parser/inline/link_target.rs
+@@ -77,7 +77,24 @@ impl<'a> Parser<'a> {
+                         i += 1;
+                     }
+                 }
+-                _ => i += 1,
++                _ => {
++                    // Short clean runs are common between escapes and malformed
++                    // entities. Probe locally before paying for a vector search.
++                    let local_end = i.saturating_add(8).min(bytes.len());
++                    i += 1;
++                    while i < local_end && !matches!(bytes[i], b'\\' | b'&') {
++                        i += 1;
++                    }
++                    if i == local_end && i < bytes.len() {
++                        // Both needles are ASCII, so every hit is a UTF-8 boundary.
++                        // memchr also provides portable and short/tail fallbacks.
++                        if let Some(offset) = memchr::memchr2(b'\\', b'&', &bytes[i..]) {
++                            i += offset;
++                        } else {
++                            break;
++                        }
++                    }
++                }
+             }
+         }
+         match out {
+@@ -162,3 +179,118 @@ fn skip_ws(bytes: &[u8], mut i: usize) -> usize {
+     }
+     i
+ }
++
++#[cfg(test)]
++mod tests {
++    // Owned strings keep the test oracle independent of production arena storage.
++    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
++
++    use std::borrow::Cow;
++
++    use ferromark_allocator::Allocator;
++
++    use super::Parser;
++    use crate::parser::inline::entity::{EntityValue, scan_entity};
++
++    // Keep the original byte-at-a-time walk as an independent scan oracle.
++    // Entity decoding itself is unchanged by the scanner optimization.
++    fn scalar_unescape(raw: &str) -> Cow<'_, str> {
++        let bytes = raw.as_bytes();
++        let (mut i, mut start) = (0, 0);
++        let mut out: Option<String> = None;
++        while i < bytes.len() {
++            match bytes[i] {
++                b'\\' if i + 1 < bytes.len() && bytes[i + 1].is_ascii_punctuation() => {
++                    out.get_or_insert_with(String::new).push_str(&raw[start..i]);
++                    start = i + 1;
++                    i += 2;
++                }
++                b'&' => {
++                    if let Some((value, len)) = scan_entity(&raw[i..]) {
++                        let out = out.get_or_insert_with(String::new);
++                        out.push_str(&raw[start..i]);
++                        match value {
++                            EntityValue::Named(text) => out.push_str(text),
++                            EntityValue::Char(ch) => out.push(ch),
++                        }
++                        i += len;
++                        start = i;
++                    } else {
++                        i += 1;
++                    }
++                }
++                _ => i += 1,
++            }
++        }
++        out.map_or(Cow::Borrowed(raw), |mut out| {
++            out.push_str(&raw[start..]);
++            Cow::Owned(out)
++        })
++    }
++
++    fn check(raw: &str) {
++        let allocator = Allocator::new();
++        let parser = Parser::new(&allocator, "");
++        let expected = scalar_unescape(raw);
++        let actual = parser.unescape_link_component(raw);
++        assert_eq!(actual, expected.as_ref(), "input: {raw:?}");
++        if matches!(expected, Cow::Borrowed(_)) {
++            assert_eq!(actual.as_ptr(), raw.as_ptr(), "unchanged input must stay borrowed");
++        }
++    }
++
++    #[test]
++    fn component_scan_matches_scalar_at_byte_boundaries_and_tails() {
++        let needles = [
++            "",
++            "\\",
++            "&",
++            "\\!",
++            "\\a",
++            "\\é",
++            "\\\\&amp;",
++            "\\&amp;",
++            "&amp;",
++            "&NotEqualTilde;",
++            "&#0;",
++            "&#x1F642;",
++            "&#xD800;",
++            "&#1114112;",
++            "&unknown;",
++            "&#99999999;",
++            "&amp",
++            "é中🙂",
++            "&&amp;\\)",
++        ];
++        for offset in 0..=65 {
++            for tail in [0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 255] {
++                for needle in needles {
++                    let input = format!("{}{}{}", "a".repeat(offset), needle, "z".repeat(tail));
++                    check(&input);
++                }
++            }
++        }
++        for value in 0..=127u8 {
++            check(&format!("prefix\\{}&amp;suffix", char::from(value)));
++        }
++    }
++
++    #[test]
++    fn component_scan_matches_scalar_on_mixed_unicode_and_dense_candidates() {
++        let tokens =
++            ["a", "é", "中", "🙂", "\\", "&", "&amp;", "&#x41;", "\\!", "\\a", "&bad;", "()"];
++        let mut state = 0x46e2_94c3_198a_7bf5u64;
++        for _ in 0..2000 {
++            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
++            let len = (state >> 32) as usize % 192;
++            let mut input = String::new();
++            for _ in 0..len {
++                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
++                input.push_str(tokens[(state >> 32) as usize % tokens.len()]);
++            }
++            check(&input);
++        }
++        check(&"\\&amp;&&#x41;\\aé\\!".repeat(256));
++        check(&format!("{}&amp;{}", "ü".repeat(4096), "中".repeat(4096)));
++    }
++}

@@ -1,0 +1,13 @@
+  PID  %CPU COMM
+  598  36.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  705   6.1 /System/Library/DriverExtensions/com.apple.DriverKit-AppleBCMWLAN.dext/com.apple.DriverKit-AppleBCMWLAN
+  785  32.0 /System/Library/PrivateFrameworks/XprotectFramework.framework/Versions/A/XPCServices/XprotectService.xpc/Contents/MacOS/XprotectService
+ 3108  26.8 /Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/152.0.7977.83/Helpers/Codex (Service).app/Contents/MacOS/Codex (Service)
+ 3141  20.5 /Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/152.0.7977.83/Helpers/Codex (Renderer).app/Contents/MacOS/Codex (Renderer)
+17855  16.6 /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python
+17923   0.0 (simd-round-worke)
+65624  16.9 /System/Library/CoreServices/TimeMachine/backupd
+
+Captured immediately after the single-probe smoke run started. No compiler or
+other benchmark was visible. This is an active desktop: XProtect, WindowServer,
+Codex, and Time Machine were active. No CPU affinity or thermal control was used.
