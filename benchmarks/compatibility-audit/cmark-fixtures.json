@@ -1,0 +1,641 @@
+{
+  "generator": "cmark_fixtures.py",
+  "cases": [
+    {
+      "id": "structure-01",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "- one\n  - two\n    - three\n\n> quote with **bold _nested_** and `code`\n"
+    },
+    {
+      "id": "structure-02",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "> > quoted\n> > - item\n> >   - nested\n\nback\n"
+    },
+    {
+      "id": "structure-03",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "1. alpha\n   1. beta\n      1. gamma\n\n2. delta\n"
+    },
+    {
+      "id": "structure-04",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "- [x] done\n- [ ] todo\n\n> [link](https://example.com/a_(b))\n"
+    },
+    {
+      "id": "structure-05",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "[outer [inner](u)](v) and **bold *em* `code`**\n"
+    },
+    {
+      "id": "structure-06",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "***strong and em*** with ___mixed___ and **`code`**\n"
+    },
+    {
+      "id": "structure-07",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "```` js extra words\n<>&\n````\n\n~~~python\nprint(1)\n~~~\n"
+    },
+    {
+      "id": "structure-08",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "[ref]: /url_(x) \"title\"\n\n> [ref] and ![alt][ref]\n"
+    },
+    {
+      "id": "structure-09",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "- a\n\n  > quote\n  >\n  > `literal`\n\n- b\n"
+    },
+    {
+      "id": "structure-10",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "A  \nline with\nsoft break and\\\nhard break\n"
+    },
+    {
+      "id": "structure-11",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "<https://example.com/a_(b)> and <mailto:a@example.com>\n"
+    },
+    {
+      "id": "structure-12",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "foo\n===\n\nbar\n---\n"
+    },
+    {
+      "id": "structure-13",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "## heading *with* [link](u)\n\n    indented `code`\n"
+    },
+    {
+      "id": "structure-14",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "<div>raw <em>html</em></div>\n\nparagraph\n"
+    },
+    {
+      "id": "structure-15",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "- a\n  continuation with [x](u) and ![i](v)\n"
+    },
+    {
+      "id": "structure-16",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "`a  b` and `` a ` b `` and ```x```\n"
+    },
+    {
+      "id": "structure-17",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "***a **b _c_** d***\n\n[a *b*](u)\n"
+    },
+    {
+      "id": "structure-18",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "> # heading\n>\n> 1. one\n> 2. two\n"
+    },
+    {
+      "id": "structure-19",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "[a](<foo bar>) [b](foo\\bar) [c](foo%23bar#x)\n"
+    },
+    {
+      "id": "structure-20",
+      "category": "nested-structure",
+      "profile": "commonmark",
+      "markdown": "- one\n\n  ```\n  x\n  ```\n\n  - two\n"
+    },
+    {
+      "id": "list-depth-01",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "- level 1\n"
+    },
+    {
+      "id": "quote-depth-01",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> nested\n"
+    },
+    {
+      "id": "list-depth-02",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "- level 1\n  - level 2\n"
+    },
+    {
+      "id": "quote-depth-02",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> nested\n> > nested\n"
+    },
+    {
+      "id": "list-depth-03",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "- level 1\n  - level 2\n    - level 3\n"
+    },
+    {
+      "id": "quote-depth-03",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> nested\n> > nested\n> > > nested\n"
+    },
+    {
+      "id": "list-depth-04",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "- level 1\n  - level 2\n    - level 3\n      - level 4\n"
+    },
+    {
+      "id": "quote-depth-04",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> nested\n> > nested\n> > > nested\n> > > > nested\n"
+    },
+    {
+      "id": "list-depth-05",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "- level 1\n  - level 2\n    - level 3\n      - level 4\n        - level 5\n"
+    },
+    {
+      "id": "quote-depth-05",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> nested\n> > nested\n> > > nested\n> > > > nested\n> > > > > nested\n"
+    },
+    {
+      "id": "list-depth-06",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "- level 1\n  - level 2\n    - level 3\n      - level 4\n        - level 5\n          - level 6\n"
+    },
+    {
+      "id": "quote-depth-06",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> nested\n> > nested\n> > > nested\n> > > > nested\n> > > > > nested\n> > > > > > nested\n"
+    },
+    {
+      "id": "list-depth-07",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "- level 1\n  - level 2\n    - level 3\n      - level 4\n        - level 5\n          - level 6\n            - level 7\n"
+    },
+    {
+      "id": "quote-depth-07",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> nested\n> > nested\n> > > nested\n> > > > nested\n> > > > > nested\n> > > > > > nested\n> > > > > > > nested\n"
+    },
+    {
+      "id": "list-depth-08",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "- level 1\n  - level 2\n    - level 3\n      - level 4\n        - level 5\n          - level 6\n            - level 7\n              - level 8\n"
+    },
+    {
+      "id": "quote-depth-08",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> nested\n> > nested\n> > > nested\n> > > > nested\n> > > > > nested\n> > > > > > nested\n> > > > > > > nested\n> > > > > > > > nested\n"
+    },
+    {
+      "id": "mixed-nesting-01",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> - *outer *\n>   - ***inner***\n>\n>     `[code]`\n"
+    },
+    {
+      "id": "mixed-nesting-02",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> - _outer _\n>   - **_inner_**\n>\n>     `[code]`\n"
+    },
+    {
+      "id": "mixed-nesting-03",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> - ~outer ~\n>   - **~inner~**\n>\n>     `[code]`\n"
+    },
+    {
+      "id": "mixed-list-quote-01",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> - [x] **item 1** with `a`\n> > - [x] **item 2** with `b`\n> > > - [x] **item 3** with `c`\n> > > > - [x] **item 4** with `d`\n"
+    },
+    {
+      "id": "mixed-list-quote-02",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> - [x] **item 1** with `a`\n> > - [x] **item 2** with `b`\n> > > - [x] **item 3** with `c`\n> > > > - [x] **item 4** with `d`\n"
+    },
+    {
+      "id": "mixed-list-quote-03",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "> - [x] **item 1** with `a`\n> > - [x] **item 2** with `b`\n> > > - [x] **item 3** with `c`\n> > > > - [x] **item 4** with `d`\n"
+    },
+    {
+      "id": "mixed-inline-01",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "1. **bold** and *em* with [link](u1)\n\n> > quote `code`\n"
+    },
+    {
+      "id": "mixed-inline-02",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "2. **bold** and *em* with [link](u2)\n\n> > > quote `code`\n"
+    },
+    {
+      "id": "mixed-inline-03",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "3. **bold** and *em* with [link](u3)\n\n> > > > quote `code`\n"
+    },
+    {
+      "id": "mixed-inline-04",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "4. **bold** and *em* with [link](u4)\n\n> quote `code`\n"
+    },
+    {
+      "id": "mixed-inline-05",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "5. **bold** and *em* with [link](u5)\n\n> > quote `code`\n"
+    },
+    {
+      "id": "mixed-inline-06",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "6. **bold** and *em* with [link](u6)\n\n> > > quote `code`\n"
+    },
+    {
+      "id": "mixed-inline-07",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "7. **bold** and *em* with [link](u7)\n\n> > > > quote `code`\n"
+    },
+    {
+      "id": "mixed-inline-08",
+      "category": "generated-nesting",
+      "profile": "commonmark",
+      "markdown": "8. **bold** and *em* with [link](u8)\n\n> quote `code`\n"
+    },
+    {
+      "id": "tilde-01",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~foo ~ bar~\n"
+    },
+    {
+      "id": "tilde-02",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~~foo ~~ bar~~\n"
+    },
+    {
+      "id": "tilde-03",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~a [b](u~r)~\n"
+    },
+    {
+      "id": "tilde-04",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~~a [b](u~~r)~~\n"
+    },
+    {
+      "id": "tilde-05",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~a `~` b~\n"
+    },
+    {
+      "id": "tilde-06",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~a\\~ b~\n"
+    },
+    {
+      "id": "tilde-07",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~one~ ~~two~~ ~~~three~~~\n"
+    },
+    {
+      "id": "tilde-08",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~~~one~~ two~ three~~~\n"
+    },
+    {
+      "id": "tilde-09",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "a ~~b~~ c ~d~ e ~~~f~~~\n"
+    },
+    {
+      "id": "tilde-10",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "[x](u \"title ~one~\") and [y](v \"~~two~~\")\n"
+    },
+    {
+      "id": "tilde-11",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~~[x](u \"~title~\")~~\n"
+    },
+    {
+      "id": "tilde-12",
+      "category": "tilde-binding",
+      "profile": "gfm",
+      "markdown": "~a **b ~~c~~** d~\n"
+    },
+    {
+      "id": "line-01-crlf",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "- a\r\n  - b\r\n\r\n> c\r\n"
+    },
+    {
+      "id": "line-01-cr",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "- a\r  - b\r\r> c\r"
+    },
+    {
+      "id": "line-02-crlf",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "[x](url) and `code`\r\n"
+    },
+    {
+      "id": "line-02-cr",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "[x](url) and `code`\r"
+    },
+    {
+      "id": "line-03-crlf",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "# heading\r\n\r\ntext\r\n"
+    },
+    {
+      "id": "line-03-cr",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "# heading\r\rtext\r"
+    },
+    {
+      "id": "line-04-crlf",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "<https://example.com/a>\r\n"
+    },
+    {
+      "id": "line-04-cr",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "<https://example.com/a>\r"
+    },
+    {
+      "id": "line-05-crlf",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "| a | b |\r\n|---|---|\r\n| c | d |\r\n"
+    },
+    {
+      "id": "line-05-cr",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "| a | b |\r|---|---|\r| c | d |\r"
+    },
+    {
+      "id": "line-06-crlf",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "~~~\r\na\r\n~~~\r\n"
+    },
+    {
+      "id": "line-06-cr",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "~~~\ra\r~~~\r"
+    },
+    {
+      "id": "line-07-crlf",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "a  \r\nb\r\n"
+    },
+    {
+      "id": "line-07-cr",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "a  \rb\r"
+    },
+    {
+      "id": "line-08-crlf",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "\r\n\r\n- x\r\n\r\n\r\n- y\r\n"
+    },
+    {
+      "id": "line-08-cr",
+      "category": "line-endings",
+      "profile": "commonmark",
+      "markdown": "\r\r- x\r\r\r- y\r"
+    },
+    {
+      "id": "unicode-01",
+      "category": "unicode-and-nul",
+      "profile": "commonmark",
+      "markdown": "こんにちは **世界** — café — 😀\n"
+    },
+    {
+      "id": "unicode-02",
+      "category": "unicode-and-nul",
+      "profile": "commonmark",
+      "markdown": "[中文](https://例え.テスト/道) and `é`\n"
+    },
+    {
+      "id": "unicode-03",
+      "category": "unicode-and-nul",
+      "profile": "commonmark",
+      "markdown": "\u0000 before NUL\n"
+    },
+    {
+      "id": "unicode-04",
+      "category": "unicode-and-nul",
+      "profile": "commonmark",
+      "markdown": "after NUL \u0000 and [link](u)\n"
+    },
+    {
+      "id": "unicode-05",
+      "category": "unicode-and-nul",
+      "profile": "commonmark",
+      "markdown": "﻿ BOM and nbsp space\n"
+    },
+    {
+      "id": "unicode-06",
+      "category": "unicode-and-nul",
+      "profile": "commonmark",
+      "markdown": "emoji 👩‍💻 and combining é\n"
+    },
+    {
+      "id": "unicode-07",
+      "category": "unicode-and-nul",
+      "profile": "commonmark",
+      "markdown": "💩\n\n- naïve\n"
+    },
+    {
+      "id": "unicode-08",
+      "category": "unicode-and-nul",
+      "profile": "commonmark",
+      "markdown": "<https://example.com/ümlaut?q=é>\n"
+    },
+    {
+      "id": "html-01",
+      "category": "raw-html",
+      "profile": "commonmark",
+      "markdown": "<script>alert(1)</script>\n"
+    },
+    {
+      "id": "html-02",
+      "category": "raw-html",
+      "profile": "commonmark",
+      "markdown": "<style> a { color: red; } </style>\n"
+    },
+    {
+      "id": "html-03",
+      "category": "raw-html",
+      "profile": "commonmark",
+      "markdown": "<div title=\"x & y\">text</div>\n"
+    },
+    {
+      "id": "html-04",
+      "category": "raw-html",
+      "profile": "commonmark",
+      "markdown": "<!-- comment -->\n\ntext\n"
+    },
+    {
+      "id": "html-05",
+      "category": "raw-html",
+      "profile": "commonmark",
+      "markdown": "<custom-tag/>\n"
+    },
+    {
+      "id": "html-06",
+      "category": "raw-html",
+      "profile": "commonmark",
+      "markdown": "<table><tr><td>x</td></tr></table>\n"
+    },
+    {
+      "id": "html-07",
+      "category": "raw-html",
+      "profile": "commonmark",
+      "markdown": "<br>after\n"
+    },
+    {
+      "id": "html-08",
+      "category": "raw-html",
+      "profile": "commonmark",
+      "markdown": "<x a='1' b=2>raw</x>\n"
+    },
+    {
+      "id": "gfm-01",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "| head | other |\n| :--- | ---: |\n| a | b |\n"
+    },
+    {
+      "id": "gfm-02",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "- [x] checked\n- [ ] open\n"
+    },
+    {
+      "id": "gfm-03",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "~~strike **bold**~~\n"
+    },
+    {
+      "id": "gfm-04",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "www.example.com and https://example.com\n"
+    },
+    {
+      "id": "gfm-05",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "A\n===\n\n| a | b |\n|---|---|\n| c | d |\n"
+    },
+    {
+      "id": "gfm-06",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "- item\n  - [x] nested task\n"
+    },
+    {
+      "id": "gfm-07",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "~~a `code` and [link](u)~~\n"
+    },
+    {
+      "id": "gfm-08",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "| a | b | c |\n|---|:---:|---:|\n| 1 | 2 | 3 |\n"
+    },
+    {
+      "id": "gfm-09",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "[^1]: footnote\n\ntext[^1]\n"
+    },
+    {
+      "id": "gfm-10",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "<https://example.com> and user@example.com\n"
+    },
+    {
+      "id": "gfm-11",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "~~one~ two~~ and ~three~~\n"
+    },
+    {
+      "id": "gfm-12",
+      "category": "gfm-extensions",
+      "profile": "gfm",
+      "markdown": "- [ ] **task** with `code`\n"
+    }
+  ]
+}

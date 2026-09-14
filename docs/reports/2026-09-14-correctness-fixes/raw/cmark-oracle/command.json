@@ -1,0 +1,21 @@
+{
+  "cwd": "/Users/sebastian/Workspace/ferromark-v2",
+  "command": [
+    "python3",
+    "benchmarks/compatibility-audit/cmark_oracle.py",
+    "--worker",
+    "/private/tmp/ferromark-v2-compat-audit/repro-build/target/release/compatibility-audit-worker",
+    "--worker-metadata",
+    "/private/tmp/ferromark-v2-correctness-fixes/audit-final/metadata.json",
+    "--cmark",
+    "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark/src/cmark",
+    "--cmark-gfm",
+    "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark-gfm/src/cmark-gfm",
+    "--cmark-build-metadata",
+    "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/metadata.json",
+    "--output",
+    "/private/tmp/ferromark-v2-correctness-fixes/cmark-oracle-reviewed",
+    "--fail-on-differences"
+  ],
+  "exit_code": 1
+}

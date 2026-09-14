@@ -107,6 +107,59 @@ HTML, previous v2 HTML, v1 HTML, classifications, and the worker hash.
 [The reproduction script](reproduce_v1.py) verifies the frozen binary hash and
 reruns the selected cases.
 
+## Differential checks against cmark
+
+The user's additional suggestion is implemented as a separate
+[offline oracle harness](../../../benchmarks/compatibility-audit/CMARK.md).
+[cmark](https://github.com/commonmark/cmark) is the CommonMark C reference
+implementation; [cmark-gfm](https://github.com/github/cmark-gfm) is GitHub's
+fork with GFM extensions. This run pins cmark 0.31.1 at
+`bb3678d7a73cb02d35c8876ecd097072636200a8` and cmark-gfm 0.29.0.gfm.13 at
+`587a12bb54d95ac37241377e6ddc93ea0e45439b`.
+
+The versioned corpus contains 106 deterministic inputs: nested lists, quotes,
+links, code and emphasis, tilde combinations, Unicode/NUL, raw HTML, GFM syntax,
+and line-ending variants. The frozen spec fixtures remain the normative tests;
+an oracle discrepancy creates a review case instead of automatically replacing
+our expected output. The reference versions also differ from the current
+CommonMark 0.31.2/GFM website snapshots.
+
+| Profile | Inputs | Exact | Serialization equivalent | Heading IDs only | Other |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| CommonMark / cmark | 82 | 61 | 14 | 5 | 2 |
+| GFM / cmark-gfm | 24 | 15 | 3 | 1 | 5 |
+
+Five additional GFM binding cases remain open despite passing the 28 official
+extension examples:
+
+| Corpus ID | Input | Difference to investigate |
+| --- | --- | --- |
+| `tilde-01` | `~foo ~ bar~` | An intermediate whitespace-adjacent tilde prevents the outer strike |
+| `tilde-02` | `~~foo ~~ bar~~` | The same issue with double tildes |
+| `tilde-03` | `~a [b](u~r)~` | The strike closes inside a link destination, breaking the link |
+| `tilde-04` | `~~a [b](u~~r)~~` | The same link-boundary issue with double tildes |
+| `gfm-11` | `~~one~ two~~ and ~three~~` | Mixed delimiter runs bind differently; check the intended GFM rule |
+
+For `tilde-03`, cmark-gfm produces a complete anchor inside `<del>`; v2 emits
+`<p><del>a [b](u</del>r)~</p>`. This is exactly the kind of combination missing
+from the simple official examples. These cases are persisted as the next
+delimiter-fix targets; they are not hidden by the passing specification count.
+
+The two CommonMark differences require separate interpretation: `unicode-02`
+percent-encodes a Unicode URL host/path in cmark while v2 retains UTF-8;
+`unicode-05` drops a leading BOM in cmark while v2 preserves it. Neither result
+alone establishes a CommonMark parsing violation. All inputs and raw outputs,
+reference build provenance, and final run metadata are retained under
+[`raw/cmark-oracle/`](raw/cmark-oracle/).
+
+The final oracle run has no worker/reference errors. Its strict mode returns
+**exit 1** for the six heading-ID-only and seven other differences; this is
+separate from the passing frozen-spec audit. All **17 Python helper tests**
+pass, including partial-response, crash, timeout, and exact fixture-generation
+checks. The reference binaries were rebuilt from the pinned clean source
+trees. CMake commands, actual compiler identities, cache files, and binary
+hashes are included with the results.
+
 ## Remaining work
 
 The ten full-GFM differences are classified, rather than accepted as ten
@@ -123,15 +176,63 @@ presets, with switches for heading IDs, callouts, TOC, and fence metadata.
 Footnote defaults and renderer autolinking also need to be named clearly in
 those profiles. Current defaults are unchanged. MDX remains syntax capture and
 static output; this batch does not add JavaScript validation, compilation, or
-a component runtime. Broader delimiter combinations and fuzz/differential
-testing remain useful follow-up coverage beyond the official finite examples.
+a component runtime. The five oracle delimiter cases above are concrete next
+fix targets. Further fuzz and differential testing can expand that coverage.
+
+## Short performance check
+
+Two bounded runs compare the corrected `4a1e55f` core with `4342b31` using the
+existing native optimization worker: four documents, fresh and reused arenas,
+three process rounds, three paired 50-ms windows per round. The frozen builds
+use Rust 1.95, fat LTO, one codegen unit, and generic target CPU. Exact HTML and
+AST Debug output agree before timing for every measured case and mode.
+
+| Mode | Baseline/candidate time, run 1 | Run 2 | Combined | Candidate time change |
+| --- | ---: | ---: | ---: | ---: |
+| Fresh | 0.98125 | 0.98062 | 0.98094 | +1.94% |
+| Reuse | 0.96495 | 0.96255 | 0.96375 | +3.76% |
+
+Each run uses the geometric mean of four case-level median ratios; the combined
+column uses both runs. The cases are `comment-review`, `guard-angle-link`,
+`legacy-contributing`, and `wiki-rainbow-article-body`. The corrections have a
+small measured cost on this subset. These measurements do not isolate which
+individual correction causes it.
+
+The host remained loaded, and both runs contain noisy pairs: run 1 has a 0.615
+ratio for the prose/reuse case; run 2 has a ratio above 1.33 for the angle-link/
+reuse case. The median effects are similar between runs. Two short runs from
+one build are not evidence for the full 57-document corpus or a new six-engine
+ranking. The README's earlier native comparison is explicitly historical.
+
+Both [raw runs](raw/performance/), build metadata, exact local build scripts,
+commands, samples, and verification output are retained. Large verification
+JSON files are gzip-compressed losslessly. The corpus is identical to the
+[already committed native corpus](../2026-09-14-native-engines/corpus.json.gz).
+For a portable rebuild, use new directories and the wrapper that selects this
+batch's baseline without editing the historical harness:
+
+```sh
+mkdir -p /tmp/ferromark-fix-perf/baseline /tmp/ferromark-fix-perf/candidate
+git archive 4342b310d8a6612b5df67d697b9d2be733c4ca70 | tar -x -C /tmp/ferromark-fix-perf/baseline
+git archive 4a1e55f190e16fad60314a1c91183123710d8bba | tar -x -C /tmp/ferromark-fix-perf/candidate
+python3 docs/reports/2026-09-14-correctness-fixes/prepare_performance.py \
+  --baseline-path /tmp/ferromark-fix-perf/baseline \
+  --candidate-path /tmp/ferromark-fix-perf/candidate \
+  --out /tmp/ferromark-fix-perf/build --lto fat
+python3 benchmarks/optimization-rounds/run.py /tmp/ferromark-fix-perf/build \
+  docs/reports/2026-09-14-native-engines/corpus.json.gz \
+  /tmp/ferromark-fix-perf/results \
+  --modes fresh reuse --rounds 3 --pairs 3 --window-ms 50 \
+  --filter '^(comment-review|legacy-contributing|wiki-rainbow-article-body|guard-angle-link)$'
+```
 
 ## Validation and reproduction
 
 Rust 1.95.0 on aarch64 macOS; root dependencies remain locked. The full workspace
 run passed **674 Rust test executions**, including integration tests and
 doctests. Formatting, Clippy with warnings denied, and benchmark compilation
-are checked separately. The ten Python helper tests and the strict audit pass.
+are checked separately. The initial ten Python helper tests and the strict
+spec audit pass; the later oracle harness expands the helper suite to 17.
 Raw gate logs retain the exact command output. Final test-only style corrections
 were rerun in the affected suites after the full workspace run.
 
