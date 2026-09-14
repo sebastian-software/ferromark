@@ -14,7 +14,6 @@ mod link_target;
 mod marker_scan;
 mod scan;
 mod script_span;
-mod smart_punctuation;
 
 use self::marker_scan::InlineMarkerScan;
 use self::script_span::same_marker_neighbor;
@@ -44,9 +43,6 @@ impl<'a> Parser<'a> {
             self.options.autolinks.then(|| gfm_autolink::may_contain_autolink(content)).flatten();
         if let Some(scan) = scan {
             self.apply_gfm_autolinks(&mut children, scan);
-        }
-        if self.options.smart_punctuation {
-            self.apply_smart_punctuation(&mut children);
         }
         Ok(children)
     }

@@ -114,7 +114,7 @@ local version**; these are not the options enabled during timing.
 | Subscript — `H~2~O` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | Highlighted text — `==important==` | ✓ | — | — | — | ✓ | — |
 | Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
-| Smart punctuation — curly quotes and ellipses | — | ✓ | ✓ | ✓ | — | — |
+| Smart punctuation — curly quotes and ellipses | — | — | ✓ | ✓ | — | — |
 | Extract frontmatter — metadata between `---` or `+++` | ✓ | — | — | ✓ | — | — |
 | Merged table cells — one cell spans several columns | ✓ | — | — | — | — | — |
 | Table column-width hints | ✓ | — | — | — | — | — |
@@ -137,6 +137,10 @@ an inline `[[toc]]` marker. Trees expose nested document nodes; events/callbacks
 expose elements in sequence. The three MDX entries cover bounded syntax handling,
 not a full MDX compiler or JavaScript runtime. Single-tilde strikethrough and
 subscript compete for the same syntax; enabling subscript gives it priority.
+
+V2 preserves authored punctuation. Automatic typography belongs in an optional,
+locale-aware document transform; the former English-oriented parser option has
+been removed. See the [typography decision](docs/typography.md).
 
 ## Correctness and compatibility
 

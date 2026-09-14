@@ -48,11 +48,6 @@ pub struct ParserOptions {
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
     pub subscript: bool,
 
-    /// Enable typographic punctuation replacement in text nodes.
-    ///
-    /// Default: `false`; not enabled by [`ParserOptions::gfm`].
-    pub smart_punctuation: bool,
-
     /// Enable `$...$` inline math and `$$...$$` display math as AST nodes.
     ///
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
@@ -139,7 +134,6 @@ impl Default for ParserOptions {
             autolinks: false,
             superscript: false,
             subscript: false,
-            smart_punctuation: false,
             math: false,
             definition_lists: false,
             heading_attributes: false,
@@ -183,7 +177,6 @@ impl ParserOptions {
             autolinks: true,
             superscript: false,
             subscript: false,
-            smart_punctuation: false,
             math: false,
             definition_lists: false,
             heading_attributes: false,

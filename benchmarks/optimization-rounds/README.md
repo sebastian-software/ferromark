@@ -43,8 +43,12 @@ borrowed HTML, and arena reset; parse omits rendering and consumes the AST via
 surrounded by exact HTML/AST/child-count checks, and every sample's iteration
 checksum is checked. Arena capacity changes are recorded and allowed.
 
-Profiles `commonmark`, `gfm` (footnotes off), `mdx`, and `extensions` retain the
-first SIMD study's options. `opt-0` through `opt-7` enable the MDX/math/superscript
+Profiles `commonmark`, `gfm` (footnotes off), `mdx`, and `extensions` follow the
+first SIMD study's options, except that current timing and allocation workers
+omit smart punctuation after its [removal from the core](../../docs/typography.md).
+Both compared cores use that reduced profile. Historical reports retain their
+original configuration; reproduce them with their original harness revision.
+`opt-0` through `opt-7` enable the MDX/math/superscript
 bits 1/2/4. `autolink` uses CommonMark parsing and enables renderer bare-URL
 recognition; other HTML comparison options stay fixed. The 57 `autolink-broad`
 replays use that profile even when the original case used GFM, so they form a
