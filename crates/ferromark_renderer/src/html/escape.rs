@@ -43,6 +43,8 @@ static URL_ESCAPE_TABLE: [&str; 256] = {
     table
 };
 
+// Non-ASCII bytes are flagged too: they are percent encoded, so one scan
+// finds both kinds of replacement instead of bounding ASCII runs first.
 static URL_ESCAPE_FLAG: [u8; 256] = {
     let mut t = [0u8; 256];
     t[b'&' as usize] = 1;
@@ -54,6 +56,11 @@ static URL_ESCAPE_FLAG: [u8; 256] = {
     t[b'[' as usize] = 1;
     t[b']' as usize] = 1;
     t[b'`' as usize] = 1;
+    let mut b = 0x80;
+    while b < 256 {
+        t[b] = 1;
+        b += 1;
+    }
     t
 };
 
@@ -94,14 +101,16 @@ const fn escape_mask(word: u64) -> u64 {
         | has_zero(word ^ splat(b'"'))
 }
 
-/// Nonzero iff `word` holds any URL-sensitive byte.
+/// Nonzero iff `word` holds any URL-sensitive byte or a non-ASCII byte.
 ///
 /// The first three tests retain the compact folds used by text escaping;
 /// syntax-sensitive URL bytes use exact one-needle tests so reserved URL
-/// delimiters such as `?`, `#`, and `:` remain untouched.
+/// delimiters such as `?`, `#`, and `:` remain untouched. The high bit of
+/// every lane flags UTF-8 bytes, which are percent encoded.
 #[inline]
 const fn url_escape_mask(word: u64) -> u64 {
-    has_zero((word | splat(0x02)) ^ splat(b'>'))
+    (word & HIGH)
+        | has_zero((word | splat(0x02)) ^ splat(b'>'))
         | has_zero((word | splat(0x02)) ^ splat(b'"'))
         | has_zero(word ^ splat(b'&'))
         | has_zero(word ^ splat(b'\\'))
@@ -292,41 +301,42 @@ pub(super) fn write_url_escaped_into(out: &mut String, s: &str) {
     }
 }
 
-/// Escapes URL syntax and UTF-8 bytes while retaining the byte-oriented fast
-/// scanner for ASCII runs. Percent encoding operates on the UTF-8 bytes, as
-/// required by cmark's URI renderer, and leaves existing `%HH` sequences alone.
+/// Escapes URL syntax and UTF-8 bytes with one scan. The classifier flags
+/// replacement bytes and non-ASCII bytes alike, so a URL is never walked
+/// byte by byte just to bound its ASCII runs. Percent encoding operates on
+/// the UTF-8 bytes, as required by cmark's URI renderer, and leaves existing
+/// `%HH` sequences alone.
 fn write_url_segment(out: &mut String, s: &str) {
     let bytes = s.as_bytes();
-    let mut start = 0;
-    while start < bytes.len() {
-        // Bound the ASCII run once, then let the established vectorized
-        // escaper scan that run. This avoids restarting a scan at every '&'
-        // or other flagged byte when a Unicode suffix is present.
-        let ascii_end = bytes[start..]
-            .iter()
-            .position(|&byte| byte >= 0x80)
-            .map_or(bytes.len(), |offset| start + offset);
-        if start < ascii_end {
-            escape_into(
-                out,
-                &s[start..ascii_end],
-                url_escape_mask,
-                &URL_ESCAPE_FLAG,
-                &URL_ESCAPE_TABLE,
-                &URL_ESCAPE_NIBBLES,
-            );
+    let mut start = 0usize;
+    loop {
+        let i = first_flagged(bytes, start, url_escape_mask, &URL_ESCAPE_FLAG, &URL_ESCAPE_NIBBLES);
+        if i >= bytes.len() {
+            break;
         }
-        if ascii_end == bytes.len() {
-            return;
+        if start < i {
+            push_run(out, &s[start..i]);
         }
-        let unicode_end = bytes[ascii_end..]
-            .iter()
-            .position(|&byte| byte < 0x80)
-            .map_or(bytes.len(), |offset| ascii_end + offset);
-        for &byte in &bytes[ascii_end..unicode_end] {
-            push_percent_byte(out, byte);
+        let byte = bytes[i];
+        if byte >= 0x80 {
+            // `start` sits on a char boundary and this is the first non-ASCII
+            // byte after it, so the run begins at a leading byte and ends at
+            // the next ASCII byte or the end of the string.
+            let unicode_end = bytes[i..]
+                .iter()
+                .position(|&byte| byte < 0x80)
+                .map_or(bytes.len(), |offset| i + offset);
+            for &byte in &bytes[i..unicode_end] {
+                push_percent_byte(out, byte);
+            }
+            start = unicode_end;
+        } else {
+            push_run(out, URL_ESCAPE_TABLE[byte as usize]);
+            start = i + 1;
         }
-        start = unicode_end;
+    }
+    if start < bytes.len() {
+        push_run(out, &s[start..]);
     }
 }
 
