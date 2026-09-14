@@ -7,6 +7,7 @@ use crate::error::ParseResult;
 
 mod block;
 mod block_quote;
+mod byte_class;
 mod cursor;
 mod definition_list;
 mod fenced_code;

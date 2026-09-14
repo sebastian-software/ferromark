@@ -6,6 +6,7 @@
 //! unescaped into the arena so the AST keeps borrowing from parser memory.
 
 use crate::parser::Parser;
+use crate::parser::byte_class::ByteClass;
 
 pub(in crate::parser) struct LinkTarget<'a> {
     pub url: &'a str,
@@ -120,7 +121,7 @@ pub(in crate::parser) fn parse_destination(content: &str, i: usize) -> Option<(&
     let mut depth = 0usize;
     let mut j = i;
     loop {
-        j = next_destination_stop(bytes, j);
+        j = DESTINATION_STOP.first_in(bytes, j);
         let Some(&byte) = bytes.get(j) else {
             break;
         };
@@ -146,11 +147,10 @@ pub(in crate::parser) fn parse_destination(content: &str, i: usize) -> Option<(&
     Some((&content[i..j], j))
 }
 
-/// Flag table for the bare-destination scan: `DESTINATION_STOP[b] != 0` iff
-/// `b` is ASCII whitespace or control (every byte below `0x21`, plus DEL),
-/// a backslash, or a parenthesis. Bytes at or above `0x80` never stop the
-/// scan. This is the definition the vector path must agree with.
-static DESTINATION_STOP: [u8; 256] = {
+/// Bytes that end or shape a bare destination: ASCII whitespace and control
+/// bytes (every byte below `0x21`, plus DEL), backslashes, and parentheses.
+/// Bytes at or above `0x80` never stop the scan.
+static DESTINATION_STOP: ByteClass = ByteClass::from_flags({
     let mut t = [0u8; 256];
     let mut b = 0;
     while b < 0x21 {
@@ -162,83 +162,7 @@ static DESTINATION_STOP: [u8; 256] = {
     t[b'(' as usize] = 1;
     t[b')' as usize] = 1;
     t
-};
-
-/// Nibble-pair tables for the vector path. A byte stops iff
-/// `LOW[b & 0x0F] & HIGH[b >> 4]` is nonzero: rows `0x0_`/`0x1_` accept every
-/// low nibble (bit 0), row `0x2_` accepts space and both parentheses
-/// (bit 1), row `0x5_` the backslash (bit 2), and row `0x7_` DEL (bit 3).
-/// Every other high nibble, including all bytes >= 0x80, maps to zero.
-#[cfg(target_arch = "aarch64")]
-const DESTINATION_LOW_NIBBLE: [u8; 16] = [
-    0x03, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x03, 0x03, 0x01, 0x01, 0x05, 0x01, 0x01, 0x09,
-];
-#[cfg(target_arch = "aarch64")]
-const DESTINATION_HIGH_NIBBLE: [u8; 16] =
-    [0x01, 0x01, 0x02, 0, 0, 0x04, 0, 0x08, 0, 0, 0, 0, 0, 0, 0, 0];
-
-/// Offset of the first stop byte at or after `from`, or `bytes.len()`.
-#[inline]
-fn next_destination_stop(bytes: &[u8], from: usize) -> usize {
-    #[cfg(target_arch = "aarch64")]
-    {
-        // One vector is the breakeven; shorter remainders (most short
-        // relative links) stay on the table walk.
-        if bytes.len() - from >= 16 {
-            return next_destination_stop_neon(bytes, from);
-        }
-    }
-    next_destination_stop_scalar(bytes, from)
-}
-
-#[inline]
-fn next_destination_stop_scalar(bytes: &[u8], from: usize) -> usize {
-    let mut j = from;
-    while j < bytes.len() && DESTINATION_STOP[bytes[j] as usize] == 0 {
-        j += 1;
-    }
-    j
-}
-
-#[cfg(target_arch = "aarch64")]
-#[allow(unsafe_code)]
-#[inline]
-fn next_destination_stop_neon(bytes: &[u8], from: usize) -> usize {
-    use std::arch::aarch64::*;
-    let end = bytes.len();
-    let mut i = from;
-    // SAFETY: every 16-byte load below is bounded by an explicit
-    // `i + 16 <= end` check or reads the final full vector at `end - 16`.
-    unsafe {
-        let low = vld1q_u8(DESTINATION_LOW_NIBBLE.as_ptr());
-        let high = vld1q_u8(DESTINATION_HIGH_NIBBLE.as_ptr());
-        let nibble = vdupq_n_u8(0x0F);
-        let classify = |v: uint8x16_t| {
-            let lo = vqtbl1q_u8(low, vandq_u8(v, nibble));
-            let hi = vqtbl1q_u8(high, vshrq_n_u8(v, 4));
-            let m = vtstq_u8(lo, hi);
-            vget_lane_u64(vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(m), 4)), 0)
-        };
-        while i + 16 <= end {
-            let mask = classify(vld1q_u8(bytes.as_ptr().add(i)));
-            if mask != 0 {
-                return i + (mask.trailing_zeros() / 4) as usize;
-            }
-            i += 16;
-        }
-        if i < end {
-            // Overlapping tail: re-read the last vector and drop the lanes
-            // the loop already cleared. `vtstq_u8` is exact per lane.
-            let base = end - 16;
-            let mask =
-                classify(vld1q_u8(bytes.as_ptr().add(base))) & (u64::MAX << ((i - base) * 4));
-            if mask != 0 {
-                return base + (mask.trailing_zeros() / 4) as usize;
-            }
-        }
-    }
-    end
-}
+});
 
 /// Parses a `"..."`, `'...'`, or `(...)` title starting at `i`.
 pub(in crate::parser) fn parse_title(content: &str, i: usize) -> Option<(&str, usize)> {
@@ -365,7 +289,7 @@ mod tests {
             let expected = byte.is_ascii_whitespace()
                 || byte.is_ascii_control()
                 || matches!(byte, b'\\' | b'(' | b')');
-            assert_eq!(super::DESTINATION_STOP[byte as usize] != 0, expected, "byte {byte:#x}");
+            assert_eq!(super::DESTINATION_STOP.contains(byte), expected, "byte {byte:#x}");
         }
     }
 
