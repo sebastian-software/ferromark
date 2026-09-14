@@ -1,5 +1,9 @@
 # Definition-list and line-comment costs
 
+Historical results: the later [line-comment dispatch study](../2026-09-14-line-comment-dispatch/README.md)
+reduces the remaining +3.2% plain-prose parser overhead further by reusing
+existing line-prefix scans. The measurements below remain unchanged.
+
 The unusually high unused-feature costs came from repeated discovery and
 speculative term storage. The retained implementation removes that work without
 changing syntax, options, HTML, ASTs, or source positions. All attempted variants,

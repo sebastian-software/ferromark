@@ -22,6 +22,12 @@ impl<'a> Parser<'a> {
             return lines.contains(&(start as u32));
         }
         let bytes = self.source.as_bytes();
+        // Ordinary text cannot open a physical comment. Reject it before
+        // checking the previous newline or walking a possible indentation.
+        // Mapped sub-sources keep their authoritative eligibility set above.
+        if !matches!(bytes.get(start), Some(b'/' | b' ')) {
+            return false;
+        }
         if start > 0 && !matches!(bytes.get(start - 1), Some(b'\n' | b'\r')) {
             return false;
         }

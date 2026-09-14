@@ -1,0 +1,91 @@
+[
+  {
+    "command": [
+      "python3",
+      "benchmarks/feature-scan-optimization/run.py",
+      "/private/tmp/ferromark-v2-line-fusion-C2-build",
+      "/private/tmp/ferromark-v2-feature-cases-attributed/corpus.json",
+      "/private/tmp/ferromark-v2-line-fusion-all-verified",
+      "--modes",
+      "parse",
+      "render",
+      "fresh",
+      "reuse",
+      "--verify-only"
+    ],
+    "exit_code": 2,
+    "log": "01.log"
+  },
+  {
+    "command": [
+      "python3",
+      "docs/reports/2026-09-14-line-comment-dispatch/checks/verify_corpus.py",
+      "/private/tmp/ferromark-v2-line-fusion-C2-build",
+      "/private/tmp/ferromark-v2-feature-cases-attributed/corpus.json",
+      "/private/tmp/ferromark-v2-line-fusion-all-verified-v2"
+    ],
+    "exit_code": 0,
+    "log": "02.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--check"
+    ],
+    "exit_code": 0,
+    "log": "03.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--all-features",
+      "--locked"
+    ],
+    "exit_code": 0,
+    "log": "04.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--all-targets",
+      "--all-features",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "log": "05.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "bench",
+      "--workspace",
+      "--no-run",
+      "--locked"
+    ],
+    "exit_code": 0,
+    "log": "06.log"
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "benchmarks/feature-scan-optimization",
+      "-p",
+      "test_*.py"
+    ],
+    "exit_code": 0,
+    "log": "07.log"
+  }
+]

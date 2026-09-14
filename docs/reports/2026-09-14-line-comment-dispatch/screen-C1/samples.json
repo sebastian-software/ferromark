@@ -1,0 +1,2906 @@
+[
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 704,
+      "elapsed_ns": 20167041,
+      "checksum": 46152128
+    },
+    "candidate": {
+      "iterations": 704,
+      "elapsed_ns": 20343250,
+      "checksum": 46152128
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 736,
+      "elapsed_ns": 20718958,
+      "checksum": 48249952
+    },
+    "baseline": {
+      "iterations": 704,
+      "elapsed_ns": 20358125,
+      "checksum": 46152128
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 704,
+      "elapsed_ns": 20225667,
+      "checksum": 46152128
+    },
+    "candidate": {
+      "iterations": 704,
+      "elapsed_ns": 20370417,
+      "checksum": 46152128
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 177472,
+      "elapsed_ns": 20000291,
+      "checksum": 354944
+    },
+    "candidate": {
+      "iterations": 174784,
+      "elapsed_ns": 20002250,
+      "checksum": 349568
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 174112,
+      "elapsed_ns": 20000125,
+      "checksum": 348224
+    },
+    "baseline": {
+      "iterations": 174336,
+      "elapsed_ns": 20003625,
+      "checksum": 348672
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 172512,
+      "elapsed_ns": 20000709,
+      "checksum": 345024
+    },
+    "candidate": {
+      "iterations": 177152,
+      "elapsed_ns": 20001666,
+      "checksum": 354304
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 2016,
+      "elapsed_ns": 20287791,
+      "checksum": 5419008
+    },
+    "candidate": {
+      "iterations": 1920,
+      "elapsed_ns": 20049166,
+      "checksum": 5160960
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1984,
+      "elapsed_ns": 20141917,
+      "checksum": 5332992
+    },
+    "baseline": {
+      "iterations": 1952,
+      "elapsed_ns": 20200750,
+      "checksum": 5246976
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 2016,
+      "elapsed_ns": 20359792,
+      "checksum": 5419008
+    },
+    "candidate": {
+      "iterations": 1984,
+      "elapsed_ns": 20298167,
+      "checksum": 5332992
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 2240,
+      "elapsed_ns": 20254042,
+      "checksum": 188160
+    },
+    "candidate": {
+      "iterations": 2176,
+      "elapsed_ns": 20080583,
+      "checksum": 182784
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 2208,
+      "elapsed_ns": 20010250,
+      "checksum": 185472
+    },
+    "baseline": {
+      "iterations": 2240,
+      "elapsed_ns": 20017625,
+      "checksum": 188160
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 2272,
+      "elapsed_ns": 20296583,
+      "checksum": 190848
+    },
+    "candidate": {
+      "iterations": 2208,
+      "elapsed_ns": 20243541,
+      "checksum": 185472
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 118720,
+      "elapsed_ns": 20003541,
+      "checksum": 40602240
+    },
+    "candidate": {
+      "iterations": 120992,
+      "elapsed_ns": 20005042,
+      "checksum": 41379264
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 122208,
+      "elapsed_ns": 20002792,
+      "checksum": 41795136
+    },
+    "baseline": {
+      "iterations": 119360,
+      "elapsed_ns": 20001875,
+      "checksum": 40821120
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 117920,
+      "elapsed_ns": 20004875,
+      "checksum": 40328640
+    },
+    "candidate": {
+      "iterations": 120416,
+      "elapsed_ns": 20003833,
+      "checksum": 41182272
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 11520,
+      "elapsed_ns": 20013459,
+      "checksum": 49248000
+    },
+    "candidate": {
+      "iterations": 11744,
+      "elapsed_ns": 20060458,
+      "checksum": 50205600
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 11520,
+      "elapsed_ns": 20018709,
+      "checksum": 49248000
+    },
+    "baseline": {
+      "iterations": 11488,
+      "elapsed_ns": 20017875,
+      "checksum": 49111200
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 11424,
+      "elapsed_ns": 20011917,
+      "checksum": 48837600
+    },
+    "candidate": {
+      "iterations": 11616,
+      "elapsed_ns": 20028583,
+      "checksum": 49658400
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 25728,
+      "elapsed_ns": 20002125,
+      "checksum": 180096
+    },
+    "candidate": {
+      "iterations": 25536,
+      "elapsed_ns": 20012166,
+      "checksum": 178752
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 25312,
+      "elapsed_ns": 20030583,
+      "checksum": 177184
+    },
+    "baseline": {
+      "iterations": 24928,
+      "elapsed_ns": 20005667,
+      "checksum": 174496
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 25376,
+      "elapsed_ns": 20014083,
+      "checksum": 177632
+    },
+    "candidate": {
+      "iterations": 25120,
+      "elapsed_ns": 20021750,
+      "checksum": 175840
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 121440,
+      "elapsed_ns": 20001291,
+      "checksum": 41532480
+    },
+    "candidate": {
+      "iterations": 121184,
+      "elapsed_ns": 20004541,
+      "checksum": 41444928
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 121376,
+      "elapsed_ns": 20001750,
+      "checksum": 41510592
+    },
+    "baseline": {
+      "iterations": 122304,
+      "elapsed_ns": 20003667,
+      "checksum": 41827968
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 118752,
+      "elapsed_ns": 20003084,
+      "checksum": 40613184
+    },
+    "candidate": {
+      "iterations": 121664,
+      "elapsed_ns": 20001708,
+      "checksum": 41609088
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 16608,
+      "elapsed_ns": 20022125,
+      "checksum": 415200
+    },
+    "candidate": {
+      "iterations": 16768,
+      "elapsed_ns": 20031459,
+      "checksum": 419200
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 16704,
+      "elapsed_ns": 20003208,
+      "checksum": 417600
+    },
+    "baseline": {
+      "iterations": 16480,
+      "elapsed_ns": 20027666,
+      "checksum": 412000
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 16416,
+      "elapsed_ns": 20020917,
+      "checksum": 410400
+    },
+    "candidate": {
+      "iterations": 16800,
+      "elapsed_ns": 20054167,
+      "checksum": 420000
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 12320,
+      "elapsed_ns": 20020334,
+      "checksum": 12320
+    },
+    "candidate": {
+      "iterations": 12224,
+      "elapsed_ns": 20035333,
+      "checksum": 12224
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 12352,
+      "elapsed_ns": 20037916,
+      "checksum": 12352
+    },
+    "baseline": {
+      "iterations": 12192,
+      "elapsed_ns": 20008834,
+      "checksum": 12192
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 12224,
+      "elapsed_ns": 20023875,
+      "checksum": 12224
+    },
+    "candidate": {
+      "iterations": 12000,
+      "elapsed_ns": 20010958,
+      "checksum": 12000
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 22272,
+      "elapsed_ns": 20009792,
+      "checksum": 4988928
+    },
+    "candidate": {
+      "iterations": 21920,
+      "elapsed_ns": 20006042,
+      "checksum": 4910080
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 22208,
+      "elapsed_ns": 20011417,
+      "checksum": 4974592
+    },
+    "baseline": {
+      "iterations": 21568,
+      "elapsed_ns": 20012083,
+      "checksum": 4831232
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 22144,
+      "elapsed_ns": 20022625,
+      "checksum": 4960256
+    },
+    "candidate": {
+      "iterations": 21984,
+      "elapsed_ns": 20025875,
+      "checksum": 4924416
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 160,
+      "elapsed_ns": 22961792,
+      "checksum": 214080
+    },
+    "candidate": {
+      "iterations": 160,
+      "elapsed_ns": 22924083,
+      "checksum": 214080
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 160,
+      "elapsed_ns": 22961917,
+      "checksum": 214080
+    },
+    "baseline": {
+      "iterations": 160,
+      "elapsed_ns": 22710500,
+      "checksum": 214080
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 160,
+      "elapsed_ns": 22917875,
+      "checksum": 214080
+    },
+    "candidate": {
+      "iterations": 160,
+      "elapsed_ns": 23033083,
+      "checksum": 214080
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 20596416,
+      "checksum": 433024
+    },
+    "candidate": {
+      "iterations": 1056,
+      "elapsed_ns": 20047958,
+      "checksum": 420288
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 20328500,
+      "checksum": 433024
+    },
+    "baseline": {
+      "iterations": 1056,
+      "elapsed_ns": 20072708,
+      "checksum": 420288
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1056,
+      "elapsed_ns": 20120958,
+      "checksum": 420288
+    },
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 20090709,
+      "checksum": 433024
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 20010292,
+      "checksum": 433024
+    },
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 20072333,
+      "checksum": 433024
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1120,
+      "elapsed_ns": 20313291,
+      "checksum": 445760
+    },
+    "baseline": {
+      "iterations": 1120,
+      "elapsed_ns": 20622833,
+      "checksum": 445760
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1120,
+      "elapsed_ns": 20452125,
+      "checksum": 445760
+    },
+    "candidate": {
+      "iterations": 1120,
+      "elapsed_ns": 20536125,
+      "checksum": 445760
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20713750,
+      "checksum": 52268544
+    },
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20525792,
+      "checksum": 52268544
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20720208,
+      "checksum": 52268544
+    },
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20361334,
+      "checksum": 52268544
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20504875,
+      "checksum": 52268544
+    },
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20729916,
+      "checksum": 52268544
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 736,
+      "elapsed_ns": 20154750,
+      "checksum": 50090688
+    },
+    "candidate": {
+      "iterations": 736,
+      "elapsed_ns": 20233417,
+      "checksum": 50090688
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 736,
+      "elapsed_ns": 20059625,
+      "checksum": 50090688
+    },
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20862250,
+      "checksum": 52268544
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20866542,
+      "checksum": 52268544
+    },
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20835375,
+      "checksum": 52268544
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 17184,
+      "elapsed_ns": 20000708,
+      "checksum": 429600
+    },
+    "candidate": {
+      "iterations": 16928,
+      "elapsed_ns": 20002875,
+      "checksum": 423200
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 17088,
+      "elapsed_ns": 20034042,
+      "checksum": 427200
+    },
+    "baseline": {
+      "iterations": 17184,
+      "elapsed_ns": 20012125,
+      "checksum": 429600
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 16704,
+      "elapsed_ns": 20034375,
+      "checksum": 417600
+    },
+    "candidate": {
+      "iterations": 16864,
+      "elapsed_ns": 20018125,
+      "checksum": 421600
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 168512,
+      "elapsed_ns": 20003250,
+      "checksum": 337024
+    },
+    "candidate": {
+      "iterations": 172064,
+      "elapsed_ns": 20003333,
+      "checksum": 344128
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 174368,
+      "elapsed_ns": 20002708,
+      "checksum": 348736
+    },
+    "baseline": {
+      "iterations": 167744,
+      "elapsed_ns": 20000584,
+      "checksum": 335488
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 167136,
+      "elapsed_ns": 20001500,
+      "checksum": 334272
+    },
+    "candidate": {
+      "iterations": 173440,
+      "elapsed_ns": 20000334,
+      "checksum": 346880
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 128,
+      "elapsed_ns": 20903583,
+      "checksum": 5480448
+    },
+    "candidate": {
+      "iterations": 128,
+      "elapsed_ns": 21551625,
+      "checksum": 5480448
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 128,
+      "elapsed_ns": 21416958,
+      "checksum": 5480448
+    },
+    "baseline": {
+      "iterations": 128,
+      "elapsed_ns": 21271375,
+      "checksum": 5480448
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 128,
+      "elapsed_ns": 21232250,
+      "checksum": 5480448
+    },
+    "candidate": {
+      "iterations": 128,
+      "elapsed_ns": 21436667,
+      "checksum": 5480448
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 800,
+      "elapsed_ns": 20745500,
+      "checksum": 800
+    },
+    "candidate": {
+      "iterations": 800,
+      "elapsed_ns": 20273125,
+      "checksum": 800
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 800,
+      "elapsed_ns": 20750334,
+      "checksum": 800
+    },
+    "baseline": {
+      "iterations": 800,
+      "elapsed_ns": 20417792,
+      "checksum": 800
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 800,
+      "elapsed_ns": 20471917,
+      "checksum": 800
+    },
+    "candidate": {
+      "iterations": 800,
+      "elapsed_ns": 20294625,
+      "checksum": 800
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 11744,
+      "elapsed_ns": 20007750,
+      "checksum": 50205600
+    },
+    "candidate": {
+      "iterations": 11872,
+      "elapsed_ns": 20078250,
+      "checksum": 50752800
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 11680,
+      "elapsed_ns": 20038292,
+      "checksum": 49932000
+    },
+    "baseline": {
+      "iterations": 11776,
+      "elapsed_ns": 20023083,
+      "checksum": 50342400
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 11872,
+      "elapsed_ns": 20007208,
+      "checksum": 50752800
+    },
+    "candidate": {
+      "iterations": 11616,
+      "elapsed_ns": 20041416,
+      "checksum": 49658400
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 10656,
+      "elapsed_ns": 20008083,
+      "checksum": 43764192
+    },
+    "candidate": {
+      "iterations": 10912,
+      "elapsed_ns": 20000792,
+      "checksum": 44815584
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 10848,
+      "elapsed_ns": 20001125,
+      "checksum": 44552736
+    },
+    "baseline": {
+      "iterations": 10848,
+      "elapsed_ns": 20008709,
+      "checksum": 44552736
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 11040,
+      "elapsed_ns": 20041708,
+      "checksum": 45341280
+    },
+    "candidate": {
+      "iterations": 10848,
+      "elapsed_ns": 20035417,
+      "checksum": 44552736
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 11840,
+      "elapsed_ns": 20046083,
+      "checksum": 50616000
+    },
+    "baseline": {
+      "iterations": 12096,
+      "elapsed_ns": 20082250,
+      "checksum": 51710400
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 11808,
+      "elapsed_ns": 20026916,
+      "checksum": 50479200
+    },
+    "candidate": {
+      "iterations": 11968,
+      "elapsed_ns": 20018083,
+      "checksum": 51163200
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 11648,
+      "elapsed_ns": 20021959,
+      "checksum": 49795200
+    },
+    "baseline": {
+      "iterations": 11968,
+      "elapsed_ns": 20043583,
+      "checksum": 51163200
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 704,
+      "elapsed_ns": 20499583,
+      "checksum": 46152128
+    },
+    "baseline": {
+      "iterations": 704,
+      "elapsed_ns": 20788917,
+      "checksum": 46152128
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 704,
+      "elapsed_ns": 20636167,
+      "checksum": 46152128
+    },
+    "candidate": {
+      "iterations": 704,
+      "elapsed_ns": 20368625,
+      "checksum": 46152128
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 704,
+      "elapsed_ns": 20504667,
+      "checksum": 46152128
+    },
+    "baseline": {
+      "iterations": 704,
+      "elapsed_ns": 20794375,
+      "checksum": 46152128
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1952,
+      "elapsed_ns": 20172625,
+      "checksum": 5246976
+    },
+    "baseline": {
+      "iterations": 1984,
+      "elapsed_ns": 20324958,
+      "checksum": 5332992
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1984,
+      "elapsed_ns": 20272833,
+      "checksum": 5332992
+    },
+    "candidate": {
+      "iterations": 1952,
+      "elapsed_ns": 20065583,
+      "checksum": 5246976
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 2016,
+      "elapsed_ns": 20398584,
+      "checksum": 5419008
+    },
+    "baseline": {
+      "iterations": 1984,
+      "elapsed_ns": 20254125,
+      "checksum": 5332992
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 25408,
+      "elapsed_ns": 20006959,
+      "checksum": 177856
+    },
+    "baseline": {
+      "iterations": 26016,
+      "elapsed_ns": 20017916,
+      "checksum": 182112
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 24992,
+      "elapsed_ns": 20004959,
+      "checksum": 174944
+    },
+    "candidate": {
+      "iterations": 25120,
+      "elapsed_ns": 20005250,
+      "checksum": 175840
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 25344,
+      "elapsed_ns": 20001166,
+      "checksum": 177408
+    },
+    "baseline": {
+      "iterations": 25440,
+      "elapsed_ns": 20002459,
+      "checksum": 178080
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 12384,
+      "elapsed_ns": 20035917,
+      "checksum": 12384
+    },
+    "baseline": {
+      "iterations": 12288,
+      "elapsed_ns": 20036625,
+      "checksum": 12288
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 12096,
+      "elapsed_ns": 20012709,
+      "checksum": 12096
+    },
+    "candidate": {
+      "iterations": 12320,
+      "elapsed_ns": 20027250,
+      "checksum": 12320
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 12384,
+      "elapsed_ns": 20088208,
+      "checksum": 12384
+    },
+    "baseline": {
+      "iterations": 12224,
+      "elapsed_ns": 20050834,
+      "checksum": 12224
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 121504,
+      "elapsed_ns": 20004875,
+      "checksum": 41554368
+    },
+    "baseline": {
+      "iterations": 117440,
+      "elapsed_ns": 20003458,
+      "checksum": 40164480
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 117056,
+      "elapsed_ns": 20005209,
+      "checksum": 40033152
+    },
+    "candidate": {
+      "iterations": 120448,
+      "elapsed_ns": 20000917,
+      "checksum": 41193216
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 117472,
+      "elapsed_ns": 20004625,
+      "checksum": 40175424
+    },
+    "baseline": {
+      "iterations": 117088,
+      "elapsed_ns": 20000667,
+      "checksum": 40044096
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 21888,
+      "elapsed_ns": 20021667,
+      "checksum": 4902912
+    },
+    "baseline": {
+      "iterations": 22048,
+      "elapsed_ns": 20016625,
+      "checksum": 4938752
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 21952,
+      "elapsed_ns": 20001084,
+      "checksum": 4917248
+    },
+    "candidate": {
+      "iterations": 22176,
+      "elapsed_ns": 20013167,
+      "checksum": 4967424
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 21632,
+      "elapsed_ns": 20028125,
+      "checksum": 4845568
+    },
+    "baseline": {
+      "iterations": 22016,
+      "elapsed_ns": 20018958,
+      "checksum": 4931584
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 11616,
+      "elapsed_ns": 20021500,
+      "checksum": 49658400
+    },
+    "baseline": {
+      "iterations": 11488,
+      "elapsed_ns": 20053083,
+      "checksum": 49111200
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 11648,
+      "elapsed_ns": 20108042,
+      "checksum": 49795200
+    },
+    "candidate": {
+      "iterations": 11744,
+      "elapsed_ns": 20037375,
+      "checksum": 50205600
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 11552,
+      "elapsed_ns": 20053708,
+      "checksum": 49384800
+    },
+    "baseline": {
+      "iterations": 11424,
+      "elapsed_ns": 20038167,
+      "checksum": 48837600
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 128,
+      "elapsed_ns": 21389834,
+      "checksum": 5480448
+    },
+    "baseline": {
+      "iterations": 128,
+      "elapsed_ns": 21486791,
+      "checksum": 5480448
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 128,
+      "elapsed_ns": 21437291,
+      "checksum": 5480448
+    },
+    "candidate": {
+      "iterations": 128,
+      "elapsed_ns": 21326000,
+      "checksum": 5480448
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 128,
+      "elapsed_ns": 21764000,
+      "checksum": 5480448
+    },
+    "baseline": {
+      "iterations": 128,
+      "elapsed_ns": 21122667,
+      "checksum": 5480448
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 10816,
+      "elapsed_ns": 20049917,
+      "checksum": 44421312
+    },
+    "baseline": {
+      "iterations": 10560,
+      "elapsed_ns": 20009750,
+      "checksum": 43369920
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 10816,
+      "elapsed_ns": 20076250,
+      "checksum": 44421312
+    },
+    "candidate": {
+      "iterations": 10592,
+      "elapsed_ns": 20018500,
+      "checksum": 43501344
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "diagnostic--slash-paths-without-comments-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 10784,
+      "elapsed_ns": 20031083,
+      "checksum": 44289888
+    },
+    "baseline": {
+      "iterations": 10720,
+      "elapsed_ns": 20008958,
+      "checksum": 44027040
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 171456,
+      "elapsed_ns": 20000875,
+      "checksum": 342912
+    },
+    "baseline": {
+      "iterations": 167520,
+      "elapsed_ns": 20002083,
+      "checksum": 335040
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 168352,
+      "elapsed_ns": 20007791,
+      "checksum": 336704
+    },
+    "candidate": {
+      "iterations": 172000,
+      "elapsed_ns": 20001375,
+      "checksum": 344000
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 173696,
+      "elapsed_ns": 20001375,
+      "checksum": 347392
+    },
+    "baseline": {
+      "iterations": 166368,
+      "elapsed_ns": 20003542,
+      "checksum": 332736
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 800,
+      "elapsed_ns": 20411458,
+      "checksum": 800
+    },
+    "baseline": {
+      "iterations": 800,
+      "elapsed_ns": 20630791,
+      "checksum": 800
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 800,
+      "elapsed_ns": 20681375,
+      "checksum": 800
+    },
+    "candidate": {
+      "iterations": 800,
+      "elapsed_ns": 20698291,
+      "checksum": 800
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "diagnostic--slash-paths-without-comments-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "diagnostic-slash-paths",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 800,
+      "elapsed_ns": 20506459,
+      "checksum": 800
+    },
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20033709,
+      "checksum": 768
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 20403917,
+      "checksum": 433024
+    },
+    "baseline": {
+      "iterations": 1056,
+      "elapsed_ns": 20127750,
+      "checksum": 420288
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1056,
+      "elapsed_ns": 20127166,
+      "checksum": 420288
+    },
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 20557916,
+      "checksum": 433024
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1088,
+      "elapsed_ns": 20360458,
+      "checksum": 433024
+    },
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 20540875,
+      "checksum": 433024
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1120,
+      "elapsed_ns": 20372833,
+      "checksum": 445760
+    },
+    "baseline": {
+      "iterations": 1088,
+      "elapsed_ns": 20274792,
+      "checksum": 433024
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 1120,
+      "elapsed_ns": 20380917,
+      "checksum": 445760
+    },
+    "candidate": {
+      "iterations": 1120,
+      "elapsed_ns": 20521083,
+      "checksum": 445760
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 1120,
+      "elapsed_ns": 20563667,
+      "checksum": 445760
+    },
+    "baseline": {
+      "iterations": 1120,
+      "elapsed_ns": 20486708,
+      "checksum": 445760
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 121408,
+      "elapsed_ns": 20001667,
+      "checksum": 41521536
+    },
+    "baseline": {
+      "iterations": 121408,
+      "elapsed_ns": 20010625,
+      "checksum": 41521536
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 121056,
+      "elapsed_ns": 20000917,
+      "checksum": 41401152
+    },
+    "candidate": {
+      "iterations": 120256,
+      "elapsed_ns": 20003125,
+      "checksum": 41127552
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 122784,
+      "elapsed_ns": 20002792,
+      "checksum": 41992128
+    },
+    "baseline": {
+      "iterations": 120704,
+      "elapsed_ns": 20004167,
+      "checksum": 41280768
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 174368,
+      "elapsed_ns": 20000792,
+      "checksum": 348736
+    },
+    "baseline": {
+      "iterations": 172928,
+      "elapsed_ns": 20001375,
+      "checksum": 345856
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 176640,
+      "elapsed_ns": 20001958,
+      "checksum": 353280
+    },
+    "candidate": {
+      "iterations": 174816,
+      "elapsed_ns": 20000708,
+      "checksum": 349632
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "control--line_comments-plain-300",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 177920,
+      "elapsed_ns": 20003083,
+      "checksum": 355840
+    },
+    "baseline": {
+      "iterations": 173568,
+      "elapsed_ns": 20006375,
+      "checksum": 347136
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20640709,
+      "checksum": 52268544
+    },
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20437792,
+      "checksum": 52268544
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20805833,
+      "checksum": 52268544
+    },
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20362792,
+      "checksum": 52268544
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "control--line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20704417,
+      "checksum": 52268544
+    },
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20564958,
+      "checksum": 52268544
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20603667,
+      "checksum": 52268544
+    },
+    "baseline": {
+      "iterations": 736,
+      "elapsed_ns": 20257583,
+      "checksum": 50090688
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 768,
+      "elapsed_ns": 20865709,
+      "checksum": 52268544
+    },
+    "candidate": {
+      "iterations": 736,
+      "elapsed_ns": 20203083,
+      "checksum": 50090688
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 768,
+      "elapsed_ns": 20635000,
+      "checksum": 52268544
+    },
+    "baseline": {
+      "iterations": 736,
+      "elapsed_ns": 20404250,
+      "checksum": 50090688
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 16576,
+      "elapsed_ns": 20011458,
+      "checksum": 414400
+    },
+    "baseline": {
+      "iterations": 16480,
+      "elapsed_ns": 20052583,
+      "checksum": 412000
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 16224,
+      "elapsed_ns": 20030833,
+      "checksum": 405600
+    },
+    "candidate": {
+      "iterations": 16480,
+      "elapsed_ns": 20004625,
+      "checksum": 412000
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 16832,
+      "elapsed_ns": 20009166,
+      "checksum": 420800
+    },
+    "baseline": {
+      "iterations": 16320,
+      "elapsed_ns": 20017709,
+      "checksum": 408000
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 160,
+      "elapsed_ns": 22791958,
+      "checksum": 214080
+    },
+    "baseline": {
+      "iterations": 160,
+      "elapsed_ns": 22823375,
+      "checksum": 214080
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 160,
+      "elapsed_ns": 22859083,
+      "checksum": 214080
+    },
+    "candidate": {
+      "iterations": 160,
+      "elapsed_ns": 22681375,
+      "checksum": 214080
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-65536",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 160,
+      "elapsed_ns": 23039542,
+      "checksum": 214080
+    },
+    "baseline": {
+      "iterations": 160,
+      "elapsed_ns": 22664209,
+      "checksum": 214080
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 16960,
+      "elapsed_ns": 20013417,
+      "checksum": 424000
+    },
+    "baseline": {
+      "iterations": 16928,
+      "elapsed_ns": 20014750,
+      "checksum": 423200
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 16864,
+      "elapsed_ns": 20006625,
+      "checksum": 421600
+    },
+    "candidate": {
+      "iterations": 17152,
+      "elapsed_ns": 20031375,
+      "checksum": 428800
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "control--line_comments-plain-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-b552b1b4e099e6cf4fb60158b4b0623cd3b7d34dfb5ebbee0111cee2a3dd4b67.json",
+    "category": "feature-off-plain",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 17024,
+      "elapsed_ns": 20005708,
+      "checksum": 425600
+    },
+    "baseline": {
+      "iterations": 16928,
+      "elapsed_ns": 20018667,
+      "checksum": 423200
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 2272,
+      "elapsed_ns": 20308125,
+      "checksum": 190848
+    },
+    "baseline": {
+      "iterations": 2272,
+      "elapsed_ns": 20286334,
+      "checksum": 190848
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 2240,
+      "elapsed_ns": 20021042,
+      "checksum": 188160
+    },
+    "candidate": {
+      "iterations": 2272,
+      "elapsed_ns": 20225792,
+      "checksum": 190848
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "feature--parser.line_comments-active-4096",
+    "profile": "/private/tmp/ferromark-v2-line-fusion-C1-run.feature-scan-replay/configs/runtime-85adaf6f20609bb1f898fcfaa050e313ebaf9d72e313e8a4e4a3ef2a94f6222b.json",
+    "category": "feature-line_comments",
+    "mode": "parse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 2208,
+      "elapsed_ns": 20171250,
+      "checksum": 185472
+    },
+    "baseline": {
+      "iterations": 2272,
+      "elapsed_ns": 20118917,
+      "checksum": 190848
+    }
+  }
+]
