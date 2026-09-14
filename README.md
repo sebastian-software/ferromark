@@ -91,6 +91,17 @@ MDX compatibility. The [repeatable audit](benchmarks/compatibility-audit/README.
 now passes its failure gate; raw results and a targeted v1 comparison are in
 the correction report.
 
+An additional [cmark / cmark-gfm oracle run](docs/reports/2026-09-14-correctness-fixes/README.md#differential-checks-against-cmark)
+checks 106 complex inputs. It exposes **five remaining GFM delimiter cases**,
+including strikethrough closing inside link destinations, plus two Unicode/BOM
+differences requiring interpretation. Passing the official examples does not
+close these additional findings.
+
+A short paired check on four unchanged-output documents measures about **2%
+more time with fresh arenas and 4% with reuse** after these corrections.
+The [two runs and limitations](docs/reports/2026-09-14-correctness-fixes/README.md#short-performance-check)
+are recorded; the full six-engine comparison has not been rerun.
+
 ## Native engine comparison
 
 On an Apple M1 Pro, the v2 core **before the correctness fixes** led the geometric
