@@ -87,10 +87,38 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
         Node::Table(t) => {
             let aligns = t.align.iter().copied().map(align_to_str).collect::<Vec<_>>().join(",");
             line(out, depth, format_args!("Table align=[{}] {}", aligns, span(t.span, source)));
+            if let Some(attributes) = &t.attributes {
+                line(
+                    out,
+                    depth + 1,
+                    format_args!(
+                        "Attributes id={:?} classes={:?}",
+                        attributes.id, attributes.classes
+                    ),
+                );
+                if !attributes.caption.is_empty() {
+                    line(out, depth + 1, format_args!("Caption"));
+                    for child in &attributes.caption {
+                        format_node(child, source, depth + 2, out);
+                    }
+                }
+            }
             for row in &t.children {
                 line(out, depth + 1, format_args!("TableRow {}", span(row.span, source)));
                 for cell in &row.children {
-                    line(out, depth + 2, format_args!("TableCell {}", span(cell.span, source)));
+                    if cell.colspan == 1 {
+                        line(out, depth + 2, format_args!("TableCell {}", span(cell.span, source)));
+                    } else {
+                        line(
+                            out,
+                            depth + 2,
+                            format_args!(
+                                "TableCell colspan={} {}",
+                                cell.colspan,
+                                span(cell.span, source)
+                            ),
+                        );
+                    }
                     for child in &cell.children {
                         format_node(child, source, depth + 3, out);
                     }

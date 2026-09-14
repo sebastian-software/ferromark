@@ -5,8 +5,8 @@
 //! glue keeps each file small while preserving the visitor behavior exactly.
 
 use ferromark_ast::{
-    BlockQuote, CodeBlock, Heading, Html, List, ListItem, MathBlock, Paragraph, Table, TableCell,
-    TableRow, ThematicBreak,
+    AlignKind, BlockQuote, CodeBlock, Heading, Html, List, ListItem, MathBlock, Paragraph, Table,
+    TableCell, TableRow, ThematicBreak,
 };
 
 use super::super::code_annotations::normalize_code_block_language;
@@ -262,9 +262,9 @@ impl HtmlRenderer {
     }
 
     pub(in crate::html::renderer) fn render_table(&mut self, table: &Table<'_>) {
-        self.write("<table");
-        self.write_source_span_attr(table.span);
-        self.write(">\n");
+        self.write_table_opening(table);
+        self.render_table_caption(table);
+        self.write_table_colgroup(&table.align);
         for (i, row) in table.children.iter().enumerate() {
             if i == 0 {
                 self.write("<thead>\n");
@@ -291,23 +291,99 @@ impl HtmlRenderer {
         self.write_source_span_attr(row.span);
         self.write(">\n");
         let tag = if is_header { "th" } else { "td" };
-        for (idx, cell) in row.children.iter().enumerate() {
-            self.write("<");
-            self.write(tag);
-            match align.get(idx).copied().unwrap_or(ferromark_ast::AlignKind::None) {
-                ferromark_ast::AlignKind::Left => self.write(" align=\"left\""),
-                ferromark_ast::AlignKind::Center => self.write(" align=\"center\""),
-                ferromark_ast::AlignKind::Right => self.write(" align=\"right\""),
-                ferromark_ast::AlignKind::None => {}
-            }
-            self.write_source_span_attr(cell.span);
-            self.write(">");
+        let mut column_index = 0usize;
+        for cell in &row.children {
+            self.write_table_cell_open(tag, cell, align.get(column_index).copied());
             self.visit_table_cell(cell);
             self.write("</");
             self.write(tag);
             self.write(">\n");
+            column_index = column_index.saturating_add(Self::normalized_table_colspan(cell));
         }
         self.write("</tr>\n");
+    }
+
+    /// Writes the part of a table opening shared by the default and hook paths.
+    pub(in crate::html::renderer) fn write_table_opening(&mut self, table: &Table<'_>) {
+        self.write("<table");
+        if let Some(attributes) = &table.attributes {
+            if let Some(id) = attributes.id {
+                self.write(" id=\"");
+                self.write_attribute_escaped(id);
+                self.write("\"");
+            }
+            if !attributes.classes.is_empty() {
+                self.write(" class=\"");
+                for (index, class_name) in attributes.classes.iter().enumerate() {
+                    if index > 0 {
+                        self.write(" ");
+                    }
+                    self.write_attribute_escaped(class_name);
+                }
+                self.write("\"");
+            }
+        }
+        self.write_source_span_attr(table.span);
+        self.write(">\n");
+    }
+
+    pub(in crate::html::renderer) fn render_table_caption(&mut self, table: &Table<'_>) {
+        let Some(attributes) = &table.attributes else {
+            return;
+        };
+        if attributes.caption.is_empty() {
+            return;
+        }
+        self.write("<caption>");
+        for child in &attributes.caption {
+            self.visit_inline_node(child);
+        }
+        self.write("</caption>\n");
+    }
+
+    pub(in crate::html::renderer) fn write_table_colgroup(&mut self, align: &[AlignKind]) {
+        if !self.options.table_colgroup {
+            return;
+        }
+        self.write("<colgroup>\n");
+        for index in 0..align.len() {
+            self.write("<col class=\"col-");
+            self.write_display(index + 1);
+            if self.options.xhtml {
+                self.write("\" />\n");
+            } else {
+                self.write("\">\n");
+            }
+        }
+        self.write("</colgroup>\n");
+    }
+
+    pub(in crate::html::renderer) fn normalized_table_colspan(cell: &TableCell<'_>) -> usize {
+        cell.colspan.max(1)
+    }
+
+    pub(in crate::html::renderer) fn write_table_cell_open(
+        &mut self,
+        tag: &str,
+        cell: &TableCell<'_>,
+        alignment: Option<AlignKind>,
+    ) {
+        self.write("<");
+        self.write(tag);
+        match alignment.unwrap_or(AlignKind::None) {
+            AlignKind::Left => self.write(" align=\"left\""),
+            AlignKind::Center => self.write(" align=\"center\""),
+            AlignKind::Right => self.write(" align=\"right\""),
+            AlignKind::None => {}
+        }
+        let colspan = Self::normalized_table_colspan(cell);
+        if colspan > 1 {
+            self.write(" colspan=\"");
+            self.write_display(colspan);
+            self.write("\"");
+        }
+        self.write_source_span_attr(cell.span);
+        self.write(">");
     }
 
     pub(in crate::html::renderer) fn visit_table_cell(&mut self, cell: &TableCell<'_>) {

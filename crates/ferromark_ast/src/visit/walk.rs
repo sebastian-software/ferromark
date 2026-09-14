@@ -85,6 +85,11 @@ pub fn walk_list_item<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, list_item: &Li
 
 /// Walks through a table's children.
 pub fn walk_table<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, table: &Table<'a>) {
+    if let Some(attributes) = &table.attributes {
+        for child in &attributes.caption {
+            visitor.visit_node(child);
+        }
+    }
     for row in &table.children {
         visitor.visit_table_row(row);
     }

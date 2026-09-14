@@ -70,6 +70,11 @@ pub(super) fn remap_node_spans<'a>(node: &mut Node<'a>, source_offset: u32, offs
         Node::Html(node) => remap_span(&mut node.span, source_offset, offsets),
         Node::Table(node) => {
             remap_span(&mut node.span, source_offset, offsets);
+            if let Some(attributes) = &mut node.attributes {
+                for child in &mut attributes.caption {
+                    remap_node_spans(child, source_offset, offsets);
+                }
+            }
             for row in &mut node.children {
                 remap_span(&mut row.span, source_offset, offsets);
                 for cell in &mut row.children {

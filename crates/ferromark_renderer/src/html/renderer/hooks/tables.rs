@@ -12,9 +12,17 @@ impl HtmlRenderer {
         table: &Table<'_>,
         hooks: &mut H,
     ) {
-        self.write("<table");
-        self.write_source_span_attr(table.span);
-        self.write(">\n");
+        self.write_table_opening(table);
+        if let Some(attributes) = &table.attributes
+            && !attributes.caption.is_empty()
+        {
+            self.write("<caption>");
+            for child in &attributes.caption {
+                self.render_inline_node_with_hooks(child, hooks);
+            }
+            self.write("</caption>\n");
+        }
+        self.write_table_colgroup(&table.align);
         for (i, row) in table.children.iter().enumerate() {
             if i == 0 {
                 self.write("<thead>\n");
@@ -97,21 +105,14 @@ impl HtmlRenderer {
         self.write_source_span_attr(row.span);
         self.write(">\n");
         let tag = if is_header { "th" } else { "td" };
-        for (idx, cell) in row.children.iter().enumerate() {
-            self.write("<");
-            self.write(tag);
-            match align.get(idx).copied().unwrap_or(AlignKind::None) {
-                AlignKind::Left => self.write(" align=\"left\""),
-                AlignKind::Center => self.write(" align=\"center\""),
-                AlignKind::Right => self.write(" align=\"right\""),
-                AlignKind::None => {}
-            }
-            self.write_source_span_attr(cell.span);
-            self.write(">");
+        let mut column_index = 0usize;
+        for cell in &row.children {
+            self.write_table_cell_open(tag, cell, align.get(column_index).copied());
             self.render_table_cell_with_hooks(cell, hooks);
             self.write("</");
             self.write(tag);
             self.write(">\n");
+            column_index = column_index.saturating_add(Self::normalized_table_colspan(cell));
         }
         self.write("</tr>\n");
     }

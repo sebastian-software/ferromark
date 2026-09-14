@@ -149,6 +149,11 @@ impl<'a> Parser<'a> {
             Node::Html(node) => Self::offset_span(&mut node.span, offset),
             Node::Table(node) => {
                 Self::offset_span(&mut node.span, offset);
+                if let Some(attributes) = &mut node.attributes {
+                    for child in &mut attributes.caption {
+                        Self::offset_node_spans(child, offset);
+                    }
+                }
                 for row in &mut node.children {
                     Self::offset_span(&mut row.span, offset);
                     for cell in &mut row.children {

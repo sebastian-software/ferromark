@@ -30,6 +30,7 @@ mod reference;
 mod source_normalization;
 mod spans;
 mod table;
+mod table_attributes;
 mod table_cell_source;
 
 #[cfg(test)]

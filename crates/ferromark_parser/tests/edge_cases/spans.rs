@@ -208,6 +208,9 @@ fn assert_node_span_indexes_source(source: &str, node: &Node<'_>) {
             assert_all_spans_index_source(source, &node.children);
         }
         Node::Table(table) => {
+            if let Some(attributes) = &table.attributes {
+                assert_all_spans_index_source(source, &attributes.caption);
+            }
             for row in &table.children {
                 assert_table_row_span_indexes_source(source, row);
             }

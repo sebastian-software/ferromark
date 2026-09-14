@@ -173,6 +173,12 @@ pub struct HtmlRendererOptions {
     /// annotations are not applied and the parser-provided first info token is
     /// emitted as the language verbatim (after ordinary HTML escaping).
     pub code_fence_metadata: bool,
+
+    /// Emit a `<colgroup>` containing one CSS-named column for each table
+    /// alignment entry.
+    ///
+    /// Default: `false`.
+    pub table_colgroup: bool,
 }
 
 const DEFAULT_SOFT_BREAK: &str = "\n";
@@ -211,6 +217,7 @@ pub(super) struct RendererOptions {
     pub(super) callouts: bool,
     pub(super) inline_toc: bool,
     pub(super) code_fence_metadata: bool,
+    pub(super) table_colgroup: bool,
 }
 
 impl RendererOptions {
@@ -239,6 +246,7 @@ impl RendererOptions {
             callouts: true,
             inline_toc: true,
             code_fence_metadata: true,
+            table_colgroup: false,
         }
     }
 
@@ -292,6 +300,7 @@ impl From<HtmlRendererOptions> for RendererOptions {
             callouts: options.callouts,
             inline_toc: options.inline_toc,
             code_fence_metadata: options.code_fence_metadata,
+            table_colgroup: options.table_colgroup,
         }
     }
 }
@@ -341,6 +350,7 @@ impl HtmlRendererOptions {
             callouts: true,
             inline_toc: true,
             code_fence_metadata: true,
+            table_colgroup: false,
         }
     }
 
