@@ -33,6 +33,7 @@ pub use visit::*;
 const _AST_IS_ARENA_ONLY: () = {
     assert!(!std::mem::needs_drop::<Node<'static>>());
     assert!(!std::mem::needs_drop::<Document<'static>>());
+    assert!(!std::mem::needs_drop::<FrontMatter<'static>>());
     // Boxed container variants keep `Node` at the size of Text/Html:
     // `&str` + `Span` is 24 bytes, plus the enum discriminant rounds the
     // slot to 32. Paragraph/Emphasis/etc. still exist, just behind a

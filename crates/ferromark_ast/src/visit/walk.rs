@@ -5,6 +5,9 @@ use super::Visit;
 
 /// Walks through a document's children.
 pub fn walk_document<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, document: &Document<'a>) {
+    if let Some(front_matter) = &document.front_matter {
+        visitor.visit_front_matter(front_matter);
+    }
     for child in &document.children {
         visitor.visit_node(child);
     }

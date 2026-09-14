@@ -7,9 +7,9 @@ is identical, or that every edge case conforms to a specification. A missing
 built-in feature can often be implemented by a caller using events or hooks.
 
 The comparison uses the same six engines as the native benchmark. Ferromark v2
-is the local core at `46c761d`, including the compatibility corrections,
-[smart-punctuation removal](typography.md), and [table extensions](table-layout.md)
-with header-derived column names, plus the subsequent [line-comment extension](line-comments.md);
+is the local core at `40047f7`, including the compatibility corrections,
+[smart-punctuation removal](typography.md), [table extensions](table-layout.md),
+and [line comments](line-comments.md), plus [frontmatter extraction](front-matter.md);
 the other five sources are the exact
 benchmark pins. This avoids mixing newer upstream features into an older timing
 comparison. Feature availability and timed configuration remain separate: the
@@ -18,7 +18,7 @@ benchmark enabled only a shared subset of Markdown extensions.
 | Engine | Reviewed source |
 | --- | --- |
 | Ferromark v1 | [0.9.0, `143ec2ce`](https://github.com/sebastian-software/ferromark/tree/143ec2ce151d87d2a3d804a048014afc97733ae0) |
-| Ferromark v2 | Local `46c761d` plus [line comments](line-comments.md); [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs), and [table layout](table-layout.md) |
+| Ferromark v2 | Local `40047f7` plus [frontmatter extraction](front-matter.md); [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs), and [table layout](table-layout.md) |
 | OX-Content | [3.2.3, `a71a5893`](https://github.com/ubugeeei-prod/ox-content/tree/a71a58939ffe7f154117cea026f6d6e71a139393) — parser/renderer core |
 | pulldown-cmark | [0.13.4 options](https://docs.rs/pulldown-cmark/0.13.4/pulldown_cmark/struct.Options.html) |
 | md4c | [`65c6c9d7` flags and event types](https://github.com/mity/md4c/blob/65c6c9d72cebd9a731aaa5597414ce04d9ea5de3/src/md4c.h) |
@@ -79,7 +79,9 @@ rendering policies or identical edge cases across libraries.
   link event and HTML rendering.
 - **Frontmatter:** recognizing a delimited metadata block is separate from
   parsing YAML/TOML into typed values. The table credits extraction/recognition,
-  not semantic metadata deserialization.
+  not semantic metadata deserialization. V2 extracts a single block only at the
+  document start, optionally after a BOM, and preserves its original text and
+  source spans. It never parses metadata as Markdown or includes it in HTML.
 - **MDX:** v1's opt-in segment/event APIs and v2/OX's JSX, expression, and ESM
   capture are bounded syntax support. They are not full `@mdx-js/mdx` compilers
   or JavaScript execution engines. OX's separate framework/SSG packages and

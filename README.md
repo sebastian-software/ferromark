@@ -115,7 +115,7 @@ local core**; these are not the options enabled during timing.
 | Highlighted text — `==important==` | ✓ | — | — | — | ✓ | — |
 | Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
 | Smart punctuation — curly quotes and ellipses | — | — | ✓ | ✓ | — | — |
-| Extract frontmatter — metadata between `---` or `+++` | ✓ | — | — | ✓ | — | — |
+| Extract frontmatter — metadata between `---` or `+++` | ✓ | ✓ | — | ✓ | — | — |
 | Source-only line comments — hide `// note` lines from HTML | ✓ | ✓ | — | — | — | — |
 | **Table layout — beyond GFM** | | | | | | |
 | Merged table cells — one cell spans several columns | ✓ | ✓ | — | — | — | — |
@@ -148,6 +148,12 @@ V2 preserves authored punctuation. Automatic typography belongs in an optional,
 locale-aware document transform; the former English-oriented parser option has
 been removed. See the [typography decision](docs/typography.md).
 
+Enable `ParserOptions::front_matter` to extract a leading `---` (YAML) or `+++`
+(TOML) metadata block into `document.front_matter`. It exposes the format, raw
+content, and original source spans. The block is omitted from HTML and cannot
+define Markdown links or footnotes. The option is off in every preset.
+[Frontmatter syntax and Rust example](docs/front-matter.md).
+
 Enable `ParserOptions::line_comments` to omit `// note` source lines from HTML.
 Comments may have up to three leading spaces and do not separate paragraphs.
 Code blocks, raw HTML blocks, and explicitly prefixed lines such as `> // text`
@@ -179,7 +185,7 @@ and one leading BOM is treated as an encoding marker with original spans preserv
 | CRLF / CR variants | 1,304/1,304 agree with their LF controls |
 | Original cmark / cmark-gfm corpus | 106/106 agree |
 | Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | 747 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, and line comments |
+| Workspace regression tests | 763 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, and frontmatter |
 
 Agreement permits conservative HTML serialization equivalence; raw output and
 all mismatches remain in the report. The two reference exceptions have exact

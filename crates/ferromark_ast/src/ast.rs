@@ -10,12 +10,48 @@ use crate::{
 };
 
 /// Root node of a Markdown document.
-#[derive(Debug)]
 pub struct Document<'a> {
+    /// Optional source-only metadata extracted from the document start.
+    pub front_matter: Option<Box<'a, FrontMatter<'a>>>,
     /// Child nodes.
     pub children: Vec<'a, Node<'a>>,
     /// Source span.
     pub span: Span,
+}
+
+impl std::fmt::Debug for Document<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut document = formatter.debug_struct("Document");
+        // Keep existing diagnostic snapshots stable when metadata is absent.
+        if let Some(metadata) = &self.front_matter {
+            document.field("front_matter", metadata);
+        }
+        document.field("children", &self.children).field("span", &self.span).finish()
+    }
+}
+
+/// Format indicated by the front matter delimiter, without parsing its values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FrontMatterKind {
+    /// YAML-style metadata delimited by `---`.
+    Yaml,
+    /// TOML-style metadata delimited by `+++`.
+    Toml,
+}
+
+/// Raw document metadata. The parser does not validate YAML or TOML syntax.
+#[derive(Debug)]
+pub struct FrontMatter<'a> {
+    /// Format indicated by the delimiter.
+    pub kind: FrontMatterKind,
+    /// Original source between delimiter lines, including its line endings.
+    /// Unlike Markdown text, metadata is not NUL-normalized or unescaped.
+    pub value: &'a str,
+    /// Complete block, including delimiter lines and their line endings,
+    /// but excluding an optional leading UTF-8 BOM.
+    pub span: Span,
+    /// Exact original source range borrowed by `value`.
+    pub content_span: Span,
 }
 
 /// A Markdown AST node.
