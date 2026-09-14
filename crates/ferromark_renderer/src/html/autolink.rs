@@ -86,7 +86,20 @@ fn find_autolink_match_in<P: AsRef<str>>(
 /// verbatim (`/wiki/日本語`) — with CJK sentence punctuation the exception.
 fn scan_url_end(s: &str, from: usize) -> usize {
     let bytes = s.as_bytes();
-    let mut end = from;
+    // An IRI host can start with Unicode immediately after its scheme. Avoid
+    // SIMD setup when there is no ASCII prefix to skip.
+    let mut end = if bytes.get(from).is_some_and(u8::is_ascii) {
+        scan_ascii_url_prefix(bytes, from)
+    } else {
+        from
+    };
+    if end >= bytes.len() || bytes[end].is_ascii() {
+        return end;
+    }
+
+    // A wide ASCII pass stops at the first high-bit byte. Resume the original
+    // Unicode-aware walk there so IRI characters remain part of the URL while
+    // CJK/fullwidth sentence punctuation still terminates it.
     while end < bytes.len() {
         let byte = bytes[end];
         if byte.is_ascii() {
@@ -105,6 +118,78 @@ fn scan_url_end(s: &str, from: usize) -> usize {
         end += ch.len_utf8();
     }
     end
+}
+
+#[cfg(target_arch = "aarch64")]
+#[allow(unsafe_code)]
+#[inline]
+fn scan_ascii_url_prefix(bytes: &[u8], from: usize) -> usize {
+    use std::arch::aarch64::*;
+
+    let end = bytes.len();
+    let mut i = from;
+    // SAFETY: full vectors are loaded only when 16 bytes remain; the overlapping
+    // tail starts at len - 16 and masks positions before the unconsumed cursor.
+    // AArch64 guarantees NEON support. No pointer outlives the borrowed slice.
+    unsafe {
+        let high_bit = vdupq_n_u8(0x7f);
+        let classify = |v: uint8x16_t| {
+            let mut stop = vcgtq_u8(v, high_bit);
+            for terminator in [b' ', b'\t', b'\n', b'\r', b'<', b'>', b'"', b'\'', b'`'] {
+                stop = vorrq_u8(stop, vceqq_u8(v, vdupq_n_u8(terminator)));
+            }
+            let stop = vtstq_u8(stop, stop);
+            let narrow = vshrn_n_u16(vreinterpretq_u16_u8(stop), 4);
+            vget_lane_u64(vreinterpret_u64_u8(narrow), 0)
+        };
+
+        while i + 16 <= end {
+            let mask = classify(vld1q_u8(bytes.as_ptr().add(i)));
+            if mask != 0 {
+                return i + (mask.trailing_zeros() / 4) as usize;
+            }
+            i += 16;
+        }
+        if i < end && end >= 16 {
+            let base = end - 16;
+            let mask =
+                classify(vld1q_u8(bytes.as_ptr().add(base))) & (u64::MAX << ((i - base) * 4));
+            if mask != 0 {
+                return base + (mask.trailing_zeros() / 4) as usize;
+            }
+            return end;
+        }
+    }
+    scan_ascii_url_prefix_scalar(bytes, i)
+}
+
+#[cfg(not(target_arch = "aarch64"))]
+#[inline]
+fn scan_ascii_url_prefix(bytes: &[u8], from: usize) -> usize {
+    scan_ascii_url_prefix_scalar(bytes, from)
+}
+
+#[inline]
+fn scan_ascii_url_prefix_scalar(bytes: &[u8], from: usize) -> usize {
+    let end = bytes.len();
+    let mut i = from;
+    while i + 8 <= end {
+        let chunk = &bytes[i..i + 8];
+        let mut stop = 0u8;
+        for (offset, &byte) in chunk.iter().enumerate() {
+            if !byte.is_ascii() || !is_url_byte(byte) {
+                stop |= 1 << offset;
+            }
+        }
+        if stop != 0 {
+            return i + stop.trailing_zeros() as usize;
+        }
+        i += 8;
+    }
+    while i < end && bytes[i].is_ascii() && is_url_byte(bytes[i]) {
+        i += 1;
+    }
+    i
 }
 
 #[inline]
@@ -247,6 +332,83 @@ mod trimming_tests {
         }
         for end in (8..bytes.len()).step_by(37) {
             assert_eq!(trim_trailing_punct(&bytes, 7, end), original(&bytes, 7, end));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn scalar_oracle(s: &str, from: usize) -> usize {
+        let bytes = s.as_bytes();
+        let mut end = from;
+        while end < bytes.len() {
+            let byte = bytes[end];
+            if byte.is_ascii() {
+                if !is_url_byte(byte) {
+                    break;
+                }
+                end += 1;
+                continue;
+            }
+            let Some(ch) = s.get(end..).and_then(|rest| rest.chars().next()) else {
+                break;
+            };
+            if ends_url(ch) {
+                break;
+            }
+            end += ch.len_utf8();
+        }
+        end
+    }
+
+    #[test]
+    fn matches_scalar_for_every_byte_at_every_offset() {
+        for value in 0u8..=0x7f {
+            for marker_at in 0..40 {
+                let mut bytes = [b'x'; 40];
+                bytes[marker_at] = value;
+                let text = std::str::from_utf8(&bytes).unwrap();
+                for from in 0..=bytes.len() {
+                    assert_eq!(scan_url_end(text, from), scalar_oracle(text, from));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn matches_scalar_for_ascii_tails_and_terminators() {
+        let terminators = [b' ', b'\t', b'\n', b'\r', b'<', b'>', b'"', b'\'', b'`'];
+        for len in 0..=48 {
+            for &terminator in &terminators {
+                let mut bytes = [b'a'; 48];
+                if len > 0 {
+                    bytes[len - 1] = terminator;
+                }
+                let text = std::str::from_utf8(&bytes[..len]).unwrap();
+                for from in 0..=len {
+                    assert_eq!(scan_url_end(text, from), scalar_oracle(text, from));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn preserves_mixed_utf8_and_cjk_boundaries() {
+        for text in [
+            "https://example.test/wiki/日本語。next",
+            "https://example.test/é中/path`tail",
+            "https://example.test/中\u{3000}next",
+            "https://example.test/日本語/fullwidth：tail",
+        ] {
+            for from in 0..=text.len() {
+                assert_eq!(
+                    scan_url_end(text, from),
+                    scalar_oracle(text, from),
+                    "text {text:?}, from {from}"
+                );
+            }
         }
     }
 }
