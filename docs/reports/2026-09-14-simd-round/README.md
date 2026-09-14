@@ -1,6 +1,11 @@
 # SIMD round: a single probe for link components
 
-**Decision: keep the candidate on local branch `codex/simd-link-probe`; keep
+**Follow-up:** The [subsequent optimization rounds](../2026-09-14-optimization-rounds/README.md)
+repeat the old binaries, vary LTO, and evaluate a combined implementation. The
+single-probe source change is now promoted locally; the original decision and
+measurements below remain the record of this first study.
+
+**Original decision: keep the candidate on local branch `codex/simd-link-probe`; keep
 `main`'s parser unchanged.** The candidate improves parsing and typical complete
 Markdown processing, but two large render-only controls regress reproducibly.
 That prevents an unconditional promotion under the port discipline.

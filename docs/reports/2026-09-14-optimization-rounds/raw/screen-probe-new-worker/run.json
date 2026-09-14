@@ -1,0 +1,71 @@
+{
+  "schema": 2,
+  "rounds": 1,
+  "pairs_per_round": 3,
+  "window_ms": 20,
+  "warmup_ms": 20,
+  "seed": 20260914,
+  "modes": [
+    "reuse",
+    "render"
+  ],
+  "case_filter": "scan-|wiki-volcano|wiki-chess|typescript-handbook|^(comment-table|comment-ack|wiki-chess-article-body|typescript-handbook-typescript-5-0)$",
+  "cases": [
+    "comment-ack",
+    "comment-table",
+    "typescript-handbook-the-handbook",
+    "typescript-handbook-advanced-types",
+    "typescript-handbook-compiler-options",
+    "typescript-handbook-typescript-5-0",
+    "wiki-chess-first-paragraph",
+    "wiki-chess-lead",
+    "wiki-chess-article-body",
+    "wiki-chess-plain-prose",
+    "wiki-volcano-first-paragraph",
+    "wiki-volcano-lead",
+    "wiki-volcano-article-body",
+    "wiki-volcano-plain-prose",
+    "scan-empty",
+    "scan-short-link",
+    "scan-short-title",
+    "scan-short-entity",
+    "scan-short-reference",
+    "scan-long-clean-links",
+    "scan-many-short-links",
+    "scan-escaped-links",
+    "scan-unicode-links",
+    "scan-long-references",
+    "scan-dense-escapes",
+    "scan-dense-entities",
+    "scan-malformed-entities",
+    "scan-mdx-links",
+    "scan-extension-links"
+  ],
+  "corpus_sha256": "31583750d418c1b9932ea391044f57ea579b9a8bbb6255a0b97f1b6b946b78d3",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "aee2b1ee884ed781cc74be3657c0d138a72c3127f7f5d602db632b0689052022",
+  "host_before": {
+    "time_utc": "2026-09-14T07:51:12Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      4.66259765625,
+      4.853515625,
+      4.97607421875
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; (no estimate) present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-14T07:51:23Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      5.076171875,
+      4.93896484375,
+      5.0048828125
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; (no estimate) present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

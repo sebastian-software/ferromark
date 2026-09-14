@@ -1,0 +1,3 @@
+# Unified patches preserve a single context-prefix space on blank lines.
+# Keep these byte-exact artifacts; whitespace checks still apply to source files.
+patches/*.patch -whitespace

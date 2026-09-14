@@ -1,0 +1,181 @@
+{
+  "worker_sha256": "fd7c88b7dd3aeea3c312cb4cdd7e4f34a81e9fcf17cb6e554de5d6ebc5e3e9b9",
+  "build": {
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+    "rustflags": "-C target-cpu=generic",
+    "worker_sha256": "c053a8f7143b1d64eabc610a458884f082f0c3667e6a3836d54dd7e15eb6551a",
+    "baseline_revision_expected": "ae963d425a4c15841ced5f7359a4b9adc47ca931",
+    "engines": {
+      "baseline": {
+        "source": "/private/tmp/ferromark-v2-simd-round/baseline",
+        "source_revision": null,
+        "source_tree_sha256": "a2c6b2ab194663056d8be9882f60781ab0c52ee62eeace4f1b27ccd3297d4058",
+        "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+        "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+        "binary": "/private/tmp/ferromark-v2-rounds-2/allocation-build-rank/baseline/target/release/simd-round-allocation-worker",
+        "binary_sha256": "8639952c3fb7a5fe1f2c3ae8d517fc755c2a817d533bf93c35de0c65836345d1",
+        "lock_sha256": "d3bea6dfb8b08f7fc740fc8b1b90b8c391acb7b095516440462101fa69d9c2f2",
+        "retained_registry_packages": 21,
+        "registry_versions_unchanged": true,
+        "command": [
+          "cargo",
+          "+1.95",
+          "build",
+          "--release",
+          "--offline"
+        ]
+      },
+      "candidate": {
+        "source": "/private/tmp/ferromark-v2-rounds-2/structure-rank",
+        "source_revision": "4de75d4843747a218771b5ec46df9171d4f54a15",
+        "source_tree_sha256": "016233f35f9f55cf9371f9ad4e813d3465fa828ff746f69af6213f7712cbf0ff",
+        "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+        "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+        "binary": "/private/tmp/ferromark-v2-rounds-2/allocation-build-rank/candidate/target/release/simd-round-allocation-worker",
+        "binary_sha256": "cc0cf032a527d5794403dd594d2de8fc58a9df9b222f709d8226e376d5f6524e",
+        "lock_sha256": "d3bea6dfb8b08f7fc740fc8b1b90b8c391acb7b095516440462101fa69d9c2f2",
+        "retained_registry_packages": 21,
+        "registry_versions_unchanged": true,
+        "command": [
+          "cargo",
+          "+1.95",
+          "build",
+          "--release",
+          "--offline"
+        ]
+      }
+    }
+  },
+  "measurements": {
+    "baseline": {
+      "binary_sha256": "4ceeb016e3fd0a1d0d855cc752cf7eccf80147f563ecd947bca0c14bd31cdb68",
+      "cases": {
+        "table-plain-256": {
+          "input_bytes": 299,
+          "arena_capacity_bytes": 20416,
+          "arena_occupied_bytes_including_padding": 712
+        },
+        "table-sparse-256": {
+          "input_bytes": 297,
+          "arena_capacity_bytes": 20416,
+          "arena_occupied_bytes_including_padding": 1992
+        },
+        "table-dense-256": {
+          "input_bytes": 300,
+          "arena_capacity_bytes": 20416,
+          "arena_occupied_bytes_including_padding": 1992
+        },
+        "table-formatted-256": {
+          "input_bytes": 278,
+          "arena_capacity_bytes": 20416,
+          "arena_occupied_bytes_including_padding": 12328
+        },
+        "table-plain-4096": {
+          "input_bytes": 4139,
+          "arena_capacity_bytes": 36800,
+          "arena_occupied_bytes_including_padding": 3784
+        },
+        "table-sparse-4096": {
+          "input_bytes": 4137,
+          "arena_capacity_bytes": 36800,
+          "arena_occupied_bytes_including_padding": 24264
+        },
+        "table-dense-4096": {
+          "input_bytes": 4140,
+          "arena_capacity_bytes": 36800,
+          "arena_occupied_bytes_including_padding": 24264
+        },
+        "table-formatted-4096": {
+          "input_bytes": 4126,
+          "arena_capacity_bytes": 257856,
+          "arena_occupied_bytes_including_padding": 210032
+        },
+        "table-plain-16000": {
+          "input_bytes": 16044,
+          "arena_capacity_bytes": 131008,
+          "arena_occupied_bytes_including_padding": 13320
+        },
+        "table-sparse-16000": {
+          "input_bytes": 16044,
+          "arena_capacity_bytes": 131008,
+          "arena_occupied_bytes_including_padding": 94856
+        },
+        "table-dense-16000": {
+          "input_bytes": 16044,
+          "arena_capacity_bytes": 131008,
+          "arena_occupied_bytes_including_padding": 62088
+        },
+        "table-formatted-16000": {
+          "input_bytes": 16034,
+          "arena_capacity_bytes": 917312,
+          "arena_occupied_bytes_including_padding": 838064
+        }
+      }
+    },
+    "candidate": {
+      "binary_sha256": "850ffb4cadd005b431f57f943b6f07a24940ad0fcc5b3373e2116d610660e4e2",
+      "cases": {
+        "table-plain-256": {
+          "input_bytes": 299,
+          "arena_capacity_bytes": 20416,
+          "arena_occupied_bytes_including_padding": 712
+        },
+        "table-sparse-256": {
+          "input_bytes": 297,
+          "arena_capacity_bytes": 20416,
+          "arena_occupied_bytes_including_padding": 1000
+        },
+        "table-dense-256": {
+          "input_bytes": 300,
+          "arena_capacity_bytes": 20416,
+          "arena_occupied_bytes_including_padding": 1000
+        },
+        "table-formatted-256": {
+          "input_bytes": 278,
+          "arena_capacity_bytes": 20416,
+          "arena_occupied_bytes_including_padding": 11368
+        },
+        "table-plain-4096": {
+          "input_bytes": 4139,
+          "arena_capacity_bytes": 36800,
+          "arena_occupied_bytes_including_padding": 3784
+        },
+        "table-sparse-4096": {
+          "input_bytes": 4137,
+          "arena_capacity_bytes": 36800,
+          "arena_occupied_bytes_including_padding": 8392
+        },
+        "table-dense-4096": {
+          "input_bytes": 4140,
+          "arena_capacity_bytes": 36800,
+          "arena_occupied_bytes_including_padding": 8392
+        },
+        "table-formatted-4096": {
+          "input_bytes": 4126,
+          "arena_capacity_bytes": 257856,
+          "arena_occupied_bytes_including_padding": 194672
+        },
+        "table-plain-16000": {
+          "input_bytes": 16044,
+          "arena_capacity_bytes": 131008,
+          "arena_occupied_bytes_including_padding": 13320
+        },
+        "table-sparse-16000": {
+          "input_bytes": 16044,
+          "arena_capacity_bytes": 131008,
+          "arena_occupied_bytes_including_padding": 31368
+        },
+        "table-dense-16000": {
+          "input_bytes": 16044,
+          "arena_capacity_bytes": 131008,
+          "arena_occupied_bytes_including_padding": 31368
+        },
+        "table-formatted-16000": {
+          "input_bytes": 16034,
+          "arena_capacity_bytes": 917312,
+          "arena_occupied_bytes_including_padding": 776624
+        }
+      }
+    }
+  }
+}
