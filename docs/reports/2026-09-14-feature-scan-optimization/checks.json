@@ -1,0 +1,62 @@
+{
+  "workspace_tests": 770,
+  "workspace_suites": 54,
+  "harness_unit_tests": 3,
+  "generated_differential_comparisons": 1200,
+  "formatting": "pass",
+  "workspace_clippy": "pass",
+  "workspace_benchmark_build": "pass",
+  "archive_integrity": "pass",
+  "production_matches_timed_candidate": true,
+  "source_commits": [
+    "203babb",
+    "3c868eb"
+  ],
+  "datasets": [
+    {
+      "name": "screens/D1",
+      "cases": 37,
+      "paired_samples": 444
+    },
+    {
+      "name": "screens/D2",
+      "cases": 37,
+      "paired_samples": 444
+    },
+    {
+      "name": "screens/D3",
+      "cases": 37,
+      "paired_samples": 444
+    },
+    {
+      "name": "screens/D4",
+      "cases": 37,
+      "paired_samples": 444
+    },
+    {
+      "name": "screens/L1",
+      "cases": 36,
+      "paired_samples": 432
+    },
+    {
+      "name": "screens/L2",
+      "cases": 36,
+      "paired_samples": 432
+    },
+    {
+      "name": "final",
+      "cases": 75,
+      "paired_samples": 2700
+    },
+    {
+      "name": "off-on-baseline",
+      "cases": 6,
+      "paired_samples": 216
+    },
+    {
+      "name": "off-on-candidate",
+      "cases": 6,
+      "paired_samples": 216
+    }
+  ]
+}

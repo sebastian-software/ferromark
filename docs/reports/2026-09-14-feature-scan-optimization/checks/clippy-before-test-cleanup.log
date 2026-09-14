@@ -1,0 +1,18 @@
+    Checking ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+error: use of a disallowed macro `std::format`
+   --> crates/ferromark_parser/src/parser/definition_list.rs:446:30
+    |
+446 |                 let source = format!("{indent}:{after}");
+    |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: avoid heap-allocating formatted temporary strings in hot paths; use StringBuilder or direct buffer writes instead
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.95.0/index.html#disallowed_macros
+note: the lint level is defined here
+   --> crates/ferromark_parser/src/lib.rs:24:9
+    |
+ 24 | #![deny(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    Checking ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+error: could not compile `ferromark_parser` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

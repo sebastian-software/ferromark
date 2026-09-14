@@ -1,0 +1,78 @@
+{
+  "schema": 2,
+  "rounds": 2,
+  "pairs_per_round": 3,
+  "window_ms": 20,
+  "warmup_ms": 20,
+  "seed": 20260914,
+  "modes": [
+    "parse",
+    "reuse"
+  ],
+  "case_filter": "line_comments|comment-|slash-paths|mixed--deflists",
+  "cases": [
+    "feature--parser.line_comments-plain-300",
+    "feature--parser.line_comments-active-300",
+    "feature--parser.line_comments-plain-4096",
+    "feature--parser.line_comments-active-4096",
+    "feature--parser.line_comments-plain-65536",
+    "feature--parser.line_comments-active-65536",
+    "mixed--deflists--comment-ack",
+    "mixed--control--comment-ack",
+    "mixed--deflists--comment-review",
+    "mixed--control--comment-review",
+    "mixed--deflists--comment-table",
+    "mixed--control--comment-table",
+    "mixed--deflists--comment-incident",
+    "mixed--control--comment-incident",
+    "mixed--deflists--legacy-node-ferromark-readme",
+    "mixed--deflists--legacy-docs-markdown-extensions",
+    "mixed--deflists--rust-book-ch03-04-comments",
+    "mixed--deflists--vite-docs-api-plugin",
+    "mixed--deflists--typescript-handbook-compiler-options",
+    "mixed--deflists--wiki-rainbow-first-paragraph",
+    "mixed--deflists--wiki-tea-lead",
+    "mixed--deflists--wiki-tea-plain-prose",
+    "mixed--deflists--wiki-chess-article-body",
+    "diagnostic--comment-inline-lookalike",
+    "diagnostic--comment-indented",
+    "diagnostic--comment-fenced",
+    "diagnostic--comment-quote",
+    "diagnostic--comment-url-path",
+    "diagnostic--comment-url-query",
+    "diagnostic--comment-email",
+    "diagnostic--comment-span-sensitive",
+    "diagnostic--slash-paths-without-comments-4096",
+    "diagnostic--slash-paths-without-comments-65536",
+    "control--line_comments-plain-300",
+    "control--line_comments-plain-4096",
+    "control--line_comments-plain-65536"
+  ],
+  "corpus_sha256": "5f7147cdc1efc97d523525ccf69d207777934152630b6a0fb32800166c47f94d",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+  "host_before": {
+    "time_utc": "2026-09-14T15:38:07Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      3.29052734375,
+      3.23681640625,
+      3.46728515625
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t78%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-14T15:38:32Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      3.41259765625,
+      3.265625,
+      3.47021484375
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t78%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "schema": 2,
+  "rounds": 2,
+  "pairs_per_round": 3,
+  "window_ms": 20,
+  "warmup_ms": 20,
+  "seed": 20260914,
+  "modes": [
+    "parse",
+    "reuse"
+  ],
+  "case_filter": "definition_lists|definition-|definitions-|mixed--deflists",
+  "cases": [
+    "feature--parser.definition_lists-plain-300",
+    "feature--parser.definition_lists-active-300",
+    "feature--parser.definition_lists-plain-4096",
+    "feature--parser.definition_lists-active-4096",
+    "feature--parser.definition_lists-plain-65536",
+    "feature--parser.definition_lists-active-65536",
+    "mixed--deflists--comment-ack",
+    "mixed--deflists--comment-review",
+    "mixed--deflists--comment-table",
+    "mixed--deflists--comment-incident",
+    "mixed--deflists--legacy-node-ferromark-readme",
+    "mixed--deflists--legacy-docs-markdown-extensions",
+    "mixed--deflists--rust-book-ch03-04-comments",
+    "mixed--deflists--vite-docs-api-plugin",
+    "mixed--deflists--typescript-handbook-compiler-options",
+    "mixed--deflists--wiki-rainbow-first-paragraph",
+    "mixed--deflists--wiki-tea-lead",
+    "mixed--deflists--wiki-tea-plain-prose",
+    "mixed--deflists--wiki-chess-article-body",
+    "diagnostic--definition-near-miss-punctuation",
+    "diagnostic--definition-near-miss-indented",
+    "diagnostic--definition-near-miss-blank",
+    "diagnostic--definition-late-after-prose",
+    "diagnostic--definition-late-after-list",
+    "diagnostic--definition-nested-list",
+    "diagnostic--definition-nested-quote",
+    "diagnostic--definition-fenced-lookalike",
+    "diagnostic--definition-crlf",
+    "diagnostic--definition-bom",
+    "diagnostic--definition-span-sensitive",
+    "diagnostic--late-definition-prose-4096",
+    "diagnostic--url-colon-definitions-4096",
+    "diagnostic--late-definition-prose-65536",
+    "diagnostic--url-colon-definitions-65536",
+    "control--definition_lists-plain-300",
+    "control--definition_lists-plain-4096",
+    "control--definition_lists-plain-65536"
+  ],
+  "corpus_sha256": "a1722262c902edbf5cd58395d8efdfb093d0f5991a74aadbc3479cf4387d28b4",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+  "host_before": {
+    "time_utc": "2026-09-14T15:42:17Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      3.3701171875,
+      3.326171875,
+      3.4345703125
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t78%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-14T15:42:45Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      3.5576171875,
+      3.3603515625,
+      3.44091796875
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t78%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

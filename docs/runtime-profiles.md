@@ -15,6 +15,12 @@ method and exact configurations.
 
 ## Measured results
 
+The tables below preserve the original `c57ef45` measurements. Definition-list
+and line-comment implementation costs have since been reduced; the
+[follow-up investigation](reports/2026-09-14-feature-scan-optimization/README.md)
+compares unchanged feature settings before and after those optimizations and
+remeasures their remaining off/on overhead. No syntax or defaults changed.
+
 The [full report](reports/2026-09-14-runtime-profiles/README.md) includes all
 37 [feature rows](reports/2026-09-14-runtime-profiles/FEATURES.md),
 [mixed-document profile results](reports/2026-09-14-runtime-profiles/PROFILES.md),
@@ -164,9 +170,11 @@ map; they cannot yet serve as functional profile dimensions.
 
 The results suggest three separate follow-ups:
 
-1. Make definition-list and line-comment rejection cheaper when the document
-   contains no matching syntax. Any preflight must cost less than the work it
-   removes, preserve nested-source semantics, and pass identical-output checks.
+1. Definition-list and line-comment rejection has now been optimized in the
+   [feature-scan follow-up](reports/2026-09-14-feature-scan-optimization/README.md).
+   Actual definition bodies and comment-bearing paragraphs still perform
+   necessary parsing, text joining, and source mapping; a late definition marker
+   can retain speculative term probes on earlier paragraphs.
 2. Avoid renderer preparation work when the selected output profile needs neither
    heading IDs nor TOC discovery. Measure this separately from profile selection.
 3. Once each use-case contract is settled, expose a profile that pairs parser
