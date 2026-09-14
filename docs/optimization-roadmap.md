@@ -20,6 +20,11 @@ an immutable account of its original measurements apart from a follow-up link.
   linear scans instead of rescanning once per trailing closer.
 - AArch64 NEON skips ASCII URL spans, with Unicode/CJK handling and portable
   fallbacks retained. An immediate Unicode host avoids unnecessary SIMD setup.
+- Definition-list probes cache possible markers, retain term source ranges,
+  and skip irrelevant block recognizers on ordinary ASCII terms. Line-comment
+  paragraphs reuse already discovered comment positions. The
+  [feature-cost follow-up](reports/2026-09-14-feature-scan-optimization/README.md)
+  records these changes, their remaining runtime costs, and rejected variants.
 
 The broad v1/v2 comparison still refers to its original frozen binaries. These
 new rounds compare v2 before and after optimization; do not substitute their

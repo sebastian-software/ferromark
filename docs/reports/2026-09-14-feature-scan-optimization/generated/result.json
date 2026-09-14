@@ -1,0 +1,62 @@
+{
+  "status": "exact HTML, AST Debug (including spans), and children",
+  "inputs": 400,
+  "configurations": 3,
+  "comparisons": 1200,
+  "seed": 20260914,
+  "corpus_sha256": "e0dafbbab55c13efc42a18859a93a830246756c8e858f6aff5d78fb3826d2f5e",
+  "output_sha256": "b95e271fade68312e444b5beed4986bdc6cdafffbd05810271b932bfe13bc8fb",
+  "generator_sha256": "9984a4de47bcb60e5803c78d178bcb7799a8c6dafd53930b14c679360447b51a",
+  "engines": {
+    "baseline": {
+      "frozen_source": "/private/tmp/ferromark-v2-feature-D1-build/sources/baseline",
+      "frozen_source_sha256": "1bcd38378177ad3404449b8ec3d4d44018d4b06d9b7de8e524d562131766560e",
+      "source": "/private/tmp/ferromark-v2-feature-D1-build/core/baseline",
+      "source_revision": null,
+      "source_tree_sha256": "1bcd38378177ad3404449b8ec3d4d44018d4b06d9b7de8e524d562131766560e",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+      "lto": "fat",
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/ferromark-v2-feature-D1-build/baseline/target/release/feature-scan-worker",
+      "binary_sha256": "ac5cc0c3810a3d00a63f16053463a171c8e627bf028e721aca98a5cc69942173",
+      "lock_sha256": "73983e74b2cd403038a4575596c77066ad92ceb170ea04b8d195ff2b88d9b374",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "reused"
+    },
+    "candidate": {
+      "frozen_source": "/private/tmp/ferromark-v2-feature-final-build/sources/candidate",
+      "frozen_source_sha256": "af9684f20706bfb05a705adcc936a93d49f0bd88f44e0f59a9e5c81f88ed05aa",
+      "source": "/private/tmp/ferromark-v2-feature-final-build/core/candidate",
+      "source_revision": null,
+      "source_tree_sha256": "af9684f20706bfb05a705adcc936a93d49f0bd88f44e0f59a9e5c81f88ed05aa",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+      "lto": "fat",
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/ferromark-v2-feature-final-build/candidate/target/release/feature-scan-worker",
+      "binary_sha256": "03ffb15b1dbecc264f637524126e9cd6255266afe912d1417307df539757d3f8",
+      "lock_sha256": "73983e74b2cd403038a4575596c77066ad92ceb170ea04b8d195ff2b88d9b374",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "built"
+    }
+  }
+}

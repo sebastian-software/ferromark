@@ -1,0 +1,168 @@
+diff --git a/crates/ferromark_parser/src/parser/block.rs b/crates/ferromark_parser/src/parser/block.rs
+index 3482125..f08c395 100644
+--- a/crates/ferromark_parser/src/parser/block.rs
++++ b/crates/ferromark_parser/src/parser/block.rs
+@@ -211,6 +211,7 @@ impl<'a> Parser<'a> {
+             None => scan_next_line_start(bytes, start),
+         };
+         self.position = content_end;
++        let mut first_line_comment = None;
+ 
+         loop {
+             if self.is_at_end() {
+@@ -218,6 +219,7 @@ impl<'a> Parser<'a> {
+             }
+ 
+             if self.is_line_comment_at(self.position) {
++                first_line_comment.get_or_insert(self.position);
+                 self.position = self.skip_line_comments_from(self.position);
+                 continue;
+             }
+@@ -241,7 +243,8 @@ impl<'a> Parser<'a> {
+             if let Some(depth) = self.setext_underline_depth(line_start, cursor) {
+                 let heading_end = scan_next_line_start(bytes, line_start);
+                 self.position = heading_end;
+-                let (raw_content, source_map) = self.without_line_comments(start, content_end);
++                let (raw_content, source_map) =
++                    self.without_line_comments_with_first(start, content_end, first_line_comment);
+                 let content = raw_content.trim();
+                 let (content, id, classes) = self.split_heading_attributes(content);
+                 let offset = if source_map.is_some() {
+@@ -280,7 +283,8 @@ impl<'a> Parser<'a> {
+             self.position = content_end;
+         }
+ 
+-        let (raw_content, source_map) = self.without_line_comments(start, content_end);
++        let (raw_content, source_map) =
++            self.without_line_comments_with_first(start, content_end, first_line_comment);
+         let content = raw_content.trim();
+         if content.is_empty() {
+             return Ok(None);
+diff --git a/crates/ferromark_parser/src/parser/line_comments.rs b/crates/ferromark_parser/src/parser/line_comments.rs
+index e18858d..ee0e743 100644
+--- a/crates/ferromark_parser/src/parser/line_comments.rs
++++ b/crates/ferromark_parser/src/parser/line_comments.rs
+@@ -1,5 +1,7 @@
+ //! Physical source-line comments, independent of Markdown container prefixes.
+ 
++use memchr::memchr;
++
+ use super::Parser;
+ use super::line_scan::next_line_start;
+ use super::spans::SourceMap;
+@@ -75,16 +77,57 @@ impl<'a> Parser<'a> {
+             return (&self.source[start..end], None);
+         }
+         let bytes = self.source.as_bytes();
+-        let mut cursor = start;
+-        while cursor < end && !self.is_line_comment_at(cursor) {
+-            cursor = next_line_start(bytes, cursor);
++        if !contains_comment_marker(bytes, start, end) {
++            return (&self.source[start..end], None);
++        }
++        let mut first_comment = start;
++        while first_comment < end && !self.is_line_comment_at(first_comment) {
++            first_comment = next_line_start(bytes, first_comment);
+         }
+-        if cursor >= end {
++        if first_comment >= end {
++            return (&self.source[start..end], None);
++        }
++        self.without_line_comments_with_first(start, end, Some(first_comment))
++    }
++
++    /// Join a paragraph when its first eligible comment was already observed
++    /// by the block parser. A comment position at or after `end` belongs to
++    /// trailing content excluded from this paragraph, so the original slice
++    /// remains valid and no scan is needed.
++    pub(super) fn without_line_comments_with_first(
++        &self,
++        start: usize,
++        end: usize,
++        first_comment: Option<usize>,
++    ) -> (&'a str, Option<SourceMap>) {
++        if !self.options.line_comments {
+             return (&self.source[start..end], None);
+         }
++        let bytes = self.source.as_bytes();
++        // `None` means the block parser already proved that this paragraph
++        // contains no eligible comments. Reference-definition callers use
++        // `without_line_comments` above to perform discovery first.
++        let Some(first_comment) = first_comment.filter(|&comment| comment < end) else {
++            return (&self.source[start..end], None);
++        };
++
+         let mut text = self.allocator.new_string();
+         let mut map = SourceMap::default();
+-        cursor = start;
++
++        // The block parser has already checked each line before this known
++        // marker. Copy that prefix directly, retaining one source-map entry
++        // per physical line so inline spans map exactly as before.
++        let mut cursor = start;
++        while cursor < first_comment {
++            let next = next_line_start(bytes, cursor).min(first_comment);
++            map.push_line(text.len(), next - cursor, cursor, next - cursor);
++            text.push_str(&self.source[cursor..next]);
++            cursor = next;
++        }
++
++        // The first marker and any later markers still need the normal
++        // eligibility check: URLs, inline text, code, and opaque HTML may
++        // contain `//` without being physical line comments.
+         while cursor < end {
+             let next = next_line_start(bytes, cursor).min(end);
+             if !self.is_line_comment_at(cursor) {
+@@ -96,3 +139,19 @@ impl<'a> Parser<'a> {
+         (text.into_bump_str(), Some(map))
+     }
+ }
++
++/// Returns whether the source range contains the necessary `//` marker.
++fn contains_comment_marker(bytes: &[u8], start: usize, end: usize) -> bool {
++    let mut cursor = start;
++    while cursor < end {
++        let Some(offset) = memchr(b'/', &bytes[cursor..end]) else {
++            return false;
++        };
++        cursor += offset;
++        if cursor + 1 < end && bytes[cursor + 1] == b'/' {
++            return true;
++        }
++        cursor += 1;
++    }
++    false
++}
+diff --git a/crates/ferromark_renderer/tests/line_comments.rs b/crates/ferromark_renderer/tests/line_comments.rs
+index 76b69c6..11bd560 100644
+--- a/crates/ferromark_renderer/tests/line_comments.rs
++++ b/crates/ferromark_renderer/tests/line_comments.rs
+@@ -72,6 +72,13 @@ fn explicit_blank_lines_still_separate_paragraphs() {
+     assert_eq!(render("first\n\n// private\n\nsecond\n"), "<p>first</p>\n<p>second</p>\n");
+ }
+ 
++#[test]
++fn trailing_comments_outside_paragraph_content_are_borrowed() {
++    assert_eq!(render("first\n// trailing\n\nsecond\n"), "<p>first</p>\n<p>second</p>\n");
++    assert_eq!(render("first\n// trailing\n# heading\n"), "<p>first</p>\n<h1>heading</h1>\n");
++    assert_eq!(render("first\n// trailing"), "<p>first</p>\n");
++}
++
+ #[test]
+ fn ordinary_slashes_escaped_markers_and_inline_code_remain_text() {
+     assert_eq!(
+@@ -80,6 +87,14 @@ fn ordinary_slashes_escaped_markers_and_inline_code_remain_text() {
+     );
+ }
+ 
++#[test]
++fn slash_heavy_prose_without_eligible_comments_stays_a_borrowed_paragraph() {
++    assert_eq!(
++        render("https://example.com/a//b\npath /// suffix\nText // ordinary\n"),
++        "<p><a href=\"https://example.com/a//b\">https://example.com/a//b</a>\npath /// suffix\nText // ordinary</p>\n"
++    );
++}
++
+ #[test]
+ fn tabs_and_four_space_indentation_are_not_comments() {
+     let html = render("   // hidden\n    // four spaces\n\t// tab\n");

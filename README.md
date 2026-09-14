@@ -85,6 +85,9 @@ The [runtime-profile study](docs/runtime-profiles.md) measures 37 individual
 options, unused-feature overhead, and candidate recipes for comments, articles,
 documentation, and MDX. It separates parser/rendering costs and fresh/reused
 lifecycles, with exact-output checks for tailored-profile comparisons.
+The [definition-list and line-comment follow-up](docs/reports/2026-09-14-feature-scan-optimization/README.md)
+investigates and reduces their scan/allocation overhead while preserving HTML,
+ASTs, and source positions. It records accepted and rejected attempts.
 
 ## Features at a glance
 
@@ -199,7 +202,7 @@ and one leading BOM is treated as an encoding marker with original spans preserv
 | CRLF / CR variants | 1,304/1,304 agree with their LF controls |
 | Original cmark / cmark-gfm corpus | 106/106 agree |
 | Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | 763 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, and frontmatter |
+| Workspace regression tests | 770 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, and definition-list scan regressions |
 
 Agreement permits conservative HTML serialization equivalence; raw output and
 all mismatches remain in the report. The two reference exceptions have exact
