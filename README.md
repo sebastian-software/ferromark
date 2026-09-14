@@ -247,6 +247,11 @@ v2 runs at 1.52× v1's speed fresh and
 1.45× with reuse. Individual documents can
 favor v1, including the 310-byte table comment in both lifecycles.
 
+The [OX regression investigation](docs/reports/2026-09-14-ox-regression/README.md)
+traces most of the current gap on these 14 cases to paragraph handling added for
+line comments, even with the flag off; input normalization is a smaller contributor.
+Isolated bypasses establish optimization targets while preserving the production core.
+
 The all-six subset contains ten comments and four plain-prose views. The broader
 five-engine subset also covers technical docs, linked encyclopedia excerpts,
 references, and READMEs. Both agreeing subsets span 37–80,966 bytes. OX has no
