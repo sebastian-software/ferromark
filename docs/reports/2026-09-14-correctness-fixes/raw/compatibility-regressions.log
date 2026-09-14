@@ -1,0 +1,20 @@
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.78s
+     Running tests/compatibility_regressions.rs (target/debug/deps/compatibility_regressions-c89a67fd311f58dd)
+
+running 12 tests
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test commonmark_gfm_exceptions_keep_their_expected_links ... ok
+test all_current_gfm_extension_examples_match ... ok
+test all_commonmark_examples_preserve_meaning_with_crlf_and_cr ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

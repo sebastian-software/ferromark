@@ -5,6 +5,11 @@ use super::Parser;
 
 mod remap;
 
+/// Shared traversal for stripped sub-sources and root character replacement.
+pub(in crate::parser) trait SpanMap {
+    fn map_span(&self, span: Span) -> Span;
+}
+
 #[derive(Debug, Default)]
 pub(in crate::parser) struct SourceMap {
     lines: SmallVec<[SourceMapLine; 8]>,
@@ -56,7 +61,9 @@ impl SourceMap {
     pub(in crate::parser) fn remap_node_spans<'a>(&self, node: &mut Node<'a>) {
         Parser::remap_node_spans(node, self);
     }
+}
 
+impl SpanMap for SourceMap {
     fn map_span(&self, span: Span) -> Span {
         if self.lines.is_empty() {
             return span;
@@ -66,7 +73,9 @@ impl SourceMap {
         let end = if span.start == span.end { start } else { self.map_end(span.end as usize) };
         Span::new(start, end)
     }
+}
 
+impl SourceMap {
     fn map_start(&self, generated: usize) -> u32 {
         let index = self.lines.partition_point(|line| generated >= line.generated_end);
         let Some(line) = self.lines.get(index).copied() else {

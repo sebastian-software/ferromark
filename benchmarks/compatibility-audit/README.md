@@ -22,11 +22,11 @@ versions and verifies that no new registry versions were resolved. It creates
 a separate Cargo workspace and release binary; it does not change root dependencies.
 The worker allocates a fresh arena, parses, and renders each JSONL request.
 
-**The audit currently exits 1 with `--fail-on-differences`.** This is the
-expected signal for the documented open issues, not a build failure. The flag
+**The corrected implementation passes `--fail-on-differences`.** The flag
 checks configured CommonMark, the current GFM extension sections, line endings,
-and normative targeted probes. It excludes deliberate default-profile probes
-and deliberately incorrect normalizer counterexamples. Without the flag the
+and normative targeted probes. It also rejects parser errors/panics in any lane
+and verifies that the deliberately incorrect normalizer counterexamples are
+rejected. Deliberate default-profile differences are diagnostic. Without the flag the
 command generates a report and exits successfully; that is not a conformance pass.
 
 The optional `--upstream-worker PATH` uses the frozen six-engine worker from
@@ -45,12 +45,15 @@ the public renderer defaults; the latter also retains GFM's footnotes setting.
 the renderer's unconditional heading IDs, callouts, TOC, and fence language cleanup.
 
 Every example keeps its input, expected HTML, actual HTML, errors, and both
-the inherited and conservative comparison result. Heading-ID differences are
+the current spec normalizer and conservative comparison result. Fields named
+`inherited_*` in the historical audit became `spec_*` after the normalizer
+was strengthened. Heading-ID differences are
 diagnostic, not silently admitted as exact output. Neither comparator is a
 browser DOM implementation or a proof for arbitrary raw HTML/CSS. In particular,
 the conservative helper still has limitations with duplicate attributes and
 foreign-content whitespace. Read the
-[findings and classified exceptions](../../docs/reports/2026-09-14-compatibility-audit/README.md)
+[original findings and classified exceptions](../../docs/reports/2026-09-14-compatibility-audit/README.md)
+and [the fixes](../../docs/reports/2026-09-14-correctness-fixes/README.md)
 before treating a mismatch count as a parser failure count.
 
 ## Fixture provenance

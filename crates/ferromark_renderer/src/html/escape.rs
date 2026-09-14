@@ -36,6 +36,10 @@ static URL_ESCAPE_TABLE: [&str; 256] = {
     table[b'>' as usize] = "%3E";
     table[b'"' as usize] = "%22";
     table[b' ' as usize] = "%20";
+    table[b'\\' as usize] = "%5C";
+    table[b'[' as usize] = "%5B";
+    table[b']' as usize] = "%5D";
+    table[b'`' as usize] = "%60";
     table
 };
 
@@ -46,6 +50,10 @@ static URL_ESCAPE_FLAG: [u8; 256] = {
     t[b'>' as usize] = 1;
     t[b'"' as usize] = 1;
     t[b' ' as usize] = 1;
+    t[b'\\' as usize] = 1;
+    t[b'[' as usize] = 1;
+    t[b']' as usize] = 1;
+    t[b'`' as usize] = 1;
     t
 };
 
@@ -86,15 +94,20 @@ const fn escape_mask(word: u64) -> u64 {
         | has_zero(word ^ splat(b'"'))
 }
 
-/// Nonzero iff `word` holds any of `&`, `<`, `>`, `"`, ` `.
+/// Nonzero iff `word` holds any URL-sensitive byte.
 ///
-/// Same fold: `<`/`>` share bit 1, and so do ` `(0x20)/`"`(0x22), leaving `&`
-/// on its own.
+/// The first three tests retain the compact folds used by text escaping;
+/// syntax-sensitive URL bytes use exact one-needle tests so reserved URL
+/// delimiters such as `?`, `#`, and `:` remain untouched.
 #[inline]
 const fn url_escape_mask(word: u64) -> u64 {
     has_zero((word | splat(0x02)) ^ splat(b'>'))
         | has_zero((word | splat(0x02)) ^ splat(b'"'))
         | has_zero(word ^ splat(b'&'))
+        | has_zero(word ^ splat(b'\\'))
+        | has_zero(word ^ splat(b'['))
+        | has_zero(word ^ splat(b']'))
+        | has_zero(word ^ splat(b'`'))
 }
 
 /// Byte offset of the lowest flagged lane in a nonzero mask.
@@ -266,7 +279,82 @@ pub(super) fn write_url_escaped_into(out: &mut String, s: &str) {
     // Ampersand stays HTML-escaped because the result is written inside an
     // HTML attribute, while spaces and tag delimiters are percent encoded to
     // keep the URL value itself stable.
-    escape_into(out, s, url_escape_mask, &URL_ESCAPE_FLAG, &URL_ESCAPE_TABLE, &URL_ESCAPE_NIBBLES);
+    // Brackets in an IPv6 authority are URL syntax and must remain delimiters;
+    // brackets in a path or query are encoded. Split around the one authority
+    // pair when present so the common scanner remains branch-free.
+    out.reserve(s.len());
+    if let Some((open, close)) = ipv6_authority_brackets(s) {
+        escape_into(
+            out,
+            &s[..open],
+            url_escape_mask,
+            &URL_ESCAPE_FLAG,
+            &URL_ESCAPE_TABLE,
+            &URL_ESCAPE_NIBBLES,
+        );
+        out.push_str(&s[open..=close]);
+        escape_into(
+            out,
+            &s[close + 1..],
+            url_escape_mask,
+            &URL_ESCAPE_FLAG,
+            &URL_ESCAPE_TABLE,
+            &URL_ESCAPE_NIBBLES,
+        );
+    } else {
+        escape_into(
+            out,
+            s,
+            url_escape_mask,
+            &URL_ESCAPE_FLAG,
+            &URL_ESCAPE_TABLE,
+            &URL_ESCAPE_NIBBLES,
+        );
+    }
+}
+
+/// Returns the bracket pair delimiting an IPv6 host in a URL authority.
+/// Brackets elsewhere are data and remain subject to URL escaping.
+fn ipv6_authority_brackets(s: &str) -> Option<(usize, usize)> {
+    let bytes = s.as_bytes();
+    memchr::memchr(b'[', bytes)?;
+    let authority_start = if bytes.starts_with(b"//") {
+        2
+    } else {
+        let first = *bytes.first()?;
+        if !first.is_ascii_alphabetic() {
+            return None;
+        }
+        let mut scheme_end = 1;
+        while let Some(&byte) = bytes.get(scheme_end) {
+            if byte.is_ascii_alphanumeric() || matches!(byte, b'+' | b'-' | b'.') {
+                scheme_end += 1;
+            } else {
+                break;
+            }
+        }
+        (bytes.get(scheme_end..scheme_end + 3) == Some(b"://")).then_some(scheme_end + 3)?
+    };
+    let authority_end = bytes[authority_start..]
+        .iter()
+        .position(|&byte| matches!(byte, b'/' | b'?' | b'#'))
+        .map_or(bytes.len(), |offset| authority_start + offset);
+    let userinfo_end = bytes[authority_start..authority_end]
+        .iter()
+        .rposition(|&byte| byte == b'@')
+        .map_or(authority_start, |offset| authority_start + offset + 1);
+    let open = userinfo_end;
+    if bytes.get(open) != Some(&b'[') {
+        return None;
+    }
+    let close = bytes[open + 1..authority_end].iter().position(|&byte| byte == b']')? + open + 1;
+    let host = std::str::from_utf8(&bytes[open + 1..close]).ok()?;
+    host.parse::<std::net::Ipv6Addr>().ok()?;
+    match bytes.get(close + 1..authority_end)? {
+        [] => Some((open, close)),
+        [b':', port @ ..] if port.iter().all(u8::is_ascii_digit) => Some((open, close)),
+        _ => None,
+    }
 }
 
 /// Escapes attribute values, including line endings, directly into the output.

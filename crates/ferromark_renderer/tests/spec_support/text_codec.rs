@@ -9,7 +9,9 @@ pub fn decode_entities(input: &str) -> String {
     while let Some(pos) = rest.find('&') {
         out.push_str(&rest[..pos]);
         rest = &rest[pos..];
-        let Some(semicolon) = rest[..rest.len().min(40)].find(';') else {
+        let Some(semicolon) =
+            rest.as_bytes()[..rest.len().min(40)].iter().position(|&byte| byte == b';')
+        else {
             out.push('&');
             rest = &rest[1..];
             continue;
@@ -47,26 +49,20 @@ fn decode_numeric_entity(entity: &str) -> Option<char> {
     Some(char::from_u32(code).filter(|&c| c != '\0').unwrap_or('\u{fffd}'))
 }
 
-/// Decodes `%HH` escapes once so URL encoding spelling differences vanish.
-pub fn percent_decode(input: &str) -> String {
-    let bytes = input.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut i = 0;
-    while i < bytes.len() {
-        let is_escape = bytes[i] == b'%'
-            && i + 2 < bytes.len()
-            && bytes[i + 1].is_ascii_hexdigit()
-            && bytes[i + 2].is_ascii_hexdigit();
-        if is_escape {
-            let hex = &input[i + 1..i + 3];
-            out.push(u8::from_str_radix(hex, 16).expect("checked hex digits"));
-            i += 3;
+/// Canonicalizes non-ASCII UTF-8 URL spelling without decoding ASCII escapes.
+/// A literal `#`, slash, backslash, or percent sign must never become equivalent
+/// to its percent-encoded spelling merely because both appear in an attribute.
+pub fn normalize_url(input: &str) -> String {
+    use std::fmt::Write;
+    let mut out = String::with_capacity(input.len());
+    for byte in input.bytes() {
+        if byte.is_ascii() {
+            out.push(char::from(byte));
         } else {
-            out.push(bytes[i]);
-            i += 1;
+            write!(&mut out, "%{byte:02X}").unwrap();
         }
     }
-    String::from_utf8_lossy(&out).into_owned()
+    out
 }
 
 pub fn encode_text_into(out: &mut String, text: &str) {
@@ -105,9 +101,16 @@ fn decodes_common_and_numeric_entities() {
 }
 
 #[test]
-fn percent_decodes_once() {
-    assert_eq!(percent_decode("/a%20b"), "/a b");
-    assert_eq!(percent_decode("%C3%A9"), "é");
-    assert_eq!(percent_decode("50%"), "50%");
-    assert_eq!(percent_decode("%2520"), "%20");
+fn url_normalization_preserves_ascii_escapes() {
+    assert_eq!(normalize_url("/a%20b"), "/a%20b");
+    assert_eq!(normalize_url("/café"), "/caf%C3%A9");
+    assert_eq!(normalize_url("%C3%A9"), "%C3%A9");
+    assert_eq!(normalize_url("50%"), "50%");
+    assert_eq!(normalize_url("%2520"), "%2520");
+}
+
+#[test]
+fn entity_probe_never_splits_utf8() {
+    let text = format!("&{}", "é".repeat(30));
+    assert_eq!(decode_entities(&text), text);
 }

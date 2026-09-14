@@ -1,0 +1,231 @@
+{
+  "v1_revision": "143ec2ce151d87d2a3d804a048014afc97733ae0",
+  "worker_sha256": "009aa0ac8ff7a17f4671af9e0af4a5c64d0f3a20f6f0edfb5ee665d47dcf48bd",
+  "results": [
+    {
+      "id": "cm-306-cr",
+      "profile": "commonmark",
+      "markdown": "- foo\r\r- bar\r\r\r- baz\r",
+      "expected": "<ul>\n<li><p>foo</p>\n</li>\n<li><p>bar</p>\n</li>\n<li><p>baz</p>\n</li>\n</ul>\n",
+      "v2_before": "<ul>\n<li><p>foo</p>\n</li>\n<li><p>bar\n\n\n- baz</p>\n</li>\n<li><p>baz</p>\n</li>\n</ul>\n",
+      "v1": "<ul>\n<li>foo\r\r- bar\r\r\r- baz</li>\n</ul>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "cm-309-cr",
+      "profile": "commonmark",
+      "markdown": "-   foo\r\r    notcode\r\r-   foo\r\r<!-- -->\r\r    code\r",
+      "expected": "<ul>\n<li><p>foo</p>\n<p>notcode</p>\n</li>\n<li><p>foo</p>\n</li>\n</ul>\n<!-- -->\n<pre><code>code\n</code></pre>\n",
+      "v2_before": "<ul>\n<li><p>foo</p>\n<p>notcode</p>\n</li>\n<li><p>foo\n\n<!-- -->\n\ncode</p>\n</li>\n</ul>\n<!-- -->\r\n<pre><code>code\n</code></pre>\n",
+      "v1": "<ul>\n<li>foo\r\r    notcode\r\r-   foo\r\r<!-- -->\r\r    code</li>\n</ul>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "cm-311-cr",
+      "profile": "commonmark",
+      "markdown": "1. a\r\r  2. b\r\r   3. c\r",
+      "expected": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n</li>\n<li><p>c</p>\n</li>\n</ol>\n",
+      "v2_before": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n<li><p>c</p>\n</li>\n</ol>\n",
+      "v1": "<ol>\n<li>a\r\r  2. b\r\r   3. c</li>\n</ol>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "cm-313-cr",
+      "profile": "commonmark",
+      "markdown": "1. a\r\r  2. b\r\r    3. c\r",
+      "expected": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n</li>\n</ol>\n<pre><code>3. c\n</code></pre>\n",
+      "v2_before": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n</ol>\n<pre><code>3. c\n</code></pre>\n",
+      "v1": "<ol>\n<li>a\r\r  2. b\r\r    3. c</li>\n</ol>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "cm-326-cr",
+      "profile": "commonmark",
+      "markdown": "- a\r  - b\r  - c\r\r- d\r  - e\r  - f\r",
+      "expected": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n",
+      "v2_before": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n",
+      "v1": "<ul>\n<li>a\r  - b\r  - c\r\r- d\r  - e\r  - f</li>\n</ul>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "cm-491-crlf",
+      "profile": "commonmark",
+      "markdown": "[link](<foo\r\nbar>)\r\n",
+      "expected": "<p>[link](<foo\nbar>)</p>\n",
+      "v2_before": "<p>[link](&lt;foo\nbar&gt;)</p>\n",
+      "v1": "<p>[link](<foo\nbar>)</p>\n",
+      "v1_status": "exact"
+    },
+    {
+      "id": "cm-491-cr",
+      "profile": "commonmark",
+      "markdown": "[link](<foo\rbar>)\r",
+      "expected": "<p>[link](<foo\nbar>)</p>\n",
+      "v2_before": "<p><a href=\"foo\rbar\">link</a></p>\n",
+      "v1": "<p><a href=\"foo\rbar\">link</a></p>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "cm-615-crlf",
+      "profile": "commonmark",
+      "markdown": "<a  /><b2\r\ndata=\"foo\" >\r\n",
+      "expected": "<p><a  /><b2\ndata=\"foo\" ></p>\n",
+      "v2_before": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "v1": "<p><a  /><b2\ndata=\"foo\" ></p>\n",
+      "v1_status": "exact"
+    },
+    {
+      "id": "cm-615-cr",
+      "profile": "commonmark",
+      "markdown": "<a  /><b2\rdata=\"foo\" >\r",
+      "expected": "<p><a  /><b2\ndata=\"foo\" ></p>\n",
+      "v2_before": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "v1": "<p><a  /><b2\rdata=\"foo\" ></p>\n",
+      "v1_status": "exact"
+    },
+    {
+      "id": "cm-616-crlf",
+      "profile": "commonmark",
+      "markdown": "<a foo=\"bar\" bam = 'baz <em>\"</em>'\r\n_boolean zoop:33=zoop:33 />\r\n",
+      "expected": "<p><a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 /></p>\n",
+      "v2_before": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "v1": "<p><a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 /></p>\n",
+      "v1_status": "exact"
+    },
+    {
+      "id": "cm-616-cr",
+      "profile": "commonmark",
+      "markdown": "<a foo=\"bar\" bam = 'baz <em>\"</em>'\r_boolean zoop:33=zoop:33 />\r",
+      "expected": "<p><a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 /></p>\n",
+      "v2_before": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "v1": "<a foo=\"bar\" bam = 'baz <em>\"</em>'\r_boolean zoop:33=zoop:33 />\r",
+      "v1_status": "other"
+    },
+    {
+      "id": "cm-621-cr",
+      "profile": "commonmark",
+      "markdown": "< a><\rfoo><bar/ >\r<foo bar=baz\rbim!bop />\r",
+      "expected": "<p>&lt; a&gt;&lt;\nfoo&gt;&lt;bar/ &gt;\n&lt;foo bar=baz\nbim!bop /&gt;</p>\n",
+      "v2_before": "<p>&lt; a&gt;&lt;\nfoo&gt;&lt;bar/ &gt;\n<foo bar=baz\rbim!bop /></p>\n",
+      "v1": "<p>&lt; a&gt;&lt;\rfoo&gt;&lt;bar/ &gt;\r&lt;foo bar=baz\rbim!bop /&gt;</p>\n",
+      "v1_status": "exact"
+    },
+    {
+      "id": "url-backslash-path",
+      "profile": "commonmark",
+      "markdown": "[link](foo\\bar)\n",
+      "expected": "<p><a href=\"foo%5Cbar\">link</a></p>\n",
+      "v2_before": "<p><a href=\"foo\\bar\">link</a></p>\n",
+      "v1": "<p><a href=\"foo%5Cbar\">link</a></p>\n",
+      "v1_status": "exact"
+    },
+    {
+      "id": "gfm-single-tilde",
+      "profile": "gfm-shared",
+      "markdown": "~word~\n",
+      "expected": "<p><del>word</del></p>\n",
+      "v2_before": "<p>~word~</p>\n",
+      "v1": "<p>~word~</p>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "gfm-triple-tilde",
+      "profile": "gfm-shared",
+      "markdown": "a ~~~word~~~ b\n",
+      "expected": "<p>a ~~~word~~~ b</p>\n",
+      "v2_before": "<p>a <del>~word</del>~ b</p>\n",
+      "v1": "<p>a ~~~word~~~ b</p>\n",
+      "v1_status": "exact"
+    },
+    {
+      "id": "nul-text",
+      "profile": "commonmark",
+      "markdown": "a\u0000b\n",
+      "expected": "<p>a�b</p>\n",
+      "v2_before": "<p>a\u0000b</p>\n",
+      "v1": "<p>a\u0000b</p>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "nul-inline-code",
+      "profile": "commonmark",
+      "markdown": "`a\u0000b`\n",
+      "expected": "<p><code>a�b</code></p>\n",
+      "v2_before": "<p><code>a\u0000b</code></p>\n",
+      "v1": "<p><code>a\u0000b</code></p>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "nul-fenced-code",
+      "profile": "commonmark",
+      "markdown": "```\na\u0000b\n```\n",
+      "expected": "<pre><code>a�b\n</code></pre>\n",
+      "v2_before": "<pre><code>a\u0000b\n</code></pre>\n",
+      "v1": "<pre><code>a\u0000b\n</code></pre>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "nul-link",
+      "profile": "commonmark",
+      "markdown": "[x](/a\u0000b)\n",
+      "expected": "<p><a href=\"/a�b\">x</a></p>\n",
+      "v2_before": "<p>[x](/a\u0000b)</p>\n",
+      "v1": "<p><a href=\"/a%00b\">x</a></p>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "nul-raw-html",
+      "profile": "commonmark",
+      "markdown": "<i title=\"a\u0000b\">x</i>\n",
+      "expected": "<p><i title=\"a�b\">x</i></p>\n",
+      "v2_before": "<p><i title=\"a\u0000b\">x</i></p>\n",
+      "v1": "<p><i title=\"a\u0000b\">x</i></p>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "nul-comment",
+      "profile": "commonmark",
+      "markdown": "<!-- a\u0000b -->\n",
+      "expected": "<!-- a�b -->\n",
+      "v2_before": "<!-- a\u0000b -->\n",
+      "v1": "<!-- a\u0000b -->\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "cr-list-sibling",
+      "profile": "commonmark",
+      "markdown": "- a\r\r- b\r\r- c\r",
+      "expected": "<ul>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n</li>\n<li><p>c</p>\n</li>\n</ul>\n",
+      "v2_before": "<ul>\n<li><p>a</p>\n</li>\n<li><p>b\n\n- c</p>\n</li>\n<li><p>c</p>\n</li>\n</ul>\n",
+      "v1": "<ul>\n<li>a\r\r- b\r\r- c</li>\n</ul>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "cr-nested-list",
+      "profile": "commonmark",
+      "markdown": "- a\r\r- b\r  - c\r",
+      "expected": "<ul>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n<ul>\n<li>c</li>\n</ul>\n</li>\n</ul>\n",
+      "v2_before": "<ul>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n<ul>\n<li>c</li>\n</ul>\n<ul>\n<li>c</li>\n</ul>\n</li>\n</ul>\n",
+      "v1": "<ul>\n<li>a\r\r- b\r  - c</li>\n</ul>\n",
+      "v1_status": "other"
+    },
+    {
+      "id": "crlf-inline-html",
+      "profile": "commonmark",
+      "markdown": "<a  /><b2\r\ndata=\"foo\" >\r\n",
+      "expected": "<p><a  /><b2\ndata=\"foo\" ></p>\n",
+      "v2_before": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "v1": "<p><a  /><b2\ndata=\"foo\" ></p>\n",
+      "v1_status": "exact"
+    },
+    {
+      "id": "cr-angle-destination",
+      "profile": "commonmark",
+      "markdown": "[link](<foo\rbar>)\r",
+      "expected": "<p>[link](<foo\nbar>)</p>\n",
+      "v2_before": "<p><a href=\"foo\rbar\">link</a></p>\n",
+      "v1": "<p><a href=\"foo\rbar\">link</a></p>\n",
+      "v1_status": "other"
+    }
+  ]
+}

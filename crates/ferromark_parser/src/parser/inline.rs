@@ -1,6 +1,6 @@
 use ferromark_allocator::Vec;
 use ferromark_ast::{Node, Span};
-use memchr::memchr;
+use memchr::memchr2;
 
 use super::Parser;
 use crate::error::ParseResult;
@@ -203,11 +203,24 @@ impl<'a> Parser<'a> {
                 Self::push_text(children, "\\", offset + *pos, offset + *pos + 1);
                 *pos += 1;
             }
-            b'~' if self.options.strikethrough
-                && *pos + 1 < content.len()
-                && bytes[*pos + 1] == b'~' =>
-            {
-                self.parse_strikethrough(content, offset, children, pos)?;
+            b'~' if self.options.strikethrough => {
+                let run_len = Self::marker_run_len(bytes, *pos, b'~');
+                // A caller that explicitly enables both extensions keeps the
+                // existing single-tilde subscript grammar. Formal GFM leaves
+                // subscript off, so its single tilde is strikethrough.
+                if run_len == 1 && self.options.subscript {
+                    self.parse_subscript_span(content, offset, children, pos)?;
+                } else if run_len <= 2 {
+                    self.parse_strikethrough(content, offset, children, pos, run_len)?;
+                } else {
+                    Self::push_text(
+                        children,
+                        &content[*pos..*pos + run_len],
+                        offset + *pos,
+                        offset + *pos + run_len,
+                    );
+                    *pos += run_len;
+                }
             }
             b'~' if self.options.subscript && !same_marker_neighbor(bytes, *pos, b'~') => {
                 self.parse_subscript_span(content, offset, children, pos)?;
@@ -261,7 +274,8 @@ impl<'a> Parser<'a> {
         } else if let Some((node, end)) = self.try_parse_mdx_jsx_text(content, *pos, offset)? {
             children.push(node);
             *pos = end;
-        } else if let Some((html, end)) = Self::parse_inline_html(content, *pos, offset) {
+        } else if let Some((mut html, end)) = Self::parse_inline_html(content, *pos, offset) {
+            self.normalize_inline_html(&mut html);
             children.push(Node::Html(html));
             *pos = end;
         } else {
@@ -277,34 +291,73 @@ impl<'a> Parser<'a> {
         offset: usize,
         children: &mut Vec<'a, Node<'a>>,
         pos: &mut usize,
+        marker_len: usize,
     ) -> ParseResult<()> {
         let bytes = content.as_bytes();
-        let inner_start = *pos + 2;
+        let inner_start = *pos + marker_len;
         let mut inner_end = inner_start;
 
-        while inner_end + 1 < content.len() {
-            // Restrict the scan to `..content.len() - 1` so any `~` memchr finds
-            // has a valid `inner_end + 1` byte to test — preserving the original
-            // `inner_end + 1 < content.len()` guard exactly.
-            match memchr(b'~', &bytes[inner_end..content.len() - 1]) {
+        while inner_end < content.len() {
+            match memchr2(b'~', b'`', &bytes[inner_end..]) {
                 Some(off) => inner_end += off,
                 None => break,
             }
-            if bytes[inner_end + 1] == b'~' {
-                let inner_children =
-                    self.parse_inline(&content[inner_start..inner_end], offset + inner_start)?;
-                let span = Span::new((offset + *pos) as u32, (offset + inner_end + 2) as u32);
+            if bytes[inner_end] == b'`' {
+                if let Some(end) = Self::closed_code_span_end(bytes, inner_end) {
+                    inner_end = end;
+                } else {
+                    inner_end += Self::marker_run_len(bytes, inner_end, b'`');
+                }
+                continue;
+            }
+            let close_len = Self::marker_run_len(bytes, inner_end, b'~');
+            if is_escaped_marker(bytes, inner_end) {
+                inner_end += close_len;
+                continue;
+            }
+            if close_len == marker_len
+                && inner_end.checked_sub(1).is_none_or(|index| bytes[index] != b'~')
+                && bytes.get(inner_end + close_len).is_none_or(|byte| *byte != b'~')
+            {
+                let inner = &content[inner_start..inner_end];
+                if inner.is_empty()
+                    || inner.chars().next().is_some_and(char::is_whitespace)
+                    || inner.chars().next_back().is_some_and(char::is_whitespace)
+                {
+                    break;
+                }
+                let inner_children = self.parse_inline(inner, offset + inner_start)?;
+                let span =
+                    Span::new((offset + *pos) as u32, (offset + inner_end + marker_len) as u32);
                 children.push(Node::Delete(
                     self.allocator.boxed(ferromark_ast::Delete { children: inner_children, span }),
                 ));
-                *pos = inner_end + 2;
+                *pos = inner_end + marker_len;
                 return Ok(());
             }
-            inner_end += 1;
+            inner_end += close_len;
         }
 
-        Self::push_text(children, &content[*pos..*pos + 2], offset + *pos, offset + *pos + 2);
-        *pos += 2;
+        Self::push_text(
+            children,
+            &content[*pos..*pos + marker_len],
+            offset + *pos,
+            offset + *pos + marker_len,
+        );
+        *pos += marker_len;
         Ok(())
     }
+}
+
+fn is_escaped_marker(bytes: &[u8], pos: usize) -> bool {
+    let mut backslashes = 0;
+    let mut index = pos;
+    while let Some(previous) = index.checked_sub(1) {
+        if bytes[previous] != b'\\' {
+            break;
+        }
+        backslashes += 1;
+        index = previous;
+    }
+    backslashes % 2 == 1
 }

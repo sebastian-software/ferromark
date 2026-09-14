@@ -11,10 +11,10 @@
 /// escaper.
 ///
 /// A byte is flagged iff `low[b & 0x0F] & high[b >> 4]` is nonzero. Both
-/// needle sets split cleanly by high nibble — `"`/`&`/`'` and ` `/`"`/`&`
-/// sit at `0x2_`, `<`/`>` at `0x3_` — so two bits describe each set
-/// exactly, admitting no other byte (digits share the `0x3_` row but not
-/// the low nibbles, and every byte >= 0x80 maps to a zero high entry).
+/// needle sets split cleanly by high nibble. HTML escaping uses two row
+/// bits; URL escaping uses four to include brackets, backslash, and backtick.
+/// The low-nibble masks exclude other bytes in those rows, and every byte
+/// >= 0x80 maps to a zero high entry.
 ///
 /// Sixteen entries is what a vector shuffle holds: `vqtbl1q_u8` and
 /// `pshufb` classify all sixteen lanes in one instruction.
@@ -30,8 +30,11 @@ pub(super) const ESCAPE_NIBBLES: NibbleTables = NibbleTables {
 };
 
 pub(super) const URL_ESCAPE_NIBBLES: NibbleTables = NibbleTables {
-    low: [0x01, 0, 0x01, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0x02, 0, 0x02, 0],
-    high: [0, 0, 0x01, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //          0     1     2  3  4     5     6  7  8  9  A     B     C     D  E  F
+    // 0x01: space/quote/&; 0x02: angle brackets; 0x04: brackets/backslash;
+    // 0x08: backtick. The separate bits prevent overlap between high-nibble rows.
+    low: [0x09, 0, 0x01, 0, 0, 0, 0x01, 0, 0, 0, 0, 0x04, 0x06, 0x04, 0x02, 0],
+    high: [0, 0, 0x01, 0x02, 0, 0x04, 0x08, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 };
 
 /// Offset of the first flagged byte in `bytes[from..]`, or `None` when the

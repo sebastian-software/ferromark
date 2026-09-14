@@ -74,6 +74,28 @@ fn matches_reference_on_fixtures() {
 }
 
 #[test]
+fn commonmark_url_syntax_bytes_are_percent_encoded() {
+    for (source, expected) in [
+        (r"foo\bar", "foo%5Cbar"),
+        ("https://foo.bar.`baz", "https://foo.bar.%60baz"),
+        ("https://example.com/?search=][ref]", "https://example.com/?search=%5D%5Bref%5D"),
+        ("https://example.com/\\[\\", "https://example.com/%5C%5B%5C"),
+    ] {
+        let mut actual = String::new();
+        write_url_escaped_into(&mut actual, source);
+        assert_eq!(actual, expected, "source: {source:?}");
+    }
+}
+
+#[test]
+fn invalid_ipv6_authority_is_escaped_without_html_injection() {
+    let source = r#"https://[::1\"onerror=\"x]/"#;
+    let mut actual = String::new();
+    write_url_escaped_into(&mut actual, source);
+    assert_eq!(actual, "https://%5B::1%5C%22onerror=%5C%22x%5D/");
+}
+
+#[test]
 fn matches_reference_on_borrow_propagation_shapes() {
     // `has_zero` can flag a 0x01 lane that borrowed from a real match
     // below it. These interleavings put such bytes directly after a match

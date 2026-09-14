@@ -106,6 +106,102 @@ fn nested_parentheses_in_links_are_preserved_in_output() {
 }
 
 #[test]
+fn commonmark_url_syntax_bytes_are_serialized_in_href() {
+    let options = HtmlRendererOptions {
+        autolink_urls: false,
+        link_target_blank: false,
+        ..Default::default()
+    };
+    let cases = [
+        (
+            r"<https://example.com?find=\*>
+",
+            r#"<p><a href="https://example.com?find=%5C*">https://example.com?find=\*</a></p>
+"#,
+        ),
+        (
+            r#"[foo]: /url\bar\*baz "foo\"bar\baz"
+
+[foo]
+"#,
+            r#"<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
+"#,
+        ),
+        (
+            r"<https://foo.bar.`baz>`
+",
+            r#"<p><a href="https://foo.bar.%60baz">https://foo.bar.`baz</a>`</p>
+"#,
+        ),
+        (
+            r"[link](foo\bar)
+",
+            r#"<p><a href="foo%5Cbar">link</a></p>
+"#,
+        ),
+        (
+            r"[foo<https://example.com/?search=](uri)>
+",
+            r#"<p>[foo<a href="https://example.com/?search=%5D(uri)">https://example.com/?search=](uri)</a></p>
+"#,
+        ),
+        (
+            r"[foo<https://example.com/?search=][ref]>
+
+[ref]: /uri
+",
+            r#"<p>[foo<a href="https://example.com/?search=%5D%5Bref%5D">https://example.com/?search=][ref]</a></p>
+"#,
+        ),
+        (
+            r"<https://example.com/\[\>
+",
+            r#"<p><a href="https://example.com/%5C%5B%5C">https://example.com/\[\</a></p>
+"#,
+        ),
+    ];
+    for (source, expected) in cases {
+        assert_eq!(
+            render(source, ParserOptions::default(), options.clone()),
+            expected,
+            "source: {source:?}"
+        );
+    }
+}
+
+#[test]
+fn url_serialization_preserves_ipv6_authority_brackets() {
+    let options = HtmlRendererOptions {
+        autolink_urls: false,
+        link_target_blank: false,
+        ..Default::default()
+    };
+    for (source, expected) in [
+        ("[x](https://[::1]/a)\n", "<p><a href=\"https://[::1]/a\">x</a></p>\n"),
+        ("[x](https://[::1]:/a)\n", "<p><a href=\"https://[::1]:/a\">x</a></p>\n"),
+        ("[x](https://u[x]@[::1]/a)\n", "<p><a href=\"https://u%5Bx%5D@[::1]/a\">x</a></p>\n"),
+        (
+            "[x](https://user:pass@[2001:db8::1]:8443/a)\n",
+            "<p><a href=\"https://user:pass@[2001:db8::1]:8443/a\">x</a></p>\n",
+        ),
+        (
+            "<https://[2001:db8::1]/>\n",
+            "<p><a href=\"https://[2001:db8::1]/\">https://[2001:db8::1]/</a></p>\n",
+        ),
+        (
+            "[x](https://example.com/a[b])\n",
+            "<p><a href=\"https://example.com/a%5Bb%5D\">x</a></p>\n",
+        ),
+    ] {
+        assert_eq!(
+            render(source, ParserOptions::default(), options.clone()),
+            expected,
+            "source: {source:?}"
+        );
+    }
+}
+
+#[test]
 fn xhtml_images_self_close() {
     let html = render(
         "![logo](/logo.svg)",

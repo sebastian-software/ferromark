@@ -1,0 +1,25 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.54s
+     Running unittests src/lib.rs (target/debug/deps/ferromark_renderer-515b19935b3d191b)
+
+running 1 test
+test html::escape::tests::commonmark_url_syntax_bytes_are_percent_encoded ... FAILED
+
+failures:
+
+---- html::escape::tests::commonmark_url_syntax_bytes_are_percent_encoded stdout ----
+
+thread 'html::escape::tests::commonmark_url_syntax_bytes_are_percent_encoded' (19601366) panicked at crates/ferromark_renderer/src/html/escape/tests.rs:86:9:
+assertion `left == right` failed: source: "foo\\bar"
+  left: "foo\\bar"
+ right: "foo%5Cbar"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    html::escape::tests::commonmark_url_syntax_bytes_are_percent_encoded
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 115 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p ferromark_renderer --lib`

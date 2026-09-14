@@ -27,6 +27,7 @@ mod mdx_jsx;
 mod options;
 mod prepass;
 mod reference;
+mod source_normalization;
 mod spans;
 mod table;
 mod table_cell_source;
@@ -43,6 +44,9 @@ pub struct Parser<'a> {
 
     /// Source text.
     source: &'a str,
+
+    /// Root-only map from NUL-normalized offsets back to the caller's source.
+    source_map: Option<&'a source_normalization::NulSourceMap<'a>>,
 
     /// Parser options.
     options: ParserOptions,
@@ -126,9 +130,11 @@ impl<'a> Parser<'a> {
     /// Creates a new parser with the specified options.
     #[must_use]
     pub fn with_options(allocator: &'a Allocator, source: &'a str, options: ParserOptions) -> Self {
+        let (source, source_map) = source_normalization::normalize(allocator, source);
         let mut parser = Self {
             allocator,
             source,
+            source_map,
             options,
             position: 0,
             nesting_depth: 0,
@@ -166,6 +172,7 @@ impl<'a> Parser<'a> {
         Self {
             allocator: self.allocator,
             source,
+            source_map: None,
             options: self.options.clone(),
             position: 0,
             nesting_depth: self.nesting_depth + 1,
@@ -182,6 +189,31 @@ impl<'a> Parser<'a> {
 
     /// Parses the source into a document AST.
     pub fn parse(mut self) -> ParseResult<Document<'a>> {
+        use spans::SpanMap;
+
+        let mut result = self.parse_document();
+        if let Some(map) = self.source_map {
+            match &mut result {
+                Ok(document) => {
+                    document.span = map.map_span(document.span);
+                    for node in &mut document.children {
+                        Self::remap_node_spans(node, map);
+                    }
+                }
+                Err(error) => {
+                    use crate::error::ParseError;
+                    let (ParseError::UnexpectedToken { span, .. }
+                    | ParseError::UnexpectedEof { span }
+                    | ParseError::InvalidSyntax { span, .. }
+                    | ParseError::NestingTooDeep { span, .. }) = error;
+                    *span = map.map_span(*span);
+                }
+            }
+        }
+        result
+    }
+
+    fn parse_document(&mut self) -> ParseResult<Document<'a>> {
         let mut children = self
             .allocator
             .new_vec_with_capacity(Self::document_children_capacity(self.source.len()));

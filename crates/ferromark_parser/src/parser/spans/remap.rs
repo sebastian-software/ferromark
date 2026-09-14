@@ -1,14 +1,14 @@
 use ferromark_ast::{ListItem, Node, Span};
 
 use super::super::Parser;
-use super::SourceMap;
+use super::SpanMap;
 
 impl<'a> Parser<'a> {
-    fn remap_span(span: &mut Span, source_map: &SourceMap) {
+    fn remap_span(span: &mut Span, source_map: &impl SpanMap) {
         *span = source_map.map_span(*span);
     }
 
-    pub(super) fn remap_node_spans(node: &mut Node<'a>, source_map: &SourceMap) {
+    pub(in crate::parser) fn remap_node_spans(node: &mut Node<'a>, source_map: &impl SpanMap) {
         match node {
             Node::Paragraph(node) => {
                 Self::remap_span(&mut node.span, source_map);
@@ -144,7 +144,7 @@ impl<'a> Parser<'a> {
 
     fn remap_mdx_attribute_entry(
         entry: &mut ferromark_ast::MdxJsxAttributeEntry<'a>,
-        source_map: &SourceMap,
+        source_map: &impl SpanMap,
     ) {
         match entry {
             ferromark_ast::MdxJsxAttributeEntry::Attribute(attribute) => {
@@ -161,7 +161,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn remap_list_item_spans(list_item: &mut ListItem<'a>, source_map: &SourceMap) {
+    fn remap_list_item_spans(list_item: &mut ListItem<'a>, source_map: &impl SpanMap) {
         Self::remap_span(&mut list_item.span, source_map);
         for child in &mut list_item.children {
             Self::remap_node_spans(child, source_map);

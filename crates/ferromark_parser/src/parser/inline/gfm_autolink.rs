@@ -1,4 +1,5 @@
-//! GFM autolink extension: bare `www.`, `http(s)://`, and email
+//! GFM autolink extension: bare `www.`, `http(s)://`, extended `mailto:`/
+//! `xmpp:`, and email
 //! addresses in plain text become links (GFM spec "Autolinks
 //! (extension)").
 //!
@@ -34,6 +35,7 @@ pub(super) struct Candidate {
 #[derive(Clone, Copy)]
 pub(in crate::parser::inline) struct AutolinkScan {
     pub(super) may_have_www: bool,
+    pub(super) may_have_extended: bool,
 }
 
 impl<'a> Parser<'a> {
