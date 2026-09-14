@@ -52,7 +52,8 @@ impl<'a> Parser<'a> {
 
         *pos += 1;
         let text_start = *pos;
-        *pos = Self::scan_balanced(content, *pos);
+        let (close, nested) = Self::scan_balanced(content, *pos);
+        *pos = close;
 
         if *pos < content.len() && bytes[*pos] == b']' {
             let close = *pos;
@@ -65,10 +66,12 @@ impl<'a> Parser<'a> {
             // accepting branch below, so parse once and hand the nodes on.
             // The verdict is memoized because the literal-bracket fallback
             // makes the caller re-scan these same bytes; re-probing there
-            // is what turns nested brackets into exponential work.
+            // is what turns nested brackets into exponential work. The
+            // balanced scan already reported whether an unescaped `[` sits
+            // inside the text; without one the probe cannot find a link.
             let mut inner_nodes = None;
-            let inner_has_link = memchr::memchr(b'[', link_text.as_bytes()).is_some()
-                && self.probe_link_text(link_text, offset + text_start, &mut inner_nodes);
+            let inner_has_link =
+                nested && self.probe_link_text(link_text, offset + text_start, &mut inner_nodes);
 
             // Inline form: [text](dest "title")
             if !inner_has_link
@@ -96,7 +99,7 @@ impl<'a> Parser<'a> {
                 && self.has_closer_from(content, close + 2, b']')
             {
                 let label_start = close + 2;
-                let label_end = Self::scan_balanced(content, label_start);
+                let (label_end, _) = Self::scan_balanced(content, label_start);
                 if label_end < content.len() && bytes[label_end] == b']' {
                     well_formed_reference = true;
                     let raw_label = &content[label_start..label_end];
