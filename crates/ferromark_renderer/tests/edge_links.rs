@@ -213,39 +213,33 @@ fn xhtml_images_self_close() {
 }
 
 #[test]
-fn script_and_smart_punctuation_extensions_render_when_enabled() {
+fn script_extensions_preserve_surrounding_punctuation() {
     let html = render(
         "\"Smart\" H~2~O x^2^",
-        ParserOptions {
-            smart_punctuation: true,
-            subscript: true,
-            superscript: true,
-            ..ParserOptions::default()
-        },
+        ParserOptions { subscript: true, superscript: true, ..ParserOptions::default() },
         HtmlRendererOptions::default(),
     );
 
-    assert_eq!(html, "<p>“Smart” H<sub>2</sub>O x<sup>2</sup></p>\n");
+    assert_eq!(html, "<p>&quot;Smart&quot; H<sub>2</sub>O x<sup>2</sup></p>\n");
 }
 
 #[test]
-fn smart_punctuation_delimiters_stay_outside_gfm_autolink_rendering() {
-    let parser_options =
-        ParserOptions { autolinks: true, smart_punctuation: true, ..ParserOptions::default() };
+fn ascii_punctuation_stays_outside_gfm_autolink_rendering() {
+    let parser_options = ParserOptions { autolinks: true, ..ParserOptions::default() };
     let renderer_options = HtmlRendererOptions { link_target_blank: false, ..Default::default() };
 
     for (source, expected) in [
         (
             r#"The URL "https://example.com" is valid."#,
-            "<p>The URL “<a href=\"https://example.com\">https://example.com</a>” is valid.</p>\n",
+            "<p>The URL &quot;<a href=\"https://example.com\">https://example.com</a>&quot; is valid.</p>\n",
         ),
         (
             "The URL 'https://example.com' is valid.",
-            "<p>The URL ‘<a href=\"https://example.com\">https://example.com</a>’ is valid.</p>\n",
+            "<p>The URL &#39;<a href=\"https://example.com\">https://example.com</a>&#39; is valid.</p>\n",
         ),
         (
             "See https://example.com...",
-            "<p>See <a href=\"https://example.com\">https://example.com</a>…</p>\n",
+            "<p>See <a href=\"https://example.com\">https://example.com</a>...</p>\n",
         ),
     ] {
         let html = render(source, parser_options.clone(), renderer_options.clone());

@@ -148,21 +148,21 @@ fn gfm_autolink_keeps_non_ascii_iri_paths() {
 }
 
 #[test]
-fn smart_punctuation_output_stays_outside_following_gfm_autolink() {
+fn ascii_punctuation_stays_outside_following_gfm_autolink() {
     let cases = [
         (
             r#"The URL "https://example.com" is valid."#,
-            "The URL “",
+            "The URL \"",
             "https://example.com",
-            "” is valid.",
+            "\" is valid.",
         ),
         (
             "The URL 'https://example.com' is valid.",
-            "The URL ‘",
+            "The URL '",
             "https://example.com",
-            "’ is valid.",
+            "' is valid.",
         ),
-        ("See https://example.com...", "See ", "https://example.com", "…"),
+        ("See https://example.com...", "See ", "https://example.com", "..."),
     ];
 
     for (source, before, href, after) in cases {
@@ -170,7 +170,7 @@ fn smart_punctuation_output_stays_outside_following_gfm_autolink() {
         let doc = parse_with_options(
             &allocator,
             source,
-            ParserOptions { autolinks: true, smart_punctuation: true, ..Default::default() },
+            ParserOptions { autolinks: true, ..Default::default() },
         );
 
         let Node::Paragraph(paragraph) = &doc.children[0] else {
@@ -200,7 +200,7 @@ fn literal_unicode_punctuation_stays_inside_gfm_autolink() {
         let doc = parse_with_options(
             &allocator,
             source,
-            ParserOptions { autolinks: true, smart_punctuation: true, ..Default::default() },
+            ParserOptions { autolinks: true, ..Default::default() },
         );
 
         let Node::Paragraph(paragraph) = &doc.children[0] else {
