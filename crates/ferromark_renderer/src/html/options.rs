@@ -179,6 +179,12 @@ pub struct HtmlRendererOptions {
     ///
     /// Default: `false`.
     pub table_colgroup: bool,
+
+    /// Add `col-name-<slug>` CSS classes derived from the first table row.
+    ///
+    /// Uses heading text/slug rules and retains positional `col-N` classes.
+    /// Requires [`Self::table_colgroup`]. Default: `false` in every preset.
+    pub table_column_names: bool,
 }
 
 const DEFAULT_SOFT_BREAK: &str = "\n";
@@ -218,6 +224,7 @@ pub(super) struct RendererOptions {
     pub(super) inline_toc: bool,
     pub(super) code_fence_metadata: bool,
     pub(super) table_colgroup: bool,
+    pub(super) table_column_names: bool,
 }
 
 impl RendererOptions {
@@ -247,6 +254,7 @@ impl RendererOptions {
             inline_toc: true,
             code_fence_metadata: true,
             table_colgroup: false,
+            table_column_names: false,
         }
     }
 
@@ -301,6 +309,7 @@ impl From<HtmlRendererOptions> for RendererOptions {
             inline_toc: options.inline_toc,
             code_fence_metadata: options.code_fence_metadata,
             table_colgroup: options.table_colgroup,
+            table_column_names: options.table_column_names,
         }
     }
 }
@@ -351,6 +360,7 @@ impl HtmlRendererOptions {
             inline_toc: true,
             code_fence_metadata: true,
             table_colgroup: false,
+            table_column_names: false,
         }
     }
 

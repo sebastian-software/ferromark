@@ -1,6 +1,6 @@
 # Table spans and CSS layout
 
-Ferromark v2 has three independent, opt-in table extensions. Every preset leaves
+Ferromark v2 has opt-in table structure and CSS layout extensions. Every preset leaves
 them disabled, including the GFM convenience and specification profiles.
 
 | Option | Owner | Effect |
@@ -8,6 +8,7 @@ them disabled, including the GFM convenience and specification profiles.
 | `merged_table_cells` | `ParserOptions` | Adjacent closing pipes produce horizontal cell spans. |
 | `table_attributes` | `ParserOptions` | A following attribute/caption line supplies the table ID and CSS classes. |
 | `table_colgroup` | `HtmlRendererOptions` | Emit one `<col>` per logical column, with classes `col-1`, `col-2`, etc. |
+| `table_column_names` | `HtmlRendererOptions` | Add `col-name-<slug>` classes derived from the first row; requires `table_colgroup`. |
 
 The two parser extensions require `tables: true`. `ParserOptions::gfm()` enables
 tables but leaves these extensions off. The renderer's `table_colgroup` option
@@ -46,6 +47,36 @@ by class or index; the renderer does not generate inline width styles:
 #prices > colgroup > .col-3 { width: 15%; }
 ```
 
+Set `table_column_names: true` as well to address columns by their header text:
+
+```html
+<colgroup>
+<col class="col-1 col-name-item">
+<col class="col-2 col-name-net">
+<col class="col-3 col-name-tax">
+</colgroup>
+```
+
+```css
+#prices > colgroup > .col-name-item { width: 60%; }
+#prices > colgroup > .col-name-net { width: 25%; }
+#prices > colgroup > .col-name-tax { width: 15%; }
+```
+
+Names use the same inline-text collector and Unicode-aware slug rules as heading
+IDs. `**Netto Preis**` becomes `col-name-netto-preis`, `Größe` becomes
+`col-name-größe`, and link labels or inline code contribute their text. Raw HTML
+tags and nodes omitted by heading text extraction, such as images and math,
+do not supply names. Empty or punctuation-only headers retain just `col-N`.
+
+Duplicate header names get `-1`, `-2`, etc., with collision checks against
+already assigned names, including naturally numbered headers such as `Price 1`.
+Names are scoped to each table and do not change heading IDs. A spanning header
+gives every covered column its shared name; positional classes still identify
+individual columns. The `col-name-` prefix prevents numeric header text from
+colliding with positional classes. Names follow the parsed first row before
+render hooks run; changing or translating a header can change its name.
+
 Enable the options with the public Rust API:
 
 ```rust
@@ -61,6 +92,7 @@ let options = ParserOptions {
 let document = Parser::with_options(&allocator, source, options).parse().unwrap();
 let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
     table_colgroup: true,
+    table_column_names: true,
     ..HtmlRendererOptions::gfm()
 });
 let html = renderer.render(&document);
@@ -98,8 +130,8 @@ A complete CSS example is runnable with
   self-closing `<col />` elements.
 
 This adds horizontal spans; it does not add row spans, multi-row headers, grid
-tables, or numeric column-width hints. Generated column classes describe positions;
-the parser does not infer semantic names from translated headings. CSS text
+tables, or numeric column-width hints. Positional classes remain available even
+when header-derived classes are enabled. CSS text
 alignment and font properties should target cells, since table cells are not
 descendants of `<col>` elements.
 
@@ -121,8 +153,9 @@ claim is made for the added features.
 ## Validation
 
 - `cargo fmt --all --check`
-- `cargo test --workspace --all-features --locked`: 720 passing tests, including
-  existing conformance/snapshot suites and the new table regressions.
+- `cargo test --workspace --all-features --locked`: 727 passing tests, including
+  existing conformance/snapshot suites, table layout, header-derived names,
+  duplicate-name collisions, renderer reuse, and hook/XHTML parity.
 - `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
 - `cargo bench --workspace --no-run --locked`
 - Separate offline compilation of all three active SIMD/optimization timing
