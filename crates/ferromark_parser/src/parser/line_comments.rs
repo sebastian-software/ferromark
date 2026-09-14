@@ -1,5 +1,7 @@
 //! Physical source-line comments, independent of Markdown container prefixes.
 
+use memchr::memchr;
+
 use super::Parser;
 use super::line_scan::next_line_start;
 use super::spans::SourceMap;
@@ -75,16 +77,57 @@ impl<'a> Parser<'a> {
             return (&self.source[start..end], None);
         }
         let bytes = self.source.as_bytes();
-        let mut cursor = start;
-        while cursor < end && !self.is_line_comment_at(cursor) {
-            cursor = next_line_start(bytes, cursor);
-        }
-        if cursor >= end {
+        if !contains_comment_marker(bytes, start, end) {
             return (&self.source[start..end], None);
         }
+        let mut first_comment = start;
+        while first_comment < end && !self.is_line_comment_at(first_comment) {
+            first_comment = next_line_start(bytes, first_comment);
+        }
+        if first_comment >= end {
+            return (&self.source[start..end], None);
+        }
+        self.without_line_comments_with_first(start, end, Some(first_comment))
+    }
+
+    /// Join a paragraph when its first eligible comment was already observed
+    /// by the block parser. A comment position at or after `end` belongs to
+    /// trailing content excluded from this paragraph, so the original slice
+    /// remains valid and no scan is needed.
+    pub(super) fn without_line_comments_with_first(
+        &self,
+        start: usize,
+        end: usize,
+        first_comment: Option<usize>,
+    ) -> (&'a str, Option<SourceMap>) {
+        if !self.options.line_comments {
+            return (&self.source[start..end], None);
+        }
+        let bytes = self.source.as_bytes();
+        // `None` means the block parser already proved that this paragraph
+        // contains no eligible comments. Reference-definition callers use
+        // `without_line_comments` above to perform discovery first.
+        let Some(first_comment) = first_comment.filter(|&comment| comment < end) else {
+            return (&self.source[start..end], None);
+        };
+
         let mut text = self.allocator.new_string();
         let mut map = SourceMap::default();
-        cursor = start;
+
+        // The block parser has already checked each line before this known
+        // marker. Copy that prefix directly, retaining one source-map entry
+        // per physical line so inline spans map exactly as before.
+        let mut cursor = start;
+        while cursor < first_comment {
+            let next = next_line_start(bytes, cursor).min(first_comment);
+            map.push_line(text.len(), next - cursor, cursor, next - cursor);
+            text.push_str(&self.source[cursor..next]);
+            cursor = next;
+        }
+
+        // The first marker and any later markers still need the normal
+        // eligibility check: URLs, inline text, code, and opaque HTML may
+        // contain `//` without being physical line comments.
         while cursor < end {
             let next = next_line_start(bytes, cursor).min(end);
             if !self.is_line_comment_at(cursor) {
@@ -95,4 +138,20 @@ impl<'a> Parser<'a> {
         }
         (text.into_bump_str(), Some(map))
     }
+}
+
+/// Returns whether the source range contains the necessary `//` marker.
+fn contains_comment_marker(bytes: &[u8], start: usize, end: usize) -> bool {
+    let mut cursor = start;
+    while cursor < end {
+        let Some(offset) = memchr(b'/', &bytes[cursor..end]) else {
+            return false;
+        };
+        cursor += offset;
+        if cursor + 1 < end && bytes[cursor + 1] == b'/' {
+            return true;
+        }
+        cursor += 1;
+    }
+    false
 }

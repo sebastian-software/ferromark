@@ -73,10 +73,25 @@ fn explicit_blank_lines_still_separate_paragraphs() {
 }
 
 #[test]
+fn trailing_comments_outside_paragraph_content_do_not_change_html() {
+    assert_eq!(render("first\n// trailing\n\nsecond\n"), "<p>first</p>\n<p>second</p>\n");
+    assert_eq!(render("first\n// trailing\n# heading\n"), "<p>first</p>\n<h1>heading</h1>\n");
+    assert_eq!(render("first\n// trailing"), "<p>first</p>\n");
+}
+
+#[test]
 fn ordinary_slashes_escaped_markers_and_inline_code_remain_text() {
     assert_eq!(
         render("https://example.com\nText // ordinary\n\\// escaped\n`// inline`\n"),
         "<p><a href=\"https://example.com\">https://example.com</a>\nText // ordinary\n// escaped\n<code>// inline</code></p>\n"
+    );
+}
+
+#[test]
+fn slash_heavy_prose_without_eligible_comments_preserves_text() {
+    assert_eq!(
+        render("https://example.com/a//b\npath /// suffix\nText // ordinary\n"),
+        "<p><a href=\"https://example.com/a//b\">https://example.com/a//b</a>\npath /// suffix\nText // ordinary</p>\n"
     );
 }
 
