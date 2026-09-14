@@ -34,7 +34,7 @@ impl<'a> Parser<'a> {
 
         *pos += 2;
         let alt_start = *pos;
-        *pos = Self::scan_balanced(content, *pos);
+        *pos = Self::scan_balanced(content, *pos).0;
 
         if *pos < content.len() && bytes[*pos] == b']' {
             let close = *pos;
@@ -58,7 +58,7 @@ impl<'a> Parser<'a> {
             if bytes.get(close + 1) == Some(&b'[') && self.has_closer_from(content, close + 2, b']')
             {
                 let label_start = close + 2;
-                let label_end = Self::scan_balanced(content, label_start);
+                let (label_end, _) = Self::scan_balanced(content, label_start);
                 if label_end < content.len() && bytes[label_end] == b']' {
                     well_formed_reference = true;
                     let raw_label = &content[label_start..label_end];
@@ -190,7 +190,9 @@ impl<'a> Parser<'a> {
     }
 
     /// Scans a bracketed region and returns the index of the `]` that closes
-    /// it, or `content.len()` when the brackets never balance.
+    /// it, or `content.len()` when the brackets never balance, together with
+    /// whether an unescaped `[` occurred inside the region. Callers use that
+    /// flag in place of a second search for nested brackets.
     ///
     /// Constructs that bind tighter than brackets are skipped whole:
     /// backslash escapes, code spans (an unmatched opener stays literal),
@@ -201,9 +203,10 @@ impl<'a> Parser<'a> {
     /// ordinary text between them is skipped with [`BRACKET_STOP`]. Link
     /// text is the second-largest scalar walk after destinations on
     /// link-dense documents, so this matters for every `[`.
-    pub(super) fn scan_balanced(content: &str, mut cursor: usize) -> usize {
+    pub(super) fn scan_balanced(content: &str, mut cursor: usize) -> (usize, bool) {
         let bytes = content.as_bytes();
         let mut depth = 1;
+        let mut nested = false;
         loop {
             cursor = BRACKET_STOP.first_in(bytes, cursor);
             let Some(&byte) = bytes.get(cursor) else {
@@ -245,20 +248,21 @@ impl<'a> Parser<'a> {
                 }
                 b'[' => {
                     depth += 1;
+                    nested = true;
                     cursor += 1;
                 }
                 b']' => {
                     depth -= 1;
                     // Stop AT the closing delimiter.
                     if depth == 0 {
-                        return cursor;
+                        return (cursor, nested);
                     }
                     cursor += 1;
                 }
                 _ => cursor += 1,
             }
         }
-        cursor
+        (cursor, nested)
     }
 }
 
@@ -301,10 +305,12 @@ mod scan_balanced_tests {
 
     use super::Parser;
 
-    /// The original byte-at-a-time walk, kept as the oracle.
-    fn scalar_scan_balanced(content: &str, mut cursor: usize) -> usize {
+    /// The original byte-at-a-time walk, kept as the oracle. The nested flag
+    /// is derived from the same walk: it is set when an unescaped `[` is seen.
+    fn scalar_scan_balanced(content: &str, mut cursor: usize) -> (usize, bool) {
         let bytes = content.as_bytes();
         let mut depth = 1;
+        let mut nested = false;
         while cursor < bytes.len() {
             match bytes[cursor] {
                 b'\\' => {
@@ -340,19 +346,20 @@ mod scan_balanced_tests {
                 }
                 b'[' => {
                     depth += 1;
+                    nested = true;
                     cursor += 1;
                 }
                 b']' => {
                     depth -= 1;
                     if depth == 0 {
-                        return cursor;
+                        return (cursor, nested);
                     }
                     cursor += 1;
                 }
                 _ => cursor += 1,
             }
         }
-        cursor
+        (cursor, nested)
     }
 
     fn check(content: &str, from: usize) {
