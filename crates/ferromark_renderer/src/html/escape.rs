@@ -208,7 +208,7 @@ fn copy_eight(bytes: &[u8], from: usize) -> [u8; 8] {
 fn push_run(out: &mut String, src: &str) {
     let len = src.len();
     if len > 16 {
-        out.push_str(src);
+        push_run_long(out, src);
         return;
     }
     out.reserve(len);
@@ -234,6 +234,45 @@ fn push_run(out: &mut String, src: &str) {
             *dst = *src;
             *dst.add(len / 2) = *src.add(len / 2);
             *dst.add(len - 1) = *src.add(len - 1);
+        }
+        vec.set_len(at + len);
+    }
+}
+
+/// Appends a run longer than 16 bytes.
+///
+/// Runs of 17-64 bytes -- the prose between two escaped bytes, most `href`
+/// values -- are still short enough that `memmove` spends most of its time
+/// choosing a strategy, so they are copied with two or four overlapping
+/// 16-byte moves instead. Longer runs go to `push_str`. This stays out of
+/// line on purpose: inlining the wider copies into the escape loops made
+/// their bodies larger and measurably slowed escape-dense code blocks.
+#[allow(unsafe_code)]
+#[inline(never)]
+fn push_run_long(out: &mut String, src: &str) {
+    let len = src.len();
+    if len > 64 {
+        out.push_str(src);
+        return;
+    }
+    out.reserve(len);
+
+    // SAFETY: `reserve` above guarantees `len` spare bytes past the current
+    // length; `len` is in 17..=64, so every 16-byte block below lands inside
+    // `[0, len)` of that spare region and `set_len` covers exactly the bytes
+    // written. `src` is a `&str` appended at a char boundary, so the result
+    // stays valid UTF-8, and the buffers cannot overlap because `out` is
+    // borrowed uniquely.
+    unsafe {
+        let vec = out.as_mut_vec();
+        let at = vec.len();
+        let dst = vec.as_mut_ptr().add(at);
+        let src = src.as_ptr();
+        std::ptr::copy_nonoverlapping(src, dst, 16);
+        std::ptr::copy_nonoverlapping(src.add(len - 16), dst.add(len - 16), 16);
+        if len > 32 {
+            std::ptr::copy_nonoverlapping(src.add(16), dst.add(16), 16);
+            std::ptr::copy_nonoverlapping(src.add(len - 32), dst.add(len - 32), 16);
         }
         vec.set_len(at + len);
     }
