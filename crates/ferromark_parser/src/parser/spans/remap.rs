@@ -8,6 +8,10 @@ impl<'a> Parser<'a> {
         *span = source_map.map_span(*span);
     }
 
+    fn remap_inline_span(span: &mut Span, source_map: &impl SpanMap) {
+        *span = source_map.map_inline_span(*span);
+    }
+
     pub(in crate::parser) fn remap_node_spans(node: &mut Node<'a>, source_map: &impl SpanMap) {
         match node {
             Node::Paragraph(node) => {
@@ -74,48 +78,48 @@ impl<'a> Parser<'a> {
                     Self::remap_node_spans(child, source_map);
                 }
             }
-            Node::Text(node) => Self::remap_span(&mut node.span, source_map),
+            Node::Text(node) => Self::remap_inline_span(&mut node.span, source_map),
             Node::Emphasis(node) => {
-                Self::remap_span(&mut node.span, source_map);
+                Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {
                     Self::remap_node_spans(child, source_map);
                 }
             }
             Node::Strong(node) => {
-                Self::remap_span(&mut node.span, source_map);
+                Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {
                     Self::remap_node_spans(child, source_map);
                 }
             }
-            Node::InlineCode(node) => Self::remap_span(&mut node.span, source_map),
-            Node::InlineMath(node) => Self::remap_span(&mut node.span, source_map),
-            Node::Break(node) => Self::remap_span(&mut node.span, source_map),
+            Node::InlineCode(node) => Self::remap_inline_span(&mut node.span, source_map),
+            Node::InlineMath(node) => Self::remap_inline_span(&mut node.span, source_map),
+            Node::Break(node) => Self::remap_inline_span(&mut node.span, source_map),
             Node::Link(node) => {
-                Self::remap_span(&mut node.span, source_map);
+                Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {
                     Self::remap_node_spans(child, source_map);
                 }
             }
-            Node::Image(node) => Self::remap_span(&mut node.span, source_map),
+            Node::Image(node) => Self::remap_inline_span(&mut node.span, source_map),
             Node::Delete(node) => {
-                Self::remap_span(&mut node.span, source_map);
+                Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {
                     Self::remap_node_spans(child, source_map);
                 }
             }
             Node::Superscript(node) => {
-                Self::remap_span(&mut node.span, source_map);
+                Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {
                     Self::remap_node_spans(child, source_map);
                 }
             }
             Node::Subscript(node) => {
-                Self::remap_span(&mut node.span, source_map);
+                Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {
                     Self::remap_node_spans(child, source_map);
                 }
             }
-            Node::FootnoteReference(node) => Self::remap_span(&mut node.span, source_map),
+            Node::FootnoteReference(node) => Self::remap_inline_span(&mut node.span, source_map),
             Node::Definition(node) => Self::remap_span(&mut node.span, source_map),
             Node::FootnoteDefinition(node) => {
                 Self::remap_span(&mut node.span, source_map);
@@ -133,7 +137,7 @@ impl<'a> Parser<'a> {
                 }
             }
             Node::MdxJsxTextElement(node) => {
-                Self::remap_span(&mut node.span, source_map);
+                Self::remap_inline_span(&mut node.span, source_map);
                 for attribute in &mut node.attributes {
                     Self::remap_mdx_attribute_entry(attribute, source_map);
                 }
@@ -143,7 +147,7 @@ impl<'a> Parser<'a> {
             }
             Node::MdxjsEsm(node) => Self::remap_span(&mut node.span, source_map),
             Node::MdxFlowExpression(node) => Self::remap_span(&mut node.span, source_map),
-            Node::MdxTextExpression(node) => Self::remap_span(&mut node.span, source_map),
+            Node::MdxTextExpression(node) => Self::remap_inline_span(&mut node.span, source_map),
         }
     }
 

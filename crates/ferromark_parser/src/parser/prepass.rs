@@ -131,6 +131,11 @@ impl<'a> Parser<'a> {
         while pos < bytes.len() {
             let first = bytes[pos];
 
+            if def_fence.is_none() && self.is_line_comment_at(pos) {
+                pos = next_line_start(bytes, pos);
+                continue;
+            }
+
             // Blank line: closes any open paragraph and is invisible to
             // both fence trackers and both collectors.
             if matches!(first, b'\n' | b'\r') {

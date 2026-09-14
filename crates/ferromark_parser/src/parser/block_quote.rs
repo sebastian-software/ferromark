@@ -36,6 +36,13 @@ impl<'a> Parser<'a> {
             }
 
             let line_start = self.position;
+            if self.is_line_comment_at(line_start) {
+                let next = scan_next_line_start(bytes, line_start);
+                source_map.push_line(inner.len(), next - line_start, line_start, next - line_start);
+                inner.push_str(&self.source[line_start..next]);
+                self.position = next;
+                continue;
+            }
             let mut ws_cursor = line_start;
             while ws_cursor < bytes.len() && matches!(bytes[ws_cursor], b' ' | b'\t') {
                 ws_cursor += 1;
@@ -147,7 +154,7 @@ impl<'a> Parser<'a> {
 
         // Recursively parse the inner content from the same arena — no copy.
         let inner_str = inner.into_bump_str();
-        let sub_parser = self.sub_parser_with_lazy_lines(inner_str, lazy_lines);
+        let sub_parser = self.sub_parser_with_source_map(inner_str, lazy_lines, &source_map);
         let sub_doc = sub_parser.parse()?;
         let mut children = sub_doc.children;
         for child in &mut children {

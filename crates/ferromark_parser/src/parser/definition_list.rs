@@ -102,6 +102,10 @@ impl<'a> Parser<'a> {
         let mut cursor = start;
 
         while cursor < self.source.len() {
+            cursor = self.skip_line_comments_from(cursor);
+            if cursor >= self.source.len() {
+                break;
+            }
             if self.is_blank_line_at(cursor) || self.definition_body_at(cursor).is_some() {
                 break;
             }
@@ -150,6 +154,14 @@ impl<'a> Parser<'a> {
             let line = self.line_at(cursor);
             let next = self.next_line_start(cursor);
 
+            if self.is_line_comment_at(cursor) {
+                source_map.push_line(body_source.len(), next - cursor, cursor, next - cursor);
+                body_source.push_str(&self.source[cursor..next]);
+                cursor = next;
+                end = cursor;
+                continue;
+            }
+
             if line.trim().is_empty() {
                 let lookahead = self.skip_blank_lines_from(cursor);
                 if lookahead >= self.source.len()
@@ -167,6 +179,11 @@ impl<'a> Parser<'a> {
 
                 while cursor < lookahead {
                     let blank_next = self.next_line_start(cursor);
+                    if self.is_line_comment_at(cursor) {
+                        cursor = blank_next;
+                        end = cursor;
+                        continue;
+                    }
                     let generated_start = body_source.len();
                     body_source.push('\n');
                     source_map.push_line(
@@ -228,7 +245,8 @@ impl<'a> Parser<'a> {
         }
 
         let body_source = body_source.into_bump_str();
-        let sub_doc = self.sub_parser_with_lazy_lines(body_source, lazy_lines).parse()?;
+        let sub_doc =
+            self.sub_parser_with_source_map(body_source, lazy_lines, &source_map).parse()?;
         let mut children = sub_doc.children;
         for child in &mut children {
             source_map.remap_node_spans(child);
