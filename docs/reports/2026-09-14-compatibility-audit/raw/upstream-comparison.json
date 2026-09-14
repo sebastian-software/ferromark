@@ -1,0 +1,204 @@
+{
+  "worker_sha256": "009aa0ac8ff7a17f4671af9e0af4a5c64d0f3a20f6f0edfb5ee665d47dcf48bd",
+  "count": 22,
+  "results": [
+    {
+      "id": "cm-306-cr",
+      "profile": "commonmark",
+      "markdown": "- foo\r\r- bar\r\r\r- baz\r",
+      "current": "<ul>\n<li><p>foo</p>\n</li>\n<li><p>bar\n\n\n- baz</p>\n</li>\n<li><p>baz</p>\n</li>\n</ul>\n",
+      "v2": "<ul>\n<li><p>foo</p>\n</li>\n<li><p>bar\n\n\n- baz</p>\n</li>\n<li><p>baz</p>\n</li>\n</ul>\n",
+      "ox-content": "<ul>\n<li><p>foo</p>\n</li>\n<li><p>bar\n\n\n- baz</p>\n</li>\n<li><p>baz</p>\n</li>\n</ul>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-309-cr",
+      "profile": "commonmark",
+      "markdown": "-   foo\r\r    notcode\r\r-   foo\r\r<!-- -->\r\r    code\r",
+      "current": "<ul>\n<li><p>foo</p>\n<p>notcode</p>\n</li>\n<li><p>foo\n\n<!-- -->\n\ncode</p>\n</li>\n</ul>\n<!-- -->\r\n<pre><code>code\n</code></pre>\n",
+      "v2": "<ul>\n<li><p>foo</p>\n<p>notcode</p>\n</li>\n<li><p>foo\n\n<!-- -->\n\ncode</p>\n</li>\n</ul>\n<!-- -->\r\n<pre><code>code\n</code></pre>\n",
+      "ox-content": "<ul>\n<li><p>foo</p>\n<p>notcode</p>\n</li>\n<li><p>foo\n\n<!-- -->\n\ncode</p>\n</li>\n</ul>\n<!-- -->\r\n<pre><code>code\n</code></pre>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-311-cr",
+      "profile": "commonmark",
+      "markdown": "1. a\r\r  2. b\r\r   3. c\r",
+      "current": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n<li><p>c</p>\n</li>\n</ol>\n",
+      "v2": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n<li><p>c</p>\n</li>\n</ol>\n",
+      "ox-content": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n<li><p>c</p>\n</li>\n</ol>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-313-cr",
+      "profile": "commonmark",
+      "markdown": "1. a\r\r  2. b\r\r    3. c\r",
+      "current": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n</ol>\n<pre><code>3. c\n</code></pre>\n",
+      "v2": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n</ol>\n<pre><code>3. c\n</code></pre>\n",
+      "ox-content": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n</ol>\n<pre><code>3. c\n</code></pre>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-326-cr",
+      "profile": "commonmark",
+      "markdown": "- a\r  - b\r  - c\r\r- d\r  - e\r  - f\r",
+      "current": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n",
+      "v2": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n",
+      "ox-content": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-491-crlf",
+      "profile": "commonmark",
+      "markdown": "[link](<foo\r\nbar>)\r\n",
+      "current": "<p>[link](&lt;foo\nbar&gt;)</p>\n",
+      "v2": "<p>[link](&lt;foo\nbar&gt;)</p>\n",
+      "ox-content": "<p>[link](&lt;foo\nbar&gt;)</p>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-491-cr",
+      "profile": "commonmark",
+      "markdown": "[link](<foo\rbar>)\r",
+      "current": "<p><a href=\"foo\rbar\">link</a></p>\n",
+      "v2": "<p><a href=\"foo\rbar\">link</a></p>\n",
+      "ox-content": "<p><a href=\"foo\rbar\">link</a></p>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-615-crlf",
+      "profile": "commonmark",
+      "markdown": "<a  /><b2\r\ndata=\"foo\" >\r\n",
+      "current": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "v2": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "ox-content": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-615-cr",
+      "profile": "commonmark",
+      "markdown": "<a  /><b2\rdata=\"foo\" >\r",
+      "current": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "v2": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "ox-content": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-616-crlf",
+      "profile": "commonmark",
+      "markdown": "<a foo=\"bar\" bam = 'baz <em>\"</em>'\r\n_boolean zoop:33=zoop:33 />\r\n",
+      "current": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "v2": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "ox-content": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-616-cr",
+      "profile": "commonmark",
+      "markdown": "<a foo=\"bar\" bam = 'baz <em>\"</em>'\r_boolean zoop:33=zoop:33 />\r",
+      "current": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "v2": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "ox-content": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "equal": true
+    },
+    {
+      "id": "cm-621-cr",
+      "profile": "commonmark",
+      "markdown": "< a><\rfoo><bar/ >\r<foo bar=baz\rbim!bop />\r",
+      "current": "<p>&lt; a&gt;&lt;\nfoo&gt;&lt;bar/ &gt;\n<foo bar=baz\rbim!bop /></p>\n",
+      "v2": "<p>&lt; a&gt;&lt;\nfoo&gt;&lt;bar/ &gt;\n<foo bar=baz\rbim!bop /></p>\n",
+      "ox-content": "<p>&lt; a&gt;&lt;\nfoo&gt;&lt;bar/ &gt;\n<foo bar=baz\rbim!bop /></p>\n",
+      "equal": true
+    },
+    {
+      "id": "url-backslash-path",
+      "profile": "commonmark",
+      "markdown": "[link](foo\\bar)\n",
+      "current": "<p><a href=\"foo\\bar\">link</a></p>\n",
+      "v2": "<p><a href=\"foo\\bar\">link</a></p>\n",
+      "ox-content": "<p><a href=\"foo\\bar\">link</a></p>\n",
+      "equal": true
+    },
+    {
+      "id": "gfm-single-tilde",
+      "profile": "gfm-shared",
+      "markdown": "~word~\n",
+      "current": "<p>~word~</p>\n",
+      "v2": "<p>~word~</p>\n",
+      "ox-content": "<p>~word~</p>\n",
+      "equal": true
+    },
+    {
+      "id": "gfm-triple-tilde",
+      "profile": "gfm-shared",
+      "markdown": "a ~~~word~~~ b\n",
+      "current": "<p>a <del>~word</del>~ b</p>\n",
+      "v2": "<p>a <del>~word</del>~ b</p>\n",
+      "ox-content": "<p>a <del>~word</del>~ b</p>\n",
+      "equal": true
+    },
+    {
+      "id": "nul-text",
+      "profile": "commonmark",
+      "markdown": "a\u0000b\n",
+      "current": "<p>a\u0000b</p>\n",
+      "v2": "<p>a\u0000b</p>\n",
+      "ox-content": "<p>a\u0000b</p>\n",
+      "equal": true
+    },
+    {
+      "id": "nul-inline-code",
+      "profile": "commonmark",
+      "markdown": "`a\u0000b`\n",
+      "current": "<p><code>a\u0000b</code></p>\n",
+      "v2": "<p><code>a\u0000b</code></p>\n",
+      "ox-content": "<p><code>a\u0000b</code></p>\n",
+      "equal": true
+    },
+    {
+      "id": "nul-fenced-code",
+      "profile": "commonmark",
+      "markdown": "```\na\u0000b\n```\n",
+      "current": "<pre><code>a\u0000b\n</code></pre>\n",
+      "v2": "<pre><code>a\u0000b\n</code></pre>\n",
+      "ox-content": "<pre><code>a\u0000b\n</code></pre>\n",
+      "equal": true
+    },
+    {
+      "id": "nul-link",
+      "profile": "commonmark",
+      "markdown": "[x](/a\u0000b)\n",
+      "current": "<p>[x](/a\u0000b)</p>\n",
+      "v2": "<p>[x](/a\u0000b)</p>\n",
+      "ox-content": "<p>[x](/a\u0000b)</p>\n",
+      "equal": true
+    },
+    {
+      "id": "nul-raw-html",
+      "profile": "commonmark",
+      "markdown": "<i title=\"a\u0000b\">x</i>\n",
+      "current": "<p><i title=\"a\u0000b\">x</i></p>\n",
+      "v2": "<p><i title=\"a\u0000b\">x</i></p>\n",
+      "ox-content": "<p><i title=\"a\u0000b\">x</i></p>\n",
+      "equal": true
+    },
+    {
+      "id": "nul-comment",
+      "profile": "commonmark",
+      "markdown": "<!-- a\u0000b -->\n",
+      "current": "<!-- a\u0000b -->\n",
+      "v2": "<!-- a\u0000b -->\n",
+      "ox-content": "<!-- a\u0000b -->\n",
+      "equal": true
+    },
+    {
+      "id": "nul-numeric-entity",
+      "profile": "commonmark",
+      "markdown": "a&#0;b\n",
+      "current": "<p>a�b</p>\n",
+      "v2": "<p>a�b</p>\n",
+      "ox-content": "<p>a�b</p>\n",
+      "equal": true
+    }
+  ]
+}

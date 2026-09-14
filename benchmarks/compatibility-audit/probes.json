@@ -1,0 +1,242 @@
+[
+  {
+    "id": "url-backslash-path",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "[link](foo\\bar)\n",
+    "expected": "<p><a href=\"foo%5Cbar\">link</a></p>\n",
+    "reference": "CommonMark 0.31.2 example 502; URL Standard special-scheme backslash handling"
+  },
+  {
+    "id": "gfm-single-tilde",
+    "kind": "normative",
+    "profile": "gfm",
+    "markdown": "~word~\n",
+    "expected": "<p><del>word</del></p>\n",
+    "reference": "GFM 0.29-gfm live snapshot section 6.5, example 491"
+  },
+  {
+    "id": "gfm-triple-tilde",
+    "kind": "normative",
+    "profile": "gfm",
+    "markdown": "a ~~~word~~~ b\n",
+    "expected": "<p>a ~~~word~~~ b</p>\n",
+    "reference": "GFM live snapshot example 493"
+  },
+  {
+    "id": "gfm-mailto",
+    "kind": "normative",
+    "profile": "gfm",
+    "markdown": "mailto:a@b.com\n",
+    "expected": "<p><a href=\"mailto:a@b.com\">mailto:a@b.com</a></p>\n",
+    "reference": "GFM live snapshot example 633"
+  },
+  {
+    "id": "gfm-xmpp",
+    "kind": "normative",
+    "profile": "gfm",
+    "markdown": "xmpp:a@b.com/txt/bin\n",
+    "expected": "<p><a href=\"xmpp:a@b.com/txt\">xmpp:a@b.com/txt</a>/bin</p>\n",
+    "reference": "GFM live snapshot example 635"
+  },
+  {
+    "id": "code-spaces",
+    "kind": "control",
+    "profile": "commonmark",
+    "markdown": "`  a  `\n",
+    "expected": "<p><code> a </code></p>\n",
+    "reference": "CommonMark code-span space normalization rule"
+  },
+  {
+    "id": "reserved-url-preserved",
+    "kind": "control",
+    "profile": "commonmark",
+    "markdown": "[x](/a%23b)\n",
+    "expected": "<p><a href=\"/a%23b\">x</a></p>\n",
+    "reference": "URL fragment delimiter must remain encoded"
+  },
+  {
+    "id": "gfm-tagfilter-configured",
+    "kind": "control",
+    "profile": "gfm",
+    "markdown": "<script>x</script>\n",
+    "expected": "&lt;script>x&lt;/script>\n",
+    "reference": "GFM disallowed raw HTML"
+  },
+  {
+    "id": "gfm-tagfilter-preset",
+    "kind": "policy",
+    "profile": "gfm-preset",
+    "markdown": "<script>x</script>\n",
+    "expected": "&lt;script>x&lt;/script>\n",
+    "reference": "ParserOptions::gfm does not configure the HTML renderer"
+  },
+  {
+    "id": "commonmark-bare-url-default",
+    "kind": "policy",
+    "profile": "default",
+    "markdown": "https://example.com\n",
+    "expected": "<p>https://example.com</p>\n",
+    "reference": "CommonMark plain text; default renderer applies extra autolinks"
+  },
+  {
+    "id": "commonmark-callout",
+    "kind": "policy",
+    "profile": "commonmark",
+    "markdown": "> [!NOTE]\n> body\n",
+    "expected": "<blockquote>\n<p>[!NOTE]\nbody</p>\n</blockquote>\n",
+    "reference": "Formal CommonMark block quote; unconditional product callout"
+  },
+  {
+    "id": "commonmark-toc",
+    "kind": "policy",
+    "profile": "commonmark",
+    "markdown": "# Title\n\n[[toc]]\n",
+    "expected": "<h1>Title</h1>\n<p>[[toc]]</p>\n",
+    "reference": "Formal CommonMark paragraph; unconditional product TOC"
+  },
+  {
+    "id": "commonmark-fence-info",
+    "kind": "policy",
+    "profile": "commonmark",
+    "markdown": "```js{2}\nx\n```\n",
+    "expected": "<pre><code class=\"language-js{2}\">x\n</code></pre>\n",
+    "reference": "CommonMark example serialization uses first info word; exact language class policy is not mandated"
+  },
+  {
+    "id": "gfm-footnotes-preset",
+    "kind": "policy",
+    "profile": "gfm-preset",
+    "markdown": "A[^1].\n\n[^1]: note\n",
+    "expected": "<p>A<a href=\"note\">^1</a>.</p>\n",
+    "reference": "GFM formal extensions do not include footnotes"
+  },
+  {
+    "id": "inherited-code-mask",
+    "kind": "normalizer-counterexample",
+    "profile": "commonmark",
+    "markdown": "<p><code>  </code></p>\n",
+    "expected": "<p><code></code></p>\n",
+    "reference": "Deliberately wrong expected HTML; inherited comparator should reject but does not"
+  },
+  {
+    "id": "inherited-reserved-url-mask",
+    "kind": "normalizer-counterexample",
+    "profile": "commonmark",
+    "markdown": "<a href=\"/a%23b\">x</a>\n",
+    "expected": "<p><a href=\"/a#b\">x</a></p>\n",
+    "reference": "Deliberately wrong expected href; inherited comparator should reject but does not"
+  },
+  {
+    "id": "nul-text",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "a\u0000b\n",
+    "expected": "<p>a�b</p>\n",
+    "reference": "CommonMark 0.31.2 section 2.3: literal U+0000 must become U+FFFD"
+  },
+  {
+    "id": "nul-inline-code",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "`a\u0000b`\n",
+    "expected": "<p><code>a�b</code></p>\n",
+    "reference": "CommonMark 0.31.2 section 2.3: literal U+0000 must become U+FFFD"
+  },
+  {
+    "id": "nul-fenced-code",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "```\na\u0000b\n```\n",
+    "expected": "<pre><code>a�b\n</code></pre>\n",
+    "reference": "CommonMark 0.31.2 section 2.3: literal U+0000 must become U+FFFD"
+  },
+  {
+    "id": "nul-link",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "[x](/a\u0000b)\n",
+    "expected": "<p><a href=\"/a�b\">x</a></p>\n",
+    "reference": "CommonMark 0.31.2 section 2.3: literal U+0000 must become U+FFFD"
+  },
+  {
+    "id": "nul-raw-html",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "<i title=\"a\u0000b\">x</i>\n",
+    "expected": "<p><i title=\"a�b\">x</i></p>\n",
+    "reference": "CommonMark 0.31.2 section 2.3: literal U+0000 must become U+FFFD"
+  },
+  {
+    "id": "nul-comment",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "<!-- a\u0000b -->\n",
+    "expected": "<!-- a�b -->\n",
+    "reference": "CommonMark 0.31.2 section 2.3: literal U+0000 must become U+FFFD"
+  },
+  {
+    "id": "nul-numeric-entity",
+    "kind": "control",
+    "profile": "commonmark",
+    "markdown": "a&#0;b\n",
+    "expected": "<p>a�b</p>\n",
+    "reference": "CommonMark entity decoding independently replaces zero"
+  },
+  {
+    "id": "cr-list-sibling",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "- a\r\r- b\r\r- c\r",
+    "expected": "<ul>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n</li>\n<li><p>c</p>\n</li>\n</ul>\n",
+    "reference": "CommonMark section 2.1; LF-to-CR/CRLF transformation of minimized spec examples"
+  },
+  {
+    "id": "cr-nested-list",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "- a\r\r- b\r  - c\r",
+    "expected": "<ul>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n<ul>\n<li>c</li>\n</ul>\n</li>\n</ul>\n",
+    "reference": "CommonMark section 2.1; LF-to-CR/CRLF transformation of minimized spec examples"
+  },
+  {
+    "id": "crlf-inline-html",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "<a  /><b2\r\ndata=\"foo\" >\r\n",
+    "expected": "<p><a  /><b2\ndata=\"foo\" ></p>\n",
+    "reference": "CommonMark section 2.1; LF-to-CR/CRLF transformation of minimized spec examples"
+  },
+  {
+    "id": "cr-angle-destination",
+    "kind": "normative",
+    "profile": "commonmark",
+    "markdown": "[link](<foo\rbar>)\r",
+    "expected": "<p>[link](<foo\nbar>)</p>\n",
+    "reference": "CommonMark section 2.1; LF-to-CR/CRLF transformation of minimized spec examples"
+  },
+  {
+    "id": "mdx-expression-static",
+    "kind": "observation",
+    "profile": "mdx",
+    "markdown": "Hello {name}.\n\n{count + 1}\n",
+    "expected": "<p>Hello .</p>\n",
+    "reference": "Observed static renderer contract: expression nodes are silent, not evaluated"
+  },
+  {
+    "id": "mdx-esm-static",
+    "kind": "observation",
+    "profile": "mdx",
+    "markdown": "import Chart from './Chart'\nexport const meta = { title: 'Report' }\n\n# Report\n",
+    "expected": "<h1 id=\"report\">Report</h1>\n",
+    "reference": "Observed static renderer contract: ESM source is silent"
+  },
+  {
+    "id": "mdx-lowercase-tag",
+    "kind": "observation",
+    "profile": "mdx",
+    "markdown": "<foo-bar />\n",
+    "expected": "<foo-bar />\n",
+    "reference": "Observed parser boundary: lowercase tags remain raw HTML"
+  }
+]

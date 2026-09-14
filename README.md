@@ -15,9 +15,11 @@ let html = HtmlRenderer::new().render(&document);
 assert_eq!(html, "<p>Hello, <strong>world</strong>!</p>\n");
 ```
 
-Use `ParserOptions::gfm()` with `Parser::with_options` for GFM, or
-`ParserOptions { mdx: true, ..ParserOptions::gfm() }` to combine GFM and MDX.
-Footnotes, math, definition lists, and other extensions remain configurable.
+`ParserOptions::gfm()` enables the implemented GFM syntax plus footnotes.
+The renderer's GFM tagfilter requires `HtmlRendererOptions::disallow_raw_html`
+separately. `ParserOptions { mdx: true, ..ParserOptions::gfm() }` adds MDX
+syntax recognition and static component-island output; it does not provide an
+MDX compiler or runtime. Math, definition lists, and other extensions remain configurable.
 The allocator and source must outlive the document. Reuse/reset an allocator only after its documents
 have been dropped. HTML options and renderer hooks remain available directly.
 
@@ -65,6 +67,27 @@ uses compact constant-time table span maps, trims URL brackets in linear time,
 and scans ASCII URL spans with NEON. The
 [first SIMD study](docs/reports/2026-09-14-simd-round/README.md) remains the historical
 record of the link prototype and its render-only build sensitivity.
+
+## Correctness and compatibility
+
+The [2026-09-14 compatibility audit](docs/reports/2026-09-14-compatibility-audit/README.md)
+found open issues despite the passing inherited suites:
+
+| Check | Result |
+| --- | --- |
+| Historical spec suites | 652 CommonMark core examples and 24 GFM extension examples pass under the inherited normalizer |
+| Stricter CommonMark comparison | Seven URL-output differences; backslashes in paths can change link destinations |
+| Current GFM extension examples | 23/28 match; single/triple tildes and extended `mailto:`/`xmpp:` autolinks remain open |
+| CRLF / CR variants | 12 differences in 1,304 inputs, including duplicated list content |
+| Literal NUL | Required replacement is missing in six tested contexts |
+
+Heading IDs, callouts, TOC, bare-URL autolinking, and fence metadata handling
+also reflect product rendering policies. The inherited normalizer can hide
+significant inline-code whitespace and URL-escape differences. These results
+do not establish full CommonMark, GFM, or MDX compatibility. The audit includes
+frozen official fixtures, minimized reproductions, output comparisons with
+original OX-Content, and a [repeatable check](benchmarks/compatibility-audit/README.md)
+that currently reports the open issues as failures.
 
 ## Native engine comparison
 
