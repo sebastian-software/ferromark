@@ -2,6 +2,7 @@ use ferromark_ast::{Node, Span};
 
 use super::Parser;
 use super::line_scan::{line_end, line_terminator_end, next_line_start};
+use super::prepass::next_fence_run_line;
 use crate::error::{ParseError, ParseResult};
 
 impl<'a> Parser<'a> {
@@ -20,9 +21,13 @@ impl<'a> Parser<'a> {
     ) -> (usize, usize) {
         let bytes = self.source.as_bytes();
         let fence_byte = fence_char as u8;
-        let mut line_start = body_start;
+        let mut from = body_start;
 
-        while line_start < bytes.len() {
+        // A closing fence holds at least three fence bytes in a row, so
+        // only lines containing such a run can close the block. Jump
+        // between those with the pre-pass's cached searcher instead of
+        // visiting every body line: code blocks are long and closers rare.
+        while let Some(line_start) = next_fence_run_line(bytes, from, fence_byte) {
             // Skip up to 3 leading spaces.
             let mut cursor = line_start;
             let max_indent_end = (line_start + 3).min(bytes.len());
@@ -52,7 +57,7 @@ impl<'a> Parser<'a> {
             }
 
             // Not a closing fence — move to the next line.
-            line_start = next_line_start(bytes, line_start);
+            from = next_line_start(bytes, line_start);
         }
 
         // No closing fence; consume everything as body.
@@ -217,5 +222,93 @@ impl<'a> Parser<'a> {
 
         value.push_str(&source[chunk_start..]);
         value.into_bump_str()
+    }
+}
+
+#[cfg(test)]
+mod fence_close_tests {
+    // Owned strings keep the test oracle independent of production arena storage.
+    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+
+    use ferromark_allocator::Allocator;
+
+    use super::super::Parser;
+    use super::super::line_scan::{line_end, line_terminator_end, next_line_start};
+
+    /// The original line-by-line walk, kept as the oracle.
+    fn scalar_close(
+        source: &str,
+        fence_byte: u8,
+        fence_len: usize,
+        body_start: usize,
+    ) -> (usize, usize) {
+        let bytes = source.as_bytes();
+        let mut line_start = body_start;
+        while line_start < bytes.len() {
+            let mut cursor = line_start;
+            let max_indent_end = (line_start + 3).min(bytes.len());
+            while cursor < max_indent_end && bytes[cursor] == b' ' {
+                cursor += 1;
+            }
+            let fence_start = cursor;
+            while cursor < bytes.len() && bytes[cursor] == fence_byte {
+                cursor += 1;
+            }
+            if cursor - fence_start >= fence_len {
+                let end = line_end(bytes, cursor);
+                if bytes[cursor..end].iter().all(|byte| matches!(byte, b' ' | b'\t' | b'\r')) {
+                    return (line_start, line_terminator_end(bytes, end));
+                }
+            }
+            line_start = next_line_start(bytes, line_start);
+        }
+        (bytes.len(), bytes.len())
+    }
+
+    #[test]
+    fn close_search_matches_line_walk() {
+        let lines = [
+            "code",
+            "",
+            "  ",
+            "```",
+            "````",
+            "~~~",
+            " ```",
+            "   ```",
+            "    ```",
+            "``` trailing",
+            "```\t",
+            "x```",
+            "`` `",
+            "~~~~ ",
+            "text with ``` inside",
+            "\r",
+            "é中🙂",
+        ];
+        let mut state = 0x5bd1_e995_2d3c_7a11u64;
+        for _ in 0..3000 {
+            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            let count = (state >> 33) as usize % 12;
+            let mut source = String::new();
+            for _ in 0..count {
+                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                source.push_str(lines[(state >> 33) as usize % lines.len()]);
+                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                source.push_str(if (state >> 40).is_multiple_of(4) { "\r\n" } else { "\n" });
+            }
+            if (state >> 20).is_multiple_of(2) {
+                source.push_str("tail");
+            }
+            let allocator = Allocator::new();
+            let parser = Parser::new(&allocator, &source);
+            for (fence_char, fence_len) in [('`', 3), ('`', 4), ('~', 3), ('~', 5)] {
+                assert_eq!(
+                    parser.find_fenced_close(fence_char, fence_len, 0),
+                    scalar_close(&source, fence_char as u8, fence_len, 0),
+                    "source {source:?} fence {fence_char}{fence_len}"
+                );
+            }
+        }
     }
 }
