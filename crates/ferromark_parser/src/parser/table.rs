@@ -123,11 +123,11 @@ impl<'a> Parser<'a> {
             Self::table_row_cells_with_offsets(line).take(column_count)
         {
             let cell_content = unescape_table_pipes(self.allocator, cell_content);
-            let cell_children = if let Some(source_offsets) = &cell_content.source_offsets {
+            let cell_children = if let Some(source_map) = &cell_content.source_map {
                 let mut children = self.parse_inline_block(cell_content.content, 0)?;
                 let source_offset = (line_start + cell_start) as u32;
                 for child in &mut children {
-                    remap_table_cell_inline_spans(child, source_offset, source_offsets);
+                    remap_table_cell_inline_spans(child, source_offset, source_map);
                 }
                 children
             } else {
