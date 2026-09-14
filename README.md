@@ -37,9 +37,9 @@ The workspace contains four core crates and a small re-export facade:
 | `ferromark_parser` | Markdown to AST |
 | `ferromark_renderer` | AST to HTML |
 
-CommonMark/GFM, the existing optional syntax extensions, rendering options, and
-core tests are retained. Site generation, JavaScript frameworks, bindings, editor
-services, and the upstream profiler are removed. See the precise
+The core retains CommonMark/GFM support, configurable syntax extensions, HTML
+rendering options, and regression tests. Site generation, JavaScript frameworks,
+bindings, editor services, and the upstream profiler are removed. See the precise
 [cleanup boundary](docs/fork.md) and [source provenance](UPSTREAM.md).
 
 Build and verify with the pinned Rust toolchain:
@@ -82,8 +82,8 @@ Footnotes and alert boxes are listed separately from the published GFM extension
 **✓** = built in, possibly requiring an option or Cargo feature. **—** = no
 built-in support. Qualifiers describe narrower support. This is a capability
 inventory, not a claim of identical output or complete specification conformance.
-It covers the native cores from the benchmark, with **v2 updated to the corrected
-local version**; these are not the options enabled during timing.
+It covers the native cores from the benchmark, with **v2 updated to the current
+local core**; these are not the options enabled during timing.
 [Exact versions, source references, and scope](docs/feature-matrix.md).
 
 | Feature / what it does | Ferromark v1 | Ferromark v2 | OX-Content | pulldown-cmark | md4c | Bun native |
@@ -116,8 +116,13 @@ local version**; these are not the options enabled during timing.
 | Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
 | Smart punctuation — curly quotes and ellipses | — | — | ✓ | ✓ | — | — |
 | Extract frontmatter — metadata between `---` or `+++` | ✓ | — | — | ✓ | — | — |
+| **Table layout — beyond GFM** | | | | | | |
 | Merged table cells — one cell spans several columns | ✓ | ✓ | — | — | — | — |
-| Table column-width hints | ✓ | — | — | — | — | — |
+| Numeric column-width hints — proportions from delimiter dashes | ✓ | — | — | — | — | — |
+| Table IDs/classes — style a whole table with CSS | — | ✓ | — | — | — | — |
+| Table captions — a label with inline Markdown formatting | — | With ID/class | — | — | — | — |
+| Column classes for CSS widths — `col-1`, `col-2`, etc. | — | ✓ | — | — | — | — |
+| Column names from headers — “Netto Preis” → `col-name-netto-preis` | — | ✓ | — | — | — | — |
 | **Documentation and navigation** | | | | | | |
 | Automatic heading IDs — link directly to a section | ✓ | ✓ | ✓ | — | — | ✓ |
 | Explicit heading IDs/classes — `# Title {#id .class}` | — | ✓ | ✓ | ✓ | — | — |
@@ -142,11 +147,14 @@ V2 preserves authored punctuation. Automatic typography belongs in an optional,
 locale-aware document transform; the former English-oriented parser option has
 been removed. See the [typography decision](docs/typography.md).
 
-V2 also supports optional table IDs/classes, inline captions, and generated
-`colgroup` columns for external CSS widths. Optional header-derived classes such
+V1 derives numeric column-width hints from delimiter dash counts. V2 instead
+supports table IDs/classes, inline captions, and generated `colgroup` columns
+whose widths are set in external CSS. Optional header-derived classes such
 as `col-name-netto-preis` use the heading slug rules and retain positional classes.
-Horizontal spans use adjacent pipes
-(`||` spans two columns). All table extras are off in the GFM presets.
+Both versions use adjacent pipes for horizontal spans (`||` spans two columns).
+All V2 table extras are opt-in and off in every preset. The table-layout rows
+describe built-in handling of Markdown tables; raw HTML and custom rendering can
+provide additional layouts in any engine.
 [Syntax, options, and a runnable CSS example](docs/table-layout.md).
 
 ## Correctness and compatibility
@@ -164,7 +172,7 @@ and one leading BOM is treated as an encoding marker with original spans preserv
 | CRLF / CR variants | 1,304/1,304 agree with their LF controls |
 | Original cmark / cmark-gfm corpus | 106/106 agree |
 | Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | 700 pass, including both oracle corpora and renderer-profile/span checks |
+| Workspace regression tests | 727 pass, including both oracle corpora, renderer-profile/span checks, and table layout/column names |
 
 Agreement permits conservative HTML serialization equivalence; raw output and
 all mismatches remain in the report. The two reference exceptions have exact
