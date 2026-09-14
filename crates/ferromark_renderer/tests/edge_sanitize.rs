@@ -15,7 +15,11 @@ fn html_blocks_are_escaped_when_sanitize_is_enabled() {
         value: "<script>alert(1)</script>",
         span: ferromark_ast::Span::new(0, 25),
     }));
-    let doc = ferromark_ast::Document { children, span: ferromark_ast::Span::new(0, 25) };
+    let doc = ferromark_ast::Document {
+        front_matter: None,
+        children,
+        span: ferromark_ast::Span::new(0, 25),
+    };
 
     let mut renderer =
         HtmlRenderer::with_options(HtmlRendererOptions { sanitize: true, ..Default::default() });

@@ -290,7 +290,7 @@ fn document_visitor_reaches_mdx_children() {
         self_closing: true,
         span: Span::new(20, 25),
     })));
-    let document = Document { children, span: Span::new(0, 25) };
+    let document = Document { front_matter: None, children, span: Span::new(0, 25) };
     let mut visitor = KindVisitor::default();
     visitor.visit_document(&document);
     assert_eq!(visitor.kinds, ["mdxjsEsm", "mdxJsxFlowElement"]);

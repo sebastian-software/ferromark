@@ -11,6 +11,7 @@ mod cursor;
 mod definition_list;
 mod fenced_code;
 mod footnote;
+mod front_matter;
 mod html;
 mod indented_code;
 mod inline;
@@ -47,8 +48,11 @@ pub struct Parser<'a> {
     /// Source text.
     source: &'a str,
 
-    /// Root-only map from NUL-normalized offsets back to the caller's source.
-    source_map: Option<&'a source_normalization::NulSourceMap<'a>>,
+    /// Root-only map from normalized Markdown offsets to the original source.
+    source_map: Option<&'a source_normalization::NormalizedSourceMap<'a>>,
+
+    /// Raw document metadata, already in original source coordinates.
+    front_matter: Option<ferromark_allocator::Box<'a, ferromark_ast::FrontMatter<'a>>>,
 
     /// Parser options.
     options: ParserOptions,
@@ -139,11 +143,14 @@ impl<'a> Parser<'a> {
     /// Creates a new parser with the specified options.
     #[must_use]
     pub fn with_options(allocator: &'a Allocator, source: &'a str, options: ParserOptions) -> Self {
-        let (source, source_map) = source_normalization::normalize(allocator, source);
+        let front_matter = options.front_matter.then(|| front_matter::extract(source)).flatten();
+        let body_start = front_matter.as_ref().map_or(0, |metadata| metadata.span.end as usize);
+        let (source, source_map) = source_normalization::normalize(allocator, source, body_start);
         let mut parser = Self {
             allocator,
             source,
             source_map,
+            front_matter: front_matter.map(|metadata| allocator.boxed(metadata)),
             options,
             position: 0,
             nesting_depth: 0,
@@ -184,9 +191,15 @@ impl<'a> Parser<'a> {
             allocator: self.allocator,
             source,
             source_map: None,
+            front_matter: None,
             // Line comments are recognized on physical source lines, before
             // container prefixes are stripped, never on generated sub-sources.
-            options: ParserOptions { line_comments: false, ..self.options.clone() },
+            // Front matter belongs only to the original document start.
+            options: ParserOptions {
+                line_comments: false,
+                front_matter: false,
+                ..self.options.clone()
+            },
             position: 0,
             nesting_depth: self.nesting_depth + 1,
             definitions: self.definitions.clone(),
@@ -240,7 +253,7 @@ impl<'a> Parser<'a> {
         }
 
         let span = Span::new(0, self.source.len() as u32);
-        Ok(Document { children, span })
+        Ok(Document { front_matter: self.front_matter.take(), children, span })
     }
 
     /// Slots to reserve for the document's top-level block list.

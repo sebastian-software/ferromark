@@ -48,6 +48,12 @@ pub struct ParserOptions {
     /// Default: `false`, including all presets.
     pub line_comments: bool,
 
+    /// Extract `---` (YAML) or `+++` (TOML) front matter at the document start,
+    /// optionally after a UTF-8 BOM. Store raw metadata in `Document::front_matter`
+    /// and exclude it from Markdown parsing. Values are not deserialized.
+    /// Default: `false`, including all presets.
+    pub front_matter: bool,
+
     /// Enable GFM strikethrough spans.
     ///
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
@@ -153,6 +159,7 @@ impl Default for ParserOptions {
             merged_table_cells: false,
             table_attributes: false,
             line_comments: false,
+            front_matter: false,
             strikethrough: false,
             autolinks: false,
             superscript: false,
@@ -199,6 +206,7 @@ impl ParserOptions {
             merged_table_cells: false,
             table_attributes: false,
             line_comments: false,
+            front_matter: false,
             strikethrough: true,
             autolinks: true,
             superscript: false,
