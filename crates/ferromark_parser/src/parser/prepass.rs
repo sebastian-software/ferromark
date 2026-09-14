@@ -40,7 +40,7 @@ static TILDE_RUN: LazyLock<memmem::Finder<'static>> = LazyLock::new(|| memmem::F
 
 /// Start of the first line at or after `from` holding a run of three
 /// `fence_byte`s, or `None` when the rest of the source holds none.
-fn next_fence_run_line(bytes: &[u8], from: usize, fence_byte: u8) -> Option<usize> {
+pub(super) fn next_fence_run_line(bytes: &[u8], from: usize, fence_byte: u8) -> Option<usize> {
     // `from` is one past a newline, which is one past the end when the last
     // line of the document is unterminated.
     let from = from.min(bytes.len());
