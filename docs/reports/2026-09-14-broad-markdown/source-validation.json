@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "checked_at_utc": "2026-09-14T05:42:18.166307Z",
+  "method": "SHA-256 per file, then deterministic tree hash over sorted relative path + NUL + file SHA-256; all extracted files were checked. Main is a permitted subset because the GitHub archive is not fully extracted.",
+  "build_record": "/private/tmp/ferromark-v2-comparison/build-final/build.json",
+  "sources": {
+    "main": {
+      "requested_revision": "a6e9906f7b4a01355d336f209fd12534796419df",
+      "revision_evidence": {
+        "archive": "/private/tmp/ferromark-v2-comparison-main.tar.gz",
+        "archive_sha256": "afe658617f83969d522e20e1ecfa872f3f2ee9e8f9587f2be85c2ebd345f8510",
+        "archive_root": "sebastian-software-ferromark-a6e9906/",
+        "archive_root_revision_prefix": "a6e9906",
+        "root_prefix_matches_recorded_revision": true
+      },
+      "archive_scope": "all files extracted under the comparison source; archive remainder intentionally not extracted",
+      "extracted_file_count": 157,
+      "archive_file_count": 4647,
+      "checked_file_count": 157,
+      "matching_file_count": 157,
+      "mismatch_count": 0,
+      "missing_from_archive": [],
+      "mismatch_files": [],
+      "extracted_tree_sha256": "70654c953c58d018a3a02e739952e8ba997bcd9945ba33ca7422e48a2ad31207",
+      "archive_checked_tree_sha256": "70654c953c58d018a3a02e739952e8ba997bcd9945ba33ca7422e48a2ad31207",
+      "build_manifest_evidence": {
+        "source": "/private/tmp/ferromark-v2-comparison/main",
+        "manifest_sha256": "65d8b31e162aa240f843e081b04782a7cd3b933904f16e0dc29d74d2dd725b97",
+        "manifest_sha256_matches_build_record": true,
+        "lock_sha256": "b2afe738de90653750c2487dfeb7bcf5ce7eee926d88a56fd2da07e50462f672",
+        "lock_sha256_matches_build_record": true,
+        "build_record_revision": "a6e9906f7b4a01355d336f209fd12534796419df"
+      }
+    },
+    "fork": {
+      "requested_revision": "d1481ca7687e94d30e56f473d3044a175dc6c9a6",
+      "revision_evidence": {
+        "git_object": "d1481ca7687e94d30e56f473d3044a175dc6c9a6",
+        "git_rev_parse": "d1481ca7687e94d30e56f473d3044a175dc6c9a6",
+        "git_tree": "4d48614cc3bb71e95b60aff3b3ffea7c358e34be",
+        "git_archive": "git archive d1481ca7687e94d30e56f473d3044a175dc6c9a6",
+        "git_archive_sha256": "cb93e55ab128bbc50611d62653827cb504a0a47f36a13af544e03e66e2c412da",
+        "provided_archive": "/private/tmp/ferromark-v2-comparison/fork.tar",
+        "provided_archive_sha256": "cb93e55ab128bbc50611d62653827cb504a0a47f36a13af544e03e66e2c412da",
+        "provided_archive_matches_git_archive_tree": true
+      },
+      "extracted_file_count": 366,
+      "archive_file_count": 366,
+      "checked_file_count": 366,
+      "matching_file_count": 366,
+      "mismatch_count": 0,
+      "missing_from_archive": [],
+      "mismatch_files": [],
+      "extracted_tree_sha256": "a42c8fdd6f765b116196dfaf84767d7d171d024485701d6b5dec2c9012134344",
+      "archive_checked_tree_sha256": "a42c8fdd6f765b116196dfaf84767d7d171d024485701d6b5dec2c9012134344",
+      "provided_archive_vs_git_archive": {
+        "extracted_file_count": 366,
+        "archive_file_count": 366,
+        "checked_file_count": 366,
+        "matching_file_count": 366,
+        "mismatch_count": 0,
+        "missing_from_archive": [],
+        "mismatch_files": [],
+        "extracted_tree_sha256": "a42c8fdd6f765b116196dfaf84767d7d171d024485701d6b5dec2c9012134344",
+        "archive_checked_tree_sha256": "a42c8fdd6f765b116196dfaf84767d7d171d024485701d6b5dec2c9012134344"
+      },
+      "build_manifest_evidence": {
+        "source": "/private/tmp/ferromark-v2-comparison/fork",
+        "manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+        "manifest_sha256_matches_build_record": true,
+        "lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+        "lock_sha256_matches_build_record": true,
+        "build_record_revision": "d1481ca7687e94d30e56f473d3044a175dc6c9a6"
+      }
+    }
+  }
+}
