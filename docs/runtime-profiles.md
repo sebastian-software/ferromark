@@ -20,6 +20,10 @@ and line-comment implementation costs have since been reduced; the
 [follow-up investigation](reports/2026-09-14-feature-scan-optimization/README.md)
 compares unchanged feature settings before and after those optimizations and
 remeasures their remaining off/on overhead. No syntax or defaults changed.
+The subsequent [line-comment dispatch study](reports/2026-09-14-line-comment-dispatch/README.md)
+reduces that option's 4,125-byte plain-prose overhead further: about +1.0% in
+parsing and +0.5% in complete reused processing. Those are unused-syntax costs
+on one input shape, not the cost of removing a comment.
 
 The [full report](reports/2026-09-14-runtime-profiles/README.md) includes all
 37 [feature rows](reports/2026-09-14-runtime-profiles/FEATURES.md),

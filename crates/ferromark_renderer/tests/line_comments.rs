@@ -141,6 +141,34 @@ fn explicit_container_prefixes_keep_slashes_literal() {
 }
 
 #[test]
+fn comment_markers_survive_container_dedenting_with_original_inline_spans() {
+    for indent in ["", " ", "  ", "   "] {
+        for template in [
+            "- first\nCOMMENT// hidden\n  **second**\n",
+            "> first\nCOMMENT// hidden\n> **second**\n",
+            "Term\n: first\nCOMMENT// hidden\n    **second**\n",
+            "Note[^n]\n\n[^n]: first\nCOMMENT// hidden\n    **second**\n",
+        ] {
+            for source in line_ending_variants(&template.replace("COMMENT", indent)) {
+                let allocator = Allocator::new();
+                let document = Parser::with_options(
+                    &allocator,
+                    &source,
+                    ParserOptions { definition_lists: true, ..options() },
+                )
+                .parse()
+                .unwrap();
+                let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
+                assert!(!html.contains("hidden"), "{source:?}: {html}");
+                assert!(html.contains("<strong>second</strong>"), "{source:?}: {html}");
+                let span = first_strong_span(&document);
+                assert_eq!(&source[span.start as usize..span.end as usize], "**second**");
+            }
+        }
+    }
+}
+
+#[test]
 fn root_four_space_comment_markers_remain_visible_code() {
     assert_eq!(render("    // visible\n"), "<pre><code>// visible\n</code></pre>\n");
 }
