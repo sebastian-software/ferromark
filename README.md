@@ -58,12 +58,13 @@ pipe scans, rendering, headings, and sanitized URLs. Run individual suites with
 The [optimization roadmap](docs/optimization-roadmap.md) records candidates for
 measured ports from the Ferramenta projects.
 
-The [first SIMD study](docs/reports/2026-09-14-simd-round/README.md) measures a
-single-probe link-unescape prototype. It improves parsing/full processing on
-the broad corpus, while two render-only regressions still need explanation.
-The prototype lives on local branch `codex/simd-link-probe`; `main` retains the
-original parser. The study includes exact output/allocation checks, discarded
-variants, repeated measurements, and an A/A control.
+The [optimization rounds](docs/reports/2026-09-14-optimization-rounds/README.md)
+record measured SIMD and algorithm changes, including rejected variants and raw
+results. The core now skips clean link unescaping, fuses enabled inline markers,
+uses compact constant-time table span maps, trims URL brackets in linear time,
+and scans ASCII URL spans with NEON. The
+[first SIMD study](docs/reports/2026-09-14-simd-round/README.md) remains the historical
+record of the link prototype and its render-only build sensitivity.
 
 The [broad Markdown comparison](docs/reports/2026-09-14-broad-markdown/INTERPRETATION.md)
 measures 57 cases from 37 bytes to 114 KB: short comments, real documentation,

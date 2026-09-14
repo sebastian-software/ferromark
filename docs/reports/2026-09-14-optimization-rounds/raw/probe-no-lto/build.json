@@ -1,0 +1,56 @@
+{
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "rustflags": "-C target-cpu=generic",
+  "worker_sha256": "0a5ba540d3f244a7ad303e29c2b4690391a623ae2861ee51d5c3612454628dcc",
+  "baseline_revision_expected": "ae963d425a4c15841ced5f7359a4b9adc47ca931",
+  "engines": {
+    "baseline": {
+      "source": "/private/tmp/ferromark-v2-simd-round/baseline",
+      "source_revision": null,
+      "source_tree_sha256": "a2c6b2ab194663056d8be9882f60781ab0c52ee62eeace4f1b27ccd3297d4058",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "binary": "/private/tmp/ferromark-v2-rounds-2/build-probe-no-lto/baseline/target/release/simd-round-worker",
+      "binary_sha256": "c8015724773c29829aaab8cb4b157b21a8228fb0982db870455aa57cea1851d0",
+      "lock_sha256": "6551f12a28954c0c0804b76d6f16a8aa50a3206e0b5f502d17f1906a6defaac9",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline",
+        "--locked"
+      ]
+    },
+    "candidate": {
+      "source": "/private/tmp/ferromark-v2-simd-round/candidate-once",
+      "source_revision": null,
+      "source_tree_sha256": "34531318f8f35b7b8672b65dd7dd1691fb097df9fef3ebb6d7ae64543b43357d",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "binary": "/private/tmp/ferromark-v2-rounds-2/build-probe-no-lto/candidate/target/release/simd-round-worker",
+      "binary_sha256": "87d5043113e8aa4df0210b13a1cecf54bf5fd4a8f86998ee8f56e040c36205b0",
+      "lock_sha256": "6551f12a28954c0c0804b76d6f16a8aa50a3206e0b5f502d17f1906a6defaac9",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline",
+        "--locked"
+      ]
+    }
+  },
+  "profile": {
+    "lto": false,
+    "opt-level": 3,
+    "codegen-units": 1,
+    "panic": "abort",
+    "strip": true
+  },
+  "control": "Original single-link-probe experiment, only LTO changed from fat to false"
+}

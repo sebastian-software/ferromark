@@ -1,0 +1,64 @@
+{
+  "schema": 2,
+  "rounds": 1,
+  "pairs_per_round": 3,
+  "window_ms": 30,
+  "warmup_ms": 30,
+  "seed": 20260914,
+  "modes": [
+    "reuse",
+    "render"
+  ],
+  "case_filter": "autolink-|^(comment-table|comment-ack|wiki-chess-article-body|typescript-handbook-typescript-5-0)$",
+  "cases": [
+    "comment-ack",
+    "comment-table",
+    "typescript-handbook-typescript-5-0",
+    "wiki-chess-article-body",
+    "autolink-clean-64",
+    "autolink-balanced-64",
+    "autolink-mixed-64",
+    "autolink-closers-64",
+    "autolink-unicode-64",
+    "autolink-long-clean-64",
+    "autolink-clean-512",
+    "autolink-balanced-512",
+    "autolink-mixed-512",
+    "autolink-closers-512",
+    "autolink-unicode-512",
+    "autolink-long-clean-512",
+    "autolink-clean-2048",
+    "autolink-balanced-2048",
+    "autolink-mixed-2048",
+    "autolink-closers-2048",
+    "autolink-unicode-2048",
+    "autolink-long-clean-2048"
+  ],
+  "corpus_sha256": "31583750d418c1b9932ea391044f57ea579b9a8bbb6255a0b97f1b6b946b78d3",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "aee2b1ee884ed781cc74be3657c0d138a72c3127f7f5d602db632b0689052022",
+  "host_before": {
+    "time_utc": "2026-09-14T07:56:46Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      5.0107421875,
+      5.41455078125,
+      5.234375
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; 2:55 remaining present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-14T07:56:58Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      4.9541015625,
+      5.384765625,
+      5.2255859375
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; 2:55 remaining present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

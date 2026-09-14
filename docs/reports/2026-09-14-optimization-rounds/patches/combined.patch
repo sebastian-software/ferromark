@@ -1,0 +1,1298 @@
+diff --git a/crates/ferromark_parser/src/parser/inline/link_target.rs b/crates/ferromark_parser/src/parser/inline/link_target.rs
+index 45d682d..295eb0d 100644
+--- a/crates/ferromark_parser/src/parser/inline/link_target.rs
++++ b/crates/ferromark_parser/src/parser/inline/link_target.rs
+@@ -50,7 +50,12 @@ impl<'a> Parser<'a> {
+     /// nothing decodes; otherwise the copy is allocated in the arena.
+     pub(in crate::parser) fn unescape_link_component(&self, raw: &'a str) -> &'a str {
+         let bytes = raw.as_bytes();
+-        let mut i = 0;
++        // Probe once so unchanged components can stay borrowed without a byte
++        // walk. Keep the scalar tail: dense escapes must not pay for repeated
++        // vector searches. memchr provides portable and short/tail fallbacks.
++        let Some(mut i) = memchr::memchr2(b'\\', b'&', bytes) else {
++            return raw;
++        };
+         let mut start = 0;
+         let mut out: Option<ferromark_allocator::String<'a>> = None;
+         while i < bytes.len() {
+@@ -162,3 +167,118 @@ fn skip_ws(bytes: &[u8], mut i: usize) -> usize {
+     }
+     i
+ }
++
++#[cfg(test)]
++mod tests {
++    // Owned strings keep the test oracle independent of production arena storage.
++    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
++
++    use std::borrow::Cow;
++
++    use ferromark_allocator::Allocator;
++
++    use super::Parser;
++    use crate::parser::inline::entity::{EntityValue, scan_entity};
++
++    // Keep the original byte-at-a-time walk as an independent scan oracle.
++    // Entity decoding itself is unchanged by the scanner optimization.
++    fn scalar_unescape(raw: &str) -> Cow<'_, str> {
++        let bytes = raw.as_bytes();
++        let (mut i, mut start) = (0, 0);
++        let mut out: Option<String> = None;
++        while i < bytes.len() {
++            match bytes[i] {
++                b'\\' if i + 1 < bytes.len() && bytes[i + 1].is_ascii_punctuation() => {
++                    out.get_or_insert_with(String::new).push_str(&raw[start..i]);
++                    start = i + 1;
++                    i += 2;
++                }
++                b'&' => {
++                    if let Some((value, len)) = scan_entity(&raw[i..]) {
++                        let out = out.get_or_insert_with(String::new);
++                        out.push_str(&raw[start..i]);
++                        match value {
++                            EntityValue::Named(text) => out.push_str(text),
++                            EntityValue::Char(ch) => out.push(ch),
++                        }
++                        i += len;
++                        start = i;
++                    } else {
++                        i += 1;
++                    }
++                }
++                _ => i += 1,
++            }
++        }
++        out.map_or(Cow::Borrowed(raw), |mut out| {
++            out.push_str(&raw[start..]);
++            Cow::Owned(out)
++        })
++    }
++
++    fn check(raw: &str) {
++        let allocator = Allocator::new();
++        let parser = Parser::new(&allocator, "");
++        let expected = scalar_unescape(raw);
++        let actual = parser.unescape_link_component(raw);
++        assert_eq!(actual, expected.as_ref(), "input: {raw:?}");
++        if matches!(expected, Cow::Borrowed(_)) {
++            assert_eq!(actual.as_ptr(), raw.as_ptr(), "unchanged input must stay borrowed");
++        }
++    }
++
++    #[test]
++    fn component_scan_matches_scalar_at_byte_boundaries_and_tails() {
++        let needles = [
++            "",
++            "\\",
++            "&",
++            "\\!",
++            "\\a",
++            "\\é",
++            "\\\\&amp;",
++            "\\&amp;",
++            "&amp;",
++            "&NotEqualTilde;",
++            "&#0;",
++            "&#x1F642;",
++            "&#xD800;",
++            "&#1114112;",
++            "&unknown;",
++            "&#99999999;",
++            "&amp",
++            "é中🙂",
++            "&&amp;\\)",
++        ];
++        for offset in 0..=65 {
++            for tail in [0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 255] {
++                for needle in needles {
++                    let input = format!("{}{}{}", "a".repeat(offset), needle, "z".repeat(tail));
++                    check(&input);
++                }
++            }
++        }
++        for value in 0..=127u8 {
++            check(&format!("prefix\\{}&amp;suffix", char::from(value)));
++        }
++    }
++
++    #[test]
++    fn component_scan_matches_scalar_on_mixed_unicode_and_dense_candidates() {
++        let tokens =
++            ["a", "é", "中", "🙂", "\\", "&", "&amp;", "&#x41;", "\\!", "\\a", "&bad;", "()"];
++        let mut state = 0x46e2_94c3_198a_7bf5u64;
++        for _ in 0..2000 {
++            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
++            let len = (state >> 32) as usize % 192;
++            let mut input = String::new();
++            for _ in 0..len {
++                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
++                input.push_str(tokens[(state >> 32) as usize % tokens.len()]);
++            }
++            check(&input);
++        }
++        check(&"\\&amp;&&#x41;\\aé\\!".repeat(256));
++        check(&format!("{}&amp;{}", "ü".repeat(4096), "中".repeat(4096)));
++    }
++}
+diff --git a/crates/ferromark_parser/src/parser/inline/marker_scan.rs b/crates/ferromark_parser/src/parser/inline/marker_scan.rs
+index 78534d7..de4f4ea 100644
+--- a/crates/ferromark_parser/src/parser/inline/marker_scan.rs
++++ b/crates/ferromark_parser/src/parser/inline/marker_scan.rs
+@@ -1,15 +1,15 @@
+ //! Where the next byte that can start an inline construct is.
+ //!
+ //! Split out of `inline.rs` so the walk itself stays readable: this file is
+-//! two cursors and the rule for when they have to be recomputed.
++//! one cursor and the rule for when it has to be recomputed.
+ 
+-use memchr::memchr;
+-
+-use super::scan::next_inline_special;
++use super::scan::{
++    INLINE_MARKER_MATH, INLINE_MARKER_MDX, INLINE_MARKER_SUPERSCRIPT, next_inline_marker,
++};
+ 
+ /// A memo for one forward byte scan over a fixed slice.
+ ///
+-/// Both scans below are position-independent: when the next hit at or
++/// The scan is position-independent: when the next hit at or
+ /// after `origin` is `hit`, it is still `hit` for every position in
+ /// `origin..=hit`. Recomputing only when the cursor leaves that window is
+ /// what keeps the walk linear.
+@@ -37,56 +37,120 @@ impl ForwardScan {
+ 
+ /// Where the next byte that can start an inline construct is.
+ ///
+-/// `{` is not in the classifier's byte set, so with MDX on it was found by
+-/// scanning to the next real marker first and then searching the span in
+-/// between. In prose whose only markers are braces that first scan runs to
+-/// the end of the content — for every brace — so a line of `{a} ` cost
+-/// O(n²): 32 KiB took 6.8 ms against 0.005 ms without MDX, growing x15 for
+-/// every x4 of input. Caching both scans costs two words and removes the
+-/// repeat.
++/// The core classifier and enabled extension markers are selected in one
++/// forward lookup. Keeping one memo instead of one memo per optional marker
++/// avoids repeated traversals when several extensions are enabled.
+ pub(super) struct InlineMarkerScan {
+-    brace: ForwardScan,
+-    caret: ForwardScan,
+-    dollar: ForwardScan,
+-    math: bool,
+-    mdx: bool,
+-    special: ForwardScan,
+-    superscript: bool,
++    optional: u8,
++    scan: ForwardScan,
+ }
+ 
+ impl InlineMarkerScan {
+     pub(super) const fn new(mdx: bool, superscript: bool, math: bool) -> Self {
+-        Self {
+-            brace: ForwardScan::new(),
+-            caret: ForwardScan::new(),
+-            dollar: ForwardScan::new(),
+-            math,
+-            mdx,
+-            special: ForwardScan::new(),
+-            superscript,
++        let mut optional = 0;
++        if mdx {
++            optional |= INLINE_MARKER_MDX;
++        }
++        if superscript {
++            optional |= INLINE_MARKER_SUPERSCRIPT;
+         }
++        if math {
++            optional |= INLINE_MARKER_MATH;
++        }
++        Self { optional, scan: ForwardScan::new() }
+     }
+ 
+     pub(super) fn next(&mut self, bytes: &[u8], from: usize) -> usize {
+-        let mut special = self.special.hit(from, |at| next_inline_special(bytes, at));
+-        if self.mdx {
+-            let brace = self
+-                .brace
+-                .hit(from, |at| memchr(b'{', &bytes[at..]).map_or(bytes.len(), |rel| at + rel));
+-            special = special.min(brace);
++        self.scan.hit(from, |at| next_inline_marker(bytes, at, self.optional))
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn is_marker(byte: u8, options: u8) -> bool {
++        matches!(
++            byte,
++            b'*' | b'_' | b'`' | b'[' | b'!' | b'~' | b'\\' | b'<' | b'&' | b'\n' | b'\r'
++        ) || (options & INLINE_MARKER_MDX != 0 && byte == b'{')
++            || (options & INLINE_MARKER_SUPERSCRIPT != 0 && byte == b'^')
++            || (options & INLINE_MARKER_MATH != 0 && byte == b'$')
++    }
++
++    fn oracle(bytes: &[u8], from: usize, options: u8) -> usize {
++        let mut at = from;
++        while at < bytes.len() && !is_marker(bytes[at], options) {
++            at += 1;
++        }
++        at
++    }
++
++    #[test]
++    fn matches_scalar_oracle_for_all_option_masks_and_offsets() {
++        for options in 0..=7 {
++            for len in 0..=80 {
++                let mut storage = [b'x'; 80];
++                for (at, byte) in storage[..len].iter_mut().enumerate() {
++                    *byte = match at % 8 {
++                        0 => b'{',
++                        1 => b'^',
++                        2 => b'$',
++                        3 => b'*',
++                        4 => 0x80,
++                        _ => b'x',
++                    };
++                }
++                let bytes = &storage[..len];
++                for from in 0..=len {
++                    let mut scan = InlineMarkerScan::new(
++                        options & INLINE_MARKER_MDX != 0,
++                        options & INLINE_MARKER_SUPERSCRIPT != 0,
++                        options & INLINE_MARKER_MATH != 0,
++                    );
++                    assert_eq!(
++                        scan.next(bytes, from),
++                        oracle(bytes, from, options),
++                        "options {options}, len {len}, from {from}, bytes {bytes:?}"
++                    );
++                }
++            }
+         }
+-        if self.superscript {
+-            let caret = self
+-                .caret
+-                .hit(from, |at| memchr(b'^', &bytes[at..]).map_or(bytes.len(), |rel| at + rel));
+-            special = special.min(caret);
++    }
++
++    #[test]
++    fn matches_every_byte_value_at_every_offset() {
++        for options in 0..=7 {
++            for value in 0..=u8::MAX {
++                let mut bytes = [b'x'; 72];
++                for at in 0..bytes.len() {
++                    bytes[at] = value;
++                    for from in 0..=at {
++                        let mut scan = InlineMarkerScan::new(
++                            options & INLINE_MARKER_MDX != 0,
++                            options & INLINE_MARKER_SUPERSCRIPT != 0,
++                            options & INLINE_MARKER_MATH != 0,
++                        );
++                        assert_eq!(scan.next(&bytes, from), oracle(&bytes, from, options));
++                    }
++                }
++            }
+         }
+-        if self.math {
+-            let dollar = self
+-                .dollar
+-                .hit(from, |at| memchr(b'$', &bytes[at..]).map_or(bytes.len(), |rel| at + rel));
+-            special = special.min(dollar);
++    }
++
++    #[test]
++    fn matches_valid_utf8_and_earliest_marker() {
++        let text = "prefixé 中 {math ^ $ * suffix";
++        let bytes = text.as_bytes();
++        for options in 0..=7 {
++            let mut scan = InlineMarkerScan::new(
++                options & INLINE_MARKER_MDX != 0,
++                options & INLINE_MARKER_SUPERSCRIPT != 0,
++                options & INLINE_MARKER_MATH != 0,
++            );
++            for from in 0..=bytes.len() {
++                assert_eq!(scan.next(bytes, from), oracle(bytes, from, options));
++            }
+         }
+-        special
+     }
+ }
+diff --git a/crates/ferromark_parser/src/parser/inline/scan.rs b/crates/ferromark_parser/src/parser/inline/scan.rs
+index 2e7efcc..29898d5 100644
+--- a/crates/ferromark_parser/src/parser/inline/scan.rs
++++ b/crates/ferromark_parser/src/parser/inline/scan.rs
+@@ -60,6 +60,48 @@ const LOW_NIBBLE: [u8; 16] =
+ #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+ const HIGH_NIBBLE: [u8; 16] = [0x01, 0, 0x02, 0x04, 0, 0x08, 0x10, 0x20, 0, 0, 0, 0, 0, 0, 0, 0];
+ 
++/// The optional bytes use otherwise-unused intersections: `$` gets bit 0x40
++/// at (high 2, low 4), `^` gets bit 0x80 at (high 5, low E), and `{` reuses
++/// the existing `~` bit at (high 7, low B). These choices avoid admitting any
++/// cross-product byte. Eight precomputed pairs let each scan use only the
++/// enabled extension markers; disabled bytes never need retry filtering.
++#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
++const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
++    let mut low = LOW_NIBBLE;
++    let mut high = HIGH_NIBBLE;
++    if options & 1 != 0 {
++        low[11] |= 0x20;
++    }
++    if options & 2 != 0 {
++        low[14] |= 0x80;
++        high[5] |= 0x80;
++    }
++    if options & 4 != 0 {
++        low[4] |= 0x40;
++        high[2] |= 0x40;
++    }
++    (low, high)
++}
++
++#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
++const OPTION_TABLES: [([u8; 16], [u8; 16]); 8] = [
++    marker_tables(0),
++    marker_tables(1),
++    marker_tables(2),
++    marker_tables(3),
++    marker_tables(4),
++    marker_tables(5),
++    marker_tables(6),
++    marker_tables(7),
++];
++
++#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
++#[inline]
++fn selected_marker_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
++    let tables = &OPTION_TABLES[(options & 7) as usize];
++    (&tables.0, &tables.1)
++}
++
+ /// Walks at most [`SHORT_RUN_PREFIX`] bytes. Returns the first marker, or
+ /// `end` when the prefix is clean and the slice ends there, or the first
+ /// unexamined index when the prefix is clean and more bytes remain.
+@@ -81,13 +123,18 @@ fn scan_short_prefix(bytes: &[u8], from: usize) -> usize {
+ #[cfg(target_arch = "aarch64")]
+ #[allow(unsafe_code)]
+ #[inline]
+-fn next_special_neon(bytes: &[u8], from: usize) -> usize {
++fn next_special_neon_with_tables(
++    bytes: &[u8],
++    from: usize,
++    low_table: &[u8; 16],
++    high_table: &[u8; 16],
++) -> usize {
+     use std::arch::aarch64::*;
+     let end = bytes.len();
+     let mut i = from;
+     unsafe {
+-        let low = vld1q_u8(LOW_NIBBLE.as_ptr());
+-        let high = vld1q_u8(HIGH_NIBBLE.as_ptr());
++        let low = vld1q_u8(low_table.as_ptr());
++        let high = vld1q_u8(high_table.as_ptr());
+         let nibble = vdupq_n_u8(0x0F);
+         let classify = |v: uint8x16_t| {
+             let lo = vqtbl1q_u8(low, vandq_u8(v, nibble));
+@@ -136,6 +183,22 @@ fn next_special_neon(bytes: &[u8], from: usize) -> usize {
+     i
+ }
+ 
++#[cfg(target_arch = "aarch64")]
++#[inline]
++fn next_special_neon(bytes: &[u8], from: usize) -> usize {
++    next_special_neon_with_tables(bytes, from, &LOW_NIBBLE, &HIGH_NIBBLE)
++}
++
++#[cfg(target_arch = "aarch64")]
++#[inline]
++fn next_special_neon_options(bytes: &[u8], from: usize, options: u8) -> usize {
++    if bytes.len().saturating_sub(from) < 16 {
++        return next_inline_special_options_scalar(bytes, from, options);
++    }
++    let (low, high) = selected_marker_tables(options);
++    next_special_neon_with_tables(bytes, from, low, high)
++}
++
+ /// SSSE3 sibling of [`next_special_neon`]. `pshufb` is the same 16-entry
+ /// table lookup `vqtbl1q_u8` performs, so both paths run the identical
+ /// classifier and are covered by the same differential tests.
+@@ -147,13 +210,18 @@ fn next_special_neon(bytes: &[u8], from: usize) -> usize {
+ #[cfg(target_arch = "x86_64")]
+ #[allow(unsafe_code)]
+ #[target_feature(enable = "ssse3")]
+-unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
++unsafe fn next_special_ssse3_with_tables(
++    bytes: &[u8],
++    from: usize,
++    low_table: &[u8; 16],
++    high_table: &[u8; 16],
++) -> usize {
+     use std::arch::x86_64::*;
+     let end = bytes.len();
+     let mut i = from;
+     unsafe {
+-        let low = _mm_loadu_si128(LOW_NIBBLE.as_ptr().cast());
+-        let high = _mm_loadu_si128(HIGH_NIBBLE.as_ptr().cast());
++        let low = _mm_loadu_si128(low_table.as_ptr().cast());
++        let high = _mm_loadu_si128(high_table.as_ptr().cast());
+         let nibble = _mm_set1_epi8(0x0F);
+         let classify = |v: __m128i| {
+             // `_mm_srli_epi16` shifts 16-bit lanes, so the neighbouring
+@@ -199,6 +267,22 @@ unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
+     next_inline_special_scalar(bytes, i)
+ }
+ 
++#[cfg(target_arch = "x86_64")]
++#[inline]
++unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
++    next_special_ssse3_with_tables(bytes, from, &LOW_NIBBLE, &HIGH_NIBBLE)
++}
++
++#[cfg(target_arch = "x86_64")]
++#[inline]
++unsafe fn next_special_ssse3_options(bytes: &[u8], from: usize, options: u8) -> usize {
++    if bytes.len().saturating_sub(from) < 16 {
++        return next_inline_special_options_scalar(bytes, from, options);
++    }
++    let (low, high) = selected_marker_tables(options);
++    next_special_ssse3_with_tables(bytes, from, low, high)
++}
++
+ /// AVX2 sibling: the same nibble classifier, 32 bytes at a time.
+ ///
+ /// `vpshufb` is per 128-bit lane, so broadcasting the 16-entry tables into
+@@ -211,13 +295,18 @@ unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
+ #[cfg(target_arch = "x86_64")]
+ #[allow(unsafe_code)]
+ #[target_feature(enable = "avx2")]
+-unsafe fn next_special_avx2(bytes: &[u8], from: usize) -> usize {
++unsafe fn next_special_avx2_with_tables(
++    bytes: &[u8],
++    from: usize,
++    low_table: &[u8; 16],
++    high_table: &[u8; 16],
++) -> usize {
+     use std::arch::x86_64::*;
+     let end = bytes.len();
+     let mut i = from;
+     unsafe {
+-        let low = _mm256_broadcastsi128_si256(_mm_loadu_si128(LOW_NIBBLE.as_ptr().cast()));
+-        let high = _mm256_broadcastsi128_si256(_mm_loadu_si128(HIGH_NIBBLE.as_ptr().cast()));
++        let low = _mm256_broadcastsi128_si256(_mm_loadu_si128(low_table.as_ptr().cast()));
++        let high = _mm256_broadcastsi128_si256(_mm_loadu_si128(high_table.as_ptr().cast()));
+         let nibble = _mm256_set1_epi8(0x0F);
+         let classify = |v: __m256i| {
+             let lo = _mm256_shuffle_epi8(low, _mm256_and_si256(v, nibble));
+@@ -246,6 +335,22 @@ unsafe fn next_special_avx2(bytes: &[u8], from: usize) -> usize {
+     next_inline_special_scalar(bytes, i)
+ }
+ 
++#[cfg(target_arch = "x86_64")]
++#[inline]
++unsafe fn next_special_avx2(bytes: &[u8], from: usize) -> usize {
++    next_special_avx2_with_tables(bytes, from, &LOW_NIBBLE, &HIGH_NIBBLE)
++}
++
++#[cfg(target_arch = "x86_64")]
++#[inline]
++unsafe fn next_special_avx2_options(bytes: &[u8], from: usize, options: u8) -> usize {
++    if bytes.len().saturating_sub(from) < 32 {
++        return next_inline_special_options_scalar(bytes, from, options);
++    }
++    let (low, high) = selected_marker_tables(options);
++    next_special_avx2_with_tables(bytes, from, low, high)
++}
++
+ #[cfg(target_arch = "aarch64")]
+ #[inline]
+ pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
+@@ -281,6 +386,55 @@ pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
+     next_inline_special_scalar(bytes, from)
+ }
+ 
++#[cfg(target_arch = "aarch64")]
++#[inline]
++fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize {
++    next_special_neon_options(bytes, from, options)
++}
++
++#[cfg(target_arch = "x86_64")]
++#[inline]
++fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize {
++    if std::arch::is_x86_feature_detected!("avx2") {
++        #[allow(unsafe_code)]
++        unsafe {
++            next_special_avx2_options(bytes, from, options)
++        }
++    } else if std::arch::is_x86_feature_detected!("ssse3") {
++        #[allow(unsafe_code)]
++        unsafe {
++            next_special_ssse3_options(bytes, from, options)
++        }
++    } else {
++        next_inline_special_options_scalar(bytes, from, options)
++    }
++}
++
++#[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
++#[inline]
++fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize {
++    next_inline_special_options_scalar(bytes, from, options)
++}
++
++/// Marker bits used by [`next_inline_marker`].
++pub(super) const INLINE_MARKER_MDX: u8 = 1 << 0;
++pub(super) const INLINE_MARKER_SUPERSCRIPT: u8 = 1 << 1;
++pub(super) const INLINE_MARKER_MATH: u8 = 1 << 2;
++
++/// Find the next core marker or enabled extension marker.
++///
++/// The core marker scan stays on its architecture-specific classifier when no
++/// extensions are enabled. With extensions, one option-specific nibble table
++/// is selected and the shared SIMD path emits only enabled markers.
++#[inline]
++pub(super) fn next_inline_marker(bytes: &[u8], from: usize, options: u8) -> usize {
++    if options == 0 {
++        return next_inline_special(bytes, from);
++    }
++
++    next_inline_special_options(bytes, from, options)
++}
++
+ #[cfg_attr(target_arch = "aarch64", allow(dead_code))]
+ #[inline]
+ fn next_inline_special_scalar(bytes: &[u8], from: usize) -> usize {
+@@ -322,6 +476,24 @@ fn next_inline_special_scalar(bytes: &[u8], from: usize) -> usize {
+     i
+ }
+ 
++#[allow(dead_code)]
++#[inline]
++fn next_inline_special_options_scalar(bytes: &[u8], from: usize, options: u8) -> usize {
++    let mut i = from;
++    while i < bytes.len() && !is_inline_marker(bytes[i], options) {
++        i += 1;
++    }
++    i
++}
++
++#[inline]
++fn is_inline_marker(byte: u8, options: u8) -> bool {
++    matches!(byte, b'*' | b'_' | b'`' | b'[' | b'!' | b'~' | b'\\' | b'<' | b'&' | b'\n' | b'\r')
++        || (options & 1 != 0 && byte == b'{')
++        || (options & 2 != 0 && byte == b'^')
++        || (options & 4 != 0 && byte == b'$')
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+diff --git a/crates/ferromark_parser/src/parser/table.rs b/crates/ferromark_parser/src/parser/table.rs
+index de8e41b..44f8714 100644
+--- a/crates/ferromark_parser/src/parser/table.rs
++++ b/crates/ferromark_parser/src/parser/table.rs
+@@ -123,11 +123,11 @@ impl<'a> Parser<'a> {
+             Self::table_row_cells_with_offsets(line).take(column_count)
+         {
+             let cell_content = unescape_table_pipes(self.allocator, cell_content);
+-            let cell_children = if let Some(source_offsets) = &cell_content.source_offsets {
++            let cell_children = if let Some(source_map) = &cell_content.source_map {
+                 let mut children = self.parse_inline_block(cell_content.content, 0)?;
+                 let source_offset = (line_start + cell_start) as u32;
+                 for child in &mut children {
+-                    remap_table_cell_inline_spans(child, source_offset, source_offsets);
++                    remap_table_cell_inline_spans(child, source_offset, source_map);
+                 }
+                 children
+             } else {
+diff --git a/crates/ferromark_parser/src/parser/table_cell_source.rs b/crates/ferromark_parser/src/parser/table_cell_source.rs
+index 719d7e3..c4ea9fe 100644
+--- a/crates/ferromark_parser/src/parser/table_cell_source.rs
++++ b/crates/ferromark_parser/src/parser/table_cell_source.rs
+@@ -4,7 +4,57 @@ use memchr::memchr;
+ 
+ pub(super) struct TableCellContent<'a> {
+     pub content: &'a str,
+-    pub source_offsets: Option<Vec<'a, u32>>,
++    pub source_map: Option<TableCellSourceMap<'a>>,
++}
++
++const SOURCE_MAP_BLOCK_BYTES: usize = 64;
++
++#[derive(Clone, Copy)]
++struct SourceMapBlock {
++    bits: u64,
++    prefix: u32,
++}
++
++/// Compact rank index for the bytes removed from a table cell. Each block
++/// keeps one bit per generated byte and the number of removed bytes before
++/// that block, making boundary remapping constant time after a clamp.
++pub(super) struct TableCellSourceMap<'a> {
++    blocks: Vec<'a, SourceMapBlock>,
++    generated_len: u32,
++    removed_total: u32,
++}
++
++impl<'a> TableCellSourceMap<'a> {
++    fn new(allocator: &'a Allocator) -> Self {
++        Self { blocks: allocator.new_vec(), generated_len: 0, removed_total: 0 }
++    }
++
++    fn record_removed(&mut self, generated_position: usize) {
++        let block_index = generated_position / SOURCE_MAP_BLOCK_BYTES;
++        while self.blocks.len() <= block_index {
++            self.blocks.push(SourceMapBlock { bits: 0, prefix: self.removed_total });
++        }
++        self.blocks[block_index].bits |= 1u64 << (generated_position % SOURCE_MAP_BLOCK_BYTES);
++        self.removed_total += 1;
++    }
++
++    fn finish(&mut self, generated_len: usize) {
++        self.generated_len = generated_len as u32;
++    }
++
++    fn boundary_offset(&self, index: usize) -> u32 {
++        // The dense map historically clamped spans beyond the generated
++        // source to its final source boundary. Preserve that behavior before
++        // looking up the rank bitset.
++        let bounded = index.min(self.generated_len as usize);
++        let block_index = bounded / SOURCE_MAP_BLOCK_BYTES;
++        let within_block = bounded % SOURCE_MAP_BLOCK_BYTES;
++        let Some(block) = self.blocks.get(block_index) else {
++            return bounded as u32 + self.removed_total;
++        };
++        let mask = if within_block == 0 { 0 } else { (1u64 << within_block) - 1 };
++        bounded as u32 + block.prefix + (block.bits & mask).count_ones()
++    }
+ }
+ 
+ /// Removes the table-level escape from pipes before inline parsing.
+@@ -21,38 +71,27 @@ pub(super) fn unescape_table_pipes<'a>(
+     // instead of examining every byte, then reuse the first escaped match
+     // when constructing the remapped source below.
+     let Some(first_pipe) = escaped_pipe_scan_start(bytes) else {
+-        return TableCellContent { content, source_offsets: None };
++        return TableCellContent { content, source_map: None };
+     };
+ 
+     let mut unescaped =
+         ferromark_allocator::String::with_capacity_in(content.len(), allocator.bump());
+-    let mut source_offsets: Vec<'a, u32> = allocator.new_vec();
++    let mut source_map = TableCellSourceMap::new(allocator);
+     let mut copied_through = 0;
+     let mut search_start = first_pipe;
+     while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
+         let pipe = search_start + relative;
+         if is_escaped_table_pipe(bytes, pipe) {
+-            push_mapped_table_cell_slice(
+-                content,
+-                copied_through,
+-                pipe - 1,
+-                &mut unescaped,
+-                &mut source_offsets,
+-            );
++            push_unescaped_table_cell_slice(content, copied_through, pipe - 1, &mut unescaped);
++            source_map.record_removed(unescaped.len());
+             unescaped.push('|');
+-            source_offsets.push((pipe + 1) as u32);
+             copied_through = pipe + 1;
+         }
+         search_start = pipe + 1;
+     }
+-    push_mapped_table_cell_slice(
+-        content,
+-        copied_through,
+-        content.len(),
+-        &mut unescaped,
+-        &mut source_offsets,
+-    );
+-    TableCellContent { content: unescaped.into_bump_str(), source_offsets: Some(source_offsets) }
++    push_unescaped_table_cell_slice(content, copied_through, content.len(), &mut unescaped);
++    source_map.finish(unescaped.len());
++    TableCellContent { content: unescaped.into_bump_str(), source_map: Some(source_map) }
+ }
+ 
+ #[inline]
+@@ -69,94 +108,91 @@ fn escaped_pipe_scan_start(bytes: &[u8]) -> Option<usize> {
+     memchr::memchr_iter(b'|', bytes).find(|&index| is_escaped_table_pipe(bytes, index))
+ }
+ 
+-fn push_mapped_table_cell_slice(
++fn push_unescaped_table_cell_slice(
+     source: &str,
+     start: usize,
+     end: usize,
+     unescaped: &mut ferromark_allocator::String<'_>,
+-    source_offsets: &mut Vec<'_, u32>,
+ ) {
+-    if start >= end {
+-        if source_offsets.is_empty() {
+-            source_offsets.push(start as u32);
+-        }
+-        return;
+-    }
+-
+-    if source_offsets.is_empty() {
+-        source_offsets.push(start as u32);
+-    }
+-    unescaped.push_str(&source[start..end]);
+-
+-    let mut source_offset = start + 1;
+-    while source_offsets.len() < unescaped.len() + 1 {
+-        source_offsets.push(source_offset.min(end) as u32);
+-        source_offset += 1;
++    if start < end {
++        unescaped.push_str(&source[start..end]);
+     }
+ }
+ 
+ pub(super) fn remap_table_cell_inline_spans(
+     node: &mut Node<'_>,
+     source_offset: u32,
+-    offsets: &[u32],
++    source_map: &TableCellSourceMap<'_>,
+ ) {
+     match node {
+-        Node::Text(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
++        Node::Text(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
+         Node::Emphasis(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::Strong(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+-        Node::InlineCode(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
+-        Node::InlineMath(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
+-        Node::Break(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
++        Node::InlineCode(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
++        Node::InlineMath(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
++        Node::Break(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
+         Node::Link(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+-        Node::Image(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
++        Node::Image(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
+         Node::Delete(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::Superscript(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::Subscript(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::FootnoteReference(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
++        Node::Html(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+         }
+-        Node::Html(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
+         Node::MdxJsxTextElement(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for attribute in &mut node.attributes {
+-                remap_table_cell_mdx_attribute_entry(attribute, source_offset, offsets);
++                remap_table_cell_mdx_attribute_entry(attribute, source_offset, source_map);
+             }
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::MdxTextExpression(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+         }
+         Node::Paragraph(_)
+         | Node::Heading(_)
+@@ -181,28 +217,24 @@ pub(super) fn remap_table_cell_inline_spans(
+ fn remap_table_cell_mdx_attribute_entry(
+     entry: &mut MdxJsxAttributeEntry<'_>,
+     source_offset: u32,
+-    offsets: &[u32],
++    source_map: &TableCellSourceMap<'_>,
+ ) {
+     match entry {
+         MdxJsxAttributeEntry::Attribute(attribute) => {
+-            remap_table_cell_span(&mut attribute.span, source_offset, offsets);
++            remap_table_cell_span(&mut attribute.span, source_offset, source_map);
+             if let Some(MdxJsxAttributeValue::Expression(expr)) = &mut attribute.value {
+-                remap_table_cell_span(&mut expr.span, source_offset, offsets);
++                remap_table_cell_span(&mut expr.span, source_offset, source_map);
+             }
+         }
+         MdxJsxAttributeEntry::Expression(expr) => {
+-            remap_table_cell_span(&mut expr.span, source_offset, offsets);
++            remap_table_cell_span(&mut expr.span, source_offset, source_map);
+         }
+     }
+ }
+ 
+-fn remap_table_cell_span(span: &mut Span, source_offset: u32, offsets: &[u32]) {
+-    span.start = source_offset + table_cell_boundary_offset(span.start as usize, offsets);
+-    span.end = source_offset + table_cell_boundary_offset(span.end as usize, offsets);
+-}
+-
+-fn table_cell_boundary_offset(index: usize, offsets: &[u32]) -> u32 {
+-    offsets.get(index).copied().unwrap_or_else(|| offsets.last().copied().unwrap_or_default())
++fn remap_table_cell_span(span: &mut Span, source_offset: u32, source_map: &TableCellSourceMap<'_>) {
++    span.start = source_offset + source_map.boundary_offset(span.start as usize);
++    span.end = source_offset + source_map.boundary_offset(span.end as usize);
+ }
+ 
+ pub(super) fn is_escaped_table_pipe(bytes: &[u8], pipe: usize) -> bool {
+diff --git a/crates/ferromark_parser/src/parser/table_cell_source/tests.rs b/crates/ferromark_parser/src/parser/table_cell_source/tests.rs
+index 0f9df5f..f9400c6 100644
+--- a/crates/ferromark_parser/src/parser/table_cell_source/tests.rs
++++ b/crates/ferromark_parser/src/parser/table_cell_source/tests.rs
+@@ -27,18 +27,84 @@ fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
+ }
+ 
+ #[test]
+-fn skipped_unescaped_pipes_keep_content_and_source_offsets() {
++fn skipped_unescaped_pipes_keep_content_and_sparse_source_map() {
+     for prefix_len in [0, 8, 31, 63, 64, 65, 128] {
+         let prefix = "x".repeat(prefix_len);
+         let source = format!("{prefix}|日本語\\|end");
+         let allocator = Allocator::new();
+         let result = unescape_table_pipes(&allocator, &source);
+         assert_eq!(result.content, format!("{prefix}|日本語|end"));
+-        let offsets = result.source_offsets.unwrap();
+-        assert_eq!(offsets.len(), result.content.len() + 1);
++        let source_map = result.source_map.unwrap();
+         let removed_at = prefix_len + "|日本語".len();
+-        for (index, offset) in offsets.iter().enumerate() {
+-            assert_eq!(*offset as usize, index + usize::from(index > removed_at));
++        assert_eq!(source_map.removed_total, 1);
++        assert_eq!(
++            source_map.blocks[removed_at / 64].bits & (1 << (removed_at % 64)),
++            1 << (removed_at % 64)
++        );
++        for boundary in 0..=result.content.len() {
++            let expected = boundary + usize::from(boundary > removed_at);
++            assert_eq!(source_map.boundary_offset(boundary) as usize, expected);
++        }
++        assert_eq!(source_map.boundary_offset(result.content.len() + 100), source.len() as u32);
++    }
++}
++
++#[test]
++fn adjacent_escaped_pipes_map_each_generated_boundary() {
++    let allocator = Allocator::new();
++    let result = unescape_table_pipes(&allocator, r"a\|\|b");
++    assert_eq!(result.content, "a||b");
++    let source_map = result.source_map.unwrap();
++    assert_eq!(source_map.removed_total, 2);
++    let mapped = std::array::from_fn(|boundary| source_map.boundary_offset(boundary));
++    assert_eq!(mapped, [0, 1, 3, 5, 6]);
++}
++
++#[test]
++fn sparse_map_matches_dense_scalar_oracle() {
++    let allocator = Allocator::new();
++    for source in
++        [r"plain text", r"a\|b|c", r"a\\|b\|c", r"\|\|\|", r"slashes \\| and escaped \| pipes"]
++    {
++        let result = unescape_table_pipes(&allocator, source);
++        let bytes = source.as_bytes();
++        let mut expected_content = allocator.new_string();
++        let mut expected_offsets = [0usize; 128];
++        let mut expected_len = 1;
++        let mut source_index = 0;
++        while source_index < bytes.len() {
++            if bytes[source_index] == b'|'
++                && is_escaped_table_pipe(bytes, source_index)
++                && source_index > 0
++            {
++                // The slash was already emitted by the previous iteration;
++                // remove it and repair the boundary immediately before the
++                // generated pipe.
++                expected_content.pop();
++                expected_len -= 1;
++                expected_offsets[expected_len - 1] = source_index - 1;
++                expected_content.push('|');
++                expected_offsets[expected_len] = source_index + 1;
++                expected_len += 1;
++                source_index += 1;
++            } else {
++                expected_content.push(bytes[source_index] as char);
++                source_index += 1;
++                expected_offsets[expected_len] = source_index;
++                expected_len += 1;
++            }
++        }
++        assert_eq!(result.content, expected_content.as_str(), "{source:?}");
++        let source_map = result.source_map.as_ref();
++        for (boundary, expected) in expected_offsets[..expected_len].iter().copied().enumerate() {
++            assert_eq!(
++                source_map.map_or(boundary as u32, |map| map.boundary_offset(boundary)) as usize,
++                expected,
++                "{source:?} boundary {boundary}"
++            );
++        }
++        if let Some(map) = source_map {
++            assert_eq!(map.boundary_offset(result.content.len() + 100), source.len() as u32);
+         }
+     }
+ }
+diff --git a/crates/ferromark_renderer/src/html/autolink.rs b/crates/ferromark_renderer/src/html/autolink.rs
+index dbaff88..3c6651a 100644
+--- a/crates/ferromark_renderer/src/html/autolink.rs
++++ b/crates/ferromark_renderer/src/html/autolink.rs
+@@ -86,7 +86,20 @@ fn find_autolink_match_in<P: AsRef<str>>(
+ /// verbatim (`/wiki/日本語`) — with CJK sentence punctuation the exception.
+ fn scan_url_end(s: &str, from: usize) -> usize {
+     let bytes = s.as_bytes();
+-    let mut end = from;
++    // An IRI host can start with Unicode immediately after its scheme. Avoid
++    // SIMD setup when there is no ASCII prefix to skip.
++    let mut end = if bytes.get(from).is_some_and(u8::is_ascii) {
++        scan_ascii_url_prefix(bytes, from)
++    } else {
++        from
++    };
++    if end >= bytes.len() || bytes[end].is_ascii() {
++        return end;
++    }
++
++    // A wide ASCII pass stops at the first high-bit byte. Resume the original
++    // Unicode-aware walk there so IRI characters remain part of the URL while
++    // CJK/fullwidth sentence punctuation still terminates it.
+     while end < bytes.len() {
+         let byte = bytes[end];
+         if byte.is_ascii() {
+@@ -107,6 +120,78 @@ fn scan_url_end(s: &str, from: usize) -> usize {
+     end
+ }
+ 
++#[cfg(target_arch = "aarch64")]
++#[allow(unsafe_code)]
++#[inline]
++fn scan_ascii_url_prefix(bytes: &[u8], from: usize) -> usize {
++    use std::arch::aarch64::*;
++
++    let end = bytes.len();
++    let mut i = from;
++    // SAFETY: full vectors are loaded only when 16 bytes remain; the overlapping
++    // tail starts at len - 16 and masks positions before the unconsumed cursor.
++    // AArch64 guarantees NEON support. No pointer outlives the borrowed slice.
++    unsafe {
++        let high_bit = vdupq_n_u8(0x7f);
++        let classify = |v: uint8x16_t| {
++            let mut stop = vcgtq_u8(v, high_bit);
++            for terminator in [b' ', b'\t', b'\n', b'\r', b'<', b'>', b'"', b'\'', b'`'] {
++                stop = vorrq_u8(stop, vceqq_u8(v, vdupq_n_u8(terminator)));
++            }
++            let stop = vtstq_u8(stop, stop);
++            let narrow = vshrn_n_u16(vreinterpretq_u16_u8(stop), 4);
++            vget_lane_u64(vreinterpret_u64_u8(narrow), 0)
++        };
++
++        while i + 16 <= end {
++            let mask = classify(vld1q_u8(bytes.as_ptr().add(i)));
++            if mask != 0 {
++                return i + (mask.trailing_zeros() / 4) as usize;
++            }
++            i += 16;
++        }
++        if i < end && end >= 16 {
++            let base = end - 16;
++            let mask =
++                classify(vld1q_u8(bytes.as_ptr().add(base))) & (u64::MAX << ((i - base) * 4));
++            if mask != 0 {
++                return base + (mask.trailing_zeros() / 4) as usize;
++            }
++            return end;
++        }
++    }
++    scan_ascii_url_prefix_scalar(bytes, i)
++}
++
++#[cfg(not(target_arch = "aarch64"))]
++#[inline]
++fn scan_ascii_url_prefix(bytes: &[u8], from: usize) -> usize {
++    scan_ascii_url_prefix_scalar(bytes, from)
++}
++
++#[inline]
++fn scan_ascii_url_prefix_scalar(bytes: &[u8], from: usize) -> usize {
++    let end = bytes.len();
++    let mut i = from;
++    while i + 8 <= end {
++        let chunk = &bytes[i..i + 8];
++        let mut stop = 0u8;
++        for (offset, &byte) in chunk.iter().enumerate() {
++            if !byte.is_ascii() || !is_url_byte(byte) {
++                stop |= 1 << offset;
++            }
++        }
++        if stop != 0 {
++            return i + stop.trailing_zeros() as usize;
++        }
++        i += 8;
++    }
++    while i < end && bytes[i].is_ascii() && is_url_byte(bytes[i]) {
++        i += 1;
++    }
++    i
++}
++
+ #[inline]
+ fn is_url_byte(byte: u8) -> bool {
+     !matches!(byte, b' ' | b'\t' | b'\n' | b'\r' | b'<' | b'>' | b'"' | b'\'' | b'`')
+@@ -137,30 +222,33 @@ const fn ends_url(ch: char) -> bool {
+ }
+ 
+ fn trim_trailing_punct(bytes: &[u8], start: usize, mut end: usize) -> usize {
++    // Count lazily: the common case has no closing bracket. Each bracket type
++    // is counted at most once, then updated as its trailing closers are removed.
++    // This bounds trimming to three linear scans even for mixed bracket runs.
++    let mut counts: [Option<(usize, usize)>; 3] = [None; 3];
+     while end > start {
+-        let b = bytes[end - 1];
+-        match b {
++        match bytes[end - 1] {
+             b'.' | b',' | b';' | b':' | b'!' | b'?' => end -= 1,
+-            b')' | b']' | b'}' => {
+-                let (open, close) = match b {
+-                    b')' => (b'(', b')'),
+-                    b']' => (b'[', b']'),
+-                    _ => (b'{', b'}'),
++            close @ (b')' | b']' | b'}') => {
++                let (slot, open) = match close {
++                    b')' => (0, b'('),
++                    b']' => (1, b'['),
++                    _ => (2, b'{'),
+                 };
+-                // Strip the closing bracket only when it has no unmatched
+-                // partner inside the URL — a single pass over the slice is
+-                // simpler than two `filter().count()` walks and avoids the
+-                // `naive_bytecount` clippy lint.
+-                let mut opens = 0usize;
+-                let mut closes = 0usize;
+-                for &x in &bytes[start..end - 1] {
+-                    if x == open {
+-                        opens += 1;
+-                    } else if x == close {
+-                        closes += 1;
++                let (opens, closes) = counts[slot].get_or_insert_with(|| {
++                    let mut opens = 0;
++                    let mut closes = 0;
++                    for &byte in &bytes[start..end] {
++                        if byte == open {
++                            opens += 1;
++                        } else if byte == close {
++                            closes += 1;
++                        }
+                     }
+-                }
+-                if closes >= opens {
++                    (opens, closes)
++                });
++                if *closes > *opens {
++                    *closes -= 1;
+                     end -= 1;
+                 } else {
+                     break;
+@@ -171,3 +259,156 @@ fn trim_trailing_punct(bytes: &[u8], start: usize, mut end: usize) -> usize {
+     }
+     end
+ }
++
++#[cfg(test)]
++mod trimming_tests {
++    use super::trim_trailing_punct;
++
++    fn original(bytes: &[u8], start: usize, mut end: usize) -> usize {
++        while end > start {
++            let b = bytes[end - 1];
++            match b {
++                b'.' | b',' | b';' | b':' | b'!' | b'?' => end -= 1,
++                b')' | b']' | b'}' => {
++                    let (open, close) = match b {
++                        b')' => (b'(', b')'),
++                        b']' => (b'[', b']'),
++                        _ => (b'{', b'}'),
++                    };
++                    // Strip the closing bracket only when it has no unmatched
++                    // partner inside the URL — a single pass over the slice is
++                    // simpler than two `filter().count()` walks and avoids the
++                    // `naive_bytecount` clippy lint.
++                    let mut opens = 0usize;
++                    let mut closes = 0usize;
++                    for &x in &bytes[start..end - 1] {
++                        if x == open {
++                            opens += 1;
++                        } else if x == close {
++                            closes += 1;
++                        }
++                    }
++                    if closes >= opens {
++                        end -= 1;
++                    } else {
++                        break;
++                    }
++                }
++                _ => break,
++            }
++        }
++        end
++    }
++
++    #[test]
++    fn matches_original_for_exhaustive_bracket_and_punctuation_tails() {
++        const ALPHABET: &[u8] = b"()[]{}.!a";
++        let mut bytes = [0u8; 9];
++        for length in 0..=6u32 {
++            for mut code in 0..ALPHABET.len().pow(length) {
++                bytes[..3].copy_from_slice(b"x:/");
++                for byte in &mut bytes[3..3 + length as usize] {
++                    *byte = ALPHABET[code % ALPHABET.len()];
++                    code /= ALPHABET.len();
++                }
++                let input = &bytes[..3 + length as usize];
++                for start in [0, 3] {
++                    assert_eq!(
++                        trim_trailing_punct(input, start, input.len()),
++                        original(input, start, input.len()),
++                        "{input:?}, start {start}"
++                    );
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn matches_original_for_long_unbalanced_and_unicode_urls() {
++        let mut bytes =
++            b"prefix https://example.org/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e/([{".to_vec();
++        for i in 0..4_096 {
++            bytes.push(b")]}.!?"[i % 6]);
++        }
++        for end in (8..bytes.len()).step_by(37) {
++            assert_eq!(trim_trailing_punct(&bytes, 7, end), original(&bytes, 7, end));
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn scalar_oracle(s: &str, from: usize) -> usize {
++        let bytes = s.as_bytes();
++        let mut end = from;
++        while end < bytes.len() {
++            let byte = bytes[end];
++            if byte.is_ascii() {
++                if !is_url_byte(byte) {
++                    break;
++                }
++                end += 1;
++                continue;
++            }
++            let Some(ch) = s.get(end..).and_then(|rest| rest.chars().next()) else {
++                break;
++            };
++            if ends_url(ch) {
++                break;
++            }
++            end += ch.len_utf8();
++        }
++        end
++    }
++
++    #[test]
++    fn matches_scalar_for_every_byte_at_every_offset() {
++        for value in 0u8..=0x7f {
++            for marker_at in 0..40 {
++                let mut bytes = [b'x'; 40];
++                bytes[marker_at] = value;
++                let text = std::str::from_utf8(&bytes).unwrap();
++                for from in 0..=bytes.len() {
++                    assert_eq!(scan_url_end(text, from), scalar_oracle(text, from));
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn matches_scalar_for_ascii_tails_and_terminators() {
++        let terminators = [b' ', b'\t', b'\n', b'\r', b'<', b'>', b'"', b'\'', b'`'];
++        for len in 0..=48 {
++            for &terminator in &terminators {
++                let mut bytes = [b'a'; 48];
++                if len > 0 {
++                    bytes[len - 1] = terminator;
++                }
++                let text = std::str::from_utf8(&bytes[..len]).unwrap();
++                for from in 0..=len {
++                    assert_eq!(scan_url_end(text, from), scalar_oracle(text, from));
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn preserves_mixed_utf8_and_cjk_boundaries() {
++        for text in [
++            "https://example.test/wiki/日本語。next",
++            "https://example.test/é中/path`tail",
++            "https://example.test/中\u{3000}next",
++            "https://example.test/日本語/fullwidth：tail",
++        ] {
++            for from in 0..=text.len() {
++                assert_eq!(
++                    scan_url_end(text, from),
++                    scalar_oracle(text, from),
++                    "text {text:?}, from {from}"
++                );
++            }
++        }
++    }
++}

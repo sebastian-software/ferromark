@@ -1,0 +1,482 @@
+[
+  {
+    "case": "comment-ack",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 49.5407815472416,
+    "candidate_ns_per_document": 48.86252882661038,
+    "baseline_over_candidate_median": 1.0154185460307505,
+    "baseline_over_candidate_min": 1.0069803613693682,
+    "baseline_over_candidate_max": 1.0160779268581228,
+    "pairs": 3,
+    "round_medians": [
+      1.0154185460307505
+    ]
+  },
+  {
+    "case": "comment-ack",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 75.58145027206771,
+    "candidate_ns_per_document": 76.5160821397968,
+    "baseline_over_candidate_median": 0.9918960695610234,
+    "baseline_over_candidate_min": 0.9877851578179149,
+    "baseline_over_candidate_max": 1.0560051929087653,
+    "pairs": 3,
+    "round_medians": [
+      0.9918960695610234
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 897.66037482066,
+    "candidate_ns_per_document": 897.8378317790531,
+    "baseline_over_candidate_median": 1.0041869535807424,
+    "baseline_over_candidate_min": 0.9996075540159508,
+    "baseline_over_candidate_max": 1.004563575268937,
+    "pairs": 3,
+    "round_medians": [
+      1.0041869535807424
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1093.09554973822,
+    "candidate_ns_per_document": 1095.3371278458844,
+    "baseline_over_candidate_median": 1.000399581278778,
+    "baseline_over_candidate_min": 0.997776993928313,
+    "baseline_over_candidate_max": 1.0021339855083897,
+    "pairs": 3,
+    "round_medians": [
+      1.000399581278778
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 47450.52008928572,
+    "candidate_ns_per_document": 48916.66741071428,
+    "baseline_over_candidate_median": 0.9700276531694505,
+    "baseline_over_candidate_min": 0.923074136967065,
+    "baseline_over_candidate_max": 1.051000957970724,
+    "pairs": 3,
+    "round_medians": [
+      0.9700276531694505
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 87418.45703125,
+    "candidate_ns_per_document": 83181.31640625,
+    "baseline_over_candidate_median": 1.0415582168791002,
+    "baseline_over_candidate_min": 0.9487102039086015,
+    "baseline_over_candidate_max": 1.096792221753669,
+    "pairs": 3,
+    "round_medians": [
+      1.0415582168791002
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 134838.28125,
+    "candidate_ns_per_document": 134246.09375,
+    "baseline_over_candidate_median": 0.9970516225238591,
+    "baseline_over_candidate_min": 0.9872261180783891,
+    "baseline_over_candidate_max": 1.0084646217431172,
+    "pairs": 3,
+    "round_medians": [
+      0.9970516225238591
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 191743.1640625,
+    "candidate_ns_per_document": 191940.4296875,
+    "baseline_over_candidate_median": 0.9989603708018947,
+    "baseline_over_candidate_min": 0.9830291651327984,
+    "baseline_over_candidate_max": 1.0110573776067722,
+    "pairs": 3,
+    "round_medians": [
+      0.9989603708018947
+    ]
+  },
+  {
+    "case": "table-plain-256",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 423.21147173324306,
+    "candidate_ns_per_document": 435.81953397212544,
+    "baseline_over_candidate_median": 0.9710704517441644,
+    "baseline_over_candidate_min": 0.5453583927076061,
+    "baseline_over_candidate_max": 0.9972954681797512,
+    "pairs": 3,
+    "round_medians": [
+      0.9710704517441644
+    ]
+  },
+  {
+    "case": "table-plain-256",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 498.43211722488036,
+    "candidate_ns_per_document": 490.8384026687598,
+    "baseline_over_candidate_median": 1.015470905525795,
+    "baseline_over_candidate_min": 1.008416431810463,
+    "baseline_over_candidate_max": 1.03058717414358,
+    "pairs": 3,
+    "round_medians": [
+      1.015470905525795
+    ]
+  },
+  {
+    "case": "table-sparse-256",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 672.1451948924731,
+    "candidate_ns_per_document": 437.28057255244755,
+    "baseline_over_candidate_median": 1.5581586413057575,
+    "baseline_over_candidate_min": 1.5285793855616263,
+    "baseline_over_candidate_max": 1.559081250345472,
+    "pairs": 3,
+    "round_medians": [
+      1.5581586413057575
+    ]
+  },
+  {
+    "case": "table-sparse-256",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 739.2031619385343,
+    "candidate_ns_per_document": 517.8397369511184,
+    "baseline_over_candidate_median": 1.4190847532284228,
+    "baseline_over_candidate_min": 1.41827430053558,
+    "baseline_over_candidate_max": 1.451904929661232,
+    "pairs": 3,
+    "round_medians": [
+      1.4190847532284228
+    ]
+  },
+  {
+    "case": "table-dense-256",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 2331.1211663568774,
+    "candidate_ns_per_document": 2291.080013736264,
+    "baseline_over_candidate_median": 1.0147989238559376,
+    "baseline_over_candidate_min": 0.9932270325236554,
+    "baseline_over_candidate_max": 1.0261468620611411,
+    "pairs": 3,
+    "round_medians": [
+      1.0147989238559376
+    ]
+  },
+  {
+    "case": "table-dense-256",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 2387.006917938931,
+    "candidate_ns_per_document": 2359.070400943396,
+    "baseline_over_candidate_median": 1.0110316412930413,
+    "baseline_over_candidate_min": 1.0096509602131079,
+    "baseline_over_candidate_max": 1.024383269722452,
+    "pairs": 3,
+    "round_medians": [
+      1.0110316412930413
+    ]
+  },
+  {
+    "case": "table-formatted-256",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 1776.8110795454545,
+    "candidate_ns_per_document": 1807.325468299712,
+    "baseline_over_candidate_median": 0.9860376530616158,
+    "baseline_over_candidate_min": 0.9655280969043801,
+    "baseline_over_candidate_max": 0.9930389733264898,
+    "pairs": 3,
+    "round_medians": [
+      0.9860376530616158
+    ]
+  },
+  {
+    "case": "table-formatted-256",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 2237.4581473214284,
+    "candidate_ns_per_document": 2240.876008064516,
+    "baseline_over_candidate_median": 0.9902768669816248,
+    "baseline_over_candidate_min": 0.9881408220092808,
+    "baseline_over_candidate_max": 0.9984747657921333,
+    "pairs": 3,
+    "round_medians": [
+      0.9902768669816248
+    ]
+  },
+  {
+    "case": "table-plain-4096",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 1116.30625,
+    "candidate_ns_per_document": 1103.0000551146384,
+    "baseline_over_candidate_median": 1.0154858179394686,
+    "baseline_over_candidate_min": 1.0120636393658011,
+    "baseline_over_candidate_max": 1.0286257317445697,
+    "pairs": 3,
+    "round_medians": [
+      1.0154858179394686
+    ]
+  },
+  {
+    "case": "table-plain-4096",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1402.5014013452915,
+    "candidate_ns_per_document": 1391.8286805555556,
+    "baseline_over_candidate_median": 1.0054054488252004,
+    "baseline_over_candidate_min": 0.9767326877272814,
+    "baseline_over_candidate_max": 1.0196083481096863,
+    "pairs": 3,
+    "round_medians": [
+      1.0054054488252004
+    ]
+  },
+  {
+    "case": "table-sparse-4096",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 3790.2857954545457,
+    "candidate_ns_per_document": 1203.583233173077,
+    "baseline_over_candidate_median": 3.1663921299614,
+    "baseline_over_candidate_min": 3.144178034287138,
+    "baseline_over_candidate_max": 3.2030239399988036,
+    "pairs": 3,
+    "round_medians": [
+      3.1663921299614
+    ]
+  },
+  {
+    "case": "table-sparse-4096",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 4063.60060483871,
+    "candidate_ns_per_document": 1464.7583430913348,
+    "baseline_over_candidate_median": 2.774246430481212,
+    "baseline_over_candidate_min": 2.6820332688077957,
+    "baseline_over_candidate_max": 2.80891939201173,
+    "pairs": 3,
+    "round_medians": [
+      2.774246430481212
+    ]
+  },
+  {
+    "case": "table-dense-4096",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 31511.0671875,
+    "candidate_ns_per_document": 31948.4375,
+    "baseline_over_candidate_median": 0.9863101188438402,
+    "baseline_over_candidate_min": 0.9831616215439287,
+    "baseline_over_candidate_max": 0.9961220839609276,
+    "pairs": 3,
+    "round_medians": [
+      0.9863101188438402
+    ]
+  },
+  {
+    "case": "table-dense-4096",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 32578.45,
+    "candidate_ns_per_document": 31825.390625,
+    "baseline_over_candidate_median": 1.0236622193855633,
+    "baseline_over_candidate_min": 0.9754838118520982,
+    "baseline_over_candidate_max": 1.031292005278021,
+    "pairs": 3,
+    "round_medians": [
+      1.0236622193855633
+    ]
+  },
+  {
+    "case": "table-formatted-4096",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 23927.95138888889,
+    "candidate_ns_per_document": 28838.955965909092,
+    "baseline_over_candidate_median": 0.83255043785389,
+    "baseline_over_candidate_min": 0.8061261844221541,
+    "baseline_over_candidate_max": 0.8335498338928976,
+    "pairs": 3,
+    "round_medians": [
+      0.83255043785389
+    ]
+  },
+  {
+    "case": "table-formatted-4096",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 28796.934659090908,
+    "candidate_ns_per_document": 33809.41611842105,
+    "baseline_over_candidate_median": 0.8400753910852571,
+    "baseline_over_candidate_min": 0.8399581485154509,
+    "baseline_over_candidate_max": 0.8566147311807236,
+    "pairs": 3,
+    "round_medians": [
+      0.8400753910852571
+    ]
+  },
+  {
+    "case": "table-plain-16000",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 3256.3883463541665,
+    "candidate_ns_per_document": 3240.341817010309,
+    "baseline_over_candidate_median": 1.0058248458493972,
+    "baseline_over_candidate_min": 0.9841977715440414,
+    "baseline_over_candidate_max": 1.0096407865685277,
+    "pairs": 3,
+    "round_medians": [
+      1.0058248458493972
+    ]
+  },
+  {
+    "case": "table-plain-16000",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 4081.963676948052,
+    "candidate_ns_per_document": 4054.3514112903226,
+    "baseline_over_candidate_median": 1.0060074461977786,
+    "baseline_over_candidate_min": 1.0004485069080185,
+    "baseline_over_candidate_max": 1.0068105259896407,
+    "pairs": 3,
+    "round_medians": [
+      1.0060074461977786
+    ]
+  },
+  {
+    "case": "table-sparse-16000",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 13832.880434782608,
+    "candidate_ns_per_document": 3471.5269337016575,
+    "baseline_over_candidate_median": 3.984667467359308,
+    "baseline_over_candidate_min": 3.8725301952617,
+    "baseline_over_candidate_max": 4.120352997713444,
+    "pairs": 3,
+    "round_medians": [
+      3.984667467359308
+    ]
+  },
+  {
+    "case": "table-sparse-16000",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 14712.693313953489,
+    "candidate_ns_per_document": 4313.721960616438,
+    "baseline_over_candidate_median": 3.431472460197473,
+    "baseline_over_candidate_min": 3.4106726043722624,
+    "baseline_over_candidate_max": 3.46690958191051,
+    "pairs": 3,
+    "round_medians": [
+      3.431472460197473
+    ]
+  },
+  {
+    "case": "table-dense-16000",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 124916.015625,
+    "candidate_ns_per_document": 124580.078125,
+    "baseline_over_candidate_median": 0.9997610079016934,
+    "baseline_over_candidate_min": 0.9799186642627578,
+    "baseline_over_candidate_max": 1.0080558303770786,
+    "pairs": 3,
+    "round_medians": [
+      0.9997610079016934
+    ]
+  },
+  {
+    "case": "table-dense-16000",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 123981.11979166667,
+    "candidate_ns_per_document": 123870.01041666667,
+    "baseline_over_candidate_median": 1.0002084678654648,
+    "baseline_over_candidate_min": 0.9966122666618437,
+    "baseline_over_candidate_max": 1.0148416050686377,
+    "pairs": 3,
+    "round_medians": [
+      1.0002084678654648
+    ]
+  },
+  {
+    "case": "table-formatted-16000",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "parse",
+    "baseline_ns_per_document": 90737.91071428571,
+    "candidate_ns_per_document": 121643.015625,
+    "baseline_over_candidate_median": 0.7459360510595342,
+    "baseline_over_candidate_min": 0.7270815105694716,
+    "baseline_over_candidate_max": 0.7556112318562989,
+    "pairs": 3,
+    "round_medians": [
+      0.7459360510595342
+    ]
+  },
+  {
+    "case": "table-formatted-16000",
+    "profile": "gfm",
+    "category": "table-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 112244.57291666667,
+    "candidate_ns_per_document": 142744.0125,
+    "baseline_over_candidate_median": 0.7830189814670844,
+    "baseline_over_candidate_min": 0.7735642253879708,
+    "baseline_over_candidate_max": 0.7879490470079377,
+    "pairs": 3,
+    "round_medians": [
+      0.7830189814670844
+    ]
+  }
+]
