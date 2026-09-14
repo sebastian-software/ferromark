@@ -349,7 +349,7 @@ fn write_url_segment(out: &mut String, s: &str) {
     let bytes = s.as_bytes();
     let mut start = 0usize;
     loop {
-        let i = first_flagged(bytes, start, url_escape_mask, &URL_ESCAPE_FLAG, &URL_ESCAPE_NIBBLES);
+        let i = next_url_flagged(bytes, start);
         if i >= bytes.len() {
             break;
         }
@@ -377,6 +377,31 @@ fn write_url_segment(out: &mut String, s: &str) {
     if start < bytes.len() {
         push_run(out, &s[start..]);
     }
+}
+
+/// Offset of the next URL byte that needs replacing or percent encoding.
+///
+/// The first scan of a segment goes straight to the vector scanner: most
+/// URLs flag nothing. After a hit, a short table walk runs first, because
+/// re-entering the scanner would reload its tables and read a full vector
+/// for what is often a one- or two-byte gap. Entity- or Unicode-dense URLs
+/// flag a byte every few positions and stayed scalar in the original
+/// two-pass escaper; this keeps them there while a long clean run after a
+/// hit still hands over to the vector scan after eight bytes.
+#[inline]
+fn next_url_flagged(bytes: &[u8], from: usize) -> usize {
+    const SHORT_RUN_PREFIX: usize = 8;
+    let mut i = from;
+    if from != 0 {
+        let quick = from.saturating_add(SHORT_RUN_PREFIX).min(bytes.len());
+        while i < quick && URL_ESCAPE_FLAG[bytes[i] as usize] == 0 {
+            i += 1;
+        }
+        if i < quick {
+            return i;
+        }
+    }
+    first_flagged(bytes, i, url_escape_mask, &URL_ESCAPE_FLAG, &URL_ESCAPE_NIBBLES)
 }
 
 #[inline]
