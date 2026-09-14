@@ -1,0 +1,49 @@
+{
+  "rounds": 2,
+  "pairs": 3,
+  "window_ms": 30,
+  "warmup_ms": 10,
+  "all_cases": false,
+  "corpus_source": "/Users/sebastian/Workspace/ferromark-v2/docs/reports/2026-09-14-native-matched/corpus.json.gz",
+  "corpus_source_sha256": "49f3577d78d7739dc004f03e2749d72bbc937645539e08da5096f98174293935",
+  "reference_verification": "/Users/sebastian/Workspace/ferromark-v2/docs/reports/2026-09-14-native-matched/verification.json.gz",
+  "reference_verification_sha256": "fef2fbb92563d0d3031542248d1f479d82dfe4f7af97117ad925a1ae216fad14",
+  "modes": [
+    "fresh",
+    "reuse",
+    "init",
+    "parse",
+    "render"
+  ],
+  "same_ast": [
+    "baseline",
+    "A",
+    "B"
+  ],
+  "seed": 20260914,
+  "host_before": {
+    "time_utc": "2026-09-14T19:42:28Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "cpu": "arm64",
+    "load_average": [
+      3.68505859375,
+      4.0009765625,
+      3.2373046875
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t76%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "runner_sha256": "97a2bda439e04b83e4e943d56175082e305b5f8a6c39feebf1ee6e8dfeae8b48",
+  "host_after": {
+    "time_utc": "2026-09-14T19:43:27Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "cpu": "arm64",
+    "load_average": [
+      3.24267578125,
+      3.8271484375,
+      3.22509765625
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t76%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

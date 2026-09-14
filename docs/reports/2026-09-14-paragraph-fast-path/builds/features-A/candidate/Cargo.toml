@@ -1,0 +1,18 @@
+[package]
+name = "feature-scan-worker"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+ferromark = { path = "/private/tmp/ferromark-v2-paragraph-A-features/sources/candidate/crates/ferromark" }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

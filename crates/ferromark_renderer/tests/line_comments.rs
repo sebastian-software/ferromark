@@ -213,6 +213,87 @@ fn comments_do_not_prevent_setext_headings_or_table_rows() {
 }
 
 #[test]
+fn absent_comments_preserve_full_ast_with_either_flag_value() {
+    for template in [
+        "  **text**  \n",
+        "first\n\tcontinued\n",
+        "Title {#topic .wide}\n---\n",
+        "> // visible\n> **continued**\n",
+        "- // visible\n  **continued**\n",
+        "\u{feff}before\0\n**after**\n",
+        "---\ntitle: Metadata\n---\n\n**body**\n",
+    ] {
+        for source in line_ending_variants(template) {
+            let results: Vec<_> = [false, true]
+                .into_iter()
+                .map(|line_comments| {
+                    let allocator = Allocator::new();
+                    let document = Parser::with_options(
+                        &allocator,
+                        &source,
+                        ParserOptions {
+                            line_comments,
+                            front_matter: true,
+                            heading_attributes: true,
+                            ..ParserOptions::gfm_spec()
+                        },
+                    )
+                    .parse()
+                    .unwrap();
+                    let html = HtmlRenderer::with_options(HtmlRendererOptions {
+                        source_spans: true,
+                        ..HtmlRendererOptions::gfm()
+                    })
+                    .render(&document);
+                    (format!("{document:?}"), html)
+                })
+                .collect();
+            assert_eq!(results[0], results[1], "{source:?}");
+        }
+    }
+}
+
+#[test]
+fn setext_comment_boundaries_preserve_attributes_and_original_spans() {
+    for (template, strong_text) in [
+        ("**Title** {#topic .wide}\n// trailing\0\n---\n", "**Title**"),
+        ("Title\n// hidden\0\n**continued** {#topic .wide}\n// trailing\n---\n", "**continued**"),
+    ] {
+        for prefix in ["", "\u{feff}"] {
+            for source in line_ending_variants(&format!("{prefix}{template}")) {
+                let allocator = Allocator::new();
+                let document = Parser::with_options(
+                    &allocator,
+                    &source,
+                    ParserOptions { heading_attributes: true, ..options() },
+                )
+                .parse()
+                .unwrap();
+                let ferromark_ast::Node::Heading(heading) = &document.children[0] else {
+                    panic!("expected setext heading");
+                };
+                assert_eq!(document.children.len(), 1);
+                assert_eq!(heading.depth, 2);
+                assert_eq!(heading.id, Some("topic"));
+                assert_eq!(heading.classes.as_slice(), &["wide"]);
+                assert_eq!(heading.span.end as usize, source.len());
+                assert_eq!(first_strong_span(&document).source_text(&source), strong_text);
+                let html = HtmlRenderer::with_options(HtmlRendererOptions {
+                    heading_ids: true,
+                    ..HtmlRendererOptions::gfm()
+                })
+                .render(&document);
+                assert!(
+                    !html.contains("hidden") && !html.contains("trailing"),
+                    "{source:?}: {html}"
+                );
+                assert!(html.contains("<h2 id=\"topic\" class=\"wide\">"), "{html}");
+            }
+        }
+    }
+}
+
+#[test]
 fn comments_before_forward_references_do_not_leak() {
     assert_eq!(
         render("// private\n[target]: /url\n\nvisible [target]\n"),

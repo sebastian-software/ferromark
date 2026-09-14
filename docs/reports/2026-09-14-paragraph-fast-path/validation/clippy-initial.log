@@ -1,0 +1,16 @@
+    Checking ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+error: this parameter is a mutable reference but is not used mutably
+   --> crates/ferromark_parser/src/parser/block.rs:319:9
+    |
+319 |         &mut self,
+    |         ^----^^^^
+    |          |
+    |          help: consider removing this `mut`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.95.0/index.html#needless_pass_by_ref_mut
+    = note: `-D clippy::needless-pass-by-ref-mut` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::needless_pass_by_ref_mut)]`
+
+error: could not compile `ferromark_parser` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `ferromark_parser` (lib test) due to 1 previous error

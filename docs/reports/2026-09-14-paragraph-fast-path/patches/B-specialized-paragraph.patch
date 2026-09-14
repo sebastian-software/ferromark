@@ -1,0 +1,158 @@
+diff --git a/crates/ferromark_parser/src/parser/block.rs b/crates/ferromark_parser/src/parser/block.rs
+index d68872c..4127097 100644
+--- a/crates/ferromark_parser/src/parser/block.rs
++++ b/crates/ferromark_parser/src/parser/block.rs
+@@ -185,18 +185,33 @@ impl<'a> Parser<'a> {
+             return Ok(Some(node));
+         }
+ 
+-        // Default: parse as paragraph
++        // Default: parse as paragraph.
+         self.parse_paragraph(start, first_line_end)
+     }
+ 
++    /// Dispatch once so the disabled paragraph loop carries no comment
++    /// discovery or comment-map state. Also used by the math fallback.
++    #[inline]
+     pub(super) fn parse_paragraph(
+         &mut self,
+         start: usize,
+         first_line_end: Option<usize>,
++    ) -> ParseResult<Option<Node<'a>>> {
++        if self.options.line_comments {
++            self.parse_paragraph_impl::<true>(start, first_line_end)
++        } else {
++            self.parse_paragraph_impl::<false>(start, first_line_end)
++        }
++    }
++
++    fn parse_paragraph_impl<const LINE_COMMENTS: bool>(
++        &mut self,
++        start: usize,
++        first_line_end: Option<usize>,
+     ) -> ParseResult<Option<Node<'a>>> {
+         let bytes = self.source.as_bytes();
+ 
+-        // `parse_block` is the sole caller and only reaches here after
++        // Block dispatch and the math fallback reach here after
+         // `skip_blank_lines` + its block dispatch — the very checks
+         // `line_starts_block` re-runs — have already classified the current
+         // line as a non-blank, non-block paragraph line. So consume the first
+@@ -229,7 +244,7 @@ impl<'a> Parser<'a> {
+                 break;
+             }
+ 
+-            if bytes[cursor] == b'/' && self.is_line_comment_at(line_start) {
++            if LINE_COMMENTS && bytes[cursor] == b'/' && self.is_line_comment_at(line_start) {
+                 first_line_comment.get_or_insert(line_start);
+                 self.position = self.skip_line_comments_from(line_start);
+                 continue;
+@@ -242,21 +257,20 @@ impl<'a> Parser<'a> {
+             if let Some(depth) = self.setext_underline_depth(line_start, cursor) {
+                 let heading_end = scan_next_line_start(bytes, line_start);
+                 self.position = heading_end;
+-                let (raw_content, source_map) =
+-                    self.without_line_comments_with_first(start, content_end, first_line_comment);
+-                let content = raw_content.trim();
+-                let (content, id, classes) = self.split_heading_attributes(content);
+-                let offset = if source_map.is_some() {
+-                    raw_content.len() - raw_content.trim_start().len()
+-                } else {
+-                    start
+-                };
+-                let mut children = self.parse_inline_block(content, offset)?;
+-                if let Some(map) = source_map {
+-                    for child in &mut children {
+-                        map.remap_node_spans(child);
+-                    }
++                if LINE_COMMENTS
++                    && let Some(first_comment) =
++                        first_line_comment.filter(|&line| line < content_end)
++                {
++                    return self.parse_commented_paragraph(
++                        start,
++                        content_end,
++                        first_comment,
++                        Some((depth, heading_end)),
++                    );
+                 }
++                let content = self.source[start..content_end].trim();
++                let (content, id, classes) = self.split_heading_attributes(content);
++                let children = self.parse_inline_block(content, start)?;
+                 return Ok(Some(Node::Heading(self.allocator.boxed(Heading {
+                     depth,
+                     id,
+@@ -282,16 +296,43 @@ impl<'a> Parser<'a> {
+             self.position = content_end;
+         }
+ 
+-        let (raw_content, source_map) =
+-            self.without_line_comments_with_first(start, content_end, first_line_comment);
+-        let content = raw_content.trim();
++        if LINE_COMMENTS
++            && let Some(first_comment) = first_line_comment.filter(|&line| line < content_end)
++        {
++            return self.parse_commented_paragraph(start, content_end, first_comment, None);
++        }
++        let content = self.source[start..content_end].trim();
+         if content.is_empty() {
+             return Ok(None);
+         }
+-
+         let span = Span::new(start as u32, content_end as u32);
++        let children = self.parse_inline_block(content, start)?;
++        Ok(Some(Node::Paragraph(self.allocator.boxed(Paragraph { children, span }))))
++    }
+ 
+-        // Parse inline content
++    /// Only paragraphs with an observed, included comment need filtering and
++    /// span remapping. Keep that state out of the ordinary borrowed-source
++    /// path, including when comments are enabled but absent. A trailing
++    /// comment at or beyond `content_end` is already outside the text slice.
++    #[inline(never)]
++    fn parse_commented_paragraph(
++        &mut self,
++        start: usize,
++        content_end: usize,
++        first_comment: usize,
++        heading: Option<(u8, usize)>,
++    ) -> ParseResult<Option<Node<'a>>> {
++        let (raw_content, source_map) =
++            self.without_line_comments_with_first(start, content_end, Some(first_comment));
++        let content = raw_content.trim();
++        if heading.is_none() && content.is_empty() {
++            return Ok(None);
++        }
++        let (content, id, classes) = if heading.is_some() {
++            self.split_heading_attributes(content)
++        } else {
++            (content, None, self.allocator.new_vec())
++        };
+         let offset = if source_map.is_some() {
+             raw_content.len() - raw_content.trim_start().len()
+         } else {
+@@ -303,8 +344,22 @@ impl<'a> Parser<'a> {
+                 map.remap_node_spans(child);
+             }
+         }
+-
+-        Ok(Some(Node::Paragraph(self.allocator.boxed(Paragraph { children, span }))))
++        let node =
++            if let Some((depth, heading_end)) = heading {
++                Node::Heading(self.allocator.boxed(Heading {
++                    depth,
++                    id,
++                    classes,
++                    children,
++                    span: Span::new(start as u32, heading_end as u32),
++                }))
++            } else {
++                Node::Paragraph(self.allocator.boxed(Paragraph {
++                    children,
++                    span: Span::new(start as u32, content_end as u32),
++                }))
++            };
++        Ok(Some(node))
+     }
+ 
+     /// Returns the setext heading depth (1 for `=`, 2 for `-`) when the
