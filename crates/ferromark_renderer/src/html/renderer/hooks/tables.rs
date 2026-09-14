@@ -22,7 +22,7 @@ impl HtmlRenderer {
             }
             self.write("</caption>\n");
         }
-        self.write_table_colgroup(&table.align);
+        self.write_table_colgroup(table);
         for (i, row) in table.children.iter().enumerate() {
             if i == 0 {
                 self.write("<thead>\n");

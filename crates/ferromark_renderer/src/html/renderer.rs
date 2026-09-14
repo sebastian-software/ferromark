@@ -15,6 +15,7 @@ mod incremental;
 mod inlines;
 mod links;
 mod mdx;
+mod table_columns;
 mod visit;
 mod write;
 

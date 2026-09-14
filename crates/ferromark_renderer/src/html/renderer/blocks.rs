@@ -264,7 +264,7 @@ impl HtmlRenderer {
     pub(in crate::html::renderer) fn render_table(&mut self, table: &Table<'_>) {
         self.write_table_opening(table);
         self.render_table_caption(table);
-        self.write_table_colgroup(&table.align);
+        self.write_table_colgroup(table);
         for (i, row) in table.children.iter().enumerate() {
             if i == 0 {
                 self.write("<thead>\n");
@@ -339,23 +339,6 @@ impl HtmlRenderer {
             self.visit_inline_node(child);
         }
         self.write("</caption>\n");
-    }
-
-    pub(in crate::html::renderer) fn write_table_colgroup(&mut self, align: &[AlignKind]) {
-        if !self.options.table_colgroup {
-            return;
-        }
-        self.write("<colgroup>\n");
-        for index in 0..align.len() {
-            self.write("<col class=\"col-");
-            self.write_display(index + 1);
-            if self.options.xhtml {
-                self.write("\" />\n");
-            } else {
-                self.write("\">\n");
-            }
-        }
-        self.write("</colgroup>\n");
     }
 
     pub(in crate::html::renderer) fn normalized_table_colspan(cell: &TableCell<'_>) -> usize {
