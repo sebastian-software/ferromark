@@ -137,30 +137,33 @@ const fn ends_url(ch: char) -> bool {
 }
 
 fn trim_trailing_punct(bytes: &[u8], start: usize, mut end: usize) -> usize {
+    // Count lazily: the common case has no closing bracket. Each bracket type
+    // is counted at most once, then updated as its trailing closers are removed.
+    // This bounds trimming to three linear scans even for mixed bracket runs.
+    let mut counts: [Option<(usize, usize)>; 3] = [None; 3];
     while end > start {
-        let b = bytes[end - 1];
-        match b {
+        match bytes[end - 1] {
             b'.' | b',' | b';' | b':' | b'!' | b'?' => end -= 1,
-            b')' | b']' | b'}' => {
-                let (open, close) = match b {
-                    b')' => (b'(', b')'),
-                    b']' => (b'[', b']'),
-                    _ => (b'{', b'}'),
+            close @ (b')' | b']' | b'}') => {
+                let (slot, open) = match close {
+                    b')' => (0, b'('),
+                    b']' => (1, b'['),
+                    _ => (2, b'{'),
                 };
-                // Strip the closing bracket only when it has no unmatched
-                // partner inside the URL — a single pass over the slice is
-                // simpler than two `filter().count()` walks and avoids the
-                // `naive_bytecount` clippy lint.
-                let mut opens = 0usize;
-                let mut closes = 0usize;
-                for &x in &bytes[start..end - 1] {
-                    if x == open {
-                        opens += 1;
-                    } else if x == close {
-                        closes += 1;
+                let (opens, closes) = counts[slot].get_or_insert_with(|| {
+                    let mut opens = 0;
+                    let mut closes = 0;
+                    for &byte in &bytes[start..end] {
+                        if byte == open {
+                            opens += 1;
+                        } else if byte == close {
+                            closes += 1;
+                        }
                     }
-                }
-                if closes >= opens {
+                    (opens, closes)
+                });
+                if *closes > *opens {
+                    *closes -= 1;
                     end -= 1;
                 } else {
                     break;
@@ -170,4 +173,80 @@ fn trim_trailing_punct(bytes: &[u8], start: usize, mut end: usize) -> usize {
         }
     }
     end
+}
+
+#[cfg(test)]
+mod trimming_tests {
+    use super::trim_trailing_punct;
+
+    fn original(bytes: &[u8], start: usize, mut end: usize) -> usize {
+        while end > start {
+            let b = bytes[end - 1];
+            match b {
+                b'.' | b',' | b';' | b':' | b'!' | b'?' => end -= 1,
+                b')' | b']' | b'}' => {
+                    let (open, close) = match b {
+                        b')' => (b'(', b')'),
+                        b']' => (b'[', b']'),
+                        _ => (b'{', b'}'),
+                    };
+                    // Strip the closing bracket only when it has no unmatched
+                    // partner inside the URL — a single pass over the slice is
+                    // simpler than two `filter().count()` walks and avoids the
+                    // `naive_bytecount` clippy lint.
+                    let mut opens = 0usize;
+                    let mut closes = 0usize;
+                    for &x in &bytes[start..end - 1] {
+                        if x == open {
+                            opens += 1;
+                        } else if x == close {
+                            closes += 1;
+                        }
+                    }
+                    if closes >= opens {
+                        end -= 1;
+                    } else {
+                        break;
+                    }
+                }
+                _ => break,
+            }
+        }
+        end
+    }
+
+    #[test]
+    fn matches_original_for_exhaustive_bracket_and_punctuation_tails() {
+        const ALPHABET: &[u8] = b"()[]{}.!a";
+        let mut bytes = [0u8; 9];
+        for length in 0..=6u32 {
+            for mut code in 0..ALPHABET.len().pow(length) {
+                bytes[..3].copy_from_slice(b"x:/");
+                for byte in &mut bytes[3..3 + length as usize] {
+                    *byte = ALPHABET[code % ALPHABET.len()];
+                    code /= ALPHABET.len();
+                }
+                let input = &bytes[..3 + length as usize];
+                for start in [0, 3] {
+                    assert_eq!(
+                        trim_trailing_punct(input, start, input.len()),
+                        original(input, start, input.len()),
+                        "{input:?}, start {start}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn matches_original_for_long_unbalanced_and_unicode_urls() {
+        let mut bytes =
+            b"prefix https://example.org/\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e/([{".to_vec();
+        for i in 0..4_096 {
+            bytes.push(b")]}.!?"[i % 6]);
+        }
+        for end in (8..bytes.len()).step_by(37) {
+            assert_eq!(trim_trailing_punct(&bytes, 7, end), original(&bytes, 7, end));
+        }
+    }
 }
