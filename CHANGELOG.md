@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.9.1](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.9.0...ferromark-v0.9.1) (2026-09-14)
+
+
+### Bug Fixes
+
+* **bench:** initialize Bun stack checks and preserve process accounting ([9cf338c](https://github.com/sebastian-software/ferromark/commit/9cf338c71634d2bf8478904c5306592d1900ded4))
+* **benchmarks:** match cmark-gfm double-tilde semantics ([b4f9196](https://github.com/sebastian-software/ferromark/commit/b4f9196e540e815041d7c7f44b6f98a538ce4642))
+* **bench:** normalize host observation locale ([c987eef](https://github.com/sebastian-software/ferromark/commit/c987eefd660abdf03e3df176b643c488511fab0b))
+* **bench:** support explicit CMake paths and checked build resumes ([f30afda](https://github.com/sebastian-software/ferromark/commit/f30afdabe2210d7da3f03a8d6d242c2d90d5511a))
+* **escape:** avoid quadratic quote scanning on ARM64 ([da661fc](https://github.com/sebastian-software/ferromark/commit/da661fca9f6f4dab013230be2606e8013c9506cd))
+* **escape:** avoid quadratic quote scanning on ARM64 ([#313](https://github.com/sebastian-software/ferromark/issues/313)) ([da661fc](https://github.com/sebastian-software/ferromark/commit/da661fca9f6f4dab013230be2606e8013c9506cd))
+* **escape:** bound quote-heavy HTML search work ([db23435](https://github.com/sebastian-software/ferromark/commit/db234354c44e97736d53dd7cb1886e89ccff0ddc))
+* **escape:** scope linear quote scanning to ARM64 NEON ([39c4a01](https://github.com/sebastian-software/ferromark/commit/39c4a0164626404e226d40441f155142342b17fa))
+* **inline:** keep HTML and code membership scans linear ([3927be5](https://github.com/sebastian-software/ferromark/commit/3927be5d86ab14d884676b71e4698f5dcd4fdfda))
+
+
+### Performance Improvements
+
+* accelerate root HTML blocks and tag recognition ([#310](https://github.com/sebastian-software/ferromark/issues/310)) ([41bf270](https://github.com/sebastian-software/ferromark/commit/41bf2701ffaeef9f2a247a89f1889be118d0a501))
+* compact inline emission and accelerate HTML searches ([#309](https://github.com/sebastian-software/ferromark/issues/309)) ([f36b0a3](https://github.com/sebastian-software/ferromark/commit/f36b0a3ab809af07be029c66413af8314984abc5))
+* **inline:** keep HTML and code membership scans linear ([143ec2c](https://github.com/sebastian-software/ferromark/commit/143ec2ce151d87d2a3d804a048014afc97733ae0))
+* **inline:** keep HTML and code membership scans linear ([#314](https://github.com/sebastian-software/ferromark/issues/314)) ([f4fe7c9](https://github.com/sebastian-software/ferromark/commit/f4fe7c9908ab8677558b2c5ff7a6416c841bb3bf))
+* **inline:** keep HTML and code membership scans linear ([#315](https://github.com/sebastian-software/ferromark/issues/315)) ([143ec2c](https://github.com/sebastian-software/ferromark/commit/143ec2ce151d87d2a3d804a048014afc97733ae0))
+* optimize HTML line scanning and opener lookahead ([#311](https://github.com/sebastian-software/ferromark/issues/311)) ([9b1965b](https://github.com/sebastian-software/ferromark/commit/9b1965bd52b856b2675b23bcf6fe545e713d94cd))
+* **parser:** reduce table and short-document rendering overhead ([da60967](https://github.com/sebastian-software/ferromark/commit/da60967ecbb377d04a72ed5bc00acb064a6fee26))
+* reduce block rendering and validation overhead ([6169d72](https://github.com/sebastian-software/ferromark/commit/6169d72a984d3a3de2d481c0e5b0c3371120ee26))
+* reduce native scanning and rendering allocations ([#307](https://github.com/sebastian-software/ferromark/issues/307)) ([a1c308c](https://github.com/sebastian-software/ferromark/commit/a1c308cba63f7bb038699df8560daa8959159b4e))
+* speed up HTML and code rendering and refresh benchmarks ([#308](https://github.com/sebastian-software/ferromark/issues/308)) ([96e7832](https://github.com/sebastian-software/ferromark/commit/96e78323a9d263530e2564cdd7ef8fa3facc0ac0))
+
 ## [0.9.0](https://github.com/sebastian-software/ferromark/compare/ferromark-v0.8.0...ferromark-v0.9.0) (2026-09-11)
 
 
