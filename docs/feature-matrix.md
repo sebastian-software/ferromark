@@ -7,8 +7,9 @@ is identical, or that every edge case conforms to a specification. A missing
 built-in feature can often be implemented by a caller using events or hooks.
 
 The comparison uses the same six engines as the native benchmark. Ferromark v2
-is the corrected local core at `db987c8` with the subsequent
-[smart-punctuation removal](typography.md) and [table extensions](table-layout.md);
+is the local core at `46c761d`, including the compatibility corrections,
+[smart-punctuation removal](typography.md), and [table extensions](table-layout.md)
+with header-derived column names;
 the other five sources are the exact
 benchmark pins. This avoids mixing newer upstream features into an older timing
 comparison. Feature availability and timed configuration remain separate: the
@@ -17,7 +18,7 @@ benchmark enabled only a shared subset of Markdown extensions.
 | Engine | Reviewed source |
 | --- | --- |
 | Ferromark v1 | [0.9.0, `143ec2ce`](https://github.com/sebastian-software/ferromark/tree/143ec2ce151d87d2a3d804a048014afc97733ae0) |
-| Ferromark v2 | Local `db987c8` plus [typography removal](typography.md) and [table extensions](table-layout.md); [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs) |
+| Ferromark v2 | Local `46c761d`; [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs), and [table layout](table-layout.md) |
 | OX-Content | [3.2.3, `a71a5893`](https://github.com/ubugeeei-prod/ox-content/tree/a71a58939ffe7f154117cea026f6d6e71a139393) — parser/renderer core |
 | pulldown-cmark | [0.13.4 options](https://docs.rs/pulldown-cmark/0.13.4/pulldown_cmark/struct.Options.html) |
 | md4c | [`65c6c9d7` flags and event types](https://github.com/mity/md4c/blob/65c6c9d72cebd9a731aaa5597414ce04d9ea5de3/src/md4c.h) |
@@ -44,9 +45,13 @@ rendering policies or identical edge cases across libraries.
 ## Important distinctions
 
 - **Table widths:** v2 can generate CSS-addressable `<col>` elements and table
-  IDs/classes. Width values remain in application CSS. This differs from v1's
-  numeric width hints derived from delimiter dash counts; the matrix continues
-  to distinguish the two capabilities.
+  IDs/classes. Columns retain positional classes and can also receive names
+  derived from header text. Width values remain in application CSS. This differs
+  from v1's numeric width hints derived from delimiter dash counts; the matrix continues
+  to distinguish the two capabilities. Its table-layout rows cover built-in
+  Markdown table handling, excluding raw HTML authored directly and layouts
+  implemented through application rendering. V2 captions require an ID/class list
+  on the same metadata line; see the [syntax boundaries](table-layout.md#syntax-and-boundaries).
 
 - **Single tildes:** v1 reserves `~text~` for subscript; original OX handles
   double-tilde strikethrough. V2, pulldown-cmark, and md4c support single-tilde
