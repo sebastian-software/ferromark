@@ -63,7 +63,8 @@ impl<'a> Parser<'a> {
                     .unwrap_or_else(|| self.init_list_item_source(&item, consumed_newline));
                 let source_map = item_source.source_map;
                 let item_source = item_source.text.into_bump_str();
-                let sub_parser = self.sub_parser_with_lazy_lines(item_source, lazy_lines);
+                let sub_parser =
+                    self.sub_parser_with_source_map(item_source, lazy_lines, &source_map);
                 let sub_doc = sub_parser.parse()?;
                 // The item directly contains blank-separated blocks iff a
                 // gap between consecutive top-level children spans a line
@@ -144,15 +145,37 @@ impl<'a> Parser<'a> {
             let continuation_line = self.line_at(continuation_start);
             let continuation_next = self.next_line_start(continuation_start);
 
+            if self.is_line_comment_at(continuation_start) {
+                let source = item_source
+                    .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
+                let generated_start = source.text.len();
+                // Preserve normal list dedenting even when a nested code or
+                // HTML parser will keep this eligible line as literal content.
+                let stripped = Self::push_line_without_indent(
+                    &mut source.text,
+                    continuation_line,
+                    content_indent,
+                );
+                source.text.push('\n');
+                source.source_map.push_line_with_block_start(
+                    generated_start,
+                    source.text.len() - generated_start,
+                    continuation_start,
+                    continuation_start + stripped,
+                    continuation_next - (continuation_start + stripped),
+                );
+                self.position = continuation_next;
+                item_end = self.position;
+                continue;
+            }
+
             if continuation_line.trim().is_empty() {
                 let mut lookahead = continuation_next;
-                let mut blank_count = 1;
                 while lookahead < self.source.len() {
                     let line = self.line_at(lookahead);
-                    if !line.trim().is_empty() {
+                    if !line.trim().is_empty() && !self.is_line_comment_at(lookahead) {
                         break;
                     }
-                    blank_count += 1;
                     lookahead = self.next_line_start(lookahead);
                 }
 
@@ -168,8 +191,12 @@ impl<'a> Parser<'a> {
                     let item_source = item_source
                         .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
                     let mut blank_start = continuation_start;
-                    for _ in 0..blank_count {
+                    while blank_start < lookahead {
                         let blank_next = self.next_line_start(blank_start);
+                        if self.is_line_comment_at(blank_start) {
+                            blank_start = blank_next;
+                            continue;
+                        }
                         let generated_start = item_source.text.len();
                         item_source.text.push('\n');
                         item_source.source_map.push_line(

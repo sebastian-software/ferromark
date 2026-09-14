@@ -15,6 +15,11 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
 
+        if self.is_line_comment_at(self.position) {
+            self.position = self.skip_line_comments_from(self.position);
+            return Ok(None);
+        }
+
         // `max_nesting_depth == 0` means unlimited. Every sub-source parser
         // is built one level deeper than its parent, so a positive cap
         // applies to quotes, list items, footnote bodies, and JSX children
@@ -212,6 +217,11 @@ impl<'a> Parser<'a> {
                 break;
             }
 
+            if self.is_line_comment_at(self.position) {
+                self.position = self.skip_line_comments_from(self.position);
+                continue;
+            }
+
             // Check for blank line (paragraph end): scan whitespace and
             // peek the next byte. Cheaper than the prior
             // `skip_whitespace` + `peek` + reset dance.
@@ -231,9 +241,20 @@ impl<'a> Parser<'a> {
             if let Some(depth) = self.setext_underline_depth(line_start, cursor) {
                 let heading_end = scan_next_line_start(bytes, line_start);
                 self.position = heading_end;
-                let content = self.source[start..content_end].trim();
+                let (raw_content, source_map) = self.without_line_comments(start, content_end);
+                let content = raw_content.trim();
                 let (content, id, classes) = self.split_heading_attributes(content);
-                let children = self.parse_inline_block(content, start)?;
+                let offset = if source_map.is_some() {
+                    raw_content.len() - raw_content.trim_start().len()
+                } else {
+                    start
+                };
+                let mut children = self.parse_inline_block(content, offset)?;
+                if let Some(map) = source_map {
+                    for child in &mut children {
+                        map.remap_node_spans(child);
+                    }
+                }
                 return Ok(Some(Node::Heading(self.allocator.boxed(Heading {
                     depth,
                     id,
@@ -259,7 +280,8 @@ impl<'a> Parser<'a> {
             self.position = content_end;
         }
 
-        let content = self.source[start..content_end].trim();
+        let (raw_content, source_map) = self.without_line_comments(start, content_end);
+        let content = raw_content.trim();
         if content.is_empty() {
             return Ok(None);
         }
@@ -267,7 +289,17 @@ impl<'a> Parser<'a> {
         let span = Span::new(start as u32, content_end as u32);
 
         // Parse inline content
-        let children = self.parse_inline_block(content, start)?;
+        let offset = if source_map.is_some() {
+            raw_content.len() - raw_content.trim_start().len()
+        } else {
+            start
+        };
+        let mut children = self.parse_inline_block(content, offset)?;
+        if let Some(map) = source_map {
+            for child in &mut children {
+                map.remap_node_spans(child);
+            }
+        }
 
         Ok(Some(Node::Paragraph(self.allocator.boxed(Paragraph { children, span }))))
     }

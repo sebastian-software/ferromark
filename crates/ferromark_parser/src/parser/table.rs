@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
         if nl0 == bytes.len() {
             return false;
         }
-        let p1 = next_line_start(bytes, p0);
+        let p1 = self.skip_line_comments_from(next_line_start(bytes, p0));
         if p1 >= bytes.len() {
             return false;
         }
@@ -64,6 +64,7 @@ impl<'a> Parser<'a> {
         // Parse header row
         let header_start = self.position;
         let header_line = self.consume_line();
+        self.position = self.skip_line_comments_from(self.position);
 
         // Parse delimiter row to get alignment
         let delimiter_line = self.consume_line();
@@ -88,6 +89,7 @@ impl<'a> Parser<'a> {
 
         // Parse body rows
         loop {
+            self.position = self.skip_line_comments_from(self.position);
             if self.is_at_end() {
                 break;
             }

@@ -116,6 +116,7 @@ local core**; these are not the options enabled during timing.
 | Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
 | Smart punctuation — curly quotes and ellipses | — | — | ✓ | ✓ | — | — |
 | Extract frontmatter — metadata between `---` or `+++` | ✓ | — | — | ✓ | — | — |
+| Source-only line comments — hide `// note` lines from HTML | ✓ | ✓ | — | — | — | — |
 | **Table layout — beyond GFM** | | | | | | |
 | Merged table cells — one cell spans several columns | ✓ | ✓ | — | — | — | — |
 | Numeric column-width hints — proportions from delimiter dashes | ✓ | — | — | — | — | — |
@@ -147,6 +148,12 @@ V2 preserves authored punctuation. Automatic typography belongs in an optional,
 locale-aware document transform; the former English-oriented parser option has
 been removed. See the [typography decision](docs/typography.md).
 
+Enable `ParserOptions::line_comments` to omit `// note` source lines from HTML.
+Comments may have up to three leading spaces and do not separate paragraphs.
+Code blocks, raw HTML blocks, and explicitly prefixed lines such as `> // text`
+remain literal. The option is off in every preset.
+[Syntax, examples, and source-span behavior](docs/line-comments.md).
+
 V1 derives numeric column-width hints from delimiter dash counts. V2 instead
 supports table IDs/classes, inline captions, and generated `colgroup` columns
 whose widths are set in external CSS. Optional header-derived classes such
@@ -172,7 +179,7 @@ and one leading BOM is treated as an encoding marker with original spans preserv
 | CRLF / CR variants | 1,304/1,304 agree with their LF controls |
 | Original cmark / cmark-gfm corpus | 106/106 agree |
 | Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | 727 pass, including both oracle corpora, renderer-profile/span checks, and table layout/column names |
+| Workspace regression tests | 747 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, and line comments |
 
 Agreement permits conservative HTML serialization equivalence; raw output and
 all mismatches remain in the report. The two reference exceptions have exact
@@ -181,6 +188,11 @@ The complete GFM website retains ten classified differences from global
 extension policies and older HTML-comment rules. MDX remains bounded syntax
 capture and static output. These finite suites do not prove correctness for
 arbitrary CommonMark, GFM, or MDX input.
+
+A subsequent [line-comment comparison](benchmarks/line-comments-oracle/README.md)
+also exposes a pre-existing gap: reference definitions directly inside list
+items are not yet collected globally. Root and block-quote definitions work in
+the covered cases.
 
 The [repeatable spec audit](benchmarks/compatibility-audit/README.md) and the
 [106-case live oracle](benchmarks/compatibility-audit/CMARK.md) pass their failure

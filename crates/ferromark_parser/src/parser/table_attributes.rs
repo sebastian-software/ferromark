@@ -30,6 +30,7 @@ impl<'a> Parser<'a> {
         if self.line_at(position).trim_matches([' ', '\t']).is_empty() {
             position = next_line_start(self.source.as_bytes(), position);
         }
+        position = self.skip_line_comments_from(position);
         if position >= self.source.len() {
             return Ok(None);
         }

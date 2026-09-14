@@ -9,6 +9,10 @@ mod remap;
 pub(in crate::parser) trait SpanMap {
     fn map_span(&self, span: Span) -> Span;
 
+    fn map_inline_span(&self, span: Span) -> Span {
+        self.map_span(span)
+    }
+
     /// Maps the synthetic parser document span back to the caller's source.
     /// Most maps have no distinction between a document and node span; the
     /// root NUL/BOM map overrides this because it strips a leading BOM while
@@ -33,6 +37,18 @@ struct SourceMapLine {
 }
 
 impl SourceMap {
+    pub(in crate::parser) fn line_origins(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
+        self.lines.iter().map(|line| (line.generated_start, line.source_block_start))
+    }
+
+    pub(in crate::parser) fn generated_line_start(&self, original: usize) -> Option<usize> {
+        let index = self.lines.partition_point(|line| line.source_block_start < original);
+        self.lines
+            .get(index)
+            .filter(|line| line.source_block_start == original)
+            .map(|line| line.generated_start)
+    }
+
     pub(in crate::parser) fn push_line(
         &mut self,
         generated_start: usize,
@@ -73,23 +89,37 @@ impl SourceMap {
 
 impl SpanMap for SourceMap {
     fn map_span(&self, span: Span) -> Span {
+        self.map_with_indent(span, true)
+    }
+
+    fn map_inline_span(&self, span: Span) -> Span {
+        self.map_with_indent(span, false)
+    }
+}
+
+impl SourceMap {
+    fn map_with_indent(&self, span: Span, include_indent: bool) -> Span {
         if self.lines.is_empty() {
             return span;
         }
 
-        let start = self.map_start(span.start as usize);
+        let start = self.map_start(span.start as usize, include_indent);
         let end = if span.start == span.end { start } else { self.map_end(span.end as usize) };
         Span::new(start, end)
     }
 }
 
 impl SourceMap {
-    fn map_start(&self, generated: usize) -> u32 {
+    fn map_start(&self, generated: usize, include_indent: bool) -> u32 {
         let index = self.lines.partition_point(|line| generated >= line.generated_end);
         let Some(line) = self.lines.get(index).copied() else {
             return self.lines.last().map_or(generated, |line| line.source_end) as u32;
         };
-        Self::map_inside(line, generated) as u32
+        if generated == line.generated_start && !include_indent {
+            line.source_start as u32
+        } else {
+            Self::map_inside(line, generated) as u32
+        }
     }
 
     fn map_end(&self, generated: usize) -> u32 {

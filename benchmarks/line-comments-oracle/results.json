@@ -1,0 +1,197 @@
+{
+  "v1_source": "/private/tmp/ferromark-v2-native-comparison/build-01/sources/ferromark_v1",
+  "v2_source": "/Users/sebastian/Workspace/ferromark-v2/crates/ferromark",
+  "v1_expected_revision": "143ec2ce151d87d2a3d804a048014afc97733ae0",
+  "worker_sha256": "100e95aacc2c9190ca5d3a30cc8626bcd7604554cdca127a0587157b0b783840",
+  "profiles": {
+    "v1": "Options::commonmark + trusted HTML + tables/tasks/strikethrough/autolinks + line_comments",
+    "v2": "ParserOptions::gfm_spec + line_comments; HtmlRendererOptions::gfm with heading IDs and URL scanner off"
+  },
+  "summary": {
+    "case_count": 40,
+    "matching_count": 39,
+    "mismatch_count": 1
+  },
+  "cases": [
+    {
+      "name": "default-shaped",
+      "status": "OK"
+    },
+    {
+      "name": "only-comments",
+      "status": "OK"
+    },
+    {
+      "name": "paragraph",
+      "status": "OK"
+    },
+    {
+      "name": "blank-lines",
+      "status": "OK"
+    },
+    {
+      "name": "ordinary",
+      "status": "OK"
+    },
+    {
+      "name": "indent",
+      "status": "OK"
+    },
+    {
+      "name": "fence",
+      "status": "OK"
+    },
+    {
+      "name": "raw-html",
+      "status": "OK"
+    },
+    {
+      "name": "quote",
+      "status": "OK"
+    },
+    {
+      "name": "list",
+      "status": "OK"
+    },
+    {
+      "name": "explicit-quote",
+      "status": "OK"
+    },
+    {
+      "name": "setext",
+      "status": "OK"
+    },
+    {
+      "name": "table",
+      "status": "OK"
+    },
+    {
+      "name": "crlf",
+      "status": "OK"
+    },
+    {
+      "name": "reference-before",
+      "status": "OK"
+    },
+    {
+      "name": "reference-after-comment",
+      "status": "OK"
+    },
+    {
+      "name": "reference-destination-title-comment",
+      "status": "OK"
+    },
+    {
+      "name": "list-explicit",
+      "status": "OK"
+    },
+    {
+      "name": "nested-explicit",
+      "status": "OK"
+    },
+    {
+      "name": "list-fence",
+      "status": "OK"
+    },
+    {
+      "name": "quote-fence",
+      "status": "OK"
+    },
+    {
+      "name": "nested-list-quote-fence",
+      "status": "OK"
+    },
+    {
+      "name": "list-html",
+      "status": "OK"
+    },
+    {
+      "name": "quote-html",
+      "status": "OK"
+    },
+    {
+      "name": "indented-code",
+      "status": "OK"
+    },
+    {
+      "name": "indented-code-after-comment",
+      "status": "OK"
+    },
+    {
+      "name": "comment-eof",
+      "status": "OK"
+    },
+    {
+      "name": "comment-between-definitions",
+      "status": "OK"
+    },
+    {
+      "name": "comment-table-body",
+      "status": "OK"
+    },
+    {
+      "name": "list-indented-code",
+      "status": "OK"
+    },
+    {
+      "name": "quote-indented-code",
+      "status": "OK"
+    },
+    {
+      "name": "definition-title",
+      "status": "OK"
+    },
+    {
+      "name": "repeated-definitions",
+      "status": "OK"
+    },
+    {
+      "name": "quote-definition-title",
+      "status": "OK"
+    },
+    {
+      "name": "list-definition-title",
+      "status": "DIFF",
+      "v1_html": "<ul>\n<li></li>\n</ul>\n<p><a href=\"/url\" title=\"title\">target</a></p>\n",
+      "v2_html": "<ul>\n<li>\n</li>\n</ul>\n<p>[target]</p>\n"
+    },
+    {
+      "name": "list-table-comment",
+      "status": "OK"
+    },
+    {
+      "name": "quote-table-comment",
+      "status": "OK"
+    },
+    {
+      "name": "root-comment-indented-code",
+      "status": "OK"
+    },
+    {
+      "name": "root-comment-before-html",
+      "status": "OK"
+    },
+    {
+      "name": "comment-after-paragraph-before-definition",
+      "status": "OK"
+    }
+  ],
+  "known_existing_limitation": {
+    "case": "list-definition-title",
+    "description": "v2 does not collect link reference definitions inside list-item sub-sources"
+  },
+  "baselines": [
+    {
+      "name": "list-definition-title-comments-off",
+      "status": "DIFF",
+      "v1_html": "<ul>\n<li>// private\n&quot;title&quot;</li>\n</ul>\n<p><a href=\"/url\">target</a></p>\n",
+      "v2_html": "<ul>\n<li>\n// private\n&quot;title&quot;</li>\n</ul>\n<p>[target]</p>\n"
+    },
+    {
+      "name": "list-definition-title-comment-removed",
+      "status": "DIFF",
+      "v1_html": "<ul>\n<li></li>\n</ul>\n<p><a href=\"/url\" title=\"title\">target</a></p>\n",
+      "v2_html": "<ul>\n<li>\n</li>\n</ul>\n<p>[target]</p>\n"
+    }
+  ]
+}
