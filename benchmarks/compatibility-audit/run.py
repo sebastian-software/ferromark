@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit raw, conservative, and inherited HTML agreement for CM and full GFM."""
+"""Audit raw, conservative, and spec HTML agreement for CM and full GFM."""
 import argparse
 from collections import Counter
 import difflib
@@ -115,7 +115,7 @@ def audit(worker, examples, profile):
         response = worker.render(example['markdown'], profile, example['html'])
         status = VERIFY.classify(example['html'], response['html']) if not response['error'] else 'error'
         row = dict(example, profile=profile, actual=response['html'], error=response['error'],
-            status=status, inherited_equal=response['inherited_equal'])
+            status=status, spec_equal=response['spec_equal'])
         if status not in ('exact', 'serialization-equivalent', 'heading-id-only'):
             row['token_diff'] = list(difflib.unified_diff(
                 [repr(t) for t in VERIFY.without_heading_ids(VERIFY.canonical(example['html']))],
@@ -167,6 +167,17 @@ def compare_upstream(binary, endings, probes, folder):
     return dict(worker_sha256=sha(binary), count=len(cases), results=cases)
 
 
+def has_gating_failures(results, endings, probes):
+    return bool(endings['failures'] or
+        any(x['error'] for rows in results.values() for x in rows) or
+        any(x['error'] for x in probes) or
+        any(not x['spec_equal'] or x['status'] in ('other', 'error')
+            for name in ('commonmark-configured', 'gfm-extensions-configured')
+            for x in results[name]) or
+        any(x['kind'] == 'normative' and x['status'] in ('other', 'error') for x in probes) or
+        any(x['kind'] == 'normalizer-counterexample' and x['spec_equal'] for x in probes))
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('worker', type=Path)
@@ -204,7 +215,7 @@ def main():
         ):
             results[name] = audit(worker, examples, profile)
             print(name, len(results[name]), dict(Counter(x['status'] for x in results[name])),
-                'inherited failures', sum(not x['inherited_equal'] for x in results[name]), flush=True)
+                'spec failures', sum(not x['spec_equal'] for x in results[name]), flush=True)
         endings = line_endings(worker, cm)
         probes = [dict(case, **worker.render(case['markdown'], case['profile'], case['expected']))
             for case in json.loads((HERE/'probes.json').read_text())]
@@ -219,22 +230,24 @@ def main():
         upstream = compare_upstream(args.upstream_worker, endings, probes, args.output/'upstream-inputs')
         (args.output/'upstream-comparison.json').write_text(json.dumps(upstream, indent=2, ensure_ascii=False)+'\n')
     (args.output / 'results.json').write_text(json.dumps(results, indent=2, ensure_ascii=False)+'\n')
-    metadata = dict(source_revision=subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'],text=True).strip(),
+    core_files = sorted(p for p in (ROOT/'crates').glob('*/src/**/*.rs'))
+    core_hash = hashlib.sha256()
+    for path in core_files:
+        core_hash.update(str(path.relative_to(ROOT)).encode() + b'\0' + path.read_bytes() + b'\0')
+    metadata = dict(core_sha256=core_hash.hexdigest(), source_revision=subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'],text=True).strip(),
         worker_sha256=sha(args.worker), worker_source_sha256=sha(HERE/'worker.rs'), runner_sha256=sha(Path(__file__)),
         gfm_html_sha256=sha(args.gfm_html), gfm_url='https://github.github.com/gfm/',
         probes_sha256=sha(HERE/'probes.json'), comparator_sha256=sha(HERE.parent/'native-comparison/verify.py'),
-        inherited_normalizer_sha256=sha(fixtures.parent/'spec_support/normalize.rs'),
+        spec_normalizer_sha256=sha(fixtures.parent/'spec_support/normalize.rs'),
+        spec_text_codec_sha256=sha(fixtures.parent/'spec_support/text_codec.rs'),
         root_lock_sha256=sha(ROOT/'Cargo.lock'),
         rustc=subprocess.check_output(['rustc', '-Vv'], cwd=ROOT, text=True).strip(),
         commonmark_spec_sha256=sha(fixtures/'commonmark-0.31.2-spec.txt'),
         extension_spec_sha256=sha(fixtures/'gfm-extensions-spec.txt'),
         summary={name:dict(count=len(rows), statuses=dict(Counter(x['status'] for x in rows)),
-             inherited_failures=sum(not x['inherited_equal'] for x in rows)) for name,rows in results.items()})
+             spec_failures=sum(not x['spec_equal'] for x in rows)) for name,rows in results.items()})
     (args.output / 'metadata.json').write_text(json.dumps(metadata, indent=2)+'\n')
-    if args.fail_on_differences and (endings['failures'] or
-        any(x['status'] in ('other', 'error') for name in ('commonmark-configured', 'gfm-extensions-configured')
-            for x in results[name]) or
-        any(x['kind'] == 'normative' and x['status'] in ('other', 'error') for x in probes)):
+    if args.fail_on_differences and has_gating_failures(results, endings, probes):
         raise SystemExit(1)
 
 

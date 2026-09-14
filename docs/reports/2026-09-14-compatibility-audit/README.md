@@ -1,5 +1,9 @@
 # CommonMark, GFM, and MDX compatibility audit
 
+Historical findings below describe the pre-fix core. The
+[first correction batch](../2026-09-14-correctness-fixes/README.md) records the
+subsequent fixes and passing audit; this report retains its original results.
+
 **V2 has confirmed compatibility gaps despite its passing inherited tests.**
 The highest-priority findings are line-ending handling, literal NUL handling,
 and URL serialization. The current GFM website also exposes missing syntax

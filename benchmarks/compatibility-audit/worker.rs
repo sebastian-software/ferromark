@@ -1,11 +1,11 @@
-//! Compatibility audit only: raw HTML and the inherited normalization side by side.
+//! Compatibility audit only: raw HTML and the spec normalization side by side.
 use ferromark::{Allocator, HtmlRenderer, HtmlRendererOptions, Parser, ParserOptions};
 use serde_json::json;
 use std::io::{self, BufRead, Write};
 
 #[allow(dead_code)]
 #[path = "../../crates/ferromark_renderer/tests/spec_support/normalize.rs"]
-mod inherited;
+mod spec;
 
 fn render(source: &str, profile: &str) -> Result<String, String> {
     let mut parser =
@@ -51,9 +51,9 @@ fn main() {
         };
         let expected = request["html"].as_str().unwrap_or("");
         writeln!(output, "{}", json!({"html":html, "error":error,
-            "inherited_equal": error.is_none() && inherited::normalize_html(&html) == inherited::normalize_html(expected),
-            "inherited_actual": inherited::normalize_html(&html),
-            "inherited_expected": inherited::normalize_html(expected)})).unwrap();
+            "spec_equal": error.is_none() && spec::normalize_html(&html) == spec::normalize_html(expected),
+            "spec_actual": spec::normalize_html(&html),
+            "spec_expected": spec::normalize_html(expected)})).unwrap();
         output.flush().unwrap();
     }
 }

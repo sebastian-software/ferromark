@@ -1,0 +1,34 @@
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.47s
+     Running tests/spec_commonmark.rs (target/debug/deps/spec_commonmark-1fddf6632d372811)
+
+running 10 tests
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test commonmark_spec_conformance ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/spec_gfm.rs (target/debug/deps/spec_gfm-7980d1c0e3343836)
+
+running 10 tests
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::keeps_meaningful_differences ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test gfm_extension_conformance ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

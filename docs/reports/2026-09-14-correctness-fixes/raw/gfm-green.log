@@ -1,0 +1,15 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.08s
+     Running tests/gfm_extension_audit.rs (target/debug/deps/gfm_extension_audit-ea3f691641a9e319)
+
+running 6 tests
+test explicit_subscript_keeps_priority_over_single_tilde_strikethrough ... ok
+test gfm_extended_autolinks_require_contiguous_addresses ... ok
+test single_tilde_strikethrough_stays_literal_when_gfm_is_disabled ... ok
+test gfm_official_strikethrough_examples_491_and_493 ... ok
+test gfm_single_tilde_ignores_escaped_and_code_span_tildes ... ok
+test gfm_official_extended_autolinks_examples_633_to_635 ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

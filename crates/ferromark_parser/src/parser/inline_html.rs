@@ -53,7 +53,7 @@ impl<'a> Parser<'a> {
         let mut cursor = tag_end;
 
         if closing {
-            while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\n')) {
+            while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\n' | b'\r')) {
                 cursor += 1;
             }
             return (bytes.get(cursor) == Some(&b'>')).then(|| {
@@ -80,6 +80,35 @@ impl<'a> Parser<'a> {
             span: Span::new((offset + start) as u32, (offset + end) as u32),
         }
     }
+
+    /// CommonMark parses CR and CRLF as line endings and exposes inline raw
+    /// HTML with canonical LF line endings. Keep the AST span in original
+    /// source coordinates while normalizing only the HTML value that is
+    /// rendered. This local conversion avoids changing offsets for all other
+    /// parser constructs.
+    pub(super) fn normalize_inline_html(&self, html: &mut Html<'a>) {
+        if !html.value.as_bytes().contains(&b'\r') {
+            return;
+        }
+
+        let raw = html.value;
+        let mut value = self.allocator.new_string();
+        let bytes = raw.as_bytes();
+        let mut start = 0;
+        let mut cursor = 0;
+        while cursor < bytes.len() {
+            if bytes[cursor] != b'\r' {
+                cursor += 1;
+                continue;
+            }
+            value.push_str(&raw[start..cursor]);
+            value.push('\n');
+            cursor += usize::from(bytes.get(cursor + 1) == Some(&b'\n')) + 1;
+            start = cursor;
+        }
+        value.push_str(&raw[start..]);
+        html.value = value.into_bump_str();
+    }
 }
 
 /// Scans the remainder of an open tag after its name: whitespace-separated
@@ -88,7 +117,7 @@ impl<'a> Parser<'a> {
 fn scan_open_tag_rest(bytes: &[u8], mut cursor: usize) -> Option<usize> {
     loop {
         let ws_start = cursor;
-        while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\n')) {
+        while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\n' | b'\r')) {
             cursor += 1;
         }
         match bytes.get(cursor)? {
@@ -120,7 +149,7 @@ fn scan_attribute(bytes: &[u8], mut cursor: usize) -> Option<usize> {
     }
 
     let mut look = cursor;
-    while matches!(bytes.get(look), Some(b' ' | b'\t' | b'\n')) {
+    while matches!(bytes.get(look), Some(b' ' | b'\t' | b'\n' | b'\r')) {
         look += 1;
     }
     if bytes.get(look) != Some(&b'=') {
@@ -129,7 +158,7 @@ fn scan_attribute(bytes: &[u8], mut cursor: usize) -> Option<usize> {
         return Some(cursor);
     }
     cursor = look + 1;
-    while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\n')) {
+    while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\n' | b'\r')) {
         cursor += 1;
     }
 
@@ -143,7 +172,7 @@ fn scan_attribute(bytes: &[u8], mut cursor: usize) -> Option<usize> {
 
     let value_start = cursor;
     while bytes.get(cursor).is_some_and(|byte| {
-        !matches!(byte, b' ' | b'\t' | b'\n' | b'"' | b'\'' | b'=' | b'<' | b'>' | b'`')
+        !matches!(byte, b' ' | b'\t' | b'\n' | b'\r' | b'"' | b'\'' | b'=' | b'<' | b'>' | b'`')
     }) {
         cursor += 1;
     }

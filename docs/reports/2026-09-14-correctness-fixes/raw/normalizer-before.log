@@ -1,0 +1,34 @@
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.04s
+     Running tests/spec_commonmark.rs (target/debug/deps/spec_commonmark-1fddf6632d372811)
+
+running 3 tests
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... FAILED
+test normalize::preserves_reserved_and_unsafe_url_bytes ... FAILED
+
+failures:
+
+---- normalize::preserves_inline_code_and_raw_text_semantics stdout ----
+
+thread 'normalize::preserves_inline_code_and_raw_text_semantics' (19605046) panicked at crates/ferromark_renderer/tests/spec_support/normalize.rs:305:9:
+assertion `left != right` failed: code whitespace is content
+  left: "<p><code></code></p>"
+ right: "<p><code></code></p>"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- normalize::preserves_reserved_and_unsafe_url_bytes stdout ----
+
+thread 'normalize::preserves_reserved_and_unsafe_url_bytes' (19605048) panicked at crates/ferromark_renderer/tests/spec_support/normalize.rs:319:9:
+assertion `left != right` failed
+  left: "<a href=\"/a#b\">x</a>"
+ right: "<a href=\"/a#b\">x</a>"
+
+
+failures:
+    normalize::preserves_inline_code_and_raw_text_semantics
+    normalize::preserves_reserved_and_unsafe_url_bytes
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p ferromark_renderer --test spec_commonmark`

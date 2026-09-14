@@ -50,29 +50,13 @@ fn renderer_options() -> HtmlRendererOptions {
     options
 }
 
-/// Renders one example, converting parser errors and panics into an
-/// inline marker string. A panicking parser must show up as a recorded
-/// conformance failure instead of killing the whole suite.
+/// Parser failures are test failures, never accepted baseline mismatches.
 fn render(markdown: &str, mode: &'static str) -> String {
-    let markdown = markdown.to_string();
-    let result = std::panic::catch_unwind(move || {
-        let allocator = Allocator::new();
-        let parser = Parser::with_options(&allocator, &markdown, parser_options(mode));
-        let parsed = parser.parse();
-
-        match parsed {
-            Ok(ref document) => HtmlRenderer::with_options(renderer_options()).render(document),
-            Err(ref error) => format!("<!-- PARSE ERROR: {error:?} -->"),
-        }
-    });
-    result.unwrap_or_else(|panic| {
-        let message = panic
-            .downcast_ref::<String>()
-            .map(String::as_str)
-            .or_else(|| panic.downcast_ref::<&str>().copied())
-            .unwrap_or("opaque panic payload");
-        format!("<!-- PANIC: {message} -->")
-    })
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, markdown, parser_options(mode))
+        .parse()
+        .expect("spec example must parse");
+    HtmlRenderer::with_options(renderer_options()).render(&document)
 }
 
 struct Failure {
@@ -85,14 +69,7 @@ struct Failure {
 }
 
 fn run_all(examples: &[SpecExample]) -> Vec<Failure> {
-    // Parser panics are caught and recorded per example; silence the
-    // default hook so hundreds of expected backtraces don't drown the
-    // actual report. The hook is restored before returning.
-    let default_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(|_| {}));
-    let failures = collect_failures(examples);
-    std::panic::set_hook(default_hook);
-    failures
+    collect_failures(examples)
 }
 
 fn collect_failures(examples: &[SpecExample]) -> Vec<Failure> {

@@ -6,7 +6,8 @@
 use super::AutolinkScan;
 use super::Candidate;
 use super::scan::{
-    LONGEST_SCHEME, SCHEME_FINDER, WWW_FINDER, scheme_prefix_len, validate_email, validate_url,
+    LONGEST_SCHEME, MAILTO_FINDER, SCHEME_FINDER, WWW_FINDER, XMPP_FINDER, scheme_prefix_len,
+    validate_email, validate_extended_email, validate_url,
 };
 
 /// Where the doubling search starts. A node that holds a candidate almost
@@ -99,6 +100,28 @@ fn search_within(value: &str, window: usize, scan: AutolinkScan) -> Option<Candi
                 break;
             }
             from = at + 4;
+        }
+    }
+
+    if scan.may_have_extended {
+        let limit = search_limit(window, best.as_ref(), 0, 6);
+        for (finder, prefix, xmpp) in
+            [(&*MAILTO_FINDER, "mailto:", false), (&*XMPP_FINDER, "xmpp:", true)]
+        {
+            let mut from = 0;
+            while from < limit {
+                let Some(offset) = finder.find(&bytes[from..limit]) else {
+                    break;
+                };
+                let at = from + offset;
+                if let Some(candidate) = validate_extended_email(value, at, prefix, xmpp) {
+                    if best.as_ref().is_none_or(|current| candidate.start < current.start) {
+                        best = Some(candidate);
+                    }
+                    break;
+                }
+                from = at + prefix.len();
+            }
         }
     }
 
