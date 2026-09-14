@@ -1,0 +1,24 @@
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.66s
+     Running tests/edge_unicode_compat.rs (target/debug/deps/edge_unicode_compat-6a5da521c45c5a31)
+
+running 1 test
+test matches_cmark_unicode_url_and_leading_bom_serialization ... FAILED
+
+failures:
+
+---- matches_cmark_unicode_url_and_leading_bom_serialization stdout ----
+
+thread 'matches_cmark_unicode_url_and_leading_bom_serialization' (19766249) panicked at crates/ferromark_renderer/tests/edge_unicode_compat.rs:19:5:
+assertion `left == right` failed
+  left: "<p><a href=\"https://例え.テスト/道\">中文</a> and <code>é</code></p>\n"
+ right: "<p><a href=\"https://%E4%BE%8B%E3%81%88.%E3%83%86%E3%82%B9%E3%83%88/%E9%81%93\">中文</a> and <code>é</code></p>\n"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    matches_cmark_unicode_url_and_leading_bom_serialization
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p ferromark_renderer --test edge_unicode_compat`

@@ -65,12 +65,13 @@ python3 benchmarks/compatibility-audit/cmark_oracle.py \
 Without `--fail-on-differences`, exit 0 means the diagnostic run completed;
 it does not mean outputs agree. Errors return 2. Strict mode returns 1 for
 any difference beyond admitted serialization, including heading IDs. The
-recorded corrected core therefore still returns 1: six heading-ID-only
-differences and seven other cases remain visible. See the
-[results and follow-up cases](../../docs/reports/2026-09-14-correctness-fixes/README.md#differential-checks-against-cmark).
+first correction batch returned 1: six heading-ID-only differences and seven
+other cases remained. The [second correction batch](../../docs/reports/2026-09-14-reference-compatibility/README.md)
+records the fixes and explicit profiles; the historical results remain unchanged.
 
 CommonMark runs cmark with `--unsafe` so raw HTML matches the configured worker.
-GFM enables `table`, `strikethrough`, `autolink`, `tasklist`, and `tagfilter`,
+GFM also uses `--unsafe` and enables `table`, `strikethrough`, `autolink`,
+`tasklist`, and `tagfilter`,
 while omitting footnotes to match the worker profile. cmark-gfm predates the
 current GFM website, so GFM differences are diagnostic candidates rather than
 a current website oracle. Heading IDs, raw HTML policy, Unicode URL spelling,
@@ -79,3 +80,25 @@ and all other differences remain visible in `results.json`.
 Primary provenance: [commonmark/cmark](https://github.com/commonmark/cmark),
 [cmark 0.31.1 release](https://github.com/commonmark/cmark/releases), and
 [github/cmark-gfm](https://github.com/github/cmark-gfm).
+
+## Extended delimiter corpus
+
+Generate 256 deterministic combinations, then repeat the oracle command with
+`--fixtures /tmp/cmark-bindings.json` and a fresh output directory:
+
+```sh
+python3 benchmarks/compatibility-audit/cmark_binding_fixtures.py /tmp/cmark-bindings.json
+```
+
+The combinations cross single/double tildes and 32 inline shapes with paragraph,
+emphasis, link-label, and block-quote contexts. They include link destinations
+and titles, code spans, HTML attributes, escaped tildes, nested emphasis, and
+whitespace boundaries. These authored inputs are MIT licensed with the repo.
+The original 106 outputs and 254 additional reference outputs are asserted
+by `cargo test -p ferromark_renderer --test cmark_regressions --locked`, without
+requiring a C toolchain during ordinary workspace tests. Two additional cases
+assert the GFM prohibition of nested links instead of the pinned oracle's
+invalid nested anchors. They remain `other` in the raw 256-case comparison,
+so its generic strict run intentionally returns 1; the 106-case strict run
+returns 0. The separate live
+oracle still verifies the exact pinned reference binaries.

@@ -1,0 +1,13 @@
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.64s
+     Running tests/profiles.rs (target/debug/deps/profiles-b9f954a2c3f61bcb)
+
+running 5 tests
+test spec_profiles_disable_product_rendering_extras ... ok
+test gfm_spec_uses_tagfilter_without_footnotes_or_ids ... ok
+test spec_profile_flags_match_normal_hooks_and_incremental_paths ... ok
+test heading_attributes_match_across_renderer_paths_and_disabled_ids ... ok
+test existing_defaults_keep_heading_ids_callouts_and_toc ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

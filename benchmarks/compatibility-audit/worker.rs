@@ -8,18 +8,12 @@ use std::io::{self, BufRead, Write};
 mod spec;
 
 fn render(source: &str, profile: &str) -> Result<String, String> {
-    let mut parser =
-        if profile.starts_with("gfm") { ParserOptions::gfm() } else { ParserOptions::default() };
-    let mut html = HtmlRendererOptions::new();
-    if !matches!(profile, "default" | "gfm-preset") {
-        html.autolink_urls = false;
-        html.autolink_target_blank = false;
-        html.link_target_blank = false;
-        if profile.starts_with("gfm") {
-            parser.footnotes = false;
-        }
-        html.disallow_raw_html = profile == "gfm";
-    }
+    let (mut parser, mut html) = match profile {
+        "default" => (ParserOptions::default(), HtmlRendererOptions::new()),
+        "gfm-preset" => (ParserOptions::gfm(), HtmlRendererOptions::new()),
+        "gfm" | "gfm-no-tagfilter" => (ParserOptions::gfm_spec(), HtmlRendererOptions::gfm()),
+        _ => (ParserOptions::commonmark(), HtmlRendererOptions::commonmark()),
+    };
     if profile == "gfm-no-tagfilter" {
         html.disallow_raw_html = false;
     }

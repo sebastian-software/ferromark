@@ -19,6 +19,20 @@ fn reference(s: &str, flags: &[u8; 256], table: &[&'static str; 256]) -> String 
     String::from_utf8(out).expect("escaping only rewrites ASCII bytes")
 }
 
+fn reference_url(s: &str) -> String {
+    let mut out = String::new();
+    for byte in s.bytes() {
+        if byte >= 0x80 {
+            push_percent_byte(&mut out, byte);
+        } else if URL_ESCAPE_FLAG[byte as usize] != 0 {
+            out.push_str(URL_ESCAPE_TABLE[byte as usize]);
+        } else {
+            out.push(byte as char);
+        }
+    }
+    out
+}
+
 fn check(s: &str) {
     let mut text = String::new();
     write_escaped_into(&mut text, s);
@@ -26,7 +40,7 @@ fn check(s: &str) {
 
     let mut url = String::new();
     write_url_escaped_into(&mut url, s);
-    assert_eq!(url, reference(s, &URL_ESCAPE_FLAG, &URL_ESCAPE_TABLE), "url escape: {s:?}");
+    assert_eq!(url, reference_url(s), "url escape: {s:?}");
 
     let mut attributes = String::from("prefix:");
     let mut expected = attributes.clone();
@@ -85,6 +99,19 @@ fn commonmark_url_syntax_bytes_are_percent_encoded() {
         write_url_escaped_into(&mut actual, source);
         assert_eq!(actual, expected, "source: {source:?}");
     }
+}
+
+#[test]
+fn url_escape_handles_escape_heavy_ascii_before_unicode_linearly() {
+    let mut source = String::with_capacity(4097);
+    for _ in 0..2048 {
+        source.push('&');
+    }
+    source.push('é');
+
+    let mut actual = String::new();
+    write_url_escaped_into(&mut actual, &source);
+    assert_eq!(actual, reference_url(&source));
 }
 
 #[test]

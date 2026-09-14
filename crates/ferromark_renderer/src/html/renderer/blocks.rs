@@ -42,14 +42,16 @@ impl HtmlRenderer {
         let depth = heading.depth.clamp(1, 6);
         self.output.push_str("<h");
         self.output.push((b'0' + depth) as char);
-        self.output.push_str(" id=\"");
-        // Heading ids are slugified: lowercase alnum + '-' separators. None
-        // of those bytes need HTML escaping, so the unconditional
-        // `write_escaped` pass over the id was pure overhead. We also
-        // skip materializing the id as a return-value `String`; it's
-        // written straight into `self.output`.
-        self.write_heading_id(heading);
-        self.output.push('"');
+        if self.options.heading_ids {
+            self.output.push_str(" id=\"");
+            // Heading ids are slugified: lowercase alnum + '-' separators. None
+            // of those bytes need HTML escaping, so the unconditional
+            // `write_escaped` pass over the id was pure overhead. We also
+            // skip materializing the id as a return-value `String`; it's
+            // written straight into `self.output`.
+            self.write_heading_id(heading);
+            self.output.push('"');
+        }
         if !heading.classes.is_empty() {
             self.output.push_str(" class=\"");
             for (index, class_name) in heading.classes.iter().enumerate() {
@@ -85,7 +87,7 @@ impl HtmlRenderer {
     }
 
     pub(in crate::html::renderer) fn render_block_quote(&mut self, block_quote: &BlockQuote<'_>) {
-        if self.render_callout_block_quote(block_quote) {
+        if self.options.callouts && self.render_callout_block_quote(block_quote) {
             return;
         }
 
@@ -174,11 +176,16 @@ impl HtmlRenderer {
     }
 
     pub(in crate::html::renderer) fn render_code_block(&mut self, code_block: &CodeBlock<'_>) {
-        if !self.options.code_annotations {
+        if !self.options.code_annotations || !self.options.code_fence_metadata {
             self.write("<pre");
             self.write_source_span_attr(code_block.span);
             self.write("><code");
-            if let Some(lang) = normalize_code_block_language(code_block.lang) {
+            let language = if self.options.code_fence_metadata {
+                normalize_code_block_language(code_block.lang)
+            } else {
+                code_block.lang.map(str::trim).filter(|lang| !lang.is_empty())
+            };
+            if let Some(lang) = language {
                 self.write(" class=\"language-");
                 self.write_escaped(lang);
                 self.write("\"");

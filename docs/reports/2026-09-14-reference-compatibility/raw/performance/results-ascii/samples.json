@@ -1,0 +1,1190 @@
+[
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 99424,
+      "elapsed_ns": 50009458,
+      "checksum": 29330080
+    },
+    "candidate": {
+      "iterations": 99328,
+      "elapsed_ns": 50001292,
+      "checksum": 29301760
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 100480,
+      "elapsed_ns": 50009500,
+      "checksum": 29641600
+    },
+    "baseline": {
+      "iterations": 100160,
+      "elapsed_ns": 50015083,
+      "checksum": 29547200
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 100640,
+      "elapsed_ns": 50013584,
+      "checksum": 29688800
+    },
+    "candidate": {
+      "iterations": 100416,
+      "elapsed_ns": 50013000,
+      "checksum": 29622720
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 294432,
+      "elapsed_ns": 50003416,
+      "checksum": 86857440
+    },
+    "candidate": {
+      "iterations": 295776,
+      "elapsed_ns": 50003125,
+      "checksum": 87253920
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 295840,
+      "elapsed_ns": 50005292,
+      "checksum": 87272800
+    },
+    "baseline": {
+      "iterations": 291392,
+      "elapsed_ns": 50000500,
+      "checksum": 85960640
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 291040,
+      "elapsed_ns": 50001583,
+      "checksum": 85856800
+    },
+    "candidate": {
+      "iterations": 295872,
+      "elapsed_ns": 50004833,
+      "checksum": 87282240
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 93792,
+      "elapsed_ns": 50016583,
+      "checksum": 5346144
+    },
+    "candidate": {
+      "iterations": 92448,
+      "elapsed_ns": 50004333,
+      "checksum": 5269536
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 92672,
+      "elapsed_ns": 50010208,
+      "checksum": 5282304
+    },
+    "baseline": {
+      "iterations": 95136,
+      "elapsed_ns": 50008792,
+      "checksum": 5422752
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 94816,
+      "elapsed_ns": 50008583,
+      "checksum": 5404512
+    },
+    "candidate": {
+      "iterations": 92512,
+      "elapsed_ns": 50011667,
+      "checksum": 5273184
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4096,
+      "elapsed_ns": 50471833,
+      "checksum": 45137920
+    },
+    "candidate": {
+      "iterations": 4032,
+      "elapsed_ns": 50336959,
+      "checksum": 44432640
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 4032,
+      "elapsed_ns": 50187083,
+      "checksum": 44432640
+    },
+    "baseline": {
+      "iterations": 4064,
+      "elapsed_ns": 50155417,
+      "checksum": 44785280
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4032,
+      "elapsed_ns": 50054083,
+      "checksum": 44432640
+    },
+    "candidate": {
+      "iterations": 4032,
+      "elapsed_ns": 50090916,
+      "checksum": 44432640
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3904,
+      "elapsed_ns": 50101833,
+      "checksum": 43022080
+    },
+    "candidate": {
+      "iterations": 3936,
+      "elapsed_ns": 50488625,
+      "checksum": 43374720
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 3904,
+      "elapsed_ns": 50195125,
+      "checksum": 43022080
+    },
+    "baseline": {
+      "iterations": 3936,
+      "elapsed_ns": 50315750,
+      "checksum": 43374720
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3936,
+      "elapsed_ns": 50123166,
+      "checksum": 43374720
+    },
+    "candidate": {
+      "iterations": 3840,
+      "elapsed_ns": 50177583,
+      "checksum": 42316800
+    }
+  },
+  {
+    "round": 0,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 241376,
+      "elapsed_ns": 50005334,
+      "checksum": 13758432
+    },
+    "candidate": {
+      "iterations": 228000,
+      "elapsed_ns": 50005667,
+      "checksum": 12996000
+    }
+  },
+  {
+    "round": 0,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 226912,
+      "elapsed_ns": 50005375,
+      "checksum": 12933984
+    },
+    "baseline": {
+      "iterations": 241216,
+      "elapsed_ns": 50001959,
+      "checksum": 13749312
+    }
+  },
+  {
+    "round": 0,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 241216,
+      "elapsed_ns": 50004291,
+      "checksum": 13749312
+    },
+    "candidate": {
+      "iterations": 226784,
+      "elapsed_ns": 50002833,
+      "checksum": 12926688
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 229696,
+      "elapsed_ns": 50000583,
+      "checksum": 13092672
+    },
+    "baseline": {
+      "iterations": 227264,
+      "elapsed_ns": 50004333,
+      "checksum": 12954048
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 225120,
+      "elapsed_ns": 50002292,
+      "checksum": 12831840
+    },
+    "candidate": {
+      "iterations": 229376,
+      "elapsed_ns": 50006250,
+      "checksum": 13074432
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 228096,
+      "elapsed_ns": 50006666,
+      "checksum": 13001472
+    },
+    "baseline": {
+      "iterations": 226592,
+      "elapsed_ns": 50004875,
+      "checksum": 12915744
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 295776,
+      "elapsed_ns": 50004541,
+      "checksum": 87253920
+    },
+    "baseline": {
+      "iterations": 292960,
+      "elapsed_ns": 50003250,
+      "checksum": 86423200
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 292096,
+      "elapsed_ns": 50002875,
+      "checksum": 86168320
+    },
+    "candidate": {
+      "iterations": 296064,
+      "elapsed_ns": 50000208,
+      "checksum": 87338880
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 295840,
+      "elapsed_ns": 50003750,
+      "checksum": 87272800
+    },
+    "baseline": {
+      "iterations": 292704,
+      "elapsed_ns": 50001500,
+      "checksum": 86347680
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 4064,
+      "elapsed_ns": 50429250,
+      "checksum": 44785280
+    },
+    "baseline": {
+      "iterations": 4064,
+      "elapsed_ns": 50136042,
+      "checksum": 44785280
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4096,
+      "elapsed_ns": 50433375,
+      "checksum": 45137920
+    },
+    "candidate": {
+      "iterations": 4000,
+      "elapsed_ns": 50265542,
+      "checksum": 44080000
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 4064,
+      "elapsed_ns": 50305958,
+      "checksum": 44785280
+    },
+    "baseline": {
+      "iterations": 4064,
+      "elapsed_ns": 50086000,
+      "checksum": 44785280
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 92288,
+      "elapsed_ns": 50012125,
+      "checksum": 5260416
+    },
+    "baseline": {
+      "iterations": 94496,
+      "elapsed_ns": 50012042,
+      "checksum": 5386272
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 94336,
+      "elapsed_ns": 50016375,
+      "checksum": 5377152
+    },
+    "candidate": {
+      "iterations": 92896,
+      "elapsed_ns": 50013375,
+      "checksum": 5295072
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 92736,
+      "elapsed_ns": 50003833,
+      "checksum": 5285952
+    },
+    "baseline": {
+      "iterations": 94496,
+      "elapsed_ns": 50012500,
+      "checksum": 5386272
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 102080,
+      "elapsed_ns": 50010708,
+      "checksum": 30113600
+    },
+    "baseline": {
+      "iterations": 101152,
+      "elapsed_ns": 50007333,
+      "checksum": 29839840
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 100704,
+      "elapsed_ns": 50014625,
+      "checksum": 29707680
+    },
+    "candidate": {
+      "iterations": 102240,
+      "elapsed_ns": 50011042,
+      "checksum": 30160800
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 101888,
+      "elapsed_ns": 50014167,
+      "checksum": 30056960
+    },
+    "baseline": {
+      "iterations": 100960,
+      "elapsed_ns": 50002542,
+      "checksum": 29783200
+    }
+  },
+  {
+    "round": 1,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 3872,
+      "elapsed_ns": 50260042,
+      "checksum": 42669440
+    },
+    "baseline": {
+      "iterations": 3872,
+      "elapsed_ns": 50299666,
+      "checksum": 42669440
+    }
+  },
+  {
+    "round": 1,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3904,
+      "elapsed_ns": 50350125,
+      "checksum": 43022080
+    },
+    "candidate": {
+      "iterations": 3776,
+      "elapsed_ns": 50164291,
+      "checksum": 41611520
+    }
+  },
+  {
+    "round": 1,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 3840,
+      "elapsed_ns": 50067125,
+      "checksum": 42316800
+    },
+    "baseline": {
+      "iterations": 3904,
+      "elapsed_ns": 50211333,
+      "checksum": 43022080
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 94848,
+      "elapsed_ns": 50009834,
+      "checksum": 5406336
+    },
+    "candidate": {
+      "iterations": 92256,
+      "elapsed_ns": 50004625,
+      "checksum": 5258592
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 92608,
+      "elapsed_ns": 50013000,
+      "checksum": 5278656
+    },
+    "baseline": {
+      "iterations": 93856,
+      "elapsed_ns": 50004750,
+      "checksum": 5349792
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 93664,
+      "elapsed_ns": 50000416,
+      "checksum": 5338848
+    },
+    "candidate": {
+      "iterations": 92672,
+      "elapsed_ns": 50013667,
+      "checksum": 5282304
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3904,
+      "elapsed_ns": 50465417,
+      "checksum": 43022080
+    },
+    "candidate": {
+      "iterations": 3872,
+      "elapsed_ns": 50330292,
+      "checksum": 42669440
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 3872,
+      "elapsed_ns": 50320083,
+      "checksum": 42669440
+    },
+    "baseline": {
+      "iterations": 3904,
+      "elapsed_ns": 50255292,
+      "checksum": 43022080
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 3904,
+      "elapsed_ns": 50125709,
+      "checksum": 43022080
+    },
+    "candidate": {
+      "iterations": 3840,
+      "elapsed_ns": 50339708,
+      "checksum": 42316800
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 239936,
+      "elapsed_ns": 50005750,
+      "checksum": 13676352
+    },
+    "candidate": {
+      "iterations": 228672,
+      "elapsed_ns": 50003875,
+      "checksum": 13034304
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 227072,
+      "elapsed_ns": 50002875,
+      "checksum": 12943104
+    },
+    "baseline": {
+      "iterations": 241696,
+      "elapsed_ns": 50006208,
+      "checksum": 13776672
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 239744,
+      "elapsed_ns": 50003000,
+      "checksum": 13665408
+    },
+    "candidate": {
+      "iterations": 227360,
+      "elapsed_ns": 50002709,
+      "checksum": 12959520
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4064,
+      "elapsed_ns": 50312000,
+      "checksum": 44785280
+    },
+    "candidate": {
+      "iterations": 4032,
+      "elapsed_ns": 50028625,
+      "checksum": 44432640
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 4064,
+      "elapsed_ns": 50431500,
+      "checksum": 44785280
+    },
+    "baseline": {
+      "iterations": 4000,
+      "elapsed_ns": 50373500,
+      "checksum": 44080000
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 4064,
+      "elapsed_ns": 50119084,
+      "checksum": 44785280
+    },
+    "candidate": {
+      "iterations": 4000,
+      "elapsed_ns": 50361583,
+      "checksum": 44080000
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 292032,
+      "elapsed_ns": 50000667,
+      "checksum": 86149440
+    },
+    "candidate": {
+      "iterations": 297216,
+      "elapsed_ns": 50004459,
+      "checksum": 87678720
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 295520,
+      "elapsed_ns": 50003583,
+      "checksum": 87178400
+    },
+    "baseline": {
+      "iterations": 293024,
+      "elapsed_ns": 50000834,
+      "checksum": 86442080
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 292544,
+      "elapsed_ns": 50002709,
+      "checksum": 86300480
+    },
+    "candidate": {
+      "iterations": 292928,
+      "elapsed_ns": 50002750,
+      "checksum": 86413760
+    }
+  },
+  {
+    "round": 2,
+    "pair": 0,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 101632,
+      "elapsed_ns": 50002375,
+      "checksum": 29981440
+    },
+    "candidate": {
+      "iterations": 101792,
+      "elapsed_ns": 50001250,
+      "checksum": 30028640
+    }
+  },
+  {
+    "round": 2,
+    "pair": 1,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "candidate",
+      "baseline"
+    ],
+    "candidate": {
+      "iterations": 102656,
+      "elapsed_ns": 50000583,
+      "checksum": 30283520
+    },
+    "baseline": {
+      "iterations": 101376,
+      "elapsed_ns": 50004833,
+      "checksum": 29905920
+    }
+  },
+  {
+    "round": 2,
+    "pair": 2,
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "baseline": {
+      "iterations": 102144,
+      "elapsed_ns": 50002084,
+      "checksum": 30132480
+    },
+    "candidate": {
+      "iterations": 101952,
+      "elapsed_ns": 50001375,
+      "checksum": 30075840
+    }
+  }
+]

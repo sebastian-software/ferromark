@@ -16,8 +16,12 @@ assert_eq!(html, "<p>Hello, <strong>world</strong>!</p>\n");
 ```
 
 `ParserOptions::gfm()` enables the implemented GFM syntax plus footnotes.
-The renderer's GFM tagfilter requires `HtmlRendererOptions::disallow_raw_html`
-separately. `ParserOptions { mdx: true, ..ParserOptions::gfm() }` adds MDX
+For specification-oriented output, pair `ParserOptions::gfm_spec()` with
+`HtmlRendererOptions::gfm()` (tagfilter enabled, footnotes disabled). The analogous
+CommonMark pair is `ParserOptions::commonmark()` and
+`HtmlRendererOptions::commonmark()`. These renderer profiles disable automatic
+heading IDs, callouts, TOC, and fence metadata cleanup; the existing defaults
+retain those conveniences. `ParserOptions { mdx: true, ..ParserOptions::gfm() }` adds MDX
 syntax recognition and static component-island output; it does not provide an
 MDX compiler or runtime. Math, definition lists, and other extensions remain configurable.
 The allocator and source must outlive the document. Reuse/reset an allocator only after its documents
@@ -70,37 +74,33 @@ record of the link prototype and its render-only build sensitivity.
 
 ## Correctness and compatibility
 
-The [first correctness fixes](docs/reports/2026-09-14-correctness-fixes/README.md)
-close the concrete syntax and content issues from the
-[2026-09-14 audit](docs/reports/2026-09-14-compatibility-audit/README.md):
+The [second correction batch](docs/reports/2026-09-14-reference-compatibility/README.md)
+closes the seven cmark findings left after the
+[first fixes](docs/reports/2026-09-14-correctness-fixes/README.md). Strikethrough now
+uses the inline delimiter stack, Unicode URL bytes receive percent encoding,
+and one leading BOM is treated as an encoding marker with original spans preserved.
 
 | Check | Result |
 | --- | --- |
-| Configured CommonMark 0.31.2 | 652/652 pass the strengthened spec comparison; the conservative audit separately records 40 heading-ID differences |
-| Current GFM extension examples | 28/28 match, including single/triple tildes and extended `mailto:`/`xmpp:` autolinks |
-| CRLF / CR variants | All 1,304 agree with their LF controls; list-content duplication is fixed |
-| Literal NUL | Replaced with U+FFFD before parsing; nested AST spans retain original source offsets |
-| Regression protection | Code/raw-text whitespace and reserved URL escapes stay significant; parser failures fail the suites directly |
+| Explicit CommonMark 0.31.2 profile | 652/652 agree, without heading-ID exceptions |
+| Current GFM extension examples | 28/28 agree |
+| CRLF / CR variants | 1,304/1,304 agree with their LF controls |
+| Original cmark / cmark-gfm corpus | 106/106 agree |
+| Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
+| Workspace regression tests | 700 pass, including both oracle corpora and renderer-profile/span checks |
 
-Heading IDs, callouts, TOC, bare-URL autolinking, and fence metadata handling
-also reflect product rendering policies and remain unchanged. The complete GFM
-website retains ten classified differences from global tagfilter/autolink
-behavior and older HTML-comment rules. MDX remains a bounded syntax/static-output
-feature. These finite tests do not establish unrestricted CommonMark, GFM, or
-MDX compatibility. The [repeatable audit](benchmarks/compatibility-audit/README.md)
-now passes its failure gate; raw results and a targeted v1 comparison are in
-the correction report.
+Agreement permits conservative HTML serialization equivalence; raw output and
+all mismatches remain in the report. The two reference exceptions have exact
+spec-correct HTML assertions, and the generic strict oracle still rejects them.
+The complete GFM website retains ten classified differences from global
+extension policies and older HTML-comment rules. MDX remains bounded syntax
+capture and static output. These finite suites do not prove correctness for
+arbitrary CommonMark, GFM, or MDX input.
 
-An additional [cmark / cmark-gfm oracle run](docs/reports/2026-09-14-correctness-fixes/README.md#differential-checks-against-cmark)
-checks 106 complex inputs. It exposes **five remaining GFM delimiter cases**,
-including strikethrough closing inside link destinations, plus two Unicode/BOM
-differences requiring interpretation. Passing the official examples does not
-close these additional findings.
-
-A short paired check on four unchanged-output documents measures about **2%
-more time with fresh arenas and 4% with reuse** after these corrections.
-The [two runs and limitations](docs/reports/2026-09-14-correctness-fixes/README.md#short-performance-check)
-are recorded; the full six-engine comparison has not been rerun.
+The [repeatable spec audit](benchmarks/compatibility-audit/README.md) and the
+[106-case live oracle](benchmarks/compatibility-audit/CMARK.md) pass their failure
+gates. The correction report records the short performance check; the full
+six-engine comparison below remains a historical pre-correction measurement.
 
 ## Native engine comparison
 

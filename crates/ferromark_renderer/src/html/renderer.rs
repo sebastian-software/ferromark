@@ -186,7 +186,10 @@ impl HtmlRenderer {
         self.toc_entries.clear();
         self.code_block_index = 0;
         let document_scan = scan_document_for_render(document);
-        self.document_has_toc_marker = document_scan.has_toc_marker;
+        // A TOC without emitted heading IDs would produce dead links. Keep
+        // the two product conveniences coupled for explicitly strict output.
+        self.document_has_toc_marker =
+            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
         if self.document_has_toc_marker {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }

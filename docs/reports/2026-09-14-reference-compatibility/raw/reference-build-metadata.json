@@ -1,0 +1,82 @@
+{
+  "sources": {
+    "cmark": {
+      "path": "/private/tmp/ferromark-cmark-0311",
+      "revision": "bb3678d7a73cb02d35c8876ecd097072636200a8",
+      "clean": true
+    },
+    "cmark-gfm": {
+      "path": "/private/tmp/ferromark-cmark-gfm-13",
+      "revision": "587a12bb54d95ac37241377e6ddc93ea0e45439b",
+      "clean": true
+    }
+  },
+  "binaries": {
+    "cmark": {
+      "path": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark/src/cmark",
+      "sha256": "a446543db6036cd5a7a06e3afbf288a812f8bc25014dc5eab0bbd06113659d78"
+    },
+    "cmark-gfm": {
+      "path": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark-gfm/src/cmark-gfm",
+      "sha256": "6ef69baad25b79dfe5baf6e78605ec3de04de1b5e128d6226b0b6f2c17c95f8d"
+    }
+  },
+  "commands": {
+    "cmake": "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+    "cmark_configure": [
+      "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+      "-S",
+      "/private/tmp/ferromark-cmark-0311",
+      "-B",
+      "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark",
+      "-DCMARK_TESTS=OFF",
+      "-DCMARK_SHARED=OFF"
+    ],
+    "cmark_gfm_configure": [
+      "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+      "-S",
+      "/private/tmp/ferromark-cmark-gfm-13",
+      "-B",
+      "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark-gfm",
+      "-DCMARK_TESTS=OFF",
+      "-DCMARK_SHARED=OFF"
+    ],
+    "cmark_build": [
+      "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+      "--build",
+      "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark",
+      "--target",
+      "cmark_exe",
+      "--parallel",
+      "2"
+    ],
+    "cmark_gfm_build": [
+      "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+      "--build",
+      "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark-gfm",
+      "--target",
+      "cmark-gfm",
+      "--parallel",
+      "2"
+    ]
+  },
+  "compilers": {
+    "cmark": {
+      "path": "/Library/Developer/CommandLineTools/usr/bin/cc",
+      "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+      "cmake_cache_sha256": "f7c3fdd5472ba2617e03710616afe0c396e2a0337bd215b497846b294dead19f"
+    },
+    "cmark-gfm": {
+      "path": "/Library/Developer/CommandLineTools/usr/bin/cc",
+      "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+      "cmake_cache_sha256": "665a3a4e3f8a70e8c3a1b219a8b95c9c2b1aa9cdf7122bf6ec34b5969154b73c"
+    }
+  },
+  "builder_sha256": "f89d0fd1cf6539478e73c90e5ff8cb67d82f2a4dd3a2cc5097bf2f9b919f1ccd",
+  "logs": {
+    "cmark_configure": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/logs/cmark-configure.log",
+    "cmark_gfm_configure": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/logs/cmark-gfm-configure.log",
+    "cmark_build": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/logs/cmark-build.log",
+    "cmark_gfm_build": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/logs/cmark-gfm-build.log"
+  }
+}

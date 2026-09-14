@@ -1,0 +1,73 @@
+{
+  "core_sha256": "ae1952feb3505317556523e0bf17a0233f0845cfff393cf7c4a0672dba1c36a4",
+  "source_revision": "c4bb2237b1d02577a5957c1f1c833e30e0ea770a",
+  "worker_sha256": "65f86a3695979dad34bec129beb3a748bca4089bb430e7bcabb251ae02e6df46",
+  "worker_source_sha256": "a34a2b17edc12467ccee1869d7ad2167f8b017b4e523e204661cd89b9d3dd9f3",
+  "runner_sha256": "f24c7145be7da27f5087c066fc76fb8fa466a668c0a4b439b761a300958bad23",
+  "gfm_html_sha256": "b153d814fdfc8624bb6da7449162c1cd707a637f7d1c1b636eb44b9cf63fa220",
+  "gfm_url": "https://github.github.com/gfm/",
+  "probes_sha256": "5e7009a829fde9fd1a5af53e3f8cf7515ba2bf48abaed4bc7ae0cbd14f7c967a",
+  "comparator_sha256": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018",
+  "spec_normalizer_sha256": "e2ea1beba4e7deec03c77b9930cb55fcc53f0e3b7ee8e7245d1848eca74b3b01",
+  "spec_text_codec_sha256": "9701ab7c8a968ab9c39140a9dddbd1efadb3ac2917225cd2e5e8885f9385977b",
+  "root_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2",
+  "commonmark_spec_sha256": "257c41ad946f7a1414a499aca402a1aa8fdac3678532266611348c1cf54f4b80",
+  "extension_spec_sha256": "dbf7266c30535f6e8746bdde1cb9627e796ac1022e6b224e8d06ff473f40e625",
+  "summary": {
+    "commonmark-configured": {
+      "count": 652,
+      "statuses": {
+        "exact": 556,
+        "serialization-equivalent": 96
+      },
+      "spec_failures": 0
+    },
+    "commonmark-default": {
+      "count": 652,
+      "statuses": {
+        "exact": 505,
+        "serialization-equivalent": 93,
+        "heading-id-only": 40,
+        "other": 14
+      },
+      "spec_failures": 3
+    },
+    "gfm-extensions-configured": {
+      "count": 28,
+      "statuses": {
+        "exact": 25,
+        "serialization-equivalent": 3
+      },
+      "spec_failures": 0
+    },
+    "gfm-configured": {
+      "count": 677,
+      "statuses": {
+        "exact": 568,
+        "serialization-equivalent": 99,
+        "other": 10
+      },
+      "spec_failures": 10
+    },
+    "gfm-without-tagfilter": {
+      "count": 677,
+      "statuses": {
+        "exact": 572,
+        "serialization-equivalent": 99,
+        "other": 6
+      },
+      "spec_failures": 6
+    },
+    "gfm-public-preset": {
+      "count": 677,
+      "statuses": {
+        "exact": 515,
+        "serialization-equivalent": 96,
+        "heading-id-only": 40,
+        "other": 26
+      },
+      "spec_failures": 7
+    }
+  }
+}

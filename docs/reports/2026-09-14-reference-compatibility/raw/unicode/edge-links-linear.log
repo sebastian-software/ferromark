@@ -1,0 +1,23 @@
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.34s
+     Running tests/edge_links.rs (target/debug/deps/edge_links-eff2c173ae23c23b)
+
+running 15 tests
+test parsed_links_can_skip_target_blank_security_attributes ... ok
+test link_target_blank_does_not_disable_renderer_autolink_attributes ... ok
+test base_prefixes_root_absolute_markdown_images ... ok
+test script_and_smart_punctuation_extensions_render_when_enabled ... ok
+test commonmark_url_syntax_bytes_are_serialized_in_href ... ok
+test smart_punctuation_delimiters_stay_outside_gfm_autolink_rendering ... ok
+test url_serialization_preserves_ipv6_authority_brackets ... ok
+test nested_parentheses_in_links_are_preserved_in_output ... ok
+test base_prefixes_root_absolute_markdown_links ... ok
+test markdown_urls_on_another_origin_are_left_alone ... ok
+test external_links_get_security_attributes ... ok
+test xhtml_images_self_close ... ok
+test base_prefixes_root_absolute_raw_html_attrs ... ok
+test local_markdown_urls_convert_around_query_and_fragment ... ok
+test relative_links_do_not_get_external_attributes ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

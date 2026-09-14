@@ -38,7 +38,7 @@ def run_reference(binary: Path, profile: str, markdown: str) -> tuple[str, str |
         command = [str(binary), "--unsafe"]
     elif profile == "gfm":
         command = [
-            str(binary), "-e", "table", "-e", "strikethrough", "-e", "autolink",
+            str(binary), "--unsafe", "-e", "table", "-e", "strikethrough", "-e", "autolink",
             "-e", "tasklist", "-e", "tagfilter",
         ]
     else:
@@ -179,7 +179,7 @@ def main(argv: list[str] | None = None) -> int:
         "reference_build_metadata": build_metadata,
         "reference_commands": {
             "commonmark": [str(args.cmark), "--unsafe"],
-            "gfm": [str(args.cmark_gfm), "-e", "table", "-e", "strikethrough", "-e", "autolink", "-e", "tasklist", "-e", "tagfilter"],
+            "gfm": [str(args.cmark_gfm), "--unsafe", "-e", "table", "-e", "strikethrough", "-e", "autolink", "-e", "tasklist", "-e", "tagfilter"],
         },
         "runner": {"path": str(HERE / "cmark_oracle.py"), "sha256": sha256(HERE / "cmark_oracle.py")},
         "comparator": {"path": str(HERE.parent / "native-comparison/verify.py"), "sha256": sha256(HERE.parent / "native-comparison/verify.py")},

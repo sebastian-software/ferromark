@@ -69,3 +69,44 @@ fn explicit_subscript_keeps_priority_over_single_tilde_strikethrough() {
         ParserOptions { strikethrough: true, subscript: true, ..ParserOptions::default() };
     assert_eq!(render_with_options("~there~\n", options), "<p><sub>there</sub></p>\n");
 }
+
+#[test]
+fn gfm_cmark_tilde_binding_cases() {
+    let cases = [
+        ("~foo ~ bar~\n", "<p><del>foo ~ bar</del></p>\n"),
+        ("~~foo ~~ bar~~\n", "<p><del>foo ~~ bar</del></p>\n"),
+        ("~a [b](u~r)~\n", "<p><del>a <a href=\"u~r\">b</a></del></p>\n"),
+        ("~~a [b](u~~r)~~\n", "<p><del>a <a href=\"u~~r\">b</a></del></p>\n"),
+        ("~~one~ two~~ and ~three~~\n", "<p>~~one~ two~~ and ~three~~</p>\n"),
+    ];
+    for (source, expected) in cases {
+        assert_eq!(render(source), expected, "source: {source:?}");
+    }
+}
+
+#[test]
+fn gfm_strikethrough_keeps_links_images_titles_html_and_unicode_boundaries() {
+    assert_eq!(
+        render("~a [b](u~r \"title~x\") ![i](img~x \"alt~x\")~\n"),
+        "<p><del>a <a href=\"u~r\" title=\"title~x\">b</a> <img src=\"img~x\" alt=\"i\" title=\"alt~x\"></del></p>\n"
+    );
+    assert_eq!(
+        render("~a <span data-x=\"~\">b</span>~\n"),
+        "<p><del>a <span data-x=\"~\">b</span></del></p>\n"
+    );
+    assert_eq!(render("~日 本~\n"), "<p><del>日 本</del></p>\n");
+    assert_eq!(render("~ foo~\n"), "<p>~ foo~</p>\n");
+}
+
+#[test]
+fn gfm_tildes_allow_intraword_strikes_and_classify_adjacent_emphasis() {
+    assert_eq!(
+        render("foo~bar~baz and foo~~bar~~baz\n"),
+        "<p>foo<del>bar</del>baz and foo<del>bar</del>baz</p>\n"
+    );
+    assert_eq!(render("*~ x~* and *~~x ~~*\n"), "<p>*~ x~* and *~~x ~~*</p>\n");
+    assert_eq!(
+        render_with_options("*~ x~*\n", ParserOptions::commonmark()),
+        "<p><em>~ x~</em></p>\n"
+    );
+}

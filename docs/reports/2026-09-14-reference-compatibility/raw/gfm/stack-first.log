@@ -1,0 +1,134 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.96s
+     Running tests/cmark_regressions.rs (target/debug/deps/cmark_regressions-ef277d00e7527b24)
+
+running 10 tests
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test complex_cmark_oracle_cases_match_reference_output ... FAILED
+test tilde_binding_combinations_match_reference_output ... FAILED
+
+failures:
+
+---- complex_cmark_oracle_cases_match_reference_output stdout ----
+
+thread 'complex_cmark_oracle_cases_match_reference_output' (19793077) panicked at crates/ferromark_renderer/tests/cmark_regressions.rs:45:5:
+"gfm-02": "- [x] checked\n- [ ] open\n"
+expected: "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> checked</li>\n<li><input type=\"checkbox\" disabled=\"\" /> open</li>\n</ul>\n"
+actual: "<ul>\n<li><input type=\"checkbox\" checked disabled> checked</li>\n<li><input type=\"checkbox\" disabled> open</li>\n</ul>\n"
+
+"gfm-06": "- item\n  - [x] nested task\n"
+expected: "<ul>\n<li>item\n<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> nested task</li>\n</ul>\n</li>\n</ul>\n"
+actual: "<ul>\n<li>item\n<ul>\n<li><input type=\"checkbox\" checked disabled> nested task</li>\n</ul>\n</li>\n</ul>\n"
+
+"gfm-12": "- [ ] **task** with `code`\n"
+expected: "<ul>\n<li><input type=\"checkbox\" disabled=\"\" /> <strong>task</strong> with <code>code</code></li>\n</ul>\n"
+actual: "<ul>\n<li><input type=\"checkbox\" disabled> <strong>task</strong> with <code>code</code></li>\n</ul>\n"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tilde_binding_combinations_match_reference_output stdout ----
+
+thread 'tilde_binding_combinations_match_reference_output' (19793086) panicked at crates/ferromark_renderer/tests/cmark_regressions.rs:45:5:
+"binding-1-11-paragraph": "~<span title=\"~\">x</span>~\n"
+expected: "<p><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></p>\n"
+actual: "<p><del><span title=\"~\">x</span></del></p>\n"
+
+"binding-1-11-emphasis": "*~<span title=\"~\">x</span>~*\n"
+expected: "<p><em><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></em></p>\n"
+actual: "<p><em><del><span title=\"~\">x</span></del></em></p>\n"
+
+"binding-1-11-link": "[~<span title=\"~\">x</span>~](target)\n"
+expected: "<p><a href=\"target\"><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></a></p>\n"
+actual: "<p><a href=\"target\"><del><span title=\"~\">x</span></del></a></p>\n"
+
+"binding-1-11-quote": "> ~<span title=\"~\">x</span>~\n"
+expected: "<blockquote>\n<p><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></p>\n</blockquote>\n"
+actual: "<blockquote>\n<p><del><span title=\"~\">x</span></del></p>\n</blockquote>\n"
+
+"binding-1-12-paragraph": "~<span title=\"~~\">x</span>~\n"
+expected: "<p><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></p>\n"
+actual: "<p><del><span title=\"~~\">x</span></del></p>\n"
+
+"binding-1-12-emphasis": "*~<span title=\"~~\">x</span>~*\n"
+expected: "<p><em><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></em></p>\n"
+actual: "<p><em><del><span title=\"~~\">x</span></del></em></p>\n"
+
+"binding-1-12-link": "[~<span title=\"~~\">x</span>~](target)\n"
+expected: "<p><a href=\"target\"><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></a></p>\n"
+actual: "<p><a href=\"target\"><del><span title=\"~~\">x</span></del></a></p>\n"
+
+"binding-1-12-quote": "> ~<span title=\"~~\">x</span>~\n"
+expected: "<blockquote>\n<p><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></p>\n</blockquote>\n"
+actual: "<blockquote>\n<p><del><span title=\"~~\">x</span></del></p>\n</blockquote>\n"
+
+"binding-1-25-emphasis": "*~ x~*\n"
+expected: "<p>*~ x~*</p>\n"
+actual: "<p><em>~ x~</em></p>\n"
+
+"binding-1-26-emphasis": "*~x ~*\n"
+expected: "<p>*~x ~*</p>\n"
+actual: "<p><em>~x ~</em></p>\n"
+
+"binding-1-31-link": "[~[x](u) [x]~](target)\n"
+expected: "<p><a href=\"target\"><del><a href=\"u\">x</a> [x]</del></a></p>\n"
+actual: "<p>[<del><a href=\"u\">x</a> [x]</del>](target)</p>\n"
+
+"binding-2-11-paragraph": "~~<span title=\"~\">x</span>~~\n"
+expected: "<p><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></p>\n"
+actual: "<p><del><span title=\"~\">x</span></del></p>\n"
+
+"binding-2-11-emphasis": "*~~<span title=\"~\">x</span>~~*\n"
+expected: "<p><em><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></em></p>\n"
+actual: "<p><em><del><span title=\"~\">x</span></del></em></p>\n"
+
+"binding-2-11-link": "[~~<span title=\"~\">x</span>~~](target)\n"
+expected: "<p><a href=\"target\"><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></a></p>\n"
+actual: "<p><a href=\"target\"><del><span title=\"~\">x</span></del></a></p>\n"
+
+"binding-2-11-quote": "> ~~<span title=\"~\">x</span>~~\n"
+expected: "<blockquote>\n<p><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></p>\n</blockquote>\n"
+actual: "<blockquote>\n<p><del><span title=\"~\">x</span></del></p>\n</blockquote>\n"
+
+"binding-2-12-paragraph": "~~<span title=\"~~\">x</span>~~\n"
+expected: "<p><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></p>\n"
+actual: "<p><del><span title=\"~~\">x</span></del></p>\n"
+
+"binding-2-12-emphasis": "*~~<span title=\"~~\">x</span>~~*\n"
+expected: "<p><em><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></em></p>\n"
+actual: "<p><em><del><span title=\"~~\">x</span></del></em></p>\n"
+
+"binding-2-12-link": "[~~<span title=\"~~\">x</span>~~](target)\n"
+expected: "<p><a href=\"target\"><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></a></p>\n"
+actual: "<p><a href=\"target\"><del><span title=\"~~\">x</span></del></a></p>\n"
+
+"binding-2-12-quote": "> ~~<span title=\"~~\">x</span>~~\n"
+expected: "<blockquote>\n<p><del><!-- raw HTML omitted -->x<!-- raw HTML omitted --></del></p>\n</blockquote>\n"
+actual: "<blockquote>\n<p><del><span title=\"~~\">x</span></del></p>\n</blockquote>\n"
+
+"binding-2-25-emphasis": "*~~ x~~*\n"
+expected: "<p>*~~ x~~*</p>\n"
+actual: "<p><em>~~ x~~</em></p>\n"
+
+"binding-2-26-emphasis": "*~~x ~~*\n"
+expected: "<p>*~~x ~~*</p>\n"
+actual: "<p><em>~~x ~~</em></p>\n"
+
+"binding-2-31-link": "[~~[x](u) [x]~~](target)\n"
+expected: "<p><a href=\"target\"><del><a href=\"u\">x</a> [x]</del></a></p>\n"
+actual: "<p>[<del><a href=\"u\">x</a> [x]</del>](target)</p>\n"
+
+
+failures:
+    complex_cmark_oracle_cases_match_reference_output
+    tilde_binding_combinations_match_reference_output
+
+test result: FAILED. 8 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p ferromark_renderer --test cmark_regressions`
