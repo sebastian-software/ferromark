@@ -60,6 +60,48 @@ const LOW_NIBBLE: [u8; 16] =
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 const HIGH_NIBBLE: [u8; 16] = [0x01, 0, 0x02, 0x04, 0, 0x08, 0x10, 0x20, 0, 0, 0, 0, 0, 0, 0, 0];
 
+/// The optional bytes use otherwise-unused intersections: `$` gets bit 0x40
+/// at (high 2, low 4), `^` gets bit 0x80 at (high 5, low E), and `{` reuses
+/// the existing `~` bit at (high 7, low B). These choices avoid admitting any
+/// cross-product byte. Eight precomputed pairs let each scan use only the
+/// enabled extension markers; disabled bytes never need retry filtering.
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
+    let mut low = LOW_NIBBLE;
+    let mut high = HIGH_NIBBLE;
+    if options & 1 != 0 {
+        low[11] |= 0x20;
+    }
+    if options & 2 != 0 {
+        low[14] |= 0x80;
+        high[5] |= 0x80;
+    }
+    if options & 4 != 0 {
+        low[4] |= 0x40;
+        high[2] |= 0x40;
+    }
+    (low, high)
+}
+
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+const OPTION_TABLES: [([u8; 16], [u8; 16]); 8] = [
+    marker_tables(0),
+    marker_tables(1),
+    marker_tables(2),
+    marker_tables(3),
+    marker_tables(4),
+    marker_tables(5),
+    marker_tables(6),
+    marker_tables(7),
+];
+
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+#[inline]
+fn selected_marker_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
+    let tables = &OPTION_TABLES[(options & 7) as usize];
+    (&tables.0, &tables.1)
+}
+
 /// Walks at most [`SHORT_RUN_PREFIX`] bytes. Returns the first marker, or
 /// `end` when the prefix is clean and the slice ends there, or the first
 /// unexamined index when the prefix is clean and more bytes remain.
@@ -81,13 +123,18 @@ fn scan_short_prefix(bytes: &[u8], from: usize) -> usize {
 #[cfg(target_arch = "aarch64")]
 #[allow(unsafe_code)]
 #[inline]
-fn next_special_neon(bytes: &[u8], from: usize) -> usize {
+fn next_special_neon_with_tables(
+    bytes: &[u8],
+    from: usize,
+    low_table: &[u8; 16],
+    high_table: &[u8; 16],
+) -> usize {
     use std::arch::aarch64::*;
     let end = bytes.len();
     let mut i = from;
     unsafe {
-        let low = vld1q_u8(LOW_NIBBLE.as_ptr());
-        let high = vld1q_u8(HIGH_NIBBLE.as_ptr());
+        let low = vld1q_u8(low_table.as_ptr());
+        let high = vld1q_u8(high_table.as_ptr());
         let nibble = vdupq_n_u8(0x0F);
         let classify = |v: uint8x16_t| {
             let lo = vqtbl1q_u8(low, vandq_u8(v, nibble));
@@ -136,6 +183,22 @@ fn next_special_neon(bytes: &[u8], from: usize) -> usize {
     i
 }
 
+#[cfg(target_arch = "aarch64")]
+#[inline]
+fn next_special_neon(bytes: &[u8], from: usize) -> usize {
+    next_special_neon_with_tables(bytes, from, &LOW_NIBBLE, &HIGH_NIBBLE)
+}
+
+#[cfg(target_arch = "aarch64")]
+#[inline]
+fn next_special_neon_options(bytes: &[u8], from: usize, options: u8) -> usize {
+    if bytes.len().saturating_sub(from) < 16 {
+        return next_inline_special_options_scalar(bytes, from, options);
+    }
+    let (low, high) = selected_marker_tables(options);
+    next_special_neon_with_tables(bytes, from, low, high)
+}
+
 /// SSSE3 sibling of [`next_special_neon`]. `pshufb` is the same 16-entry
 /// table lookup `vqtbl1q_u8` performs, so both paths run the identical
 /// classifier and are covered by the same differential tests.
@@ -147,13 +210,18 @@ fn next_special_neon(bytes: &[u8], from: usize) -> usize {
 #[cfg(target_arch = "x86_64")]
 #[allow(unsafe_code)]
 #[target_feature(enable = "ssse3")]
-unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
+unsafe fn next_special_ssse3_with_tables(
+    bytes: &[u8],
+    from: usize,
+    low_table: &[u8; 16],
+    high_table: &[u8; 16],
+) -> usize {
     use std::arch::x86_64::*;
     let end = bytes.len();
     let mut i = from;
     unsafe {
-        let low = _mm_loadu_si128(LOW_NIBBLE.as_ptr().cast());
-        let high = _mm_loadu_si128(HIGH_NIBBLE.as_ptr().cast());
+        let low = _mm_loadu_si128(low_table.as_ptr().cast());
+        let high = _mm_loadu_si128(high_table.as_ptr().cast());
         let nibble = _mm_set1_epi8(0x0F);
         let classify = |v: __m128i| {
             // `_mm_srli_epi16` shifts 16-bit lanes, so the neighbouring
@@ -199,6 +267,22 @@ unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
     next_inline_special_scalar(bytes, i)
 }
 
+#[cfg(target_arch = "x86_64")]
+#[inline]
+unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
+    next_special_ssse3_with_tables(bytes, from, &LOW_NIBBLE, &HIGH_NIBBLE)
+}
+
+#[cfg(target_arch = "x86_64")]
+#[inline]
+unsafe fn next_special_ssse3_options(bytes: &[u8], from: usize, options: u8) -> usize {
+    if bytes.len().saturating_sub(from) < 16 {
+        return next_inline_special_options_scalar(bytes, from, options);
+    }
+    let (low, high) = selected_marker_tables(options);
+    next_special_ssse3_with_tables(bytes, from, low, high)
+}
+
 /// AVX2 sibling: the same nibble classifier, 32 bytes at a time.
 ///
 /// `vpshufb` is per 128-bit lane, so broadcasting the 16-entry tables into
@@ -211,13 +295,18 @@ unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
 #[cfg(target_arch = "x86_64")]
 #[allow(unsafe_code)]
 #[target_feature(enable = "avx2")]
-unsafe fn next_special_avx2(bytes: &[u8], from: usize) -> usize {
+unsafe fn next_special_avx2_with_tables(
+    bytes: &[u8],
+    from: usize,
+    low_table: &[u8; 16],
+    high_table: &[u8; 16],
+) -> usize {
     use std::arch::x86_64::*;
     let end = bytes.len();
     let mut i = from;
     unsafe {
-        let low = _mm256_broadcastsi128_si256(_mm_loadu_si128(LOW_NIBBLE.as_ptr().cast()));
-        let high = _mm256_broadcastsi128_si256(_mm_loadu_si128(HIGH_NIBBLE.as_ptr().cast()));
+        let low = _mm256_broadcastsi128_si256(_mm_loadu_si128(low_table.as_ptr().cast()));
+        let high = _mm256_broadcastsi128_si256(_mm_loadu_si128(high_table.as_ptr().cast()));
         let nibble = _mm256_set1_epi8(0x0F);
         let classify = |v: __m256i| {
             let lo = _mm256_shuffle_epi8(low, _mm256_and_si256(v, nibble));
@@ -244,6 +333,22 @@ unsafe fn next_special_avx2(bytes: &[u8], from: usize) -> usize {
         }
     }
     next_inline_special_scalar(bytes, i)
+}
+
+#[cfg(target_arch = "x86_64")]
+#[inline]
+unsafe fn next_special_avx2(bytes: &[u8], from: usize) -> usize {
+    next_special_avx2_with_tables(bytes, from, &LOW_NIBBLE, &HIGH_NIBBLE)
+}
+
+#[cfg(target_arch = "x86_64")]
+#[inline]
+unsafe fn next_special_avx2_options(bytes: &[u8], from: usize, options: u8) -> usize {
+    if bytes.len().saturating_sub(from) < 32 {
+        return next_inline_special_options_scalar(bytes, from, options);
+    }
+    let (low, high) = selected_marker_tables(options);
+    next_special_avx2_with_tables(bytes, from, low, high)
 }
 
 #[cfg(target_arch = "aarch64")]
@@ -279,6 +384,55 @@ pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
 #[inline]
 pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
     next_inline_special_scalar(bytes, from)
+}
+
+#[cfg(target_arch = "aarch64")]
+#[inline]
+fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize {
+    next_special_neon_options(bytes, from, options)
+}
+
+#[cfg(target_arch = "x86_64")]
+#[inline]
+fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize {
+    if std::arch::is_x86_feature_detected!("avx2") {
+        #[allow(unsafe_code)]
+        unsafe {
+            next_special_avx2_options(bytes, from, options)
+        }
+    } else if std::arch::is_x86_feature_detected!("ssse3") {
+        #[allow(unsafe_code)]
+        unsafe {
+            next_special_ssse3_options(bytes, from, options)
+        }
+    } else {
+        next_inline_special_options_scalar(bytes, from, options)
+    }
+}
+
+#[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
+#[inline]
+fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize {
+    next_inline_special_options_scalar(bytes, from, options)
+}
+
+/// Marker bits used by [`next_inline_marker`].
+pub(super) const INLINE_MARKER_MDX: u8 = 1 << 0;
+pub(super) const INLINE_MARKER_SUPERSCRIPT: u8 = 1 << 1;
+pub(super) const INLINE_MARKER_MATH: u8 = 1 << 2;
+
+/// Find the next core marker or enabled extension marker.
+///
+/// The core marker scan stays on its architecture-specific classifier when no
+/// extensions are enabled. With extensions, one option-specific nibble table
+/// is selected and the shared SIMD path emits only enabled markers.
+#[inline]
+pub(super) fn next_inline_marker(bytes: &[u8], from: usize, options: u8) -> usize {
+    if options == 0 {
+        return next_inline_special(bytes, from);
+    }
+
+    next_inline_special_options(bytes, from, options)
 }
 
 #[cfg_attr(target_arch = "aarch64", allow(dead_code))]
@@ -320,6 +474,24 @@ fn next_inline_special_scalar(bytes: &[u8], from: usize) -> usize {
         i += 1;
     }
     i
+}
+
+#[allow(dead_code)]
+#[inline]
+fn next_inline_special_options_scalar(bytes: &[u8], from: usize, options: u8) -> usize {
+    let mut i = from;
+    while i < bytes.len() && !is_inline_marker(bytes[i], options) {
+        i += 1;
+    }
+    i
+}
+
+#[inline]
+fn is_inline_marker(byte: u8, options: u8) -> bool {
+    matches!(byte, b'*' | b'_' | b'`' | b'[' | b'!' | b'~' | b'\\' | b'<' | b'&' | b'\n' | b'\r')
+        || (options & 1 != 0 && byte == b'{')
+        || (options & 2 != 0 && byte == b'^')
+        || (options & 4 != 0 && byte == b'$')
 }
 
 #[cfg(test)]
