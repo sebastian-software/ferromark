@@ -227,7 +227,12 @@ syntax and renderer settings across all six engines.
 
 ## Native engine comparison
 
-The current local cores, **v2 `33c216b` and v1 `4e15141`**, were rerun with
+The newer [paragraph fast path](docs/reports/2026-09-14-paragraph-fast-path/README.md)
+removes comment filtering and mapping from ordinary paragraphs while preserving
+enabled-comment behavior. Its controlled before/after results cover all 57 inputs.
+
+The six-engine table below records **v2 `33c216b` and v1 `4e15141`**, before that
+paragraph optimization. Those cores were run with
 explicit syntax and renderer flags on the original **57 documents (37–113,609
 UTF-8 bytes)**. Each scored column uses the same input set and equivalent HTML
 for every included engine. **Speed relative to v2: higher is faster; v2 = 1.00×.**
@@ -248,9 +253,9 @@ v2 runs at 1.52× v1's speed fresh and
 favor v1, including the 310-byte table comment in both lifecycles.
 
 The [OX regression investigation](docs/reports/2026-09-14-ox-regression/README.md)
-traces most of the current gap on these 14 cases to paragraph handling added for
+traces most of the gap in that run to paragraph handling added for
 line comments, even with the flag off; input normalization is a smaller contributor.
-Isolated bypasses establish optimization targets while preserving the production core.
+That diagnosis led to the production paragraph optimization linked above.
 
 The all-six subset contains ten comments and four plain-prose views. The broader
 five-engine subset also covers technical docs, linked encyclopedia excerpts,

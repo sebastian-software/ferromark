@@ -1,0 +1,70 @@
+--- a/crates/ferromark_parser/src/parser/block.rs
++++ b/crates/ferromark_parser/src/parser/block.rs
+@@ -185,18 +185,33 @@
+             return Ok(Some(node));
+         }
+ 
+-        // Default: parse as paragraph
++        // Default: parse as paragraph.
+         self.parse_paragraph(start, first_line_end)
+     }
+ 
++    /// Dispatch once so the disabled paragraph loop carries no comment
++    /// discovery or comment-map state. Also used by the math fallback.
++    #[inline]
+     pub(super) fn parse_paragraph(
+         &mut self,
+         start: usize,
+         first_line_end: Option<usize>,
+     ) -> ParseResult<Option<Node<'a>>> {
++        if self.options.line_comments {
++            self.parse_paragraph_impl::<true>(start, first_line_end)
++        } else {
++            self.parse_paragraph_impl::<false>(start, first_line_end)
++        }
++    }
++
++    fn parse_paragraph_impl<const LINE_COMMENTS: bool>(
++        &mut self,
++        start: usize,
++        first_line_end: Option<usize>,
++    ) -> ParseResult<Option<Node<'a>>> {
+         let bytes = self.source.as_bytes();
+ 
+-        // `parse_block` is the sole caller and only reaches here after
++        // Block dispatch and the math fallback reach here after
+         // `skip_blank_lines` + its block dispatch — the very checks
+         // `line_starts_block` re-runs — have already classified the current
+         // line as a non-blank, non-block paragraph line. So consume the first
+@@ -229,7 +244,7 @@
+                 break;
+             }
+ 
+-            if bytes[cursor] == b'/' && self.is_line_comment_at(line_start) {
++            if LINE_COMMENTS && bytes[cursor] == b'/' && self.is_line_comment_at(line_start) {
+                 first_line_comment.get_or_insert(line_start);
+                 self.position = self.skip_line_comments_from(line_start);
+                 continue;
+@@ -242,7 +257,10 @@
+             if let Some(depth) = self.setext_underline_depth(line_start, cursor) {
+                 let heading_end = scan_next_line_start(bytes, line_start);
+                 self.position = heading_end;
+-                if let Some(first_comment) = first_line_comment.filter(|&line| line < content_end) {
++                if LINE_COMMENTS
++                    && let Some(first_comment) =
++                        first_line_comment.filter(|&line| line < content_end)
++                {
+                     return self.parse_commented_paragraph(
+                         start,
+                         content_end,
+@@ -278,7 +296,9 @@
+             self.position = content_end;
+         }
+ 
+-        if let Some(first_comment) = first_line_comment.filter(|&line| line < content_end) {
++        if LINE_COMMENTS
++            && let Some(first_comment) = first_line_comment.filter(|&line| line < content_end)
++        {
+             return self.parse_commented_paragraph(start, content_end, first_comment, None);
+         }
+         let content = self.source[start..content_end].trim();

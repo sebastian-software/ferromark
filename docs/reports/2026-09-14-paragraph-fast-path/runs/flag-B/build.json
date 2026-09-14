@@ -1,0 +1,28 @@
+{
+  "frozen_source": "/private/tmp/ferromark-v2-paragraph-B2-features/sources/candidate",
+  "frozen_source_sha256": "2881add34058f94f98361f3c4a0518d304e535e2752ddbbbbdb7610028730ec9",
+  "source": "/private/tmp/ferromark-v2-paragraph-B2-features/core/candidate",
+  "source_revision": null,
+  "source_tree_sha256": "2881add34058f94f98361f3c4a0518d304e535e2752ddbbbbdb7610028730ec9",
+  "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+  "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+  "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+  "lto": "fat",
+  "rustflags": "-C target-cpu=generic",
+  "binary": "/private/tmp/ferromark-v2-paragraph-B2-features/candidate/target/release/feature-scan-worker",
+  "binary_sha256": "5a02b997e0a67d519dcf77b2ca6a6d24f8e4b0eb626e5d14278411b7771edd20",
+  "lock_sha256": "73983e74b2cd403038a4575596c77066ad92ceb170ea04b8d195ff2b88d9b374",
+  "retained_registry_packages": 21,
+  "registry_versions_unchanged": true,
+  "command": [
+    "cargo",
+    "+1.95",
+    "build",
+    "--release",
+    "--offline"
+  ],
+  "cache": "built",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "feature_scan_build": "/private/tmp/ferromark-v2-paragraph-B2-features/build.json",
+  "engine": "candidate"
+}
