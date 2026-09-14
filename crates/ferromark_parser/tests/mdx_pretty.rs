@@ -15,7 +15,7 @@ mod pretty;
 
 fn format_nodes<'a>(source: &str, nodes: ferromark_allocator::Vec<'a, Node<'a>>) -> String {
     let span = Span::new(0, source.len() as u32);
-    let doc = Document { children: nodes, span };
+    let doc = Document { front_matter: None, children: nodes, span };
     let mut out = String::new();
     pretty::format_document(&doc, source, &mut out);
     out

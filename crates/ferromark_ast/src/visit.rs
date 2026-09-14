@@ -14,6 +14,9 @@ pub trait Visit<'a> {
         walk_document(self, document);
     }
 
+    /// Visits source-only document metadata before the Markdown children.
+    fn visit_front_matter(&mut self, _front_matter: &FrontMatter<'a>) {}
+
     /// Visits a node.
     fn visit_node(&mut self, node: &Node<'a>) {
         walk_node(self, node);

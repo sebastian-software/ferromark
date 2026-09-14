@@ -16,6 +16,18 @@ mod mdx;
 
 pub fn format_document(doc: &Document<'_>, source: &str, out: &mut String) {
     line(out, 0, format_args!("Document {}", span(doc.span, source)));
+    if let Some(metadata) = &doc.front_matter {
+        line(
+            out,
+            1,
+            format_args!(
+                "FrontMatter kind={:?} value={:?} {}",
+                metadata.kind,
+                metadata.value,
+                span(metadata.span, source),
+            ),
+        );
+    }
     for child in &doc.children {
         format_node(child, source, 1, out);
     }

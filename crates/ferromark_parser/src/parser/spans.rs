@@ -15,8 +15,8 @@ pub(in crate::parser) trait SpanMap {
 
     /// Maps the synthetic parser document span back to the caller's source.
     /// Most maps have no distinction between a document and node span; the
-    /// root NUL/BOM map overrides this because it strips a leading BOM while
-    /// the document span must continue to cover the complete input.
+    /// root normalization map overrides this because it can strip a leading
+    /// BOM or metadata block while the document still covers the full input.
     fn map_document_span(&self, span: Span) -> Span {
         self.map_span(span)
     }
