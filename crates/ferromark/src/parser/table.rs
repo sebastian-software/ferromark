@@ -3,7 +3,7 @@ use crate::ast::{AlignKind, Node, Span, Table, TableCell, TableRow};
 use memchr::memchr;
 
 use super::Parser;
-use super::line_scan::{line_end, next_line_start};
+use super::line_scan::{line_end, line_terminator_end};
 use super::table_cell_source::{
     is_escaped_table_pipe, remap_table_cell_inline_spans, unescape_table_pipes,
 };
@@ -23,7 +23,9 @@ impl<'a> Parser<'a> {
         if nl0 == bytes.len() {
             return false;
         }
-        let p1 = self.skip_line_comments_from(next_line_start(bytes, p0));
+        // `nl0` already located the header line's terminator, so the
+        // delimiter line starts one two-byte step past it.
+        let p1 = self.skip_line_comments_from(line_terminator_end(bytes, nl0));
         if p1 >= bytes.len() {
             return false;
         }

@@ -43,20 +43,20 @@ impl<'a> Parser<'a> {
                 let mut blank_pos = pending_blank_start;
                 for _ in 0..pending_blank_lines {
                     let blank_content = strip_indent_columns(self.source.as_bytes(), blank_pos, 4);
-                    let blank_line = self.line_at(blank_pos);
+                    let (blank_line, blank_next) = self.line_and_next(blank_pos);
                     let blank_end = blank_pos + blank_line.len();
                     value.push_str(&self.source[blank_content.min(blank_end)..blank_end]);
                     value.push('\n');
-                    blank_pos = self.next_line_start(blank_pos);
+                    blank_pos = blank_next;
                 }
                 pending_blank_lines = 0;
             }
 
-            let line = self.line_at(line_start);
+            let (line, next) = self.line_and_next(line_start);
             let line_end = line_start + line.len();
             value.push_str(&self.source[content_start..line_end]);
             value.push('\n');
-            pos = self.next_line_start(line_start);
+            pos = next;
             end = pos;
         }
 

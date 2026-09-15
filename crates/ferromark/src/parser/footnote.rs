@@ -17,7 +17,7 @@ use compact_str::CompactString;
 use rustc_hash::FxHashSet;
 
 use super::Parser;
-use super::line_scan::{line_end, next_line_start};
+use super::line_scan::{line_end, line_terminator_end, next_line_start};
 use super::spans::SourceMap;
 use crate::parser::error::ParseResult;
 
@@ -73,7 +73,7 @@ fn definition_body_len(parser: &Parser<'_>, content_start: usize) -> usize {
 
     while cursor < source.len() {
         let current_line_end = line_end(bytes, cursor);
-        let next_line = next_line_start(bytes, cursor);
+        let next_line = line_terminator_end(bytes, current_line_end);
         let line = &source[cursor..current_line_end];
         let trimmed = line.trim_start_matches([' ', '\t']);
 
@@ -132,7 +132,7 @@ fn dedent_body<'a>(
 
     while line_start < body.len() {
         let current_line_end = line_end(bytes, line_start);
-        let next_line = next_line_start(bytes, line_start);
+        let next_line = line_terminator_end(bytes, current_line_end);
         let line = &body[line_start..current_line_end];
         let consumed = if index == 0 {
             first_line_indent_len(line)

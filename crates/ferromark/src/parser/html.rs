@@ -2,7 +2,7 @@ use crate::ast::{Html, Node, Span};
 use memchr::{memchr, memmem};
 
 use super::Parser;
-use super::line_scan::{line_end, next_line_start};
+use super::line_scan::{line_end, line_terminator_end, next_line_start};
 use crate::parser::error::ParseResult;
 
 mod start;
@@ -79,7 +79,9 @@ impl<'a> Parser<'a> {
                 self.position = line_start;
                 return;
             }
-            let next_line = next_line_start(bytes, line_start);
+            // The terminator is already located; step over it instead of
+            // searching the line for it a second time.
+            let next_line = line_terminator_end(bytes, current_line_end);
             if next_line == line_start {
                 break;
             }

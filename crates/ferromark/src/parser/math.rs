@@ -23,9 +23,14 @@ impl<'a> Parser<'a> {
     }
 
     pub(super) fn parse_math_block(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
-        let line = self.line_at(start);
-        let trimmed_offset = line.len() - line.trim_start_matches([' ', '\t']).len();
-        let open = start + trimmed_offset;
+        // Only the leading whitespace run matters here, and it can never
+        // reach the terminator, so walking it directly beats scanning the
+        // whole line just to measure its front.
+        let bytes = self.source.as_bytes();
+        let mut open = start;
+        while matches!(bytes.get(open), Some(b' ' | b'\t')) {
+            open += 1;
+        }
         let Some(close) = math_block_close(self.source.as_bytes(), open + 2) else {
             return self.parse_paragraph(start, None);
         };

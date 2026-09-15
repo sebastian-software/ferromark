@@ -1,7 +1,9 @@
 use crate::ast::{BlockQuote, Node, Span};
 
 use super::Parser;
-use super::line_scan::{line_end as scan_line_end, next_line_start as scan_next_line_start};
+use super::line_scan::{
+    line_end as scan_line_end, line_terminator_end, next_line_start as scan_next_line_start,
+};
 use super::reference::{closes_paragraph_context, fence_open, is_fence_close};
 use super::spans::SourceMap;
 use crate::parser::error::ParseResult;
@@ -103,7 +105,9 @@ impl<'a> Parser<'a> {
                 inner.push('\n');
                 let content_start =
                     line_start + trimmed_offset + 1 + Self::quote_marker_space_bytes(after_gt);
-                let line_next = scan_next_line_start(bytes, line_start);
+                // The line's terminator is already located, so stepping
+                // over it is a two-byte test rather than a second search.
+                let line_next = line_terminator_end(bytes, line_end);
                 let source_len =
                     line_end.saturating_sub(content_start) + line_next.saturating_sub(line_end);
                 source_map.push_line(
@@ -147,7 +151,7 @@ impl<'a> Parser<'a> {
                 lazy_lines.insert(inner.len() as u32);
                 inner.push_str(line);
                 inner.push('\n');
-                let line_next = scan_next_line_start(bytes, line_start);
+                let line_next = line_terminator_end(bytes, line_end);
                 source_map.push_line(
                     generated_start,
                     line.len() + 1,

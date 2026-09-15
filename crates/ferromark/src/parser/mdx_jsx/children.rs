@@ -1,7 +1,7 @@
 use crate::allocator::{Allocator, Vec};
 use crate::ast::{Node, Span};
 
-use super::super::line_scan::{line_end, next_line_start};
+use super::super::line_scan::{line_end, line_terminator_end};
 
 pub(super) struct JsxChildSource<'a> {
     pub source: &'a str,
@@ -95,10 +95,10 @@ fn common_line_indent(source: &str) -> usize {
 }
 
 fn line_bounds(bytes: &[u8], line_start: usize) -> (usize, usize) {
-    (
-        line_end(bytes, line_start),
-        next_line_start(bytes, line_start),
-    )
+    // One terminator search answers both questions: the second is the
+    // width of the terminator that the first one stopped on.
+    let end = line_end(bytes, line_start);
+    (end, line_terminator_end(bytes, end))
 }
 
 fn first_non_whitespace(bytes: &[u8], line_start: usize, line_end: usize) -> Option<usize> {

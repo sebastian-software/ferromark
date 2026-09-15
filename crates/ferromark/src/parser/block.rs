@@ -109,7 +109,7 @@ impl<'a> Parser<'a> {
                 line_end_hint = Some(start + line.len());
                 let trimmed = &line[trimmed_start - start..];
                 if Self::try_parse_fenced_code_at(line, trimmed) {
-                    return self.parse_fenced_code(start);
+                    return self.parse_fenced_code(start, line_indent);
                 }
             }
             b'$' if self.options.math => {
