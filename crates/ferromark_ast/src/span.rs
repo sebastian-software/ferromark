@@ -97,6 +97,36 @@ mod tests {
     use super::*;
 
     #[test]
+    fn span_boundaries_merge_symmetrically_and_contain_empty_ranges() {
+        let whole = Span::new(2, 8);
+        let middle = Span::new(4, 6);
+        let after = Span::new(10, 12);
+        assert_eq!(whole.merge(middle), whole);
+        assert_eq!(middle.merge(whole), whole);
+        assert_eq!(whole.merge(after), Span::new(2, 12));
+        assert_eq!(after.merge(whole), Span::new(2, 12));
+        assert!(whole.contains_span(&middle));
+        assert!(whole.contains_span(&Span::new(8, 8)));
+        assert!(!middle.contains_span(&whole));
+        assert!(!whole.contains_span(&after));
+        assert!(Span::empty().is_empty());
+        assert!(!whole.is_empty());
+        assert_eq!(Span::empty().source_text("Unicode: 日本語"), "");
+    }
+
+    #[test]
+    fn source_positions_keep_byte_offsets_separate_from_columns() {
+        let source = "a\n日本語";
+        let position = Position::new(2, 2, 5);
+        assert_eq!(position.line, 2);
+        assert_eq!(position.column, 2);
+        assert_eq!(
+            Span::new(position.offset, position.offset + 3).source_text(source),
+            "本"
+        );
+    }
+
+    #[test]
     fn test_span_new() {
         let span = Span::new(10, 20);
         assert_eq!(span.start, 10);

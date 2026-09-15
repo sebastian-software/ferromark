@@ -110,6 +110,10 @@ impl<'a> Visit<'a> for HtmlRenderer {
         self.render_image(image);
     }
 
+    fn visit_highlight(&mut self, highlight: &ferromark_ast::Highlight<'a>) {
+        self.render_highlight(highlight);
+    }
+
     fn visit_delete(&mut self, delete: &Delete<'a>) {
         self.render_delete(delete);
     }
@@ -148,4 +152,88 @@ impl<'a> Visit<'a> for HtmlRenderer {
     fn visit_mdx_flow_expression(&mut self, _node: &MdxFlowExpression<'a>) {}
 
     fn visit_mdx_text_expression(&mut self, _node: &MdxTextExpression<'a>) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::HtmlRendererOptions;
+    use ferromark_allocator::Allocator;
+    use ferromark_ast::{walk_document, walk_node};
+    use ferromark_parser::{Parser, ParserOptions};
+
+    /// The public typed visitor and the renderer's direct dispatch must agree.
+    /// Walking every nested node catches a missing typed override even when the
+    /// optimized document renderer never calls that override itself.
+    struct CheckDispatch<'d, 'a> {
+        document: &'d Document<'a>,
+        visited: std::collections::HashSet<std::mem::Discriminant<Node<'a>>>,
+    }
+
+    impl<'a> Visit<'a> for CheckDispatch<'_, 'a> {
+        fn visit_node(&mut self, node: &Node<'a>) {
+            self.visited.insert(std::mem::discriminant(node));
+            let mut direct = HtmlRenderer::with_options(HtmlRendererOptions::commonmark());
+            let mut typed = HtmlRenderer::with_options(HtmlRendererOptions::commonmark());
+            direct.prepare_render(self.document);
+            typed.prepare_render(self.document);
+            direct.visit_node(node);
+            walk_node(&mut typed, node);
+            assert_eq!(
+                typed.output, direct.output,
+                "typed visitor lost rendering for {node:?}"
+            );
+            walk_node(self, node);
+        }
+
+        fn visit_list_item(&mut self, item: &ListItem<'a>) {
+            // Lists store items directly rather than as Node::ListItem.
+            let mut direct = HtmlRenderer::with_options(HtmlRendererOptions::commonmark());
+            let mut typed = HtmlRenderer::with_options(HtmlRendererOptions::commonmark());
+            direct.prepare_render(self.document);
+            typed.prepare_render(self.document);
+            direct.render_list_item(item);
+            typed.visit_list_item(item);
+            assert_eq!(typed.output, direct.output);
+            ferromark_ast::walk_list_item(self, item);
+        }
+    }
+
+    #[test]
+    fn typed_visitor_preserves_every_node_kind() {
+        let source = "# Heading\n\n---\n\n> Quote\n\n- Item\n\n```txt\ncode\n```\n\n$$\nx\n$$\n\n<div>raw</div>\n\n| A | B |\n| --- | --- |\n| x | y |\n\nTerm\n: Meaning\n\n*em* **strong** `code` $x$ [link](/url) ![alt](/img) ==mark== ~~old~~ x^2^ H~2~O[^note]  \nbreak\n\n[ref]: /ref\n\n[^note]: Footnote\n\n<Component />\n\nText <Badge /> {inline}\n\n{flow}\n\nexport const x = 1;\n";
+        let allocator = Allocator::new();
+        let options = ParserOptions {
+            mdx: true,
+            math: true,
+            definition_lists: true,
+            highlight: true,
+            superscript: true,
+            subscript: true,
+            ..ParserOptions::gfm()
+        };
+        let document = Parser::with_options(&allocator, source, options)
+            .parse()
+            .unwrap();
+        let mut check = CheckDispatch {
+            document: &document,
+            visited: std::collections::HashSet::new(),
+        };
+        walk_document(&mut check, &document);
+        assert_eq!(
+            check.visited.len(),
+            32,
+            "fixture must exercise every parsed Node variant (list items are checked separately)"
+        );
+
+        let mut visitor = HtmlRenderer::with_options(HtmlRendererOptions::commonmark());
+        visitor.prepare_render(&document);
+        visitor.visit_document(&document);
+        visitor.finish_render();
+        assert_eq!(
+            visitor.output,
+            HtmlRenderer::with_options(HtmlRendererOptions::commonmark()).render(&document)
+        );
+        assert!(visitor.output.contains("<mark>mark</mark>"));
+    }
 }

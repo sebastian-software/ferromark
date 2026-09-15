@@ -216,6 +216,40 @@ mod tests {
     }
 
     #[test]
+    fn runtime_classes_preserve_arbitrary_ascii_membership() {
+        // Production classes are const-evaluated. Exercise the constructor
+        // contract independently of those few fixed sets, including all rows.
+        for modulus in [1, 2, 3, 7, 17, 127, 128] {
+            let mut flags = [0; 256];
+            for (byte, flag) in flags.iter_mut().enumerate().take(128) {
+                *flag = u8::from(byte % modulus == 0);
+            }
+            let class = ByteClass::from_flags(flags);
+            for byte in 0..=255u8 {
+                let expected = byte < 128 && usize::from(byte) % modulus == 0;
+                assert_eq!(class.contains(byte), expected);
+                assert_eq!(
+                    class.low[usize::from(byte & 15)] & class.high[usize::from(byte >> 4)] != 0,
+                    expected
+                );
+            }
+        }
+        let empty = ByteClass::from_flags([0; 256]);
+        assert_eq!(
+            empty.first_in(b"ordinary text and []", 0),
+            b"ordinary text and []".len()
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "byte class members must be ASCII")]
+    fn runtime_classes_reject_non_ascii_members() {
+        let mut flags = [0; 256];
+        flags[128] = 1;
+        let _ = ByteClass::from_flags(flags);
+    }
+
+    #[test]
     fn nibble_tables_match_flags_for_every_byte() {
         check_class(&SAMPLE);
         check_class(&DENSE);
