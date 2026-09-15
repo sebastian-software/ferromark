@@ -41,3 +41,29 @@ bugs. Specification fixtures and frozen conformance outputs are unchanged.
 The [report](../reports/2026-09-15-refactor-references/README.md) records equivalence
 on the measured corpora and performance. This does not redesign MDX footnote scope
 or fix the separate label-only-inside-JSX gap.
+
+## 3. Renderer link policy — retained
+
+Keep one anchor-opening implementation for URL conversion, sanitization, escaping,
+external-link attributes, and titles. Both normal and hook-enabled rendering call
+it; each retains its child traversal and saves/restores the existing `in_link`
+state. The default path does not run through hooks. This change adds no public API,
+callback dispatch or allocations and leaves image policy unchanged.
+
+The [report](../reports/2026-09-15-refactor-renderer/README.md) records default and
+no-op-hook measurements separately, including configured links. Existing tests
+cover specification examples, reused renderer state, hook replacement/skip/wrap,
+and highlighter fallback. No-op measurements do not model user callback costs.
+Heading writers already share lower-level helpers; this bounded step does not
+introduce a generic renderer framework or change AST visitation.
+
+## Final retention check
+
+Retain all three bounded changes. A direct 57-document comparison against the
+pre-refactor commit measures +0.56% fresh and +0.38% reused overall. Accept this
+small cost for removing 529 net production lines and duplicated responsibilities;
+this is not a claim of perfect cost neutrality. The targeted reference improvement
+and quoted-fence correctness fix provide additional value. All 828 workspace tests,
+Clippy, formatting, benchmark builds, Node checks and the unchanged coverage gate
+pass. Coverage is 93.99% lines without new exclusions; denominator reduction is
+part of the increase. Detailed costs and limitations remain in the linked reports.

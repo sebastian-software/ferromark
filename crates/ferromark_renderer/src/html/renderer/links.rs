@@ -6,8 +6,34 @@
 
 use super::super::html_attr::{html_attr_value_range, is_html_attr_char, is_html_attr_start};
 use super::HtmlRenderer;
+use ferromark_ast::Link;
 
 impl HtmlRenderer {
+    /// Shared anchor policy for ordinary and hook-enabled child traversal.
+    pub(in crate::html::renderer) fn write_link_open(&mut self, link: &Link<'_>) {
+        self.write("<a href=\"");
+        let converted_url = if self.options.convert_md_links {
+            self.convert_markdown_url(link.url)
+        } else {
+            None
+        };
+        let href = self.sanitized_url(converted_url.as_deref().unwrap_or(link.url), "#");
+        self.write_url_escaped(href);
+        self.write("\"");
+        // Add target="_blank" for external links (http:// or https://)
+        if self.options.link_target_blank
+            && (href.starts_with("http://") || href.starts_with("https://"))
+        {
+            self.write(" target=\"_blank\" rel=\"noopener noreferrer\"");
+        }
+        if let Some(title) = link.title {
+            self.write(" title=\"");
+            self.write_escaped(title);
+            self.write("\"");
+        }
+        self.write(">");
+    }
+
     pub(in crate::html::renderer) fn convert_markdown_url(&self, url: &str) -> Option<String> {
         if let Some(converted) = self.convert_md_url(url) {
             return Some(converted);

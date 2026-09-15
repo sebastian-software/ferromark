@@ -28,6 +28,14 @@ def corpus():
         cases.append(dict(name=name, profile='extended', input=source,
             byte_count=len(value), sha256=hashlib.sha256(value).hexdigest(),
             origin={'kind': 'authored-example', 'license': 'MIT'}))
+    profiles['link-policy'] = {'parser': {}, 'renderer': dict(sanitize=True,
+        convert_md_links=True, link_target_blank=True, base_url='https://docs.example.com/',
+        source_path='guide/page.md')}
+    source = (bodies['links'] + '[root](/guide.md?q=1&x=2) [local](../index.md#title)\n\n') * 64
+    value = source.encode()
+    cases.append(dict(name='configured-links', profile='link-policy', input=source,
+        byte_count=len(value), sha256=hashlib.sha256(value).hexdigest(),
+        origin={'kind': 'authored-example', 'license': 'MIT'}))
     return dict(schema=1, profiles=profiles, cases=cases)
 
 
