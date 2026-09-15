@@ -1,3 +1,4 @@
+import { releaseChannel } from './release-channel.mjs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -18,7 +19,7 @@ for (const [name, version] of Object.entries(packageJson.optionalDependencies).s
   console.log(`Publishing ${name}@${version}`)
   const result = spawnSync(
     'npm',
-    ['publish', '--access', 'public', '--provenance'],
+    ['publish', '--access', 'public', '--provenance', '--tag', releaseChannel(packageJson.version).tag],
     {
       cwd: path.join(packageDir, 'npm', target),
       shell: process.platform === 'win32',

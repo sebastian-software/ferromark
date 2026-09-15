@@ -19,11 +19,12 @@ const [readme, packageJson, loader, nativeTargets, declarations, nativeOptions]
   ])
 
 function assertReadmeContract(candidate) {
-  assert.match(candidate, /V2 is unpublished/)
+  assert.match(candidate, /ferromark@next/)
+  assert.ok(candidate.includes(`npm install ${packageJson.name}@${packageJson.version}`), 'README must show npm install for the selected version')
   assert.match(candidate, /pnpm build/)
   assert.match(candidate, /migration-v2/)
 
-  assert.match(candidate, /^## Build the development package$/m)
+  assert.match(candidate, /^## Install the release candidate$/m)
   assert.match(candidate, new RegExp(`npm install ${packageJson.name}`), 'README must show npm install')
   assert.match(candidate, /pnpm install --frozen-lockfile/)
 

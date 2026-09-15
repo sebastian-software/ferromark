@@ -10,7 +10,7 @@ This branch develops Ferromark v2 in the Ferromark repository, based on OX-Conte
   Any intended semantic change needs its own documented decision and review.
 - Port one optimization at a time, with a scalar fallback for SIMD and output
   equality verified before timing. Do not publish unmeasured speed claims.
-- Keep all packages unpublished while this is a local development baseline.
+- Publish only reviewed release versions through the verified workflow in [docs/releasing.md](docs/releasing.md). Keep the Node build workspace and native binding crate private.
 
 Run from the repository root after code changes:
 

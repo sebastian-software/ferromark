@@ -17,9 +17,15 @@ to its authors. V2 combines that foundation with selected v1 features and
 optimizations, alongside new development, to shape a Markdown-to-HTML library
 with its own scope and direction.
 
-This development branch lives in the Ferromark repository and preserves both project histories.
-All Rust and npm packages remain unpublished.
-The API is not compatible with Ferromark v1 and is not a stable v2 release.
+Ferromark v2 is entering release-candidate testing and preserves both project histories.
+The API is not compatible with Ferromark v1. Release candidates are available through
+npm's `next` channel after publication; `latest` stays on the stable release.
+See the [release notes](docs/releases/2.0.0-rc.1.md) and [migration guide](docs/migration-v2.md).
+
+```sh
+npm install ferromark@2.0.0-rc.1
+cargo add ferromark@=2.0.0-rc.1
+```
 
 ```rust
 let html = ferromark::to_html("Hello, **world**!").unwrap();

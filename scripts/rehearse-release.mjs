@@ -6,7 +6,12 @@ if (process.argv.length !== 3)
   throw new Error("Usage: node scripts/rehearse-release.mjs <new-output-directory>");
 const output = resolve(process.argv[2]);
 mkdirSync(output); // Never overwrite an earlier rehearsal or a real checkout.
-let files = readReleaseFiles();
+let files = (
+  await proposeRelease(
+    readReleaseFiles(),
+    "chore: seed version rehearsal\n\nRelease-As: 2.0.0-dev.0",
+  )
+).files;
 const results = [];
 for (const [version, message] of [
   ["2.0.0-rc.1", "feat!: prepare v2\n\nRelease-As: 2.0.0-rc.1"],

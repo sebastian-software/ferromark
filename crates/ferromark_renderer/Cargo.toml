@@ -28,7 +28,8 @@ smallvec = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
-ferromark_parser = { workspace = true }
+# Repository-only test/benchmark dependency; omit it from published metadata.
+ferromark_parser = { path = "../ferromark_parser" }
 insta = { workspace = true }
 criterion = { workspace = true }
 
