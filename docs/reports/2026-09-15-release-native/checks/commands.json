@@ -1,0 +1,11 @@
+{
+  "source_revision": "c232d97",
+  "core_validation": "../2026-09-15-footnote-scope/local-checks.txt",
+  "additional_tests": "crates/ferromark_renderer/tests/inline_toc.rs: four tests passed; full instrumented suite passed 830 executable tests plus five separately verified doctests",
+  "harness_tests": 13,
+  "build_log": "build-log.txt",
+  "source_audit": "source-audit.json.gz",
+  "platform_ci": "https://github.com/sebastian-software/ferromark/actions/runs/34972183386",
+  "paired_diagnosis": "12 variant/lifecycle cases, 288 archived timing windows; two independent probes agree on the outliers",
+  "artifact_audit": "python3 docs/reports/2026-09-15-release-native/audit.py: passed, including paired diagnosis"
+}
