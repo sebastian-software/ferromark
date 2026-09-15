@@ -4,8 +4,9 @@ use ferromark_renderer::{HtmlRenderer, HtmlRendererOptions};
 
 fn render(source: &str) -> String {
     let allocator = Allocator::new();
-    let document =
-        Parser::with_options(&allocator, source, ParserOptions::default()).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, ParserOptions::default())
+        .parse()
+        .unwrap();
     HtmlRenderer::with_options(HtmlRendererOptions {
         autolink_urls: false,
         link_target_blank: false,

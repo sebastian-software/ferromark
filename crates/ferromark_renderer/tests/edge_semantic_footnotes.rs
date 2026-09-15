@@ -11,7 +11,10 @@ fn semantic(source: &str) -> String {
     render(
         source,
         ParserOptions::gfm(),
-        HtmlRendererOptions { semantic_footnotes: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            semantic_footnotes: true,
+            ..HtmlRendererOptions::default()
+        },
     )
 }
 
@@ -23,8 +26,14 @@ fn default_keeps_legacy_in_place_markup() {
         HtmlRendererOptions::default(),
     );
 
-    assert!(html.contains("id=\"fnref-deployment-note\">deployment-note</a>"), "{html}");
-    assert!(html.contains("<div id=\"fn-deployment-note\" class=\"footnote\">"), "{html}");
+    assert!(
+        html.contains("id=\"fnref-deployment-note\">deployment-note</a>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<div id=\"fn-deployment-note\" class=\"footnote\">"),
+        "{html}"
+    );
     assert!(!html.contains("<section class=\"footnotes\""), "{html}");
 }
 
@@ -52,22 +61,38 @@ fn named_labels_get_document_order_numeric_markers() {
 fn numeric_source_labels_are_renumbered_in_document_order() {
     let html = semantic("Start[^2] then[^1].\n\n[^1]: One.\n\n[^2]: Two.\n");
 
-    assert!(html.contains("<sup><a href=\"#fn-2\" id=\"fnref-2\">1</a></sup>"), "{html}");
-    assert!(html.contains("<sup><a href=\"#fn-1\" id=\"fnref-1\">2</a></sup>"), "{html}");
+    assert!(
+        html.contains("<sup><a href=\"#fn-2\" id=\"fnref-2\">1</a></sup>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<sup><a href=\"#fn-1\" id=\"fnref-1\">2</a></sup>"),
+        "{html}"
+    );
 }
 
 #[test]
 fn definitions_emit_one_accessible_ordered_section() {
     let html = semantic("A[^note].\n\n[^note]: The note text.\n");
 
-    assert!(html.contains("<section class=\"footnotes\" aria-label=\"Footnotes\">"), "{html}");
+    assert!(
+        html.contains("<section class=\"footnotes\" aria-label=\"Footnotes\">"),
+        "{html}"
+    );
     assert!(html.contains("<ol>"), "{html}");
     assert!(html.contains("<li id=\"fn-note\">"), "{html}");
     assert!(html.contains("<p>The note text.</p>"), "{html}");
-    assert!(html.contains("aria-label=\"Back to reference 1\">↩</a>"), "{html}");
+    assert!(
+        html.contains("aria-label=\"Back to reference 1\">↩</a>"),
+        "{html}"
+    );
     assert!(!html.contains("<div"), "{html}");
     assert!(!html.contains("class=\"footnote\""), "{html}");
-    assert_eq!(html.matches("<section class=\"footnotes\"").count(), 1, "{html}");
+    assert_eq!(
+        html.matches("<section class=\"footnotes\"").count(),
+        1,
+        "{html}"
+    );
 }
 
 #[test]
@@ -77,7 +102,10 @@ fn repeated_references_keep_unique_ids_and_every_backlink() {
     assert!(html.contains("id=\"fnref-1\""), "{html}");
     assert!(html.contains("id=\"fnref-1-2\""), "{html}");
     assert!(html.contains("id=\"fnref-1-3\""), "{html}");
-    assert!(html.contains("href=\"#fnref-1\" aria-label=\"Back to reference 1\">↩</a>"), "{html}");
+    assert!(
+        html.contains("href=\"#fnref-1\" aria-label=\"Back to reference 1\">↩</a>"),
+        "{html}"
+    );
     assert!(
         html.contains("href=\"#fnref-1-2\" aria-label=\"Back to reference 1, occurrence 2\">↩</a>"),
         "{html}"
@@ -105,7 +133,10 @@ fn unicode_and_empty_slugs_and_collisions_stay_unique() {
         "A[^注釈] B[^---] C[^foo_bar] D[^foo-bar].\n\n[^注釈]: U.\n\n[^---]: E.\n\n[^foo_bar]: X.\n\n[^foo-bar]: Y.\n",
     );
 
-    assert!(html.contains("<sup><a href=\"#fn-注釈\" id=\"fnref-注釈\">1</a></sup>"), "{html}");
+    assert!(
+        html.contains("<sup><a href=\"#fn-注釈\" id=\"fnref-注釈\">1</a></sup>"),
+        "{html}"
+    );
     assert!(
         html.contains("<sup><a href=\"#fn-footnote-2\" id=\"fnref-footnote-2\">2</a></sup>"),
         "{html}"

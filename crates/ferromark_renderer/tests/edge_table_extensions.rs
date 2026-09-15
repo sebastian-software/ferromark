@@ -12,7 +12,9 @@ fn render(
     renderer_options: HtmlRendererOptions,
 ) -> String {
     let allocator = Allocator::new();
-    let document = Parser::with_options(&allocator, source, parser_options).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, parser_options)
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::with_options(renderer_options);
     renderer.render(&document)
 }
@@ -21,8 +23,15 @@ fn render(
 fn table_attributes_caption_and_colgroup_render_in_order() {
     let html = render(
         "| item | price |\n| :--- | ---: |\n| tea | 2 |\n: Prices *today* {#prices .wide}",
-        ParserOptions { tables: true, table_attributes: true, ..ParserOptions::default() },
-        HtmlRendererOptions { table_colgroup: true, ..HtmlRendererOptions::default() },
+        ParserOptions {
+            tables: true,
+            table_attributes: true,
+            ..ParserOptions::default()
+        },
+        HtmlRendererOptions {
+            table_colgroup: true,
+            ..HtmlRendererOptions::default()
+        },
     );
 
     assert_eq!(
@@ -55,13 +64,23 @@ fn table_attributes_caption_and_colgroup_render_in_order() {
 fn merged_cells_emit_colspan_and_align_the_following_cell_logically() {
     let html = render(
         "| first || third |\n| :--- | --- | ---: |\n| one || three |",
-        ParserOptions { tables: true, merged_table_cells: true, ..ParserOptions::default() },
+        ParserOptions {
+            tables: true,
+            merged_table_cells: true,
+            ..ParserOptions::default()
+        },
         HtmlRendererOptions::default(),
     );
 
-    assert!(html.contains("<th align=\"left\" colspan=\"2\">first</th>"), "{html}");
+    assert!(
+        html.contains("<th align=\"left\" colspan=\"2\">first</th>"),
+        "{html}"
+    );
     assert!(html.contains("<th align=\"right\">third</th>"), "{html}");
-    assert!(html.contains("<td align=\"left\" colspan=\"2\">one</td>"), "{html}");
+    assert!(
+        html.contains("<td align=\"left\" colspan=\"2\">one</td>"),
+        "{html}"
+    );
     assert!(html.contains("<td align=\"right\">three</td>"), "{html}");
 }
 
@@ -70,20 +89,35 @@ fn xhtml_colgroup_uses_self_closing_columns() {
     let html = render(
         "| a | b |\n| --- | --- |\n| c | d |",
         ParserOptions::gfm(),
-        HtmlRendererOptions { table_colgroup: true, xhtml: true, ..Default::default() },
+        HtmlRendererOptions {
+            table_colgroup: true,
+            xhtml: true,
+            ..Default::default()
+        },
     );
 
-    assert!(html.contains("<col class=\"col-1\" />\n<col class=\"col-2\" />"), "{html}");
+    assert!(
+        html.contains("<col class=\"col-1\" />\n<col class=\"col-2\" />"),
+        "{html}"
+    );
 }
 
 #[test]
 fn hooks_traverse_caption_children_and_match_default_output() {
     let source = "| item |\n| --- |\n| value |\n: Caption **bold** {#prices}";
-    let parser_options =
-        ParserOptions { tables: true, table_attributes: true, ..ParserOptions::default() };
-    let renderer_options = HtmlRendererOptions { table_colgroup: true, ..Default::default() };
+    let parser_options = ParserOptions {
+        tables: true,
+        table_attributes: true,
+        ..ParserOptions::default()
+    };
+    let renderer_options = HtmlRendererOptions {
+        table_colgroup: true,
+        ..Default::default()
+    };
     let allocator = Allocator::new();
-    let document = Parser::with_options(&allocator, source, parser_options).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, parser_options)
+        .parse()
+        .unwrap();
 
     let mut default_renderer = HtmlRenderer::with_options(renderer_options.clone());
     let expected = default_renderer.render(&document);
@@ -91,7 +125,10 @@ fn hooks_traverse_caption_children_and_match_default_output() {
     let mut hooks = CaptionTextHook { text_nodes: 0 };
     let actual = hooked_renderer.render_with_hooks(&document, &mut hooks);
     assert_eq!(actual, expected);
-    assert_eq!(hooks.text_nodes, 4, "caption and cell text must traverse hooks");
+    assert_eq!(
+        hooks.text_nodes, 4,
+        "caption and cell text must traverse hooks"
+    );
 
     let mut no_hooks_renderer = HtmlRenderer::new();
     let mut no_hooks = NoHtmlRenderHooks;
@@ -121,14 +158,20 @@ fn combined_extensions_preserve_logical_columns_with_or_without_hooks() {
     )
     .parse()
     .unwrap();
-    let options = HtmlRendererOptions { table_colgroup: true, ..HtmlRendererOptions::gfm() };
+    let options = HtmlRendererOptions {
+        table_colgroup: true,
+        ..HtmlRendererOptions::gfm()
+    };
     let expected = concat!(
         "<table id=\"prices\" class=\"wide compact\">\n",
         "<colgroup>\n<col class=\"col-1\">\n<col class=\"col-2\">\n</colgroup>\n",
         "<thead>\n<tr>\n<th align=\"left\" colspan=\"2\">Group</th>\n</tr>\n</thead>\n",
         "<tbody>\n<tr>\n<td align=\"left\" colspan=\"2\">joined</td>\n</tr>\n</tbody>\n</table>\n",
     );
-    assert_eq!(HtmlRenderer::with_options(options.clone()).render(&document), expected);
+    assert_eq!(
+        HtmlRenderer::with_options(options.clone()).render(&document),
+        expected
+    );
     assert_eq!(
         HtmlRenderer::with_options(options).render_with_hooks(&document, &mut NoHtmlRenderHooks),
         expected
@@ -141,7 +184,11 @@ fn table_attributes_escape_values_from_a_transformed_ast() {
     let mut document = Parser::with_options(
         &allocator,
         "| A |\n| --- |\n: {#id}",
-        ParserOptions { tables: true, table_attributes: true, ..ParserOptions::default() },
+        ParserOptions {
+            tables: true,
+            table_attributes: true,
+            ..ParserOptions::default()
+        },
     )
     .parse()
     .unwrap();
@@ -156,7 +203,10 @@ fn table_attributes_escape_values_from_a_transformed_ast() {
         html.starts_with("<table id=\"id&quot;&lt;&amp;\" class=\"class&quot;&lt;&amp;\">\n"),
         "{html}"
     );
-    assert_eq!(HtmlRenderer::new().render_with_hooks(&document, &mut NoHtmlRenderHooks), html);
+    assert_eq!(
+        HtmlRenderer::new().render_with_hooks(&document, &mut NoHtmlRenderHooks),
+        html
+    );
 }
 
 #[test]

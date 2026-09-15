@@ -6,7 +6,9 @@ use ferromark_parser::Parser;
 fn test_render_nested_list() {
     let allocator = Allocator::new();
     // Indent with 2 spaces for nesting
-    let doc = Parser::new(&allocator, "- item 1\n  - sub 1\n- item 2").parse().unwrap();
+    let doc = Parser::new(&allocator, "- item 1\n  - sub 1\n- item 2")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
 
@@ -29,7 +31,9 @@ fn test_render_table() {
 fn test_render_table_no_gfm() {
     let allocator = Allocator::new();
     // Default options have tables: false
-    let doc = Parser::new(&allocator, "| head |\n| --- |\n| body |").parse().unwrap();
+    let doc = Parser::new(&allocator, "| head |\n| --- |\n| body |")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
     insta::assert_snapshot!(html);

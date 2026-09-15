@@ -1,0 +1,28 @@
+[package]
+name = "ferromark-node"
+version.workspace = true
+edition = "2024"
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+authors = ["Sebastian Software GmbH"]
+publish = false
+build = "build.rs"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+doctest = false
+test = false
+
+[features]
+panic-test = []
+
+[dependencies]
+ferromark.workspace = true
+napi = { version = "=3.11.0", default-features = false, features = ["dyn-symbols", "napi8"] }
+napi-derive = "=3.6.0"
+
+[build-dependencies]
+napi-build = "=2.3.2"

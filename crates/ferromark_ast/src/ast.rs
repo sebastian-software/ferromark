@@ -26,7 +26,10 @@ impl std::fmt::Debug for Document<'_> {
         if let Some(metadata) = &self.front_matter {
             document.field("front_matter", metadata);
         }
-        document.field("children", &self.children).field("span", &self.span).finish()
+        document
+            .field("children", &self.children)
+            .field("span", &self.span)
+            .finish()
     }
 }
 

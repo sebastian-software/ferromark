@@ -14,7 +14,10 @@ pub(super) fn normalize_indentation<'a>(
 ) -> JsxChildSource<'a> {
     let common_indent = common_line_indent(source);
     if common_indent == 0 {
-        return JsxChildSource { source, offsets: None };
+        return JsxChildSource {
+            source,
+            offsets: None,
+        };
     }
 
     let bytes = source.as_bytes();
@@ -26,7 +29,13 @@ pub(super) fn normalize_indentation<'a>(
     while line_start < bytes.len() {
         let (line_end, next_line) = line_bounds(bytes, line_start);
         let content_start = strip_indent_columns(bytes, line_start, line_end, common_indent);
-        push_mapped_slice(source, content_start, next_line, &mut normalized, &mut offsets);
+        push_mapped_slice(
+            source,
+            content_start,
+            next_line,
+            &mut normalized,
+            &mut offsets,
+        );
         line_start = next_line;
     }
 
@@ -34,7 +43,10 @@ pub(super) fn normalize_indentation<'a>(
         offsets.push(0);
     }
 
-    JsxChildSource { source: normalized.into_bump_str(), offsets: Some(offsets) }
+    JsxChildSource {
+        source: normalized.into_bump_str(),
+        offsets: Some(offsets),
+    }
 }
 
 pub(super) fn remap_node_spans<'a>(node: &mut Node<'a>, source_offset: u32, offsets: &[u32]) {
@@ -197,7 +209,10 @@ fn common_line_indent(source: &str) -> usize {
 }
 
 fn line_bounds(bytes: &[u8], line_start: usize) -> (usize, usize) {
-    (line_end(bytes, line_start), next_line_start(bytes, line_start))
+    (
+        line_end(bytes, line_start),
+        next_line_start(bytes, line_start),
+    )
 }
 
 fn first_non_whitespace(bytes: &[u8], line_start: usize, line_end: usize) -> Option<usize> {
@@ -270,7 +285,10 @@ fn remap_span(span: &mut Span, source_offset: u32, offsets: &[u32]) {
 }
 
 fn boundary_offset(index: usize, offsets: &[u32]) -> u32 {
-    offsets.get(index).copied().unwrap_or_else(|| offsets.last().copied().unwrap_or_default())
+    offsets
+        .get(index)
+        .copied()
+        .unwrap_or_else(|| offsets.last().copied().unwrap_or_default())
 }
 
 fn remap_list_item_spans<'a>(

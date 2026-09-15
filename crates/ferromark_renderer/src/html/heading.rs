@@ -12,7 +12,9 @@ use ferromark_ast::{Link, Node};
 /// link to the generated id do not receive a second marker.
 pub const HEADING_PERMALINK_CLASS: &str = "header-anchor";
 
-pub(super) fn collect_heading_text(nodes: &[Node<'_>]) -> String {
+/// Collects heading text using the same rules as generated HTML IDs.
+#[must_use]
+pub fn collect_heading_text(nodes: &[Node<'_>]) -> String {
     let mut text = String::new();
     collect_heading_text_into(nodes, &mut text);
     text
@@ -182,7 +184,9 @@ fn class_attr_contains(tag: &str, class_name: &str) -> bool {
         if let Some(index) = tag.find(needle) {
             let after = &tag[index + needle.len()..];
             if let Some(end) = after.find(quote) {
-                return after[..end].split_whitespace().any(|class| class == class_name);
+                return after[..end]
+                    .split_whitespace()
+                    .any(|class| class == class_name);
             }
         }
     }

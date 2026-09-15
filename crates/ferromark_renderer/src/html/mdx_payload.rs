@@ -23,7 +23,10 @@ impl IslandPayload {
 
     pub(super) fn into_json_value(self) -> Value {
         let mut object = Map::new();
-        object.insert("expressions".into(), Value::Object(sorted_map(self.expressions)));
+        object.insert(
+            "expressions".into(),
+            Value::Object(sorted_map(self.expressions)),
+        );
         object.insert("props".into(), Value::Object(sorted_map(self.props)));
         object.insert("spreads".into(), Value::Array(self.spreads));
         Value::Object(object)
@@ -42,19 +45,25 @@ fn sorted_map(map: Map<String, Value>) -> Map<String, Value> {
 }
 
 pub(super) fn collect_island_payload(attributes: &[MdxJsxAttributeEntry<'_>]) -> IslandPayload {
-    let mut payload =
-        IslandPayload { props: Map::new(), expressions: Map::new(), spreads: Vec::new() };
+    let mut payload = IslandPayload {
+        props: Map::new(),
+        expressions: Map::new(),
+        spreads: Vec::new(),
+    };
 
     for entry in attributes {
         match entry {
             MdxJsxAttributeEntry::Attribute(attribute) => match &attribute.value {
                 None => {
-                    payload.props.insert(attribute.name.to_owned(), Value::Bool(true));
-                }
-                Some(MdxJsxAttributeValue::Literal(value)) => {
                     payload
                         .props
-                        .insert(attribute.name.to_owned(), Value::String((*value).to_owned()));
+                        .insert(attribute.name.to_owned(), Value::Bool(true));
+                }
+                Some(MdxJsxAttributeValue::Literal(value)) => {
+                    payload.props.insert(
+                        attribute.name.to_owned(),
+                        Value::String((*value).to_owned()),
+                    );
                 }
                 Some(MdxJsxAttributeValue::Expression(expr)) => {
                     match serde_json::from_str::<Value>(expr.value.trim()) {
@@ -121,10 +130,12 @@ mod tests {
         }));
         attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
             name: "count",
-            value: Some(MdxJsxAttributeValue::Expression(MdxJsxAttributeValueExpression {
-                value: "42",
-                span: Span::new(0, 1),
-            })),
+            value: Some(MdxJsxAttributeValue::Expression(
+                MdxJsxAttributeValueExpression {
+                    value: "42",
+                    span: Span::new(0, 1),
+                },
+            )),
             span: Span::new(0, 1),
         }));
         attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
@@ -146,16 +157,20 @@ mod tests {
         let mut attributes = allocator.new_vec();
         attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
             name: "onClick",
-            value: Some(MdxJsxAttributeValue::Expression(MdxJsxAttributeValueExpression {
-                value: "alert(1)",
+            value: Some(MdxJsxAttributeValue::Expression(
+                MdxJsxAttributeValueExpression {
+                    value: "alert(1)",
+                    span: Span::new(0, 1),
+                },
+            )),
+            span: Span::new(0, 1),
+        }));
+        attributes.push(MdxJsxAttributeEntry::Expression(
+            MdxJsxExpressionAttribute {
+                value: "...cardProps",
                 span: Span::new(0, 1),
-            })),
-            span: Span::new(0, 1),
-        }));
-        attributes.push(MdxJsxAttributeEntry::Expression(MdxJsxExpressionAttribute {
-            value: "...cardProps",
-            span: Span::new(0, 1),
-        }));
+            },
+        ));
 
         let payload = collect_island_payload(&attributes);
         assert_eq!(payload.expressions["onClick"], "alert(1)");
@@ -170,9 +185,15 @@ mod tests {
             expressions: serde_json::Map::new(),
             spreads: Vec::new(),
         };
-        payload.props.insert("title".into(), serde_json::json!("Docs"));
-        payload.props.insert("data-kind".into(), serde_json::json!("guide"));
-        payload.expressions.insert("count".into(), serde_json::json!("count"));
+        payload
+            .props
+            .insert("title".into(), serde_json::json!("Docs"));
+        payload
+            .props
+            .insert("data-kind".into(), serde_json::json!("guide"));
+        payload
+            .expressions
+            .insert("count".into(), serde_json::json!("count"));
 
         let json = stringify_xss_safe(&payload.into_json_value());
 
@@ -190,8 +211,14 @@ mod tests {
             "spreads": []
         });
         let json = stringify_xss_safe(&value);
-        assert!(!json.contains("</script>"), "raw </script> must not appear: {json}");
+        assert!(
+            !json.contains("</script>"),
+            "raw </script> must not appear: {json}"
+        );
         assert!(!json.contains('<'), "raw < must not appear: {json}");
-        assert!(json.contains("\\u003c"), "expected unicode-escaped markup: {json}");
+        assert!(
+            json.contains("\\u003c"),
+            "expected unicode-escaped markup: {json}"
+        );
     }
 }

@@ -89,7 +89,10 @@ impl FirstByteIndex {
             // 0 = unset, ANY_SECOND = conflicting/absent, else the required
             // lowercased second byte. The default patterns (`http://`,
             // `https://`) agree on `t`, so `h` candidates filter on it.
-            let pat_second = pat.as_bytes().get(1).map_or(ANY_SECOND, u8::to_ascii_lowercase);
+            let pat_second = pat
+                .as_bytes()
+                .get(1)
+                .map_or(ANY_SECOND, u8::to_ascii_lowercase);
             for cand in [first.to_ascii_lowercase(), first.to_ascii_uppercase()] {
                 let entry = &mut second[cand as usize];
                 *entry = match *entry {
@@ -117,16 +120,25 @@ impl FirstByteIndex {
         // holds. Alphabetic bytes never qualify — the prefix compare is
         // case-insensitive, so a letter's presence proves nothing about the
         // other case.
-        let gate_candidates = patterns.first().map_or(&[][..], |pat| pat.as_ref().as_bytes());
+        let gate_candidates = patterns
+            .first()
+            .map_or(&[][..], |pat| pat.as_ref().as_bytes());
         let qualifies = |byte: u8| {
             !byte.is_ascii_alphabetic()
-                && patterns.iter().all(|pat| pat.as_ref().as_bytes().contains(&byte))
+                && patterns
+                    .iter()
+                    .all(|pat| pat.as_ref().as_bytes().contains(&byte))
         };
         let gate = b":/@."
             .iter()
             .copied()
             .find(|&byte| qualifies(byte))
-            .or_else(|| gate_candidates.iter().copied().find(|&byte| qualifies(byte)));
+            .or_else(|| {
+                gate_candidates
+                    .iter()
+                    .copied()
+                    .find(|&byte| qualifies(byte))
+            });
 
         // Extend the gate with the bytes that follow it in every pattern.
         // Only caseless bytes qualify, for the same reason the gate byte
@@ -163,7 +175,16 @@ impl FirstByteIndex {
             }
         }
 
-        Self { table, needles, needle_len, overflow, second, gate, gate_tail, gate_tail_len }
+        Self {
+            table,
+            needles,
+            needle_len,
+            overflow,
+            second,
+            gate,
+            gate_tail,
+            gate_tail_len,
+        }
     }
 
     /// Whether `haystack` can hold a pattern match at all.

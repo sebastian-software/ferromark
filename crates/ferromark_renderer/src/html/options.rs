@@ -271,7 +271,9 @@ impl RendererOptions {
     }
 
     pub(super) fn code_annotation_meta_key(&self) -> &str {
-        self.code_annotation_meta_key.as_deref().unwrap_or(DEFAULT_CODE_ANNOTATION_META_KEY)
+        self.code_annotation_meta_key
+            .as_deref()
+            .unwrap_or(DEFAULT_CODE_ANNOTATION_META_KEY)
     }
 
     pub(super) fn autolink_patterns(&self) -> AutolinkPatterns<'_> {
@@ -349,7 +351,10 @@ impl HtmlRendererOptions {
             code_annotation_default_line_numbers: false,
             toc_max_depth: 3,
             autolink_urls: true,
-            autolink_patterns: DEFAULT_AUTOLINK_PATTERNS.iter().map(ToString::to_string).collect(),
+            autolink_patterns: DEFAULT_AUTOLINK_PATTERNS
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
             autolink_target_blank: true,
             link_target_blank: true,
             semantic_footnotes: false,

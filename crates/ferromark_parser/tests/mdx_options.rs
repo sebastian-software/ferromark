@@ -35,7 +35,10 @@ fn assert_mdx_flag_is_noop(source: &str, mut options: ParserOptions) {
 #[test]
 fn default_options_disable_mdx() {
     let options = ParserOptions::default();
-    assert!(!options.mdx, "MDX must stay opt-in until the default-enable PR");
+    assert!(
+        !options.mdx,
+        "MDX must stay opt-in until the default-enable PR"
+    );
     assert!(!options.gfm);
     assert!(!options.footnotes);
     assert!(!options.task_lists);
@@ -91,9 +94,15 @@ fn clone_preserves_mdx_flag() {
 #[test]
 fn debug_mentions_mdx_field() {
     let debug = format!("{:?}", ParserOptions::default());
-    assert!(debug.contains("mdx: false"), "Debug output must include the mdx field: {debug}");
+    assert!(
+        debug.contains("mdx: false"),
+        "Debug output must include the mdx field: {debug}"
+    );
     let debug = format!("{:?}", ParserOptions::mdx());
-    assert!(debug.contains("mdx: true"), "Debug output must include the mdx field: {debug}");
+    assert!(
+        debug.contains("mdx: true"),
+        "Debug output must include the mdx field: {debug}"
+    );
 }
 
 #[test]
@@ -123,7 +132,10 @@ fn mdx_flag_is_noop_for_html_block() {
 
 #[test]
 fn mdx_flag_is_noop_for_inline_html() {
-    assert_mdx_flag_is_noop("Hello <span class=\"x\">there</span>.\n", ParserOptions::default());
+    assert_mdx_flag_is_noop(
+        "Hello <span class=\"x\">there</span>.\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
@@ -140,9 +152,18 @@ fn mdx_flag_is_noop_for_gfm_task_list() {
 fn mdx_flag_parses_brace_expression_when_enabled() {
     let off = pretty_ast("Hello {name}.\n", ParserOptions::default());
     let on = pretty_ast("Hello {name}.\n", ParserOptions::mdx());
-    assert!(off.contains("Text \"Hello {name}.\""), "mdx=false keeps braces as text:\n{off}");
-    assert!(!off.contains("MdxTextExpression"), "mdx=false must not emit expr:\n{off}");
-    assert!(on.contains("MdxTextExpression value=\"name\""), "mdx=true parses prose expr:\n{on}");
+    assert!(
+        off.contains("Text \"Hello {name}.\""),
+        "mdx=false keeps braces as text:\n{off}"
+    );
+    assert!(
+        !off.contains("MdxTextExpression"),
+        "mdx=false must not emit expr:\n{off}"
+    );
+    assert!(
+        on.contains("MdxTextExpression value=\"name\""),
+        "mdx=true parses prose expr:\n{on}"
+    );
 }
 
 #[test]
@@ -153,5 +174,8 @@ fn mdx_flag_is_noop_for_nested_blockquote() {
 #[test]
 fn mdx_false_does_not_emit_mdx_nodes_for_jsx() {
     let tree = pretty_ast("<Counter count={1} />\n", ParserOptions::default());
-    assert!(!tree.contains("MdxJsx"), "mdx=false must not emit MDX JSX nodes:\n{tree}");
+    assert!(
+        !tree.contains("MdxJsx"),
+        "mdx=false must not emit MDX JSX nodes:\n{tree}"
+    );
 }

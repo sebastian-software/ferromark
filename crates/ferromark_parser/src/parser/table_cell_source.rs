@@ -26,13 +26,20 @@ pub(super) struct TableCellSourceMap<'a> {
 
 impl<'a> TableCellSourceMap<'a> {
     fn new(allocator: &'a Allocator) -> Self {
-        Self { blocks: allocator.new_vec(), generated_len: 0, removed_total: 0 }
+        Self {
+            blocks: allocator.new_vec(),
+            generated_len: 0,
+            removed_total: 0,
+        }
     }
 
     fn record_removed(&mut self, generated_position: usize) {
         let block_index = generated_position / SOURCE_MAP_BLOCK_BYTES;
         while self.blocks.len() <= block_index {
-            self.blocks.push(SourceMapBlock { bits: 0, prefix: self.removed_total });
+            self.blocks.push(SourceMapBlock {
+                bits: 0,
+                prefix: self.removed_total,
+            });
         }
         self.blocks[block_index].bits |= 1u64 << (generated_position % SOURCE_MAP_BLOCK_BYTES);
         self.removed_total += 1;
@@ -52,7 +59,11 @@ impl<'a> TableCellSourceMap<'a> {
         let Some(block) = self.blocks.get(block_index) else {
             return bounded as u32 + self.removed_total;
         };
-        let mask = if within_block == 0 { 0 } else { (1u64 << within_block) - 1 };
+        let mask = if within_block == 0 {
+            0
+        } else {
+            (1u64 << within_block) - 1
+        };
         bounded as u32 + block.prefix + (block.bits & mask).count_ones()
     }
 }
@@ -71,7 +82,10 @@ pub(super) fn unescape_table_pipes<'a>(
     // instead of examining every byte, then reuse the first escaped match
     // when constructing the remapped source below.
     let Some(first_pipe) = escaped_pipe_scan_start(bytes) else {
-        return TableCellContent { content, source_map: None };
+        return TableCellContent {
+            content,
+            source_map: None,
+        };
     };
 
     let mut unescaped =
@@ -91,7 +105,10 @@ pub(super) fn unescape_table_pipes<'a>(
     }
     push_unescaped_table_cell_slice(content, copied_through, content.len(), &mut unescaped);
     source_map.finish(unescaped.len());
-    TableCellContent { content: unescaped.into_bump_str(), source_map: Some(source_map) }
+    TableCellContent {
+        content: unescaped.into_bump_str(),
+        source_map: Some(source_map),
+    }
 }
 
 #[inline]
@@ -238,7 +255,13 @@ fn remap_table_cell_span(span: &mut Span, source_offset: u32, source_map: &Table
 }
 
 pub(super) fn is_escaped_table_pipe(bytes: &[u8], pipe: usize) -> bool {
-    bytes[..pipe].iter().rev().take_while(|&&byte| byte == b'\\').count() % 2 == 1
+    bytes[..pipe]
+        .iter()
+        .rev()
+        .take_while(|&&byte| byte == b'\\')
+        .count()
+        % 2
+        == 1
 }
 
 #[cfg(test)]

@@ -40,7 +40,10 @@ impl CalloutKind {
         let name = marker[..end].trim();
         let kind = Self::from_name(name)?;
 
-        Some((kind, marker[end + 1..].trim_start_matches(char::is_whitespace)))
+        Some((
+            kind,
+            marker[end + 1..].trim_start_matches(char::is_whitespace),
+        ))
     }
 
     pub(super) fn class_name(self) -> &'static str {

@@ -47,7 +47,11 @@ fn failures(examples: &[SpecExample]) -> Vec<(usize, String)> {
             let actual = render(&example.markdown, &example.section);
             (normalize_html(&actual) != normalize_html(&example.html)).then(|| {
                 let mut detail = String::new();
-                let _ = writeln!(detail, "=== example {} ({})", example.number, example.section);
+                let _ = writeln!(
+                    detail,
+                    "=== example {} ({})",
+                    example.number, example.section
+                );
                 let _ = writeln!(detail, "--- markdown\n{}", example.markdown);
                 let _ = writeln!(detail, "--- expected\n{}", example.html);
                 let _ = writeln!(detail, "--- actual\n{actual}");
@@ -74,7 +78,11 @@ fn baseline_numbers() -> Vec<usize> {
 #[test]
 fn gfm_extension_conformance() {
     let examples = parse_spec(SPEC);
-    assert_eq!(examples.len(), 24, "expected the vendored GFM extension examples");
+    assert_eq!(
+        examples.len(),
+        24,
+        "expected the vendored GFM extension examples"
+    );
 
     let failing = failures(&examples);
 
@@ -101,7 +109,10 @@ fn gfm_extension_conformance() {
         }
     }
     for number in &known {
-        if !failing.iter().any(|(failing_number, _)| failing_number == number) {
+        if !failing
+            .iter()
+            .any(|(failing_number, _)| failing_number == number)
+        {
             let _ = writeln!(
                 report,
                 "baseline example {number} now passes — remove it from gfm-known-failures.txt"

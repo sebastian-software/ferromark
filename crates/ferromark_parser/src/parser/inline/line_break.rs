@@ -43,7 +43,12 @@ impl<'a> Parser<'a> {
         if hard {
             children.push(Node::Break(ferromark_ast::Break { span }));
         } else {
-            Self::push_text(children, "\n", offset + newline_pos, offset + newline_pos + 1);
+            Self::push_text(
+                children,
+                "\n",
+                offset + newline_pos,
+                offset + newline_pos + 1,
+            );
         }
     }
 }

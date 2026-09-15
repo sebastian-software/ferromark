@@ -308,7 +308,9 @@ impl<'a> Parser<'a> {
         }
         let span = Span::new(start as u32, content_end as u32);
         let children = self.parse_inline_block(content, start)?;
-        Ok(Some(Node::Paragraph(self.allocator.boxed(Paragraph { children, span }))))
+        Ok(Some(Node::Paragraph(
+            self.allocator.boxed(Paragraph { children, span }),
+        )))
     }
 
     /// Only paragraphs with an observed, included comment need filtering and
@@ -345,21 +347,20 @@ impl<'a> Parser<'a> {
                 map.remap_node_spans(child);
             }
         }
-        let node =
-            if let Some((depth, heading_end)) = heading {
-                Node::Heading(self.allocator.boxed(Heading {
-                    depth,
-                    id,
-                    classes,
-                    children,
-                    span: Span::new(start as u32, heading_end as u32),
-                }))
-            } else {
-                Node::Paragraph(self.allocator.boxed(Paragraph {
-                    children,
-                    span: Span::new(start as u32, content_end as u32),
-                }))
-            };
+        let node = if let Some((depth, heading_end)) = heading {
+            Node::Heading(self.allocator.boxed(Heading {
+                depth,
+                id,
+                classes,
+                children,
+                span: Span::new(start as u32, heading_end as u32),
+            }))
+        } else {
+            Node::Paragraph(self.allocator.boxed(Paragraph {
+                children,
+                span: Span::new(start as u32, content_end as u32),
+            }))
+        };
         Ok(Some(node))
     }
 
@@ -381,7 +382,9 @@ impl<'a> Parser<'a> {
         };
         // A tab in the indent always reaches column 4+, so spaces only.
         if first_non_ws - line_start > 3
-            || bytes[line_start..first_non_ws].iter().any(|&byte| byte != b' ')
+            || bytes[line_start..first_non_ws]
+                .iter()
+                .any(|&byte| byte != b' ')
         {
             return None;
         }

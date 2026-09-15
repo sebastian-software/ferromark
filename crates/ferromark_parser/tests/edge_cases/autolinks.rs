@@ -25,7 +25,9 @@ fn gfm_autolink_does_not_fire_inside_link_text() {
                 // GFM excludes link text from the autolink extension; a
                 // nested Link here would render as invalid nested <a> tags.
                 assert!(
-                    link.children.iter().all(|child| matches!(child, Node::Text(_))),
+                    link.children
+                        .iter()
+                        .all(|child| matches!(child, Node::Text(_))),
                     "link text must stay plain text, got {:?}",
                     link.children
                 );
@@ -44,11 +46,18 @@ fn gfm_autolink_still_fires_inside_strikethrough() {
     match &doc.children[0] {
         Node::Paragraph(paragraph) => match &paragraph.children[0] {
             Node::Delete(delete) => {
-                let link_count =
-                    delete.children.iter().filter(|child| matches!(child, Node::Link(_))).count();
+                let link_count = delete
+                    .children
+                    .iter()
+                    .filter(|child| matches!(child, Node::Link(_)))
+                    .count();
                 // The root-level pass recurses into emphasis-like
                 // containers, so the bare URL still links exactly once.
-                assert_eq!(link_count, 1, "expected one autolink, got {:?}", delete.children);
+                assert_eq!(
+                    link_count, 1,
+                    "expected one autolink, got {:?}",
+                    delete.children
+                );
             }
             other => panic!("expected strikethrough, got {other:?}"),
         },
@@ -103,9 +112,18 @@ fn gfm_autolink_stops_at_cjk_sentence_punctuation() {
     // Japanese prose puts no space between a URL and the `。` that closes
     // the sentence, so scanning to whitespace swallowed the rest of it.
     for (source, expected) in [
-        ("句点直後: https://example.com/foo。次の文。", "https://example.com/foo"),
-        ("読点: https://example.com/qux、続き。", "https://example.com/qux"),
-        ("全角: https://example.com/baz）です。", "https://example.com/baz"),
+        (
+            "句点直後: https://example.com/foo。次の文。",
+            "https://example.com/foo",
+        ),
+        (
+            "読点: https://example.com/qux、続き。",
+            "https://example.com/qux",
+        ),
+        (
+            "全角: https://example.com/baz）です。",
+            "https://example.com/baz",
+        ),
         ("感嘆: https://example.com/a！", "https://example.com/a"),
         ("鉤括弧: https://example.com/b」", "https://example.com/b"),
     ] {
@@ -162,7 +180,12 @@ fn ascii_punctuation_stays_outside_following_gfm_autolink() {
             "https://example.com",
             "' is valid.",
         ),
-        ("See https://example.com...", "See ", "https://example.com", "..."),
+        (
+            "See https://example.com...",
+            "See ",
+            "https://example.com",
+            "...",
+        ),
     ];
 
     for (source, before, href, after) in cases {
@@ -170,7 +193,10 @@ fn ascii_punctuation_stays_outside_following_gfm_autolink() {
         let doc = parse_with_options(
             &allocator,
             source,
-            ParserOptions { autolinks: true, ..Default::default() },
+            ParserOptions {
+                autolinks: true,
+                ..Default::default()
+            },
         );
 
         let Node::Paragraph(paragraph) = &doc.children[0] else {
@@ -179,12 +205,21 @@ fn ascii_punctuation_stays_outside_following_gfm_autolink() {
         let [Node::Text(prefix), Node::Link(link), Node::Text(suffix)] =
             paragraph.children.as_slice()
         else {
-            panic!("expected text, autolink, text for {source:?}, got {:?}", paragraph.children);
+            panic!(
+                "expected text, autolink, text for {source:?}, got {:?}",
+                paragraph.children
+            );
         };
 
         assert_eq!(prefix.value, before, "prefix for {source:?}");
         assert_eq!(link.url, href, "href for {source:?}");
-        assert_eq!(link.children.iter().map(super::flatten_text).collect::<String>(), href);
+        assert_eq!(
+            link.children
+                .iter()
+                .map(super::flatten_text)
+                .collect::<String>(),
+            href
+        );
         assert_eq!(suffix.value, after, "suffix for {source:?}");
     }
 }
@@ -200,17 +235,29 @@ fn literal_unicode_punctuation_stays_inside_gfm_autolink() {
         let doc = parse_with_options(
             &allocator,
             source,
-            ParserOptions { autolinks: true, ..Default::default() },
+            ParserOptions {
+                autolinks: true,
+                ..Default::default()
+            },
         );
 
         let Node::Paragraph(paragraph) = &doc.children[0] else {
             panic!("expected paragraph, got {:?}", doc.children[0]);
         };
         let Node::Link(link) = &paragraph.children[0] else {
-            panic!("expected autolink for {source:?}, got {:?}", paragraph.children);
+            panic!(
+                "expected autolink for {source:?}, got {:?}",
+                paragraph.children
+            );
         };
 
         assert_eq!(link.url, expected);
-        assert_eq!(link.children.iter().map(super::flatten_text).collect::<String>(), expected);
+        assert_eq!(
+            link.children
+                .iter()
+                .map(super::flatten_text)
+                .collect::<String>(),
+            expected
+        );
     }
 }

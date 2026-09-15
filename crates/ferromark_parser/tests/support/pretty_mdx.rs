@@ -48,7 +48,15 @@ pub(super) fn format_jsx_text_element(
 }
 
 pub(super) fn format_esm(node: &MdxjsEsm<'_>, source: &str, depth: usize, out: &mut String) {
-    line(out, depth, format_args!("MdxjsEsm value={:?} {}", node.value, span(node.span, source)));
+    line(
+        out,
+        depth,
+        format_args!(
+            "MdxjsEsm value={:?} {}",
+            node.value,
+            span(node.span, source)
+        ),
+    );
 }
 
 pub(super) fn format_flow_expression(
@@ -60,7 +68,11 @@ pub(super) fn format_flow_expression(
     line(
         out,
         depth,
-        format_args!("MdxFlowExpression value={:?} {}", node.value, span(node.span, source)),
+        format_args!(
+            "MdxFlowExpression value={:?} {}",
+            node.value,
+            span(node.span, source)
+        ),
     );
 }
 
@@ -73,7 +85,11 @@ pub(super) fn format_text_expression(
     line(
         out,
         depth,
-        format_args!("MdxTextExpression value={:?} {}", node.value, span(node.span, source)),
+        format_args!(
+            "MdxTextExpression value={:?} {}",
+            node.value,
+            span(node.span, source)
+        ),
     );
 }
 
@@ -125,7 +141,11 @@ fn format_mdx_attribute(
             line(
                 out,
                 depth,
-                format_args!("AttrExpr value={:?} {}", expr.value, span(expr.span, source)),
+                format_args!(
+                    "AttrExpr value={:?} {}",
+                    expr.value,
+                    span(expr.span, source)
+                ),
             );
         }
     }

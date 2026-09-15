@@ -11,7 +11,10 @@ fn html_sanitize_escapes_html_block() {
         "sanitize_escapes_html_block",
         "<div><script>alert(1)</script></div>\n",
         ParserOptions::default(),
-        HtmlRendererOptions { sanitize: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            sanitize: true,
+            ..HtmlRendererOptions::default()
+        },
     );
 }
 
@@ -21,7 +24,10 @@ fn html_sanitize_escapes_inline_raw_html() {
         "sanitize_escapes_inline_raw_html",
         "<span>ok</span>\n",
         ParserOptions::default(),
-        HtmlRendererOptions { sanitize: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            sanitize: true,
+            ..HtmlRendererOptions::default()
+        },
     );
 }
 
@@ -31,7 +37,10 @@ fn html_sanitize_neutralizes_javascript_link() {
         "sanitize_neutralizes_javascript_link",
         "[run](javascript:alert(1))\n",
         ParserOptions::default(),
-        HtmlRendererOptions { sanitize: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            sanitize: true,
+            ..HtmlRendererOptions::default()
+        },
     );
 }
 
@@ -44,7 +53,10 @@ fn html_sanitize_neutralizes_obfuscated_javascript_link() {
         // obfuscation that still reaches the URL sanitizer.
         "[run](JaVaScRiPt:alert(1))\n",
         ParserOptions::default(),
-        HtmlRendererOptions { sanitize: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            sanitize: true,
+            ..HtmlRendererOptions::default()
+        },
     );
 }
 
@@ -54,7 +66,10 @@ fn html_sanitize_clears_unsafe_image_data_url() {
         "sanitize_clears_unsafe_image_data_url",
         "![x](data:text/html,<script>alert(1)</script>)\n",
         ParserOptions::default(),
-        HtmlRendererOptions { sanitize: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            sanitize: true,
+            ..HtmlRendererOptions::default()
+        },
     );
 }
 
@@ -64,7 +79,10 @@ fn html_sanitize_keeps_allowed_schemes() {
         "sanitize_keeps_allowed_schemes",
         "[guide](./guide.md) [mail](mailto:hi@example.com) [phone](tel:+123)\n",
         ParserOptions::default(),
-        HtmlRendererOptions { sanitize: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            sanitize: true,
+            ..HtmlRendererOptions::default()
+        },
     );
 }
 

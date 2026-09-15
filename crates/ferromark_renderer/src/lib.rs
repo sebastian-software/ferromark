@@ -36,6 +36,7 @@ mod render;
 
 pub use html::{
     CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HtmlRenderContext, HtmlRenderControl,
-    HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks, slugify_heading,
+    HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks, collect_heading_text,
+    slugify_heading,
 };
 pub use render::{RenderError, RenderResult, Renderer};

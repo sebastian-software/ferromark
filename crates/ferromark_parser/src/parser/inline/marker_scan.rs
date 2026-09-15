@@ -23,7 +23,10 @@ impl ForwardScan {
     pub(super) const fn new() -> Self {
         // `usize::MAX` cannot be a real origin, so the first lookup always
         // computes.
-        Self { origin: usize::MAX, hit: 0 }
+        Self {
+            origin: usize::MAX,
+            hit: 0,
+        }
     }
 
     pub(super) fn hit(&mut self, from: usize, find: impl FnOnce(usize) -> usize) -> usize {
@@ -57,11 +60,15 @@ impl InlineMarkerScan {
         if math {
             optional |= INLINE_MARKER_MATH;
         }
-        Self { optional, scan: ForwardScan::new() }
+        Self {
+            optional,
+            scan: ForwardScan::new(),
+        }
     }
 
     pub(super) fn next(&mut self, bytes: &[u8], from: usize) -> usize {
-        self.scan.hit(from, |at| next_inline_marker(bytes, at, self.optional))
+        self.scan
+            .hit(from, |at| next_inline_marker(bytes, at, self.optional))
     }
 }
 

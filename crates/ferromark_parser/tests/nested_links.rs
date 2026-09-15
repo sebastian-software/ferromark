@@ -22,8 +22,9 @@ const BUDGET: Duration = Duration::from_secs(15);
 
 fn render(source: &str, options: ParserOptions) -> String {
     let allocator = Allocator::new();
-    let document =
-        Parser::with_options(&allocator, source, options).parse().expect("source should parse");
+    let document = Parser::with_options(&allocator, source, options)
+        .parse()
+        .expect("source should parse");
     HtmlRenderer::new().render(&document).trim().to_string()
 }
 
@@ -34,8 +35,9 @@ fn parse_within_budget(source: String) -> Duration {
     thread::spawn(move || {
         let started = Instant::now();
         let allocator = Allocator::new();
-        let parsed =
-            Parser::with_options(&allocator, &source, ParserOptions::gfm()).parse().is_ok();
+        let parsed = Parser::with_options(&allocator, &source, ParserOptions::gfm())
+            .parse()
+            .is_ok();
         let _ = sender.send((parsed, started.elapsed()));
     });
     let (parsed, elapsed) = receiver
@@ -99,7 +101,10 @@ fn only_the_innermost_inline_link_survives() {
 #[test]
 fn only_the_innermost_reference_link_survives() {
     assert_eq!(
-        render("[a [b [c][ref]][ref]][ref]\n\n[ref]: /r", ParserOptions::gfm()),
+        render(
+            "[a [b [c][ref]][ref]][ref]\n\n[ref]: /r",
+            ParserOptions::gfm()
+        ),
         "<p>[a [b <a href=\"/r\">c</a>]<a href=\"/r\">ref</a>]<a href=\"/r\">ref</a></p>"
     );
 }
@@ -127,7 +132,10 @@ fn identical_bracket_text_is_judged_per_occurrence() {
     // The memoized verdict is keyed by the slice, so repeating the same
     // characters in a different position must not inherit an answer.
     assert_eq!(
-        render("[same](/1) and [same](/2) and [[same](/3)](/4)", ParserOptions::gfm()),
+        render(
+            "[same](/1) and [same](/2) and [[same](/3)](/4)",
+            ParserOptions::gfm()
+        ),
         concat!(
             "<p><a href=\"/1\">same</a> and <a href=\"/2\">same</a> ",
             "and [<a href=\"/3\">same</a>](/4)</p>"

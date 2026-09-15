@@ -45,7 +45,8 @@ impl HtmlRenderer {
 
         self.output.push('<');
         self.output.push_str(tag);
-        self.output.push_str(" class=\"ox-island\" data-ox-island=\"");
+        self.output
+            .push_str(" class=\"ox-island\" data-ox-island=\"");
         write_escaped_into(&mut self.output, name);
         self.output.push('"');
 

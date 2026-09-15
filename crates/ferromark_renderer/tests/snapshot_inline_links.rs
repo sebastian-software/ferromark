@@ -103,7 +103,10 @@ fn html_image_xhtml_self_closes() {
         "image_xhtml_self_closes",
         "![logo](/logo.svg)\n",
         ParserOptions::default(),
-        HtmlRendererOptions { xhtml: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            xhtml: true,
+            ..HtmlRendererOptions::default()
+        },
     );
 }
 

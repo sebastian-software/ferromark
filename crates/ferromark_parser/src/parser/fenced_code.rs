@@ -46,8 +46,9 @@ impl<'a> Parser<'a> {
                 // A closing fence carries nothing but trailing whitespace
                 // (``` aaa is content, not a closer).
                 let line_end = line_end(bytes, cursor);
-                let only_ws =
-                    bytes[cursor..line_end].iter().all(|byte| matches!(byte, b' ' | b'\t' | b'\r'));
+                let only_ws = bytes[cursor..line_end]
+                    .iter()
+                    .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'));
                 if only_ws {
                     // Body ends at `line_start`; the fence line ends at
                     // the next newline (inclusive) or EOF.
@@ -196,12 +197,14 @@ impl<'a> Parser<'a> {
             value.into_bump_str()
         };
 
-        Ok(Some(Node::CodeBlock(self.allocator.boxed(ferromark_ast::CodeBlock {
-            lang,
-            meta,
-            value,
-            span,
-        }))))
+        Ok(Some(Node::CodeBlock(self.allocator.boxed(
+            ferromark_ast::CodeBlock {
+                lang,
+                meta,
+                value,
+                span,
+            },
+        ))))
     }
 
     fn normalize_code_block_line_endings(&self, source: &str) -> &'a str {
@@ -219,7 +222,11 @@ impl<'a> Parser<'a> {
 
             value.push_str(&source[chunk_start..cursor]);
             value.push('\n');
-            cursor += if bytes.get(cursor + 1) == Some(&b'\n') { 2 } else { 1 };
+            cursor += if bytes.get(cursor + 1) == Some(&b'\n') {
+                2
+            } else {
+                1
+            };
             chunk_start = cursor;
         }
 
@@ -231,7 +238,11 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod fence_close_tests {
     // Owned strings keep the test oracle independent of production arena storage.
-    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+    #![allow(
+        clippy::disallowed_macros,
+        clippy::disallowed_methods,
+        clippy::disallowed_types
+    )]
 
     use ferromark_allocator::Allocator;
 
@@ -259,7 +270,10 @@ mod fence_close_tests {
             }
             if cursor - fence_start >= fence_len {
                 let end = line_end(bytes, cursor);
-                if bytes[cursor..end].iter().all(|byte| matches!(byte, b' ' | b'\t' | b'\r')) {
+                if bytes[cursor..end]
+                    .iter()
+                    .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'))
+                {
                     return (line_start, line_terminator_end(bytes, end));
                 }
             }
@@ -291,14 +305,24 @@ mod fence_close_tests {
         ];
         let mut state = 0x5bd1_e995_2d3c_7a11u64;
         for _ in 0..3000 {
-            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
             let count = (state >> 33) as usize % 12;
             let mut source = String::new();
             for _ in 0..count {
-                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                state = state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1);
                 source.push_str(lines[(state >> 33) as usize % lines.len()]);
-                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
-                source.push_str(if (state >> 40).is_multiple_of(4) { "\r\n" } else { "\n" });
+                state = state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1);
+                source.push_str(if (state >> 40).is_multiple_of(4) {
+                    "\r\n"
+                } else {
+                    "\n"
+                });
             }
             if (state >> 20).is_multiple_of(2) {
                 source.push_str("tail");

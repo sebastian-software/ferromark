@@ -3,7 +3,11 @@ use ferromark_ast::{Node, Span, Table, Text, Visit};
 use ferromark_parser::{Parser, ParserOptions};
 
 fn options() -> ParserOptions {
-    ParserOptions { table_attributes: true, merged_table_cells: true, ..ParserOptions::gfm() }
+    ParserOptions {
+        table_attributes: true,
+        merged_table_cells: true,
+        ..ParserOptions::gfm()
+    }
 }
 
 #[test]
@@ -15,8 +19,9 @@ fn table_metadata_accepts_caption_or_attributes_only_with_all_line_endings() {
                     "| A | B |{newline}| --- | --- |{newline}| merged ||{newline}{gap}: {caption}{{#preise .wide .striped}}"
                 );
                 let allocator = Allocator::new();
-                let document =
-                    Parser::with_options(&allocator, &source, options()).parse().unwrap();
+                let document = Parser::with_options(&allocator, &source, options())
+                    .parse()
+                    .unwrap();
                 assert_eq!(document.children.len(), 1, "{source:?}");
                 let Node::Table(table) = &document.children[0] else {
                     panic!("expected table");
@@ -38,7 +43,9 @@ fn table_metadata_is_opt_in_and_requires_tables() {
     let source = "| A | B |\n| --- | --- |\n\n: Caption {#prices .wide}";
     for preset in [ParserOptions::gfm(), ParserOptions::gfm_spec()] {
         let allocator = Allocator::new();
-        let document = Parser::with_options(&allocator, source, preset).parse().unwrap();
+        let document = Parser::with_options(&allocator, source, preset)
+            .parse()
+            .unwrap();
         let Node::Table(table) = &document.children[0] else {
             panic!("expected table");
         };
@@ -57,7 +64,12 @@ fn table_metadata_is_opt_in_and_requires_tables() {
     )
     .parse()
     .unwrap();
-    assert!(document.children.iter().all(|node| !matches!(node, Node::Table(_))));
+    assert!(
+        document
+            .children
+            .iter()
+            .all(|node| !matches!(node, Node::Table(_)))
+    );
     for preset in [
         ParserOptions::commonmark(),
         ParserOptions::gfm(),
@@ -89,7 +101,9 @@ fn malformed_metadata_preserves_the_following_markdown() {
     ] {
         let source = format!("| A | B |\n| --- | --- |\n\n{metadata}");
         let allocator = Allocator::new();
-        let document = Parser::with_options(&allocator, &source, options()).parse().unwrap();
+        let document = Parser::with_options(&allocator, &source, options())
+            .parse()
+            .unwrap();
         let Node::Table(table) = &document.children[0] else {
             panic!("expected table");
         };
@@ -104,7 +118,9 @@ fn metadata_attaches_once_and_only_to_an_adjacent_table() {
     for separator in ["\n\n", "\nparagraph\n\n", "\n# Heading\n\n"] {
         let source = format!("| A | B |\n| --- | --- |\n{separator}: {{#distant}}");
         let allocator = Allocator::new();
-        let document = Parser::with_options(&allocator, &source, options()).parse().unwrap();
+        let document = Parser::with_options(&allocator, &source, options())
+            .parse()
+            .unwrap();
         let Node::Table(table) = &document.children[0] else {
             panic!("expected table");
         };
@@ -112,7 +128,9 @@ fn metadata_attaches_once_and_only_to_an_adjacent_table() {
     }
     let source = "| A | B |\n| --- | --- |\n: {#first}\n: {#second}";
     let allocator = Allocator::new();
-    let document = Parser::with_options(&allocator, source, options()).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
     let Node::Table(table) = &document.children[0] else {
         panic!("expected table");
     };
@@ -149,10 +167,16 @@ fn caption_spans_map_back_through_containers_and_normalization() {
         "\u{feff}| A\0 | B |\n| --- | --- |\n\n: *Größe* {#id}",
     ] {
         let allocator = Allocator::new();
-        let document =
-            Parser::with_options(&allocator, source, ParserOptions { mdx: true, ..options() })
-                .parse()
-                .unwrap();
+        let document = Parser::with_options(
+            &allocator,
+            source,
+            ParserOptions {
+                mdx: true,
+                ..options()
+            },
+        )
+        .parse()
+        .unwrap();
         let mut visitor = CaptionSpans::default();
         visitor.visit_document(&document);
         assert_eq!(visitor.spans.len(), 1, "{source:?}");
@@ -170,7 +194,9 @@ fn default_ast_visitor_includes_caption_text() {
     }
     let allocator = Allocator::new();
     let source = "| A | B |\n| --- | --- |\n: Caption {#id}";
-    let document = Parser::with_options(&allocator, source, options()).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
     let mut visitor = TextCollector(String::new());
     visitor.visit_document(&document);
     assert_eq!(visitor.0, "CaptionAB");

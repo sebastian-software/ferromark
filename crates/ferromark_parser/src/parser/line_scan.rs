@@ -62,7 +62,10 @@ fn line_end_neon(bytes: &[u8], from: usize) -> usize {
         let cr = vdupq_n_u8(b'\r');
         let classify = |v: uint8x16_t| {
             let m = vorrq_u8(vceqq_u8(v, nl), vceqq_u8(v, cr));
-            vget_lane_u64(vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(m), 4)), 0)
+            vget_lane_u64(
+                vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(m), 4)),
+                0,
+            )
         };
         while i + 32 <= end {
             let m0 = classify(vld1q_u8(bytes.as_ptr().add(i)));
@@ -203,7 +206,11 @@ mod tests {
                 buffer[lead] = b'\n';
                 let bytes = &buffer[..];
                 let expected = memchr::memchr2(b'\n', b'\r', bytes).unwrap_or(bytes.len());
-                assert_eq!(line_end(bytes, 0), expected, "filler {filler:#x}, newline at {lead}");
+                assert_eq!(
+                    line_end(bytes, 0),
+                    expected,
+                    "filler {filler:#x}, newline at {lead}"
+                );
             }
         }
     }
@@ -230,7 +237,11 @@ mod tests {
             let unterminated = [b'x'; 96];
             let bytes = &unterminated[..len];
             for from in 0..=len {
-                assert_eq!(line_end(bytes, from), len, "unterminated len {len} from {from}");
+                assert_eq!(
+                    line_end(bytes, from),
+                    len,
+                    "unterminated len {len} from {from}"
+                );
             }
         }
     }
@@ -258,9 +269,10 @@ mod tests {
 
     #[test]
     fn recognizes_crlf_and_lone_cr_line_endings() {
-        for (source, expected) in
-            [("a\r\nb\nc\rd", &["a", "b", "c", "d"][..]), ("\r\n\n\r", &["", "", ""][..])]
-        {
+        for (source, expected) in [
+            ("a\r\nb\nc\rd", &["a", "b", "c", "d"][..]),
+            ("\r\n\n\r", &["", "", ""][..]),
+        ] {
             let bytes = source.as_bytes();
             let mut pos = 0;
             let mut line_index = 0;

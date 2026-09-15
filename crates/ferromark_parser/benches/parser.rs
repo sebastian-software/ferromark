@@ -214,5 +214,10 @@ fn bench_parse_lists(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_parse_simple, bench_parse_large, bench_parse_lists);
+criterion_group!(
+    benches,
+    bench_parse_simple,
+    bench_parse_large,
+    bench_parse_lists
+);
 criterion_main!(benches);

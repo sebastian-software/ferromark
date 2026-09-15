@@ -3,7 +3,11 @@
 //! This crate provides a high-performance arena allocator based on bumpalo,
 //! designed for efficient memory management during parsing operations.
 
-#![deny(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+#![deny(
+    clippy::disallowed_macros,
+    clippy::disallowed_methods,
+    clippy::disallowed_types
+)]
 
 use std::ops::Deref;
 
@@ -28,7 +32,9 @@ impl Allocator {
     /// Creates a new allocator with the specified capacity in bytes.
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
-        Self { bump: Bump::with_capacity(capacity) }
+        Self {
+            bump: Bump::with_capacity(capacity),
+        }
     }
 
     /// Creates a new allocator pre-sized for parsing a Markdown source of
@@ -68,7 +74,11 @@ impl Allocator {
         // covers everything under ~2 KB of Markdown in a single chunk.
         const MIN_CAPACITY: usize = 16 * 1024;
         let capacity = source_len.saturating_mul(BYTES_PER_INPUT_BYTE);
-        if capacity < MIN_CAPACITY { MIN_CAPACITY } else { capacity }
+        if capacity < MIN_CAPACITY {
+            MIN_CAPACITY
+        } else {
+            capacity
+        }
     }
 
     /// Returns the underlying bump allocator.
@@ -150,7 +160,10 @@ pub struct Box<'a, T> {
 impl<'a, T> Box<'a, T> {
     /// Allocates `value` in `bump` and returns a pointer to it.
     pub fn new_in(value: T, bump: &'a Bump) -> Self {
-        Self { ptr: std::ptr::NonNull::from(bump.alloc(value)), _lt: std::marker::PhantomData }
+        Self {
+            ptr: std::ptr::NonNull::from(bump.alloc(value)),
+            _lt: std::marker::PhantomData,
+        }
     }
 }
 
@@ -209,15 +222,17 @@ pub struct Vec<'a, T>(std::mem::ManuallyDrop<bumpalo::collections::Vec<'a, T>>);
 impl<'a, T> Vec<'a, T> {
     /// Constructs a new, empty vector in `bump`.
     pub fn new_in(bump: &'a Bump) -> Self {
-        Self(std::mem::ManuallyDrop::new(bumpalo::collections::Vec::new_in(bump)))
+        Self(std::mem::ManuallyDrop::new(
+            bumpalo::collections::Vec::new_in(bump),
+        ))
     }
 
     /// Constructs a new, empty vector in `bump` with room for `capacity`
     /// elements.
     pub fn with_capacity_in(capacity: usize, bump: &'a Bump) -> Self {
-        Self(std::mem::ManuallyDrop::new(bumpalo::collections::Vec::with_capacity_in(
-            capacity, bump,
-        )))
+        Self(std::mem::ManuallyDrop::new(
+            bumpalo::collections::Vec::with_capacity_in(capacity, bump),
+        ))
     }
 
     /// Returns the elements as an arena slice, consuming the vector.

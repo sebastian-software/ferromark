@@ -57,7 +57,11 @@ impl HtmlRenderer {
             self.write(" col-name-");
             self.write_attribute_escaped(name);
         }
-        self.write(if self.options.xhtml { "\" />\n" } else { "\">\n" });
+        self.write(if self.options.xhtml {
+            "\" />\n"
+        } else {
+            "\">\n"
+        });
     }
 }
 

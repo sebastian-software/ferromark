@@ -20,7 +20,10 @@ fn parsed_links_can_skip_target_blank_security_attributes() {
     let html = render(
         "[site](https://example.com)",
         ParserOptions::default(),
-        HtmlRendererOptions { link_target_blank: false, ..Default::default() },
+        HtmlRendererOptions {
+            link_target_blank: false,
+            ..Default::default()
+        },
     );
 
     assert_eq!(html, "<p><a href=\"https://example.com\">site</a></p>\n");
@@ -31,7 +34,10 @@ fn link_target_blank_does_not_disable_renderer_autolink_attributes() {
     let html = render(
         "Visit https://example.com",
         ParserOptions::default(),
-        HtmlRendererOptions { link_target_blank: false, ..Default::default() },
+        HtmlRendererOptions {
+            link_target_blank: false,
+            ..Default::default()
+        },
     );
 
     assert!(
@@ -44,8 +50,11 @@ fn link_target_blank_does_not_disable_renderer_autolink_attributes() {
 
 #[test]
 fn relative_links_do_not_get_external_attributes() {
-    let html =
-        render("[guide](./guide.md)", ParserOptions::default(), HtmlRendererOptions::default());
+    let html = render(
+        "[guide](./guide.md)",
+        ParserOptions::default(),
+        HtmlRendererOptions::default(),
+    );
 
     insta::assert_snapshot!(html);
 }
@@ -77,7 +86,10 @@ fn base_prefixes_root_absolute_markdown_images() {
         },
     );
 
-    assert_eq!(html, "<p><img src=\"/docs/img/logo.png\" alt=\"logo\"></p>\n");
+    assert_eq!(
+        html,
+        "<p><img src=\"/docs/img/logo.png\" alt=\"logo\"></p>\n"
+    );
 }
 
 #[test]
@@ -177,9 +189,18 @@ fn url_serialization_preserves_ipv6_authority_brackets() {
         ..Default::default()
     };
     for (source, expected) in [
-        ("[x](https://[::1]/a)\n", "<p><a href=\"https://[::1]/a\">x</a></p>\n"),
-        ("[x](https://[::1]:/a)\n", "<p><a href=\"https://[::1]:/a\">x</a></p>\n"),
-        ("[x](https://u[x]@[::1]/a)\n", "<p><a href=\"https://u%5Bx%5D@[::1]/a\">x</a></p>\n"),
+        (
+            "[x](https://[::1]/a)\n",
+            "<p><a href=\"https://[::1]/a\">x</a></p>\n",
+        ),
+        (
+            "[x](https://[::1]:/a)\n",
+            "<p><a href=\"https://[::1]:/a\">x</a></p>\n",
+        ),
+        (
+            "[x](https://u[x]@[::1]/a)\n",
+            "<p><a href=\"https://u%5Bx%5D@[::1]/a\">x</a></p>\n",
+        ),
         (
             "[x](https://user:pass@[2001:db8::1]:8443/a)\n",
             "<p><a href=\"https://user:pass@[2001:db8::1]:8443/a\">x</a></p>\n",
@@ -206,7 +227,10 @@ fn xhtml_images_self_close() {
     let html = render(
         "![logo](/logo.svg)",
         ParserOptions::default(),
-        HtmlRendererOptions { xhtml: true, ..Default::default() },
+        HtmlRendererOptions {
+            xhtml: true,
+            ..Default::default()
+        },
     );
 
     insta::assert_snapshot!(html);
@@ -216,17 +240,30 @@ fn xhtml_images_self_close() {
 fn script_extensions_preserve_surrounding_punctuation() {
     let html = render(
         "\"Smart\" H~2~O x^2^",
-        ParserOptions { subscript: true, superscript: true, ..ParserOptions::default() },
+        ParserOptions {
+            subscript: true,
+            superscript: true,
+            ..ParserOptions::default()
+        },
         HtmlRendererOptions::default(),
     );
 
-    assert_eq!(html, "<p>&quot;Smart&quot; H<sub>2</sub>O x<sup>2</sup></p>\n");
+    assert_eq!(
+        html,
+        "<p>&quot;Smart&quot; H<sub>2</sub>O x<sup>2</sup></p>\n"
+    );
 }
 
 #[test]
 fn ascii_punctuation_stays_outside_gfm_autolink_rendering() {
-    let parser_options = ParserOptions { autolinks: true, ..ParserOptions::default() };
-    let renderer_options = HtmlRendererOptions { link_target_blank: false, ..Default::default() };
+    let parser_options = ParserOptions {
+        autolinks: true,
+        ..ParserOptions::default()
+    };
+    let renderer_options = HtmlRendererOptions {
+        link_target_blank: false,
+        ..Default::default()
+    };
 
     for (source, expected) in [
         (

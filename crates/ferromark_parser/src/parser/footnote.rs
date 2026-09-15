@@ -134,7 +134,11 @@ fn dedent_body<'a>(
         let current_line_end = line_end(bytes, line_start);
         let next_line = next_line_start(bytes, line_start);
         let line = &body[line_start..current_line_end];
-        let consumed = if index == 0 { first_line_indent_len(line) } else { dedent_len(line) };
+        let consumed = if index == 0 {
+            first_line_indent_len(line)
+        } else {
+            dedent_len(line)
+        };
         let dedented = &line[consumed..];
         let generated_start = out.len();
         out.push_str(dedented);
@@ -152,7 +156,10 @@ fn dedent_body<'a>(
         index += 1;
     }
 
-    DedentedBody { text: out.into_bump_str(), source_map }
+    DedentedBody {
+        text: out.into_bump_str(),
+        source_map,
+    }
 }
 
 fn first_line_indent_len(line: &str) -> usize {
@@ -190,7 +197,8 @@ impl<'a> Parser<'a> {
         };
 
         let identifier =
-            self.allocator.alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
+            self.allocator
+                .alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
         let content_start = start + after_colon;
         let body_len = definition_body_len(self, content_start);
         let body = dedent_body(
@@ -217,12 +225,14 @@ impl<'a> Parser<'a> {
         let end = content_start + body_len;
         self.position = end;
 
-        Ok(Some(Node::FootnoteDefinition(self.allocator.boxed(FootnoteDefinition {
-            identifier,
-            label: Some(label),
-            children,
-            span: Span::new(start as u32, end as u32),
-        }))))
+        Ok(Some(Node::FootnoteDefinition(self.allocator.boxed(
+            FootnoteDefinition {
+                identifier,
+                label: Some(label),
+                children,
+                span: Span::new(start as u32, end as u32),
+            },
+        ))))
     }
 
     /// Whether a definition exists for `label` (already normalized-able).
@@ -263,7 +273,8 @@ impl<'a> Parser<'a> {
         }
 
         let identifier =
-            self.allocator.alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
+            self.allocator
+                .alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
         children.push(Node::FootnoteReference(self.allocator.boxed(
             ferromark_ast::FootnoteReference {
                 identifier,

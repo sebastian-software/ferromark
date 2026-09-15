@@ -22,7 +22,11 @@ fn previous_url_policy(url: &str) -> bool {
 }
 
 fn assert_previous_policy(url: &str) {
-    assert_eq!(HtmlRenderer::is_safe_url(url), previous_url_policy(url), "{url:?}");
+    assert_eq!(
+        HtmlRenderer::is_safe_url(url),
+        previous_url_policy(url),
+        "{url:?}"
+    );
 }
 
 #[test]
@@ -54,11 +58,22 @@ fn allowed_schemes_preserve_all_case_and_space_combinations() {
 
 #[test]
 fn scheme_mutations_match_the_previous_policy() {
-    for scheme in
-        ["http", "https", "mailto", "tel", "javascript", "data", "vbscript", "file", "ftp", ""]
-    {
+    for scheme in [
+        "http",
+        "https",
+        "mailto",
+        "tel",
+        "javascript",
+        "data",
+        "vbscript",
+        "file",
+        "ftp",
+        "",
+    ] {
         for index in 0..=scheme.len() {
-            for inserted in (0u8..=255).map(char::from).chain(['日', '🙂', '\u{200b}', '\u{3000}'])
+            for inserted in (0u8..=255)
+                .map(char::from)
+                .chain(['日', '🙂', '\u{200b}', '\u{3000}'])
             {
                 let mut candidate = scheme.to_string();
                 candidate.insert(index, inserted);
@@ -67,21 +82,34 @@ fn scheme_mutations_match_the_previous_policy() {
             }
         }
         for prefix in ["", "./", "/", "//", "?", "#"] {
-            for suffix in
-                ["", ":payload", "://example.com", "/path:part", "?query:value", "#part:value"]
-            {
+            for suffix in [
+                "",
+                ":payload",
+                "://example.com",
+                "/path:part",
+                "?query:value",
+                "#part:value",
+            ] {
                 assert_previous_policy(&format!("{prefix}{scheme}{suffix}"));
             }
         }
     }
     assert_previous_policy(&format!("{}:payload", "x".repeat(8192)));
-    assert_previous_policy(&format!("{}https{}:example", " ".repeat(128), " ".repeat(128)));
+    assert_previous_policy(&format!(
+        "{}https{}:example",
+        " ".repeat(128),
+        " ".repeat(128)
+    ));
 }
 
 #[test]
 fn controls_remain_rejected_anywhere_in_the_url() {
     for byte in (0u8..=31).chain([127]) {
-        for url in ["https://example.com/api", "./relative/path", "mailto:hi@example.com"] {
+        for url in [
+            "https://example.com/api",
+            "./relative/path",
+            "mailto:hi@example.com",
+        ] {
             for index in 0..=url.len() {
                 let mut candidate = url.to_string();
                 candidate.insert(index, char::from(byte));

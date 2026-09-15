@@ -6,7 +6,11 @@ use super::check;
 
 #[test]
 fn snapshot_html_block_div() {
-    check("html_block_div", "<div>\nraw html line\n</div>\n\nAfter\n", ParserOptions::default());
+    check(
+        "html_block_div",
+        "<div>\nraw html line\n</div>\n\nAfter\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]

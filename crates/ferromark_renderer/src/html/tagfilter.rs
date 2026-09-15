@@ -12,8 +12,17 @@
 //! blocks) rely on.
 
 /// Tags filtered by the extension, in the order the spec lists them.
-const DISALLOWED: [&str; 9] =
-    ["title", "textarea", "style", "xmp", "iframe", "noembed", "noframes", "script", "plaintext"];
+const DISALLOWED: [&str; 9] = [
+    "title",
+    "textarea",
+    "style",
+    "xmp",
+    "iframe",
+    "noembed",
+    "noframes",
+    "script",
+    "plaintext",
+];
 
 /// Writes `value` into `out`, escaping the `<` of every disallowed tag.
 pub(super) fn write_filtered_into(out: &mut String, value: &str) {
@@ -24,7 +33,11 @@ pub(super) fn write_filtered_into(out: &mut String, value: &str) {
     while let Some(offset) = memchr::memchr(b'<', &bytes[i..]) {
         let lt = i + offset;
         // A closing tag (`</style>`) is filtered exactly like an opening one.
-        let name_start = if bytes.get(lt + 1) == Some(&b'/') { lt + 2 } else { lt + 1 };
+        let name_start = if bytes.get(lt + 1) == Some(&b'/') {
+            lt + 2
+        } else {
+            lt + 1
+        };
 
         if let Some(name) = matching_tag(&value[name_start.min(value.len())..]) {
             out.push_str(&value[copied..lt]);
@@ -67,7 +80,11 @@ pub(super) fn needs_filtering(value: &str) -> bool {
     let mut i = 0;
     while let Some(offset) = memchr::memchr(b'<', &bytes[i..]) {
         let lt = i + offset;
-        let name_start = if bytes.get(lt + 1) == Some(&b'/') { lt + 2 } else { lt + 1 };
+        let name_start = if bytes.get(lt + 1) == Some(&b'/') {
+            lt + 2
+        } else {
+            lt + 1
+        };
         if matching_tag(&value[name_start.min(value.len())..]).is_some() {
             return true;
         }

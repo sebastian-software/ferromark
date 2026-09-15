@@ -10,10 +10,15 @@ use ferromark_renderer::{HtmlRenderer, HtmlRendererOptions};
 
 fn render(source: &str, gfm: bool) -> String {
     let allocator = Allocator::new();
-    let mut options = if gfm { ParserOptions::gfm() } else { ParserOptions::default() };
+    let mut options = if gfm {
+        ParserOptions::gfm()
+    } else {
+        ParserOptions::default()
+    };
     options.footnotes = false;
-    let document =
-        Parser::with_options(&allocator, source, options).parse().expect("valid Markdown");
+    let document = Parser::with_options(&allocator, source, options)
+        .parse()
+        .expect("valid Markdown");
     HtmlRenderer::with_options(HtmlRendererOptions {
         autolink_urls: false,
         autolink_target_blank: false,
@@ -32,7 +37,9 @@ fn all_commonmark_examples_preserve_meaning_with_crlf_and_cr() {
         let lf = render(&example.markdown, false);
         for ending in ["\r\n", "\r"] {
             let input = example.markdown.replace('\n', ending);
-            let output = render(&input, false).replace("\r\n", "\n").replace('\r', "\n");
+            let output = render(&input, false)
+                .replace("\r\n", "\n")
+                .replace('\r', "\n");
             assert_eq!(
                 output, lf,
                 "example {} ({}) with {ending:?}",
@@ -75,9 +82,18 @@ fn commonmark_gfm_exceptions_keep_their_expected_links() {
     // for arbitrary output changes or panics on known-failure example numbers.
     let examples = spec_txt::parse_spec(include_str!("spec_fixtures/commonmark-0.31.2-spec.txt"));
     for (number, expected) in [
-        (608, "<p>&lt; <a href=\"https://foo.bar\">https://foo.bar</a> &gt;</p>\n"),
-        (611, "<p><a href=\"https://example.com\">https://example.com</a></p>\n"),
-        (612, "<p><a href=\"mailto:foo@bar.example.com\">foo@bar.example.com</a></p>\n"),
+        (
+            608,
+            "<p>&lt; <a href=\"https://foo.bar\">https://foo.bar</a> &gt;</p>\n",
+        ),
+        (
+            611,
+            "<p><a href=\"https://example.com\">https://example.com</a></p>\n",
+        ),
+        (
+            612,
+            "<p><a href=\"mailto:foo@bar.example.com\">foo@bar.example.com</a></p>\n",
+        ),
     ] {
         let example = &examples[number - 1];
         assert_eq!(

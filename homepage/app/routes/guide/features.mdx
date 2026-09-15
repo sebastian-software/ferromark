@@ -1,0 +1,38 @@
+---
+title: Features
+---
+
+# Features
+
+V2 exposes parsing and rendering separately, with an arena-allocated AST and
+source spans between them. The four core crates cover allocation, AST types,
+parsing, and HTML rendering; `ferromark` re-exports their public APIs.
+
+## Markdown profiles
+
+`ParserOptions::commonmark()` and `HtmlRendererOptions::commonmark()` select
+specification-oriented CommonMark behavior. The matching `gfm_spec()` parser
+and `gfm()` renderer add GFM tables, task lists, strikethrough, autolinks, and
+tagfilter. Convenience `ParserOptions::gfm()` also enables footnotes.
+
+## Optional syntax
+
+Front matter, footnotes, math, definition lists, superscript, subscript,
+line comments, wiki links, heading attributes, CJK emphasis, merged table
+cells, and table attributes are configurable. Source fixtures, conformance
+baselines, and compatibility corrections live alongside the code.
+
+## HTML rendering
+
+Configure raw HTML handling, URL filtering, heading IDs, callouts, CSS-addressable table
+columns, TOC behavior, and source-span attributes in Rust.
+`HtmlRenderHooks` lets Rust consumers replace or wrap individual nodes.
+The native Node package offers `toHtml`, `toHtmlBuffer`, `Renderer`,
+`transform`, `toHtmlWithHighlighter`, and `transformWithHighlighter`.
+
+## Boundaries
+
+V2 has a breaking Rust API and remains unpublished. It does not include a
+JavaScript runtime, an MDX compiler, or the old v1 CLI. The Node API exposes a
+subset of the Rust renderer configuration; its TypeScript declarations are
+the authoritative option list. See [MDX](./mdx-examples) for its exact scope.

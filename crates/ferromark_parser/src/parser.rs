@@ -148,8 +148,13 @@ impl<'a> Parser<'a> {
     /// Creates a new parser with the specified options.
     #[must_use]
     pub fn with_options(allocator: &'a Allocator, source: &'a str, options: ParserOptions) -> Self {
-        let front_matter = options.front_matter.then(|| front_matter::extract(source)).flatten();
-        let body_start = front_matter.as_ref().map_or(0, |metadata| metadata.span.end as usize);
+        let front_matter = options
+            .front_matter
+            .then(|| front_matter::extract(source))
+            .flatten();
+        let body_start = front_matter
+            .as_ref()
+            .map_or(0, |metadata| metadata.span.end as usize);
         let (source, source_map) = source_normalization::normalize(allocator, source, body_start);
         let mut parser = Self {
             allocator,
@@ -256,7 +261,11 @@ impl<'a> Parser<'a> {
         }
 
         let span = Span::new(0, self.source.len() as u32);
-        Ok(Document { front_matter: self.front_matter.take(), children, span })
+        Ok(Document {
+            front_matter: self.front_matter.take(),
+            children,
+            span,
+        })
     }
 
     /// Slots to reserve for the document's top-level block list.

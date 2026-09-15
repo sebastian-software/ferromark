@@ -4,7 +4,10 @@ use ferromark_parser::{Parser, ParserOptions};
 use ferromark_renderer::{HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks};
 
 fn options() -> ParserOptions {
-    ParserOptions { line_comments: true, ..ParserOptions::gfm() }
+    ParserOptions {
+        line_comments: true,
+        ..ParserOptions::gfm()
+    }
 }
 
 fn render_with_options(
@@ -13,7 +16,9 @@ fn render_with_options(
     renderer_options: HtmlRendererOptions,
 ) -> String {
     let allocator = Allocator::new();
-    let document = Parser::with_options(&allocator, source, parser_options).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, parser_options)
+        .parse()
+        .unwrap();
     HtmlRenderer::with_options(renderer_options).render(&document)
 }
 
@@ -34,11 +39,19 @@ impl<'a> Visit<'a> for StrongSpans {
 fn first_strong_span(document: &ferromark_ast::Document<'_>) -> Span {
     let mut visitor = StrongSpans { spans: Vec::new() };
     visitor.visit_document(document);
-    visitor.spans.into_iter().next().expect("expected a strong node")
+    visitor
+        .spans
+        .into_iter()
+        .next()
+        .expect("expected a strong node")
 }
 
 fn line_ending_variants(source: &str) -> [String; 3] {
-    [source.to_string(), source.replace('\n', "\r\n"), source.replace('\n', "\r")]
+    [
+        source.to_string(),
+        source.replace('\n', "\r\n"),
+        source.replace('\n', "\r"),
+    ]
 }
 
 #[test]
@@ -69,13 +82,22 @@ fn comments_at_line_start_are_transparent_and_need_no_space() {
 
 #[test]
 fn explicit_blank_lines_still_separate_paragraphs() {
-    assert_eq!(render("first\n\n// private\n\nsecond\n"), "<p>first</p>\n<p>second</p>\n");
+    assert_eq!(
+        render("first\n\n// private\n\nsecond\n"),
+        "<p>first</p>\n<p>second</p>\n"
+    );
 }
 
 #[test]
 fn trailing_comments_outside_paragraph_content_do_not_change_html() {
-    assert_eq!(render("first\n// trailing\n\nsecond\n"), "<p>first</p>\n<p>second</p>\n");
-    assert_eq!(render("first\n// trailing\n# heading\n"), "<p>first</p>\n<h1>heading</h1>\n");
+    assert_eq!(
+        render("first\n// trailing\n\nsecond\n"),
+        "<p>first</p>\n<p>second</p>\n"
+    );
+    assert_eq!(
+        render("first\n// trailing\n# heading\n"),
+        "<p>first</p>\n<h1>heading</h1>\n"
+    );
     assert_eq!(render("first\n// trailing"), "<p>first</p>\n");
 }
 
@@ -103,8 +125,14 @@ fn tabs_and_four_space_indentation_are_not_comments() {
 
 #[test]
 fn fenced_code_and_raw_html_blocks_remain_opaque() {
-    assert_eq!(render("```\n// code\n```\n"), "<pre><code>// code\n</code></pre>\n");
-    assert_eq!(render("<div>\n// html content\n</div>\n"), "<div>\n// html content\n</div>\n");
+    assert_eq!(
+        render("```\n// code\n```\n"),
+        "<pre><code>// code\n</code></pre>\n"
+    );
+    assert_eq!(
+        render("<div>\n// html content\n</div>\n"),
+        "<div>\n// html content\n</div>\n"
+    );
 }
 
 #[test]
@@ -132,8 +160,14 @@ fn fenced_code_and_raw_html_inside_lists_keep_physical_comments_literal() {
 
 #[test]
 fn explicit_container_prefixes_keep_slashes_literal() {
-    assert_eq!(render("> // visible\n"), "<blockquote>\n<p>// visible</p>\n</blockquote>\n");
-    assert_eq!(render("- // visible\n"), "<ul>\n<li>// visible</li>\n</ul>\n");
+    assert_eq!(
+        render("> // visible\n"),
+        "<blockquote>\n<p>// visible</p>\n</blockquote>\n"
+    );
+    assert_eq!(
+        render("- // visible\n"),
+        "<ul>\n<li>// visible</li>\n</ul>\n"
+    );
     assert_eq!(
         render("> - // nested visible\n"),
         "<blockquote>\n<ul>\n<li>// nested visible</li>\n</ul>\n</blockquote>\n"
@@ -154,15 +188,24 @@ fn comment_markers_survive_container_dedenting_with_original_inline_spans() {
                 let document = Parser::with_options(
                     &allocator,
                     &source,
-                    ParserOptions { definition_lists: true, ..options() },
+                    ParserOptions {
+                        definition_lists: true,
+                        ..options()
+                    },
                 )
                 .parse()
                 .unwrap();
                 let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
                 assert!(!html.contains("hidden"), "{source:?}: {html}");
-                assert!(html.contains("<strong>second</strong>"), "{source:?}: {html}");
+                assert!(
+                    html.contains("<strong>second</strong>"),
+                    "{source:?}: {html}"
+                );
                 let span = first_strong_span(&document);
-                assert_eq!(&source[span.start as usize..span.end as usize], "**second**");
+                assert_eq!(
+                    &source[span.start as usize..span.end as usize],
+                    "**second**"
+                );
             }
         }
     }
@@ -170,12 +213,18 @@ fn comment_markers_survive_container_dedenting_with_original_inline_spans() {
 
 #[test]
 fn root_four_space_comment_markers_remain_visible_code() {
-    assert_eq!(render("    // visible\n"), "<pre><code>// visible\n</code></pre>\n");
+    assert_eq!(
+        render("    // visible\n"),
+        "<pre><code>// visible\n</code></pre>\n"
+    );
 }
 
 #[test]
 fn trailing_comments_keep_lists_tight_but_real_blanks_make_them_loose() {
-    assert_eq!(render("- one\n// trailing\n- two\n"), "<ul>\n<li>one</li>\n<li>two</li>\n</ul>\n");
+    assert_eq!(
+        render("- one\n// trailing\n- two\n"),
+        "<ul>\n<li>one</li>\n<li>two</li>\n</ul>\n"
+    );
     assert_eq!(
         render("- one\n\n// trailing\n\n- two\n"),
         "<ul>\n<li><p>one</p>\n</li>\n<li><p>two</p>\n</li>\n</ul>\n"
@@ -256,8 +305,14 @@ fn absent_comments_preserve_full_ast_with_either_flag_value() {
 #[test]
 fn setext_comment_boundaries_preserve_attributes_and_original_spans() {
     for (template, strong_text) in [
-        ("**Title** {#topic .wide}\n// trailing\0\n---\n", "**Title**"),
-        ("Title\n// hidden\0\n**continued** {#topic .wide}\n// trailing\n---\n", "**continued**"),
+        (
+            "**Title** {#topic .wide}\n// trailing\0\n---\n",
+            "**Title**",
+        ),
+        (
+            "Title\n// hidden\0\n**continued** {#topic .wide}\n// trailing\n---\n",
+            "**continued**",
+        ),
     ] {
         for prefix in ["", "\u{feff}"] {
             for source in line_ending_variants(&format!("{prefix}{template}")) {
@@ -265,7 +320,10 @@ fn setext_comment_boundaries_preserve_attributes_and_original_spans() {
                 let document = Parser::with_options(
                     &allocator,
                     &source,
-                    ParserOptions { heading_attributes: true, ..options() },
+                    ParserOptions {
+                        heading_attributes: true,
+                        ..options()
+                    },
                 )
                 .parse()
                 .unwrap();
@@ -277,7 +335,10 @@ fn setext_comment_boundaries_preserve_attributes_and_original_spans() {
                 assert_eq!(heading.id, Some("topic"));
                 assert_eq!(heading.classes.as_slice(), &["wide"]);
                 assert_eq!(heading.span.end as usize, source.len());
-                assert_eq!(first_strong_span(&document).source_text(&source), strong_text);
+                assert_eq!(
+                    first_strong_span(&document).source_text(&source),
+                    strong_text
+                );
                 let html = HtmlRenderer::with_options(HtmlRendererOptions {
                     heading_ids: true,
                     ..HtmlRendererOptions::gfm()
@@ -324,20 +385,29 @@ fn comments_inside_footnote_and_definition_list_bodies_disappear() {
     );
     assert!(!footnote.contains("private"), "{footnote}");
 
-    let definition_options = ParserOptions { definition_lists: true, ..options() };
+    let definition_options = ParserOptions {
+        definition_lists: true,
+        ..options()
+    };
     let definition = render_with_options(
         "Term\n: first\n  // private\n    second\n",
         definition_options,
         HtmlRendererOptions::gfm(),
     );
     assert!(definition.contains("<dt>Term</dt>"), "{definition}");
-    assert!(definition.contains("<dd>first\nsecond</dd>"), "{definition}");
+    assert!(
+        definition.contains("<dd>first\nsecond</dd>"),
+        "{definition}"
+    );
     assert!(!definition.contains("private"), "{definition}");
 }
 
 #[test]
 fn comments_before_table_attributes_do_not_drop_metadata_or_column_names() {
-    let parser_options = ParserOptions { table_attributes: true, ..options() };
+    let parser_options = ParserOptions {
+        table_attributes: true,
+        ..options()
+    };
     let renderer_options = HtmlRendererOptions {
         table_colgroup: true,
         table_column_names: true,
@@ -348,10 +418,19 @@ fn comments_before_table_attributes_do_not_drop_metadata_or_column_names() {
         parser_options,
         renderer_options,
     );
-    assert!(html.contains("<table id=\"products\" class=\"wide\">"), "{html}");
+    assert!(
+        html.contains("<table id=\"products\" class=\"wide\">"),
+        "{html}"
+    );
     assert!(html.contains("<caption>Caption</caption>"), "{html}");
-    assert!(html.contains("<col class=\"col-1 col-name-name\">"), "{html}");
-    assert!(html.contains("<col class=\"col-2 col-name-price\">"), "{html}");
+    assert!(
+        html.contains("<col class=\"col-1 col-name-name\">"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<col class=\"col-2 col-name-price\">"),
+        "{html}"
+    );
     assert!(!html.contains("private"), "{html}");
 }
 
@@ -360,15 +439,26 @@ fn strong_spans_survive_removed_comments_in_root_setext_quote_and_list_contexts(
     let cases = [
         ("\u{feff}before\n// private\0\n**visible**\n", "**visible**"),
         ("\u{feff}**Heading**\n// private\0\n---\n", "**Heading**"),
-        ("\u{feff}> before\n// private\0\n> **visible**\n", "**visible**"),
-        ("\u{feff}- before\n// private\0\n- **visible**\n", "**visible**"),
-        ("\u{feff}- before\n// private\0\n  **visible**\n", "**visible**"),
+        (
+            "\u{feff}> before\n// private\0\n> **visible**\n",
+            "**visible**",
+        ),
+        (
+            "\u{feff}- before\n// private\0\n- **visible**\n",
+            "**visible**",
+        ),
+        (
+            "\u{feff}- before\n// private\0\n  **visible**\n",
+            "**visible**",
+        ),
     ];
 
     for (source, expected) in cases {
         for variant in line_ending_variants(source) {
             let allocator = Allocator::new();
-            let document = Parser::with_options(&allocator, &variant, options()).parse().unwrap();
+            let document = Parser::with_options(&allocator, &variant, options())
+                .parse()
+                .unwrap();
             let span = first_strong_span(&document);
             assert_eq!(span.source_text(&variant), expected);
         }
@@ -388,7 +478,9 @@ fn crlf_and_lone_cr_comments_match_lf() {
 fn bom_and_nul_preserve_source_spans_while_comments_disappear() {
     let source = "\u{feff}// private\rvisible\0\r";
     let allocator = Allocator::new();
-    let document = Parser::with_options(&allocator, source, options()).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
     assert_eq!(document.span.start, 0);
     assert_eq!(document.span.end as usize, source.len());
     assert_eq!(document.children.len(), 1);
@@ -410,12 +502,17 @@ fn bom_and_nul_preserve_source_spans_while_comments_disappear() {
 fn renderer_paths_agree_when_comments_are_removed() {
     let source = "before\n// private\nafter\n";
     let allocator = Allocator::new();
-    let document = Parser::with_options(&allocator, source, options()).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
     let renderer_options = HtmlRendererOptions::gfm();
     let expected = HtmlRenderer::with_options(renderer_options.clone()).render(&document);
 
     let mut hooks_renderer = HtmlRenderer::with_options(renderer_options.clone());
-    assert_eq!(hooks_renderer.render_with_hooks(&document, &mut NoHtmlRenderHooks), expected);
+    assert_eq!(
+        hooks_renderer.render_with_hooks(&document, &mut NoHtmlRenderHooks),
+        expected
+    );
 
     let mut borrowed_renderer = HtmlRenderer::with_options(renderer_options);
     assert_eq!(borrowed_renderer.render_borrowed(&document), expected);

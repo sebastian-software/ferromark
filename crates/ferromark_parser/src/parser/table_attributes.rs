@@ -49,7 +49,11 @@ impl<'a> Parser<'a> {
         }
         let caption = self.parse_inline_block(line.caption, position + line.caption_offset)?;
         self.position = next_line_start(self.source.as_bytes(), position);
-        Ok(Some(self.allocator.boxed(TableAttributes { id, classes, caption })))
+        Ok(Some(self.allocator.boxed(TableAttributes {
+            id,
+            classes,
+            caption,
+        })))
     }
 }
 

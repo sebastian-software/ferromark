@@ -26,7 +26,9 @@ pub(super) struct NibbleTables {
 
 pub(super) const ESCAPE_NIBBLES: NibbleTables = NibbleTables {
     //          0     1     2     3  4  5     6     7  8  9  A  B     C  D     E  F
-    low: [0, 0, 0x01, 0, 0, 0, 0x01, 0x01, 0, 0, 0, 0, 0x02, 0, 0x02, 0],
+    low: [
+        0, 0, 0x01, 0, 0, 0, 0x01, 0x01, 0, 0, 0, 0, 0x02, 0, 0x02, 0,
+    ],
     high: [0, 0, 0x01, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 };
 
@@ -38,7 +40,9 @@ pub(super) const URL_ESCAPE_NIBBLES: NibbleTables = NibbleTables {
         0x19, 0x10, 0x11, 0x10, 0x10, 0x10, 0x11, 0x10, 0x10, 0x10, 0x10, 0x14, 0x16, 0x14, 0x12,
         0x10,
     ],
-    high: [0, 0, 0x01, 0x02, 0, 0x04, 0x08, 0, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10],
+    high: [
+        0, 0, 0x01, 0x02, 0, 0x04, 0x08, 0, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+    ],
 };
 
 /// Offset of the first flagged byte in `bytes[from..]`, or `None` when the
@@ -62,7 +66,10 @@ fn first_flagged_vector(bytes: &[u8], from: usize, tables: &NibbleTables) -> Opt
             let lo = vqtbl1q_u8(low, vandq_u8(v, nibble));
             let hi = vqtbl1q_u8(high, vshrq_n_u8(v, 4));
             let m = vtstq_u8(lo, hi);
-            vget_lane_u64(vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(m), 4)), 0)
+            vget_lane_u64(
+                vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(m), 4)),
+                0,
+            )
         };
         while i + 16 <= len {
             let mask = classify(vld1q_u8(bytes.as_ptr().add(i)));

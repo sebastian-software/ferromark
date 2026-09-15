@@ -77,8 +77,10 @@ pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<A
     let may_have_www = has_at || WWW_FINDER.find(bytes).is_some();
     // Both extended schemes require an email separator.
     let may_have_extended = has_at && has_extended_scheme;
-    (may_have_www || may_have_extended || has_bare_scheme)
-        .then_some(AutolinkScan { may_have_www, may_have_extended })
+    (may_have_www || may_have_extended || has_bare_scheme).then_some(AutolinkScan {
+        may_have_www,
+        may_have_extended,
+    })
 }
 
 /// True when the `://` at `colon_slash_slash` completes a Markdown link
@@ -103,7 +105,10 @@ fn scheme_is_markdown_destination(bytes: &[u8], colon_slash_slash: usize) -> boo
 /// Length of the whole `scheme://` prefix ending at the `://` that starts
 /// at `at`, or `None` when the bytes in front are not a known scheme.
 pub(super) fn scheme_prefix_len(bytes: &[u8], at: usize) -> Option<usize> {
-    SCHEMES.iter().find(|name| bytes[..at].ends_with(name.as_bytes())).map(|name| name.len() + 3)
+    SCHEMES
+        .iter()
+        .find(|name| bytes[..at].ends_with(name.as_bytes()))
+        .map(|name| name.len() + 3)
 }
 
 /// Start-of-text, whitespace, or common delimiter punctuation may precede an
@@ -133,7 +138,10 @@ pub(super) fn validate_url(value: &str, start: usize, prefix_len: usize) -> Opti
     // Trailing dots belong to the surrounding sentence, not the domain.
     let domain = value[domain_start..domain_end].trim_end_matches('.');
     if domain.split('.').count() < 2
-        || domain.rsplit('.').take(2).any(|segment| segment.is_empty() || segment.contains('_'))
+        || domain
+            .rsplit('.')
+            .take(2)
+            .any(|segment| segment.is_empty() || segment.contains('_'))
     {
         return None;
     }
@@ -326,7 +334,11 @@ fn validate_email_parts(value: &str, at: usize) -> Option<Candidate> {
     if !value[at + 1..end].contains('.') {
         return None;
     }
-    Some(Candidate { start, end, href_prefix: "mailto:" })
+    Some(Candidate {
+        start,
+        end,
+        href_prefix: "mailto:",
+    })
 }
 
 fn is_email_local_byte(byte: u8) -> bool {
@@ -336,7 +348,11 @@ fn is_email_local_byte(byte: u8) -> bool {
 #[cfg(test)]
 mod tests {
     // Owned strings keep the test oracle independent of production arena storage.
-    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+    #![allow(
+        clippy::disallowed_macros,
+        clippy::disallowed_methods,
+        clippy::disallowed_types
+    )]
 
     use super::*;
 
@@ -424,11 +440,15 @@ mod tests {
         ];
         let mut state = 0x7a3c_5e1d_9b2f_4681u64;
         for _ in 0..4000 {
-            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
             let len = (state >> 33) as usize % 24;
             let mut input = String::new();
             for _ in 0..len {
-                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                state = state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1);
                 input.push_str(tokens[(state >> 33) as usize % tokens.len()]);
             }
             check(&input);

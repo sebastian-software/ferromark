@@ -70,13 +70,21 @@ fn crlf_and_lone_cr_tight_lists_stay_tight() {
 #[test]
 fn nested_list_is_attached_to_previous_item() {
     let allocator = Allocator::new();
-    let doc =
-        parse_with_options(&allocator, "- parent\n  - child\n- sibling", ParserOptions::default());
+    let doc = parse_with_options(
+        &allocator,
+        "- parent\n  - child\n- sibling",
+        ParserOptions::default(),
+    );
 
     match &doc.children[0] {
         Node::List(list) => {
             assert_eq!(list.children.len(), 2);
-            assert!(list.children[0].children.iter().any(|node| matches!(node, Node::List(_))));
+            assert!(
+                list.children[0]
+                    .children
+                    .iter()
+                    .any(|node| matches!(node, Node::List(_)))
+            );
             assert!(list.children[0].span.end >= list.children[0].children[1].span().end);
         }
         other => panic!("expected list, got {other:?}"),

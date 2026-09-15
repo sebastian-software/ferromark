@@ -34,11 +34,16 @@ const BUDGET: Duration = Duration::from_mins(2);
 
 /// Syntax markers spliced into the seeds. Each opens a construct whose
 /// scanner has to cope with the closer being absent or misplaced.
-const MARKERS: [&str; 16] =
-    ["[", "![", "](", "*", "_", "`", "~~", "<", "&#", "[^", "> ", "- ", "|", "\\", "    ", "\t"];
+const MARKERS: [&str; 16] = [
+    "[", "![", "](", "*", "_", "`", "~~", "<", "&#", "[^", "> ", "- ", "|", "\\", "    ", "\t",
+];
 
 fn options(variant: u8) -> (ParserOptions, HtmlRendererOptions) {
-    let parser = if variant & 1 == 0 { ParserOptions::default() } else { ParserOptions::gfm() };
+    let parser = if variant & 1 == 0 {
+        ParserOptions::default()
+    } else {
+        ParserOptions::gfm()
+    };
     let mut renderer = HtmlRendererOptions::new();
     renderer.sanitize = variant & 0b10 != 0;
     renderer.xhtml = variant & 0b100 != 0;
@@ -118,7 +123,9 @@ fn mutated_spec_examples_never_panic_or_hang() {
     });
 
     // Propagate a panic from the worker with its original message.
-    worker.join().expect("no mutated input may panic the pipeline");
+    worker
+        .join()
+        .expect("no mutated input may panic the pipeline");
 
     // Assert the batch size rather than printing it (the workspace lints
     // ban stdout/stderr writes): if a future change shrinks the seed set
@@ -141,6 +148,9 @@ fn whitespace_only_inputs_terminate() {
             .parse()
             .expect("whitespace-only input parses");
         let html = HtmlRenderer::new().render(&document);
-        assert!(html.trim().is_empty(), "expected empty output for {source:?}, got {html:?}");
+        assert!(
+            html.trim().is_empty(),
+            "expected empty output for {source:?}, got {html:?}"
+        );
     }
 }

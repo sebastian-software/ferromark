@@ -30,16 +30,28 @@ fn mdx_tree(source: &str) -> String {
 #[test]
 fn mdx_false_does_not_emit_jsx_for_pascal_case() {
     let tree = pretty_ast("<Alert title=\"hi\" />\n", ParserOptions::default());
-    assert!(!tree.contains("MdxJsx"), "mdx=false must not emit JSX:\n{tree}");
+    assert!(
+        !tree.contains("MdxJsx"),
+        "mdx=false must not emit JSX:\n{tree}"
+    );
 }
 
 #[test]
 fn disabled_mdx_does_not_parse_jsx_children() {
     let source = "<Callout>\n\n# Title\n\nHello **world**.\n\n</Callout>\n";
     let tree = pretty_ast(source, ParserOptions::default());
-    assert!(!tree.contains("MdxJsx"), "mdx=false must not wrap children in JSX:\n{tree}");
-    assert!(tree.contains("Heading"), "markdown after the opener still parses:\n{tree}");
-    assert!(tree.contains("Strong"), "phrasing is not swallowed:\n{tree}");
+    assert!(
+        !tree.contains("MdxJsx"),
+        "mdx=false must not wrap children in JSX:\n{tree}"
+    );
+    assert!(
+        tree.contains("Heading"),
+        "markdown after the opener still parses:\n{tree}"
+    );
+    assert!(
+        tree.contains("Strong"),
+        "phrasing is not swallowed:\n{tree}"
+    );
 }
 
 #[test]
@@ -53,7 +65,10 @@ fn flow_self_closing_literal_attr() {
         tree.contains("Attr name=\"title\" value=literal(\"hi\")"),
         "expected literal title:\n{tree}"
     );
-    assert!(!tree.contains("Paragraph"), "standalone tag must not wrap in a paragraph:\n{tree}");
+    assert!(
+        !tree.contains("Paragraph"),
+        "standalone tag must not wrap in a paragraph:\n{tree}"
+    );
 }
 
 #[test]
@@ -64,8 +79,14 @@ fn text_self_closing_inside_paragraph() {
         tree.contains("MdxJsxTextElement name=Some(\"Badge\") self_closing=true"),
         "expected text Badge:\n{tree}"
     );
-    assert!(tree.contains("Text \"Hello \""), "expected leading text:\n{tree}");
-    assert!(tree.contains("Text \" world.\""), "expected trailing text:\n{tree}");
+    assert!(
+        tree.contains("Text \"Hello \""),
+        "expected leading text:\n{tree}"
+    );
+    assert!(
+        tree.contains("Text \" world.\""),
+        "expected trailing text:\n{tree}"
+    );
 }
 
 #[test]
@@ -75,7 +96,10 @@ fn boolean_and_expression_attrs() {
         tree.contains("MdxJsxFlowElement name=Some(\"Btn\") self_closing=true"),
         "expected flow Btn:\n{tree}"
     );
-    assert!(tree.contains("Attr name=\"disabled\" value=boolean"), "expected boolean:\n{tree}");
+    assert!(
+        tree.contains("Attr name=\"disabled\" value=boolean"),
+        "expected boolean:\n{tree}"
+    );
     assert!(
         tree.contains("Attr name=\"count\" value=expression(\"1+1\")"),
         "expression attrs store source, not a evaluated result:\n{tree}"
@@ -94,37 +118,70 @@ fn hostile_quoted_attr_is_literal_source() {
 #[test]
 fn unclosed_tag_does_not_panic_or_emit_jsx() {
     let tree = mdx_tree("<Alert\n");
-    assert!(!tree.contains("MdxJsx"), "unclosed opener stays non-JSX:\n{tree}");
+    assert!(
+        !tree.contains("MdxJsx"),
+        "unclosed opener stays non-JSX:\n{tree}"
+    );
 }
 
 #[test]
 fn unclosed_component_does_not_swallow_file() {
     let tree = mdx_tree("<Callout>\n\n# Still here\n\nAfter the unclosed tag.\n");
-    assert!(!tree.contains("MdxJsx"), "unclosed opener is not JSX:\n{tree}");
-    assert!(tree.contains("Heading"), "heading after the opener still parses:\n{tree}");
-    assert!(tree.contains("After the unclosed tag."), "trailing prose is not swallowed:\n{tree}");
+    assert!(
+        !tree.contains("MdxJsx"),
+        "unclosed opener is not JSX:\n{tree}"
+    );
+    assert!(
+        tree.contains("Heading"),
+        "heading after the opener still parses:\n{tree}"
+    );
+    assert!(
+        tree.contains("After the unclosed tag."),
+        "trailing prose is not swallowed:\n{tree}"
+    );
 }
 
 #[test]
 fn fenced_and_inline_code_are_not_components() {
     let fenced = mdx_tree("```js\nconst x = <div />;\n```\n");
     assert!(fenced.contains("Code"), "expected a fence:\n{fenced}");
-    assert!(!fenced.contains("MdxJsx"), "fence contents are not JSX:\n{fenced}");
+    assert!(
+        !fenced.contains("MdxJsx"),
+        "fence contents are not JSX:\n{fenced}"
+    );
 
     let inline = mdx_tree("Use `<Alert />` in prose.\n");
-    assert!(inline.contains("InlineCode"), "expected inline code:\n{inline}");
-    assert!(!inline.contains("MdxJsx"), "inline code is not JSX:\n{inline}");
+    assert!(
+        inline.contains("InlineCode"),
+        "expected inline code:\n{inline}"
+    );
+    assert!(
+        !inline.contains("MdxJsx"),
+        "inline code is not JSX:\n{inline}"
+    );
 }
 
 #[test]
 fn lowercase_html_stays_html_when_mdx_is_on() {
     let block = mdx_tree("<div>\nraw\n</div>\n\nAfter\n");
-    assert!(block.contains("Html"), "lowercase block stays Html:\n{block}");
-    assert!(!block.contains("MdxJsx"), "lowercase HTML is not JSX in this slice:\n{block}");
+    assert!(
+        block.contains("Html"),
+        "lowercase block stays Html:\n{block}"
+    );
+    assert!(
+        !block.contains("MdxJsx"),
+        "lowercase HTML is not JSX in this slice:\n{block}"
+    );
 
     let inline = mdx_tree("Hello <span class=\"x\">there</span>.\n");
-    assert!(inline.contains("Html"), "lowercase inline stays Html:\n{inline}");
-    assert!(!inline.contains("MdxJsx"), "lowercase HTML is not JSX in this slice:\n{inline}");
+    assert!(
+        inline.contains("Html"),
+        "lowercase inline stays Html:\n{inline}"
+    );
+    assert!(
+        !inline.contains("MdxJsx"),
+        "lowercase HTML is not JSX in this slice:\n{inline}"
+    );
 }
 
 #[test]
@@ -134,8 +191,14 @@ fn flow_open_close_parses_markdown_children() {
         tree.contains("MdxJsxFlowElement name=Some(\"Alert\") self_closing=false"),
         "expected open/close flow:\n{tree}"
     );
-    assert!(tree.contains("Strong"), "markdown children should parse:\n{tree}");
-    assert!(!tree.contains("MdxFlowExpression"), "this fixture has no child expression:\n{tree}");
+    assert!(
+        tree.contains("Strong"),
+        "markdown children should parse:\n{tree}"
+    );
+    assert!(
+        !tree.contains("MdxFlowExpression"),
+        "this fixture has no child expression:\n{tree}"
+    );
 }
 
 #[test]
@@ -146,7 +209,10 @@ fn fence_inside_component_is_code_not_island() {
         "wrapper still parses:\n{tree}"
     );
     assert!(tree.contains("Code"), "inner fence is a code node:\n{tree}");
-    assert!(!tree.contains("name=Some(\"Alert\")"), "fence JSX is not a component:\n{tree}");
+    assert!(
+        !tree.contains("name=Some(\"Alert\")"),
+        "fence JSX is not a component:\n{tree}"
+    );
 }
 
 #[test]
@@ -156,13 +222,19 @@ fn text_open_close_parses_phrasing_children() {
         tree.contains("MdxJsxTextElement name=Some(\"Badge\") self_closing=false"),
         "expected open/close text:\n{tree}"
     );
-    assert!(tree.contains("Text \"x\""), "expected phrasing child:\n{tree}");
+    assert!(
+        tree.contains("Text \"x\""),
+        "expected phrasing child:\n{tree}"
+    );
 }
 
 #[test]
 fn pascal_case_flow_interrupts_paragraph() {
     let tree = mdx_tree("Hello\n<Alert />\n");
-    assert!(tree.contains("Paragraph"), "leading prose stays a paragraph:\n{tree}");
+    assert!(
+        tree.contains("Paragraph"),
+        "leading prose stays a paragraph:\n{tree}"
+    );
     assert!(
         tree.contains("MdxJsxFlowElement name=Some(\"Alert\") self_closing=true"),
         "PascalCase at line start is flow:\n{tree}"
@@ -189,7 +261,10 @@ fn fragment_parses_as_nameless_jsx() {
         tree.contains("MdxJsxFlowElement name=None self_closing=false"),
         "expected a fragment:\n{tree}"
     );
-    assert!(tree.contains("Text \"hello\""), "fragment children stay markdown:\n{tree}");
+    assert!(
+        tree.contains("Text \"hello\""),
+        "fragment children stay markdown:\n{tree}"
+    );
 }
 
 #[test]
@@ -199,7 +274,10 @@ fn jsx_comment_is_flow_expression() {
         tree.contains("MdxFlowExpression value=\"/* hide */\""),
         "JSX comments store source as an expression:\n{tree}"
     );
-    assert!(!tree.contains("MdxJsx"), "a comment is not a JSX element:\n{tree}");
+    assert!(
+        !tree.contains("MdxJsx"),
+        "a comment is not a JSX element:\n{tree}"
+    );
 }
 
 #[test]

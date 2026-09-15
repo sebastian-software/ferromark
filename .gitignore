@@ -2,3 +2,15 @@
 **/*.rs.bk
 **/*.snap.new
 .DS_Store
+
+**/node_modules/
+/scripts/node_modules/
+/homepage/build/
+/homepage/.react-router/
+/node/ferromark/**/*.node
+/node/ferromark/.napi-artifacts/
+/node/artifacts/
+/.pnpm-store/
+/lcov.info
+
+**/__pycache__/

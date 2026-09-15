@@ -128,7 +128,12 @@ impl<'a> Parser<'a> {
                 if !(1..=9).contains(&digits) || !matches!(bytes.get(digits), Some(b'.' | b')')) {
                     return None;
                 }
-                (true, bytes[digits], digits + 1, trimmed[..digits].parse().ok())
+                (
+                    true,
+                    bytes[digits],
+                    digits + 1,
+                    trimmed[..digits].parse().ok(),
+                )
             };
 
         // Content begins after 1–4 spaces (or a tab). More than four
@@ -136,7 +141,10 @@ impl<'a> Parser<'a> {
         // taken to start one column after the marker, keeping the extra
         // spaces. A bare marker at end of line is an empty item.
         let after_marker = &bytes[marker_width..];
-        let spaces = after_marker.iter().take_while(|&&byte| byte == b' ').count();
+        let spaces = after_marker
+            .iter()
+            .take_while(|&&byte| byte == b' ')
+            .count();
         let content_skip = match after_marker.first() {
             None => 0,
             Some(b'\t') => 1,
@@ -147,7 +155,10 @@ impl<'a> Parser<'a> {
         };
 
         let marker_indent = line.len() - trimmed.len();
-        let ws_run = after_marker.iter().take_while(|&&byte| matches!(byte, b' ' | b'\t')).count();
+        let ws_run = after_marker
+            .iter()
+            .take_while(|&&byte| matches!(byte, b' ' | b'\t'))
+            .count();
         if after_marker[..ws_run].contains(&b'\t') {
             // Tabs after the marker expand from the marker's original
             // column; everything beyond the single separator column
@@ -157,7 +168,11 @@ impl<'a> Parser<'a> {
             let marker_end_col = marker_indent + marker_width;
             let mut end_col = marker_end_col;
             for &byte in &after_marker[..ws_run] {
-                end_col = if byte == b'\t' { (end_col / 4 + 1) * 4 } else { end_col + 1 };
+                end_col = if byte == b'\t' {
+                    (end_col / 4 + 1) * 4
+                } else {
+                    end_col + 1
+                };
             }
             let extra_columns = end_col.saturating_sub(marker_end_col + 1);
             let rest = &trimmed[marker_width + ws_run..];
@@ -185,7 +200,11 @@ impl<'a> Parser<'a> {
         // marker and its separating spaces; empty items count one column.
         let content_indent = marker_indent
             + marker_width
-            + if content.trim().is_empty() { 1 } else { content_skip.max(1) };
+            + if content.trim().is_empty() {
+                1
+            } else {
+                content_skip.max(1)
+            };
         let mut checked = None;
 
         if let Some((done, consumed)) = self.parse_task_list_prefix(content) {

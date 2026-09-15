@@ -9,7 +9,11 @@ fn main() {
     let document = Parser::with_options(
         &allocator,
         source,
-        ParserOptions { merged_table_cells: true, table_attributes: true, ..ParserOptions::gfm() },
+        ParserOptions {
+            merged_table_cells: true,
+            table_attributes: true,
+            ..ParserOptions::gfm()
+        },
     )
     .parse()
     .expect("valid example Markdown");

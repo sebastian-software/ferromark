@@ -62,8 +62,11 @@ def git_revision(source: Path):
 
 
 def archive_revision(revision: str) -> bytes:
+    native = subprocess.check_output(
+        ["git", "-C", str(ROOT), "ls-tree", "--name-only", revision, "node/native"], text=True
+    ).splitlines()
     return subprocess.check_output(
-        ["git", "-C", str(ROOT), "archive", revision, *CORE_FILES]
+        ["git", "-C", str(ROOT), "archive", revision, *CORE_FILES, *native]
     )
 
 
@@ -81,6 +84,8 @@ def copy_core(source: Path, destination: Path):
     for name in CORE_FILES[:-1]:
         shutil.copyfile(source / name, destination / name)
     shutil.copytree(source / "crates", destination / "crates")
+    if (source / "node/native").exists():
+        shutil.copytree(source / "node/native", destination / "node/native")
 
 
 def manifest(dependency: Path) -> str:

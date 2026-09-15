@@ -173,8 +173,9 @@ impl HtmlRenderer {
             if source_is_index {
                 // Source is index.md at directory level
                 // ../types.md -> ../types/index.html
-                if let Some(dir) =
-                    rest.strip_suffix("/index").or_else(|| (rest == "index").then_some(""))
+                if let Some(dir) = rest
+                    .strip_suffix("/index")
+                    .or_else(|| (rest == "index").then_some(""))
                 {
                     if dir.is_empty() {
                         "../index.html".to_string()
@@ -187,8 +188,9 @@ impl HtmlRenderer {
             } else {
                 // Source is not index.md, need extra ../
                 // ../types.md -> ../../types/index.html
-                if let Some(dir) =
-                    rest.strip_suffix("/index").or_else(|| (rest == "index").then_some(""))
+                if let Some(dir) = rest
+                    .strip_suffix("/index")
+                    .or_else(|| (rest == "index").then_some(""))
                 {
                     if dir.is_empty() {
                         "../../index.html".to_string()
@@ -224,7 +226,11 @@ impl HtmlRenderer {
         };
 
         // Reattach the query and/or fragment if there was one.
-        Some(if suffix.is_empty() { converted } else { append_suffix(converted, suffix) })
+        Some(if suffix.is_empty() {
+            converted
+        } else {
+            append_suffix(converted, suffix)
+        })
     }
 
     /// Checks if the source file is an index file (index.md).
@@ -233,7 +239,9 @@ impl HtmlRenderer {
             return false;
         }
         let source = std::path::Path::new(self.options.source_path());
-        source.file_stem().is_some_and(|stem| stem.eq_ignore_ascii_case("index"))
+        source
+            .file_stem()
+            .is_some_and(|stem| stem.eq_ignore_ascii_case("index"))
     }
 }
 

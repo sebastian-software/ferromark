@@ -27,7 +27,12 @@ impl<'a> Parser<'a> {
         // would walk to the end of the content to reach the same verdict.
         // Same fallback as below, reached without the walk.
         if !self.has_closer_from(content, *pos + 2, b']') {
-            Self::push_text(children, "![", offset + image_start, offset + image_start + 2);
+            Self::push_text(
+                children,
+                "![",
+                offset + image_start,
+                offset + image_start + 2,
+            );
             *pos = image_start + 2;
             return Ok(());
         }
@@ -62,7 +67,11 @@ impl<'a> Parser<'a> {
                 if label_end < content.len() && bytes[label_end] == b']' {
                     well_formed_reference = true;
                     let raw_label = &content[label_start..label_end];
-                    let key = if raw_label.trim().is_empty() { raw_alt } else { raw_label };
+                    let key = if raw_label.trim().is_empty() {
+                        raw_alt
+                    } else {
+                        raw_label
+                    };
                     if let Some(reference) = self.lookup_reference(key) {
                         children.push(Node::Image(self.allocator.boxed(Image {
                             url: reference.url,
@@ -93,7 +102,12 @@ impl<'a> Parser<'a> {
 
         // No valid inline image here: `![` is literal text and the rest of
         // the bracketed run is re-parsed for other inline markup.
-        Self::push_text(children, "![", offset + image_start, offset + image_start + 2);
+        Self::push_text(
+            children,
+            "![",
+            offset + image_start,
+            offset + image_start + 2,
+        );
         *pos = image_start + 2;
         Ok(())
     }
@@ -136,7 +150,10 @@ impl<'a> Parser<'a> {
         start: usize,
         end: usize,
     ) {
-        children.push(Node::Text(Text { value, span: Span::new(start as u32, end as u32) }));
+        children.push(Node::Text(Text {
+            value,
+            span: Span::new(start as u32, end as u32),
+        }));
     }
 
     pub(super) fn marker_run_len(bytes: &[u8], start: usize, marker: u8) -> usize {
@@ -301,7 +318,11 @@ fn flatten_inline_text(nodes: &[Node<'_>], out: &mut ferromark_allocator::String
 #[cfg(test)]
 mod scan_balanced_tests {
     // Owned strings keep the test oracle independent of production arena storage.
-    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+    #![allow(
+        clippy::disallowed_macros,
+        clippy::disallowed_methods,
+        clippy::disallowed_types
+    )]
 
     use super::Parser;
 
@@ -374,7 +395,11 @@ mod scan_balanced_tests {
     fn bracket_stop_matches_definition() {
         for byte in 0..=255u8 {
             let expected = matches!(byte, b'\\' | b'`' | b'<' | b'[' | b']');
-            assert_eq!(super::BRACKET_STOP.contains(byte), expected, "byte {byte:#x}");
+            assert_eq!(
+                super::BRACKET_STOP.contains(byte),
+                expected,
+                "byte {byte:#x}"
+            );
         }
     }
 
@@ -438,11 +463,15 @@ mod scan_balanced_tests {
         ];
         let mut state = 0x2545_f491_4f6c_dd1du64;
         for _ in 0..3000 {
-            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
             let len = (state >> 33) as usize % 80;
             let mut input = String::new();
             for _ in 0..len {
-                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                state = state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1);
                 input.push_str(tokens[(state >> 33) as usize % tokens.len()]);
             }
             check(&input, 0);
@@ -453,6 +482,9 @@ mod scan_balanced_tests {
         }
         check(&"[x]".repeat(64), 0);
         check(&format!("{}]", "a".repeat(100)), 0);
-        check(&format!("{}`{}`{}]", "a".repeat(20), "]".repeat(20), "b".repeat(20)), 0);
+        check(
+            &format!("{}`{}`{}]", "a".repeat(20), "]".repeat(20), "b".repeat(20)),
+            0,
+        );
     }
 }

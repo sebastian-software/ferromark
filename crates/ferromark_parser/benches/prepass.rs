@@ -21,9 +21,10 @@ Read the [documentation][docs] and [API reference][api].
 fn bench_prepass(c: &mut Criterion) {
     let mut group = c.benchmark_group("parse_prepass");
 
-    for (name, source) in
-        [("changelog_decoy", CHANGELOG_DECOY), ("reference_definitions", REFERENCE_DEFINITIONS)]
-    {
+    for (name, source) in [
+        ("changelog_decoy", CHANGELOG_DECOY),
+        ("reference_definitions", REFERENCE_DEFINITIONS),
+    ] {
         group.throughput(Throughput::Bytes(source.len() as u64));
         group.bench_with_input(name, source, |b, source| {
             b.iter(|| {

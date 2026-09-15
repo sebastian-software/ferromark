@@ -44,7 +44,11 @@ pub(super) fn next_fence_run_line(bytes: &[u8], from: usize, fence_byte: u8) -> 
     // `from` is one past a newline, which is one past the end when the last
     // line of the document is unterminated.
     let from = from.min(bytes.len());
-    let finder = if fence_byte == b'`' { &*BACKTICK_RUN } else { &*TILDE_RUN };
+    let finder = if fence_byte == b'`' {
+        &*BACKTICK_RUN
+    } else {
+        &*TILDE_RUN
+    };
     let at = from + finder.find(&bytes[from..])?;
     // `from` is a line start, so the match's line starts at or after it.
     Some(memrchr2(b'\n', b'\r', &bytes[from..at]).map_or(from, |off| from + off + 1))
@@ -234,7 +238,10 @@ impl<'a> Parser<'a> {
                 while let Some(parsed) = self.parse_reference_definition(&chunk[offset..]) {
                     definitions
                         .entry(Self::normalize_reference_label(parsed.label))
-                        .or_insert(ReferenceDef { url: parsed.url, title: parsed.title });
+                        .or_insert(ReferenceDef {
+                            url: parsed.url,
+                            title: parsed.title,
+                        });
                     offset += parsed.consumed;
                 }
                 // Skip the source lines the parsed prefix covered so fence
@@ -242,7 +249,10 @@ impl<'a> Parser<'a> {
                 // fences). A leftover suffix starts a paragraph.
                 let consumed_lines = chunk[..offset].matches('\n').count();
                 if consumed_lines > 0 {
-                    let next_pos = line_starts.get(consumed_lines).copied().unwrap_or(bytes.len());
+                    let next_pos = line_starts
+                        .get(consumed_lines)
+                        .copied()
+                        .unwrap_or(bytes.len());
                     // The footnote collector's scan is line-independent, so
                     // it must still see the definition's continuation lines
                     // the reference side jumps over.

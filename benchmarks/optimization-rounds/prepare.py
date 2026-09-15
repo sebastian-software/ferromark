@@ -113,6 +113,8 @@ def build_engine(name, source: Path, build: Path, worker: bytes, worker_sha: str
         if (source / filename).exists():
             shutil.copyfile(source / filename, snapshot / filename)
     shutil.copytree(source / "crates", snapshot / "crates")
+    if (source / "node/native").exists():
+        shutil.copytree(source / "node/native", snapshot / "node/native")
     (root / "src").mkdir(parents=True, exist_ok=True)
     (root / "src" / "main.rs").write_bytes(worker)
     (root / "Cargo.lock").write_bytes((source / "Cargo.lock").read_bytes())

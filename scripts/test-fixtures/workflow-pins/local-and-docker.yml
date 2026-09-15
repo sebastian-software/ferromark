@@ -1,0 +1,10 @@
+name: Local and Docker actions
+
+on: workflow_dispatch
+
+jobs:
+  actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/build
+      - uses: docker://alpine:3.22

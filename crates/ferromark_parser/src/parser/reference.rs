@@ -175,9 +175,12 @@ impl<'a> Parser<'a> {
         // reuse the last one rather than re-scanning to it per definition —
         // that scan is what made a definition-only document quadratic.
         let region_end = self.definition_region_end(start);
-        let cached = self.comment_definition_region.as_ref().is_some_and(|region| {
-            region.start <= start && start < region.end && region.end == region_end
-        });
+        let cached = self
+            .comment_definition_region
+            .as_ref()
+            .is_some_and(|region| {
+                region.start <= start && start < region.end && region.end == region_end
+            });
         if self.options.line_comments && !cached {
             let (text, map) = self.without_line_comments(start, region_end);
             self.comment_definition_region = Some(std::rc::Rc::new(CommentDefinitionRegion {
@@ -203,8 +206,9 @@ impl<'a> Parser<'a> {
             (parsed, end)
         };
 
-        let identifier =
-            self.allocator.alloc_str(Self::normalize_reference_label(parsed.label).as_str());
+        let identifier = self
+            .allocator
+            .alloc_str(Self::normalize_reference_label(parsed.label).as_str());
         self.position = end;
         Some(Node::Definition(self.allocator.boxed(Definition {
             identifier,

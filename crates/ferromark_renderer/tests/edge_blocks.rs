@@ -6,14 +6,21 @@ use ferromark_parser::ParserOptions;
 use ferromark_renderer::HtmlRendererOptions;
 #[test]
 fn ordered_lists_preserve_start_attribute() {
-    let html =
-        render("3. third\n4. fourth", ParserOptions::default(), HtmlRendererOptions::default());
+    let html = render(
+        "3. third\n4. fourth",
+        ParserOptions::default(),
+        HtmlRendererOptions::default(),
+    );
     insta::assert_snapshot!(html);
 }
 
 #[test]
 fn task_list_without_feature_renders_literal_text() {
-    let html = render("- [x] done", ParserOptions::default(), HtmlRendererOptions::default());
+    let html = render(
+        "- [x] done",
+        ParserOptions::default(),
+        HtmlRendererOptions::default(),
+    );
     insta::assert_snapshot!(html);
 }
 
@@ -52,7 +59,11 @@ fn fenced_code_inside_list_item_renders_as_block_code() {
 
 #[test]
 fn hard_breaks_render_inside_paragraphs() {
-    let html = render("line 1\\\nline 2", ParserOptions::default(), HtmlRendererOptions::default());
+    let html = render(
+        "line 1\\\nline 2",
+        ParserOptions::default(),
+        HtmlRendererOptions::default(),
+    );
     assert_eq!(html, "<p>line 1<br>\nline 2</p>\n");
 }
 
@@ -62,7 +73,11 @@ fn crlf_and_lone_cr_render_like_lf_line_endings() {
     let expected = render(lf, ParserOptions::default(), HtmlRendererOptions::default());
 
     for source in [lf.replace('\n', "\r\n"), lf.replace('\n', "\r")] {
-        let html = render(&source, ParserOptions::default(), HtmlRendererOptions::default());
+        let html = render(
+            &source,
+            ParserOptions::default(),
+            HtmlRendererOptions::default(),
+        );
         assert_eq!(html, expected);
     }
 }
@@ -75,7 +90,10 @@ fn inline_raw_html_renders_without_extra_newline() {
         HtmlRendererOptions::default(),
     );
 
-    assert_eq!(html, "<ul>\n<li><input type=\"checkbox\"> task</li>\n</ul>\n");
+    assert_eq!(
+        html,
+        "<ul>\n<li><input type=\"checkbox\"> task</li>\n</ul>\n"
+    );
 }
 
 #[test]
@@ -103,16 +121,28 @@ fn source_span_attributes_are_opt_in_for_block_elements() {
     );
 
     let without_spans = render(source, ParserOptions::gfm(), HtmlRendererOptions::default());
-    assert!(!without_spans.contains("data-source-span="), "{without_spans}");
+    assert!(
+        !without_spans.contains("data-source-span="),
+        "{without_spans}"
+    );
 
     let html = render(
         source,
         ParserOptions::gfm(),
-        HtmlRendererOptions { source_spans: true, ..Default::default() },
+        HtmlRendererOptions {
+            source_spans: true,
+            ..Default::default()
+        },
     );
 
-    assert!(html.contains("<h1 id=\"title\" data-source-span=\"0-8\">Title</h1>"), "{html}");
-    assert!(html.contains("<p data-source-span=\"9-15\">Text.</p>"), "{html}");
+    assert!(
+        html.contains("<h1 id=\"title\" data-source-span=\"0-8\">Title</h1>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<p data-source-span=\"9-15\">Text.</p>"),
+        "{html}"
+    );
     assert!(html.contains("<ul data-source-span="), "{html}");
     assert!(html.contains("<li data-source-span="), "{html}");
     assert!(html.contains("<table data-source-span="), "{html}");
@@ -126,7 +156,10 @@ fn source_span_attributes_do_not_mutate_raw_html_blocks() {
     let html = render(
         "<div>\nraw\n</div>\n",
         ParserOptions::default(),
-        HtmlRendererOptions { source_spans: true, ..Default::default() },
+        HtmlRendererOptions {
+            source_spans: true,
+            ..Default::default()
+        },
     );
 
     assert_eq!(html, "<div>\nraw\n</div>\n");
@@ -137,7 +170,10 @@ fn source_span_attributes_do_not_mutate_raw_html_blocks() {
 fn math_nodes_render_transform_compatible_markup() {
     let html = render(
         "Energy: $E=mc^2$\n\n$$\na + b\n$$\n",
-        ParserOptions { math: true, ..ParserOptions::default() },
+        ParserOptions {
+            math: true,
+            ..ParserOptions::default()
+        },
         HtmlRendererOptions::default(),
     );
 
@@ -154,7 +190,10 @@ fn math_nodes_render_transform_compatible_markup() {
 fn definition_lists_render_native_dl_nodes() {
     let html = render(
         "HTTP\n: Hypertext **Transfer** Protocol\n\nTCP\n: Transmission\n    - reliable\n",
-        ParserOptions { definition_lists: true, ..ParserOptions::default() },
+        ParserOptions {
+            definition_lists: true,
+            ..ParserOptions::default()
+        },
         HtmlRendererOptions::default(),
     );
 
@@ -173,19 +212,30 @@ fn definition_lists_render_native_dl_nodes() {
 
 #[test]
 fn definition_markers_remain_visible_in_dedented_sources_and_all_line_endings() {
-    let list =
-        concat!("<dl class=\"ox-definition-list\">\n", "<dt>Term</dt>\n<dd>body</dd>\n</dl>\n",);
+    let list = concat!(
+        "<dl class=\"ox-definition-list\">\n",
+        "<dt>Term</dt>\n<dd>body</dd>\n</dl>\n",
+    );
     for (source, expected) in [
         ("Term\n: body\n", list.to_string()),
-        ("> Term\n> : body\n", format!("<blockquote>\n{list}</blockquote>\n")),
-        ("- Term\n  : body\n", format!("<ul>\n<li>\n{list}</li>\n</ul>\n")),
+        (
+            "> Term\n> : body\n",
+            format!("<blockquote>\n{list}</blockquote>\n"),
+        ),
+        (
+            "- Term\n  : body\n",
+            format!("<ul>\n<li>\n{list}</li>\n</ul>\n"),
+        ),
     ] {
         for ending in ["\n", "\r\n", "\r"] {
             let source = source.replace('\n', ending);
             assert_eq!(
                 render(
                     &source,
-                    ParserOptions { definition_lists: true, ..ParserOptions::commonmark() },
+                    ParserOptions {
+                        definition_lists: true,
+                        ..ParserOptions::commonmark()
+                    },
                     HtmlRendererOptions::commonmark(),
                 ),
                 expected,
@@ -223,7 +273,10 @@ fn definition_term_spans_survive_comments_between_terms() {
             let Node::DefinitionListTerm(term) = node else {
                 panic!("expected a term");
             };
-            assert_eq!(&source[term.span.start as usize..term.span.end as usize], expected);
+            assert_eq!(
+                &source[term.span.start as usize..term.span.end as usize],
+                expected
+            );
         }
     }
 }

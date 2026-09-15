@@ -1,0 +1,297 @@
+/*
+ * Site chrome — the seam between Ardo's documentation shell and the shared
+ * family chrome from ferramenta-family.
+ *
+ * The family header and footer come from `ferramenta-family/chrome.css`, which
+ * root.tsx loads *after* this file so the package keeps winning the ties. That
+ * includes the chrome's own link colors and the tool switcher's
+ * narrow-viewport flyout: the package ships both, so this file does not.
+ *
+ * What this file owns is the integration — handing the scrolling back to the
+ * document, the documentation affordances the site puts in the header's `nav`
+ * and `actions` slots (guide links, search, the small-screen menu), and the one
+ * place the bar itself has to give way, at phone width.
+ */
+
+:root {
+  /*
+   * Ardo derives its sticky offsets, the height of the table of contents and
+   * the page's `scroll-padding-top` from this variable, and the family bar is
+   * 4rem tall (`.bar` in chrome.css), so the two have to agree — at every
+   * width, which is why the phone bar at the end of this file restates the
+   * variable rather than growing behind its back.
+   *
+   * The second row is what that phone bar reserves for the search field: zero
+   * while the bar is one row, raised by the media query below. The bar's own
+   * height is derived from the same two numbers, so the variable and the bar
+   * cannot drift apart.
+   */
+  --ferromark-search-row: 0rem;
+  --ardo-layout-headerHeight: calc(4rem + var(--ferromark-search-row));
+}
+
+/*
+ * ── The Ardo shell inside the family chrome ──
+ *
+ * Ardo's documentation layout is an application shell: a 100vh frame that never
+ * scrolls and an inner <main> that does. The family footer sits below that
+ * frame, so the page — not the article — has to be what scrolls. These rules
+ * hand the scrolling back to the document and pin the two rails that relied on
+ * the inner scroll container. The wrapper class comes from app/root.tsx; the
+ * inner hooks are Ardo's stable ones (#main-content, .ardo-sidebar) or a
+ * direct-child path, because Ardo's own layout class names are hashed.
+ */
+
+.ferromark-shell > div {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
+/* The layout container reserves room for a fixed header; ours is sticky. */
+.ferromark-shell > div > div {
+  padding-top: 0;
+}
+
+.ferromark-shell #main-content {
+  overflow: visible;
+}
+
+.ferromark-shell .ardo-sidebar {
+  position: sticky;
+  top: var(--ardo-layout-headerHeight);
+  align-self: flex-start;
+  height: calc(100vh - var(--ardo-layout-headerHeight));
+}
+
+/* "On this page": its sticky offset assumed a scroll container, not the page. */
+.ferromark-shell #main-content > div > aside {
+  top: calc(var(--ardo-layout-headerHeight) + var(--ardo-space-xl));
+}
+
+/*
+ * Deep links need no rule of their own here. Ardo already gives the document
+ * `scroll-padding-top: calc(var(--ardo-layout-headerHeight) +
+ * env(safe-area-inset-top) + 32px)`, and the document is the scrolling box
+ * now, so that padding is exactly what a hash target clears — but only while
+ * the variable above tells the truth about the bar, which is why the phone bar
+ * raises it instead of growing behind its back. A `scroll-margin-top` of our
+ * own would only add the header height a second time.
+ */
+
+/*
+ * ── The documentation affordances in the header slots ──
+ *
+ * The guide links go in `nav`, between the lockup and the family navigation;
+ * search and the small-screen guide menu go in `actions`, just before the theme
+ * toggle. The family chrome styles neither slot's contents, so everything below
+ * is ours — and because `chrome.css` loads last, nothing below may reuse one of
+ * its class names.
+ */
+
+.ferromark-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ferromark-nav a {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.ferromark-nav a:hover,
+.ferromark-nav a[aria-current="page"] {
+  color: var(--ember);
+}
+
+/* Ardo colors the field and its result popover from its own tokens; only the
+   width is ours. */
+.ferromark-search {
+  width: clamp(10rem, 18vw, 16rem);
+}
+
+.ferromark-search input {
+  width: 100%;
+}
+
+/* The guide menu: hidden while the bar shows the links (see the media query
+   below), and the whole guide once it takes over. */
+
+.ferromark-guide-menu {
+  position: relative;
+  display: none;
+}
+
+.ferromark-guide-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.4rem 0.45rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.ferromark-guide-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ferromark-guide-flyout {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.85rem);
+  z-index: 60;
+  display: grid;
+  min-width: 13rem;
+  padding: 0.5rem;
+  background: var(--iron);
+  border: 1px solid var(--iron-line);
+  border-top: 2px solid var(--rust);
+  box-shadow: 0 18px 44px -16px oklch(0.1 0.01 45 / 0.55);
+}
+
+.ferromark-guide-flyout a {
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.6rem;
+  font-size: 0.95rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ferromark-guide-flyout a:hover,
+.ferromark-guide-flyout a[aria-current="page"] {
+  background: var(--iron-2);
+  color: var(--ember);
+}
+
+/*
+ * Below 1180px the bar no longer holds the guide links next to the switcher and
+ * the search field, and below 1024px Ardo hides the sidebar rail as well: the
+ * menu takes over both jobs, and it carries the whole guide, not just the four
+ * links the bar shows.
+ */
+@media (max-width: 1180px) {
+  .ferromark-nav {
+    display: none;
+  }
+
+  .ferromark-guide-menu {
+    display: block;
+  }
+}
+
+/*
+ * On a phone the bar runs out of room. Search drops to a full-width second row
+ * rather than disappearing — a documentation site without search is the worse
+ * trade — and the GitHub link steps aside, since the tool switcher and the
+ * footer both still carry it.
+ */
+@media (max-width: 640px) {
+  :root {
+    /*
+     * The bar keeps its 4rem row and reserves this much below it for the
+     * search field, so the sticky header is that much taller. Raising the row
+     * raises `--ardo-layout-headerHeight` with it, which is what every offset
+     * derived from that variable reads — Ardo's `scroll-padding-top` above
+     * all, so a deep link keeps the same cushion under the bar here as it has
+     * on a desktop.
+     */
+    --ferromark-search-row: 3.5rem;
+  }
+
+  /*
+   * Height from the variable, second row from the same custom property: the
+   * bar cannot grow without the offsets that clear it growing too.
+   */
+  .site-header .bar {
+    height: var(--ardo-layout-headerHeight);
+    gap: 0.75rem;
+    padding-block: 0 var(--ferromark-search-row);
+  }
+
+  .site-header .lockup {
+    font-size: 1.35rem;
+  }
+
+  .site-header nav.site {
+    gap: 0.4rem;
+  }
+
+  .site-header .ghlink {
+    display: none;
+  }
+
+  .ferromark-search {
+    position: absolute;
+    right: 0;
+    bottom: 0.5rem;
+    left: 0;
+    width: auto;
+  }
+}
+
+/* Keep the five-parser feature matrix readable on narrow guide pages. */
+.feature-benchmark-table {
+  overflow-x: auto;
+}
+
+.feature-benchmark-table table {
+  min-width: 720px;
+}
+
+.feature-benchmark-table td {
+  white-space: nowrap;
+}
+
+/* Native pairs retain independent baselines and readable columns on small screens. */
+.native-benchmark-table {
+  overflow-x: auto;
+  margin-block: 1rem;
+}
+
+.native-benchmark-table table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.native-benchmark-table th,
+.native-benchmark-table td {
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--ardo-color-border, #d8e0e8);
+}
+
+.native-benchmark-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+.native-benchmark-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block: 1rem;
+  font-weight: 600;
+}
+
+.native-benchmark-selector select {
+  max-width: 100%;
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.native-benchmark-note {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}

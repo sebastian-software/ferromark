@@ -14,7 +14,10 @@ fn block_quote_child_spans_index_the_document_source() {
         panic!("expected block quote, got {:?}", doc.children[1]);
     };
     let Node::Paragraph(paragraph) = &block_quote.children[0] else {
-        panic!("expected quoted paragraph, got {:?}", block_quote.children[0]);
+        panic!(
+            "expected quoted paragraph, got {:?}",
+            block_quote.children[0]
+        );
     };
 
     assert_eq!(paragraph.span, Span::new(8, 13));
@@ -41,7 +44,10 @@ fn list_continuation_child_spans_account_for_stripped_indent() {
         panic!("expected list, got {:?}", doc.children[0]);
     };
     let Node::CodeBlock(code) = &list.children[0].children[1] else {
-        panic!("expected code block, got {:?}", list.children[0].children[1]);
+        panic!(
+            "expected code block, got {:?}",
+            list.children[0].children[1]
+        );
     };
 
     assert_eq!(code.span, Span::new(7, 30));
@@ -59,10 +65,16 @@ fn nested_list_child_spans_account_for_marker_indent() {
         panic!("expected list, got {:?}", doc.children[0]);
     };
     let Node::List(nested) = &list.children[0].children[1] else {
-        panic!("expected nested list, got {:?}", list.children[0].children[1]);
+        panic!(
+            "expected nested list, got {:?}",
+            list.children[0].children[1]
+        );
     };
     let Node::Paragraph(paragraph) = &nested.children[0].children[0] else {
-        panic!("expected paragraph, got {:?}", nested.children[0].children[0]);
+        panic!(
+            "expected paragraph, got {:?}",
+            nested.children[0].children[0]
+        );
     };
 
     assert_eq!(nested.span, Span::new(7, 18));
@@ -75,7 +87,10 @@ fn nested_list_child_spans_account_for_marker_indent() {
 fn footnote_definition_child_spans_index_the_document_source() {
     let allocator = Allocator::new();
     let source = "Ref[^a]\n\n[^a]: first\n\n    second\n\n    third\n";
-    let options = ParserOptions { footnotes: true, ..ParserOptions::gfm() };
+    let options = ParserOptions {
+        footnotes: true,
+        ..ParserOptions::gfm()
+    };
     let doc = parse_with_options(&allocator, source, options);
 
     let Node::FootnoteDefinition(definition) = &doc.children[1] else {
@@ -88,7 +103,10 @@ fn footnote_definition_child_spans_index_the_document_source() {
         (2, "third", Span::new(38, 43)),
     ] {
         let Node::Paragraph(paragraph) = &definition.children[index] else {
-            panic!("expected footnote paragraph, got {:?}", definition.children[index]);
+            panic!(
+                "expected footnote paragraph, got {:?}",
+                definition.children[index]
+            );
         };
         let Node::Text(text) = &paragraph.children[0] else {
             panic!("expected paragraph text, got {:?}", paragraph.children[0]);
@@ -115,7 +133,10 @@ fn table_rows_cells_and_inline_children_index_source() {
     assert_eq!(table.children[0].children[1].span, Span::new(6, 7));
     assert_eq!(table.children[1].span, Span::new(20, 29));
     assert_eq!(table.children[1].children[0].span, Span::new(22, 23));
-    assert_eq!(table.children[1].children[0].children[0].span(), Span::new(22, 23));
+    assert_eq!(
+        table.children[1].children[0].children[0].span(),
+        Span::new(22, 23)
+    );
     assert_all_spans_index_source(source, &doc.children);
 }
 
@@ -123,8 +144,18 @@ fn table_rows_cells_and_inline_children_index_source() {
 fn table_inline_strong_spans_after_escaped_pipes_index_document_source() {
     for (source, text_value, text_source, cell_source) in [
         ("| a **bold** |\n| --- |\n", "a ", "a ", "a **bold**"),
-        ("| a\\|b **bold** |\n| --- |\n", "a|b ", "a\\|b ", "a\\|b **bold**"),
-        ("| a\\|b\\|c **bold** |\n| --- |\n", "a|b|c ", "a\\|b\\|c ", "a\\|b\\|c **bold**"),
+        (
+            "| a\\|b **bold** |\n| --- |\n",
+            "a|b ",
+            "a\\|b ",
+            "a\\|b **bold**",
+        ),
+        (
+            "| a\\|b\\|c **bold** |\n| --- |\n",
+            "a|b|c ",
+            "a\\|b\\|c ",
+            "a\\|b\\|c **bold**",
+        ),
     ] {
         let allocator = Allocator::new();
         let doc = parse_with_options(&allocator, source, ParserOptions::gfm());
@@ -134,7 +165,10 @@ fn table_inline_strong_spans_after_escaped_pipes_index_document_source() {
         };
         let cell = &table.children[0].children[0];
         let cell_start = source.find(cell_source).expect("cell source") as u32;
-        assert_eq!(cell.span, Span::new(cell_start, cell_start + cell_source.len() as u32));
+        assert_eq!(
+            cell.span,
+            Span::new(cell_start, cell_start + cell_source.len() as u32)
+        );
         assert_eq!(cell.span.source_text(source), cell_source);
 
         let Node::Text(text) = &cell.children[0] else {
@@ -142,7 +176,10 @@ fn table_inline_strong_spans_after_escaped_pipes_index_document_source() {
         };
         let text_start = source.find(text_source).expect("text source") as u32;
         assert_eq!(text.value, text_value);
-        assert_eq!(text.span, Span::new(text_start, text_start + text_source.len() as u32));
+        assert_eq!(
+            text.span,
+            Span::new(text_start, text_start + text_source.len() as u32)
+        );
         assert_eq!(text.span.source_text(source), text_source);
 
         let Node::Strong(strong) = &cell.children[1] else {
@@ -159,7 +196,10 @@ fn table_inline_strong_spans_after_escaped_pipes_index_document_source() {
 fn table_wiki_link_span_after_escaped_pipes_indexes_document_source() {
     let allocator = Allocator::new();
     let source = "| a\\|b\\|c [[Guide\\|Label]] |\n| --- |\n";
-    let options = ParserOptions { wiki_links: true, ..ParserOptions::gfm() };
+    let options = ParserOptions {
+        wiki_links: true,
+        ..ParserOptions::gfm()
+    };
     let doc = parse_with_options(&allocator, source, options);
 
     let Node::Table(table) = &doc.children[0] else {
@@ -173,7 +213,10 @@ fn table_wiki_link_span_after_escaped_pipes_indexes_document_source() {
     assert_eq!(link.url, "Guide");
     let link_source = "[[Guide\\|Label]]";
     let link_start = source.find(link_source).expect("link source") as u32;
-    assert_eq!(link.span, Span::new(link_start, link_start + link_source.len() as u32));
+    assert_eq!(
+        link.span,
+        Span::new(link_start, link_start + link_source.len() as u32)
+    );
     assert_eq!(link.span.source_text(source), link_source);
 
     let Node::Text(label) = &link.children[0] else {

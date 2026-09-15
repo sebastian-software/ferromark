@@ -6,7 +6,9 @@ use ferromark_renderer::{HtmlRenderer, HtmlRendererOptions};
 
 fn render(source: &str, options: ParserOptions) -> String {
     let allocator = Allocator::new();
-    let document = Parser::with_options(&allocator, source, options).parse().unwrap();
+    let document = Parser::with_options(&allocator, source, options)
+        .parse()
+        .unwrap();
     let html = HtmlRendererOptions {
         autolink_urls: false,
         link_target_blank: false,
@@ -32,8 +34,16 @@ fn replaces_literal_nul_before_syntax_and_reference_resolution() {
         "\0\0é\0😀\0",
     ] {
         let replaced = source.replace('\0', "�");
-        for options in [ParserOptions::default(), ParserOptions::gfm(), ParserOptions::mdx()] {
-            assert_eq!(render(source, options.clone()), render(&replaced, options), "{source:?}");
+        for options in [
+            ParserOptions::default(),
+            ParserOptions::gfm(),
+            ParserOptions::mdx(),
+        ] {
+            assert_eq!(
+                render(source, options.clone()),
+                render(&replaced, options),
+                "{source:?}"
+            );
         }
     }
 }
@@ -71,8 +81,13 @@ fn nul_expansion_keeps_original_spans_through_nested_sources() {
     }
     let source = "é\0 **b\0c**\n\n> - [d\0e](/url)\n\n| f | g |\n| - | - |\n| h\0 | i |\n\n<Widget name=\"j\0\" />\n";
     let allocator = Allocator::new();
-    let options = ParserOptions { mdx: true, ..ParserOptions::gfm() };
-    let document = Parser::with_options(&allocator, source, options).parse().unwrap();
+    let options = ParserOptions {
+        mdx: true,
+        ..ParserOptions::gfm()
+    };
+    let document = Parser::with_options(&allocator, source, options)
+        .parse()
+        .unwrap();
     assert_eq!(document.span, Span::new(0, source.len() as u32));
     let mut check = Check { source, checked: 0 };
     check.visit_document(&document);

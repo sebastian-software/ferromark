@@ -1,6 +1,10 @@
 //! Strict construction, span, and visitor tests for MDX AST nodes.
 
-#![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+#![allow(
+    clippy::disallowed_macros,
+    clippy::disallowed_methods,
+    clippy::disallowed_types
+)]
 
 use ferromark_allocator::Allocator;
 
@@ -126,7 +130,11 @@ fn fragment_name_is_none_for_flow_and_text() {
 
 #[test]
 fn boolean_attribute_has_no_value() {
-    let attr = MdxJsxAttribute { name: "disabled", value: None, span: Span::new(7, 15) };
+    let attr = MdxJsxAttribute {
+        name: "disabled",
+        value: None,
+        span: Span::new(7, 15),
+    };
     assert_eq!(attr.name, "disabled");
     assert!(attr.value.is_none());
     assert_eq!(attr.span, Span::new(7, 15));
@@ -149,10 +157,12 @@ fn literal_attribute_keeps_quoted_value() {
 fn expression_attribute_value_keeps_source_without_braces() {
     let attr = MdxJsxAttribute {
         name: "title",
-        value: Some(MdxJsxAttributeValue::Expression(MdxJsxAttributeValueExpression {
-            value: "props.title",
-            span: Span::new(13, 26),
-        })),
+        value: Some(MdxJsxAttributeValue::Expression(
+            MdxJsxAttributeValueExpression {
+                value: "props.title",
+                span: Span::new(13, 26),
+            },
+        )),
         span: Span::new(7, 26),
     };
     match attr.value {
@@ -182,7 +192,10 @@ fn spread_attribute_is_expression_entry() {
 
 #[test]
 fn esm_node_keeps_source_and_span() {
-    let node = Node::MdxjsEsm(MdxjsEsm { value: "import X from './x'", span: Span::new(0, 19) });
+    let node = Node::MdxjsEsm(MdxjsEsm {
+        value: "import X from './x'",
+        span: Span::new(0, 19),
+    });
     assert_eq!(node.span(), Span::new(0, 19));
     match node {
         Node::MdxjsEsm(esm) => {
@@ -195,9 +208,14 @@ fn esm_node_keeps_source_and_span() {
 
 #[test]
 fn flow_and_text_expressions_keep_source_without_braces() {
-    let flow = Node::MdxFlowExpression(MdxFlowExpression { value: "1 + 1", span: Span::new(0, 7) });
-    let text_expr =
-        Node::MdxTextExpression(MdxTextExpression { value: "name", span: Span::new(6, 12) });
+    let flow = Node::MdxFlowExpression(MdxFlowExpression {
+        value: "1 + 1",
+        span: Span::new(0, 7),
+    });
+    let text_expr = Node::MdxTextExpression(MdxTextExpression {
+        value: "name",
+        span: Span::new(6, 12),
+    });
     assert_eq!(flow.span(), Span::new(0, 7));
     assert_eq!(text_expr.span(), Span::new(6, 12));
     match flow {
@@ -245,18 +263,22 @@ fn visitor_walks_nested_jsx_and_text_expressions() {
         span: Span::new(14, 21),
     }));
     let mut inner_attrs = allocator.new_vec();
-    inner_attrs.push(MdxJsxAttributeEntry::Expression(MdxJsxExpressionAttribute {
-        value: "...rest",
-        span: Span::new(8, 17),
-    }));
+    inner_attrs.push(MdxJsxAttributeEntry::Expression(
+        MdxJsxExpressionAttribute {
+            value: "...rest",
+            span: Span::new(8, 17),
+        },
+    ));
     let mut outer_children = allocator.new_vec();
-    outer_children.push(Node::MdxJsxTextElement(allocator.boxed(MdxJsxTextElement {
-        name: Some("Badge"),
-        attributes: inner_attrs,
-        children: inner_children,
-        self_closing: false,
-        span: Span::new(7, 30),
-    })));
+    outer_children.push(Node::MdxJsxTextElement(allocator.boxed(
+        MdxJsxTextElement {
+            name: Some("Badge"),
+            attributes: inner_attrs,
+            children: inner_children,
+            self_closing: false,
+            span: Span::new(7, 30),
+        },
+    )));
     let node = Node::MdxJsxFlowElement(allocator.boxed(MdxJsxFlowElement {
         name: Some("Alert"),
         attributes: allocator.new_vec(),
@@ -265,14 +287,30 @@ fn visitor_walks_nested_jsx_and_text_expressions() {
         span: Span::new(0, 39),
     }));
     let (kinds, texts) = visit_kinds(&node);
-    assert_eq!(kinds, ["mdxJsxFlowElement", "mdxJsxTextElement", "mdxTextExpression"]);
-    assert!(texts.is_empty(), "expression nodes must not be flattened to text: {texts:?}");
+    assert_eq!(
+        kinds,
+        [
+            "mdxJsxFlowElement",
+            "mdxJsxTextElement",
+            "mdxTextExpression"
+        ]
+    );
+    assert!(
+        texts.is_empty(),
+        "expression nodes must not be flattened to text: {texts:?}"
+    );
 }
 
 #[test]
 fn visitor_does_not_invent_children_for_esm_or_expressions() {
-    let esm = Node::MdxjsEsm(MdxjsEsm { value: "export const n = 1", span: Span::new(0, 18) });
-    let flow = Node::MdxFlowExpression(MdxFlowExpression { value: "n", span: Span::new(0, 3) });
+    let esm = Node::MdxjsEsm(MdxjsEsm {
+        value: "export const n = 1",
+        span: Span::new(0, 18),
+    });
+    let flow = Node::MdxFlowExpression(MdxFlowExpression {
+        value: "n",
+        span: Span::new(0, 3),
+    });
     assert_eq!(visit_kinds(&esm).0, ["mdxjsEsm"]);
     assert_eq!(visit_kinds(&flow).0, ["mdxFlowExpression"]);
 }
@@ -281,16 +319,24 @@ fn visitor_does_not_invent_children_for_esm_or_expressions() {
 fn document_visitor_reaches_mdx_children() {
     let allocator = Allocator::new();
     let mut children = allocator.new_vec();
-    children
-        .push(Node::MdxjsEsm(MdxjsEsm { value: "import X from './x'", span: Span::new(0, 19) }));
-    children.push(Node::MdxJsxFlowElement(allocator.boxed(MdxJsxFlowElement {
-        name: Some("X"),
-        attributes: allocator.new_vec(),
-        children: allocator.new_vec(),
-        self_closing: true,
-        span: Span::new(20, 25),
-    })));
-    let document = Document { front_matter: None, children, span: Span::new(0, 25) };
+    children.push(Node::MdxjsEsm(MdxjsEsm {
+        value: "import X from './x'",
+        span: Span::new(0, 19),
+    }));
+    children.push(Node::MdxJsxFlowElement(allocator.boxed(
+        MdxJsxFlowElement {
+            name: Some("X"),
+            attributes: allocator.new_vec(),
+            children: allocator.new_vec(),
+            self_closing: true,
+            span: Span::new(20, 25),
+        },
+    )));
+    let document = Document {
+        front_matter: None,
+        children,
+        span: Span::new(0, 25),
+    };
     let mut visitor = KindVisitor::default();
     visitor.visit_document(&document);
     assert_eq!(visitor.kinds, ["mdxjsEsm", "mdxJsxFlowElement"]);
@@ -320,13 +366,25 @@ fn every_mdx_node_debug_contains_its_mdast_type_name() {
             })),
             "MdxJsxTextElement",
         ),
-        (Node::MdxjsEsm(MdxjsEsm { value: "export {}", span: Span::new(0, 9) }), "MdxjsEsm"),
         (
-            Node::MdxFlowExpression(MdxFlowExpression { value: "1", span: Span::new(0, 3) }),
+            Node::MdxjsEsm(MdxjsEsm {
+                value: "export {}",
+                span: Span::new(0, 9),
+            }),
+            "MdxjsEsm",
+        ),
+        (
+            Node::MdxFlowExpression(MdxFlowExpression {
+                value: "1",
+                span: Span::new(0, 3),
+            }),
             "MdxFlowExpression",
         ),
         (
-            Node::MdxTextExpression(MdxTextExpression { value: "1", span: Span::new(0, 3) }),
+            Node::MdxTextExpression(MdxTextExpression {
+                value: "1",
+                span: Span::new(0, 3),
+            }),
             "MdxTextExpression",
         ),
     ];

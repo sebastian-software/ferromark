@@ -67,13 +67,21 @@ pub(super) fn scan_jsx_open<'a>(
         return None;
     }
     if bytes.get(start + 1) == Some(&b'>') {
-        return Some(JsxOpen { name: None, self_closing: false, end: start + 2 });
+        return Some(JsxOpen {
+            name: None,
+            self_closing: false,
+            end: start + 2,
+        });
     }
     let name_start = start + 1;
     let name_end = scan_jsx_name(bytes, name_start)?;
     let name = &source[name_start..name_end];
     let (self_closing, end) = scan_attributes(source, name_end, offset, attributes)?;
-    Some(JsxOpen { name: Some(name), self_closing, end })
+    Some(JsxOpen {
+        name: Some(name),
+        self_closing,
+        end,
+    })
 }
 
 pub(super) fn find_matching_close(
@@ -146,10 +154,12 @@ fn push_expression_attribute<'a>(
     attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
 ) -> Option<usize> {
     let end = skip_braces(source.as_bytes(), start)?;
-    attributes.push(MdxJsxAttributeEntry::Expression(MdxJsxExpressionAttribute {
-        value: &source[start + 1..end - 1],
-        span: Span::new((offset + start) as u32, (offset + end) as u32),
-    }));
+    attributes.push(MdxJsxAttributeEntry::Expression(
+        MdxJsxExpressionAttribute {
+            value: &source[start + 1..end - 1],
+            span: Span::new((offset + start) as u32, (offset + end) as u32),
+        },
+    ));
     Some(end)
 }
 
@@ -192,7 +202,10 @@ fn scan_attr_value<'a>(
     match *bytes.get(start)? {
         b'"' | b'\'' => {
             let end = skip_quoted(bytes, start)?;
-            Some((MdxJsxAttributeValue::Literal(&source[start + 1..end - 1]), end))
+            Some((
+                MdxJsxAttributeValue::Literal(&source[start + 1..end - 1]),
+                end,
+            ))
         }
         b'{' => {
             let end = skip_braces(bytes, start)?;
@@ -219,7 +232,13 @@ fn scan_tag_skip(source: &str, start: usize) -> Option<TagSkip<'_>> {
         cursor += 1;
     }
     if bytes.get(cursor) == Some(&b'>') {
-        return Some(TagSkip { name: None, start, closing, self_closing: false, end: cursor + 1 });
+        return Some(TagSkip {
+            name: None,
+            start,
+            closing,
+            self_closing: false,
+            end: cursor + 1,
+        });
     }
     let name_end = scan_member_name(bytes, cursor)?;
     let name = &source[cursor..name_end];
@@ -228,7 +247,13 @@ fn scan_tag_skip(source: &str, start: usize) -> Option<TagSkip<'_>> {
     if closing && self_closing {
         return None;
     }
-    Some(TagSkip { name: Some(name), start, closing, self_closing, end: cursor })
+    Some(TagSkip {
+        name: Some(name),
+        start,
+        closing,
+        self_closing,
+        end: cursor,
+    })
 }
 
 fn skip_tag_rest(bytes: &[u8], cursor: &mut usize) -> Option<bool> {
@@ -286,7 +311,10 @@ fn scan_ident(bytes: &[u8], start: usize) -> Option<usize> {
 }
 
 fn scan_attr_name(bytes: &[u8], start: usize) -> Option<usize> {
-    if !bytes.get(start).is_some_and(|byte| is_attr_name_start(*byte)) {
+    if !bytes
+        .get(start)
+        .is_some_and(|byte| is_attr_name_start(*byte))
+    {
         return None;
     }
     let mut end = start + 1;

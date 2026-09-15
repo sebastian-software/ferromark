@@ -29,10 +29,12 @@ impl<'a> Parser<'a> {
         };
 
         self.position = end;
-        Ok(Some(Node::DefinitionList(
-            self.allocator
-                .boxed(DefinitionList { span: Span::new(start as u32, end as u32), children }),
-        )))
+        Ok(Some(Node::DefinitionList(self.allocator.boxed(
+            DefinitionList {
+                span: Span::new(start as u32, end as u32),
+                children,
+            },
+        ))))
     }
 
     fn collect_definition_list(
@@ -144,7 +146,11 @@ impl<'a> Parser<'a> {
         // term vector, including during speculative body-continuation probes.
         // Validate as we scan: delaying rejection of an indented body line
         // could repeatedly scan its suffix at each continuation probe.
-        Some(DefinitionTerms { end, count, body_start })
+        Some(DefinitionTerms {
+            end,
+            count,
+            body_start,
+        })
     }
 
     /// Necessary syntax only: actual term/body and container validation stays
@@ -160,7 +166,10 @@ impl<'a> Parser<'a> {
         let mut marker = bytes.len();
         for relative in memchr::memchr_iter(b':', &bytes[start..]) {
             let colon = start + relative;
-            if !matches!(bytes.get(colon + 1), None | Some(b' ' | b'\t' | b'\n' | b'\r')) {
+            if !matches!(
+                bytes.get(colon + 1),
+                None | Some(b' ' | b'\t' | b'\n' | b'\r')
+            ) {
                 continue;
             }
             let mut prefix = colon;
@@ -277,7 +286,11 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
-            if after_blank || self.probe_line_without_table(cursor, trimmed_start).starts_block {
+            if after_blank
+                || self
+                    .probe_line_without_table(cursor, trimmed_start)
+                    .starts_block
+            {
                 break;
             }
 
@@ -296,8 +309,9 @@ impl<'a> Parser<'a> {
         }
 
         let body_source = body_source.into_bump_str();
-        let sub_doc =
-            self.sub_parser_with_source_map(body_source, lazy_lines, &source_map).parse()?;
+        let sub_doc = self
+            .sub_parser_with_source_map(body_source, lazy_lines, &source_map)
+            .parse()?;
         let mut children = sub_doc.children;
         for child in &mut children {
             source_map.remap_node_spans(child);
@@ -363,7 +377,9 @@ impl<'a> Parser<'a> {
             && !Self::try_parse_thematic_break_line(line)
             && !self.try_parse_heading_start(line_start, trimmed_start)
             && !Self::try_parse_fenced_code_at(line, trimmed)
-            && self.parse_list_item_line_from_trimmed(line_start, line, trimmed).is_none()
+            && self
+                .parse_list_item_line_from_trimmed(line_start, line, trimmed)
+                .is_none()
             && !has_unclosed_inline_code(line)
     }
 
@@ -382,7 +398,10 @@ impl<'a> Parser<'a> {
             return None;
         }
         let after_colon = cursor + 1;
-        if !matches!(bytes.get(after_colon), None | Some(b' ' | b'\t' | b'\n' | b'\r')) {
+        if !matches!(
+            bytes.get(after_colon),
+            None | Some(b' ' | b'\t' | b'\n' | b'\r')
+        ) {
             return None;
         }
         // Reject ordinary term/body lines from their prefix before searching
@@ -394,7 +413,10 @@ impl<'a> Parser<'a> {
             body_start += 1;
         }
         let (_, body_end) = trim_line_span(self.source, body_start, line_end);
-        Some(DefinitionBodyLine { body_start, body_end })
+        Some(DefinitionBodyLine {
+            body_start,
+            body_end,
+        })
     }
 }
 
@@ -417,11 +439,18 @@ mod tests {
             let mut parser = Parser::with_options(
                 &allocator,
                 source,
-                ParserOptions { definition_lists: true, ..ParserOptions::commonmark() },
+                ParserOptions {
+                    definition_lists: true,
+                    ..ParserOptions::commonmark()
+                },
             );
             assert!(parser.parse_definition_list(0).unwrap().is_none());
             assert_eq!(parser.position, 0);
-            assert_eq!(allocator.allocated_bytes(), 0, "rejected probe allocated: {source:?}");
+            assert_eq!(
+                allocator.allocated_bytes(),
+                0,
+                "rejected probe allocated: {source:?}"
+            );
         }
     }
 

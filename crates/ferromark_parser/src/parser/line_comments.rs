@@ -35,7 +35,9 @@ impl<'a> Parser<'a> {
         while marker < bytes.len() && marker - start < 3 && bytes[marker] == b' ' {
             marker += 1;
         }
-        bytes.get(marker..).is_some_and(|rest| rest.starts_with(b"//"))
+        bytes
+            .get(marker..)
+            .is_some_and(|rest| rest.starts_with(b"//"))
     }
 
     /// Carry physical eligibility through dedenting without turning `> //`

@@ -11,13 +11,19 @@ fn render_with_options(source: &str, parser_options: ParserOptions) -> String {
     let document = Parser::with_options(&allocator, source, parser_options)
         .parse()
         .expect("fixture input should parse");
-    let options = HtmlRendererOptions { autolink_urls: false, ..HtmlRendererOptions::new() };
+    let options = HtmlRendererOptions {
+        autolink_urls: false,
+        ..HtmlRendererOptions::new()
+    };
     HtmlRenderer::with_options(options).render(&document)
 }
 
 #[test]
 fn single_tilde_strikethrough_stays_literal_when_gfm_is_disabled() {
-    assert_eq!(render_with_options("~there~\n", ParserOptions::default()), "<p>~there~</p>\n");
+    assert_eq!(
+        render_with_options("~there~\n", ParserOptions::default()),
+        "<p>~there~</p>\n"
+    );
 }
 
 #[test]
@@ -26,7 +32,10 @@ fn gfm_official_strikethrough_examples_491_and_493() {
         render("~~Hi~~ Hello, ~there~ world!\n"),
         "<p><del>Hi</del> Hello, <del>there</del> world!</p>\n"
     );
-    assert_eq!(render("This will ~~~not~~~ strike.\n"), "<p>This will ~~~not~~~ strike.</p>\n");
+    assert_eq!(
+        render("This will ~~~not~~~ strike.\n"),
+        "<p>This will ~~~not~~~ strike.</p>\n"
+    );
 }
 
 #[test]
@@ -60,14 +69,23 @@ fn gfm_extended_autolinks_require_contiguous_addresses() {
 #[test]
 fn gfm_single_tilde_ignores_escaped_and_code_span_tildes() {
     assert_eq!(render("~a\\~ b~\n"), "<p><del>a~ b</del></p>\n");
-    assert_eq!(render("~a `~` b~\n"), "<p><del>a <code>~</code> b</del></p>\n");
+    assert_eq!(
+        render("~a `~` b~\n"),
+        "<p><del>a <code>~</code> b</del></p>\n"
+    );
 }
 
 #[test]
 fn explicit_subscript_keeps_priority_over_single_tilde_strikethrough() {
-    let options =
-        ParserOptions { strikethrough: true, subscript: true, ..ParserOptions::default() };
-    assert_eq!(render_with_options("~there~\n", options), "<p><sub>there</sub></p>\n");
+    let options = ParserOptions {
+        strikethrough: true,
+        subscript: true,
+        ..ParserOptions::default()
+    };
+    assert_eq!(
+        render_with_options("~there~\n", options),
+        "<p><sub>there</sub></p>\n"
+    );
 }
 
 #[test]
@@ -75,9 +93,18 @@ fn gfm_cmark_tilde_binding_cases() {
     let cases = [
         ("~foo ~ bar~\n", "<p><del>foo ~ bar</del></p>\n"),
         ("~~foo ~~ bar~~\n", "<p><del>foo ~~ bar</del></p>\n"),
-        ("~a [b](u~r)~\n", "<p><del>a <a href=\"u~r\">b</a></del></p>\n"),
-        ("~~a [b](u~~r)~~\n", "<p><del>a <a href=\"u~~r\">b</a></del></p>\n"),
-        ("~~one~ two~~ and ~three~~\n", "<p>~~one~ two~~ and ~three~~</p>\n"),
+        (
+            "~a [b](u~r)~\n",
+            "<p><del>a <a href=\"u~r\">b</a></del></p>\n",
+        ),
+        (
+            "~~a [b](u~~r)~~\n",
+            "<p><del>a <a href=\"u~~r\">b</a></del></p>\n",
+        ),
+        (
+            "~~one~ two~~ and ~three~~\n",
+            "<p>~~one~ two~~ and ~three~~</p>\n",
+        ),
     ];
     for (source, expected) in cases {
         assert_eq!(render(source), expected, "source: {source:?}");
@@ -104,7 +131,10 @@ fn gfm_tildes_allow_intraword_strikes_and_classify_adjacent_emphasis() {
         render("foo~bar~baz and foo~~bar~~baz\n"),
         "<p>foo<del>bar</del>baz and foo<del>bar</del>baz</p>\n"
     );
-    assert_eq!(render("*~ x~* and *~~x ~~*\n"), "<p>*~ x~* and *~~x ~~*</p>\n");
+    assert_eq!(
+        render("*~ x~* and *~~x ~~*\n"),
+        "<p>*~ x~* and *~~x ~~*</p>\n"
+    );
     assert_eq!(
         render_with_options("*~ x~*\n", ParserOptions::commonmark()),
         "<p><em>~ x~</em></p>\n"

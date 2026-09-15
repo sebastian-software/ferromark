@@ -11,12 +11,20 @@ fn snapshot_empty_document() {
 
 #[test]
 fn snapshot_whitespace_only_document() {
-    check("whitespace_only_document", "\n  \n\t\n   \n", ParserOptions::default());
+    check(
+        "whitespace_only_document",
+        "\n  \n\t\n   \n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
 fn snapshot_single_paragraph() {
-    check("single_paragraph", "Just one paragraph.", ParserOptions::default());
+    check(
+        "single_paragraph",
+        "Just one paragraph.",
+        ParserOptions::default(),
+    );
 }
 
 // --- Headings ---
@@ -41,12 +49,20 @@ fn snapshot_atx_heading_with_trailing_hashes() {
 
 #[test]
 fn snapshot_atx_heading_requires_space() {
-    check("atx_heading_requires_space", "#NoSpace\n## With space\n", ParserOptions::default());
+    check(
+        "atx_heading_requires_space",
+        "#NoSpace\n## With space\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
 fn snapshot_atx_heading_too_many_hashes() {
-    check("atx_heading_too_many_hashes", "####### too many\n", ParserOptions::default());
+    check(
+        "atx_heading_too_many_hashes",
+        "####### too many\n",
+        ParserOptions::default(),
+    );
 }
 
 // --- Thematic breaks ---
@@ -62,5 +78,9 @@ fn snapshot_thematic_break_variants() {
 
 #[test]
 fn snapshot_thematic_break_invalid_mixed_markers() {
-    check("thematic_break_invalid_mixed_markers", "- * -\n", ParserOptions::default());
+    check(
+        "thematic_break_invalid_mixed_markers",
+        "- * -\n",
+        ParserOptions::default(),
+    );
 }

@@ -1,0 +1,12 @@
+name: Merged mutable action reference
+
+on: workflow_dispatch
+
+mutable_step: &mutable_step
+  uses: actions/cache@v4
+
+jobs:
+  unpinned:
+    runs-on: ubuntu-latest
+    steps:
+      - <<: *mutable_step

@@ -63,11 +63,17 @@ pub(super) fn normalize<'a>(
 
 impl NormalizedSourceMap<'_> {
     fn boundary(&self, offset: u32) -> u32 {
-        let count = self.replacements.partition_point(|&start| start + 3 <= offset);
+        let count = self
+            .replacements
+            .partition_point(|&start| start + 3 <= offset);
         // AST boundaries normally cannot split U+FFFD. Clamp defensively if an
         // error points inside it, so returned offsets remain source boundaries.
-        let offset =
-            self.replacements.get(count).copied().filter(|&start| start < offset).unwrap_or(offset);
+        let offset = self
+            .replacements
+            .get(count)
+            .copied()
+            .filter(|&start| start < offset)
+            .unwrap_or(offset);
         offset - 2 * count as u32 + self.source_start
     }
 }
@@ -75,7 +81,11 @@ impl NormalizedSourceMap<'_> {
 impl SpanMap for NormalizedSourceMap<'_> {
     fn map_span(&self, span: Span) -> Span {
         let start = self.boundary(span.start);
-        let end = if span.start == span.end { start } else { self.boundary(span.end) };
+        let end = if span.start == span.end {
+            start
+        } else {
+            self.boundary(span.end)
+        };
         Span::new(start, end)
     }
     fn map_document_span(&self, _span: Span) -> Span {

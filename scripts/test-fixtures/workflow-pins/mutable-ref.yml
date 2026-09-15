@@ -1,0 +1,10 @@
+name: Mutable ref
+
+on: workflow_dispatch
+
+jobs:
+  unpinned:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@main

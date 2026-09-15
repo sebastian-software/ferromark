@@ -44,8 +44,16 @@ impl<'a> Parser<'a> {
         }
         // The destination scan saw every byte: without a backslash or `&`
         // there is nothing to unescape, so the URL keeps borrowing the source.
-        let url = if escaped { self.unescape_link_component(raw_url) } else { raw_url };
-        Some(LinkTarget { url, title, end: i + 1 })
+        let url = if escaped {
+            self.unescape_link_component(raw_url)
+        } else {
+            raw_url
+        };
+        Some(LinkTarget {
+            url,
+            title,
+            end: i + 1,
+        })
     }
 
     /// Removes backslashes that escape ASCII punctuation and decodes
@@ -219,7 +227,11 @@ fn skip_ws(bytes: &[u8], mut i: usize) -> usize {
 #[cfg(test)]
 mod tests {
     // Owned strings keep the test oracle independent of production arena storage.
-    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+    #![allow(
+        clippy::disallowed_macros,
+        clippy::disallowed_methods,
+        clippy::disallowed_types
+    )]
 
     use std::borrow::Cow;
 
@@ -292,7 +304,9 @@ mod tests {
         if depth > 0 {
             return None;
         }
-        let escaped = content[i..j].bytes().any(|byte| matches!(byte, b'\\' | b'&'));
+        let escaped = content[i..j]
+            .bytes()
+            .any(|byte| matches!(byte, b'\\' | b'&'));
         Some((&content[i..j], j, escaped))
     }
 
@@ -310,7 +324,11 @@ mod tests {
             let expected = byte.is_ascii_whitespace()
                 || byte.is_ascii_control()
                 || matches!(byte, b'\\' | b'&' | b'(' | b')');
-            assert_eq!(super::DESTINATION_STOP.contains(byte), expected, "byte {byte:#x}");
+            assert_eq!(
+                super::DESTINATION_STOP.contains(byte),
+                expected,
+                "byte {byte:#x}"
+            );
         }
     }
 
@@ -362,11 +380,15 @@ mod tests {
         ];
         let mut state = 0x9e37_79b9_7f4a_7c15u64;
         for _ in 0..3000 {
-            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
             let len = (state >> 33) as usize % 96;
             let mut input = String::new();
             for _ in 0..len {
-                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                state = state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1);
                 input.push_str(tokens[(state >> 33) as usize % tokens.len()]);
             }
             check_destination(&input, 0);
@@ -387,7 +409,11 @@ mod tests {
         let actual = parser.unescape_link_component(raw);
         assert_eq!(actual, expected.as_ref(), "input: {raw:?}");
         if matches!(expected, Cow::Borrowed(_)) {
-            assert_eq!(actual.as_ptr(), raw.as_ptr(), "unchanged input must stay borrowed");
+            assert_eq!(
+                actual.as_ptr(),
+                raw.as_ptr(),
+                "unchanged input must stay borrowed"
+            );
         }
     }
 
@@ -429,15 +455,20 @@ mod tests {
 
     #[test]
     fn component_scan_matches_scalar_on_mixed_unicode_and_dense_candidates() {
-        let tokens =
-            ["a", "é", "中", "🙂", "\\", "&", "&amp;", "&#x41;", "\\!", "\\a", "&bad;", "()"];
+        let tokens = [
+            "a", "é", "中", "🙂", "\\", "&", "&amp;", "&#x41;", "\\!", "\\a", "&bad;", "()",
+        ];
         let mut state = 0x46e2_94c3_198a_7bf5u64;
         for _ in 0..2000 {
-            state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
             let len = (state >> 32) as usize % 192;
             let mut input = String::new();
             for _ in 0..len {
-                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                state = state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1);
                 input.push_str(tokens[(state >> 32) as usize % tokens.len()]);
             }
             check(&input);

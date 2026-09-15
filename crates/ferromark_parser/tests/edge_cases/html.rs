@@ -22,7 +22,10 @@ fn html_details_block_is_preserved_as_raw_html() {
 
     match &doc.children[1] {
         Node::Paragraph(paragraph) => {
-            assert_eq!(first_text_in_nodes(paragraph.children.iter()), Some("After"));
+            assert_eq!(
+                first_text_in_nodes(paragraph.children.iter()),
+                Some("After")
+            );
         }
         other => panic!("expected paragraph after html block, got {other:?}"),
     }
@@ -112,7 +115,10 @@ fn html_comment_spans_lines_until_terminator_line() {
         "<!--\nline one\nline two --> tail\nAfter paragraph? no: same line ends block",
         ParserOptions::default(),
     );
-    assert_eq!(first_html_value(&doc), "<!--\nline one\nline two --> tail\n");
+    assert_eq!(
+        first_html_value(&doc),
+        "<!--\nline one\nline two --> tail\n"
+    );
 }
 
 #[test]
@@ -135,7 +141,10 @@ fn html_type1_script_closes_case_insensitively() {
         "<script>\nlet a = 1 < 2;\n</SCRIPT> tail\n\nAfter",
         ParserOptions::default(),
     );
-    assert_eq!(first_html_value(&doc), "<script>\nlet a = 1 < 2;\n</SCRIPT> tail\n");
+    assert_eq!(
+        first_html_value(&doc),
+        "<script>\nlet a = 1 < 2;\n</SCRIPT> tail\n"
+    );
 }
 
 #[test]
@@ -154,8 +163,11 @@ fn html_type1_close_on_opener_line_ends_the_block() {
 #[test]
 fn html_type1_closing_tag_split_across_lines_does_not_close() {
     let allocator = Allocator::new();
-    let doc =
-        parse_with_options(&allocator, "<script>\nx = '</scr\nipt>';\n", ParserOptions::default());
+    let doc = parse_with_options(
+        &allocator,
+        "<script>\nx = '</scr\nipt>';\n",
+        ParserOptions::default(),
+    );
     assert_eq!(doc.children.len(), 1);
     assert!(matches!(&doc.children[0], Node::Html(_)));
 }
@@ -178,8 +190,11 @@ fn html_cdata_and_processing_instruction_terminators() {
 #[test]
 fn html_type6_whitespace_only_line_terminates_and_stays_unconsumed() {
     let allocator = Allocator::new();
-    let doc =
-        parse_with_options(&allocator, "<div>\ncontent\n \t\nAfter", ParserOptions::default());
+    let doc = parse_with_options(
+        &allocator,
+        "<div>\ncontent\n \t\nAfter",
+        ParserOptions::default(),
+    );
     // The whitespace-only line is blank for termination purposes and is
     // not part of the block's raw value.
     assert_eq!(first_html_value(&doc), "<div>\ncontent\n");

@@ -44,7 +44,10 @@ impl ByteClass {
                 nibble += 1;
             }
             if members != 0 {
-                assert!(bit != 0, "a byte class may use at most eight high-nibble rows");
+                assert!(
+                    bit != 0,
+                    "a byte class may use at most eight high-nibble rows"
+                );
                 high[row] = bit;
                 let mut nibble = 0;
                 while nibble < 16 {
@@ -113,7 +116,10 @@ impl ByteClass {
                 let lo = vqtbl1q_u8(low, vandq_u8(v, nibble));
                 let hi = vqtbl1q_u8(high, vshrq_n_u8(v, 4));
                 let m = vtstq_u8(lo, hi);
-                vget_lane_u64(vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(m), 4)), 0)
+                vget_lane_u64(
+                    vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(m), 4)),
+                    0,
+                )
             };
             while i + 16 <= end {
                 let mask = classify(vld1q_u8(bytes.as_ptr().add(i)));
@@ -140,7 +146,11 @@ impl ByteClass {
 #[cfg(test)]
 mod tests {
     // Owned strings keep the test oracle independent of production arena storage.
-    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+    #![allow(
+        clippy::disallowed_macros,
+        clippy::disallowed_methods,
+        clippy::disallowed_types
+    )]
 
     use super::ByteClass;
 
@@ -170,7 +180,10 @@ mod tests {
     });
 
     fn scalar_first(class: &ByteClass, bytes: &[u8], from: usize) -> usize {
-        bytes[from..].iter().position(|&b| class.contains(b)).map_or(bytes.len(), |o| from + o)
+        bytes[from..]
+            .iter()
+            .position(|&b| class.contains(b))
+            .map_or(bytes.len(), |o| from + o)
     }
 
     fn check_class(class: &ByteClass) {
@@ -178,7 +191,11 @@ mod tests {
             let expected = class.contains(byte);
             let lo = class.low[(byte & 0x0F) as usize];
             let hi = class.high[(byte >> 4) as usize];
-            assert_eq!(lo & hi != 0, expected, "nibble tables disagree on {byte:#x}");
+            assert_eq!(
+                lo & hi != 0,
+                expected,
+                "nibble tables disagree on {byte:#x}"
+            );
         }
         for value in 0..=255u8 {
             for offset in 0..=40 {

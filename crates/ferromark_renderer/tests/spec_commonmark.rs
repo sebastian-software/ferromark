@@ -106,7 +106,10 @@ fn parse_baseline(text: &str) -> Vec<(String, usize)> {
             .next()
             .and_then(|token| token.parse::<usize>().ok())
             .unwrap_or_else(|| panic!("malformed baseline line: {line:?}"));
-        assert!(MODES.contains(&mode), "unknown mode in baseline line: {line:?}");
+        assert!(
+            MODES.contains(&mode),
+            "unknown mode in baseline line: {line:?}"
+        );
         entries.push((mode.to_string(), number));
     }
     entries
@@ -145,8 +148,16 @@ fn describe(failure: &Failure) -> String {
     let _ = writeln!(message, "--- markdown\n{}", failure.markdown);
     let _ = writeln!(message, "--- expected (spec)\n{}", failure.expected);
     let _ = writeln!(message, "--- actual (renderer)\n{}", failure.actual_raw);
-    let _ = writeln!(message, "--- expected normalized\n{}", normalize_html(&failure.expected));
-    let _ = writeln!(message, "--- actual normalized\n{}", normalize_html(&failure.actual_raw));
+    let _ = writeln!(
+        message,
+        "--- expected normalized\n{}",
+        normalize_html(&failure.expected)
+    );
+    let _ = writeln!(
+        message,
+        "--- actual normalized\n{}",
+        normalize_html(&failure.actual_raw)
+    );
     message
 }
 
@@ -170,7 +181,10 @@ fn commonmark_spec_conformance() {
     let known: Vec<(String, usize)> = parse_baseline(BASELINE);
     let mut unexpected_failures = Vec::new();
     for failure in &failures {
-        if !known.iter().any(|(mode, number)| mode == failure.mode && *number == failure.example) {
+        if !known
+            .iter()
+            .any(|(mode, number)| mode == failure.mode && *number == failure.example)
+        {
             unexpected_failures.push(failure);
         }
     }

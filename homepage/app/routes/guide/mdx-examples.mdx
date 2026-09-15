@@ -1,0 +1,31 @@
+---
+title: MDX Syntax
+---
+
+# MDX Syntax
+
+V2 recognizes JSX-like elements, expressions, ESM source, and MDX islands.
+It stores syntax and renders static payloads. It does not compile or execute
+JavaScript and does not generate React, Preact, or Solid component modules.
+
+## Rust
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, Parser, ParserOptions};
+
+let source = "<Notice>**Hello**</Notice>";
+let allocator = Allocator::for_source_len(source.len());
+let options = ParserOptions { mdx: true, ..ParserOptions::gfm() };
+let document = Parser::with_options(&allocator, source, options).parse()?;
+let html = HtmlRenderer::new().render(&document);
+```
+
+## Node.js
+
+```js
+import { toHtml } from './ferromark/index.mjs'
+const html = toHtml('<Notice>**Hello**</Notice>', { mdx: true })
+```
+
+Applications decide how to consume the resulting static islands. The old v1
+`render`, `segment`, and `to_component` MDX APIs are not part of v2.

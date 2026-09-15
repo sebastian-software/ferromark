@@ -228,12 +228,18 @@ impl ParserOptions {
     /// feature set without Ferromark's semantic footnote extension.
     #[must_use]
     pub fn gfm_spec() -> Self {
-        Self { footnotes: false, ..Self::gfm() }
+        Self {
+            footnotes: false,
+            ..Self::gfm()
+        }
     }
 
     /// Creates parser options with MDX enabled and GFM left off.
     #[must_use]
     pub fn mdx() -> Self {
-        Self { mdx: true, ..Self::default() }
+        Self {
+            mdx: true,
+            ..Self::default()
+        }
     }
 }

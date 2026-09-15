@@ -36,22 +36,38 @@ pub fn format_document(doc: &Document<'_>, source: &str, out: &mut String) {
 fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
     match node {
         Node::Paragraph(p) => {
-            line(out, depth, format_args!("Paragraph {}", span(p.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("Paragraph {}", span(p.span, source)),
+            );
             for child in &p.children {
                 format_node(child, source, depth + 1, out);
             }
         }
         Node::Heading(h) => {
-            line(out, depth, format_args!("Heading depth={} {}", h.depth, span(h.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("Heading depth={} {}", h.depth, span(h.span, source)),
+            );
             for child in &h.children {
                 format_node(child, source, depth + 1, out);
             }
         }
         Node::ThematicBreak(t) => {
-            line(out, depth, format_args!("ThematicBreak {}", span(t.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("ThematicBreak {}", span(t.span, source)),
+            );
         }
         Node::BlockQuote(b) => {
-            line(out, depth, format_args!("BlockQuote {}", span(b.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("BlockQuote {}", span(b.span, source)),
+            );
             for child in &b.children {
                 format_node(child, source, depth + 1, out);
             }
@@ -94,11 +110,25 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
             );
         }
         Node::Html(h) => {
-            line(out, depth, format_args!("Html value={:?} {}", h.value, span(h.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("Html value={:?} {}", h.value, span(h.span, source)),
+            );
         }
         Node::Table(t) => {
-            let aligns = t.align.iter().copied().map(align_to_str).collect::<Vec<_>>().join(",");
-            line(out, depth, format_args!("Table align=[{}] {}", aligns, span(t.span, source)));
+            let aligns = t
+                .align
+                .iter()
+                .copied()
+                .map(align_to_str)
+                .collect::<Vec<_>>()
+                .join(",");
+            line(
+                out,
+                depth,
+                format_args!("Table align=[{}] {}", aligns, span(t.span, source)),
+            );
             if let Some(attributes) = &t.attributes {
                 line(
                     out,
@@ -116,10 +146,18 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
                 }
             }
             for row in &t.children {
-                line(out, depth + 1, format_args!("TableRow {}", span(row.span, source)));
+                line(
+                    out,
+                    depth + 1,
+                    format_args!("TableRow {}", span(row.span, source)),
+                );
                 for cell in &row.children {
                     if cell.colspan == 1 {
-                        line(out, depth + 2, format_args!("TableCell {}", span(cell.span, source)));
+                        line(
+                            out,
+                            depth + 2,
+                            format_args!("TableCell {}", span(cell.span, source)),
+                        );
                     } else {
                         line(
                             out,
@@ -138,28 +176,48 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
             }
         }
         Node::DefinitionList(d) => {
-            line(out, depth, format_args!("DefinitionList {}", span(d.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("DefinitionList {}", span(d.span, source)),
+            );
             for child in &d.children {
                 format_node(child, source, depth + 1, out);
             }
         }
         Node::DefinitionListTerm(t) => {
-            line(out, depth, format_args!("DefinitionListTerm {}", span(t.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("DefinitionListTerm {}", span(t.span, source)),
+            );
             for child in &t.children {
                 format_node(child, source, depth + 1, out);
             }
         }
         Node::DefinitionListDefinition(d) => {
-            line(out, depth, format_args!("DefinitionListDefinition {}", span(d.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("DefinitionListDefinition {}", span(d.span, source)),
+            );
             for child in &d.children {
                 format_node(child, source, depth + 1, out);
             }
         }
         Node::Text(t) => {
-            line(out, depth, format_args!("Text {:?} {}", t.value, span(t.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("Text {:?} {}", t.value, span(t.span, source)),
+            );
         }
         Node::Emphasis(e) => {
-            line(out, depth, format_args!("Emphasis {}", span(e.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("Emphasis {}", span(e.span, source)),
+            );
             for child in &e.children {
                 format_node(child, source, depth + 1, out);
             }
@@ -171,10 +229,18 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
             }
         }
         Node::InlineCode(c) => {
-            line(out, depth, format_args!("InlineCode {:?} {}", c.value, span(c.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("InlineCode {:?} {}", c.value, span(c.span, source)),
+            );
         }
         Node::InlineMath(m) => {
-            line(out, depth, format_args!("InlineMath {:?} {}", m.value, span(m.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("InlineMath {:?} {}", m.value, span(m.span, source)),
+            );
         }
         Node::Break(b) => {
             line(out, depth, format_args!("Break {}", span(b.span, source)));
@@ -183,7 +249,12 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
             line(
                 out,
                 depth,
-                format_args!("Link url={:?} title={:?} {}", l.url, l.title, span(l.span, source)),
+                format_args!(
+                    "Link url={:?} title={:?} {}",
+                    l.url,
+                    l.title,
+                    span(l.span, source)
+                ),
             );
             for child in &l.children {
                 format_node(child, source, depth + 1, out);
@@ -209,13 +280,21 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
             }
         }
         Node::Superscript(s) => {
-            line(out, depth, format_args!("Superscript {}", span(s.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("Superscript {}", span(s.span, source)),
+            );
             for child in &s.children {
                 format_node(child, source, depth + 1, out);
             }
         }
         Node::Subscript(s) => {
-            line(out, depth, format_args!("Subscript {}", span(s.span, source)));
+            line(
+                out,
+                depth,
+                format_args!("Subscript {}", span(s.span, source)),
+            );
             for child in &s.children {
                 format_node(child, source, depth + 1, out);
             }

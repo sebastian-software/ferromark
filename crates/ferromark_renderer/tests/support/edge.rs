@@ -8,7 +8,9 @@ pub fn render(
     renderer_options: HtmlRendererOptions,
 ) -> String {
     let allocator = Allocator::new();
-    let doc = Parser::with_options(&allocator, source, parser_options).parse().unwrap();
+    let doc = Parser::with_options(&allocator, source, parser_options)
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::with_options(renderer_options);
     renderer.render(&doc)
 }

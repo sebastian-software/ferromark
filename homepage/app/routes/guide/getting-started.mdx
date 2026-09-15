@@ -1,0 +1,30 @@
+---
+title: Getting Started
+---
+
+# Getting Started
+
+Ferromark v2 is developed on the `codex/v2` branch of the Ferromark repository.
+It combines an OX-Content-derived arena AST with Ferromark features and optimizations.
+All packages are currently unpublished. Installing the released `ferromark`
+package from npm or crates.io still installs v1.
+
+```sh
+git clone --branch codex/v2 https://github.com/sebastian-software/ferromark.git
+cd ferromark
+cargo test --workspace --all-features --locked
+```
+
+The repository toolchain selects the minimum Rust version from the workspace.
+For Node development, use Node.js 22.13.0 or newer and the pinned pnpm version:
+
+```sh
+cd node
+pnpm install --frozen-lockfile
+pnpm build
+pnpm test
+```
+
+The native package supports Node.js 22.12.0 and newer. CI builds native packages
+for macOS, Windows, and glibc/musl Linux on x64 and arm64.
+See [Quick Start](./quick-start) for local Rust and Node examples.

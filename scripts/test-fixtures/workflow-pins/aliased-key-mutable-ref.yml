@@ -1,0 +1,13 @@
+name: Aliased mutable action key
+
+on: workflow_dispatch
+
+env:
+  uses_key: &uses_key uses
+  mutable_action: &mutable_action actions/checkout@v5
+
+jobs:
+  unpinned:
+    runs-on: ubuntu-latest
+    steps:
+      - *uses_key: *mutable_action

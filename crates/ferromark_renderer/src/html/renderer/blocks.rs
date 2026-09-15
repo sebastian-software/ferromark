@@ -183,7 +183,10 @@ impl HtmlRenderer {
             let language = if self.options.code_fence_metadata {
                 normalize_code_block_language(code_block.lang)
             } else {
-                code_block.lang.map(str::trim).filter(|lang| !lang.is_empty())
+                code_block
+                    .lang
+                    .map(str::trim)
+                    .filter(|lang| !lang.is_empty())
             };
             if let Some(lang) = language {
                 self.write(" class=\"language-");

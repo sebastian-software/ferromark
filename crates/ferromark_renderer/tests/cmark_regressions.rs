@@ -38,11 +38,20 @@ fn compare_reference_cases(json: &str, count: usize) {
     for case in cases {
         let source = case["markdown"].as_str().unwrap();
         let gfm = case["profile"] == "gfm";
-        let parser = if gfm { ParserOptions::gfm_spec() } else { ParserOptions::commonmark() };
-        let options =
-            if gfm { HtmlRendererOptions::gfm() } else { HtmlRendererOptions::commonmark() };
+        let parser = if gfm {
+            ParserOptions::gfm_spec()
+        } else {
+            ParserOptions::commonmark()
+        };
+        let options = if gfm {
+            HtmlRendererOptions::gfm()
+        } else {
+            HtmlRendererOptions::commonmark()
+        };
         let arena = Allocator::new();
-        let doc = Parser::with_options(&arena, source, parser).parse().unwrap();
+        let doc = Parser::with_options(&arena, source, parser)
+            .parse()
+            .unwrap();
         let html = HtmlRenderer::with_options(options).render(&doc);
         let reference = case["cmark_actual"].as_str().unwrap();
         // These two pinned cmark-gfm cases emit forbidden nested anchors.

@@ -68,15 +68,18 @@ pub fn normalize_html(input: &str) -> String {
     while i < bytes.len() {
         if let Some(name) = &n.raw_element {
             // Raw text/RCDATA may contain '<' without starting nested markup.
-            let end = bytes[i..].windows(name.len() + 2).enumerate().find_map(|(offset, part)| {
-                (part[..2] == *b"</"
-                    && part[2..].eq_ignore_ascii_case(name.as_bytes())
-                    && matches!(
-                        bytes.get(i + offset + part.len()),
-                        Some(b'>' | b'/' | b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
-                    ))
-                .then_some(offset)
-            });
+            let end = bytes[i..]
+                .windows(name.len() + 2)
+                .enumerate()
+                .find_map(|(offset, part)| {
+                    (part[..2] == *b"</"
+                        && part[2..].eq_ignore_ascii_case(name.as_bytes())
+                        && matches!(
+                            bytes.get(i + offset + part.len()),
+                            Some(b'>' | b'/' | b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
+                        ))
+                    .then_some(offset)
+                });
             let end = end.map_or(bytes.len(), |offset| i + offset);
             n.push_text(&input[i..end]);
             i = end;
@@ -95,7 +98,9 @@ pub fn normalize_html(input: &str) -> String {
             i += 1;
             continue;
         }
-        let end = input[i..].find('<').map_or(input.len(), |offset| i + offset);
+        let end = input[i..]
+            .find('<')
+            .map_or(input.len(), |offset| i + offset);
         n.push_text(&input[i..end]);
         i = end;
     }
@@ -110,7 +115,12 @@ impl Normalizer {
     /// Handles `<...` markup. Returns consumed byte length, or `None` when
     /// the input is not well-formed markup.
     fn push_markup(&mut self, rest: &str) -> Option<usize> {
-        for (open, close) in [("<!--", "-->"), ("<![CDATA[", "]]>"), ("<?", "?>"), ("<!", ">")] {
+        for (open, close) in [
+            ("<!--", "-->"),
+            ("<![CDATA[", "]]>"),
+            ("<?", "?>"),
+            ("<!", ">"),
+        ] {
             if let Some(after_open) = rest.strip_prefix(open) {
                 let end = after_open.find(close)?;
                 let total = open.len() + end + close.len();
@@ -316,7 +326,10 @@ fn normalizes_equivalent_markup() {
 #[test]
 fn keeps_meaningful_differences() {
     assert_ne!(normalize_html("<p>a b</p>"), normalize_html("<p>ab</p>"));
-    assert_ne!(normalize_html("<p><em>a</em></p>"), normalize_html("<p>a</p>"));
+    assert_ne!(
+        normalize_html("<p><em>a</em></p>"),
+        normalize_html("<p>a</p>")
+    );
     assert_ne!(
         normalize_html("<pre><code>a\n b\n</code></pre>"),
         normalize_html("<pre><code>a\nb\n</code></pre>")
@@ -331,7 +344,10 @@ fn keeps_meaningful_differences() {
 fn preserves_pre_content_verbatim() {
     let html = "<pre><code>  indented\n\ttab &amp; more  \n</code></pre>";
     let normalized = normalize_html(html);
-    assert!(normalized.contains("  indented\n\ttab &amp; more  \n"), "{normalized}");
+    assert!(
+        normalized.contains("  indented\n\ttab &amp; more  \n"),
+        "{normalized}"
+    );
 }
 
 #[test]
@@ -356,14 +372,21 @@ fn preserves_inline_code_and_raw_text_semantics() {
         normalize_html("<script>x</scriptx>&;</script>")
     );
     assert_ne!(normalize_html("<script>  "), normalize_html("<script>"));
-    assert_ne!(normalize_html("<p><code>x</code> y</p>"), normalize_html("<p><code>x</code>y</p>"));
+    assert_ne!(
+        normalize_html("<p><code>x</code> y</p>"),
+        normalize_html("<p><code>x</code>y</p>")
+    );
 }
 
 #[test]
 fn preserves_reserved_and_unsafe_url_bytes() {
-    for (encoded, literal) in
-        [("%23", "#"), ("%2F", "/"), ("%5C", "\\"), ("%26", "&"), ("%25", "%")]
-    {
+    for (encoded, literal) in [
+        ("%23", "#"),
+        ("%2F", "/"),
+        ("%5C", "\\"),
+        ("%26", "&"),
+        ("%25", "%"),
+    ] {
         assert_ne!(
             normalize_html(&format!("<a href=\"/a{encoded}b\">x</a>")),
             normalize_html(&format!("<a href=\"/a{literal}b\">x</a>"))

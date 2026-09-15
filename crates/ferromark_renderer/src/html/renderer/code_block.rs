@@ -86,8 +86,10 @@ impl HtmlRenderer {
                         MetaTokenKind::Raw => {
                             if token.value == ":line-numbers" {
                                 line_numbers_start = Some(1);
-                            } else if let Some(start) =
-                                token.value.strip_prefix(":line-numbers=").and_then(|value| {
+                            } else if let Some(start) = token
+                                .value
+                                .strip_prefix(":line-numbers=")
+                                .and_then(|value| {
                                     value
                                         .trim()
                                         .parse::<usize>()
@@ -107,8 +109,10 @@ impl HtmlRenderer {
                                 wrap_lines = Some(false);
                             } else if token.value == ":line-links" {
                                 line_links = true;
-                            } else if let Some(prefix) =
-                                token.value.strip_prefix(":line-links=").and_then(slug_meta_value)
+                            } else if let Some(prefix) = token
+                                .value
+                                .strip_prefix(":line-links=")
+                                .and_then(slug_meta_value)
                             {
                                 line_link_prefix = Some(prefix);
                             }
@@ -183,8 +187,9 @@ impl HtmlRenderer {
             self.write_display(line_number);
             self.write("\"");
 
-            let visible_line_number =
-                state.line_numbers_start.map_or(line_number, |start| start + index);
+            let visible_line_number = state
+                .line_numbers_start
+                .map_or(line_number, |start| start + index);
             if let Some(prefix) = state.line_link_prefix.as_deref() {
                 self.write(" id=\"");
                 self.write_attribute_escaped(prefix);

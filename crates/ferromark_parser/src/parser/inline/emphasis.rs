@@ -141,13 +141,20 @@ impl<'a> Parser<'a> {
             }
             let span = inner_span(&inner, use_delims);
             let node = if strikethrough {
-                Node::Delete(self.allocator.boxed(ferromark_ast::Delete { children: inner, span }))
+                Node::Delete(self.allocator.boxed(ferromark_ast::Delete {
+                    children: inner,
+                    span,
+                }))
             } else if use_delims == 2 {
-                Node::Strong(self.allocator.boxed(ferromark_ast::Strong { children: inner, span }))
+                Node::Strong(self.allocator.boxed(ferromark_ast::Strong {
+                    children: inner,
+                    span,
+                }))
             } else {
-                Node::Emphasis(
-                    self.allocator.boxed(ferromark_ast::Emphasis { children: inner, span }),
-                )
+                Node::Emphasis(self.allocator.boxed(ferromark_ast::Emphasis {
+                    children: inner,
+                    span,
+                }))
             };
             children[opener_node + 1] = node;
 
@@ -180,7 +187,10 @@ impl<'a> Parser<'a> {
 /// Placeholder left where a node has been lifted into an emphasis node.
 /// Empty text renders as nothing and is dropped once pairing is done.
 fn empty_text<'a>() -> Node<'a> {
-    Node::Text(Text { value: "", span: Span::new(0, 0) })
+    Node::Text(Text {
+        value: "",
+        span: Span::new(0, 0),
+    })
 }
 
 /// Lowest opener still worth examining, per closer class.

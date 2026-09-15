@@ -54,7 +54,12 @@ impl<'a> Parser<'a> {
         }
 
         // No closer: the opening run is literal text.
-        Self::push_text(children, &content[*pos..code_start], offset + *pos, offset + code_start);
+        Self::push_text(
+            children,
+            &content[*pos..code_start],
+            offset + *pos,
+            offset + code_start,
+        );
         *pos = code_start;
     }
 
@@ -93,6 +98,10 @@ impl<'a> Parser<'a> {
             && value.ends_with(' ')
             && value.len() >= 2
             && value.bytes().any(|byte| byte != b' ');
-        if stripped { &value[1..value.len() - 1] } else { value }
+        if stripped {
+            &value[1..value.len() - 1]
+        } else {
+            value
+        }
     }
 }

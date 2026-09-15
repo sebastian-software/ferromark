@@ -40,7 +40,10 @@ pub(super) fn line_end_if_blank_after(bytes: &[u8], mut i: usize) -> Option<usiz
 pub(super) fn next_blank_line(bytes: &[u8], mut pos: usize) -> usize {
     while pos < bytes.len() {
         let line_end = line_end(bytes, pos);
-        if bytes[pos..line_end].iter().all(|byte| matches!(byte, b' ' | b'\t')) {
+        if bytes[pos..line_end]
+            .iter()
+            .all(|byte| matches!(byte, b' ' | b'\t'))
+        {
             return pos;
         }
         pos = line_terminator_end(bytes, line_end);

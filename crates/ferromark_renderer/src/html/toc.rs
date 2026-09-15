@@ -46,7 +46,10 @@ pub(super) fn collect_inline_toc_entries(
 /// to exactly `[[toc]]`, which is also the only form `visit_paragraph` will
 /// render as a TOC.
 pub(super) fn scan_document_for_render(document: &Document<'_>) -> DocumentRenderScan {
-    let mut scan = DocumentRenderScan { has_toc_marker: false, heading_count: 0 };
+    let mut scan = DocumentRenderScan {
+        has_toc_marker: false,
+        heading_count: 0,
+    };
     for node in &document.children {
         scan_node_for_render(node, &mut scan);
     }
@@ -188,7 +191,11 @@ fn collect_inline_toc_node(
             };
 
             if let Some(id) = id {
-                entries.push(InlineTocEntry { depth: heading.depth, text, id });
+                entries.push(InlineTocEntry {
+                    depth: heading.depth,
+                    text,
+                    id,
+                });
             }
         }
         Node::BlockQuote(block_quote) => {

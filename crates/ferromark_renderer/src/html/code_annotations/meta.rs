@@ -88,7 +88,10 @@ pub(in crate::html) fn split_code_block_meta(meta: &str) -> SmallVec<[MetaToken<
                     index += 1;
                 }
 
-                tokens.push(MetaToken { kind: MetaTokenKind::Raw, value: &meta[start..index] });
+                tokens.push(MetaToken {
+                    kind: MetaTokenKind::Raw,
+                    value: &meta[start..index],
+                });
             }
         }
     }
@@ -163,7 +166,11 @@ pub(in crate::html) fn normalize_code_block_language(lang: Option<&str>) -> Opti
     let (language, _) = split_code_block_language_token(raw_lang);
     let language = language.trim();
 
-    if language.is_empty() { None } else { Some(language) }
+    if language.is_empty() {
+        None
+    } else {
+        Some(language)
+    }
 }
 
 pub(in crate::html) fn apply_annotation_numbers(
@@ -223,5 +230,10 @@ pub(in crate::html) fn apply_pending_annotations(
 }
 
 pub(in crate::html) fn parse_annotation_count(value: &str) -> usize {
-    value.trim().parse::<usize>().ok().filter(|count| *count > 0).unwrap_or(1)
+    value
+        .trim()
+        .parse::<usize>()
+        .ok()
+        .filter(|count| *count > 0)
+        .unwrap_or(1)
 }

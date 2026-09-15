@@ -84,7 +84,9 @@ impl CodeBlockRenderState {
     }
 
     pub(in crate::html) fn has_focus(&self) -> bool {
-        self.lines.iter().any(|line| line.annotations.contains(&CodeAnnotationKind::Focus))
+        self.lines
+            .iter()
+            .any(|line| line.annotations.contains(&CodeAnnotationKind::Focus))
     }
 
     pub(in crate::html) fn block_classes(&self) -> SmallVec<[&'static str; 8]> {
@@ -168,7 +170,10 @@ pub(in crate::html) struct PendingCodeAnnotation {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::html) enum InlineDirectiveAction {
-    Annotate { kind: CodeAnnotationKind, count: usize },
+    Annotate {
+        kind: CodeAnnotationKind,
+        count: usize,
+    },
     EscapeNextLine,
 }
 

@@ -30,7 +30,11 @@ impl<'a> Parser<'a> {
         let bytes = self.source.as_bytes();
         let pos = self.position;
         let &b = bytes.get(pos)?;
-        if b < 0x80 { Some(b as char) } else { self.source[pos..].chars().next() }
+        if b < 0x80 {
+            Some(b as char)
+        } else {
+            self.source[pos..].chars().next()
+        }
     }
 
     /// Advances by one character.
@@ -137,7 +141,10 @@ impl<'a> Parser<'a> {
         // A line indented four or more columns cannot start any block, so
         // it can never interrupt a paragraph either (lazy continuation).
         if self.line_indent_width(line_start, trimmed_start) >= 4 {
-            return BlockProbe { starts_block: false, line_end: None };
+            return BlockProbe {
+                starts_block: false,
+                line_end: None,
+            };
         }
 
         let starts_block = match bytes[trimmed_start] {
@@ -186,17 +193,30 @@ impl<'a> Parser<'a> {
         };
 
         if starts_block {
-            return BlockProbe { starts_block: true, line_end: None };
+            return BlockProbe {
+                starts_block: true,
+                line_end: None,
+            };
         }
         if !check_tables {
-            return BlockProbe { starts_block: false, line_end: None };
+            return BlockProbe {
+                starts_block: false,
+                line_end: None,
+            };
         }
         match memchr3(b'|', b'\n', b'\r', &bytes[line_start..]) {
-            Some(off) if bytes[line_start + off] == b'|' => {
-                BlockProbe { starts_block: self.try_parse_table(), line_end: None }
-            }
-            Some(off) => BlockProbe { starts_block: false, line_end: Some(line_start + off) },
-            None => BlockProbe { starts_block: false, line_end: Some(self.source.len()) },
+            Some(off) if bytes[line_start + off] == b'|' => BlockProbe {
+                starts_block: self.try_parse_table(),
+                line_end: None,
+            },
+            Some(off) => BlockProbe {
+                starts_block: false,
+                line_end: Some(line_start + off),
+            },
+            None => BlockProbe {
+                starts_block: false,
+                line_end: Some(self.source.len()),
+            },
         }
     }
 

@@ -9,8 +9,11 @@ fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
     for prefix_len in 0..=128 {
         for backslashes in 0..=5 {
             for suffix in ["", "|", " \\| end", " 日本語 \\| 🙂"] {
-                let source =
-                    format!("{}{}|{suffix}", "x".repeat(prefix_len), "\\".repeat(backslashes));
+                let source = format!(
+                    "{}{}|{suffix}",
+                    "x".repeat(prefix_len),
+                    "\\".repeat(backslashes)
+                );
                 let bytes = source.as_bytes();
                 let expected = bytes.iter().enumerate().find_map(|(index, &byte)| {
                     (byte == b'|' && is_escaped_table_pipe(bytes, index)).then_some(index)
@@ -18,11 +21,17 @@ fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
                 let scan_start = escaped_pipe_scan_start(bytes);
                 assert_eq!(scan_start.is_some(), expected.is_some(), "{source:?}");
                 if let (Some(start), Some(first)) = (scan_start, expected) {
-                    assert!(start <= first, "must not skip the first escaped pipe: {source:?}");
+                    assert!(
+                        start <= first,
+                        "must not skip the first escaped pipe: {source:?}"
+                    );
                 }
             }
         }
-        assert_eq!(escaped_pipe_scan_start("x".repeat(prefix_len).as_bytes()), None);
+        assert_eq!(
+            escaped_pipe_scan_start("x".repeat(prefix_len).as_bytes()),
+            None
+        );
     }
 }
 
@@ -45,7 +54,10 @@ fn skipped_unescaped_pipes_keep_content_and_sparse_source_map() {
             let expected = boundary + usize::from(boundary > removed_at);
             assert_eq!(source_map.boundary_offset(boundary) as usize, expected);
         }
-        assert_eq!(source_map.boundary_offset(result.content.len() + 100), source.len() as u32);
+        assert_eq!(
+            source_map.boundary_offset(result.content.len() + 100),
+            source.len() as u32
+        );
     }
 }
 
@@ -63,9 +75,13 @@ fn adjacent_escaped_pipes_map_each_generated_boundary() {
 #[test]
 fn sparse_map_matches_dense_scalar_oracle() {
     let allocator = Allocator::new();
-    for source in
-        [r"plain text", r"a\|b|c", r"a\\|b\|c", r"\|\|\|", r"slashes \\| and escaped \| pipes"]
-    {
+    for source in [
+        r"plain text",
+        r"a\|b|c",
+        r"a\\|b\|c",
+        r"\|\|\|",
+        r"slashes \\| and escaped \| pipes",
+    ] {
         let result = unescape_table_pipes(&allocator, source);
         let bytes = source.as_bytes();
         let mut expected_content = allocator.new_string();
@@ -104,7 +120,10 @@ fn sparse_map_matches_dense_scalar_oracle() {
             );
         }
         if let Some(map) = source_map {
-            assert_eq!(map.boundary_offset(result.content.len() + 100), source.len() as u32);
+            assert_eq!(
+                map.boundary_offset(result.content.len() + 100),
+                source.len() as u32
+            );
         }
     }
 }
