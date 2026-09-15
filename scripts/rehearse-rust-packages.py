@@ -28,17 +28,20 @@ def main():
     names = sorted(tomllib.loads((ROOT / member / 'Cargo.toml').read_text())['package']['name']
                    for member in workspace['members'] if member.startswith('crates/'))
     assert len(names) == 5
-    # Stable Cargo cannot resolve unpublished inter-crate registry versions.
-    # First create the actual normalized archives without generated lockfiles;
-    # then compile a separate consumer of those archives with local patches.
-    run(['cargo', 'package', '--workspace', '--exclude', 'ferromark-node', '--offline',
-         '--allow-dirty', '--no-verify', '--exclude-lockfile', '--target-dir', str(output / 'target')],
+    # Cargo stages all publishable workspace crates in its temporary registry,
+    # so this verifies the first release before any registry upload exists.
+    run(['cargo', 'publish', '--workspace', '--exclude', 'ferromark-node',
+         '--dry-run', '--locked', '--allow-dirty', '--target-dir', str(output / 'target')],
         output / 'package.log')
     unpacked = output / 'unpacked'
     unpacked.mkdir()
     artifacts = []
     for name in names:
         archive = output / 'target/package' / f'{name}-{version}.crate'
+        # Pinned Cargo 1.95 keeps multi-package dry-run archives in tmp-crate.
+        # Copy the verified bytes to the stable artifact layout consumed by CI.
+        if not archive.exists():
+            shutil.copyfile(archive.parent / 'tmp-crate' / archive.name, archive)
         with tarfile.open(archive) as tar:
             tar.extractall(unpacked, filter='data')
         package = unpacked / f'{name}-{version}'
@@ -89,8 +92,8 @@ ferromark = "={version}"
         elif package['name'] != 'ferromark-packaged-consumer':
             assert package['name'] in names and package['version'] == version
     result = dict(version=version, packages=artifacts, packaged_consumer='passed',
-        method='Stable Cargo archives without generated lockfiles; isolated consumer uses only unpacked archives through local crates.io patches.',
-        limits='No registry upload, credentials, availability, or Cargo registry verification was tested. Publication remains disabled.')
+        method='Full cargo publish --dry-run --locked, including packaged builds; additional isolated consumer uses unpacked archives.',
+        limits='No registry upload or publishing credentials were tested.')
     (output / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
     print(f'Verified {len(artifacts)} Cargo archives and isolated packaged consumer: {output}')
 

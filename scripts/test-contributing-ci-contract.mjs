@@ -48,15 +48,19 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
   assert.ok(ci.jobs.test.steps.some((step) => step.run === 'rustup override set "$TOOLCHAIN"'));
 });
 
-test("development packages cannot publish and homepage deployment is main-only", () => {
-  assert.match(read("Cargo.toml"), /^publish = false$/m);
+test("release packages target public registries and publication is main-only", () => {
+  assert.match(read("Cargo.toml"), /^publish = \["crates-io"\]$/m);
   const packageJson = JSON.parse(read("node/ferromark/package.json"));
-  assert.equal(packageJson.private, true);
+  assert.equal(packageJson.private, false);
   assert.equal(packageJson.version, read("Cargo.toml").match(/^version = "([^"]+)"/m)[1]);
   for (const dependency of Object.keys(packageJson.optionalDependencies)) {
     const suffix = dependency.replace(/^ferromark-/, "");
-    assert.equal(JSON.parse(read(`node/ferromark/npm/${suffix}/package.json`)).private, true);
+    assert.equal(JSON.parse(read(`node/ferromark/npm/${suffix}/package.json`)).private, false);
   }
+  const publisher = parse(read(".github/workflows/publish.yml"));
+  assert.equal(publisher.jobs.publish.if, "github.ref == 'refs/heads/main'");
+  assert.deepEqual(Object.keys(publisher.on), ["workflow_dispatch"]);
+  assert.match(read("node/native/Cargo.toml"), /^publish = false$/m);
   const deploy = parse(read(".github/workflows/deploy-homepage.yml"));
   assert.equal(deploy.jobs.build.if, "github.ref == 'refs/heads/main'");
 });

@@ -5,14 +5,14 @@ export default function HomePage() {
   return (
     <div className="landing">
       <section className="hero panel-mesh">
-        <p className="eyebrow">Ferromark v2 · Development preview</p>
+        <p className="eyebrow">Ferromark v2 · Release candidate</p>
         <h1>Markdown, with room to build.</h1>
         <p className="lead">An arena-allocated Markdown parser and HTML renderer for Rust and Node.js. Inspect the syntax tree, retain source spans, and shape the output with render hooks.</p>
         <div className="hero-actions">
           <Link className="button button-primary" to="/guide/quick-start">Try the v2 workspace</Link>
           <Link className="button button-secondary" to="/guide/features">Explore the API</Link>
         </div>
-        <p>V2 is under development. Packages are unpublished and the Rust API differs from v1.</p>
+        <p>V2 is entering release-candidate testing. The Rust API differs from v1.</p>
       </section>
       <section className="panel">
         <div className="section-head"><p className="eyebrow">A new foundation</p><h2>Parse, inspect, render.</h2></div>

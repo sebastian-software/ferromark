@@ -1,6 +1,6 @@
 {
   "name": "ferromark",
-  "version": "2.0.0-dev.0",
+  "version": "2.0.0-rc.1",
   "description": "Arena-allocated Markdown parser and HTML renderer for Node.js",
   "license": "MIT",
   "type": "module",
@@ -45,14 +45,14 @@
     "LICENSE"
   ],
   "optionalDependencies": {
-    "ferromark-darwin-arm64": "2.0.0-dev.0",
-    "ferromark-darwin-x64": "2.0.0-dev.0",
-    "ferromark-linux-arm64-gnu": "2.0.0-dev.0",
-    "ferromark-linux-arm64-musl": "2.0.0-dev.0",
-    "ferromark-linux-x64-gnu": "2.0.0-dev.0",
-    "ferromark-linux-x64-musl": "2.0.0-dev.0",
-    "ferromark-win32-arm64-msvc": "2.0.0-dev.0",
-    "ferromark-win32-x64-msvc": "2.0.0-dev.0"
+    "ferromark-darwin-arm64": "2.0.0-rc.1",
+    "ferromark-darwin-x64": "2.0.0-rc.1",
+    "ferromark-linux-arm64-gnu": "2.0.0-rc.1",
+    "ferromark-linux-arm64-musl": "2.0.0-rc.1",
+    "ferromark-linux-x64-gnu": "2.0.0-rc.1",
+    "ferromark-linux-x64-musl": "2.0.0-rc.1",
+    "ferromark-win32-arm64-msvc": "2.0.0-rc.1",
+    "ferromark-win32-x64-msvc": "2.0.0-rc.1"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -81,5 +81,5 @@
       "x86_64-unknown-linux-musl"
     ]
   },
-  "private": true
+  "private": false
 }

@@ -5,10 +5,16 @@ Native Node.js bindings for the [Ferromark](https://github.com/sebastian-softwar
 [Documentation site](https://sebastian-software.github.io/ferromark/) ·
 [Rust crate](https://crates.io/crates/ferromark)
 
-## Build the development package
+## Install the release candidate
 
-V2 is unpublished. `npm install ferromark` still installs the released v1 package.
-Check out `codex/v2` in this repository, then build from `node/`:
+```sh
+npm install ferromark@2.0.0-rc.1
+```
+
+After publication, `ferromark@next` selects the latest release candidate.
+`npm install ferromark` stays on the stable release until v2 is finalized.
+
+To build from source, check out this repository and run from `node/`:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -16,7 +22,6 @@ pnpm build
 pnpm test
 ```
 
-Examples below use the package name as it resolves inside the workspace.
 See the [v2 migration guide](../../docs/migration-v2.md) for breaking changes.
 The v2 engine uses an arena AST and retains upstream MIT attribution in `LICENSE`.
 
@@ -37,7 +42,7 @@ musl support includes Alpine Linux. GNU Linux binaries target glibc 2.17 or
 newer, although the installed Node.js runtime may impose a newer requirement.
 There is no WASM fallback.
 
-Consumers and contributors have different floors on purpose. This development
+Consumers and contributors have different floors on purpose. The published
 package supports Node.js 22.12.0 and newer, while the repository's `node/`
 development workspace declares Node.js 22.13.0 for its pinned pnpm toolchain.
 The `node-floor` CI job therefore builds the addon on the workspace version and

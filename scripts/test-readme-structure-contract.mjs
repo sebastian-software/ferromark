@@ -4,11 +4,12 @@ import { test } from "node:test";
 
 const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 
-test("README identifies the unpublished v2 architecture and links migration", () => {
+test("README identifies the v2 release candidate architecture and links migration", () => {
   const source = read("README.md.src");
   assert.match(source, /^# Ferromark v2$/m);
   assert.match(source, /arena-allocated/);
-  assert.match(source, /unpublished/);
+  assert.match(source, /release-candidate/);
+  assert.match(source, /npm install ferromark@2\.0\.0-rc\.1/);
   assert.match(source, /OX-Content/);
   assert.match(source, /docs\/migration-v2\.md/);
   assert.match(source, /node\/ferromark\/README\.md/);

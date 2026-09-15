@@ -21,7 +21,7 @@ to escape raw HTML and filter unsafe link/image URL schemes.
 For document-tree access, use `Allocator`, `Parser`, and `HtmlRenderer` directly.
 The source and allocator must outlive the parsed document. For GFM, pair
 `ParserOptions::gfm_spec()` with `HtmlRendererOptions::gfm()`.
-See the [Rust API guide](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/rust-api.md)
+See the [Rust API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md)
 for complete examples and ownership rules.
 
 ## Node.js
@@ -63,13 +63,13 @@ links and images continue to work.
 
 Rust exposes these switches through `ParserOptions::highlight`,
 `ParserOptions::inline_footnotes`, and `ParserOptions::allow_link_refs`.
-See the [syntax and Rust example](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/optional-writing.md).
+See the [syntax and Rust example](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md).
 
 Keep extensions disabled when their syntax is not needed. Measurements found
 no material disabled-option slowdown on representative documents, but enabling
 unused syntax costs several percent and more on marker-heavy inputs. Reference
 link savings depend on the profile; documents containing references also change
-output. The [performance report](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/reports/2026-09-15-optional-writing/README.md)
+output. The [performance report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-optional-writing/README.md)
 includes repeated measurements and limitations.
 
 ## Migrating from v1
@@ -81,5 +81,5 @@ also applies to root-absolute image and raw HTML URLs and converts Markdown
 links to index.html routes. Highlighter callbacks
 apply to code blocks, including indented code.
 
-Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/migration-v2.md)
+Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md)
 before adopting the development package.

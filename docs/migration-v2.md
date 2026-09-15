@@ -1,8 +1,8 @@
 # Migrating to Ferromark v2
 
-V2 is developed on `codex/v2` in the existing Ferromark repository. The original
-v1 history and the separately developed v2 history are both retained. It is an
-unpublished development baseline, not a drop-in stable upgrade.
+V2 lives in the existing Ferromark repository. The original v1 history and the
+separately developed v2 history are both retained. The first release candidate is
+`2.0.0-rc.1`; it is a breaking upgrade intended for testing before stable v2.
 
 ## Rust
 
@@ -56,5 +56,5 @@ and strikethrough, plus heading IDs and callouts; autolink literals and footnote
 remain opt-in. Consult `node/ferromark/index.d.mts` for the supported options.
 
 MDX captures syntax and static island payloads; it does not compile or execute
-JavaScript. The facade, native packages, and platform binaries remain unpublished.
+JavaScript. Release candidates use npm's `next` channel and explicit Cargo prerelease versions.
 Build and pack locally using [the package checks](releasing.md#local-package-checks).

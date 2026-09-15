@@ -1,0 +1,93 @@
+name: Publish release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version already committed on main (for example 2.0.0-rc.1)
+        required: true
+        type: string
+      ci_run_id:
+        description: Successful main CI run for this exact commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      CI_RUN_ID: ${{ inputs.ci_run_id }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: scripts/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+          cache-dependency-path: scripts/pnpm-lock.yaml
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+      - run: pnpm install --frozen-lockfile
+        working-directory: scripts
+      - name: Validate release version and channel
+        run: |
+          node --input-type=module -e '
+            import { readReleaseFiles, validateRelease } from "./scripts/lib/release-rehearsal.mjs";
+            import { releaseChannel } from "./node/scripts/release-channel.mjs";
+            releaseChannel(process.env.RELEASE_VERSION);
+            validateRelease(readReleaseFiles(), process.env.RELEASE_VERSION);
+          '
+          test -f "docs/releases/$RELEASE_VERSION.md"
+      - name: Require successful CI and initial crate credentials
+        id: preflight
+        run: python3 scripts/release-preflight.py
+        env:
+          CRATES_IO_BOOTSTRAP_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: npm-package-rehearsal
+          path: release-artifacts/npm
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: rust-package-rehearsal
+          path: release-artifacts/rust
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ github.token }}
+      - name: Validate npm archives and existing versions
+        run: node node/scripts/publish-packages.mjs release-artifacts/npm "$RELEASE_VERSION" --check
+      - name: Capture stable npm tags before publishing
+        run: node node/scripts/capture-release-tags.mjs release-artifacts/npm-tags-before.json
+      - name: Authenticate with crates.io
+        id: crates-io-auth
+        if: steps.preflight.outputs.bootstrap != 'true'
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+      - name: Publish Rust workspace
+        run: python3 scripts/publish-rust.py "$RELEASE_VERSION" "$GITHUB_SHA"
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN || steps.crates-io-auth.outputs.token }}
+      - name: Publish native npm packages and facade
+        run: node node/scripts/publish-packages.mjs release-artifacts/npm "$RELEASE_VERSION"
+      - name: Verify registry versions, channels and clean installations
+        run: node node/scripts/verify-published-release.mjs "$RELEASE_VERSION" release-artifacts/npm-tags-before.json
+      - name: Create GitHub release with verified archives
+        run: python3 scripts/finish-github-release.py
