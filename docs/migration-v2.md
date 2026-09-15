@@ -40,6 +40,13 @@ highlighter fallback and observers retain their existing JavaScript behavior.
 | Highlighter callback | Receives both fenced and indented code blocks |
 | New options | `tableAttributes`, `headingAttributes`, `wikiLinks`, `cjkEmphasis`, `mdx` |
 
+The restored writing switches are opt-in in v2. Enable `highlight` and
+`inlineFootnotes` explicitly where their syntax is required; inline notes use
+v2's existing footnote output rather than promising v1 HTML compatibility.
+`allowLinkRefs: false` also leaves definitions visible as ordinary Markdown.
+Enabled-but-unused extensions have a measurable cost; see the
+[performance assessment](reports/2026-09-15-optional-writing/README.md).
+
 `allowHtml: false` escapes raw HTML even with `renderPolicy: 'trusted'`; it does
 not disable HTML recognition in the parser. Node enables GFM tables, task lists,
 and strikethrough, plus heading IDs and callouts; autolink literals and footnotes
