@@ -119,24 +119,20 @@ pub(super) fn slugify_heading_into(text: &str, out: &mut String) {
     // non-ASCII runs, preserving Japanese and other non-Latin heading text
     // without slowing down the common ASCII API-doc heading.
     let bytes = text.as_bytes();
+    // One reserve covers an all-ASCII heading, which is the whole input in the
+    // common case: the ASCII path emits at most one byte per input byte.
+    // `push_ascii_run` still asks for its own run below, because the Unicode
+    // path can grow the slug past `text.len()` (U+0130 lowercases to two
+    // scalars, three bytes, from a two-byte input) and would otherwise eat the
+    // headroom a later ASCII run relies on.
     out.reserve(text.len());
     let start_len = out.len();
     let mut last_was_separator = true;
     let mut i = 0;
 
     while i < bytes.len() {
-        let b = bytes[i];
-        if b < 0x80 {
-            if b.is_ascii_alphanumeric() {
-                // Lowercase ASCII letters with a branchless add.
-                let lower = if b.is_ascii_uppercase() { b + 32 } else { b };
-                out.push(lower as char);
-                last_was_separator = false;
-            } else if !last_was_separator {
-                out.push('-');
-                last_was_separator = true;
-            }
-            i += 1;
+        if bytes[i] < 0x80 {
+            i = push_ascii_run(bytes, i, out, &mut last_was_separator);
         } else {
             // Find the next ASCII boundary and process the multi-byte run
             // through the char iterator (handles Unicode case folding /
@@ -145,17 +141,7 @@ pub(super) fn slugify_heading_into(text: &str, out: &mut String) {
             while j < bytes.len() && bytes[j] >= 0x80 {
                 j += 1;
             }
-            for ch in text[i..j].chars() {
-                for lower in ch.to_lowercase() {
-                    if lower.is_alphanumeric() {
-                        out.push(lower);
-                        last_was_separator = false;
-                    } else if !last_was_separator {
-                        out.push('-');
-                        last_was_separator = true;
-                    }
-                }
-            }
+            push_unicode_run(&text[i..j], out, &mut last_was_separator);
             i = j;
         }
     }
@@ -166,6 +152,86 @@ pub(super) fn slugify_heading_into(text: &str, out: &mut String) {
 
     if out.len() == start_len {
         out.push_str("section");
+    }
+}
+
+/// Appends the slug bytes for the ASCII run starting at `from`, returning the
+/// index of the first non-ASCII byte (or `bytes.len()`).
+///
+/// `String::push` re-checks capacity and re-encodes UTF-8 for every character,
+/// which is the bulk of the work for a 20-40 byte ASCII heading. The run's
+/// length bounds the output exactly — an alphanumeric byte emits its lowercase
+/// self and any other byte emits at most one `-` — so the capacity can be
+/// claimed once and the bytes written through a plain cursor, with a single
+/// `set_len` publishing the run. No stack buffer and no `from_utf8` are
+/// involved: the bytes go straight to their final address.
+#[allow(unsafe_code)]
+fn push_ascii_run(
+    bytes: &[u8],
+    from: usize,
+    out: &mut String,
+    last_was_separator: &mut bool,
+) -> usize {
+    let mut end = from;
+    while end < bytes.len() && bytes[end] < 0x80 {
+        end += 1;
+    }
+    let run = &bytes[from..end];
+    out.reserve(run.len());
+    let mut separator = *last_was_separator;
+
+    // SAFETY: `reserve` above guarantees at least `run.len()` spare bytes past
+    // the current length, and no reallocation can happen between it and
+    // `set_len` because `out` is only touched through `dst` in between. The
+    // loop writes at most one byte per byte of `run`, so `written` never
+    // exceeds `run.len()` and every write lands inside that spare region;
+    // `set_len` then covers exactly the bytes written. Every written byte is
+    // ASCII (`-`, or an ASCII alphanumeric with bit 5 forced on for the
+    // uppercase letters), appended at the end of a `String`, which is a char
+    // boundary, so the buffer stays valid UTF-8.
+    unsafe {
+        let vec = out.as_mut_vec();
+        let at = vec.len();
+        let dst = vec.as_mut_ptr().add(at);
+        let mut written = 0usize;
+        for &byte in run {
+            if byte.is_ascii_alphanumeric() {
+                // Bit 5 is the ASCII case bit. Forcing it on lowercases a
+                // letter and leaves a digit alone, with no branch.
+                *dst.add(written) = byte | 0x20;
+                written += 1;
+                separator = false;
+            } else if !separator {
+                *dst.add(written) = b'-';
+                written += 1;
+                separator = true;
+            }
+        }
+        debug_assert!(written <= run.len());
+        debug_assert!(at + written <= vec.capacity());
+        vec.set_len(at + written);
+    }
+
+    *last_was_separator = separator;
+    end
+}
+
+/// Appends the slug for one run of non-ASCII bytes.
+///
+/// Case folding and `is_alphanumeric` need real scalars, and a lowercase
+/// mapping may be several characters long, so this run keeps the safe
+/// `String::push` path.
+fn push_unicode_run(run: &str, out: &mut String, last_was_separator: &mut bool) {
+    for ch in run.chars() {
+        for lower in ch.to_lowercase() {
+            if lower.is_alphanumeric() {
+                out.push(lower);
+                *last_was_separator = false;
+            } else if !*last_was_separator {
+                out.push('-');
+                *last_was_separator = true;
+            }
+        }
     }
 }
 
