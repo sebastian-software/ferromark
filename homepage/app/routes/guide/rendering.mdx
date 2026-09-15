@@ -1,0 +1,45 @@
+---
+title: Rendering and Trust
+order: 6
+---
+
+# Rendering and Trust
+
+Choose the output policy for the source you accept. Raw HTML recognition and
+permission to emit that HTML are different decisions.
+
+## Defaults depend on the API
+
+| Integration | Default                                   | For untrusted Markdown                        |
+| ----------- | ----------------------------------------- | --------------------------------------------- |
+| Rust        | Raw HTML passthrough                      | Set `HtmlRendererOptions::sanitize` to `true` |
+| Node.js     | Escaped raw HTML and filtered URL schemes | Keep `renderPolicy: 'untrusted'`              |
+
+Sanitized output escapes raw HTML and filters unsafe link/image URL schemes.
+The GFM tag filter only neutralizes a narrow list of disallowed tags; it is not
+an HTML sanitizer. Custom renderer hooks and highlighter HTML are written
+verbatim and must escape untrusted code, metadata, and attributes themselves.
+
+## Specification output and publishing conveniences
+
+CommonMark profiles turn off extra heading IDs, callouts, inline TOCs, and fence
+metadata cleanup. GFM specification profiles additionally select the defined
+extensions. Rust exposes paired parser/renderer constructors; Node's publishing
+API offers individual flags and keeps its own defaults.
+
+The explicit CommonMark profile agrees with all 652 examples in the recorded
+audit. [Correctness and compatibility](/guide/correctness) retains corpus scope,
+oracle exceptions, and known GFM differences. These finite suites do not prove
+correctness on every possible document. MDX support is bounded syntax capture.
+
+## Input limits and migration
+
+Block nesting defaults to 100 levels. Exceeding that limit returns a parse error.
+Rust callers can configure it; avoid unlimited recursion on untrusted source.
+Node rejects input exceeding 4,294,967,294 UTF-8 bytes. Applications should also
+bound request sizes and concurrency for their deployment.
+
+V2 is a breaking release candidate. Heading slugs, extension output, site
+routing, and Rust API signatures differ from v1. The
+[migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md)
+lists changed and removed options.

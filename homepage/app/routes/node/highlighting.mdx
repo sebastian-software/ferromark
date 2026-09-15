@@ -1,0 +1,79 @@
+---
+title: Highlight Code in Node.js
+order: 4
+---
+
+# Highlight Code in Node.js
+
+import { RuntimeSwitch } from "../../components/runtime-switch";
+
+<RuntimeSwitch topic="highlighting" />
+
+Connect an initialized Ferriki highlighter to Ferromark. The same interface
+also accepts a compatible synchronous highlighter.
+
+## Install and initialize
+
+```sh
+npm install ferromark ferriki
+```
+
+Create the highlighter once and reuse it. Load the languages and theme your
+content needs:
+
+````js
+import { createHighlighter } from "ferriki";
+import { toHtmlWithHighlighter } from "ferromark";
+
+const highlighter = await createHighlighter({
+  langs: ["javascript"],
+  themes: ["github-dark"],
+});
+
+const html = toHtmlWithHighlighter(
+  '```javascript\nconsole.log("Hello")\n```',
+  highlighter,
+  {
+    theme: "github-dark",
+    onHighlightError(error, { lang }) {
+      console.warn(`Could not highlight ${lang}`, error);
+    },
+  },
+  { headingIds: true },
+);
+console.log(html);
+````
+
+The arguments are Markdown, the highlighter, highlighting settings, and optional
+Markdown options. Initialization is asynchronous; rendering uses synchronous
+`codeToHtml()` calls.
+
+## Keep document metadata
+
+```js
+import { transformWithHighlighter } from "ferromark";
+
+// Reuse the highlighter initialized above.
+const page = transformWithHighlighter(
+  "---\ntitle: Example\n---\n# Example",
+  highlighter,
+  { theme: "github-dark" },
+  { frontMatter: true },
+);
+console.log(page.headings, page.frontMatter);
+```
+
+The callback receives fenced and indented code blocks.
+
+## Understand fallback behavior
+
+Unsupported languages and highlighter exceptions fall back to escaped
+`<pre><code>` output. `onHighlightError` can observe exceptions; if it throws,
+the render call also throws. Invalid highlighter return values surface as
+native callback errors.
+
+Highlighter HTML is inserted verbatim. The highlighter must escape untrusted
+code and metadata. Fence metadata after the language is forwarded as
+`meta.__raw` for compatible title and line-highlighting transformers.
+
+For the shared trust boundary, see [rendering and trust](/guide/rendering).

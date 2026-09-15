@@ -1,0 +1,62 @@
+---
+title: Start with Node.js
+order: 1
+---
+
+# Start with Node.js
+
+import { RuntimeSwitch } from "../../components/runtime-switch";
+
+<RuntimeSwitch topic="getting-started" />
+
+Render Markdown in a Node.js application with a synchronous, native API.
+Use **Node.js 22.12 or newer**. TypeScript declarations are included.
+
+## Install the release candidate
+
+```sh
+npm install ferromark@2.0.0-rc.1
+```
+
+V2 is in release-candidate testing. npm's stable `latest` channel stays on v1.
+Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md) before upgrading.
+
+Save this as `example.mjs` and run `node example.mjs`:
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml("# Hello\n\n**World**");
+console.log(html);
+```
+
+The result is:
+
+```html
+<h1 id="hello">Hello</h1>
+<p><strong>World</strong></p>
+```
+
+For CommonJS, use `const { toHtml } = require('ferromark')` on a supported Node.js
+version. You do not need to install a compiler: npm selects a prebuilt native
+package for your platform.
+
+## Choose your API
+
+| Your task                      | API                                | Result                                |
+| ------------------------------ | ---------------------------------- | ------------------------------------- |
+| Render one document            | `toHtml(markdown, options?)`       | HTML string                           |
+| Send HTML as bytes             | `toHtmlBuffer(markdown, options?)` | UTF-8 `Buffer`                        |
+| Get HTML and metadata          | `transform(markdown, options?)`    | HTML, headings, optional front matter |
+| Render many documents          | `new Renderer(options?)`           | Reuses native parser scratch          |
+| Highlight code                 | `toHtmlWithHighlighter()`          | HTML with custom code-block output    |
+| Highlight and collect metadata | `transformWithHighlighter()`       | HTML, headings, optional front matter |
+
+These calls are synchronous. For sustained CPU work in a server, use a worker
+thread so rendering does not occupy the request-handling event loop.
+
+## Next: configure your content
+
+[Set rendering options](/node/configuration), then
+[build a content pipeline](/node/pipelines). For installation failures or
+server deployment, see [runtime and deployment](/node/deployment).

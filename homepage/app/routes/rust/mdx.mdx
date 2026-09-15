@@ -1,0 +1,27 @@
+---
+title: MDX in Rust
+order: 5
+---
+
+# MDX in Rust
+
+V2 recognizes MDX syntax inside the arena AST. It preserves expressions and
+imports/exports as source and can render static component-island payloads.
+It does not compile or execute JavaScript.
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, Parser, ParserOptions};
+
+let source = "# Hello\n\n<Card title=\"Example\" />\n";
+let allocator = Allocator::for_source_len(source.len());
+let document = Parser::with_options(
+    &allocator, source,
+    ParserOptions { mdx: true, ..ParserOptions::gfm() },
+).parse().unwrap();
+let html = HtmlRenderer::new().render(&document);
+assert!(!html.is_empty());
+```
+
+There is no v1 `segment()`, MDX `render()`, or `to_component()` API in v2.
+Component resolution, framework compilation, and hydration belong to the
+application. See [MDX boundaries](/guide/mdx) and [examples](/rust/mdx-examples).

@@ -1,6 +1,6 @@
 # Contributing to ferromark v2
 
-Clone `sebastian-software/ferromark` and check out `codex/v2`. The branch combines
+Clone `sebastian-software/ferromark` and check out `main`. The branch combines
 the original Ferromark history with the separately developed v2 core. Read
 [the integration decision](docs/arch/ADR-0015-v2-repository-integration.md) and
 [upstream provenance](UPSTREAM.md) before changing the architecture.
@@ -22,7 +22,7 @@ cargo bench --workspace --no-run --locked
 
 Node and release changes also require the [package checks](docs/releasing.md#local-package-checks).
 Website changes require `pnpm install --frozen-lockfile`, `pnpm typecheck`,
-`pnpm run audit`, and `pnpm build` from `homepage/`. The build checks all six
+`pnpm run audit`, and `pnpm build` from `homepage/`. The build checks all 27
 prerendered routes, navigation, and v2 content.
 
 ## Repository contracts

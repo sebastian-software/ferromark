@@ -1,0 +1,81 @@
+---
+title: Build a Node.js Content Pipeline
+order: 3
+---
+
+# Build a Node.js Content Pipeline
+
+import { RuntimeSwitch } from "../../components/runtime-switch";
+
+<RuntimeSwitch topic="pipelines" />
+
+Choose the result your application needs: an HTML string, UTF-8 bytes, or HTML
+with document metadata. All operations are synchronous.
+
+## Get HTML, front matter, and headings
+
+```js
+import { transform } from "ferromark";
+
+const source =
+  "---\ntitle: Installation\n---\n# Installation\n\nRun `npm install ferromark@2.0.0-rc.1`.";
+const page = transform(source, { frontMatter: true });
+
+console.log(page.frontMatter); // 'title: Installation\n'
+console.log(page.headings[0]);
+// { level: 1, id: 'installation', text: 'Installation' }
+console.log(page.html);
+```
+
+Front-matter extraction is opt-in, including for `transform()`. The result is
+raw text between `---` or `+++` delimiters; parse it with the YAML or TOML library
+your application uses. Headings arrive in document order for a table of contents.
+See the [shared pipeline concepts](/guide/pipelines) for output responsibilities.
+
+## Reuse a renderer for a collection
+
+```js
+import { Renderer } from "ferromark";
+
+const renderer = new Renderer({ headingIds: true, footnotes: true });
+const pages = ["# First page", "# Next page"].map((source) => renderer.toHtml(source));
+console.log(pages);
+```
+
+Options are fixed at construction. Keep one renderer per worker. It retains
+parser scratch allocations while resetting headings, references, and footnotes
+between documents. Each call returns its own HTML. `Renderer` provides
+`toHtml()` and `toHtmlBuffer()`; use `transform()` when you need metadata.
+
+## Send UTF-8 HTML directly
+
+```js
+import { createServer } from "node:http";
+import { toHtmlBuffer } from "ferromark";
+
+const server = createServer((_request, response) => {
+  response.setHeader("content-type", "text/html; charset=utf-8");
+  response.end(toHtmlBuffer("# Hello"));
+});
+server.listen(3000, "127.0.0.1");
+```
+
+`toHtmlBuffer()` returns a Node.js `Buffer` backed by the native output
+allocation. It avoids converting HTML into a JavaScript string when the next
+consumer wants bytes. Reusable renderers also expose `renderer.toHtmlBuffer()`.
+
+## Deploy under a subpath
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml("[Guide](/guide)", { linkBasePath: "/docs" });
+console.log(html);
+```
+
+This enables v2 site routing: internal absolute links, image sources, and
+root-absolute raw HTML URLs use the base. Markdown links convert to index.html
+routes. Check representative pages when migrating from v1.
+
+Next: [syntax highlighting with Ferriki](/node/highlighting) or
+[deployment requirements](/node/deployment).

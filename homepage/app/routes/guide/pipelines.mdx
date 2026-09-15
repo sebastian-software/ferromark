@@ -1,0 +1,34 @@
+---
+title: Content Pipeline Concepts
+order: 5
+---
+
+# Content Pipeline Concepts
+
+A content pipeline turns source files into pages. Ferromark supplies Markdown
+parsing, document structure, and HTML rendering. The surrounding application
+owns storage, metadata deserialization, templates, routing, CSS, and deployment.
+
+## Metadata belongs to your application
+
+Front matter is raw YAML- or TOML-style text. Extract it before rendering, then
+validate it with the schema your application uses. Heading text and IDs support
+navigation; match the renderer's slug rules, explicit IDs, and duplicate suffixes.
+An inline `[[toc]]` marker can produce a rendered table of contents where enabled.
+
+## Keep presentation explicit
+
+Table and column classes let CSS control layout. Code-rendering hooks let a
+highlighter supply escaped HTML. Translation stays outside the parser. Decide
+which input is trusted before selecting the HTML policy.
+
+## Select the API for the output
+
+[Rust pipelines](/rust/pipelines) cover owned HTML, append helpers, arena ASTs,
+and allocator lifetimes. [Node.js pipelines](/node/pipelines) cover strings,
+Buffers, metadata, and reusable renderers. Both support optional front-matter
+extraction; their API names and defaults differ.
+
+For deployment under a subpath, configure site routing explicitly. Check links,
+images, and raw HTML URLs on representative pages. See [rendering and trust](/guide/rendering)
+and [configuration](/guide/configuration).
