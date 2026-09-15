@@ -39,18 +39,8 @@ impl<'a> Parser<'a> {
         let marker = bytes[*pos];
         let run_len = Self::marker_run_len(bytes, *pos, marker);
 
-        let mut before = &content[..*pos];
-        let mut after = &content[*pos + run_len..];
-        if self.options.strikethrough && marker != b'~' {
-            // GFM emphasis looks through adjacent extension markers when
-            // classifying flanking, as cmark-gfm does for strikethrough.
-            before = before.trim_end_matches('~');
-            after = after.trim_start_matches('~');
-        }
-        let prev_char = before.chars().next_back();
-        let next_char = after.chars().next();
         let (can_open, can_close) =
-            classify_flanking(marker, prev_char, next_char, self.options.cjk_emphasis);
+            self.classify_run(marker, &content[..*pos], &content[*pos + run_len..]);
 
         Self::push_text(
             children,
@@ -69,6 +59,42 @@ impl<'a> Parser<'a> {
         *pos += run_len;
     }
 
+    /// Flanking classification for the run between `before` and `after`.
+    ///
+    /// The neighbouring characters decide it, and in prose both are ASCII,
+    /// where the character classes reduce to byte tests: no ASCII character
+    /// is East Asian punctuation, so `cjk_emphasis` cannot apply either. A
+    /// multibyte neighbour fails the ASCII test on its lead or continuation
+    /// byte and takes the character path, which is the only one that has to
+    /// decode.
+    fn classify_run(&self, marker: u8, mut before: &'a str, mut after: &'a str) -> (bool, bool) {
+        if self.options.strikethrough && marker != b'~' {
+            // GFM emphasis looks through adjacent extension markers when
+            // classifying flanking, as cmark-gfm does for strikethrough.
+            // Only an adjacent marker can be trimmed, so test for one first.
+            if before.as_bytes().last() == Some(&b'~') {
+                before = before.trim_end_matches('~');
+            }
+            if after.as_bytes().first() == Some(&b'~') {
+                after = after.trim_start_matches('~');
+            }
+        }
+
+        let prev_byte = before.as_bytes().last().copied();
+        let next_byte = after.as_bytes().first().copied();
+        if prev_byte.is_none_or(|byte| byte.is_ascii())
+            && next_byte.is_none_or(|byte| byte.is_ascii())
+        {
+            return classify_flanking_ascii(marker, prev_byte, next_byte);
+        }
+        classify_flanking(
+            marker,
+            before.chars().next_back(),
+            after.chars().next(),
+            self.options.cjk_emphasis,
+        )
+    }
+
     /// Pairs delimiters and restructures `children` into the emphasis
     /// tree, spec algorithm "process emphasis".
     ///
@@ -83,7 +109,15 @@ impl<'a> Parser<'a> {
         children: &mut Vec<'a, Node<'a>>,
         delimiters: &mut Vec<'a, Delimiter>,
     ) {
+        // Nothing else in inline parsing produces an empty text node, so the
+        // sweep at the end is only owed the ones pairing leaves behind. The
+        // spec suites and snapshot corpora hold this assertion up.
+        debug_assert!(
+            !children.iter().any(is_empty_text),
+            "inline parsing produced an empty text node before pairing"
+        );
         let mut openers_bottom = OpenersBottom::default();
+        let mut emptied = false;
         let mut closer_idx = 0;
         while closer_idx < delimiters.len() {
             if !delimiters[closer_idx].can_close || delimiters[closer_idx].remaining == 0 {
@@ -135,10 +169,13 @@ impl<'a> Parser<'a> {
             let mut inner = self.allocator.new_vec();
             for slot in &mut children[opener_node + 1..closer_node] {
                 let node = core::mem::replace(slot, empty_text());
-                if !matches!(&node, Node::Text(text) if text.value.is_empty()) {
+                if !is_empty_text(&node) {
                     inner.push(node);
                 }
             }
+            // The slot right after the opener takes the new node below, so
+            // only a wider range leaves a placeholder behind.
+            emptied |= closer_node > opener_node + 2;
             let span = inner_span(&inner, use_delims);
             let node = if delimiters[closer_idx].marker == b'=' {
                 Node::Highlight(self.allocator.boxed(crate::ast::Highlight {
@@ -165,8 +202,8 @@ impl<'a> Parser<'a> {
 
             // Trim the delimiter text nodes in place (they may end up
             // empty, which renders as nothing).
-            trim_text_tail(&mut children[opener_node], use_delims);
-            trim_text_head(&mut children[closer_node], use_delims);
+            emptied |= trim_text_tail(&mut children[opener_node], use_delims);
+            emptied |= trim_text_head(&mut children[closer_node], use_delims);
 
             // Delimiters strictly inside the pair are now unreachable, and
             // the pair itself has spent `use_delims` characters. Retiring an
@@ -184,9 +221,19 @@ impl<'a> Parser<'a> {
         }
 
         // Emptied delimiter text nodes at this level render as nothing;
-        // drop them so consumers see a clean tree.
-        children.retain(|node| !matches!(node, Node::Text(text) if text.value.is_empty()));
+        // drop them so consumers see a clean tree. A paragraph whose runs
+        // never paired — a stray `*`, an intraword `_`, a lone `~` — has
+        // nothing to drop, and it would otherwise pay a full sweep of its
+        // children for the delimiters alone.
+        if emptied {
+            children.retain(|node| !is_empty_text(node));
+        }
     }
+}
+
+/// Whether `node` is the empty text a lifted or trimmed slot leaves behind.
+fn is_empty_text(node: &Node<'_>) -> bool {
+    matches!(node, Node::Text(text) if text.value.is_empty())
 }
 
 /// Placeholder left where a node has been lifted into an emphasis node.
@@ -273,19 +320,25 @@ fn node_span(node: &Node<'_>) -> Span {
     node.span()
 }
 
-fn trim_text_tail(node: &mut Node<'_>, count: u32) {
+/// Both trims report whether the node is now empty, which is what decides
+/// that the sweep at the end of pairing has something to do.
+fn trim_text_tail(node: &mut Node<'_>, count: u32) -> bool {
     if let Node::Text(text) = node {
         let new_len = text.value.len().saturating_sub(count as usize);
         text.value = &text.value[..new_len];
         text.span = Span::new(text.span.start, text.span.end - count);
+        return text.value.is_empty();
     }
+    false
 }
 
-fn trim_text_head(node: &mut Node<'_>, count: u32) {
+fn trim_text_head(node: &mut Node<'_>, count: u32) -> bool {
     if let Node::Text(text) = node {
         text.value = &text.value[(count as usize).min(text.value.len())..];
         text.span = Span::new(text.span.start + count, text.span.end);
+        return text.value.is_empty();
     }
+    false
 }
 
 /// Flanking classification (CommonMark "Emphasis and strong emphasis").
@@ -304,21 +357,57 @@ fn classify_flanking(
     let is_punct =
         |ch: char| is_punctuation_like(ch) && !(cjk_emphasis && is_east_asian_punctuation(ch));
 
-    let prev_ws = prev.is_none_or(char::is_whitespace);
-    let next_ws = next.is_none_or(char::is_whitespace);
-    let prev_punct = prev.is_some_and(is_punct);
-    let next_punct = next.is_some_and(is_punct);
+    Neighbors {
+        prev_ws: prev.is_none_or(char::is_whitespace),
+        next_ws: next.is_none_or(char::is_whitespace),
+        prev_punct: prev.is_some_and(is_punct),
+        next_punct: next.is_some_and(is_punct),
+    }
+    .flanking(marker)
+}
 
-    let left_flanking = !next_ws && (!next_punct || prev_ws || prev_punct);
-    let right_flanking = !prev_ws && (!prev_punct || next_ws || next_punct);
+/// [`classify_flanking`] for ASCII neighbours, which is what prose has.
+///
+/// The classes collapse to byte tests there: ASCII punctuation is the whole
+/// of [`is_punctuation_like`] below `0x80`, none of it is East Asian, and the
+/// whitespace set is the one `char::is_whitespace` accepts below `0x80` —
+/// which includes the vertical tab that `u8::is_ascii_whitespace` leaves out.
+fn classify_flanking_ascii(marker: u8, prev: Option<u8>, next: Option<u8>) -> (bool, bool) {
+    let is_space = |byte: u8| matches!(byte, b'\t' | b'\n' | 0x0B | 0x0C | b'\r' | b' ');
 
-    if matches!(marker, b'*' | b'~' | b'=') {
-        (left_flanking, right_flanking)
-    } else {
-        (
-            left_flanking && (!right_flanking || prev_punct),
-            right_flanking && (!left_flanking || next_punct),
-        )
+    Neighbors {
+        prev_ws: prev.is_none_or(is_space),
+        next_ws: next.is_none_or(is_space),
+        prev_punct: prev.is_some_and(|byte| byte.is_ascii_punctuation()),
+        next_punct: next.is_some_and(|byte| byte.is_ascii_punctuation()),
+    }
+    .flanking(marker)
+}
+
+/// How a run's two neighbouring characters classify. Sequence boundaries
+/// count as whitespace, so both sides always have a class.
+struct Neighbors {
+    prev_ws: bool,
+    next_ws: bool,
+    prev_punct: bool,
+    next_punct: bool,
+}
+
+impl Neighbors {
+    /// The flanking rules themselves, shared by both classifications so they
+    /// cannot drift apart.
+    const fn flanking(&self, marker: u8) -> (bool, bool) {
+        let left_flanking = !self.next_ws && (!self.next_punct || self.prev_ws || self.prev_punct);
+        let right_flanking = !self.prev_ws && (!self.prev_punct || self.next_ws || self.next_punct);
+
+        if matches!(marker, b'*' | b'~' | b'=') {
+            (left_flanking, right_flanking)
+        } else {
+            (
+                left_flanking && (!right_flanking || self.prev_punct),
+                right_flanking && (!left_flanking || self.next_punct),
+            )
+        }
     }
 }
 
@@ -357,4 +446,39 @@ fn is_east_asian_punctuation(ch: char) -> bool {
         | '\u{FF3B}'..='\u{FF40}'
         | '\u{FF5B}'..='\u{FF65}'
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{classify_flanking, classify_flanking_ascii};
+
+    /// Every marker that can carry a delimiter run, including the extension
+    /// ones, plus a byte that is none of them so the `_` branch is reached
+    /// the way an unknown marker would reach it.
+    const MARKERS: [u8; 5] = [b'*', b'_', b'~', b'=', b'!'];
+
+    #[test]
+    fn ascii_flanking_matches_the_character_classification() {
+        for marker in MARKERS {
+            for prev in std::iter::once(None).chain((0..=127u8).map(Some)) {
+                for next in std::iter::once(None).chain((0..=127u8).map(Some)) {
+                    // `cjk_emphasis` only reclassifies East Asian
+                    // punctuation, which no ASCII byte is, so both settings
+                    // have to agree with the byte path.
+                    for cjk_emphasis in [false, true] {
+                        assert_eq!(
+                            classify_flanking_ascii(marker, prev, next),
+                            classify_flanking(
+                                marker,
+                                prev.map(char::from),
+                                next.map(char::from),
+                                cjk_emphasis,
+                            ),
+                            "marker {marker:#x}, prev {prev:?}, next {next:?}, cjk {cjk_emphasis}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }
