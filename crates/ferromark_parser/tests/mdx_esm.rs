@@ -190,3 +190,62 @@ fn unclosed_import_does_not_panic() {
         "unclosed import must not panic:\n{tree}"
     );
 }
+
+#[test]
+fn esm_balances_delimiters_without_interpreting_strings_or_comments() {
+    use ferromark_ast::Node;
+
+    let statements = [
+        "export const x = call(\n [1, 2], { key: '};\\\'still string' }\n); \t",
+        "export const x = {\n // } ] ) ; ignored until newline\n key: \"quote\\\";still string\",\n};",
+        "export const x = [\n /* ] } ) ;\n ignored */\n `template\\`;still string`,\n];",
+        "export const x = 6 / 2;",
+        "import \"package\" // ; } trailing comment",
+        "export const x = 'single\\\\slash';",
+    ];
+    for ending in ["\n", "\r\n", "\r"] {
+        for statement in statements {
+            let statement = statement.replace('\n', ending);
+            let source = format!("{statement}{ending}{ending}# Following{ending}");
+            let allocator = Allocator::new();
+            let doc = Parser::with_options(&allocator, &source, ParserOptions::mdx())
+                .parse()
+                .unwrap();
+            let [Node::MdxjsEsm(esm), Node::Heading(heading)] = doc.children.as_slice() else {
+                panic!("ESM swallowed or split following Markdown: {source:?}: {doc:?}");
+            };
+            assert_eq!(esm.value, statement.trim_end());
+            assert_eq!(
+                esm.span.source_text(&source).trim_end(),
+                statement.trim_end()
+            );
+            assert_eq!(heading.depth, 1);
+            assert!(heading.span.source_text(&source).contains("Following"));
+        }
+    }
+}
+
+#[test]
+fn unterminated_esm_preserves_the_complete_source() {
+    use ferromark_ast::Node;
+
+    for source in [
+        "export const x = 'unterminated\\",
+        "export const x = \"unterminated\\",
+        "export const x = `unterminated\\",
+        "export const x = { /* unterminated",
+        "export const x = [1, (2",
+        "export",
+        "import",
+    ] {
+        let allocator = Allocator::new();
+        let doc = Parser::with_options(&allocator, source, ParserOptions::mdx())
+            .parse()
+            .unwrap();
+        let [Node::MdxjsEsm(esm)] = doc.children.as_slice() else {
+            panic!("expected one source-only ESM node: {doc:?}");
+        };
+        assert_eq!(esm.value, source);
+        assert_eq!(esm.span.source_text(source), source);
+    }
+}

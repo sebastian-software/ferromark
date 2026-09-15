@@ -65,3 +65,9 @@ CI retains the 90% Rust line coverage gate. It excludes the N-API library,
 which is exercised by the Node tests. Run `cargo llvm-cov --workspace --exclude
 ferromark-node --all-features --locked --fail-under-lines 90 -- --test-threads=1` for the same gate.
 `cargo deny check` and RustSec retain the repository's dependency checks.
+
+Coverage work must improve checked behavior, with a documented reason for any
+exclusion. See the [coverage audit](docs/reports/2026-09-15-coverage/README.md)
+for measured scope and remaining gaps, and the
+[test-quality decision](docs/decisions/2026-09-15-test-quality.md) for oracle and
+coverage acceptance rules.

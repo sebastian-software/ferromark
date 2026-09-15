@@ -1,0 +1,3649 @@
+{
+  "totals": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 1038,
+      "covered": 957,
+      "percent": 92.1965317919075
+    },
+    "instantiations": {
+      "count": 3639,
+      "covered": 1886,
+      "percent": 51.82742511679032
+    },
+    "lines": {
+      "count": 13461,
+      "covered": 12223,
+      "percent": 90.80306069385632
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 21896,
+      "covered": 19750,
+      "notcovered": 2146,
+      "percent": 90.19912312751187
+    }
+  },
+  "files": [
+    {
+      "file": "crates/ferromark/src/convenience.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 8,
+          "covered": 4,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 33,
+          "covered": 33,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 46,
+          "covered": 46,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_allocator/src/lib.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 36,
+          "covered": 31,
+          "percent": 86.11111111111111
+        },
+        "instantiations": {
+          "count": 461,
+          "covered": 272,
+          "percent": 59.00216919739696
+        },
+        "lines": {
+          "count": 139,
+          "covered": 123,
+          "percent": 88.48920863309353
+        },
+        "regions": {
+          "count": 185,
+          "covered": 167,
+          "notcovered": 18,
+          "percent": 90.27027027027027
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_ast/src/ast.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 2,
+          "covered": 2,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 4,
+          "covered": 3,
+          "percent": 75.0
+        },
+        "lines": {
+          "count": 46,
+          "covered": 31,
+          "percent": 67.3913043478261
+        },
+        "regions": {
+          "count": 87,
+          "covered": 57,
+          "notcovered": 30,
+          "percent": 65.51724137931035
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_ast/src/span.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 9,
+          "percent": 69.23076923076923
+        },
+        "instantiations": {
+          "count": 22,
+          "covered": 12,
+          "percent": 54.54545454545454
+        },
+        "lines": {
+          "count": 65,
+          "covered": 47,
+          "percent": 72.3076923076923
+        },
+        "regions": {
+          "count": 82,
+          "covered": 66,
+          "notcovered": 16,
+          "percent": 80.4878048780488
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_ast/src/visit.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 38,
+          "covered": 30,
+          "percent": 78.94736842105263
+        },
+        "instantiations": {
+          "count": 479,
+          "covered": 97,
+          "percent": 20.250521920668056
+        },
+        "lines": {
+          "count": 87,
+          "covered": 79,
+          "percent": 90.80459770114942
+        },
+        "regions": {
+          "count": 145,
+          "covered": 129,
+          "notcovered": 16,
+          "percent": 88.96551724137932
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_ast/src/visit/walk.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 23,
+          "covered": 23,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 293,
+          "covered": 89,
+          "percent": 30.37542662116041
+        },
+        "lines": {
+          "count": 172,
+          "covered": 160,
+          "percent": 93.02325581395348
+        },
+        "regions": {
+          "count": 279,
+          "covered": 230,
+          "notcovered": 49,
+          "percent": 82.43727598566308
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/error.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 9,
+          "covered": 8,
+          "percent": 88.88888888888889
+        },
+        "instantiations": {
+          "count": 16,
+          "covered": 11,
+          "percent": 68.75
+        },
+        "lines": {
+          "count": 45,
+          "covered": 35,
+          "percent": 77.77777777777779
+        },
+        "regions": {
+          "count": 58,
+          "covered": 45,
+          "notcovered": 13,
+          "percent": 77.58620689655173
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/lib.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 1,
+          "covered": 0,
+          "percent": 0.0
+        },
+        "instantiations": {
+          "count": 1,
+          "covered": 0,
+          "percent": 0.0
+        },
+        "lines": {
+          "count": 6,
+          "covered": 0,
+          "percent": 0.0
+        },
+        "regions": {
+          "count": 6,
+          "covered": 0,
+          "notcovered": 6,
+          "percent": 0.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 11,
+          "covered": 11,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 22,
+          "covered": 17,
+          "percent": 77.27272727272727
+        },
+        "lines": {
+          "count": 106,
+          "covered": 102,
+          "percent": 96.22641509433963
+        },
+        "regions": {
+          "count": 140,
+          "covered": 134,
+          "notcovered": 6,
+          "percent": 95.71428571428572
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/block.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 9,
+          "covered": 9,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 20,
+          "covered": 14,
+          "percent": 70.0
+        },
+        "lines": {
+          "count": 260,
+          "covered": 253,
+          "percent": 97.3076923076923
+        },
+        "regions": {
+          "count": 503,
+          "covered": 489,
+          "notcovered": 14,
+          "percent": 97.21669980119285
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/block_quote.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 8,
+          "covered": 6,
+          "percent": 75.0
+        },
+        "lines": {
+          "count": 127,
+          "covered": 127,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 227,
+          "covered": 227,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/byte_class.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 11,
+          "percent": 84.61538461538461
+        },
+        "instantiations": {
+          "count": 18,
+          "covered": 16,
+          "percent": 88.88888888888889
+        },
+        "lines": {
+          "count": 125,
+          "covered": 84,
+          "percent": 67.2
+        },
+        "regions": {
+          "count": 232,
+          "covered": 178,
+          "notcovered": 54,
+          "percent": 76.72413793103449
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/cursor.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 13,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 26,
+          "covered": 26,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 147,
+          "covered": 141,
+          "percent": 95.91836734693877
+        },
+        "regions": {
+          "count": 250,
+          "covered": 230,
+          "notcovered": 20,
+          "percent": 92.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/definition_list.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 14,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 25,
+          "covered": 22,
+          "percent": 88.0
+        },
+        "lines": {
+          "count": 365,
+          "covered": 316,
+          "percent": 86.57534246575342
+        },
+        "regions": {
+          "count": 634,
+          "covered": 558,
+          "notcovered": 76,
+          "percent": 88.01261829652996
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/definition_list/lines.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 7,
+          "covered": 5,
+          "percent": 71.42857142857143
+        },
+        "instantiations": {
+          "count": 14,
+          "covered": 10,
+          "percent": 71.42857142857143
+        },
+        "lines": {
+          "count": 61,
+          "covered": 29,
+          "percent": 47.540983606557376
+        },
+        "regions": {
+          "count": 88,
+          "covered": 51,
+          "notcovered": 37,
+          "percent": 57.95454545454546
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/fenced_code.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 8,
+          "covered": 8,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 13,
+          "covered": 12,
+          "percent": 92.3076923076923
+        },
+        "lines": {
+          "count": 226,
+          "covered": 220,
+          "percent": 97.34513274336283
+        },
+        "regions": {
+          "count": 357,
+          "covered": 349,
+          "notcovered": 8,
+          "percent": 97.75910364145658
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/footnote.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 12,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 188,
+          "covered": 185,
+          "percent": 98.40425531914892
+        },
+        "regions": {
+          "count": 301,
+          "covered": 298,
+          "notcovered": 3,
+          "percent": 99.00332225913621
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/front_matter.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 3,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 33,
+          "covered": 33,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 71,
+          "covered": 70,
+          "notcovered": 1,
+          "percent": 98.59154929577466
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/html.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 7,
+          "covered": 7,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 14,
+          "covered": 8,
+          "percent": 57.14285714285714
+        },
+        "lines": {
+          "count": 68,
+          "covered": 65,
+          "percent": 95.58823529411765
+        },
+        "regions": {
+          "count": 117,
+          "covered": 113,
+          "notcovered": 4,
+          "percent": 96.58119658119658
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/html/start.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 12,
+          "covered": 6,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 97,
+          "covered": 97,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 130,
+          "covered": 129,
+          "notcovered": 1,
+          "percent": 99.23076923076923
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/indented_code.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 8,
+          "covered": 6,
+          "percent": 75.0
+        },
+        "lines": {
+          "count": 73,
+          "covered": 73,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 120,
+          "covered": 120,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 7,
+          "covered": 7,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 14,
+          "covered": 12,
+          "percent": 85.71428571428571
+        },
+        "lines": {
+          "count": 223,
+          "covered": 223,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 390,
+          "covered": 380,
+          "notcovered": 10,
+          "percent": 97.43589743589743
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/autolink.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 20,
+          "covered": 15,
+          "percent": 75.0
+        },
+        "lines": {
+          "count": 85,
+          "covered": 85,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 148,
+          "covered": 145,
+          "notcovered": 3,
+          "percent": 97.97297297297295
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/code_span.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 5,
+          "percent": 83.33333333333334
+        },
+        "lines": {
+          "count": 68,
+          "covered": 68,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 96,
+          "covered": 96,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/emphasis.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 19,
+          "covered": 19,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 38,
+          "covered": 35,
+          "percent": 92.10526315789474
+        },
+        "lines": {
+          "count": 212,
+          "covered": 209,
+          "percent": 98.58490566037736
+        },
+        "regions": {
+          "count": 324,
+          "covered": 319,
+          "notcovered": 5,
+          "percent": 98.4567901234568
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/entity.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 11,
+          "covered": 11,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 71,
+          "covered": 66,
+          "percent": 92.95774647887323
+        },
+        "regions": {
+          "count": 131,
+          "covered": 126,
+          "notcovered": 5,
+          "percent": 96.18320610687024
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/gfm_autolink.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 3,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 93,
+          "covered": 90,
+          "percent": 96.7741935483871
+        },
+        "regions": {
+          "count": 158,
+          "covered": 147,
+          "notcovered": 11,
+          "percent": 93.0379746835443
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/gfm_autolink/candidate.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 9,
+          "covered": 4,
+          "percent": 44.44444444444444
+        },
+        "instantiations": {
+          "count": 18,
+          "covered": 4,
+          "percent": 22.22222222222222
+        },
+        "lines": {
+          "count": 108,
+          "covered": 89,
+          "percent": 82.4074074074074
+        },
+        "regions": {
+          "count": 193,
+          "covered": 154,
+          "notcovered": 39,
+          "percent": 79.79274611398964
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/gfm_autolink/scan.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 30,
+          "covered": 30,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 55,
+          "covered": 36,
+          "percent": 65.45454545454545
+        },
+        "lines": {
+          "count": 316,
+          "covered": 308,
+          "percent": 97.46835443037975
+        },
+        "regions": {
+          "count": 474,
+          "covered": 463,
+          "notcovered": 11,
+          "percent": 97.67932489451476
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/line_break.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 1,
+          "covered": 1,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 2,
+          "covered": 1,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 43,
+          "covered": 43,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 61,
+          "covered": 60,
+          "notcovered": 1,
+          "percent": 98.36065573770492
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/link_target.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 20,
+          "covered": 20,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 28,
+          "covered": 27,
+          "percent": 96.42857142857143
+        },
+        "lines": {
+          "count": 325,
+          "covered": 325,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 541,
+          "covered": 541,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/marker_scan.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 15,
+          "covered": 15,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 126,
+          "covered": 126,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 189,
+          "covered": 189,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/scan.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 19,
+          "covered": 18,
+          "percent": 94.73684210526316
+        },
+        "instantiations": {
+          "count": 29,
+          "covered": 28,
+          "percent": 96.55172413793105
+        },
+        "lines": {
+          "count": 202,
+          "covered": 183,
+          "percent": 90.5940594059406
+        },
+        "regions": {
+          "count": 344,
+          "covered": 325,
+          "notcovered": 19,
+          "percent": 94.47674418604652
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline/script_span.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 8,
+          "covered": 8,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 16,
+          "covered": 8,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 95,
+          "covered": 80,
+          "percent": 84.21052631578947
+        },
+        "regions": {
+          "count": 129,
+          "covered": 111,
+          "notcovered": 18,
+          "percent": 86.04651162790698
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline_footnote.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 5,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 178,
+          "covered": 169,
+          "percent": 94.9438202247191
+        },
+        "regions": {
+          "count": 313,
+          "covered": 294,
+          "notcovered": 19,
+          "percent": 93.92971246006391
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline_helpers.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 16,
+          "covered": 16,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 26,
+          "covered": 24,
+          "percent": 92.3076923076923
+        },
+        "lines": {
+          "count": 332,
+          "covered": 321,
+          "percent": 96.6867469879518
+        },
+        "regions": {
+          "count": 534,
+          "covered": 504,
+          "notcovered": 30,
+          "percent": 94.38202247191012
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline_html.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 18,
+          "percent": 75.0
+        },
+        "lines": {
+          "count": 139,
+          "covered": 139,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 269,
+          "covered": 265,
+          "notcovered": 4,
+          "percent": 98.51301115241635
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/inline_link.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 9,
+          "covered": 8,
+          "percent": 88.88888888888889
+        },
+        "instantiations": {
+          "count": 18,
+          "covered": 8,
+          "percent": 44.44444444444444
+        },
+        "lines": {
+          "count": 202,
+          "covered": 183,
+          "percent": 90.5940594059406
+        },
+        "regions": {
+          "count": 360,
+          "covered": 321,
+          "notcovered": 39,
+          "percent": 89.16666666666667
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/leaf.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 11,
+          "covered": 11,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 22,
+          "covered": 21,
+          "percent": 95.45454545454545
+        },
+        "lines": {
+          "count": 153,
+          "covered": 150,
+          "percent": 98.0392156862745
+        },
+        "regions": {
+          "count": 234,
+          "covered": 227,
+          "notcovered": 7,
+          "percent": 97.00854700854701
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/line_comments.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 15,
+          "percent": 62.5
+        },
+        "lines": {
+          "count": 119,
+          "covered": 113,
+          "percent": 94.9579831932773
+        },
+        "regions": {
+          "count": 192,
+          "covered": 181,
+          "notcovered": 11,
+          "percent": 94.27083333333334
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/line_scan.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 18,
+          "covered": 18,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 27,
+          "covered": 27,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 168,
+          "covered": 166,
+          "percent": 98.8095238095238
+        },
+        "regions": {
+          "count": 324,
+          "covered": 322,
+          "notcovered": 2,
+          "percent": 99.38271604938271
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/list.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 13,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 26,
+          "covered": 16,
+          "percent": 61.53846153846154
+        },
+        "lines": {
+          "count": 252,
+          "covered": 246,
+          "percent": 97.61904761904762
+        },
+        "regions": {
+          "count": 416,
+          "covered": 406,
+          "notcovered": 10,
+          "percent": 97.59615384615384
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/list/item_source.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 5,
+          "percent": 83.33333333333334
+        },
+        "lines": {
+          "count": 60,
+          "covered": 59,
+          "percent": 98.33333333333333
+        },
+        "regions": {
+          "count": 78,
+          "covered": 76,
+          "notcovered": 2,
+          "percent": 97.43589743589743
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/list_item.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 11,
+          "covered": 11,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 22,
+          "covered": 18,
+          "percent": 81.81818181818183
+        },
+        "lines": {
+          "count": 203,
+          "covered": 203,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 312,
+          "covered": 309,
+          "notcovered": 3,
+          "percent": 99.03846153846155
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/math.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 15,
+          "covered": 15,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 30,
+          "covered": 15,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 170,
+          "covered": 137,
+          "percent": 80.58823529411765
+        },
+        "regions": {
+          "count": 280,
+          "covered": 235,
+          "notcovered": 45,
+          "percent": 83.92857142857143
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/mdx_esm.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 12,
+          "covered": 6,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 140,
+          "covered": 83,
+          "percent": 59.285714285714285
+        },
+        "regions": {
+          "count": 157,
+          "covered": 114,
+          "notcovered": 43,
+          "percent": 72.61146496815286
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/mdx_jsx.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 12,
+          "covered": 6,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 97,
+          "covered": 94,
+          "percent": 96.90721649484536
+        },
+        "regions": {
+          "count": 143,
+          "covered": 137,
+          "notcovered": 6,
+          "percent": 95.8041958041958
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/mdx_jsx/braces.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 7,
+          "covered": 6,
+          "percent": 85.71428571428571
+        },
+        "instantiations": {
+          "count": 14,
+          "covered": 10,
+          "percent": 71.42857142857143
+        },
+        "lines": {
+          "count": 80,
+          "covered": 65,
+          "percent": 81.25
+        },
+        "regions": {
+          "count": 117,
+          "covered": 93,
+          "notcovered": 24,
+          "percent": 79.48717948717949
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/mdx_jsx/children.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 12,
+          "percent": 85.71428571428571
+        },
+        "instantiations": {
+          "count": 28,
+          "covered": 12,
+          "percent": 42.857142857142854
+        },
+        "lines": {
+          "count": 274,
+          "covered": 148,
+          "percent": 54.01459854014598
+        },
+        "regions": {
+          "count": 484,
+          "covered": 218,
+          "notcovered": 266,
+          "percent": 45.04132231404959
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/mdx_jsx/expression.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 3,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 49,
+          "covered": 45,
+          "percent": 91.83673469387756
+        },
+        "regions": {
+          "count": 55,
+          "covered": 50,
+          "notcovered": 5,
+          "percent": 90.9090909090909
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/mdx_jsx/scan.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 19,
+          "covered": 18,
+          "percent": 94.73684210526316
+        },
+        "instantiations": {
+          "count": 38,
+          "covered": 18,
+          "percent": 47.368421052631575
+        },
+        "lines": {
+          "count": 277,
+          "covered": 255,
+          "percent": 92.05776173285199
+        },
+        "regions": {
+          "count": 431,
+          "covered": 388,
+          "notcovered": 43,
+          "percent": 90.02320185614849
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/options.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 8,
+          "percent": 80.0
+        },
+        "lines": {
+          "count": 74,
+          "covered": 74,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 15,
+          "covered": 15,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/prepass.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 19,
+          "covered": 19,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 33,
+          "covered": 28,
+          "percent": 84.84848484848484
+        },
+        "lines": {
+          "count": 245,
+          "covered": 245,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 422,
+          "covered": 420,
+          "notcovered": 2,
+          "percent": 99.52606635071089
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/reference.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 9,
+          "covered": 9,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 18,
+          "covered": 9,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 177,
+          "covered": 174,
+          "percent": 98.30508474576273
+        },
+        "regions": {
+          "count": 304,
+          "covered": 298,
+          "notcovered": 6,
+          "percent": 98.02631578947368
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/reference/containers.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 8,
+          "covered": 4,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 37,
+          "covered": 37,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 34,
+          "covered": 34,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/reference/scan.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 13,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 26,
+          "covered": 19,
+          "percent": 73.07692307692307
+        },
+        "lines": {
+          "count": 84,
+          "covered": 83,
+          "percent": 98.8095238095238
+        },
+        "regions": {
+          "count": 140,
+          "covered": 139,
+          "notcovered": 1,
+          "percent": 99.28571428571429
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/source_normalization.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 7,
+          "covered": 7,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 14,
+          "covered": 8,
+          "percent": 57.14285714285714
+        },
+        "lines": {
+          "count": 65,
+          "covered": 64,
+          "percent": 98.46153846153847
+        },
+        "regions": {
+          "count": 106,
+          "covered": 105,
+          "notcovered": 1,
+          "percent": 99.05660377358491
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/spans.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 22,
+          "covered": 21,
+          "percent": 95.45454545454545
+        },
+        "instantiations": {
+          "count": 43,
+          "covered": 32,
+          "percent": 74.4186046511628
+        },
+        "lines": {
+          "count": 249,
+          "covered": 185,
+          "percent": 74.2971887550201
+        },
+        "regions": {
+          "count": 391,
+          "covered": 269,
+          "notcovered": 122,
+          "percent": 68.79795396419436
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/spans/remap.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 20,
+          "covered": 12,
+          "percent": 60.0
+        },
+        "lines": {
+          "count": 151,
+          "covered": 123,
+          "percent": 81.45695364238411
+        },
+        "regions": {
+          "count": 264,
+          "covered": 213,
+          "notcovered": 51,
+          "percent": 80.68181818181817
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/table.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 22,
+          "percent": 91.66666666666666
+        },
+        "lines": {
+          "count": 285,
+          "covered": 279,
+          "percent": 97.89473684210527
+        },
+        "regions": {
+          "count": 486,
+          "covered": 475,
+          "notcovered": 11,
+          "percent": 97.7366255144033
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/table_attributes.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 8,
+          "covered": 5,
+          "percent": 62.5
+        },
+        "lines": {
+          "count": 79,
+          "covered": 78,
+          "percent": 98.73417721518987
+        },
+        "regions": {
+          "count": 146,
+          "covered": 142,
+          "notcovered": 4,
+          "percent": 97.26027397260275
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_parser/src/parser/table_cell_source.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 13,
+          "percent": 92.85714285714286
+        },
+        "instantiations": {
+          "count": 28,
+          "covered": 25,
+          "percent": 89.28571428571429
+        },
+        "lines": {
+          "count": 197,
+          "covered": 134,
+          "percent": 68.02030456852792
+        },
+        "regions": {
+          "count": 287,
+          "covered": 188,
+          "notcovered": 99,
+          "percent": 65.50522648083623
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/autolink.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 19,
+          "covered": 19,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 32,
+          "covered": 29,
+          "percent": 90.625
+        },
+        "lines": {
+          "count": 269,
+          "covered": 265,
+          "percent": 98.51301115241635
+        },
+        "regions": {
+          "count": 462,
+          "covered": 458,
+          "notcovered": 4,
+          "percent": 99.13419913419914
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/autolink/index.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 14,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 44,
+          "covered": 37,
+          "percent": 84.0909090909091
+        },
+        "lines": {
+          "count": 135,
+          "covered": 127,
+          "percent": 94.07407407407408
+        },
+        "regions": {
+          "count": 203,
+          "covered": 189,
+          "notcovered": 14,
+          "percent": 93.10344827586206
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/callout.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 8,
+          "covered": 8,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 39,
+          "covered": 22,
+          "percent": 56.41025641025641
+        },
+        "regions": {
+          "count": 58,
+          "covered": 34,
+          "notcovered": 24,
+          "percent": 58.620689655172406
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/code_annotations/attribute.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 5,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 110,
+          "covered": 84,
+          "percent": 76.36363636363637
+        },
+        "regions": {
+          "count": 166,
+          "covered": 131,
+          "notcovered": 35,
+          "percent": 78.91566265060241
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/code_annotations/meta.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 14,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 28,
+          "covered": 17,
+          "percent": 60.714285714285715
+        },
+        "lines": {
+          "count": 168,
+          "covered": 155,
+          "percent": 92.26190476190477
+        },
+        "regions": {
+          "count": 238,
+          "covered": 217,
+          "notcovered": 21,
+          "percent": 91.17647058823528
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/code_annotations/state.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 20,
+          "covered": 10,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 86,
+          "covered": 76,
+          "percent": 88.37209302325581
+        },
+        "regions": {
+          "count": 115,
+          "covered": 95,
+          "notcovered": 20,
+          "percent": 82.6086956521739
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/code_annotations/vitepress.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 3,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 124,
+          "covered": 104,
+          "percent": 83.87096774193549
+        },
+        "regions": {
+          "count": 179,
+          "covered": 147,
+          "notcovered": 32,
+          "percent": 82.12290502793296
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/escape.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 24,
+          "covered": 24,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 57,
+          "covered": 50,
+          "percent": 87.71929824561403
+        },
+        "lines": {
+          "count": 256,
+          "covered": 254,
+          "percent": 99.21875
+        },
+        "regions": {
+          "count": 472,
+          "covered": 465,
+          "notcovered": 7,
+          "percent": 98.51694915254238
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/escape/nibble.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 40,
+          "covered": 40,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 77,
+          "covered": 77,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/heading.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 20,
+          "percent": 83.33333333333334
+        },
+        "lines": {
+          "count": 138,
+          "covered": 112,
+          "percent": 81.15942028985508
+        },
+        "regions": {
+          "count": 240,
+          "covered": 189,
+          "notcovered": 51,
+          "percent": 78.75
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/html_attr.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 41,
+          "covered": 27,
+          "percent": 65.85365853658537
+        },
+        "regions": {
+          "count": 57,
+          "covered": 42,
+          "notcovered": 15,
+          "percent": 73.68421052631578
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/mdx_payload.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 12,
+          "covered": 11,
+          "percent": 91.66666666666666
+        },
+        "instantiations": {
+          "count": 20,
+          "covered": 17,
+          "percent": 85.0
+        },
+        "lines": {
+          "count": 158,
+          "covered": 154,
+          "percent": 97.46835443037975
+        },
+        "regions": {
+          "count": 223,
+          "covered": 212,
+          "notcovered": 11,
+          "percent": 95.06726457399103
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/options.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 14,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 28,
+          "covered": 23,
+          "percent": 82.14285714285714
+        },
+        "lines": {
+          "count": 140,
+          "covered": 140,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 112,
+          "covered": 112,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 11,
+          "percent": 84.61538461538461
+        },
+        "instantiations": {
+          "count": 26,
+          "covered": 21,
+          "percent": 80.76923076923077
+        },
+        "lines": {
+          "count": 131,
+          "covered": 122,
+          "percent": 93.12977099236642
+        },
+        "regions": {
+          "count": 259,
+          "covered": 240,
+          "notcovered": 19,
+          "percent": 92.66409266409268
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/blocks.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 18,
+          "covered": 17,
+          "percent": 94.44444444444444
+        },
+        "instantiations": {
+          "count": 36,
+          "covered": 31,
+          "percent": 86.11111111111111
+        },
+        "lines": {
+          "count": 315,
+          "covered": 303,
+          "percent": 96.1904761904762
+        },
+        "regions": {
+          "count": 569,
+          "covered": 553,
+          "notcovered": 16,
+          "percent": 97.18804920913884
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/callout.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 103,
+          "covered": 94,
+          "percent": 91.2621359223301
+        },
+        "regions": {
+          "count": 176,
+          "covered": 156,
+          "notcovered": 20,
+          "percent": 88.63636363636364
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/code_block.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 13,
+          "percent": 92.85714285714286
+        },
+        "instantiations": {
+          "count": 28,
+          "covered": 13,
+          "percent": 46.42857142857143
+        },
+        "lines": {
+          "count": 217,
+          "covered": 193,
+          "percent": 88.94009216589862
+        },
+        "regions": {
+          "count": 350,
+          "covered": 312,
+          "notcovered": 38,
+          "percent": 89.14285714285714
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/definition_list.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 6,
+          "covered": 3,
+          "percent": 50.0
+        },
+        "lines": {
+          "count": 46,
+          "covered": 45,
+          "percent": 97.82608695652173
+        },
+        "regions": {
+          "count": 79,
+          "covered": 76,
+          "notcovered": 3,
+          "percent": 96.20253164556962
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/footnotes.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 18,
+          "covered": 18,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 84,
+          "covered": 27,
+          "percent": 32.142857142857146
+        },
+        "lines": {
+          "count": 237,
+          "covered": 234,
+          "percent": 98.73417721518987
+        },
+        "regions": {
+          "count": 412,
+          "covered": 408,
+          "notcovered": 4,
+          "percent": 99.02912621359224
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/hooks.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 15,
+          "covered": 12,
+          "percent": 80.0
+        },
+        "instantiations": {
+          "count": 134,
+          "covered": 117,
+          "percent": 87.31343283582089
+        },
+        "lines": {
+          "count": 172,
+          "covered": 136,
+          "percent": 79.06976744186046
+        },
+        "regions": {
+          "count": 315,
+          "covered": 217,
+          "notcovered": 98,
+          "percent": 68.88888888888889
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/hooks/blocks.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 8,
+          "covered": 7,
+          "percent": 87.5
+        },
+        "instantiations": {
+          "count": 144,
+          "covered": 25,
+          "percent": 17.36111111111111
+        },
+        "lines": {
+          "count": 209,
+          "covered": 189,
+          "percent": 90.43062200956938
+        },
+        "regions": {
+          "count": 318,
+          "covered": 292,
+          "notcovered": 26,
+          "percent": 91.82389937106919
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/hooks/inlines.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 7,
+          "covered": 7,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 126,
+          "covered": 9,
+          "percent": 7.142857142857142
+        },
+        "lines": {
+          "count": 97,
+          "covered": 97,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 135,
+          "covered": 135,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/hooks/mdx.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 90,
+          "covered": 8,
+          "percent": 8.88888888888889
+        },
+        "lines": {
+          "count": 81,
+          "covered": 79,
+          "percent": 97.53086419753086
+        },
+        "regions": {
+          "count": 104,
+          "covered": 98,
+          "notcovered": 6,
+          "percent": 94.23076923076923
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/hooks/tables.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 108,
+          "covered": 15,
+          "percent": 13.888888888888888
+        },
+        "lines": {
+          "count": 111,
+          "covered": 105,
+          "percent": 94.5945945945946
+        },
+        "regions": {
+          "count": 177,
+          "covered": 165,
+          "notcovered": 12,
+          "percent": 93.22033898305084
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/incremental.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 11,
+          "covered": 10,
+          "percent": 90.9090909090909
+        },
+        "instantiations": {
+          "count": 28,
+          "covered": 16,
+          "percent": 57.14285714285714
+        },
+        "lines": {
+          "count": 126,
+          "covered": 112,
+          "percent": 88.88888888888889
+        },
+        "regions": {
+          "count": 213,
+          "covered": 186,
+          "notcovered": 27,
+          "percent": 87.32394366197182
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/inlines.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 19,
+          "percent": 79.16666666666666
+        },
+        "lines": {
+          "count": 112,
+          "covered": 112,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 215,
+          "covered": 215,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/links.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 13,
+          "percent": 92.85714285714286
+        },
+        "instantiations": {
+          "count": 28,
+          "covered": 21,
+          "percent": 75.0
+        },
+        "lines": {
+          "count": 197,
+          "covered": 169,
+          "percent": 85.78680203045685
+        },
+        "regions": {
+          "count": 400,
+          "covered": 337,
+          "notcovered": 63,
+          "percent": 84.25
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/mdx.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 9,
+          "percent": 90.0
+        },
+        "lines": {
+          "count": 63,
+          "covered": 63,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 98,
+          "covered": 97,
+          "notcovered": 1,
+          "percent": 98.9795918367347
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/table_columns.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 8,
+          "covered": 5,
+          "percent": 62.5
+        },
+        "lines": {
+          "count": 68,
+          "covered": 64,
+          "percent": 94.11764705882352
+        },
+        "regions": {
+          "count": 124,
+          "covered": 118,
+          "notcovered": 6,
+          "percent": 95.16129032258065
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/visit.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 34,
+          "covered": 0,
+          "percent": 0.0
+        },
+        "instantiations": {
+          "count": 68,
+          "covered": 0,
+          "percent": 0.0
+        },
+        "lines": {
+          "count": 99,
+          "covered": 0,
+          "percent": 0.0
+        },
+        "regions": {
+          "count": 159,
+          "covered": 0,
+          "notcovered": 159,
+          "percent": 0.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/renderer/write.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 17,
+          "covered": 17,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 36,
+          "covered": 34,
+          "percent": 94.44444444444444
+        },
+        "lines": {
+          "count": 181,
+          "covered": 178,
+          "percent": 98.3425414364641
+        },
+        "regions": {
+          "count": 319,
+          "covered": 312,
+          "notcovered": 7,
+          "percent": 97.80564263322884
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/tagfilter.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 15,
+          "covered": 15,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 71,
+          "covered": 71,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 137,
+          "covered": 137,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "crates/ferromark_renderer/src/html/toc.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 149,
+          "covered": 117,
+          "percent": 78.52348993288591
+        },
+        "regions": {
+          "count": 205,
+          "covered": 148,
+          "notcovered": 57,
+          "percent": 72.1951219512195
+        }
+      }
+    }
+  ]
+}
