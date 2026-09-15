@@ -13,6 +13,50 @@ fn owned_output_uses_rust_defaults() {
     assert_eq!(to_html("").unwrap(), "");
 }
 
+/// The default entry points build the renderer's static default options
+/// instead of the owned `HtmlRendererOptions` struct. Every default the
+/// renderer reads — hard breaks, base URL, source path, code annotation key,
+/// and the autolink pattern list — must still produce identical bytes.
+#[test]
+fn default_entry_points_match_explicit_default_options() {
+    for source in [
+        "",
+        "plain text",
+        "# Title\n\n## Title\n\n## Title\n",
+        "Visit https://example.com and http://example.org/a?b=c#d now.\n",
+        "[link](/relative.md) and [abs](https://example.com)\n",
+        "Line one  \nline two\n",
+        "> [!NOTE]\n> Callout body with https://example.com\n",
+        "[[toc]]\n\n# One\n\n## Two\n\n### Three\n\n#### Four\n",
+        "Ref[^a] and again[^a]\n\n[^a]: Note body\n",
+        "```rust annotate=\"add:1\"\nfn main() {}\n```\n",
+        "| a | b |\n| --- | --- |\n| 1 | 2 |\n",
+        "<div class=\"raw\"><script>ok()</script></div>\n",
+        "日本語の見出し\n===\n",
+    ] {
+        let explicit = to_html_with_options(
+            source,
+            ParserOptions::default(),
+            HtmlRendererOptions::default(),
+        )
+        .unwrap();
+        assert_eq!(to_html(source).unwrap(), explicit, "{source:?}");
+
+        let mut appended = String::from("prefix\n");
+        to_html_into(source, &mut appended).unwrap();
+        let mut appended_explicit = String::from("prefix\n");
+        to_html_into_with_options(
+            source,
+            &mut appended_explicit,
+            ParserOptions::default(),
+            HtmlRendererOptions::default(),
+        )
+        .unwrap();
+        assert_eq!(appended, appended_explicit, "{source:?}");
+        assert_eq!(appended, format!("prefix\n{explicit}"), "{source:?}");
+    }
+}
+
 #[test]
 fn explicit_options_control_syntax_and_html_policy() {
     let html = to_html_with_options(

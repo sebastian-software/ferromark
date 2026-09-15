@@ -14,11 +14,15 @@ use crate::{Allocator, HtmlRenderer, HtmlRendererOptions, ParseResult, Parser, P
 /// # Ok::<(), ferromark::ParseError>(())
 /// ```
 pub fn to_html(source: &str) -> ParseResult<String> {
-    to_html_with_options(
-        source,
-        ParserOptions::default(),
-        HtmlRendererOptions::default(),
-    )
+    // Built through `HtmlRenderer::new` rather than
+    // `to_html_with_options(.., HtmlRendererOptions::default())`: the owned
+    // options struct heap-allocates every default string and the autolink
+    // pattern list, which the renderer's internal form represents with static
+    // data instead. The two configurations are the same values — see
+    // `static_default_options_match_owned_defaults`.
+    let arena = Allocator::for_source_len(source.len());
+    let document = Parser::with_options(&arena, source, ParserOptions::default()).parse()?;
+    Ok(HtmlRenderer::new().render(&document))
 }
 
 /// Converts Markdown to owned HTML with explicit syntax and output options.
@@ -58,12 +62,11 @@ pub fn to_html_with_options(
 /// # Errors
 /// Returns a parser error and leaves `output` unchanged if parsing fails.
 pub fn to_html_into(source: &str, output: &mut String) -> ParseResult<()> {
-    to_html_into_with_options(
-        source,
-        output,
-        ParserOptions::default(),
-        HtmlRendererOptions::default(),
-    )
+    // See `to_html` for why the default path skips the owned options struct.
+    let arena = Allocator::for_source_len(source.len());
+    let document = Parser::with_options(&arena, source, ParserOptions::default()).parse()?;
+    output.push_str(HtmlRenderer::new().render_borrowed(&document));
+    Ok(())
 }
 
 /// Appends rendered HTML to a string with explicit syntax and output options.

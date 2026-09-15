@@ -17,7 +17,7 @@ use compact_str::CompactString;
 
 use super::super::escape::write_escaped_into;
 use super::super::heading::slugify_heading_into;
-use super::{HtmlRenderHooks, HtmlRenderer};
+use super::{HtmlRenderHooks, HtmlRenderer, reserve_heading_scratch};
 
 /// First `-N` tried when a slug repeats, matching the ids the scan produced.
 const FIRST_SUFFIX: usize = 2;
@@ -259,6 +259,7 @@ impl HtmlRenderer {
 
     fn assign_footnote_slug(&mut self, identifier: &str, index: usize) -> CompactString {
         self.heading_slug_scratch.clear();
+        reserve_heading_scratch(&mut self.heading_slug_scratch);
         slugify_heading_into(identifier, &mut self.heading_slug_scratch);
         if self.heading_slug_scratch == "section" && !identifier.chars().any(char::is_alphanumeric)
         {

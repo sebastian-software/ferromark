@@ -74,7 +74,8 @@ pub struct HtmlRenderer {
     /// Reusable scratch buffer for the raw concatenated heading text in
     /// `heading_id`. A long-lived buffer avoids paying for a fresh
     /// `String` allocation per heading — `slugify_heading` previously
-    /// allocated one `text` String per call.
+    /// allocated one `text` String per call. Empty until the first heading
+    /// (see [`reserve_heading_scratch`]).
     heading_text_scratch: String,
     /// Reusable scratch buffer for the slugified id. The final id that
     /// ends up in `heading_id_counts` is copied out of here on vacant
@@ -107,6 +108,26 @@ pub struct HtmlRenderer {
     autolink_index: Option<FirstByteIndex>,
 }
 
+/// Working capacity a heading scratch buffer is given on first use.
+///
+/// A typical heading text, slug, and id all sit well under this, so one
+/// reservation covers the whole render.
+const HEADING_SCRATCH_CAPACITY: usize = 64;
+
+/// Gives a just-cleared scratch buffer its working capacity on first use.
+///
+/// [`HtmlRenderer`] leaves the heading scratch buffers empty at construction,
+/// so building a renderer for a document without headings performs no scratch
+/// allocation at all. The first heading pays exactly the one reservation the
+/// constructor used to make, and a reused renderer keeps that capacity for
+/// later renders because these buffers are only ever cleared, never shrunk.
+#[inline]
+fn reserve_heading_scratch(buffer: &mut String) {
+    if buffer.capacity() == 0 {
+        buffer.reserve(HEADING_SCRATCH_CAPACITY);
+    }
+}
+
 impl HtmlRenderer {
     /// Creates a new HTML renderer with default options.
     #[must_use]
@@ -131,14 +152,15 @@ impl HtmlRenderer {
             footnote_slug_counts: FxHashMap::default(),
             toc_entries: Vec::new(),
             document_has_toc_marker: false,
-            // Pre-size the heading scratch buffers: a typical heading text
-            // is well under 64 chars. Pre-allocating spares the first
-            // heading from a `String::with_capacity(0)` → `reserve(N)`
-            // round-trip without meaningful memory cost (these buffers
-            // live for the renderer's lifetime regardless).
-            heading_text_scratch: String::with_capacity(64),
-            heading_slug_scratch: String::with_capacity(64),
-            heading_id_scratch: String::with_capacity(64),
+            // The heading scratch buffers start empty. Constructing them
+            // pre-sized cost three allocations per renderer even for a
+            // document that has no heading at all — the common shape for
+            // short inputs and for pipelines that build one renderer per
+            // document. The first heading (or footnote slug) reserves the
+            // same working capacity instead, and reuse keeps it warm.
+            heading_text_scratch: String::new(),
+            heading_slug_scratch: String::new(),
+            heading_id_scratch: String::new(),
             code_block_index: 0,
             in_link: false,
             in_mdx_island_children: false,

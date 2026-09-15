@@ -17,7 +17,7 @@ use super::super::heading::{
     HEADING_PERMALINK_CLASS, collect_heading_text_into, heading_has_permalink_marker,
     slugify_heading_into,
 };
-use super::HtmlRenderer;
+use super::{HtmlRenderer, reserve_heading_scratch};
 
 impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn write(&mut self, s: &str) {
@@ -252,9 +252,11 @@ impl HtmlRenderer {
 
     fn prepare_heading_id(&mut self, heading: &Heading<'_>) {
         self.heading_text_scratch.clear();
+        reserve_heading_scratch(&mut self.heading_text_scratch);
         collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
         if let Some(id) = heading.id {
             self.heading_id_scratch.clear();
+            reserve_heading_scratch(&mut self.heading_id_scratch);
             self.heading_id_scratch.push_str(id);
             if let Some(count) = self.heading_id_counts.get_mut(id) {
                 *count += 1;
@@ -264,9 +266,11 @@ impl HtmlRenderer {
             return;
         }
         self.heading_slug_scratch.clear();
+        reserve_heading_scratch(&mut self.heading_slug_scratch);
         slugify_heading_into(&self.heading_text_scratch, &mut self.heading_slug_scratch);
 
         self.heading_id_scratch.clear();
+        reserve_heading_scratch(&mut self.heading_id_scratch);
         if let Some(count) = self
             .heading_id_counts
             .get_mut(self.heading_slug_scratch.as_str())

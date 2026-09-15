@@ -1,6 +1,6 @@
 use ferromark::allocator::Allocator;
 use ferromark::ast::Node;
-use ferromark::parser::Parser;
+use ferromark::parser::{Parser, ParserOptions};
 use ferromark::renderer::{HtmlRenderer, HtmlRendererOptions};
 
 #[test]
@@ -22,6 +22,61 @@ fn explicit_heading_ids_escape_identically_in_ids_and_permalinks() {
     );
     assert_eq!(renderer.render_borrowed(&document), expected);
     assert_eq!(renderer.render(&document), expected);
+}
+
+/// The heading scratch buffers are allocated on first use rather than in the
+/// constructor, so the first heading (or footnote slug) a renderer ever sees
+/// takes a different path than later ones. A renderer built per document and a
+/// renderer reused across documents must still agree byte for byte, in every
+/// order the two paths can be reached.
+#[test]
+fn lazily_sized_heading_buffers_match_a_reused_renderer_in_any_order() {
+    let allocator = Allocator::new();
+    let sources = [
+        // No heading at all: nothing must touch the scratch buffers.
+        "Just a paragraph with https://example.com in it.\n",
+        // Footnote slugs borrow the slug scratch without any heading.
+        "Ref[^one] and[^one] and[^!!!]\n\n[^one]: First\n\n[^!!!]: Symbolic\n",
+        // Explicit ids skip slugification but still use the id scratch.
+        "## Explicit {#fixed}\n\n## Explicit {#fixed}\n",
+        // Generated ids, duplicates, and a non-ASCII slug.
+        "# Root\n\n## Dup\n\n## Dup\n\n## 日本語の見出し\n",
+        // A heading whose text slugifies to nothing.
+        "## ---\n\n## ---\n",
+        // Headings and footnotes together, sharing the slug scratch.
+        "# Shared\n\nBody[^shared]\n\n[^shared]: Shared note\n",
+        "",
+    ];
+    for semantic_footnotes in [false, true] {
+        let options = HtmlRendererOptions {
+            semantic_footnotes,
+            heading_permalinks: true,
+            ..HtmlRendererOptions::default()
+        };
+        let parser_options = ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::gfm()
+        };
+        let documents: Vec<_> = sources
+            .iter()
+            .map(|source| {
+                Parser::with_options(&allocator, source, parser_options.clone())
+                    .parse()
+                    .unwrap()
+            })
+            .collect();
+
+        // Rotating the start point exercises every "which shape warmed the
+        // buffers first" ordering, including footnotes before headings.
+        for offset in 0..documents.len() {
+            let mut reused = HtmlRenderer::with_options(options.clone());
+            for step in 0..documents.len() {
+                let document = &documents[(offset + step) % documents.len()];
+                let fresh = HtmlRenderer::with_options(options.clone()).render(document);
+                assert_eq!(reused.render_borrowed(document), fresh, "offset {offset}");
+            }
+        }
+    }
 }
 
 #[test]
