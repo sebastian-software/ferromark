@@ -64,7 +64,7 @@ def main():
     env['RUSTFLAGS'] = '-C target-cpu=generic'
     env['CARGO_TARGET_DIR'] = str(build / 'target')
     command = ['cargo', '+1.95', 'build', '--release', '--offline']
-    if 'pub inline_footnotes:' in (source / 'crates/ferromark_parser/src/parser/options.rs').read_text():
+    if 'pub inline_footnotes:' in next(path for path in [source / 'crates/ferromark/src/parser/options.rs', source / 'crates/ferromark_parser/src/parser/options.rs'] if path.is_file()).read_text():
         command += ['--features', 'optional-writing']
     with (out / 'build.log').open('w') as log:
         result = subprocess.run(command, cwd=build, env=env, stdout=log, stderr=log)

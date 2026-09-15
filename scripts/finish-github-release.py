@@ -11,7 +11,7 @@ commit = os.environ['GITHUB_SHA']
 notes = Path('docs/releases') / (version + '.md')
 assert notes.is_file(), 'Release notes must be reviewed in Git'
 assets = sorted(str(p) for p in Path('release-artifacts').rglob('*') if p.suffix in ('.tgz', '.crate'))
-assert len(assets) == 14, 'Expected nine npm and five Rust archives'
+assert len(assets) == 10, 'Expected nine npm archives and one Rust archive'
 existing = subprocess.run(['gh', 'release', 'view', tag, '--json', 'tagName'], capture_output=True, text=True)
 if existing.returncode == 0:
     published = json.loads(subprocess.check_output(['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/commits/{tag}']))

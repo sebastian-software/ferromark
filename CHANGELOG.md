@@ -16,6 +16,9 @@ cargo add ferromark@=2.0.0-rc.1
 For reproducible Node testing, install `ferromark@2.0.0-rc.1` explicitly.
 The RC does not replace npm's stable `latest` tag.
 
+The Rust distribution is a single `ferromark` crate with public allocator, AST,
+parser and renderer modules. Node continues to install its native platform package.
+
 ## What to test
 
 - Real documents through the Rust convenience functions or arena AST API.
@@ -29,7 +32,7 @@ compiler APIs are not part of v2. MDX syntax capture does not execute JavaScript
 
 ## Validation and known limits
 
-The release requires the full platform CI, five Rust package builds, and all
+The release requires the full platform CI, a verified Rust package build, and all
 nine npm archives. Six native targets have runtime tests; the two musl targets
 are built and inspected. Registry installations are checked before the GitHub
 prerelease is created.

@@ -16,26 +16,6 @@
         {
           "type": "toml",
           "path": "Cargo.lock",
-          "jsonpath": "$.package[?(@.name.value=='ferromark_allocator' && !@.source)].version"
-        },
-        {
-          "type": "toml",
-          "path": "Cargo.lock",
-          "jsonpath": "$.package[?(@.name.value=='ferromark_ast' && !@.source)].version"
-        },
-        {
-          "type": "toml",
-          "path": "Cargo.lock",
-          "jsonpath": "$.package[?(@.name.value=='ferromark_parser' && !@.source)].version"
-        },
-        {
-          "type": "toml",
-          "path": "Cargo.lock",
-          "jsonpath": "$.package[?(@.name.value=='ferromark_renderer' && !@.source)].version"
-        },
-        {
-          "type": "toml",
-          "path": "Cargo.lock",
           "jsonpath": "$.package[?(@.name.value=='ferromark-node' && !@.source)].version"
         },
         "node/ferromark/package.json",

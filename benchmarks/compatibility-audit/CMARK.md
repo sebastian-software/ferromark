@@ -95,7 +95,7 @@ emphasis, link-label, and block-quote contexts. They include link destinations
 and titles, code spans, HTML attributes, escaped tildes, nested emphasis, and
 whitespace boundaries. These authored inputs are MIT licensed with the repo.
 The original 106 outputs and 254 additional reference outputs are asserted
-by `cargo test -p ferromark_renderer --test cmark_regressions --locked`, without
+by `cargo test -p ferromark --test cmark_regressions --locked`, without
 requiring a C toolchain during ordinary workspace tests. Two additional cases
 assert the GFM prohibition of nested links instead of the pinned oracle's
 invalid nested anchors. They remain `other` in the raw 256-case comparison,

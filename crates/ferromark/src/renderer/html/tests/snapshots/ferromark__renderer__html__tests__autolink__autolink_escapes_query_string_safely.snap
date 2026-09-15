@@ -1,0 +1,5 @@
+---
+source: crates/ferromark/src/renderer/html/tests/autolink.rs
+expression: html
+---
+<p>see <a href="http://a.test/?q=foo" target="_blank" rel="noopener noreferrer">http://a.test/?q=foo</a>&amp;r=bar now</p>

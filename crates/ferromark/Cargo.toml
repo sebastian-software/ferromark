@@ -18,7 +18,42 @@ description = "Arena-allocated Markdown parser and HTML renderer"
 workspace = true
 
 [dependencies]
-ferromark_allocator.workspace = true
-ferromark_ast.workspace = true
-ferromark_parser.workspace = true
-ferromark_renderer.workspace = true
+bumpalo = { workspace = true, features = ["collections", "boxed"] }
+compact_str.workspace = true
+smallvec.workspace = true
+memchr.workspace = true
+rustc-hash.workspace = true
+thiserror.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+insta.workspace = true
+
+[[bench]]
+name = "parser"
+harness = false
+
+[[bench]]
+name = "prepass"
+harness = false
+
+[[bench]]
+name = "tables"
+harness = false
+
+[[bench]]
+name = "table_pipes"
+harness = false
+
+[[bench]]
+name = "renderer"
+harness = false
+
+[[bench]]
+name = "headings"
+harness = false
+
+[[bench]]
+name = "sanitized_urls"
+harness = false

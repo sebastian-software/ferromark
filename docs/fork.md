@@ -46,6 +46,9 @@ A focused fuzz harness can be added when a port needs it.
 
 ## Mechanical changes
 
+This section records the initial import. The RC later consolidated the core into
+one published crate; see [ADR-0018](arch/ADR-0018-single-rust-crate.md).
+
 The four crate names and imports use `ferromark_` instead of `ox_content_`.
 Snapshot filenames and source metadata follow those crate names; expected
 outputs are preserved. Workspace metadata describes an unpublished local

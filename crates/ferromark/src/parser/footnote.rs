@@ -1,0 +1,293 @@
+//! GFM footnotes.
+//!
+//! A definition is a block starting with `[^label]:`; its content is the
+//! rest of that line plus any following lines indented at least four
+//! columns (or blank lines between them). A reference is the inline
+//! `[^label]`, which only becomes a [`FootnoteReference`] when a matching
+//! definition exists somewhere in the document — otherwise it stays
+//! literal text, as GFM specifies.
+//!
+//! Because references may appear before their definitions, the root
+//! parser collects the label set in a pre-pass ([`Parser::build_prepass`])
+//! and shares it with sub-parsers, mirroring how link reference
+//! definitions work.
+
+use crate::ast::{FootnoteDefinition, Node, Span};
+use compact_str::CompactString;
+use rustc_hash::FxHashSet;
+
+use super::Parser;
+use super::line_scan::{line_end, next_line_start};
+use super::spans::SourceMap;
+use crate::parser::error::ParseResult;
+
+pub(super) type FootnoteLabels = FxHashSet<CompactString>;
+
+/// Reads a `[^label]:` opener at the start of `text`.
+///
+/// Returns the raw label (without the `^`) and the byte offset just past
+/// the colon. Labels may not contain brackets, whitespace, or span lines.
+pub(super) fn parse_footnote_opener(text: &str) -> Option<(&str, usize)> {
+    let bytes = text.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() && bytes[i] == b' ' {
+        i += 1;
+    }
+    // More than three leading spaces makes it indented code, not a block start.
+    if i > 3 || bytes.get(i) != Some(&b'[') || bytes.get(i + 1) != Some(&b'^') {
+        return None;
+    }
+
+    let label_start = i + 2;
+    let mut j = label_start;
+    loop {
+        match bytes.get(j)? {
+            b']' => break,
+            b'[' | b'\n' | b'\r' => return None,
+            byte if byte.is_ascii_whitespace() => return None,
+            _ => j += 1,
+        }
+    }
+    if j == label_start || bytes.get(j + 1) != Some(&b':') {
+        return None;
+    }
+
+    Some((&text[label_start..j], j + 2))
+}
+
+/// Normalizes a footnote label for matching. GFM matches footnote labels
+/// case-insensitively, like link labels.
+pub(super) fn normalize_footnote_label(label: &str) -> CompactString {
+    CompactString::from(label.to_lowercase())
+}
+
+/// Byte length of the definition body starting at `content_start`:
+/// the remainder of the opening line plus indented continuation lines.
+fn definition_body_len(parser: &Parser<'_>, content_start: usize) -> usize {
+    let source = parser.source;
+    let bytes = source.as_bytes();
+    let mut cursor = next_line_start(bytes, content_start);
+    // Trailing blank lines only belong to the definition when an indented
+    // line follows, so remember where the last real content ended.
+    let mut end = cursor;
+
+    while cursor < source.len() {
+        let current_line_end = line_end(bytes, cursor);
+        let next_line = next_line_start(bytes, cursor);
+        let line = &source[cursor..current_line_end];
+        let trimmed = line.trim_start_matches([' ', '\t']);
+
+        if parser.is_line_comment_at(cursor) {
+            cursor = next_line;
+            continue;
+        }
+
+        if trimmed.trim_end().is_empty() {
+            cursor = next_line;
+            continue;
+        }
+        // Four columns of indent continue the definition; anything less
+        // starts a new block.
+        if indent_columns(line) < 4 {
+            break;
+        }
+        cursor = next_line;
+        end = next_line;
+    }
+
+    end - content_start
+}
+
+fn indent_columns(line: &str) -> usize {
+    let mut columns = 0;
+    for byte in line.bytes() {
+        match byte {
+            b' ' => columns += 1,
+            b'\t' => columns += 4 - (columns % 4),
+            _ => break,
+        }
+    }
+    columns
+}
+
+struct DedentedBody<'a> {
+    text: &'a str,
+    source_map: SourceMap,
+}
+
+/// Strips up to four columns of indentation from every line but the first,
+/// which the caller has already positioned past the `[^label]:` opener.
+fn dedent_body<'a>(
+    allocator: &'a crate::allocator::Allocator,
+    body: &str,
+    source_offset: usize,
+) -> DedentedBody<'a> {
+    // Arena-owned like the block quote / list item sub-sources, so the
+    // dedented copy lives as long as the AST that borrows from it.
+    let mut out = crate::allocator::String::with_capacity_in(body.len(), allocator.bump());
+    let mut source_map = SourceMap::default();
+    let bytes = body.as_bytes();
+    let mut line_start = 0usize;
+    let mut index = 0usize;
+
+    while line_start < body.len() {
+        let current_line_end = line_end(bytes, line_start);
+        let next_line = next_line_start(bytes, line_start);
+        let line = &body[line_start..current_line_end];
+        let consumed = if index == 0 {
+            first_line_indent_len(line)
+        } else {
+            dedent_len(line)
+        };
+        let dedented = &line[consumed..];
+        let generated_start = out.len();
+        out.push_str(dedented);
+        if current_line_end < body.len() {
+            out.push('\n');
+        }
+        source_map.push_line(
+            generated_start,
+            dedented.len() + usize::from(current_line_end < body.len()),
+            source_offset + line_start + consumed,
+            current_line_end.saturating_sub(line_start + consumed)
+                + next_line.saturating_sub(current_line_end),
+        );
+        line_start = next_line;
+        index += 1;
+    }
+
+    DedentedBody {
+        text: out.into_bump_str(),
+        source_map,
+    }
+}
+
+fn first_line_indent_len(line: &str) -> usize {
+    line.len() - line.trim_start_matches([' ', '\t']).len()
+}
+
+fn dedent_len(line: &str) -> usize {
+    let mut columns = 0;
+    let mut consumed = 0;
+    for byte in line.bytes() {
+        if columns >= 4 {
+            break;
+        }
+        match byte {
+            b' ' => columns += 1,
+            b'\t' => columns += 4 - (columns % 4),
+            _ => break,
+        }
+        consumed += 1;
+    }
+    consumed
+}
+
+impl<'a> Parser<'a> {
+    /// Whether `[^` at `position` opens a footnote definition here.
+    pub(super) fn at_footnote_definition(&self, start: usize) -> bool {
+        self.options.footnotes && parse_footnote_opener(&self.source[start..]).is_some()
+    }
+
+    /// Consumes a footnote definition block, emitting its node.
+    pub(super) fn try_parse_footnote_definition_node(&mut self) -> ParseResult<Option<Node<'a>>> {
+        let start = self.position;
+        let Some((label, after_colon)) = parse_footnote_opener(&self.source[start..]) else {
+            return Ok(None);
+        };
+
+        let identifier = if self.phase == super::ParsePhase::Definitions {
+            // The collector normalizes labels into its owned set; avoid
+            // allocating an intermediate normalized copy in the temporary AST.
+            label
+        } else {
+            self.allocator
+                .alloc_str(normalize_footnote_label(label).as_str()) as &'a str
+        };
+        let content_start = start + after_colon;
+        let body_len = definition_body_len(self, content_start);
+        let raw_body = &self.source[content_start..content_start + body_len];
+        // Collection only needs nested definitions. Without the necessary
+        // closing label marker, this body cannot contribute any; the real
+        // document parse still validates and renders its complete content.
+        let children = if self.phase == super::ParsePhase::Definitions && !raw_body.contains("]:") {
+            crate::allocator::Vec::new_in(self.allocator.bump())
+        } else {
+            let body = dedent_body(self.allocator, raw_body, content_start);
+            let sub_doc = self
+                .sub_parser_with_source_map(
+                    body.text,
+                    rustc_hash::FxHashSet::default(),
+                    &body.source_map,
+                )
+                .parse()?;
+            let mut children = sub_doc.children;
+            for child in &mut children {
+                body.source_map.remap_node_spans(child);
+            }
+            children
+        };
+        let end = content_start + body_len;
+        self.position = end;
+
+        Ok(Some(Node::FootnoteDefinition(self.allocator.boxed(
+            FootnoteDefinition {
+                identifier,
+                label: Some(label),
+                children,
+                span: Span::new(start as u32, end as u32),
+            },
+        ))))
+    }
+
+    /// Whether a definition exists for `label` (already normalized-able).
+    pub(super) fn has_footnote_label(&self, label: &str) -> bool {
+        self.footnote_labels
+            .as_ref()
+            .is_some_and(|labels| labels.contains(&normalize_footnote_label(label)))
+    }
+
+    /// Emits a [`FootnoteReference`] for `[^label]` at `pos`. Returns
+    /// false (leaving `pos` untouched) when this is not a reference to a
+    /// defined footnote, so the caller can fall back to link parsing.
+    pub(super) fn try_parse_footnote_reference(
+        &self,
+        content: &'a str,
+        offset: usize,
+        children: &mut crate::allocator::Vec<'a, Node<'a>>,
+        pos: &mut usize,
+    ) -> bool {
+        let bytes = content.as_bytes();
+        let label_start = *pos + 2;
+        let mut end = label_start;
+        loop {
+            match bytes.get(end) {
+                Some(b']') => break,
+                // Labels are a single run without brackets or whitespace.
+                Some(byte) if !byte.is_ascii_whitespace() && *byte != b'[' => end += 1,
+                _ => return false,
+            }
+        }
+        if end == label_start {
+            return false;
+        }
+
+        let label = &content[label_start..end];
+        if !self.has_footnote_label(label) {
+            return false;
+        }
+
+        let identifier =
+            self.allocator
+                .alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
+        children.push(Node::FootnoteReference(self.allocator.boxed(
+            crate::ast::FootnoteReference {
+                identifier,
+                label: Some(label),
+                span: Span::new((offset + *pos) as u32, (offset + end + 1) as u32),
+            },
+        )));
+        *pos = end + 1;
+        true
+    }
+}

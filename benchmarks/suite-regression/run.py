@@ -7,11 +7,27 @@ import json
 from pathlib import Path
 import random
 import statistics
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location('paired', ROOT / 'benchmarks/optimization-rounds/run.py')
 paired = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(paired)
+
+
+def check_build_compatibility(builds, directories):
+    for key in ('worker_sha256', 'rustc', 'rustflags', 'lto'):
+        assert builds[0][key] == builds[1][key], key
+    registries = []
+    for build, directory in zip(builds, directories, strict=True):
+        lock = directory / 'worker/Cargo.lock'
+        assert paired.digest(lock) == build['worker_lock_sha256'], 'worker lockfile changed after build'
+        packages = tomllib.loads(lock.read_text())['package']
+        # A crate-to-module refactor changes local lock entries. Compare the
+        # complete external graph (including features' dependency resolution)
+        # instead, while retaining the recorded lock hash for each build.
+        registries.append(sorted((p for p in packages if 'source' in p), key=lambda p: (p['name'], p['version'], p['source'])))
+    assert registries[0] == registries[1], 'external dependency graph changed'
 
 
 def main():
@@ -31,8 +47,7 @@ def main():
     builds = [json.loads((p / 'build.json').read_text()) for p in (args.before, args.after)]
     for build in builds:
         assert paired.digest(Path(build['binary'])) == build['binary_sha256']
-    for key in ('worker_sha256', 'worker_lock_sha256', 'rustc', 'rustflags', 'lto'):
-        assert builds[0][key] == builds[1][key], key
+    check_build_compatibility(builds, [args.before, args.after])
     corpus = paired.load_corpus(args.corpus)
     cases = corpus['cases']
     assert len({c['name'] for c in cases}) == len(cases)

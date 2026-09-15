@@ -21,11 +21,11 @@ changes belong in [runtime-profile results](runtime-profiles.md).
 ## Parser options
 
 The public fields and presets are defined in the [parser option
-type](../crates/ferromark_parser/src/parser/options.rs). Parser construction
+type](../crates/ferromark/src/parser/options.rs). Parser construction
 always performs source normalization and invokes the fused reference/footnote
-prepass: [construction](../crates/ferromark_parser/src/parser.rs#L143),
-[normalization](../crates/ferromark_parser/src/parser/source_normalization.rs#L16),
-[prepass](../crates/ferromark_parser/src/parser/prepass.rs#L104).
+prepass: [construction](../crates/ferromark/src/parser/mod.rs),
+[normalization](../crates/ferromark/src/parser/source_normalization.rs),
+[prepass](../crates/ferromark/src/parser/prepass.rs).
 Reference definitions are baseline CommonMark support, so their candidate scan
 is not an optional-feature comparison. The prepass returns early when no
 block-shaped definition candidate exists; a real candidate causes a line
@@ -36,17 +36,17 @@ scan.
 | `gfm` | No-op metadata field during parsing. The parser reads the individual extension fields, not this boolean. | `ParserOptions::gfm()` sets the GFM fields explicitly; setting `gfm: true` alone does not do so. |
 | `footnotes` | Extends the baseline prepass with footnote-label collection when `[^`/definition-shaped input is present; definitions then dedent and recursively parse a subdocument. | Shares the fused prepass with reference definitions; renderer `semantic_footnotes` is independent. |
 | `task_lists` | Trigger-local list-item prefix check for `[x]`, `[X]`, and `[ ]`. | Only applies after list-item recognition. |
-| `tables` | Block hot path: enables pipe probing during block dispatch and paragraph continuation checks; pipe candidates receive a two-line table probe. Actual rows/cells are trigger-local. | `merged_table_cells` and `table_attributes` only matter after a table is recognized. See [table dispatch](../crates/ferromark_parser/src/parser/block.rs#L146) and [table parser](../crates/ferromark_parser/src/parser/table.rs#L13). |
+| `tables` | Block hot path: enables pipe probing during block dispatch and paragraph continuation checks; pipe candidates receive a two-line table probe. Actual rows/cells are trigger-local. | `merged_table_cells` and `table_attributes` only matter after a table is recognized. See [table dispatch](../crates/ferromark/src/parser/block.rs) and [table parser](../crates/ferromark/src/parser/table.rs). |
 | `merged_table_cells` | Trigger-local table header/row splitting that preserves adjacent pipe runs as spans. | Requires `tables`; no work on non-table input. |
 | `table_attributes` | Trigger-local lookahead after a table for a caption/`{#id .class}` line, followed by attribute and caption parsing if matched. | Requires `tables`; a non-matching lookahead only pays the table-local check. |
-| `line_comments` | Block and paragraph dispatch reuse the first non-space/tab byte and check physical eligibility only for slash prefixes. Paragraph joining reuses the first observed comment; absent comments need no second discovery scan. Reference definitions retain a marker preflight. Actual removed comments can require joined text and a source map. | Changes block, table, definition, and nested-source handling; code and raw HTML remain opaque. See [line-comment handling](../crates/ferromark_parser/src/parser/line_comments.rs) and the [dispatch measurement](reports/2026-09-14-line-comment-dispatch/README.md). |
-| `front_matter` | Constructor-local leading scan for `---`/`+++`; when an opener is valid it scans to the closing delimiter and removes that range from Markdown parsing. | Root-document only; BOM and source-span normalization interact with the extracted body. See [front matter extraction](../crates/ferromark_parser/src/parser/front_matter.rs#L7). |
+| `line_comments` | Block and paragraph dispatch reuse the first non-space/tab byte and check physical eligibility only for slash prefixes. Paragraph joining reuses the first observed comment; absent comments need no second discovery scan. Reference definitions retain a marker preflight. Actual removed comments can require joined text and a source map. | Changes block, table, definition, and nested-source handling; code and raw HTML remain opaque. See [line-comment handling](../crates/ferromark/src/parser/line_comments.rs) and the [dispatch measurement](reports/2026-09-14-line-comment-dispatch/README.md). |
+| `front_matter` | Constructor-local leading scan for `---`/`+++`; when an opener is valid it scans to the closing delimiter and removes that range from Markdown parsing. | Root-document only; BOM and source-span normalization interact with the extracted body. See [front matter extraction](../crates/ferromark/src/parser/front_matter.rs). |
 | `strikethrough` | Inline hot path for `~` runs; also changes flanking classification for `*`/`_` runs when enabled. | Competes with `subscript` for single tildes. |
-| `autolinks` | Each block-level inline parse runs a cheap `may_contain_autolink` preflight. The recursive text coalescing/rewrite pass runs only when that preflight finds a possible candidate. | Does not make the renderer’s bare-URL option redundant; parser autolinks create link nodes, while renderer autolinks remaining text. See [inline block path](../crates/ferromark_parser/src/parser/inline.rs#L27) and [GFM rewrite](../crates/ferromark_parser/src/parser/inline/gfm_autolink.rs#L27). |
+| `autolinks` | Each block-level inline parse runs a cheap `may_contain_autolink` preflight. The recursive text coalescing/rewrite pass runs only when that preflight finds a possible candidate. | Does not make the renderer’s bare-URL option redundant; parser autolinks create link nodes, while renderer autolinks remaining text. See [inline block path](../crates/ferromark/src/parser/inline.rs) and [GFM rewrite](../crates/ferromark/src/parser/inline/gfm_autolink.rs). |
 | `superscript` | Adds `^` to the fused inline marker classifier and parses matching spans locally. | Changes the selected classifier; no separate scan is added. Full parsing occurs only for candidates. |
 | `subscript` | Trigger-local single-tilde branch and matching scan. | Shares `~` with strikethrough; does not add a new base marker because tilde is already scanned. |
 | `math` | Adds `$` to every inline marker scan; `$` block lines receive a block probe. Candidate inline/display math scans forward for a valid closer. | Math AST nodes are only syntax preservation; mathematical typesetting is external. |
-| `definition_lists` | A cached necessary-marker scan rejects marker-free suffixes before term collection. Candidate terms are represented by source coordinates; ordinary ASCII-letter prefixes skip irrelevant block recognizers. Real bodies still allocate a dedented source/map and recursively parse. | Each dedented subparser has a fresh marker cache. A later marker can retain speculative work on earlier text; definition bodies can combine with lists, tables, comments, and other block syntax. See [definition-list collector](../crates/ferromark_parser/src/parser/definition_list.rs). |
+| `definition_lists` | A cached necessary-marker scan rejects marker-free suffixes before term collection. Candidate terms are represented by source coordinates; ordinary ASCII-letter prefixes skip irrelevant block recognizers. Real bodies still allocate a dedented source/map and recursively parse. | Each dedented subparser has a fresh marker cache. A later marker can retain speculative work on earlier text; definition bodies can combine with lists, tables, comments, and other block syntax. See [definition-list collector](../crates/ferromark/src/parser/definition_list.rs). |
 | `heading_attributes` | Heading-local trailing trim and attribute-token parsing. | Explicit IDs require renderer `heading_ids`; CSS classes are emitted independently. |
 | `wiki_links` | Only `[` inline candidates are affected; `[[...]]` candidates scan for a closing pair and parse/probe the label. | Nested-link rules still apply; renderer sees a normal `Link` node. |
 | `cjk_emphasis` | Delimiter-local Unicode punctuation classification. | No prepass or allocation; it changes emphasis pairing semantics for East Asian punctuation. |
@@ -56,10 +56,10 @@ scan.
 ## Renderer options
 
 The public fields and strict profiles are defined in the [HTML renderer option
-type](../crates/ferromark_renderer/src/html/options.rs). Every normal render
+type](../crates/ferromark/src/renderer/html/options.rs). Every normal render
 first performs the renderer’s allocation-free structural AST scan for heading
-counts and a possible `[[toc]]` marker: [render setup](../crates/ferromark_renderer/src/html/renderer.rs#L177),
-[structural scan](../crates/ferromark_renderer/src/html/toc.rs#L43). This scan
+counts and a possible `[[toc]]` marker: [render setup](../crates/ferromark/src/renderer/html/renderer.rs),
+[structural scan](../crates/ferromark/src/renderer/html/toc.rs). This scan
 is baseline renderer work and still occurs when TOC substitution is disabled.
 
 | Field | Scope and work | Dependencies or interactions |
