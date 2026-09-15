@@ -69,6 +69,7 @@ mod mdx_jsx;
 mod options;
 mod prepass;
 mod reference;
+mod short_scan;
 mod source_normalization;
 mod spans;
 mod table;

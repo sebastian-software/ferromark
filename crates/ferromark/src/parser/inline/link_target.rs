@@ -7,6 +7,7 @@
 
 use crate::parser::Parser;
 use crate::parser::byte_class::ByteClass;
+use crate::parser::short_scan;
 
 pub(in crate::parser) struct LinkTarget<'a> {
     pub url: &'a str,
@@ -64,8 +65,9 @@ impl<'a> Parser<'a> {
         let bytes = raw.as_bytes();
         // Probe once so unchanged components can stay borrowed without a byte
         // walk. Keep the scalar tail: dense escapes must not pay for repeated
-        // vector searches. memchr provides portable and short/tail fallbacks.
-        let Some(mut i) = memchr::memchr2(b'\\', b'&', bytes) else {
+        // vector searches. Destinations and titles are usually shorter than
+        // one vector, which is the case `short_scan` exists for.
+        let Some(mut i) = short_scan::find2(b'\\', b'&', bytes) else {
             return raw;
         };
         let mut start = 0;
