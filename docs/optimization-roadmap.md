@@ -30,13 +30,21 @@ an immutable account of its original measurements apart from a follow-up link.
   bracket bodies (`ByteClass`), a one-scan URL escaper, a one-pass autolink
   pre-flight, cached fence-close search, a boxed `ParseError`, out-of-line
   17–64-byte copies, and reuse of scan facts in link parsing. Against
-  `a7f0a00` the 57 broad documents parse 1.30×, reuse 1.26×, fresh 1.22×, and
-  render 1.19× faster. Nine rejected variants and the remaining hot spots are
-  recorded there.
+  `a7f0a00`, the [complete 207-case confirmation](reports/2026-09-15-arm-full-suite/README.md)
+  measures the finished branch on all four stages. The 57 broad documents
+  gain 1.298× in parsing, 1.257× with reuse, 1.224× fresh, and 1.199× in
+  rendering. Every broad fresh/reuse/parse median improves; isolated render
+  and diagnostic losses remain visible in the full tables. The original
+  attempts, rejected variants, patches, and raw results are archived with the
+  iteration report.
 
-The broad v1/v2 comparison still refers to its original frozen binaries. These
-new rounds compare v2 before and after optimization; do not substitute their
-results into the old comparison or claim v1 was remeasured.
+The [new native comparison](reports/2026-09-15-native-arm/README.md) separately
+remeasures all six engines with matched syntax and renderer settings. V2 is
+effectively tied with OX fresh (1.000×) and reaches 1.018× OX throughput with
+reuse on the 14 all-six agreeing inputs. On 50 inputs agreeing among the five
+configurable engines, v2 reaches 1.90× v1 fresh and 1.85× with reuse. OX has
+no score on that broader set. These direct measurements replace extrapolation
+from optimization speedups; the older reports retain their frozen evidence.
 
 ## Next questions
 
@@ -63,9 +71,9 @@ questions below remain open as well.
    x86-64 SSSE3/AVX2 and scalar targets. The current evidence is Apple M1 Pro NEON;
    cross-target speedups are not established.
 
-Ferroni's [candidate scanner](../../ferroni/src/regset.rs) and Ferrocat's
-[structural scans](../../ferrocat/crates/ferrocat-po/src/scan.rs) remain useful
-local references. OX-Content already supplied SIMD nibble classifiers, SWAR line
+Ferroni's candidate scanner (`src/regset.rs`) and Ferrocat's structural scans
+(`crates/ferrocat-po/src/scan.rs`) remain useful references in those repositories.
+OX-Content already supplied SIMD nibble classifiers, SWAR line
 scans, code-span fast paths, arena sizing, and an autolink prefix index; these
 existing facilities should not be counted as new ports.
 

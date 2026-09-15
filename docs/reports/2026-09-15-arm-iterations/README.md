@@ -7,6 +7,18 @@ committed or reverted; nine variants were rejected. This report records the
 method, the numbers, the rejected variants, what was learned, and where the
 next gains most likely are.
 
+The original session evidence is preserved in [the evidence archive](evidence/README.md):
+losslessly compressed result samples and verification, the frozen workers and
+build metadata, the corpus and inputs, compact profiler exports, and source
+patches reconstructed against each recorded baseline.
+
+Follow-up: the [complete 207-case rerun](../2026-09-15-arm-full-suite/README.md)
+confirms the finished branch after both fixes across all four stages. The
+[new six-engine native comparison](../2026-09-15-native-arm/README.md) also
+remeasures OX and v1 directly: v2 is effectively tied with OX fresh and reaches
+1.018× OX throughput with reuse on the 14 agreeing inputs. The original
+measurements and predictions below remain the historical account.
+
 ## Results
 
 Cumulative, baseline `a7f0a00` against `9a5e071` (the two later fix commits are
@@ -93,7 +105,9 @@ effects.
 ## Rejected variants
 
 Each was measured with the same screen and reverted. Patches were kept outside
-the repository for the session; the reasons are what matters here.
+the repository during the session and are now preserved in the
+[evidence archive](evidence/README.md), together with the results and build
+identities.
 
 - Autolink pre-flight over `@`, `:`, and `.` with `memchr3`: 707 dots in one
   39.7 KB document made a compare per sentence; code-heavy docs lost 3–5%.

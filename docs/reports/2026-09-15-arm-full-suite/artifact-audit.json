@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "cases": 207,
+  "stages": 4,
+  "timed_windows": 14904,
+  "checks": [
+    "input lengths and hashes",
+    "HTML/AST/spans/child-count equality across both engines and all stages",
+    "all timed checksums",
+    "complete unique window coverage",
+    "archived runner and worker hashes",
+    "archived build lock and source manifest hashes",
+    "summary medians recomputed from raw windows"
+  ]
+}
