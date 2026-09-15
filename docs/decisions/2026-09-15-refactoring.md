@@ -67,3 +67,32 @@ and quoted-fence correctness fix provide additional value. All 828 workspace tes
 Clippy, formatting, benchmark builds, Node checks and the unchanged coverage gate
 pass. Coverage is 93.99% lines without new exclusions; denominator reduction is
 part of the increase. Detailed costs and limitations remain in the linked reports.
+
+## 4. Inline helper file boundaries — retained
+
+Replace the mixed `inline_helpers.rs` module with owners named for their work:
+
+- `inline/image.rs`: image syntax and alternative-text flattening, 153 lines.
+- `delimiters.rs`: shared marker runs, closed-code skipping, cached closer
+  discovery and balanced brackets, 153 lines; its existing scalar-oracle tests
+  live in `delimiters/tests.rs` (170 lines).
+- `inline.rs`: the existing inline-node capacity and text-node construction
+  helpers stay next to their primary caller. Capacity is private; image parsing
+  is visible only inside the inline module. No visibility is widened.
+
+Delimiter discovery also serves math and MDX, so it remains a parser-level module
+rather than being hidden under image or link parsing. These are organizational
+boundaries within the existing parser, not independently stateful components.
+Keep algorithms, signatures, parser layout, allocation policies, fixtures and test
+expectations unchanged. No traits, new crates or runtime dispatch are introduced.
+Do not split remaining files purely to meet a line-count limit. The architecture-
+specific marker scanner and URL escaping remain separate prospective steps.
+
+See the [measurement report](../reports/2026-09-15-refactor-inline-files/README.md)
+for the retention decision and validation against `61eafed`.
+
+The 57-document aggregate is −0.19% fresh / −0.31% reused, with exact HTML/AST
+preserved. A mixed fresh-footnote outlier was investigated using longer windows
+and did not repeat (−0.08% fresh / +0.10% reused). Retain the boundaries for clearer
+ownership and narrower visibility. All 828 workspace tests, Clippy, formatting and
+benchmark builds pass. The change is organizational; no speedup is claimed.
