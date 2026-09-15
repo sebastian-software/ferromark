@@ -1,17 +1,27 @@
-//! Differential tests for the fenced-code language class.
+//! Differential tests for the plain (unannotated) fenced-code path.
 //!
-//! `write_code_block_language_class` short-circuits info tokens that
+//! `write_plain_code_block` short-circuits info tokens that
 //! `plain_code_block_language` proves are already their own normalized, escaped
-//! class body. `oracle` below is the routine that shortcut replaced — normalize
-//! through the VitePress metadata tokenizer, then HTML-escape — so every case
+//! class body, and assembles the surrounding markup from merged literals.
+//! `oracle` below writes the same fence the way the renderer did before either
+//! change — tag, delimiter, and attribute name pushed separately, the language
+//! always run through the metadata tokenizer and the escaper — so every case
 //! here asserts the two produce the same bytes.
 
 use super::*;
 use crate::allocator::Allocator;
+use crate::ast::Span;
 use crate::parser::Parser;
 use crate::renderer::html::code_annotations::normalize_code_block_info;
 use crate::renderer::html::escape::write_escaped_into;
 use crate::renderer::html::{CodeAnnotationSyntax, HtmlRendererOptions};
+
+/// A body carrying bytes the escaper rewrites, so every case also covers the
+/// markup around the language.
+const BODY: &str = "let ok = 1 < 2 && \"3\" > '2';\n";
+
+/// A non-empty span, so the `source_spans` profile actually emits the attribute.
+const SPAN: Span = Span { start: 7, end: 41 };
 
 /// Language tokens that should take the shortcut: the bare names that dominate
 /// documentation corpora, plus punctuation-carrying names that are still plain.
@@ -156,8 +166,10 @@ const INFO_STRINGS: &[&str] = &[
     "日本語 {1}",
 ];
 
-/// The pre-shortcut routine: normalize the info token, then HTML-escape it.
-fn oracle(lang: Option<&str>, code_fence_metadata: bool) -> String {
+/// Writes one plain fence the way the renderer did before the shortcut and the
+/// merged literals: every piece of markup pushed separately, and the language
+/// always taken through the metadata tokenizer and the HTML escaper.
+fn oracle(lang: Option<&str>, source_spans: bool, code_fence_metadata: bool) -> String {
     let language = if code_fence_metadata {
         normalize_code_block_language(lang)
     } else {
@@ -165,24 +177,64 @@ fn oracle(lang: Option<&str>, code_fence_metadata: bool) -> String {
     };
 
     let mut expected = String::new();
+    expected.push_str("<pre");
+    if source_spans && SPAN.start != SPAN.end {
+        expected.push_str(" data-source-span=\"");
+        expected.push_str(&SPAN.start.to_string());
+        expected.push('-');
+        expected.push_str(&SPAN.end.to_string());
+        expected.push('"');
+    }
+    expected.push_str("><code");
     if let Some(language) = language {
         expected.push_str(" class=\"language-");
         write_escaped_into(&mut expected, language);
         expected.push('"');
     }
+    expected.push('>');
+    write_escaped_into(&mut expected, BODY);
+    expected.push_str("</code></pre>\n");
     expected
 }
 
-fn assert_matches_oracle(lang: Option<&str>) {
-    for code_fence_metadata in [true, false] {
-        let mut renderer = HtmlRenderer::new();
-        renderer.options.code_fence_metadata = code_fence_metadata;
-        renderer.write_code_block_language_class(lang);
-        assert_eq!(
-            renderer.output,
-            oracle(lang, code_fence_metadata),
-            "language class for {lang:?} with code_fence_metadata={code_fence_metadata}"
-        );
+/// Holds one renderer per option combination the plain fence path branches on,
+/// so the generated cases do not rebuild renderer state per token.
+struct Fences {
+    renderers: Vec<(bool, bool, HtmlRenderer)>,
+}
+
+impl Fences {
+    fn new() -> Self {
+        let mut renderers = Vec::new();
+        for source_spans in [false, true] {
+            for code_fence_metadata in [true, false] {
+                let mut renderer = HtmlRenderer::new();
+                renderer.options.source_spans = source_spans;
+                renderer.options.code_fence_metadata = code_fence_metadata;
+                renderers.push((source_spans, code_fence_metadata, renderer));
+            }
+        }
+        Self { renderers }
+    }
+
+    fn assert_matches_oracle(&mut self, lang: Option<&str>) {
+        let code_block = CodeBlock {
+            lang,
+            meta: None,
+            value: BODY,
+            span: SPAN,
+        };
+
+        for (source_spans, code_fence_metadata, renderer) in &mut self.renderers {
+            renderer.output.clear();
+            renderer.write_plain_code_block(&code_block);
+            assert_eq!(
+                renderer.output,
+                oracle(lang, *source_spans, *code_fence_metadata),
+                "fence for {lang:?} with source_spans={source_spans} \
+                 code_fence_metadata={code_fence_metadata}"
+            );
+        }
     }
 }
 
@@ -207,31 +259,33 @@ impl Rng {
 
 #[test]
 fn bare_languages_take_the_shortcut() {
+    let mut fences = Fences::new();
     for language in BARE_LANGUAGES {
         assert_eq!(
             plain_code_block_language(language),
             Some(*language),
             "{language:?} should be recognized as a plain language token"
         );
-        assert_matches_oracle(Some(language));
+        fences.assert_matches_oracle(Some(language));
     }
 }
 
 #[test]
 fn metadata_tokens_fall_back_to_the_general_route() {
+    let mut fences = Fences::new();
     for token in METADATA_TOKENS {
         assert_eq!(
             plain_code_block_language(token),
             None,
             "{token:?} must not be treated as a plain language token"
         );
-        assert_matches_oracle(Some(token));
+        fences.assert_matches_oracle(Some(token));
     }
 }
 
 #[test]
 fn absent_language_matches_oracle() {
-    assert_matches_oracle(None);
+    Fences::new().assert_matches_oracle(None);
 }
 
 #[test]
@@ -251,6 +305,7 @@ fn plain_language_tokens_survive_escaping_unchanged() {
 
 #[test]
 fn bundled_fixture_info_tokens_match_oracle() {
+    let mut fences = Fences::new();
     let tokens = bundled_fence_info_tokens();
     // The specification fixtures write most examples as indented blocks, so the
     // harvest is small; these two bare names pin the extractor against a silently
@@ -266,7 +321,7 @@ fn bundled_fixture_info_tokens_match_oracle() {
         if plain_code_block_language(token).is_some() {
             plain += 1;
         }
-        assert_matches_oracle(Some(token));
+        fences.assert_matches_oracle(Some(token));
     }
 
     assert!(
@@ -287,6 +342,7 @@ fn random_info_tokens_match_oracle() {
         'p', 's', 'o', 't', '0', '1', '9', '.', '/', '_', 'é', '日', '🦀',
     ];
 
+    let mut fences = Fences::new();
     let mut rng = Rng(0x2026_0915_c0de_b10c);
     let mut token = String::new();
     let mut plain = 0usize;
@@ -303,7 +359,7 @@ fn random_info_tokens_match_oracle() {
         } else {
             rejected += 1;
         }
-        assert_matches_oracle(Some(&token));
+        fences.assert_matches_oracle(Some(&token));
     }
 
     assert!(
@@ -354,7 +410,7 @@ fn annotation_paths_still_derive_the_language_from_normalized_info() {
 }
 
 #[test]
-fn default_and_annotation_routes_agree_on_the_language_class() {
+fn default_rendering_matches_the_normalized_language() {
     for info in INFO_STRINGS {
         let source = format!("```{info}\nconst first = true;\n```\n");
         let allocator = Allocator::new();
@@ -362,7 +418,15 @@ fn default_and_annotation_routes_agree_on_the_language_class() {
         let html = HtmlRenderer::new().render(&document);
 
         let (lang, _) = split_fence_info(info);
-        let expected = format!("<code{}>", oracle(lang, true));
+        let expected = match normalize_code_block_language(lang) {
+            Some(language) => {
+                let mut expected = String::from("<code class=\"language-");
+                write_escaped_into(&mut expected, language);
+                expected.push_str("\">");
+                expected
+            }
+            None => String::from("<code>"),
+        };
         assert!(
             html.contains(&expected),
             "default rendering of ```{info} should contain {expected:?}, got {html}"
