@@ -33,3 +33,7 @@ workstation measurements, not confidence intervals or cross-machine guarantees.
 Authored diagnostic corpora may supply a `profiles` object with explicit parser
 and renderer option dictionaries. These cannot replace the standard CommonMark
 or GFM profiles; empty profiles are not timed.
+
+`--batches-only` still verifies every document before and after timing, but times
+only whole-profile batches. Use it alongside targeted per-document probes when
+the question is aggregate cost; it cannot identify individual broad-corpus outliers.

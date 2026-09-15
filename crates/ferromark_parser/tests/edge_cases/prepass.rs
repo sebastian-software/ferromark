@@ -191,14 +191,12 @@ fn footnote_label_over_reference_limit_resolves() {
     assert!(resolves_footnote(&source));
 }
 
-// The two collectors deliberately classify fences differently: the
-// reference side tracks fences on the quote-stripped line, the footnote
-// side on the raw line. A quoted fence line therefore opens a fence for
-// the reference collector only. These two tests pin that asymmetry.
-
+// CommonMark 0.31.2 section 4.5, example 128: an unclosed fence ends
+// with its containing quote. The former flat reference prepass leaked that
+// fence into the root document; the block grammar must own this context.
 #[test]
-fn quoted_fence_hides_later_reference_definition() {
-    assert!(!resolves_reference("> ```\n\n[a]: /url\n\n[a]"));
+fn quoted_fence_does_not_hide_later_reference_definition() {
+    assert!(resolves_reference("> ```\n\n[a]: /url\n\n[a]"));
 }
 
 #[test]
@@ -206,9 +204,7 @@ fn quoted_fence_does_not_hide_later_footnote_definition() {
     assert!(resolves_footnote("> ```\n\n[^n]: note\n\n[^n]"));
 }
 
-// A multi-line reference definition (title on its own line) is skipped in
-// one jump by the reference collector; the footnote scan must still see
-// the skipped lines exactly as the standalone pass did.
+// Footnote labels remain visible after multi-line reference definitions.
 
 #[test]
 fn footnote_definition_directly_after_multiline_definition_resolves() {

@@ -1,4 +1,4 @@
-//! Resolve container definitions using the existing block grammar.
+//! Resolve document-wide definitions using the existing block grammar.
 //!
 //! A temporary arena holds only block structure; inline parsing is skipped.
 //! Copy the collected definition values into the document arena, then discard
@@ -29,26 +29,20 @@ impl<'a, 'tree> Visit<'tree> for Collector<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub(in crate::parser) fn collect_container_references(&self) -> ReferenceMap<'a> {
+    pub(in crate::parser) fn collect_references(&self) -> ReferenceMap<'a> {
         let temporary = Allocator::new();
-        // Disable collectors during construction to avoid recursively invoking
-        // this pass. The source is already normalized and front matter removed.
-        let mut parser = Parser::with_options(
+        // Choose the collection phase at construction. Syntax options retain
+        // their real meaning throughout; no temporarily disabled options or
+        // post-construction state repair is needed to suppress recursion.
+        let mut parser = Parser::with_phase(
             &temporary,
             self.source,
             ParserOptions {
-                allow_link_refs: false,
-                footnotes: false,
-                inline_footnotes: false,
                 front_matter: false,
                 ..self.options.clone()
             },
+            super::super::ParsePhase::Definitions,
         );
-        parser.options = ParserOptions {
-            front_matter: false,
-            ..self.options.clone()
-        };
-        parser.collecting_references = true;
         let mut collector = Collector {
             allocator: self.allocator,
             definitions: ReferenceMap::default(),
