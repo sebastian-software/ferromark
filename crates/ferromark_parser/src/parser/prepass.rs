@@ -6,8 +6,9 @@
 //! affect either collector) costs one memchr line skip and a flag write
 //! instead of quote-stripping, trimming, and fence-classifying every line.
 //!
-//! Behavior is intentionally identical to the two previous passes,
-//! including their asymmetry: the reference collector classifies fences on
+//! Container-shaped reference candidates use the real block grammar in a
+//! temporary arena. Other inputs retain the original fused scan, including
+//! its asymmetry: the reference collector classifies fences on
 //! the quote-stripped line (so a quoted fence line opens a fence for it)
 //! while the footnote collector classifies fences on the raw line (so the
 //! same line does not). The two fence states are tracked independently,
@@ -59,23 +60,36 @@ pub(super) fn next_fence_run_line(bytes: &[u8], from: usize, fence_byte: u8) -> 
 /// A bare `]:` anywhere is not enough: ordinary prose can mention the token
 /// and force the much more expensive structural pre-pass. The opening `[` of
 /// either a reference or footnote definition must begin a block line after
-/// quote markers and at most three spaces. Reference labels are capped at
+/// optional container prefixes. The returned flags indicate any candidate
+/// and a candidate requiring full block context. Reference labels are capped at
 /// 1,000 bytes; footnote labels are line-bounded but have no length cap. This
 /// scanner only proves that necessary shape exists; the full pre-pass remains
 /// responsible for validating syntax and block context.
-fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
+fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
     let bytes = source.as_bytes();
     let Some(mut open) = memchr(b'[', bytes) else {
-        return false;
+        return (false, false);
     };
     if memmem::find(bytes, b"]:").is_none() {
-        return false;
+        return (false, false);
     }
 
+    let mut found = false;
     let mut line_start = previous_line_start(bytes, open);
     loop {
-        let prefix = strip_quote_markers(&source[line_start..open]);
-        if prefix.len() <= 3 && prefix.as_bytes().iter().all(|&byte| byte == b' ') {
+        let raw_prefix = &source[line_start..open];
+        let prefix = strip_quote_markers(raw_prefix);
+        let flat = prefix.len() <= 3 && prefix.as_bytes().iter().all(|&byte| byte == b' ');
+        // A necessary shape, not a container grammar. False positives (for
+        // example indented code) are rejected by the real block parser.
+        let container = !raw_prefix.is_empty()
+            && raw_prefix.bytes().all(|byte| {
+                matches!(
+                    byte,
+                    b' ' | b'\t' | b'>' | b'-' | b'+' | b'*' | b'.' | b')' | b'0'..=b'9'
+                )
+            });
+        if flat || container {
             let candidate_end = if footnotes && bytes.get(open + 1) == Some(&b'^') {
                 // Footnote labels cannot span lines, but unlike reference
                 // labels their parser deliberately has no length cap.
@@ -86,13 +100,16 @@ fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
                 open.saturating_add(1003).min(bytes.len())
             };
             if memmem::find(&bytes[open + 1..candidate_end], b"]:").is_some() {
-                return true;
+                if container {
+                    return (true, true);
+                }
+                found = true;
             }
         }
 
         let search_start = open + 1;
         let Some(next) = memchr(b'[', &bytes[search_start..]) else {
-            return false;
+            return (found, false);
         };
         open = search_start + next;
         if memrchr2(b'\n', b'\r', &bytes[search_start..open]).is_some() {
@@ -122,10 +139,19 @@ impl<'a> Parser<'a> {
         // Cheap bail: both collectors need a bounded `[...]:` opener at a
         // valid block-line prefix. Full syntax and context validation still
         // happens below, but ordinary prose decoys skip the structural scan.
-        if !has_definition_candidate(self.source, self.options.footnotes) {
+        let (has_candidate, container_candidate) =
+            definition_candidates(self.source, self.options.footnotes);
+        if !has_candidate {
             return (None, None);
         }
         let collect_footnotes = self.options.footnotes && self.source.contains("[^");
+        if container_candidate && self.options.allow_link_refs && !collect_footnotes {
+            let definitions = self.collect_container_references();
+            return (
+                (!definitions.is_empty()).then(|| Rc::new(definitions)),
+                None,
+            );
+        }
 
         let mut definitions = ReferenceMap::default();
         let mut labels = FootnoteLabels::default();
@@ -285,6 +311,12 @@ impl<'a> Parser<'a> {
             pos = line_terminator_end(bytes, line_end);
         }
 
+        if container_candidate && self.options.allow_link_refs {
+            // Rebuild the complete map in document order, so a nested first
+            // definition wins over a later root definition too.
+            definitions = self.collect_container_references();
+        }
+
         (
             (!definitions.is_empty()).then(|| Rc::new(definitions)),
             (!labels.is_empty()).then(|| Rc::new(labels)),
@@ -319,13 +351,20 @@ fn footnote_scan_line(
 
 #[cfg(test)]
 mod tests {
-    use super::has_definition_candidate;
+    use super::definition_candidates;
+
+    fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
+        definition_candidates(source, footnotes).0
+    }
 
     #[test]
     fn definition_candidate_rejects_inline_prose_decoys() {
         let source = "Earlier [link](https://example.com).\n- Skip the scan when no `]:` exists.";
         assert!(!has_definition_candidate(source, false));
-        assert!(!has_definition_candidate("    [indented]: /code", false));
+        assert_eq!(
+            definition_candidates("    [indented]: /code", false),
+            (true, true)
+        );
     }
 
     #[test]

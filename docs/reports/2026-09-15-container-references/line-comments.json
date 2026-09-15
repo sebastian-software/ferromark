@@ -1,0 +1,241 @@
+{
+  "v1_source": "/private/tmp/ferromark-container-v1",
+  "v2_source": "/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark",
+  "v1_expected_revision": "143ec2ce151d87d2a3d804a048014afc97733ae0",
+  "worker_sha256": "f82aeb2e5f015fa1b53f91593f8c7adda24dfdab2716d3ff9360ffb82526dfa9",
+  "profiles": {
+    "v1": "Options::commonmark + trusted HTML + tables/tasks/strikethrough/autolinks + line_comments",
+    "v2": "ParserOptions::gfm_spec + line_comments; HtmlRendererOptions::gfm with heading IDs and URL scanner off"
+  },
+  "summary": {
+    "case_count": 40,
+    "matching_count": 39,
+    "mismatch_count": 1
+  },
+  "semantic_summary": {
+    "case_count": 40,
+    "matching_count": 40,
+    "mismatch_count": 0
+  },
+  "cases": [
+    {
+      "name": "default-shaped",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "only-comments",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "paragraph",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "blank-lines",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "ordinary",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "indent",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "fence",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "raw-html",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "quote",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "list",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "explicit-quote",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "setext",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "table",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "crlf",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "reference-before",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "reference-after-comment",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "reference-destination-title-comment",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "list-explicit",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "nested-explicit",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "list-fence",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "quote-fence",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "nested-list-quote-fence",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "list-html",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "quote-html",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "indented-code",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "indented-code-after-comment",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "comment-eof",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "comment-between-definitions",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "comment-table-body",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "list-indented-code",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "quote-indented-code",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "definition-title",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "repeated-definitions",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "quote-definition-title",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "list-definition-title",
+      "status": "DIFF",
+      "v1_html": "<ul>\n<li></li>\n</ul>\n<p><a href=\"/url\" title=\"title\">target</a></p>\n",
+      "v2_html": "<ul>\n<li>\n</li>\n</ul>\n<p><a href=\"/url\" title=\"title\">target</a></p>\n",
+      "comparison": "serialization-equivalent"
+    },
+    {
+      "name": "list-table-comment",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "quote-table-comment",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "root-comment-indented-code",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "root-comment-before-html",
+      "status": "OK",
+      "comparison": "exact"
+    },
+    {
+      "name": "comment-after-paragraph-before-definition",
+      "status": "OK",
+      "comparison": "exact"
+    }
+  ],
+  "known_existing_limitation": null,
+  "baselines": [
+    {
+      "name": "list-definition-title-comments-off",
+      "status": "DIFF",
+      "v1_html": "<ul>\n<li>// private\n&quot;title&quot;</li>\n</ul>\n<p><a href=\"/url\">target</a></p>\n",
+      "v2_html": "<ul>\n<li>\n// private\n&quot;title&quot;</li>\n</ul>\n<p><a href=\"/url\">target</a></p>\n",
+      "comparison": "serialization-equivalent"
+    },
+    {
+      "name": "list-definition-title-comment-removed",
+      "status": "DIFF",
+      "v1_html": "<ul>\n<li></li>\n</ul>\n<p><a href=\"/url\" title=\"title\">target</a></p>\n",
+      "v2_html": "<ul>\n<li>\n</li>\n</ul>\n<p><a href=\"/url\" title=\"title\">target</a></p>\n",
+      "comparison": "serialization-equivalent"
+    }
+  ]
+}

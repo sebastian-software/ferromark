@@ -1,0 +1,632 @@
+[
+  {
+    "case": "root-definition-4096",
+    "stage": "parse",
+    "bytes": 4080,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0643691543933653,
+    "range": [
+      1.0513268992588671,
+      1.0716060100847475
+    ],
+    "before_ns": 50426.5947265625,
+    "after_ns": 53794.575
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "stage": "reuse",
+    "bytes": 2874,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9799350534968524,
+    "range": [
+      0.9741431413873314,
+      0.9949958448618081
+    ],
+    "before_ns": 2848.446038251366,
+    "after_ns": 2783.5066169928828
+  },
+  {
+    "case": "list-prose-65536",
+    "stage": "fresh",
+    "bytes": 65520,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0080360508062336,
+    "range": [
+      0.9861808679632909,
+      1.920857486030602
+    ],
+    "before_ns": 290356.1197916667,
+    "after_ns": 291599.609375
+  },
+  {
+    "case": "list-prose-4096",
+    "stage": "reuse",
+    "bytes": 4080,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0048900696054661,
+    "range": [
+      0.987125659418116,
+      1.0106397442909134
+    ],
+    "before_ns": 17394.06840277778,
+    "after_ns": 17412.688194444443
+  },
+  {
+    "case": "docs_front-matter.md",
+    "stage": "parse",
+    "bytes": 5233,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0031194509942434,
+    "range": [
+      0.9931943887786858,
+      1.0134274453180272
+    ],
+    "before_ns": 3548.3512613378684,
+    "after_ns": 3562.455509681093
+  },
+  {
+    "case": "docs_table-layout.md",
+    "stage": "reuse",
+    "bytes": 7701,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9851913753771387,
+    "range": [
+      0.9817889776250321,
+      0.999959238262536
+    ],
+    "before_ns": 8384.323529411764,
+    "after_ns": 8283.261739417989
+  },
+  {
+    "case": "UPSTREAM.md",
+    "stage": "reuse",
+    "bytes": 2214,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9828007644288589,
+    "range": [
+      0.9788276209158059,
+      0.9908597895259671
+    ],
+    "before_ns": 2393.4644908116384,
+    "after_ns": 2354.5725715361446
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "stage": "fresh",
+    "bytes": 2874,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9905440196296943,
+    "range": [
+      0.9802085437431809,
+      0.9992962766667224
+    ],
+    "before_ns": 3166.6086791497974,
+    "after_ns": 3117.182270916335
+  },
+  {
+    "case": "UPSTREAM.md",
+    "stage": "parse",
+    "bytes": 2214,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0031404490718794,
+    "range": [
+      0.9974008896841663,
+      1.005769004306341
+    ],
+    "before_ns": 1662.8310837765957,
+    "after_ns": 1663.5042885638297
+  },
+  {
+    "case": "sparse-container-65536",
+    "stage": "fresh",
+    "bytes": 66028,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.4488400868475653,
+    "range": [
+      1.4371568907835108,
+      1.4570183785846558
+    ],
+    "before_ns": 57131.74330357143,
+    "after_ns": 82516.17269736843
+  },
+  {
+    "case": "code-decoy-65536",
+    "stage": "fresh",
+    "bytes": 65579,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.3616329751018688,
+    "range": [
+      1.338485825958661,
+      1.3739959977021508
+    ],
+    "before_ns": 102925.69921875,
+    "after_ns": 140147.02604166666
+  },
+  {
+    "case": "code-decoy-4096",
+    "stage": "parse",
+    "bytes": 4139,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.4589523340553132,
+    "range": [
+      1.4512192922787337,
+      1.4667280428758012
+    ],
+    "before_ns": 7045.748873873874,
+    "after_ns": 10281.964869281046
+  },
+  {
+    "case": "nested-definition-4096",
+    "stage": "reuse",
+    "bytes": 4050,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 2.0581333457501567,
+    "range": [
+      2.039477070647195,
+      2.0687543577913683
+    ],
+    "before_ns": 33073.811848958336,
+    "after_ns": 67996.0390625
+  },
+  {
+    "case": "root-definition-65536",
+    "stage": "fresh",
+    "bytes": 65520,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.049486565342641,
+    "range": [
+      1.0330557375604121,
+      1.0656601932803706
+    ],
+    "before_ns": 897356.125,
+    "after_ns": 941248.703125
+  },
+  {
+    "case": "root-definition-65536",
+    "stage": "reuse",
+    "bytes": 65520,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0550603675036743,
+    "range": [
+      1.0426138728064585,
+      1.0702460540327694
+    ],
+    "before_ns": 889554.03125,
+    "after_ns": 941093.75
+  },
+  {
+    "case": "list-prose-65536",
+    "stage": "parse",
+    "bytes": 65520,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.008141334850719,
+    "range": [
+      1.0054533413400835,
+      1.0141184029120378
+    ],
+    "before_ns": 222020.34765625,
+    "after_ns": 223827.00892857142
+  },
+  {
+    "case": "docs_table-layout.md",
+    "stage": "fresh",
+    "bytes": 7701,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9934469039100439,
+    "range": [
+      0.9828715885395747,
+      1.001964788259102
+    ],
+    "before_ns": 8782.383778089888,
+    "after_ns": 8732.118055555555
+  },
+  {
+    "case": "sparse-container-65536",
+    "stage": "parse",
+    "bytes": 66028,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.7567171939785868,
+    "range": [
+      1.7150902956718226,
+      1.7724687260775696
+    ],
+    "before_ns": 34802.92222222222,
+    "after_ns": 61039.41346153846
+  },
+  {
+    "case": "nested-definition-65536",
+    "stage": "reuse",
+    "bytes": 65500,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 2.06123188269669,
+    "range": [
+      2.04788110290309,
+      2.091351516634051
+    ],
+    "before_ns": 534205.2916666666,
+    "after_ns": 1103124.359375
+  },
+  {
+    "case": "prose-65536",
+    "stage": "fresh",
+    "bytes": 65505,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9948797546255856,
+    "range": [
+      0.9818043489688694,
+      1.0054531737503563
+    ],
+    "before_ns": 54158.22521551724,
+    "after_ns": 53889.099137931036
+  },
+  {
+    "case": "code-decoy-4096",
+    "stage": "fresh",
+    "bytes": 4139,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.420297457511571,
+    "range": [
+      1.3962632123441783,
+      1.4387200429265683
+    ],
+    "before_ns": 7720.731988916256,
+    "after_ns": 10974.34986888112
+  },
+  {
+    "case": "root-definition-4096",
+    "stage": "fresh",
+    "bytes": 4080,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0455165348152815,
+    "range": [
+      1.0345041515683298,
+      1.0605414869020762
+    ],
+    "before_ns": 56509.62611607143,
+    "after_ns": 58985.195601851854
+  },
+  {
+    "case": "root-definition-65536",
+    "stage": "parse",
+    "bytes": 65520,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.057095542777143,
+    "range": [
+      1.0537598587325059,
+      1.0869400874070159
+    ],
+    "before_ns": 800800.140625,
+    "after_ns": 851313.796875
+  },
+  {
+    "case": "nested-definition-65536",
+    "stage": "fresh",
+    "bytes": 65500,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 2.0519103648628194,
+    "range": [
+      2.046290765016322,
+      2.0689284969801323
+    ],
+    "before_ns": 535478.7291666666,
+    "after_ns": 1100984.375
+  },
+  {
+    "case": "code-decoy-65536",
+    "stage": "parse",
+    "bytes": 65579,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.372050463375644,
+    "range": [
+      1.3662430447913119,
+      1.3910745724567564
+    ],
+    "before_ns": 99226.15625,
+    "after_ns": 136108.61458333334
+  },
+  {
+    "case": "prose-4096",
+    "stage": "parse",
+    "bytes": 4070,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9979695975482049,
+    "range": [
+      0.9893691543030217,
+      1.0079677051686369
+    ],
+    "before_ns": 2010.1137130462726,
+    "after_ns": 2003.8745592948717
+  },
+  {
+    "case": "nested-definition-4096",
+    "stage": "fresh",
+    "bytes": 4050,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 2.0495128658299135,
+    "range": [
+      2.011436000133422,
+      2.070104113407378
+    ],
+    "before_ns": 33790.918218085106,
+    "after_ns": 69104.78940217392
+  },
+  {
+    "case": "UPSTREAM.md",
+    "stage": "fresh",
+    "bytes": 2214,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9854933652729697,
+    "range": [
+      0.9680640009215218,
+      0.994977503813718
+    ],
+    "before_ns": 2760.382220017637,
+    "after_ns": 2709.6173635181976
+  },
+  {
+    "case": "docs_front-matter.md",
+    "stage": "reuse",
+    "bytes": 5233,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9820725288857067,
+    "range": [
+      0.9751637719602144,
+      0.9910973660979179
+    ],
+    "before_ns": 4749.560695288754,
+    "after_ns": 4664.322947761194
+  },
+  {
+    "case": "prose-65536",
+    "stage": "reuse",
+    "bytes": 65505,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9895968179785082,
+    "range": [
+      0.9823187655318767,
+      1.007240309926796
+    ],
+    "before_ns": 53779.775,
+    "after_ns": 53384.98229166667
+  },
+  {
+    "case": "sparse-container-65536",
+    "stage": "reuse",
+    "bytes": 66028,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.4491384416940116,
+    "range": [
+      1.4458760444702186,
+      1.460719565861238
+    ],
+    "before_ns": 56596.7734375,
+    "after_ns": 82224.8703125
+  },
+  {
+    "case": "prose-65536",
+    "stage": "parse",
+    "bytes": 65505,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0022435624483435,
+    "range": [
+      0.9863058095753311,
+      1.0186081095663049
+    ],
+    "before_ns": 32042.27806122449,
+    "after_ns": 32113.54719387755
+  },
+  {
+    "case": "prose-4096",
+    "stage": "fresh",
+    "bytes": 4070,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9927114772470551,
+    "range": [
+      0.9863138644633559,
+      0.997001903027451
+    ],
+    "before_ns": 3404.093070652174,
+    "after_ns": 3372.583849676724
+  },
+  {
+    "case": "list-prose-65536",
+    "stage": "reuse",
+    "bytes": 65520,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0062662449764443,
+    "range": [
+      0.998745631989285,
+      1.0101572680467255
+    ],
+    "before_ns": 287907.7708333333,
+    "after_ns": 289462.890625
+  },
+  {
+    "case": "code-decoy-65536",
+    "stage": "reuse",
+    "bytes": 65579,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.3547407476618898,
+    "range": [
+      1.33955852026158,
+      1.3658471424737975
+    ],
+    "before_ns": 102710.9375,
+    "after_ns": 138789.9296875
+  },
+  {
+    "case": "list-prose-4096",
+    "stage": "fresh",
+    "bytes": 4080,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9927819404201377,
+    "range": [
+      0.9785650665170862,
+      1.0020200441448976
+    ],
+    "before_ns": 18031.6091954023,
+    "after_ns": 17906.70880681818
+  },
+  {
+    "case": "nested-definition-4096",
+    "stage": "parse",
+    "bytes": 4050,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 2.318150366863882,
+    "range": [
+      2.237441980037518,
+      3.8570245741683893
+    ],
+    "before_ns": 26784.0969279661,
+    "after_ns": 61785.05649038462
+  },
+  {
+    "case": "code-decoy-4096",
+    "stage": "reuse",
+    "bytes": 4139,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 1.4385103786717586,
+    "range": [
+      1.4248155890132426,
+      1.4567161790997696
+    ],
+    "before_ns": 7371.038472877359,
+    "after_ns": 10603.68285472973
+  },
+  {
+    "case": "prose-4096",
+    "stage": "reuse",
+    "bytes": 4070,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9900768925142343,
+    "range": [
+      0.9839258207725001,
+      1.0118083352539733
+    ],
+    "before_ns": 3125.10675,
+    "after_ns": 3103.4923735119046
+  },
+  {
+    "case": "nested-definition-65536",
+    "stage": "parse",
+    "bytes": 65500,
+    "same_html": false,
+    "same_ast": false,
+    "ratio": 2.298312143415419,
+    "range": [
+      2.288990997453137,
+      2.3127330481400836
+    ],
+    "before_ns": 430216.796875,
+    "after_ns": 991098.953125
+  },
+  {
+    "case": "docs_table-layout.md",
+    "stage": "parse",
+    "bytes": 7701,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0097448744356987,
+    "range": [
+      1.0086731295525422,
+      1.014331313649879
+    ],
+    "before_ns": 6157.65931372549,
+    "after_ns": 6220.563616071428
+  },
+  {
+    "case": "root-definition-4096",
+    "stage": "reuse",
+    "bytes": 4080,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0519385976331799,
+    "range": [
+      1.0418554028043538,
+      1.070708539715425
+    ],
+    "before_ns": 55778.19719827586,
+    "after_ns": 58811.43865740741
+  },
+  {
+    "case": "list-prose-4096",
+    "stage": "parse",
+    "bytes": 4080,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9948824287692959,
+    "range": [
+      0.9897356294906552,
+      1.0030735298077518
+    ],
+    "before_ns": 13712.696546052632,
+    "after_ns": 13694.984239130436
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "stage": "parse",
+    "bytes": 2874,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 1.0020422687030595,
+    "range": [
+      0.9931206759185619,
+      1.0162147597700044
+    ],
+    "before_ns": 1895.4308712121212,
+    "after_ns": 1899.0307943499392
+  },
+  {
+    "case": "docs_front-matter.md",
+    "stage": "fresh",
+    "bytes": 5233,
+    "same_html": true,
+    "same_ast": true,
+    "ratio": 0.9888411046603154,
+    "range": [
+      0.9771768735978718,
+      0.9932641000656702
+    ],
+    "before_ns": 5157.324257425743,
+    "after_ns": 5089.061688311688
+  }
+]

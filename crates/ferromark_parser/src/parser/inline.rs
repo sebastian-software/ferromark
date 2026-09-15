@@ -38,6 +38,9 @@ impl<'a> Parser<'a> {
         content: &'a str,
         offset: usize,
     ) -> ParseResult<Vec<'a, Node<'a>>> {
+        if self.collecting_references {
+            return Ok(self.allocator.new_vec());
+        }
         let mut children = self.parse_inline(content, offset)?;
         let scan = self
             .options
