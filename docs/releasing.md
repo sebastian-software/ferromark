@@ -1,10 +1,10 @@
 # Releasing ferromark v2
 
-All five Rust crates share one version and publish to crates.io. The npm facade
-and eight native platform packages share that version. The Node development
-workspace and `ferromark-node` binding crate remain private: npm distributes the
-compiled binding, while Rust consumers compile the four core dependencies.
-See [ADR-0017](arch/ADR-0017-verified-release-candidates.md).
+One Rust crate, `ferromark`, publishes to crates.io. The npm facade and eight
+native platform packages share its version. The Node development workspace and
+`ferromark-node` binding crate remain private. Allocator, AST, parser and renderer
+are modules inside the Rust library; consumers can use them individually through
+`ferromark`. See [ADR-0018](arch/ADR-0018-single-rust-crate.md).
 
 The structural reference optimization is deferred to
 [issue #320](https://github.com/sebastian-software/ferromark/issues/320) and is not
@@ -64,16 +64,14 @@ cargo fetch --locked
 python3 scripts/rehearse-rust-packages.py /tmp/ferromark-rust-package-review
 ```
 
-The output directory must not exist. Cargo's multi-package
-`publish --dry-run` stages the new workspace dependencies and builds all five
-packages without uploading them. Parser/renderer cross-dependencies used only
-by repository tests and benchmarks are path-only dev dependencies and are
-omitted from published metadata. Production dependencies retain exact pins.
+The output directory must not exist. `cargo package --locked` builds and verifies
+the actual `ferromark` archive. There are no internal crate dependencies or
+repository-only cross-crate test dependencies to resolve.
 
-The rehearsal also checks archive metadata, version pins and upstream MIT
-notices, then builds/runs an isolated consumer from the unpacked packages.
-External versions must remain within the workspace lockfile. Member READMEs and
-LICENSE files ship in every archive. This does not test registry credentials.
+The rehearsal checks package metadata, upstream MIT notices and the absence of
+internal path dependencies, then builds/runs an isolated consumer from the
+unpacked archive. External versions must remain within the workspace lockfile.
+The README and LICENSE ship with the package. This does not test registry credentials.
 
 ## CI package assembly
 
@@ -85,32 +83,12 @@ the Cargo archive rehearsal. CI retains the verified archives for seven days.
 These jobs do not publish. Publication requires a successful **push CI run on
 main at the exact release commit**, including every gate.
 
-## First publication of a new crate
+## Registry authorization
 
-Keep the existing organization authorization. Trusted Publishing must additionally
-be configured for each new crate after its first publication; it cannot bootstrap
-an unregistered name. See the [crates.io documentation](https://crates.io/docs/trusted-publishing).
-
-For the first v2 release, an authorized maintainer can publish the four new crates
-from a clean checkout of the reviewed main commit, using their local crates.io
-credentials:
-
-```sh
-cargo publish --locked -p ferromark_allocator -p ferromark_ast -p ferromark_parser -p ferromark_renderer
-```
-
-Configure their ownership and Trusted Publishing for
-`sebastian-software/ferromark`, workflow `publish.yml`, matching the existing
-`ferromark` configuration. The workflow then verifies the already-published
-crates' source commit and publishes the facade through the existing authorization.
-Do not publish from a dirty or different checkout: retry validation rejects it.
-
-Alternatively, an authorized maintainer may temporarily provide
-`CRATES_IO_BOOTSTRAP_TOKEN` through GitHub Actions secrets, with rights to create
-and publish the five crate names. The workflow can perform that initial publish;
-remove the token after configuring Trusted Publishing. Never commit or paste
-credentials into release notes, issues or chat. No new token is needed when the
-crates already exist and their Trusted Publishing configuration is complete.
+Reuse the existing Trusted Publishing configuration for `ferromark`, repository
+`sebastian-software/ferromark`, workflow `publish.yml`. No new Rust crate names,
+bootstrap token or initial manual publication are required by the consolidation.
+The nine existing npm packages keep their Trusted Publishing configuration.
 
 ## Publish the reviewed release
 
@@ -123,17 +101,17 @@ gh workflow run publish.yml --ref main -f version=2.0.0-rc.1 -f ci_run_id=SUCCES
 
 The workflow rejects a different commit, branch, workflow, version or failed run.
 It downloads that run's npm and Rust archives and validates all npm manifests
-and any existing versions before the first upload. It publishes missing Rust
-crates in dependency order with Cargo verification, then the eight native npm
+and any existing versions before the first upload. It publishes the Rust
+crate with Cargo verification, then the eight native npm
 packages before the facade. npm uses Trusted Publishing with provenance.
 
 A retry accepts an existing npm version only when the tarball integrity matches;
-existing Rust crates must have the exact clean source commit. A conflicting
+the existing Rust crate must have the exact clean source commit. A conflicting
 immutable version requires investigation and usually a new RC version.
 Registry checks confirm all npm versions and tags and preserve the previous
 stable tags for an RC. A fresh consumer installs npm from the registry and a
 separate Cargo consumer compiles without local patches. Only after both work
-does the workflow create the GitHub release and attach all fourteen archives.
+does the workflow create the GitHub release and attach all ten archives.
 
 The homepage deploys from main. Its deployment is independent of registry
 publication; the candidate documentation must state the selected prerelease.

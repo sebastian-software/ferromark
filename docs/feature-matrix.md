@@ -18,7 +18,7 @@ Markdown extensions and disables optional renderer conveniences where possible.
 | Engine | Reviewed source |
 | --- | --- |
 | Ferromark v1 | 0.9.0, local `4e15141`; original feature review at [published `143ec2ce`](https://github.com/sebastian-software/ferromark/tree/143ec2ce151d87d2a3d804a048014afc97733ae0), benchmark option contract rechecked on the local pin |
-| Ferromark v2 | Local `33c216b`; [parser options](../crates/ferromark_parser/src/parser/options.rs), [renderer options](../crates/ferromark_renderer/src/html/options.rs), and [table layout](table-layout.md) |
+| Ferromark v2 | Local `33c216b`; [parser options](../crates/ferromark/src/parser/options.rs), [renderer options](../crates/ferromark/src/renderer/html/options.rs), and [table layout](table-layout.md) |
 | OX-Content | [3.2.3, `a71a5893`](https://github.com/ubugeeei-prod/ox-content/tree/a71a58939ffe7f154117cea026f6d6e71a139393) — parser/renderer core |
 | pulldown-cmark | [0.13.4 options](https://docs.rs/pulldown-cmark/0.13.4/pulldown_cmark/struct.Options.html) |
 | md4c | [`65c6c9d7` flags and event types](https://github.com/mity/md4c/blob/65c6c9d72cebd9a731aaa5597414ce04d9ea5de3/src/md4c.h) |

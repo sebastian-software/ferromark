@@ -56,11 +56,8 @@ jobs:
             validateRelease(readReleaseFiles(), process.env.RELEASE_VERSION);
           '
           test -f "docs/releases/$RELEASE_VERSION.md"
-      - name: Require successful CI and initial crate credentials
-        id: preflight
+      - name: Require successful CI
         run: python3 scripts/release-preflight.py
-        env:
-          CRATES_IO_BOOTSTRAP_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: npm-package-rehearsal
@@ -79,12 +76,11 @@ jobs:
         run: node node/scripts/capture-release-tags.mjs release-artifacts/npm-tags-before.json
       - name: Authenticate with crates.io
         id: crates-io-auth
-        if: steps.preflight.outputs.bootstrap != 'true'
         uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
-      - name: Publish Rust workspace
+      - name: Publish Rust crate
         run: python3 scripts/publish-rust.py "$RELEASE_VERSION" "$GITHUB_SHA"
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN || steps.crates-io-auth.outputs.token }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-io-auth.outputs.token }}
       - name: Publish native npm packages and facade
         run: node node/scripts/publish-packages.mjs release-artifacts/npm "$RELEASE_VERSION"
       - name: Verify registry versions, channels and clean installations

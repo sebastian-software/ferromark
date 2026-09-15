@@ -99,7 +99,7 @@ let html = renderer.render(&document);
 ```
 
 A complete CSS example is runnable with
-`cargo run --locked -p ferromark_renderer --example table_layout > table-layout.html`.
+`cargo run --locked -p ferromark --example table_layout > table-layout.html`.
 
 ## Syntax and boundaries
 

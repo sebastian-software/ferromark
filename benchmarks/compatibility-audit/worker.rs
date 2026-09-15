@@ -4,7 +4,7 @@ use serde_json::json;
 use std::io::{self, BufRead, Write};
 
 #[allow(dead_code)]
-#[path = "../../crates/ferromark_renderer/tests/spec_support/normalize.rs"]
+#[path = "../../crates/ferromark/tests/spec_support/normalize.rs"]
 mod spec;
 
 fn render(source: &str, profile: &str) -> Result<String, String> {

@@ -30,10 +30,6 @@ exceptions = []
 # build that is otherwise safe.
 multiple-versions = "warn"
 wildcards = "deny"
-# Parser/renderer cross dev dependencies are repository-only and must be omitted
-# from published metadata (ADR-0017). The CI contract limits unversioned paths to
-# those two edges; registry dependencies still require explicit versions.
-allow-wildcard-paths = true
 highlight = "all"
 deny = []
 skip = []

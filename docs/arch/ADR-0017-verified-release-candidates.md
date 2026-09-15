@@ -1,6 +1,6 @@
 # ADR-0017: Verified release candidates
 
-- Status: Accepted
+- Status: Release verification accepted; five-crate layout and bootstrap superseded by [ADR-0018](ADR-0018-single-rust-crate.md).
 - Date: 2026-09-15
 
 ## Context

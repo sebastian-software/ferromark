@@ -81,4 +81,4 @@ and licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0
 The HTML snapshot, extracted fixtures, and reproduced specification examples in
 the result files retain that license and attribution; they are not relicensed
 under this repository's MIT license. CommonMark test input is loaded directly
-from the [separately attributed existing fixture](../../crates/ferromark_renderer/tests/spec_fixtures/README.md).
+from the [separately attributed existing fixture](../../crates/ferromark/tests/spec_fixtures/README.md).

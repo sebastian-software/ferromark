@@ -14,13 +14,17 @@
 //! untrusted input. For AST access, use [`Allocator`], [`Parser`], and
 //! [`HtmlRenderer`] directly.
 
+pub mod allocator;
+pub mod ast;
+pub mod parser;
+pub mod renderer;
+
 mod convenience;
 
+pub use allocator::Allocator;
 pub use convenience::{to_html, to_html_into, to_html_into_with_options, to_html_with_options};
-pub use ferromark_allocator::Allocator;
-pub use ferromark_ast as ast;
-pub use ferromark_parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
-pub use ferromark_renderer::{
+pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
+pub use renderer::{
     CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HtmlRenderContext, HtmlRenderControl,
     HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks, RenderError,
     RenderResult, Renderer, collect_heading_text, slugify_heading,

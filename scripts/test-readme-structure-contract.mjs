@@ -17,10 +17,10 @@ test("README identifies the v2 release candidate architecture and links migratio
   assert.equal(new Set(headings).size, headings.length, "top-level headings must be unique");
   for (const crate of [
     "ferromark",
-    "ferromark_allocator",
-    "ferromark_ast",
-    "ferromark_parser",
-    "ferromark_renderer",
+    "ferromark::allocator",
+    "ferromark::ast",
+    "ferromark::parser",
+    "ferromark::renderer",
   ]) {
     assert.ok(source.includes(`\`${crate}\``));
   }
