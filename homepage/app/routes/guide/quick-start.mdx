@@ -9,20 +9,20 @@ title: Quick Start
 Use the workspace facade while developing in the repository:
 
 ```rust
-use ferromark::{Allocator, HtmlRenderer, Parser};
-
-let source = "# Hello\n\n**World**";
-let allocator = Allocator::for_source_len(source.len());
-let document = Parser::new(&allocator, source).parse()?;
-let html = HtmlRenderer::new().render(&document);
+let html = ferromark::to_html("# Hello\n\n**World**")?;
 ```
 
-The source and allocator must outlive `document`. Drop the document before
-resetting its allocator. For GFM, construct a parser with
-`Parser::with_options(&allocator, source, ParserOptions::gfm_spec())` and a
-renderer with `HtmlRenderer::with_options(HtmlRendererOptions::gfm())`.
-Rust renderer defaults pass raw HTML through; use `sanitize: true` to escape
-raw HTML and filter link/image URL schemes.
+`to_html_with_options` accepts separate parser and renderer options.
+`to_html_into` and `to_html_into_with_options` append to a caller-owned `String`,
+preserving its existing contents if parsing fails. Each helper returns `Result`.
+Rust defaults pass raw HTML through; select `HtmlRendererOptions { sanitize: true, .. }`
+to escape raw HTML and filter unsafe link/image URL schemes.
+
+For document-tree access, use `Allocator`, `Parser`, and `HtmlRenderer` directly.
+The source and allocator must outlive the parsed document. For GFM, pair
+`ParserOptions::gfm_spec()` with `HtmlRendererOptions::gfm()`.
+See the [Rust API guide](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/rust-api.md)
+for complete examples and ownership rules.
 
 ## Node.js
 

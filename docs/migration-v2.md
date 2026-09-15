@@ -6,20 +6,23 @@ unpublished development baseline, not a drop-in stable upgrade.
 
 ## Rust
 
-The streaming renderer becomes an arena AST pipeline:
+The parser uses an arena AST pipeline. For owned HTML output, v2 provides
+`to_html` and `to_html_with_options`; `to_html_into` and
+`to_html_into_with_options` append to a caller-owned `String`.
 
 ```rust
-use ferromark::{Allocator, HtmlRenderer, Parser};
-let source = "# Hello";
-let allocator = Allocator::for_source_len(source.len());
-let document = Parser::new(&allocator, source).parse()?;
-let html = HtmlRenderer::new().render(&document);
+let html = ferromark::to_html("# Hello")?;
 ```
 
-The source and allocator outlive the document. Use `ParserOptions` for syntax
-and `HtmlRendererOptions` for output. Rust defaults pass raw HTML through;
-`sanitize: true` escapes raw HTML and filters link/image schemes. There is no
-v1-compatible CLI or MDX `segment`, `render`, or `to_component` API.
+These helpers return `Result` and expose separate `ParserOptions` and
+`HtmlRendererOptions`. They are v2 APIs rather than drop-in v1 signatures.
+The append helpers leave the output unchanged on parse errors. See
+[the Rust API guide](rust-api.md) for examples and AST access.
+
+When using the AST directly, the source and allocator outlive the document.
+Rust defaults pass raw HTML through; `sanitize: true` escapes raw HTML and
+filters link/image schemes. There is no v1-compatible CLI or MDX `segment`,
+`render`, or `to_component` API.
 
 ## Node.js
 
