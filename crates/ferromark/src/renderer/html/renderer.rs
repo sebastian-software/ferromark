@@ -26,7 +26,9 @@ use rustc_hash::FxHashMap;
 use super::autolink::FirstByteIndex;
 use super::escape::{write_escaped_into, write_url_escaped_into};
 use super::options::{HtmlRendererOptions, RendererOptions};
-use super::toc::{InlineTocEntry, collect_inline_toc_entries, scan_document_for_render};
+use super::toc::{
+    DocumentRenderScan, InlineTocEntry, collect_inline_toc_entries, scan_document_for_render,
+};
 use crate::renderer::render::{RenderResult, Renderer};
 
 pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRenderHooks};
@@ -223,11 +225,21 @@ impl HtmlRenderer {
         // unique-id map once.
         self.toc_entries.clear();
         self.code_block_index = 0;
-        let document_scan = scan_document_for_render(document);
-        // A TOC without emitted heading IDs would produce dead links. Keep
-        // the two product conveniences coupled for explicitly strict output.
-        self.document_has_toc_marker =
-            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+        // Both facts the scan derives are consumed only when `heading_ids` is
+        // on: the marker needs an inline TOC, and an inline TOC without
+        // heading IDs would produce dead links, so the two product
+        // conveniences stay coupled; the heading count only sizes a map that
+        // stays empty when no heading emits an ID. A profile with heading IDs
+        // off — the strict CommonMark and GFM profiles among them — therefore
+        // skips the structural walk instead of deriving facts nothing reads,
+        // and one with only the inline TOC off skips the per-paragraph marker
+        // predicate while still counting headings.
+        let document_scan = if self.options.heading_ids {
+            scan_document_for_render(document, self.options.inline_toc)
+        } else {
+            DocumentRenderScan::NONE
+        };
+        self.document_has_toc_marker = document_scan.has_toc_marker;
         if self.document_has_toc_marker {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }

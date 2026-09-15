@@ -34,7 +34,7 @@ impl HtmlRenderer {
     /// The returned HTML is meant to be replaceable by the next streaming update.
     #[must_use]
     pub fn render_provisional_fragment(&mut self, document: &Document<'_>) -> String {
-        let document_scan = scan_document_for_render(document);
+        let document_scan = self.scan_for_fragment(document);
         let heading_id_counts =
             (document_scan.heading_count != 0).then(|| self.heading_id_counts.clone());
         let footnote_ref_counts = self.footnote_ref_counts.clone();
@@ -59,7 +59,7 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
-        let document_scan = scan_document_for_render(document);
+        let document_scan = self.scan_for_fragment(document);
         let heading_id_counts =
             (document_scan.heading_count != 0).then(|| self.heading_id_counts.clone());
         let footnote_ref_counts = self.footnote_ref_counts.clone();
@@ -92,8 +92,23 @@ impl HtmlRenderer {
         // far, and every fragment path used to rebuild the identical value.
     }
 
+    /// Scans a fragment for the facts its setup consumes.
+    ///
+    /// Unlike the one-shot render path this always walks: the provisional
+    /// entry points use the exact heading count to decide whether committed
+    /// heading-ID state has to be snapshotted, and an approximation there
+    /// would change what a provisional render leaves behind. Only the
+    /// per-paragraph marker predicate is skipped, and only when the renderer
+    /// would ignore a marker anyway.
+    fn scan_for_fragment(&self, document: &Document<'_>) -> DocumentRenderScan {
+        scan_document_for_render(
+            document,
+            self.options.inline_toc && self.options.heading_ids,
+        )
+    }
+
     fn render_fragment(&mut self, document: &Document<'_>) -> String {
-        let document_scan = scan_document_for_render(document);
+        let document_scan = self.scan_for_fragment(document);
         self.render_fragment_with_scan(document, document_scan)
     }
 
@@ -102,7 +117,7 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
-        let document_scan = scan_document_for_render(document);
+        let document_scan = self.scan_for_fragment(document);
         self.render_fragment_with_scan_and_hooks(document, document_scan, hooks)
     }
 
@@ -113,8 +128,7 @@ impl HtmlRenderer {
     ) -> String {
         self.output.clear();
         self.toc_entries.clear();
-        self.document_has_toc_marker =
-            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+        self.document_has_toc_marker = document_scan.has_toc_marker;
         if self.document_has_toc_marker {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }
@@ -137,8 +151,7 @@ impl HtmlRenderer {
     ) -> String {
         self.output.clear();
         self.toc_entries.clear();
-        self.document_has_toc_marker =
-            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+        self.document_has_toc_marker = document_scan.has_toc_marker;
         if self.document_has_toc_marker {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }
