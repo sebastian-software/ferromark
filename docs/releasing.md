@@ -50,6 +50,42 @@ on the workspace floor and tests the resulting binary on the consumer floor.
 `release-node` inherits the optimized release profile with `panic = "unwind"`.
 The panic test verifies that Rust panics become JavaScript exceptions.
 
+## Rust archive rehearsal
+
+From the repository root, with Rust 1.95 and Python 3.12 or later:
+
+```sh
+cargo fetch --locked
+python3 scripts/rehearse-rust-packages.py /tmp/ferromark-rust-package-review
+```
+
+The output directory must not exist. This creates the five actual Cargo archives,
+checks normalized version pins, metadata and the unchanged upstream MIT notice,
+and builds/runs an isolated consumer using only the unpacked packages. External
+registry versions must remain within the workspace lockfile. Member READMEs and
+LICENSE files ship inside every archive.
+
+The inter-crate versions are not yet available on crates.io. Stable Cargo cannot
+perform its usual registry verification for that combination, so the initial
+archive command uses `--no-verify --exclude-lockfile`. The separate consumer then
+validates the archives with local crates.io patches. This is a package-content and
+build check; it does not test registry credentials, availability or publication.
+Publication order is allocator, AST, parser/renderer, then facade; the parser and
+renderer have a development-dependency cycle. The publisher must accommodate that
+cycle and perform registry checks at the selected release version.
+
+## CI package assembly
+
+Each of the eight native jobs uploads its verified binary. The dependent
+`npm-packages` job assembles all nine npm packages, checks versions and exact
+archive contents, and performs a clean installation on Linux x64 GNU. Six native
+targets also have their own runtime tests; the two musl targets are built and
+inspected, not runtime-tested. The `rust-packages` job runs the isolated Cargo
+archive rehearsal. CI retains the verified archives for seven days.
+
+These jobs assemble and test artifacts only. They grant no registry publishing
+permissions and do not create releases.
+
 ## Before enabling publication
 
 Decide and review the public v2 API and migration guide, the publish order of

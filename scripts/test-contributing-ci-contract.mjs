@@ -25,6 +25,8 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
     "node",
     "node-floor",
     "native",
+    "npm-packages",
+    "rust-packages",
     "homepage",
     "standards",
     "cargo-deny",
@@ -32,6 +34,17 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
   ])
     assert.ok(ci.jobs[job]);
   assert.equal(ci.jobs.native.strategy.matrix.include.length, 8);
+  assert.equal(ci.jobs["npm-packages"].needs, "native");
+  assert.ok(
+    ci.jobs["npm-packages"].steps.some(
+      (step) => step.run === "node ./scripts/verify-pack.mjs --all-targets",
+    ),
+  );
+  assert.ok(
+    ci.jobs["rust-packages"].steps.some((step) =>
+      step.run?.startsWith("python3 scripts/rehearse-rust-packages.py "),
+    ),
+  );
   assert.ok(ci.jobs.test.steps.some((step) => step.run === 'rustup override set "$TOOLCHAIN"'));
 });
 
