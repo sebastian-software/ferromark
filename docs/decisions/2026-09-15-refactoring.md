@@ -96,3 +96,34 @@ preserved. A mixed fresh-footnote outlier was investigated using longer windows
 and did not repeat (−0.08% fresh / +0.10% reused). Retain the boundaries for clearer
 ownership and narrower visibility. All 828 workspace tests, Clippy, formatting and
 benchmark builds pass. The change is organizational; no speedup is claimed.
+
+## 5. Inline scanner backend files — retained
+
+Keep `inline/scan.rs` as the internal entry point, common marker classification
+and CPU dispatch. Place portable loops in `scan/scalar.rs`, NEON in `scan/neon.rs`,
+and both SSSE3/AVX2 in `scan/x86.rs`. Gate backend modules by architecture instead
+of repeating the architecture condition on each backend function. Backend entries
+are visible only within `scan`; classifier internals and table-taking functions
+stay private. The existing tests move into `scan/tests.rs` with only their scalar
+import adjusted. Algorithm bodies, table values, inlining/target-feature attributes,
+CPU detection order, and scalar fallback behavior are preserved.
+
+### x86 lint correction
+
+Cross-compiling the parser exposed four pre-existing unsafe wrapper declarations
+and four implicit unsafe calls rejected by the warnings-as-errors gate. Reproduced
+all eight errors on the unchanged `1063140` baseline. Give those wrappers the same
+narrow unsafe-code allowances as the intrinsic implementations, with explicit unsafe
+blocks and documented caller feature requirements. No unsafe-operation lint is
+suppressed; runtime CPU detection still guards every entry. This is a Rust-2024 lint
+correction, not a parser-output or instruction-selection change.
+
+See the [report](../reports/2026-09-15-refactor-scanner-files/README.md) for native
+measurements, compile checks on x86 and portable WebAssembly, and retention.
+
+Retain the change: native output/AST equality holds, and the broad aggregate is
++0.21% fresh / −0.07% reused. The diagnostic aggregate is +0.08% / +0.52%; individual
+synthetic medians reach +2.01%. Accept those small measured costs for clearer
+backend ownership and the x86 lint fix. All 828 native workspace tests and required
+Rust checks pass. x86 parser all-targets and WebAssembly library Clippy checks pass;
+no execution or speed claim is made for those non-native targets.
