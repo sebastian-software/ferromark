@@ -5,17 +5,18 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
 import tempfile
 
 
-EXPECTED_CASE_MISMATCHES = {"list-definition-title"}
-EXPECTED_BASELINE_MISMATCHES = {
-    "list-definition-title-comments-off",
-    "list-definition-title-comment-removed",
-}
+SPEC = importlib.util.spec_from_file_location(
+    "native_verify", Path(__file__).resolve().parents[1] / "native-comparison" / "verify.py"
+)
+VERIFY = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(VERIFY)
 
 
 def cargo_string(path: Path) -> str:
@@ -110,14 +111,18 @@ ferromark_v2 = {{ package = "ferromark", path = {cargo_string(v2_source)} }}
         raise SystemExit(completed.stderr or completed.stdout)
 
     cases, baselines, summary = parse_worker_output(completed.stdout)
-    case_mismatches = {case["name"] for case in cases if case["status"] == "DIFF"}
-    baseline_mismatches = {case["name"] for case in baselines if case["status"] == "DIFF"}
-    if case_mismatches != EXPECTED_CASE_MISMATCHES:
-        raise SystemExit(f"unexpected case mismatches: {sorted(case_mismatches)}")
-    if baseline_mismatches != EXPECTED_BASELINE_MISMATCHES:
-        raise SystemExit(f"unexpected baseline mismatches: {sorted(baseline_mismatches)}")
-    if summary != {"case_count": 40, "matching_count": 39, "mismatch_count": 1}:
-        raise SystemExit(f"unexpected summary: {summary}")
+    for case in cases + baselines:
+        case["comparison"] = (
+            "exact" if case["status"] == "OK"
+            else VERIFY.classify(case["v1_html"], case["v2_html"])
+        )
+        if not VERIFY.admitted(case["comparison"]):
+            raise SystemExit(f"unexpected semantic difference: {case}")
+    exact = sum(case["status"] == "OK" for case in cases)
+    if summary != {"case_count": len(cases), "matching_count": exact, "mismatch_count": len(cases) - exact}:
+        raise SystemExit(f"inconsistent worker summary: {summary}")
+    if len(cases) != 40 or len(baselines) != 2:
+        raise SystemExit("worker returned an incomplete corpus")
 
     result = {
         "v1_source": str(v1_source),
@@ -129,16 +134,14 @@ ferromark_v2 = {{ package = "ferromark", path = {cargo_string(v2_source)} }}
             "v2": "ParserOptions::gfm_spec + line_comments; HtmlRendererOptions::gfm with heading IDs and URL scanner off",
         },
         "summary": summary,
+        "semantic_summary": {"case_count": 40, "matching_count": 40, "mismatch_count": 0},
         "cases": cases,
-        "known_existing_limitation": {
-            "case": "list-definition-title",
-            "description": "v2 does not collect link reference definitions inside list-item sub-sources",
-        },
+        "known_existing_limitation": None,
         "baselines": baselines,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
-    print(f"matched {summary['matching_count']}/{summary['case_count']}; known mismatch: list-definition-title")
+    print(f"exact {summary['matching_count']}/{summary['case_count']}; semantic 40/40; both baseline probes agree")
     print(f"saved {args.output}")
     return 0
 

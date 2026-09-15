@@ -255,10 +255,12 @@ extension policies and older HTML-comment rules. MDX remains bounded syntax
 capture and static output. These finite suites do not prove correctness for
 arbitrary CommonMark, GFM, or MDX input.
 
-A subsequent [line-comment comparison](benchmarks/line-comments-oracle/README.md)
-also exposes a pre-existing gap: reference definitions directly inside list
-items are not yet collected globally. Root and block-quote definitions work in
-the covered cases.
+The [container-reference correction](docs/reports/2026-09-15-container-references/README.md)
+resolves the subsequent list-definition finding: reference definitions in list
+items and block quotes now apply document-wide, including forward references.
+Code and paragraph decoys remain literal, and the first definition wins across
+container boundaries. The [line-comment oracle](benchmarks/line-comments-oracle/README.md)
+now requires semantic agreement for all cases and both baseline probes.
 
 The [repeatable spec audit](benchmarks/compatibility-audit/README.md) and the
 [106-case live oracle](benchmarks/compatibility-audit/CMARK.md) pass their failure

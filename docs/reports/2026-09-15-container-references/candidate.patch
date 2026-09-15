@@ -1,0 +1,384 @@
+--- a/crates/ferromark_parser/src/parser/inline.rs
++++ b/crates/ferromark_parser/src/parser/inline.rs
+@@ -38,6 +38,9 @@
+         content: &'a str,
+         offset: usize,
+     ) -> ParseResult<Vec<'a, Node<'a>>> {
++        if self.collecting_references {
++            return Ok(self.allocator.new_vec());
++        }
+         let mut children = self.parse_inline(content, offset)?;
+         let scan = self
+             .options
+--- a/crates/ferromark_parser/src/parser/list/item_source.rs
++++ b/crates/ferromark_parser/src/parser/list/item_source.rs
+@@ -77,6 +77,12 @@
+             return true;
+         };
+ 
++        // Definitions must reach block parsing even in a one-line item.
++        // Ordinary link labels retain the direct inline path.
++        if first == b'[' && content.contains("]:") {
++            return false;
++        }
++
+         // These are the same leading-byte families that `parse_block` may
+         // treat as block syntax in a freshly spawned sub-parser. Keep those
+         // on the old path so `- # heading`, nested lists, fenced code, raw
+--- a/crates/ferromark_parser/src/parser/prepass.rs
++++ b/crates/ferromark_parser/src/parser/prepass.rs
+@@ -6,8 +6,9 @@
+ //! affect either collector) costs one memchr line skip and a flag write
+ //! instead of quote-stripping, trimming, and fence-classifying every line.
+ //!
+-//! Behavior is intentionally identical to the two previous passes,
+-//! including their asymmetry: the reference collector classifies fences on
++//! Container-shaped reference candidates use the real block grammar in a
++//! temporary arena. Other inputs retain the original fused scan, including
++//! its asymmetry: the reference collector classifies fences on
+ //! the quote-stripped line (so a quoted fence line opens a fence for it)
+ //! while the footnote collector classifies fences on the raw line (so the
+ //! same line does not). The two fence states are tracked independently,
+@@ -59,23 +60,36 @@
+ /// A bare `]:` anywhere is not enough: ordinary prose can mention the token
+ /// and force the much more expensive structural pre-pass. The opening `[` of
+ /// either a reference or footnote definition must begin a block line after
+-/// quote markers and at most three spaces. Reference labels are capped at
++/// optional container prefixes. The returned flags indicate any candidate
++/// and a candidate requiring full block context. Reference labels are capped at
+ /// 1,000 bytes; footnote labels are line-bounded but have no length cap. This
+ /// scanner only proves that necessary shape exists; the full pre-pass remains
+ /// responsible for validating syntax and block context.
+-fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
++fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
+     let bytes = source.as_bytes();
+     let Some(mut open) = memchr(b'[', bytes) else {
+-        return false;
++        return (false, false);
+     };
+     if memmem::find(bytes, b"]:").is_none() {
+-        return false;
+-    }
+-
++        return (false, false);
++    }
++
++    let mut found = false;
+     let mut line_start = previous_line_start(bytes, open);
+     loop {
+-        let prefix = strip_quote_markers(&source[line_start..open]);
+-        if prefix.len() <= 3 && prefix.as_bytes().iter().all(|&byte| byte == b' ') {
++        let raw_prefix = &source[line_start..open];
++        let prefix = strip_quote_markers(raw_prefix);
++        let flat = prefix.len() <= 3 && prefix.as_bytes().iter().all(|&byte| byte == b' ');
++        // A necessary shape, not a container grammar. False positives (for
++        // example indented code) are rejected by the real block parser.
++        let container = !raw_prefix.is_empty()
++            && raw_prefix.bytes().all(|byte| {
++                matches!(
++                    byte,
++                    b' ' | b'\t' | b'>' | b'-' | b'+' | b'*' | b'.' | b')' | b'0'..=b'9'
++                )
++            });
++        if flat || container {
+             let candidate_end = if footnotes && bytes.get(open + 1) == Some(&b'^') {
+                 // Footnote labels cannot span lines, but unlike reference
+                 // labels their parser deliberately has no length cap.
+@@ -86,13 +100,16 @@
+                 open.saturating_add(1003).min(bytes.len())
+             };
+             if memmem::find(&bytes[open + 1..candidate_end], b"]:").is_some() {
+-                return true;
++                if container {
++                    return (true, true);
++                }
++                found = true;
+             }
+         }
+ 
+         let search_start = open + 1;
+         let Some(next) = memchr(b'[', &bytes[search_start..]) else {
+-            return false;
++            return (found, false);
+         };
+         open = search_start + next;
+         if memrchr2(b'\n', b'\r', &bytes[search_start..open]).is_some() {
+@@ -122,10 +139,19 @@
+         // Cheap bail: both collectors need a bounded `[...]:` opener at a
+         // valid block-line prefix. Full syntax and context validation still
+         // happens below, but ordinary prose decoys skip the structural scan.
+-        if !has_definition_candidate(self.source, self.options.footnotes) {
++        let (has_candidate, container_candidate) =
++            definition_candidates(self.source, self.options.footnotes);
++        if !has_candidate {
+             return (None, None);
+         }
+         let collect_footnotes = self.options.footnotes && self.source.contains("[^");
++        if container_candidate && self.options.allow_link_refs && !collect_footnotes {
++            let definitions = self.collect_container_references();
++            return (
++                (!definitions.is_empty()).then(|| Rc::new(definitions)),
++                None,
++            );
++        }
+ 
+         let mut definitions = ReferenceMap::default();
+         let mut labels = FootnoteLabels::default();
+@@ -285,6 +311,12 @@
+             pos = line_terminator_end(bytes, line_end);
+         }
+ 
++        if container_candidate && self.options.allow_link_refs {
++            // Rebuild the complete map in document order, so a nested first
++            // definition wins over a later root definition too.
++            definitions = self.collect_container_references();
++        }
++
+         (
+             (!definitions.is_empty()).then(|| Rc::new(definitions)),
+             (!labels.is_empty()).then(|| Rc::new(labels)),
+@@ -319,13 +351,20 @@
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::has_definition_candidate;
++    use super::definition_candidates;
++
++    fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
++        definition_candidates(source, footnotes).0
++    }
+ 
+     #[test]
+     fn definition_candidate_rejects_inline_prose_decoys() {
+         let source = "Earlier [link](https://example.com).\n- Skip the scan when no `]:` exists.";
+         assert!(!has_definition_candidate(source, false));
+-        assert!(!has_definition_candidate("    [indented]: /code", false));
++        assert_eq!(
++            definition_candidates("    [indented]: /code", false),
++            (true, true)
++        );
+     }
+ 
+     #[test]
+--- /dev/null
++++ b/crates/ferromark_parser/src/parser/reference/containers.rs
+@@ -0,0 +1,63 @@
++//! Resolve container definitions using the existing block grammar.
++//!
++//! A temporary arena holds only block structure; inline parsing is skipped.
++//! Copy the collected definition values into the document arena, then discard
++//! the temporary tree. The ordinary no-definition path never enters this pass.
++use compact_str::CompactString;
++use ferromark_allocator::Allocator;
++use ferromark_ast::{Definition, Visit};
++
++use super::{Parser, ReferenceDef, ReferenceMap};
++use crate::ParserOptions;
++
++struct Collector<'a> {
++    allocator: &'a Allocator,
++    definitions: ReferenceMap<'a>,
++}
++
++impl<'a, 'tree> Visit<'tree> for Collector<'a> {
++    fn visit_definition(&mut self, definition: &Definition<'tree>) {
++        self.definitions
++            .entry(CompactString::from(definition.identifier))
++            .or_insert_with(|| ReferenceDef {
++                url: self.allocator.alloc_str(definition.url),
++                title: definition
++                    .title
++                    .map(|title| self.allocator.alloc_str(title)),
++            });
++    }
++}
++
++impl<'a> Parser<'a> {
++    pub(in crate::parser) fn collect_container_references(&self) -> ReferenceMap<'a> {
++        let temporary = Allocator::new();
++        // Disable collectors during construction to avoid recursively invoking
++        // this pass. The source is already normalized and front matter removed.
++        let mut parser = Parser::with_options(
++            &temporary,
++            self.source,
++            ParserOptions {
++                allow_link_refs: false,
++                footnotes: false,
++                inline_footnotes: false,
++                front_matter: false,
++                ..self.options.clone()
++            },
++        );
++        parser.options = ParserOptions {
++            front_matter: false,
++            ..self.options.clone()
++        };
++        parser.collecting_references = true;
++        let mut collector = Collector {
++            allocator: self.allocator,
++            definitions: ReferenceMap::default(),
++        };
++        if let Ok(document) = parser.parse_document() {
++            collector.visit_document(&document);
++        }
++        // If the block grammar rejects the document (for example depth), the
++        // real parse reports that error; no successful output uses this map.
++        collector.definitions
++    }
++}
+--- a/crates/ferromark_parser/src/parser/reference.rs
++++ b/crates/ferromark_parser/src/parser/reference.rs
+@@ -18,6 +18,7 @@
+ use super::line_scan::{is_line_ending_byte, line_end as scan_line_end, line_terminator_end};
+ use super::spans::SpanMap;
+ 
++mod containers;
+ mod scan;
+ 
+ use scan::{line_end_if_blank_after, next_blank_line, skip_ws_one_newline};
+--- a/crates/ferromark_parser/src/parser.rs
++++ b/crates/ferromark_parser/src/parser.rs
+@@ -81,6 +81,9 @@
+     /// whether a definition exists before reaching it.
+     footnote_labels: Option<std::rc::Rc<footnote::FootnoteLabels>>,
+ 
++    /// A temporary block-only pass for collecting container definitions.
++    collecting_references: bool,
++
+     /// Shared by container sub-parsers. Allocated in the existing arena only
+     /// when inline notes are enabled; avoids a source scan or AST walk when
+     /// no inline note was parsed. Speculative parses may set it harmlessly.
+@@ -173,6 +176,7 @@
+             position: 0,
+             nesting_depth: 0,
+             definitions: None,
++            collecting_references: false,
+             footnote_labels: None,
+             lazy_lines: None,
+             comment_lines: None,
+@@ -222,6 +226,7 @@
+             position: 0,
+             nesting_depth: self.nesting_depth + 1,
+             definitions: self.definitions.clone(),
++            collecting_references: self.collecting_references,
+             footnote_labels: self.footnote_labels.clone(),
+             inline_note_seen: self.inline_note_seen,
+             // Most sub-sources are entered without any lazy continuation
+--- /dev/null
++++ b/crates/ferromark_renderer/tests/edge_container_references.rs
+@@ -0,0 +1,115 @@
++//! CommonMark 0.31.2 section 4.7: container definitions have document scope.
++use ferromark_allocator::Allocator;
++use ferromark_parser::{Parser, ParserOptions};
++use ferromark_renderer::{HtmlRenderer, HtmlRendererOptions};
++
++fn render(source: &str) -> String {
++    let arena = Allocator::new();
++    let doc = Parser::with_options(&arena, source, ParserOptions::commonmark())
++        .parse()
++        .unwrap();
++    HtmlRenderer::with_options(HtmlRendererOptions::commonmark()).render(&doc)
++}
++
++#[test]
++fn list_definitions_resolve_forward_backward_and_image_references() {
++    for definition in [
++        "- [target]: /url \"title\"",
++        "+ [target]: /url\n  \"title\"",
++        "7. [target]: /url \"title\"",
++        "- Item\n\n  [target]: /url \"title\"",
++        "- Outer\n  - [target]: /url \"title\"",
++        "> - [target]: /url \"title\"",
++        "- > [target]: /url \"title\"",
++        "- Item\n\n  > [target]: /url \"title\"",
++    ] {
++        let source = format!("[target]\n\n{definition}\n\n[target][] ![alt][target]\n");
++        let html = render(&source);
++        assert_eq!(
++            html.matches("href=\"/url\" title=\"title\"").count(),
++            2,
++            "{source:?}: {html}"
++        );
++        assert!(
++            html.contains("src=\"/url\" alt=\"alt\" title=\"title\""),
++            "{source:?}: {html}"
++        );
++        assert!(!html.contains("[target]:"), "{source:?}: {html}");
++    }
++}
++
++#[test]
++fn first_definition_wins_across_root_and_nested_containers() {
++    for definitions in [
++        "- [target]: /first\n\n[target]: /second",
++        "[target]: /first\n\n- [target]: /second",
++        "> - [target]: /first\n\n- > [target]: /second",
++    ] {
++        let html = render(&format!("[target]\n\n{definitions}\n"));
++        assert!(html.contains("href=\"/first\""), "{definitions:?}: {html}");
++        assert!(!html.contains("href=\"/second\""), "{html}");
++    }
++}
++
++#[test]
++fn definition_shapes_in_container_code_and_paragraphs_remain_literal() {
++    for decoy in [
++        "- ```\n  [target]: /wrong\n  ```",
++        "- Item\n\n      [target]: /wrong",
++        "- Item\n  [target]: /wrong",
++        "- <div>\n  [target]: /wrong\n  </div>",
++    ] {
++        let html = render(&format!("{decoy}\n\n[target]: /right\n\n[target]\n"));
++        assert!(html.contains("href=\"/right\""), "{decoy:?}: {html}");
++        assert!(!html.contains("href=\"/wrong\""), "{html}");
++    }
++}
++
++#[test]
++fn container_definitions_survive_comments_tabs_and_line_ending_normalization() {
++    let cases = [
++        "[target]\n\n- [target]: /url\n  // private\n  \"title\"\n",
++        "[target]\n\n-\t[target]: /url \"title\"\n",
++        "[target]\n\n- Outer\n\n  2) [target]: /url \"title\"\n",
++    ];
++    for source in cases {
++        for ending in ["\n", "\r\n", "\r"] {
++            let source = source.replace('\n', ending);
++            let arena = Allocator::new();
++            let doc = Parser::with_options(
++                &arena,
++                &source,
++                ParserOptions {
++                    line_comments: true,
++                    ..ParserOptions::commonmark()
++                },
++            )
++            .parse()
++            .unwrap();
++            let html = HtmlRenderer::with_options(HtmlRendererOptions::commonmark()).render(&doc);
++            assert!(
++                html.contains("href=\"/url\" title=\"title\""),
++                "{source:?}: {html}"
++            );
++        }
++    }
++}
++
++#[test]
++fn disabling_references_keeps_container_definition_syntax_visible() {
++    let source = "[target]\n\n- [target]: /url\n";
++    let arena = Allocator::new();
++    let doc = Parser::with_options(
++        &arena,
++        source,
++        ParserOptions {
++            allow_link_refs: false,
++            ..ParserOptions::commonmark()
++        },
++    )
++    .parse()
++    .unwrap();
++    let html = HtmlRenderer::with_options(HtmlRendererOptions::commonmark()).render(&doc);
++    assert!(html.contains("[target]: /url"), "{html}");
++    assert!(!html.contains("<a "), "{html}");
++}

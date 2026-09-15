@@ -18,6 +18,7 @@ use super::line_comments::CommentDefinitionRegion;
 use super::line_scan::{is_line_ending_byte, line_end as scan_line_end, line_terminator_end};
 use super::spans::SpanMap;
 
+mod containers;
 mod scan;
 
 use scan::{line_end_if_blank_after, next_blank_line, skip_ws_one_newline};
