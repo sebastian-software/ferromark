@@ -134,10 +134,7 @@ impl HtmlRenderer {
         }
         self.heading_id_counts.reserve(document_scan.heading_count);
         self.in_link = false;
-        let estimated_len = (document.span.len() as usize).saturating_mul(2);
-        if self.output.capacity() < estimated_len {
-            self.output.reserve(estimated_len - self.output.capacity());
-        }
+        self.reserve_output_for(document);
         self.render_document(document);
         self.finish_semantic_footnotes();
         std::mem::take(&mut self.output)
@@ -157,10 +154,7 @@ impl HtmlRenderer {
         }
         self.heading_id_counts.reserve(document_scan.heading_count);
         self.in_link = false;
-        let estimated_len = (document.span.len() as usize).saturating_mul(2);
-        if self.output.capacity() < estimated_len {
-            self.output.reserve(estimated_len - self.output.capacity());
-        }
+        self.reserve_output_for(document);
         self.render_document_with_hooks(document, hooks);
         self.finish_semantic_footnotes();
         std::mem::take(&mut self.output)

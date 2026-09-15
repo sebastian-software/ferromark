@@ -122,6 +122,13 @@ pub struct HtmlRenderer {
 /// reservation covers the whole render.
 const HEADING_SCRATCH_CAPACITY: usize = 64;
 
+/// Smallest output buffer a document with any content is given.
+///
+/// Enough for a short paragraph, heading, or list item — the shapes whose
+/// markup overhead is not proportional to their source — to be written in one
+/// reservation. See [`HtmlRenderer::reserve_output_for`].
+pub(super) const MIN_OUTPUT_CAPACITY: usize = 64;
+
 /// Gives a just-cleared scratch buffer its working capacity on first use.
 ///
 /// [`HtmlRenderer`] leaves the heading scratch buffers empty at construction,
@@ -248,13 +255,37 @@ impl HtmlRenderer {
         self.clear_footnote_state();
         // The autolink first-byte index is built once per renderer (see the
         // field) because it depends only on the immutable options.
-        // HTML output is typically 2×–3× the markdown source (every
-        // `**bold**` becomes `<strong>...</strong>` etc.) so the prior
-        // 1.5× estimate kept undersizing the buffer and forcing 1–2
-        // power-of-two reallocs per render on docs >32 KB. 2× hits the
-        // realistic mean for the bundled corpora (rust-book / vite /
-        // vue / typescript-handbook all land between 1.8× and 2.6×).
-        let estimated_len = (document.span.len() as usize).saturating_mul(2);
+        self.reserve_output_for(document);
+    }
+
+    /// Sizes the output buffer for the document about to be rendered.
+    ///
+    /// HTML output is typically 2×–3× the markdown source (every `**bold**`
+    /// becomes `<strong>...</strong>` etc.) so the original 1.5× estimate kept
+    /// undersizing the buffer and forcing power-of-two reallocs on large
+    /// documents. 2× hits the realistic mean for the bundled corpora
+    /// (rust-book / vite / vue / typescript-handbook all land between 1.8×
+    /// and 2.6×).
+    ///
+    /// A ratio alone is wrong at the short end, though, because HTML overhead
+    /// is per block rather than proportional: the shortest paragraph the
+    /// renderer emits already carries `<p>` and `</p>\n`, and a heading with
+    /// an id carries its own text a second time inside the attribute. Doubling
+    /// a comment-sized source therefore under-sizes the buffer and makes the
+    /// output grow itself two or three times on the way out, which is the
+    /// whole render for such a document. [`MIN_OUTPUT_CAPACITY`] covers those
+    /// shapes in one reservation without changing what long documents get.
+    pub(in crate::renderer::html::renderer) fn reserve_output_for(
+        &mut self,
+        document: &Document<'_>,
+    ) {
+        let source_len = document.span.len() as usize;
+        if source_len == 0 {
+            // An empty document renders to nothing. Leave the buffer alone so
+            // an empty source still yields a string that never allocated.
+            return;
+        }
+        let estimated_len = source_len.saturating_mul(2).max(MIN_OUTPUT_CAPACITY);
         if self.output.capacity() < estimated_len {
             self.output.reserve(estimated_len - self.output.capacity());
         }
