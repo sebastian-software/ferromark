@@ -20,10 +20,12 @@ Examples below use the package name as it resolves inside the workspace.
 See the [v2 migration guide](../../docs/migration-v2.md) for breaking changes.
 The v2 engine uses an arena AST and retains upstream MIT attribution in `LICENSE`.
 
-Removed options `tableColumnWidths`, `highlight`, `inlineFootnotes`, `allowLinkRefs`, and
-`indentedCodeBlocks` throw an unknown-option error. `tableColgroup`,
+Removed options `tableColumnWidths` and `indentedCodeBlocks` throw an unknown-option error. `tableColgroup`,
 `tableColumnNames`, `tableAttributes`,
 `headingAttributes`, `wikiLinks`, `cjkEmphasis`, and `mdx` expose v2 features.
+Optional `highlight` (`==text==`) and `inlineFootnotes` (`^[note]`) default off.
+`allowLinkRefs` defaults on; disabling it keeps reference definitions visible.
+See [optional writing syntax](../../docs/optional-writing.md).
 Heading slugs and extension HTML follow v2. `linkBasePath` enables v2 site routing:
 root-absolute links, images, and raw HTML URLs use the base, and Markdown links
 become index.html routes. Highlighters receive fenced and indented code blocks.

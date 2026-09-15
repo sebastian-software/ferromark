@@ -27,6 +27,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
     parser.add_argument('--revision', default='HEAD')
+    parser.add_argument('--working-tree', action='store_true', help='Freeze current core files, including untracked source files')
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -35,6 +36,12 @@ def main():
     native = subprocess.check_output(['git', 'ls-tree', '--name-only', revision, 'node/native'], cwd=ROOT, text=True).splitlines()
     archive = subprocess.check_output(['git', 'archive', revision, 'Cargo.toml', 'Cargo.lock',
                                        'rust-toolchain.toml', 'crates', *native], cwd=ROOT)
+    if args.working_tree:
+        buffer = io.BytesIO()
+        with tarfile.open(fileobj=buffer, mode='w') as tar:
+            for name in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'crates', *native]:
+                tar.add(ROOT / name, arcname=name)
+        archive = buffer.getvalue()
     source = out / 'source'
     source.mkdir()
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
@@ -48,13 +55,15 @@ def main():
         '[package]\nname = "runtime-profile-worker"\nversion = "0.0.0"\n'
         'edition = "2024"\npublish = false\n\n[workspace]\n\n[dependencies]\n'
         f'ferromark = {{ path = {json.dumps(str(source / "crates/ferromark"))} }}\n'
-        'serde_json = "1.0"\n\n[profile.release]\nopt-level = 3\nlto = "fat"\n'
+        'serde_json = "1.0"\n\n[features]\noptional-writing = []\n\n[profile.release]\nopt-level = 3\nlto = "fat"\n'
         'codegen-units = 1\npanic = "abort"\nstrip = true\n')
     env = os.environ.copy()
     env.pop('CARGO_ENCODED_RUSTFLAGS', None)
     env['RUSTFLAGS'] = '-C target-cpu=generic'
     env['CARGO_TARGET_DIR'] = str(build / 'target')
     command = ['cargo', '+1.95', 'build', '--release', '--offline']
+    if 'pub inline_footnotes:' in (source / 'crates/ferromark_parser/src/parser/options.rs').read_text():
+        command += ['--features', 'optional-writing']
     with (out / 'build.log').open('w') as log:
         result = subprocess.run(command, cwd=build, env=env, stdout=log, stderr=log)
     if result.returncode:
@@ -63,7 +72,7 @@ def main():
     retained = helpers.registry_packages(build / 'Cargo.lock')
     assert all(original.get(key) == value for key, value in retained.items())
     binary = build / 'target/release/runtime-profile-worker'
-    data = {'revision': revision, 'binary': str(binary),
+    data = {'revision': revision, 'working_tree': args.working_tree, 'binary': str(binary),
             'binary_sha256': helpers.sha256(binary),
             'worker_sha256': hashlib.sha256(worker).hexdigest(),
             'source_tree_sha256': helpers.tree_sha(source),

@@ -94,7 +94,8 @@ impl<'a> Parser<'a> {
 
             // Full [text][label] and collapsed [text][] reference forms.
             let mut well_formed_reference = false;
-            if !inner_has_link
+            if self.options.allow_link_refs
+                && !inner_has_link
                 && bytes.get(close + 1) == Some(&b'[')
                 && self.has_closer_from(content, close + 2, b']')
             {
@@ -278,8 +279,10 @@ fn trim_with_offset(value: &str, offset: usize) -> (&str, usize) {
 fn contains_link(nodes: &[Node<'_>]) -> bool {
     nodes.iter().any(|node| match node {
         Node::Link(_) => true,
+        Node::FootnoteDefinition(n) if n.label.is_none() => true,
         Node::Emphasis(n) => contains_link(&n.children),
         Node::Strong(n) => contains_link(&n.children),
+        Node::Highlight(n) => contains_link(&n.children),
         Node::Delete(n) => contains_link(&n.children),
         Node::Superscript(n) => contains_link(&n.children),
         Node::Subscript(n) => contains_link(&n.children),

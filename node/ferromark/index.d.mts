@@ -35,6 +35,12 @@ export interface Options {
   disallowedRawHtml?: boolean
   /** Enable `[^label]` footnotes. Default: off. */
   footnotes?: boolean
+  /** Enable `==marked text==`. Default: off. Independent of code highlighting. */
+  highlight?: boolean
+  /** Enable `^[inline notes]`. Default: off; independent of `footnotes`. */
+  inlineFootnotes?: boolean
+  /** Resolve link/image references and consume definitions. Default: on. */
+  allowLinkRefs?: boolean
   /** Extract a leading `---` or `+++` front-matter block. Default: off. */
   frontMatter?: boolean
   /** Generate v2 heading IDs. Default: on. */

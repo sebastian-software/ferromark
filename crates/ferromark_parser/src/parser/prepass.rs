@@ -116,6 +116,9 @@ impl<'a> Parser<'a> {
     pub(super) fn build_prepass(
         &self,
     ) -> (Option<Rc<ReferenceMap<'a>>>, Option<Rc<FootnoteLabels>>) {
+        if !self.options.allow_link_refs && !self.options.footnotes {
+            return (None, None);
+        }
         // Cheap bail: both collectors need a bounded `[...]:` opener at a
         // valid block-line prefix. Full syntax and context validation still
         // happens below, but ordinary prose decoys skip the structural scan.
@@ -230,7 +233,11 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
-            if !paragraph_open && stripped.len() - trimmed.len() <= 3 && trimmed.starts_with('[') {
+            if self.options.allow_link_refs
+                && !paragraph_open
+                && stripped.len() - trimmed.len() <= 3
+                && trimmed.starts_with('[')
+            {
                 // Candidate: join the stripped lines of this paragraph
                 // chunk and parse as many definitions as it holds.
                 let (chunk, line_starts) = self.join_stripped_chunk(pos);

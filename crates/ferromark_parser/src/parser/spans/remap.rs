@@ -101,6 +101,12 @@ impl<'a> Parser<'a> {
                 }
             }
             Node::Image(node) => Self::remap_inline_span(&mut node.span, source_map),
+            Node::Highlight(node) => {
+                Self::remap_inline_span(&mut node.span, source_map);
+                for child in &mut node.children {
+                    Self::remap_node_spans(child, source_map);
+                }
+            }
             Node::Delete(node) => {
                 Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {

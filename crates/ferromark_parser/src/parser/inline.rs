@@ -60,11 +60,7 @@ impl<'a> Parser<'a> {
         offset: usize,
     ) -> ParseResult<Vec<'a, Node<'a>>> {
         let bytes = content.as_bytes();
-        let mut markers = InlineMarkerScan::new(
-            self.allows_mdx_text_expression(),
-            self.options.superscript,
-            self.options.math,
-        );
+        let mut markers = InlineMarkerScan::new(&self.options);
         let first_special = markers.next(bytes, 0);
 
         // Plain text is both the most common inline shape and exactly one AST
@@ -212,6 +208,23 @@ impl<'a> Parser<'a> {
                 // backslash; the following character is parsed normally.
                 Self::push_text(children, "\\", offset + *pos, offset + *pos + 1);
                 *pos += 1;
+            }
+            b'=' if self.options.highlight => {
+                let run = Self::marker_run_len(bytes, *pos, b'=');
+                if run == 2 {
+                    self.push_delimiter_run(content, offset, children, delimiters, pos);
+                } else {
+                    Self::push_text(
+                        children,
+                        &content[*pos..*pos + run],
+                        offset + *pos,
+                        offset + *pos + run,
+                    );
+                    *pos += run;
+                }
+            }
+            b'^' if self.options.inline_footnotes && bytes.get(*pos + 1) == Some(&b'[') => {
+                self.parse_inline_footnote(content, offset, children, pos)?;
             }
             b'~' if self.options.strikethrough => {
                 let run_len = Self::marker_run_len(bytes, *pos, b'~');

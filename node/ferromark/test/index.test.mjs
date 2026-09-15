@@ -460,7 +460,7 @@ function currentNativeTarget() {
 
 
 test('rejects removed v1 options instead of silently ignoring them', () => {
-  for (const key of ['tableColumnWidths', 'highlight', 'inlineFootnotes', 'allowLinkRefs', 'indentedCodeBlocks']) {
+  for (const key of ['tableColumnWidths', 'indentedCodeBlocks']) {
     assert.throws(() => toHtml('text', { [key]: true }), /unknown option/)
     assert.throws(() => new Renderer({ [key]: true }), /unknown option/)
     assert.throws(() => transform('text', { [key]: true }), /unknown option/)
@@ -488,4 +488,24 @@ test('a reusable renderer recovers after a bounded-depth parse error', () => {
   const renderer = new Renderer()
   assert.throws(() => renderer.toHtml('> '.repeat(150) + 'deep'), /nest|depth/i)
   assert.equal(renderer.toHtml('recovered'), '<p>recovered</p>\n')
+})
+
+
+test('supports optional marked text, inline notes, and reference policy', () => {
+  const source = '==Text==^[a *note*] [ref]\n\n[ref]: /url'
+  const options = { highlight: true, inlineFootnotes: true, allowLinkRefs: false }
+  const html = toHtml(source, options)
+  assert.match(html, /<mark>Text<\/mark>/)
+  assert.match(html, /a <em>note<\/em>/)
+  assert.match(html, /\[ref\]: \/url/)
+  assert.equal(toHtmlBuffer(source, options).toString(), html)
+  const renderer = new Renderer(options)
+  assert.equal(renderer.toHtml('plain'), '<p>plain</p>\n')
+  assert.equal(renderer.toHtml(source), html)
+  assert.equal(renderer.toHtml(source), html)
+  assert.equal(transform(source, options).html, html)
+  const highlighter = { codeToHtml: () => '<pre>code</pre>' }
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: 'dark' }, options), html)
+  assert.equal(transformWithHighlighter(source, highlighter, { theme: 'dark' }, options).html, html)
+  assert.equal(toHtml('==Text== ^[note]'), '<p>==Text== ^[note]</p>\n')
 })

@@ -37,6 +37,7 @@ pub fn walk_node<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, node: &Node<'a>) {
         Node::Break(n) => visitor.visit_break(n),
         Node::Link(n) => visitor.visit_link(n),
         Node::Image(n) => visitor.visit_image(n),
+        Node::Highlight(n) => visitor.visit_highlight(n),
         Node::Delete(n) => visitor.visit_delete(n),
         Node::Superscript(n) => visitor.visit_superscript(n),
         Node::Subscript(n) => visitor.visit_subscript(n),
@@ -159,6 +160,13 @@ pub fn walk_strong<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, strong: &Strong<'
 /// Walks through a link's children.
 pub fn walk_link<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, link: &Link<'a>) {
     for child in &link.children {
+        visitor.visit_node(child);
+    }
+}
+
+/// Walks through highlighted text children.
+pub fn walk_highlight<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, highlight: &Highlight<'a>) {
+    for child in &highlight.children {
         visitor.visit_node(child);
     }
 }

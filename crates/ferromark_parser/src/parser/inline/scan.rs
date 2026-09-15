@@ -66,7 +66,8 @@ const HIGH_NIBBLE: [u8; 16] = [
 /// The optional bytes use otherwise-unused intersections: `$` gets bit 0x40
 /// at (high 2, low 4), `^` gets bit 0x80 at (high 5, low E), and `{` reuses
 /// the existing `~` bit at (high 7, low B). These choices avoid admitting any
-/// cross-product byte. Eight precomputed pairs let each scan use only the
+/// cross-product byte. `=` shares the `<` bit at (high 3, low D).
+/// Sixteen precomputed pairs let each scan use only the
 /// enabled extension markers; disabled bytes never need retry filtering.
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
@@ -83,11 +84,14 @@ const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
         low[4] |= 0x40;
         high[2] |= 0x40;
     }
+    if options & 8 != 0 {
+        low[13] |= 0x04; // `=` shares the high nibble of `<`.
+    }
     (low, high)
 }
 
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
-const OPTION_TABLES: [([u8; 16], [u8; 16]); 8] = [
+const OPTION_TABLES: [([u8; 16], [u8; 16]); 16] = [
     marker_tables(0),
     marker_tables(1),
     marker_tables(2),
@@ -96,12 +100,20 @@ const OPTION_TABLES: [([u8; 16], [u8; 16]); 8] = [
     marker_tables(5),
     marker_tables(6),
     marker_tables(7),
+    marker_tables(8),
+    marker_tables(9),
+    marker_tables(10),
+    marker_tables(11),
+    marker_tables(12),
+    marker_tables(13),
+    marker_tables(14),
+    marker_tables(15),
 ];
 
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 #[inline]
 fn selected_marker_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
-    let tables = &OPTION_TABLES[(options & 7) as usize];
+    let tables = &OPTION_TABLES[(options & 15) as usize];
     (&tables.0, &tables.1)
 }
 
@@ -422,6 +434,7 @@ fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize 
 /// Marker bits used by [`next_inline_marker`].
 pub(super) const INLINE_MARKER_MDX: u8 = 1 << 0;
 pub(super) const INLINE_MARKER_SUPERSCRIPT: u8 = 1 << 1;
+pub(super) const INLINE_MARKER_HIGHLIGHT: u8 = 1 << 3;
 pub(super) const INLINE_MARKER_MATH: u8 = 1 << 2;
 
 /// Find the next core marker or enabled extension marker.
@@ -497,6 +510,7 @@ fn is_inline_marker(byte: u8, options: u8) -> bool {
     ) || (options & 1 != 0 && byte == b'{')
         || (options & 2 != 0 && byte == b'^')
         || (options & 4 != 0 && byte == b'$')
+        || (options & 8 != 0 && byte == b'=')
 }
 
 #[cfg(test)]

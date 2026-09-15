@@ -1,4 +1,4 @@
-use ferromark_ast::{Delete, Emphasis, Link, Strong, Subscript, Superscript};
+use ferromark_ast::{Delete, Emphasis, Highlight, Link, Strong, Subscript, Superscript};
 
 use super::HtmlRenderHooks;
 use crate::html::renderer::HtmlRenderer;
@@ -60,6 +60,19 @@ impl HtmlRenderer {
         }
         self.in_link = prev_in_link;
         self.write("</a>");
+    }
+
+    /// Visits highlighted text and its children.
+    pub(in crate::html::renderer) fn render_highlight_with_hooks<H: HtmlRenderHooks>(
+        &mut self,
+        highlight: &Highlight<'_>,
+        hooks: &mut H,
+    ) {
+        self.write("<mark>");
+        for child in &highlight.children {
+            self.render_inline_node_with_hooks(child, hooks);
+        }
+        self.write("</mark>");
     }
 
     pub(in crate::html::renderer) fn render_delete_with_hooks<H: HtmlRenderHooks>(

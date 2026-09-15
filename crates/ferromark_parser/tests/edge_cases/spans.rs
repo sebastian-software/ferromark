@@ -262,6 +262,7 @@ fn assert_node_span_indexes_source(source: &str, node: &Node<'_>) {
         Node::Strong(node) => assert_all_spans_index_source(source, &node.children),
         Node::Link(node) => assert_all_spans_index_source(source, &node.children),
         Node::Delete(node) => assert_all_spans_index_source(source, &node.children),
+        Node::Highlight(node) => assert_all_spans_index_source(source, &node.children),
         Node::Superscript(node) => assert_all_spans_index_source(source, &node.children),
         Node::Subscript(node) => assert_all_spans_index_source(source, &node.children),
         Node::FootnoteDefinition(node) => assert_all_spans_index_source(source, &node.children),
