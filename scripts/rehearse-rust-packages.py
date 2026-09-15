@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build real Cargo archives and verify a consumer using only their unpacked contents."""
+"""Build the Cargo archive and verify an isolated consumer of its contents."""
 import argparse
 import hashlib
 import json
@@ -27,21 +27,14 @@ def main():
     version = workspace['package']['version']
     names = sorted(tomllib.loads((ROOT / member / 'Cargo.toml').read_text())['package']['name']
                    for member in workspace['members'] if member.startswith('crates/'))
-    assert len(names) == 5
-    # Cargo stages all publishable workspace crates in its temporary registry,
-    # so this verifies the first release before any registry upload exists.
-    run(['cargo', 'publish', '--workspace', '--exclude', 'ferromark-node',
-         '--dry-run', '--locked', '--allow-dirty', '--target-dir', str(output / 'target')],
-        output / 'package.log')
+    assert names == ['ferromark']
+    run(['cargo', 'package', '-p', 'ferromark', '--locked', '--allow-dirty',
+         '--target-dir', str(output / 'target')], output / 'package.log')
     unpacked = output / 'unpacked'
     unpacked.mkdir()
     artifacts = []
     for name in names:
         archive = output / 'target/package' / f'{name}-{version}.crate'
-        # Pinned Cargo 1.95 keeps multi-package dry-run archives in tmp-crate.
-        # Copy the verified bytes to the stable artifact layout consumed by CI.
-        if not archive.exists():
-            shutil.copyfile(archive.parent / 'tmp-crate' / archive.name, archive)
         with tarfile.open(archive) as tar:
             tar.extractall(unpacked, filter='data')
         package = unpacked / f'{name}-{version}'
@@ -54,15 +47,12 @@ def main():
         assert (package / 'src/lib.rs').is_file()
         for section in ('dependencies', 'dev-dependencies', 'build-dependencies'):
             for dependency, spec in manifest.get(section, {}).items():
-                if dependency in names:
-                    assert spec['version'] == '=' + version, f'{name}: {dependency} exact version'
-                    assert 'path' not in spec, f'{name}: leaked workspace path'
+                assert not dependency.startswith('ferromark_'), f'{name}: internal crate dependency'
+                assert 'path' not in spec, f'{name}: leaked workspace path'
         artifacts.append(dict(name=name, version=version, archive=str(archive.relative_to(output)),
             bytes=archive.stat().st_size, sha256=hashlib.sha256(archive.read_bytes()).hexdigest()))
     consumer = output / 'consumer'
     (consumer / 'src').mkdir(parents=True)
-    # JSON-quoted paths are also valid TOML strings.
-    patches = '\n'.join(f'{name} = {{ path = {json.dumps(str(unpacked / f"{name}-{version}"))} }}' for name in names)
     (consumer / 'Cargo.toml').write_text(f'''[workspace]
 [package]
 name = "ferromark-packaged-consumer"
@@ -70,9 +60,7 @@ version = "0.0.0"
 edition = "2024"
 publish = false
 [dependencies]
-ferromark = "={version}"
-[patch.crates-io]
-{patches}
+ferromark = {{ path = {json.dumps(str(unpacked / f"ferromark-{version}"))}, version = "={version}" }}
 ''')
     (consumer / 'src/main.rs').write_text('''fn main() {
     assert_eq!(ferromark::to_html("Hello, **world**!").unwrap(),
@@ -92,10 +80,10 @@ ferromark = "={version}"
         elif package['name'] != 'ferromark-packaged-consumer':
             assert package['name'] in names and package['version'] == version
     result = dict(version=version, packages=artifacts, packaged_consumer='passed',
-        method='Full cargo publish --dry-run --locked, including packaged builds; additional isolated consumer uses unpacked archives.',
+        method='Full cargo package --locked, including packaged builds; additional isolated consumer uses unpacked archives.',
         limits='No registry upload or publishing credentials were tested.')
     (output / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
-    print(f'Verified {len(artifacts)} Cargo archives and isolated packaged consumer: {output}')
+    print(f'Verified ferromark Cargo archive and isolated packaged consumer: {output}')
 
 
 if __name__ == '__main__':

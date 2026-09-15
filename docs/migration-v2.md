@@ -6,6 +6,12 @@ separately developed v2 history are both retained. The first release candidate i
 
 ## Rust
 
+V2 publishes one crate: `ferromark`. Its `allocator`, `ast`, `parser`, and
+`renderer` modules expose advanced APIs, while top-level imports such as
+`ferromark::Parser` and `ferromark::HtmlRenderer` remain available. The four
+separate crates from the development branch were consolidated before publication;
+replace imports like `ferromark_ast::Node` with `ferromark::ast::Node`.
+
 The parser uses an arena AST pipeline. For owned HTML output, v2 provides
 `to_html` and `to_html_with_options`; `to_html_into` and
 `to_html_into_with_options` append to a caller-owned `String`.

@@ -59,10 +59,10 @@ def main():
         shutil.copyfile(base / 'bun' / 'comparison-worker' / filename, worker / filename)
     worker_text = args.worker.read_text()
     adaptations = []
-    if 'fn commonmark()' not in (source / 'crates/ferromark_parser/src/parser/options.rs').read_text():
+    if 'fn commonmark()' not in next(path for path in [source / 'crates/ferromark/src/parser/options.rs', source / 'crates/ferromark_parser/src/parser/options.rs'] if path.is_file()).read_text():
         worker_text = worker_text.replace('..v2::ParserOptions::commonmark()', '..v2::ParserOptions::default()')
         adaptations.append('Older parser: default is the same all-extensions-off option set.')
-    if 'fn commonmark()' not in (source / 'crates/ferromark_renderer/src/html/options.rs').read_text():
+    if 'fn commonmark()' not in next(path for path in [source / 'crates/ferromark/src/renderer/html/options.rs', source / 'crates/ferromark_renderer/src/html/options.rs'] if path.is_file()).read_text():
         worker_text = worker_text.replace('v2::HtmlRendererOptions::commonmark(),', '''v2::HtmlRendererOptions {
             autolink_urls: false,
             autolink_target_blank: false,

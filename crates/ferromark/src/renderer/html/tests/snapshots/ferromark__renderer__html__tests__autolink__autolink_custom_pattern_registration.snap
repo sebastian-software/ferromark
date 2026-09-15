@@ -1,0 +1,5 @@
+---
+source: crates/ferromark/src/renderer/html/tests/autolink.rs
+expression: html
+---
+<p>email <a href="mailto:foo@example.com" target="_blank" rel="noopener noreferrer">mailto:foo@example.com</a> please</p>

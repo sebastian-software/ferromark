@@ -47,15 +47,14 @@ MDX compiler or runtime. Math, definition lists, and other extensions remain con
 The allocator and source must outlive the document. Reuse/reset an allocator only after its documents
 have been dropped. HTML options and renderer hooks remain available directly.
 
-The workspace contains four core crates and a small public facade:
+One Rust crate, `ferromark`, exposes four modules and convenient top-level functions:
 
-| Crate | Responsibility |
+| Module | Responsibility |
 | --- | --- |
-| `ferromark` | Public entry point |
-| `ferromark_allocator` | Arena allocation and buffer helpers |
-| `ferromark_ast` | Nodes, source spans, visitors |
-| `ferromark_parser` | Markdown to AST |
-| `ferromark_renderer` | AST to HTML |
+| `ferromark::allocator` | Arena allocation and buffer helpers |
+| `ferromark::ast` | Nodes, source spans, visitors |
+| `ferromark::parser` | Markdown to AST |
+| `ferromark::renderer` | AST to HTML |
 
 The core retains CommonMark/GFM support, configurable syntax extensions, HTML
 rendering options, and regression tests. Site generation, JavaScript frameworks,
@@ -79,13 +78,13 @@ cargo bench --workspace --no-run --locked
 Try the retained stdin rendering example:
 
 ```sh
-printf 'Hello, **world**!\n' | cargo run --quiet --locked -p ferromark_renderer --example render_stdin
+printf 'Hello, **world**!\n' | cargo run --quiet --locked -p ferromark --example render_stdin
 ```
 
 Seven self-contained Criterion suites cover parsing, reference prepasses, tables,
 pipe scans, rendering, headings, and sanitized URLs. Run individual suites with
-`cargo bench -p ferromark_parser --bench table_pipes --locked` or
-`cargo bench -p ferromark_renderer --bench renderer --locked`.
+`cargo bench -p ferromark --bench table_pipes --locked` or
+`cargo bench -p ferromark --bench renderer --locked`.
 The [optimization roadmap](docs/optimization-roadmap.md) records candidates for
 measured ports from the Ferramenta projects.
 
@@ -352,6 +351,6 @@ use the same pinned parser binaries.
 
 The source is MIT licensed; the original copyright notice is preserved in
 [LICENSE](LICENSE). CommonMark and GFM specification fixtures carry their own
-[CC-BY-SA attribution](crates/ferromark_renderer/tests/spec_fixtures/README.md).
+[CC-BY-SA attribution](crates/ferromark/tests/spec_fixtures/README.md).
 The [benchmark corpus sources](benchmarks/broad-comparison/README.md) retain their
 separate MIT, Apache, CC BY, or CC BY-SA licenses and attribution.

@@ -270,10 +270,15 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 name = "ferromark"
 version = "2.0.0-rc.1"
 dependencies = [
- "ferromark_allocator",
- "ferromark_ast",
- "ferromark_parser",
- "ferromark_renderer",
+ "bumpalo",
+ "compact_str",
+ "criterion",
+ "insta",
+ "memchr",
+ "rustc-hash",
+ "serde_json",
+ "smallvec",
+ "thiserror",
 ]
 
 [[package]]
@@ -284,53 +289,6 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
-]
-
-[[package]]
-name = "ferromark_allocator"
-version = "2.0.0-rc.1"
-dependencies = [
- "bumpalo",
-]
-
-[[package]]
-name = "ferromark_ast"
-version = "2.0.0-rc.1"
-dependencies = [
- "ferromark_allocator",
-]
-
-[[package]]
-name = "ferromark_parser"
-version = "2.0.0-rc.1"
-dependencies = [
- "compact_str",
- "criterion",
- "ferromark_allocator",
- "ferromark_ast",
- "ferromark_renderer",
- "insta",
- "memchr",
- "rustc-hash",
- "smallvec",
- "thiserror",
-]
-
-[[package]]
-name = "ferromark_renderer"
-version = "2.0.0-rc.1"
-dependencies = [
- "compact_str",
- "criterion",
- "ferromark_allocator",
- "ferromark_ast",
- "ferromark_parser",
- "insta",
- "memchr",
- "rustc-hash",
- "serde_json",
- "smallvec",
- "thiserror",
 ]
 
 [[package]]

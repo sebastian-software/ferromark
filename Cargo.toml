@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ferromark", "crates/ferromark_allocator", "crates/ferromark_ast", "crates/ferromark_parser", "crates/ferromark_renderer", "node/native"]
+members = ["crates/ferromark", "node/native"]
 
 [workspace.package]
 version = "2.0.0-rc.1" # x-release-please-version
@@ -74,10 +74,6 @@ use_self = "allow"
 
 [workspace.dependencies]
 ferromark = { path = "crates/ferromark", version = "=2.0.0-rc.1" } # x-release-please-version
-ferromark_allocator = { path = "crates/ferromark_allocator", version = "=2.0.0-rc.1" } # x-release-please-version
-ferromark_ast = { path = "crates/ferromark_ast", version = "=2.0.0-rc.1" } # x-release-please-version
-ferromark_parser = { path = "crates/ferromark_parser", version = "=2.0.0-rc.1" } # x-release-please-version
-ferromark_renderer = { path = "crates/ferromark_renderer", version = "=2.0.0-rc.1" } # x-release-please-version
 bumpalo = "3.16"
 compact_str = "0.10.0"
 smallvec = "1.15"

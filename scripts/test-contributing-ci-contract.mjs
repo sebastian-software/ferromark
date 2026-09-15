@@ -86,11 +86,12 @@ test("Node native declarations follow the v2 option surface", () => {
   assert.ok(!declarations.includes("CodeCallback"), "callback types must be self-contained");
 });
 
-test("unversioned paths are limited to the two repository-only test dependencies", () => {
+test("only ferromark is public and no path-only dependency exceptions remain", () => {
   const policy = TOML.parse(read("deny.toml"));
   assert.equal(policy.bans.wildcards, "deny");
-  assert.equal(policy.bans["allow-wildcard-paths"], true);
+  assert.notEqual(policy.bans["allow-wildcard-paths"], true);
   const workspace = TOML.parse(read("Cargo.toml")).workspace;
+  assert.deepEqual(workspace.members, ["crates/ferromark", "node/native"]);
   const unversioned = [];
   for (const member of workspace.members) {
     const manifest = TOML.parse(read(`${member}/Cargo.toml`));
@@ -101,8 +102,5 @@ test("unversioned paths are limited to the two repository-only test dependencies
       }
     }
   }
-  assert.deepEqual(unversioned.sort(), [
-    "crates/ferromark_parser:dev-dependencies:ferromark_renderer",
-    "crates/ferromark_renderer:dev-dependencies:ferromark_parser",
-  ]);
+  assert.deepEqual(unversioned, []);
 });
