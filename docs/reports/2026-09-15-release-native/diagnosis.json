@@ -1,0 +1,2024 @@
+{
+  "metadata": {
+    "host": {
+      "time_utc": "2026-09-15T13:22:08Z",
+      "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+      "cpu": "arm64",
+      "load_average": [
+        3.6962890625,
+        3.783203125,
+        3.603515625
+      ],
+      "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+      "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+    },
+    "binaries": [
+      {
+        "path": "/private/tmp/ferromark-native-20260915-build/target/release/native-comparison-worker",
+        "sha256": "d68d1975b6a4b9bbcf5c8ef15bcf4b3a7d89c366274b05d2c9675cf2b8cf42dd"
+      },
+      {
+        "path": "/private/tmp/ferromark-release-native-build/target/release/native-comparison-worker",
+        "sha256": "466e2662a6ad717a3975d56945c0431a616935a24649cf143cbf2c7e8cf3e5c8"
+      }
+    ],
+    "samples": 12,
+    "window_ms": 40,
+    "warmup_ms": 60,
+    "corpus_sha256": "49f3577d78d7739dc004f03e2749d72bbc937645539e08da5096f98174293935"
+  },
+  "rows": [
+    {
+      "case": "comment-incident",
+      "variant": "original",
+      "mode": "fresh",
+      "input_sha256": "b8cbca8190d2958638e4b56ef0777a142f243017bacacd5ffee357e72d16c78a",
+      "output": "<h3>Reproduction on a clean checkout</h3>\n<p>The first page builds successfully, but the second page contains a link from the first one. Restarting the process clears the problem. I tested this with a small project containing two Markdown files and no plugins.</p>\n<p><strong>Steps</strong></p>\n<ol>\n<li>Create a page with a reference-style link.</li>\n<li>Create another page that uses the same label but does not define it.</li>\n<li>Render both pages through the same renderer.</li>\n</ol>\n<p>The second page should display the unresolved label as text. Instead, it links to the destination from the first page. Reversing the file order changes which page fails.</p>\n<pre><code class=\"language-markdown\">See [the guide][help].\n\n[help]: /getting-started\n</code></pre>\n<p>I have not seen the problem when invoking the command separately for each page. It may be worth checking whether reference definitions are cleared along with the output buffer. The behavior is the same on a fresh checkout and on the release package.</p>\n<blockquote>\n<p>Is this specific to nested links?</p>\n</blockquote>\n<p>No. A single ordinary paragraph is enough. The larger example in the original report happened to contain a list, but the list is not needed to reproduce the failure.</p>\n",
+      "delta_percent": 37.406547843976035,
+      "samples": [
+        {
+          "before": {
+            "iterations": 32224,
+            "elapsed_ns": 40033583,
+            "checksum": 40763360
+          },
+          "after": {
+            "iterations": 23456,
+            "elapsed_ns": 40008041,
+            "checksum": 29671840
+          },
+          "ratio": 1.3729297674768282
+        },
+        {
+          "before": {
+            "iterations": 31872,
+            "elapsed_ns": 40021792,
+            "checksum": 40318080
+          },
+          "after": {
+            "iterations": 23520,
+            "elapsed_ns": 40023125,
+            "checksum": 29752800
+          },
+          "ratio": 1.355147175002732
+        },
+        {
+          "before": {
+            "iterations": 32480,
+            "elapsed_ns": 40008209,
+            "checksum": 41087200
+          },
+          "after": {
+            "iterations": 23136,
+            "elapsed_ns": 40019250,
+            "checksum": 29267040
+          },
+          "ratio": 1.404260176887771
+        },
+        {
+          "before": {
+            "iterations": 32320,
+            "elapsed_ns": 40000959,
+            "checksum": 40884800
+          },
+          "after": {
+            "iterations": 23584,
+            "elapsed_ns": 40033625,
+            "checksum": 29833760
+          },
+          "ratio": 1.3715397513236072
+        },
+        {
+          "before": {
+            "iterations": 31936,
+            "elapsed_ns": 40001792,
+            "checksum": 40399040
+          },
+          "after": {
+            "iterations": 23232,
+            "elapsed_ns": 40017667,
+            "checksum": 29388480
+          },
+          "ratio": 1.3752011894026925
+        },
+        {
+          "before": {
+            "iterations": 31648,
+            "elapsed_ns": 40021666,
+            "checksum": 40034720
+          },
+          "after": {
+            "iterations": 23264,
+            "elapsed_ns": 40036959,
+            "checksum": 29428960
+          },
+          "ratio": 1.360904972114839
+        },
+        {
+          "before": {
+            "iterations": 32032,
+            "elapsed_ns": 40016959,
+            "checksum": 40520480
+          },
+          "after": {
+            "iterations": 23264,
+            "elapsed_ns": 40010416,
+            "checksum": 29428960
+          },
+          "ratio": 1.3766662046996452
+        },
+        {
+          "before": {
+            "iterations": 31744,
+            "elapsed_ns": 40030250,
+            "checksum": 40156160
+          },
+          "after": {
+            "iterations": 23168,
+            "elapsed_ns": 40022625,
+            "checksum": 29307520
+          },
+          "ratio": 1.3699047553850936
+        },
+        {
+          "before": {
+            "iterations": 32352,
+            "elapsed_ns": 40001250,
+            "checksum": 40925280
+          },
+          "after": {
+            "iterations": 23424,
+            "elapsed_ns": 40015583,
+            "checksum": 29631360
+          },
+          "ratio": 1.3816424252110973
+        },
+        {
+          "before": {
+            "iterations": 31968,
+            "elapsed_ns": 40021625,
+            "checksum": 40439520
+          },
+          "after": {
+            "iterations": 23072,
+            "elapsed_ns": 40033375,
+            "checksum": 29186080
+          },
+          "ratio": 1.3859823823660729
+        },
+        {
+          "before": {
+            "iterations": 31808,
+            "elapsed_ns": 40019208,
+            "checksum": 40237120
+          },
+          "after": {
+            "iterations": 22784,
+            "elapsed_ns": 40013917,
+            "checksum": 28821760
+          },
+          "ratio": 1.395882839546405
+        },
+        {
+          "before": {
+            "iterations": 31744,
+            "elapsed_ns": 40022833,
+            "checksum": 40156160
+          },
+          "after": {
+            "iterations": 23264,
+            "elapsed_ns": 40043917,
+            "checksum": 29428960
+          },
+          "ratio": 1.3652305156746587
+        }
+      ]
+    },
+    {
+      "case": "comment-incident",
+      "variant": "original",
+      "mode": "reuse",
+      "input_sha256": "b8cbca8190d2958638e4b56ef0777a142f243017bacacd5ffee357e72d16c78a",
+      "output": "<h3>Reproduction on a clean checkout</h3>\n<p>The first page builds successfully, but the second page contains a link from the first one. Restarting the process clears the problem. I tested this with a small project containing two Markdown files and no plugins.</p>\n<p><strong>Steps</strong></p>\n<ol>\n<li>Create a page with a reference-style link.</li>\n<li>Create another page that uses the same label but does not define it.</li>\n<li>Render both pages through the same renderer.</li>\n</ol>\n<p>The second page should display the unresolved label as text. Instead, it links to the destination from the first page. Reversing the file order changes which page fails.</p>\n<pre><code class=\"language-markdown\">See [the guide][help].\n\n[help]: /getting-started\n</code></pre>\n<p>I have not seen the problem when invoking the command separately for each page. It may be worth checking whether reference definitions are cleared along with the output buffer. The behavior is the same on a fresh checkout and on the release package.</p>\n<blockquote>\n<p>Is this specific to nested links?</p>\n</blockquote>\n<p>No. A single ordinary paragraph is enough. The larger example in the original report happened to contain a list, but the list is not needed to reproduce the failure.</p>\n",
+      "delta_percent": 42.15906983596349,
+      "samples": [
+        {
+          "before": {
+            "iterations": 35232,
+            "elapsed_ns": 40009500,
+            "checksum": 44568480
+          },
+          "after": {
+            "iterations": 24896,
+            "elapsed_ns": 40015625,
+            "checksum": 31493440
+          },
+          "ratio": 1.415383741123694
+        },
+        {
+          "before": {
+            "iterations": 35040,
+            "elapsed_ns": 40018750,
+            "checksum": 44325600
+          },
+          "after": {
+            "iterations": 24960,
+            "elapsed_ns": 40039083,
+            "checksum": 31574400
+          },
+          "ratio": 1.4045594295943007
+        },
+        {
+          "before": {
+            "iterations": 35200,
+            "elapsed_ns": 40021917,
+            "checksum": 44528000
+          },
+          "after": {
+            "iterations": 24800,
+            "elapsed_ns": 40032500,
+            "checksum": 31372000
+          },
+          "ratio": 1.419730158868831
+        },
+        {
+          "before": {
+            "iterations": 35296,
+            "elapsed_ns": 40010333,
+            "checksum": 44649440
+          },
+          "after": {
+            "iterations": 24736,
+            "elapsed_ns": 40020958,
+            "checksum": 31291040
+          },
+          "ratio": 1.4272870746563489
+        },
+        {
+          "before": {
+            "iterations": 35104,
+            "elapsed_ns": 40012667,
+            "checksum": 44406560
+          },
+          "after": {
+            "iterations": 25024,
+            "elapsed_ns": 40002000,
+            "checksum": 31655360
+          },
+          "ratio": 1.4024393224252691
+        },
+        {
+          "before": {
+            "iterations": 35424,
+            "elapsed_ns": 40005541,
+            "checksum": 44811360
+          },
+          "after": {
+            "iterations": 24896,
+            "elapsed_ns": 40021625,
+            "checksum": 31493440
+          },
+          "ratio": 1.423451237850439
+        },
+        {
+          "before": {
+            "iterations": 35200,
+            "elapsed_ns": 40014750,
+            "checksum": 44528000
+          },
+          "after": {
+            "iterations": 24864,
+            "elapsed_ns": 40050084,
+            "checksum": 31452960
+          },
+          "ratio": 1.4169515145730165
+        },
+        {
+          "before": {
+            "iterations": 35200,
+            "elapsed_ns": 40003625,
+            "checksum": 44528000
+          },
+          "after": {
+            "iterations": 24736,
+            "elapsed_ns": 40045084,
+            "checksum": 31291040
+          },
+          "ratio": 1.4245019653114637
+        },
+        {
+          "before": {
+            "iterations": 35360,
+            "elapsed_ns": 40007458,
+            "checksum": 44730400
+          },
+          "after": {
+            "iterations": 24640,
+            "elapsed_ns": 40036667,
+            "checksum": 31169600
+          },
+          "ratio": 1.436112660008827
+        },
+        {
+          "before": {
+            "iterations": 34976,
+            "elapsed_ns": 40023083,
+            "checksum": 44244640
+          },
+          "after": {
+            "iterations": 24544,
+            "elapsed_ns": 40012333,
+            "checksum": 31048160
+          },
+          "ratio": 1.424649837893624
+        },
+        {
+          "before": {
+            "iterations": 34688,
+            "elapsed_ns": 40029666,
+            "checksum": 43880320
+          },
+          "after": {
+            "iterations": 24352,
+            "elapsed_ns": 40011750,
+            "checksum": 30805280
+          },
+          "ratio": 1.423803989778865
+        },
+        {
+          "before": {
+            "iterations": 35488,
+            "elapsed_ns": 40032958,
+            "checksum": 44892320
+          },
+          "after": {
+            "iterations": 25088,
+            "elapsed_ns": 40012208,
+            "checksum": 31736320
+          },
+          "ratio": 1.4138076273890865
+        }
+      ]
+    },
+    {
+      "case": "comment-incident",
+      "variant": "no-definitions",
+      "mode": "fresh",
+      "input_sha256": "6ff39ba87051c959ed661b7208ad4fb128eaf06fd7964fa31d3ac9815b35ab72",
+      "output": "<h3>Reproduction on a clean checkout</h3>\n<p>The first page builds successfully, but the second page contains a link from the first one. Restarting the process clears the problem. I tested this with a small project containing two Markdown files and no plugins.</p>\n<p><strong>Steps</strong></p>\n<ol>\n<li>Create a page with a reference-style link.</li>\n<li>Create another page that uses the same label but does not define it.</li>\n<li>Render both pages through the same renderer.</li>\n</ol>\n<p>The second page should display the unresolved label as text. Instead, it links to the destination from the first page. Reversing the file order changes which page fails.</p>\n<pre><code class=\"language-markdown\">See [the guide][help].\n\n[help]= /getting-started\n</code></pre>\n<p>I have not seen the problem when invoking the command separately for each page. It may be worth checking whether reference definitions are cleared along with the output buffer. The behavior is the same on a fresh checkout and on the release package.</p>\n<blockquote>\n<p>Is this specific to nested links?</p>\n</blockquote>\n<p>No. A single ordinary paragraph is enough. The larger example in the original report happened to contain a list, but the list is not needed to reproduce the failure.</p>\n",
+      "delta_percent": 2.341878279335785,
+      "samples": [
+        {
+          "before": {
+            "iterations": 37088,
+            "elapsed_ns": 40019917,
+            "checksum": 46916320
+          },
+          "after": {
+            "iterations": 36416,
+            "elapsed_ns": 40022125,
+            "checksum": 46066240
+          },
+          "ratio": 1.0185096177154707
+        },
+        {
+          "before": {
+            "iterations": 37248,
+            "elapsed_ns": 40004750,
+            "checksum": 47118720
+          },
+          "after": {
+            "iterations": 36256,
+            "elapsed_ns": 40025583,
+            "checksum": 45863840
+          },
+          "ratio": 1.0278960002802402
+        },
+        {
+          "before": {
+            "iterations": 36992,
+            "elapsed_ns": 40033250,
+            "checksum": 46794880
+          },
+          "after": {
+            "iterations": 35904,
+            "elapsed_ns": 40012084,
+            "checksum": 45418560
+          },
+          "ratio": 1.0297582982630535
+        },
+        {
+          "before": {
+            "iterations": 36832,
+            "elapsed_ns": 40010875,
+            "checksum": 46592480
+          },
+          "after": {
+            "iterations": 36384,
+            "elapsed_ns": 40033417,
+            "checksum": 46025760
+          },
+          "ratio": 1.012883438651968
+        },
+        {
+          "before": {
+            "iterations": 37024,
+            "elapsed_ns": 40031333,
+            "checksum": 46835360
+          },
+          "after": {
+            "iterations": 36384,
+            "elapsed_ns": 40025958,
+            "checksum": 46025760
+          },
+          "ratio": 1.0174535178669164
+        },
+        {
+          "before": {
+            "iterations": 37312,
+            "elapsed_ns": 40027333,
+            "checksum": 47199680
+          },
+          "after": {
+            "iterations": 36128,
+            "elapsed_ns": 40014416,
+            "checksum": 45701920
+          },
+          "ratio": 1.0324390846475144
+        },
+        {
+          "before": {
+            "iterations": 37408,
+            "elapsed_ns": 40006666,
+            "checksum": 47321120
+          },
+          "after": {
+            "iterations": 36064,
+            "elapsed_ns": 40026292,
+            "checksum": 45620960
+          },
+          "ratio": 1.0377759310386079
+        },
+        {
+          "before": {
+            "iterations": 36960,
+            "elapsed_ns": 40008458,
+            "checksum": 46754400
+          },
+          "after": {
+            "iterations": 36352,
+            "elapsed_ns": 40028833,
+            "checksum": 45985280
+          },
+          "ratio": 1.0172431371032722
+        },
+        {
+          "before": {
+            "iterations": 37536,
+            "elapsed_ns": 40014583,
+            "checksum": 47483040
+          },
+          "after": {
+            "iterations": 36448,
+            "elapsed_ns": 40003042,
+            "checksum": 46106720
+          },
+          "ratio": 1.0295537168715818
+        },
+        {
+          "before": {
+            "iterations": 36928,
+            "elapsed_ns": 40024167,
+            "checksum": 46713920
+          },
+          "after": {
+            "iterations": 36096,
+            "elapsed_ns": 40015292,
+            "checksum": 45661440
+          },
+          "ratio": 1.0228227933083565
+        },
+        {
+          "before": {
+            "iterations": 37632,
+            "elapsed_ns": 40015625,
+            "checksum": 47604480
+          },
+          "after": {
+            "iterations": 36736,
+            "elapsed_ns": 40000958,
+            "checksum": 46471040
+          },
+          "ratio": 1.0240147722783592
+        },
+        {
+          "before": {
+            "iterations": 37088,
+            "elapsed_ns": 40009542,
+            "checksum": 46916320
+          },
+          "after": {
+            "iterations": 36416,
+            "elapsed_ns": 40001416,
+            "checksum": 46066240
+          },
+          "ratio": 1.0182465775952594
+        }
+      ]
+    },
+    {
+      "case": "comment-incident",
+      "variant": "no-definitions",
+      "mode": "reuse",
+      "input_sha256": "6ff39ba87051c959ed661b7208ad4fb128eaf06fd7964fa31d3ac9815b35ab72",
+      "output": "<h3>Reproduction on a clean checkout</h3>\n<p>The first page builds successfully, but the second page contains a link from the first one. Restarting the process clears the problem. I tested this with a small project containing two Markdown files and no plugins.</p>\n<p><strong>Steps</strong></p>\n<ol>\n<li>Create a page with a reference-style link.</li>\n<li>Create another page that uses the same label but does not define it.</li>\n<li>Render both pages through the same renderer.</li>\n</ol>\n<p>The second page should display the unresolved label as text. Instead, it links to the destination from the first page. Reversing the file order changes which page fails.</p>\n<pre><code class=\"language-markdown\">See [the guide][help].\n\n[help]= /getting-started\n</code></pre>\n<p>I have not seen the problem when invoking the command separately for each page. It may be worth checking whether reference definitions are cleared along with the output buffer. The behavior is the same on a fresh checkout and on the release package.</p>\n<blockquote>\n<p>Is this specific to nested links?</p>\n</blockquote>\n<p>No. A single ordinary paragraph is enough. The larger example in the original report happened to contain a list, but the list is not needed to reproduce the failure.</p>\n",
+      "delta_percent": 2.832344762607475,
+      "samples": [
+        {
+          "before": {
+            "iterations": 41888,
+            "elapsed_ns": 40005041,
+            "checksum": 52988320
+          },
+          "after": {
+            "iterations": 40832,
+            "elapsed_ns": 40028250,
+            "checksum": 51652480
+          },
+          "ratio": 1.0264572247799713
+        },
+        {
+          "before": {
+            "iterations": 42080,
+            "elapsed_ns": 40026291,
+            "checksum": 53231200
+          },
+          "after": {
+            "iterations": 41120,
+            "elapsed_ns": 40026833,
+            "checksum": 52016800
+          },
+          "ratio": 1.0233601607363443
+        },
+        {
+          "before": {
+            "iterations": 42080,
+            "elapsed_ns": 40025375,
+            "checksum": 53231200
+          },
+          "after": {
+            "iterations": 40864,
+            "elapsed_ns": 40021375,
+            "checksum": 51692960
+          },
+          "ratio": 1.0296543330990027
+        },
+        {
+          "before": {
+            "iterations": 42016,
+            "elapsed_ns": 40004458,
+            "checksum": 53150240
+          },
+          "after": {
+            "iterations": 40704,
+            "elapsed_ns": 40011375,
+            "checksum": 51490560
+          },
+          "ratio": 1.0324111833514458
+        },
+        {
+          "before": {
+            "iterations": 42208,
+            "elapsed_ns": 40015542,
+            "checksum": 53393120
+          },
+          "after": {
+            "iterations": 40928,
+            "elapsed_ns": 40004416,
+            "checksum": 51773920
+          },
+          "ratio": 1.0309876955792017
+        },
+        {
+          "before": {
+            "iterations": 41760,
+            "elapsed_ns": 40002291,
+            "checksum": 52826400
+          },
+          "after": {
+            "iterations": 40544,
+            "elapsed_ns": 40018209,
+            "checksum": 51288160
+          },
+          "ratio": 1.0304019692244504
+        },
+        {
+          "before": {
+            "iterations": 42016,
+            "elapsed_ns": 40007125,
+            "checksum": 53150240
+          },
+          "after": {
+            "iterations": 40896,
+            "elapsed_ns": 40015333,
+            "checksum": 51733440
+          },
+          "ratio": 1.0275973236437839
+        },
+        {
+          "before": {
+            "iterations": 41632,
+            "elapsed_ns": 40021291,
+            "checksum": 52664480
+          },
+          "after": {
+            "iterations": 41280,
+            "elapsed_ns": 40030667,
+            "checksum": 52219200
+          },
+          "ratio": 1.008763404780426
+        },
+        {
+          "before": {
+            "iterations": 41312,
+            "elapsed_ns": 40023792,
+            "checksum": 52259680
+          },
+          "after": {
+            "iterations": 40640,
+            "elapsed_ns": 40018292,
+            "checksum": 51409600
+          },
+          "ratio": 1.0163957425367485
+        },
+        {
+          "before": {
+            "iterations": 41920,
+            "elapsed_ns": 40008666,
+            "checksum": 53028800
+          },
+          "after": {
+            "iterations": 40672,
+            "elapsed_ns": 40019750,
+            "checksum": 51450080
+          },
+          "ratio": 1.030970041206033
+        },
+        {
+          "before": {
+            "iterations": 41728,
+            "elapsed_ns": 40007833,
+            "checksum": 52785920
+          },
+          "after": {
+            "iterations": 40544,
+            "elapsed_ns": 40001875,
+            "checksum": 51288160
+          },
+          "ratio": 1.0290495716083659
+        },
+        {
+          "before": {
+            "iterations": 41440,
+            "elapsed_ns": 40021667,
+            "checksum": 52421600
+          },
+          "after": {
+            "iterations": 40448,
+            "elapsed_ns": 40005292,
+            "checksum": 51166720
+          },
+          "ratio": 1.0241061284679254
+        }
+      ]
+    },
+    {
+      "case": "rust-book-ch00-00-introduction",
+      "variant": "original",
+      "mode": "fresh",
+      "input_sha256": "2eba711175d633b5c6bf2585bcb6382fef4eec2b39f18689a1a2b9134dd9d273",
+      "output": "<h1>Introduction</h1>\n<blockquote>\n<p>Note: This edition of the book is the same as <a href=\"https://nostarch.com/rust-programming-language-3rd-edition\">The Rust Programming\nLanguage</a> available in print and ebook format from <a href=\"https://nostarch.com/\">No Starch\nPress</a>.</p>\n</blockquote>\n<p>Welcome to <em>The Rust Programming Language</em>, an introductory book about Rust.\nThe Rust programming language helps you write faster, more reliable software.\nHigh-level ergonomics and low-level control are often at odds in programming\nlanguage design; Rust challenges that conflict. Through balancing powerful\ntechnical capacity and a great developer experience, Rust gives you the option\nto control low-level details (such as memory usage) without all the hassle\ntraditionally associated with such control.</p>\n<h2>Who Rust Is For</h2>\n<p>Rust is ideal for many people for a variety of reasons. Let\u2019s look at a few of\nthe most important groups.</p>\n<h3>Teams of Developers</h3>\n<p>Rust is proving to be a productive tool for collaborating among large teams of\ndevelopers with varying levels of systems programming knowledge. Low-level code\nis prone to various subtle bugs, which in most other languages can only be\ncaught through extensive testing and careful code review by experienced\ndevelopers. In Rust, the compiler plays a gatekeeper role by refusing to\ncompile code with these elusive bugs, including concurrency bugs. By working\nalongside the compiler, the team can spend its time focusing on the program\u2019s\nlogic rather than chasing down bugs.</p>\n<p>Rust also brings contemporary developer tools to the systems programming world:</p>\n<ul>\n<li>Cargo, the included dependency manager and build tool, makes adding,\ncompiling, and managing dependencies painless and consistent across the Rust\necosystem.</li>\n<li>The <code>rustfmt</code> formatting tool ensures a consistent coding style across\ndevelopers.</li>\n<li>The Rust Language Server powers integrated development environment (IDE)\nintegration for code completion and inline error messages.</li>\n</ul>\n<p>By using these and other tools in the Rust ecosystem, developers can be\nproductive while writing systems-level code.</p>\n<h3>Students</h3>\n<p>Rust is for students and those who are interested in learning about systems\nconcepts. Using Rust, many people have learned about topics like operating\nsystems development. The community is very welcoming and happy to answer\nstudents\u2019 questions. Through efforts such as this book, the Rust teams want to\nmake systems concepts more accessible to more people, especially those new to\nprogramming.</p>\n<h3>Companies</h3>\n<p>Hundreds of companies, large and small, use Rust in production for a variety of\ntasks, including command line tools, web services, DevOps tooling, embedded\ndevices, audio and video analysis and transcoding, cryptocurrencies,\nbioinformatics, search engines, Internet of Things applications, machine\nlearning, and even major parts of the Firefox web browser.</p>\n<h3>Open Source Developers</h3>\n<p>Rust is for people who want to build the Rust programming language, community,\ndeveloper tools, and libraries. We\u2019d love to have you contribute to the Rust\nlanguage.</p>\n<h3>People Who Value Speed and Stability</h3>\n<p>Rust is for people who crave speed and stability in a language. By speed, we\nmean both how quickly Rust code can run and the speed at which Rust lets you\nwrite programs. The Rust compiler\u2019s checks ensure stability through feature\nadditions and refactoring. This is in contrast to the brittle legacy code in\nlanguages without these checks, which developers are often afraid to modify. By\nstriving for zero-cost abstractions\u2014higher-level features that compile to\nlower-level code as fast as code written manually\u2014Rust endeavors to make safe\ncode be fast code as well.</p>\n<p>The Rust language hopes to support many other users as well; those mentioned\nhere are merely some of the biggest stakeholders. Overall, Rust\u2019s greatest\nambition is to eliminate the trade-offs that programmers have accepted for\ndecades by providing safety <em>and</em> productivity, speed <em>and</em> ergonomics. Give\nRust a try, and see if its choices work for you.</p>\n<h2>Who This Book Is For</h2>\n<p>This book assumes that you\u2019ve written code in another programming language, but\nit doesn\u2019t make any assumptions about which one. We\u2019ve tried to make the\nmaterial broadly accessible to those from a wide variety of programming\nbackgrounds. We don\u2019t spend a lot of time talking about what programming <em>is</em>\nor how to think about it. If you\u2019re entirely new to programming, you would be\nbetter served by reading a book that specifically provides an introduction to\nprogramming.</p>\n<h2>How to Use This Book</h2>\n<p>In general, this book assumes that you\u2019re reading it in sequence from front to\nback. Later chapters build on concepts in earlier chapters, and earlier\nchapters might not delve into details on a particular topic but will revisit\nthe topic in a later chapter.</p>\n<p>You\u2019ll find two kinds of chapters in this book: concept chapters and project\nchapters. In concept chapters, you\u2019ll learn about an aspect of Rust. In project\nchapters, we\u2019ll build small programs together, applying what you\u2019ve learned so\nfar. Chapter 2, Chapter 12, and Chapter 21 are project chapters; the rest are\nconcept chapters.</p>\n<p><strong>Chapter 1</strong> explains how to install Rust, how to write a \u201cHello, world!\u201d\nprogram, and how to use Cargo, Rust\u2019s package manager and build tool. <strong>Chapter\n2</strong> is a hands-on introduction to writing a program in Rust, having you build\nup a number-guessing game. Here, we cover concepts at a high level, and later\nchapters will provide additional detail. If you want to get your hands dirty\nright away, Chapter 2 is the place for that. If you\u2019re a particularly\nmeticulous learner who prefers to learn every detail before moving on to the\nnext, you might want to skip Chapter 2 and go straight to <strong>Chapter 3</strong>, which\ncovers Rust features that are similar to those of other programming languages;\nthen, you can return to Chapter 2 when you\u2019d like to work on a project applying\nthe details you\u2019ve learned.</p>\n<p>In <strong>Chapter 4</strong>, you\u2019ll learn about Rust\u2019s ownership system. <strong>Chapter 5</strong>\ndiscusses structs and methods. <strong>Chapter 6</strong> covers enums, <code>match</code> expressions,\nand the <code>if let</code> and <code>let...else</code> control flow constructs. You\u2019ll use structs\nand enums to make custom types.</p>\n<p>In <strong>Chapter 7</strong>, you\u2019ll learn about Rust\u2019s module system and about privacy\nrules for organizing your code and its public application programming interface\n(API). <strong>Chapter 8</strong> discusses some common collection data structures that the\nstandard library provides: vectors, strings, and hash maps. <strong>Chapter 9</strong>\nexplores Rust\u2019s error-handling philosophy and techniques.</p>\n<p><strong>Chapter 10</strong> digs into generics, traits, and lifetimes, which give you the\npower to define code that applies to multiple types. <strong>Chapter 11</strong> is all\nabout testing, which even with Rust\u2019s safety guarantees is necessary to ensure\nthat your program\u2019s logic is correct. In <strong>Chapter 12</strong>, we\u2019ll build our own\nimplementation of a subset of functionality from the <code>grep</code> command line tool\nthat searches for text within files. For this, we\u2019ll use many of the concepts\nwe discussed in the previous chapters.</p>\n<p><strong>Chapter 13</strong> explores closures and iterators: features of Rust that come from\nfunctional programming languages. In <strong>Chapter 14</strong>, we\u2019ll examine Cargo in\nmore depth and talk about best practices for sharing your libraries with\nothers. <strong>Chapter 15</strong> discusses smart pointers that the standard library\nprovides and the traits that enable their functionality.</p>\n<p>In <strong>Chapter 16</strong>, we\u2019ll walk through different models of concurrent\nprogramming and talk about how Rust helps you program in multiple threads\nfearlessly. In <strong>Chapter 17</strong>, we build on that by exploring Rust\u2019s async and\nawait syntax, along with tasks, futures, and streams, and the lightweight\nconcurrency model they enable.</p>\n<p><strong>Chapter 18</strong> looks at how Rust idioms compare to object-oriented programming\nprinciples you might be familiar with. <strong>Chapter 19</strong> is a reference on\npatterns and pattern matching, which are powerful ways of expressing ideas\nthroughout Rust programs. <strong>Chapter 20</strong> contains a smorgasbord of advanced\ntopics of interest, including unsafe Rust, macros, and more about lifetimes,\ntraits, types, functions, and closures.</p>\n<p>In <strong>Chapter 21</strong>, we\u2019ll complete a project in which we\u2019ll implement a\nlow-level multithreaded web server!</p>\n<p>Finally, some appendixes contain useful information about the language in a\nmore reference-like format. <strong>Appendix A</strong> covers Rust\u2019s keywords, <strong>Appendix\nB</strong> covers Rust\u2019s operators and symbols, <strong>Appendix C</strong> covers derivable traits\nprovided by the standard library, <strong>Appendix D</strong> covers some useful development\ntools, and <strong>Appendix E</strong> explains Rust editions. In <strong>Appendix F</strong>, you can\nfind translations of the book, and in <strong>Appendix G</strong> we\u2019ll cover how Rust is\nmade and what nightly Rust is.</p>\n<p>There is no wrong way to read this book: If you want to skip ahead, go for it!\nYou might have to jump back to earlier chapters if you experience any\nconfusion. But do whatever works for you.</p>\n<p><span id=\"ferris\"></span></p>\n<p>An important part of the process of learning Rust is learning how to read the\nerror messages the compiler displays: These will guide you toward working code.\nAs such, we\u2019ll provide many examples that don\u2019t compile along with the error\nmessage the compiler will show you in each situation. Know that if you enter\nand run a random example, it may not compile! Make sure you read the\nsurrounding text to see whether the example you\u2019re trying to run is meant to\nerror. In most situations, we\u2019ll lead you to the correct version of any code\nthat doesn\u2019t compile. Ferris will also help you distinguish code that isn\u2019t\nmeant to work:</p>\n<table>\n<thead>\n<tr>\n<th>Ferris</th>\n<th>Meaning</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><img src=\"img/ferris/does_not_compile.svg\" class=\"ferris-explain\" alt=\"Ferris with a question mark\"/></td>\n<td>This code does not compile!</td>\n</tr>\n<tr>\n<td><img src=\"img/ferris/panics.svg\" class=\"ferris-explain\" alt=\"Ferris throwing up their hands\"/></td>\n<td>This code panics!</td>\n</tr>\n<tr>\n<td><img src=\"img/ferris/not_desired_behavior.svg\" class=\"ferris-explain\" alt=\"Ferris with one claw up, shrugging\"/></td>\n<td>This code does not produce the desired behavior.</td>\n</tr>\n</tbody>\n</table>\n<p>In most situations, we\u2019ll lead you to the correct version of any code that\ndoesn\u2019t compile.</p>\n<h2>Source Code</h2>\n<p>The source files from which this book is generated can be found on\n<a href=\"https://github.com/rust-lang/book/tree/main/src\">GitHub</a>.</p>\n",
+      "delta_percent": 22.146587528930482,
+      "samples": [
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40465833,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40390125,
+            "checksum": 28152384
+          },
+          "ratio": 1.2156700434546464
+        },
+        {
+          "before": {
+            "iterations": 3008,
+            "elapsed_ns": 40196208,
+            "checksum": 33927232
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40257125,
+            "checksum": 28152384
+          },
+          "ratio": 1.2069545663330181
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40388250,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2464,
+            "elapsed_ns": 40026291,
+            "checksum": 27791456
+          },
+          "ratio": 1.2227092359461305
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40278542,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2464,
+            "elapsed_ns": 40013750,
+            "checksum": 27791456
+          },
+          "ratio": 1.2256554280530718
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40411375,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40631916,
+            "checksum": 28152384
+          },
+          "ratio": 1.2245955501390389
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40268250,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2464,
+            "elapsed_ns": 40146958,
+            "checksum": 27791456
+          },
+          "ratio": 1.23005000636559
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40006209,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40477083,
+            "checksum": 28152384
+          },
+          "ratio": 1.2322840023695782
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40308125,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40429000,
+            "checksum": 28152384
+          },
+          "ratio": 1.221601072189508
+        },
+        {
+          "before": {
+            "iterations": 3008,
+            "elapsed_ns": 40033125,
+            "checksum": 33927232
+          },
+          "after": {
+            "iterations": 2464,
+            "elapsed_ns": 40051209,
+            "checksum": 27791456
+          },
+          "ratio": 1.2213306783891018
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40441792,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40509958,
+            "checksum": 28152384
+          },
+          "ratio": 1.2200016114581769
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40100291,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40087791,
+            "checksum": 28152384
+          },
+          "ratio": 1.2175690608790384
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40231833,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40240916,
+            "checksum": 28152384
+          },
+          "ratio": 1.2182236899641647
+        }
+      ]
+    },
+    {
+      "case": "rust-book-ch00-00-introduction",
+      "variant": "original",
+      "mode": "reuse",
+      "input_sha256": "2eba711175d633b5c6bf2585bcb6382fef4eec2b39f18689a1a2b9134dd9d273",
+      "output": "<h1>Introduction</h1>\n<blockquote>\n<p>Note: This edition of the book is the same as <a href=\"https://nostarch.com/rust-programming-language-3rd-edition\">The Rust Programming\nLanguage</a> available in print and ebook format from <a href=\"https://nostarch.com/\">No Starch\nPress</a>.</p>\n</blockquote>\n<p>Welcome to <em>The Rust Programming Language</em>, an introductory book about Rust.\nThe Rust programming language helps you write faster, more reliable software.\nHigh-level ergonomics and low-level control are often at odds in programming\nlanguage design; Rust challenges that conflict. Through balancing powerful\ntechnical capacity and a great developer experience, Rust gives you the option\nto control low-level details (such as memory usage) without all the hassle\ntraditionally associated with such control.</p>\n<h2>Who Rust Is For</h2>\n<p>Rust is ideal for many people for a variety of reasons. Let\u2019s look at a few of\nthe most important groups.</p>\n<h3>Teams of Developers</h3>\n<p>Rust is proving to be a productive tool for collaborating among large teams of\ndevelopers with varying levels of systems programming knowledge. Low-level code\nis prone to various subtle bugs, which in most other languages can only be\ncaught through extensive testing and careful code review by experienced\ndevelopers. In Rust, the compiler plays a gatekeeper role by refusing to\ncompile code with these elusive bugs, including concurrency bugs. By working\nalongside the compiler, the team can spend its time focusing on the program\u2019s\nlogic rather than chasing down bugs.</p>\n<p>Rust also brings contemporary developer tools to the systems programming world:</p>\n<ul>\n<li>Cargo, the included dependency manager and build tool, makes adding,\ncompiling, and managing dependencies painless and consistent across the Rust\necosystem.</li>\n<li>The <code>rustfmt</code> formatting tool ensures a consistent coding style across\ndevelopers.</li>\n<li>The Rust Language Server powers integrated development environment (IDE)\nintegration for code completion and inline error messages.</li>\n</ul>\n<p>By using these and other tools in the Rust ecosystem, developers can be\nproductive while writing systems-level code.</p>\n<h3>Students</h3>\n<p>Rust is for students and those who are interested in learning about systems\nconcepts. Using Rust, many people have learned about topics like operating\nsystems development. The community is very welcoming and happy to answer\nstudents\u2019 questions. Through efforts such as this book, the Rust teams want to\nmake systems concepts more accessible to more people, especially those new to\nprogramming.</p>\n<h3>Companies</h3>\n<p>Hundreds of companies, large and small, use Rust in production for a variety of\ntasks, including command line tools, web services, DevOps tooling, embedded\ndevices, audio and video analysis and transcoding, cryptocurrencies,\nbioinformatics, search engines, Internet of Things applications, machine\nlearning, and even major parts of the Firefox web browser.</p>\n<h3>Open Source Developers</h3>\n<p>Rust is for people who want to build the Rust programming language, community,\ndeveloper tools, and libraries. We\u2019d love to have you contribute to the Rust\nlanguage.</p>\n<h3>People Who Value Speed and Stability</h3>\n<p>Rust is for people who crave speed and stability in a language. By speed, we\nmean both how quickly Rust code can run and the speed at which Rust lets you\nwrite programs. The Rust compiler\u2019s checks ensure stability through feature\nadditions and refactoring. This is in contrast to the brittle legacy code in\nlanguages without these checks, which developers are often afraid to modify. By\nstriving for zero-cost abstractions\u2014higher-level features that compile to\nlower-level code as fast as code written manually\u2014Rust endeavors to make safe\ncode be fast code as well.</p>\n<p>The Rust language hopes to support many other users as well; those mentioned\nhere are merely some of the biggest stakeholders. Overall, Rust\u2019s greatest\nambition is to eliminate the trade-offs that programmers have accepted for\ndecades by providing safety <em>and</em> productivity, speed <em>and</em> ergonomics. Give\nRust a try, and see if its choices work for you.</p>\n<h2>Who This Book Is For</h2>\n<p>This book assumes that you\u2019ve written code in another programming language, but\nit doesn\u2019t make any assumptions about which one. We\u2019ve tried to make the\nmaterial broadly accessible to those from a wide variety of programming\nbackgrounds. We don\u2019t spend a lot of time talking about what programming <em>is</em>\nor how to think about it. If you\u2019re entirely new to programming, you would be\nbetter served by reading a book that specifically provides an introduction to\nprogramming.</p>\n<h2>How to Use This Book</h2>\n<p>In general, this book assumes that you\u2019re reading it in sequence from front to\nback. Later chapters build on concepts in earlier chapters, and earlier\nchapters might not delve into details on a particular topic but will revisit\nthe topic in a later chapter.</p>\n<p>You\u2019ll find two kinds of chapters in this book: concept chapters and project\nchapters. In concept chapters, you\u2019ll learn about an aspect of Rust. In project\nchapters, we\u2019ll build small programs together, applying what you\u2019ve learned so\nfar. Chapter 2, Chapter 12, and Chapter 21 are project chapters; the rest are\nconcept chapters.</p>\n<p><strong>Chapter 1</strong> explains how to install Rust, how to write a \u201cHello, world!\u201d\nprogram, and how to use Cargo, Rust\u2019s package manager and build tool. <strong>Chapter\n2</strong> is a hands-on introduction to writing a program in Rust, having you build\nup a number-guessing game. Here, we cover concepts at a high level, and later\nchapters will provide additional detail. If you want to get your hands dirty\nright away, Chapter 2 is the place for that. If you\u2019re a particularly\nmeticulous learner who prefers to learn every detail before moving on to the\nnext, you might want to skip Chapter 2 and go straight to <strong>Chapter 3</strong>, which\ncovers Rust features that are similar to those of other programming languages;\nthen, you can return to Chapter 2 when you\u2019d like to work on a project applying\nthe details you\u2019ve learned.</p>\n<p>In <strong>Chapter 4</strong>, you\u2019ll learn about Rust\u2019s ownership system. <strong>Chapter 5</strong>\ndiscusses structs and methods. <strong>Chapter 6</strong> covers enums, <code>match</code> expressions,\nand the <code>if let</code> and <code>let...else</code> control flow constructs. You\u2019ll use structs\nand enums to make custom types.</p>\n<p>In <strong>Chapter 7</strong>, you\u2019ll learn about Rust\u2019s module system and about privacy\nrules for organizing your code and its public application programming interface\n(API). <strong>Chapter 8</strong> discusses some common collection data structures that the\nstandard library provides: vectors, strings, and hash maps. <strong>Chapter 9</strong>\nexplores Rust\u2019s error-handling philosophy and techniques.</p>\n<p><strong>Chapter 10</strong> digs into generics, traits, and lifetimes, which give you the\npower to define code that applies to multiple types. <strong>Chapter 11</strong> is all\nabout testing, which even with Rust\u2019s safety guarantees is necessary to ensure\nthat your program\u2019s logic is correct. In <strong>Chapter 12</strong>, we\u2019ll build our own\nimplementation of a subset of functionality from the <code>grep</code> command line tool\nthat searches for text within files. For this, we\u2019ll use many of the concepts\nwe discussed in the previous chapters.</p>\n<p><strong>Chapter 13</strong> explores closures and iterators: features of Rust that come from\nfunctional programming languages. In <strong>Chapter 14</strong>, we\u2019ll examine Cargo in\nmore depth and talk about best practices for sharing your libraries with\nothers. <strong>Chapter 15</strong> discusses smart pointers that the standard library\nprovides and the traits that enable their functionality.</p>\n<p>In <strong>Chapter 16</strong>, we\u2019ll walk through different models of concurrent\nprogramming and talk about how Rust helps you program in multiple threads\nfearlessly. In <strong>Chapter 17</strong>, we build on that by exploring Rust\u2019s async and\nawait syntax, along with tasks, futures, and streams, and the lightweight\nconcurrency model they enable.</p>\n<p><strong>Chapter 18</strong> looks at how Rust idioms compare to object-oriented programming\nprinciples you might be familiar with. <strong>Chapter 19</strong> is a reference on\npatterns and pattern matching, which are powerful ways of expressing ideas\nthroughout Rust programs. <strong>Chapter 20</strong> contains a smorgasbord of advanced\ntopics of interest, including unsafe Rust, macros, and more about lifetimes,\ntraits, types, functions, and closures.</p>\n<p>In <strong>Chapter 21</strong>, we\u2019ll complete a project in which we\u2019ll implement a\nlow-level multithreaded web server!</p>\n<p>Finally, some appendixes contain useful information about the language in a\nmore reference-like format. <strong>Appendix A</strong> covers Rust\u2019s keywords, <strong>Appendix\nB</strong> covers Rust\u2019s operators and symbols, <strong>Appendix C</strong> covers derivable traits\nprovided by the standard library, <strong>Appendix D</strong> covers some useful development\ntools, and <strong>Appendix E</strong> explains Rust editions. In <strong>Appendix F</strong>, you can\nfind translations of the book, and in <strong>Appendix G</strong> we\u2019ll cover how Rust is\nmade and what nightly Rust is.</p>\n<p>There is no wrong way to read this book: If you want to skip ahead, go for it!\nYou might have to jump back to earlier chapters if you experience any\nconfusion. But do whatever works for you.</p>\n<p><span id=\"ferris\"></span></p>\n<p>An important part of the process of learning Rust is learning how to read the\nerror messages the compiler displays: These will guide you toward working code.\nAs such, we\u2019ll provide many examples that don\u2019t compile along with the error\nmessage the compiler will show you in each situation. Know that if you enter\nand run a random example, it may not compile! Make sure you read the\nsurrounding text to see whether the example you\u2019re trying to run is meant to\nerror. In most situations, we\u2019ll lead you to the correct version of any code\nthat doesn\u2019t compile. Ferris will also help you distinguish code that isn\u2019t\nmeant to work:</p>\n<table>\n<thead>\n<tr>\n<th>Ferris</th>\n<th>Meaning</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><img src=\"img/ferris/does_not_compile.svg\" class=\"ferris-explain\" alt=\"Ferris with a question mark\"/></td>\n<td>This code does not compile!</td>\n</tr>\n<tr>\n<td><img src=\"img/ferris/panics.svg\" class=\"ferris-explain\" alt=\"Ferris throwing up their hands\"/></td>\n<td>This code panics!</td>\n</tr>\n<tr>\n<td><img src=\"img/ferris/not_desired_behavior.svg\" class=\"ferris-explain\" alt=\"Ferris with one claw up, shrugging\"/></td>\n<td>This code does not produce the desired behavior.</td>\n</tr>\n</tbody>\n</table>\n<p>In most situations, we\u2019ll lead you to the correct version of any code that\ndoesn\u2019t compile.</p>\n<h2>Source Code</h2>\n<p>The source files from which this book is generated can be found on\n<a href=\"https://github.com/rust-lang/book/tree/main/src\">GitHub</a>.</p>\n",
+      "delta_percent": 23.720332245753227,
+      "samples": [
+        {
+          "before": {
+            "iterations": 3104,
+            "elapsed_ns": 40335792,
+            "checksum": 35010016
+          },
+          "after": {
+            "iterations": 2464,
+            "elapsed_ns": 40043084,
+            "checksum": 27791456
+          },
+          "ratio": 1.250598600839697
+        },
+        {
+          "before": {
+            "iterations": 2976,
+            "elapsed_ns": 40312916,
+            "checksum": 33566304
+          },
+          "after": {
+            "iterations": 2528,
+            "elapsed_ns": 40642542,
+            "checksum": 28513312
+          },
+          "ratio": 1.1868409072037447
+        },
+        {
+          "before": {
+            "iterations": 3072,
+            "elapsed_ns": 40402917,
+            "checksum": 34649088
+          },
+          "after": {
+            "iterations": 2464,
+            "elapsed_ns": 40067167,
+            "checksum": 27791456
+          },
+          "ratio": 1.2363926729709775
+        },
+        {
+          "before": {
+            "iterations": 3072,
+            "elapsed_ns": 40194208,
+            "checksum": 34649088
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40361166,
+            "checksum": 28152384
+          },
+          "ratio": 1.235881578529156
+        },
+        {
+          "before": {
+            "iterations": 3072,
+            "elapsed_ns": 40016708,
+            "checksum": 34649088
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40425625,
+            "checksum": 28152384
+          },
+          "ratio": 1.2433460389749047
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40358666,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2528,
+            "elapsed_ns": 40362834,
+            "checksum": 28513312
+          },
+          "ratio": 1.202655835796788
+        },
+        {
+          "before": {
+            "iterations": 3104,
+            "elapsed_ns": 40341375,
+            "checksum": 35010016
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40160500,
+            "checksum": 28152384
+          },
+          "ratio": 1.238013971944087
+        },
+        {
+          "before": {
+            "iterations": 3040,
+            "elapsed_ns": 40075625,
+            "checksum": 34288160
+          },
+          "after": {
+            "iterations": 2528,
+            "elapsed_ns": 40463000,
+            "checksum": 28513312
+          },
+          "ratio": 1.2141554367444936
+        },
+        {
+          "before": {
+            "iterations": 3072,
+            "elapsed_ns": 40180333,
+            "checksum": 34649088
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40467125,
+            "checksum": 28152384
+          },
+          "ratio": 1.2395539954258792
+        },
+        {
+          "before": {
+            "iterations": 3072,
+            "elapsed_ns": 40074167,
+            "checksum": 34649088
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40354625,
+            "checksum": 28152384
+          },
+          "ratio": 1.2393827367448653
+        },
+        {
+          "before": {
+            "iterations": 3104,
+            "elapsed_ns": 40269208,
+            "checksum": 35010016
+          },
+          "after": {
+            "iterations": 2496,
+            "elapsed_ns": 40162708,
+            "checksum": 28152384
+          },
+          "ratio": 1.240300821004221
+        },
+        {
+          "before": {
+            "iterations": 3072,
+            "elapsed_ns": 40212750,
+            "checksum": 34649088
+          },
+          "after": {
+            "iterations": 2528,
+            "elapsed_ns": 40475500,
+            "checksum": 28513312
+          },
+          "ratio": 1.2231299207718693
+        }
+      ]
+    },
+    {
+      "case": "rust-book-ch00-00-introduction",
+      "variant": "no-definitions",
+      "mode": "fresh",
+      "input_sha256": "5943eecec1b511b585cff00a1f5e6f3a40473c470d51dd8c18c510e487fdca54",
+      "output": "<h1>Introduction</h1>\n<blockquote>\n<p>Note: This edition of the book is the same as [The Rust Programming\nLanguage][nsprust] available in print and ebook format from [No Starch\nPress][nsp].</p>\n</blockquote>\n<p>[nsprust]= https://nostarch.com/rust-programming-language-3rd-edition\n[nsp]= https://nostarch.com/</p>\n<p>Welcome to <em>The Rust Programming Language</em>, an introductory book about Rust.\nThe Rust programming language helps you write faster, more reliable software.\nHigh-level ergonomics and low-level control are often at odds in programming\nlanguage design; Rust challenges that conflict. Through balancing powerful\ntechnical capacity and a great developer experience, Rust gives you the option\nto control low-level details (such as memory usage) without all the hassle\ntraditionally associated with such control.</p>\n<h2>Who Rust Is For</h2>\n<p>Rust is ideal for many people for a variety of reasons. Let\u2019s look at a few of\nthe most important groups.</p>\n<h3>Teams of Developers</h3>\n<p>Rust is proving to be a productive tool for collaborating among large teams of\ndevelopers with varying levels of systems programming knowledge. Low-level code\nis prone to various subtle bugs, which in most other languages can only be\ncaught through extensive testing and careful code review by experienced\ndevelopers. In Rust, the compiler plays a gatekeeper role by refusing to\ncompile code with these elusive bugs, including concurrency bugs. By working\nalongside the compiler, the team can spend its time focusing on the program\u2019s\nlogic rather than chasing down bugs.</p>\n<p>Rust also brings contemporary developer tools to the systems programming world:</p>\n<ul>\n<li>Cargo, the included dependency manager and build tool, makes adding,\ncompiling, and managing dependencies painless and consistent across the Rust\necosystem.</li>\n<li>The <code>rustfmt</code> formatting tool ensures a consistent coding style across\ndevelopers.</li>\n<li>The Rust Language Server powers integrated development environment (IDE)\nintegration for code completion and inline error messages.</li>\n</ul>\n<p>By using these and other tools in the Rust ecosystem, developers can be\nproductive while writing systems-level code.</p>\n<h3>Students</h3>\n<p>Rust is for students and those who are interested in learning about systems\nconcepts. Using Rust, many people have learned about topics like operating\nsystems development. The community is very welcoming and happy to answer\nstudents\u2019 questions. Through efforts such as this book, the Rust teams want to\nmake systems concepts more accessible to more people, especially those new to\nprogramming.</p>\n<h3>Companies</h3>\n<p>Hundreds of companies, large and small, use Rust in production for a variety of\ntasks, including command line tools, web services, DevOps tooling, embedded\ndevices, audio and video analysis and transcoding, cryptocurrencies,\nbioinformatics, search engines, Internet of Things applications, machine\nlearning, and even major parts of the Firefox web browser.</p>\n<h3>Open Source Developers</h3>\n<p>Rust is for people who want to build the Rust programming language, community,\ndeveloper tools, and libraries. We\u2019d love to have you contribute to the Rust\nlanguage.</p>\n<h3>People Who Value Speed and Stability</h3>\n<p>Rust is for people who crave speed and stability in a language. By speed, we\nmean both how quickly Rust code can run and the speed at which Rust lets you\nwrite programs. The Rust compiler\u2019s checks ensure stability through feature\nadditions and refactoring. This is in contrast to the brittle legacy code in\nlanguages without these checks, which developers are often afraid to modify. By\nstriving for zero-cost abstractions\u2014higher-level features that compile to\nlower-level code as fast as code written manually\u2014Rust endeavors to make safe\ncode be fast code as well.</p>\n<p>The Rust language hopes to support many other users as well; those mentioned\nhere are merely some of the biggest stakeholders. Overall, Rust\u2019s greatest\nambition is to eliminate the trade-offs that programmers have accepted for\ndecades by providing safety <em>and</em> productivity, speed <em>and</em> ergonomics. Give\nRust a try, and see if its choices work for you.</p>\n<h2>Who This Book Is For</h2>\n<p>This book assumes that you\u2019ve written code in another programming language, but\nit doesn\u2019t make any assumptions about which one. We\u2019ve tried to make the\nmaterial broadly accessible to those from a wide variety of programming\nbackgrounds. We don\u2019t spend a lot of time talking about what programming <em>is</em>\nor how to think about it. If you\u2019re entirely new to programming, you would be\nbetter served by reading a book that specifically provides an introduction to\nprogramming.</p>\n<h2>How to Use This Book</h2>\n<p>In general, this book assumes that you\u2019re reading it in sequence from front to\nback. Later chapters build on concepts in earlier chapters, and earlier\nchapters might not delve into details on a particular topic but will revisit\nthe topic in a later chapter.</p>\n<p>You\u2019ll find two kinds of chapters in this book: concept chapters and project\nchapters. In concept chapters, you\u2019ll learn about an aspect of Rust. In project\nchapters, we\u2019ll build small programs together, applying what you\u2019ve learned so\nfar. Chapter 2, Chapter 12, and Chapter 21 are project chapters; the rest are\nconcept chapters.</p>\n<p><strong>Chapter 1</strong> explains how to install Rust, how to write a \u201cHello, world!\u201d\nprogram, and how to use Cargo, Rust\u2019s package manager and build tool. <strong>Chapter\n2</strong> is a hands-on introduction to writing a program in Rust, having you build\nup a number-guessing game. Here, we cover concepts at a high level, and later\nchapters will provide additional detail. If you want to get your hands dirty\nright away, Chapter 2 is the place for that. If you\u2019re a particularly\nmeticulous learner who prefers to learn every detail before moving on to the\nnext, you might want to skip Chapter 2 and go straight to <strong>Chapter 3</strong>, which\ncovers Rust features that are similar to those of other programming languages;\nthen, you can return to Chapter 2 when you\u2019d like to work on a project applying\nthe details you\u2019ve learned.</p>\n<p>In <strong>Chapter 4</strong>, you\u2019ll learn about Rust\u2019s ownership system. <strong>Chapter 5</strong>\ndiscusses structs and methods. <strong>Chapter 6</strong> covers enums, <code>match</code> expressions,\nand the <code>if let</code> and <code>let...else</code> control flow constructs. You\u2019ll use structs\nand enums to make custom types.</p>\n<p>In <strong>Chapter 7</strong>, you\u2019ll learn about Rust\u2019s module system and about privacy\nrules for organizing your code and its public application programming interface\n(API). <strong>Chapter 8</strong> discusses some common collection data structures that the\nstandard library provides: vectors, strings, and hash maps. <strong>Chapter 9</strong>\nexplores Rust\u2019s error-handling philosophy and techniques.</p>\n<p><strong>Chapter 10</strong> digs into generics, traits, and lifetimes, which give you the\npower to define code that applies to multiple types. <strong>Chapter 11</strong> is all\nabout testing, which even with Rust\u2019s safety guarantees is necessary to ensure\nthat your program\u2019s logic is correct. In <strong>Chapter 12</strong>, we\u2019ll build our own\nimplementation of a subset of functionality from the <code>grep</code> command line tool\nthat searches for text within files. For this, we\u2019ll use many of the concepts\nwe discussed in the previous chapters.</p>\n<p><strong>Chapter 13</strong> explores closures and iterators: features of Rust that come from\nfunctional programming languages. In <strong>Chapter 14</strong>, we\u2019ll examine Cargo in\nmore depth and talk about best practices for sharing your libraries with\nothers. <strong>Chapter 15</strong> discusses smart pointers that the standard library\nprovides and the traits that enable their functionality.</p>\n<p>In <strong>Chapter 16</strong>, we\u2019ll walk through different models of concurrent\nprogramming and talk about how Rust helps you program in multiple threads\nfearlessly. In <strong>Chapter 17</strong>, we build on that by exploring Rust\u2019s async and\nawait syntax, along with tasks, futures, and streams, and the lightweight\nconcurrency model they enable.</p>\n<p><strong>Chapter 18</strong> looks at how Rust idioms compare to object-oriented programming\nprinciples you might be familiar with. <strong>Chapter 19</strong> is a reference on\npatterns and pattern matching, which are powerful ways of expressing ideas\nthroughout Rust programs. <strong>Chapter 20</strong> contains a smorgasbord of advanced\ntopics of interest, including unsafe Rust, macros, and more about lifetimes,\ntraits, types, functions, and closures.</p>\n<p>In <strong>Chapter 21</strong>, we\u2019ll complete a project in which we\u2019ll implement a\nlow-level multithreaded web server!</p>\n<p>Finally, some appendixes contain useful information about the language in a\nmore reference-like format. <strong>Appendix A</strong> covers Rust\u2019s keywords, <strong>Appendix\nB</strong> covers Rust\u2019s operators and symbols, <strong>Appendix C</strong> covers derivable traits\nprovided by the standard library, <strong>Appendix D</strong> covers some useful development\ntools, and <strong>Appendix E</strong> explains Rust editions. In <strong>Appendix F</strong>, you can\nfind translations of the book, and in <strong>Appendix G</strong> we\u2019ll cover how Rust is\nmade and what nightly Rust is.</p>\n<p>There is no wrong way to read this book: If you want to skip ahead, go for it!\nYou might have to jump back to earlier chapters if you experience any\nconfusion. But do whatever works for you.</p>\n<p><span id=\"ferris\"></span></p>\n<p>An important part of the process of learning Rust is learning how to read the\nerror messages the compiler displays: These will guide you toward working code.\nAs such, we\u2019ll provide many examples that don\u2019t compile along with the error\nmessage the compiler will show you in each situation. Know that if you enter\nand run a random example, it may not compile! Make sure you read the\nsurrounding text to see whether the example you\u2019re trying to run is meant to\nerror. In most situations, we\u2019ll lead you to the correct version of any code\nthat doesn\u2019t compile. Ferris will also help you distinguish code that isn\u2019t\nmeant to work:</p>\n<table>\n<thead>\n<tr>\n<th>Ferris</th>\n<th>Meaning</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><img src=\"img/ferris/does_not_compile.svg\" class=\"ferris-explain\" alt=\"Ferris with a question mark\"/></td>\n<td>This code does not compile!</td>\n</tr>\n<tr>\n<td><img src=\"img/ferris/panics.svg\" class=\"ferris-explain\" alt=\"Ferris throwing up their hands\"/></td>\n<td>This code panics!</td>\n</tr>\n<tr>\n<td><img src=\"img/ferris/not_desired_behavior.svg\" class=\"ferris-explain\" alt=\"Ferris with one claw up, shrugging\"/></td>\n<td>This code does not produce the desired behavior.</td>\n</tr>\n</tbody>\n</table>\n<p>In most situations, we\u2019ll lead you to the correct version of any code that\ndoesn\u2019t compile.</p>\n<h2>Source Code</h2>\n<p>The source files from which this book is generated can be found on\n[GitHub][book].</p>\n<p>[book]= https://github.com/rust-lang/book/tree/main/src</p>\n",
+      "delta_percent": -0.19448295529491677,
+      "samples": [
+        {
+          "before": {
+            "iterations": 3520,
+            "elapsed_ns": 40029416,
+            "checksum": 39786560
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40256000,
+            "checksum": 40509952
+          },
+          "ratio": 0.9877022152194991
+        },
+        {
+          "before": {
+            "iterations": 3552,
+            "elapsed_ns": 40050125,
+            "checksum": 40148256
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40162542,
+            "checksum": 40509952
+          },
+          "ratio": 0.9938532744904043
+        },
+        {
+          "before": {
+            "iterations": 3552,
+            "elapsed_ns": 40139791,
+            "checksum": 40148256
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40104292,
+            "checksum": 40509952
+          },
+          "ratio": 0.9901949405836646
+        },
+        {
+          "before": {
+            "iterations": 3552,
+            "elapsed_ns": 40029584,
+            "checksum": 40148256
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40229333,
+            "checksum": 40509952
+          },
+          "ratio": 0.9960169090636993
+        },
+        {
+          "before": {
+            "iterations": 3584,
+            "elapsed_ns": 40032959,
+            "checksum": 40509952
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40127500,
+            "checksum": 40509952
+          },
+          "ratio": 1.0023615791178464
+        },
+        {
+          "before": {
+            "iterations": 3584,
+            "elapsed_ns": 40421917,
+            "checksum": 40509952
+          },
+          "after": {
+            "iterations": 3552,
+            "elapsed_ns": 40064750,
+            "checksum": 40148256
+          },
+          "ratio": 1.0000934318304024
+        },
+        {
+          "before": {
+            "iterations": 3552,
+            "elapsed_ns": 40045750,
+            "checksum": 40148256
+          },
+          "after": {
+            "iterations": 3552,
+            "elapsed_ns": 40213667,
+            "checksum": 40148256
+          },
+          "ratio": 1.004193129108582
+        },
+        {
+          "before": {
+            "iterations": 3488,
+            "elapsed_ns": 40200625,
+            "checksum": 39424864
+          },
+          "after": {
+            "iterations": 3552,
+            "elapsed_ns": 40325583,
+            "checksum": 40148256
+          },
+          "ratio": 0.9850343351358074
+        },
+        {
+          "before": {
+            "iterations": 3584,
+            "elapsed_ns": 40032125,
+            "checksum": 40509952
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40084833,
+            "checksum": 40509952
+          },
+          "ratio": 1.0013166425714348
+        },
+        {
+          "before": {
+            "iterations": 3520,
+            "elapsed_ns": 40072458,
+            "checksum": 39786560
+          },
+          "after": {
+            "iterations": 3520,
+            "elapsed_ns": 40249500,
+            "checksum": 39786560
+          },
+          "ratio": 1.0044180469288906
+        },
+        {
+          "before": {
+            "iterations": 3552,
+            "elapsed_ns": 40025792,
+            "checksum": 40148256
+          },
+          "after": {
+            "iterations": 3520,
+            "elapsed_ns": 40152542,
+            "checksum": 39786560
+          },
+          "ratio": 1.0122864054530365
+        },
+        {
+          "before": {
+            "iterations": 3520,
+            "elapsed_ns": 40040959,
+            "checksum": 39786560
+          },
+          "after": {
+            "iterations": 3552,
+            "elapsed_ns": 40198458,
+            "checksum": 40148256
+          },
+          "ratio": 0.9948890017776479
+        }
+      ]
+    },
+    {
+      "case": "rust-book-ch00-00-introduction",
+      "variant": "no-definitions",
+      "mode": "reuse",
+      "input_sha256": "5943eecec1b511b585cff00a1f5e6f3a40473c470d51dd8c18c510e487fdca54",
+      "output": "<h1>Introduction</h1>\n<blockquote>\n<p>Note: This edition of the book is the same as [The Rust Programming\nLanguage][nsprust] available in print and ebook format from [No Starch\nPress][nsp].</p>\n</blockquote>\n<p>[nsprust]= https://nostarch.com/rust-programming-language-3rd-edition\n[nsp]= https://nostarch.com/</p>\n<p>Welcome to <em>The Rust Programming Language</em>, an introductory book about Rust.\nThe Rust programming language helps you write faster, more reliable software.\nHigh-level ergonomics and low-level control are often at odds in programming\nlanguage design; Rust challenges that conflict. Through balancing powerful\ntechnical capacity and a great developer experience, Rust gives you the option\nto control low-level details (such as memory usage) without all the hassle\ntraditionally associated with such control.</p>\n<h2>Who Rust Is For</h2>\n<p>Rust is ideal for many people for a variety of reasons. Let\u2019s look at a few of\nthe most important groups.</p>\n<h3>Teams of Developers</h3>\n<p>Rust is proving to be a productive tool for collaborating among large teams of\ndevelopers with varying levels of systems programming knowledge. Low-level code\nis prone to various subtle bugs, which in most other languages can only be\ncaught through extensive testing and careful code review by experienced\ndevelopers. In Rust, the compiler plays a gatekeeper role by refusing to\ncompile code with these elusive bugs, including concurrency bugs. By working\nalongside the compiler, the team can spend its time focusing on the program\u2019s\nlogic rather than chasing down bugs.</p>\n<p>Rust also brings contemporary developer tools to the systems programming world:</p>\n<ul>\n<li>Cargo, the included dependency manager and build tool, makes adding,\ncompiling, and managing dependencies painless and consistent across the Rust\necosystem.</li>\n<li>The <code>rustfmt</code> formatting tool ensures a consistent coding style across\ndevelopers.</li>\n<li>The Rust Language Server powers integrated development environment (IDE)\nintegration for code completion and inline error messages.</li>\n</ul>\n<p>By using these and other tools in the Rust ecosystem, developers can be\nproductive while writing systems-level code.</p>\n<h3>Students</h3>\n<p>Rust is for students and those who are interested in learning about systems\nconcepts. Using Rust, many people have learned about topics like operating\nsystems development. The community is very welcoming and happy to answer\nstudents\u2019 questions. Through efforts such as this book, the Rust teams want to\nmake systems concepts more accessible to more people, especially those new to\nprogramming.</p>\n<h3>Companies</h3>\n<p>Hundreds of companies, large and small, use Rust in production for a variety of\ntasks, including command line tools, web services, DevOps tooling, embedded\ndevices, audio and video analysis and transcoding, cryptocurrencies,\nbioinformatics, search engines, Internet of Things applications, machine\nlearning, and even major parts of the Firefox web browser.</p>\n<h3>Open Source Developers</h3>\n<p>Rust is for people who want to build the Rust programming language, community,\ndeveloper tools, and libraries. We\u2019d love to have you contribute to the Rust\nlanguage.</p>\n<h3>People Who Value Speed and Stability</h3>\n<p>Rust is for people who crave speed and stability in a language. By speed, we\nmean both how quickly Rust code can run and the speed at which Rust lets you\nwrite programs. The Rust compiler\u2019s checks ensure stability through feature\nadditions and refactoring. This is in contrast to the brittle legacy code in\nlanguages without these checks, which developers are often afraid to modify. By\nstriving for zero-cost abstractions\u2014higher-level features that compile to\nlower-level code as fast as code written manually\u2014Rust endeavors to make safe\ncode be fast code as well.</p>\n<p>The Rust language hopes to support many other users as well; those mentioned\nhere are merely some of the biggest stakeholders. Overall, Rust\u2019s greatest\nambition is to eliminate the trade-offs that programmers have accepted for\ndecades by providing safety <em>and</em> productivity, speed <em>and</em> ergonomics. Give\nRust a try, and see if its choices work for you.</p>\n<h2>Who This Book Is For</h2>\n<p>This book assumes that you\u2019ve written code in another programming language, but\nit doesn\u2019t make any assumptions about which one. We\u2019ve tried to make the\nmaterial broadly accessible to those from a wide variety of programming\nbackgrounds. We don\u2019t spend a lot of time talking about what programming <em>is</em>\nor how to think about it. If you\u2019re entirely new to programming, you would be\nbetter served by reading a book that specifically provides an introduction to\nprogramming.</p>\n<h2>How to Use This Book</h2>\n<p>In general, this book assumes that you\u2019re reading it in sequence from front to\nback. Later chapters build on concepts in earlier chapters, and earlier\nchapters might not delve into details on a particular topic but will revisit\nthe topic in a later chapter.</p>\n<p>You\u2019ll find two kinds of chapters in this book: concept chapters and project\nchapters. In concept chapters, you\u2019ll learn about an aspect of Rust. In project\nchapters, we\u2019ll build small programs together, applying what you\u2019ve learned so\nfar. Chapter 2, Chapter 12, and Chapter 21 are project chapters; the rest are\nconcept chapters.</p>\n<p><strong>Chapter 1</strong> explains how to install Rust, how to write a \u201cHello, world!\u201d\nprogram, and how to use Cargo, Rust\u2019s package manager and build tool. <strong>Chapter\n2</strong> is a hands-on introduction to writing a program in Rust, having you build\nup a number-guessing game. Here, we cover concepts at a high level, and later\nchapters will provide additional detail. If you want to get your hands dirty\nright away, Chapter 2 is the place for that. If you\u2019re a particularly\nmeticulous learner who prefers to learn every detail before moving on to the\nnext, you might want to skip Chapter 2 and go straight to <strong>Chapter 3</strong>, which\ncovers Rust features that are similar to those of other programming languages;\nthen, you can return to Chapter 2 when you\u2019d like to work on a project applying\nthe details you\u2019ve learned.</p>\n<p>In <strong>Chapter 4</strong>, you\u2019ll learn about Rust\u2019s ownership system. <strong>Chapter 5</strong>\ndiscusses structs and methods. <strong>Chapter 6</strong> covers enums, <code>match</code> expressions,\nand the <code>if let</code> and <code>let...else</code> control flow constructs. You\u2019ll use structs\nand enums to make custom types.</p>\n<p>In <strong>Chapter 7</strong>, you\u2019ll learn about Rust\u2019s module system and about privacy\nrules for organizing your code and its public application programming interface\n(API). <strong>Chapter 8</strong> discusses some common collection data structures that the\nstandard library provides: vectors, strings, and hash maps. <strong>Chapter 9</strong>\nexplores Rust\u2019s error-handling philosophy and techniques.</p>\n<p><strong>Chapter 10</strong> digs into generics, traits, and lifetimes, which give you the\npower to define code that applies to multiple types. <strong>Chapter 11</strong> is all\nabout testing, which even with Rust\u2019s safety guarantees is necessary to ensure\nthat your program\u2019s logic is correct. In <strong>Chapter 12</strong>, we\u2019ll build our own\nimplementation of a subset of functionality from the <code>grep</code> command line tool\nthat searches for text within files. For this, we\u2019ll use many of the concepts\nwe discussed in the previous chapters.</p>\n<p><strong>Chapter 13</strong> explores closures and iterators: features of Rust that come from\nfunctional programming languages. In <strong>Chapter 14</strong>, we\u2019ll examine Cargo in\nmore depth and talk about best practices for sharing your libraries with\nothers. <strong>Chapter 15</strong> discusses smart pointers that the standard library\nprovides and the traits that enable their functionality.</p>\n<p>In <strong>Chapter 16</strong>, we\u2019ll walk through different models of concurrent\nprogramming and talk about how Rust helps you program in multiple threads\nfearlessly. In <strong>Chapter 17</strong>, we build on that by exploring Rust\u2019s async and\nawait syntax, along with tasks, futures, and streams, and the lightweight\nconcurrency model they enable.</p>\n<p><strong>Chapter 18</strong> looks at how Rust idioms compare to object-oriented programming\nprinciples you might be familiar with. <strong>Chapter 19</strong> is a reference on\npatterns and pattern matching, which are powerful ways of expressing ideas\nthroughout Rust programs. <strong>Chapter 20</strong> contains a smorgasbord of advanced\ntopics of interest, including unsafe Rust, macros, and more about lifetimes,\ntraits, types, functions, and closures.</p>\n<p>In <strong>Chapter 21</strong>, we\u2019ll complete a project in which we\u2019ll implement a\nlow-level multithreaded web server!</p>\n<p>Finally, some appendixes contain useful information about the language in a\nmore reference-like format. <strong>Appendix A</strong> covers Rust\u2019s keywords, <strong>Appendix\nB</strong> covers Rust\u2019s operators and symbols, <strong>Appendix C</strong> covers derivable traits\nprovided by the standard library, <strong>Appendix D</strong> covers some useful development\ntools, and <strong>Appendix E</strong> explains Rust editions. In <strong>Appendix F</strong>, you can\nfind translations of the book, and in <strong>Appendix G</strong> we\u2019ll cover how Rust is\nmade and what nightly Rust is.</p>\n<p>There is no wrong way to read this book: If you want to skip ahead, go for it!\nYou might have to jump back to earlier chapters if you experience any\nconfusion. But do whatever works for you.</p>\n<p><span id=\"ferris\"></span></p>\n<p>An important part of the process of learning Rust is learning how to read the\nerror messages the compiler displays: These will guide you toward working code.\nAs such, we\u2019ll provide many examples that don\u2019t compile along with the error\nmessage the compiler will show you in each situation. Know that if you enter\nand run a random example, it may not compile! Make sure you read the\nsurrounding text to see whether the example you\u2019re trying to run is meant to\nerror. In most situations, we\u2019ll lead you to the correct version of any code\nthat doesn\u2019t compile. Ferris will also help you distinguish code that isn\u2019t\nmeant to work:</p>\n<table>\n<thead>\n<tr>\n<th>Ferris</th>\n<th>Meaning</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><img src=\"img/ferris/does_not_compile.svg\" class=\"ferris-explain\" alt=\"Ferris with a question mark\"/></td>\n<td>This code does not compile!</td>\n</tr>\n<tr>\n<td><img src=\"img/ferris/panics.svg\" class=\"ferris-explain\" alt=\"Ferris throwing up their hands\"/></td>\n<td>This code panics!</td>\n</tr>\n<tr>\n<td><img src=\"img/ferris/not_desired_behavior.svg\" class=\"ferris-explain\" alt=\"Ferris with one claw up, shrugging\"/></td>\n<td>This code does not produce the desired behavior.</td>\n</tr>\n</tbody>\n</table>\n<p>In most situations, we\u2019ll lead you to the correct version of any code that\ndoesn\u2019t compile.</p>\n<h2>Source Code</h2>\n<p>The source files from which this book is generated can be found on\n[GitHub][book].</p>\n<p>[book]= https://github.com/rust-lang/book/tree/main/src</p>\n",
+      "delta_percent": 0.610443052101628,
+      "samples": [
+        {
+          "before": {
+            "iterations": 3616,
+            "elapsed_ns": 40267584,
+            "checksum": 40871648
+          },
+          "after": {
+            "iterations": 3552,
+            "elapsed_ns": 40033666,
+            "checksum": 40148256
+          },
+          "ratio": 1.0121042602236905
+        },
+        {
+          "before": {
+            "iterations": 3648,
+            "elapsed_ns": 40272333,
+            "checksum": 41233344
+          },
+          "after": {
+            "iterations": 3616,
+            "elapsed_ns": 40171958,
+            "checksum": 40871648
+          },
+          "ratio": 1.0063350949421614
+        },
+        {
+          "before": {
+            "iterations": 3616,
+            "elapsed_ns": 40073834,
+            "checksum": 40871648
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40094666,
+            "checksum": 40509952
+          },
+          "ratio": 1.0094530533136836
+        },
+        {
+          "before": {
+            "iterations": 3648,
+            "elapsed_ns": 40255334,
+            "checksum": 41233344
+          },
+          "after": {
+            "iterations": 3648,
+            "elapsed_ns": 40033458,
+            "checksum": 41233344
+          },
+          "ratio": 0.9944882832173247
+        },
+        {
+          "before": {
+            "iterations": 3648,
+            "elapsed_ns": 40074666,
+            "checksum": 41233344
+          },
+          "after": {
+            "iterations": 3616,
+            "elapsed_ns": 40387417,
+            "checksum": 40871648
+          },
+          "ratio": 1.016722828579819
+        },
+        {
+          "before": {
+            "iterations": 3584,
+            "elapsed_ns": 40225542,
+            "checksum": 40509952
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40079541,
+            "checksum": 40509952
+          },
+          "ratio": 0.9963704404529838
+        },
+        {
+          "before": {
+            "iterations": 3552,
+            "elapsed_ns": 40020959,
+            "checksum": 40148256
+          },
+          "after": {
+            "iterations": 3648,
+            "elapsed_ns": 40406167,
+            "checksum": 41233344
+          },
+          "ratio": 0.9830560735885783
+        },
+        {
+          "before": {
+            "iterations": 3616,
+            "elapsed_ns": 40252375,
+            "checksum": 40871648
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40130500,
+            "checksum": 40509952
+          },
+          "ratio": 1.005873766099871
+        },
+        {
+          "before": {
+            "iterations": 3584,
+            "elapsed_ns": 40079375,
+            "checksum": 40509952
+          },
+          "after": {
+            "iterations": 3616,
+            "elapsed_ns": 40290500,
+            "checksum": 40871648
+          },
+          "ratio": 0.9963714978752753
+        },
+        {
+          "before": {
+            "iterations": 3616,
+            "elapsed_ns": 40191125,
+            "checksum": 40871648
+          },
+          "after": {
+            "iterations": 3552,
+            "elapsed_ns": 40161542,
+            "checksum": 40148256
+          },
+          "ratio": 1.0172686976885417
+        },
+        {
+          "before": {
+            "iterations": 3616,
+            "elapsed_ns": 40387375,
+            "checksum": 40871648
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40069541,
+            "checksum": 40509952
+          },
+          "ratio": 1.0009886693286845
+        },
+        {
+          "before": {
+            "iterations": 3616,
+            "elapsed_ns": 40078625,
+            "checksum": 40871648
+          },
+          "after": {
+            "iterations": 3584,
+            "elapsed_ns": 40124500,
+            "checksum": 40509952
+          },
+          "ratio": 1.0100834163917978
+        }
+      ]
+    },
+    {
+      "case": "comment-review",
+      "variant": "original",
+      "mode": "fresh",
+      "input_sha256": "060b46b9cd7525171f4dd69129189800b27dcd79e953cfd4fc0f084277cb78c1",
+      "output": "<p>The change looks reasonable. Could we keep the existing error message when the file is missing?</p>\n<p>That message is linked from the troubleshooting guide, and a few users may search for its exact wording. The new wording would still make sense for files that exist but cannot be read.</p>\n",
+      "delta_percent": 2.073567138725263,
+      "samples": [
+        {
+          "before": {
+            "iterations": 175840,
+            "elapsed_ns": 40004000,
+            "checksum": 51872800
+          },
+          "after": {
+            "iterations": 172896,
+            "elapsed_ns": 40005959,
+            "checksum": 51004320
+          },
+          "ratio": 1.0170773812170883
+        },
+        {
+          "before": {
+            "iterations": 178592,
+            "elapsed_ns": 40001000,
+            "checksum": 52684640
+          },
+          "after": {
+            "iterations": 173952,
+            "elapsed_ns": 40004875,
+            "checksum": 51315840
+          },
+          "ratio": 1.0267734815781555
+        },
+        {
+          "before": {
+            "iterations": 177600,
+            "elapsed_ns": 40001709,
+            "checksum": 52392000
+          },
+          "after": {
+            "iterations": 173984,
+            "elapsed_ns": 40001000,
+            "checksum": 51325280
+          },
+          "ratio": 1.0207654277088172
+        },
+        {
+          "before": {
+            "iterations": 178272,
+            "elapsed_ns": 40004750,
+            "checksum": 52590240
+          },
+          "after": {
+            "iterations": 174784,
+            "elapsed_ns": 40003000,
+            "checksum": 51561280
+          },
+          "ratio": 1.0199114422719973
+        },
+        {
+          "before": {
+            "iterations": 177536,
+            "elapsed_ns": 40000541,
+            "checksum": 52373120
+          },
+          "after": {
+            "iterations": 173600,
+            "elapsed_ns": 40005750,
+            "checksum": 51212000
+          },
+          "ratio": 1.022805986825526
+        },
+        {
+          "before": {
+            "iterations": 177504,
+            "elapsed_ns": 40002000,
+            "checksum": 52363680
+          },
+          "after": {
+            "iterations": 172160,
+            "elapsed_ns": 40003000,
+            "checksum": 50787200
+          },
+          "ratio": 1.0310666669268767
+        },
+        {
+          "before": {
+            "iterations": 176960,
+            "elapsed_ns": 40003542,
+            "checksum": 52203200
+          },
+          "after": {
+            "iterations": 174880,
+            "elapsed_ns": 40001958,
+            "checksum": 51589600
+          },
+          "ratio": 1.0118538026330597
+        },
+        {
+          "before": {
+            "iterations": 177920,
+            "elapsed_ns": 40001375,
+            "checksum": 52486400
+          },
+          "after": {
+            "iterations": 174720,
+            "elapsed_ns": 40007333,
+            "checksum": 51542400
+          },
+          "ratio": 1.0184666911232436
+        },
+        {
+          "before": {
+            "iterations": 177920,
+            "elapsed_ns": 40007042,
+            "checksum": 52486400
+          },
+          "after": {
+            "iterations": 175360,
+            "elapsed_ns": 40001958,
+            "checksum": 51731200
+          },
+          "ratio": 1.014469607370148
+        },
+        {
+          "before": {
+            "iterations": 177952,
+            "elapsed_ns": 40004958,
+            "checksum": 52495840
+          },
+          "after": {
+            "iterations": 173696,
+            "elapsed_ns": 40003875,
+            "checksum": 51240320
+          },
+          "ratio": 1.0244748442492824
+        },
+        {
+          "before": {
+            "iterations": 178912,
+            "elapsed_ns": 40005667,
+            "checksum": 52779040
+          },
+          "after": {
+            "iterations": 173024,
+            "elapsed_ns": 40004459,
+            "checksum": 51042080
+          },
+          "ratio": 1.0339987378801885
+        },
+        {
+          "before": {
+            "iterations": 177440,
+            "elapsed_ns": 40004416,
+            "checksum": 52344800
+          },
+          "after": {
+            "iterations": 173824,
+            "elapsed_ns": 40000625,
+            "checksum": 51278080
+          },
+          "ratio": 1.020705915065688
+        }
+      ]
+    },
+    {
+      "case": "comment-review",
+      "variant": "original",
+      "mode": "reuse",
+      "input_sha256": "060b46b9cd7525171f4dd69129189800b27dcd79e953cfd4fc0f084277cb78c1",
+      "output": "<p>The change looks reasonable. Could we keep the existing error message when the file is missing?</p>\n<p>That message is linked from the troubleshooting guide, and a few users may search for its exact wording. The new wording would still make sense for files that exist but cannot be read.</p>\n",
+      "delta_percent": 4.804050545024796,
+      "samples": [
+        {
+          "before": {
+            "iterations": 305088,
+            "elapsed_ns": 40001000,
+            "checksum": 90000960
+          },
+          "after": {
+            "iterations": 285376,
+            "elapsed_ns": 40001667,
+            "checksum": 84185920
+          },
+          "ratio": 1.069091609719176
+        },
+        {
+          "before": {
+            "iterations": 300896,
+            "elapsed_ns": 40003583,
+            "checksum": 88764320
+          },
+          "after": {
+            "iterations": 288896,
+            "elapsed_ns": 40003250,
+            "checksum": 85224320
+          },
+          "ratio": 1.0415287690558597
+        },
+        {
+          "before": {
+            "iterations": 304800,
+            "elapsed_ns": 40002541,
+            "checksum": 89916000
+          },
+          "after": {
+            "iterations": 291680,
+            "elapsed_ns": 40001333,
+            "checksum": 86045600
+          },
+          "ratio": 1.044949244462109
+        },
+        {
+          "before": {
+            "iterations": 304000,
+            "elapsed_ns": 40003625,
+            "checksum": 89680000
+          },
+          "after": {
+            "iterations": 289664,
+            "elapsed_ns": 40003667,
+            "checksum": 85450880
+          },
+          "ratio": 1.0494929268776068
+        },
+        {
+          "before": {
+            "iterations": 301888,
+            "elapsed_ns": 40003709,
+            "checksum": 89056960
+          },
+          "after": {
+            "iterations": 289184,
+            "elapsed_ns": 40003458,
+            "checksum": 85309280
+          },
+          "ratio": 1.0439239578553345
+        },
+        {
+          "before": {
+            "iterations": 304064,
+            "elapsed_ns": 40002709,
+            "checksum": 89698880
+          },
+          "after": {
+            "iterations": 289632,
+            "elapsed_ns": 40003167,
+            "checksum": 85441440
+          },
+          "ratio": 1.0498407679297492
+        },
+        {
+          "before": {
+            "iterations": 303744,
+            "elapsed_ns": 40001458,
+            "checksum": 89604480
+          },
+          "after": {
+            "iterations": 289792,
+            "elapsed_ns": 40002541,
+            "checksum": 85488640
+          },
+          "ratio": 1.0481732538132555
+        },
+        {
+          "before": {
+            "iterations": 303424,
+            "elapsed_ns": 40000959,
+            "checksum": 89510080
+          },
+          "after": {
+            "iterations": 288704,
+            "elapsed_ns": 40004291,
+            "checksum": 85167680
+          },
+          "ratio": 1.0510740225741284
+        },
+        {
+          "before": {
+            "iterations": 301280,
+            "elapsed_ns": 40001458,
+            "checksum": 88877600
+          },
+          "after": {
+            "iterations": 287520,
+            "elapsed_ns": 40003375,
+            "checksum": 84818400
+          },
+          "ratio": 1.0479077570872404
+        },
+        {
+          "before": {
+            "iterations": 300352,
+            "elapsed_ns": 40002500,
+            "checksum": 88603840
+          },
+          "after": {
+            "iterations": 288480,
+            "elapsed_ns": 40003292,
+            "checksum": 85101600
+          },
+          "ratio": 1.0411742463877482
+        },
+        {
+          "before": {
+            "iterations": 301632,
+            "elapsed_ns": 40002375,
+            "checksum": 88981440
+          },
+          "after": {
+            "iterations": 285440,
+            "elapsed_ns": 40002250,
+            "checksum": 84204800
+          },
+          "ratio": 1.0567231553249843
+        },
+        {
+          "before": {
+            "iterations": 300992,
+            "elapsed_ns": 40002709,
+            "checksum": 88792640
+          },
+          "after": {
+            "iterations": 289600,
+            "elapsed_ns": 40003708,
+            "checksum": 85432000
+          },
+          "ratio": 1.0393629722587259
+        }
+      ]
+    },
+    {
+      "case": "comment-review",
+      "variant": "no-definitions",
+      "mode": "fresh",
+      "input_sha256": "060b46b9cd7525171f4dd69129189800b27dcd79e953cfd4fc0f084277cb78c1",
+      "output": "<p>The change looks reasonable. Could we keep the existing error message when the file is missing?</p>\n<p>That message is linked from the troubleshooting guide, and a few users may search for its exact wording. The new wording would still make sense for files that exist but cannot be read.</p>\n",
+      "delta_percent": 2.5630820738130833,
+      "samples": [
+        {
+          "before": {
+            "iterations": 178816,
+            "elapsed_ns": 40002375,
+            "checksum": 52750720
+          },
+          "after": {
+            "iterations": 172672,
+            "elapsed_ns": 40006917,
+            "checksum": 50938240
+          },
+          "ratio": 1.0356994958724548
+        },
+        {
+          "before": {
+            "iterations": 180032,
+            "elapsed_ns": 40002875,
+            "checksum": 53109440
+          },
+          "after": {
+            "iterations": 173632,
+            "elapsed_ns": 40005000,
+            "checksum": 51221440
+          },
+          "ratio": 1.0369146442627082
+        },
+        {
+          "before": {
+            "iterations": 177408,
+            "elapsed_ns": 40004084,
+            "checksum": 52335360
+          },
+          "after": {
+            "iterations": 173728,
+            "elapsed_ns": 40000041,
+            "checksum": 51249760
+          },
+          "ratio": 1.0210793327328964
+        },
+        {
+          "before": {
+            "iterations": 177792,
+            "elapsed_ns": 40002625,
+            "checksum": 52448640
+          },
+          "after": {
+            "iterations": 171616,
+            "elapsed_ns": 40002250,
+            "checksum": 50626720
+          },
+          "ratio": 1.0359776087857577
+        },
+        {
+          "before": {
+            "iterations": 177472,
+            "elapsed_ns": 40006291,
+            "checksum": 52354240
+          },
+          "after": {
+            "iterations": 174752,
+            "elapsed_ns": 40005084,
+            "checksum": 51551840
+          },
+          "ratio": 1.015534274998337
+        },
+        {
+          "before": {
+            "iterations": 174816,
+            "elapsed_ns": 40004542,
+            "checksum": 51570720
+          },
+          "after": {
+            "iterations": 173536,
+            "elapsed_ns": 40004291,
+            "checksum": 51193120
+          },
+          "ratio": 1.0073696705821664
+        },
+        {
+          "before": {
+            "iterations": 177632,
+            "elapsed_ns": 40003583,
+            "checksum": 52401440
+          },
+          "after": {
+            "iterations": 173824,
+            "elapsed_ns": 40006333,
+            "checksum": 51278080
+          },
+          "ratio": 1.021977466323351
+        },
+        {
+          "before": {
+            "iterations": 178880,
+            "elapsed_ns": 40000542,
+            "checksum": 52769600
+          },
+          "after": {
+            "iterations": 175616,
+            "elapsed_ns": 40005416,
+            "checksum": 51806720
+          },
+          "ratio": 1.0187101188539829
+        },
+        {
+          "before": {
+            "iterations": 177888,
+            "elapsed_ns": 40003084,
+            "checksum": 52476960
+          },
+          "after": {
+            "iterations": 172352,
+            "elapsed_ns": 40006208,
+            "checksum": 50843840
+          },
+          "ratio": 1.0322009143017095
+        },
+        {
+          "before": {
+            "iterations": 179072,
+            "elapsed_ns": 40007125,
+            "checksum": 52826240
+          },
+          "after": {
+            "iterations": 173344,
+            "elapsed_ns": 40003916,
+            "checksum": 51136480
+          },
+          "ratio": 1.03296125915692
+        },
+        {
+          "before": {
+            "iterations": 178560,
+            "elapsed_ns": 40001583,
+            "checksum": 52675200
+          },
+          "after": {
+            "iterations": 173504,
+            "elapsed_ns": 40007166,
+            "checksum": 51183680
+          },
+          "ratio": 1.0292841751529107
+        },
+        {
+          "before": {
+            "iterations": 177792,
+            "elapsed_ns": 40006667,
+            "checksum": 52448640
+          },
+          "after": {
+            "iterations": 174144,
+            "elapsed_ns": 40004958,
+            "checksum": 51372480
+          },
+          "ratio": 1.020904568074005
+        }
+      ]
+    },
+    {
+      "case": "comment-review",
+      "variant": "no-definitions",
+      "mode": "reuse",
+      "input_sha256": "060b46b9cd7525171f4dd69129189800b27dcd79e953cfd4fc0f084277cb78c1",
+      "output": "<p>The change looks reasonable. Could we keep the existing error message when the file is missing?</p>\n<p>That message is linked from the troubleshooting guide, and a few users may search for its exact wording. The new wording would still make sense for files that exist but cannot be read.</p>\n",
+      "delta_percent": 5.0958303427639295,
+      "samples": [
+        {
+          "before": {
+            "iterations": 306240,
+            "elapsed_ns": 40004000,
+            "checksum": 90340800
+          },
+          "after": {
+            "iterations": 287552,
+            "elapsed_ns": 40003125,
+            "checksum": 84827840
+          },
+          "ratio": 1.0649666900937327
+        },
+        {
+          "before": {
+            "iterations": 301824,
+            "elapsed_ns": 40002750,
+            "checksum": 89038080
+          },
+          "after": {
+            "iterations": 286304,
+            "elapsed_ns": 40004334,
+            "checksum": 84459680
+          },
+          "ratio": 1.0542498582232196
+        },
+        {
+          "before": {
+            "iterations": 300736,
+            "elapsed_ns": 40000292,
+            "checksum": 88717120
+          },
+          "after": {
+            "iterations": 288480,
+            "elapsed_ns": 40003750,
+            "checksum": 85101600
+          },
+          "ratio": 1.0425748697913595
+        },
+        {
+          "before": {
+            "iterations": 303520,
+            "elapsed_ns": 40001167,
+            "checksum": 89538400
+          },
+          "after": {
+            "iterations": 288448,
+            "elapsed_ns": 40003584,
+            "checksum": 85092160
+          },
+          "ratio": 1.0523156328382945
+        },
+        {
+          "before": {
+            "iterations": 300608,
+            "elapsed_ns": 40025916,
+            "checksum": 88679360
+          },
+          "after": {
+            "iterations": 288864,
+            "elapsed_ns": 40002375,
+            "checksum": 85214880
+          },
+          "ratio": 1.0400437549366535
+        },
+        {
+          "before": {
+            "iterations": 298784,
+            "elapsed_ns": 40002292,
+            "checksum": 88141280
+          },
+          "after": {
+            "iterations": 285632,
+            "elapsed_ns": 40001416,
+            "checksum": 84261440
+          },
+          "ratio": 1.0460223539565372
+        },
+        {
+          "before": {
+            "iterations": 303456,
+            "elapsed_ns": 40001542,
+            "checksum": 89519520
+          },
+          "after": {
+            "iterations": 289984,
+            "elapsed_ns": 40002083,
+            "checksum": 85545280
+          },
+          "ratio": 1.0464718883944892
+        },
+        {
+          "before": {
+            "iterations": 304960,
+            "elapsed_ns": 40003125,
+            "checksum": 89963200
+          },
+          "after": {
+            "iterations": 288032,
+            "elapsed_ns": 40003209,
+            "checksum": 84969440
+          },
+          "ratio": 1.0587734708850802
+        },
+        {
+          "before": {
+            "iterations": 303680,
+            "elapsed_ns": 40001458,
+            "checksum": 89585600
+          },
+          "after": {
+            "iterations": 289312,
+            "elapsed_ns": 40002208,
+            "checksum": 85347040
+          },
+          "ratio": 1.0496823283944714
+        },
+        {
+          "before": {
+            "iterations": 304096,
+            "elapsed_ns": 40000417,
+            "checksum": 89708320
+          },
+          "after": {
+            "iterations": 290304,
+            "elapsed_ns": 40002375,
+            "checksum": 85639680
+          },
+          "ratio": 1.0475600933642675
+        },
+        {
+          "before": {
+            "iterations": 302720,
+            "elapsed_ns": 40003708,
+            "checksum": 89302400
+          },
+          "after": {
+            "iterations": 287680,
+            "elapsed_ns": 40001958,
+            "checksum": 84865600
+          },
+          "ratio": 1.0522342784608072
+        },
+        {
+          "before": {
+            "iterations": 303712,
+            "elapsed_ns": 40003875,
+            "checksum": 89595040
+          },
+          "after": {
+            "iterations": 288608,
+            "elapsed_ns": 40000500,
+            "checksum": 85139360
+          },
+          "ratio": 1.0522451795592958
+        }
+      ]
+    }
+  ]
+}

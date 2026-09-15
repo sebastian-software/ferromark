@@ -1,0 +1,601 @@
+{
+  "rounds": 3,
+  "samples": 6,
+  "window_ms": 40,
+  "warmup_ms": 60,
+  "seed": 20260914,
+  "jobs": [
+    {
+      "name": "comment-ack",
+      "profile": "gfm",
+      "members": [
+        "comment-ack"
+      ]
+    },
+    {
+      "name": "comment-question",
+      "profile": "gfm",
+      "members": [
+        "comment-question"
+      ]
+    },
+    {
+      "name": "comment-review",
+      "profile": "gfm",
+      "members": [
+        "comment-review"
+      ]
+    },
+    {
+      "name": "comment-links",
+      "profile": "gfm",
+      "members": [
+        "comment-links"
+      ]
+    },
+    {
+      "name": "comment-checklist",
+      "profile": "gfm",
+      "members": [
+        "comment-checklist"
+      ]
+    },
+    {
+      "name": "comment-quote",
+      "profile": "gfm",
+      "members": [
+        "comment-quote"
+      ]
+    },
+    {
+      "name": "comment-unicode",
+      "profile": "gfm",
+      "members": [
+        "comment-unicode"
+      ]
+    },
+    {
+      "name": "comment-inline-code",
+      "profile": "gfm",
+      "members": [
+        "comment-inline-code"
+      ]
+    },
+    {
+      "name": "comment-reproduction",
+      "profile": "gfm",
+      "members": [
+        "comment-reproduction"
+      ]
+    },
+    {
+      "name": "comment-table",
+      "profile": "gfm",
+      "members": [
+        "comment-table"
+      ]
+    },
+    {
+      "name": "comment-review-long",
+      "profile": "gfm",
+      "members": [
+        "comment-review-long"
+      ]
+    },
+    {
+      "name": "comment-incident",
+      "profile": "gfm",
+      "members": [
+        "comment-incident"
+      ]
+    },
+    {
+      "name": "guard-angle-link",
+      "profile": "commonmark",
+      "members": [
+        "guard-angle-link"
+      ]
+    },
+    {
+      "name": "legacy-contributing",
+      "profile": "gfm",
+      "members": [
+        "legacy-contributing"
+      ]
+    },
+    {
+      "name": "legacy-node-ferromark-readme",
+      "profile": "gfm",
+      "members": [
+        "legacy-node-ferromark-readme"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-2",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-migration-0-2"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-3",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-migration-0-3"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-4",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-migration-0-4"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-8",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-migration-0-8"
+      ]
+    },
+    {
+      "name": "legacy-docs-releasing",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-releasing"
+      ]
+    },
+    {
+      "name": "legacy-docs-readme-theme",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-readme-theme"
+      ]
+    },
+    {
+      "name": "legacy-docs-markdown-extensions",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-markdown-extensions"
+      ]
+    },
+    {
+      "name": "legacy-docs-mdx",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-mdx"
+      ]
+    },
+    {
+      "name": "legacy-docs-readme",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-readme"
+      ]
+    },
+    {
+      "name": "legacy-docs-adr-readme-theme-composition",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-adr-readme-theme-composition"
+      ]
+    },
+    {
+      "name": "rust-book-ch03-04-comments",
+      "profile": "gfm",
+      "members": [
+        "rust-book-ch03-04-comments"
+      ]
+    },
+    {
+      "name": "rust-book-appendix-02-operators",
+      "profile": "gfm",
+      "members": [
+        "rust-book-appendix-02-operators"
+      ]
+    },
+    {
+      "name": "rust-book-ch00-00-introduction",
+      "profile": "gfm",
+      "members": [
+        "rust-book-ch00-00-introduction"
+      ]
+    },
+    {
+      "name": "rust-book-ch17-00-async-await",
+      "profile": "gfm",
+      "members": [
+        "rust-book-ch17-00-async-await"
+      ]
+    },
+    {
+      "name": "vue-docs-ways-of-using-vue",
+      "profile": "gfm",
+      "members": [
+        "vue-docs-ways-of-using-vue"
+      ]
+    },
+    {
+      "name": "vue-docs-suspense",
+      "profile": "gfm",
+      "members": [
+        "vue-docs-suspense"
+      ]
+    },
+    {
+      "name": "vue-docs-slots",
+      "profile": "gfm",
+      "members": [
+        "vue-docs-slots"
+      ]
+    },
+    {
+      "name": "vue-docs-reactivity-in-depth",
+      "profile": "gfm",
+      "members": [
+        "vue-docs-reactivity-in-depth"
+      ]
+    },
+    {
+      "name": "vite-docs-philosophy",
+      "profile": "gfm",
+      "members": [
+        "vite-docs-philosophy"
+      ]
+    },
+    {
+      "name": "vite-docs-performance",
+      "profile": "gfm",
+      "members": [
+        "vite-docs-performance"
+      ]
+    },
+    {
+      "name": "vite-docs-api-plugin",
+      "profile": "gfm",
+      "members": [
+        "vite-docs-api-plugin"
+      ]
+    },
+    {
+      "name": "vite-docs-features",
+      "profile": "gfm",
+      "members": [
+        "vite-docs-features"
+      ]
+    },
+    {
+      "name": "typescript-handbook-the-handbook",
+      "profile": "gfm",
+      "members": [
+        "typescript-handbook-the-handbook"
+      ]
+    },
+    {
+      "name": "typescript-handbook-advanced-types",
+      "profile": "gfm",
+      "members": [
+        "typescript-handbook-advanced-types"
+      ]
+    },
+    {
+      "name": "typescript-handbook-compiler-options",
+      "profile": "gfm",
+      "members": [
+        "typescript-handbook-compiler-options"
+      ]
+    },
+    {
+      "name": "typescript-handbook-typescript-5-0",
+      "profile": "gfm",
+      "members": [
+        "typescript-handbook-typescript-5-0"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-lead",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-lead"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-article-body"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-plain-prose",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-plain-prose"
+      ]
+    },
+    {
+      "name": "wiki-tea-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-tea-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-tea-lead",
+      "profile": "commonmark",
+      "members": [
+        "wiki-tea-lead"
+      ]
+    },
+    {
+      "name": "wiki-tea-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-tea-article-body"
+      ]
+    },
+    {
+      "name": "wiki-tea-plain-prose",
+      "profile": "commonmark",
+      "members": [
+        "wiki-tea-plain-prose"
+      ]
+    },
+    {
+      "name": "wiki-chess-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-chess-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-chess-lead",
+      "profile": "commonmark",
+      "members": [
+        "wiki-chess-lead"
+      ]
+    },
+    {
+      "name": "wiki-chess-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-chess-article-body"
+      ]
+    },
+    {
+      "name": "wiki-chess-plain-prose",
+      "profile": "commonmark",
+      "members": [
+        "wiki-chess-plain-prose"
+      ]
+    },
+    {
+      "name": "wiki-volcano-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-volcano-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-volcano-lead",
+      "profile": "commonmark",
+      "members": [
+        "wiki-volcano-lead"
+      ]
+    },
+    {
+      "name": "wiki-volcano-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-volcano-article-body"
+      ]
+    },
+    {
+      "name": "wiki-volcano-plain-prose",
+      "profile": "commonmark",
+      "members": [
+        "wiki-volcano-plain-prose"
+      ]
+    },
+    {
+      "name": "rotating-commonmark",
+      "profile": "commonmark",
+      "members": [
+        "guard-angle-link",
+        "wiki-rainbow-first-paragraph",
+        "wiki-rainbow-lead",
+        "wiki-rainbow-article-body",
+        "wiki-rainbow-plain-prose",
+        "wiki-tea-first-paragraph",
+        "wiki-tea-lead",
+        "wiki-tea-article-body",
+        "wiki-tea-plain-prose",
+        "wiki-chess-first-paragraph",
+        "wiki-chess-lead",
+        "wiki-chess-article-body",
+        "wiki-chess-plain-prose",
+        "wiki-volcano-first-paragraph",
+        "wiki-volcano-lead",
+        "wiki-volcano-article-body",
+        "wiki-volcano-plain-prose"
+      ]
+    },
+    {
+      "name": "rotating-gfm",
+      "profile": "gfm",
+      "members": [
+        "comment-ack",
+        "comment-question",
+        "comment-review",
+        "comment-links",
+        "comment-checklist",
+        "comment-quote",
+        "comment-unicode",
+        "comment-inline-code",
+        "comment-reproduction",
+        "comment-table",
+        "comment-review-long",
+        "comment-incident",
+        "legacy-contributing",
+        "legacy-node-ferromark-readme",
+        "legacy-docs-migration-0-2",
+        "legacy-docs-migration-0-3",
+        "legacy-docs-migration-0-4",
+        "legacy-docs-migration-0-8",
+        "legacy-docs-releasing",
+        "legacy-docs-readme-theme",
+        "legacy-docs-markdown-extensions",
+        "legacy-docs-mdx",
+        "legacy-docs-readme",
+        "legacy-docs-adr-readme-theme-composition",
+        "rust-book-ch03-04-comments",
+        "rust-book-appendix-02-operators",
+        "rust-book-ch00-00-introduction",
+        "rust-book-ch17-00-async-await",
+        "vue-docs-ways-of-using-vue",
+        "vue-docs-suspense",
+        "vue-docs-slots",
+        "vue-docs-reactivity-in-depth",
+        "vite-docs-philosophy",
+        "vite-docs-performance",
+        "vite-docs-api-plugin",
+        "vite-docs-features",
+        "typescript-handbook-the-handbook",
+        "typescript-handbook-advanced-types",
+        "typescript-handbook-compiler-options",
+        "typescript-handbook-typescript-5-0"
+      ]
+    }
+  ],
+  "modes": [
+    "fresh",
+    "reuse"
+  ],
+  "engines": [
+    "v2",
+    "ox-content",
+    "v1",
+    "md4c",
+    "pulldown-cmark",
+    "bun"
+  ],
+  "host_before": {
+    "time_utc": "2026-09-15T13:02:54Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "cpu": "arm64",
+    "load_average": [
+      2.685546875,
+      2.68212890625,
+      2.88720703125
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "observations": [
+    {
+      "round": 0,
+      "before": {
+        "time_utc": "2026-09-15T13:02:54Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          2.685546875,
+          2.68212890625,
+          2.88720703125
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-15T13:06:36Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          3.0029296875,
+          3.05224609375,
+          3.0068359375
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    },
+    {
+      "round": 1,
+      "before": {
+        "time_utc": "2026-09-15T13:06:36Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          3.0029296875,
+          3.05224609375,
+          3.0068359375
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-15T13:10:18Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          4.34423828125,
+          3.65478515625,
+          3.27587890625
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    },
+    {
+      "round": 2,
+      "before": {
+        "time_utc": "2026-09-15T13:10:18Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          4.34423828125,
+          3.65478515625,
+          3.27587890625
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      },
+      "after": {
+        "time_utc": "2026-09-15T13:14:00Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          4.5400390625,
+          4.18212890625,
+          3.58837890625
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+        "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+      }
+    }
+  ],
+  "runner_sha256": "850d9870eb77d1b9dacdb2fe204be9caa45c8e03b785f938a5e5a5cbaed01c21",
+  "verifier_sha256": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018",
+  "corpus_sha256": "e8b7e468863b14a90ec4fe2b0ac54382dcc327c513ce9b9fdce8e871f8ffff43",
+  "aggregation": "Per-engine median of per-process round medians; equal-document geometric mean of time ratios.",
+  "lifecycle": "Fresh: new parser and owned HTML. Reuse: retained arenas/scratch/output where public API permits; Bun still uses its fresh owned-output API.",
+  "host_after": {
+    "time_utc": "2026-09-15T13:14:00Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "cpu": "arm64",
+    "load_average": [
+      4.5400390625,
+      4.18212890625,
+      3.58837890625
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}
