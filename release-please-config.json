@@ -2,10 +2,42 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
     ".": {
-      "release-type": "rust",
-      "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
+      "release-type": "simple",
       "extra-files": [
+        {
+          "type": "generic",
+          "path": "Cargo.toml"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name.value=='ferromark' && !@.source)].version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name.value=='ferromark_allocator' && !@.source)].version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name.value=='ferromark_ast' && !@.source)].version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name.value=='ferromark_parser' && !@.source)].version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name.value=='ferromark_renderer' && !@.source)].version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name.value=='ferromark-node' && !@.source)].version"
+        },
         "node/ferromark/package.json",
         "node/ferromark/npm/darwin-arm64/package.json",
         "node/ferromark/npm/darwin-x64/package.json",
@@ -95,7 +127,10 @@
           "path": "node/pnpm-lock.yaml",
           "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-win32-x64-msvc'].specifier"
         }
-      ]
+      ],
+      "version-file": "version.txt",
+      "component": "ferromark",
+      "include-component-in-tag": false
     }
   }
 }
