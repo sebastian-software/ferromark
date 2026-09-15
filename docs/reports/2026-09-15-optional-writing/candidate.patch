@@ -1,0 +1,1501 @@
+--- a/crates/ferromark_ast/src/ast.rs
++++ b/crates/ferromark_ast/src/ast.rs
+@@ -110,6 +110,9 @@
+     Link(Box<'a, Link<'a>>),
+     /// Image.
+     Image(Box<'a, Image<'a>>),
++    /// Highlighted text (`==text==`).
++    Highlight(Box<'a, Highlight<'a>>),
++
+     /// Strikethrough (GFM extension).
+     Delete(Box<'a, Delete<'a>>),
+     /// Superscript (extension).
+@@ -411,6 +414,15 @@
+     /// Inline children.
+     pub children: Vec<'a, Node<'a>>,
+     /// Source span.
++    pub span: Span,
++}
++
++/// Highlighted inline text.
++#[derive(Debug)]
++pub struct Highlight<'a> {
++    /// Inline children.
++    pub children: Vec<'a, Node<'a>>,
++    /// Original source span, including delimiters.
+     pub span: Span,
+ }
+ 
+@@ -499,6 +511,7 @@
+             Self::Break(n) => n.span,
+             Self::Link(n) => n.span,
+             Self::Image(n) => n.span,
++            Self::Highlight(n) => n.span,
+             Self::Delete(n) => n.span,
+             Self::Superscript(n) => n.span,
+             Self::Subscript(n) => n.span,
+--- a/crates/ferromark_ast/src/visit/walk.rs
++++ b/crates/ferromark_ast/src/visit/walk.rs
+@@ -37,6 +37,7 @@
+         Node::Break(n) => visitor.visit_break(n),
+         Node::Link(n) => visitor.visit_link(n),
+         Node::Image(n) => visitor.visit_image(n),
++        Node::Highlight(n) => visitor.visit_highlight(n),
+         Node::Delete(n) => visitor.visit_delete(n),
+         Node::Superscript(n) => visitor.visit_superscript(n),
+         Node::Subscript(n) => visitor.visit_subscript(n),
+@@ -163,6 +164,13 @@
+     }
+ }
+ 
++/// Walks through highlighted text children.
++pub fn walk_highlight<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, highlight: &Highlight<'a>) {
++    for child in &highlight.children {
++        visitor.visit_node(child);
++    }
++}
++
+ /// Walks through strikethrough children.
+ pub fn walk_delete<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, delete: &Delete<'a>) {
+     for child in &delete.children {
+--- a/crates/ferromark_ast/src/visit.rs
++++ b/crates/ferromark_ast/src/visit.rs
+@@ -122,6 +122,11 @@
+     /// Visits an image.
+     fn visit_image(&mut self, _image: &Image<'a>) {}
+ 
++    /// Visits highlighted text and its children.
++    fn visit_highlight(&mut self, highlight: &Highlight<'a>) {
++        walk_highlight(self, highlight);
++    }
++
+     /// Visits strikethrough.
+     fn visit_delete(&mut self, delete: &Delete<'a>) {
+         walk_delete(self, delete);
+--- a/crates/ferromark_parser/src/parser/block.rs
++++ b/crates/ferromark_parser/src/parser/block.rs
+@@ -176,7 +176,8 @@
+ 
+         // Link reference definitions look like paragraphs but are
+         // consumed as their own (non-rendered) nodes.
+-        if bytes[trimmed_start] == b'['
++        if self.options.allow_link_refs
++            && bytes[trimmed_start] == b'['
+             && let Some(node) = self.try_parse_definition_node()
+         {
+             return Ok(Some(node));
+--- a/crates/ferromark_parser/src/parser/inline/emphasis.rs
++++ b/crates/ferromark_parser/src/parser/inline/emphasis.rs
+@@ -1,10 +1,10 @@
+-//! Emphasis, strong emphasis, and GFM strikethrough via the delimiter stack.
++//! Emphasis, strong emphasis, GFM strikethrough, and marked text via the delimiter stack.
+ //!
+-//! During inline parsing every enabled `*`/`_`/`~` run is pushed as a plain text node
++//! During inline parsing every enabled `*`/`_`/`~`/`==` run is pushed as a plain text node
+ //! plus a [`Delimiter`] record carrying its flanking classification. Once
+ //! the inline sequence is complete, [`Parser::process_emphasis`] pairs
+ //! closers with openers (nearest matching opener, rule of three), wraps
+-//! the nodes between into `Emphasis`/`Strong`/`Delete`, and trims the delimiter
++//! the nodes between into `Emphasis`/`Strong`/`Delete`/`Highlight`, and trims the delimiter
+ //! text nodes in place. Unpaired runs simply stay literal text.
+ 
+ use ferromark_allocator::Vec;
+@@ -25,7 +25,7 @@
+ }
+ 
+ impl<'a> Parser<'a> {
+-    /// Records a `*`/`_`/`~` run: pushes its text node and the delimiter
++    /// Records a `*`/`_`/`~`/`==` run: pushes its text node and the delimiter
+     /// entry describing how it may participate in emphasis.
+     pub(in crate::parser) fn push_delimiter_run(
+         &self,
+@@ -140,7 +140,12 @@
+                 }
+             }
+             let span = inner_span(&inner, use_delims);
+-            let node = if strikethrough {
++            let node = if delimiters[closer_idx].marker == b'=' {
++                Node::Highlight(self.allocator.boxed(ferromark_ast::Highlight {
++                    children: inner,
++                    span,
++                }))
++            } else if strikethrough {
+                 Node::Delete(self.allocator.boxed(ferromark_ast::Delete {
+                     children: inner,
+                     span,
+@@ -205,6 +210,7 @@
+     star: [[Option<usize>; 2]; 3],
+     underscore: [[Option<usize>; 2]; 3],
+     tilde: [[Option<usize>; 2]; 3],
++    equals: [[Option<usize>; 2]; 3],
+ }
+ 
+ impl OpenersBottom {
+@@ -212,6 +218,7 @@
+         let table = match closer.marker {
+             b'_' => &mut self.underscore,
+             b'~' => &mut self.tilde,
++            b'=' => &mut self.equals,
+             _ => &mut self.star,
+         };
+         &mut table[closer.orig_len % 3][usize::from(closer.can_open)]
+@@ -263,19 +270,7 @@
+ }
+ 
+ fn node_span(node: &Node<'_>) -> Span {
+-    match node {
+-        Node::Text(n) => n.span,
+-        Node::Emphasis(n) => n.span,
+-        Node::Strong(n) => n.span,
+-        Node::InlineCode(n) => n.span,
+-        Node::Link(n) => n.span,
+-        Node::Image(n) => n.span,
+-        Node::Delete(n) => n.span,
+-        Node::Break(n) => n.span,
+-        Node::Html(n) => n.span,
+-        Node::FootnoteReference(n) => n.span,
+-        _ => Span::new(0, 0),
+-    }
++    node.span()
+ }
+ 
+ fn trim_text_tail(node: &mut Node<'_>, count: u32) {
+@@ -317,7 +312,7 @@
+     let left_flanking = !next_ws && (!next_punct || prev_ws || prev_punct);
+     let right_flanking = !prev_ws && (!prev_punct || next_ws || next_punct);
+ 
+-    if matches!(marker, b'*' | b'~') {
++    if matches!(marker, b'*' | b'~' | b'=') {
+         (left_flanking, right_flanking)
+     } else {
+         (
+--- a/crates/ferromark_parser/src/parser/inline/gfm_autolink.rs
++++ b/crates/ferromark_parser/src/parser/inline/gfm_autolink.rs
+@@ -53,6 +53,7 @@
+             match &mut children[i] {
+                 Node::Emphasis(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                 Node::Strong(node) => self.apply_gfm_autolinks(&mut node.children, scan),
++                Node::Highlight(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                 Node::Delete(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                 Node::Superscript(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                 Node::Subscript(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+--- a/crates/ferromark_parser/src/parser/inline/marker_scan.rs
++++ b/crates/ferromark_parser/src/parser/inline/marker_scan.rs
+@@ -4,7 +4,8 @@
+ //! one cursor and the rule for when it has to be recomputed.
+ 
+ use super::scan::{
+-    INLINE_MARKER_MATH, INLINE_MARKER_MDX, INLINE_MARKER_SUPERSCRIPT, next_inline_marker,
++    INLINE_MARKER_HIGHLIGHT, INLINE_MARKER_MATH, INLINE_MARKER_MDX, INLINE_MARKER_SUPERSCRIPT,
++    next_inline_marker,
+ };
+ 
+ /// A memo for one forward byte scan over a fixed slice.
+@@ -45,30 +46,62 @@
+ /// avoids repeated traversals when several extensions are enabled.
+ pub(super) struct InlineMarkerScan {
+     optional: u8,
++    notes_only: bool,
+     scan: ForwardScan,
+ }
+ 
+ impl InlineMarkerScan {
+-    pub(super) const fn new(mdx: bool, superscript: bool, math: bool) -> Self {
++    pub(super) const fn new(options: &crate::ParserOptions) -> Self {
+         let mut optional = 0;
+-        if mdx {
++        if options.mdx {
+             optional |= INLINE_MARKER_MDX;
+         }
+-        if superscript {
++        if options.superscript || options.inline_footnotes {
+             optional |= INLINE_MARKER_SUPERSCRIPT;
+         }
+-        if math {
++        if options.math {
+             optional |= INLINE_MARKER_MATH;
++        }
++        if options.highlight {
++            optional |= INLINE_MARKER_HIGHLIGHT;
+         }
+         Self {
+             optional,
++            notes_only: options.inline_footnotes && !options.superscript,
+             scan: ForwardScan::new(),
+         }
+     }
+ 
+     pub(super) fn next(&mut self, bytes: &[u8], from: usize) -> usize {
+-        self.scan
+-            .hit(from, |at| next_inline_marker(bytes, at, self.optional))
++        let optional = self.optional;
++        let notes_only = self.notes_only;
++        self.scan.hit(from, |mut at| {
++            loop {
++                at = next_inline_marker(bytes, at, optional);
++                if optional == 0 || at == bytes.len() {
++                    return at;
++                }
++                // An isolated equals sign or a caret that cannot start a note
++                // stays in the current text run: no extra AST nodes or dispatch.
++                if bytes[at] == b'='
++                    && bytes.get(at + 1) == Some(&b'=')
++                    && (at == 0 || bytes[at - 1].is_ascii_whitespace())
++                    && bytes.get(at + 2).is_none_or(u8::is_ascii_whitespace)
++                {
++                    // A pair surrounded by whitespace can neither open nor
++                    // close. Preserve it in the text run without a delimiter record.
++                    at += 2;
++                    continue;
++                }
++                if (bytes[at] == b'=' && bytes.get(at + 1) != Some(&b'='))
++                    || (notes_only && bytes[at] == b'^' && bytes.get(at + 1) != Some(&b'['))
++                {
++                    at += 1;
++                } else {
++                    return at;
++                }
++            }
++        })
+     }
+ }
+ 
+@@ -83,11 +116,19 @@
+         ) || (options & INLINE_MARKER_MDX != 0 && byte == b'{')
+             || (options & INLINE_MARKER_SUPERSCRIPT != 0 && byte == b'^')
+             || (options & INLINE_MARKER_MATH != 0 && byte == b'$')
++            || (options & INLINE_MARKER_HIGHLIGHT != 0 && byte == b'=')
+     }
+ 
+     fn oracle(bytes: &[u8], from: usize, options: u8) -> usize {
+         let mut at = from;
+-        while at < bytes.len() && !is_marker(bytes[at], options) {
++        while at < bytes.len()
++            && (!is_marker(bytes[at], options)
++                || (bytes[at] == b'=' && bytes.get(at + 1) != Some(&b'='))
++                || (bytes[at] == b'='
++                    && bytes.get(at + 1) == Some(&b'=')
++                    && (at == 0 || bytes[at - 1].is_ascii_whitespace())
++                    && bytes.get(at + 2).is_none_or(u8::is_ascii_whitespace)))
++        {
+             at += 1;
+         }
+         at
+@@ -95,7 +136,7 @@
+ 
+     #[test]
+     fn matches_scalar_oracle_for_all_option_masks_and_offsets() {
+-        for options in 0..=7 {
++        for options in 0..=15 {
+             for len in 0..=80 {
+                 let mut storage = [b'x'; 80];
+                 for (at, byte) in storage[..len].iter_mut().enumerate() {
+@@ -110,11 +151,11 @@
+                 }
+                 let bytes = &storage[..len];
+                 for from in 0..=len {
+-                    let mut scan = InlineMarkerScan::new(
+-                        options & INLINE_MARKER_MDX != 0,
+-                        options & INLINE_MARKER_SUPERSCRIPT != 0,
+-                        options & INLINE_MARKER_MATH != 0,
+-                    );
++                    let mut scan = InlineMarkerScan {
++                        optional: options,
++                        notes_only: false,
++                        scan: ForwardScan::new(),
++                    };
+                     assert_eq!(
+                         scan.next(bytes, from),
+                         oracle(bytes, from, options),
+@@ -127,17 +168,17 @@
+ 
+     #[test]
+     fn matches_every_byte_value_at_every_offset() {
+-        for options in 0..=7 {
++        for options in 0..=15 {
+             for value in 0..=u8::MAX {
+                 let mut bytes = [b'x'; 72];
+                 for at in 0..bytes.len() {
+                     bytes[at] = value;
+                     for from in 0..=at {
+-                        let mut scan = InlineMarkerScan::new(
+-                            options & INLINE_MARKER_MDX != 0,
+-                            options & INLINE_MARKER_SUPERSCRIPT != 0,
+-                            options & INLINE_MARKER_MATH != 0,
+-                        );
++                        let mut scan = InlineMarkerScan {
++                            optional: options,
++                            notes_only: false,
++                            scan: ForwardScan::new(),
++                        };
+                         assert_eq!(scan.next(&bytes, from), oracle(&bytes, from, options));
+                     }
+                 }
+@@ -149,12 +190,12 @@
+     fn matches_valid_utf8_and_earliest_marker() {
+         let text = "prefixé 中 {math ^ $ * suffix";
+         let bytes = text.as_bytes();
+-        for options in 0..=7 {
+-            let mut scan = InlineMarkerScan::new(
+-                options & INLINE_MARKER_MDX != 0,
+-                options & INLINE_MARKER_SUPERSCRIPT != 0,
+-                options & INLINE_MARKER_MATH != 0,
+-            );
++        for options in 0..=15 {
++            let mut scan = InlineMarkerScan {
++                optional: options,
++                notes_only: false,
++                scan: ForwardScan::new(),
++            };
+             for from in 0..=bytes.len() {
+                 assert_eq!(scan.next(bytes, from), oracle(bytes, from, options));
+             }
+--- a/crates/ferromark_parser/src/parser/inline/scan.rs
++++ b/crates/ferromark_parser/src/parser/inline/scan.rs
+@@ -66,7 +66,8 @@
+ /// The optional bytes use otherwise-unused intersections: `$` gets bit 0x40
+ /// at (high 2, low 4), `^` gets bit 0x80 at (high 5, low E), and `{` reuses
+ /// the existing `~` bit at (high 7, low B). These choices avoid admitting any
+-/// cross-product byte. Eight precomputed pairs let each scan use only the
++/// cross-product byte. `=` shares the `<` bit at (high 3, low D).
++/// Sixteen precomputed pairs let each scan use only the
+ /// enabled extension markers; disabled bytes never need retry filtering.
+ #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+ const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
+@@ -83,11 +84,14 @@
+         low[4] |= 0x40;
+         high[2] |= 0x40;
+     }
++    if options & 8 != 0 {
++        low[13] |= 0x04; // `=` shares the high nibble of `<`.
++    }
+     (low, high)
+ }
+ 
+ #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+-const OPTION_TABLES: [([u8; 16], [u8; 16]); 8] = [
++const OPTION_TABLES: [([u8; 16], [u8; 16]); 16] = [
+     marker_tables(0),
+     marker_tables(1),
+     marker_tables(2),
+@@ -96,12 +100,20 @@
+     marker_tables(5),
+     marker_tables(6),
+     marker_tables(7),
++    marker_tables(8),
++    marker_tables(9),
++    marker_tables(10),
++    marker_tables(11),
++    marker_tables(12),
++    marker_tables(13),
++    marker_tables(14),
++    marker_tables(15),
+ ];
+ 
+ #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+ #[inline]
+ fn selected_marker_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
+-    let tables = &OPTION_TABLES[(options & 7) as usize];
++    let tables = &OPTION_TABLES[(options & 15) as usize];
+     (&tables.0, &tables.1)
+ }
+ 
+@@ -422,6 +434,7 @@
+ /// Marker bits used by [`next_inline_marker`].
+ pub(super) const INLINE_MARKER_MDX: u8 = 1 << 0;
+ pub(super) const INLINE_MARKER_SUPERSCRIPT: u8 = 1 << 1;
++pub(super) const INLINE_MARKER_HIGHLIGHT: u8 = 1 << 3;
+ pub(super) const INLINE_MARKER_MATH: u8 = 1 << 2;
+ 
+ /// Find the next core marker or enabled extension marker.
+@@ -497,6 +510,7 @@
+     ) || (options & 1 != 0 && byte == b'{')
+         || (options & 2 != 0 && byte == b'^')
+         || (options & 4 != 0 && byte == b'$')
++        || (options & 8 != 0 && byte == b'=')
+ }
+ 
+ #[cfg(test)]
+--- a/crates/ferromark_parser/src/parser/inline.rs
++++ b/crates/ferromark_parser/src/parser/inline.rs
+@@ -60,11 +60,7 @@
+         offset: usize,
+     ) -> ParseResult<Vec<'a, Node<'a>>> {
+         let bytes = content.as_bytes();
+-        let mut markers = InlineMarkerScan::new(
+-            self.allows_mdx_text_expression(),
+-            self.options.superscript,
+-            self.options.math,
+-        );
++        let mut markers = InlineMarkerScan::new(&self.options);
+         let first_special = markers.next(bytes, 0);
+ 
+         // Plain text is both the most common inline shape and exactly one AST
+@@ -213,6 +209,23 @@
+                 Self::push_text(children, "\\", offset + *pos, offset + *pos + 1);
+                 *pos += 1;
+             }
++            b'=' if self.options.highlight => {
++                let run = Self::marker_run_len(bytes, *pos, b'=');
++                if run == 2 {
++                    self.push_delimiter_run(content, offset, children, delimiters, pos);
++                } else {
++                    Self::push_text(
++                        children,
++                        &content[*pos..*pos + run],
++                        offset + *pos,
++                        offset + *pos + run,
++                    );
++                    *pos += run;
++                }
++            }
++            b'^' if self.options.inline_footnotes && bytes.get(*pos + 1) == Some(&b'[') => {
++                self.parse_inline_footnote(content, offset, children, pos)?;
++            }
+             b'~' if self.options.strikethrough => {
+                 let run_len = Self::marker_run_len(bytes, *pos, b'~');
+                 // A caller that explicitly enables both extensions keeps the
+--- /dev/null
++++ b/crates/ferromark_parser/src/parser/inline_footnote.rs
+@@ -0,0 +1,247 @@
++//! Inline notes lower to the existing reference/definition AST at the root.
++//! No numbering or definition side effects occur during speculative link parsing.
++
++use ferromark_allocator::Vec;
++use ferromark_ast::{Document, FootnoteDefinition, FootnoteReference, Node, Paragraph, Span};
++
++use ferromark_ast::Visit;
++use rustc_hash::FxHashSet;
++
++use super::Parser;
++
++#[derive(Default)]
++struct ExplicitLabels<'a>(FxHashSet<&'a str>);
++
++impl<'a> Visit<'a> for ExplicitLabels<'a> {
++    fn visit_footnote_definition(&mut self, definition: &FootnoteDefinition<'a>) {
++        if definition.label.is_some() {
++            self.0.insert(definition.identifier);
++        }
++        ferromark_ast::walk_footnote_definition(self, definition);
++    }
++}
++use crate::error::ParseResult;
++
++impl<'a> Parser<'a> {
++    pub(super) fn parse_inline_footnote(
++        &self,
++        content: &'a str,
++        offset: usize,
++        children: &mut Vec<'a, Node<'a>>,
++        pos: &mut usize,
++    ) -> ParseResult<()> {
++        let start = *pos;
++        let body_start = start + 2;
++        let has_closer = self.has_closer_from(content, body_start, b']');
++        if has_closer {
++            let (close, _) = Self::scan_balanced(content, body_start);
++            if close < content.len() && close > body_start {
++                let body = &content[body_start..close];
++                // An inline note cannot cross a paragraph boundary. Block parsing
++                // usually enforces this already; this also covers inline callers.
++                if !body.lines().any(|line| line.trim().is_empty()) {
++                    let mut parser =
++                        self.sub_parser_with_lazy_lines(body, rustc_hash::FxHashSet::default());
++                    parser.options.inline_footnotes = false;
++                    let inline = parser.parse_inline_block(body, offset + body_start)?;
++                    let span = Span::new((offset + start) as u32, (offset + close + 1) as u32);
++                    let mut blocks = self.allocator.new_vec_with_capacity(1);
++                    blocks.push(Node::Paragraph(self.allocator.boxed(Paragraph {
++                        children: inline,
++                        span: Span::new((offset + body_start) as u32, (offset + close) as u32),
++                    })));
++                    // Only internal inline placeholders have no label. They are
++                    // lifted after all speculative parses and span remapping.
++                    children.push(Node::FootnoteDefinition(self.allocator.boxed(
++                        FootnoteDefinition {
++                            identifier: "",
++                            label: None,
++                            children: blocks,
++                            span,
++                        },
++                    )));
++                    if let Some(seen) = self.inline_note_seen {
++                        seen.set(true);
++                    }
++                    *pos = close + 1;
++                    return Ok(());
++                }
++            }
++        }
++        // With no closing bracket anywhere, the following `[` cannot open
++        // a link either. Consume both literal bytes in one step instead of
++        // re-entering the link parser and repeating the same cache lookup.
++        if !has_closer {
++            Self::push_text(children, "^[", offset + start, offset + body_start);
++            *pos = body_start;
++            return Ok(());
++        }
++        Self::push_text(children, "^", offset + start, offset + start + 1);
++        *pos += 1;
++        Ok(())
++    }
++
++    pub(super) fn lower_inline_footnotes(&self, document: &mut Document<'a>) {
++        // The reference prepass is only a lookup aid: it does not collect
++        // every nested definition that can survive block parsing. Use the
++        // final AST to avoid identifier collisions in quotes and lists too.
++        let mut explicit = ExplicitLabels::default();
++        explicit.visit_document(document);
++        let mut definitions = self.allocator.new_vec();
++        let mut next_id = 1;
++        for node in &mut document.children {
++            self.lift_inline_note(node, &mut definitions, &mut next_id, &explicit.0);
++        }
++        document.children.extend(definitions);
++    }
++
++    fn lift_inline_note(
++        &self,
++        node: &mut Node<'a>,
++        definitions: &mut Vec<'a, Node<'a>>,
++        next_id: &mut usize,
++        explicit: &FxHashSet<&str>,
++    ) {
++        if let Node::FootnoteDefinition(definition) = node
++            && definition.label.is_none()
++        {
++            let identifier = loop {
++                let candidate = compact_str::format_compact!("{next_id}");
++                *next_id += 1;
++                if !explicit.contains(candidate.as_str()) {
++                    break self.allocator.alloc_str(&candidate) as &'a str;
++                }
++            };
++            definition.identifier = identifier;
++            let reference = Node::FootnoteReference(self.allocator.boxed(FootnoteReference {
++                identifier,
++                label: None,
++                span: definition.span,
++            }));
++            definitions.push(core::mem::replace(node, reference));
++            return;
++        }
++        match node {
++            Node::Paragraph(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::Heading(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::BlockQuote(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::ListItem(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::DefinitionList(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::DefinitionListTerm(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::DefinitionListDefinition(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::Emphasis(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::Strong(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::Link(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::Highlight(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::Delete(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::Superscript(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::Subscript(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::FootnoteDefinition(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::MdxJsxFlowElement(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::MdxJsxTextElement(n) => {
++                for child in &mut n.children {
++                    self.lift_inline_note(child, definitions, next_id, explicit);
++                }
++            }
++            Node::List(n) => {
++                for item in &mut n.children {
++                    for child in &mut item.children {
++                        self.lift_inline_note(child, definitions, next_id, explicit);
++                    }
++                }
++            }
++            Node::Table(n) => {
++                if let Some(attributes) = &mut n.attributes {
++                    for child in &mut attributes.caption {
++                        self.lift_inline_note(child, definitions, next_id, explicit);
++                    }
++                }
++                for row in &mut n.children {
++                    for cell in &mut row.children {
++                        for child in &mut cell.children {
++                            self.lift_inline_note(child, definitions, next_id, explicit);
++                        }
++                    }
++                }
++            }
++            Node::Text(_)
++            | Node::ThematicBreak(_)
++            | Node::CodeBlock(_)
++            | Node::MathBlock(_)
++            | Node::Html(_)
++            | Node::InlineCode(_)
++            | Node::InlineMath(_)
++            | Node::Break(_)
++            | Node::Image(_)
++            | Node::FootnoteReference(_)
++            | Node::Definition(_)
++            | Node::MdxjsEsm(_)
++            | Node::MdxFlowExpression(_)
++            | Node::MdxTextExpression(_) => {}
++        }
++    }
++}
+--- a/crates/ferromark_parser/src/parser/inline_helpers.rs
++++ b/crates/ferromark_parser/src/parser/inline_helpers.rs
+@@ -60,7 +60,9 @@
+             }
+ 
+             let mut well_formed_reference = false;
+-            if bytes.get(close + 1) == Some(&b'[') && self.has_closer_from(content, close + 2, b']')
++            if self.options.allow_link_refs
++                && bytes.get(close + 1) == Some(&b'[')
++                && self.has_closer_from(content, close + 2, b']')
+             {
+                 let label_start = close + 2;
+                 let (label_end, _) = Self::scan_balanced(content, label_start);
+@@ -304,6 +306,7 @@
+             Node::InlineCode(n) => out.push_str(n.value),
+             Node::Emphasis(n) => flatten_inline_text(&n.children, out),
+             Node::Strong(n) => flatten_inline_text(&n.children, out),
++            Node::Highlight(n) => flatten_inline_text(&n.children, out),
+             Node::Delete(n) => flatten_inline_text(&n.children, out),
+             Node::Superscript(n) => flatten_inline_text(&n.children, out),
+             Node::Subscript(n) => flatten_inline_text(&n.children, out),
+--- a/crates/ferromark_parser/src/parser/inline_link.rs
++++ b/crates/ferromark_parser/src/parser/inline_link.rs
+@@ -94,7 +94,8 @@
+ 
+             // Full [text][label] and collapsed [text][] reference forms.
+             let mut well_formed_reference = false;
+-            if !inner_has_link
++            if self.options.allow_link_refs
++                && !inner_has_link
+                 && bytes.get(close + 1) == Some(&b'[')
+                 && self.has_closer_from(content, close + 2, b']')
+             {
+@@ -278,8 +279,10 @@
+ fn contains_link(nodes: &[Node<'_>]) -> bool {
+     nodes.iter().any(|node| match node {
+         Node::Link(_) => true,
++        Node::FootnoteDefinition(n) if n.label.is_none() => true,
+         Node::Emphasis(n) => contains_link(&n.children),
+         Node::Strong(n) => contains_link(&n.children),
++        Node::Highlight(n) => contains_link(&n.children),
+         Node::Delete(n) => contains_link(&n.children),
+         Node::Superscript(n) => contains_link(&n.children),
+         Node::Subscript(n) => contains_link(&n.children),
+--- a/crates/ferromark_parser/src/parser/mdx_jsx/children.rs
++++ b/crates/ferromark_parser/src/parser/mdx_jsx/children.rs
+@@ -138,6 +138,12 @@
+             }
+         }
+         Node::Image(node) => remap_span(&mut node.span, source_offset, offsets),
++        Node::Highlight(node) => {
++            remap_span(&mut node.span, source_offset, offsets);
++            for child in &mut node.children {
++                remap_node_spans(child, source_offset, offsets);
++            }
++        }
+         Node::Delete(node) => {
+             remap_span(&mut node.span, source_offset, offsets);
+             for child in &mut node.children {
+--- a/crates/ferromark_parser/src/parser/options.rs
++++ b/crates/ferromark_parser/src/parser/options.rs
+@@ -18,6 +18,18 @@
+     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
+     pub footnotes: bool,
+ 
++    /// Enable `==highlighted text==`. Off in all presets.
++    pub highlight: bool,
++
++    /// Enable Pandoc-style `^[inline notes]`. Off in all presets.
++    /// Independent of reference footnotes; nested inline notes stay literal.
++    pub inline_footnotes: bool,
++
++    /// Resolve link/image references and consume their definitions.
++    /// Default: `true`. Disabling this leaves definitions as visible Markdown
++    /// and skips collection; inline links and footnotes remain independent.
++    pub allow_link_refs: bool,
++
+     /// Enable GFM task-list item markers such as `- [x]`.
+     ///
+     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
+@@ -153,6 +165,9 @@
+     fn default() -> Self {
+         Self {
+             gfm: false,
++            highlight: false,
++            inline_footnotes: false,
++            allow_link_refs: true,
+             footnotes: false,
+             task_lists: false,
+             tables: false,
+@@ -200,6 +215,9 @@
+     pub fn gfm() -> Self {
+         Self {
+             gfm: true,
++            highlight: false,
++            inline_footnotes: false,
++            allow_link_refs: true,
+             footnotes: true,
+             task_lists: true,
+             tables: true,
+@@ -229,6 +247,9 @@
+     #[must_use]
+     pub fn gfm_spec() -> Self {
+         Self {
++            highlight: false,
++            inline_footnotes: false,
++            allow_link_refs: true,
+             footnotes: false,
+             ..Self::gfm()
+         }
+--- a/crates/ferromark_parser/src/parser/prepass.rs
++++ b/crates/ferromark_parser/src/parser/prepass.rs
+@@ -116,6 +116,9 @@
+     pub(super) fn build_prepass(
+         &self,
+     ) -> (Option<Rc<ReferenceMap<'a>>>, Option<Rc<FootnoteLabels>>) {
++        if !self.options.allow_link_refs && !self.options.footnotes {
++            return (None, None);
++        }
+         // Cheap bail: both collectors need a bounded `[...]:` opener at a
+         // valid block-line prefix. Full syntax and context validation still
+         // happens below, but ordinary prose decoys skip the structural scan.
+@@ -230,7 +233,11 @@
+                 continue;
+             }
+ 
+-            if !paragraph_open && stripped.len() - trimmed.len() <= 3 && trimmed.starts_with('[') {
++            if self.options.allow_link_refs
++                && !paragraph_open
++                && stripped.len() - trimmed.len() <= 3
++                && trimmed.starts_with('[')
++            {
+                 // Candidate: join the stripped lines of this paragraph
+                 // chunk and parse as many definitions as it holds.
+                 let (chunk, line_starts) = self.join_stripped_chunk(pos);
+--- a/crates/ferromark_parser/src/parser/reference.rs
++++ b/crates/ferromark_parser/src/parser/reference.rs
+@@ -80,6 +80,9 @@
+     /// Parses a single definition at the start of `text`. `text` must not
+     /// span a blank line (callers cut at paragraph boundaries).
+     pub(super) fn parse_reference_definition(&self, text: &'a str) -> Option<ParsedDefinition<'a>> {
++        if !self.options.allow_link_refs {
++            return None;
++        }
+         let bytes = text.as_bytes();
+         let mut i = 0;
+         while i < bytes.len() && bytes[i] == b' ' {
+--- a/crates/ferromark_parser/src/parser/spans/remap.rs
++++ b/crates/ferromark_parser/src/parser/spans/remap.rs
+@@ -101,6 +101,12 @@
+                 }
+             }
+             Node::Image(node) => Self::remap_inline_span(&mut node.span, source_map),
++            Node::Highlight(node) => {
++                Self::remap_inline_span(&mut node.span, source_map);
++                for child in &mut node.children {
++                    Self::remap_node_spans(child, source_map);
++                }
++            }
+             Node::Delete(node) => {
+                 Self::remap_inline_span(&mut node.span, source_map);
+                 for child in &mut node.children {
+--- a/crates/ferromark_parser/src/parser/spans.rs
++++ b/crates/ferromark_parser/src/parser/spans.rs
+@@ -247,6 +247,12 @@
+                 }
+             }
+             Node::Image(node) => Self::offset_span(&mut node.span, offset),
++            Node::Highlight(node) => {
++                Self::offset_span(&mut node.span, offset);
++                for child in &mut node.children {
++                    Self::offset_node_spans(child, offset);
++                }
++            }
+             Node::Delete(node) => {
+                 Self::offset_span(&mut node.span, offset);
+                 for child in &mut node.children {
+--- a/crates/ferromark_parser/src/parser/table_cell_source.rs
++++ b/crates/ferromark_parser/src/parser/table_cell_source.rs
+@@ -175,6 +175,12 @@
+         Node::Image(node) => {
+             remap_table_cell_span(&mut node.span, source_offset, source_map);
+         }
++        Node::Highlight(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++            for child in &mut node.children {
++                remap_table_cell_inline_spans(child, source_offset, source_map);
++            }
++        }
+         Node::Delete(node) => {
+             remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+@@ -211,8 +217,19 @@
+         Node::MdxTextExpression(node) => {
+             remap_table_cell_span(&mut node.span, source_offset, source_map);
+         }
+-        Node::Paragraph(_)
+-        | Node::Heading(_)
++        Node::FootnoteDefinition(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++            for child in &mut node.children {
++                remap_table_cell_inline_spans(child, source_offset, source_map);
++            }
++        }
++        Node::Paragraph(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++            for child in &mut node.children {
++                remap_table_cell_inline_spans(child, source_offset, source_map);
++            }
++        }
++        Node::Heading(_)
+         | Node::ThematicBreak(_)
+         | Node::BlockQuote(_)
+         | Node::List(_)
+@@ -224,7 +241,6 @@
+         | Node::DefinitionListTerm(_)
+         | Node::DefinitionListDefinition(_)
+         | Node::Definition(_)
+-        | Node::FootnoteDefinition(_)
+         | Node::MdxJsxFlowElement(_)
+         | Node::MdxjsEsm(_)
+         | Node::MdxFlowExpression(_) => {}
+--- a/crates/ferromark_parser/src/parser.rs
++++ b/crates/ferromark_parser/src/parser.rs
+@@ -16,6 +16,7 @@
+ mod html;
+ mod indented_code;
+ mod inline;
++mod inline_footnote;
+ mod inline_helpers;
+ mod inline_html;
+ mod inline_link;
+@@ -80,6 +81,11 @@
+     /// whether a definition exists before reaching it.
+     footnote_labels: Option<std::rc::Rc<footnote::FootnoteLabels>>,
+ 
++    /// Shared by container sub-parsers. Allocated in the existing arena only
++    /// when inline notes are enabled; avoids a source scan or AST walk when
++    /// no inline note was parsed. Speculative parses may set it harmlessly.
++    inline_note_seen: Option<&'a std::cell::Cell<bool>>,
++
+     /// Byte offsets (in `source`) of lines that entered this sub-source
+     /// via lazy continuation. Such lines are paragraph text by
+     /// construction and must not be reinterpreted as setext underlines
+@@ -161,6 +167,8 @@
+             source,
+             source_map,
+             front_matter: front_matter.map(|metadata| allocator.boxed(metadata)),
++            inline_note_seen: (options.inline_footnotes && !source.is_empty())
++                .then(|| &*allocator.alloc(std::cell::Cell::new(false))),
+             options,
+             position: 0,
+             nesting_depth: 0,
+@@ -215,6 +223,7 @@
+             nesting_depth: self.nesting_depth + 1,
+             definitions: self.definitions.clone(),
+             footnote_labels: self.footnote_labels.clone(),
++            inline_note_seen: self.inline_note_seen,
+             // Most sub-sources are entered without any lazy continuation
+             // line, and every block quote and list item builds one of these.
+             lazy_lines: (!lazy_lines.is_empty()).then(|| std::rc::Rc::new(lazy_lines)),
+@@ -246,6 +255,12 @@
+                 }
+             }
+         }
++        if self.nesting_depth == 0
++            && self.inline_note_seen.is_some_and(std::cell::Cell::get)
++            && let Ok(document) = &mut result
++        {
++            self.lower_inline_footnotes(document);
++        }
+         result
+     }
+ 
+--- a/crates/ferromark_parser/tests/edge_cases/spans.rs
++++ b/crates/ferromark_parser/tests/edge_cases/spans.rs
+@@ -262,6 +262,7 @@
+         Node::Strong(node) => assert_all_spans_index_source(source, &node.children),
+         Node::Link(node) => assert_all_spans_index_source(source, &node.children),
+         Node::Delete(node) => assert_all_spans_index_source(source, &node.children),
++        Node::Highlight(node) => assert_all_spans_index_source(source, &node.children),
+         Node::Superscript(node) => assert_all_spans_index_source(source, &node.children),
+         Node::Subscript(node) => assert_all_spans_index_source(source, &node.children),
+         Node::FootnoteDefinition(node) => assert_all_spans_index_source(source, &node.children),
+--- a/crates/ferromark_parser/tests/snapshot_parse/mixed.rs
++++ b/crates/ferromark_parser/tests/snapshot_parse/mixed.rs
+@@ -103,6 +103,7 @@
+         Some(Node::Link(_)) => "Link",
+         Some(Node::Image(_)) => "Image",
+         Some(Node::Delete(_)) => "Delete",
++        Some(Node::Highlight(_)) => "Highlight",
+         Some(Node::Superscript(_)) => "Superscript",
+         Some(Node::Subscript(_)) => "Subscript",
+         Some(Node::FootnoteReference(_)) => "FootnoteReference",
+--- a/crates/ferromark_parser/tests/support/pretty.rs
++++ b/crates/ferromark_parser/tests/support/pretty.rs
+@@ -273,6 +273,16 @@
+                 ),
+             );
+         }
++        Node::Highlight(d) => {
++            line(
++                out,
++                depth,
++                format_args!("Highlight {}", span(d.span, source)),
++            );
++            for child in &d.children {
++                format_node(child, source, depth + 1, out);
++            }
++        }
+         Node::Delete(d) => {
+             line(out, depth, format_args!("Delete {}", span(d.span, source)));
+             for child in &d.children {
+--- a/crates/ferromark_renderer/src/html/heading.rs
++++ b/crates/ferromark_renderer/src/html/heading.rs
+@@ -36,6 +36,11 @@
+             }
+         }
+         Node::Strong(value) => {
++            for child in &value.children {
++                collect_node_text(child, text);
++            }
++        }
++        Node::Highlight(value) => {
+             for child in &value.children {
+                 collect_node_text(child, text);
+             }
+@@ -148,6 +153,7 @@
+         Node::Html(html) => html_has_header_anchor(html.value),
+         Node::Emphasis(value) => heading_has_permalink_marker(&value.children, id),
+         Node::Strong(value) => heading_has_permalink_marker(&value.children, id),
++        Node::Highlight(value) => heading_has_permalink_marker(&value.children, id),
+         Node::Delete(value) => heading_has_permalink_marker(&value.children, id),
+         Node::Superscript(value) => heading_has_permalink_marker(&value.children, id),
+         Node::Subscript(value) => heading_has_permalink_marker(&value.children, id),
+--- a/crates/ferromark_renderer/src/html/renderer/hooks/inlines.rs
++++ b/crates/ferromark_renderer/src/html/renderer/hooks/inlines.rs
+@@ -1,4 +1,4 @@
+-use ferromark_ast::{Delete, Emphasis, Link, Strong, Subscript, Superscript};
++use ferromark_ast::{Delete, Emphasis, Highlight, Link, Strong, Subscript, Superscript};
+ 
+ use super::HtmlRenderHooks;
+ use crate::html::renderer::HtmlRenderer;
+@@ -62,6 +62,19 @@
+         self.write("</a>");
+     }
+ 
++    /// Visits highlighted text and its children.
++    pub(in crate::html::renderer) fn render_highlight_with_hooks<H: HtmlRenderHooks>(
++        &mut self,
++        highlight: &Highlight<'_>,
++        hooks: &mut H,
++    ) {
++        self.write("<mark>");
++        for child in &highlight.children {
++            self.render_inline_node_with_hooks(child, hooks);
++        }
++        self.write("</mark>");
++    }
++
+     pub(in crate::html::renderer) fn render_delete_with_hooks<H: HtmlRenderHooks>(
+         &mut self,
+         delete: &Delete<'_>,
+--- a/crates/ferromark_renderer/src/html/renderer/hooks.rs
++++ b/crates/ferromark_renderer/src/html/renderer/hooks.rs
+@@ -113,6 +113,7 @@
+             | Node::Strong(_)
+             | Node::Link(_)
+             | Node::Delete(_)
++            | Node::Highlight(_)
+             | Node::Superscript(_)
+             | Node::Subscript(_)
+             | Node::MdxJsxTextElement(_)
+@@ -225,6 +226,7 @@
+             Node::Break(node) => self.render_break(node),
+             Node::Link(node) => self.render_link_with_hooks(node, hooks),
+             Node::Image(node) => self.render_image(node),
++            Node::Highlight(node) => self.render_highlight_with_hooks(node, hooks),
+             Node::Delete(node) => self.render_delete_with_hooks(node, hooks),
+             Node::Superscript(node) => self.render_superscript_with_hooks(node, hooks),
+             Node::Subscript(node) => self.render_subscript_with_hooks(node, hooks),
+@@ -258,6 +260,7 @@
+             Node::Break(node) => self.render_break(node),
+             Node::Link(node) => self.render_link_with_hooks(node, hooks),
+             Node::Image(node) => self.render_image(node),
++            Node::Highlight(node) => self.render_highlight_with_hooks(node, hooks),
+             Node::Delete(node) => self.render_delete_with_hooks(node, hooks),
+             Node::Superscript(node) => self.render_superscript_with_hooks(node, hooks),
+             Node::Subscript(node) => self.render_subscript_with_hooks(node, hooks),
+--- a/crates/ferromark_renderer/src/html/renderer/inlines.rs
++++ b/crates/ferromark_renderer/src/html/renderer/inlines.rs
+@@ -5,8 +5,8 @@
+ //! single place.
+ 
+ use ferromark_ast::{
+-    Break, Delete, Emphasis, Image, InlineCode, InlineMath, Link, Strong, Subscript, Superscript,
+-    Text,
++    Break, Delete, Emphasis, Highlight, Image, InlineCode, InlineMath, Link, Strong, Subscript,
++    Superscript, Text,
+ };
+ 
+ use super::HtmlRenderer;
+@@ -113,6 +113,15 @@
+         }
+     }
+ 
++    /// Visits highlighted text and its children.
++    pub(in crate::html::renderer) fn render_highlight(&mut self, highlight: &Highlight<'_>) {
++        self.write("<mark>");
++        for child in &highlight.children {
++            self.visit_inline_node(child);
++        }
++        self.write("</mark>");
++    }
++
+     pub(in crate::html::renderer) fn render_delete(&mut self, delete: &Delete<'_>) {
+         self.write("<del>");
+         for child in &delete.children {
+--- a/crates/ferromark_renderer/src/html/renderer.rs
++++ b/crates/ferromark_renderer/src/html/renderer.rs
+@@ -253,6 +253,7 @@
+             Node::Break(node) => self.render_break(node),
+             Node::Link(node) => self.render_link(node),
+             Node::Image(node) => self.render_image(node),
++            Node::Highlight(node) => self.render_highlight(node),
+             Node::Delete(node) => self.render_delete(node),
+             Node::Superscript(node) => self.render_superscript(node),
+             Node::Subscript(node) => self.render_subscript(node),
+--- /dev/null
++++ b/crates/ferromark_renderer/tests/edge_optional_writing.rs
+@@ -0,0 +1,341 @@
++//! Optional writing syntax and reference-policy regressions.
++use ferromark_allocator::Allocator;
++use ferromark_ast::{Node, Visit};
++use ferromark_parser::{Parser, ParserOptions};
++use ferromark_renderer::{HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks};
++
++fn options() -> ParserOptions {
++    ParserOptions {
++        highlight: true,
++        inline_footnotes: true,
++        ..ParserOptions::gfm()
++    }
++}
++fn render(source: &str, options: ParserOptions) -> String {
++    let arena = Allocator::new();
++    let doc = Parser::with_options(&arena, source, options)
++        .parse()
++        .unwrap();
++    HtmlRenderer::with_options(HtmlRendererOptions::commonmark()).render(&doc)
++}
++#[test]
++fn extensions_are_opt_in_in_every_preset() {
++    for options in [
++        ParserOptions::default(),
++        ParserOptions::commonmark(),
++        ParserOptions::gfm(),
++        ParserOptions::gfm_spec(),
++        ParserOptions::mdx(),
++    ] {
++        assert!(!options.highlight && !options.inline_footnotes && options.allow_link_refs);
++        assert_eq!(
++            render("==text== ^[note]", options),
++            "<p>==text== ^[note]</p>\n"
++        );
++    }
++}
++#[test]
++fn highlight_respects_inline_boundaries_and_flanking() {
++    for (source, expected) in [
++        ("==important==", "<mark>important</mark>"),
++        (
++            "==a **bold** and *soft*==",
++            "<mark>a <strong>bold</strong> and <em>soft</em></mark>",
++        ),
++        (
++            "**==bold mark==**",
++            "<strong><mark>bold mark</mark></strong>",
++        ),
++        ("==[a](url)==", "<mark><a href=\"url\">a</a></mark>"),
++        ("[==a==](url)", "<a href=\"url\"><mark>a</mark></a>"),
++        ("==`a==b`==", "<mark><code>a==b</code></mark>"),
++        ("==a [b](x==y)==", "<mark>a <a href=\"x==y\">b</a></mark>"),
++        (
++            "==a <i title=\"==\">b</i>==",
++            "<mark>a <i title=\"==\">b</i></mark>",
++        ),
++        ("==空 白==", "<mark>空 白</mark>"),
++        ("x==yes==y", "x<mark>yes</mark>y"),
++        ("== x==", "== x=="),
++        ("==x ==", "==x =="),
++        ("===x===", "===x==="),
++        (r"\==x==", "==x=="),
++        ("`==x==`", "<code>==x==</code>"),
++        ("==a\nb==", "<mark>a\nb</mark>"),
++    ] {
++        assert_eq!(
++            render(source, options()),
++            format!("<p>{expected}</p>\n"),
++            "{source}"
++        );
++    }
++}
++#[test]
++fn marked_text_participates_in_autolinks_and_heading_metadata() {
++    let source = "# ==Heading==\n\n==https://example.org==";
++    let arena = Allocator::new();
++    let doc = Parser::with_options(&arena, source, options())
++        .parse()
++        .unwrap();
++    let html = HtmlRenderer::with_options(HtmlRendererOptions {
++        heading_ids: true,
++        ..HtmlRendererOptions::commonmark()
++    })
++    .render(&doc);
++    assert!(html.contains("id=\"heading\""), "{html}");
++    assert!(
++        html.contains("<mark><a href=\"https://example.org\">https://example.org</a></mark>"),
++        "{html}"
++    );
++}
++#[test]
++fn inline_note_uses_existing_footnote_nodes_and_deferred_definition() {
++    let html = render("Text^[a *note* with [link](/url)] after.", options());
++    assert!(
++        html.starts_with("<p>Text<sup><a href=\"#fn-1\" id=\"fnref-1\">1</a></sup> after.</p>\n"),
++        "{html}"
++    );
++    assert!(
++        html.contains("<p>a <em>note</em> with <a href=\"/url\">link</a></p>"),
++        "{html}"
++    );
++}
++#[test]
++fn inline_notes_work_without_reference_footnotes_or_link_references() {
++    let html = render(
++        "A^[note] [link](/url)",
++        ParserOptions {
++            footnotes: false,
++            allow_link_refs: false,
++            ..options()
++        },
++    );
++    assert!(html.contains("<p>note</p>"), "{html}");
++    assert!(html.contains("<a href=\"/url\">link</a>"), "{html}");
++}
++#[test]
++fn mixed_notes_avoid_identifiers_and_share_semantic_numbering() {
++    let arena = Allocator::new();
++    let doc = Parser::with_options(
++        &arena,
++        "A^[inline] B[^1] C^[last]\n\n[^1]: named",
++        options(),
++    )
++    .parse()
++    .unwrap();
++    let html = HtmlRenderer::with_options(HtmlRendererOptions {
++        semantic_footnotes: true,
++        ..HtmlRendererOptions::commonmark()
++    })
++    .render(&doc);
++    assert!(html.contains("id=\"fnref-2\">1</a>"), "{html}");
++    assert!(html.contains("id=\"fnref-1\">2</a>"), "{html}");
++    assert!(html.contains("id=\"fnref-3\">3</a>"), "{html}");
++    assert_eq!(html.matches("<li id=").count(), 3);
++}
++#[test]
++fn notes_in_containers_have_document_wide_identifiers() {
++    let html = render(
++        "> Quote^[first]\n\n- List^[second]\n\nText^[third]",
++        options(),
++    );
++    for id in 1..=3 {
++        assert_eq!(
++            html.matches(&format!("id=\"fn-{id}\"")).count(),
++            1,
++            "{html}"
++        );
++    }
++    assert!(html.rfind("class=\"footnote\"").unwrap() > html.find("</ul>").unwrap());
++}
++#[test]
++fn speculative_links_and_images_do_not_leave_phantom_notes() {
++    let html = render(
++        "[text^[note]](/outer) ![alt^[hidden]](/img) after^[real]",
++        options(),
++    );
++    assert!(!html.contains("href=\"/outer\""), "{html}");
++    assert_eq!(html.matches("class=\"footnote\"").count(), 2, "{html}");
++    assert!(!html.contains("<p>hidden</p>"), "{html}");
++}
++#[test]
++fn notes_respect_escapes_code_balanced_brackets_and_superscript() {
++    let html = render(
++        r"\^[literal] `^[code]` A^[a \] and `]` and [nested]] x^2^",
++        ParserOptions {
++            superscript: true,
++            ..options()
++        },
++    );
++    assert!(html.contains("^[literal] <code>^[code]</code>"), "{html}");
++    assert!(
++        html.contains("a ] and <code>]</code> and [nested]"),
++        "{html}"
++    );
++    assert!(html.contains("x<sup>2</sup>"), "{html}");
++}
++#[test]
++fn malformed_empty_and_nested_notes_have_bounded_literal_fallback() {
++    for source in ["^[]", "^[missing", "^[first\n\nsecond]"] {
++        assert!(!render(source, options()).contains("class=\"footnote\""));
++    }
++    let html = render("A^[outer ^[inner]]", options());
++    assert_eq!(html.matches("class=\"footnote\"").count(), 1, "{html}");
++    assert!(html.contains("outer ^[inner]"), "{html}");
++    let unclosed = "^[".repeat(5000);
++    assert!(!render(&unclosed, options()).contains("class=\"footnote\""));
++}
++#[test]
++fn no_op_hooks_and_renderer_reuse_preserve_both_extensions() {
++    let arena = Allocator::new();
++    let doc = Parser::with_options(&arena, "==Text==^[==note==]", options())
++        .parse()
++        .unwrap();
++    for semantic in [false, true] {
++        let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
++            semantic_footnotes: semantic,
++            ..HtmlRendererOptions::commonmark()
++        });
++        let expected = renderer.render(&doc);
++        assert_eq!(
++            renderer.render_with_hooks(&doc, &mut NoHtmlRenderHooks),
++            expected
++        );
++        assert_eq!(renderer.render(&doc), expected);
++    }
++}
++#[test]
++fn reference_toggle_preserves_definitions_and_inline_links() {
++    let source = "[full][key] [key][] [key] ![img][key]\n\n[key]: /target \"title\"\n\n[inline](/ok) ![image](/img)";
++    let html = render(
++        source,
++        ParserOptions {
++            allow_link_refs: false,
++            ..options()
++        },
++    );
++    assert!(
++        html.contains("[full][key] [key][] [key] ![img][key]"),
++        "{html}"
++    );
++    assert!(html.contains("[key]: /target &quot;title&quot;"), "{html}");
++    assert!(html.contains("<a href=\"/ok\">inline</a>"), "{html}");
++    assert!(html.contains("<img src=\"/img\" alt=\"image\""), "{html}");
++    assert!(!html.contains("href=\"/target\""), "{html}");
++}
++#[test]
++fn reference_toggle_keeps_footnotes_wiki_links_and_nested_contexts() {
++    let source = "> [key] and [^n]\n\n[key]: /target\n\n[^n]: footnote\n\n[[wiki]]";
++    let html = render(
++        source,
++        ParserOptions {
++            allow_link_refs: false,
++            wiki_links: true,
++            ..options()
++        },
++    );
++    assert!(html.contains("[key]"), "{html}");
++    assert!(html.contains("href=\"#fn-n\""), "{html}");
++    assert!(html.contains("href=\"wiki\""), "{html}");
++}
++#[test]
++fn visitors_and_spans_cover_marks_and_lifted_notes() {
++    struct Check<'s> {
++        source: &'s str,
++        highlights: usize,
++        definitions: usize,
++    }
++    impl<'a> Visit<'a> for Check<'_> {
++        fn visit_node(&mut self, node: &Node<'a>) {
++            let span = node.span();
++            assert!(
++                self.source
++                    .get(span.start as usize..span.end as usize)
++                    .is_some(),
++                "{node:?}"
++            );
++            if let Node::Highlight(_) = node {
++                self.highlights += 1;
++                assert!(self.source[span.start as usize..span.end as usize].starts_with("=="));
++            }
++            if let Node::FootnoteDefinition(_) = node {
++                self.definitions += 1;
++                assert!(
++                    self.source[span.start as usize..span.end as usize].starts_with("^["),
++                    "source={:?}, node={:?}",
++                    self.source,
++                    node
++                );
++            }
++            ferromark_ast::walk_node(self, node);
++        }
++    }
++    for source in [
++        "\u{feff}> ==é==^[==中==]\r\n",
++        "- ==x==^[a\0b]\r\n",
++        "| a |\n|---|\n| ==a\\|b==^[n\\|x] |\n",
++    ] {
++        let arena = Allocator::new();
++        let doc = Parser::with_options(&arena, source, options())
++            .parse()
++            .unwrap();
++        let mut check = Check {
++            source,
++            highlights: 0,
++            definitions: 0,
++        };
++        check.visit_document(&doc);
++        assert!(check.highlights > 0);
++        assert_eq!(check.definitions, 1);
++    }
++}
++
++#[test]
++fn notes_are_lifted_from_inline_definition_list_table_caption_and_mdx_containers() {
++    for source in [
++        "**strong^[note]**",
++        "*emphasis^[note]*",
++        "~~deleted^[note]~~",
++        "==marked^[note]==",
++        "~subscript^[note]~",
++        "Term^[note]\n: Definition",
++        "Term\n: Definition^[note]",
++        "| Column |\n|---|\n| cell |\n: Caption^[note] {#table}",
++        "<Box>Text^[note]</Box>",
++        "Text <Span>inline^[note]</Span>",
++    ] {
++        let html = render(
++            source,
++            ParserOptions {
++                definition_lists: true,
++                table_attributes: true,
++                subscript: true,
++                mdx: true,
++                ..options()
++            },
++        );
++        assert_eq!(
++            html.matches("class=\"footnote\"").count(),
++            1,
++            "{source}: {html}"
++        );
++        assert!(html.contains("<p>note</p>"), "{source}: {html}");
++        assert!(!html.contains("^[note]"), "{source}: {html}");
++    }
++}
++
++#[test]
++fn inline_identifiers_do_not_collide_with_nested_unreferenced_definitions() {
++    let html = render(
++        "> [^1]: quoted definition\n\n- Item\n\n  [^2]: list definition\n\nText^[inline]",
++        options(),
++    );
++    for id in 1..=3 {
++        assert_eq!(
++            html.matches(&format!("id=\"fn-{id}\"")).count(),
++            1,
++            "{html}"
++        );
++    }
++    assert!(html.contains("href=\"#fn-3\""), "{html}");
++}
+--- a/node/native/src/lib.rs
++++ b/node/native/src/lib.rs
+@@ -28,6 +28,9 @@
+     pub autolink_literals: Option<bool>,
+     pub disallowed_raw_html: Option<bool>,
+     pub footnotes: Option<bool>,
++    pub highlight: Option<bool>,
++    pub inline_footnotes: Option<bool>,
++    pub allow_link_refs: Option<bool>,
+     pub front_matter: Option<bool>,
+     pub heading_ids: Option<bool>,
+     pub heading_attributes: Option<bool>,
+@@ -89,6 +92,9 @@
+         apply!(parser.autolinks, options.autolink_literals);
+         apply!(html.disallow_raw_html, options.disallowed_raw_html);
+         apply!(parser.footnotes, options.footnotes);
++        apply!(parser.highlight, options.highlight);
++        apply!(parser.inline_footnotes, options.inline_footnotes);
++        apply!(parser.allow_link_refs, options.allow_link_refs);
+         apply!(parser.front_matter, options.front_matter);
+         apply!(html.heading_ids, options.heading_ids);
+         apply!(parser.heading_attributes, options.heading_attributes);

@@ -28,6 +28,9 @@ pub struct Options {
     pub autolink_literals: Option<bool>,
     pub disallowed_raw_html: Option<bool>,
     pub footnotes: Option<bool>,
+    pub highlight: Option<bool>,
+    pub inline_footnotes: Option<bool>,
+    pub allow_link_refs: Option<bool>,
     pub front_matter: Option<bool>,
     pub heading_ids: Option<bool>,
     pub heading_attributes: Option<bool>,
@@ -89,6 +92,9 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.autolinks, options.autolink_literals);
         apply!(html.disallow_raw_html, options.disallowed_raw_html);
         apply!(parser.footnotes, options.footnotes);
+        apply!(parser.highlight, options.highlight);
+        apply!(parser.inline_footnotes, options.inline_footnotes);
+        apply!(parser.allow_link_refs, options.allow_link_refs);
         apply!(parser.front_matter, options.front_matter);
         apply!(html.heading_ids, options.heading_ids);
         apply!(parser.heading_attributes, options.heading_attributes);

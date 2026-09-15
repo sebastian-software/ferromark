@@ -138,6 +138,12 @@ pub(super) fn remap_node_spans<'a>(node: &mut Node<'a>, source_offset: u32, offs
             }
         }
         Node::Image(node) => remap_span(&mut node.span, source_offset, offsets),
+        Node::Highlight(node) => {
+            remap_span(&mut node.span, source_offset, offsets);
+            for child in &mut node.children {
+                remap_node_spans(child, source_offset, offsets);
+            }
+        }
         Node::Delete(node) => {
             remap_span(&mut node.span, source_offset, offsets);
             for child in &mut node.children {

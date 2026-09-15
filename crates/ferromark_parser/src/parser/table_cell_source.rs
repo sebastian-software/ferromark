@@ -175,6 +175,12 @@ pub(super) fn remap_table_cell_inline_spans(
         Node::Image(node) => {
             remap_table_cell_span(&mut node.span, source_offset, source_map);
         }
+        Node::Highlight(node) => {
+            remap_table_cell_span(&mut node.span, source_offset, source_map);
+            for child in &mut node.children {
+                remap_table_cell_inline_spans(child, source_offset, source_map);
+            }
+        }
         Node::Delete(node) => {
             remap_table_cell_span(&mut node.span, source_offset, source_map);
             for child in &mut node.children {
@@ -211,8 +217,19 @@ pub(super) fn remap_table_cell_inline_spans(
         Node::MdxTextExpression(node) => {
             remap_table_cell_span(&mut node.span, source_offset, source_map);
         }
-        Node::Paragraph(_)
-        | Node::Heading(_)
+        Node::FootnoteDefinition(node) => {
+            remap_table_cell_span(&mut node.span, source_offset, source_map);
+            for child in &mut node.children {
+                remap_table_cell_inline_spans(child, source_offset, source_map);
+            }
+        }
+        Node::Paragraph(node) => {
+            remap_table_cell_span(&mut node.span, source_offset, source_map);
+            for child in &mut node.children {
+                remap_table_cell_inline_spans(child, source_offset, source_map);
+            }
+        }
+        Node::Heading(_)
         | Node::ThematicBreak(_)
         | Node::BlockQuote(_)
         | Node::List(_)
@@ -224,7 +241,6 @@ pub(super) fn remap_table_cell_inline_spans(
         | Node::DefinitionListTerm(_)
         | Node::DefinitionListDefinition(_)
         | Node::Definition(_)
-        | Node::FootnoteDefinition(_)
         | Node::MdxJsxFlowElement(_)
         | Node::MdxjsEsm(_)
         | Node::MdxFlowExpression(_) => {}

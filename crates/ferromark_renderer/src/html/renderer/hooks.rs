@@ -113,6 +113,7 @@ fn node_children_are_inline(node: &Node<'_>) -> bool {
             | Node::Strong(_)
             | Node::Link(_)
             | Node::Delete(_)
+            | Node::Highlight(_)
             | Node::Superscript(_)
             | Node::Subscript(_)
             | Node::MdxJsxTextElement(_)
@@ -225,6 +226,7 @@ impl HtmlRenderer {
             Node::Break(node) => self.render_break(node),
             Node::Link(node) => self.render_link_with_hooks(node, hooks),
             Node::Image(node) => self.render_image(node),
+            Node::Highlight(node) => self.render_highlight_with_hooks(node, hooks),
             Node::Delete(node) => self.render_delete_with_hooks(node, hooks),
             Node::Superscript(node) => self.render_superscript_with_hooks(node, hooks),
             Node::Subscript(node) => self.render_subscript_with_hooks(node, hooks),
@@ -258,6 +260,7 @@ impl HtmlRenderer {
             Node::Break(node) => self.render_break(node),
             Node::Link(node) => self.render_link_with_hooks(node, hooks),
             Node::Image(node) => self.render_image(node),
+            Node::Highlight(node) => self.render_highlight_with_hooks(node, hooks),
             Node::Delete(node) => self.render_delete_with_hooks(node, hooks),
             Node::Superscript(node) => self.render_superscript_with_hooks(node, hooks),
             Node::Subscript(node) => self.render_subscript_with_hooks(node, hooks),

@@ -5,8 +5,8 @@
 //! single place.
 
 use ferromark_ast::{
-    Break, Delete, Emphasis, Image, InlineCode, InlineMath, Link, Strong, Subscript, Superscript,
-    Text,
+    Break, Delete, Emphasis, Highlight, Image, InlineCode, InlineMath, Link, Strong, Subscript,
+    Superscript, Text,
 };
 
 use super::HtmlRenderer;
@@ -111,6 +111,15 @@ impl HtmlRenderer {
         } else {
             self.write(">");
         }
+    }
+
+    /// Visits highlighted text and its children.
+    pub(in crate::html::renderer) fn render_highlight(&mut self, highlight: &Highlight<'_>) {
+        self.write("<mark>");
+        for child in &highlight.children {
+            self.visit_inline_node(child);
+        }
+        self.write("</mark>");
     }
 
     pub(in crate::html::renderer) fn render_delete(&mut self, delete: &Delete<'_>) {

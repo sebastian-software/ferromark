@@ -16,6 +16,7 @@ mod front_matter;
 mod html;
 mod indented_code;
 mod inline;
+mod inline_footnote;
 mod inline_helpers;
 mod inline_html;
 mod inline_link;
@@ -79,6 +80,11 @@ pub struct Parser<'a> {
     /// same kind of pre-pass as `definitions` so an inline `[^x]` can tell
     /// whether a definition exists before reaching it.
     footnote_labels: Option<std::rc::Rc<footnote::FootnoteLabels>>,
+
+    /// Shared by container sub-parsers. Allocated in the existing arena only
+    /// when inline notes are enabled; avoids a source scan or AST walk when
+    /// no inline note was parsed. Speculative parses may set it harmlessly.
+    inline_note_seen: Option<&'a std::cell::Cell<bool>>,
 
     /// Byte offsets (in `source`) of lines that entered this sub-source
     /// via lazy continuation. Such lines are paragraph text by
@@ -161,6 +167,8 @@ impl<'a> Parser<'a> {
             source,
             source_map,
             front_matter: front_matter.map(|metadata| allocator.boxed(metadata)),
+            inline_note_seen: (options.inline_footnotes && !source.is_empty())
+                .then(|| &*allocator.alloc(std::cell::Cell::new(false))),
             options,
             position: 0,
             nesting_depth: 0,
@@ -215,6 +223,7 @@ impl<'a> Parser<'a> {
             nesting_depth: self.nesting_depth + 1,
             definitions: self.definitions.clone(),
             footnote_labels: self.footnote_labels.clone(),
+            inline_note_seen: self.inline_note_seen,
             // Most sub-sources are entered without any lazy continuation
             // line, and every block quote and list item builds one of these.
             lazy_lines: (!lazy_lines.is_empty()).then(|| std::rc::Rc::new(lazy_lines)),
@@ -245,6 +254,12 @@ impl<'a> Parser<'a> {
                     *span = map.map_span(*span);
                 }
             }
+        }
+        if self.nesting_depth == 0
+            && self.inline_note_seen.is_some_and(std::cell::Cell::get)
+            && let Ok(document) = &mut result
+        {
+            self.lower_inline_footnotes(document);
         }
         result
     }

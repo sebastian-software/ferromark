@@ -247,6 +247,12 @@ impl<'a> Parser<'a> {
                 }
             }
             Node::Image(node) => Self::offset_span(&mut node.span, offset),
+            Node::Highlight(node) => {
+                Self::offset_span(&mut node.span, offset);
+                for child in &mut node.children {
+                    Self::offset_node_spans(child, offset);
+                }
+            }
             Node::Delete(node) => {
                 Self::offset_span(&mut node.span, offset);
                 for child in &mut node.children {

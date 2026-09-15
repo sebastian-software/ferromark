@@ -145,12 +145,12 @@ local core**; these are not the options enabled during timing.
 | GFM HTML tag filter — filter its specified tag list | ✓ | ✓ | ✓ | — | — | ✓ |
 | **Writing extras — beyond CommonMark/GFM** | | | | | | |
 | Reference footnotes — `[^note]` plus a definition | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Inline footnotes — `^[note written here]` | ✓ | — | — | — | — | — |
+| Inline footnotes — `^[note written here]` | ✓ | ✓ | — | — | — | — |
 | Definition lists — a term followed by `: explanation` | ✓ | ✓ | ✓ | ✓ | — | — |
 | Math notation — `$x^2$`, `$$…$$` | Syntax | Syntax | Syntax | Syntax | Syntax | Syntax |
 | Superscript — `x^2^` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | Subscript — `H~2~O` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Highlighted text — `==important==` | ✓ | — | — | — | ✓ | — |
+| Highlighted text — `==important==` | ✓ | ✓ | — | — | ✓ | — |
 | Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
 | Smart punctuation — curly quotes and ellipses | — | — | ✓ | ✓ | — | — |
 | Extract frontmatter — metadata between `---` or `+++` | ✓ | ✓ | — | ✓ | — | — |
@@ -181,6 +181,10 @@ an inline `[[toc]]` marker. Trees expose nested document nodes; events/callbacks
 expose elements in sequence. The three MDX entries cover bounded syntax handling,
 not a full MDX compiler or JavaScript runtime. Single-tilde strikethrough and
 subscript compete for the same syntax; enabling subscript gives it priority.
+
+Opt-in `highlight` and `inline_footnotes` add marked text and inline notes.
+`allow_link_refs: false` disables reference links while preserving definitions as
+visible Markdown. [Syntax, defaults, and performance evidence](docs/optional-writing.md).
 
 V2 preserves authored punctuation. Automatic typography belongs in an optional,
 locale-aware document transform; the former English-oriented parser option has

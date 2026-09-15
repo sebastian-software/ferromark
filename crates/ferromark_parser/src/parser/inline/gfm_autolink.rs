@@ -53,6 +53,7 @@ impl<'a> Parser<'a> {
             match &mut children[i] {
                 Node::Emphasis(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Strong(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Highlight(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Delete(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Superscript(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Subscript(node) => self.apply_gfm_autolinks(&mut node.children, scan),

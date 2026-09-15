@@ -31,7 +31,8 @@ highlighter fallback and observers retain their existing JavaScript behavior.
 
 | Area | v2 behavior |
 | --- | --- |
-| `tableColumnWidths`, `highlight`, `inlineFootnotes`, `allowLinkRefs`, `indentedCodeBlocks` | Removed; passing any of these throws an unknown-option error |
+| `tableColumnWidths`, `indentedCodeBlocks` | Removed; passing any of these throws an unknown-option error |
+| `highlight`, `inlineFootnotes`, `allowLinkRefs` | Supported again; see [syntax and policy](optional-writing.md). Writing extensions default off; reference links default on |
 | Heading IDs | v2 slug rules and duplicate suffixes; metadata follows the same rules |
 | Footnotes | v2 markup and definition rendering, including unreferenced definitions |
 | `tableColgroup`, `tableColumnNames` | CSS-addressable colgroup output replaces v1 numeric width hints |

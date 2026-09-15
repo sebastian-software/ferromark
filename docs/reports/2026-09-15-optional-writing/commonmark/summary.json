@@ -1,0 +1,2162 @@
+[
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0482180525240137,
+    "ratio_range": [
+      1.0404532139323506,
+      1.0560131217856028
+    ],
+    "left_ns": 385352.0,
+    "right_ns": 404004.34375
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 0.9806405030111103,
+    "ratio_range": [
+      0.9681382450474532,
+      0.983955790849692
+    ],
+    "left_ns": 40139.106770833336,
+    "right_ns": 39301.486979166664
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.013040221263077,
+    "ratio_range": [
+      1.0113012792236435,
+      1.024128773481105
+    ],
+    "left_ns": 38964.0625,
+    "right_ns": 39460.44921875
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0265836348704502,
+    "ratio_range": [
+      1.0247569355801613,
+      1.033773594301127
+    ],
+    "left_ns": 2327.1169354838707,
+    "right_ns": 2393.1428571428573
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0155140171272354,
+    "ratio_range": [
+      1.01452445891049,
+      1.0321690262352967
+    ],
+    "left_ns": 23896.6796875,
+    "right_ns": 24316.23878205128
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9640693256332173,
+    "ratio_range": [
+      0.9568473656548645,
+      0.9743654266256345
+    ],
+    "left_ns": 8246.422282608695,
+    "right_ns": 7955.011917372882
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.011330369896672,
+    "ratio_range": [
+      1.0010257131228877,
+      1.0139629894060365
+    ],
+    "left_ns": 1281.4759221311476,
+    "right_ns": 1287.3228309327847
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.038017459604225,
+    "ratio_range": [
+      1.0026531038104258,
+      1.0416948574167264
+    ],
+    "left_ns": 34050.45647321428,
+    "right_ns": 35375.916666666664
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0428308389405452,
+    "ratio_range": [
+      1.0405375295192418,
+      1.0546803839244914
+    ],
+    "left_ns": 2088.7620406458796,
+    "right_ns": 2181.6678779069766
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0294046630376632,
+    "ratio_range": [
+      1.026508270035389,
+      1.0327410811744844
+    ],
+    "left_ns": 34215.122767857145,
+    "right_ns": 35173.85300925926
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 265,
+    "ratio": 0.9846557350339512,
+    "ratio_range": [
+      0.9807265760557615,
+      1.0066407111327613
+    ],
+    "left_ns": 3272.112695993031,
+    "right_ns": 3221.904531786942
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.044677696802683,
+    "ratio_range": [
+      1.0418638656305326,
+      1.0653216128340506
+    ],
+    "left_ns": 1895.3309343434344,
+    "right_ns": 1988.3916181144068
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9563930502633864,
+    "ratio_range": [
+      0.9494414545078821,
+      0.9637030500956223
+    ],
+    "left_ns": 5094.404560810811,
+    "right_ns": 4871.7684585492225
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 0.9942397421974035,
+    "ratio_range": [
+      0.9810637959742384,
+      1.002231620440146
+    ],
+    "left_ns": 384506.0833333333,
+    "right_ns": 382291.2291666667
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4081,
+    "ratio": 1.0032675233635018,
+    "ratio_range": [
+      0.9929604721715296,
+      1.016922255825903
+    ],
+    "left_ns": 42071.217391304344,
+    "right_ns": 42243.092391304344
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9909812791286415,
+    "ratio_range": [
+      0.9804184856085314,
+      1.0036840532154572
+    ],
+    "left_ns": 8761.911747685184,
+    "right_ns": 8682.936639908257
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9521582979068106,
+    "ratio_range": [
+      0.9446456678795222,
+      0.962874214405338
+    ],
+    "left_ns": 4648.024907178218,
+    "right_ns": 4426.545481220657
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.03989009638791,
+    "ratio_range": [
+      1.0314872498335081,
+      1.053505413622173
+    ],
+    "left_ns": 449.78955335731416,
+    "right_ns": 467.8721931137725
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0635031489781819,
+    "ratio_range": [
+      1.0597739682888023,
+      1.0665929747449252
+    ],
+    "left_ns": 277962.2421875,
+    "right_ns": 295459.3125
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0263985249009473,
+    "ratio_range": [
+      1.0245941497551927,
+      1.0319042014724522
+    ],
+    "left_ns": 2039.8267663043478,
+    "right_ns": 2092.0505985523387
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.028746578912363,
+    "ratio_range": [
+      1.0171690198879428,
+      1.0365214539438026
+    ],
+    "left_ns": 165.08486309209368,
+    "right_ns": 169.2644825329482
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 0.9791869147068624,
+    "ratio_range": [
+      0.9672732483127883,
+      0.9829104025485211
+    ],
+    "left_ns": 2336.484919154229,
+    "right_ns": 2288.573399390244
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4081,
+    "ratio": 0.9955103042198234,
+    "ratio_range": [
+      0.9910866246481558,
+      1.0032384352815773
+    ],
+    "left_ns": 41525.25,
+    "right_ns": 41354.16576086957
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0123619787060458,
+    "ratio_range": [
+      0.9965580702710523,
+      1.0156302855094381
+    ],
+    "left_ns": 2697.2281788793102,
+    "right_ns": 2708.141930835735
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0901756334779404,
+    "ratio_range": [
+      1.0865036998505457,
+      1.0974781292747733
+    ],
+    "left_ns": 39484.80859375,
+    "right_ns": 43111.21022727273
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 265,
+    "ratio": 0.3759355483785711,
+    "ratio_range": [
+      0.3741259952266539,
+      0.4610398945746755
+    ],
+    "left_ns": 2509.1389538770054,
+    "right_ns": 942.713567839196
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0973304796236862,
+    "ratio_range": [
+      1.0882703776603433,
+      1.1036161716766706
+    ],
+    "left_ns": 169.14727471585783,
+    "right_ns": 184.51605245030507
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 0.9795338654092854,
+    "ratio_range": [
+      0.9772354037927059,
+      0.9884684270691
+    ],
+    "left_ns": 168.7496231551476,
+    "right_ns": 165.6631901501767
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.028095432856888,
+    "ratio_range": [
+      1.0194068559466816,
+      1.0333352980239507
+    ],
+    "left_ns": 1424.0484161608497,
+    "right_ns": 1463.860569422777
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0102827892069015,
+    "ratio_range": [
+      1.007390826825439,
+      1.019522586739895
+    ],
+    "left_ns": 2306.5654176904177,
+    "right_ns": 2330.283343672457
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0295324098828833,
+    "ratio_range": [
+      1.021369008082365,
+      1.0329753407239664
+    ],
+    "left_ns": 168.73214526723052,
+    "right_ns": 173.61545138888889
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 0.9783007458608505,
+    "ratio_range": [
+      0.9767901488867913,
+      0.9822475984416044
+    ],
+    "left_ns": 2632.794292717087,
+    "right_ns": 2573.087928082192
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0203558696793216,
+    "ratio_range": [
+      1.018131797721156,
+      1.024011331725424
+    ],
+    "left_ns": 2293.9206143031784,
+    "right_ns": 2339.6327150872817
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0091977890551045,
+    "ratio_range": [
+      1.0059426574860046,
+      1.0257742788170534
+    ],
+    "left_ns": 1874.6179515968063,
+    "right_ns": 1890.6039566532259
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 0.9644621071315309,
+    "ratio_range": [
+      0.9582472868737688,
+      0.970527747401257
+    ],
+    "left_ns": 108.45959263651088,
+    "right_ns": 104.65253167206161
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 265,
+    "ratio": 0.9976837660346616,
+    "ratio_range": [
+      0.9917398696074828,
+      1.012272298706373
+    ],
+    "left_ns": 2925.1768886292834,
+    "right_ns": 2923.55023364486
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0366583930748883,
+    "ratio_range": [
+      1.0326818001300695,
+      1.0426620471280827
+    ],
+    "left_ns": 1423.0882018209409,
+    "right_ns": 1477.1858759842519
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0494319972576496,
+    "ratio_range": [
+      1.043974014995893,
+      1.0543823966178358
+    ],
+    "left_ns": 24194.74519230769,
+    "right_ns": 25400.690033783783
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 0.9960374460723188,
+    "ratio_range": [
+      0.9821858889977433,
+      0.9999375075511708
+    ],
+    "left_ns": 452.926856884058,
+    "right_ns": 449.23559535218016
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0163773566314132,
+    "ratio_range": [
+      0.9998393213014722,
+      1.0229648270133802
+    ],
+    "left_ns": 39583.0078125,
+    "right_ns": 40292.48046875
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0083067460236854,
+    "ratio_range": [
+      1.0014190328826384,
+      1.0094335295650596
+    ],
+    "left_ns": 33231.23275862069,
+    "right_ns": 33456.31357758621
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 0.9889941544803961,
+    "ratio_range": [
+      0.9842240506834893,
+      0.9959025131279252
+    ],
+    "left_ns": 17212.997159090908,
+    "right_ns": 17032.01729910714
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9406180747661143,
+    "ratio_range": [
+      0.9371906004331957,
+      0.9595709467049269
+    ],
+    "left_ns": 6165.134803921569,
+    "right_ns": 5799.037229938272
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 0.9801573551476676,
+    "ratio_range": [
+      0.9753981785761353,
+      0.9911272992035524
+    ],
+    "left_ns": 34141.22991071428,
+    "right_ns": 33478.089439655174
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65508,
+    "ratio": 0.9986035440498934,
+    "ratio_range": [
+      0.9912347736953159,
+      1.0036355783347701
+    ],
+    "left_ns": 663895.171875,
+    "right_ns": 663527.984375
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.1688332592195603,
+    "ratio_range": [
+      1.1626905546606332,
+      1.1759836370185983
+    ],
+    "left_ns": 1464.2303042121684,
+    "right_ns": 1709.2796561930784
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9609505230577234,
+    "ratio_range": [
+      0.9515910529329754,
+      0.9683645860504143
+    ],
+    "left_ns": 2782.895956973294,
+    "right_ns": 2672.613247863248
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 0.9920491296293037,
+    "ratio_range": [
+      0.9835536335904475,
+      1.0050071825554723
+    ],
+    "left_ns": 451.3304108517806,
+    "right_ns": 447.74194126074497
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0149454075331574,
+    "ratio_range": [
+      1.010381805666896,
+      1.0268426598673535
+    ],
+    "left_ns": 22947.662347560974,
+    "right_ns": 23410.94969512195
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 0.99087817155464,
+    "ratio_range": [
+      0.9798203672027073,
+      0.9942505756551684
+    ],
+    "left_ns": 1269.0413988497971,
+    "right_ns": 1258.8908976510068
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4081,
+    "ratio": 0.45495062008224585,
+    "ratio_range": [
+      0.4459167657872206,
+      0.4595594884812271
+    ],
+    "left_ns": 42063.688858695656,
+    "right_ns": 19145.54081632653
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0132983088160366,
+    "ratio_range": [
+      1.0073107585749501,
+      1.0179540672521412
+    ],
+    "left_ns": 453.40958957930366,
+    "right_ns": 459.13676848677767
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0306919873408806,
+    "ratio_range": [
+      1.02402113887206,
+      1.0406758053379945
+    ],
+    "left_ns": 2800.8357276119405,
+    "right_ns": 2886.7989423076924
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65508,
+    "ratio": 0.35548876390574646,
+    "ratio_range": [
+      0.35500003745581427,
+      0.3559610609797011
+    ],
+    "left_ns": 564705.078125,
+    "right_ns": 200663.54375
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0111236752990858,
+    "ratio_range": [
+      0.9930729152495904,
+      1.014553069998677
+    ],
+    "left_ns": 1740.5303223562153,
+    "right_ns": 1759.891416510319
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0104605814762526,
+    "ratio_range": [
+      1.0098069085204293,
+      1.0146236195604463
+    ],
+    "left_ns": 447.8774922397326,
+    "right_ns": 453.371811532882
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0201326745711574,
+    "ratio_range": [
+      1.0050928074535712,
+      1.03474230374982
+    ],
+    "left_ns": 4647.522122524752,
+    "right_ns": 4739.262719849246
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 265,
+    "ratio": 0.44753799084904033,
+    "ratio_range": [
+      0.44454316024800916,
+      0.45105959184771
+    ],
+    "left_ns": 2915.388835139319,
+    "right_ns": 1304.747261821975
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0048419716243064,
+    "ratio_range": [
+      1.001141666872494,
+      1.0143373071064308
+    ],
+    "left_ns": 33845.14508928572,
+    "right_ns": 34009.02232142857
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 0.9667993523513657,
+    "ratio_range": [
+      0.9545702019074332,
+      0.9786461477572859
+    ],
+    "left_ns": 1419.5702534039335,
+    "right_ns": 1372.439601608187
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0012200327338516,
+    "ratio_range": [
+      0.9682793047195293,
+      1.0122908821728107
+    ],
+    "left_ns": 24394.464743589742,
+    "right_ns": 24523.63782051282
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9417698436177507,
+    "ratio_range": [
+      0.9274678673111775,
+      0.9579497107981708
+    ],
+    "left_ns": 1904.5887423935092,
+    "right_ns": 1815.1444632495165
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9848777542665607,
+    "ratio_range": [
+      0.9608389109733537,
+      1.0093544264239023
+    ],
+    "left_ns": 8452.456362612613,
+    "right_ns": 8337.458517699115
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0986099084466265,
+    "ratio_range": [
+      1.0950652885426793,
+      1.1174672173104645
+    ],
+    "left_ns": 2648.0780809859157,
+    "right_ns": 2909.954721362229
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4081,
+    "ratio": 0.44846760751010406,
+    "ratio_range": [
+      0.43716941753707517,
+      0.4562001211213492
+    ],
+    "left_ns": 41642.38043478261,
+    "right_ns": 18627.604166666668
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0018204364667886,
+    "ratio_range": [
+      0.996136010183734,
+      1.0045669670169597
+    ],
+    "left_ns": 6210.247723509934,
+    "right_ns": 6208.911009933775
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.1775899381539618,
+    "ratio_range": [
+      1.1731818004876924,
+      1.1978314324852473
+    ],
+    "left_ns": 23402.724847560974,
+    "right_ns": 27664.368566176472
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.003306686455365,
+    "ratio_range": [
+      0.9973137784374531,
+      1.0150390206861
+    ],
+    "left_ns": 2078.2488938053098,
+    "right_ns": 2092.114420935412
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0340676362526653,
+    "ratio_range": [
+      1.0282402701804996,
+      1.0472514399928217
+    ],
+    "left_ns": 115.76291054451167,
+    "right_ns": 119.99212551190172
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0195440609240114,
+    "ratio_range": [
+      1.0187417832440882,
+      1.0241796642663215
+    ],
+    "left_ns": 5066.070228494624,
+    "right_ns": 5182.2345467032965
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 0.9330752818338345,
+    "ratio_range": [
+      0.9170060315254354,
+      0.9481048952339706
+    ],
+    "left_ns": 1663.0490359042553,
+    "right_ns": 1554.073106374172
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.1428929952827427,
+    "ratio_range": [
+      1.1407619863594853,
+      1.1559640545941592
+    ],
+    "left_ns": 109.06856750232666,
+    "right_ns": 124.77974863587968
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0103794341113659,
+    "ratio_range": [
+      1.0051384739548035,
+      1.0246391950925262
+    ],
+    "left_ns": 16948.381696428572,
+    "right_ns": 17158.451704545456
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 0.9716491624127989,
+    "ratio_range": [
+      0.9510461746804757,
+      0.972894710534172
+    ],
+    "left_ns": 1462.5727379095165,
+    "right_ns": 1416.3086763595165
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0016259078198082,
+    "ratio_range": [
+      1.0000485790171032,
+      1.004780773103022
+    ],
+    "left_ns": 3513.6281483208954,
+    "right_ns": 3515.566697761194
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 0.9748898080829765,
+    "ratio_range": [
+      0.961218461129808,
+      0.9784561000547334
+    ],
+    "left_ns": 33394.84482758621,
+    "right_ns": 32627.064655172413
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 0.9830901809500309,
+    "ratio_range": [
+      0.9712519668106849,
+      0.991306476343654
+    ],
+    "left_ns": 2091.7809716035636,
+    "right_ns": 2056.4093338815787
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65508,
+    "ratio": 1.0056620800304161,
+    "ratio_range": [
+      0.9907458408414052,
+      1.0110150893148602
+    ],
+    "left_ns": 562130.859375,
+    "right_ns": 564098.96875
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0189382489120873,
+    "ratio_range": [
+      1.006206031179253,
+      1.0224413434495663
+    ],
+    "left_ns": 2598.438971606648,
+    "right_ns": 2642.9328476123596
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 265,
+    "ratio": 0.9957060673362377,
+    "ratio_range": [
+      0.9912591181584107,
+      1.0108136054815153
+    ],
+    "left_ns": 2548.7397248641305,
+    "right_ns": 2537.795608108108
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0203646729812736,
+    "ratio_range": [
+      1.0120197984843275,
+      1.0309895643848526
+    ],
+    "left_ns": 2026.1288471922246,
+    "right_ns": 2066.7647990088108
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65508,
+    "ratio": 1.0033576022149626,
+    "ratio_range": [
+      0.9959301392246331,
+      1.0049545809948341
+    ],
+    "left_ns": 666630.859375,
+    "right_ns": 668869.140625
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 0.9882868309880012,
+    "ratio_range": [
+      0.9819518955507397,
+      0.9945563551755858
+    ],
+    "left_ns": 389343.75,
+    "right_ns": 383364.5833333333
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0338348476862222,
+    "ratio_range": [
+      1.0268331065494107,
+      1.0356835302542957
+    ],
+    "left_ns": 6175.602532679739,
+    "right_ns": 6364.644847972973
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0441196141990172,
+    "ratio_range": [
+      1.042382350705264,
+      1.0579115314466372
+    ],
+    "left_ns": 1658.844964664311,
+    "right_ns": 1733.609634935305
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 0.9669058434500128,
+    "ratio_range": [
+      0.9601040977508626,
+      0.9733606576070772
+    ],
+    "left_ns": 23434.006859756097,
+    "right_ns": 22685.85714285714
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 0.9616868781215662,
+    "ratio_range": [
+      0.9506918755574084,
+      0.9647625572603765
+    ],
+    "left_ns": 2372.1557765151515,
+    "right_ns": 2282.615419708029
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 0.9822357027121645,
+    "ratio_range": [
+      0.9731393429070335,
+      0.9847245840372071
+    ],
+    "left_ns": 39517.415364583336,
+    "right_ns": 38815.41625
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 0.9948981507553459,
+    "ratio_range": [
+      0.9932901261905488,
+      0.9969949055921874
+    ],
+    "left_ns": 23635.9046875,
+    "right_ns": 23520.3125
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0328635545129325,
+    "ratio_range": [
+      1.0261100787982398,
+      1.0397805711803023
+    ],
+    "left_ns": 3101.682858910891,
+    "right_ns": 3196.122980442177
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0123787486506854,
+    "ratio_range": [
+      1.0101775215031075,
+      1.0137710434210003
+    ],
+    "left_ns": 1640.3609593531469,
+    "right_ns": 1660.9904867256637
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0005151951060665,
+    "ratio_range": [
+      0.996668351350386,
+      1.0131960512597575
+    ],
+    "left_ns": 4634.1274630541875,
+    "right_ns": 4641.701423267326
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0517349948934729,
+    "ratio_range": [
+      1.0379381907672063,
+      1.0556553253548817
+    ],
+    "left_ns": 23748.046875,
+    "right_ns": 24861.979440789473
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 0.9584456328046478,
+    "ratio_range": [
+      0.955556035095311,
+      0.9666541184683588
+    ],
+    "left_ns": 22681.144345238095,
+    "right_ns": 21765.80255681818
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0021370123057964,
+    "ratio_range": [
+      0.990661584015507,
+      1.0066430025955915
+    ],
+    "left_ns": 3128.7977083333335,
+    "right_ns": 3134.4444791666665
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9420631667270797,
+    "ratio_range": [
+      0.9275490134227892,
+      0.9451149627324178
+    ],
+    "left_ns": 3541.533962264151,
+    "right_ns": 3339.3525355871884
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0521084476139282,
+    "ratio_range": [
+      1.043439526161861,
+      1.056347281427788
+    ],
+    "left_ns": 103.36081330614044,
+    "right_ns": 108.66751419796013
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65508,
+    "ratio": 0.4396905338379446,
+    "ratio_range": [
+      0.43665992509761226,
+      0.441579119144019
+    ],
+    "left_ns": 668854.15625,
+    "right_ns": 292826.8203125
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.063719792892073,
+    "ratio_range": [
+      1.0561986835927906,
+      1.0656514470174652
+    ],
+    "left_ns": 17178.077840909093,
+    "right_ns": 18260.216346153848
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 0.96554337575461,
+    "ratio_range": [
+      0.9578330801098438,
+      0.970311944908086
+    ],
+    "left_ns": 119.97643953934741,
+    "right_ns": 115.84245644384036
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9997557168468428,
+    "ratio_range": [
+      0.9942537673924675,
+      1.00777918825654
+    ],
+    "left_ns": 5086.2611486486485,
+    "right_ns": 5098.47972972973
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0104721191422885,
+    "ratio_range": [
+      1.0060949476320376,
+      1.0266771540180883
+    ],
+    "left_ns": 1409.313626126126,
+    "right_ns": 1424.0721263277694
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0386570471008556,
+    "ratio_range": [
+      1.0306861266859504,
+      1.0439964955940635
+    ],
+    "left_ns": 22700.14880952381,
+    "right_ns": 23577.66953125
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0344592786166762,
+    "ratio_range": [
+      1.0159277832710933,
+      1.041896418473899
+    ],
+    "left_ns": 2698.713631465517,
+    "right_ns": 2791.7093563988096
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9634174886317808,
+    "ratio_range": [
+      0.9492048671480752,
+      0.9683351180326395
+    ],
+    "left_ns": 8678.839162844037,
+    "right_ns": 8333.022123893805
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9693270735544414,
+    "ratio_range": [
+      0.9551420939816503,
+      0.9695589820810725
+    ],
+    "left_ns": 3106.2965645695363,
+    "right_ns": 3003.9271166134185
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 0.9685675132661201,
+    "ratio_range": [
+      0.9666060267388001,
+      0.9771750859784957
+    ],
+    "left_ns": 2707.800522334294,
+    "right_ns": 2628.117056564246
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.009690226003459,
+    "ratio_range": [
+      0.9984273162596491,
+      1.0125102755427497
+    ],
+    "left_ns": 23604.6875,
+    "right_ns": 23731.803125
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.1010356488189557,
+    "ratio_range": [
+      1.098097016821913,
+      1.1030073248488734
+    ],
+    "left_ns": 40240.505208333336,
+    "right_ns": 44327.88778409091
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.1044072260836768,
+    "ratio_range": [
+      1.100855627990212,
+      1.1085617309163642
+    ],
+    "left_ns": 2340.987095771144,
+    "right_ns": 2584.1475550964187
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4081,
+    "ratio": 0.9975271206917277,
+    "ratio_range": [
+      0.9860125549909272,
+      1.0133080147967428
+    ],
+    "left_ns": 35325.520833333336,
+    "right_ns": 35331.4525462963
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65508,
+    "ratio": 0.4355105394909983,
+    "ratio_range": [
+      0.43252763145294165,
+      0.43769079145081685
+    ],
+    "left_ns": 667817.703125,
+    "right_ns": 290250.0
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0063069763033594,
+    "ratio_range": [
+      1.0044427013954969,
+      1.0093287761625929
+    ],
+    "left_ns": 450.1038916226596,
+    "right_ns": 453.1394695505075
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0733629095855146,
+    "ratio_range": [
+      1.0695355165204796,
+      1.0768957334084996
+    ],
+    "left_ns": 1270.4646002710026,
+    "right_ns": 1363.2187954215117
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0269903020874085,
+    "ratio_range": [
+      1.0096598095633935,
+      1.04333256421678
+    ],
+    "left_ns": 3532.0870535714284,
+    "right_ns": 3653.2101167315177
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 0.9938753400045931,
+    "ratio_range": [
+      0.9888366280672721,
+      1.0073123117615619
+    ],
+    "left_ns": 2389.717159669211,
+    "right_ns": 2378.576582278481
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 0.9987868983906394,
+    "ratio_range": [
+      0.9883542267433382,
+      1.0124417632745113
+    ],
+    "left_ns": 278014.0,
+    "right_ns": 276953.125
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0450752245517185,
+    "ratio_range": [
+      1.0398627039334443,
+      1.0548343877352322
+    ],
+    "left_ns": 385020.8333333333,
+    "right_ns": 402387.1458333333
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 0.9831647907556813,
+    "ratio_range": [
+      0.9778570759334406,
+      0.9879277788348637
+    ],
+    "left_ns": 1762.8323543233082,
+    "right_ns": 1732.9309149722735
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.010765841274316,
+    "ratio_range": [
+      1.0051195456773983,
+      1.0157295604637846
+    ],
+    "left_ns": 381948.3541666667,
+    "right_ns": 385390.1979166667
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 0.9756613584592752,
+    "ratio_range": [
+      0.9571314709281472,
+      0.9795706858779296
+    ],
+    "left_ns": 2335.5164800995026,
+    "right_ns": 2274.597760290557
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0128705811960972,
+    "ratio_range": [
+      1.009195597527006,
+      1.0197701950936167
+    ],
+    "left_ns": 381046.0,
+    "right_ns": 386567.7083333333
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 265,
+    "ratio": 0.4932801647955339,
+    "ratio_range": [
+      0.4897733604156173,
+      0.4971357423729681
+    ],
+    "left_ns": 3226.8533075601376,
+    "right_ns": 1591.7427313242783
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 0.974450368552907,
+    "ratio_range": [
+      0.9726660673960128,
+      0.9770871379985633
+    ],
+    "left_ns": 168.47694856244385,
+    "right_ns": 164.19042797723293
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4081,
+    "ratio": 0.3674056076658768,
+    "ratio_range": [
+      0.3649714100571197,
+      0.3679725406472523
+    ],
+    "left_ns": 35362.944444444445,
+    "right_ns": 12994.309931506848
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0545883249045809,
+    "ratio_range": [
+      1.0420205071051079,
+      1.062754429428578
+    ],
+    "left_ns": 1755.9276100187267,
+    "right_ns": 1851.780756903353
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 0.9766677661527634,
+    "ratio_range": [
+      0.9699897751542302,
+      0.9802625582019489
+    ],
+    "left_ns": 2036.139167570499,
+    "right_ns": 1986.8246822033898
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.03792820847834,
+    "ratio_range": [
+      1.0328847307135525,
+      1.0433285928416673
+    ],
+    "left_ns": 120.15544502114571,
+    "right_ns": 125.11658493461435
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0225409224987603,
+    "ratio_range": [
+      1.0020271969176144,
+      1.0242349112505604
+    ],
+    "left_ns": 8670.381880733945,
+    "right_ns": 8820.762558411216
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9986639576032843,
+    "ratio_range": [
+      0.988716809411424,
+      1.0098312666003042
+    ],
+    "left_ns": 2777.3938609467455,
+    "right_ns": 2778.934726331361
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0141181511434845,
+    "ratio_range": [
+      1.005057340015366,
+      1.024903577618616
+    ],
+    "left_ns": 273500.9765625,
+    "right_ns": 278489.2578125
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0234603338823418,
+    "ratio_range": [
+      1.01431016233036,
+      1.0381457939995733
+    ],
+    "left_ns": 2392.863839285714,
+    "right_ns": 2445.343017578125
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0422092512399508,
+    "ratio_range": [
+      1.0223736448039127,
+      1.0439275224716293
+    ],
+    "left_ns": 163.42746099877985,
+    "right_ns": 169.108777507215
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.010011912819943,
+    "ratio_range": [
+      1.007109677512185,
+      1.0268032892069245
+    ],
+    "left_ns": 22439.639136904763,
+    "right_ns": 22822.606398809523
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0147056792143945,
+    "ratio_range": [
+      1.0024049072669163,
+      1.0350679411184707
+    ],
+    "left_ns": 8312.5,
+    "right_ns": 8405.099051339286
+  }
+]

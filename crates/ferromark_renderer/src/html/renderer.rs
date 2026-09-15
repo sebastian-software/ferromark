@@ -253,6 +253,7 @@ impl HtmlRenderer {
             Node::Break(node) => self.render_break(node),
             Node::Link(node) => self.render_link(node),
             Node::Image(node) => self.render_image(node),
+            Node::Highlight(node) => self.render_highlight(node),
             Node::Delete(node) => self.render_delete(node),
             Node::Superscript(node) => self.render_superscript(node),
             Node::Subscript(node) => self.render_subscript(node),

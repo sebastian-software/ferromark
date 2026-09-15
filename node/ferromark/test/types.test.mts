@@ -33,3 +33,5 @@ toHtmlWithHighlighter('```ts\nconst typed = true\n```', highlighter, {
     lang.toUpperCase()
   },
 })
+
+toHtml('==text==^[note]', { highlight: true, inlineFootnotes: true, allowLinkRefs: false })
