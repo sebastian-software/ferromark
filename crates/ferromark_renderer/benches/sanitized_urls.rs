@@ -10,7 +10,10 @@ use ferromark_renderer::{HtmlRenderer, HtmlRendererOptions};
 fn bench_sanitized_urls(c: &mut Criterion) {
     let mut group = c.benchmark_group("sanitized_urls");
     for (name, url) in [
-        ("https", "https://example.com/api/reference?lang=ja#settings"),
+        (
+            "https",
+            "https://example.com/api/reference?lang=ja#settings",
+        ),
         ("mixed_case", "hTtPs://example.com/api"),
         ("relative", "./guide/api.md#settings"),
         ("unsafe", "javascript:alert(1)"),

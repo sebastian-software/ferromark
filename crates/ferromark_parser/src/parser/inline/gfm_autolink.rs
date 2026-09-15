@@ -74,7 +74,10 @@ impl<'a> Parser<'a> {
                             span_start + candidate.end as u32,
                         );
                         let mut link_children = self.allocator.new_vec();
-                        link_children.push(Node::Text(Text { value: link_value, span: link_span }));
+                        link_children.push(Node::Text(Text {
+                            value: link_value,
+                            span: link_span,
+                        }));
                         let link_node = Node::Link(self.allocator.boxed(Link {
                             url,
                             title: None,
@@ -149,7 +152,10 @@ impl<'a> Parser<'a> {
                             merged.push_str(text.value);
                         }
                     }
-                    children[write] = Node::Text(Text { value: merged.into_bump_str(), span });
+                    children[write] = Node::Text(Text {
+                        value: merged.into_bump_str(),
+                        span,
+                    });
                 }
             }
             write += 1;

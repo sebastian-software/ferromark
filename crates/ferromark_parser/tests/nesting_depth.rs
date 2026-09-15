@@ -14,13 +14,18 @@ const OVER_LIMIT: usize = 500;
 
 fn parse_result(source: &str, options: ParserOptions) -> Result<(), ParseError> {
     let allocator = Allocator::new();
-    Parser::with_options(&allocator, source, options).parse().map(|_| ())
+    Parser::with_options(&allocator, source, options)
+        .parse()
+        .map(|_| ())
 }
 
 fn assert_too_deep(label: &str, source: &str, options: ParserOptions) {
     match parse_result(source, options) {
         Err(error)
-            if matches!(error.kind(), ParseErrorKind::NestingTooDeep { max_depth: 100, .. }) => {}
+            if matches!(
+                error.kind(),
+                ParseErrorKind::NestingTooDeep { max_depth: 100, .. }
+            ) => {}
         Err(other) => panic!("{label}: expected NestingTooDeep, got {other}"),
         Ok(()) => panic!("{label}: expected NestingTooDeep, parsed instead"),
     }
@@ -73,12 +78,20 @@ fn deeply_nested_quotes_fail_closed() {
 
 #[test]
 fn deeply_nested_footnote_definitions_fail_closed() {
-    assert_too_deep("footnotes", &nested_footnote_definitions(OVER_LIMIT), ParserOptions::gfm());
+    assert_too_deep(
+        "footnotes",
+        &nested_footnote_definitions(OVER_LIMIT),
+        ParserOptions::gfm(),
+    );
 }
 
 #[test]
 fn deeply_nested_quotes_around_lists_fail_closed() {
-    assert_too_deep("quoted lists", &nested_quotes_around_lists(OVER_LIMIT), ParserOptions::gfm());
+    assert_too_deep(
+        "quoted lists",
+        &nested_quotes_around_lists(OVER_LIMIT),
+        ParserOptions::gfm(),
+    );
 }
 
 #[test]
@@ -86,8 +99,16 @@ fn the_cap_applies_without_the_gfm_profile() {
     // `ParserOptions::default()` used to leave nesting unlimited, so the
     // plain-CommonMark path could take the host process down.
     assert_eq!(ParserOptions::default().max_nesting_depth, 100);
-    assert_too_deep("plain lists", &nested_lists(OVER_LIMIT), ParserOptions::default());
-    assert_too_deep("plain quotes", &nested_quotes(OVER_LIMIT), ParserOptions::default());
+    assert_too_deep(
+        "plain lists",
+        &nested_lists(OVER_LIMIT),
+        ParserOptions::default(),
+    );
+    assert_too_deep(
+        "plain quotes",
+        &nested_quotes(OVER_LIMIT),
+        ParserOptions::default(),
+    );
 }
 
 #[test]
@@ -109,7 +130,11 @@ fn nesting_within_the_cap_still_parses() {
     let mut levels = 1;
     while let Node::List(list) = node {
         let item = list.children.first().expect("each list has an item");
-        match item.children.iter().find(|child| matches!(child, Node::List(_))) {
+        match item
+            .children
+            .iter()
+            .find(|child| matches!(child, Node::List(_)))
+        {
             Some(inner) => {
                 node = inner;
                 levels += 1;
@@ -117,12 +142,18 @@ fn nesting_within_the_cap_still_parses() {
             None => break,
         }
     }
-    assert_eq!(levels, 40, "every source level should survive as a nested list");
+    assert_eq!(
+        levels, 40,
+        "every source level should survive as a nested list"
+    );
 }
 
 #[test]
 fn a_custom_cap_is_honored_for_every_construct() {
-    let options = ParserOptions { max_nesting_depth: 3, ..ParserOptions::gfm() };
+    let options = ParserOptions {
+        max_nesting_depth: 3,
+        ..ParserOptions::gfm()
+    };
     for (label, source) in [
         ("lists", nested_lists(12)),
         ("quotes", nested_quotes(12)),
@@ -130,7 +161,10 @@ fn a_custom_cap_is_honored_for_every_construct() {
     ] {
         match parse_result(&source, options.clone()) {
             Err(error)
-                if matches!(error.kind(), ParseErrorKind::NestingTooDeep { max_depth: 3, .. }) => {}
+                if matches!(
+                    error.kind(),
+                    ParseErrorKind::NestingTooDeep { max_depth: 3, .. }
+                ) => {}
             other => panic!("{label}: expected the custom cap to bite, got {other:?}"),
         }
     }
@@ -141,7 +175,10 @@ fn a_custom_cap_is_honored_for_every_construct() {
 #[test]
 fn zero_still_means_unlimited() {
     // Documented escape hatch: shallow input must keep parsing with it.
-    let options = ParserOptions { max_nesting_depth: 0, ..ParserOptions::gfm() };
+    let options = ParserOptions {
+        max_nesting_depth: 0,
+        ..ParserOptions::gfm()
+    };
     assert!(parse_result(&nested_lists(120), options.clone()).is_ok());
     assert!(parse_result(&nested_quotes(120), options).is_ok());
 }

@@ -32,8 +32,9 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     helpers = load_module('optimization_prepare', HERE.parent / 'optimization-rounds/prepare.py')
     revision = subprocess.check_output(['git', 'rev-parse', args.revision], cwd=ROOT, text=True).strip()
+    native = subprocess.check_output(['git', 'ls-tree', '--name-only', revision, 'node/native'], cwd=ROOT, text=True).splitlines()
     archive = subprocess.check_output(['git', 'archive', revision, 'Cargo.toml', 'Cargo.lock',
-                                       'rust-toolchain.toml', 'crates'], cwd=ROOT)
+                                       'rust-toolchain.toml', 'crates', *native], cwd=ROOT)
     source = out / 'source'
     source.mkdir()
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:

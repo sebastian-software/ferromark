@@ -13,7 +13,10 @@ fn bench_headings(c: &mut Criterion) {
     for (name, title) in [
         ("ascii", "API reference"),
         ("unicode", "日本語の見出しと設定ガイド"),
-        ("long", "An extended API reference heading describing configuration and options"),
+        (
+            "long",
+            "An extended API reference heading describing configuration and options",
+        ),
     ] {
         let mut source = String::new();
         for index in 0..512 {

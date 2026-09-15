@@ -114,9 +114,12 @@ fn chained_definitions_all_resolve() {
         .children
         .iter()
         .filter_map(|node| match node {
-            Node::Paragraph(p) => {
-                Some(p.children.iter().filter(|n| matches!(n, Node::Link(_))).count())
-            }
+            Node::Paragraph(p) => Some(
+                p.children
+                    .iter()
+                    .filter(|n| matches!(n, Node::Link(_)))
+                    .count(),
+            ),
             _ => None,
         })
         .sum::<usize>();
@@ -209,7 +212,9 @@ fn quoted_fence_does_not_hide_later_footnote_definition() {
 
 #[test]
 fn footnote_definition_directly_after_multiline_definition_resolves() {
-    assert!(resolves_footnote("[a]: /url\n\"title\"\n[^n]: note\n\n[^n]"));
+    assert!(resolves_footnote(
+        "[a]: /url\n\"title\"\n[^n]: note\n\n[^n]"
+    ));
 }
 
 #[test]

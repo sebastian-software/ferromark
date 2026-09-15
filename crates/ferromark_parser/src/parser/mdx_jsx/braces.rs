@@ -67,7 +67,9 @@ pub(super) fn skip_backticks(bytes: &[u8], start: usize) -> Option<usize> {
     }
     let mut cursor = start + open;
     while cursor + open <= bytes.len() {
-        if bytes[cursor..cursor + open].iter().all(|byte| *byte == b'`')
+        if bytes[cursor..cursor + open]
+            .iter()
+            .all(|byte| *byte == b'`')
             && bytes.get(cursor + open) != Some(&b'`')
         {
             return Some(cursor + open);

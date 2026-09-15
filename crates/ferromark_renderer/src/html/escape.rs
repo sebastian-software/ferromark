@@ -319,7 +319,14 @@ pub(super) fn write_escaped_into(out: &mut String, s: &str) {
     // `reserve(s.len())` covers the no-escape case exactly and reduces growth
     // even when replacements make the final output longer.
     out.reserve(s.len());
-    escape_into(out, s, escape_mask, &ESCAPE_FLAG, &ESCAPE_TABLE, &ESCAPE_NIBBLES);
+    escape_into(
+        out,
+        s,
+        escape_mask,
+        &ESCAPE_FLAG,
+        &ESCAPE_TABLE,
+        &ESCAPE_NIBBLES,
+    );
 }
 
 pub(super) fn write_url_escaped_into(out: &mut String, s: &str) {
@@ -401,7 +408,13 @@ fn next_url_flagged(bytes: &[u8], from: usize) -> usize {
             return i;
         }
     }
-    first_flagged(bytes, i, url_escape_mask, &URL_ESCAPE_FLAG, &URL_ESCAPE_NIBBLES)
+    first_flagged(
+        bytes,
+        i,
+        url_escape_mask,
+        &URL_ESCAPE_FLAG,
+        &URL_ESCAPE_NIBBLES,
+    )
 }
 
 #[inline]
@@ -446,7 +459,11 @@ fn ipv6_authority_brackets(s: &str) -> Option<(usize, usize)> {
     if bytes.get(open) != Some(&b'[') {
         return None;
     }
-    let close = bytes[open + 1..authority_end].iter().position(|&byte| byte == b']')? + open + 1;
+    let close = bytes[open + 1..authority_end]
+        .iter()
+        .position(|&byte| byte == b']')?
+        + open
+        + 1;
     let host = std::str::from_utf8(&bytes[open + 1..close]).ok()?;
     host.parse::<std::net::Ipv6Addr>().ok()?;
     match bytes.get(close + 1..authority_end)? {
@@ -465,7 +482,11 @@ pub(super) fn write_attribute_escaped_into(out: &mut String, s: &str) {
     let mut start = 0;
     for index in memchr::memchr2_iter(b'\r', b'\n', s.as_bytes()) {
         write_escaped_into(out, &s[start..index]);
-        out.push_str(if s.as_bytes()[index] == b'\r' { "&#13;" } else { "&#10;" });
+        out.push_str(if s.as_bytes()[index] == b'\r' {
+            "&#13;"
+        } else {
+            "&#10;"
+        });
         start = index + 1;
     }
     write_escaped_into(out, &s[start..]);

@@ -24,17 +24,29 @@ fn snapshot_inline_underscore_emphasis() {
 
 #[test]
 fn snapshot_inline_strikethrough_gfm() {
-    check("inline_strikethrough_gfm", "~~gone~~ but kept.\n", ParserOptions::gfm());
+    check(
+        "inline_strikethrough_gfm",
+        "~~gone~~ but kept.\n",
+        ParserOptions::gfm(),
+    );
 }
 
 #[test]
 fn snapshot_inline_strikethrough_unmatched() {
-    check("inline_strikethrough_unmatched", "~~open\n", ParserOptions::gfm());
+    check(
+        "inline_strikethrough_unmatched",
+        "~~open\n",
+        ParserOptions::gfm(),
+    );
 }
 
 #[test]
 fn snapshot_inline_code_basic() {
-    check("inline_code_basic", "Use `let x = 1;` to declare a value.\n", ParserOptions::default());
+    check(
+        "inline_code_basic",
+        "Use `let x = 1;` to declare a value.\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
@@ -48,7 +60,11 @@ fn snapshot_inline_code_with_html_literal() {
 
 #[test]
 fn snapshot_inline_hard_break_backslash() {
-    check("inline_hard_break_backslash", "line 1\\\nline 2\n", ParserOptions::default());
+    check(
+        "inline_hard_break_backslash",
+        "line 1\\\nline 2\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
@@ -64,7 +80,11 @@ fn snapshot_inline_escaped_punctuation() {
 
 #[test]
 fn snapshot_inline_link_simple() {
-    check("inline_link_simple", "See [the site](https://example.com).\n", ParserOptions::default());
+    check(
+        "inline_link_simple",
+        "See [the site](https://example.com).\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
@@ -87,15 +107,27 @@ fn snapshot_inline_link_nested_parentheses() {
 
 #[test]
 fn snapshot_image_simple() {
-    check("image_simple", "![alt](./logo.png)\n", ParserOptions::default());
+    check(
+        "image_simple",
+        "![alt](./logo.png)\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
 fn snapshot_image_with_title() {
-    check("image_with_title", "![alt](./logo.png \"A logo\")\n", ParserOptions::default());
+    check(
+        "image_with_title",
+        "![alt](./logo.png \"A logo\")\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
 fn snapshot_image_nested_parentheses() {
-    check("image_nested_parentheses", "![diagram](./img(test).png)\n", ParserOptions::default());
+    check(
+        "image_nested_parentheses",
+        "![diagram](./img(test).png)\n",
+        ParserOptions::default(),
+    );
 }

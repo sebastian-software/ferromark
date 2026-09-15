@@ -46,7 +46,10 @@ pub(super) fn has_unclosed_inline_code(line: &str) -> bool {
             return false;
         };
         let start = cursor + relative;
-        let ticks = bytes[start..].iter().take_while(|byte| **byte == b'`').count();
+        let ticks = bytes[start..]
+            .iter()
+            .take_while(|byte| **byte == b'`')
+            .count();
         let mut search = start + ticks;
         let mut closed = false;
         while search < bytes.len() {
@@ -54,7 +57,10 @@ pub(super) fn has_unclosed_inline_code(line: &str) -> bool {
                 search += 1;
                 continue;
             }
-            let close = bytes[search..].iter().take_while(|byte| **byte == b'`').count();
+            let close = bytes[search..]
+                .iter()
+                .take_while(|byte| **byte == b'`')
+                .count();
             if close >= ticks {
                 cursor = search + close;
                 closed = true;

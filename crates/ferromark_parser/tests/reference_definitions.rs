@@ -76,7 +76,10 @@ fn fastest_equal_definition_sample(small_source: &str, large_source: &str) -> Ti
     parse_once(small_source);
     parse_once(large_source);
 
-    let mut best = TimingSample { small_batch: Duration::MAX, large: Duration::MAX };
+    let mut best = TimingSample {
+        small_batch: Duration::MAX,
+        large: Duration::MAX,
+    };
     let mut best_ratio = f64::INFINITY;
 
     for round in 0..5 {
@@ -90,7 +93,10 @@ fn fastest_equal_definition_sample(small_source: &str, large_source: &str) -> Ti
             TimingSample { small_batch, large }
         };
         let ratio = sample.large.as_secs_f64()
-            / sample.small_batch.max(Duration::from_micros(1)).as_secs_f64();
+            / sample
+                .small_batch
+                .max(Duration::from_micros(1))
+                .as_secs_f64();
         if ratio < best_ratio {
             best = sample;
             best_ratio = ratio;
@@ -111,7 +117,10 @@ fn every_definition_in_a_long_run_is_collected() {
 #[test]
 fn references_in_a_long_run_still_resolve() {
     let source = definition_run(1_000) + "\n[link][r0] and [link][r999]\n";
-    assert_eq!(render(&source), "<p><a href=\"/u0\">link</a> and <a href=\"/u999\">link</a></p>");
+    assert_eq!(
+        render(&source),
+        "<p><a href=\"/u0\">link</a> and <a href=\"/u999\">link</a></p>"
+    );
 }
 
 #[test]
@@ -120,7 +129,10 @@ fn a_blank_line_ends_the_remembered_region() {
     // must not be reused for it.
     let source = "[a]: /a\n[b]: /b\n\n[c]: /c\n[d]: /d\n\n[x][a][x][b][x][c][x][d]\n";
     assert_eq!(
-        definitions(source).iter().map(|(id, url, _)| format!("{id}={url}")).collect::<Vec<_>>(),
+        definitions(source)
+            .iter()
+            .map(|(id, url, _)| format!("{id}={url}"))
+            .collect::<Vec<_>>(),
         ["a=/a", "b=/b", "c=/c", "d=/d"]
     );
 }
@@ -141,7 +153,10 @@ fn a_failed_candidate_does_not_poison_the_definitions_after_it() {
     // `[nope]` has no colon, so the run becomes a paragraph; the real
     // definitions that follow the blank line still have to register.
     let source = "[nope] plain text\n[still]: text\n\n[real]: /real\n\n[x][real]\n";
-    assert_eq!(definitions(source), [("real".to_string(), "/real".to_string(), None)]);
+    assert_eq!(
+        definitions(source),
+        [("real".to_string(), "/real".to_string(), None)]
+    );
     assert!(render(source).contains("<a href=\"/real\">x</a>"));
 }
 
@@ -158,8 +173,16 @@ fn multiline_definitions_inside_a_run_keep_their_titles() {
         definitions(source),
         [
             ("a".to_string(), "/a".to_string(), None),
-            ("b".to_string(), "/b".to_string(), Some("B title".to_string())),
-            ("c".to_string(), "/c".to_string(), Some("C title".to_string())),
+            (
+                "b".to_string(),
+                "/b".to_string(),
+                Some("B title".to_string())
+            ),
+            (
+                "c".to_string(),
+                "/c".to_string(),
+                Some("C title".to_string())
+            ),
             ("d".to_string(), "/d".to_string(), None),
         ]
     );
@@ -184,8 +207,11 @@ fn a_run_of_definitions_costs_linear_time() {
     let small_source = definition_run(4_000);
     let large_source = definition_run(16_000);
     let sample = fastest_equal_definition_sample(&small_source, &large_source);
-    let ratio =
-        sample.large.as_secs_f64() / sample.small_batch.max(Duration::from_micros(1)).as_secs_f64();
+    let ratio = sample.large.as_secs_f64()
+        / sample
+            .small_batch
+            .max(Duration::from_micros(1))
+            .as_secs_f64();
     assert!(
         ratio < 2.5,
         "16,000 definitions took {large:?} against {small:?} for four 4,000-definition runs \

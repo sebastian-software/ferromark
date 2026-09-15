@@ -3,21 +3,38 @@ use ferromark_ast::Node;
 
 #[test]
 fn find_closing_tag_matches_case_insensitively() {
-    assert_eq!(super::html::find_closing_tag(b"end </SCRIPT> tail", 0, b"script"), Some(4));
-    assert_eq!(super::html::find_closing_tag(b"</style ", 0, b"style"), Some(0));
-    assert_eq!(super::html::find_closing_tag(b"<scriptsource>", 0, b"script"), None);
+    assert_eq!(
+        super::html::find_closing_tag(b"end </SCRIPT> tail", 0, b"script"),
+        Some(4)
+    );
+    assert_eq!(
+        super::html::find_closing_tag(b"</style ", 0, b"style"),
+        Some(0)
+    );
+    assert_eq!(
+        super::html::find_closing_tag(b"<scriptsource>", 0, b"script"),
+        None
+    );
     assert_eq!(super::html::find_closing_tag(b"", 0, b"pre"), None);
     assert_eq!(super::html::find_closing_tag(b"</pr", 0, b"pre"), None);
     // Search starts at `from`, skipping earlier occurrences.
-    assert_eq!(super::html::find_closing_tag(b"</pre> </pre>", 1, b"pre"), Some(7));
+    assert_eq!(
+        super::html::find_closing_tag(b"</pre> </pre>", 1, b"pre"),
+        Some(7)
+    );
     // A closing tag split across a newline never matches.
-    assert_eq!(super::html::find_closing_tag(b"</scr\nipt>", 0, b"script"), None);
+    assert_eq!(
+        super::html::find_closing_tag(b"</scr\nipt>", 0, b"script"),
+        None
+    );
 }
 
 #[test]
 fn test_parse_image() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "![Alt text](/path/to/image.png)").parse().unwrap();
+    let doc = Parser::new(&allocator, "![Alt text](/path/to/image.png)")
+        .parse()
+        .unwrap();
     assert_eq!(doc.children.len(), 1);
     match &doc.children[0] {
         Node::Paragraph(p) => {
@@ -79,7 +96,9 @@ fn test_parse_paragraph() {
 #[test]
 fn plain_text_paragraph_reserves_one_inline_node() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "One plain text node").parse().unwrap();
+    let doc = Parser::new(&allocator, "One plain text node")
+        .parse()
+        .unwrap();
     let Node::Paragraph(paragraph) = &doc.children[0] else {
         panic!("expected paragraph");
     };
@@ -162,7 +181,9 @@ fn test_parse_inline_code() {
 #[test]
 fn test_parse_strikethrough() {
     let allocator = Allocator::new();
-    let doc = Parser::with_options(&allocator, "~~done~~", ParserOptions::gfm()).parse().unwrap();
+    let doc = Parser::with_options(&allocator, "~~done~~", ParserOptions::gfm())
+        .parse()
+        .unwrap();
     assert_eq!(doc.children.len(), 1);
     match &doc.children[0] {
         Node::Paragraph(p) => {
@@ -179,7 +200,9 @@ fn test_parse_strikethrough_lone_tilde_not_matched() {
     // `inner_end + 1 < len` boundary preserved by the memchr-based scan.
     let allocator = Allocator::new();
     for input in ["~~open ~ but no close", "~~trailing tilde~"] {
-        let doc = Parser::with_options(&allocator, input, ParserOptions::gfm()).parse().unwrap();
+        let doc = Parser::with_options(&allocator, input, ParserOptions::gfm())
+            .parse()
+            .unwrap();
         match &doc.children[0] {
             Node::Paragraph(p) => {
                 assert!(
@@ -231,10 +254,13 @@ fn test_parse_table_preserves_escaped_pipes() {
         panic!("expected table, got {:?}", doc.children[0]);
     };
     assert_eq!(table.children[1].children.len(), 1);
-    let inline_code = table.children[1].children[0].children.iter().find_map(|node| match node {
-        Node::InlineCode(code) => Some(code.value),
-        _ => None,
-    });
+    let inline_code = table.children[1].children[0]
+        .children
+        .iter()
+        .find_map(|node| match node {
+            Node::InlineCode(code) => Some(code.value),
+            _ => None,
+        });
     assert_eq!(inline_code, Some("|"));
 }
 
@@ -264,7 +290,9 @@ fn multi_item_list_skips_the_two_slot_growth_step() {
     assert_eq!(single_list.children.capacity(), 1);
 
     let pair_allocator = Allocator::new();
-    let pair = Parser::new(&pair_allocator, "- one\n- two").parse().unwrap();
+    let pair = Parser::new(&pair_allocator, "- one\n- two")
+        .parse()
+        .unwrap();
     let Node::List(pair_list) = &pair.children[0] else {
         panic!("expected two-item list");
     };
@@ -274,7 +302,9 @@ fn multi_item_list_skips_the_two_slot_growth_step() {
 #[test]
 fn outdented_marker_starts_a_new_list() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "  - indented\n- outdented").parse().unwrap();
+    let doc = Parser::new(&allocator, "  - indented\n- outdented")
+        .parse()
+        .unwrap();
 
     assert_eq!(doc.children.len(), 2);
     assert!(
@@ -329,7 +359,9 @@ fn test_parse_block_quote() {
 #[test]
 fn test_parse_block_quote_multiline() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "> line 1\n> line 2").parse().unwrap();
+    let doc = Parser::new(&allocator, "> line 1\n> line 2")
+        .parse()
+        .unwrap();
     assert_eq!(doc.children.len(), 1);
     match &doc.children[0] {
         Node::BlockQuote(bq) => {

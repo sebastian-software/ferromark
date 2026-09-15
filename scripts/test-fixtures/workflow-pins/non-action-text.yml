@@ -1,0 +1,13 @@
+name: Non-action uses text
+
+on: workflow_dispatch
+
+# uses: actions/checkout@v5
+jobs:
+  shell-only:
+    runs-on: ubuntu-latest
+    env:
+      MESSAGE: "uses: actions/checkout@v5"
+    steps:
+      - run: |
+          echo "uses: actions/checkout@v5"

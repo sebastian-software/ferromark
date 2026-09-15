@@ -43,7 +43,9 @@ impl<'a> Parser<'a> {
         }
 
         let header_cells = if self.options.merged_table_cells {
-            Self::table_row_cells_with_spans(first_line).map(|(_, _, _, span)| span).sum()
+            Self::table_row_cells_with_spans(first_line)
+                .map(|(_, _, _, span)| span)
+                .sum()
         } else {
             Self::table_row_cells(first_line).count()
         };
@@ -103,7 +105,10 @@ impl<'a> Parser<'a> {
             let Some(trimmed_start) = self.first_non_whitespace_in_line(self.position) else {
                 break;
             };
-            if self.probe_line_without_table(self.position, trimmed_start).starts_block {
+            if self
+                .probe_line_without_table(self.position, trimmed_start)
+                .starts_block
+            {
                 break;
             }
 
@@ -119,7 +124,12 @@ impl<'a> Parser<'a> {
 
         let attributes = self.parse_table_attributes()?;
         let span = Span::new(start as u32, self.position as u32);
-        Ok(Some(Node::Table(self.allocator.boxed(Table { align, children, attributes, span }))))
+        Ok(Some(Node::Table(self.allocator.boxed(Table {
+            align,
+            children,
+            attributes,
+            span,
+        }))))
     }
 
     /// Parses a table row into arena-backed AST cells without temporary heap
@@ -181,7 +191,10 @@ impl<'a> Parser<'a> {
             });
             logical_columns += 1;
         }
-        Ok(TableRow { children: cells, span: Span::new(line_start as u32, line_end as u32) })
+        Ok(TableRow {
+            children: cells,
+            span: Span::new(line_start as u32, line_end as u32),
+        })
     }
 
     fn parse_table_cell(
@@ -205,7 +218,10 @@ impl<'a> Parser<'a> {
         };
         Ok(TableCell {
             children: cell_children,
-            span: Span::new((line_start + cell_start) as u32, (line_start + cell_end) as u32),
+            span: Span::new(
+                (line_start + cell_start) as u32,
+                (line_start + cell_end) as u32,
+            ),
             colspan,
         })
     }

@@ -53,13 +53,15 @@ impl<'a> Parser<'a> {
         };
 
         self.position = scan::after_trailing_line_ws(self.source.as_bytes(), element_end);
-        Ok(Some(Node::MdxJsxFlowElement(self.allocator.boxed(MdxJsxFlowElement {
-            name: open.name,
-            attributes,
-            children,
-            self_closing,
-            span: Span::new(start as u32, self.position as u32),
-        }))))
+        Ok(Some(Node::MdxJsxFlowElement(self.allocator.boxed(
+            MdxJsxFlowElement {
+                name: open.name,
+                attributes,
+                children,
+                self_closing,
+                span: Span::new(start as u32, self.position as u32),
+            },
+        ))))
     }
 
     /// Parses a text JSX element at `pos` inside inline `content`.

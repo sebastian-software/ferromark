@@ -125,7 +125,11 @@ impl HtmlRenderer {
         let trimmed =
             url.trim_matches(|ch: char| ch.is_ascii_control() || ch.is_ascii_whitespace());
 
-        if Self::is_safe_url(trimmed) { trimmed } else { fallback }
+        if Self::is_safe_url(trimmed) {
+            trimmed
+        } else {
+            fallback
+        }
     }
 
     pub(in crate::html::renderer) fn is_safe_url(url: &str) -> bool {
@@ -146,7 +150,10 @@ impl HtmlRenderer {
         // into bounded stack storage instead of allocating for each link.
         let mut scheme = [0; 6];
         let mut len = 0;
-        for byte in url[..colon_index].bytes().filter(|byte| !byte.is_ascii_whitespace()) {
+        for byte in url[..colon_index]
+            .bytes()
+            .filter(|byte| !byte.is_ascii_whitespace())
+        {
             let Some(slot) = scheme.get_mut(len) else {
                 return false;
             };
@@ -234,7 +241,8 @@ impl HtmlRenderer {
         self.output.push_str("\" href=\"#");
         write_attribute_escaped_into(&mut self.output, &self.heading_id_scratch);
         if self.heading_text_scratch.is_empty() {
-            self.output.push_str("\" aria-label=\"Permalink to this section\">#</a>");
+            self.output
+                .push_str("\" aria-label=\"Permalink to this section\">#</a>");
             return;
         }
         self.output.push_str("\" aria-label=\"Permalink to &quot;");
@@ -259,7 +267,10 @@ impl HtmlRenderer {
         slugify_heading_into(&self.heading_text_scratch, &mut self.heading_slug_scratch);
 
         self.heading_id_scratch.clear();
-        if let Some(count) = self.heading_id_counts.get_mut(self.heading_slug_scratch.as_str()) {
+        if let Some(count) = self
+            .heading_id_counts
+            .get_mut(self.heading_slug_scratch.as_str())
+        {
             let n = *count;
             *count += 1;
             self.heading_id_scratch.push_str(&self.heading_slug_scratch);

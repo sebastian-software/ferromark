@@ -44,7 +44,10 @@ impl<'a> Parser<'a> {
             item.content_source_end.saturating_sub(item.content_offset)
                 + usize::from(consumed_newline),
         );
-        ListItemSource { text: source, source_map }
+        ListItemSource {
+            text: source,
+            source_map,
+        }
     }
 
     /// Returns true when a single-line list item can bypass the sub-parser.
@@ -78,7 +81,10 @@ impl<'a> Parser<'a> {
         // treat as block syntax in a freshly spawned sub-parser. Keep those
         // on the old path so `- # heading`, nested lists, fenced code, raw
         // HTML blocks, etc. preserve their current AST.
-        !matches!(first, b'#' | b'-' | b'*' | b'_' | b'>' | b'`' | b'~' | b'<' | b'+' | b'0'..=b'9')
+        !matches!(
+            first,
+            b'#' | b'-' | b'*' | b'_' | b'>' | b'`' | b'~' | b'<' | b'+' | b'0'..=b'9'
+        )
     }
 
     /// Creates the direct AST for the single-paragraph list-item fast path.

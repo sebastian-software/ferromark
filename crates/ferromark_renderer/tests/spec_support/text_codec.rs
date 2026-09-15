@@ -9,8 +9,9 @@ pub fn decode_entities(input: &str) -> String {
     while let Some(pos) = rest.find('&') {
         out.push_str(&rest[..pos]);
         rest = &rest[pos..];
-        let Some(semicolon) =
-            rest.as_bytes()[..rest.len().min(40)].iter().position(|&byte| byte == b';')
+        let Some(semicolon) = rest.as_bytes()[..rest.len().min(40)]
+            .iter()
+            .position(|&byte| byte == b';')
         else {
             out.push('&');
             rest = &rest[1..];
@@ -46,7 +47,11 @@ fn decode_numeric_entity(entity: &str) -> Option<char> {
         digits.parse::<u32>().ok()?
     };
     // The spec maps U+0000 and out-of-range references to U+FFFD.
-    Some(char::from_u32(code).filter(|&c| c != '\0').unwrap_or('\u{fffd}'))
+    Some(
+        char::from_u32(code)
+            .filter(|&c| c != '\0')
+            .unwrap_or('\u{fffd}'),
+    )
 }
 
 /// Canonicalizes non-ASCII UTF-8 URL spelling without decoding ASCII escapes.
@@ -94,7 +99,10 @@ pub fn encode_attr_into(out: &mut String, value: &str) {
 
 #[test]
 fn decodes_common_and_numeric_entities() {
-    assert_eq!(decode_entities("a &amp; b &#35; &#x22; &nbsp;"), "a & b # \" \u{a0}");
+    assert_eq!(
+        decode_entities("a &amp; b &#35; &#x22; &nbsp;"),
+        "a & b # \" \u{a0}"
+    );
     assert_eq!(decode_entities("&copy; stays"), "&copy; stays");
     assert_eq!(decode_entities("&#0; becomes"), "\u{fffd} becomes");
     assert_eq!(decode_entities("bare & alone"), "bare & alone");

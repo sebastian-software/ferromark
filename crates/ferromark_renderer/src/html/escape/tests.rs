@@ -36,7 +36,11 @@ fn reference_url(s: &str) -> String {
 fn check(s: &str) {
     let mut text = String::new();
     write_escaped_into(&mut text, s);
-    assert_eq!(text, reference(s, &ESCAPE_FLAG, &ESCAPE_TABLE), "text escape: {s:?}");
+    assert_eq!(
+        text,
+        reference(s, &ESCAPE_FLAG, &ESCAPE_TABLE),
+        "text escape: {s:?}"
+    );
 
     let mut url = String::new();
     write_url_escaped_into(&mut url, s);
@@ -104,8 +108,9 @@ fn url_escape_matches_reference_at_every_offset_and_tail() {
 #[test]
 fn runs_of_every_length_are_copied_intact() {
     for len in 0..=200 {
-        let run: String =
-            (0..len).map(|i| char::from(b'a' + u8::try_from(i % 26).unwrap())).collect();
+        let run: String = (0..len)
+            .map(|i| char::from(b'a' + u8::try_from(i % 26).unwrap()))
+            .collect();
         for (prefix, suffix) in [("", ""), ("&", ""), ("", "<"), ("'", "\"")] {
             let source = format!("{prefix}{run}{suffix}");
             check(&source);
@@ -113,7 +118,10 @@ fn runs_of_every_length_are_copied_intact() {
             write_escaped_into(&mut out, &source);
             assert_eq!(
                 out,
-                format!("existing-content{}", reference(&source, &ESCAPE_FLAG, &ESCAPE_TABLE))
+                format!(
+                    "existing-content{}",
+                    reference(&source, &ESCAPE_FLAG, &ESCAPE_TABLE)
+                )
             );
         }
     }
@@ -124,7 +132,10 @@ fn commonmark_url_syntax_bytes_are_percent_encoded() {
     for (source, expected) in [
         (r"foo\bar", "foo%5Cbar"),
         ("https://foo.bar.`baz", "https://foo.bar.%60baz"),
-        ("https://example.com/?search=][ref]", "https://example.com/?search=%5D%5Bref%5D"),
+        (
+            "https://example.com/?search=][ref]",
+            "https://example.com/?search=%5D%5Bref%5D",
+        ),
         ("https://example.com/\\[\\", "https://example.com/%5C%5B%5C"),
     ] {
         let mut actual = String::new();

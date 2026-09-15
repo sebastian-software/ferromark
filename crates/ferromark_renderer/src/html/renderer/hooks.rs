@@ -183,7 +183,10 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         let control = {
-            let mut cx = HtmlRenderContext { renderer: self, children_inline: true };
+            let mut cx = HtmlRenderContext {
+                renderer: self,
+                children_inline: true,
+            };
             hooks.render_node(node, &mut cx)
         };
         if control == HtmlRenderControl::Default {

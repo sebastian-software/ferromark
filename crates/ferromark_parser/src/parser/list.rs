@@ -30,7 +30,9 @@ impl<'a> Parser<'a> {
 
         loop {
             let line_start = self.position;
-            let line_len = first_line_len.take().unwrap_or_else(|| self.line_at(line_start).len());
+            let line_len = first_line_len
+                .take()
+                .unwrap_or_else(|| self.line_at(line_start).len());
 
             // Consume the marker line.
             self.position += line_len;
@@ -125,7 +127,12 @@ impl<'a> Parser<'a> {
         baseline_indent: usize,
         consumed_newline: bool,
         lazy_lines: &mut rustc_hash::FxHashSet<u32>,
-    ) -> (bool, usize, Option<ListItemSource<'a>>, Option<ParsedListItem<'a>>) {
+    ) -> (
+        bool,
+        usize,
+        Option<ListItemSource<'a>>,
+        Option<ParsedListItem<'a>>,
+    ) {
         let content_indent = item.content_indent;
         let item_is_empty = item.content.trim().is_empty();
         let mut item_source = None;
@@ -312,7 +319,9 @@ fn item_content_has_blank_gap(source: &str, children: &[Node<'_>]) -> bool {
     children.windows(2).any(|pair| {
         let gap_start = block_span(&pair[0]).end as usize;
         let gap_end = block_span(&pair[1]).start as usize;
-        source.get(gap_start..gap_end).is_some_and(|gap| gap.contains('\n'))
+        source
+            .get(gap_start..gap_end)
+            .is_some_and(|gap| gap.contains('\n'))
     })
 }
 

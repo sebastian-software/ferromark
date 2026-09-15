@@ -119,14 +119,24 @@ impl ParseErrorKind {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+    #![allow(
+        clippy::disallowed_macros,
+        clippy::disallowed_methods,
+        clippy::disallowed_types
+    )]
 
     use super::*;
 
     #[test]
     fn results_stay_small() {
-        assert_eq!(std::mem::size_of::<ParseError>(), std::mem::size_of::<usize>());
-        assert_eq!(std::mem::size_of::<ParseResult<()>>(), std::mem::size_of::<usize>());
+        assert_eq!(
+            std::mem::size_of::<ParseError>(),
+            std::mem::size_of::<usize>()
+        );
+        assert_eq!(
+            std::mem::size_of::<ParseResult<()>>(),
+            std::mem::size_of::<usize>()
+        );
         assert!(std::mem::size_of::<ParseResult<Option<ferromark_ast::Node<'_>>>>() <= 40);
     }
 
@@ -135,11 +145,17 @@ mod tests {
         let span = Span::new(3, 7);
         let error = ParseError::from(ParseErrorKind::NestingTooDeep { span, max_depth: 2 });
         assert_eq!(error.span(), span);
-        assert!(matches!(error.kind(), ParseErrorKind::NestingTooDeep { max_depth: 2, .. }));
+        assert!(matches!(
+            error.kind(),
+            ParseErrorKind::NestingTooDeep { max_depth: 2, .. }
+        ));
         assert_eq!(
             error.to_string(),
             "nesting too deep at Span { start: 3, end: 7 }: maximum depth is 2"
         );
-        assert!(matches!(error.into_kind(), ParseErrorKind::NestingTooDeep { .. }));
+        assert!(matches!(
+            error.into_kind(),
+            ParseErrorKind::NestingTooDeep { .. }
+        ));
     }
 }

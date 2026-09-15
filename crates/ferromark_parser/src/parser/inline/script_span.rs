@@ -65,21 +65,30 @@ impl<'a> Parser<'a> {
             let inner_children = self.parse_inline(inner, offset + inner_start)?;
             let span = Span::new((offset + *pos) as u32, (offset + inner_end + 1) as u32);
             let node = match kind {
-                ScriptKind::Superscript => Node::Superscript(
-                    self.allocator
-                        .boxed(ferromark_ast::Superscript { children: inner_children, span }),
-                ),
-                ScriptKind::Subscript => Node::Subscript(
-                    self.allocator
-                        .boxed(ferromark_ast::Subscript { children: inner_children, span }),
-                ),
+                ScriptKind::Superscript => {
+                    Node::Superscript(self.allocator.boxed(ferromark_ast::Superscript {
+                        children: inner_children,
+                        span,
+                    }))
+                }
+                ScriptKind::Subscript => {
+                    Node::Subscript(self.allocator.boxed(ferromark_ast::Subscript {
+                        children: inner_children,
+                        span,
+                    }))
+                }
             };
             children.push(node);
             *pos = inner_end + 1;
             return Ok(());
         }
 
-        Self::push_text(children, &content[*pos..*pos + 1], offset + *pos, offset + *pos + 1);
+        Self::push_text(
+            children,
+            &content[*pos..*pos + 1],
+            offset + *pos,
+            offset + *pos + 1,
+        );
         *pos += 1;
         Ok(())
     }

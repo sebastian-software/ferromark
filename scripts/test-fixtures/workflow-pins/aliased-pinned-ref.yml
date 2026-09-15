@@ -1,0 +1,13 @@
+name: Aliased pinned action value
+
+on: workflow_dispatch
+
+env:
+  uses_key: &uses_key uses
+  pinned_action: &pinned_action actions/checkout@0123456789abcdef0123456789abcdef01234567
+
+jobs:
+  pinned:
+    runs-on: ubuntu-latest
+    steps:
+      - *uses_key: *pinned_action

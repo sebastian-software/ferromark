@@ -37,5 +37,9 @@ fn snapshot_reference_link_definition() {
 fn snapshot_footnote_reference_and_definition() {
     let mut options = ParserOptions::gfm();
     options.footnotes = true;
-    check("footnote_reference_and_definition", "See[^1].\n\n[^1]: The footnote body.\n", options);
+    check(
+        "footnote_reference_and_definition",
+        "See[^1].\n\n[^1]: The footnote body.\n",
+        options,
+    );
 }

@@ -40,7 +40,10 @@ fn children_of<'a, 'b: 'a>(node: &'a Node<'b>) -> Option<&'a [Node<'b>]> {
 fn assert_no_empty_text(nodes: &[Node<'_>], source: &str) {
     for node in nodes {
         if let Node::Text(text) = node {
-            assert!(!text.value.is_empty(), "empty text node survived pairing in {source:?}");
+            assert!(
+                !text.value.is_empty(),
+                "empty text node survived pairing in {source:?}"
+            );
         }
         if let Some(children) = children_of(node) {
             assert_no_empty_text(children, source);
@@ -51,10 +54,16 @@ fn assert_no_empty_text(nodes: &[Node<'_>], source: &str) {
 fn assert_spans_inside(nodes: &[Node<'_>], limit: u32, source: &str) {
     for node in nodes {
         if let Node::Emphasis(n) = node {
-            assert!(n.span.start <= n.span.end && n.span.end <= limit, "bad span in {source:?}");
+            assert!(
+                n.span.start <= n.span.end && n.span.end <= limit,
+                "bad span in {source:?}"
+            );
         }
         if let Node::Strong(n) = node {
-            assert!(n.span.start <= n.span.end && n.span.end <= limit, "bad span in {source:?}");
+            assert!(
+                n.span.start <= n.span.end && n.span.end <= limit,
+                "bad span in {source:?}"
+            );
         }
         if let Some(children) = children_of(node) {
             assert_spans_inside(children, limit, source);
@@ -95,7 +104,10 @@ fn fastest_equal_emphasis_sample(small_source: &str, large_source: &str) -> Timi
     parse_once(small_source);
     parse_once(large_source);
 
-    let mut best = TimingSample { small_batch: Duration::MAX, large: Duration::MAX };
+    let mut best = TimingSample {
+        small_batch: Duration::MAX,
+        large: Duration::MAX,
+    };
     let mut best_ratio = f64::INFINITY;
 
     for round in 0..5 {
@@ -109,7 +121,10 @@ fn fastest_equal_emphasis_sample(small_source: &str, large_source: &str) -> Timi
             TimingSample { small_batch, large }
         };
         let ratio = sample.large.as_secs_f64()
-            / sample.small_batch.max(Duration::from_micros(1)).as_secs_f64();
+            / sample
+                .small_batch
+                .max(Duration::from_micros(1))
+                .as_secs_f64();
         if ratio < best_ratio {
             best = sample;
             best_ratio = ratio;
@@ -126,12 +141,21 @@ const NESTING_CASES: [(&str, &str); 12] = [
     ("*a *b* c*", "<p><em>a <em>b</em> c</em></p>"),
     ("_a_b_c_", "<p><em>a_b_c</em></p>"),
     ("a*b*c*d*e", "<p>a<em>b</em>c<em>d</em>e</p>"),
-    ("**a**b**c**", "<p><strong>a</strong>b<strong>c</strong></p>"),
+    (
+        "**a**b**c**",
+        "<p><strong>a</strong>b<strong>c</strong></p>",
+    ),
     ("*(**foo**)*", "<p><em>(<strong>foo</strong>)</em></p>"),
-    ("foo***bar***baz", "<p>foo<em><strong>bar</strong></em>baz</p>"),
+    (
+        "foo***bar***baz",
+        "<p>foo<em><strong>bar</strong></em>baz</p>",
+    ),
     ("*a `b` c*", "<p><em>a <code>b</code> c</em></p>"),
     ("**[l](u)**", "<p><strong><a href=\"u\">l</a></strong></p>"),
-    ("*foo **bar** baz*", "<p><em>foo <strong>bar</strong> baz</em></p>"),
+    (
+        "*foo **bar** baz*",
+        "<p><em>foo <strong>bar</strong> baz</em></p>",
+    ),
 ];
 
 #[test]
@@ -147,7 +171,10 @@ fn retired_delimiters_never_pair_across_a_finished_span() {
     // The inner `*` runs are consumed by the inner pair; if they stayed
     // available they would reach past the closing `*` and re-pair.
     assert_eq!(render("*a *b* c* d*"), "<p><em>a <em>b</em> c</em> d*</p>");
-    assert_eq!(render("**a *b* c** d*"), "<p><strong>a <em>b</em> c</strong> d*</p>");
+    assert_eq!(
+        render("**a *b* c** d*"),
+        "<p><strong>a <em>b</em> c</strong> d*</p>"
+    );
     check_tree("*a *b* c* d*");
 }
 
@@ -179,7 +206,11 @@ fn a_long_sequence_of_unpairable_delimiters_stays_literal() {
     let rendered = render(&source);
     assert_eq!(rendered.matches("<em>").count(), 0);
     assert_eq!(rendered.matches("<strong>").count(), 0);
-    assert_eq!(rendered.matches('*').count(), 400, "every marker stays literal");
+    assert_eq!(
+        rendered.matches('*').count(),
+        400,
+        "every marker stays literal"
+    );
     check_tree(&source);
 
     // Intraword `_` cannot open or close either.
@@ -195,14 +226,20 @@ fn emphasis_pairing_costs_linear_time() {
     // Compare equal bytes of work: four smaller parses against one 4x input.
     // Quadratic pairing makes the large input cost about four times the batch;
     // a linear parser stays close to one without pinning an absolute time.
-    let builds: [fn(usize) -> String; 3] =
-        [|n| "**bold** and *ital* ".repeat(n), |n| "x * ".repeat(n), |n| "*_".repeat(n) + "a"];
+    let builds: [fn(usize) -> String; 3] = [
+        |n| "**bold** and *ital* ".repeat(n),
+        |n| "x * ".repeat(n),
+        |n| "*_".repeat(n) + "a",
+    ];
     for build in builds {
         let small_source = build(1_000);
         let large_source = build(4_000);
         let sample = fastest_equal_emphasis_sample(&small_source, &large_source);
         let ratio = sample.large.as_secs_f64()
-            / sample.small_batch.max(Duration::from_micros(1)).as_secs_f64();
+            / sample
+                .small_batch
+                .max(Duration::from_micros(1))
+                .as_secs_f64();
         assert!(
             ratio < 2.5,
             "4x the delimiters took {large:?} against {small:?} for four smaller parses (x{ratio:.1})",

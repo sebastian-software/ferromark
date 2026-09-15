@@ -15,7 +15,9 @@ impl<'a> Parser<'a> {
     pub(super) fn try_parse_heading_start(&self, line_start: usize, trimmed_start: usize) -> bool {
         let bytes = self.source.as_bytes();
         trimmed_start - line_start <= 3
-            && bytes[line_start..trimmed_start].iter().all(|&byte| byte == b' ')
+            && bytes[line_start..trimmed_start]
+                .iter()
+                .all(|&byte| byte == b' ')
             && is_atx_heading_prefix(&bytes[trimmed_start..])
     }
 
@@ -126,13 +128,15 @@ impl<'a> Parser<'a> {
             self.allocator.new_vec()
         };
 
-        Ok(Some(Node::Heading(self.allocator.boxed(ferromark_ast::Heading {
-            depth,
-            id,
-            classes,
-            children,
-            span,
-        }))))
+        Ok(Some(Node::Heading(self.allocator.boxed(
+            ferromark_ast::Heading {
+                depth,
+                id,
+                classes,
+                children,
+                span,
+            },
+        ))))
     }
 
     pub(super) fn split_heading_attributes(
@@ -177,7 +181,11 @@ impl<'a> Parser<'a> {
             return (content, None, classes);
         }
 
-        (trimmed[..open].trim_end_matches(char::is_whitespace), id, classes)
+        (
+            trimmed[..open].trim_end_matches(char::is_whitespace),
+            id,
+            classes,
+        )
     }
 
     /// Parses a thematic break.
@@ -188,7 +196,9 @@ impl<'a> Parser<'a> {
         self.consume_line();
 
         let span = Span::new(start as u32, self.position as u32);
-        Ok(Some(Node::ThematicBreak(ferromark_ast::ThematicBreak { span })))
+        Ok(Some(Node::ThematicBreak(ferromark_ast::ThematicBreak {
+            span,
+        })))
     }
 }
 

@@ -21,7 +21,11 @@
 //! let document = parser.parse();
 //! ```
 
-#![deny(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+#![deny(
+    clippy::disallowed_macros,
+    clippy::disallowed_methods,
+    clippy::disallowed_types
+)]
 #![cfg_attr(
     not(test),
     deny(

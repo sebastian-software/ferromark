@@ -38,11 +38,15 @@ struct SourceMapLine {
 
 impl SourceMap {
     pub(in crate::parser) fn line_origins(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
-        self.lines.iter().map(|line| (line.generated_start, line.source_block_start))
+        self.lines
+            .iter()
+            .map(|line| (line.generated_start, line.source_block_start))
     }
 
     pub(in crate::parser) fn generated_line_start(&self, original: usize) -> Option<usize> {
-        let index = self.lines.partition_point(|line| line.source_block_start < original);
+        let index = self
+            .lines
+            .partition_point(|line| line.source_block_start < original);
         self.lines
             .get(index)
             .filter(|line| line.source_block_start == original)
@@ -104,14 +108,20 @@ impl SourceMap {
         }
 
         let start = self.map_start(span.start as usize, include_indent);
-        let end = if span.start == span.end { start } else { self.map_end(span.end as usize) };
+        let end = if span.start == span.end {
+            start
+        } else {
+            self.map_end(span.end as usize)
+        };
         Span::new(start, end)
     }
 }
 
 impl SourceMap {
     fn map_start(&self, generated: usize, include_indent: bool) -> u32 {
-        let index = self.lines.partition_point(|line| generated >= line.generated_end);
+        let index = self
+            .lines
+            .partition_point(|line| generated >= line.generated_end);
         let Some(line) = self.lines.get(index).copied() else {
             return self.lines.last().map_or(generated, |line| line.source_end) as u32;
         };
@@ -123,7 +133,9 @@ impl SourceMap {
     }
 
     fn map_end(&self, generated: usize) -> u32 {
-        let index = self.lines.partition_point(|line| generated > line.generated_end);
+        let index = self
+            .lines
+            .partition_point(|line| generated > line.generated_end);
         let Some(line) = self.lines.get(index).copied() else {
             return self.lines.last().map_or(generated, |line| line.source_end) as u32;
         };

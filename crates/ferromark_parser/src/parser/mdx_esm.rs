@@ -29,7 +29,10 @@ fn keyword_then_boundary(bytes: &[u8], at: usize, keyword: &[u8]) -> bool {
 }
 
 fn is_keyword_boundary(b: u8) -> bool {
-    matches!(b, b' ' | b'\t' | b'\n' | b'\r' | b'{' | b'*' | b'\'' | b'"' | b'`' | b'/')
+    matches!(
+        b,
+        b' ' | b'\t' | b'\n' | b'\r' | b'{' | b'*' | b'\'' | b'"' | b'`' | b'/'
+    )
 }
 
 #[derive(Clone, Copy)]

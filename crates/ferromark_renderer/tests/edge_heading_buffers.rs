@@ -32,7 +32,10 @@ fn heading_buffers_do_not_leak_long_ids_or_duplicate_counts_across_renders() {
     let long_document = Parser::new(&allocator, &long_source).parse().unwrap();
     let short_document = Parser::new(&allocator, "## A\n\n## A").parse().unwrap();
     let empty_document = Parser::new(&allocator, "").parse().unwrap();
-    let options = HtmlRendererOptions { heading_permalinks: true, ..Default::default() };
+    let options = HtmlRendererOptions {
+        heading_permalinks: true,
+        ..Default::default()
+    };
     let mut renderer = HtmlRenderer::with_options(options.clone());
     let expected = concat!(
         "<h2 id=\"a\">A<a class=\"header-anchor\" href=\"#a\" ",

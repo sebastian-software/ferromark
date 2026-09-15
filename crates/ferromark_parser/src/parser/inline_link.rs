@@ -103,7 +103,11 @@ impl<'a> Parser<'a> {
                 if label_end < content.len() && bytes[label_end] == b']' {
                     well_formed_reference = true;
                     let raw_label = &content[label_start..label_end];
-                    let key = if raw_label.trim().is_empty() { link_text } else { raw_label };
+                    let key = if raw_label.trim().is_empty() {
+                        link_text
+                    } else {
+                        raw_label
+                    };
                     if let Some(reference) = self.lookup_reference(key) {
                         let (url, title) = (reference.url, reference.title);
                         let children_nodes = match inner_nodes.take() {
@@ -178,7 +182,11 @@ impl<'a> Parser<'a> {
 
         let (label, label_offset) = if let Some(label_part) = label_part {
             let (label, label_offset) = trim_with_offset(label_part, label_part_offset);
-            if label.is_empty() { (target, target_offset) } else { (label, label_offset) }
+            if label.is_empty() {
+                (target, target_offset)
+            } else {
+                (label, label_offset)
+            }
         } else {
             (target, target_offset)
         };

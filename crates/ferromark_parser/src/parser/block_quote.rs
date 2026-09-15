@@ -38,7 +38,12 @@ impl<'a> Parser<'a> {
             let line_start = self.position;
             if self.is_line_comment_at(line_start) {
                 let next = scan_next_line_start(bytes, line_start);
-                source_map.push_line(inner.len(), next - line_start, line_start, next - line_start);
+                source_map.push_line(
+                    inner.len(),
+                    next - line_start,
+                    line_start,
+                    next - line_start,
+                );
                 inner.push_str(&self.source[line_start..next]);
                 self.position = next;
                 continue;
@@ -66,7 +71,11 @@ impl<'a> Parser<'a> {
                 // spaces + foo, i.e. indented code with two extra columns.
                 let mut column = 0usize;
                 for &byte in &line.as_bytes()[..trimmed_offset] {
-                    column = if byte == b'\t' { (column / 4 + 1) * 4 } else { column + 1 };
+                    column = if byte == b'\t' {
+                        (column / 4 + 1) * 4
+                    } else {
+                        column + 1
+                    };
                 }
                 let after_marker_column = column + 1;
                 let ws_bytes = after_gt.as_bytes();
@@ -162,7 +171,9 @@ impl<'a> Parser<'a> {
         }
 
         let span = Span::new(start as u32, self.position as u32);
-        Ok(Some(Node::BlockQuote(self.allocator.boxed(BlockQuote { children, span }))))
+        Ok(Some(Node::BlockQuote(
+            self.allocator.boxed(BlockQuote { children, span }),
+        )))
     }
 
     /// Lines that must not lazily continue a block quote paragraph even

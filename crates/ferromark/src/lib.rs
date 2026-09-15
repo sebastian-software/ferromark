@@ -20,5 +20,5 @@ pub use ferromark_parser::{ParseError, ParseErrorKind, ParseResult, Parser, Pars
 pub use ferromark_renderer::{
     CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HtmlRenderContext, HtmlRenderControl,
     HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks, RenderError,
-    RenderResult, Renderer, slugify_heading,
+    RenderResult, Renderer, collect_heading_text, slugify_heading,
 };

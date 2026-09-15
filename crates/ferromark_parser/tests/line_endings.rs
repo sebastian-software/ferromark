@@ -43,7 +43,10 @@ fn lone_cr_does_not_duplicate_nested_list() {
 
 #[test]
 fn html_tag_line_endings_accept_cr_and_crlf() {
-    assert_eq!(render("<a  /><b2\r\ndata=\"foo\" >\r\n"), "<p><a  /><b2\ndata=\"foo\" ></p>\n");
+    assert_eq!(
+        render("<a  /><b2\r\ndata=\"foo\" >\r\n"),
+        "<p><a  /><b2\ndata=\"foo\" ></p>\n"
+    );
     assert_eq!(
         render("<a foo=\"bar\" bam = 'baz <em>\"</em>'\r_boolean zoop:33=zoop:33 />\r"),
         "<p><a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 /></p>\n"
@@ -64,8 +67,10 @@ fn normalized_inline_html_keeps_original_span() {
     let Node::Paragraph(paragraph) = &document.children[0] else {
         panic!("expected paragraph");
     };
-    let Some(Node::Html(html)) =
-        paragraph.children.iter().find(|node| matches!(node, Node::Html(_)))
+    let Some(Node::Html(html)) = paragraph
+        .children
+        .iter()
+        .find(|node| matches!(node, Node::Html(_)))
     else {
         panic!("expected inline HTML");
     };
@@ -75,6 +80,12 @@ fn normalized_inline_html_keeps_original_span() {
 
 #[test]
 fn angle_link_destination_rejects_cr_line_endings() {
-    assert_eq!(render("[link](<foo\rbar>)\r"), "<p>[link](<foo\nbar>)</p>\n");
-    assert_eq!(render("[link](<foo\r\nbar>)\r\n"), "<p>[link](<foo\nbar>)</p>\n");
+    assert_eq!(
+        render("[link](<foo\rbar>)\r"),
+        "<p>[link](<foo\nbar>)</p>\n"
+    );
+    assert_eq!(
+        render("[link](<foo\r\nbar>)\r\n"),
+        "<p>[link](<foo\nbar>)</p>\n"
+    );
 }

@@ -6,7 +6,11 @@ use super::check;
 
 #[test]
 fn snapshot_unordered_list_dash_marker() {
-    check("unordered_list_dash_marker", "- a\n- b\n- c\n", ParserOptions::default());
+    check(
+        "unordered_list_dash_marker",
+        "- a\n- b\n- c\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
@@ -20,12 +24,20 @@ fn snapshot_wrapped_list_item_continuation() {
 
 #[test]
 fn snapshot_ordered_list_with_start() {
-    check("ordered_list_with_start", "3. third\n4. fourth\n", ParserOptions::default());
+    check(
+        "ordered_list_with_start",
+        "3. third\n4. fourth\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
 fn snapshot_ordered_list_parenthesis_marker() {
-    check("ordered_list_parenthesis_marker", "3) third\n4) fourth\n", ParserOptions::default());
+    check(
+        "ordered_list_parenthesis_marker",
+        "3) third\n4) fourth\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
@@ -39,12 +51,20 @@ fn snapshot_nested_lists_mixed_markers() {
 
 #[test]
 fn snapshot_task_list_literal_without_gfm() {
-    check("task_list_literal_without_gfm", "- [x] done\n- [ ] todo\n", ParserOptions::default());
+    check(
+        "task_list_literal_without_gfm",
+        "- [x] done\n- [ ] todo\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
 fn snapshot_task_list_with_gfm() {
-    check("task_list_with_gfm", "- [ ] todo\n- [x] done\n", ParserOptions::gfm());
+    check(
+        "task_list_with_gfm",
+        "- [ ] todo\n- [x] done\n",
+        ParserOptions::gfm(),
+    );
 }
 
 #[test]

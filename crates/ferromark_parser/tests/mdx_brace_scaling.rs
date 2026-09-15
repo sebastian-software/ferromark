@@ -60,11 +60,14 @@ fn parse_within_budget(source: &str) -> Duration {
         thread::spawn(move || {
             let started = Instant::now();
             let allocator = Allocator::new();
-            let parsed = Parser::with_options(&allocator, &owned, mdx_options()).parse().is_ok();
+            let parsed = Parser::with_options(&allocator, &owned, mdx_options())
+                .parse()
+                .is_ok();
             let _ = sender.send((parsed, started.elapsed()));
         });
-        let (parsed, elapsed) =
-            receiver.recv_timeout(BUDGET).expect("MDX braces should parse in bounded time");
+        let (parsed, elapsed) = receiver
+            .recv_timeout(BUDGET)
+            .expect("MDX braces should parse in bounded time");
         assert!(parsed, "MDX braces should parse to a document");
         best = best.min(elapsed);
     }
@@ -89,18 +92,23 @@ fn assert_linear(name: &str, unit: &str) {
 fn inline_expressions_cost_linear_time() {
     // Closed expressions never needed a long scan to begin with; they were
     // quadratic purely because finding the `{` was.
-    for (name, unit) in
-        [("closed", "{a} "), ("closed, empty", "{} "), ("closed, after text", "a{b} ")]
-    {
+    for (name, unit) in [
+        ("closed", "{a} "),
+        ("closed, empty", "{} "),
+        ("closed, after text", "a{b} "),
+    ] {
         assert_linear(name, unit);
     }
 }
 
 #[test]
 fn unclosed_inline_braces_cost_linear_time() {
-    for (name, unit) in
-        [("bare", "{ "), ("no separator", "{"), ("with text", "{a "), ("nested", "{a{b ")]
-    {
+    for (name, unit) in [
+        ("bare", "{ "),
+        ("no separator", "{"),
+        ("with text", "{a "),
+        ("nested", "{a{b "),
+    ] {
         assert_linear(name, unit);
     }
 }
@@ -128,16 +136,31 @@ fn braces_still_parse_to_the_same_nodes() {
     // marker cache changes only when the scan runs, not what it finds. Pin
     // both the expression nodes and the literal fallbacks, with spans.
     for (source, expected) in [
-        ("{a}", "Document [0..3]\n  MdxFlowExpression value=\"a\" [0..3]\n"),
-        ("{}", "Document [0..2]\n  MdxFlowExpression value=\"\" [0..2]\n"),
-        ("{a{b}}", "Document [0..6]\n  MdxFlowExpression value=\"a{b}\" [0..6]\n"),
+        (
+            "{a}",
+            "Document [0..3]\n  MdxFlowExpression value=\"a\" [0..3]\n",
+        ),
+        (
+            "{}",
+            "Document [0..2]\n  MdxFlowExpression value=\"\" [0..2]\n",
+        ),
+        (
+            "{a{b}}",
+            "Document [0..6]\n  MdxFlowExpression value=\"a{b}\" [0..6]\n",
+        ),
         (
             "x{y}z",
             "Document [0..5]\n  Paragraph [0..5]\n    Text \"x\" [0..1]\n    \
              MdxTextExpression value=\"y\" [1..4]\n    Text \"z\" [4..5]\n",
         ),
-        ("{ ", "Document [0..2]\n  Paragraph [0..2]\n    Text \"{\" [0..1]\n"),
-        ("{\n", "Document [0..2]\n  Paragraph [0..2]\n    Text \"{\" [0..1]\n"),
+        (
+            "{ ",
+            "Document [0..2]\n  Paragraph [0..2]\n    Text \"{\" [0..1]\n",
+        ),
+        (
+            "{\n",
+            "Document [0..2]\n  Paragraph [0..2]\n    Text \"{\" [0..1]\n",
+        ),
         (
             "{a",
             "Document [0..2]\n  Paragraph [0..2]\n    Text \"{\" [0..1]\n    Text \"a\" [1..2]\n",

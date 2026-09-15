@@ -67,7 +67,10 @@ impl HtmlRenderer {
 
     pub(in crate::html::renderer) fn finish_semantic_footnotes(&mut self) {
         if !self.options.semantic_footnotes
-            || !self.footnote_records.iter().any(|record| record.body_html.is_some())
+            || !self
+                .footnote_records
+                .iter()
+                .any(|record| record.body_html.is_some())
         {
             return;
         }
@@ -106,7 +109,10 @@ impl HtmlRenderer {
         // suffix. Without this the document carries duplicate ids, which
         // is invalid HTML and breaks in-page anchors.
         let occurrence = {
-            let count = self.footnote_ref_counts.entry(identifier.to_owned()).or_insert(0);
+            let count = self
+                .footnote_ref_counts
+                .entry(identifier.to_owned())
+                .or_insert(0);
             *count += 1;
             *count
         };
@@ -238,7 +244,8 @@ impl HtmlRenderer {
         }
         let index = self.footnote_records.len();
         let slug = self.assign_footnote_slug(identifier, index);
-        self.footnote_index.insert(CompactString::from(identifier), index as u32);
+        self.footnote_index
+            .insert(CompactString::from(identifier), index as u32);
         self.footnote_records.push(FootnoteRecord {
             slug,
             ref_count: 0,
@@ -273,7 +280,10 @@ impl HtmlRenderer {
     /// re-testing every earlier one.
     fn uniquify_footnote_slug(&mut self) {
         let base_len = self.heading_slug_scratch.len();
-        let Some(&start) = self.footnote_slug_counts.get(self.heading_slug_scratch.as_str()) else {
+        let Some(&start) = self
+            .footnote_slug_counts
+            .get(self.heading_slug_scratch.as_str())
+        else {
             self.claim_footnote_slug();
             return;
         };
@@ -284,7 +294,10 @@ impl HtmlRenderer {
             self.heading_slug_scratch.truncate(base_len);
             let _ = write!(self.heading_slug_scratch, "-{suffix}");
             suffix += 1;
-            if !self.footnote_slug_counts.contains_key(self.heading_slug_scratch.as_str()) {
+            if !self
+                .footnote_slug_counts
+                .contains_key(self.heading_slug_scratch.as_str())
+            {
                 self.claim_footnote_slug();
                 self.footnote_slug_counts.insert(base, suffix);
                 return;
@@ -294,7 +307,9 @@ impl HtmlRenderer {
 
     /// Records the scratch slug as taken, starting its own suffix run at 2.
     fn claim_footnote_slug(&mut self) {
-        self.footnote_slug_counts
-            .insert(CompactString::from(self.heading_slug_scratch.as_str()), FIRST_SUFFIX);
+        self.footnote_slug_counts.insert(
+            CompactString::from(self.heading_slug_scratch.as_str()),
+            FIRST_SUFFIX,
+        );
     }
 }

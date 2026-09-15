@@ -19,7 +19,11 @@ fn superscript_and_subscript_are_opt_in_and_outside_gfm() {
     );
 
     let allocator = Allocator::new();
-    let options = ParserOptions { superscript: true, subscript: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        superscript: true,
+        subscript: true,
+        ..ParserOptions::default()
+    };
     let doc = parse_with_options(&allocator, "H~2~O and x^2^", options);
     let Node::Paragraph(paragraph) = &doc.children[0] else {
         panic!("expected paragraph");
@@ -29,19 +33,33 @@ fn superscript_and_subscript_are_opt_in_and_outside_gfm() {
         &paragraph.children[1],
         Node::Subscript(node) if node.children.iter().map(flatten_text).collect::<String>() == "2"
     ));
-    assert!(paragraph.children.iter().any(|node| matches!(node, Node::Superscript(_))));
+    assert!(
+        paragraph
+            .children
+            .iter()
+            .any(|node| matches!(node, Node::Superscript(_)))
+    );
 }
 
 #[test]
 fn script_spans_do_not_steal_strikethrough_or_code_spans() {
     let allocator = Allocator::new();
-    let options = ParserOptions { superscript: true, subscript: true, ..ParserOptions::gfm() };
+    let options = ParserOptions {
+        superscript: true,
+        subscript: true,
+        ..ParserOptions::gfm()
+    };
     let doc = parse_with_options(&allocator, "~~gone~~ and `x^2^`", options);
     let Node::Paragraph(paragraph) = &doc.children[0] else {
         panic!("expected paragraph");
     };
 
-    assert!(paragraph.children.iter().any(|node| matches!(node, Node::Delete(_))));
+    assert!(
+        paragraph
+            .children
+            .iter()
+            .any(|node| matches!(node, Node::Delete(_)))
+    );
     assert!(
         paragraph
             .children
@@ -53,7 +71,11 @@ fn script_spans_do_not_steal_strikethrough_or_code_spans() {
 #[test]
 fn script_span_closing_delimiters_ignore_code_spans() {
     let allocator = Allocator::new();
-    let options = ParserOptions { superscript: true, subscript: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        superscript: true,
+        subscript: true,
+        ..ParserOptions::default()
+    };
     let doc = parse_with_options(&allocator, "^a `^ code` b^ and ~H `~ code` O~", options);
     let Node::Paragraph(paragraph) = &doc.children[0] else {
         panic!("expected paragraph");
@@ -62,7 +84,14 @@ fn script_span_closing_delimiters_ignore_code_spans() {
     let Node::Superscript(superscript) = &paragraph.children[0] else {
         panic!("expected superscript, got {:?}", paragraph.children[0]);
     };
-    assert_eq!(superscript.children.iter().map(flatten_text).collect::<String>(), "a ^ code b");
+    assert_eq!(
+        superscript
+            .children
+            .iter()
+            .map(flatten_text)
+            .collect::<String>(),
+        "a ^ code b"
+    );
     assert!(
         superscript
             .children
@@ -73,7 +102,14 @@ fn script_span_closing_delimiters_ignore_code_spans() {
     let Node::Subscript(subscript) = &paragraph.children[2] else {
         panic!("expected subscript, got {:?}", paragraph.children[2]);
     };
-    assert_eq!(subscript.children.iter().map(flatten_text).collect::<String>(), "H ~ code O");
+    assert_eq!(
+        subscript
+            .children
+            .iter()
+            .map(flatten_text)
+            .collect::<String>(),
+        "H ~ code O"
+    );
     assert!(
         subscript
             .children
@@ -104,7 +140,10 @@ fn text_punctuation_is_preserved_in_every_profile() {
 #[test]
 fn link_text_preserves_authored_punctuation() {
     let allocator = Allocator::new();
-    let options = ParserOptions { autolinks: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        autolinks: true,
+        ..ParserOptions::default()
+    };
     let doc = parse_with_options(
         &allocator,
         "https://example.com/a--b and [\"label\"](/x) -- ok",
@@ -118,13 +157,30 @@ fn link_text_preserves_authored_punctuation() {
         panic!("expected GFM autolink, got {:?}", paragraph.children[0]);
     };
     assert_eq!(autolink.url, "https://example.com/a--b");
-    assert_eq!(autolink.children.iter().map(flatten_text).collect::<String>(), autolink.url);
+    assert_eq!(
+        autolink
+            .children
+            .iter()
+            .map(flatten_text)
+            .collect::<String>(),
+        autolink.url
+    );
 
     let Node::Link(authored_link) = &paragraph.children[2] else {
         panic!("expected authored link, got {:?}", paragraph.children[2]);
     };
-    assert_eq!(authored_link.children.iter().map(flatten_text).collect::<String>(), "\"label\"");
-    assert_eq!(flatten_text(&doc.children[0]), "https://example.com/a--b and \"label\" -- ok");
+    assert_eq!(
+        authored_link
+            .children
+            .iter()
+            .map(flatten_text)
+            .collect::<String>(),
+        "\"label\""
+    );
+    assert_eq!(
+        flatten_text(&doc.children[0]),
+        "https://example.com/a--b and \"label\" -- ok"
+    );
 }
 
 #[test]
@@ -138,7 +194,10 @@ fn math_nodes_are_opt_in_and_preserve_escaped_dollars() {
     ));
 
     let allocator = Allocator::new();
-    let options = ParserOptions { math: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        math: true,
+        ..ParserOptions::default()
+    };
     let doc = parse_with_options(&allocator, "Energy: $E=mc^2$ and \\$5", options.clone());
     let Node::Paragraph(paragraph) = &doc.children[0] else {
         panic!("expected paragraph");
@@ -158,11 +217,16 @@ fn math_nodes_are_opt_in_and_preserve_escaped_dollars() {
 #[test]
 fn digit_prefixed_inline_math_preserves_emphasis_markers_as_tex() {
     let allocator = Allocator::new();
-    let options = ParserOptions { math: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        math: true,
+        ..ParserOptions::default()
+    };
 
-    for (source, expected) in
-        [("$2*3*4 = 24$", "2*3*4 = 24"), ("$2_3_4$", "2_3_4"), ("$a_1 * b_2$", "a_1 * b_2")]
-    {
+    for (source, expected) in [
+        ("$2*3*4 = 24$", "2*3*4 = 24"),
+        ("$2_3_4$", "2_3_4"),
+        ("$a_1 * b_2$", "a_1 * b_2"),
+    ] {
         let doc = parse_with_options(&allocator, source, options.clone());
         let Node::Paragraph(paragraph) = &doc.children[0] else {
             panic!("expected paragraph for {source}");
@@ -180,7 +244,10 @@ fn digit_prefixed_inline_math_preserves_emphasis_markers_as_tex() {
 #[test]
 fn inline_math_closing_delimiters_ignore_code_spans() {
     let allocator = Allocator::new();
-    let options = ParserOptions { math: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        math: true,
+        ..ParserOptions::default()
+    };
     let doc = parse_with_options(&allocator, "before $a `$ code` b$ after", options);
     let Node::Paragraph(paragraph) = &doc.children[0] else {
         panic!("expected paragraph");
@@ -196,7 +263,10 @@ fn inline_math_closing_delimiters_ignore_code_spans() {
 #[test]
 fn definition_lists_parse_terms_definitions_and_block_body() {
     let allocator = Allocator::new();
-    let options = ParserOptions { definition_lists: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        definition_lists: true,
+        ..ParserOptions::default()
+    };
     let source = "HTTP\n: Hypertext **Transfer** Protocol\n\nTCP\n: Transmission\n    - reliable\n";
     let doc = parse_with_options(&allocator, source, options);
 

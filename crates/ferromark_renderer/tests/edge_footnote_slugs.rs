@@ -19,7 +19,10 @@ fn semantic(source: &str) -> String {
     render(
         source,
         ParserOptions::gfm(),
-        HtmlRendererOptions { semantic_footnotes: true, ..HtmlRendererOptions::default() },
+        HtmlRendererOptions {
+            semantic_footnotes: true,
+            ..HtmlRendererOptions::default()
+        },
     )
 }
 
@@ -45,7 +48,10 @@ fn definitions(identifiers: &[&str]) -> String {
 
 #[test]
 fn colliding_slugs_are_numbered_in_document_order() {
-    assert_eq!(footnote_ids(&semantic(&definitions(&["x!", "x?", "x."]))), ["x", "x-2", "x-3"]);
+    assert_eq!(
+        footnote_ids(&semantic(&definitions(&["x!", "x?", "x."]))),
+        ["x", "x-2", "x-3"]
+    );
     assert_eq!(
         footnote_ids(&semantic(&definitions(&["p.q", "p!q", "p?q"]))),
         ["p-q", "p-q-2", "p-q-3"]
@@ -56,8 +62,14 @@ fn colliding_slugs_are_numbered_in_document_order() {
 fn a_slug_that_is_already_a_suffixed_form_is_not_taken_twice() {
     // `x-2` arrives on its own, so the collision after it has to skip past
     // the id that footnote already holds.
-    assert_eq!(footnote_ids(&semantic(&definitions(&["x!", "x-2", "x?"]))), ["x", "x-2", "x-3"]);
-    assert_eq!(footnote_ids(&semantic(&definitions(&["x-2", "x!", "x?"]))), ["x-2", "x", "x-3"]);
+    assert_eq!(
+        footnote_ids(&semantic(&definitions(&["x!", "x-2", "x?"]))),
+        ["x", "x-2", "x-3"]
+    );
+    assert_eq!(
+        footnote_ids(&semantic(&definitions(&["x-2", "x!", "x?"]))),
+        ["x-2", "x", "x-3"]
+    );
     // And a suffixed form that collides in turn gets suffixed itself.
     assert_eq!(
         footnote_ids(&semantic(&definitions(&["x!", "x?", "x-2", "x."]))),
@@ -81,8 +93,10 @@ fn distinct_identifiers_keep_their_own_slugs() {
 
 #[test]
 fn slugs_do_not_carry_over_between_renders() {
-    let options =
-        HtmlRendererOptions { semantic_footnotes: true, ..HtmlRendererOptions::default() };
+    let options = HtmlRendererOptions {
+        semantic_footnotes: true,
+        ..HtmlRendererOptions::default()
+    };
     let mut renderer = HtmlRenderer::with_options(options);
     let source = definitions(&["x!", "x?"]);
     let allocator = Allocator::new();
@@ -93,15 +107,21 @@ fn slugs_do_not_carry_over_between_renders() {
     let first = renderer.render(&document);
     let second = renderer.render(&document);
     assert_eq!(footnote_ids(&first), ["x", "x-2"]);
-    assert_eq!(footnote_ids(&second), ["x", "x-2"], "a second render must start clean");
+    assert_eq!(
+        footnote_ids(&second),
+        ["x", "x-2"],
+        "a second render must start clean"
+    );
 }
 
 #[test]
 fn a_provisional_fragment_does_not_claim_slugs() {
     // `render_provisional_fragment` is meant to be replaceable, so nothing
     // it renders may push the real render's ids along.
-    let options =
-        HtmlRendererOptions { semantic_footnotes: true, ..HtmlRendererOptions::default() };
+    let options = HtmlRendererOptions {
+        semantic_footnotes: true,
+        ..HtmlRendererOptions::default()
+    };
     let mut renderer = HtmlRenderer::with_options(options);
     let source = definitions(&["x!", "x?"]);
     let allocator = Allocator::new();
@@ -144,5 +164,8 @@ fn many_footnotes_cost_linear_time() {
 
     let small = measure(&build(2_000)).max(Duration::from_micros(1));
     let large = measure(&build(8_000));
-    assert!(large < small * 8, "8,000 footnotes took {large:?} against {small:?} for 2,000");
+    assert!(
+        large < small * 8,
+        "8,000 footnotes took {large:?} against {small:?} for 2,000"
+    );
 }

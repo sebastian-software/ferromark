@@ -20,7 +20,10 @@ fn parse_vitepress_directive_action(value: &str) -> Option<InlineDirectiveAction
     }
 
     if trimmed == "++" {
-        return Some(InlineDirectiveAction::Annotate { kind: CodeAnnotationKind::Add, count: 1 });
+        return Some(InlineDirectiveAction::Annotate {
+            kind: CodeAnnotationKind::Add,
+            count: 1,
+        });
     }
 
     if trimmed == "--" {
@@ -95,7 +98,11 @@ fn parse_vitepress_inline_directive(line: &str) -> Option<ParsedInlineDirective>
         return None;
     }
 
-    Some(ParsedInlineDirective { action, stripped_line, standalone })
+    Some(ParsedInlineDirective {
+        action,
+        stripped_line,
+        standalone,
+    })
 }
 
 pub(in crate::html) fn parse_vitepress_inline_annotations(value: &str) -> Vec<CodeLineRenderState> {
@@ -125,7 +132,10 @@ pub(in crate::html) fn parse_vitepress_inline_annotations(value: &str) -> Vec<Co
                 }
                 InlineDirectiveAction::Annotate { kind, count } => {
                     if directive.standalone {
-                        pending_annotations.push(PendingCodeAnnotation { kind, remaining: count });
+                        pending_annotations.push(PendingCodeAnnotation {
+                            kind,
+                            remaining: count,
+                        });
                         continue;
                     }
 
@@ -138,8 +148,10 @@ pub(in crate::html) fn parse_vitepress_inline_annotations(value: &str) -> Vec<Co
                         line.annotations.push(kind);
                     }
                     if count > 1 {
-                        pending_annotations
-                            .push(PendingCodeAnnotation { kind, remaining: count - 1 });
+                        pending_annotations.push(PendingCodeAnnotation {
+                            kind,
+                            remaining: count - 1,
+                        });
                     }
                     lines.push(line);
                     continue;
@@ -147,8 +159,10 @@ pub(in crate::html) fn parse_vitepress_inline_annotations(value: &str) -> Vec<Co
             }
         }
 
-        let mut line =
-            CodeLineRenderState { value: raw_line.to_string(), annotations: SmallVec::new() };
+        let mut line = CodeLineRenderState {
+            value: raw_line.to_string(),
+            annotations: SmallVec::new(),
+        };
         apply_pending_annotations(&mut line, &mut pending_annotations);
         lines.push(line);
     }

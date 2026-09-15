@@ -60,7 +60,9 @@ fn scan_numeric(rest: &str) -> Option<(EntityValue, usize)> {
     let code = u32::from_str_radix(&rest[digits_start..end], radix).unwrap_or(u32::MAX);
     // The spec maps U+0000, surrogates, and out-of-range references to
     // the replacement character.
-    let ch = char::from_u32(code).filter(|&c| c != '\0').unwrap_or('\u{fffd}');
+    let ch = char::from_u32(code)
+        .filter(|&c| c != '\0')
+        .unwrap_or('\u{fffd}');
     Some((EntityValue::Char(ch), end + 1))
 }
 
@@ -107,7 +109,10 @@ mod tests {
         assert!(scan_entity("&MadeUpEntity;").is_none());
         assert!(scan_entity("&;").is_none());
         assert!(scan_entity("&#;").is_none());
-        assert!(scan_entity("&#12345678;").is_none(), "8 digits exceed the limit");
+        assert!(
+            scan_entity("&#12345678;").is_none(),
+            "8 digits exceed the limit"
+        );
         assert!(scan_entity("&amp rest").is_none(), "missing semicolon");
     }
 }

@@ -24,7 +24,10 @@ fn test_render_heading() {
 fn test_render_heading_attributes_use_explicit_id_and_classes() {
     let html = render_html_with_options(
         "### Custom identifier {#custom-heading-id .highlight .wide}",
-        ParserOptions { heading_attributes: true, ..ParserOptions::default() },
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
     );
 
     assert_eq!(
@@ -37,7 +40,10 @@ fn test_render_heading_attributes_use_explicit_id_and_classes() {
 fn test_render_heading_attributes_escape_explicit_attrs() {
     let html = render_html_with_options(
         "### Custom {#a\"b .x<y}",
-        ParserOptions { heading_attributes: true, ..ParserOptions::default() },
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
     );
 
     assert_eq!(html, "<h3 id=\"a&quot;b\" class=\"x&lt;y\">Custom</h3>\n");
@@ -49,13 +55,18 @@ fn test_render_crlf_fenced_code_like_lf() {
     let crlf = render_html("```rust\r\nfn main() {}\r\n```\r\n");
 
     assert_eq!(crlf, lf);
-    assert_eq!(crlf, "<pre><code class=\"language-rust\">fn main() {}\n</code></pre>\n");
+    assert_eq!(
+        crlf,
+        "<pre><code class=\"language-rust\">fn main() {}\n</code></pre>\n"
+    );
 }
 
 #[test]
 fn test_render_heading_ids_are_unique_and_unicode() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "## はじめに\n## はじめに").parse().unwrap();
+    let doc = Parser::new(&allocator, "## はじめに\n## はじめに")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
     insta::assert_snapshot!(html);
@@ -70,7 +81,9 @@ fn render_html(source: &str) -> String {
 
 fn render_html_with_options(source: &str, options: ParserOptions) -> String {
     let allocator = Allocator::new();
-    let doc = Parser::with_options(&allocator, source, options).parse().unwrap();
+    let doc = Parser::with_options(&allocator, source, options)
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     renderer.render(&doc)
 }
@@ -78,7 +91,9 @@ fn render_html_with_options(source: &str, options: ParserOptions) -> String {
 #[test]
 fn test_render_heading_id_uses_inline_text() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "## **API** `Index` [Guide](./guide.md)").parse().unwrap();
+    let doc = Parser::new(&allocator, "## **API** `Index` [Guide](./guide.md)")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
     insta::assert_snapshot!(html);
@@ -145,7 +160,10 @@ fn test_heading_permalinks_empty_heading_uses_section_id() {
 #[test]
 fn test_heading_permalinks_are_real_links_without_js() {
     let html = render_with_permalinks("## API");
-    assert!(html.contains("<a class=\"header-anchor\" href=\"#api\""), "{html}");
+    assert!(
+        html.contains("<a class=\"header-anchor\" href=\"#api\""),
+        "{html}"
+    );
     assert!(!html.contains("onclick="), "{html}");
     assert!(!html.contains("<script"), "{html}");
 }
@@ -153,7 +171,9 @@ fn test_heading_permalinks_are_real_links_without_js() {
 #[test]
 fn test_render_inline_toc_directive() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "# Title\n\n[[toc]]\n\n## Intro\n### API").parse().unwrap();
+    let doc = Parser::new(&allocator, "# Title\n\n[[toc]]\n\n## Intro\n### API")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
 
@@ -163,8 +183,9 @@ fn test_render_inline_toc_directive() {
 #[test]
 fn test_render_inline_toc_uses_unique_and_unicode_ids() {
     let allocator = Allocator::new();
-    let doc =
-        Parser::new(&allocator, "[[toc]]\n\n## Setup\n## Setup\n## はじめに").parse().unwrap();
+    let doc = Parser::new(&allocator, "[[toc]]\n\n## Setup\n## Setup\n## はじめに")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
 
@@ -177,15 +198,24 @@ fn test_render_inline_toc_uses_heading_attribute_id() {
     let doc = Parser::with_options(
         &allocator,
         "[[toc]]\n\n## Custom identifier {#custom-heading-id .highlight}\n",
-        ParserOptions { heading_attributes: true, ..ParserOptions::default() },
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
     )
     .parse()
     .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
 
-    assert!(html.contains("<a href=\"#custom-heading-id\">Custom identifier</a>"), "{html}");
-    assert!(html.contains("<h2 id=\"custom-heading-id\" class=\"highlight\">"), "{html}");
+    assert!(
+        html.contains("<a href=\"#custom-heading-id\">Custom identifier</a>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<h2 id=\"custom-heading-id\" class=\"highlight\">"),
+        "{html}"
+    );
     assert!(!html.contains("{#custom-heading-id"), "{html}");
 }
 
@@ -207,7 +237,9 @@ fn test_render_inline_toc_directive_is_case_insensitive() {
 #[test]
 fn test_render_inline_toc_requires_standalone_text() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "See [[toc]] here\n\n`[[toc]]`\n\n## Intro").parse().unwrap();
+    let doc = Parser::new(&allocator, "See [[toc]] here\n\n`[[toc]]`\n\n## Intro")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
 
@@ -234,9 +266,13 @@ fn test_render_inline_toc_marker_is_suppressed_when_filtered_by_depth() {
     // `toc_max_depth: 0` filters every heading out, but the marker
     // paragraph should still be consumed so it doesn't leak.
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "[[toc]]\n\n## Intro").parse().unwrap();
-    let mut renderer =
-        HtmlRenderer::with_options(HtmlRendererOptions { toc_max_depth: 0, ..Default::default() });
+    let doc = Parser::new(&allocator, "[[toc]]\n\n## Intro")
+        .parse()
+        .unwrap();
+    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
+        toc_max_depth: 0,
+        ..Default::default()
+    });
     let html = renderer.render(&doc);
 
     insta::assert_snapshot!(html);
@@ -245,9 +281,13 @@ fn test_render_inline_toc_marker_is_suppressed_when_filtered_by_depth() {
 #[test]
 fn test_render_inline_toc_honors_max_depth() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "[[toc]]\n\n# Title\n## Intro\n### API").parse().unwrap();
-    let mut renderer =
-        HtmlRenderer::with_options(HtmlRendererOptions { toc_max_depth: 2, ..Default::default() });
+    let doc = Parser::new(&allocator, "[[toc]]\n\n# Title\n## Intro\n### API")
+        .parse()
+        .unwrap();
+    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
+        toc_max_depth: 2,
+        ..Default::default()
+    });
     let html = renderer.render(&doc);
 
     insta::assert_snapshot!(html);
@@ -265,7 +305,9 @@ fn test_render_block_quote() {
 #[test]
 fn test_render_block_quote_with_inline() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "> **Note:** This is important").parse().unwrap();
+    let doc = Parser::new(&allocator, "> **Note:** This is important")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
     insta::assert_snapshot!(html);
@@ -274,7 +316,9 @@ fn test_render_block_quote_with_inline() {
 #[test]
 fn test_render_github_style_important_callout() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "> [!IMPORTANT]\n> This is important.").parse().unwrap();
+    let doc = Parser::new(&allocator, "> [!IMPORTANT]\n> This is important.")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
 
@@ -284,7 +328,9 @@ fn test_render_github_style_important_callout() {
 #[test]
 fn test_render_github_style_callout_with_inline_content_after_marker() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "> [!NOTE] Supports **inline** content").parse().unwrap();
+    let doc = Parser::new(&allocator, "> [!NOTE] Supports **inline** content")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
 

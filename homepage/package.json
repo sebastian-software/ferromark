@@ -1,0 +1,31 @@
+{
+  "name": "homepage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.17.0",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build && node scripts/verify-build.mjs",
+    "typecheck": "tsc6 --noEmit -p tsconfig.json",
+    "preview": "vite preview",
+    "audit": "pnpm audit --prod --audit-level high"
+  },
+  "dependencies": {
+    "ardo": "^4.2.0",
+    "ferramenta-family": "github:sebastian-software/ferramenta#05fadd21d86b69bb15179ef4461bef6b3b531f88&path:/packages/family",
+    "isbot": "*",
+    "lucide-react": "^1.27.0",
+    "mermaid": "^11.16.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^8.3.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vite": "^8.1.5"
+  }
+}

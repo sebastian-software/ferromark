@@ -61,7 +61,10 @@ impl<'a> Parser<'a> {
             return Some(HtmlBlockStart::Terminated("]]>"));
         }
         if trimmed.starts_with("<!")
-            && trimmed.as_bytes().get(2).is_some_and(u8::is_ascii_alphabetic)
+            && trimmed
+                .as_bytes()
+                .get(2)
+                .is_some_and(u8::is_ascii_alphabetic)
         {
             return Some(HtmlBlockStart::Terminated(">"));
         }
@@ -152,13 +155,19 @@ impl<'a> Parser<'a> {
                 "tr", "ul",
             ],
             3 => &["col", "dir", "div", "nav"],
-            4 => &["base", "body", "form", "head", "html", "link", "main", "menu"],
-            5 => &["aside", "frame", "param", "table", "tbody", "tfoot", "thead", "title", "track"],
+            4 => &[
+                "base", "body", "form", "head", "html", "link", "main", "menu",
+            ],
+            5 => &[
+                "aside", "frame", "param", "table", "tbody", "tfoot", "thead", "title", "track",
+            ],
             6 => &[
                 "center", "dialog", "figure", "footer", "header", "iframe", "legend", "option",
                 "search",
             ],
-            7 => &["address", "article", "caption", "details", "section", "summary"],
+            7 => &[
+                "address", "article", "caption", "details", "section", "summary",
+            ],
             8 => &[
                 "basefont", "colgroup", "fieldset", "frameset", "menuitem", "noframes", "optgroup",
             ],

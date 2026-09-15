@@ -7,7 +7,12 @@ use snapshot_support::check;
 
 #[test]
 fn html_empty_document() {
-    check("empty_document", "", ParserOptions::default(), HtmlRendererOptions::default());
+    check(
+        "empty_document",
+        "",
+        ParserOptions::default(),
+        HtmlRendererOptions::default(),
+    );
 }
 
 #[test]

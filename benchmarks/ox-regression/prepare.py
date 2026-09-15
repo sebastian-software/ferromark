@@ -38,8 +38,9 @@ def main():
     source = sources / 'ferromark_v2'
     source.mkdir()
     revision = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', args.revision], text=True).strip()
+    native = subprocess.check_output(['git', '-C', str(ROOT), 'ls-tree', '--name-only', revision, 'node/native'], text=True).splitlines()
     raw = subprocess.check_output(['git', '-C', str(ROOT), 'archive', revision,
-                                   'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'crates'])
+                                   'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'crates', *native])
     with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
         archive.extractall(source, filter='data')
     if args.patch:

@@ -26,7 +26,9 @@ fn parse_with_options<'a>(
     source: &'a str,
     options: ParserOptions,
 ) -> ferromark_ast::Document<'a> {
-    Parser::with_options(allocator, source, options).parse().unwrap()
+    Parser::with_options(allocator, source, options)
+        .parse()
+        .unwrap()
 }
 
 fn first_text<'a>(node: &'a Node<'a>) -> Option<&'a str> {
@@ -40,9 +42,11 @@ fn first_text<'a>(node: &'a Node<'a>) -> Option<&'a str> {
         Node::Superscript(superscript) => superscript.children.iter().find_map(first_text),
         Node::Subscript(subscript) => subscript.children.iter().find_map(first_text),
         Node::Link(link) => link.children.iter().find_map(first_text),
-        Node::List(list) => {
-            list.children.iter().flat_map(|item| item.children.iter()).find_map(first_text)
-        }
+        Node::List(list) => list
+            .children
+            .iter()
+            .flat_map(|item| item.children.iter())
+            .find_map(first_text),
         Node::ListItem(item) => item.children.iter().find_map(first_text),
         _ => None,
     }
@@ -71,9 +75,12 @@ fn flatten_text(node: &Node<'_>) -> String {
             definition.children.iter().map(flatten_text).collect()
         }
         Node::Link(link) => link.children.iter().map(flatten_text).collect(),
-        Node::List(list) => {
-            list.children.iter().flat_map(|item| item.children.iter()).map(flatten_text).collect()
-        }
+        Node::List(list) => list
+            .children
+            .iter()
+            .flat_map(|item| item.children.iter())
+            .map(flatten_text)
+            .collect(),
         _ => String::new(),
     }
 }

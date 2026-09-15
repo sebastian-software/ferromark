@@ -34,8 +34,11 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write("<a href=\"");
-        let converted_url =
-            if self.options.convert_md_links { self.convert_markdown_url(link.url) } else { None };
+        let converted_url = if self.options.convert_md_links {
+            self.convert_markdown_url(link.url)
+        } else {
+            None
+        };
         let href = self.sanitized_url(converted_url.as_deref().unwrap_or(link.url), "#");
         self.write_url_escaped(href);
         self.write("\"");

@@ -67,13 +67,18 @@ fn parse_within_budget_with_options(source: &str, options: ParserOptions) -> Dur
         thread::spawn(move || {
             let started = Instant::now();
             let allocator = Allocator::new();
-            let parsed = Parser::with_options(&allocator, &owned, options).parse().is_ok();
+            let parsed = Parser::with_options(&allocator, &owned, options)
+                .parse()
+                .is_ok();
             let _ = sender.send((parsed, started.elapsed()));
         });
         let (parsed, elapsed) = receiver
             .recv_timeout(BUDGET)
             .expect("a run of unclosed brackets should parse in bounded time");
-        assert!(parsed, "a run of unclosed brackets should parse to a document");
+        assert!(
+            parsed,
+            "a run of unclosed brackets should parse to a document"
+        );
         best = best.min(elapsed);
     }
     best
@@ -81,7 +86,10 @@ fn parse_within_budget_with_options(source: &str, options: ParserOptions) -> Dur
 
 #[test]
 fn wiki_links_do_not_scan_unclosed_double_brackets_quadratically() {
-    let options = ParserOptions { wiki_links: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        wiki_links: true,
+        ..ParserOptions::default()
+    };
 
     for unit in ["[[", "[[ ", "[[Page|Label "] {
         let small = parse_within_budget_with_options(&repeat_to(unit, 32 * 1024), options.clone());
@@ -147,7 +155,10 @@ fn a_bracket_that_does_close_still_links() {
         ("[a]\n\n[a]: /u", r#"<p><a href="/u">a</a></p>"#),
         ("[a][]\n\n[a]: /u", r#"<p><a href="/u">a</a></p>"#),
         ("![a](b.png)", r#"<p><img src="b.png" alt="a"></p>"#),
-        ("![a][b]\n\n[b]: /u.png", r#"<p><img src="/u.png" alt="a"></p>"#),
+        (
+            "![a][b]\n\n[b]: /u.png",
+            r#"<p><img src="/u.png" alt="a"></p>"#,
+        ),
         ("[`]`", "<p>[<code>]</code></p>"),
     ] {
         assert_eq!(render(source), expected, "for {source:?}");

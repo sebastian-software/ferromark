@@ -14,7 +14,9 @@ fn parse_source<'a>(
     source: &'a str,
     options: ParserOptions,
 ) -> ferromark_ast::Document<'a> {
-    Parser::with_options(allocator, source, options).parse().unwrap()
+    Parser::with_options(allocator, source, options)
+        .parse()
+        .unwrap()
 }
 
 #[test]
@@ -74,20 +76,32 @@ fn heading_attributes_match_across_renderer_paths_and_disabled_ids() {
     let document = parse_source(
         &allocator,
         source,
-        ParserOptions { heading_attributes: true, ..ParserOptions::commonmark() },
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::commonmark()
+        },
     );
 
     let expected = HtmlRenderer::new().render(&document);
-    assert_eq!(expected, "<h1 id=\"custom-id\" class=\"highlight wide\">Custom</h1>\n");
+    assert_eq!(
+        expected,
+        "<h1 id=\"custom-id\" class=\"highlight wide\">Custom</h1>\n"
+    );
 
     let mut hooks_renderer = HtmlRenderer::new();
-    assert_eq!(hooks_renderer.render_with_hooks(&document, &mut NoHtmlRenderHooks), expected);
+    assert_eq!(
+        hooks_renderer.render_with_hooks(&document, &mut NoHtmlRenderHooks),
+        expected
+    );
 
     let mut borrowed_renderer = HtmlRenderer::new();
     assert_eq!(borrowed_renderer.render_borrowed(&document), expected);
 
     let mut incremental_renderer = HtmlRenderer::new();
-    assert_eq!(incremental_renderer.render_incremental_fragment(&document), expected);
+    assert_eq!(
+        incremental_renderer.render_incremental_fragment(&document),
+        expected
+    );
 
     let mut strict_options = HtmlRendererOptions::commonmark();
     strict_options.heading_permalinks = true;
@@ -96,10 +110,16 @@ fn heading_attributes_match_across_renderer_paths_and_disabled_ids() {
     let strict_document = parse_source(
         &allocator,
         strict_source,
-        ParserOptions { heading_attributes: true, ..ParserOptions::commonmark() },
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::commonmark()
+        },
     );
     let strict = HtmlRenderer::with_options(strict_options.clone()).render(&strict_document);
-    assert_eq!(strict, "<h1 class=\"highlight wide\">Custom</h1>\n<p>[[toc]]</p>\n");
+    assert_eq!(
+        strict,
+        "<h1 class=\"highlight wide\">Custom</h1>\n<p>[[toc]]</p>\n"
+    );
     assert!(!strict.contains("header-anchor"), "{strict}");
     assert!(!strict.contains("ox-toc"), "{strict}");
     let mut reused = HtmlRenderer::with_options(strict_options.clone());
@@ -107,7 +127,10 @@ fn heading_attributes_match_across_renderer_paths_and_disabled_ids() {
     let mut hooked = HtmlRenderer::with_options(strict_options);
     for _ in 0..2 {
         assert_eq!(reused.render_borrowed(&strict_document), strict);
-        assert_eq!(incremental.render_incremental_fragment(&strict_document), strict);
+        assert_eq!(
+            incremental.render_incremental_fragment(&strict_document),
+            strict
+        );
         assert_eq!(
             hooked.render_incremental_fragment_with_hooks(&strict_document, &mut NoHtmlRenderHooks),
             strict,

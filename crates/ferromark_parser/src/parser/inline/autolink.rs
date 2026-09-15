@@ -103,7 +103,9 @@ fn is_email_address(s: &str) -> bool {
         && domain.split('.').all(|label| {
             !label.is_empty()
                 && label.len() <= 63
-                && label.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+                && label
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
                 && !label.starts_with('-')
                 && !label.ends_with('-')
         })

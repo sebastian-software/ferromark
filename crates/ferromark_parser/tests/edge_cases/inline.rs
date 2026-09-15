@@ -28,7 +28,10 @@ fn wiki_links_are_opt_in_and_use_raw_targets() {
     let doc = parse_with_options(
         &allocator,
         "See [[README]] and [[Guide Page#Install|the **guide**]].",
-        ParserOptions { wiki_links: true, ..ParserOptions::default() },
+        ParserOptions {
+            wiki_links: true,
+            ..ParserOptions::default()
+        },
     );
 
     match &doc.children[0] {
@@ -44,7 +47,11 @@ fn wiki_links_are_opt_in_and_use_raw_targets() {
             match &paragraph.children[3] {
                 Node::Link(link) => {
                     assert_eq!(link.url, "Guide Page#Install");
-                    assert!(link.children.iter().any(|node| matches!(node, Node::Strong(_))));
+                    assert!(
+                        link.children
+                            .iter()
+                            .any(|node| matches!(node, Node::Strong(_)))
+                    );
                 }
                 other => panic!("expected labelled wiki link, got {other:?}"),
             }
@@ -60,9 +67,18 @@ fn wiki_links_stay_literal_without_the_option_or_in_gfm() {
         let doc = parse_with_options(&allocator, "[[README]]", options);
         match &doc.children[0] {
             Node::Paragraph(paragraph) => {
-                assert!(paragraph.children.iter().all(|node| !matches!(node, Node::Link(_))));
+                assert!(
+                    paragraph
+                        .children
+                        .iter()
+                        .all(|node| !matches!(node, Node::Link(_)))
+                );
                 assert_eq!(
-                    paragraph.children.iter().map(super::flatten_text).collect::<String>(),
+                    paragraph
+                        .children
+                        .iter()
+                        .map(super::flatten_text)
+                        .collect::<String>(),
                     "[[README]]"
                 );
             }
@@ -74,21 +90,37 @@ fn wiki_links_stay_literal_without_the_option_or_in_gfm() {
 #[test]
 fn wiki_links_reject_empty_targets_and_nested_links() {
     let allocator = Allocator::new();
-    let options = ParserOptions { wiki_links: true, ..ParserOptions::default() };
+    let options = ParserOptions {
+        wiki_links: true,
+        ..ParserOptions::default()
+    };
 
     let empty = parse_with_options(&allocator, "[[ |Label]]", options.clone());
     match &empty.children[0] {
         Node::Paragraph(paragraph) => {
-            assert!(paragraph.children.iter().all(|node| !matches!(node, Node::Link(_))));
+            assert!(
+                paragraph
+                    .children
+                    .iter()
+                    .all(|node| !matches!(node, Node::Link(_)))
+            );
             assert_eq!(
-                paragraph.children.iter().map(super::flatten_text).collect::<String>(),
+                paragraph
+                    .children
+                    .iter()
+                    .map(super::flatten_text)
+                    .collect::<String>(),
                 "[[ |Label]]"
             );
         }
         other => panic!("expected paragraph, got {other:?}"),
     }
 
-    let nested = parse_with_options(&allocator, "[outer [[README]]](https://example.com)", options);
+    let nested = parse_with_options(
+        &allocator,
+        "[outer [[README]]](https://example.com)",
+        options,
+    );
     match &nested.children[0] {
         Node::Paragraph(paragraph) => {
             assert!(matches!(&paragraph.children[0], Node::Text(text) if text.value == "["));
@@ -162,8 +194,11 @@ fn inline_code_keeps_raw_html_literal() {
 #[test]
 fn image_url_handles_nested_parentheses() {
     let allocator = Allocator::new();
-    let doc =
-        parse_with_options(&allocator, "![diagram](./img(test).png)", ParserOptions::default());
+    let doc = parse_with_options(
+        &allocator,
+        "![diagram](./img(test).png)",
+        ParserOptions::default(),
+    );
 
     match &doc.children[0] {
         Node::Paragraph(paragraph) => match &paragraph.children[0] {
@@ -199,7 +234,11 @@ fn backslash_before_non_punctuation_stays_literal() {
     // CommonMark example 13: only ASCII punctuation is escapable; before
     // anything else (including multibyte characters, which used to panic
     // on a byte-index slice) the backslash is literal text.
-    let doc = parse_with_options(&allocator, "\\\t\\A\\a\\ \\3\\φ\\«", ParserOptions::default());
+    let doc = parse_with_options(
+        &allocator,
+        "\\\t\\A\\a\\ \\3\\φ\\«",
+        ParserOptions::default(),
+    );
 
     match &doc.children[0] {
         Node::Paragraph(paragraph) => {
@@ -242,7 +281,12 @@ fn hard_break_creates_break_node() {
 
     match &doc.children[0] {
         Node::Paragraph(paragraph) => {
-            assert!(paragraph.children.iter().any(|node| matches!(node, Node::Break(_))));
+            assert!(
+                paragraph
+                    .children
+                    .iter()
+                    .any(|node| matches!(node, Node::Break(_)))
+            );
         }
         other => panic!("expected paragraph, got {other:?}"),
     }
@@ -251,12 +295,16 @@ fn hard_break_creates_break_node() {
 /// Whether the paragraph's first inline is a `Strong` node.
 fn parses_as_strong(source: &str, cjk_emphasis: bool) -> bool {
     let allocator = Allocator::new();
-    let options = ParserOptions { cjk_emphasis, ..ParserOptions::default() };
+    let options = ParserOptions {
+        cjk_emphasis,
+        ..ParserOptions::default()
+    };
     let doc = parse_with_options(&allocator, source, options);
     match &doc.children[0] {
-        Node::Paragraph(paragraph) => {
-            paragraph.children.iter().any(|node| matches!(node, Node::Strong(_)))
-        }
+        Node::Paragraph(paragraph) => paragraph
+            .children
+            .iter()
+            .any(|node| matches!(node, Node::Strong(_))),
         other => panic!("expected paragraph, got {other:?}"),
     }
 }
@@ -273,7 +321,10 @@ fn cjk_emphasis_off_leaves_punctuation_adjacent_runs_literal() {
         "A**強調）**B",
         "中文**加粗，**测试",
     ] {
-        assert!(!parses_as_strong(source, false), "{source} must stay literal by default");
+        assert!(
+            !parses_as_strong(source, false),
+            "{source} must stay literal by default"
+        );
     }
 }
 
@@ -287,7 +338,10 @@ fn cjk_emphasis_on_pairs_punctuation_adjacent_runs() {
         "A**強調）**B",
         "中文**加粗，**测试",
     ] {
-        assert!(parses_as_strong(source, true), "{source} must render as strong when enabled");
+        assert!(
+            parses_as_strong(source, true),
+            "{source} must render as strong when enabled"
+        );
     }
 }
 
@@ -309,10 +363,19 @@ fn cjk_emphasis_leaves_ascii_punctuation_alone() {
 fn cjk_emphasis_keeps_working_for_cases_commonmark_already_accepts() {
     // Emphasis between CJK *characters* needs no help from the option; it must
     // keep working with the option in either state.
-    for source in ["これは**重要**です。", "「**強調**」というもの", "（**注**）です"]
-    {
-        assert!(parses_as_strong(source, false), "{source} works per CommonMark");
-        assert!(parses_as_strong(source, true), "{source} must keep working when enabled");
+    for source in [
+        "これは**重要**です。",
+        "「**強調**」というもの",
+        "（**注**）です",
+    ] {
+        assert!(
+            parses_as_strong(source, false),
+            "{source} works per CommonMark"
+        );
+        assert!(
+            parses_as_strong(source, true),
+            "{source} must keep working when enabled"
+        );
     }
 }
 

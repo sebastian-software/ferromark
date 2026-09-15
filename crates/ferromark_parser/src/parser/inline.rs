@@ -39,8 +39,11 @@ impl<'a> Parser<'a> {
         offset: usize,
     ) -> ParseResult<Vec<'a, Node<'a>>> {
         let mut children = self.parse_inline(content, offset)?;
-        let scan =
-            self.options.autolinks.then(|| gfm_autolink::may_contain_autolink(content)).flatten();
+        let scan = self
+            .options
+            .autolinks
+            .then(|| gfm_autolink::may_contain_autolink(content))
+            .flatten();
         if let Some(scan) = scan {
             self.apply_gfm_autolinks(&mut children, scan);
         }
@@ -78,8 +81,9 @@ impl<'a> Parser<'a> {
             return Ok(children);
         }
 
-        let mut children =
-            self.allocator.new_vec_with_capacity(Self::inline_children_capacity(content.len()));
+        let mut children = self
+            .allocator
+            .new_vec_with_capacity(Self::inline_children_capacity(content.len()));
         let mut delimiters = self.allocator.new_vec();
         let mut pos = 0;
         let mut first_scan = Some(first_special);
@@ -91,7 +95,9 @@ impl<'a> Parser<'a> {
             // one Text node. This keeps the parser on bulk byte scans for
             // prose and only enters the slower match when a real marker byte
             // has been reached.
-            pos = first_scan.take().unwrap_or_else(|| markers.next(bytes, pos));
+            pos = first_scan
+                .take()
+                .unwrap_or_else(|| markers.next(bytes, pos));
 
             // Fold soft line breaks into the running text node. A newline
             // with non-whitespace on both sides is a soft break with nothing
@@ -113,7 +119,12 @@ impl<'a> Parser<'a> {
             }
 
             if pos > start {
-                Self::push_text(&mut children, &content[start..pos], offset + start, offset + pos);
+                Self::push_text(
+                    &mut children,
+                    &content[start..pos],
+                    offset + start,
+                    offset + pos,
+                );
             }
             if pos >= content.len() {
                 break;
@@ -187,7 +198,12 @@ impl<'a> Parser<'a> {
                 // literal text so it can't open any inline construct.
                 *pos += 1;
                 let span_start = offset + *pos - 1;
-                Self::push_text(children, &content[*pos..*pos + 1], span_start, offset + *pos + 1);
+                Self::push_text(
+                    children,
+                    &content[*pos..*pos + 1],
+                    span_start,
+                    offset + *pos + 1,
+                );
                 *pos += 1;
             }
             b'\\' => {

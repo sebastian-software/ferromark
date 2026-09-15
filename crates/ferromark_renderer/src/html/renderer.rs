@@ -274,7 +274,8 @@ impl HtmlRenderer {
 
         self.write("<nav class=\"ox-toc\" aria-label=\"Table of contents\">\n<ul>\n");
         for entry in &self.toc_entries {
-            self.output.push_str("<li class=\"ox-toc__item ox-toc__item--depth-");
+            self.output
+                .push_str("<li class=\"ox-toc__item ox-toc__item--depth-");
             let _ = write!(self.output, "{}", entry.depth);
             self.output.push_str("\"><a href=\"#");
             write_url_escaped_into(&mut self.output, &entry.id);

@@ -1,0 +1,58 @@
+---
+title: Quick Start
+---
+
+# Quick Start
+
+## Rust
+
+Use the workspace facade while developing in the repository:
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, Parser};
+
+let source = "# Hello\n\n**World**";
+let allocator = Allocator::for_source_len(source.len());
+let document = Parser::new(&allocator, source).parse()?;
+let html = HtmlRenderer::new().render(&document);
+```
+
+The source and allocator must outlive `document`. Drop the document before
+resetting its allocator. For GFM, construct a parser with
+`Parser::with_options(&allocator, source, ParserOptions::gfm_spec())` and a
+renderer with `HtmlRenderer::with_options(HtmlRendererOptions::gfm())`.
+Rust renderer defaults pass raw HTML through; use `sanitize: true` to escape
+raw HTML and filter link/image URL schemes.
+
+## Node.js
+
+After building from the repository root's `node/` directory:
+
+```js
+import { toHtml, toHtmlBuffer, Renderer, transform } from './ferromark/index.mjs'
+
+const html = toHtml('# Hello v2')
+const buffer = toHtmlBuffer('**UTF-8 output**')
+const renderer = new Renderer({ tables: true })
+renderer.toHtml('First document')
+renderer.toHtml('Second document')
+const result = transform('---\ntitle: Guide\n---\n# Guide', { frontMatter: true })
+console.log(result.headings, result.frontMatter)
+```
+
+Node defaults escape raw HTML and filter link/image URL schemes. Set
+`renderPolicy: 'trusted'` only for trusted Markdown. Custom highlighter output
+is inserted verbatim and must escape every untrusted value.
+
+## Migrating from v1
+
+The Rust AST API replaces v1's one-shot and streaming APIs. Node keeps its
+rendering entry points, but `tableColumnWidths`, `highlight`, `inlineFootnotes`, `allowLinkRefs`,
+and `indentedCodeBlocks` are unsupported and rejected. Heading slugs, table
+layout markup, and some extension output follow v2 semantics. `linkBasePath`
+also applies to root-absolute image and raw HTML URLs and converts Markdown
+links to index.html routes. Highlighter callbacks
+apply to code blocks, including indented code.
+
+Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/migration-v2.md)
+before adopting the development package.

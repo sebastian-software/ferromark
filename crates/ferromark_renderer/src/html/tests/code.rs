@@ -5,7 +5,9 @@ use ferromark_parser::Parser;
 #[test]
 fn test_render_code_block() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "```rust\nfn main() {}\n```").parse().unwrap();
+    let doc = Parser::new(&allocator, "```rust\nfn main() {}\n```")
+        .parse()
+        .unwrap();
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
     insta::assert_snapshot!(html);

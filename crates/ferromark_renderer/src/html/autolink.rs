@@ -194,7 +194,10 @@ fn scan_ascii_url_prefix_scalar(bytes: &[u8], from: usize) -> usize {
 
 #[inline]
 fn is_url_byte(byte: u8) -> bool {
-    !matches!(byte, b' ' | b'\t' | b'\n' | b'\r' | b'<' | b'>' | b'"' | b'\'' | b'`')
+    !matches!(
+        byte,
+        b' ' | b'\t' | b'\n' | b'\r' | b'<' | b'>' | b'"' | b'\'' | b'`'
+    )
 }
 
 /// Punctuation that ends a bare URL the way ASCII whitespace does.
@@ -331,7 +334,10 @@ mod trimming_tests {
             bytes.push(b")]}.!?"[i % 6]);
         }
         for end in (8..bytes.len()).step_by(37) {
-            assert_eq!(trim_trailing_punct(&bytes, 7, end), original(&bytes, 7, end));
+            assert_eq!(
+                trim_trailing_punct(&bytes, 7, end),
+                original(&bytes, 7, end)
+            );
         }
     }
 }

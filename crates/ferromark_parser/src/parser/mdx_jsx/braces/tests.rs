@@ -1,4 +1,8 @@
-#![allow(clippy::disallowed_macros, clippy::disallowed_methods, clippy::disallowed_types)]
+#![allow(
+    clippy::disallowed_macros,
+    clippy::disallowed_methods,
+    clippy::disallowed_types
+)]
 
 use super::{scan_balanced_braces, skip_braces};
 

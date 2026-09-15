@@ -32,10 +32,10 @@ impl<'a> Parser<'a> {
         let close_end = close + 2;
         self.position = next_line_start(self.source.as_bytes(), close_end);
         let value = &self.source[open + 2..close];
-        Ok(Some(Node::MathBlock(
-            self.allocator
-                .boxed(MathBlock { value, span: Span::new(start as u32, self.position as u32) }),
-        )))
+        Ok(Some(Node::MathBlock(self.allocator.boxed(MathBlock {
+            value,
+            span: Span::new(start as u32, self.position as u32),
+        }))))
     }
 
     pub(super) fn parse_inline_math(
@@ -45,11 +45,20 @@ impl<'a> Parser<'a> {
         pos: &mut usize,
     ) {
         let bytes = content.as_bytes();
-        let open_len = if bytes.get(*pos + 1) == Some(&b'$') { 2 } else { 1 };
+        let open_len = if bytes.get(*pos + 1) == Some(&b'$') {
+            2
+        } else {
+            1
+        };
         if !can_open_inline(bytes, *pos, open_len)
             && !can_open_digit_prefixed_inline_math(bytes, *pos, open_len)
         {
-            Self::push_text(children, &content[*pos..*pos + 1], offset + *pos, offset + *pos + 1);
+            Self::push_text(
+                children,
+                &content[*pos..*pos + 1],
+                offset + *pos,
+                offset + *pos + 1,
+            );
             *pos += 1;
             return;
         }
@@ -73,8 +82,10 @@ impl<'a> Parser<'a> {
             if marker_len_at(bytes, candidate) >= open_len
                 && can_close_inline(bytes, candidate, open_len)
             {
-                let span =
-                    Span::new((offset + *pos) as u32, (offset + candidate + open_len) as u32);
+                let span = Span::new(
+                    (offset + *pos) as u32,
+                    (offset + candidate + open_len) as u32,
+                );
                 children.push(Node::InlineMath(InlineMath {
                     value: &content[inner_start..candidate],
                     span,
@@ -112,14 +123,18 @@ fn math_block_close(bytes: &[u8], mut cursor: usize) -> Option<usize> {
 
 fn can_open_inline(bytes: &[u8], index: usize, open_len: usize) -> bool {
     let next = bytes.get(index + open_len).copied();
-    let prev = index.checked_sub(1).and_then(|prev| bytes.get(prev).copied());
+    let prev = index
+        .checked_sub(1)
+        .and_then(|prev| bytes.get(prev).copied());
     !matches!(next, None | Some(b' ' | b'\t' | b'\n' | b'0'..=b'9'))
         && !matches!(prev, Some(b'0'..=b'9'))
 }
 
 fn can_open_digit_prefixed_inline_math(bytes: &[u8], index: usize, open_len: usize) -> bool {
     let next = bytes.get(index + open_len).copied();
-    let prev = index.checked_sub(1).and_then(|prev| bytes.get(prev).copied());
+    let prev = index
+        .checked_sub(1)
+        .and_then(|prev| bytes.get(prev).copied());
     matches!(next, Some(b'0'..=b'9'))
         && !matches!(prev, Some(b'0'..=b'9'))
         && has_closing_inline_math(bytes, index, open_len)
@@ -151,7 +166,9 @@ fn has_closing_inline_math(bytes: &[u8], index: usize, open_len: usize) -> bool 
 }
 
 fn can_close_inline(bytes: &[u8], index: usize, close_len: usize) -> bool {
-    let prev = index.checked_sub(1).and_then(|prev| bytes.get(prev).copied());
+    let prev = index
+        .checked_sub(1)
+        .and_then(|prev| bytes.get(prev).copied());
     let next = bytes.get(index + close_len).copied();
     !matches!(prev, None | Some(b' ' | b'\t' | b'\n')) && !matches!(next, Some(b'0'..=b'9'))
 }

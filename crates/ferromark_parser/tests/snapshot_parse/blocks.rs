@@ -24,7 +24,11 @@ fn snapshot_fenced_code_tildes_with_meta() {
 
 #[test]
 fn snapshot_fenced_code_unclosed_until_eof() {
-    check("fenced_code_unclosed_until_eof", "```rs\nfn main() {}\n", ParserOptions::default());
+    check(
+        "fenced_code_unclosed_until_eof",
+        "```rs\nfn main() {}\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
@@ -49,12 +53,20 @@ fn snapshot_indented_code_block_preserves_blank_lines() {
 
 #[test]
 fn snapshot_blockquote_single_line() {
-    check("blockquote_single_line", "> hello\n", ParserOptions::default());
+    check(
+        "blockquote_single_line",
+        "> hello\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]
 fn snapshot_blockquote_multi_paragraph() {
-    check("blockquote_multi_paragraph", "> first\n>\n> second\n", ParserOptions::default());
+    check(
+        "blockquote_multi_paragraph",
+        "> first\n>\n> second\n",
+        ParserOptions::default(),
+    );
 }
 
 #[test]

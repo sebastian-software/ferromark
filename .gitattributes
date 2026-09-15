@@ -9,3 +9,6 @@ crates/ferromark_parser/benches/fixtures/upstream-changelog.md -text -whitespace
 # Preserve archived CSV bytes so the report checksums survive Git checkout.
 docs/reports/2026-09-15-native-arm/*.csv -text -whitespace
 docs/reports/2026-09-15-arm-full-suite/*.csv -text -whitespace
+
+# Preserve every imported measurement, including older CRLF CSV reports.
+docs/reports/**/*.csv -text -whitespace

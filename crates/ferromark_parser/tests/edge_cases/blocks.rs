@@ -52,14 +52,23 @@ fn heading_attributes_parse_id_classes_and_strip_text() {
     let doc = parse_with_options(
         &allocator,
         "### Custom identifier {#custom-heading-id .highlight .wide ignored}\n",
-        ParserOptions { heading_attributes: true, ..ParserOptions::default() },
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
     );
 
     match &doc.children[0] {
         Node::Heading(heading) => {
             assert_eq!(heading.id, Some("custom-heading-id"));
-            assert_eq!(heading.classes.iter().copied().collect::<Vec<_>>(), ["highlight", "wide"]);
-            assert_eq!(first_text_in_nodes(heading.children.iter()), Some("Custom identifier"));
+            assert_eq!(
+                heading.classes.iter().copied().collect::<Vec<_>>(),
+                ["highlight", "wide"]
+            );
+            assert_eq!(
+                first_text_in_nodes(heading.children.iter()),
+                Some("Custom identifier")
+            );
         }
         other => panic!("expected heading, got {other:?}"),
     }
@@ -72,16 +81,21 @@ fn heading_attributes_leave_unusable_blocks_as_prose() {
         let doc = parse_with_options(
             &allocator,
             source,
-            ParserOptions { heading_attributes: true, ..ParserOptions::default() },
+            ParserOptions {
+                heading_attributes: true,
+                ..ParserOptions::default()
+            },
         );
 
         match &doc.children[0] {
             Node::Heading(heading) => {
                 assert_eq!(heading.id, None);
                 assert!(heading.classes.is_empty());
-                assert!(first_text_in_nodes(heading.children.iter()).is_some_and(|text| {
-                    text == "A sentence {like this}" || text == "A sentence {}"
-                }));
+                assert!(
+                    first_text_in_nodes(heading.children.iter()).is_some_and(|text| {
+                        text == "A sentence {like this}" || text == "A sentence {}"
+                    })
+                );
             }
             other => panic!("expected heading, got {other:?}"),
         }
@@ -94,15 +108,24 @@ fn heading_attributes_apply_to_setext_headings() {
     let doc = parse_with_options(
         &allocator,
         "Custom identifier {#custom-heading-id .highlight}\n---\n",
-        ParserOptions { heading_attributes: true, ..ParserOptions::default() },
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
     );
 
     match &doc.children[0] {
         Node::Heading(heading) => {
             assert_eq!(heading.depth, 2);
             assert_eq!(heading.id, Some("custom-heading-id"));
-            assert_eq!(heading.classes.iter().copied().collect::<Vec<_>>(), ["highlight"]);
-            assert_eq!(first_text_in_nodes(heading.children.iter()), Some("Custom identifier"));
+            assert_eq!(
+                heading.classes.iter().copied().collect::<Vec<_>>(),
+                ["highlight"]
+            );
+            assert_eq!(
+                first_text_in_nodes(heading.children.iter()),
+                Some("Custom identifier")
+            );
         }
         other => panic!("expected heading, got {other:?}"),
     }
@@ -139,7 +162,10 @@ fn crlf_and_lone_cr_parse_as_line_endings() {
         let allocator = Allocator::new();
         let doc = parse_with_options(&allocator, source, ParserOptions::default());
         assert!(matches!(&doc.children[0], Node::Paragraph(_)), "{source:?}");
-        assert!(matches!(&doc.children[1], Node::ThematicBreak(_)), "{source:?}");
+        assert!(
+            matches!(&doc.children[1], Node::ThematicBreak(_)),
+            "{source:?}"
+        );
         assert!(matches!(&doc.children[2], Node::Paragraph(_)), "{source:?}");
     }
 }
@@ -173,7 +199,11 @@ fn fenced_code_supports_tildes_and_meta() {
 #[test]
 fn unclosed_fence_consumes_until_eof() {
     let allocator = Allocator::new();
-    let doc = parse_with_options(&allocator, "```rs\nfn main() {}\n", ParserOptions::default());
+    let doc = parse_with_options(
+        &allocator,
+        "```rs\nfn main() {}\n",
+        ParserOptions::default(),
+    );
 
     match &doc.children[0] {
         Node::CodeBlock(block) => assert_eq!(block.value, "fn main() {}\n"),
@@ -183,7 +213,10 @@ fn unclosed_fence_consumes_until_eof() {
 
 #[test]
 fn fenced_code_normalizes_crlf_and_lone_cr_line_endings() {
-    for source in ["```rust\r\nfn main() {}\r\n```\r\n", "```rust\rfn main() {}\r```\r"] {
+    for source in [
+        "```rust\r\nfn main() {}\r\n```\r\n",
+        "```rust\rfn main() {}\r```\r",
+    ] {
         let allocator = Allocator::new();
         let doc = parse_with_options(&allocator, source, ParserOptions::default());
 

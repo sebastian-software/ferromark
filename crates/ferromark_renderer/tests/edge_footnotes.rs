@@ -15,8 +15,14 @@ fn gfm(source: &str) -> String {
 fn reference_and_definition_render_as_linked_pair() {
     let html = gfm("Here is a note[^1].\n\n[^1]: The note text.\n");
 
-    assert!(html.contains("<sup><a href=\"#fn-1\" id=\"fnref-1\">1</a></sup>"), "{html}");
-    assert!(html.contains("<div id=\"fn-1\" class=\"footnote\">"), "{html}");
+    assert!(
+        html.contains("<sup><a href=\"#fn-1\" id=\"fnref-1\">1</a></sup>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<div id=\"fn-1\" class=\"footnote\">"),
+        "{html}"
+    );
     assert!(html.contains("<p>The note text.</p>"), "{html}");
     assert!(html.contains("<a href=\"#fnref-1\">↩</a>"), "{html}");
 }
@@ -79,8 +85,11 @@ fn labels_match_case_insensitively() {
 fn footnotes_stay_literal_without_the_extension() {
     // With footnotes disabled, `[^1]: url` is a valid CommonMark link
     // reference definition and `[^1]` a shortcut reference to it.
-    let html =
-        render("A[^1].\n\n[^1]: /url\n", ParserOptions::default(), HtmlRendererOptions::default());
+    let html = render(
+        "A[^1].\n\n[^1]: /url\n",
+        ParserOptions::default(),
+        HtmlRendererOptions::default(),
+    );
 
     assert!(html.contains("href=\"/url\""), "{html}");
     assert!(!html.contains("footnote"), "{html}");

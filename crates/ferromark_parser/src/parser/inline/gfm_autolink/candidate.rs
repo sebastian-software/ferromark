@@ -56,7 +56,9 @@ fn earlier_needle_bound(bytes: &[u8], start: usize) -> usize {
     while local_part_end < bytes.len() && is_local_part_byte(bytes[local_part_end]) {
         local_part_end += 1;
     }
-    (start + LONGEST_SCHEME + 3).max(start + 4).max(local_part_end + 1)
+    (start + LONGEST_SCHEME + 3)
+        .max(start + 4)
+        .max(local_part_end + 1)
 }
 
 fn is_local_part_byte(byte: u8) -> bool {
@@ -94,7 +96,10 @@ fn search_within(value: &str, window: usize, scan: AutolinkScan) -> Option<Candi
             };
             let at = from + offset;
             if let Some(candidate) = validate_url(value, at, 4) {
-                if best.as_ref().is_none_or(|current| candidate.start < current.start) {
+                if best
+                    .as_ref()
+                    .is_none_or(|current| candidate.start < current.start)
+                {
                     best = Some(candidate);
                 }
                 break;
@@ -105,9 +110,10 @@ fn search_within(value: &str, window: usize, scan: AutolinkScan) -> Option<Candi
 
     if scan.may_have_extended {
         let limit = search_limit(window, best.as_ref(), 0, 6);
-        for (finder, prefix, xmpp) in
-            [(&*MAILTO_FINDER, "mailto:", false), (&*XMPP_FINDER, "xmpp:", true)]
-        {
+        for (finder, prefix, xmpp) in [
+            (&*MAILTO_FINDER, "mailto:", false),
+            (&*XMPP_FINDER, "xmpp:", true),
+        ] {
             let mut from = 0;
             while from < limit {
                 let Some(offset) = finder.find(&bytes[from..limit]) else {
@@ -115,7 +121,10 @@ fn search_within(value: &str, window: usize, scan: AutolinkScan) -> Option<Candi
                 };
                 let at = from + offset;
                 if let Some(candidate) = validate_extended_email(value, at, prefix, xmpp) {
-                    if best.as_ref().is_none_or(|current| candidate.start < current.start) {
+                    if best
+                        .as_ref()
+                        .is_none_or(|current| candidate.start < current.start)
+                    {
                         best = Some(candidate);
                     }
                     break;
@@ -138,7 +147,10 @@ fn search_within(value: &str, window: usize, scan: AutolinkScan) -> Option<Candi
             // `at + 3 - prefix_len` steps back over the scheme name to the
             // first byte of the candidate.
             if let Some(candidate) = validate_url(value, at + 3 - prefix_len, prefix_len) {
-                if best.as_ref().is_none_or(|current| candidate.start < current.start) {
+                if best
+                    .as_ref()
+                    .is_none_or(|current| candidate.start < current.start)
+                {
                     best = Some(candidate);
                 }
                 break;
@@ -157,5 +169,7 @@ fn search_within(value: &str, window: usize, scan: AutolinkScan) -> Option<Candi
 /// nothing past that point is worth scanning. Without a best yet, the whole
 /// node is in play.
 fn search_limit(len: usize, best: Option<&Candidate>, lookbehind: usize, needle: usize) -> usize {
-    best.map_or(len, |candidate| (candidate.start + lookbehind + needle).min(len))
+    best.map_or(len, |candidate| {
+        (candidate.start + lookbehind + needle).min(len)
+    })
 }

@@ -34,7 +34,9 @@ impl<'a> Parser<'a> {
         // Processing instructions, CDATA, then other declarations.
         for (open, close) in [("<?", "?>"), ("<![CDATA[", "]]>")] {
             if let Some(body) = rest.strip_prefix(open) {
-                let end = body.find(close).map(|found| pos + open.len() + found + close.len())?;
+                let end = body
+                    .find(close)
+                    .map(|found| pos + open.len() + found + close.len())?;
                 return Some((Self::inline_html_node(content, pos, end, offset), end));
             }
         }
@@ -172,7 +174,10 @@ fn scan_attribute(bytes: &[u8], mut cursor: usize) -> Option<usize> {
 
     let value_start = cursor;
     while bytes.get(cursor).is_some_and(|byte| {
-        !matches!(byte, b' ' | b'\t' | b'\n' | b'\r' | b'"' | b'\'' | b'=' | b'<' | b'>' | b'`')
+        !matches!(
+            byte,
+            b' ' | b'\t' | b'\n' | b'\r' | b'"' | b'\'' | b'=' | b'<' | b'>' | b'`'
+        )
     }) {
         cursor += 1;
     }

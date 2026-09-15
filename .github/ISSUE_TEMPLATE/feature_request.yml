@@ -1,0 +1,28 @@
+name: Feature request
+description: Propose a focused improvement to ferromark
+title: "feat: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the use case or limitation that motivates this request.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Explain the desired behavior and public API, if applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe current workarounds or other designs you considered.
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility considerations
+      description: Note relevant CommonMark, GFM, MDX, Rust, Node.js, or CLI behavior.

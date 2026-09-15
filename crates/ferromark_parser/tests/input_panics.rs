@@ -48,5 +48,8 @@ fn nesting_limit_returns_an_error_instead_of_aborting() {
     let error = Parser::with_options(&allocator, &source, ParserOptions::gfm())
         .parse()
         .expect_err("deeply nested quotes should fail closed");
-    assert!(matches!(error.kind(), ParseErrorKind::NestingTooDeep { max_depth: 100, .. }));
+    assert!(matches!(
+        error.kind(),
+        ParseErrorKind::NestingTooDeep { max_depth: 100, .. }
+    ));
 }

@@ -55,10 +55,13 @@ const SHORT_RUN_PREFIX: usize = 8;
 /// point: `vqtbl1q_u8` / `pshufb` look up all sixteen lanes in one
 /// instruction, where the flag table needs sixteen loads.
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
-const LOW_NIBBLE: [u8; 16] =
-    [0x10, 0x02, 0, 0, 0, 0, 0x02, 0, 0, 0, 0x03, 0x08, 0x0C, 0x01, 0x20, 0x08];
+const LOW_NIBBLE: [u8; 16] = [
+    0x10, 0x02, 0, 0, 0, 0, 0x02, 0, 0, 0, 0x03, 0x08, 0x0C, 0x01, 0x20, 0x08,
+];
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
-const HIGH_NIBBLE: [u8; 16] = [0x01, 0, 0x02, 0x04, 0, 0x08, 0x10, 0x20, 0, 0, 0, 0, 0, 0, 0, 0];
+const HIGH_NIBBLE: [u8; 16] = [
+    0x01, 0, 0x02, 0x04, 0, 0x08, 0x10, 0x20, 0, 0, 0, 0, 0, 0, 0, 0,
+];
 
 /// The optional bytes use otherwise-unused intersections: `$` gets bit 0x40
 /// at (high 2, low 4), `^` gets bit 0x80 at (high 5, low E), and `{` reuses
@@ -488,8 +491,10 @@ fn next_inline_special_options_scalar(bytes: &[u8], from: usize, options: u8) ->
 
 #[inline]
 fn is_inline_marker(byte: u8, options: u8) -> bool {
-    matches!(byte, b'*' | b'_' | b'`' | b'[' | b'!' | b'~' | b'\\' | b'<' | b'&' | b'\n' | b'\r')
-        || (options & 1 != 0 && byte == b'{')
+    matches!(
+        byte,
+        b'*' | b'_' | b'`' | b'[' | b'!' | b'~' | b'\\' | b'<' | b'&' | b'\n' | b'\r'
+    ) || (options & 1 != 0 && byte == b'{')
         || (options & 2 != 0 && byte == b'^')
         || (options & 4 != 0 && byte == b'$')
 }

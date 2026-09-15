@@ -1,0 +1,30 @@
+---
+title: Benchmarks
+---
+
+# Benchmarks
+
+V2 benchmark reports preserve source revisions, compiler flags, output checks,
+and raw measurements. Results describe the recorded workloads and machines;
+they are not guarantees for other documents or hardware.
+
+## Archived v2 evidence
+
+- [Apple Silicon native comparison](https://github.com/sebastian-software/ferromark/tree/codex/v2/docs/reports/2026-09-15-native-arm)
+- [Full ARM benchmark suites](https://github.com/sebastian-software/ferromark/tree/codex/v2/docs/reports/2026-09-15-arm-full-suite)
+- [Reproducible native harness](https://github.com/sebastian-software/ferromark/tree/codex/v2/benchmarks/native-comparison)
+
+The reports separate output compatibility from timing. Inspect the recorded
+feature profiles, source revisions, allocator choices, and exclusions before
+comparing engines. V1 figures remain in v1 history and are not relabeled as v2.
+
+## Run the workspace suites
+
+```sh
+cargo bench --workspace --no-run --locked
+cargo bench --workspace --locked
+```
+
+External comparison harnesses have additional pinned-source requirements.
+Follow the README in the relevant `benchmarks/` directory. Do not edit measured
+figures by hand or compare unlike feature profiles as equivalent workloads.

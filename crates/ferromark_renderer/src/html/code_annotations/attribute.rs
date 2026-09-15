@@ -120,7 +120,11 @@ pub(in crate::html) fn parse_line_numbers(value: &str) -> SmallVec<[usize; 4]> {
     // application order without a heap allocation for typical metadata.
     let mut line_numbers = SmallVec::new();
 
-    for part in value.split(',').map(str::trim).filter(|part| !part.is_empty()) {
+    for part in value
+        .split(',')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+    {
         if let Some((raw_start, raw_end)) = part.split_once('-') {
             let Ok(start) = raw_start.trim().parse::<usize>() else {
                 continue;
