@@ -9,7 +9,7 @@ use crate::ast::{
     TableCell, TableRow, ThematicBreak,
 };
 
-use super::super::code_annotations::normalize_code_block_language;
+use super::super::code_annotations::{normalize_code_block_language, plain_code_block_language};
 use super::super::toc::is_toc_marker_paragraph;
 use super::HtmlRenderer;
 
@@ -192,19 +192,7 @@ impl HtmlRenderer {
             self.write("<pre");
             self.write_source_span_attr(code_block.span);
             self.write("><code");
-            let language = if self.options.code_fence_metadata {
-                normalize_code_block_language(code_block.lang)
-            } else {
-                code_block
-                    .lang
-                    .map(str::trim)
-                    .filter(|lang| !lang.is_empty())
-            };
-            if let Some(lang) = language {
-                self.write(" class=\"language-");
-                self.write_escaped(lang);
-                self.write("\"");
-            }
+            self.write_code_block_language_class(code_block.lang);
             self.write(">");
             self.write_escaped(code_block.value);
             self.write("</code></pre>\n");
@@ -255,6 +243,34 @@ impl HtmlRenderer {
             self.write_escaped(code_block.value);
         }
         self.write("</code></pre>\n");
+    }
+
+    /// Writes the ` class="language-…"` attribute for a plain `<pre><code>` fence.
+    ///
+    /// A bare language name is the overwhelmingly common info string, and
+    /// `plain_code_block_language` proves with one table lookup per byte that
+    /// such a token is already its own normalized, escaped form. That skips the
+    /// VitePress metadata tokenizer and the escape scan for it; anything the
+    /// proof does not cover falls back to the general route, which produces the
+    /// same bytes.
+    fn write_code_block_language_class(&mut self, lang: Option<&str>) {
+        let language = if self.options.code_fence_metadata {
+            if let Some(plain) = lang.and_then(plain_code_block_language) {
+                self.write(" class=\"language-");
+                self.write(plain);
+                self.write("\"");
+                return;
+            }
+            normalize_code_block_language(lang)
+        } else {
+            lang.map(str::trim).filter(|lang| !lang.is_empty())
+        };
+
+        if let Some(language) = language {
+            self.write(" class=\"language-");
+            self.write_escaped(language);
+            self.write("\"");
+        }
     }
 
     pub(in crate::renderer::html::renderer) fn render_math_block(&mut self, math: &MathBlock<'_>) {
@@ -392,3 +408,6 @@ impl HtmlRenderer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
