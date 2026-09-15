@@ -1,0 +1,17 @@
+[package]
+name = "optimization-round-worker"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+ferromark = { path = "/private/tmp/fmv2-arm/build-aa/sources/baseline/crates/ferromark" }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

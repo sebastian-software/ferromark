@@ -1,0 +1,69 @@
+{
+  "schema": 2,
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "baseline_revision": "a7f0a006b1ca70b678c84c741488b0a4d75569b8",
+  "baseline_revision_expected": "a7f0a00",
+  "baseline_archive_sha256": "8cc83fdff3652d1af36c7e89e530b5c87751bdf1ed5bc35de98d2bb17801bd22",
+  "candidate_path": "/Users/sebastian/Workspace/ferromark-v2/.claude/worktrees/macos-arm-performance-e17e95",
+  "candidate_revision": "639c79b4065f8a28b14d6602e8f03dcecbdfd461",
+  "candidate_dirty": false,
+  "worker_sha256": "bdc2ce24bf0d781c280abcb1b232248b8a33d6344645aef4eb65d1c7559adf40",
+  "worker_source": "/Users/sebastian/Workspace/ferromark-v2/.claude/worktrees/macos-arm-performance-e17e95/benchmarks/optimization-rounds/worker.rs",
+  "lto": "fat",
+  "symbols": false,
+  "frozen_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+  "engines": {
+    "baseline": {
+      "frozen_source": "/private/tmp/fmv2-arm/build-aa/sources/baseline",
+      "frozen_source_sha256": "488097d0776b19f91ef8918fb21cf9643a2e91618c34245bcac4784a852988bf",
+      "source": "/private/tmp/fmv2-arm/build-aa/core/baseline",
+      "source_revision": null,
+      "source_tree_sha256": "488097d0776b19f91ef8918fb21cf9643a2e91618c34245bcac4784a852988bf",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "worker_sha256": "bdc2ce24bf0d781c280abcb1b232248b8a33d6344645aef4eb65d1c7559adf40",
+      "lto": "fat",
+      "symbols": false,
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/fmv2-arm/build-aa/baseline/target/release/optimization-round-worker",
+      "binary_sha256": "16d95879a40e8a4431542dbcf61fed6c58d046b24efce6dd58d59303c8d16ef0",
+      "lock_sha256": "9765ebfecff6998b349902251309d5aaf53f27409f95e7c616a2a69a1007605b",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "reused"
+    },
+    "candidate": {
+      "frozen_source": "/private/tmp/fmv2-arm/build-final2/sources/candidate",
+      "frozen_source_sha256": "c0c6a28319adc6f0b55b8bbd8a20f03fd04e9ea839a7c40ae75484c4c49ab5a6",
+      "source": "/private/tmp/fmv2-arm/build-final2/core/candidate",
+      "source_revision": null,
+      "source_tree_sha256": "c0c6a28319adc6f0b55b8bbd8a20f03fd04e9ea839a7c40ae75484c4c49ab5a6",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "worker_sha256": "bdc2ce24bf0d781c280abcb1b232248b8a33d6344645aef4eb65d1c7559adf40",
+      "lto": "fat",
+      "symbols": false,
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/fmv2-arm/build-final2/candidate/target/release/optimization-round-worker",
+      "binary_sha256": "8e679543b2299c60c742314d70d72b7e23656fe41822e769a408340f027888ce",
+      "lock_sha256": "9765ebfecff6998b349902251309d5aaf53f27409f95e7c616a2a69a1007605b",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "built"
+    }
+  }
+}
