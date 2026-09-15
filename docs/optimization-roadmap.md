@@ -25,12 +25,27 @@ an immutable account of its original measurements apart from a follow-up link.
   paragraphs reuse already discovered comment positions. The
   [feature-cost follow-up](reports/2026-09-14-feature-scan-optimization/README.md)
   records these changes, their remaining runtime costs, and rejected variants.
+- The [Apple Silicon iteration round](reports/2026-09-15-arm-iterations/README.md)
+  added ten commits: NEON stop-byte classifiers for link destinations and
+  bracket bodies (`ByteClass`), a one-scan URL escaper, a one-pass autolink
+  pre-flight, cached fence-close search, a boxed `ParseError`, out-of-line
+  17–64-byte copies, and reuse of scan facts in link parsing. Against
+  `a7f0a00` the 57 broad documents parse 1.30×, reuse 1.26×, fresh 1.22×, and
+  render 1.19× faster. Nine rejected variants and the remaining hot spots are
+  recorded there.
 
 The broad v1/v2 comparison still refers to its original frozen binaries. These
 new rounds compare v2 before and after optimization; do not substitute their
 results into the old comparison or claim v1 was remeasured.
 
 ## Next questions
+
+The [iteration-round report](reports/2026-09-15-arm-iterations/README.md) ranks
+the currently measured hot spots: output-buffer growth checks in the escaper,
+the double scan of paragraph lines, the reference-definition pre-pass bail, URL
+sanitization searches, heading slugs, and the renderer preparation scan. The
+questions below remain open as well.
+
 
 1. **Code layout and render-only variance.** Unchanged render paths can shift
    across combined fat-LTO binaries. The earlier link-probe losses disappear
