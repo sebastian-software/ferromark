@@ -6,7 +6,8 @@ title: Features
 
 V2 exposes parsing and rendering separately, with an arena-allocated AST and
 source spans between them. The four core crates cover allocation, AST types,
-parsing, and HTML rendering; `ferromark` re-exports their public APIs.
+parsing, and HTML rendering. The `ferromark` facade re-exports their APIs and
+provides `to_html` and append helpers for direct HTML output.
 
 ## Markdown profiles
 
