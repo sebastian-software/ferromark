@@ -1,0 +1,307 @@
+diff --git a/crates/ferromark/src/parser/fenced_code.rs b/crates/ferromark/src/parser/fenced_code.rs
+index 5f64e4ee..9e95b48b 100644
+--- a/crates/ferromark/src/parser/fenced_code.rs
++++ b/crates/ferromark/src/parser/fenced_code.rs
+@@ -282,6 +282,80 @@ mod fence_close_tests {
+         (bytes.len(), bytes.len())
+     }
+ 
++    #[track_caller]
++    fn check_close(source: &str) {
++        let allocator = Allocator::new();
++        let parser = Parser::new(&allocator, source);
++        for (fence_char, fence_len) in [('`', 3), ('`', 4), ('`', 5), ('~', 3), ('~', 4), ('~', 5)]
++        {
++            for body_start in 0..=source.len() {
++                if !source.is_char_boundary(body_start) {
++                    continue;
++                }
++                assert_eq!(
++                    parser.find_fenced_close(fence_char, fence_len, body_start),
++                    scalar_close(source, fence_char as u8, fence_len, body_start),
++                    "source {source:?} fence {fence_char}{fence_len} from {body_start}"
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn close_search_matches_line_walk_on_fence_dense_bodies() {
++        // Bodies whose stray fence bytes outnumber the single-byte route's
++        // rejection budget, so the three-byte searcher answers the tail.
++        for body in [
++            "`a`b`c`d`e`f`g\n",
++            "`` `` `` `` `` ``\n",
++            "~ ~ ~ ~ ~ ~ ~ ~\n",
++            "`\n`\n`\n`\n`\n`\n",
++            "``\n``\n``\n``\n``\n",
++            "echo ``` here\n",
++            "a ``` b ``` c\n",
++        ] {
++            for closer in ["```", " ```", "   ```", "```  ", "~~~", "````", ""] {
++                check_close(&format!("{body}{closer}\n"));
++                check_close(&format!("{body}{closer}"));
++                check_close(&format!("{body}{body}{closer}\n"));
++            }
++        }
++    }
++
++    #[test]
++    fn close_search_matches_line_walk_on_indentation_and_eof_shapes() {
++        for source in [
++            // 1-3 spaces of closing indentation, and the 4 that disqualifies.
++            "a\n ```\n",
++            "a\n  ```\n",
++            "a\n   ```\n",
++            "a\n    ```\n",
++            // Trailing whitespace after the closer.
++            "a\n``` \n",
++            "a\n```\t\n",
++            "a\n```   \r\n",
++            "a\n``` x\n",
++            // Unterminated at EOF, with and without a final newline.
++            "a\n",
++            "a",
++            "a\n``",
++            "a\n```",
++            "a\n```\n",
++            // Mixed fence characters.
++            "a\n~~~\n```\n",
++            "a\n```\n~~~\n",
++            // Line endings.
++            "a\r\n```\r\n",
++            "a\r```\r",
++            "\r\n\r\n```",
++            // Longer closing runs than the opener asked for.
++            "a\n`````\n",
++            "a\n~~~~~\n",
++        ] {
++            check_close(source);
++        }
++    }
++
+     #[test]
+     fn close_search_matches_line_walk() {
+         let lines = [
+@@ -300,6 +374,9 @@ mod fence_close_tests {
+             "`` `",
+             "~~~~ ",
+             "text with ``` inside",
++            "`a` and ``b`` spans",
++            "shell: echo ``` >file",
++            "~ ~~ ~~~",
+             "\r",
+             "é中🙂",
+         ];
+@@ -329,12 +406,21 @@ mod fence_close_tests {
+             }
+             let allocator = Allocator::new();
+             let parser = Parser::new(&allocator, &source);
++            // A real body starts after an opening fence line, so vary the
++            // start as well: the search has to stay correct wherever the
++            // block parser enters it.
++            let starts = [0, source.len() / 3, source.len()];
+             for (fence_char, fence_len) in [('`', 3), ('`', 4), ('~', 3), ('~', 5)] {
+-                assert_eq!(
+-                    parser.find_fenced_close(fence_char, fence_len, 0),
+-                    scalar_close(&source, fence_char as u8, fence_len, 0),
+-                    "source {source:?} fence {fence_char}{fence_len}"
+-                );
++                for body_start in starts {
++                    if !source.is_char_boundary(body_start) {
++                        continue;
++                    }
++                    assert_eq!(
++                        parser.find_fenced_close(fence_char, fence_len, body_start),
++                        scalar_close(&source, fence_char as u8, fence_len, body_start),
++                        "source {source:?} fence {fence_char}{fence_len} from {body_start}"
++                    );
++                }
+             }
+         }
+     }
+diff --git a/crates/ferromark/src/parser/prepass.rs b/crates/ferromark/src/parser/prepass.rs
+index 3d0dd241..83514104 100644
+--- a/crates/ferromark/src/parser/prepass.rs
++++ b/crates/ferromark/src/parser/prepass.rs
+@@ -21,10 +21,24 @@ use super::reference::ReferenceMap;
+ /// the first line that could possibly close an open fence. The one-shot
+ /// `memmem::find` would rebuild its SIMD prefilter for every fence in the
+ /// document.
++///
++/// These now serve as the fallback route for bodies that really are dense in
++/// their own fence byte; [`find_fence_run`] explains why the common body is
++/// better served by a single-byte search.
+ static BACKTICK_RUN: LazyLock<memmem::Finder<'static>> =
+     LazyLock::new(|| memmem::Finder::new("```"));
+ static TILDE_RUN: LazyLock<memmem::Finder<'static>> = LazyLock::new(|| memmem::Finder::new("~~~"));
+ 
++/// Fence-byte runs the single-byte route rejects before handing the rest of
++/// the document to the three-byte searcher.
++///
++/// Each rejected run costs one more `memchr` call, so the budget caps how far
++/// the cheap route can fall behind the searcher on a body that defeats it,
++/// while staying well above what ordinary code bodies need: measured over the
++/// documentation corpus, fewer than one body in ten holds a stray fence byte
++/// before its closer at all.
++const FENCE_RUN_BUDGET: usize = 4;
++
+ /// Definition-closer searcher, built once for the process, for the same
+ /// reason: a short document spends more time building a one-shot finder's
+ /// prefilter than searching with it.
+@@ -37,14 +51,55 @@ pub(super) fn next_fence_run_line(bytes: &[u8], from: usize, fence_byte: u8) ->
+     // `from` is one past a newline, which is one past the end when the last
+     // line of the document is unterminated.
+     let from = from.min(bytes.len());
++    let at = find_fence_run(bytes, from, fence_byte)?;
++    // `from` is a line start, so the match's line starts at or after it.
++    Some(memrchr2(b'\n', b'\r', &bytes[from..at]).map_or(from, |off| from + off + 1))
++}
++
++/// Offset of the first run of three or more `fence_byte`s at or after `from`.
++///
++/// This is the position [`memmem::Finder::find`] reports for the three-byte
++/// needle: an occurrence of three in a row is exactly the start of a run of at
++/// least three, and the earliest occurrence starts the earliest such run.
++///
++/// The route to it differs. A fenced body is searched from its opening fence
++/// to its closing one, and the byte that delimits the block is by construction
++/// rare inside it, so the first occurrence of a single fence byte is almost
++/// always the closing run itself. That makes a one-byte search the right
++/// shape: it answers in one pass with a plain vector loop, whereas the
++/// three-byte searcher pays to arrange its packed-pair prefilter on entry —
++/// a cost the short hop from an opening fence to its closer cannot amortize,
++/// and one that dominated fence handling on documentation pages built out of
++/// many small code samples.
++///
++/// A body that does hold stray fence bytes rejects a run per occurrence, so
++/// after [`FENCE_RUN_BUDGET`] rejections the remainder goes to the searcher,
++/// whose cost does not grow with how often the byte appears. Runs shorter than
++/// three cannot contain the needle, so skipping past them keeps the answer the
++/// searcher's own.
++fn find_fence_run(bytes: &[u8], from: usize, fence_byte: u8) -> Option<usize> {
++    let mut at = from;
++    for _ in 0..FENCE_RUN_BUDGET {
++        // `at` starts at a caller-clamped offset and only ever moves to one
++        // past a run, so it stays within the slice.
++        let start = at + memchr(fence_byte, &bytes[at..])?;
++        let mut end = start + 1;
++        while bytes.get(end) == Some(&fence_byte) {
++            end += 1;
++        }
++        if end - start >= 3 {
++            return Some(start);
++        }
++        // `end` is one past a run of one or two, so it is past every needle
++        // position ruled out so far and never revisits a byte.
++        at = end;
++    }
+     let finder = if fence_byte == b'`' {
+         &*BACKTICK_RUN
+     } else {
+         &*TILDE_RUN
+     };
+-    let at = from + finder.find(&bytes[from..])?;
+-    // `from` is a line start, so the match's line starts at or after it.
+-    Some(memrchr2(b'\n', b'\r', &bytes[from..at]).map_or(from, |off| from + off + 1))
++    Some(at + finder.find(&bytes[at..])?)
+ }
+ 
+ /// Furthest an opening `[` can sit before the `]:` that closes its label:
+@@ -201,7 +256,95 @@ mod tests {
+ 
+     use crate::parser::line_scan::line_end as scan_line_end;
+ 
+-    use super::previous_line_start;
++    use super::{find_fence_run, next_fence_run_line, previous_line_start};
++
++    /// The three-byte searcher the single-byte route replaced, kept as the
++    /// oracle for [`find_fence_run`].
++    fn fence_run_oracle(bytes: &[u8], from: usize, fence_byte: u8) -> Option<usize> {
++        let needle = [fence_byte; 3];
++        memmem::find(&bytes[from..], &needle).map(|offset| from + offset)
++    }
++
++    #[track_caller]
++    fn check_fence_run(bytes: &[u8]) {
++        for fence_byte in [b'`', b'~'] {
++            for from in 0..=bytes.len() {
++                assert_eq!(
++                    find_fence_run(bytes, from, fence_byte),
++                    fence_run_oracle(bytes, from, fence_byte),
++                    "fence {} from {from} over {:?}",
++                    fence_byte as char,
++                    std::str::from_utf8(bytes),
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn fence_run_scan_matches_the_three_byte_searcher_on_run_shapes() {
++        // Runs on both sides of the three-byte threshold, in every order and
++        // adjacency: the budget only ever skips runs that cannot hold the
++        // needle, so a shorter run must never hide a longer one behind it.
++        let pieces = [
++            "`", "``", "```", "````", "`````", "~", "~~", "~~~", "~~~~", "a", " ", "\n", "\r\n",
++            "`a`", "~a~", "``a``", "`~`", "~`~",
++        ];
++        let mut state = 0x9e37_79b9_7f4a_7c15u64;
++        let mut next = move || {
++            state = state
++                .wrapping_mul(6_364_136_223_846_793_005)
++                .wrapping_add(1);
++            (state >> 33) as usize
++        };
++        for _ in 0..4000 {
++            let count = next() % 14;
++            let mut source = String::new();
++            for _ in 0..count {
++                source.push_str(pieces[next() % pieces.len()]);
++            }
++            check_fence_run(source.as_bytes());
++        }
++    }
++
++    #[test]
++    fn fence_run_scan_matches_the_searcher_past_the_rejection_budget() {
++        // More short runs than the budget allows, so the tail of each source
++        // is answered by the searcher rather than the single-byte route.
++        for lead in 0..12usize {
++            for short in ["`", "``"] {
++                for tail in ["```", "````", "", "a```", "~~~"] {
++                    let source = format!("{}{tail}", format!("{short}x").repeat(lead));
++                    check_fence_run(source.as_bytes());
++                    let padded = format!("{}{tail}", format!("{short} ").repeat(lead));
++                    check_fence_run(padded.as_bytes());
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn fence_run_scan_matches_the_searcher_at_the_slice_boundaries() {
++        // Empty input, a start at the very end, and runs that touch EOF.
++        for source in [
++            "", "`", "``", "```", "~~", "~~~", "a```", "```a", "a``", "``a", "\n```", "```\n",
++        ] {
++            check_fence_run(source.as_bytes());
++        }
++        assert_eq!(next_fence_run_line(b"", 0, b'`'), None);
++        // A `from` past the end is clamped rather than panicking.
++        assert_eq!(next_fence_run_line(b"abc", 99, b'`'), None);
++    }
++
++    #[test]
++    fn fence_run_line_reports_the_line_start_of_the_run() {
++        assert_eq!(next_fence_run_line(b"```", 0, b'`'), Some(0));
++        assert_eq!(next_fence_run_line(b"a\nb ```", 0, b'`'), Some(2));
++        assert_eq!(next_fence_run_line(b"a\r\nb ```", 0, b'`'), Some(3));
++        assert_eq!(next_fence_run_line(b"a\rb ```", 0, b'`'), Some(2));
++        assert_eq!(next_fence_run_line(b"a\n`\n``\n```", 0, b'`'), Some(7));
++        assert_eq!(next_fence_run_line(b"~~~", 0, b'`'), None);
++        assert_eq!(next_fence_run_line(b"```", 0, b'~'), None);
++    }
+ 
+     /// The original opener-driven walk, kept as an independent oracle for the
+     /// `]:`-driven scan. It examines every `[` in the document and searches

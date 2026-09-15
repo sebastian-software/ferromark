@@ -1,0 +1,50 @@
+{
+  "schema": 2,
+  "rounds": 3,
+  "pairs_per_round": 5,
+  "window_ms": 40,
+  "warmup_ms": 40,
+  "seed": 20260914,
+  "modes": [
+    "parse",
+    "reuse",
+    "render"
+  ],
+  "case_filter": "^(wiki-(tea|volcano|chess)-article-body|scan-mdx-links|autolink-closers-512|autolink-unicode-2048|scan-dense-escapes)$",
+  "cases": [
+    "wiki-tea-article-body",
+    "wiki-chess-article-body",
+    "wiki-volcano-article-body",
+    "scan-dense-escapes",
+    "scan-mdx-links",
+    "autolink-closers-512",
+    "autolink-unicode-2048"
+  ],
+  "corpus_sha256": "9331c117ee7c24ff6a06090c44953fdd465894911b170f06657e339e8e48eeeb",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "bdc2ce24bf0d781c280abcb1b232248b8a33d6344645aef4eb65d1c7559adf40",
+  "host_before": {
+    "time_utc": "2026-09-15T23:27:31Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      7.8134765625,
+      6.87548828125,
+      6.27001953125
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  },
+  "host_after": {
+    "time_utc": "2026-09-15T23:28:03Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      7.31787109375,
+      6.84375,
+      6.27978515625
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  }
+}

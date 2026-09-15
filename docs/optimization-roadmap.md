@@ -52,6 +52,20 @@ an immutable account of its original measurements apart from a follow-up link.
   lost: a raw output cursor in the escapers (render 0.973× / 0.940×) and a
   fused block/inline paragraph scan (parse 0.949×). Patches and screens are
   archived with the report.
+- The [third round](reports/2026-09-16-arm-round-3/README.md) added nine
+  commits: every block-level line walk finds a line end once (lists, block
+  dispatch and probe, containers and leaves, definition lists and table
+  metadata), bare fence languages bypass the metadata tokenizer and the
+  plain fence markup is assembled from merged literals, and — as a recorded
+  v2 API decision — `HtmlRendererOptions` strings became `Cow<'static, str>`
+  so default options and their clones allocate nothing. Against `f216b8da`
+  the 57 broad documents gain 1.142× fresh, 1.027× with reuse, 1.036× in
+  parsing (every document), and 1.009× in rendering. The fence-run finders,
+  a document-level autolink gate, and reserved text coalescing were measured
+  and rejected. The same report measures profile-guided optimization as a
+  build experiment: trained on half the broad documents plus the
+  diagnostics and measured on the other half, PGO gives 1.204× fresh,
+  1.240× reuse, 1.255× parse and 1.176× render on documents it never saw.
 
 The [new native comparison](reports/2026-09-15-native-arm/README.md) separately
 remeasures all six engines with matched syntax and renderer settings. V2 is
@@ -71,8 +85,14 @@ checks and the double paragraph scan were implemented as designed and measured
 slower, so they should be treated as structural floors unless a genuinely
 different mechanism is proposed. URL sanitization searches remain untested
 (the benchmark profiles do not enable `sanitize`). The questions below remain
-open as well, plus the `HtmlRendererOptions` string ownership noted in the
-second round's remaining hot spots.
+open as well. The third round settled the `HtmlRendererOptions` string
+ownership and the line-end rescans, and measured the fence-run finders and a
+document-level autolink gate as non-wins. Its two forward-looking items are
+(a) profile-guided optimization in the release pipeline, by far the largest
+measured lever (1.18–1.26× on unseen documents), and (b) the definition
+pre-pass, which block-parses a document twice whenever it holds a `]:`
+candidate — the remaining structural target is a blocks-first parse with
+inline content resolved afterwards.
 
 
 1. **Code layout and render-only variance.** Unchanged render paths can shift
