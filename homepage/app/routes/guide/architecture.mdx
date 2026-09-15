@@ -1,0 +1,64 @@
+---
+title: Architecture and Trade-offs
+order: 9
+---
+
+# Architecture and Trade-offs
+
+## Parser design
+
+Ferromark uses an arena-allocated abstract syntax tree (AST): nodes share an
+allocator and refer to the original source. Parse a document, inspect or transform
+its nodes, then render HTML. Reusing arenas and renderer buffers amortizes
+allocation costs across document collections. SIMD and specialized byte scans
+accelerate supported paths, with scalar fallbacks.
+
+## One crate, four modules
+
+| Module                 | Responsibility                             |
+| ---------------------- | ------------------------------------------ |
+| `ferromark::allocator` | Arena allocation and buffer helpers        |
+| `ferromark::ast`       | Document nodes, source spans, and visitors |
+| `ferromark::parser`    | Markdown to AST                            |
+| `ferromark::renderer`  | HTML output and rendering hooks            |
+
+The top-level crate also offers `to_html` helpers for callers that only need
+owned HTML. The source and arena must outlive their documents. Drop documents
+before resetting the arena. See [Rust pipelines](/rust/pipelines).
+
+## Scope and trade-offs
+
+The core focuses on Markdown parsing and HTML rendering. Translation, site
+assembly, and framework compilation belong to applications. Highlighters plug
+in through explicit output hooks. MDX support captures syntax and static islands;
+it is not a JavaScript compiler or runtime. The AST supports structural tooling,
+but there is no general Markdown round-trip formatter.
+
+Rust and Node.js share the core and expose different defaults and API boundaries.
+See [rendering and trust](/guide/rendering). Performance depends on documents,
+features, allocation lifecycle, and hardware; [benchmarks](/guide/benchmarks)
+record those conditions.
+
+## Project background
+
+Ferromark carries forward features and experience from Ferromark v1 and builds
+on the MIT-licensed OX-Content core. [Source provenance](https://github.com/sebastian-software/ferromark/blob/main/UPSTREAM.md)
+records the imported revision and preserved attribution.
+
+## Project structure
+
+```text
+crates/ferromark/
+  src/allocator/    Arena and allocation helpers
+  src/ast/          Document tree, spans, and visitors
+  src/parser/       Block and inline parsing
+  src/renderer/     HTML output and hooks
+  tests/            Regression and conformance tests
+node/               Native Node.js bindings and package
+homepage/           Documentation website
+benchmarks/         Reproducible comparison harnesses
+```
+
+[Contributing](https://github.com/sebastian-software/ferromark/blob/main/CONTRIBUTING.md)
+covers local checks; [architecture decisions](https://github.com/sebastian-software/ferromark/tree/main/docs/arch)
+record durable boundaries.

@@ -1,0 +1,29 @@
+---
+title: Markdown Configuration
+order: 3
+---
+
+# Markdown Configuration
+
+Choose the Markdown syntax your authors use, then select the rendering policy
+appropriate for that content. Syntax recognition and HTML trust are separate.
+
+## Choose an integration
+
+[Rust configuration](/rust/configuration) separates parser and renderer options.
+[Node.js configuration](/node/configuration) uses a camelCase options object.
+The defaults differ: Rust preserves raw HTML, while Node.js escapes it by default.
+
+## Choose syntax deliberately
+
+CommonMark defines standard Markdown. GFM adds tables, task lists, strikethrough,
+autolinks, and a disallowed-HTML tag filter. Footnotes, callouts, front matter,
+and CSS-addressable tables are separate publishing features.
+
+Enable extensions when the content requires them. Front matter, table spans,
+table attributes, and generated colgroups are opt-in. Marked text and inline
+footnotes are also opt-in. Unused enabled syntax can still add parsing work;
+[profile measurements](/guide/workflow-benchmarks) help evaluate that cost.
+
+See [Markdown syntax](/guide/features) for examples and [rendering and trust](/guide/rendering)
+for safe output policies and specification profiles.

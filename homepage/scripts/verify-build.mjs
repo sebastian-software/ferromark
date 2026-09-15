@@ -4,11 +4,32 @@ import { join } from "node:path";
 const outputDirectory = new URL("../build/client/", import.meta.url);
 const expectedPages = [
   "index.html",
+  "guide/architecture/index.html",
+  "guide/benchmark-explorer/index.html",
   "guide/benchmarks/index.html",
+  "guide/cli/index.html",
+  "guide/configuration/index.html",
+  "guide/correctness/index.html",
+  "guide/feature-comparison/index.html",
   "guide/features/index.html",
   "guide/getting-started/index.html",
   "guide/mdx-examples/index.html",
+  "guide/mdx/index.html",
+  "guide/pipelines/index.html",
   "guide/quick-start/index.html",
+  "guide/rendering/index.html",
+  "guide/workflow-benchmarks/index.html",
+  "node/configuration/index.html",
+  "node/deployment/index.html",
+  "node/getting-started/index.html",
+  "node/highlighting/index.html",
+  "node/pipelines/index.html",
+  "rust/configuration/index.html",
+  "rust/getting-started/index.html",
+  "rust/highlighting/index.html",
+  "rust/mdx-examples/index.html",
+  "rust/mdx/index.html",
+  "rust/pipelines/index.html",
 ];
 
 await Promise.all(expectedPages.map((page) => access(new URL(page, outputDirectory))));
@@ -21,9 +42,15 @@ const benchmarkPage = await readFile(
 const guidePage = await readFile(new URL("guide/quick-start/index.html", outputDirectory), "utf8");
 
 const requiredFragments = [
-  "/ferromark/assets/", "/ferromark/favicon.ico", 'class="site-header"',
-  'class="site-footer"', "https://ferramenta.dev", "Release candidate",
-  "arena-allocated", "release-candidate testing", "OX-Content",
+  "/ferromark/assets/",
+  "/ferromark/favicon.ico",
+  'class="site-header"',
+  'class="site-footer"',
+  "https://ferramenta.dev",
+  "Release candidate",
+  "release-candidate testing",
+  "Start with Rust",
+  "Start with Node.js",
 ];
 
 // The family chrome replaces Ardo's own header and footer (`handle.chrome` in
@@ -67,6 +94,21 @@ check(guidePage, "guide page", requiredGuideFragments, forbiddenFragments);
 
 if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {
   throw new Error("Prerendered homepage contains a nav nested directly inside a paragraph");
+}
+
+for (const path of expectedPages) {
+  const html = await readFile(new URL(path, outputDirectory), "utf8");
+  check(html, path, ["/ferromark/rust/getting-started", "/ferromark/node/getting-started"]);
+  if ((html.match(/<h1(?:\s|>)/g) ?? []).length !== 1) {
+    throw new Error(`${path} must have one h1`);
+  }
+  for (const [, href] of html.matchAll(/href="([^"#]*)(?:#[^"]*)?"/g)) {
+    if (!href.startsWith("/ferromark/") || href.startsWith("/ferromark/assets/")) continue;
+    const pathname = href.slice("/ferromark/".length).split("?")[0].replace(/\/$/, "");
+    if (/\.[a-z0-9]+$/i.test(pathname)) continue;
+    const target = pathname ? `${pathname}/index.html` : "index.html";
+    await access(new URL(target, outputDirectory));
+  }
 }
 
 console.log(`Verified ${expectedPages.length} prerendered pages in ${join("build", "client")}`);

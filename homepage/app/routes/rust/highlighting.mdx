@@ -1,0 +1,52 @@
+---
+title: Customize Code Blocks in Rust
+order: 4
+---
+
+# Customize Code Blocks in Rust
+
+import { RuntimeSwitch } from "../../components/runtime-switch";
+
+<RuntimeSwitch topic="highlighting" />
+
+Use `HtmlRenderHooks` to replace output for selected AST nodes. The normal
+`render()` path does not dispatch hooks; opt in with `render_with_hooks()`.
+
+````rust
+use ferromark::{Allocator, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks,
+    HtmlRenderer, Parser};
+use ferromark::ast::Node;
+
+struct CodeRenderer;
+impl HtmlRenderHooks for CodeRenderer {
+    fn render_node(&mut self, node: &Node<'_>, cx: &mut HtmlRenderContext<'_>)
+        -> HtmlRenderControl {
+        if let Node::CodeBlock(block) = node {
+            cx.write("<pre class=\"source\"><code>");
+            cx.write_escaped(&block.value);
+            cx.write("</code></pre>\n");
+            HtmlRenderControl::Handled
+        } else {
+            HtmlRenderControl::Default
+        }
+    }
+}
+let source = "```rust\nfn main() {}\n```";
+let allocator = Allocator::for_source_len(source.len());
+let document = Parser::new(&allocator, source).parse().unwrap();
+let html = HtmlRenderer::new().render_with_hooks(&document, &mut CodeRenderer);
+assert!(html.contains("class=\"source\""));
+````
+
+Return `Default` to use built-in output; return `Handled` after writing the entire
+replacement. The hook sees fenced and indented code blocks. A highlighter adapter
+can inspect the code, language, and metadata, then write its HTML here.
+
+`cx.write()` inserts raw HTML, even when sanitization is enabled. Escape source
+text with `write_escaped`, attributes with `write_attribute_escaped`, and URL
+attributes with `write_url_escaped`. Validate URL schemes when supplying custom
+URLs. Only insert highlighter output you trust.
+
+For code annotations, line numbers, and heading permalinks, inspect the existing
+`HtmlRendererOptions` before writing a hook. [Rendering and trust](/guide/rendering)
+explains the shared output boundary.

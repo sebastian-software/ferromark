@@ -6,24 +6,50 @@ Part of [Ferramenta](https://ferramenta.dev), a family of Rust tools.
 
 # Ferromark v2
 
-A lean, arena-allocated Markdown parser and HTML renderer.
+**Markdown, ready for the work ahead.**
 
-Ferromark v2 brings together our work on
-[Ferromark v1](https://github.com/sebastian-software/ferromark) and the
-arena-based AST architecture of [OX-Content](https://github.com/ubugeeei-prod/ox-content).
-In v1, we encountered performance limits that called for a deeper architectural
-change. OX-Content provided the foundation for that rebuild, and we are grateful
-to its authors. V2 combines that foundation with selected v1 features and
-optimizations, alongside new development, to shape a Markdown-to-HTML library
-with its own scope and direction.
+Ferromark turns Markdown into HTML for documentation sites, publishing tools,
+and applications. A fast Rust engine with an arena-allocated document tree,
+CommonMark correctness, and practical publishing features. Use the Rust crate
+or its native Node.js bindings.
 
-Ferromark v2 is entering release-candidate testing and preserves both project histories.
-The API is not compatible with Ferromark v1. Release candidates are available through
-npm's `next` channel after publication; `latest` stays on the stable release.
-See the [release notes](docs/releases/2.0.0-rc.1.md) and [migration guide](docs/migration-v2.md).
+[Documentation](https://sebastian-software.github.io/ferromark/) ·
+[Rust API](https://docs.rs/ferromark/2.0.0-rc.1/ferromark/) ·
+[Node.js package](node/ferromark/README.md)
+
+**V2 is in release-candidate testing.** Version `2.0.0-rc.1` is a breaking upgrade
+from v1. Read the [release notes](docs/releases/2.0.0-rc.1.md) and
+[migration guide](docs/migration-v2.md). npm's stable `latest` channel remains on v1.
+
+## Why Ferromark
+
+A Markdown engine earns its place when the documents get complicated.
+Nested lists. Reference links. Tables with real content. The page that looked
+fine until an author added one more footnote.
+
+- **Keep the core focused.** Parse Markdown and render HTML. Your application
+  chooses translation, site assembly, and the highlighter connected through
+  rendering hooks.
+- **Build correctness in.** The explicit CommonMark profile agrees with all
+  652 specification examples. Differential checks against cmark and cmark-gfm
+  expose edge cases and keep fixes reproducible.
+- **Cover everyday publishing needs.** Front matter, heading IDs, footnotes,
+  callouts, and inline tables of contents support real documents. Table classes,
+  captions, merged cells, and named columns give CSS control over layout.
+- **Keep rendering fast.** Arena allocation, reusable buffers, specialized byte
+  scans, and SIMD reduce parser and renderer work. You can inspect or transform
+  the document tree before rendering it.
+
+[Syntax and features](https://sebastian-software.github.io/ferromark/guide/features),
+[correctness and limits](https://sebastian-software.github.io/ferromark/guide/correctness),
+and [measured comparisons](https://sebastian-software.github.io/ferromark/guide/benchmarks)
+explain the details and trade-offs.
+
+## Quick start
+
+### Rust
 
 ```sh
-npm install ferromark@2.0.0-rc.1
 cargo add ferromark@=2.0.0-rc.1
 ```
 
@@ -32,334 +58,41 @@ let html = ferromark::to_html("Hello, **world**!").unwrap();
 assert_eq!(html, "<p>Hello, <strong>world</strong>!</p>\n");
 ```
 
-Use `to_html_with_options` to select syntax and output settings, or
-`to_html_into` / `to_html_into_with_options` to append to a caller-owned `String`.
-The helpers return `Result` and use the same defaults as the low-level Rust API,
-including raw HTML passthrough. Select `HtmlRendererOptions { sanitize: true, .. }`
-for untrusted input. [Rust examples and API choices](docs/rust-api.md).
+Rust requires **1.95 or newer**. The helpers return `Result`. Rust defaults
+preserve raw HTML; set `HtmlRendererOptions::sanitize` to `true` for untrusted
+input. The [Rust guide](https://sebastian-software.github.io/ferromark/rust/getting-started)
+covers configuration, ownership, and AST access through `ferromark`.
 
-For AST access, construct an `Allocator`, parse with `Parser`, then render the
-document with `HtmlRenderer`.
-
-`ParserOptions::gfm()` enables the implemented GFM syntax plus footnotes.
-For specification-oriented output, pair `ParserOptions::gfm_spec()` with
-`HtmlRendererOptions::gfm()` (tagfilter enabled, footnotes disabled). The analogous
-CommonMark pair is `ParserOptions::commonmark()` and
-`HtmlRendererOptions::commonmark()`. These renderer profiles disable automatic
-heading IDs, callouts, TOC, and fence metadata cleanup; the existing defaults
-retain those conveniences. `ParserOptions { mdx: true, ..ParserOptions::gfm() }` adds MDX
-syntax recognition and static component-island output; it does not provide an
-MDX compiler or runtime. Math, definition lists, and other extensions remain configurable.
-The allocator and source must outlive the document. Reuse/reset an allocator only after its documents
-have been dropped. HTML options and renderer hooks remain available directly.
-
-One Rust crate, `ferromark`, exposes four modules and convenient top-level functions:
-
-| Module | Responsibility |
-| --- | --- |
-| `ferromark::allocator` | Arena allocation and buffer helpers |
-| `ferromark::ast` | Nodes, source spans, visitors |
-| `ferromark::parser` | Markdown to AST |
-| `ferromark::renderer` | AST to HTML |
-
-The core retains CommonMark/GFM support, configurable syntax extensions, HTML
-rendering options, and regression tests. Site generation, JavaScript frameworks,
-bindings, editor services, and the upstream profiler are removed. See the precise
-[cleanup boundary](docs/fork.md) and [source provenance](UPSTREAM.md).
-
-## Development
-
-See [Contributing](CONTRIBUTING.md), [v2 migration](docs/migration-v2.md), and the
-[Node package](node/ferromark/README.md). The documentation website lives in `homepage/`.
-
-Build and verify with the pinned Rust toolchain:
+### Node.js
 
 ```sh
-cargo fmt --all --check
-cargo test --workspace --all-features --locked
-cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
-cargo bench --workspace --no-run --locked
+npm install ferromark@2.0.0-rc.1
 ```
 
-Try the retained stdin rendering example:
+```js
+import { toHtml } from 'ferromark'
 
-```sh
-printf 'Hello, **world**!\n' | cargo run --quiet --locked -p ferromark --example render_stdin
+const html = toHtml('Hello, **world**!')
 ```
 
-Seven self-contained Criterion suites cover parsing, reference prepasses, tables,
-pipe scans, rendering, headings, and sanitized URLs. Run individual suites with
-`cargo bench -p ferromark --bench table_pipes --locked` or
-`cargo bench -p ferromark --bench renderer --locked`.
-The [optimization roadmap](docs/optimization-roadmap.md) records candidates for
-measured ports from the Ferramenta projects.
+Requires **Node.js 22.12 or newer**. Node defaults escape raw HTML and filter
+unsafe URL schemes. The [Node.js guide](https://sebastian-software.github.io/ferromark/node/getting-started)
+covers metadata, Buffers, reusable renderers, and highlighters.
 
-The [optimization rounds](docs/reports/2026-09-14-optimization-rounds/README.md)
-record measured SIMD and algorithm changes, including rejected variants and raw
-results. The core now skips clean link unescaping, fuses enabled inline markers,
-uses compact constant-time table span maps, trims URL brackets in linear time,
-and scans ASCII URL spans with NEON. The
-[first SIMD study](docs/reports/2026-09-14-simd-round/README.md) remains the historical
-record of the link prototype and its render-only build sensitivity.
+## Make it yours
 
-The [Apple Silicon iteration round](docs/reports/2026-09-15-arm-iterations/README.md)
-adds link scanners, URL escaping, fence search, smaller parse results, and output
-copy optimizations. The [complete 207-case rerun](docs/reports/2026-09-15-arm-full-suite/README.md)
-checks the finished branch against main in all four stages; the native engine
-comparison below uses its separately matched flags and build environment.
+- [Configuration](https://sebastian-software.github.io/ferromark/guide/configuration) — syntax and output policies.
+- [Content pipelines](https://sebastian-software.github.io/ferromark/guide/pipelines) — document metadata, navigation, and presentation.
+- [Rendering and trust](https://sebastian-software.github.io/ferromark/guide/rendering) — defaults and input boundaries.
+- [Architecture](https://sebastian-software.github.io/ferromark/guide/architecture) — arena AST, modules, and integration points.
+- [MDX boundaries](https://sebastian-software.github.io/ferromark/guide/mdx) — syntax capture and static output.
 
-The [runtime-profile study](docs/runtime-profiles.md) measures 37 individual
-options, unused-feature overhead, and candidate recipes for comments, articles,
-documentation, and MDX. It separates parser/rendering costs and fresh/reused
-lifecycles, with exact-output checks for tailored-profile comparisons.
-The [definition-list and line-comment follow-up](docs/reports/2026-09-14-feature-scan-optimization/README.md)
-investigates and reduces their scan/allocation overhead while preserving HTML,
-ASTs, and source positions. It records accepted and rejected attempts.
-The [line-comment dispatch follow-up](docs/reports/2026-09-14-line-comment-dispatch/README.md)
-reuses existing line-prefix scans, reducing the 4 KiB plain-prose option tax
-to about 1% in parsing and 0.5% in complete reused processing.
+## Contributing and license
 
-## Features at a glance
-
-**CommonMark** defines everyday Markdown: headings, lists, links, emphasis, and
-code. **GFM** (GitHub Flavored Markdown) adds features such as tables and
-checklists. The groups below spell out those names and show useful extras.
-Footnotes and alert boxes are listed separately from the published GFM extensions.
-
-**✓** = built in, possibly requiring an option or Cargo feature. **—** = no
-built-in support. Qualifiers describe narrower support. This is a capability
-inventory, not a claim of identical output or complete specification conformance.
-It covers the native cores from the benchmark, with **v2 updated to the current
-local core**; these are not the options enabled during timing.
-[Exact versions, source references, and scope](docs/feature-matrix.md).
-
-| Feature / what it does | Ferromark v1 | Ferromark v2 | OX-Content | pulldown-cmark | md4c | Bun native |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **CommonMark — everyday Markdown** | | | | | | |
-| Headings — `# Title` through `###### Title` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Paragraphs and line breaks | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Bold and italic — `**bold**`, `*italic*` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Numbered, bulleted, and nested lists | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Block quotes — `> quoted text` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Horizontal separators — `---` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Links, images, and reusable reference links | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Inline code, fenced code blocks, and indented code | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Raw HTML inside Markdown — `<details>…</details>` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **GFM — GitHub-style extensions** | | | | | | |
-| Tables with left/center/right column alignment | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Checklists — `- [x] done`, `- [ ] pending` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Crossed-out text — `~~removed~~` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Single-tilde crossed-out text — `~removed~` | — | ✓ | — | ✓ | ✓ | ✓ |
-| Turn bare URLs/emails into links — `www.example.com` | ✓ | ✓ | ✓ | — | ✓ | ✓ |
-| GFM HTML tag filter — filter its specified tag list | ✓ | ✓ | ✓ | — | — | ✓ |
-| **Writing extras — beyond CommonMark/GFM** | | | | | | |
-| Reference footnotes — `[^note]` plus a definition | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Inline footnotes — `^[note written here]` | ✓ | ✓ | — | — | — | — |
-| Definition lists — a term followed by `: explanation` | ✓ | ✓ | ✓ | ✓ | — | — |
-| Math notation — `$x^2$`, `$$…$$` | Syntax | Syntax | Syntax | Syntax | Syntax | Syntax |
-| Superscript — `x^2^` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Subscript — `H~2~O` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Highlighted text — `==important==` | ✓ | ✓ | — | — | ✓ | — |
-| Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
-| Smart punctuation — curly quotes and ellipses | — | — | ✓ | ✓ | — | — |
-| Extract frontmatter — metadata between `---` or `+++` | ✓ | ✓ | — | ✓ | — | — |
-| Source-only line comments — hide `// note` lines from HTML | ✓ | ✓ | — | — | — | — |
-| **Table layout — beyond GFM** | | | | | | |
-| Merged table cells — one cell spans several columns | ✓ | ✓ | — | — | — | — |
-| Numeric column-width hints — proportions from delimiter dashes | ✓ | — | — | — | — | — |
-| Table IDs/classes — style a whole table with CSS | — | ✓ | — | — | — | — |
-| Table captions — a label with inline Markdown formatting | — | With ID/class | — | — | — | — |
-| Column classes for CSS widths — `col-1`, `col-2`, etc. | — | ✓ | — | — | — | — |
-| Column names from headers — “Netto Preis” → `col-name-netto-preis` | — | ✓ | — | — | — | — |
-| **Documentation and navigation** | | | | | | |
-| Automatic heading IDs — link directly to a section | ✓ | ✓ | ✓ | — | — | ✓ |
-| Explicit heading IDs/classes — `# Title {#id .class}` | — | ✓ | ✓ | ✓ | — | — |
-| Alert boxes — `> [!NOTE]`, `> [!WARNING]` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Table of contents from document headings | Heading data | Rendered TOC | Rendered TOC | — | — | — |
-| **MDX — components and expressions mixed with Markdown** | | | | | | |
-| Recognize JSX, `{expressions}`, and imports/exports | Limited | Limited | Limited | — | — | — |
-| **Application integration** | | | | | | |
-| Inspect/transform the parsed document | Events | Tree (AST) | Tree (AST) | Events | Callbacks | Callbacks |
-| Customize generated output | Code hook / events | HTML hooks | HTML hooks | Event transforms | Renderer callbacks | Renderer callbacks |
-
-Math support preserves formula notation; an application supplies mathematical
-typesetting. “Custom tag” wiki links also need application-side routing/rendering.
-Frontmatter support extracts metadata text, rather than parsing YAML/TOML values.
-“Heading data” lets an application build a TOC; “Rendered TOC” includes HTML for
-an inline `[[toc]]` marker. Trees expose nested document nodes; events/callbacks
-expose elements in sequence. The three MDX entries cover bounded syntax handling,
-not a full MDX compiler or JavaScript runtime. Single-tilde strikethrough and
-subscript compete for the same syntax; enabling subscript gives it priority.
-
-### Optional writing syntax
-
-| Behavior | Rust `ParserOptions` | Node option | Default |
-| --- | --- | --- | --- |
-| `==marked text==` renders as `<mark>` | `highlight` | `highlight` | `false` |
-| `^[inline note]` creates a footnote | `inline_footnotes` | `inlineFootnotes` | `false` |
-| Resolve full, collapsed, and shortcut reference links/images | `allow_link_refs` | `allowLinkRefs` | `true` |
-
-Inline notes accept inline formatting and work independently of reference
-footnotes. Disabling reference links preserves definitions as visible Markdown;
-inline links and images continue to work. Marked text is separate from code
-syntax highlighting. [Rust and Node examples, syntax, and defaults](docs/optional-writing.md).
-
-The writing extensions remain off by default. Paired measurements found no
-material slowdown on representative documents with them disabled. Enabling them
-on documents without matching syntax still costs several percent, and literal
-marker-heavy inputs cost more. Disabling reference links can skip parsing work,
-but its benefit depends on the parser profile and changes the output of actual
-references. See the [measured costs and limitations](docs/reports/2026-09-15-optional-writing/README.md).
-
-### Other extension policies
-
-Reference footnotes have document-wide scope, including definitions in lists,
-block quotes, and Markdown blocks inside MDX components. References can precede
-their definitions. Code and raw HTML cannot define footnotes.
-
-V2 preserves authored punctuation. Automatic typography belongs in an optional,
-locale-aware document transform; the former English-oriented parser option has
-been removed. See the [typography decision](docs/typography.md).
-
-Enable `ParserOptions::front_matter` to extract a leading `---` (YAML) or `+++`
-(TOML) metadata block into `document.front_matter`. It exposes the format, raw
-content, and original source spans. The block is omitted from HTML and cannot
-define Markdown links or footnotes. The option is off in every preset.
-[Frontmatter syntax and Rust example](docs/front-matter.md).
-
-Enable `ParserOptions::line_comments` to omit `// note` source lines from HTML.
-Comments may have up to three leading spaces and do not separate paragraphs.
-Code blocks, raw HTML blocks, and explicitly prefixed lines such as `> // text`
-remain literal. The option is off in every preset.
-[Syntax, examples, and source-span behavior](docs/line-comments.md).
-
-V1 derives numeric column-width hints from delimiter dash counts. V2 instead
-supports table IDs/classes, inline captions, and generated `colgroup` columns
-whose widths are set in external CSS. Optional header-derived classes such
-as `col-name-netto-preis` use the heading slug rules and retain positional classes.
-Both versions use adjacent pipes for horizontal spans (`||` spans two columns).
-All V2 table extras are opt-in and off in every preset. The table-layout rows
-describe built-in handling of Markdown tables; raw HTML and custom rendering can
-provide additional layouts in any engine.
-[Syntax, options, and a runnable CSS example](docs/table-layout.md).
-
-## Correctness and compatibility
-
-The [second correction batch](docs/reports/2026-09-14-reference-compatibility/README.md)
-closes the seven cmark findings left after the
-[first fixes](docs/reports/2026-09-14-correctness-fixes/README.md). Strikethrough now
-uses the inline delimiter stack, Unicode URL bytes receive percent encoding,
-and one leading BOM is treated as an encoding marker with original spans preserved.
-
-| Check | Result |
-| --- | --- |
-| Explicit CommonMark 0.31.2 profile | 652/652 agree, without heading-ID exceptions |
-| Current GFM extension examples | 28/28 agree |
-| CRLF / CR variants | 1,304/1,304 agree with their LF controls |
-| Original cmark / cmark-gfm corpus | 106/106 agree |
-| Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | Both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, optional writing syntax, container references, and Rust convenience helpers |
-
-Agreement permits conservative HTML serialization equivalence; raw output and
-all mismatches remain in the report. The two reference exceptions have exact
-spec-correct HTML assertions, and the generic strict oracle still rejects them.
-The complete GFM website retains ten classified differences from global
-extension policies and older HTML-comment rules. MDX remains bounded syntax
-capture and static output. These finite suites do not prove correctness for
-arbitrary CommonMark, GFM, or MDX input.
-
-The [container-reference correction](docs/reports/2026-09-15-container-references/README.md)
-resolves the subsequent list-definition finding: reference definitions in list
-items and block quotes now apply document-wide, including forward references.
-Code and paragraph decoys remain literal, and the first definition wins across
-container boundaries. The [line-comment oracle](benchmarks/line-comments-oracle/README.md)
-now requires semantic agreement for all cases and both baseline probes.
-
-The [repeatable spec audit](benchmarks/compatibility-audit/README.md) and the
-[106-case live oracle](benchmarks/compatibility-audit/CMARK.md) pass their failure
-gates. The native comparison below reruns the corrected core with explicit
-syntax and renderer settings across all six engines.
-
-## Native engine comparison
-
-The current local cores, **v2 `e93394e` and v1 `4e15141`**, were rerun with
-explicit syntax and renderer flags on the original **57 documents (37–113,609
-UTF-8 bytes)**. Each scored column uses the same input set and equivalent HTML
-for every included engine. **Speed relative to v2: higher is faster; v2 = 1.00×.**
-
-| Engine | Fresh, 14 agreeing across six | Reuse, same 14 | Fresh, 50 agreeing across five | Reuse, same 50 |
-| --- | ---: | ---: | ---: | ---: |
-| Ferromark v2 | 1.00× | 1.00× | 1.00× | 1.00× |
-| OX-Content original | 1.00× | 0.98× | — | — |
-| Ferromark v1 | 0.71× | 0.71× | 0.53× | 0.54× |
-| md4c | 0.26× | 0.21× | 0.31× | 0.28× |
-| pulldown-cmark | 0.46× | 0.38× | 0.42× | 0.39× |
-| Bun native bun_md | 0.17× | 0.12× | 0.18× | 0.16× |
-
-On the all-six agreement subset, v2 runs at
-**1.000× OX's throughput fresh** and
-**1.018× with reuse**. On the broader
-five-engine subset it runs at 1.90× v1's speed
-fresh and 1.85× with reuse. These are measured
-corpus aggregates; ratios close to 1.00 are not evidence of a universal lead.
-
-The all-six subset contains ten comments and four plain-prose views. The broader
-five-engine subset also covers technical docs, linked encyclopedia excerpts,
-references, and READMEs. Both agreeing subsets span 37–80,966 bytes. OX has no
-score in the five-engine columns: its original renderer cannot disable heading
-IDs, callouts, inline TOCs, or fence metadata cleanup. Its 39 heading-ID-only
-differences are not normalized away. The seven cases outside five-engine
-agreement remain measured as diagnostics, including task CSS and link/content
-differences.
-
-All engines parse and render natively. The CommonMark lane disables optional
-syntax; the extension lane enables only **tables, strikethrough, and task lists**.
-It is not full GFM. Bare URL autolinking, footnotes, frontmatter, line comments,
-definition lists, MDX, and optional renderer extras are off where configurable.
-Raw HTML passes through; these explicit benchmark settings differ from library
-defaults.
-
-Fresh includes parser/renderer setup, complete processing, owned output, and
-destruction. Reuse retains state where the public API permits; Bun's native
-`bun_md` still uses its fresh owned-output API. No JavaScript, WASM, process
-startup, file I/O, or output normalization is timed. One macOS arm64 executable,
-one Rust compiler, shared mimalloc and the same pinned dependency lock; three
-process rounds with six rotating windows per round. Small differences on this
-shared workstation are not established significance.
-
-Selected groups, **fresh**, using only the five-engine agreement subset and
-the same speed scale:
-
-| Group, five-engine agreement | N | V1 | md4c | pulldown | Bun native |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| <512 B | 10 | 0.71× | 0.26× | 0.55× | 0.26× |
-| 32–128 KiB | 7 | 0.57× | 0.29× | 0.37× | 0.10× |
-| comments | 11 | 0.74× | 0.28× | 0.55× | 0.25× |
-| technical-docs | 21 | 0.51× | 0.35× | 0.40× | 0.18× |
-| plain-prose | 4 | 0.65× | 0.26× | 0.30× | 0.06× |
-
-
-[Full results and per-document timings](docs/reports/2026-09-15-native-arm/README.md),
-[exact flags](docs/reports/2026-09-15-native-arm/FLAGS.md), and
-[HTML differences](docs/reports/2026-09-15-native-arm/OUTPUT-REVIEW.md)
-include raw measurements, source hashes, and reproducible configuration.
-The [previous matched-flags run](docs/reports/2026-09-14-native-matched/README.md)
-and [original six-engine run](docs/reports/2026-09-14-native-engines/README.md)
-remain historical evidence. The [full 207-case before/after suite](docs/reports/2026-09-15-arm-full-suite/README.md)
-uses a separate harness and reports all four stages.
-
-The historical [two-engine broad Markdown comparison](docs/reports/2026-09-14-broad-markdown/INTERPRETATION.md)
-measures 57 cases from 37 bytes to 114 KB: short comments, real documentation,
-and Wikipedia-derived prose. It separates input size, content, output agreement,
-and fresh/reused lifecycles. [Full tables and raw data](docs/reports/2026-09-14-broad-markdown/README.md)
-and the [earlier synthetic diagnostic comparison](docs/reports/2026-09-13-current-ferromark/README.md)
-use the same pinned parser binaries.
-
-The source is MIT licensed; the original copyright notice is preserved in
-[LICENSE](LICENSE). CommonMark and GFM specification fixtures carry their own
-[CC-BY-SA attribution](crates/ferromark/tests/spec_fixtures/README.md).
-The [benchmark corpus sources](benchmarks/broad-comparison/README.md) retain their
-separate MIT, Apache, CC BY, or CC BY-SA licenses and attribution.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and required checks.
+The code is [MIT licensed](LICENSE); [source provenance](UPSTREAM.md) preserves
+upstream attribution. Specification fixtures and benchmark corpora retain their
+separate licenses.
 
 ### <a href="https://ferramenta.dev"><img src="https://raw.githubusercontent.com/sebastian-software/ferramenta/main/app/assets/brand/logo-light.svg" width="24" height="24" alt="" /> More from Ferramenta</a>
 

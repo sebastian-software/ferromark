@@ -1,0 +1,56 @@
+---
+title: Node.js Runtime and Deployment
+order: 5
+---
+
+# Node.js Runtime and Deployment
+
+The npm package uses a native addon. Production needs a supported Node.js
+runtime and the matching optional native package.
+
+## Supported environments
+
+- Node.js **22.12 or newer**; both ESM and CommonJS are supported.
+- macOS and Windows on x64 or arm64.
+- Linux on x64 or arm64 with glibc or musl, including Alpine.
+- GNU Linux binaries target glibc 2.17 or newer; Node.js itself may require a newer version.
+
+There is no browser/WASM fallback. Edge runtimes that cannot load Node native
+addons are unsupported. Keep Ferromark in server-side modules, and preserve its
+optional platform package when packaging a deployment. Build/install dependencies
+for the target OS, architecture, and libc rather than copying a local install.
+
+## Keep the event loop responsive
+
+Rendering is synchronous CPU work. Small renders can run in a request handler;
+move sustained document batches to worker threads when that work affects
+request latency. Create one reusable `Renderer` inside each worker. Measure
+with your own input and concurrency: the [native benchmark studies](/guide/benchmarks)
+do not measure a Node.js application's request latency.
+
+## Troubleshoot installation
+
+| Symptom                                    | What to check                                                                                                   |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Unsupported Node.js version                | Run `node --version`; upgrade to 22.12 or newer                                                                 |
+| Could not load the optional native package | Reinstall without `--omit=optional`; retain the package for the deployment platform in your lockfile and output |
+| Unsupported platform or architecture       | Check the environments above; no fallback renderer is bundled                                                   |
+| `ERR_DLOPEN_FAILED`                        | Read `error.cause` for the original loader message; check OS/architecture and shared libraries                  |
+
+On Windows, install or repair the Microsoft Visual C++ Redistributable. On GNU
+Linux, check glibc and shared-library requirements. On macOS, check architecture,
+OS compatibility, quarantine, and signing policy.
+
+The addon loads when constructing `Renderer` or making the first rendering call.
+Include an actual render in a deployment smoke test; importing the package alone
+does not verify native loading.
+
+## Input and API boundaries
+
+Input is limited to 4,294,967,294 UTF-8 bytes. Oversized input throws an
+`InvalidArg` native error. Unknown option names throw `TypeError`.
+
+The package exposes Markdown rendering, metadata, and highlighter helpers.
+`mdx: true` enables syntax capture and static island output; it does not compile
+or execute JavaScript. Parser nesting errors propagate to JavaScript. See the
+[shared limits and compatibility](/guide/rendering).

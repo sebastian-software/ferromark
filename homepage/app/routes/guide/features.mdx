@@ -1,44 +1,89 @@
 ---
-title: Features
+title: Markdown Syntax
+order: 4
 ---
 
-# Features
+# Markdown Syntax
 
-V2 exposes parsing and rendering separately, with an arena-allocated AST and
-source spans between them. The four core crates cover allocation, AST types,
-parsing, and HTML rendering. The `ferromark` facade re-exports their APIs and
-provides `to_html` and append helpers for direct HTML output.
+Ferromark supports CommonMark, GFM extensions, and opt-in publishing syntax.
+Enable features in [Rust](/rust/configuration) or [Node.js](/node/configuration).
+The [feature comparison](/guide/feature-comparison) records the reviewed capability
+inventory; [correctness checks](/guide/correctness) describe tested conformance.
 
-## Markdown profiles
+## Everyday Markdown and GFM
 
-`ParserOptions::commonmark()` and `HtmlRendererOptions::commonmark()` select
-specification-oriented CommonMark behavior. The matching `gfm_spec()` parser
-and `gfm()` renderer add GFM tables, task lists, strikethrough, autolinks, and
-tagfilter. Convenience `ParserOptions::gfm()` also enables footnotes.
+Headings, paragraphs, lists, links, emphasis, images, and fenced code form the
+CommonMark core. GFM adds pipe tables, checklists, strikethrough, and autolinks.
 
-## Optional syntax
+```text
+# Release notes
 
-Front matter, reference and inline footnotes, marked text, math, definition
-lists, superscript, subscript,
-line comments, wiki links, heading attributes, CJK emphasis, merged table
-cells, and table attributes are configurable. Source fixtures, conformance
-baselines, and compatibility corrections live alongside the code.
+- [x] Publish the docs
+- [ ] Check the examples
 
-Marked text (`==text==`) and inline notes (`^[note]`) default off. Reference
-links default on and can be disabled independently. See the
-[writing options, examples, and performance guidance](./quick-start#optional-writing-syntax).
+Read the [guide](/guide). ~~Outdated advice~~
+```
 
-## HTML rendering
+## Front matter and heading IDs
 
-Configure raw HTML handling, URL filtering, heading IDs, callouts, CSS-addressable table
-columns, TOC behavior, and source-span attributes in Rust.
-`HtmlRenderHooks` lets Rust consumers replace or wrap individual nodes.
-The native Node package offers `toHtml`, `toHtmlBuffer`, `Renderer`,
-`transform`, `toHtmlWithHighlighter`, and `transformWithHighlighter`.
+```text
+---
+title: Release notes
+draft: true
+---
 
-## Boundaries
+# Installation
+```
 
-V2 is a release candidate with a breaking Rust API. It does not include a
-JavaScript runtime, an MDX compiler, or the old v1 CLI. The Node API exposes a
-subset of the Rust renderer configuration; its TypeScript declarations are
-the authoritative option list. See [MDX](./mdx-examples) for its exact scope.
+Enable front-matter extraction to receive the exact text between leading `---`
+or `+++` delimiters. The engine does not parse YAML/TOML values. Headings can
+receive automatic IDs; optional heading attributes support explicit IDs/classes.
+See [front-matter boundaries](https://github.com/sebastian-software/ferromark/blob/main/docs/front-matter.md).
+
+## Tables you can style
+
+```text
+| Item | Net | Tax |
+| :--- | ---: | ---: |
+| Book | 20.00 | 1.40 |
+| Gift | Included ||
+
+: Prices *today* {#prices .price-list}
+```
+
+With table spans enabled, adjacent closing pipes merge horizontal cells. Table
+attributes attach the ID and classes to the table; captions require an ID or
+class. Generated colgroups expose positional classes such as `col-1` and optional
+header-derived classes such as `col-name-net`. Set widths in CSS. Delimiter dash
+counts do not produce numeric width hints in v2.
+
+See [table syntax, options, and CSS](https://github.com/sebastian-software/ferromark/blob/main/docs/table-layout.md).
+
+## Notes, marks, and callouts
+
+```text
+This is ==important==. A reference note.[^detail]
+An inline explanation.^[More context here.]
+
+[^detail]: The longer explanation.
+
+> [!NOTE]
+> A detail worth remembering.
+```
+
+Marked text and inline notes are independent options; inline notes do not require
+reference footnotes. Callouts format labeled block quotes. The application owns
+their styling. [Optional writing syntax](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md)
+explains defaults and edge cases.
+
+## Other extensions
+
+Definition lists, math notation, wiki links, superscript, subscript, line comments,
+and MDX syntax are configurable. Math notation needs downstream typesetting;
+wiki links need application routing. When subscript is enabled it takes priority
+over single-tilde strikethrough. Smart punctuation is outside the core.
+
+Line comments omit physical source lines beginning with `//` after at most three
+spaces; code and HTML blocks stay literal. [Line-comment rules](https://github.com/sebastian-software/ferromark/blob/main/docs/line-comments.md)
+describe source-position behavior. [MDX boundaries](/guide/mdx) distinguish syntax
+capture from compilation.
