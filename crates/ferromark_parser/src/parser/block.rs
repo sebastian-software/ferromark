@@ -298,6 +298,12 @@ impl<'a> Parser<'a> {
             self.position = content_end;
         }
 
+        // A paragraph has no block children to contribute to definition
+        // collection. Its boundary must still be parsed by the real grammar.
+        if self.phase == super::ParsePhase::Definitions {
+            return Ok(None);
+        }
+
         if LINE_COMMENTS
             && let Some(first_comment) = first_line_comment.filter(|&line| line < content_end)
         {

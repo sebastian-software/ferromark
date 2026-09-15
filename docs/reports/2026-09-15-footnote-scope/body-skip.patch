@@ -1,0 +1,200 @@
+--- a/crates/ferromark_parser/src/parser/footnote.rs
++++ b/crates/ferromark_parser/src/parser/footnote.rs
+@@ -8,7 +8,7 @@
+ //! literal text, as GFM specifies.
+ //!
+ //! Because references may appear before their definitions, the root
+-//! parser collects the label set in a pre-pass ([`Parser::build_footnote_labels`])
++//! parser collects the label set in a pre-pass ([`Parser::build_prepass`])
+ //! and shares it with sub-parsers, mirroring how link reference
+ //! definitions work.
+ 
+@@ -201,27 +201,27 @@
+                 .alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
+         let content_start = start + after_colon;
+         let body_len = definition_body_len(self, content_start);
+-        let body = dedent_body(
+-            self.allocator,
+-            &self.source[content_start..content_start + body_len],
+-            content_start,
+-        );
+-
+-        // The body is a full block context (paragraphs, lists, code), so
+-        // hand it to a sub-parser rather than treating it as inline text.
+-        let sub_doc = self
+-            .sub_parser_with_source_map(
+-                body.text,
+-                rustc_hash::FxHashSet::default(),
+-                &body.source_map,
+-            )
+-            .parse()?;
+-        let mut children = sub_doc.children;
+-        // Sub-parser spans are relative to the dedented body; map them
+-        // back onto the original source so downstream tooling keeps ranges.
+-        for child in &mut children {
+-            body.source_map.remap_node_spans(child);
+-        }
++        let raw_body = &self.source[content_start..content_start + body_len];
++        // Collection only needs nested definitions. Without the necessary
++        // closing label marker, this body cannot contribute any; the real
++        // document parse still validates and renders its complete content.
++        let children = if self.phase == super::ParsePhase::Definitions && !raw_body.contains("]:") {
++            ferromark_allocator::Vec::new_in(self.allocator.bump())
++        } else {
++            let body = dedent_body(self.allocator, raw_body, content_start);
++            let sub_doc = self
++                .sub_parser_with_source_map(
++                    body.text,
++                    rustc_hash::FxHashSet::default(),
++                    &body.source_map,
++                )
++                .parse()?;
++            let mut children = sub_doc.children;
++            for child in &mut children {
++                body.source_map.remap_node_spans(child);
++            }
++            children
++        };
+         let end = content_start + body_len;
+         self.position = end;
+ 
+--- a/crates/ferromark_parser/src/parser/prepass.rs
++++ b/crates/ferromark_parser/src/parser/prepass.rs
+@@ -1,9 +1,8 @@
+ //! Document-wide definition discovery.
+ //!
+ //! A cheap syntax-shape filter keeps ordinary documents out of collection.
+-//! Link definitions are collected by the real block grammar, so root and
+-//! container definitions share context and precedence rules. Footnote labels
+-//! retain their existing raw-line policy independently of link definitions.
++//! Link definitions and footnote labels are collected by the real block
++//! grammar, so root and container definitions share context and scope.
+ 
+ use std::rc::Rc;
+ use std::sync::LazyLock;
+@@ -11,9 +10,9 @@
+ use memchr::{memchr, memmem, memrchr2};
+ 
+ use super::Parser;
+-use super::footnote::{FootnoteLabels, normalize_footnote_label, parse_footnote_opener};
+-use super::line_scan::{line_end as scan_line_end, line_terminator_end};
+-use super::reference::{ReferenceMap, fence_open, is_fence_close};
++use super::footnote::FootnoteLabels;
++use super::line_scan::line_end as scan_line_end;
++use super::reference::ReferenceMap;
+ 
+ /// Three-byte fence-run searchers, built once for the process.
+ ///
+@@ -124,54 +123,17 @@
+         if !has_candidate {
+             return (None, None);
+         }
+-        let definitions = if self.options.allow_link_refs && has_link_candidate {
+-            self.collect_references()
++        let (definitions, labels) = if (self.options.allow_link_refs && has_link_candidate)
++            || (self.options.footnotes && self.source.contains("[^"))
++        {
++            self.collect_definitions()
+         } else {
+-            ReferenceMap::default()
++            (ReferenceMap::default(), FootnoteLabels::default())
+         };
+-        let mut labels = FootnoteLabels::default();
+-        if self.options.footnotes && self.source.contains("[^") {
+-            // Preserve the existing footnote scope. Every physical line was
+-            // already inspected independently of the reference scan's fence
+-            // and paragraph state; no link-grammar approximation is needed.
+-            let bytes = self.source.as_bytes();
+-            let mut pos = 0;
+-            let mut fence = None;
+-            while pos < bytes.len() {
+-                let end = scan_line_end(bytes, pos);
+-                footnote_scan_line(&self.source[pos..end], bytes[pos], &mut fence, &mut labels);
+-                pos = line_terminator_end(bytes, end);
+-            }
+-        }
+         (
+             (!definitions.is_empty()).then(|| Rc::new(definitions)),
+             (!labels.is_empty()).then(|| Rc::new(labels)),
+         )
+-    }
+-}
+-
+-/// One line of the footnote-label scan: raw-line fence tracking plus the
+-/// `[^label]:` opener check. Mirrors the former standalone footnote
+-/// pre-pass exactly (no quote stripping).
+-fn footnote_scan_line(
+-    line: &str,
+-    first: u8,
+-    foot_fence: &mut Option<(u8, usize)>,
+-    labels: &mut FootnoteLabels,
+-) {
+-    let raw_trimmed = line.trim_start_matches([' ', '\t']);
+-    if let Some((fence_byte, fence_len)) = *foot_fence {
+-        if is_fence_close(raw_trimmed, fence_byte, fence_len) {
+-            *foot_fence = None;
+-        }
+-    } else if let Some(open) = fence_open(raw_trimmed) {
+-        *foot_fence = Some(open);
+-    } else if matches!(first, b'[' | b' ') {
+-        // An opener starts with `[^` after at most three spaces, so only
+-        // these first bytes can begin one.
+-        if let Some((label, _)) = parse_footnote_opener(line) {
+-            labels.insert(normalize_footnote_label(label));
+-        }
+     }
+ }
+ 
+--- a/crates/ferromark_parser/src/parser/reference/collect.rs
++++ b/crates/ferromark_parser/src/parser/reference/collect.rs
+@@ -5,17 +5,25 @@
+ //! the temporary tree. The ordinary no-definition path never enters this pass.
+ use compact_str::CompactString;
+ use ferromark_allocator::Allocator;
+-use ferromark_ast::{Definition, Visit};
++use ferromark_ast::{Definition, FootnoteDefinition, Visit, walk_footnote_definition};
+ 
+ use super::{Parser, ReferenceDef, ReferenceMap};
+ use crate::ParserOptions;
++use crate::parser::footnote::FootnoteLabels;
+ 
+ struct Collector<'a> {
+     allocator: &'a Allocator,
+     definitions: ReferenceMap<'a>,
++    labels: FootnoteLabels,
+ }
+ 
+ impl<'a, 'tree> Visit<'tree> for Collector<'a> {
++    fn visit_footnote_definition(&mut self, definition: &FootnoteDefinition<'tree>) {
++        self.labels
++            .insert(CompactString::from(definition.identifier));
++        walk_footnote_definition(self, definition);
++    }
++
+     fn visit_definition(&mut self, definition: &Definition<'tree>) {
+         self.definitions
+             .entry(CompactString::from(definition.identifier))
+@@ -29,7 +37,7 @@
+ }
+ 
+ impl<'a> Parser<'a> {
+-    pub(in crate::parser) fn collect_references(&self) -> ReferenceMap<'a> {
++    pub(in crate::parser) fn collect_definitions(&self) -> (ReferenceMap<'a>, FootnoteLabels) {
+         let temporary = Allocator::new();
+         // Choose the collection phase at construction. Syntax options retain
+         // their real meaning throughout; no temporarily disabled options or
+@@ -46,12 +54,13 @@
+         let mut collector = Collector {
+             allocator: self.allocator,
+             definitions: ReferenceMap::default(),
++            labels: FootnoteLabels::default(),
+         };
+         if let Ok(document) = parser.parse_document() {
+             collector.visit_document(&document);
+         }
+         // If the block grammar rejects the document (for example depth), the
+         // real parse reports that error; no successful output uses this map.
+-        collector.definitions
++        (collector.definitions, collector.labels)
+     }
+ }
