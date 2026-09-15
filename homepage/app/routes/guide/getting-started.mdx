@@ -1,37 +1,33 @@
 ---
-title: Getting Started
+title: Documentation
+order: 1
 ---
 
-# Getting Started
+# Documentation
 
-Ferromark v2 lives in the Ferromark repository.
-It combines an OX-Content-derived arena AST with Ferromark features and optimizations.
-The first release candidate is `2.0.0-rc.1`. After publication, install it explicitly:
+import { PlatformChoices } from "../../components/platform-choices";
 
-```sh
-npm install ferromark@2.0.0-rc.1
-cargo add ferromark@=2.0.0-rc.1
-```
+Ferromark v2 is in release-candidate testing. [Read the migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md) before upgrading.
 
-The npm `next` channel selects release candidates; `latest` stays on the stable
-release. To build from source:
+Ferromark turns Markdown into HTML for publishing tools, documentation sites,
+and applications. Start with the Rust crate, or use the Node.js bindings from
+JavaScript and TypeScript. The shared reference covers syntax and rendering behavior.
 
-```sh
-git clone https://github.com/sebastian-software/ferromark.git
-cd ferromark
-cargo test --workspace --all-features --locked
-```
+<PlatformChoices />
 
-The repository toolchain selects the minimum Rust version from the workspace.
-For Node development, use Node.js 22.13.0 or newer and the pinned pnpm version:
+For shell scripts, use the [CLI guide](/guide/cli).
 
-```sh
-cd node
-pnpm install --frozen-lockfile
-pnpm build
-pnpm test
-```
+## Shared reference
 
-The native package supports Node.js 22.12.0 and newer. CI builds native packages
-for macOS, Windows, and glibc/musl Linux on x64 and arm64.
-See [Quick Start](./quick-start) for local Rust and Node examples.
+- [Markdown configuration](/guide/configuration): syntax choices and defaults.
+- [Markdown syntax](/guide/features): author-facing examples and extensions.
+- [Content pipelines](/guide/pipelines): metadata, headings, links, and presentation.
+- [Rendering and trust](/guide/rendering): HTML policy, compatibility, and limits.
+- [MDX boundaries](/guide/mdx): what MDX integration does and which API exposes it.
+
+## Engineering and evidence
+
+[Architecture](/guide/architecture), [parser benchmarks](/guide/benchmarks), and
+[runtime profiles](/guide/workflow-benchmarks) explain the implementation
+and measured trade-offs. [Explore performance reports](/guide/benchmark-explorer)
+to choose the relevant study.

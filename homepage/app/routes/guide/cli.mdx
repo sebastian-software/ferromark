@@ -1,0 +1,23 @@
+---
+title: Command Line
+order: 14
+---
+
+# Command Line
+
+Ferromark v2 ships a Rust library and Node.js bindings. It does not ship the v1
+`ferromark` command. Use an application script or the retained stdin example.
+
+## Render stdin from a repository checkout
+
+```sh
+printf 'Hello, **world**!\n' | cargo run --quiet --locked -p ferromark --example render_stdin
+```
+
+The example follows Rust rendering defaults, including raw HTML passthrough.
+For untrusted input, build a small wrapper with `sanitize: true` using the
+[Rust configuration guide](/rust/configuration).
+
+For a JavaScript script, start with the [Node.js guide](/node/getting-started).
+Read [v2 migration](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md)
+before replacing an existing CLI workflow.

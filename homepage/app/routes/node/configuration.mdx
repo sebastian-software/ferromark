@@ -1,0 +1,90 @@
+---
+title: Configure Node.js Rendering
+order: 2
+---
+
+# Configure Node.js Rendering
+
+import { RuntimeSwitch } from "../../components/runtime-switch";
+
+<RuntimeSwitch topic="configuration" />
+
+Pass an options object to a render function, or set it once when constructing a
+`Renderer`. Use camelCase property names. Unknown keys throw a `TypeError` so
+spelling mistakes cannot silently change your output.
+
+## Enable the features your content uses
+
+```ts
+import { toHtml, type Options } from "ferromark";
+
+const options = {
+  frontMatter: true,
+  headingIds: true,
+  footnotes: true,
+  tableColgroup: true,
+  tableColumnNames: true,
+  tableAttributes: true,
+} satisfies Options;
+
+const html = toHtml("# Notes\n\nA detail.[^1]\n\n[^1]: More context.", options);
+```
+
+Omitted values use the package defaults. There are no named preset constructors
+in the Node.js API; configure the individual options directly. To add bare URL
+and email detection to the default GFM extensions, set `autolinkLiterals: true`.
+
+## Option reference
+
+All properties are optional. Syntax examples and output semantics live in the
+[shared Markdown guide](/guide/features).
+
+| Option              | Default       | Purpose                                                                |
+| ------------------- | ------------- | ---------------------------------------------------------------------- |
+| `renderPolicy`      | `'untrusted'` | Escape raw HTML and check URL schemes; `'trusted'` permits passthrough |
+| `allowHtml`         | `true`        | Permit raw HTML in trusted output; false escapes it                    |
+| `allowLinkRefs`     | `true`        | Resolve reference-style links                                          |
+| `tables`            | `true`        | GFM pipe tables                                                        |
+| `mergedTableCells`  | `false`       | Horizontal cell spans; requires `tables`                               |
+| `strikethrough`     | `true`        | Double-tilde strikethrough                                             |
+| `highlight`         | `false`       | Highlight markup                                                       |
+| `superscript`       | `false`       | Superscript markup                                                     |
+| `subscript`         | `false`       | Subscript markup                                                       |
+| `taskLists`         | `true`        | Task-list checkboxes                                                   |
+| `autolinkLiterals`  | `false`       | Bare URL, www, and email links                                         |
+| `disallowedRawHtml` | `true`        | GFM tag filter in trusted mode                                         |
+| `footnotes`         | `false`       | Reference footnotes                                                    |
+| `inlineFootnotes`   | `false`       | Inline footnotes                                                       |
+| `frontMatter`       | `false`       | Extract leading YAML/TOML-style front matter                           |
+| `headingIds`        | `true`        | Generate heading IDs                                                   |
+| `math`              | `false`       | Inline and display math markup                                         |
+| `callouts`          | `true`        | GitHub-style note/warning callouts                                     |
+| `definitionLists`   | `false`       | Terms and descriptions                                                 |
+| `lineComments`      | `false`       | Omit physical-line-start source comments                               |
+| `linkBasePath`      | unset         | Enable site routing for links, images, raw HTML URLs, and .md paths    |
+| `tableAttributes`   | `false`       | Table IDs, CSS classes, and captions                                   |
+| `tableColgroup`     | `false`       | CSS-addressable colgroup elements                                      |
+| `tableColumnNames`  | `false`       | Header-derived column classes; requires tableColgroup                  |
+| `headingAttributes` | `false`       | Explicit heading IDs and classes                                       |
+| `wikiLinks`         | `false`       | Wiki-link syntax                                                       |
+| `cjkEmphasis`       | `false`       | CJK emphasis rules                                                     |
+| `mdx`               | `false`       | MDX syntax capture and static island output                            |
+
+The [published TypeScript declarations](https://github.com/sebastian-software/ferromark/blob/main/node/ferromark/index.d.mts)
+are the complete API contract and power editor autocomplete.
+
+## Preserve trusted HTML
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml('<span class="note">Internal note</span>', {
+  renderPolicy: "trusted",
+});
+```
+
+Use this only for content you trust. It also permits arbitrary URL schemes.
+The default `disallowedRawHtml` filter still removes GFM-disallowed tags; it is
+not an HTML sanitizer. See [rendering and trust](/guide/rendering).
+
+Next: [HTML, metadata, and reusable renderers](/node/pipelines).

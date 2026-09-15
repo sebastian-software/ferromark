@@ -1,0 +1,51 @@
+---
+title: Start with Rust
+order: 1
+---
+
+# Start with Rust
+
+import { RuntimeSwitch } from "../../components/runtime-switch";
+
+<RuntimeSwitch topic="getting-started" />
+
+Ferromark is an arena-allocated Markdown parser and HTML renderer. The Rust crate
+provides direct HTML helpers and an AST API for applications that need document
+structure. Requires **Rust 1.95 or newer**.
+
+## Install the release candidate
+
+```sh
+cargo add ferromark@=2.0.0-rc.1
+```
+
+V2 is in release-candidate testing and has a breaking API change from v1.
+Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md).
+
+Save this in `src/main.rs` and run `cargo run`:
+
+```rust
+fn main() -> Result<(), ferromark::ParseError> {
+    let html = ferromark::to_html("Hello, **world**!")?;
+    assert_eq!(html, "<p>Hello, <strong>world</strong>!</p>\n");
+    println!("{html}");
+    Ok(())
+}
+```
+
+Rust defaults preserve raw HTML. For untrusted Markdown, explicitly set
+`HtmlRendererOptions { sanitize: true, ..Default::default() }` with
+`to_html_with_options` as shown in [configuration](/rust/configuration).
+
+## Choose your API
+
+| Your task                               | API                                              |
+| --------------------------------------- | ------------------------------------------------ |
+| Render one document                     | `to_html()` → `Result<String, ParseError>`       |
+| Select syntax and rendering policy      | `to_html_with_options()`                         |
+| Append to an existing string            | `to_html_into()` / `to_html_into_with_options()` |
+| Inspect front matter or transform nodes | `Allocator` + `Parser` + `HtmlRenderer`          |
+| Customize HTML output                   | `HtmlRenderHooks`                                |
+
+Continue with [configuration](/rust/configuration) and [content pipelines](/rust/pipelines).
+The [API reference](https://docs.rs/ferromark/2.0.0-rc.1/ferromark/) lists all types and methods.
