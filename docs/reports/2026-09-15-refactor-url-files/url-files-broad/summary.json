@@ -1,0 +1,216 @@
+[
+  {
+    "case": "rotating-commonmark",
+    "stage": "fresh",
+    "members": [
+      "guard-angle-link",
+      "wiki-rainbow-first-paragraph",
+      "wiki-rainbow-lead",
+      "wiki-rainbow-article-body",
+      "wiki-rainbow-plain-prose",
+      "wiki-tea-first-paragraph",
+      "wiki-tea-lead",
+      "wiki-tea-article-body",
+      "wiki-tea-plain-prose",
+      "wiki-chess-first-paragraph",
+      "wiki-chess-lead",
+      "wiki-chess-article-body",
+      "wiki-chess-plain-prose",
+      "wiki-volcano-first-paragraph",
+      "wiki-volcano-lead",
+      "wiki-volcano-article-body",
+      "wiki-volcano-plain-prose"
+    ],
+    "ratio": 1.0026732531934128,
+    "round_ratios": [
+      1.0026732531934128,
+      1.0067381895234124,
+      0.9992710804437713
+    ],
+    "before_ns": 452905.2734375,
+    "after_ns": 455747.71875
+  },
+  {
+    "case": "rotating-commonmark",
+    "stage": "reuse",
+    "members": [
+      "guard-angle-link",
+      "wiki-rainbow-first-paragraph",
+      "wiki-rainbow-lead",
+      "wiki-rainbow-article-body",
+      "wiki-rainbow-plain-prose",
+      "wiki-tea-first-paragraph",
+      "wiki-tea-lead",
+      "wiki-tea-article-body",
+      "wiki-tea-plain-prose",
+      "wiki-chess-first-paragraph",
+      "wiki-chess-lead",
+      "wiki-chess-article-body",
+      "wiki-chess-plain-prose",
+      "wiki-volcano-first-paragraph",
+      "wiki-volcano-lead",
+      "wiki-volcano-article-body",
+      "wiki-volcano-plain-prose"
+    ],
+    "ratio": 1.0040005818418836,
+    "round_ratios": [
+      1.0016831517721583,
+      1.005584908484838,
+      1.0040005818418836
+    ],
+    "before_ns": 445412.109375,
+    "after_ns": 445695.640625
+  },
+  {
+    "case": "rotating-gfm",
+    "stage": "fresh",
+    "members": [
+      "comment-ack",
+      "comment-question",
+      "comment-review",
+      "comment-links",
+      "comment-checklist",
+      "comment-quote",
+      "comment-unicode",
+      "comment-inline-code",
+      "comment-reproduction",
+      "comment-table",
+      "comment-review-long",
+      "comment-incident",
+      "legacy-contributing",
+      "legacy-node-ferromark-readme",
+      "legacy-docs-migration-0-2",
+      "legacy-docs-migration-0-3",
+      "legacy-docs-migration-0-4",
+      "legacy-docs-migration-0-8",
+      "legacy-docs-releasing",
+      "legacy-docs-readme-theme",
+      "legacy-docs-markdown-extensions",
+      "legacy-docs-mdx",
+      "legacy-docs-readme",
+      "legacy-docs-adr-readme-theme-composition",
+      "rust-book-ch03-04-comments",
+      "rust-book-appendix-02-operators",
+      "rust-book-ch00-00-introduction",
+      "rust-book-ch17-00-async-await",
+      "vue-docs-ways-of-using-vue",
+      "vue-docs-suspense",
+      "vue-docs-slots",
+      "vue-docs-reactivity-in-depth",
+      "vite-docs-philosophy",
+      "vite-docs-performance",
+      "vite-docs-api-plugin",
+      "vite-docs-features",
+      "typescript-handbook-the-handbook",
+      "typescript-handbook-advanced-types",
+      "typescript-handbook-compiler-options",
+      "typescript-handbook-typescript-5-0"
+    ],
+    "ratio": 0.9979030312085889,
+    "round_ratios": [
+      1.007144010136057,
+      0.9968149088948126,
+      0.9979030312085889
+    ],
+    "before_ns": 719247.8333333334,
+    "after_ns": 714894.96875
+  },
+  {
+    "case": "rotating-gfm",
+    "stage": "reuse",
+    "members": [
+      "comment-ack",
+      "comment-question",
+      "comment-review",
+      "comment-links",
+      "comment-checklist",
+      "comment-quote",
+      "comment-unicode",
+      "comment-inline-code",
+      "comment-reproduction",
+      "comment-table",
+      "comment-review-long",
+      "comment-incident",
+      "legacy-contributing",
+      "legacy-node-ferromark-readme",
+      "legacy-docs-migration-0-2",
+      "legacy-docs-migration-0-3",
+      "legacy-docs-migration-0-4",
+      "legacy-docs-migration-0-8",
+      "legacy-docs-releasing",
+      "legacy-docs-readme-theme",
+      "legacy-docs-markdown-extensions",
+      "legacy-docs-mdx",
+      "legacy-docs-readme",
+      "legacy-docs-adr-readme-theme-composition",
+      "rust-book-ch03-04-comments",
+      "rust-book-appendix-02-operators",
+      "rust-book-ch00-00-introduction",
+      "rust-book-ch17-00-async-await",
+      "vue-docs-ways-of-using-vue",
+      "vue-docs-suspense",
+      "vue-docs-slots",
+      "vue-docs-reactivity-in-depth",
+      "vite-docs-philosophy",
+      "vite-docs-performance",
+      "vite-docs-api-plugin",
+      "vite-docs-features",
+      "typescript-handbook-the-handbook",
+      "typescript-handbook-advanced-types",
+      "typescript-handbook-compiler-options",
+      "typescript-handbook-typescript-5-0"
+    ],
+    "ratio": 0.9965616332813553,
+    "round_ratios": [
+      0.9931237576623223,
+      1.009911421154,
+      0.9965616332813553
+    ],
+    "before_ns": 697772.5729166666,
+    "after_ns": 697127.1666666666
+  },
+  {
+    "case": "complete-suite",
+    "stage": "fresh",
+    "ratio": 0.9987454166475779,
+    "rounds": [
+      {
+        "before_ns": 1175751.6276041665,
+        "after_ns": 1168662.0104166665,
+        "ratio": 0.9939701404437377
+      },
+      {
+        "before_ns": 1170828.5598958335,
+        "after_ns": 1170642.6875,
+        "ratio": 0.9998412471285719
+      },
+      {
+        "before_ns": 1175801.2109375,
+        "after_ns": 1174326.0703125,
+        "ratio": 0.9987454166475779
+      }
+    ]
+  },
+  {
+    "case": "complete-suite",
+    "stage": "reuse",
+    "ratio": 1.004872452564201,
+    "rounds": [
+      {
+        "before_ns": 1149329.75,
+        "after_ns": 1154929.8046875,
+        "ratio": 1.004872452564201
+      },
+      {
+        "before_ns": 1135700.6302083335,
+        "after_ns": 1142170.9010416665,
+        "ratio": 1.0056971623165747
+      },
+      {
+        "before_ns": 1143184.6822916665,
+        "after_ns": 1141434.1354166665,
+        "ratio": 0.9984687103474036
+      }
+    ]
+  }
+]

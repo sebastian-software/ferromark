@@ -22,6 +22,8 @@ def corpus():
         'image-alt': '![plain](/image.png) ![**bold** and `code` &amp; [link](/url)](/image.png "title") ![missing][unknown] !literal\n\n',
         'balanced-brackets': '[outer [inner] `]` <https://example.com/a]b>](target.md) ![a [b] c](/image.png) Text ^[note with `]` and [link](/url)].\n\n',
         'unclosed-delimiters': ('![open [link {expression ' * 16) + '\n\n',
+        'url-unicode': '[Unicode](<https://例.example/中?q=é&x=🙂>) [encoded](/path%20name?q=a&b=c) ![image](<image é.png>)\n\n',
+        'url-ipv6': '[host](<https://[::1]:8080/a[b]?q=[x]&v=1>) [userinfo](<https://u:p@[2001:db8::1]/中>) [invalid](<https://[not-ipv6]/[x]>)\n\n',
         'links': '[same](doc.md "title") **[web](https://example.com/path?q=1&x=2)** [unsafe](javascript:bad) ![image](image.md)\n\n',
     }
     cases = []

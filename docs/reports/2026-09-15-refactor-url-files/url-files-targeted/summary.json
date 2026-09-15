@@ -1,0 +1,582 @@
+[
+  {
+    "case": "nested-spans",
+    "stage": "fresh",
+    "members": [
+      "nested-spans"
+    ],
+    "ratio": 1.0084024139080559,
+    "round_ratios": [
+      1.0084024139080559,
+      1.0069701189186826,
+      1.0142781818835456
+    ],
+    "before_ns": 62081.16369047619,
+    "after_ns": 62584.635416666664
+  },
+  {
+    "case": "nested-spans",
+    "stage": "reuse",
+    "members": [
+      "nested-spans"
+    ],
+    "ratio": 1.0043742455462152,
+    "round_ratios": [
+      1.0037335265468785,
+      1.0043742455462152,
+      1.005031568924264
+    ],
+    "before_ns": 60992.25,
+    "after_ns": 61256.075892857145
+  },
+  {
+    "case": "jsx-spans",
+    "stage": "fresh",
+    "members": [
+      "jsx-spans"
+    ],
+    "ratio": 1.0212939716056277,
+    "round_ratios": [
+      1.0212939716056277,
+      1.0229663989139044,
+      1.011710984460201
+    ],
+    "before_ns": 105893.01302083333,
+    "after_ns": 108147.89583333333
+  },
+  {
+    "case": "jsx-spans",
+    "stage": "reuse",
+    "members": [
+      "jsx-spans"
+    ],
+    "ratio": 1.0163324567628464,
+    "round_ratios": [
+      1.0148241889133496,
+      1.0163324567628464,
+      1.0171141841537614
+    ],
+    "before_ns": 104386.609375,
+    "after_ns": 106126.84375
+  },
+  {
+    "case": "table-spans",
+    "stage": "fresh",
+    "members": [
+      "table-spans"
+    ],
+    "ratio": 1.0087792098401471,
+    "round_ratios": [
+      1.004599587337584,
+      1.0087792098401471,
+      1.0130062278489909
+    ],
+    "before_ns": 97008.81490384616,
+    "after_ns": 97606.67067307692
+  },
+  {
+    "case": "table-spans",
+    "stage": "reuse",
+    "members": [
+      "table-spans"
+    ],
+    "ratio": 1.003953160561597,
+    "round_ratios": [
+      1.0017882234244735,
+      1.003953160561597,
+      1.0194615669770208
+    ],
+    "before_ns": 95646.85491071429,
+    "after_ns": 96868.38942307692
+  },
+  {
+    "case": "normalized-spans",
+    "stage": "fresh",
+    "members": [
+      "normalized-spans"
+    ],
+    "ratio": 1.0090966899406644,
+    "round_ratios": [
+      1.0095987105506063,
+      1.0090966899406644,
+      1.0061808772410286
+    ],
+    "before_ns": 38220.56439393939,
+    "after_ns": 38438.643939393936
+  },
+  {
+    "case": "normalized-spans",
+    "stage": "reuse",
+    "members": [
+      "normalized-spans"
+    ],
+    "ratio": 1.0091354388850868,
+    "round_ratios": [
+      1.0102136699419249,
+      1.008717542665671,
+      1.0091354388850868
+    ],
+    "before_ns": 36755.24553571428,
+    "after_ns": 37041.20680147059
+  },
+  {
+    "case": "root-references",
+    "stage": "fresh",
+    "members": [
+      "root-references"
+    ],
+    "ratio": 0.9982599666202584,
+    "round_ratios": [
+      0.9958531548548432,
+      0.9982599666202584,
+      1.0013151738085175
+    ],
+    "before_ns": 44770.786830357145,
+    "after_ns": 44876.11607142857
+  },
+  {
+    "case": "root-references",
+    "stage": "reuse",
+    "members": [
+      "root-references"
+    ],
+    "ratio": 1.0067965186570158,
+    "round_ratios": [
+      1.0067965186570158,
+      0.9983795500366762,
+      1.0104281895403804
+    ],
+    "before_ns": 44155.93534482759,
+    "after_ns": 44258.93426724138
+  },
+  {
+    "case": "container-references",
+    "stage": "fresh",
+    "members": [
+      "container-references"
+    ],
+    "ratio": 1.0075380336403432,
+    "round_ratios": [
+      1.0075380336403432,
+      1.0092010257485076,
+      1.0069682642707076
+    ],
+    "before_ns": 62576.822916666664,
+    "after_ns": 63087.7609375
+  },
+  {
+    "case": "container-references",
+    "stage": "reuse",
+    "members": [
+      "container-references"
+    ],
+    "ratio": 1.0110495232738521,
+    "round_ratios": [
+      1.0110495232738521,
+      1.0151260325225164,
+      1.0057491791766822
+    ],
+    "before_ns": 61518.84821428572,
+    "after_ns": 62328.1875
+  },
+  {
+    "case": "fenced-decoys",
+    "stage": "fresh",
+    "members": [
+      "fenced-decoys"
+    ],
+    "ratio": 0.9766115908929389,
+    "round_ratios": [
+      0.9843088494703005,
+      0.9766115908929389,
+      0.9722864023286243
+    ],
+    "before_ns": 24573.733455882353,
+    "after_ns": 24039.463341346152
+  },
+  {
+    "case": "fenced-decoys",
+    "stage": "reuse",
+    "members": [
+      "fenced-decoys"
+    ],
+    "ratio": 0.9730191830019073,
+    "round_ratios": [
+      0.9730191830019073,
+      0.9741089325419973,
+      0.9725830659944115
+    ],
+    "before_ns": 24217.6484375,
+    "after_ns": 23553.67476851852
+  },
+  {
+    "case": "footnote-labels",
+    "stage": "fresh",
+    "members": [
+      "footnote-labels"
+    ],
+    "ratio": 1.019246659041316,
+    "round_ratios": [
+      1.019636161782233,
+      1.0128342226152571,
+      1.019246659041316
+    ],
+    "before_ns": 39997.4365234375,
+    "after_ns": 40726.14213709677
+  },
+  {
+    "case": "footnote-labels",
+    "stage": "reuse",
+    "members": [
+      "footnote-labels"
+    ],
+    "ratio": 0.9949893365153173,
+    "round_ratios": [
+      1.0004257156770564,
+      0.9930247787880172,
+      0.9949893365153173
+    ],
+    "before_ns": 38649.26609848485,
+    "after_ns": 38456.75473484849
+  },
+  {
+    "case": "image-alt",
+    "stage": "fresh",
+    "members": [
+      "image-alt"
+    ],
+    "ratio": 1.0111093987087814,
+    "round_ratios": [
+      1.010826783504348,
+      1.0111093987087814,
+      1.0171292186259786
+    ],
+    "before_ns": 37966.856060606064,
+    "after_ns": 38500.59185606061
+  },
+  {
+    "case": "image-alt",
+    "stage": "reuse",
+    "members": [
+      "image-alt"
+    ],
+    "ratio": 1.0208743958743958,
+    "round_ratios": [
+      1.0110453140301274,
+      1.0208743958743958,
+      1.0244169147094822
+    ],
+    "before_ns": 37343.903492647056,
+    "after_ns": 37981.92803030303
+  },
+  {
+    "case": "balanced-brackets",
+    "stage": "fresh",
+    "members": [
+      "balanced-brackets"
+    ],
+    "ratio": 1.0127949119908692,
+    "round_ratios": [
+      1.0208434638966484,
+      1.0127949119908692,
+      1.011386774161994
+    ],
+    "before_ns": 73245.87673611111,
+    "after_ns": 74391.92647058824
+  },
+  {
+    "case": "balanced-brackets",
+    "stage": "reuse",
+    "members": [
+      "balanced-brackets"
+    ],
+    "ratio": 1.0161488481505796,
+    "round_ratios": [
+      1.0161488481505796,
+      1.0183376698498818,
+      0.9965354243438033
+    ],
+    "before_ns": 70801.72222222222,
+    "after_ns": 71376.59201388889
+  },
+  {
+    "case": "unclosed-delimiters",
+    "stage": "fresh",
+    "members": [
+      "unclosed-delimiters"
+    ],
+    "ratio": 1.0503770079727843,
+    "round_ratios": [
+      1.049801110399885,
+      1.0511942295180363,
+      1.0503770079727843
+    ],
+    "before_ns": 87559.11458333333,
+    "after_ns": 92077.47321428571
+  },
+  {
+    "case": "unclosed-delimiters",
+    "stage": "reuse",
+    "members": [
+      "unclosed-delimiters"
+    ],
+    "ratio": 1.0504737223021379,
+    "round_ratios": [
+      1.0496672100654472,
+      1.0543601408436212,
+      1.0504737223021379
+    ],
+    "before_ns": 86874.73958333333,
+    "after_ns": 91443.08035714286
+  },
+  {
+    "case": "url-unicode",
+    "stage": "fresh",
+    "members": [
+      "url-unicode"
+    ],
+    "ratio": 1.0120794353688338,
+    "round_ratios": [
+      1.0120794353688338,
+      1.011096778548627,
+      1.015135989603184
+    ],
+    "before_ns": 27361.809103260868,
+    "after_ns": 27575.775815217392
+  },
+  {
+    "case": "url-unicode",
+    "stage": "reuse",
+    "members": [
+      "url-unicode"
+    ],
+    "ratio": 1.0116654358720143,
+    "round_ratios": [
+      1.0060183183498077,
+      1.015175826611982,
+      1.0116654358720143
+    ],
+    "before_ns": 26825.49268617021,
+    "after_ns": 27179.885869565216
+  },
+  {
+    "case": "url-ipv6",
+    "stage": "fresh",
+    "members": [
+      "url-ipv6"
+    ],
+    "ratio": 1.0101774617361314,
+    "round_ratios": [
+      1.0101774617361314,
+      1.0060185965452584,
+      1.0164340051167293
+    ],
+    "before_ns": 49628.65625,
+    "after_ns": 50133.75
+  },
+  {
+    "case": "url-ipv6",
+    "stage": "reuse",
+    "members": [
+      "url-ipv6"
+    ],
+    "ratio": 1.0054613762465892,
+    "round_ratios": [
+      1.0035179950423527,
+      1.0108718907209875,
+      1.0054613762465892
+    ],
+    "before_ns": 49443.810096153844,
+    "after_ns": 49708.283653846156
+  },
+  {
+    "case": "links",
+    "stage": "fresh",
+    "members": [
+      "links"
+    ],
+    "ratio": 1.0118945004155353,
+    "round_ratios": [
+      1.0124471826275578,
+      1.0093178032902423,
+      1.0118945004155353
+    ],
+    "before_ns": 30838.319359756097,
+    "after_ns": 31156.028201219513
+  },
+  {
+    "case": "links",
+    "stage": "reuse",
+    "members": [
+      "links"
+    ],
+    "ratio": 1.0093398390485235,
+    "round_ratios": [
+      1.0151801374673597,
+      1.0093398390485235,
+      0.9998085220060717
+    ],
+    "before_ns": 30047.464285714286,
+    "after_ns": 30275.453125
+  },
+  {
+    "case": "configured-links",
+    "stage": "fresh",
+    "members": [
+      "configured-links"
+    ],
+    "ratio": 1.0159709717283179,
+    "round_ratios": [
+      1.0159709717283179,
+      1.010768284335903,
+      1.0171268285718198
+    ],
+    "before_ns": 83266.68359375,
+    "after_ns": 84608.76875
+  },
+  {
+    "case": "configured-links",
+    "stage": "reuse",
+    "members": [
+      "configured-links"
+    ],
+    "ratio": 1.0101841149653494,
+    "round_ratios": [
+      1.0027652965743208,
+      1.0108218718391146,
+      1.0101841149653494
+    ],
+    "before_ns": 81918.130859375,
+    "after_ns": 82752.1171875
+  },
+  {
+    "case": "rotating-extended",
+    "stage": "fresh",
+    "members": [
+      "nested-spans",
+      "jsx-spans",
+      "table-spans",
+      "normalized-spans",
+      "root-references",
+      "container-references",
+      "fenced-decoys",
+      "footnote-labels",
+      "image-alt",
+      "balanced-brackets",
+      "unclosed-delimiters",
+      "url-unicode",
+      "url-ipv6",
+      "links"
+    ],
+    "ratio": 1.0242991610736083,
+    "round_ratios": [
+      1.017509176076614,
+      1.0242991610736083,
+      1.027645621070753
+    ],
+    "before_ns": 796602.21875,
+    "after_ns": 809680.984375
+  },
+  {
+    "case": "rotating-extended",
+    "stage": "reuse",
+    "members": [
+      "nested-spans",
+      "jsx-spans",
+      "table-spans",
+      "normalized-spans",
+      "root-references",
+      "container-references",
+      "fenced-decoys",
+      "footnote-labels",
+      "image-alt",
+      "balanced-brackets",
+      "unclosed-delimiters",
+      "url-unicode",
+      "url-ipv6",
+      "links"
+    ],
+    "ratio": 1.0126511196078627,
+    "round_ratios": [
+      1.0157059137223263,
+      1.0112758840885643,
+      1.0126511196078627
+    ],
+    "before_ns": 783369.140625,
+    "after_ns": 791878.90625
+  },
+  {
+    "case": "rotating-link-policy",
+    "stage": "fresh",
+    "members": [
+      "configured-links"
+    ],
+    "ratio": 1.0063531254217761,
+    "round_ratios": [
+      1.0093406761682595,
+      1.0008004371789467,
+      1.0063531254217761
+    ],
+    "before_ns": 83394.53125,
+    "after_ns": 84176.99791666666
+  },
+  {
+    "case": "rotating-link-policy",
+    "stage": "reuse",
+    "members": [
+      "configured-links"
+    ],
+    "ratio": 1.0031599900597095,
+    "round_ratios": [
+      1.0031599900597095,
+      0.996555749680151,
+      1.0077400011940525
+    ],
+    "before_ns": 82076.009765625,
+    "after_ns": 82604.736328125
+  },
+  {
+    "case": "complete-suite",
+    "stage": "fresh",
+    "ratio": 1.02118474157806,
+    "rounds": [
+      {
+        "before_ns": 882352.462890625,
+        "after_ns": 893308.4979166667,
+        "ratio": 1.0124168464268226
+      },
+      {
+        "before_ns": 879996.75,
+        "after_ns": 898879.2489583334,
+        "ratio": 1.0214574644262417
+      },
+      {
+        "before_ns": 875326.822265625,
+        "after_ns": 893870.3947916667,
+        "ratio": 1.02118474157806
+      }
+    ]
+  },
+  {
+    "case": "complete-suite",
+    "stage": "reuse",
+    "ratio": 1.0105673770884454,
+    "rounds": [
+      {
+        "before_ns": 865363.119140625,
+        "after_ns": 876036.376953125,
+        "ratio": 1.0123338487351985
+      },
+      {
+        "before_ns": 868854.412109375,
+        "after_ns": 874614.75,
+        "ratio": 1.0066298079521059
+      },
+      {
+        "before_ns": 865285.5625,
+        "after_ns": 874429.361328125,
+        "ratio": 1.0105673770884454
+      }
+    ]
+  }
+]
