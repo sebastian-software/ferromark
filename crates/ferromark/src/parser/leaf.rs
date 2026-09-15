@@ -2,7 +2,7 @@ use crate::allocator::Vec as ArenaVec;
 use crate::ast::{Node, Span};
 
 use super::Parser;
-use super::line_scan::{line_end, next_line_start};
+use super::line_scan::{line_end as line_end_scan, line_terminator_end};
 use crate::parser::error::ParseResult;
 
 impl<'a> Parser<'a> {
@@ -98,9 +98,10 @@ impl<'a> Parser<'a> {
 
         let content_start = self.position;
         // The heading content runs to the end of the line; find it in one
-        // memchr scan rather than a per-char peek/advance walk.
-        let content_end = line_end(bytes, content_start);
-        self.position = next_line_start(bytes, content_start);
+        // scan rather than a per-char peek/advance walk, and step over the
+        // terminator from that offset instead of searching for it again.
+        let content_end = line_end_scan(bytes, content_start);
+        self.position = line_terminator_end(bytes, content_end);
 
         // A closing hash sequence only counts when preceded by a space or
         // tab (or when the heading is nothing but hashes); an escaped
@@ -189,11 +190,22 @@ impl<'a> Parser<'a> {
     }
 
     /// Parses a thematic break.
-    pub(super) fn parse_thematic_break(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
-        // Skip to (and past) the end of the current line. `consume_line`
-        // advances to `line_end + 1`, or to EOF when there's no newline —
-        // exactly the two positions the old peek/advance loop produced.
-        self.consume_line();
+    ///
+    /// `line_end` is the offset of the line's terminator, which the caller
+    /// found while recognizing the break; stepping over the terminator from
+    /// there is a two-byte test, where `consume_line` would search the line
+    /// for it a second time.
+    pub(super) fn parse_thematic_break(
+        &mut self,
+        start: usize,
+        line_end: usize,
+    ) -> ParseResult<Option<Node<'a>>> {
+        debug_assert_eq!(
+            line_end,
+            line_end_scan(self.source.as_bytes(), start),
+            "thematic break line end must match a fresh line scan"
+        );
+        self.position = line_terminator_end(self.source.as_bytes(), line_end);
 
         let span = Span::new(start as u32, self.position as u32);
         Ok(Some(Node::ThematicBreak(crate::ast::ThematicBreak {

@@ -1,4 +1,4 @@
-use memchr::memchr3;
+use memchr::{memchr, memchr3};
 
 use super::Parser;
 use super::line_scan::{
@@ -10,8 +10,8 @@ pub(super) struct BlockProbe {
     /// Whether the line begins a block-level construct.
     pub starts_block: bool,
     /// Offset of the line's newline, or `source.len()` for an unterminated
-    /// final line — but only when the table scan ran all the way to it.
-    /// `None` means the caller has to find the line end itself.
+    /// final line — but only when the probe happened to reach it. `None`
+    /// means the caller has to find the line end itself.
     pub line_end: Option<usize>,
 }
 
@@ -55,8 +55,14 @@ impl<'a> Parser<'a> {
         self.position = pos;
     }
 
-    /// Skips blank lines.
-    pub(super) fn skip_blank_lines(&mut self) {
+    /// Skips blank lines and reports the first non-space, non-tab byte of
+    /// the line it settles on.
+    ///
+    /// Finding that byte is the walk's own stopping condition, so returning
+    /// it saves the caller a second pass over the same indentation — the
+    /// answer `first_non_whitespace_in_line` would recompute from the
+    /// rewound position. `None` means the input ended in whitespace.
+    pub(super) fn skip_blank_lines(&mut self) -> Option<usize> {
         let bytes = self.source.as_bytes();
         let mut pos = self.position;
         loop {
@@ -74,13 +80,13 @@ impl<'a> Parser<'a> {
                 // parser consumes, and the block loop — which runs until
                 // `is_at_end` — would spin forever.
                 self.position = pos;
-                return;
+                return None;
             } else {
                 // Content follows the indentation; rewind so the caller
                 // still sees the leading whitespace (indented code and
                 // list markers depend on it).
                 self.position = line_start;
-                return;
+                return Some(pos);
             }
         }
     }
@@ -147,22 +153,34 @@ impl<'a> Parser<'a> {
             };
         }
 
+        // Arms that materialize the line have already found its terminator.
+        // Recording that offset keeps the table probe and the paragraph loop
+        // from searching the same bytes for it again.
+        let mut line_end_hint = None;
+
         let starts_block = match bytes[trimmed_start] {
             b'#' => self.try_parse_heading_start(line_start, trimmed_start),
             b'-' | b'*' => {
                 let line = self.line_at(line_start);
+                line_end_hint = Some(line_start + line.len());
                 let trimmed = &line[trimmed_start - line_start..];
                 Self::try_parse_thematic_break_line(line) || Self::try_parse_list_interrupt(trimmed)
             }
-            b'_' => Self::try_parse_thematic_break_line(self.line_at(line_start)),
+            b'_' => {
+                let line = self.line_at(line_start);
+                line_end_hint = Some(line_start + line.len());
+                Self::try_parse_thematic_break_line(line)
+            }
             b'>' => true,
             b'`' | b'~' => {
                 let line = self.line_at(line_start);
+                line_end_hint = Some(line_start + line.len());
                 let trimmed = &line[trimmed_start - line_start..];
                 Self::try_parse_fenced_code_at(line, trimmed)
             }
             b'$' if self.options.math => {
                 let line = self.line_at(line_start);
+                line_end_hint = Some(line_start + line.len());
                 let trimmed = &line[trimmed_start - line_start..];
                 self.try_parse_math_block_at(line_start, line, trimmed)
             }
@@ -181,11 +199,13 @@ impl<'a> Parser<'a> {
                     true
                 } else {
                     let line = self.line_at(line_start);
+                    line_end_hint = Some(line_start + line.len());
                     Self::parse_html_block_start(&line[trimmed_start - line_start..]).is_some()
                 }
             }
             b'+' | b'0'..=b'9' => {
                 let line = self.line_at(line_start);
+                line_end_hint = Some(line_start + line.len());
                 Self::try_parse_list_interrupt(&line[trimmed_start - line_start..])
             }
             b'i' | b'e' => self.options.mdx && super::mdx_esm::looks_like_esm(bytes, trimmed_start),
@@ -198,26 +218,54 @@ impl<'a> Parser<'a> {
                 line_end: None,
             };
         }
-        if !check_tables {
-            return BlockProbe {
+        let probe = if !check_tables {
+            BlockProbe {
                 starts_block: false,
-                line_end: None,
-            };
-        }
-        match memchr3(b'|', b'\n', b'\r', &bytes[line_start..]) {
-            Some(off) if bytes[line_start + off] == b'|' => BlockProbe {
-                starts_block: self.try_parse_table(),
-                line_end: None,
-            },
-            Some(off) => BlockProbe {
-                starts_block: false,
-                line_end: Some(line_start + off),
-            },
-            None => BlockProbe {
-                starts_block: false,
-                line_end: Some(self.source.len()),
-            },
-        }
+                line_end: line_end_hint,
+            }
+        } else if let Some(end) = line_end_hint {
+            // The line is already bounded, so the table guard only has to
+            // ask whether a pipe lives inside it.
+            let has_pipe = memchr(b'|', &bytes[line_start..end]).is_some();
+            BlockProbe {
+                starts_block: has_pipe && self.try_parse_table(),
+                line_end: Some(end),
+            }
+        } else {
+            match memchr3(b'|', b'\n', b'\r', &bytes[line_start..]) {
+                Some(off) if bytes[line_start + off] == b'|' => {
+                    if self.try_parse_table() {
+                        return BlockProbe {
+                            starts_block: true,
+                            line_end: None,
+                        };
+                    }
+                    // The pipe stopped the scan short of the terminator.
+                    // Finishing the line from there costs one pass over it
+                    // in total and spares the caller a fresh one.
+                    BlockProbe {
+                        starts_block: false,
+                        line_end: Some(line_end(bytes, line_start + off + 1)),
+                    }
+                }
+                Some(off) => BlockProbe {
+                    starts_block: false,
+                    line_end: Some(line_start + off),
+                },
+                None => BlockProbe {
+                    starts_block: false,
+                    line_end: Some(self.source.len()),
+                },
+            }
+        };
+        debug_assert!(
+            probe.starts_block
+                || probe
+                    .line_end
+                    .is_none_or(|end| end == line_end(bytes, line_start)),
+            "a reported line end must match a fresh line scan"
+        );
+        probe
     }
 
     pub(super) fn line_at(&self, line_start: usize) -> &'a str {
@@ -306,7 +354,71 @@ pub(super) mod line_reuse_corpus {
 mod tests {
     use super::line_reuse_corpus::SOURCES;
     use crate::allocator::Allocator;
-    use crate::parser::Parser;
+    use crate::parser::line_scan::{line_end, next_line_start};
+    use crate::parser::{Parser, ParserOptions};
+
+    fn option_matrix() -> [ParserOptions; 4] {
+        [
+            ParserOptions::commonmark(),
+            ParserOptions::gfm(),
+            ParserOptions::gfm_spec(),
+            ParserOptions::mdx(),
+        ]
+    }
+
+    #[test]
+    fn probe_line_reports_the_real_line_end() {
+        // Every `Some` the probe hands back has to name the same offset a
+        // fresh scan would, whichever branch produced it: a dispatch arm's
+        // line slice, the pipe guard's own scan, or the continuation past a
+        // pipe that turned out not to open a table.
+        for source in SOURCES {
+            for options in option_matrix() {
+                let allocator = Allocator::new();
+                let parser = Parser::with_options(&allocator, source, options);
+                let bytes = source.as_bytes();
+                let mut line_start = 0;
+                while line_start < source.len() {
+                    if let Some(trimmed_start) = parser.first_non_whitespace_in_line(line_start) {
+                        for probe in [
+                            parser.probe_line(line_start, trimmed_start),
+                            parser.probe_line_without_table(line_start, trimmed_start),
+                        ] {
+                            if let Some(end) = probe.line_end {
+                                assert_eq!(
+                                    end,
+                                    line_end(bytes, line_start),
+                                    "source {source:?} line at {line_start}"
+                                );
+                            }
+                        }
+                    }
+                    line_start = next_line_start(bytes, line_start);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn skip_blank_lines_reports_the_settled_indentation() {
+        for source in SOURCES {
+            let allocator = Allocator::new();
+            for offset in 0..=source.len() {
+                if !source.is_char_boundary(offset) {
+                    continue;
+                }
+                let mut parser = Parser::new(&allocator, source);
+                parser.position = offset;
+                let reported = parser.skip_blank_lines();
+                let settled = parser.position;
+                assert_eq!(
+                    reported,
+                    parser.first_non_whitespace_in_line(settled),
+                    "source {source:?} from {offset}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn line_and_next_matches_two_separate_scans() {
