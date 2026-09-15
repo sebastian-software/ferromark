@@ -16,10 +16,14 @@ impl Parser<'_> {
     }
 
     pub(super) fn skip_blank_lines_from(&self, mut cursor: usize) -> usize {
-        while cursor < self.source.len()
-            && (self.is_blank_line_at(cursor) || self.is_line_comment_at(cursor))
-        {
-            cursor = self.next_line_start(cursor);
+        while cursor < self.source.len() {
+            // One scan answers "is this line blank" and "where does the next
+            // one start", instead of the line being searched twice per step.
+            let (line, next) = self.line_and_next(cursor);
+            if !line.trim().is_empty() && !self.is_line_comment_at(cursor) {
+                break;
+            }
+            cursor = next;
         }
         cursor
     }

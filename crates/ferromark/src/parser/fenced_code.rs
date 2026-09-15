@@ -70,6 +70,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parses a fenced code block.
+    ///
     /// `opening_indent` is the fence line's indentation in columns, which
     /// block dispatch measured before it recognized the fence. It is below
     /// four there, so it is a plain run of spaces and no tab-stop arithmetic

@@ -111,12 +111,12 @@ impl<'a> Parser<'a> {
     /// line's first non-whitespace byte, and that also wants to know where
     /// the line ends.
     ///
-    /// The table check scans the line with `memchr2(b'|', b'\n')`. When it
-    /// comes back with the newline — the answer for ordinary prose — it has
-    /// incidentally answered "where does this line end", which is the very
-    /// next thing paragraph parsing asks. Returning that offset lets the
-    /// paragraph loop consume the line without a second scan over the same
-    /// bytes.
+    /// Whatever the probe touches, it reports where the line ended if it
+    /// found out — the dispatch arm that sliced the line, or the table
+    /// guard's own `memchr3`, which for ordinary prose comes back with the
+    /// terminator. That is the very next thing paragraph parsing asks, so
+    /// returning the offset lets the paragraph loop consume the line without
+    /// a second scan over the same bytes.
     pub(super) fn probe_line(&self, line_start: usize, trimmed_start: usize) -> BlockProbe {
         self.probe_line_inner(line_start, trimmed_start, self.options.tables)
     }

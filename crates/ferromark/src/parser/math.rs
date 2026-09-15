@@ -31,11 +31,11 @@ impl<'a> Parser<'a> {
         while matches!(bytes.get(open), Some(b' ' | b'\t')) {
             open += 1;
         }
-        let Some(close) = math_block_close(self.source.as_bytes(), open + 2) else {
+        let Some(close) = math_block_close(bytes, open + 2) else {
             return self.parse_paragraph(start, None);
         };
         let close_end = close + 2;
-        self.position = next_line_start(self.source.as_bytes(), close_end);
+        self.position = next_line_start(bytes, close_end);
         let value = &self.source[open + 2..close];
         Ok(Some(Node::MathBlock(self.allocator.boxed(MathBlock {
             value,

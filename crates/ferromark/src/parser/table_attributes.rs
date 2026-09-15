@@ -4,7 +4,6 @@ use crate::allocator::Box;
 use crate::ast::TableAttributes;
 
 use super::Parser;
-use super::line_scan::next_line_start;
 use crate::parser::error::ParseResult;
 
 struct AttributeLine<'a> {
@@ -27,14 +26,16 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
         let mut position = self.position;
-        if self.line_at(position).trim_matches([' ', '\t']).is_empty() {
-            position = next_line_start(self.source.as_bytes(), position);
+        let (blank_candidate, after_blank) = self.line_and_next(position);
+        if blank_candidate.trim_matches([' ', '\t']).is_empty() {
+            position = after_blank;
         }
         position = self.skip_line_comments_from(position);
         if position >= self.source.len() {
             return Ok(None);
         }
-        let Some(line) = attribute_line(self.line_at(position)) else {
+        let (raw_line, next_position) = self.line_and_next(position);
+        let Some(line) = attribute_line(raw_line) else {
             return Ok(None);
         };
 
@@ -48,7 +49,7 @@ impl<'a> Parser<'a> {
             }
         }
         let caption = self.parse_inline_block(line.caption, position + line.caption_offset)?;
-        self.position = next_line_start(self.source.as_bytes(), position);
+        self.position = next_position;
         Ok(Some(self.allocator.boxed(TableAttributes {
             id,
             classes,
