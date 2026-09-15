@@ -29,6 +29,20 @@ pub(super) fn collect_heading_text_into(nodes: &[Node<'_>], text: &mut String) {
     }
 }
 
+/// Returns the heading's text when a single `Text` child carries all of it.
+///
+/// `## Configuration options` parses to exactly one `Text` node, and
+/// [`collect_heading_text_into`] would do nothing but copy that node's `value`
+/// into the destination. Recognizing the shape lets a caller read the source
+/// slice directly and skip the copy; anything else (emphasis, inline code,
+/// links, several children) still has to be concatenated.
+pub(super) fn single_text_child<'a>(nodes: &[Node<'a>]) -> Option<&'a str> {
+    match nodes {
+        [Node::Text(text)] => Some(text.value),
+        _ => None,
+    }
+}
+
 fn collect_node_text(node: &Node<'_>, text: &mut String) {
     match node {
         Node::Text(value) => text.push_str(value.value),

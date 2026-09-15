@@ -3,6 +3,129 @@ use ferromark::ast::Node;
 use ferromark::parser::{Parser, ParserOptions};
 use ferromark::renderer::{HtmlRenderer, HtmlRendererOptions};
 
+/// Every heading shape whose id path differs: a single `Text` child (the shape
+/// the renderer slugifies straight from the source), several children, a child
+/// that is not `Text`, an explicit `{#id}`, an empty heading, and a duplicate
+/// of the first so the `-N` suffix is exercised after the others have run.
+const MIXED_HEADING_SHAPES: &str = concat!(
+    "## Simple heading\n\n",
+    "## **Bold** and `code` and [link](./x.md)\n\n",
+    "## `OnlyCode`\n\n",
+    "## Explicit {#my-id}\n\n",
+    "##\n\n",
+    "## Simple heading\n",
+);
+
+fn render_mixed_headings(permalinks: bool) -> String {
+    let allocator = Allocator::new();
+    let document = Parser::with_options(
+        &allocator,
+        MIXED_HEADING_SHAPES,
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
+    )
+    .parse()
+    .unwrap();
+    HtmlRenderer::with_options(HtmlRendererOptions {
+        heading_permalinks: permalinks,
+        ..Default::default()
+    })
+    .render(&document)
+}
+
+#[test]
+fn mixed_heading_shapes_render_identically_whatever_fills_the_text_buffer() {
+    // The renderer fills its heading-text buffer only when something will read
+    // it, so the shapes that skip the fill must still produce the same ids, and
+    // a heading that skips it must not be able to see the previous heading's
+    // text through the permalink's `aria-label`.
+    assert_eq!(
+        render_mixed_headings(false),
+        concat!(
+            "<h2 id=\"simple-heading\">Simple heading</h2>\n",
+            "<h2 id=\"bold-and-code-and-link\"><strong>Bold</strong> and <code>code</code>",
+            " and <a href=\"./x.md\">link</a></h2>\n",
+            "<h2 id=\"onlycode\"><code>OnlyCode</code></h2>\n",
+            "<h2 id=\"my-id\">Explicit</h2>\n",
+            "<h2 id=\"section\"></h2>\n",
+            "<h2 id=\"simple-heading-1\">Simple heading</h2>\n",
+        )
+    );
+}
+
+#[test]
+fn mixed_heading_shapes_keep_their_own_permalink_labels() {
+    // The `aria-label` is the reader that forces the heading-text buffer to be
+    // filled. Each label has to name its own heading, including the explicit-id
+    // heading (whose text the id path never looks at) and the empty heading
+    // (whose empty buffer selects the generic label).
+    assert_eq!(
+        render_mixed_headings(true),
+        concat!(
+            "<h2 id=\"simple-heading\">Simple heading",
+            "<a class=\"header-anchor\" href=\"#simple-heading\"",
+            " aria-label=\"Permalink to &quot;Simple heading&quot;\">#</a></h2>\n",
+            "<h2 id=\"bold-and-code-and-link\"><strong>Bold</strong> and <code>code</code>",
+            " and <a href=\"./x.md\">link</a>",
+            "<a class=\"header-anchor\" href=\"#bold-and-code-and-link\"",
+            " aria-label=\"Permalink to &quot;Bold and code and link&quot;\">#</a></h2>\n",
+            "<h2 id=\"onlycode\"><code>OnlyCode</code>",
+            "<a class=\"header-anchor\" href=\"#onlycode\"",
+            " aria-label=\"Permalink to &quot;OnlyCode&quot;\">#</a></h2>\n",
+            "<h2 id=\"my-id\">Explicit",
+            "<a class=\"header-anchor\" href=\"#my-id\"",
+            " aria-label=\"Permalink to &quot;Explicit&quot;\">#</a></h2>\n",
+            "<h2 id=\"section\">",
+            "<a class=\"header-anchor\" href=\"#section\"",
+            " aria-label=\"Permalink to this section\">#</a></h2>\n",
+            "<h2 id=\"simple-heading-1\">Simple heading",
+            "<a class=\"header-anchor\" href=\"#simple-heading-1\"",
+            " aria-label=\"Permalink to &quot;Simple heading&quot;\">#</a></h2>\n",
+        )
+    );
+}
+
+#[test]
+fn a_reused_renderer_alternating_heading_shapes_matches_fresh_renderers() {
+    // Cross-check the buffer reuse itself: a renderer that has just rendered a
+    // long multi-child heading must produce exactly what a fresh renderer does
+    // for a short single-`Text` heading, with permalinks both off and on.
+    let allocator = Allocator::new();
+    let long_source = format!("## **{}** and `x`\n", "日本語の長い見出し".repeat(32));
+    let long_document = Parser::new(&allocator, &long_source).parse().unwrap();
+    let short_document = Parser::new(&allocator, "## Short\n").parse().unwrap();
+    let explicit_source = "## Explicit {#kept}\n";
+    let explicit_document = Parser::with_options(
+        &allocator,
+        explicit_source,
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
+    )
+    .parse()
+    .unwrap();
+
+    for permalinks in [false, true] {
+        let options = HtmlRendererOptions {
+            heading_permalinks: permalinks,
+            ..Default::default()
+        };
+        let mut reused = HtmlRenderer::with_options(options.clone());
+        for _ in 0..3 {
+            for document in [&long_document, &short_document, &explicit_document] {
+                assert_eq!(
+                    reused.render_borrowed(document),
+                    HtmlRenderer::with_options(options.clone()).render(document),
+                    "permalinks={permalinks}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn explicit_heading_ids_escape_identically_in_ids_and_permalinks() {
     let allocator = Allocator::new();

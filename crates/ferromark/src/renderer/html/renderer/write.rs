@@ -15,7 +15,7 @@ use super::super::escape::{
 };
 use super::super::heading::{
     HEADING_PERMALINK_CLASS, collect_heading_text_into, heading_has_permalink_marker,
-    slugify_heading_into,
+    single_text_child, slugify_heading_into,
 };
 use super::{HtmlRenderer, reserve_heading_scratch};
 
@@ -268,9 +268,22 @@ impl HtmlRenderer {
     }
 
     fn prepare_heading_id(&mut self, heading: &Heading<'_>) {
+        // `heading_text_scratch` has exactly two readers: the slugifier and
+        // the permalink's `aria-label`. Most headings are a single `Text`
+        // child, which the slugifier can read straight out of the source, and
+        // an explicit `{#id}` skips the slugifier altogether — so the
+        // concatenation only has to run when a reader will actually see its
+        // result. The buffer is still cleared on every heading so that a
+        // skipped fill can never leave the previous heading's text where the
+        // permalink would read it.
+        let single_text = single_text_child(&heading.children);
+        let permalink_reads_text = self.options.heading_permalinks;
         self.heading_text_scratch.clear();
-        reserve_heading_scratch(&mut self.heading_text_scratch);
-        collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
+        if permalink_reads_text || (heading.id.is_none() && single_text.is_none()) {
+            reserve_heading_scratch(&mut self.heading_text_scratch);
+            collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
+        }
+
         if let Some(id) = heading.id {
             self.heading_id_is_explicit = true;
             self.heading_id_scratch.clear();
@@ -286,7 +299,11 @@ impl HtmlRenderer {
         self.heading_id_is_explicit = false;
         self.heading_slug_scratch.clear();
         reserve_heading_scratch(&mut self.heading_slug_scratch);
-        slugify_heading_into(&self.heading_text_scratch, &mut self.heading_slug_scratch);
+        if let Some(text) = single_text {
+            slugify_heading_into(text, &mut self.heading_slug_scratch);
+        } else {
+            slugify_heading_into(&self.heading_text_scratch, &mut self.heading_slug_scratch);
+        }
 
         self.heading_id_scratch.clear();
         reserve_heading_scratch(&mut self.heading_id_scratch);
