@@ -1,7 +1,6 @@
 use crate::ast::Document;
 
 use super::{HtmlRenderHooks, HtmlRenderer};
-use crate::renderer::html::autolink::FirstByteIndex;
 use crate::renderer::html::toc::{
     DocumentRenderScan, collect_inline_toc_entries, scan_document_for_render,
 };
@@ -88,7 +87,9 @@ impl HtmlRenderer {
         self.heading_text_scratch.clear();
         self.heading_slug_scratch.clear();
         self.in_link = false;
-        self.autolink_index = None;
+        // `autolink_index` is deliberately untouched: it is derived from the
+        // renderer's immutable options, not from the fragments rendered so
+        // far, and every fragment path used to rebuild the identical value.
     }
 
     fn render_fragment(&mut self, document: &Document<'_>) -> String {
@@ -118,12 +119,6 @@ impl HtmlRenderer {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }
         self.heading_id_counts.reserve(document_scan.heading_count);
-        let autolink_patterns = self.options.autolink_patterns();
-        self.autolink_index = if self.options.autolink_urls && !autolink_patterns.is_empty() {
-            Some(FirstByteIndex::from_patterns(autolink_patterns))
-        } else {
-            None
-        };
         self.in_link = false;
         let estimated_len = (document.span.len() as usize).saturating_mul(2);
         if self.output.capacity() < estimated_len {
@@ -148,12 +143,6 @@ impl HtmlRenderer {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }
         self.heading_id_counts.reserve(document_scan.heading_count);
-        let autolink_patterns = self.options.autolink_patterns();
-        self.autolink_index = if self.options.autolink_urls && !autolink_patterns.is_empty() {
-            Some(FirstByteIndex::from_patterns(autolink_patterns))
-        } else {
-            None
-        };
         self.in_link = false;
         let estimated_len = (document.span.len() as usize).saturating_mul(2);
         if self.output.capacity() < estimated_len {

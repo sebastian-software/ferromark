@@ -250,6 +250,102 @@ fn default_gate_requires_colon_slash_slash() {
     assert!(index.may_match(b"://bare"));
 }
 
+/// The first-byte index is built once per renderer rather than once per
+/// render, so every entry point that used to rebuild it must still see the
+/// same index: plain renders, reused renderers, committed and provisional
+/// fragments, and renderers that have been reset in between.
+#[test]
+fn autolink_index_survives_reuse_fragments_and_resets() {
+    let allocator = Allocator::new();
+    let sources = [
+        "see http://example.com here",
+        "> [!NOTE]\n> body http://example.com\n\nafter http://example.org\n",
+        "[visit https://example.com here](/page) then https://example.org\n",
+        "no urls at all",
+        "email mailto:foo@example.com and http://example.com",
+        "",
+    ];
+    let option_sets = [
+        HtmlRendererOptions::default(),
+        HtmlRendererOptions {
+            autolink_urls: false,
+            ..Default::default()
+        },
+        HtmlRendererOptions {
+            autolink_patterns: vec!["mailto:".to_string()],
+            ..Default::default()
+        },
+        // An empty pattern list leaves the renderer without an index at all.
+        HtmlRendererOptions {
+            autolink_patterns: Vec::new(),
+            ..Default::default()
+        },
+        // Five distinct leading bytes fall back to the lookup table.
+        HtmlRendererOptions {
+            autolink_patterns: vec![
+                "http://".to_string(),
+                "ftp://".to_string(),
+                "mailto:".to_string(),
+                "tel:".to_string(),
+                "ssh://".to_string(),
+            ],
+            ..Default::default()
+        },
+    ];
+
+    let documents: Vec<_> = sources
+        .iter()
+        .map(|source| Parser::new(&allocator, source).parse().unwrap())
+        .collect();
+
+    for options in option_sets {
+        let expected: Vec<String> = documents
+            .iter()
+            .map(|document| HtmlRenderer::with_options(options.clone()).render(document))
+            .collect();
+
+        let mut reused = HtmlRenderer::with_options(options.clone());
+        let mut reset_between = HtmlRenderer::with_options(options.clone());
+        let mut fragments = HtmlRenderer::with_options(options.clone());
+        // Two passes so the second one runs against fully warmed state.
+        for _ in 0..2 {
+            for (document, expected) in documents.iter().zip(&expected) {
+                assert_eq!(reused.render_borrowed(document), expected.as_str());
+
+                reset_between.reset_incremental_state();
+                assert_eq!(&reset_between.render(document), expected);
+
+                fragments.reset_incremental_state();
+                assert_eq!(&fragments.render_provisional_fragment(document), expected);
+                fragments.reset_incremental_state();
+                assert_eq!(&fragments.render_incremental_fragment(document), expected);
+            }
+        }
+    }
+}
+
+/// Callout bodies suppress autolinking by taking the renderer's index for the
+/// duration of the body. With the index now owned by the renderer rather than
+/// rebuilt per render, the restore has to bring it back for the rest of the
+/// document and for every later render.
+#[test]
+fn callout_suppression_returns_the_shared_autolink_index() {
+    let allocator = Allocator::new();
+    let doc = Parser::new(
+        &allocator,
+        "> [!NOTE]\n> body http://example.com\n\nafter http://example.org\n",
+    )
+    .parse()
+    .unwrap();
+    let mut renderer = HtmlRenderer::new();
+    for _ in 0..3 {
+        let html = renderer.render(&doc);
+        assert_eq!(html.matches("<a ").count(), 1, "{html}");
+        assert!(html.contains("href=\"http://example.org\""), "{html}");
+        assert!(!html.contains("href=\"http://example.com\""), "{html}");
+    }
+}
+
 #[test]
 fn test_autolink_stops_at_cjk_sentence_punctuation() {
     let allocator = Allocator::new();

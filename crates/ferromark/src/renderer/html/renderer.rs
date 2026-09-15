@@ -100,11 +100,17 @@ pub struct HtmlRenderer {
     /// island writes its own non-executing JSON payload.
     in_mdx_island_children: bool,
     /// First-byte skip index for the autolink scanner. It depends only on
-    /// `options.autolink_patterns`, which is immutable for the duration of a
-    /// render, so it is built once at `render()` entry and reused for every
-    /// text node instead of being rebuilt per node (the prior behaviour zeroed
-    /// and filled a 256-byte table on the hottest inline path). `None` when
+    /// `options.autolink_patterns` and `options.autolink_urls`, neither of
+    /// which can change after construction (`options` is private and never
+    /// reassigned), so it is built once per renderer and reused for every text
+    /// node of every render instead of being rebuilt per node — or, as before,
+    /// per render, which charged two 256-entry tables plus needle and gate
+    /// selection to documents far too short to amortize them. `None` when
     /// autolinking is disabled or there are no patterns.
+    ///
+    /// Callout bodies suppress autolinking by taking this field for the
+    /// duration of the body and putting it back afterwards, so the per-render
+    /// `is_some()` gate keeps its exact meaning.
     autolink_index: Option<FirstByteIndex>,
 }
 
@@ -142,6 +148,15 @@ impl HtmlRenderer {
     }
 
     fn with_renderer_options(options: RendererOptions) -> Self {
+        // The index is a pure function of the options, which are immutable for
+        // the life of the renderer, so it is built here rather than at every
+        // `render` entry.
+        let autolink_patterns = options.autolink_patterns();
+        let autolink_index = if options.autolink_urls && !autolink_patterns.is_empty() {
+            Some(FirstByteIndex::from_patterns(autolink_patterns))
+        } else {
+            None
+        };
         Self {
             options,
             output: String::new(),
@@ -164,7 +179,7 @@ impl HtmlRenderer {
             code_block_index: 0,
             in_link: false,
             in_mdx_island_children: false,
-            autolink_index: None,
+            autolink_index,
         }
     }
 
@@ -219,16 +234,8 @@ impl HtmlRenderer {
         self.heading_id_counts.clear();
         self.heading_id_counts.reserve(document_scan.heading_count);
         self.clear_footnote_state();
-        // Build the autolink first-byte index once per render. It depends only
-        // on the immutable pattern list, not on the text node being rendered,
-        // so reusing it avoids rebuilding a 256-byte table on every inline
-        // text visit.
-        let autolink_patterns = self.options.autolink_patterns();
-        self.autolink_index = if self.options.autolink_urls && !autolink_patterns.is_empty() {
-            Some(FirstByteIndex::from_patterns(autolink_patterns))
-        } else {
-            None
-        };
+        // The autolink first-byte index is built once per renderer (see the
+        // field) because it depends only on the immutable options.
         // HTML output is typically 2×–3× the markdown source (every
         // `**bold**` becomes `<strong>...</strong>` etc.) so the prior
         // 1.5× estimate kept undersizing the buffer and forcing 1–2
