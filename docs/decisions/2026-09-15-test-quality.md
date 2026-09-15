@@ -48,3 +48,11 @@ conceal material incident-comment and Rust-book introduction regressions. A
 [paired diagnosis](../reports/2026-09-15-release-native/DIAGNOSIS.md) reproduces
 them and identifies unnecessary structural definition discovery as the principal
 target. Do not clear those outliers merely because the aggregate remains fast.
+
+## Owner decision: defer the reference optimization
+
+The owner explicitly chose to continue v2.0 release work and track the measured
+reference-prepass costs as a follow-up in [issue #320](https://github.com/sebastian-software/ferromark/issues/320).
+Those costs remain visible in the frozen evidence but are not a v2.0 release
+blocker. This supersedes the earlier recommendation to resolve the two outliers
+before release; it does not erase them or change the measurement criterion.
