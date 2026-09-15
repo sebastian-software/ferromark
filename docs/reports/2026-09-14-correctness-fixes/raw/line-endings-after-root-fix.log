@@ -1,0 +1,13 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running tests/line_endings.rs (target/debug/deps/line_endings-90fa610c6b8376a2)
+
+running 5 tests
+test normalized_inline_html_keeps_original_span ... ok
+test lone_cr_does_not_duplicate_nested_list ... ok
+test angle_link_destination_rejects_cr_line_endings ... ok
+test html_tag_line_endings_accept_cr_and_crlf ... ok
+test lone_cr_keeps_blank_list_siblings_separate ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

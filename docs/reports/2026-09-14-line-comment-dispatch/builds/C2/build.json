@@ -1,0 +1,63 @@
+{
+  "schema": 2,
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "baseline_revision_expected": "78d7e21",
+  "baseline_archive_sha256": "6ca1c988386ea6be3955c6ce9c77bebb230be91596eeed2f9ea4cf104001e704",
+  "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+  "worker_source": "/Users/sebastian/Workspace/ferromark-v2/benchmarks/runtime-profiles/worker.rs",
+  "lto": "fat",
+  "rustflags": "-C target-cpu=generic",
+  "frozen_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+  "engines": {
+    "baseline": {
+      "frozen_source": "/private/tmp/ferromark-v2-line-fusion-C1-build/sources/baseline",
+      "frozen_source_sha256": "13c0c09ba4a2993af6007b02c6527a4398d13109ec78c927d00e3c8058277c04",
+      "source": "/private/tmp/ferromark-v2-line-fusion-C1-build/core/baseline",
+      "source_revision": null,
+      "source_tree_sha256": "13c0c09ba4a2993af6007b02c6527a4398d13109ec78c927d00e3c8058277c04",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+      "lto": "fat",
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/ferromark-v2-line-fusion-C1-build/baseline/target/release/feature-scan-worker",
+      "binary_sha256": "0f62eebf00bb84afa9d35fe3e59963d29dc10a481e55549100ed218039a2522d",
+      "lock_sha256": "73983e74b2cd403038a4575596c77066ad92ceb170ea04b8d195ff2b88d9b374",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "reused"
+    },
+    "candidate": {
+      "frozen_source": "/private/tmp/ferromark-v2-line-fusion-C2-build/sources/candidate",
+      "frozen_source_sha256": "3347af086fccf8ee7dcc0af35d12d1f90a0f4e1c2db7a8c6299773767c41e7d2",
+      "source": "/private/tmp/ferromark-v2-line-fusion-C2-build/core/candidate",
+      "source_revision": null,
+      "source_tree_sha256": "3347af086fccf8ee7dcc0af35d12d1f90a0f4e1c2db7a8c6299773767c41e7d2",
+      "source_manifest_sha256": "c08e925acdd9e0d565d2cf07acd35108d58c32f8edf1fe42c034f72a03563004",
+      "source_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+      "worker_sha256": "fb6fb34527b4666b36a047356e9a8523353b7a4d26cbb57318d595664bce719f",
+      "lto": "fat",
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/ferromark-v2-line-fusion-C2-build/candidate/target/release/feature-scan-worker",
+      "binary_sha256": "99937855e3ab31c9aee377f70db6b3ef34da7c89cba6fec14cebbb36becb5a6b",
+      "lock_sha256": "73983e74b2cd403038a4575596c77066ad92ceb170ea04b8d195ff2b88d9b374",
+      "retained_registry_packages": 21,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "built"
+    }
+  }
+}

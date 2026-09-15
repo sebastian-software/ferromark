@@ -1,0 +1,77 @@
+[
+  {
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--check"
+    ],
+    "exit_code": 0,
+    "log": "01.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--all-features",
+      "--locked"
+    ],
+    "exit_code": 0,
+    "log": "02.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--all-targets",
+      "--all-features",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "log": "03.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "bench",
+      "--workspace",
+      "--no-run",
+      "--locked"
+    ],
+    "exit_code": 0,
+    "log": "04.log"
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "benchmarks/native-comparison",
+      "-p",
+      "test_*.py"
+    ],
+    "exit_code": 0,
+    "log": "05.log"
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "benchmarks/optimization-rounds",
+      "-p",
+      "test_*.py"
+    ],
+    "exit_code": 0,
+    "log": "06.log"
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "cargo fmt --all --check": 0,
+  "cargo test --workspace --all-features --locked": {
+    "exit_code": 0,
+    "tests_passed": 700
+  },
+  "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings": 0,
+  "cargo bench --workspace --no-run --locked": 0,
+  "python3 -m unittest discover -s benchmarks/compatibility-audit": {
+    "exit_code": 0,
+    "tests_passed": 18
+  },
+  "spec audit --fail-on-differences": 0,
+  "original cmark oracle --fail-on-differences": 0,
+  "expanded cmark oracle --fail-on-differences": {
+    "exit_code": 1,
+    "reviewed_reference_defects": [
+      "binding-1-31-link",
+      "binding-2-31-link"
+    ],
+    "other_differences": 0,
+    "engine_errors": 0
+  },
+  "performance initial four-case equality check": {
+    "exit_code": 1,
+    "excluded": "wiki-rainbow-article-body",
+    "reason": "intentional Unicode URL serialization change, AST identical"
+  },
+  "performance three-case unchanged-output subset": 0
+}

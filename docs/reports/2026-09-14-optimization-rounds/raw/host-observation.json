@@ -1,0 +1,10 @@
+{
+  "cpu": "Apple M1 Pro",
+  "probe": "sysctl -n machdep.cpu.brand_string",
+  "probe_context": "Read with sandbox escalation after the run's restricted sysctl probe failed. Timings themselves ran without escalation.",
+  "rustc": "1.95.0",
+  "architecture": "aarch64-apple-darwin",
+  "target_cpu": "generic",
+  "power": "AC power",
+  "limitations": "No CPU affinity or fixed frequency; macOS desktop workload. Pairwise alternating runs and repeat rounds reduce but do not eliminate scheduler/thermal noise. Only AArch64 NEON executed; x86 SIMD paths and other-target fallbacks were not cross-compiled in this environment."
+}

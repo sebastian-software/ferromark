@@ -1,11 +1,14 @@
-# Keep measured evidence available without expanding raw data in PR reviews.
-docs/reports/2026-09-04-core-performance/** linguist-generated=true
-docs/reports/2026-09-05-bun-comparison/** linguist-generated=true
-docs/reports/2026-09-05-byte-search-extraction/** linguist-generated=true
+* text=auto eol=lf
 
-# Preserve archived patches and command output byte-for-byte, including the
-# leading space on blank context lines in unified diffs.
-docs/reports/2026-09-04-core-performance/**/*.patch -whitespace
-docs/reports/2026-09-05-bun-comparison/*.patch -whitespace
-docs/reports/2026-09-05-byte-search-extraction/*.patch -whitespace
-docs/reports/2026-09-05-byte-search-extraction/*.log -whitespace
+# Whitespace is literal parser input/output; preserve these bytes on checkout.
+*.snap -text -whitespace
+crates/ferromark_parser/src/parser/inline/entities.txt -text -whitespace
+crates/ferromark_renderer/tests/spec_fixtures/*.txt -text -whitespace
+crates/ferromark_parser/benches/fixtures/upstream-changelog.md -text -whitespace
+
+# Preserve archived CSV bytes so the report checksums survive Git checkout.
+docs/reports/2026-09-15-native-arm/*.csv -text -whitespace
+docs/reports/2026-09-15-arm-full-suite/*.csv -text -whitespace
+
+# Preserve every imported measurement, including older CRLF CSV reports.
+docs/reports/**/*.csv -text -whitespace

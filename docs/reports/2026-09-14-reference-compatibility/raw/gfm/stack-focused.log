@@ -1,0 +1,32 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.66s
+     Running tests/gfm_extension_audit.rs (target/debug/deps/gfm_extension_audit-ea3f691641a9e319)
+
+running 8 tests
+test gfm_official_strikethrough_examples_491_and_493 ... ok
+test single_tilde_strikethrough_stays_literal_when_gfm_is_disabled ... ok
+test gfm_extended_autolinks_require_contiguous_addresses ... ok
+test gfm_single_tilde_ignores_escaped_and_code_span_tildes ... ok
+test explicit_subscript_keeps_priority_over_single_tilde_strikethrough ... ok
+test gfm_official_extended_autolinks_examples_633_to_635 ... ok
+test gfm_cmark_tilde_binding_cases ... ok
+test gfm_strikethrough_keeps_links_images_titles_html_and_unicode_boundaries ... FAILED
+
+failures:
+
+---- gfm_strikethrough_keeps_links_images_titles_html_and_unicode_boundaries stdout ----
+
+thread 'gfm_strikethrough_keeps_links_images_titles_html_and_unicode_boundaries' (19794754) panicked at crates/ferromark_renderer/tests/gfm_extension_audit.rs:89:5:
+assertion `left == right` failed
+  left: "<p><del>a <a href=\"u~r\" title=\"title~x\">b</a> <img src=\"img~x\" alt=\"i\" title=\"alt~x\"></del></p>\n"
+ right: "<p><del>a <a href=\"u~r\" title=\"title~x\">b</a> <img src=\"img~x\" alt=\"i\" title=\"alt~x\" /></del></p>\n"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    gfm_strikethrough_keeps_links_images_titles_html_and_unicode_boundaries
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p ferromark_renderer --test gfm_extension_audit`

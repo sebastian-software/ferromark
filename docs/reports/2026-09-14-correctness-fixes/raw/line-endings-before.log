@@ -1,0 +1,51 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.84s
+     Running tests/line_endings.rs (target/debug/deps/line_endings-90fa610c6b8376a2)
+
+running 4 tests
+test html_tag_line_endings_accept_cr_and_crlf ... FAILED
+test angle_link_destination_rejects_cr_line_endings ... FAILED
+test lone_cr_keeps_blank_list_siblings_separate ... FAILED
+test lone_cr_does_not_duplicate_nested_list ... FAILED
+
+failures:
+
+---- html_tag_line_endings_accept_cr_and_crlf stdout ----
+
+thread 'html_tag_line_endings_accept_cr_and_crlf' (19591116) panicked at crates/ferromark_parser/tests/line_endings.rs:35:5:
+assertion `left == right` failed
+  left: "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n"
+ right: "<p><a  /><b2\ndata=\"foo\" ></p>\n"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- angle_link_destination_rejects_cr_line_endings stdout ----
+
+thread 'angle_link_destination_rejects_cr_line_endings' (19591115) panicked at crates/ferromark_parser/tests/line_endings.rs:47:5:
+assertion `left == right` failed
+  left: "<p><a href=\"foo\rbar\">link</a></p>\n"
+ right: "<p>[link](<foo\nbar>)</p>\n"
+
+---- lone_cr_keeps_blank_list_siblings_separate stdout ----
+
+thread 'lone_cr_keeps_blank_list_siblings_separate' (19591118) panicked at crates/ferromark_parser/tests/line_endings.rs:15:5:
+assertion `left == right` failed
+  left: "<ul>\n<li><p>a</p>\n</li>\n<li><p>b\n\n- c</p>\n</li>\n<li><p>c</p>\n</li>\n</ul>\n"
+ right: "<ul>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n</li>\n<li><p>c</p>\n</li>\n</ul>\n"
+
+---- lone_cr_does_not_duplicate_nested_list stdout ----
+
+thread 'lone_cr_does_not_duplicate_nested_list' (19591117) panicked at crates/ferromark_parser/tests/line_endings.rs:27:5:
+assertion `left == right` failed
+  left: "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n"
+ right: "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n"
+
+
+failures:
+    angle_link_destination_rejects_cr_line_endings
+    html_tag_line_endings_accept_cr_and_crlf
+    lone_cr_does_not_duplicate_nested_list
+    lone_cr_keeps_blank_list_siblings_separate
+
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p ferromark_parser --test line_endings`

@@ -1,0 +1,5 @@
+# Preserve raw command output, including trailing blank lines.
+raw/**/*.log -text -whitespace
+raw/**/*.csv -text -whitespace
+raw/**/*.md -text -whitespace
+raw/cmark-oracle/*-CMakeCache.txt -text -whitespace

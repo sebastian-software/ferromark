@@ -6,11 +6,14 @@ const options: Options = {
   renderPolicy: 'untrusted',
   tables: true,
   mergedTableCells: true,
-  tableColumnWidths: true,
-  inlineFootnotes: true,
+  tableColgroup: true,
+  tableAttributes: true,
   definitionLists: true,
   lineComments: true,
-  indentedCodeBlocks: false,
+  headingAttributes: true,
+  wikiLinks: true,
+  cjkEmphasis: true,
+  mdx: true,
 }
 const highlighter: CodeHighlighter = {
   codeToHtml: (code, { lang, theme }) => `${lang}:${theme}:${code}`,

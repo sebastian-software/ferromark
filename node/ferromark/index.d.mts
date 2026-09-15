@@ -3,22 +3,26 @@ import type { Buffer } from 'node:buffer'
 export type RenderPolicy = 'untrusted' | 'trusted'
 
 export interface Options {
+  tableAttributes?: boolean
+  headingAttributes?: boolean
+  wikiLinks?: boolean
+  cjkEmphasis?: boolean
+  /** Recognize MDX syntax; does not compile or execute JavaScript. */
+  mdx?: boolean
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy
-  /** Parse raw inline and block HTML. Default: on; untrusted output still escapes it. */
+  /** Allow raw HTML in trusted output. Default: on; untrusted output always escapes it. */
   allowHtml?: boolean
-  /** Resolve reference definitions and reference-style links. Default: on. */
-  allowLinkRefs?: boolean
   /** Enable GFM pipe tables. Default: on. */
   tables?: boolean
   /** Enable MultiMarkdown-style table column spans. Default: off; requires `tables`. */
   mergedTableCells?: boolean
-  /** Emit numeric table column-width hints. Default: off; requires `tables`. */
-  tableColumnWidths?: boolean
+  /** Emit CSS-addressable colgroup elements. Default: off; requires `tables`. */
+  tableColgroup?: boolean
+  /** Add header-derived CSS classes to colgroup elements. */
+  tableColumnNames?: boolean
   /** Enable GFM `~~strikethrough~~`. Default: on. */
   strikethrough?: boolean
-  /** Enable `==highlight==`. Default: off. */
-  highlight?: boolean
   /** Enable `^superscript^`. Default: off. */
   superscript?: boolean
   /** Enable `~subscript~`. Default: off. */
@@ -31,11 +35,9 @@ export interface Options {
   disallowedRawHtml?: boolean
   /** Enable `[^label]` footnotes. Default: off. */
   footnotes?: boolean
-  /** Enable Pandoc-style `^[note]` footnotes. Default: off. */
-  inlineFootnotes?: boolean
   /** Extract a leading `---` or `+++` front-matter block. Default: off. */
   frontMatter?: boolean
-  /** Generate GitHub-compatible heading IDs. Default: on. */
+  /** Generate v2 heading IDs. Default: on. */
   headingIds?: boolean
   /** Enable `$inline$` and `$$display$$` math. Default: off. */
   math?: boolean
@@ -45,12 +47,10 @@ export interface Options {
   definitionLists?: boolean
   /** Omit physical-line-start `//` source comments. Default: off. */
   lineComments?: boolean
-  /** Parse four-space indented code blocks. Default: on. */
-  indentedCodeBlocks?: boolean
   /**
    * Prefix internal absolute link destinations (starting with `/`) with
-   * this base path, for sites deployed under a subpath. Image sources and
-   * autolinks are not rewritten. Default: unset.
+   * this base path, for sites deployed under a subpath. Image sources and root-absolute raw HTML URLs also use this base.
+   * Enables v2 site routing, including .md to index.html conversion. Default: unset.
    */
   linkBasePath?: string
 }
@@ -85,7 +85,7 @@ export declare class Renderer {
 }
 
 /**
- * Render fenced code with a trusted synchronous highlighter.
+ * Render code blocks with a trusted synchronous highlighter.
  * Highlighter exceptions fall back to ferromark's escaped code-block output
  * and can be observed with `onHighlightError`.
  */
@@ -122,7 +122,7 @@ export interface TransformResult {
 export declare function transform(markdown: string, options?: Options): TransformResult
 
 /**
- * `transform` with fenced code rendered by a trusted synchronous highlighter.
+ * `transform` with code blocks rendered by a trusted synchronous highlighter.
  * Highlighter exceptions fall back to ferromark's escaped code-block output
  * and can be observed with `onHighlightError`.
  */

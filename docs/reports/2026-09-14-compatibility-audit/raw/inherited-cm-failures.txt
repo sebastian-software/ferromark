@@ -1,0 +1,45 @@
+
+=== gfm mode, example 608 (Autolinks) ===
+--- markdown
+< https://foo.bar >
+
+--- expected (spec)
+<p>&lt; https://foo.bar &gt;</p>
+
+--- actual (renderer)
+<p>&lt; <a href="https://foo.bar" target="_blank" rel="noopener noreferrer">https://foo.bar</a> &gt;</p>
+
+--- expected normalized
+<p>&lt; https://foo.bar &gt;</p>
+--- actual normalized
+<p>&lt; <a href="https://foo.bar">https://foo.bar</a> &gt;</p>
+
+=== gfm mode, example 611 (Autolinks) ===
+--- markdown
+https://example.com
+
+--- expected (spec)
+<p>https://example.com</p>
+
+--- actual (renderer)
+<p><a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a></p>
+
+--- expected normalized
+<p>https://example.com</p>
+--- actual normalized
+<p><a href="https://example.com">https://example.com</a></p>
+
+=== gfm mode, example 612 (Autolinks) ===
+--- markdown
+foo@bar.example.com
+
+--- expected (spec)
+<p>foo@bar.example.com</p>
+
+--- actual (renderer)
+<p><a href="mailto:foo@bar.example.com">foo@bar.example.com</a></p>
+
+--- expected normalized
+<p>foo@bar.example.com</p>
+--- actual normalized
+<p><a href="mailto:foo@bar.example.com">foo@bar.example.com</a></p>

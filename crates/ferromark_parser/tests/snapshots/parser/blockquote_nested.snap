@@ -1,0 +1,13 @@
+---
+source: crates/ferromark_parser/tests/snapshot_parse.rs
+description: "> outer\n>\n> > inner\n>\n> outer again\n"
+---
+Document [0..36]
+  BlockQuote [0..36]
+    Paragraph [2..8]
+      Text "outer" [2..7]
+    BlockQuote [12..20]
+      Paragraph [14..20]
+        Text "inner" [14..19]
+    Paragraph [24..36]
+      Text "outer again" [24..35]

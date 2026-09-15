@@ -1,0 +1,76 @@
+{
+  "source_revision": "060595be27b96130c82ecee8e1542cd26194538d",
+  "worker_sha256": "38af81df1117ecf180a8133b9d6c40f90584b49a5ff59829ff81521a96fa0e65",
+  "worker_source_sha256": "04c6c77e0ea8c0e011cafbed1bcb20d6aeb5e15cf4b8e3d79866bd6f0a440cfe",
+  "runner_sha256": "6c79cb52f72b4b9e88939513d6d79cacd0afe7207522442ac10967985a5c26b0",
+  "gfm_html_sha256": "b153d814fdfc8624bb6da7449162c1cd707a637f7d1c1b636eb44b9cf63fa220",
+  "gfm_url": "https://github.github.com/gfm/",
+  "probes_sha256": "5e7009a829fde9fd1a5af53e3f8cf7515ba2bf48abaed4bc7ae0cbd14f7c967a",
+  "comparator_sha256": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018",
+  "inherited_normalizer_sha256": "323d3179e89455ac8fc049880373f741498820e8bdb0867b2f0de22c842c9fdb",
+  "root_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2",
+  "commonmark_spec_sha256": "257c41ad946f7a1414a499aca402a1aa8fdac3678532266611348c1cf54f4b80",
+  "extension_spec_sha256": "dbf7266c30535f6e8746bdde1cb9627e796ac1022e6b224e8d06ff473f40e625",
+  "summary": {
+    "commonmark-configured": {
+      "count": 652,
+      "statuses": {
+        "exact": 507,
+        "serialization-equivalent": 98,
+        "heading-id-only": 40,
+        "other": 7
+      },
+      "inherited_failures": 0
+    },
+    "commonmark-default": {
+      "count": 652,
+      "statuses": {
+        "exact": 498,
+        "serialization-equivalent": 98,
+        "heading-id-only": 40,
+        "other": 16
+      },
+      "inherited_failures": 3
+    },
+    "gfm-extensions-configured": {
+      "count": 28,
+      "statuses": {
+        "exact": 20,
+        "serialization-equivalent": 3,
+        "other": 5
+      },
+      "inherited_failures": 5
+    },
+    "gfm-configured": {
+      "count": 677,
+      "statuses": {
+        "exact": 514,
+        "serialization-equivalent": 101,
+        "heading-id-only": 40,
+        "other": 22
+      },
+      "inherited_failures": 15
+    },
+    "gfm-without-tagfilter": {
+      "count": 677,
+      "statuses": {
+        "exact": 518,
+        "serialization-equivalent": 101,
+        "heading-id-only": 40,
+        "other": 18
+      },
+      "inherited_failures": 11
+    },
+    "gfm-public-preset": {
+      "count": 677,
+      "statuses": {
+        "exact": 503,
+        "serialization-equivalent": 101,
+        "heading-id-only": 40,
+        "other": 33
+      },
+      "inherited_failures": 12
+    }
+  }
+}

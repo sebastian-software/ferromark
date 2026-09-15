@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { rm } from 'node:fs/promises'
+import { copyFile, rm } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -63,6 +63,7 @@ if (result.status !== 0) {
 // matching optional package. Isolated verification builds use a temporary
 // output directory and must not modify package artifacts.
 if (outputDir === '.') {
+  await copyFile(path.join(packageDir, buildOutputDir, 'native.d.ts'), path.join(packageDir, 'native.d.ts'))
   const artifacts = spawnSync(
     pnpm,
     ['exec', 'napi', 'artifacts', '--output-dir', buildOutputDir, '--npm-dir', 'npm'],

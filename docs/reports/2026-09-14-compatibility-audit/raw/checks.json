@@ -1,0 +1,31 @@
+{
+  "commands": [
+    {
+      "command": "cargo fmt --all --check",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo test --workspace --all-features --locked",
+      "exit_code": 0,
+      "passed": 638
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo bench --workspace --no-run --locked",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 -m unittest discover -s benchmarks/compatibility-audit -p test_*.py",
+      "exit_code": 0,
+      "passed": 9
+    },
+    {
+      "command": "audit run.py --fail-on-differences (full command in harness README)",
+      "exit_code": 1,
+      "expected": "Documented open compatibility differences; all output artifacts produced."
+    }
+  ]
+}

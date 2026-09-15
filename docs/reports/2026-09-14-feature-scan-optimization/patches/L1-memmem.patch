@@ -1,0 +1,37 @@
+diff --git a/crates/ferromark_parser/src/parser/line_comments.rs b/crates/ferromark_parser/src/parser/line_comments.rs
+index e18858d..7d38a6e 100644
+--- a/crates/ferromark_parser/src/parser/line_comments.rs
++++ b/crates/ferromark_parser/src/parser/line_comments.rs
+@@ -1,9 +1,19 @@
+ //! Physical source-line comments, independent of Markdown container prefixes.
+ 
++use std::sync::LazyLock;
++
++use memchr::memmem;
++
+ use super::Parser;
+ use super::line_scan::next_line_start;
+ use super::spans::SourceMap;
+ 
++/// Every eligible line comment contains this byte pair. Keep the finder
++/// process-wide because `without_line_comments` is called for each paragraph
++/// and reference-definition candidate when the option is enabled.
++static LINE_COMMENT_FINDER: LazyLock<memmem::Finder<'static>> =
++    LazyLock::new(|| memmem::Finder::new("//"));
++
+ pub(super) struct CommentDefinitionRegion<'a> {
+     pub(super) start: usize,
+     pub(super) end: usize,
+@@ -75,6 +85,12 @@ impl<'a> Parser<'a> {
+             return (&self.source[start..end], None);
+         }
+         let bytes = self.source.as_bytes();
++        // A marker is necessary for a line comment. On the common prose path,
++        // this SIMD-friendly search avoids walking every physical line and
++        // calling `is_line_comment_at` before borrowing the original source.
++        if LINE_COMMENT_FINDER.find(&bytes[start..end]).is_none() {
++            return (&self.source[start..end], None);
++        }
+         let mut cursor = start;
+         while cursor < end && !self.is_line_comment_at(cursor) {
+             cursor = next_line_start(bytes, cursor);

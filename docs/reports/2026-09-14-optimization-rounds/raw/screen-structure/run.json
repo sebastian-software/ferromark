@@ -1,0 +1,58 @@
+{
+  "schema": 2,
+  "rounds": 1,
+  "pairs_per_round": 3,
+  "window_ms": 20,
+  "warmup_ms": 20,
+  "seed": 20260914,
+  "modes": [
+    "parse",
+    "reuse"
+  ],
+  "case_filter": "table-|^(comment-table|comment-ack|wiki-chess-article-body|typescript-handbook-typescript-5-0)$",
+  "cases": [
+    "comment-ack",
+    "comment-table",
+    "typescript-handbook-typescript-5-0",
+    "wiki-chess-article-body",
+    "table-plain-256",
+    "table-sparse-256",
+    "table-dense-256",
+    "table-formatted-256",
+    "table-plain-4096",
+    "table-sparse-4096",
+    "table-dense-4096",
+    "table-formatted-4096",
+    "table-plain-16000",
+    "table-sparse-16000",
+    "table-dense-16000",
+    "table-formatted-16000"
+  ],
+  "corpus_sha256": "31583750d418c1b9932ea391044f57ea579b9a8bbb6255a0b97f1b6b946b78d3",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "aee2b1ee884ed781cc74be3657c0d138a72c3127f7f5d602db632b0689052022",
+  "host_before": {
+    "time_utc": "2026-09-14T07:50:47Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      4.7744140625,
+      4.89404296875,
+      4.99365234375
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; (no estimate) present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-14T07:50:53Z",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      4.6318359375,
+      4.8623046875,
+      4.98193359375
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=35324003)\t75%; charging; (no estimate) present: true",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}

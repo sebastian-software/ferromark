@@ -1,16 +1,33 @@
-# ferromark for Node.js
+# ferromark v2 for Node.js
 
 Native Node.js bindings for the [Ferromark](https://github.com/sebastian-software/ferromark) Markdown-to-HTML compiler.
 
 [Documentation site](https://sebastian-software.github.io/ferromark/) ·
 [Rust crate](https://crates.io/crates/ferromark)
 
-## Install
+## Build the development package
+
+V2 is unpublished. `npm install ferromark` still installs the released v1 package.
+Check out `codex/v2` in this repository, then build from `node/`:
 
 ```sh
-npm install ferromark
-# or: pnpm add ferromark
+pnpm install --frozen-lockfile
+pnpm build
+pnpm test
 ```
+
+Examples below use the package name as it resolves inside the workspace.
+See the [v2 migration guide](../../docs/migration-v2.md) for breaking changes.
+The v2 engine uses an arena AST and retains upstream MIT attribution in `LICENSE`.
+
+Removed options `tableColumnWidths`, `highlight`, `inlineFootnotes`, `allowLinkRefs`, and
+`indentedCodeBlocks` throw an unknown-option error. `tableColgroup`,
+`tableColumnNames`, `tableAttributes`,
+`headingAttributes`, `wikiLinks`, `cjkEmphasis`, and `mdx` expose v2 features.
+Heading slugs and extension HTML follow v2. `linkBasePath` enables v2 site routing:
+root-absolute links, images, and raw HTML URLs use the base, and Markdown links
+become index.html routes. Highlighters receive fenced and indented code blocks.
+
 
 The package requires Node.js 22.12 or newer. It installs one platform-specific
 native package for glibc or musl Linux, macOS, and Windows on x64 and arm64;
@@ -18,7 +35,7 @@ musl support includes Alpine Linux. GNU Linux binaries target glibc 2.17 or
 newer, although the installed Node.js runtime may impose a newer requirement.
 There is no WASM fallback.
 
-Consumers and contributors have different floors on purpose. This published
+Consumers and contributors have different floors on purpose. This development
 package supports Node.js 22.12.0 and newer, while the repository's `node/`
 development workspace declares Node.js 22.13.0 for its pinned pnpm toolchain.
 The `node-floor` CI job therefore builds the addon on the workspace version and
@@ -99,12 +116,12 @@ the highlighter helpers below accept trusted highlighter HTML.
 
 ## Options reference
 
-Every `Options` property is optional; omitted values use the Rust `Options::default()` values. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `allowLinkRefs`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, `callouts`, and `indentedCodeBlocks`. All other boolean syntax extensions default off; `renderPolicy` defaults to `'untrusted'` and `linkBasePath` is unset.
+Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions default off; `renderPolicy` defaults to `'untrusted'` and `linkBasePath` is unset.
 
 Unknown option names throw a `TypeError` that identifies the rejected key, so
 misspellings such as `taskList` cannot silently change rendered output.
 
-`mergedTableCells` and `tableColumnWidths` require `tables`. `disallowedRawHtml` only filters a narrow GFM tag list in trusted mode and is not a sanitizer. `renderPolicy: 'trusted'` permits raw HTML and unrestricted URL schemes, so use it only for trusted Markdown. See [`Options`](./index.d.mts) for each field's semantics and examples above for `frontMatter` and `linkBasePath`.
+`mergedTableCells`, `tableColgroup`, and `tableColumnNames` require `tables`. `disallowedRawHtml` only filters a narrow GFM tag list in trusted mode and is not a sanitizer. `renderPolicy: 'trusted'` permits raw HTML and unrestricted URL schemes, so use it only for trusted Markdown. See [`Options`](./index.d.mts) for each field's semantics and examples above for `frontMatter` and `linkBasePath`.
 
 ## Input size limit
 
@@ -114,7 +131,7 @@ instead of parsing with truncated source offsets.
 
 ## Syntax highlighting with Ferriki
 
-An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter plugs into the fenced-code renderer without coupling the two native cores:
+An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter plugs into the code-block renderer without coupling the two native cores:
 
 ```js
 import { createHighlighter } from 'ferriki'
@@ -153,7 +170,7 @@ const { html, headings, frontMatter } = transform(source, { frontMatter: true })
 // frontMatter: raw text between the --- delimiters (parse with your YAML library)
 ```
 
-`transformWithHighlighter()` combines this with fenced-code highlighting in the same native pass.
+`transformWithHighlighter()` combines this with code-block highlighting in the same native pass.
 
 For sites deployed under a subpath (e.g. GitHub Pages), `linkBasePath` prefixes internal absolute link destinations natively:
 

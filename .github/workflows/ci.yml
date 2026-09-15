@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/v2]
   pull_request:
 
 permissions:
@@ -16,36 +16,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { os: ubuntu-latest, rust: stable, features: default, args: "" }
-          - { os: macos-latest, rust: stable, features: default, args: "" }
-          - { os: windows-latest, rust: stable, features: default, args: "" }
-          - { os: ubuntu-latest, rust: stable, features: all, args: "--all-features" }
-          - { os: ubuntu-latest, rust: stable, features: mdx, args: "--no-default-features --features mdx" }
-          - { os: ubuntu-latest, rust: "1.94", features: default, args: "" }
-          - { os: ubuntu-latest, rust: "1.94", features: all, args: "--all-features" }
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: ["1.95", stable]
     runs-on: ${{ matrix.os }}
-    name: test (${{ matrix.os }}, rust ${{ matrix.rust }}, ${{ matrix.features }})
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
           toolchain: ${{ matrix.rust }}
-      # The action only sets the rustup default, and rust-toolchain.toml
-      # outranks that; a directory override outranks the file. Without this
-      # line the MSRV rows would quietly test with stable instead.
-      # `shell: bash` is required: the Windows default shell is pwsh, which
-      # does not expand `$TOOLCHAIN`.
       - run: rustup override set "$TOOLCHAIN"
         shell: bash
         env:
           TOOLCHAIN: ${{ matrix.rust }}
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
-      - run: cargo test --locked ${{ matrix.args }}
-      - run: cargo test -p ferro-byte-search --locked
-      - name: Test complete workflow comparison adapters
-        if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable' && matrix.features == 'all'
-        run: cargo test --manifest-path benchmarks/workflows/Cargo.toml --all-features --locked
+      - run: cargo test --workspace --all-features --locked
 
   clippy:
     runs-on: ubuntu-latest
@@ -53,33 +37,28 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
-          toolchain: stable
+          toolchain: "1.95"
           components: clippy
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
-      - run: cargo clippy --all-targets --all-features --locked -- -D warnings
-      - run: cargo clippy -p ferro-byte-search --all-targets --locked -- -D warnings
-      - run: cargo clippy --manifest-path benchmarks/workflows/Cargo.toml --all-targets --all-features --locked -- -D warnings
+      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - run: cargo bench --workspace --no-run --locked
 
   coverage:
     runs-on: ubuntu-latest
-    # The line-coverage floor lives here and nowhere else: the gate below and
-    # the run summary both read it, CONTRIBUTING.md documents the same number,
-    # and scripts/test-ci-hardening.mjs checks that they agree.
     env:
       COVERAGE_FLOOR: "90"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
-          toolchain: stable
+          toolchain: "1.95"
           components: llvm-tools-preview
       - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
         with:
           tool: cargo-llvm-cov
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
-      - run: cargo llvm-cov --all-features --locked --no-report
-      # The measured percentage and the floor reach the run summary before the
-      # gate below can fail the job, so a red run states both numbers.
+      # Serialize instrumented tests so timing guards do not compete for CPU.
+      - run: cargo llvm-cov --workspace --exclude ferromark-node --all-features --locked --no-report -- --test-threads=1
       - name: Summarize line coverage
         run: |
           percent=$(cargo llvm-cov report --json --summary-only | jq -r '.data[0].totals.lines.percent')
@@ -92,7 +71,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
-          toolchain: stable
+          toolchain: "1.95"
           components: rustfmt
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
@@ -102,45 +81,25 @@ jobs:
           node-version: "22"
           cache: pnpm
           cache-dependency-path: scripts/pnpm-lock.yaml
-      - name: Install contract dependencies
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
         working-directory: scripts
-      # The contract scripts are a declared Node workspace, so they are
-      # formatted with the org's managed oxfmt config that lives next to them.
-      - name: Check the contract scripts formatting
-        run: pnpm format:check
+      - run: pnpm format:check
         working-directory: scripts
-      - run: cargo fmt --check
-      - run: cargo fmt --manifest-path benchmarks/workflows/Cargo.toml --check
-      - run: python3 -m unittest discover -s benchmarks/bun-comparison -p "test_*.py"
-      - run: python3 -m unittest discover -s benchmarks/cmark-comparison -p "test_*.py"
-      - run: python3 -m unittest discover -s benchmarks/native-pipeline-comparison -p "test_*.py"
-      - run: python3 -m unittest discover -s benchmarks/workflows -p "test_*.py"
-      - run: python3 -m unittest discover -s benchmarks/workflows/field -p "test_*.py"
-      - run: python3 benchmarks/workflows/field/publish.py --check
-      - run: python3 benchmarks/workflows/publish.py --check
-      - run: python3 docs/reports/2026-09-13-ox-workflow-study/summarize.py --check
-      - run: python3 -m unittest discover -s scripts -p "test_ci_benchmarks.py"
-      - run: python3 benchmarks/bun-comparison/publish.py --check
-      - run: python3 docs/reports/2026-09-11-native-cmark-comparison/render.py --check
-      - run: python3 benchmarks/native-pipeline-comparison/report.py docs/reports/2026-09-11-native-pipeline-comparison --check
+      - run: cargo fmt --all --check
+      - run: node --test scripts/test-*.mjs
       - run: ./scripts/test-check-workflow-pins.sh
-      - run: node ./scripts/test-publish-verification.mjs
-      - run: node --test ./scripts/test-release-version-sync.mjs
-      - run: node --test ./scripts/test-node-ci-matrix.mjs
-      - run: node --test ./scripts/test-contributing-ci-contract.mjs
-      - run: node --test ./scripts/test-ci-hardening.mjs
-      - run: node --test ./scripts/test-benchmark-ci-contract.mjs
-      - run: node --test ./scripts/test-profiling-scripts.mjs
-      - run: node --test ./scripts/test-docs-rs-metadata.mjs
-      - run: RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features --locked
-      - run: node --test ./scripts/test-migration-guide-contract.mjs
-      - run: node --test ./scripts/test-node-options-docs-contract.mjs
-      - run: node --test ./scripts/test-readme-structure-contract.mjs
-      # Renders the Ferramenta family block from the registry pinned in the
-      # script and fails on drift; `--write` regenerates it.
-      - run: node ./scripts/check-readme-family.mjs
       - run: ./scripts/check-workflow-pins.sh
+      - run: python3 scripts/publish-native-readme.py --check
+      - run: node ./scripts/check-readme-family.mjs
+      - run: RUSTDOCFLAGS='-D warnings' cargo doc --workspace --no-deps --all-features --locked
+      - name: Check benchmark harnesses
+        shell: bash
+        run: |
+          for directory in benchmarks/*/; do
+            if compgen -G "${directory}test_*.py" > /dev/null; then
+              python3 -m unittest discover -s "$directory" -p 'test_*.py'
+            fi
+          done
 
   standards:
     name: standards drift
@@ -274,7 +233,7 @@ jobs:
           cache-dependency-path: node/pnpm-lock.yaml
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
-          toolchain: stable
+          toolchain: "1.95"
       - run: pnpm install --frozen-lockfile
       - name: Verify the lockfile matches the manifests
         run: pnpm install --lockfile-only && git diff --exit-code -- pnpm-lock.yaml
@@ -305,7 +264,7 @@ jobs:
           cache-dependency-path: node/pnpm-lock.yaml
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
-          toolchain: stable
+          toolchain: "1.95"
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Set minimum supported Node.js
@@ -349,7 +308,7 @@ jobs:
           cache-dependency-path: node/pnpm-lock.yaml
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
-          toolchain: stable
+          toolchain: "1.95"
           targets: ${{ matrix.rust_target }}
       - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         if: ${{ contains(matrix.rust_target, '-musl') }}

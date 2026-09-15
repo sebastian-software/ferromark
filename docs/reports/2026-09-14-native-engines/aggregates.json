@@ -1,0 +1,418 @@
+[
+  {
+    "group": "All 57 native workloads (output differences included)",
+    "count": 57,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9691702947543901,
+      "v1": 0.7180986312732979,
+      "md4c": 0.38194470938675573,
+      "pulldown-cmark": 0.5091938397020207,
+      "bun": 0.22523695432118257
+    }
+  },
+  {
+    "group": "All-six HTML agreement (14 cases)",
+    "count": 14,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9964176996779447,
+      "v1": 0.8143578992995342,
+      "md4c": 0.26248185343874003,
+      "pulldown-cmark": 0.46492759343342166,
+      "bun": 0.16638662822339498
+    }
+  },
+  {
+    "group": "comments",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9975640829882455,
+      "v1": 0.8311915762071013,
+      "md4c": 0.2878334632157266,
+      "pulldown-cmark": 0.5701433516749408,
+      "bun": 0.257693727115691
+    }
+  },
+  {
+    "group": "encyclopedia",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9016626004045201,
+      "v1": 0.5522146204793444,
+      "md4c": 0.42383118148172055,
+      "pulldown-cmark": 0.4970283804116375,
+      "bun": 0.2456889903874894
+    }
+  },
+  {
+    "group": "plain-prose",
+    "count": 4,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9963229090308348,
+      "v1": 0.8011783512588534,
+      "md4c": 0.2541842289818041,
+      "pulldown-cmark": 0.2952991439158232,
+      "bun": 0.058893548131549296
+    }
+  },
+  {
+    "group": "readme",
+    "count": 2,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9806094768824121,
+      "v1": 0.7565294041911076,
+      "md4c": 0.4586572139287505,
+      "pulldown-cmark": 0.5775373862742228,
+      "bun": 0.2898361238528275
+    }
+  },
+  {
+    "group": "reference",
+    "count": 4,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 1.0097067667783286,
+      "v1": 0.9685075964697062,
+      "md4c": 0.46666189703171246,
+      "pulldown-cmark": 0.6592576308489505,
+      "bun": 0.3125540995104253
+    }
+  },
+  {
+    "group": "syntax-guard",
+    "count": 1,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.961455366692113,
+      "v1": 0.5733281668061997,
+      "md4c": 0.27982606132121873,
+      "pulldown-cmark": 0.7724520668116088,
+      "bun": 0.5940536166373465
+    }
+  },
+  {
+    "group": "technical-docs",
+    "count": 22,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9793551066190184,
+      "v1": 0.7143020242672322,
+      "md4c": 0.4361299372984821,
+      "pulldown-cmark": 0.4957435111021791,
+      "bun": 0.22444651285156822
+    }
+  },
+  {
+    "group": "commonmark",
+    "count": 17,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9265860989757077,
+      "v1": 0.604080747693627,
+      "md4c": 0.36672542857708534,
+      "pulldown-cmark": 0.45127456425496565,
+      "bun": 0.18491997071078445
+    }
+  },
+  {
+    "group": "gfm (shared subset)",
+    "count": 40,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.98785608171984,
+      "v1": 0.7728531265784429,
+      "md4c": 0.3886026653787061,
+      "pulldown-cmark": 0.5360078031067185,
+      "bun": 0.24493078473952606
+    }
+  },
+  {
+    "group": "<512 B",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9889439040865369,
+      "v1": 0.7929365302508046,
+      "md4c": 0.27802846306429185,
+      "pulldown-cmark": 0.5923676602312414,
+      "bun": 0.290726656183988
+    }
+  },
+  {
+    "group": "512 B\u20132 KiB",
+    "count": 9,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9531362614902636,
+      "v1": 0.6949958450076505,
+      "md4c": 0.41672373062188856,
+      "pulldown-cmark": 0.5257291577770752,
+      "bun": 0.25881819160846914
+    }
+  },
+  {
+    "group": "2\u20138 KiB",
+    "count": 15,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9553612098147349,
+      "v1": 0.6341619169407215,
+      "md4c": 0.4332240247386221,
+      "pulldown-cmark": 0.4888379791457132,
+      "bun": 0.2297870170794445
+    }
+  },
+  {
+    "group": "8\u201332 KiB",
+    "count": 9,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9739071911604027,
+      "v1": 0.7328205475978891,
+      "md4c": 0.469457623684756,
+      "pulldown-cmark": 0.5324340879126644,
+      "bun": 0.24283485322057152
+    }
+  },
+  {
+    "group": "32\u2013128 KiB",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9755844344092994,
+      "v1": 0.7667450161976024,
+      "md4c": 0.3596987862968955,
+      "pulldown-cmark": 0.43488704030990005,
+      "bun": 0.14493298702798316
+    }
+  },
+  {
+    "group": "All 57 native workloads (output differences included)",
+    "count": 57,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9663700292406009,
+      "v1": 0.7465522243176006,
+      "md4c": 0.35619248089132977,
+      "pulldown-cmark": 0.48332651529730336,
+      "bun": 0.20360488070527133
+    }
+  },
+  {
+    "group": "All-six HTML agreement (14 cases)",
+    "count": 14,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9923712086947158,
+      "v1": 0.840085527414681,
+      "md4c": 0.208187444590318,
+      "pulldown-cmark": 0.38543880037031736,
+      "bun": 0.12519389771108427
+    }
+  },
+  {
+    "group": "comments",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9931269072235299,
+      "v1": 0.8255603104184782,
+      "md4c": 0.2148638611818226,
+      "pulldown-cmark": 0.4476164838898283,
+      "bun": 0.1816025786073506
+    }
+  },
+  {
+    "group": "encyclopedia",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8992645128183708,
+      "v1": 0.5734218932110242,
+      "md4c": 0.4196802452079147,
+      "pulldown-cmark": 0.49486775290699464,
+      "bun": 0.23859366626470876
+    }
+  },
+  {
+    "group": "plain-prose",
+    "count": 4,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9922038275225421,
+      "v1": 0.9236513049917694,
+      "md4c": 0.2629879873976186,
+      "pulldown-cmark": 0.30805594179815976,
+      "bun": 0.0583033816437075
+    }
+  },
+  {
+    "group": "readme",
+    "count": 2,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9852087710960363,
+      "v1": 0.7985384843596688,
+      "md4c": 0.45989279721049403,
+      "pulldown-cmark": 0.5839312752364552,
+      "bun": 0.2849013077757175
+    }
+  },
+  {
+    "group": "reference",
+    "count": 4,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 1.0081270896424055,
+      "v1": 0.9977818481806572,
+      "md4c": 0.47071722024648366,
+      "pulldown-cmark": 0.6664502668375458,
+      "bun": 0.30972427353850546
+    }
+  },
+  {
+    "group": "syntax-guard",
+    "count": 1,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9491242858287398,
+      "v1": 0.6137620580040433,
+      "md4c": 0.19196784231614217,
+      "pulldown-cmark": 0.5768436763355114,
+      "bun": 0.38878885543420333
+    }
+  },
+  {
+    "group": "technical-docs",
+    "count": 22,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9769944351385667,
+      "v1": 0.7468385350917748,
+      "md4c": 0.4331354507213351,
+      "pulldown-cmark": 0.49667557856300615,
+      "bun": 0.21772031098485092
+    }
+  },
+  {
+    "group": "commonmark",
+    "count": 17,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9232434681102832,
+      "v1": 0.6440578978395715,
+      "md4c": 0.35906753834534233,
+      "pulldown-cmark": 0.44665009688430524,
+      "bun": 0.17625478835880212
+    }
+  },
+  {
+    "group": "gfm (shared subset)",
+    "count": 40,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.985303478603296,
+      "v1": 0.7949095036464077,
+      "md4c": 0.35497756313518314,
+      "pulldown-cmark": 0.49981205463121264,
+      "bun": 0.2164777523030487
+    }
+  },
+  {
+    "group": "<512 B",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9826215152461747,
+      "v1": 0.7871617092981054,
+      "md4c": 0.20164902369553203,
+      "pulldown-cmark": 0.4559588571136991,
+      "bun": 0.1990571791375269
+    }
+  },
+  {
+    "group": "512 B\u20132 KiB",
+    "count": 9,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9489389142397564,
+      "v1": 0.7279770590417741,
+      "md4c": 0.40190286512592766,
+      "pulldown-cmark": 0.509210879863157,
+      "bun": 0.2414348513349736
+    }
+  },
+  {
+    "group": "2\u20138 KiB",
+    "count": 15,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9554717981948674,
+      "v1": 0.6604825835191729,
+      "md4c": 0.43148675090536126,
+      "pulldown-cmark": 0.489848081541402,
+      "bun": 0.22352433530073032
+    }
+  },
+  {
+    "group": "8\u201332 KiB",
+    "count": 9,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9737858129312638,
+      "v1": 0.7660621194752003,
+      "md4c": 0.4725190757296444,
+      "pulldown-cmark": 0.5408806687147427,
+      "bun": 0.2404228679288895
+    }
+  },
+  {
+    "group": "32\u2013128 KiB",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9716201522195854,
+      "v1": 0.824819627277845,
+      "md4c": 0.36584048094041705,
+      "pulldown-cmark": 0.4452881924779989,
+      "bun": 0.14397205872344074
+    }
+  }
+]

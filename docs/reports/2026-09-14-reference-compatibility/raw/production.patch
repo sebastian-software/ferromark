@@ -1,0 +1,803 @@
+diff --git a/crates/ferromark_parser/src/parser.rs b/crates/ferromark_parser/src/parser.rs
+index 65dfa55..4241932 100644
+--- a/crates/ferromark_parser/src/parser.rs
++++ b/crates/ferromark_parser/src/parser.rs
+@@ -195,7 +195,7 @@ impl<'a> Parser<'a> {
+         if let Some(map) = self.source_map {
+             match &mut result {
+                 Ok(document) => {
+-                    document.span = map.map_span(document.span);
++                    document.span = map.map_document_span(document.span);
+                     for node in &mut document.children {
+                         Self::remap_node_spans(node, map);
+                     }
+diff --git a/crates/ferromark_parser/src/parser/inline.rs b/crates/ferromark_parser/src/parser/inline.rs
+index 8f1a52d..813b859 100644
+--- a/crates/ferromark_parser/src/parser/inline.rs
++++ b/crates/ferromark_parser/src/parser/inline.rs
+@@ -1,6 +1,5 @@
+ use ferromark_allocator::Vec;
+ use ferromark_ast::{Node, Span};
+-use memchr::memchr2;
+ 
+ use super::Parser;
+ use crate::error::ParseResult;
+@@ -31,8 +30,7 @@ impl<'a> Parser<'a> {
+     /// heading, table cell, list item paragraph) and runs the block-scoped
+     /// post-passes on the result — today, the GFM autolink rewrite.
+     ///
+-    /// Nested inline contexts (link text, image alt, strikethrough
+-    /// interiors) call [`Self::parse_inline`] directly instead: the autolink
++    /// Nested inline contexts (link text and image alt) call [`Self::parse_inline`] directly instead: the autolink
+     /// pass itself recurses through emphasis-like containers, so running it
+     /// per nested sequence both re-scanned the same nodes and — for link
+     /// text, which GFM excludes from autolinking — made nested `<a>`s.
+@@ -211,7 +209,7 @@ impl<'a> Parser<'a> {
+                 if run_len == 1 && self.options.subscript {
+                     self.parse_subscript_span(content, offset, children, pos)?;
+                 } else if run_len <= 2 {
+-                    self.parse_strikethrough(content, offset, children, pos, run_len)?;
++                    self.push_delimiter_run(content, offset, children, delimiters, pos);
+                 } else {
+                     Self::push_text(
+                         children,
+@@ -284,80 +282,4 @@ impl<'a> Parser<'a> {
+         }
+         Ok(())
+     }
+-
+-    fn parse_strikethrough(
+-        &self,
+-        content: &'a str,
+-        offset: usize,
+-        children: &mut Vec<'a, Node<'a>>,
+-        pos: &mut usize,
+-        marker_len: usize,
+-    ) -> ParseResult<()> {
+-        let bytes = content.as_bytes();
+-        let inner_start = *pos + marker_len;
+-        let mut inner_end = inner_start;
+-
+-        while inner_end < content.len() {
+-            match memchr2(b'~', b'`', &bytes[inner_end..]) {
+-                Some(off) => inner_end += off,
+-                None => break,
+-            }
+-            if bytes[inner_end] == b'`' {
+-                if let Some(end) = Self::closed_code_span_end(bytes, inner_end) {
+-                    inner_end = end;
+-                } else {
+-                    inner_end += Self::marker_run_len(bytes, inner_end, b'`');
+-                }
+-                continue;
+-            }
+-            let close_len = Self::marker_run_len(bytes, inner_end, b'~');
+-            if is_escaped_marker(bytes, inner_end) {
+-                inner_end += close_len;
+-                continue;
+-            }
+-            if close_len == marker_len
+-                && inner_end.checked_sub(1).is_none_or(|index| bytes[index] != b'~')
+-                && bytes.get(inner_end + close_len).is_none_or(|byte| *byte != b'~')
+-            {
+-                let inner = &content[inner_start..inner_end];
+-                if inner.is_empty()
+-                    || inner.chars().next().is_some_and(char::is_whitespace)
+-                    || inner.chars().next_back().is_some_and(char::is_whitespace)
+-                {
+-                    break;
+-                }
+-                let inner_children = self.parse_inline(inner, offset + inner_start)?;
+-                let span =
+-                    Span::new((offset + *pos) as u32, (offset + inner_end + marker_len) as u32);
+-                children.push(Node::Delete(
+-                    self.allocator.boxed(ferromark_ast::Delete { children: inner_children, span }),
+-                ));
+-                *pos = inner_end + marker_len;
+-                return Ok(());
+-            }
+-            inner_end += close_len;
+-        }
+-
+-        Self::push_text(
+-            children,
+-            &content[*pos..*pos + marker_len],
+-            offset + *pos,
+-            offset + *pos + marker_len,
+-        );
+-        *pos += marker_len;
+-        Ok(())
+-    }
+-}
+-
+-fn is_escaped_marker(bytes: &[u8], pos: usize) -> bool {
+-    let mut backslashes = 0;
+-    let mut index = pos;
+-    while let Some(previous) = index.checked_sub(1) {
+-        if bytes[previous] != b'\\' {
+-            break;
+-        }
+-        backslashes += 1;
+-        index = previous;
+-    }
+-    backslashes % 2 == 1
+ }
+diff --git a/crates/ferromark_parser/src/parser/inline/emphasis.rs b/crates/ferromark_parser/src/parser/inline/emphasis.rs
+index b448fcc..ba6ad6c 100644
+--- a/crates/ferromark_parser/src/parser/inline/emphasis.rs
++++ b/crates/ferromark_parser/src/parser/inline/emphasis.rs
+@@ -1,10 +1,10 @@
+-//! Emphasis and strong emphasis via the CommonMark delimiter stack.
++//! Emphasis, strong emphasis, and GFM strikethrough via the delimiter stack.
+ //!
+-//! During inline parsing every `*`/`_` run is pushed as a plain text node
++//! During inline parsing every enabled `*`/`_`/`~` run is pushed as a plain text node
+ //! plus a [`Delimiter`] record carrying its flanking classification. Once
+ //! the inline sequence is complete, [`Parser::process_emphasis`] pairs
+ //! closers with openers (nearest matching opener, rule of three), wraps
+-//! the nodes between into `Emphasis`/`Strong`, and trims the delimiter
++//! the nodes between into `Emphasis`/`Strong`/`Delete`, and trims the delimiter
+ //! text nodes in place. Unpaired runs simply stay literal text.
+ 
+ use ferromark_allocator::Vec;
+@@ -25,7 +25,7 @@ pub(in crate::parser) struct Delimiter {
+ }
+ 
+ impl<'a> Parser<'a> {
+-    /// Records a `*`/`_` run: pushes its text node and the delimiter
++    /// Records a `*`/`_`/`~` run: pushes its text node and the delimiter
+     /// entry describing how it may participate in emphasis.
+     pub(in crate::parser) fn push_delimiter_run(
+         &self,
+@@ -39,8 +39,16 @@ impl<'a> Parser<'a> {
+         let marker = bytes[*pos];
+         let run_len = Self::marker_run_len(bytes, *pos, marker);
+ 
+-        let prev_char = content[..*pos].chars().next_back();
+-        let next_char = content[*pos + run_len..].chars().next();
++        let mut before = &content[..*pos];
++        let mut after = &content[*pos + run_len..];
++        if self.options.strikethrough && marker != b'~' {
++            // GFM emphasis looks through adjacent extension markers when
++            // classifying flanking, as cmark-gfm does for strikethrough.
++            before = before.trim_end_matches('~');
++            after = after.trim_start_matches('~');
++        }
++        let prev_char = before.chars().next_back();
++        let next_char = after.chars().next();
+         let (can_open, can_close) =
+             classify_flanking(marker, prev_char, next_char, self.options.cjk_emphasis);
+ 
+@@ -97,6 +105,19 @@ impl<'a> Parser<'a> {
+                 continue;
+             };
+ 
++            let strikethrough = delimiters[closer_idx].marker == b'~';
++            if strikethrough && delimiters[opener_idx].remaining != delimiters[closer_idx].remaining
++            {
++                // cmark-gfm consumes the delimiter records for an unequal
++                // single/double pair, retaining their literal text. Retire
++                // the enclosed records too: they cannot pair across it later.
++                for delimiter in &mut delimiters[opener_idx..=closer_idx] {
++                    delimiter.remaining = 0;
++                }
++                closer_idx += 1;
++                continue;
++            }
++
+             let use_delims: u32 =
+                 if delimiters[opener_idx].remaining >= 2 && delimiters[closer_idx].remaining >= 2 {
+                     2
+@@ -119,7 +140,9 @@ impl<'a> Parser<'a> {
+                 }
+             }
+             let span = inner_span(&inner, use_delims);
+-            let node = if use_delims == 2 {
++            let node = if strikethrough {
++                Node::Delete(self.allocator.boxed(ferromark_ast::Delete { children: inner, span }))
++            } else if use_delims == 2 {
+                 Node::Strong(self.allocator.boxed(ferromark_ast::Strong { children: inner, span }))
+             } else {
+                 Node::Emphasis(
+@@ -171,11 +194,16 @@ fn empty_text<'a>() -> Node<'a> {
+ struct OpenersBottom {
+     star: [[Option<usize>; 2]; 3],
+     underscore: [[Option<usize>; 2]; 3],
++    tilde: [[Option<usize>; 2]; 3],
+ }
+ 
+ impl OpenersBottom {
+     fn slot(&mut self, closer: &Delimiter) -> &mut Option<usize> {
+-        let table = if closer.marker == b'_' { &mut self.underscore } else { &mut self.star };
++        let table = match closer.marker {
++            b'_' => &mut self.underscore,
++            b'~' => &mut self.tilde,
++            _ => &mut self.star,
++        };
+         &mut table[closer.orig_len % 3][usize::from(closer.can_open)]
+     }
+ 
+@@ -279,7 +307,7 @@ fn classify_flanking(
+     let left_flanking = !next_ws && (!next_punct || prev_ws || prev_punct);
+     let right_flanking = !prev_ws && (!prev_punct || next_ws || next_punct);
+ 
+-    if marker == b'*' {
++    if matches!(marker, b'*' | b'~') {
+         (left_flanking, right_flanking)
+     } else {
+         (
+diff --git a/crates/ferromark_parser/src/parser/options.rs b/crates/ferromark_parser/src/parser/options.rs
+index 86ec220..ccd5658 100644
+--- a/crates/ferromark_parser/src/parser/options.rs
++++ b/crates/ferromark_parser/src/parser/options.rs
+@@ -162,6 +162,15 @@ impl Default for ParserOptions {
+ const DEFAULT_MAX_NESTING_DEPTH: usize = 100;
+ 
+ impl ParserOptions {
++    /// Creates the strict CommonMark parser profile.
++    ///
++    /// This is equivalent to [`Default::default`], but names the profile
++    /// explicitly at call sites that compare Markdown dialects.
++    #[must_use]
++    pub fn commonmark() -> Self {
++        Self::default()
++    }
++
+     /// Creates new parser options with GFM extensions enabled.
+     #[must_use]
+     pub fn gfm() -> Self {
+@@ -186,6 +195,15 @@ impl ParserOptions {
+         }
+     }
+ 
++    /// Creates the strict GFM parser profile.
++    ///
++    /// Unlike the convenience [`Self::gfm`] preset, this follows the GFM
++    /// feature set without Ferromark's semantic footnote extension.
++    #[must_use]
++    pub fn gfm_spec() -> Self {
++        Self { footnotes: false, ..Self::gfm() }
++    }
++
+     /// Creates parser options with MDX enabled and GFM left off.
+     #[must_use]
+     pub fn mdx() -> Self {
+diff --git a/crates/ferromark_parser/src/parser/source_normalization.rs b/crates/ferromark_parser/src/parser/source_normalization.rs
+index 745fcdc..f4cab45 100644
+--- a/crates/ferromark_parser/src/parser/source_normalization.rs
++++ b/crates/ferromark_parser/src/parser/source_normalization.rs
+@@ -1,4 +1,4 @@
+-//! CommonMark U+0000 replacement before any syntax or reference parsing.
++//! CommonMark source normalization before any syntax or reference parsing.
+ use ferromark_allocator::{Allocator, Vec};
+ use ferromark_ast::Span;
+ 
+@@ -9,22 +9,38 @@ use super::spans::SpanMap;
+ /// source and remap their stripped-source spans before this final mapping.
+ pub(super) struct NulSourceMap<'a> {
+     replacements: Vec<'a, u32>,
++    leading_bom: bool,
++    original_len: u32,
+ }
+ 
+ pub(super) fn normalize<'a>(
+     allocator: &'a Allocator,
+     source: &'a str,
+ ) -> (&'a str, Option<&'a NulSourceMap<'a>>) {
+-    let Some(first) = memchr::memchr(0, source.as_bytes()) else {
+-        // Keep ordinary Markdown borrowed, with no map or string allocation.
+-        return (source, None);
++    let bytes = source.as_bytes();
++    let leading_bom = bytes.starts_with(b"\xEF\xBB\xBF");
++    let source_start = usize::from(leading_bom) * 3;
++    let first_nul = memchr::memchr(0, &bytes[source_start..]).map(|offset| source_start + offset);
++    let Some(first) = first_nul else {
++        if !leading_bom {
++            // Keep ordinary Markdown borrowed, with no map or string allocation.
++            return (source, None);
++        }
++        let map = allocator.alloc(NulSourceMap {
++            replacements: allocator.new_vec(),
++            leading_bom,
++            original_len: source.len() as u32,
++        });
++        // A BOM-only normalization needs no generated copy: borrow the
++        // caller's post-BOM slice and retain the map solely for span offsets.
++        return (&source[source_start..], Some(map));
+     };
+     let mut normalized = allocator.new_string();
+     normalized.reserve(source.len() + 2);
+-    normalized.push_str(&source[..first]);
++    normalized.push_str(&source[source_start..first]);
+     let mut replacements = allocator.new_vec();
+     let mut start = first;
+-    for relative in memchr::memchr_iter(0, &source.as_bytes()[first..]) {
++    for relative in memchr::memchr_iter(0, &bytes[first..]) {
+         let offset = first + relative;
+         normalized.push_str(&source[start..offset]);
+         replacements.push(normalized.len() as u32);
+@@ -32,7 +48,11 @@ pub(super) fn normalize<'a>(
+         start = offset + 1;
+     }
+     normalized.push_str(&source[start..]);
+-    let map = allocator.alloc(NulSourceMap { replacements });
++    let map = allocator.alloc(NulSourceMap {
++        replacements,
++        leading_bom,
++        original_len: source.len() as u32,
++    });
+     (normalized.into_bump_str(), Some(map))
+ }
+ 
+@@ -43,12 +63,17 @@ impl NulSourceMap<'_> {
+         // error points inside it, so returned offsets remain source boundaries.
+         let offset =
+             self.replacements.get(count).copied().filter(|&start| start < offset).unwrap_or(offset);
+-        offset - 2 * count as u32
++        offset - 2 * count as u32 + u32::from(self.leading_bom) * 3
+     }
+ }
+ 
+ impl SpanMap for NulSourceMap<'_> {
+     fn map_span(&self, span: Span) -> Span {
+-        Span::new(self.boundary(span.start), self.boundary(span.end))
++        let start = self.boundary(span.start);
++        let end = if span.start == span.end { start } else { self.boundary(span.end) };
++        Span::new(start, end)
++    }
++    fn map_document_span(&self, _span: Span) -> Span {
++        Span::new(0, self.original_len)
+     }
+ }
+diff --git a/crates/ferromark_parser/src/parser/spans.rs b/crates/ferromark_parser/src/parser/spans.rs
+index 3376eea..9e9eee3 100644
+--- a/crates/ferromark_parser/src/parser/spans.rs
++++ b/crates/ferromark_parser/src/parser/spans.rs
+@@ -8,6 +8,14 @@ mod remap;
+ /// Shared traversal for stripped sub-sources and root character replacement.
+ pub(in crate::parser) trait SpanMap {
+     fn map_span(&self, span: Span) -> Span;
++
++    /// Maps the synthetic parser document span back to the caller's source.
++    /// Most maps have no distinction between a document and node span; the
++    /// root NUL/BOM map overrides this because it strips a leading BOM while
++    /// the document span must continue to cover the complete input.
++    fn map_document_span(&self, span: Span) -> Span {
++        self.map_span(span)
++    }
+ }
+ 
+ #[derive(Debug, Default)]
+diff --git a/crates/ferromark_renderer/src/html/escape.rs b/crates/ferromark_renderer/src/html/escape.rs
+index 6e4d8c5..341ae34 100644
+--- a/crates/ferromark_renderer/src/html/escape.rs
++++ b/crates/ferromark_renderer/src/html/escape.rs
+@@ -284,35 +284,60 @@ pub(super) fn write_url_escaped_into(out: &mut String, s: &str) {
+     // pair when present so the common scanner remains branch-free.
+     out.reserve(s.len());
+     if let Some((open, close)) = ipv6_authority_brackets(s) {
+-        escape_into(
+-            out,
+-            &s[..open],
+-            url_escape_mask,
+-            &URL_ESCAPE_FLAG,
+-            &URL_ESCAPE_TABLE,
+-            &URL_ESCAPE_NIBBLES,
+-        );
++        write_url_segment(out, &s[..open]);
+         out.push_str(&s[open..=close]);
+-        escape_into(
+-            out,
+-            &s[close + 1..],
+-            url_escape_mask,
+-            &URL_ESCAPE_FLAG,
+-            &URL_ESCAPE_TABLE,
+-            &URL_ESCAPE_NIBBLES,
+-        );
++        write_url_segment(out, &s[close + 1..]);
+     } else {
+-        escape_into(
+-            out,
+-            s,
+-            url_escape_mask,
+-            &URL_ESCAPE_FLAG,
+-            &URL_ESCAPE_TABLE,
+-            &URL_ESCAPE_NIBBLES,
+-        );
++        write_url_segment(out, s);
+     }
+ }
+ 
++/// Escapes URL syntax and UTF-8 bytes while retaining the byte-oriented fast
++/// scanner for ASCII runs. Percent encoding operates on the UTF-8 bytes, as
++/// required by cmark's URI renderer, and leaves existing `%HH` sequences alone.
++fn write_url_segment(out: &mut String, s: &str) {
++    let bytes = s.as_bytes();
++    let mut start = 0;
++    while start < bytes.len() {
++        // Bound the ASCII run once, then let the established vectorized
++        // escaper scan that run. This avoids restarting a scan at every '&'
++        // or other flagged byte when a Unicode suffix is present.
++        let ascii_end = bytes[start..]
++            .iter()
++            .position(|&byte| byte >= 0x80)
++            .map_or(bytes.len(), |offset| start + offset);
++        if start < ascii_end {
++            escape_into(
++                out,
++                &s[start..ascii_end],
++                url_escape_mask,
++                &URL_ESCAPE_FLAG,
++                &URL_ESCAPE_TABLE,
++                &URL_ESCAPE_NIBBLES,
++            );
++        }
++        if ascii_end == bytes.len() {
++            return;
++        }
++        let unicode_end = bytes[ascii_end..]
++            .iter()
++            .position(|&byte| byte < 0x80)
++            .map_or(bytes.len(), |offset| ascii_end + offset);
++        for &byte in &bytes[ascii_end..unicode_end] {
++            push_percent_byte(out, byte);
++        }
++        start = unicode_end;
++    }
++}
++
++#[inline]
++fn push_percent_byte(out: &mut String, byte: u8) {
++    const HEX: &[u8; 16] = b"0123456789ABCDEF";
++    out.push('%');
++    out.push(HEX[(byte >> 4) as usize] as char);
++    out.push(HEX[(byte & 0x0F) as usize] as char);
++}
++
+ /// Returns the bracket pair delimiting an IPv6 host in a URL authority.
+ /// Brackets elsewhere are data and remain subject to URL escaping.
+ fn ipv6_authority_brackets(s: &str) -> Option<(usize, usize)> {
+diff --git a/crates/ferromark_renderer/src/html/escape/tests.rs b/crates/ferromark_renderer/src/html/escape/tests.rs
+index 97b889d..19237bb 100644
+--- a/crates/ferromark_renderer/src/html/escape/tests.rs
++++ b/crates/ferromark_renderer/src/html/escape/tests.rs
+@@ -19,6 +19,20 @@ fn reference(s: &str, flags: &[u8; 256], table: &[&'static str; 256]) -> String
+     String::from_utf8(out).expect("escaping only rewrites ASCII bytes")
+ }
+ 
++fn reference_url(s: &str) -> String {
++    let mut out = String::new();
++    for byte in s.bytes() {
++        if byte >= 0x80 {
++            push_percent_byte(&mut out, byte);
++        } else if URL_ESCAPE_FLAG[byte as usize] != 0 {
++            out.push_str(URL_ESCAPE_TABLE[byte as usize]);
++        } else {
++            out.push(byte as char);
++        }
++    }
++    out
++}
++
+ fn check(s: &str) {
+     let mut text = String::new();
+     write_escaped_into(&mut text, s);
+@@ -26,7 +40,7 @@ fn check(s: &str) {
+ 
+     let mut url = String::new();
+     write_url_escaped_into(&mut url, s);
+-    assert_eq!(url, reference(s, &URL_ESCAPE_FLAG, &URL_ESCAPE_TABLE), "url escape: {s:?}");
++    assert_eq!(url, reference_url(s), "url escape: {s:?}");
+ 
+     let mut attributes = String::from("prefix:");
+     let mut expected = attributes.clone();
+@@ -87,6 +101,19 @@ fn commonmark_url_syntax_bytes_are_percent_encoded() {
+     }
+ }
+ 
++#[test]
++fn url_escape_handles_escape_heavy_ascii_before_unicode_linearly() {
++    let mut source = String::with_capacity(4097);
++    for _ in 0..2048 {
++        source.push('&');
++    }
++    source.push('é');
++
++    let mut actual = String::new();
++    write_url_escaped_into(&mut actual, &source);
++    assert_eq!(actual, reference_url(&source));
++}
++
+ #[test]
+ fn invalid_ipv6_authority_is_escaped_without_html_injection() {
+     let source = r#"https://[::1\"onerror=\"x]/"#;
+diff --git a/crates/ferromark_renderer/src/html/options.rs b/crates/ferromark_renderer/src/html/options.rs
+index 1a53575..fef1b20 100644
+--- a/crates/ferromark_renderer/src/html/options.rs
++++ b/crates/ferromark_renderer/src/html/options.rs
+@@ -148,6 +148,31 @@ pub struct HtmlRendererOptions {
+     ///
+     /// Default: `false`.
+     pub source_spans: bool,
++
++    /// Emit `id` attributes on headings, including explicit IDs from heading
++    /// attributes and generated IDs for ordinary headings.
++    ///
++    /// Default: `true`. The strict CommonMark and GFM profiles disable this
++    /// product convenience because heading IDs are not part of the HTML
++    /// defined by the Markdown specifications.
++    pub heading_ids: bool,
++
++    /// Render GitHub-style `[!NOTE]` block quotes as themed callouts.
++    ///
++    /// Default: `true`; strict profiles disable this product extension.
++    pub callouts: bool,
++
++    /// Interpret standalone `[[toc]]` paragraphs as inline tables of contents.
++    ///
++    /// Default: `true`; strict profiles disable this product extension.
++    pub inline_toc: bool,
++
++    /// Parse and clean VitePress-style fenced-code metadata and annotations.
++    ///
++    /// Default: `true`. When disabled, fenced code uses the plain fence path:
++    /// annotations are not applied and the parser-provided first info token is
++    /// emitted as the language verbatim (after ordinary HTML escaping).
++    pub code_fence_metadata: bool,
+ }
+ 
+ const DEFAULT_SOFT_BREAK: &str = "\n";
+@@ -182,6 +207,10 @@ pub(super) struct RendererOptions {
+     pub(super) semantic_footnotes: bool,
+     pub(super) heading_permalinks: bool,
+     pub(super) source_spans: bool,
++    pub(super) heading_ids: bool,
++    pub(super) callouts: bool,
++    pub(super) inline_toc: bool,
++    pub(super) code_fence_metadata: bool,
+ }
+ 
+ impl RendererOptions {
+@@ -206,6 +235,10 @@ impl RendererOptions {
+             semantic_footnotes: false,
+             heading_permalinks: false,
+             source_spans: false,
++            heading_ids: true,
++            callouts: true,
++            inline_toc: true,
++            code_fence_metadata: true,
+         }
+     }
+ 
+@@ -255,6 +288,10 @@ impl From<HtmlRendererOptions> for RendererOptions {
+             semantic_footnotes: options.semantic_footnotes,
+             heading_permalinks: options.heading_permalinks,
+             source_spans: options.source_spans,
++            heading_ids: options.heading_ids,
++            callouts: options.callouts,
++            inline_toc: options.inline_toc,
++            code_fence_metadata: options.code_fence_metadata,
+         }
+     }
+ }
+@@ -300,8 +337,41 @@ impl HtmlRendererOptions {
+             semantic_footnotes: false,
+             heading_permalinks: false,
+             source_spans: false,
++            heading_ids: true,
++            callouts: true,
++            inline_toc: true,
++            code_fence_metadata: true,
+         }
+     }
++
++    /// Creates the strict CommonMark HTML profile.
++    ///
++    /// Product conveniences remain available through [`Self::new`] and
++    /// [`Default::default`]. This profile keeps raw HTML passthrough but does
++    /// not add IDs, callouts, TOCs, URL autolinks, link targets, or
++    /// VitePress fence metadata cleanup.
++    #[must_use]
++    pub fn commonmark() -> Self {
++        let mut options = Self::new();
++        options.autolink_urls = false;
++        options.autolink_target_blank = false;
++        options.link_target_blank = false;
++        options.heading_ids = false;
++        options.callouts = false;
++        options.inline_toc = false;
++        options.code_fence_metadata = false;
++        options
++    }
++
++    /// Creates the strict GFM HTML profile.
++    ///
++    /// This adds GFM tag filtering to the strict CommonMark HTML profile.
++    #[must_use]
++    pub fn gfm() -> Self {
++        let mut options = Self::commonmark();
++        options.disallow_raw_html = true;
++        options
++    }
+ }
+ 
+ impl Default for HtmlRendererOptions {
+diff --git a/crates/ferromark_renderer/src/html/renderer.rs b/crates/ferromark_renderer/src/html/renderer.rs
+index a2715fd..ef7ad5f 100644
+--- a/crates/ferromark_renderer/src/html/renderer.rs
++++ b/crates/ferromark_renderer/src/html/renderer.rs
+@@ -186,7 +186,10 @@ impl HtmlRenderer {
+         self.toc_entries.clear();
+         self.code_block_index = 0;
+         let document_scan = scan_document_for_render(document);
+-        self.document_has_toc_marker = document_scan.has_toc_marker;
++        // A TOC without emitted heading IDs would produce dead links. Keep
++        // the two product conveniences coupled for explicitly strict output.
++        self.document_has_toc_marker =
++            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+         if self.document_has_toc_marker {
+             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
+         }
+diff --git a/crates/ferromark_renderer/src/html/renderer/blocks.rs b/crates/ferromark_renderer/src/html/renderer/blocks.rs
+index afa5d0a..446938c 100644
+--- a/crates/ferromark_renderer/src/html/renderer/blocks.rs
++++ b/crates/ferromark_renderer/src/html/renderer/blocks.rs
+@@ -42,14 +42,16 @@ impl HtmlRenderer {
+         let depth = heading.depth.clamp(1, 6);
+         self.output.push_str("<h");
+         self.output.push((b'0' + depth) as char);
+-        self.output.push_str(" id=\"");
+-        // Heading ids are slugified: lowercase alnum + '-' separators. None
+-        // of those bytes need HTML escaping, so the unconditional
+-        // `write_escaped` pass over the id was pure overhead. We also
+-        // skip materializing the id as a return-value `String`; it's
+-        // written straight into `self.output`.
+-        self.write_heading_id(heading);
+-        self.output.push('"');
++        if self.options.heading_ids {
++            self.output.push_str(" id=\"");
++            // Heading ids are slugified: lowercase alnum + '-' separators. None
++            // of those bytes need HTML escaping, so the unconditional
++            // `write_escaped` pass over the id was pure overhead. We also
++            // skip materializing the id as a return-value `String`; it's
++            // written straight into `self.output`.
++            self.write_heading_id(heading);
++            self.output.push('"');
++        }
+         if !heading.classes.is_empty() {
+             self.output.push_str(" class=\"");
+             for (index, class_name) in heading.classes.iter().enumerate() {
+@@ -85,7 +87,7 @@ impl HtmlRenderer {
+     }
+ 
+     pub(in crate::html::renderer) fn render_block_quote(&mut self, block_quote: &BlockQuote<'_>) {
+-        if self.render_callout_block_quote(block_quote) {
++        if self.options.callouts && self.render_callout_block_quote(block_quote) {
+             return;
+         }
+ 
+@@ -174,11 +176,16 @@ impl HtmlRenderer {
+     }
+ 
+     pub(in crate::html::renderer) fn render_code_block(&mut self, code_block: &CodeBlock<'_>) {
+-        if !self.options.code_annotations {
++        if !self.options.code_annotations || !self.options.code_fence_metadata {
+             self.write("<pre");
+             self.write_source_span_attr(code_block.span);
+             self.write("><code");
+-            if let Some(lang) = normalize_code_block_language(code_block.lang) {
++            let language = if self.options.code_fence_metadata {
++                normalize_code_block_language(code_block.lang)
++            } else {
++                code_block.lang.map(str::trim).filter(|lang| !lang.is_empty())
++            };
++            if let Some(lang) = language {
+                 self.write(" class=\"language-");
+                 self.write_escaped(lang);
+                 self.write("\"");
+diff --git a/crates/ferromark_renderer/src/html/renderer/hooks/blocks.rs b/crates/ferromark_renderer/src/html/renderer/hooks/blocks.rs
+index f343c4a..b880e0f 100644
+--- a/crates/ferromark_renderer/src/html/renderer/hooks/blocks.rs
++++ b/crates/ferromark_renderer/src/html/renderer/hooks/blocks.rs
+@@ -32,9 +32,21 @@ impl HtmlRenderer {
+         let depth = heading.depth.clamp(1, 6);
+         self.write("<h");
+         self.output.push((b'0' + depth) as char);
+-        self.write(" id=\"");
+-        self.write_heading_id(heading);
+-        self.output.push('"');
++        if self.options.heading_ids {
++            self.write(" id=\"");
++            self.write_heading_id(heading);
++            self.output.push('"');
++        }
++        if !heading.classes.is_empty() {
++            self.write(" class=\"");
++            for (index, class_name) in heading.classes.iter().enumerate() {
++                if index > 0 {
++                    self.output.push(' ');
++                }
++                self.write_attribute_escaped(class_name);
++            }
++            self.output.push('"');
++        }
+         self.write_source_span_attr(heading.span);
+         self.write(">");
+         for child in &heading.children {
+@@ -51,7 +63,7 @@ impl HtmlRenderer {
+         block_quote: &BlockQuote<'_>,
+         hooks: &mut H,
+     ) {
+-        if self.render_callout_block_quote_with_hooks(block_quote, hooks) {
++        if self.options.callouts && self.render_callout_block_quote_with_hooks(block_quote, hooks) {
+             return;
+         }
+ 
+diff --git a/crates/ferromark_renderer/src/html/renderer/incremental.rs b/crates/ferromark_renderer/src/html/renderer/incremental.rs
+index b1f6001..0fe2d33 100644
+--- a/crates/ferromark_renderer/src/html/renderer/incremental.rs
++++ b/crates/ferromark_renderer/src/html/renderer/incremental.rs
+@@ -110,7 +110,8 @@ impl HtmlRenderer {
+     ) -> String {
+         self.output.clear();
+         self.toc_entries.clear();
+-        self.document_has_toc_marker = document_scan.has_toc_marker;
++        self.document_has_toc_marker =
++            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+         if self.document_has_toc_marker {
+             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
+         }
+@@ -139,7 +140,8 @@ impl HtmlRenderer {
+     ) -> String {
+         self.output.clear();
+         self.toc_entries.clear();
+-        self.document_has_toc_marker = document_scan.has_toc_marker;
++        self.document_has_toc_marker =
++            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+         if self.document_has_toc_marker {
+             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
+         }
+diff --git a/crates/ferromark_renderer/src/html/renderer/write.rs b/crates/ferromark_renderer/src/html/renderer/write.rs
+index c41952e..e9c59e6 100644
+--- a/crates/ferromark_renderer/src/html/renderer/write.rs
++++ b/crates/ferromark_renderer/src/html/renderer/write.rs
+@@ -223,7 +223,7 @@ impl HtmlRenderer {
+         &mut self,
+         heading: &Heading<'_>,
+     ) {
+-        if !self.options.heading_permalinks {
++        if !self.options.heading_ids || !self.options.heading_permalinks {
+             return;
+         }
+         if heading_has_permalink_marker(&heading.children, &self.heading_id_scratch) {
+diff --git a/crates/ferromark_renderer/src/html/tests/snapshots/ferromark_renderer__html__tests__autolink__autolink_keeps_non_ascii_iri_paths.snap b/crates/ferromark_renderer/src/html/tests/snapshots/ferromark_renderer__html__tests__autolink__autolink_keeps_non_ascii_iri_paths.snap
+index 3de7f49..d041802 100644
+--- a/crates/ferromark_renderer/src/html/tests/snapshots/ferromark_renderer__html__tests__autolink__autolink_keeps_non_ascii_iri_paths.snap
++++ b/crates/ferromark_renderer/src/html/tests/snapshots/ferromark_renderer__html__tests__autolink__autolink_keeps_non_ascii_iri_paths.snap
+@@ -1,5 +1,6 @@
+ ---
+ source: crates/ferromark_renderer/src/html/tests/autolink.rs
++assertion_line: 247
+ expression: html
+ ---
+-<p>IRI: <a href="https://ja.wikipedia.org/wiki/日本語" target="_blank" rel="noopener noreferrer">https://ja.wikipedia.org/wiki/日本語</a> です。</p>
++<p>IRI: <a href="https://ja.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E8%AA%9E" target="_blank" rel="noopener noreferrer">https://ja.wikipedia.org/wiki/日本語</a> です。</p>
+diff --git a/crates/ferromark_renderer/src/html/tests/snapshots/ferromark_renderer__html__tests__blocks__render_inline_toc_uses_unique_and_unicode_ids.snap b/crates/ferromark_renderer/src/html/tests/snapshots/ferromark_renderer__html__tests__blocks__render_inline_toc_uses_unique_and_unicode_ids.snap
+index 276df84..b97b189 100644
+--- a/crates/ferromark_renderer/src/html/tests/snapshots/ferromark_renderer__html__tests__blocks__render_inline_toc_uses_unique_and_unicode_ids.snap
++++ b/crates/ferromark_renderer/src/html/tests/snapshots/ferromark_renderer__html__tests__blocks__render_inline_toc_uses_unique_and_unicode_ids.snap
+@@ -1,12 +1,13 @@
+ ---
+ source: crates/ferromark_renderer/src/html/tests/blocks.rs
++assertion_line: 171
+ expression: html
+ ---
+ <nav class="ox-toc" aria-label="Table of contents">
+ <ul>
+ <li class="ox-toc__item ox-toc__item--depth-2"><a href="#setup">Setup</a></li>
+ <li class="ox-toc__item ox-toc__item--depth-2"><a href="#setup-1">Setup</a></li>
+-<li class="ox-toc__item ox-toc__item--depth-2"><a href="#はじめに">はじめに</a></li>
++<li class="ox-toc__item ox-toc__item--depth-2"><a href="#%E3%81%AF%E3%81%98%E3%82%81%E3%81%AB">はじめに</a></li>
+ </ul>
+ </nav>
+ <h2 id="setup">Setup</h2>

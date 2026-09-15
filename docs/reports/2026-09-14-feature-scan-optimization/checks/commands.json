@@ -1,0 +1,82 @@
+[
+  {
+    "name": "format",
+    "command": [
+      "cargo",
+      "fmt",
+      "--all"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "format-check",
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "workspace-tests",
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--all-features",
+      "--locked"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--all-targets",
+      "--all-features",
+      "--locked",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "benchmark-build",
+    "command": [
+      "cargo",
+      "bench",
+      "--workspace",
+      "--no-run",
+      "--locked"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "harness-tests",
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "benchmarks/feature-scan-optimization",
+      "-p",
+      "test_*.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "generated-verification",
+    "command": [
+      "python3",
+      "benchmarks/feature-scan-optimization/verify_generated.py",
+      "/private/tmp/ferromark-v2-feature-final-build",
+      "/private/tmp/ferromark-v2-feature-final-generated-02"
+    ],
+    "exit_code": 0
+  }
+]

@@ -1,71 +1,31 @@
 ---
-title: MDX Examples
+title: MDX Syntax
 ---
 
-# MDX Examples
+# MDX Syntax
 
-ferromark can process `.mdx` input without a JavaScript toolchain. Enable the `mdx` feature and choose the integration level that fits your pipeline.
+V2 recognizes JSX-like elements, expressions, ESM source, and MDX islands.
+It stores syntax and renders static payloads. It does not compile or execute
+JavaScript and does not generate React, Preact, or Solid component modules.
 
-## render()
-
-`render()` returns a structured object with HTML body output plus extracted metadata.
-
-```rust
-use ferromark::mdx::render;
-
-let input = r#"import { Card } from './card'
-
----
-title: Hello
----
-
-# Hello World
-
-<Card title="Example">
-
-Markdown **inside** a component.
-
-</Card>
-
-{new Date().getFullYear()}
-"#;
-
-let output = render(input);
-// output.body
-// output.esm
-// output.front_matter
-```
-
-## to_component()
-
-Use `to_component()` to package rendered MDX as a JSX/TSX module.
+## Rust
 
 ```rust
-let output = render(input);
-let tsx = output.to_component("HelloWorld")?;
+use ferromark::{Allocator, HtmlRenderer, Parser, ParserOptions};
+
+let source = "<Notice>**Hello**</Notice>";
+let allocator = Allocator::for_source_len(source.len());
+let options = ParserOptions { mdx: true, ..ParserOptions::gfm() };
+let document = Parser::with_options(&allocator, source, options).parse()?;
+let html = HtmlRenderer::new().render(&document);
 ```
 
-## segment()
+## Node.js
 
-Use `segment()` when you need full control over each block:
-
-```rust
-use ferromark::mdx::{segment, Segment};
-
-for seg in segment(input) {
-    match seg {
-        Segment::Esm(s)               => { /* import/export */ }
-        Segment::Markdown(s)          => { /* parse with to_html */ }
-        Segment::JsxBlockOpen(s)      => { /* <Component> */ }
-        Segment::JsxBlockClose(s)     => { /* </Component> */ }
-        Segment::JsxBlockSelfClose(s) => { /* <Component /> */ }
-        Segment::Expression(s)        => { /* {expression} */ }
-    }
-}
+```js
+import { toHtml } from './ferromark/index.mjs'
+const html = toHtml('<Notice>**Hello**</Notice>', { mdx: true })
 ```
 
-Run the full sample:
-
-```bash
-cargo run --features mdx --example mdx_segment
-```
+Applications decide how to consume the resulting static islands. The old v1
+`render`, `segment`, and `to_component` MDX APIs are not part of v2.

@@ -1,0 +1,202 @@
+{
+  "fixture_sha256": "93240d5fd4d44155133a5ed91da66211040972a6b57596b43e2ee0e861532eaa",
+  "worker": {
+    "path": "/private/tmp/ferromark-v2-correctness-round2/audit-build/target/release/compatibility-audit-worker",
+    "sha256": "65f86a3695979dad34bec129beb3a748bca4089bb430e7bcabb251ae02e6df46",
+    "metadata_path": "/private/tmp/ferromark-v2-correctness-round2/audit-final/metadata.json",
+    "metadata_sha256": "87f4fc434d2d2679e804005460b57fe78e40c916026cd5766576260d3d13b012",
+    "source_revision": "c4bb2237b1d02577a5957c1f1c833e30e0ea770a",
+    "core_sha256": "ae1952feb3505317556523e0bf17a0233f0845cfff393cf7c4a0672dba1c36a4",
+    "worker_source_sha256": "a34a2b17edc12467ccee1869d7ad2167f8b017b4e523e204661cd89b9d3dd9f3"
+  },
+  "worker_source_metadata": {
+    "core_sha256": "ae1952feb3505317556523e0bf17a0233f0845cfff393cf7c4a0672dba1c36a4",
+    "source_revision": "c4bb2237b1d02577a5957c1f1c833e30e0ea770a",
+    "worker_sha256": "65f86a3695979dad34bec129beb3a748bca4089bb430e7bcabb251ae02e6df46",
+    "worker_source_sha256": "a34a2b17edc12467ccee1869d7ad2167f8b017b4e523e204661cd89b9d3dd9f3",
+    "runner_sha256": "f24c7145be7da27f5087c066fc76fb8fa466a668c0a4b439b761a300958bad23",
+    "gfm_html_sha256": "b153d814fdfc8624bb6da7449162c1cd707a637f7d1c1b636eb44b9cf63fa220",
+    "gfm_url": "https://github.github.com/gfm/",
+    "probes_sha256": "5e7009a829fde9fd1a5af53e3f8cf7515ba2bf48abaed4bc7ae0cbd14f7c967a",
+    "comparator_sha256": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018",
+    "spec_normalizer_sha256": "e2ea1beba4e7deec03c77b9930cb55fcc53f0e3b7ee8e7245d1848eca74b3b01",
+    "spec_text_codec_sha256": "9701ab7c8a968ab9c39140a9dddbd1efadb3ac2917225cd2e5e8885f9385977b",
+    "root_lock_sha256": "cf5b3223d4cf9ca14a5f3788d606769f99ca6fcd8431955e954cd205b20a147a",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2",
+    "commonmark_spec_sha256": "257c41ad946f7a1414a499aca402a1aa8fdac3678532266611348c1cf54f4b80",
+    "extension_spec_sha256": "dbf7266c30535f6e8746bdde1cb9627e796ac1022e6b224e8d06ff473f40e625",
+    "summary": {
+      "commonmark-configured": {
+        "count": 652,
+        "statuses": {
+          "exact": 556,
+          "serialization-equivalent": 96
+        },
+        "spec_failures": 0
+      },
+      "commonmark-default": {
+        "count": 652,
+        "statuses": {
+          "exact": 505,
+          "serialization-equivalent": 93,
+          "heading-id-only": 40,
+          "other": 14
+        },
+        "spec_failures": 3
+      },
+      "gfm-extensions-configured": {
+        "count": 28,
+        "statuses": {
+          "exact": 25,
+          "serialization-equivalent": 3
+        },
+        "spec_failures": 0
+      },
+      "gfm-configured": {
+        "count": 677,
+        "statuses": {
+          "exact": 568,
+          "serialization-equivalent": 99,
+          "other": 10
+        },
+        "spec_failures": 10
+      },
+      "gfm-without-tagfilter": {
+        "count": 677,
+        "statuses": {
+          "exact": 572,
+          "serialization-equivalent": 99,
+          "other": 6
+        },
+        "spec_failures": 6
+      },
+      "gfm-public-preset": {
+        "count": 677,
+        "statuses": {
+          "exact": 515,
+          "serialization-equivalent": 96,
+          "heading-id-only": 40,
+          "other": 26
+        },
+        "spec_failures": 7
+      }
+    }
+  },
+  "cmark_sha256": "a446543db6036cd5a7a06e3afbf288a812f8bc25014dc5eab0bbd06113659d78",
+  "cmark_gfm_sha256": "6ef69baad25b79dfe5baf6e78605ec3de04de1b5e128d6226b0b6f2c17c95f8d",
+  "cmark_version": "cmark 0.31.1 - CommonMark converter\n(C) 2014-2016 John MacFarlane",
+  "cmark_gfm_version": "cmark-gfm 0.29.0.gfm.13 - CommonMark with GitHub Flavored Markdown converter\n(C) 2014-2016 John MacFarlane",
+  "reference_build_metadata_path": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/metadata.json",
+  "reference_build_metadata_sha256": "e266c541f2d0c6afd8872032873293390191172381ca24ededcecec439c1fbe6",
+  "reference_build_metadata": {
+    "sources": {
+      "cmark": {
+        "path": "/private/tmp/ferromark-cmark-0311",
+        "revision": "bb3678d7a73cb02d35c8876ecd097072636200a8",
+        "clean": true
+      },
+      "cmark-gfm": {
+        "path": "/private/tmp/ferromark-cmark-gfm-13",
+        "revision": "587a12bb54d95ac37241377e6ddc93ea0e45439b",
+        "clean": true
+      }
+    },
+    "binaries": {
+      "cmark": {
+        "path": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark/src/cmark",
+        "sha256": "a446543db6036cd5a7a06e3afbf288a812f8bc25014dc5eab0bbd06113659d78"
+      },
+      "cmark-gfm": {
+        "path": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark-gfm/src/cmark-gfm",
+        "sha256": "6ef69baad25b79dfe5baf6e78605ec3de04de1b5e128d6226b0b6f2c17c95f8d"
+      }
+    },
+    "commands": {
+      "cmake": "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+      "cmark_configure": [
+        "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+        "-S",
+        "/private/tmp/ferromark-cmark-0311",
+        "-B",
+        "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark",
+        "-DCMARK_TESTS=OFF",
+        "-DCMARK_SHARED=OFF"
+      ],
+      "cmark_gfm_configure": [
+        "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+        "-S",
+        "/private/tmp/ferromark-cmark-gfm-13",
+        "-B",
+        "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark-gfm",
+        "-DCMARK_TESTS=OFF",
+        "-DCMARK_SHARED=OFF"
+      ],
+      "cmark_build": [
+        "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+        "--build",
+        "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark",
+        "--target",
+        "cmark_exe",
+        "--parallel",
+        "2"
+      ],
+      "cmark_gfm_build": [
+        "/private/tmp/ferromark-cmark-tools/lib/python3.14/site-packages/cmake/data/bin/cmake",
+        "--build",
+        "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark-gfm",
+        "--target",
+        "cmark-gfm",
+        "--parallel",
+        "2"
+      ]
+    },
+    "compilers": {
+      "cmark": {
+        "path": "/Library/Developer/CommandLineTools/usr/bin/cc",
+        "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+        "cmake_cache_sha256": "f7c3fdd5472ba2617e03710616afe0c396e2a0337bd215b497846b294dead19f"
+      },
+      "cmark-gfm": {
+        "path": "/Library/Developer/CommandLineTools/usr/bin/cc",
+        "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+        "cmake_cache_sha256": "665a3a4e3f8a70e8c3a1b219a8b95c9c2b1aa9cdf7122bf6ec34b5969154b73c"
+      }
+    },
+    "builder_sha256": "f89d0fd1cf6539478e73c90e5ff8cb67d82f2a4dd3a2cc5097bf2f9b919f1ccd",
+    "logs": {
+      "cmark_configure": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/logs/cmark-configure.log",
+      "cmark_gfm_configure": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/logs/cmark-gfm-configure.log",
+      "cmark_build": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/logs/cmark-build.log",
+      "cmark_gfm_build": "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/logs/cmark-gfm-build.log"
+    }
+  },
+  "reference_commands": {
+    "commonmark": [
+      "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark/src/cmark",
+      "--unsafe"
+    ],
+    "gfm": [
+      "/private/tmp/ferromark-v2-correctness-fixes/cmark-build-reviewed/cmark-gfm/src/cmark-gfm",
+      "--unsafe",
+      "-e",
+      "table",
+      "-e",
+      "strikethrough",
+      "-e",
+      "autolink",
+      "-e",
+      "tasklist",
+      "-e",
+      "tagfilter"
+    ]
+  },
+  "runner": {
+    "path": "/Users/sebastian/Workspace/ferromark-v2/benchmarks/compatibility-audit/cmark_oracle.py",
+    "sha256": "5d4bfd0e800db6362e17493b01e9086613732bc0d55138419989ef13dbdfe49b"
+  },
+  "comparator": {
+    "path": "/Users/sebastian/Workspace/ferromark-v2/benchmarks/native-comparison/verify.py",
+    "sha256": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018"
+  },
+  "comparison_policy": "raw outputs retained; exact, serialization-equivalent, heading-id-only, and other are separate"
+}

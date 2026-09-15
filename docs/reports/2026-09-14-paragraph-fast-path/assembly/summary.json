@@ -1,0 +1,70 @@
+[
+  {
+    "variant": "baseline",
+    "binary": "/private/tmp/ferromark-v2-ox-stages-current/target/release/native-comparison-worker",
+    "symbol": "__RNvMNtNtCslQ53J8kkxJ4_16ferromark_parser6parser5blockNtB4_6Parser15parse_paragraph:",
+    "instructions": 483,
+    "prologue": [
+      "000000010008de24\tstp\tx28, x27, [sp, #-0x60]!",
+      "000000010008de28\tstp\tx26, x25, [sp, #0x10]",
+      "000000010008de2c\tstp\tx24, x23, [sp, #0x20]",
+      "000000010008de30\tstp\tx22, x21, [sp, #0x30]",
+      "000000010008de34\tstp\tx20, x19, [sp, #0x40]",
+      "000000010008de38\tstp\tx29, x30, [sp, #0x50]",
+      "000000010008de3c\tadd\tx29, sp, #0x50",
+      "000000010008de40\tsub\tsp, sp, #0x330",
+      "000000010008de44\tldp\tx25, x24, [x1, #0x40]"
+    ]
+  },
+  {
+    "variant": "A",
+    "binary": "/private/tmp/ferromark-v2-paragraph-A-native/target/release/native-comparison-worker",
+    "symbol": "__RNvMNtNtCsjsmNQ2Qpu5c_16ferromark_parser6parser5blockNtB4_6Parser15parse_paragraph:",
+    "instructions": 442,
+    "prologue": [
+      "000000010008dd04\tsub\tsp, sp, #0xf0",
+      "000000010008dd08\tstp\tx28, x27, [sp, #0x90]",
+      "000000010008dd0c\tstp\tx26, x25, [sp, #0xa0]",
+      "000000010008dd10\tstp\tx24, x23, [sp, #0xb0]",
+      "000000010008dd14\tstp\tx22, x21, [sp, #0xc0]",
+      "000000010008dd18\tstp\tx20, x19, [sp, #0xd0]",
+      "000000010008dd1c\tstp\tx29, x30, [sp, #0xe0]",
+      "000000010008dd20\tadd\tx29, sp, #0xe0",
+      "000000010008dd24\tldp\tx25, x24, [x1, #0x40]"
+    ]
+  },
+  {
+    "variant": "B",
+    "binary": "/private/tmp/ferromark-v2-paragraph-B2-native/target/release/native-comparison-worker",
+    "symbol": "__RNvMNtNtCs4N5jI4sqWI9_16ferromark_parser6parser5blockNtB4_6Parser15parse_paragraph:",
+    "instructions": 547,
+    "prologue": [
+      "000000010008eb3c\tsub\tsp, sp, #0xf0",
+      "000000010008eb40\tstp\tx28, x27, [sp, #0x90]",
+      "000000010008eb44\tstp\tx26, x25, [sp, #0xa0]",
+      "000000010008eb48\tstp\tx24, x23, [sp, #0xb0]",
+      "000000010008eb4c\tstp\tx22, x21, [sp, #0xc0]",
+      "000000010008eb50\tstp\tx20, x19, [sp, #0xd0]",
+      "000000010008eb54\tstp\tx29, x30, [sp, #0xe0]",
+      "000000010008eb58\tadd\tx29, sp, #0xe0",
+      "000000010008eb5c\tldrb\tw8, [x1, #0x26]"
+    ]
+  },
+  {
+    "variant": "accepted (B3)",
+    "binary": "/private/tmp/ferromark-v2-paragraph-B3-native/target/release/native-comparison-worker",
+    "symbol": "__RNvMNtNtCs7XZq9su4SLn_16ferromark_parser6parser5blockNtB4_6Parser15parse_paragraph:",
+    "instructions": 547,
+    "prologue": [
+      "000000010008ddd8\tsub\tsp, sp, #0xf0",
+      "000000010008dddc\tstp\tx28, x27, [sp, #0x90]",
+      "000000010008dde0\tstp\tx26, x25, [sp, #0xa0]",
+      "000000010008dde4\tstp\tx24, x23, [sp, #0xb0]",
+      "000000010008dde8\tstp\tx22, x21, [sp, #0xc0]",
+      "000000010008ddec\tstp\tx20, x19, [sp, #0xd0]",
+      "000000010008ddf0\tstp\tx29, x30, [sp, #0xe0]",
+      "000000010008ddf4\tadd\tx29, sp, #0xe0",
+      "000000010008ddf8\tldrb\tw8, [x1, #0x26]"
+    ]
+  }
+]

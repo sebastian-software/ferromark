@@ -2,719 +2,327 @@
 
 Part of [Ferramenta](https://ferramenta.dev), a family of Rust tools.
 
-# ferromark
+[![Powered by Sebastian Software](https://img.shields.io/badge/Powered_by-Sebastian_Software-005164?style=flat)](https://oss.sebastian-software.com)
 
-[![Powered by Sebastian Software](https://img.shields.io/badge/Powered_by-Sebastian_Software-005164?style=flat)](https://oss.sebastian-software.com) [![CI](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastian-software/ferromark/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/ferromark.svg)](https://crates.io/crates/ferromark)
-[![coverage gate ≥ 90%](https://img.shields.io/badge/coverage%20gate-%E2%89%A5%2090%25-brightgreen.svg)](https://github.com/sebastian-software/ferromark/blob/main/.github/workflows/ci.yml)
-[![docs.rs](https://docs.rs/ferromark/badge.svg)](https://docs.rs/ferromark)
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
-[![Rust 1.94+](https://img.shields.io/badge/rust-1.94%2B-orange.svg)](#minimum-supported-rust-version)
+# Ferromark v2
 
-Markdown to HTML with a secure default and every GFM extension included.
+A lean, arena-allocated Markdown parser and HTML renderer.
 
-Build documentation sites, publish Markdown articles, or add formatted content
-to your application. Ferromark gives you HTML, document metadata, and control
-over the Markdown your authors can use. Start with one function; add headings,
-front matter, or custom code-block rendering as your publishing workflow grows.
+Ferromark v2 brings together our work on
+[Ferromark v1](https://github.com/sebastian-software/ferromark) and the
+arena-based AST architecture of [OX-Content](https://github.com/ubugeeei-prod/ox-content).
+In v1, we encountered performance limits that called for a deeper architectural
+change. OX-Content provided the foundation for that rebuild, and we are grateful
+to its authors. V2 combines that foundation with selected v1 features and
+optimizations, alongside new development, to shape a Markdown-to-HTML library
+with its own scope and direction.
 
-Available as a **Rust library**, a **native Node.js package**, and a **CLI**.
-
-[Quick start](#quick-start) ·
-[Documentation site](https://sebastian-software.github.io/ferromark/) ·
-[API reference](https://docs.rs/ferromark) ·
-[Node.js package](node/ferromark/README.md)
-
-## What you get
-
-| What you are building | How Ferromark helps |
-| --- | --- |
-| Documentation or a knowledge base | Render the page body, extract front matter, and collect headings for a table of contents in one call. |
-| Comments, descriptions, or other user-authored content | Escape raw HTML and restrict unsafe link and image URL schemes by default. |
-| Articles and technical content | Add footnotes, callouts, math markup, definition lists, and richer tables with explicit options. |
-| A content build or rendering service | Use the same Rust engine from Rust, Node.js, or the command line; reuse a renderer for repeated documents. |
-| Tooling for trusted MDX content | Separate prose, components, expressions, and imports; opt into source-ranged events for downstream processing. |
-
-## Quick start
-
-### Rust
-
-```bash
-cargo add ferromark
-```
+This development branch lives in the Ferromark repository and preserves both project histories.
+All Rust and npm packages remain unpublished.
+The API is not compatible with Ferromark v1 and is not a stable v2 release.
 
 ```rust
-let html = ferromark::to_html("# Hello\n\n**World**");
-assert_eq!(html, "<h1 id=\"hello\">Hello</h1>\n<p><strong>World</strong></p>\n");
+use ferromark::{Allocator, HtmlRenderer, Parser};
+
+let source = "Hello, **world**!";
+let allocator = Allocator::for_source_len(source.len());
+let document = Parser::new(&allocator, source).parse().unwrap();
+let html = HtmlRenderer::new().render(&document);
+assert_eq!(html, "<p>Hello, <strong>world</strong>!</p>\n");
 ```
 
-### Node.js
+`ParserOptions::gfm()` enables the implemented GFM syntax plus footnotes.
+For specification-oriented output, pair `ParserOptions::gfm_spec()` with
+`HtmlRendererOptions::gfm()` (tagfilter enabled, footnotes disabled). The analogous
+CommonMark pair is `ParserOptions::commonmark()` and
+`HtmlRendererOptions::commonmark()`. These renderer profiles disable automatic
+heading IDs, callouts, TOC, and fence metadata cleanup; the existing defaults
+retain those conveniences. `ParserOptions { mdx: true, ..ParserOptions::gfm() }` adds MDX
+syntax recognition and static component-island output; it does not provide an
+MDX compiler or runtime. Math, definition lists, and other extensions remain configurable.
+The allocator and source must outlive the document. Reuse/reset an allocator only after its documents
+have been dropped. HTML options and renderer hooks remain available directly.
 
-```bash
-npm install ferromark
-```
+The workspace contains four core crates and a small re-export facade:
 
-```js
-import { toHtml } from 'ferromark'
+| Crate | Responsibility |
+| --- | --- |
+| `ferromark` | Public entry point |
+| `ferromark_allocator` | Arena allocation and buffer helpers |
+| `ferromark_ast` | Nodes, source spans, visitors |
+| `ferromark_parser` | Markdown to AST |
+| `ferromark_renderer` | AST to HTML |
 
-const html = toHtml('# Hello\n\n**World**')
-```
+The core retains CommonMark/GFM support, configurable syntax extensions, HTML
+rendering options, and regression tests. Site generation, JavaScript frameworks,
+bindings, editor services, and the upstream profiler are removed. See the precise
+[cleanup boundary](docs/fork.md) and [source provenance](UPSTREAM.md).
 
-The native package supports Node.js 22.12 and newer on macOS, Linux, and
-Windows, with x64 and arm64 builds. See the [package guide](node/ferromark/README.md)
-for platform requirements, CommonJS, buffer output, and reusable renderers.
+## Development
 
-Both examples use the untrusted rendering policy. Choose a
-[Markdown preset](#markdown-configuration) when you need a specific dialect.
+See [Contributing](CONTRIBUTING.md), [v2 migration](docs/migration-v2.md), and the
+[Node package](node/ferromark/README.md). The documentation website lives in `homepage/`.
 
-## CLI
-
-`cargo install ferromark` installs the CLI. Convert a file or pipe Markdown into
-it; HTML goes to standard output unless you select an output file.
+Build and verify with the pinned Rust toolchain:
 
 ```sh
-ferromark --gfm README.md -o README.html
-printf '# Hello\n' | ferromark --no-heading-ids
+cargo fmt --all --check
+cargo test --workspace --all-features --locked
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo bench --workspace --no-run --locked
 ```
 
-`--gfm`, `--commonmark`, and `--minimal` select syntax presets. `--trusted`
-preserves raw HTML recognized by the preset and permits arbitrary URL schemes;
-it also disables GFM's disallowed-raw-HTML filter. Use it only for sources you
-trust. Run `ferromark --help` for all options.
+Try the retained stdin rendering example:
 
-## Build a documentation pipeline
-
-A page needs more than its body. `parse()` returns HTML, raw front matter, and
-headings together, so you can pass metadata to your application and build a
-table of contents from the headings that were actually rendered.
-
-```rust
-let page = ferromark::parse("---\ntitle: Getting started\n---\n# Installation\n\nRun `cargo add ferromark`.");
-
-assert_eq!(page.front_matter, Some("title: Getting started\n"));
-assert_eq!(page.headings[0].text, "Installation");
-assert_eq!(page.headings[0].id.as_deref(), Some("installation"));
-assert!(page.html.contains("<h1 id=\"installation\">"));
+```sh
+printf 'Hello, **world**!\n' | cargo run --quiet --locked -p ferromark_renderer --example render_stdin
 ```
 
-Front matter is returned as text between `---` or `+++` delimiters; your
-application chooses how to deserialize it. Each heading includes its level,
-plain text, and optional generated ID.
+Seven self-contained Criterion suites cover parsing, reference prepasses, tables,
+pipe scans, rendering, headings, and sanitized URLs. Run individual suites with
+`cargo bench -p ferromark_parser --bench table_pipes --locked` or
+`cargo bench -p ferromark_renderer --bench renderer --locked`.
+The [optimization roadmap](docs/optimization-roadmap.md) records candidates for
+measured ports from the Ferramenta projects.
 
-For more control, `parse_with_options()` selects the syntax and
-`parse_with_renderer()` adds a
-[`FencedCodeRenderer`](https://docs.rs/ferromark/latest/ferromark/trait.FencedCodeRenderer.html)
-for syntax highlighting or other code-block output. Return `None` to keep the
-normal escaped code block. Custom `TrustedHtml` is inserted verbatim, so your
-renderer must escape any untrusted values it includes.
+The [optimization rounds](docs/reports/2026-09-14-optimization-rounds/README.md)
+record measured SIMD and algorithm changes, including rejected variants and raw
+results. The core now skips clean link unescaping, fuses enabled inline markers,
+uses compact constant-time table span maps, trims URL brackets in linear time,
+and scans ASCII URL spans with NEON. The
+[first SIMD study](docs/reports/2026-09-14-simd-round/README.md) remains the historical
+record of the link prototype and its render-only build sensitivity.
 
-Deploying under a subpath? `link_base_path` prefixes internal absolute links
-such as `/guide`. Image sources and autolinks remain unchanged.
+The [Apple Silicon iteration round](docs/reports/2026-09-15-arm-iterations/README.md)
+adds link scanners, URL escaping, fence search, smaller parse results, and output
+copy optimizations. The [complete 207-case rerun](docs/reports/2026-09-15-arm-full-suite/README.md)
+checks the finished branch against main in all four stages; the native engine
+comparison below uses its separately matched flags and build environment.
 
-## Markdown configuration
+The [runtime-profile study](docs/runtime-profiles.md) measures 37 individual
+options, unused-feature overhead, and candidate recipes for comments, articles,
+documentation, and MDX. It separates parser/rendering costs and fresh/reused
+lifecycles, with exact-output checks for tailored-profile comparisons.
+The [definition-list and line-comment follow-up](docs/reports/2026-09-14-feature-scan-optimization/README.md)
+investigates and reduces their scan/allocation overhead while preserving HTML,
+ASTs, and source positions. It records accepted and rejected attempts.
+The [line-comment dispatch follow-up](docs/reports/2026-09-14-line-comment-dispatch/README.md)
+reuses existing line-prefix scans, reducing the 4 KiB plain-prose option tax
+to about 1% in parsing and 0.5% in complete reused processing.
 
-Start from the syntax contract you need, then enable individual extensions:
+## Features at a glance
 
-| Preset | Syntax |
+**CommonMark** defines everyday Markdown: headings, lists, links, emphasis, and
+code. **GFM** (GitHub Flavored Markdown) adds features such as tables and
+checklists. The groups below spell out those names and show useful extras.
+Footnotes and alert boxes are listed separately from the published GFM extensions.
+
+**✓** = built in, possibly requiring an option or Cargo feature. **—** = no
+built-in support. Qualifiers describe narrower support. This is a capability
+inventory, not a claim of identical output or complete specification conformance.
+It covers the native cores from the benchmark, with **v2 updated to the current
+local core**; these are not the options enabled during timing.
+[Exact versions, source references, and scope](docs/feature-matrix.md).
+
+| Feature / what it does | Ferromark v1 | Ferromark v2 | OX-Content | pulldown-cmark | md4c | Bun native |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **CommonMark — everyday Markdown** | | | | | | |
+| Headings — `# Title` through `###### Title` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Paragraphs and line breaks | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Bold and italic — `**bold**`, `*italic*` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Numbered, bulleted, and nested lists | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Block quotes — `> quoted text` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Horizontal separators — `---` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Links, images, and reusable reference links | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Inline code, fenced code blocks, and indented code | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Raw HTML inside Markdown — `<details>…</details>` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **GFM — GitHub-style extensions** | | | | | | |
+| Tables with left/center/right column alignment | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Checklists — `- [x] done`, `- [ ] pending` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Crossed-out text — `~~removed~~` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Single-tilde crossed-out text — `~removed~` | — | ✓ | — | ✓ | ✓ | ✓ |
+| Turn bare URLs/emails into links — `www.example.com` | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| GFM HTML tag filter — filter its specified tag list | ✓ | ✓ | ✓ | — | — | ✓ |
+| **Writing extras — beyond CommonMark/GFM** | | | | | | |
+| Reference footnotes — `[^note]` plus a definition | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Inline footnotes — `^[note written here]` | ✓ | — | — | — | — | — |
+| Definition lists — a term followed by `: explanation` | ✓ | ✓ | ✓ | ✓ | — | — |
+| Math notation — `$x^2$`, `$$…$$` | Syntax | Syntax | Syntax | Syntax | Syntax | Syntax |
+| Superscript — `x^2^` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Subscript — `H~2~O` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Highlighted text — `==important==` | ✓ | — | — | — | ✓ | — |
+| Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
+| Smart punctuation — curly quotes and ellipses | — | — | ✓ | ✓ | — | — |
+| Extract frontmatter — metadata between `---` or `+++` | ✓ | ✓ | — | ✓ | — | — |
+| Source-only line comments — hide `// note` lines from HTML | ✓ | ✓ | — | — | — | — |
+| **Table layout — beyond GFM** | | | | | | |
+| Merged table cells — one cell spans several columns | ✓ | ✓ | — | — | — | — |
+| Numeric column-width hints — proportions from delimiter dashes | ✓ | — | — | — | — | — |
+| Table IDs/classes — style a whole table with CSS | — | ✓ | — | — | — | — |
+| Table captions — a label with inline Markdown formatting | — | With ID/class | — | — | — | — |
+| Column classes for CSS widths — `col-1`, `col-2`, etc. | — | ✓ | — | — | — | — |
+| Column names from headers — “Netto Preis” → `col-name-netto-preis` | — | ✓ | — | — | — | — |
+| **Documentation and navigation** | | | | | | |
+| Automatic heading IDs — link directly to a section | ✓ | ✓ | ✓ | — | — | ✓ |
+| Explicit heading IDs/classes — `# Title {#id .class}` | — | ✓ | ✓ | ✓ | — | — |
+| Alert boxes — `> [!NOTE]`, `> [!WARNING]` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Table of contents from document headings | Heading data | Rendered TOC | Rendered TOC | — | — | — |
+| **MDX — components and expressions mixed with Markdown** | | | | | | |
+| Recognize JSX, `{expressions}`, and imports/exports | Limited | Limited | Limited | — | — | — |
+| **Application integration** | | | | | | |
+| Inspect/transform the parsed document | Events | Tree (AST) | Tree (AST) | Events | Callbacks | Callbacks |
+| Customize generated output | Code hook / events | HTML hooks | HTML hooks | Event transforms | Renderer callbacks | Renderer callbacks |
+
+Math support preserves formula notation; an application supplies mathematical
+typesetting. “Custom tag” wiki links also need application-side routing/rendering.
+Frontmatter support extracts metadata text, rather than parsing YAML/TOML values.
+“Heading data” lets an application build a TOC; “Rendered TOC” includes HTML for
+an inline `[[toc]]` marker. Trees expose nested document nodes; events/callbacks
+expose elements in sequence. The three MDX entries cover bounded syntax handling,
+not a full MDX compiler or JavaScript runtime. Single-tilde strikethrough and
+subscript compete for the same syntax; enabling subscript gives it priority.
+
+V2 preserves authored punctuation. Automatic typography belongs in an optional,
+locale-aware document transform; the former English-oriented parser option has
+been removed. See the [typography decision](docs/typography.md).
+
+Enable `ParserOptions::front_matter` to extract a leading `---` (YAML) or `+++`
+(TOML) metadata block into `document.front_matter`. It exposes the format, raw
+content, and original source spans. The block is omitted from HTML and cannot
+define Markdown links or footnotes. The option is off in every preset.
+[Frontmatter syntax and Rust example](docs/front-matter.md).
+
+Enable `ParserOptions::line_comments` to omit `// note` source lines from HTML.
+Comments may have up to three leading spaces and do not separate paragraphs.
+Code blocks, raw HTML blocks, and explicitly prefixed lines such as `> // text`
+remain literal. The option is off in every preset.
+[Syntax, examples, and source-span behavior](docs/line-comments.md).
+
+V1 derives numeric column-width hints from delimiter dash counts. V2 instead
+supports table IDs/classes, inline captions, and generated `colgroup` columns
+whose widths are set in external CSS. Optional header-derived classes such
+as `col-name-netto-preis` use the heading slug rules and retain positional classes.
+Both versions use adjacent pipes for horizontal spans (`||` spans two columns).
+All V2 table extras are opt-in and off in every preset. The table-layout rows
+describe built-in handling of Markdown tables; raw HTML and custom rendering can
+provide additional layouts in any engine.
+[Syntax, options, and a runnable CSS example](docs/table-layout.md).
+
+## Correctness and compatibility
+
+The [second correction batch](docs/reports/2026-09-14-reference-compatibility/README.md)
+closes the seven cmark findings left after the
+[first fixes](docs/reports/2026-09-14-correctness-fixes/README.md). Strikethrough now
+uses the inline delimiter stack, Unicode URL bytes receive percent encoding,
+and one leading BOM is treated as an encoding marker with original spans preserved.
+
+| Check | Result |
 | --- | --- |
-| `Options::commonmark()` | CommonMark, including reference links and raw HTML recognition. |
-| `Options::gfm()` | CommonMark plus tables, strikethrough, task lists, autolink literals, and the disallowed-raw-HTML filter. |
-| `Options::minimal()` | The smallest supported surface, with raw HTML parsing, reference links, and optional extensions disabled. |
+| Explicit CommonMark 0.31.2 profile | 652/652 agree, without heading-ID exceptions |
+| Current GFM extension examples | 28/28 agree |
+| CRLF / CR variants | 1,304/1,304 agree with their LF controls |
+| Original cmark / cmark-gfm corpus | 106/106 agree |
+| Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
+| Workspace regression tests | 788 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, and definition-list scan regressions |
 
-```rust
-use ferromark::Options;
+Agreement permits conservative HTML serialization equivalence; raw output and
+all mismatches remain in the report. The two reference exceptions have exact
+spec-correct HTML assertions, and the generic strict oracle still rejects them.
+The complete GFM website retains ten classified differences from global
+extension policies and older HTML-comment rules. MDX remains bounded syntax
+capture and static output. These finite suites do not prove correctness for
+arbitrary CommonMark, GFM, or MDX input.
 
-let mut options = Options::gfm();
-options.front_matter = true;
-options.heading_ids = true;
-options.footnotes = true;
+A subsequent [line-comment comparison](benchmarks/line-comments-oracle/README.md)
+also exposes a pre-existing gap: reference definitions directly inside list
+items are not yet collected globally. Root and block-quote definitions work in
+the covered cases.
 
-let page = ferromark::parse_with_options("# Notes\n\nA detail.[^1]\n\n[^1]: More context.", &options);
-assert_eq!(page.headings[0].id.as_deref(), Some("notes"));
-```
+The [repeatable spec audit](benchmarks/compatibility-audit/README.md) and the
+[106-case live oracle](benchmarks/compatibility-audit/CMARK.md) pass their failure
+gates. The native comparison below reruns the corrected core with explicit
+syntax and renderer settings across all six engines.
 
-Beyond GFM, you can enable reference and inline footnotes, callouts, definition
-lists, front matter, heading IDs, math spans, highlight, superscript, subscript,
-merged table cells, column-width hints, and source-only line comments. Math
-spans emit markup for a downstream math renderer. See the
-[extension guide](docs/markdown-extensions.md) for syntax examples and the
-[`Options` reference](https://docs.rs/ferromark/latest/ferromark/struct.Options.html)
-for all fields and defaults.
+## Native engine comparison
 
-Syntax note: `~~text~~` is strikethrough, `~text~` is subscript, and `^text^` is
-superscript. Single-tilde strikethrough is intentionally not supported.
+The current local cores, **v2 `e93394e` and v1 `4e15141`**, were rerun with
+explicit syntax and renderer flags on the original **57 documents (37–113,609
+UTF-8 bytes)**. Each scored column uses the same input set and equivalent HTML
+for every included engine. **Speed relative to v2: higher is faster; v2 = 1.00×.**
 
-Every preset uses `RenderPolicy::Untrusted`. `allow_html` controls recognition
-of HTML syntax; the render policy independently controls whether that HTML is
-escaped or preserved. `Options::default()` retains Ferromark's existing feature
-mix and is not an alias for a dialect preset.
-
-`Options` is non-exhaustive: start with a preset and mutate its public fields
-as above. External struct literals, including `Options { .. }` updates, are
-not supported. The `ferromark::options!` macro provides a compact alternative.
-
-## Rendering untrusted Markdown
-
-Keep the default policy for content supplied by users. It escapes raw HTML and
-allows relative URLs plus a limited set of non-script schemes, including
-`http`, `https`, `mailto`, and `tel`. URL checks normalize entities and control
-characters first, so spellings such as `javas&#99;ript:` are blocked too.
-
-For trusted sources that need HTML passthrough, make that choice explicit:
-
-```rust
-use ferromark::{Options, RenderPolicy};
-
-let mut options = Options::commonmark();
-options.render_policy = RenderPolicy::Trusted;
-let html = ferromark::to_html_with_options("<aside>Maintainer-authored HTML</aside>", &options);
-assert!(html.contains("<aside>"));
-```
-
-The GFM `disallowed_raw_html` filter applies in trusted mode. It is a narrow
-tag filter, not a general-purpose HTML sanitizer.
-
-### Compatibility you can check
-
-With `RenderPolicy::Trusted`, `Options::commonmark()` passes **652 of 652**
-CommonMark spec examples, enforced by `commonmark_spec_trusted_full_conformance`
-in [the spec tests](tests/commonmark_spec.rs). The same syntax with the
-untrusted policy passes 577 of 652 (88.5%); those differences reflect the
-intentional HTML and URL safety boundary. Run the per-section report with
-`cargo test --test commonmark_spec -- --ignored --nocapture`.
-
-### Input limits and diagnostics
-
-The parser bounds nesting, delimiter counts, table width, and reference-link
-resolution work. When a budget is reached, it can preserve syntax as literal
-text or truncate bounded output. `parse()` and its variants return a
-`resource_limits` report so your pipeline can detect those fallbacks. The
-reference-link budget is shared across a document and resets for the next one.
-
-Source positions use compact `u32` values, limiting each document to
-4,294,967,294 bytes. Use `try_to_html()`, `try_parse()`, or the other fallible
-`try_*` entry points to handle oversized input as an error. Infallible APIs
-panic when this limit is exceeded; `validate_input_size()` lets you preflight
-input before choosing an API.
-
-## MDX support
-
-For trusted component-based content, enable the optional `mdx` feature:
-
-```bash
-cargo add ferromark --features mdx
-```
-
-```rust
-use ferromark::mdx::render;
-
-let output = render("import { Card } from './card'\n\n# Hello\n\n<Card />\n");
-assert!(output.body.contains("<Card />"));
-assert_eq!(output.esm.len(), 1);
-```
-
-Markdown becomes HTML; JSX and expressions pass through, while ESM and front
-matter are returned separately. `to_component()` can package the result as a
-JSX/TSX module for your downstream toolchain. Ferromark does not execute or
-type-check JavaScript, and MDX output is not safe for untrusted input.
-
-For tooling, `segment_spanned()` exposes source ranges, `segment_strict()` adds
-structural diagnostics, and `parse_events()` returns semantic events for
-compiler or localization work. These paths are opt-in and do not add MDX
-processing to ordinary Markdown rendering.
-
-The supported block-level patterns include imports, components wrapping
-content, and expressions between paragraphs.
-`tests/mdx_segment_tests.rs` exercises that supported set. Read the
-[MDX integration guide](docs/mdx.md) for examples, permissive versus strict
-parsing, inline and container behavior, and compatibility limits.
-
-## Trade-offs
-
-Ferromark is a fit when your main output is HTML and you want explicit control
-over syntax and trust. Check these boundaries before integrating:
-
-- **Tree transformations:** Ferromark exposes events and source ranges, but
-  does not build a mutable document AST for editing and reserializing Markdown.
-- **Output formats:** the core renderer produces HTML. MDX APIs can preserve
-  component syntax for downstream processing; there is no Markdown round-trip
-  or general-purpose output-format system.
-- **Source mapping:** parser events and MDX segments carry source ranges;
-  generated HTML does not include an HTML-to-Markdown source map.
-- **MDX compilation:** segmentation and structural diagnostics do not replace
-  a full JavaScript/TypeScript parser or the `@mdx-js/mdx` compiler contract.
-
-Upgrading an existing integration? Start with the
-[migration index](docs/README.md#migrating), including the
-[0.8 migration guide](docs/migration-0.8.md) and
-[0.4–0.7 migration guide](docs/migration-0.4.md).
-
-## How it works
-
-Ferromark parses blocks and inline syntax into compact events that reference
-the input, then writes HTML into an output buffer. It does not retain a full
-document AST. The inline scanner uses NEON on AArch64 and baseline SSE2 (x86-64),
-with scalar fallbacks; `memchr` handles other byte searches. The
-[architecture decisions](docs/arch/ADR-0001-core-architecture-streaming-no-ast.md)
-explain the design and its trade-offs.
-
-For repeated documents, keep a `Renderer` per worker to reuse parser scratch
-space as well as the output buffer:
-
-```rust
-let mut renderer = ferromark::Renderer::new();
-let mut buffer = Vec::new();
-renderer.render_into("# First page", &mut buffer);
-renderer.render_into("# Next page", &mut buffer);
-// Each call replaces the previous output; allocations are retained for reuse.
-```
-
-`to_html_into()` reuses only the output buffer and creates fresh parser state
-per call. Measure with your own documents, options, and allocation lifecycle;
-the comparisons below document their specific workloads.
-
-<!-- workflow-benchmarks:start -->
-
-## Workflow benchmarks
-
-What does the Markdown step cost in an application? These workloads measure
-complete sets of documents, including output allocation and release. Time and
-exact Rust heap measurements come from separate runs so allocation tracking does not affect timings.
-
-### Preview user-authored comments
-
-Twelve authored examples. Ferromark uses secure defaults; pulldown-cmark and Comrak use application adapters for matching HTML escaping, URL checks, heading IDs, and callouts. Each returns owned HTML that is released immediately. The retained `Renderer` is Ferromark's scratch-reuse variant.
-
-12 documents · 2,081 input bytes · 2,901 HTML bytes (Ferromark).
-
-| API / output lifetime | Time / complete workload | Peak live heap¹ | Allocated per workload² |
-| --- | ---: | ---: | ---: |
-| Ferromark · Fresh `to_html` calls | 11.7 µs | 6.9 KiB | 47.2 KiB |
-| Ferromark · Retained `Renderer` | 7.3 µs | 8.4 KiB | 5.6 KiB |
-| pulldown-cmark + preview adapter | 15.1 µs | 17.2 KiB | 202.5 KiB |
-| Comrak + preview adapter | 38.8 µs | 7.9 KiB | 115.4 KiB |
-
-### Render documentation with metadata
-
-Three actual guide pages, rendered under the same untrusted policy. Ferromark `parse` and the two application adapters return HTML, raw front matter, and headings with matching navigation IDs; each complete result is released.
-
-3 documents · 6,763 input bytes · 8,725 HTML bytes (Ferromark).
-
-| API / output lifetime | Time / complete workload | Peak live heap¹ | Allocated per workload² |
-| --- | ---: | ---: | ---: |
-| Ferromark · `parse`: HTML + front matter + headings | 20.3 µs | 20.6 KiB | 57.2 KiB |
-| pulldown-cmark + metadata adapter | 31.1 µs | 44.2 KiB | 118.0 KiB |
-| Comrak + metadata adapter | 80.4 µs | 71.6 KiB | 223.2 KiB |
-
-Reusing `Renderer` reduced time and allocation traffic for these previews.
-Its peak heap was higher: retained scratch remains part of the worker's memory budget.
-
-For the documentation collection, compare each engine's two output lifetimes
-before using a memory figure to size your pipeline. Keeping completed HTML
-in memory is application work included in the retained-output rows.
-
-The metadata rows measure complete HTML-and-metadata operations; they do
-not isolate the incremental cost of collecting headings or represent an
-end-to-end site build.
-
-Preview and metadata comparisons include the application adapters needed
-by pulldown-cmark and Comrak. Their escaping, URL checks, heading IDs,
-and metadata collection are timed and counted in heap usage. These are
-complete integration costs, not rankings of body-only parser calls.
-
-¹ Peak simultaneously live **requested heap**, including retained parser scratch
-and the chosen HTML output lifetime. Loaded inputs, stack, allocator overhead,
-and cached pages are excluded; this is **not process RAM/RSS**. ² Cumulative
-allocation traffic, not simultaneously required memory.
-
-Apple M1 Pro, macOS 26.6.2, Rust 1.97.1, generic CPU target, system allocator.
-Three process rounds per variant; median of round medians. Native, warmed,
-single-threaded API work only: no Node.js bindings, I/O, templates, or syntax
-highlighting. These project snapshots and authored comments are examples, not
-a production-traffic distribution or a complete site build. No x86-64 run is included.
-
-[Full report, run variation, and source provenance](docs/reports/2026-09-13-workflow-comparisons/REPORT.md) ·
-[Reproduce the workloads](benchmarks/workflows/README.md).
-
-### Render a documentation collection across the native engine field
-
-Twelve actual documentation files, 53,656 input bytes, with trusted
-CommonMark plus tables, strikethrough, and tasks. Every timed row completes the entire
-collection. Native defaults for allocation, GC, and output representation
-remain in place; Markdig returns UTF-16 strings, the other workers UTF-8.
-
-**API lifecycle:** Ferromark uses fresh `to_html_with_options` calls.
-Ox retains its `HtmlRenderer` scratch, but creates and drops a fresh parser
-and growing AST arena for each document; owned HTML is moved out and released.
-These are integration choices, not identical scratch lifetimes. The
-[lifecycle and cache audit](docs/reports/2026-09-13-ox-workflow-study/REPORT.md)
-also measures fresh and reusable renderers for both engines and checks
-changed inputs against fresh-process output.
-
-| Engine | Release each: time | Keep all: time | Release each: peak process RSS | Keep all: peak process RSS |
+| Engine | Fresh, 14 agreeing across six | Reuse, same 14 | Fresh, 50 agreeing across five | Reuse, same 50 |
 | --- | ---: | ---: | ---: | ---: |
-| Ferromark | 137.4 µs | 138.0 µs | 3.0 MiB | 3.1 MiB |
-| pulldown-cmark | 173.5 µs | 173.9 µs | 3.1 MiB | 3.2 MiB |
-| Comrak | 530.8 µs | 528.3 µs | 3.5 MiB | 3.5 MiB |
-| md4c | 195.7 µs | 196.4 µs | 2.6 MiB | 2.7 MiB |
-| cmark | Not comparable (9/12 complete documents) | — | — | — |
-| cmark-gfm | 454.1 µs | 456.0 µs | 2.6 MiB | 2.8 MiB |
-| Goldmark | 606.4 µs | 606.6 µs | 14.7 MiB | 14.4 MiB |
-| Sätteri | 288.3 µs | 287.8 µs | 3.8 MiB | 3.8 MiB |
-| Rushdown | 384.6 µs | 385.3 µs | 3.3 MiB | 3.3 MiB |
-| Markdig | 330.2 µs | 329.5 µs | 70.3 MiB | 70.3 MiB |
-| markdown-rs | 3829.7 µs | 3815.0 µs | 5.7 MiB | 5.5 MiB |
-| Ox Content | **87.8 µs** | **87.4 µs** | **2.5 MiB** | **2.6 MiB** |
-
-Ox Content had the lowest collection time with immediate release in this run: 87.8 µs. Ferromark took 137.4 µs. This result applies to the complete archived workload, not every Markdown application.
-
-Bun's native support uses its pinned nightly compiler and shared mimalloc.
-This separate environment has its own freshly measured Ferromark baseline:
-
-| Engine | Release each: time | Keep all: time | Release each: peak process RSS | Keep all: peak process RSS |
-| --- | ---: | ---: | ---: | ---: |
-| Ferromark (Bun support) | **128.1 µs** | **129.1 µs** | 3.1 MiB | 3.1 MiB |
-| Bun (native) | 331.8 µs | 332.5 µs | **3.0 MiB** | **3.0 MiB** |
-
-Bold marks the lowest unrounded observation in each column and environment.
-
-**Process RSS is a different memory measurement from the Rust heap table.**
-It includes the runtime/JIT, stacks, input, allocator/GC reserves, and worker
-infrastructure. Each cell is the median of three whole-process peaks during
-startup, warmup, repeated collection work, and shutdown. It is not incremental
-parser memory, a single-request peak, or a concurrent-service capacity estimate.
-
-Timing still surrounds only completed Markdown work. GC in those windows is
-included; OS peak-RSS accounting needs no instrumented allocator. Collection
-timings and the earlier Rust heap measurements are separate fresh runs.
-
-Ox Content's extra generated heading IDs may be admitted as additional output;
-content, heading levels, links, tables, and checkbox states must remain intact.
-cmark's core-only dialect cannot complete the GFM collection. No input is
-removed to obtain a timing row. Full secure-preview and metadata adapters are
-currently measured for Ferromark, pulldown-cmark, and Comrak only; the wider
-HTML-only collection comparison does not establish those additional contracts.
-
-[All engine versions, reviewed output differences, variation, and raw evidence](docs/reports/2026-09-13-workflow-engine-field/REPORT.md).
-
-<!-- workflow-benchmarks:end -->
-
-## Benchmarks
-
-Use the measured comparisons to evaluate Ferromark for your workload. Match
-the syntax, trust policy, and allocation lifecycle to your application; the
-[full report](docs/reports/2026-09-12-ox-corpus-optimizations/REPORT.md) retains raw measurements and output audits.
-
-<details>
-<summary>Measured results, methodology, and reproduction</summary>
-
-Five native Markdown-to-HTML implementations, measured together: Ferromark,
-pulldown-cmark, Bun, Comrak, and C-md4c. Apple M1 Pro, macOS 26.6.2,
-rustc 1.99.0-nightly, September 2026. The [full report](docs/reports/2026-09-12-ox-corpus-optimizations/REPORT.md)
-links raw timings, output differences, options, and source hashes.
-The [additional native comparisons](#additional-native-engine-comparisons) cover
-Goldmark, Sätteri, Rushdown, Markdig, markdown-rs, and Ox Content, with a separate
-report for cmark and cmark-gfm. Each experiment retains its own conditions.
-
-All five parsers render trusted input with fresh parser state and owned HTML output. The feature set is named per table; bare autolinks, tag filtering, heading IDs, and other extensions are disabled. All parsers use Bun's pinned mimalloc, including md4c's C allocation calls. Rust uses the same pinned nightly compiler and generic CPU target; Bun retains its native Highway support. No PGO is used.
-
-These measurements are Apple Silicon results only; this comparison has not been re-measured on x86-64. The shared Bun-native support environment is part of the experiment, and the results do not measure the JavaScript runtime or Ferromark's secure-default rendering.
-
-The main cases use 2, 5, and 10 KiB of synthetic Markdown with headings, emphasis,
-links, lists, quotes, and fenced code. These are controlled size examples, not a
-claim about typical usage. Tiny inputs diagnose per-call overhead; 50 KiB and
-1 MiB remain long-document/stress cases in the detailed results.
-
-### CommonMark · 2 KiB
-
-2,048 input bytes; fresh parser and owned output.
-
-| Parser | Time / document | Throughput | vs ferromark |
-| --- | ---: | ---: | ---: |
-| **ferromark** | **8.916 µs** | **219.1 MiB/s** | **baseline** |
-| pulldown-cmark | 10.016 µs | 195.0 MiB/s | 0.89x |
-| Bun (native) | 14.818 µs | 131.8 MiB/s | 0.60x |
-| comrak | 22.192 µs | 88.0 MiB/s | 0.40x |
-| md4c (C) | 11.881 µs | 164.4 MiB/s | 0.75x |
-
-### CommonMark · 5 KiB
-
-5,120 input bytes; fresh parser and owned output.
-
-| Parser | Time / document | Throughput | vs ferromark |
-| --- | ---: | ---: | ---: |
-| **ferromark** | **22.873 µs** | **213.5 MiB/s** | **baseline** |
-| pulldown-cmark | 27.197 µs | 179.5 MiB/s | 0.84x |
-| Bun (native) | 37.540 µs | 130.1 MiB/s | 0.61x |
-| comrak | 57.516 µs | 84.9 MiB/s | 0.40x |
-| md4c (C) | 29.722 µs | 164.3 MiB/s | 0.77x |
-
-### CommonMark · 10 KiB
-
-10,240 input bytes; fresh parser and owned output.
-
-| Parser | Time / document | Throughput | vs ferromark |
-| --- | ---: | ---: | ---: |
-| **ferromark** | **46.654 µs** | **209.3 MiB/s** | **baseline** |
-| pulldown-cmark | 55.101 µs | 177.2 MiB/s | 0.85x |
-| Bun (native) | 75.974 µs | 128.5 MiB/s | 0.61x |
-| comrak | 118.434 µs | 82.5 MiB/s | 0.39x |
-| md4c (C) | 60.397 µs | 161.7 MiB/s | 0.77x |
-
-Every displayed case passed the five-parser workload check and three alternating-order measurement runs. Speed ratios apply to these inputs, feature sets, and allocation lifecycle. Locked versions: pulldown-cmark 0.13.4,
-comrak 0.54.0, md4c @ 65c6c9d, and bun @ 76e9dcc.
-
-### Feature-set comparisons
-
-Time per complete document (microseconds, lower is faster). Each row uses the
-same input and selected options for all five parsers. Input sizes and syntax
-density differ between rows, so these are not additive feature prices.
-
-| Input / feature set | Bytes | ferromark | pulldown-cmark | Bun (native) | comrak | md4c (C) |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Tables: plain text | 4560 | **25.519 µs** | 29.092 µs | 40.186 µs | 120.894 µs | 39.702 µs |
-| Tables: emphasis and strong | 4800 | **32.489 µs** | 36.305 µs | 47.652 µs | 139.884 µs | 49.289 µs |
-| Tables: link column | 6360 | **37.305 µs** | 43.909 µs | 61.547 µs | 160.332 µs | 68.000 µs |
-| Strikethrough only | 4700 | **21.049 µs** | 33.116 µs | 37.124 µs | 72.216 µs | 27.614 µs |
-| CommonMark links and images | 4760 | **24.523 µs** | 28.296 µs | 38.010 µs | 56.867 µs | 40.873 µs |
-| CommonMark entities and inline markup | 5800 | **51.172 µs** | 61.919 µs | 64.071 µs | 95.415 µs | 57.396 µs |
-
-**Bold marks the lowest measured time in each row**, including exact ties.
-The three table cases use identical CommonMark-plus-tables options and cover
-plain text, emphasis/strong formatting, and a Markdown link column. CommonMark
-inline parsing remains active in all three. Table strikethrough is outside this
-comparison. The [profiling baseline](docs/reports/2026-09-11-commonmark-table-costs.md)
-and [optimization experiments](docs/reports/2026-09-11-native-hotspot-optimization.md)
-explain the table and short-document changes included in this run.
-The earlier [mixed-syntax figures](docs/reports/2026-09-11-benchmark-refresh.md)
-and [md4c flag correction](docs/reports/2026-09-11-benchmark-refresh/native-corrected/summary.json)
-remain historical evidence; none of their samples are mixed into this run.
-Task-list rendering conventions and the recorded Bun alignment bug are accepted
-for workload comparisons; the [output audit](docs/reports/2026-09-11-output-parity-audit.md)
-identifies agreeing groups, renderer conventions, a Bun table bug, and Ferromark's
-former reference-resolution limit. Ordinary HTML flow whitespace is accepted. 36 of
-42 archived input/configuration pairs had matching HTML under the
-revised whitespace check. HTML agreement is a diagnostic, not the timing gate.
-The [workload contract](docs/arch/ARCH-COMP-002-workload-comparability.md) accepts
-reviewed rendering differences while excluding missing features or unfinished work.
-
-### Native Bun Markdown comparison
-
-The [five-parser harness](benchmarks/bun-comparison/README.md) builds Bun's native
-parser without JavaScript. Its [provenance](benchmarks/bun-comparison/PROVENANCE.md)
-traces md4c through Zig and Rust ports. Bun retains C++ Highway search routines
-and C mimalloc; all five parsers share the measured allocator environment.
-The limited HTML comparison records text, URLs, code whitespace, and attributes.
-Workload admission separately accepts documented table-alignment and task-rendering
-differences; output fidelity remains visible rather than blocking timing.
-
-Each displayed result is the median of three run medians. Each run has 80
-alternating-order windows totaling at least five seconds per parser/input,
-after three seconds of warmup. The [raw evidence](docs/reports/2026-09-12-ox-corpus-optimizations/bun/summary.json)
-retains individual run medians and the complete samples. The [September 5 study](docs/reports/2026-09-05-bun-comparison.md)
-and former stable/System-allocator comparisons are historical experiments;
-their numbers are not mixed into these tables.
-
-Follow the harness README to prepare Bun and the pinned md4c checkout:
-
-```bash
-git -C "$MD4C_DIR" checkout --detach 65c6c9d
-python3 benchmarks/bun-comparison/prepare.py "$BUN_BENCH_DIR" "$BUN_BENCH_WORK" \
-  --md4c "$MD4C_DIR" --lockfile docs/reports/2026-09-12-ox-corpus-optimizations/bun/Cargo.lock
-python3 benchmarks/bun-comparison/run.py "$BUN_BENCH_DIR" /private/tmp/new-benchmark-run
-```
-
-Normal library builds and package consumers do not build Bun or md4c.
-
-### Fine-grained feature and document benchmarks
-
-The [feature study](docs/reports/2026-09-11-benchmark-refresh.md#feature-and-lifecycle-costs)
-replays the complete 140-scenario, 292-input/configuration catalog, including
-core CommonMark constructs, boolean Markdown options, and link-base rewriting:
-
-- **Activation:** options off/on on plain input with identical HTML isolate
-  detection and setup without using the feature.
-- **Actual syntax:** input uses the feature, so changed output includes real
-  parsing/rendering work rather than only avoidable overhead.
-- **Lifecycle:** fresh owned output versus a retained `Renderer` separates
-  per-call setup from repeated parsing with existing buffers.
-
-Allocation counters run separately from timings; requested bytes are not peak memory.
-The [earlier generated feature tables](docs/reports/2026-09-10-markdown-feature-costs-final.md),
-[GFM profile](docs/reports/2026-09-10-gfm-profiling.md), and
-[optimization decisions](docs/reports/2026-09-10-markdown-feature-optimizations.md)
-explain the hypotheses and known tradeoffs behind this rerun. Most unused options
-were cheap in that study, with literal-autolink detection a measurable exception.
-Feature-heavy documents differ in structure and output volume: choose options
-for semantics and measure the workload your application actually uses.
-
-The [two-parser harness](benchmarks/pulldown-comparison/README.md) also covers
-extended syntax intersections. Those diagnostics and the stable-toolchain
-Criterion suites use different environments/lifecycles and remain separate from
-the verified five-parser tables above.
-
-### Additional native engine comparisons
-
-Native Rust, Go and .NET implementations, measured on Apple Silicon using system allocators or normal managed-runtime GC. These runs have different allocation settings from the five-parser mimalloc tables above.
-
-Trusted Markdown-to-HTML with the same named syntax per document. Runtime setup, Node.js wrappers, WASM and MDX compilation are outside these measurements.
-
-Apple M1 Pro, macOS 26.6.2, September 2026. Three process runs per pair, three seconds of warmup and at least five seconds of sampling per engine/workload in each run. Values are medians of run medians; the linked archives retain exact toolchains, source revisions, options and run variation.
-
-| Engine | Runtime | Admitted workloads | Spec mismatches | Evidence |
-| --- | --- | ---: | ---: | --- |
-| Goldmark | Go | 18/18 | 0/652 | [2.0.2](docs/reports/2026-09-12-ox-corpus-optimizations/native-pipeline/REPORT.md) |
-| Sätteri | Rust | 18/18 | 0/652 | [b3d38e1e341c](docs/reports/2026-09-12-ox-corpus-optimizations/native-pipeline/REPORT.md) |
-| Rushdown | Rust | 18/18 | 0/652 | [0.18.0](docs/reports/2026-09-12-ox-corpus-optimizations/rushdown/REPORT.md) |
-| Markdig | .NET (warmed JIT) | 18/18 | 0/652 | [1.3.2](docs/reports/2026-09-12-ox-corpus-optimizations/markdig/REPORT.md) |
-| markdown-rs | Rust | 18/18 | 0/652 | [1.0.0](docs/reports/2026-09-12-ox-corpus-optimizations/markdown-rs/REPORT.md) |
-| Ox Content | Rust | 10/18 | 52/652 | [3.2.0](docs/reports/2026-09-12-ox-corpus-optimizations/ox-content/REPORT.md) |
-
-Admission checks comparable Markdown work. Spec mismatches are normalized output diagnostics, not a conformance certification. Only the workloads below received full timing runs.
-
-Ferromark appears once per document: its time is the median of the independently measured Ferromark reference medians. Each other engine retains its own measured time. Relative speed uses that single Ferromark value; above 1 means faster. The archives retain the original paired comparisons.
-
-#### Native CommonMark · 5 KiB
-
-5,120 input bytes. Bold marks the lowest measured time in this overview.
-
-| Engine | Time / document | Throughput | Relative speed |
-| --- | ---: | ---: | ---: |
-| **Ferromark** | **23.91 µs** | **204.2 MiB/s** | **baseline** |
-| Goldmark | 152.67 µs | 32.0 MiB/s | 0.16× |
-| Sätteri | 39.03 µs | 125.1 MiB/s | 0.61× |
-| Rushdown | 56.65 µs | 86.2 MiB/s | 0.42× |
-| Markdig | 62.73 µs | 77.8 MiB/s | 0.38× |
-| markdown-rs | 638.15 µs | 7.7 MiB/s | 0.04× |
-
-Not measured for this document: Ox Content.
-
-#### Native CommonMark · short
-
-18 input bytes. Bold marks the lowest measured time in this overview.
-
-| Engine | Time / document | Throughput | Relative speed |
-| --- | ---: | ---: | ---: |
-| Ferromark | 0.49 µs | 34.8 MiB/s | baseline |
-| **Ox Content** | **0.29 µs** | **59.0 MiB/s** | **1.70×** |
-
-Not measured for this document: Goldmark, Sätteri, Rushdown, Markdig, markdown-rs.
-
-#### Native Tables + inline CommonMark
-
-4,800 input bytes. Bold marks the lowest measured time in this overview.
-
-| Engine | Time / document | Throughput | Relative speed |
-| --- | ---: | ---: | ---: |
-| **Ferromark** | **32.58 µs** | **140.5 MiB/s** | **baseline** |
-| Goldmark | 371.26 µs | 12.3 MiB/s | 0.09× |
-| Sätteri | 64.07 µs | 71.5 MiB/s | 0.51× |
-| Rushdown | 96.78 µs | 47.3 MiB/s | 0.34× |
-| Markdig | 244.28 µs | 18.7 MiB/s | 0.13× |
-| markdown-rs | 1810.61 µs | 2.5 MiB/s | 0.02× |
-| Ox Content | 37.14 µs | 123.3 MiB/s | 0.88× |
-
-#### Native Tables + strikethrough + tasks
-
-5,050 input bytes. Bold marks the lowest measured time in this overview.
-
-| Engine | Time / document | Throughput | Relative speed |
-| --- | ---: | ---: | ---: |
-| Ferromark | 36.73 µs | 131.1 MiB/s | baseline |
-| Goldmark | 442.66 µs | 10.9 MiB/s | 0.08× |
-| Sätteri | 77.04 µs | 62.5 MiB/s | 0.48× |
-| Rushdown | 109.04 µs | 44.2 MiB/s | 0.34× |
-| Markdig | 251.12 µs | 19.2 MiB/s | 0.15× |
-| markdown-rs | 1518.19 µs | 3.2 MiB/s | 0.02× |
-| **Ox Content** | **35.08 µs** | **137.3 MiB/s** | **1.05×** |
-
-
-- **Goldmark:** Fresh AST and HTML buffer; normal automatic Go GC remains enabled.
-- **Sätteri:** Full native Markdown-to-MDAST-to-HTML pipeline, including source positions. MDX compilation is outside timing.
-- **Rushdown:** Fresh arena AST and owned HTML; full default entity support is retained.
-- **Markdig:** Direct .NET API with tiered JIT/PGO and normal concurrent GC. Startup and warmup are outside timing; GC within a sampled window is included. The measured package lock targets macOS ARM64.
-- **markdown-rs:** Direct native events-to-HTML API. MDX support is available upstream but is not measured here.
-- **Ox Content:** Generated heading IDs cannot be disabled; affected workloads are excluded. Specification differences include more than heading IDs. Native renderer scratch reuse is retained; every call creates a fresh arena, AST and owned HTML.
-
-Ox Content's short CommonMark case is a different document from the other engines' 5 KiB case. Its heading-ID exclusions prevent a corresponding 5 KiB result; no missing time is estimated.
-
-The [native cmark and cmark-gfm report](docs/reports/2026-09-11-native-cmark-comparison.md) additionally covers the C CommonMark reference parser and GitHub's fork, each with its own Ferromark baseline.
-
-Reproduce these pairs with the [native harness](benchmarks/native-pipeline-comparison/README.md) and each engine's adapter README. Regenerate this overview with `python3 benchmarks/native-pipeline-comparison/publish.py`, then `python3 benchmarks/bun-comparison/publish.py` and `mise run readme:write`.
-
-</details>
-
-## Building
-
-For contributor setup and the required test, lint, and format checks, see
-[CONTRIBUTING.md](CONTRIBUTING.md#required-local-checks).
-
-```bash
-cargo build
-cargo test --locked --all-features
-```
-
-### Minimum supported Rust version
-
-Ferromark supports Rust 1.94 and newer. `rust-version` in `Cargo.toml` is the
-source of truth; the CI test matrix exercises that floor on every pull request.
-
-## Project structure
-
-<details>
-<summary>Parser, renderer, and integration modules</summary>
-
-```
-src/
-├── lib.rs          # Public API (to_html, to_html_into, parse, Options)
-├── main.rs         # CLI binary
-├── block/          # Block-level parser
-│   ├── parser.rs   # Line-oriented block parsing
-│   └── event.rs    # BlockEvent types
-├── inline/         # Inline-level parser
-│   ├── mod.rs      # Three-phase inline parsing
-│   ├── marks.rs    # Mark collection + SIMD integration
-│   ├── simd.rs     # SIMD character scanning (SSE2/NEON)
-│   ├── event.rs    # InlineEvent types
-│   ├── code_span.rs
-│   ├── emphasis.rs      # Modulo-3 stack optimization
-│   ├── highlight.rs     # Highlight/mark resolution (==text==)
-│   ├── strikethrough.rs # GFM strikethrough resolution
-│   ├── subscript.rs     # Subscript resolution (~text~)
-│   ├── superscript.rs   # Superscript resolution (^text^)
-│   ├── math.rs          # Math span resolution ($/$$ delimiters)
-│   └── links.rs         # Link/image/autolink parsing
-├── mdx/            # MDX segmenter + renderer (feature = "mdx")
-│   ├── mod.rs      # Public API — Segment enum, segment(), render()
-│   ├── events.rs   # Semantic event stream exposed by parse_events()
-│   ├── render.rs   # Assembly layer: segments → HTML body + ESM + front matter
-│   ├── splitter.rs # Line-based state machine
-│   ├── strict.rs   # Structural diagnostics exposed by segment_strict()
-│   ├── jsx_tag.rs  # JSX tag boundary parser
-│   └── expr.rs     # Expression boundary parser (brace/string/comment tracking)
-├── footnote.rs     # Footnote store and rendering
-├── link_ref.rs     # Link reference definitions
-├── cursor.rs       # Pointer-based byte cursor
-├── range.rs        # Compact u32 range type
-├── render.rs       # HTML writer
-├── escape.rs       # HTML escaping (SSE2/NEON + memchr)
-└── limits.rs       # DoS prevention constants
-```
-
-</details>
-
-## License
-
-Licensed under either of [MIT](LICENSE-MIT) or
-[Apache License, Version 2.0](LICENSE-APACHE) at your option. Unless you state
-otherwise, any contribution you intentionally submit for inclusion in this
-project is dual licensed as above, without additional terms or conditions.
-
-
-
-## Security
-
-See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+| Ferromark v2 | 1.00× | 1.00× | 1.00× | 1.00× |
+| OX-Content original | 1.00× | 0.98× | — | — |
+| Ferromark v1 | 0.71× | 0.71× | 0.53× | 0.54× |
+| md4c | 0.26× | 0.21× | 0.31× | 0.28× |
+| pulldown-cmark | 0.46× | 0.38× | 0.42× | 0.39× |
+| Bun native bun_md | 0.17× | 0.12× | 0.18× | 0.16× |
+
+On the all-six agreement subset, v2 runs at
+**1.000× OX's throughput fresh** and
+**1.018× with reuse**. On the broader
+five-engine subset it runs at 1.90× v1's speed
+fresh and 1.85× with reuse. These are measured
+corpus aggregates; ratios close to 1.00 are not evidence of a universal lead.
+
+The all-six subset contains ten comments and four plain-prose views. The broader
+five-engine subset also covers technical docs, linked encyclopedia excerpts,
+references, and READMEs. Both agreeing subsets span 37–80,966 bytes. OX has no
+score in the five-engine columns: its original renderer cannot disable heading
+IDs, callouts, inline TOCs, or fence metadata cleanup. Its 39 heading-ID-only
+differences are not normalized away. The seven cases outside five-engine
+agreement remain measured as diagnostics, including task CSS and link/content
+differences.
+
+All engines parse and render natively. The CommonMark lane disables optional
+syntax; the extension lane enables only **tables, strikethrough, and task lists**.
+It is not full GFM. Bare URL autolinking, footnotes, frontmatter, line comments,
+definition lists, MDX, and optional renderer extras are off where configurable.
+Raw HTML passes through; these explicit benchmark settings differ from library
+defaults.
+
+Fresh includes parser/renderer setup, complete processing, owned output, and
+destruction. Reuse retains state where the public API permits; Bun's native
+`bun_md` still uses its fresh owned-output API. No JavaScript, WASM, process
+startup, file I/O, or output normalization is timed. One macOS arm64 executable,
+one Rust compiler, shared mimalloc and the same pinned dependency lock; three
+process rounds with six rotating windows per round. Small differences on this
+shared workstation are not established significance.
+
+Selected groups, **fresh**, using only the five-engine agreement subset and
+the same speed scale:
+
+| Group, five-engine agreement | N | V1 | md4c | pulldown | Bun native |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| <512 B | 10 | 0.71× | 0.26× | 0.55× | 0.26× |
+| 32–128 KiB | 7 | 0.57× | 0.29× | 0.37× | 0.10× |
+| comments | 11 | 0.74× | 0.28× | 0.55× | 0.25× |
+| technical-docs | 21 | 0.51× | 0.35× | 0.40× | 0.18× |
+| plain-prose | 4 | 0.65× | 0.26× | 0.30× | 0.06× |
+
+
+[Full results and per-document timings](docs/reports/2026-09-15-native-arm/README.md),
+[exact flags](docs/reports/2026-09-15-native-arm/FLAGS.md), and
+[HTML differences](docs/reports/2026-09-15-native-arm/OUTPUT-REVIEW.md)
+include raw measurements, source hashes, and reproducible configuration.
+The [previous matched-flags run](docs/reports/2026-09-14-native-matched/README.md)
+and [original six-engine run](docs/reports/2026-09-14-native-engines/README.md)
+remain historical evidence. The [full 207-case before/after suite](docs/reports/2026-09-15-arm-full-suite/README.md)
+uses a separate harness and reports all four stages.
+
+The historical [two-engine broad Markdown comparison](docs/reports/2026-09-14-broad-markdown/INTERPRETATION.md)
+measures 57 cases from 37 bytes to 114 KB: short comments, real documentation,
+and Wikipedia-derived prose. It separates input size, content, output agreement,
+and fresh/reused lifecycles. [Full tables and raw data](docs/reports/2026-09-14-broad-markdown/README.md)
+and the [earlier synthetic diagnostic comparison](docs/reports/2026-09-13-current-ferromark/README.md)
+use the same pinned parser binaries.
+
+The source is MIT licensed; the original copyright notice is preserved in
+[LICENSE](LICENSE). CommonMark and GFM specification fixtures carry their own
+[CC-BY-SA attribution](crates/ferromark_renderer/tests/spec_fixtures/README.md).
+The [benchmark corpus sources](benchmarks/broad-comparison/README.md) retain their
+separate MIT, Apache, CC BY, or CC BY-SA licenses and attribution.
 
 ### <a href="https://ferramenta.dev"><img src="https://raw.githubusercontent.com/sebastian-software/ferramenta/main/app/assets/brand/logo-light.svg" width="24" height="24" alt="" /> More from Ferramenta</a>
 

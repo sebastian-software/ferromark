@@ -21,17 +21,9 @@ const benchmarkPage = await readFile(
 const guidePage = await readFile(new URL("guide/quick-start/index.html", outputDirectory), "utf8");
 
 const requiredFragments = [
-  "/ferromark/assets/",
-  "/ferromark/favicon.ico",
-  // The shared chrome from ferramenta-family: the header carries the tool
-  // switcher and the footer carry sibling links, excluding this site.
-  'class="site-header"',
-  'class="site-footer"',
-  "https://ferramenta.dev",
-  "652/652 CommonMark spec tests pass in trusted mode",
-  "CommonMark tests passed in trusted mode",
-  "Fine-grained",
-  "Parsing and rendering controls for precise output",
+  "/ferromark/assets/", "/ferromark/favicon.ico", 'class="site-header"',
+  'class="site-footer"', "https://ferramenta.dev", "Development preview",
+  "arena-allocated", "Packages are unpublished", "OX-Content",
 ];
 
 // The family chrome replaces Ardo's own header and footer (`handle.chrome` in
@@ -70,19 +62,7 @@ check(
 );
 
 check(homepage, "homepage", requiredFragments, forbiddenFragments);
-const nativeData = JSON.parse(
-  await readFile(new URL("../app/data/native-benchmarks.json", import.meta.url), "utf8"),
-);
-for (const engine of nativeData.engines) {
-  check(homepage, "native engine overview", [engine.label]);
-  check(benchmarkPage, "native benchmark guide", [engine.label, engine.notes]);
-}
-check(benchmarkPage, "native comparison disclosures", [
-  nativeData.conditions,
-  nativeData.ratioExplanation,
-  "cmark-gfm",
-]);
-
+check(benchmarkPage, "v2 benchmark evidence", ["v2", "source revisions", "native-arm"]);
 check(guidePage, "guide page", requiredGuideFragments, forbiddenFragments);
 
 if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {

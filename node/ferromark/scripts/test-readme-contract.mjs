@@ -7,9 +7,8 @@ const loaderUrl = new URL('../index.mjs', import.meta.url)
 const nativeTargetUrl = new URL('../native-target.mjs', import.meta.url)
 const declarationUrl = new URL('../index.d.mts', import.meta.url)
 const nativeOptionsUrl = new URL('../../native/src/lib.rs', import.meta.url)
-const coreOptionsUrl = new URL('../../../src/lib.rs', import.meta.url)
 
-const [readme, packageJson, loader, nativeTargets, declarations, nativeOptions, coreOptions]
+const [readme, packageJson, loader, nativeTargets, declarations, nativeOptions]
   = await Promise.all([
     readFile(readmeUrl, 'utf8'),
     readFile(packageUrl, 'utf8').then(JSON.parse),
@@ -17,13 +16,16 @@ const [readme, packageJson, loader, nativeTargets, declarations, nativeOptions, 
     readFile(nativeTargetUrl, 'utf8'),
     readFile(declarationUrl, 'utf8'),
     readFile(nativeOptionsUrl, 'utf8'),
-    readFile(coreOptionsUrl, 'utf8'),
   ])
 
 function assertReadmeContract(candidate) {
-  assert.match(candidate, /^## Install$/m, 'README must have an install section')
+  assert.match(candidate, /V2 is unpublished/)
+  assert.match(candidate, /pnpm build/)
+  assert.match(candidate, /migration-v2/)
+
+  assert.match(candidate, /^## Build the development package$/m)
   assert.match(candidate, new RegExp(`npm install ${packageJson.name}`), 'README must show npm install')
-  assert.match(candidate, new RegExp(`pnpm add ${packageJson.name}`), 'README must show pnpm add')
+  assert.match(candidate, /pnpm install --frozen-lockfile/)
 
   const minimumNode = packageJson.engines.node.match(/^>=(\d+\.\d+\.\d+)$/)?.[1]
   assert.ok(minimumNode, 'package.json must declare an exact minimum Node version')
@@ -37,10 +39,7 @@ function assertReadmeContract(candidate) {
 
   assert.match(candidate, /^## Untrusted by default$/m, 'README must explain the default trust boundary')
   assert.match(declarations, /export type RenderPolicy = 'untrusted' \| 'trusted'/, 'declarations must expose both render policies')
-  assert.match(nativeOptions, /let mut options = CoreOptions::default\(\)/, 'Node options must start from core defaults')
-  const coreDefaultOptions = coreOptions.match(/impl Default for Options \{.*?\n\}/s)?.[0]
-  assert.ok(coreDefaultOptions, 'core must define default options')
-  assert.match(coreDefaultOptions, /render_policy: RenderPolicy::Untrusted/, 'core default policy must be untrusted')
+  assert.match(nativeOptions, /html.sanitize = true/, 'Node default must escape raw HTML and filter URLs')
   assert.match(candidate, /renderPolicy: 'untrusted'/, 'README must name the default render policy')
   assert.match(candidate, /raw HTML\s+is escaped/i, 'README must describe raw HTML escaping')
   assert.match(candidate, /unsafe link and image URL schemes/i, 'README must describe URL filtering')

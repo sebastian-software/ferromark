@@ -1,0 +1,7 @@
+---
+source: crates/ferromark_parser/tests/snapshot_parse.rs
+description: "![alt](./logo.png \"A logo\")\n"
+---
+Document [0..28]
+  Paragraph [0..28]
+    Image url="./logo.png" alt="alt" title=Some("A logo") [0..27]

@@ -1,0 +1,98 @@
+[
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1081.271265560166,
+    "candidate_ns_per_document": 1071.8548096707818,
+    "baseline_over_candidate_median": 1.0044058081377254,
+    "baseline_over_candidate_min": 0.9972683379781145,
+    "baseline_over_candidate_max": 1.0305552576471748,
+    "pairs": 9,
+    "round_medians": [
+      1.0025327888326587,
+      1.0109013161353857,
+      0.999424860175221
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "mode": "render",
+    "baseline_ns_per_document": 186.40651840033402,
+    "candidate_ns_per_document": 191.45745910928693,
+    "baseline_over_candidate_median": 0.9752950970076171,
+    "baseline_over_candidate_min": 0.9648811408137765,
+    "baseline_over_candidate_max": 1.073242068734729,
+    "pairs": 9,
+    "round_medians": [
+      0.972781074710511,
+      0.9701799071091017,
+      0.9761154624141346
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "mode": "reuse",
+    "baseline_ns_per_document": 79561.4578125,
+    "candidate_ns_per_document": 80352.5390625,
+    "baseline_over_candidate_median": 0.9949059267863533,
+    "baseline_over_candidate_min": 0.9628502654812637,
+    "baseline_over_candidate_max": 1.0460081556207579,
+    "pairs": 9,
+    "round_medians": [
+      0.9949059267863533,
+      1.0129632498499708,
+      0.9666340484296341
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "mode": "render",
+    "baseline_ns_per_document": 21423.997859589042,
+    "candidate_ns_per_document": 22485.286607142858,
+    "baseline_over_candidate_median": 0.9526961692482758,
+    "baseline_over_candidate_min": 0.9230452992894912,
+    "baseline_over_candidate_max": 1.009020328837717,
+    "pairs": 9,
+    "round_medians": [
+      0.9469028831265666,
+      0.96288442591439,
+      0.9526961692482758
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "mode": "reuse",
+    "baseline_ns_per_document": 186489.00347222222,
+    "candidate_ns_per_document": 171669.009375,
+    "baseline_over_candidate_median": 1.09366878687695,
+    "baseline_over_candidate_min": 1.0490518018577697,
+    "baseline_over_candidate_max": 2.541444397558871,
+    "pairs": 9,
+    "round_medians": [
+      1.0812739004047573,
+      1.3446915461432811,
+      1.0722380535990927
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "mode": "render",
+    "baseline_ns_per_document": 37612.568452380954,
+    "candidate_ns_per_document": 40275.24038461538,
+    "baseline_over_candidate_median": 0.9460069295970764,
+    "baseline_over_candidate_min": 0.9099616014302301,
+    "baseline_over_candidate_max": 0.9745399295914298,
+    "pairs": 9,
+    "round_medians": [
+      0.928717649636826,
+      0.9544111835667111,
+      0.9460069295970764
+    ]
+  }
+]

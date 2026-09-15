@@ -1,121 +1,38 @@
 ---
-title: Features and Flags
+title: Features
 ---
 
-# Features and Flags
+# Features
 
-## Standards coverage
+V2 exposes parsing and rendering separately, with an arena-allocated AST and
+source spans between them. The four core crates cover allocation, AST types,
+parsing, and HTML rendering; `ferromark` re-exports their public APIs.
 
-- Full CommonMark conformance: 652/652 spec tests pass with `RenderPolicy::Trusted`. The secure default escapes raw HTML by design and passes 577/652.
-- All five GFM extensions:
-  - Tables
-  - Strikethrough
-  - Task lists
-  - Autolink literals
-  - Disallowed raw HTML
+## Markdown profiles
 
-## Beyond GFM
+`ParserOptions::commonmark()` and `HtmlRendererOptions::commonmark()` select
+specification-oriented CommonMark behavior. The matching `gfm_spec()` parser
+and `gfm()` renderer add GFM tables, task lists, strikethrough, autolinks, and
+tagfilter. Convenience `ParserOptions::gfm()` also enables footnotes.
 
-- Optional horizontal table-cell spans (`||`, `|||`)
-- Optional relative table-column width hints
-- Reference and inline footnotes
-- Front matter extraction (`---` and `+++`)
-- Heading IDs (GitHub-compatible slugs)
-- Math spans (`$` and `$$`)
-- Callouts (`> [!NOTE]`, `> [!WARNING]`, etc.)
-- Highlight (`==text==` renders `<mark>`)
-- Superscript (`^text^` renders `<sup>`)
-- Subscript (`~text~` renders `<sub>`)
-- Definition lists (`Term` followed by `: Definition`)
+## Optional syntax
 
-## Configuration flags
+Front matter, footnotes, math, definition lists, superscript, subscript,
+line comments, wiki links, heading attributes, CJK emphasis, merged table
+cells, and table attributes are configurable. Source fixtures, conformance
+baselines, and compatibility corrections live alongside the code.
 
-Enable only what your workload needs:
+## HTML rendering
 
-```text
-allow_html · allow_link_refs · tables · merged_table_cells · table_column_widths · strikethrough · highlight
-superscript · subscript · task_lists · autolink_literals
-disallowed_raw_html · footnotes · inline_footnotes · front_matter · heading_ids
-math · callouts · definition_lists · line_comments · indented_code_blocks
-```
+Configure raw HTML handling, URL filtering, heading IDs, callouts, CSS-addressable table
+columns, TOC behavior, and source-span attributes in Rust.
+`HtmlRenderHooks` lets Rust consumers replace or wrap individual nodes.
+The native Node package offers `toHtml`, `toHtmlBuffer`, `Renderer`,
+`transform`, `toHtmlWithHighlighter`, and `transformWithHighlighter`.
 
-## Merged table cells
+## Boundaries
 
-Enable `merged_table_cells` together with `tables` for MultiMarkdown/iA-style
-horizontal spans. The number of adjacent pipes after a cell is its `colspan`:
-
-```markdown
-| Name | Price | Tax |
-| --- | ---: | ---: |
-| Gift | 0$ ||
-```
-
-Here `0$` spans two columns. Whitespace between pipes keeps an explicit empty
-cell. When the flag is disabled, consecutive pipes use normal GFM empty-cell
-semantics.
-
-Enable `table_column_widths` to interpret the relative number of dashes in each
-delimiter cell as a numeric HTML `<col>` width hint:
-
-```markdown
-| Short | Long |
-| -- | ------ |
-```
-
-This produces 25% and 75% hints. Alignment colons do not contribute to the
-ratio. The option composes with `merged_table_cells`: widths still describe the
-underlying table columns, while a merged cell spans those columns.
-
-## Inline footnotes
-
-Enable `inline_footnotes` for Pandoc-style notes:
-
-```markdown
-The result needs context.^[This note can contain *inline Markdown*.]
-```
-
-This flag is independent from reference `footnotes`. Inline and reference
-notes share first-appearance numbering in HTML. The iA Presenter
-`[^Footnote text.]` form remains reference syntax to avoid ambiguity.
-
-Event-based presentation adapters can use `InlineEvent::InlineFootnote` to
-collect notes and place them at slide boundaries.
-
-## Definition lists
-
-Definition lists are an independent opt-in extension:
-
-```rust
-use ferromark::Options;
-
-let options = Options {
-    definition_lists: true,
-    ..Options::commonmark()
-};
-let html = ferromark::to_html_with_options(markdown, &options);
-```
-
-Start from `Options::minimal()`, `Options::commonmark()`, or `Options::gfm()`
-and override only the syntax flags your documents use. These are dialect
-constructors, not performance profiles.
-
-## Rendering policy
-
-`RenderPolicy::Untrusted` is the default. It escapes raw HTML and rejects unsafe
-URL schemes after entity and control-character normalization. Use
-`RenderPolicy::Trusted` only for content you control. The
-`disallowed_raw_html` option is the narrower GFM tag filter, not a general HTML
-sanitizer.
-
-See the [0.2 migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-0.2.md)
-for the related API changes.
-
-## Design trade-offs
-
-ferromark optimizes for streaming Markdown-to-HTML throughput:
-
-- No AST access
-- No source map offsets
-- HTML output only
-
-If you need AST traversal or alternate output formats, choose a parser built for that model.
+V2 has a breaking Rust API and remains unpublished. It does not include a
+JavaScript runtime, an MDX compiler, or the old v1 CLI. The Node API exposes a
+subset of the Rust renderer configuration; its TypeScript declarations are
+the authoritative option list. See [MDX](./mdx-examples) for its exact scope.

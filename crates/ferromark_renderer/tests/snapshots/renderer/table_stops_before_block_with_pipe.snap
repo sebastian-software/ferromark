@@ -1,0 +1,15 @@
+---
+source: crates/ferromark_renderer/tests/support/snapshot.rs
+description: "| abc | def |\n| --- | --- |\n> quote | value\n"
+---
+<table>
+<thead>
+<tr>
+<th>abc</th>
+<th>def</th>
+</tr>
+</thead>
+</table>
+<blockquote>
+<p>quote | value</p>
+</blockquote>

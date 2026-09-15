@@ -1,0 +1,380 @@
+diff --git a/crates/ferromark_parser/src/parser/table.rs b/crates/ferromark_parser/src/parser/table.rs
+index de8e41b..44f8714 100644
+--- a/crates/ferromark_parser/src/parser/table.rs
++++ b/crates/ferromark_parser/src/parser/table.rs
+@@ -123,11 +123,11 @@ impl<'a> Parser<'a> {
+             Self::table_row_cells_with_offsets(line).take(column_count)
+         {
+             let cell_content = unescape_table_pipes(self.allocator, cell_content);
+-            let cell_children = if let Some(source_offsets) = &cell_content.source_offsets {
++            let cell_children = if let Some(source_map) = &cell_content.source_map {
+                 let mut children = self.parse_inline_block(cell_content.content, 0)?;
+                 let source_offset = (line_start + cell_start) as u32;
+                 for child in &mut children {
+-                    remap_table_cell_inline_spans(child, source_offset, source_offsets);
++                    remap_table_cell_inline_spans(child, source_offset, source_map);
+                 }
+                 children
+             } else {
+diff --git a/crates/ferromark_parser/src/parser/table_cell_source.rs b/crates/ferromark_parser/src/parser/table_cell_source.rs
+index 719d7e3..505b6f2 100644
+--- a/crates/ferromark_parser/src/parser/table_cell_source.rs
++++ b/crates/ferromark_parser/src/parser/table_cell_source.rs
+@@ -4,7 +4,24 @@ use memchr::memchr;
+ 
+ pub(super) struct TableCellContent<'a> {
+     pub content: &'a str,
+-    pub source_offsets: Option<Vec<'a, u32>>,
++    pub source_map: Option<SparseTableCellMap<'a>>,
++}
++
++/// Sparse mapping from a generated table-cell byte boundary back to the
++/// original source boundary. `generated_len` is part of the map so remapping
++/// retains the dense map's defensive clamp for malformed/out-of-range spans.
++pub(super) struct SparseTableCellMap<'a> {
++    generated_len: u32,
++    removed_backslashes: Vec<'a, u32>,
++}
++
++impl SparseTableCellMap<'_> {
++    fn boundary_offset(&self, index: usize) -> u32 {
++        let bounded = index.min(self.generated_len as usize);
++        let removed_before =
++            self.removed_backslashes.partition_point(|&position| position < bounded as u32);
++        bounded as u32 + removed_before as u32
++    }
+ }
+ 
+ /// Removes the table-level escape from pipes before inline parsing.
+@@ -21,38 +38,33 @@ pub(super) fn unescape_table_pipes<'a>(
+     // instead of examining every byte, then reuse the first escaped match
+     // when constructing the remapped source below.
+     let Some(first_pipe) = escaped_pipe_scan_start(bytes) else {
+-        return TableCellContent { content, source_offsets: None };
++        return TableCellContent { content, source_map: None };
+     };
+ 
+     let mut unescaped =
+         ferromark_allocator::String::with_capacity_in(content.len(), allocator.bump());
+-    let mut source_offsets: Vec<'a, u32> = allocator.new_vec();
++    let mut removed_backslashes: Vec<'a, u32> = allocator.new_vec();
+     let mut copied_through = 0;
+     let mut search_start = first_pipe;
+     while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
+         let pipe = search_start + relative;
+         if is_escaped_table_pipe(bytes, pipe) {
+-            push_mapped_table_cell_slice(
+-                content,
+-                copied_through,
+-                pipe - 1,
+-                &mut unescaped,
+-                &mut source_offsets,
+-            );
++            push_unescaped_table_cell_slice(content, copied_through, pipe - 1, &mut unescaped);
++            // `unescaped.len()` is the generated position of the removed
++            // backslash. Keeping only these sparse positions avoids one u32
++            // per byte of every long cell containing an escaped pipe.
++            removed_backslashes.push(unescaped.len() as u32);
+             unescaped.push('|');
+-            source_offsets.push((pipe + 1) as u32);
+             copied_through = pipe + 1;
+         }
+         search_start = pipe + 1;
+     }
+-    push_mapped_table_cell_slice(
+-        content,
+-        copied_through,
+-        content.len(),
+-        &mut unescaped,
+-        &mut source_offsets,
+-    );
+-    TableCellContent { content: unescaped.into_bump_str(), source_offsets: Some(source_offsets) }
++    push_unescaped_table_cell_slice(content, copied_through, content.len(), &mut unescaped);
++    let generated_len = unescaped.len() as u32;
++    TableCellContent {
++        content: unescaped.into_bump_str(),
++        source_map: Some(SparseTableCellMap { generated_len, removed_backslashes }),
++    }
+ }
+ 
+ #[inline]
+@@ -69,94 +81,91 @@ fn escaped_pipe_scan_start(bytes: &[u8]) -> Option<usize> {
+     memchr::memchr_iter(b'|', bytes).find(|&index| is_escaped_table_pipe(bytes, index))
+ }
+ 
+-fn push_mapped_table_cell_slice(
++fn push_unescaped_table_cell_slice(
+     source: &str,
+     start: usize,
+     end: usize,
+     unescaped: &mut ferromark_allocator::String<'_>,
+-    source_offsets: &mut Vec<'_, u32>,
+ ) {
+-    if start >= end {
+-        if source_offsets.is_empty() {
+-            source_offsets.push(start as u32);
+-        }
+-        return;
+-    }
+-
+-    if source_offsets.is_empty() {
+-        source_offsets.push(start as u32);
+-    }
+-    unescaped.push_str(&source[start..end]);
+-
+-    let mut source_offset = start + 1;
+-    while source_offsets.len() < unescaped.len() + 1 {
+-        source_offsets.push(source_offset.min(end) as u32);
+-        source_offset += 1;
++    if start < end {
++        unescaped.push_str(&source[start..end]);
+     }
+ }
+ 
+ pub(super) fn remap_table_cell_inline_spans(
+     node: &mut Node<'_>,
+     source_offset: u32,
+-    offsets: &[u32],
++    source_map: &SparseTableCellMap<'_>,
+ ) {
+     match node {
+-        Node::Text(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
++        Node::Text(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
+         Node::Emphasis(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::Strong(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+-        Node::InlineCode(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
+-        Node::InlineMath(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
+-        Node::Break(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
++        Node::InlineCode(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
++        Node::InlineMath(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
++        Node::Break(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
+         Node::Link(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+-        Node::Image(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
++        Node::Image(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
+         Node::Delete(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::Superscript(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::Subscript(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::FootnoteReference(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
++        }
++        Node::Html(node) => {
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+         }
+-        Node::Html(node) => remap_table_cell_span(&mut node.span, source_offset, offsets),
+         Node::MdxJsxTextElement(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+             for attribute in &mut node.attributes {
+-                remap_table_cell_mdx_attribute_entry(attribute, source_offset, offsets);
++                remap_table_cell_mdx_attribute_entry(attribute, source_offset, source_map);
+             }
+             for child in &mut node.children {
+-                remap_table_cell_inline_spans(child, source_offset, offsets);
++                remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+         }
+         Node::MdxTextExpression(node) => {
+-            remap_table_cell_span(&mut node.span, source_offset, offsets);
++            remap_table_cell_span(&mut node.span, source_offset, source_map);
+         }
+         Node::Paragraph(_)
+         | Node::Heading(_)
+@@ -181,28 +190,24 @@ pub(super) fn remap_table_cell_inline_spans(
+ fn remap_table_cell_mdx_attribute_entry(
+     entry: &mut MdxJsxAttributeEntry<'_>,
+     source_offset: u32,
+-    offsets: &[u32],
++    source_map: &SparseTableCellMap<'_>,
+ ) {
+     match entry {
+         MdxJsxAttributeEntry::Attribute(attribute) => {
+-            remap_table_cell_span(&mut attribute.span, source_offset, offsets);
++            remap_table_cell_span(&mut attribute.span, source_offset, source_map);
+             if let Some(MdxJsxAttributeValue::Expression(expr)) = &mut attribute.value {
+-                remap_table_cell_span(&mut expr.span, source_offset, offsets);
++                remap_table_cell_span(&mut expr.span, source_offset, source_map);
+             }
+         }
+         MdxJsxAttributeEntry::Expression(expr) => {
+-            remap_table_cell_span(&mut expr.span, source_offset, offsets);
++            remap_table_cell_span(&mut expr.span, source_offset, source_map);
+         }
+     }
+ }
+ 
+-fn remap_table_cell_span(span: &mut Span, source_offset: u32, offsets: &[u32]) {
+-    span.start = source_offset + table_cell_boundary_offset(span.start as usize, offsets);
+-    span.end = source_offset + table_cell_boundary_offset(span.end as usize, offsets);
+-}
+-
+-fn table_cell_boundary_offset(index: usize, offsets: &[u32]) -> u32 {
+-    offsets.get(index).copied().unwrap_or_else(|| offsets.last().copied().unwrap_or_default())
++fn remap_table_cell_span(span: &mut Span, source_offset: u32, source_map: &SparseTableCellMap<'_>) {
++    span.start = source_offset + source_map.boundary_offset(span.start as usize);
++    span.end = source_offset + source_map.boundary_offset(span.end as usize);
+ }
+ 
+ pub(super) fn is_escaped_table_pipe(bytes: &[u8], pipe: usize) -> bool {
+diff --git a/crates/ferromark_parser/src/parser/table_cell_source/tests.rs b/crates/ferromark_parser/src/parser/table_cell_source/tests.rs
+index 0f9df5f..2636307 100644
+--- a/crates/ferromark_parser/src/parser/table_cell_source/tests.rs
++++ b/crates/ferromark_parser/src/parser/table_cell_source/tests.rs
+@@ -27,18 +27,100 @@ fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
+ }
+ 
+ #[test]
+-fn skipped_unescaped_pipes_keep_content_and_source_offsets() {
++fn skipped_unescaped_pipes_keep_content_and_sparse_source_map() {
+     for prefix_len in [0, 8, 31, 63, 64, 65, 128] {
+         let prefix = "x".repeat(prefix_len);
+         let source = format!("{prefix}|日本語\\|end");
+         let allocator = Allocator::new();
+         let result = unescape_table_pipes(&allocator, &source);
+         assert_eq!(result.content, format!("{prefix}|日本語|end"));
+-        let offsets = result.source_offsets.unwrap();
+-        assert_eq!(offsets.len(), result.content.len() + 1);
++        let source_map = result.source_map.unwrap();
+         let removed_at = prefix_len + "|日本語".len();
+-        for (index, offset) in offsets.iter().enumerate() {
+-            assert_eq!(*offset as usize, index + usize::from(index > removed_at));
++        assert_eq!(source_map.removed_backslashes.as_slice(), &[removed_at as u32]);
++        for boundary in 0..=result.content.len() {
++            let expected = boundary + usize::from(boundary > removed_at);
++            assert_eq!(source_map.boundary_offset(boundary) as usize, expected);
++        }
++    }
++}
++
++#[test]
++fn adjacent_escaped_pipes_map_each_generated_boundary() {
++    let allocator = Allocator::new();
++    let result = unescape_table_pipes(&allocator, r"a\|\|b");
++    assert_eq!(result.content, "a||b");
++    let source_map = result.source_map.unwrap();
++    assert_eq!(source_map.removed_backslashes.as_slice(), &[1, 2]);
++    let mapped = std::array::from_fn(|boundary| source_map.boundary_offset(boundary));
++    assert_eq!(mapped, [0, 1, 3, 5, 6]);
++}
++
++#[test]
++fn sparse_map_matches_dense_scalar_oracle() {
++    let allocator = Allocator::new();
++    for source in
++        [r"plain text", r"a\|b|c", r"a\\|b\|c", r"\|\|\|", r"slashes \\| and escaped \| pipes"]
++    {
++        let result = unescape_table_pipes(&allocator, source);
++        let bytes = source.as_bytes();
++        let mut expected_content = allocator.new_string();
++        let mut expected_offsets = [0usize; 128];
++        let mut expected_len = 1;
++        let mut source_index = 0;
++        while source_index < bytes.len() {
++            if bytes[source_index] == b'|'
++                && is_escaped_table_pipe(bytes, source_index)
++                && source_index > 0
++            {
++                // The slash was already emitted by the previous iteration;
++                // remove it and repair the boundary immediately before the
++                // generated pipe.
++                expected_content.pop();
++                expected_len -= 1;
++                expected_offsets[expected_len - 1] = source_index - 1;
++                expected_content.push('|');
++                expected_offsets[expected_len] = source_index + 1;
++                expected_len += 1;
++                source_index += 1;
++            } else {
++                expected_content.push(bytes[source_index] as char);
++                source_index += 1;
++                expected_offsets[expected_len] = source_index;
++                expected_len += 1;
++            }
++        }
++        assert_eq!(result.content, expected_content.as_str(), "{source:?}");
++        let source_map = result.source_map.as_ref();
++        for (boundary, expected) in expected_offsets[..expected_len].iter().copied().enumerate() {
++            assert_eq!(
++                source_map.map_or(boundary as u32, |map| map.boundary_offset(boundary)) as usize,
++                expected,
++                "{source:?} boundary {boundary}"
++            );
++        }
++    }
++}
++
++#[test]
++fn sparse_map_matches_dense_oracle_for_out_of_range_boundaries_and_unicode() {
++    let allocator = Allocator::new();
++    for source in ["é日本語\\|tail", "a\\|🙂\\|終"] {
++        let result = unescape_table_pipes(&allocator, source);
++        let source_map = result.source_map.as_ref().expect("escaped pipe map");
++        let generated_len = result.content.len();
++        let final_source_boundary = source.len();
++        for boundary in 0..=generated_len + 4 {
++            let dense = if boundary <= generated_len {
++                boundary
++                    + source_map
++                        .removed_backslashes
++                        .iter()
++                        .filter(|&&position| position < boundary as u32)
++                        .count()
++            } else {
++                final_source_boundary
++            };
++            assert_eq!(source_map.boundary_offset(boundary) as usize, dense, "{source:?}");
+         }
+     }
+ }

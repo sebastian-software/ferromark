@@ -4,81 +4,55 @@ title: Quick Start
 
 # Quick Start
 
-Install the crate and render Markdown to HTML in one call.
+## Rust
 
-```bash
-cargo add ferromark
-```
+Use the workspace facade while developing in the repository:
 
 ```rust
-let html = ferromark::to_html("# Hello\n\n**World**");
+use ferromark::{Allocator, HtmlRenderer, Parser};
+
+let source = "# Hello\n\n**World**";
+let allocator = Allocator::for_source_len(source.len());
+let document = Parser::new(&allocator, source).parse()?;
+let html = HtmlRenderer::new().render(&document);
 ```
 
-Start from the dialect constructor that matches your content —
-`Options::minimal()`, `Options::commonmark()`, or `Options::gfm()` — and
-override individual flags:
+The source and allocator must outlive `document`. Drop the document before
+resetting its allocator. For GFM, construct a parser with
+`Parser::with_options(&allocator, source, ParserOptions::gfm_spec())` and a
+renderer with `HtmlRenderer::with_options(HtmlRendererOptions::gfm())`.
+Rust renderer defaults pass raw HTML through; use `sanitize: true` to escape
+raw HTML and filter link/image URL schemes.
 
-```rust
-use ferromark::Options;
+## Node.js
 
-let options = Options {
-    front_matter: true,
-    ..Options::gfm()
-};
-let html = ferromark::to_html_with_options(markdown, &options);
-```
-
-## Reuse output buffers
-
-When allocation pressure matters, reuse a `Vec<u8>`:
-
-```rust
-let mut buffer = Vec::new();
-ferromark::to_html_into("# Reuse me", &mut buffer);
-```
-
-## Enable MDX support
-
-MDX support is opt-in via feature flag:
-
-```bash
-cargo add ferromark --features mdx
-```
-
-See [MDX Examples](/guide/mdx-examples) for full code paths.
-
-## Use the Node.js package
-
-Install the native ESM package on Node.js 22 or newer:
-
-```sh
-npm install ferromark
-```
+After building from the repository root's `node/` directory:
 
 ```js
-import { toHtml } from 'ferromark'
+import { toHtml, toHtmlBuffer, Renderer, transform } from './ferromark/index.mjs'
 
-const html = toHtml('# Hello', { tables: true })
+const html = toHtml('# Hello v2')
+const buffer = toHtmlBuffer('**UTF-8 output**')
+const renderer = new Renderer({ tables: true })
+renderer.toHtml('First document')
+renderer.toHtml('Second document')
+const result = transform('---\ntitle: Guide\n---\n# Guide', { frontMatter: true })
+console.log(result.headings, result.frontMatter)
 ```
 
-## Highlight fenced code with Ferriki
+Node defaults escape raw HTML and filter link/image URL schemes. Set
+`renderPolicy: 'trusted'` only for trusted Markdown. Custom highlighter output
+is inserted verbatim and must escape every untrusted value.
 
-An initialized Ferriki highlighter plugs into the Node API without coupling the two Rust cores:
+## Migrating from v1
 
-```js
-import { createHighlighter } from 'ferriki'
-import { toHtmlWithHighlighter } from 'ferromark'
+The Rust AST API replaces v1's one-shot and streaming APIs. Node keeps its
+rendering entry points, but `tableColumnWidths`, `highlight`, `inlineFootnotes`, `allowLinkRefs`,
+and `indentedCodeBlocks` are unsupported and rejected. Heading slugs, table
+layout markup, and some extension output follow v2 semantics. `linkBasePath`
+also applies to root-absolute image and raw HTML URLs and converts Markdown
+links to index.html routes. Highlighter callbacks
+apply to code blocks, including indented code.
 
-const highlighter = await createHighlighter({
-  langs: ['rust'],
-  themes: ['github-dark'],
-})
-
-const html = toHtmlWithHighlighter(
-  '```rust\nfn main() {}\n```',
-  highlighter,
-  { theme: 'github-dark' },
-)
-```
-
-Highlighter errors fall back to escaped code-block output.
+Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/migration-v2.md)
+before adopting the development package.

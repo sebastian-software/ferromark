@@ -1,0 +1,281 @@
+//! Differential tests: every escape path must agree with a plain
+//! byte-at-a-time reference, including the vector classifiers.
+
+use super::*;
+
+/// Straightforward byte-at-a-time escaper the SWAR scanner must match.
+///
+/// Every escaped byte is ASCII, so copying the rest through verbatim at
+/// the byte level keeps multi-byte sequences intact.
+fn reference(s: &str, flags: &[u8; 256], table: &[&'static str; 256]) -> String {
+    let mut out: Vec<u8> = Vec::new();
+    for byte in s.bytes() {
+        if flags[byte as usize] != 0 {
+            out.extend_from_slice(table[byte as usize].as_bytes());
+        } else {
+            out.push(byte);
+        }
+    }
+    String::from_utf8(out).expect("escaping only rewrites ASCII bytes")
+}
+
+fn reference_url(s: &str) -> String {
+    let mut out = String::new();
+    for byte in s.bytes() {
+        if byte >= 0x80 {
+            push_percent_byte(&mut out, byte);
+        } else if URL_ESCAPE_FLAG[byte as usize] != 0 {
+            out.push_str(URL_ESCAPE_TABLE[byte as usize]);
+        } else {
+            out.push(byte as char);
+        }
+    }
+    out
+}
+
+fn check(s: &str) {
+    let mut text = String::new();
+    write_escaped_into(&mut text, s);
+    assert_eq!(
+        text,
+        reference(s, &ESCAPE_FLAG, &ESCAPE_TABLE),
+        "text escape: {s:?}"
+    );
+
+    let mut url = String::new();
+    write_url_escaped_into(&mut url, s);
+    assert_eq!(url, reference_url(s), "url escape: {s:?}");
+
+    let mut attributes = String::from("prefix:");
+    let mut expected = attributes.clone();
+    for ch in s.chars() {
+        match ch {
+            '&' => expected.push_str("&amp;"),
+            '<' => expected.push_str("&lt;"),
+            '>' => expected.push_str("&gt;"),
+            '"' => expected.push_str("&quot;"),
+            '\'' => expected.push_str("&#39;"),
+            '\r' => expected.push_str("&#13;"),
+            '\n' => expected.push_str("&#10;"),
+            _ => expected.push(ch),
+        }
+    }
+    write_attribute_escaped_into(&mut attributes, s);
+    assert_eq!(attributes, expected, "attribute escape: {s:?}");
+}
+
+#[test]
+fn matches_reference_on_fixtures() {
+    for case in [
+        "",
+        "a",
+        "&",
+        "<>",
+        "plain ascii text with no escapes at all",
+        "&<>\"'",
+        "a&b<c>d\"e'f",
+        "exactly-8b",
+        "seven77",
+        "&&&&&&&&&&&&&&&&",
+        "trailing escape &",
+        "& leading escape",
+        // The folded masks admit no extra bytes, but these neighbours are
+        // the ones a sloppy fold would leak: 0x21 0x23 0x25 0x3D 0x3F.
+        "!#%=?",
+        "!#%=? &<>\"' !#%=?",
+        "\r\n",
+        "\n\r\r\n\n",
+        "日本語\r\n<&>\"'\n🙂\r",
+    ] {
+        check(case);
+    }
+}
+
+#[test]
+fn url_escape_matches_reference_at_every_offset_and_tail() {
+    for needle in ["é", "中", "🙂", "é中🙂", "&", "[", "%", " ", "`", "a"] {
+        for offset in 0..=40 {
+            for tail in [0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33] {
+                let source = format!("{}{}{}", "u".repeat(offset), needle, "v".repeat(tail));
+                let mut actual = String::new();
+                write_url_escaped_into(&mut actual, &source);
+                assert_eq!(actual, reference_url(&source), "source: {source:?}");
+            }
+        }
+    }
+}
+
+#[test]
+fn runs_of_every_length_are_copied_intact() {
+    for len in 0..=200 {
+        let run: String = (0..len)
+            .map(|i| char::from(b'a' + u8::try_from(i % 26).unwrap()))
+            .collect();
+        for (prefix, suffix) in [("", ""), ("&", ""), ("", "<"), ("'", "\"")] {
+            let source = format!("{prefix}{run}{suffix}");
+            check(&source);
+            let mut out = String::from("existing-content");
+            write_escaped_into(&mut out, &source);
+            assert_eq!(
+                out,
+                format!(
+                    "existing-content{}",
+                    reference(&source, &ESCAPE_FLAG, &ESCAPE_TABLE)
+                )
+            );
+        }
+    }
+}
+
+#[test]
+fn commonmark_url_syntax_bytes_are_percent_encoded() {
+    for (source, expected) in [
+        (r"foo\bar", "foo%5Cbar"),
+        ("https://foo.bar.`baz", "https://foo.bar.%60baz"),
+        (
+            "https://example.com/?search=][ref]",
+            "https://example.com/?search=%5D%5Bref%5D",
+        ),
+        ("https://example.com/\\[\\", "https://example.com/%5C%5B%5C"),
+    ] {
+        let mut actual = String::new();
+        write_url_escaped_into(&mut actual, source);
+        assert_eq!(actual, expected, "source: {source:?}");
+    }
+}
+
+#[test]
+fn url_escape_handles_escape_heavy_ascii_before_unicode_linearly() {
+    let mut source = String::with_capacity(4097);
+    for _ in 0..2048 {
+        source.push('&');
+    }
+    source.push('é');
+
+    let mut actual = String::new();
+    write_url_escaped_into(&mut actual, &source);
+    assert_eq!(actual, reference_url(&source));
+}
+
+#[test]
+fn invalid_ipv6_authority_is_escaped_without_html_injection() {
+    let source = r#"https://[::1\"onerror=\"x]/"#;
+    let mut actual = String::new();
+    write_url_escaped_into(&mut actual, source);
+    assert_eq!(actual, "https://%5B::1%5C%22onerror=%5C%22x%5D/");
+}
+
+#[test]
+fn matches_reference_on_borrow_propagation_shapes() {
+    // `has_zero` can flag a 0x01 lane that borrowed from a real match
+    // below it. These interleavings put such bytes directly after a match
+    // inside the same word, which is where a wrong lane index would show.
+    for filler in ["!", "#", "%", "=", "?", "\x01", "\x00"] {
+        for needle in ["&", "<", ">", "\"", "'", " "] {
+            for lead in 0..9 {
+                let mut s = "x".repeat(lead);
+                s.push_str(needle);
+                for _ in 0..8 {
+                    s.push_str(filler);
+                }
+                s.push_str(needle);
+                check(&s);
+            }
+        }
+    }
+}
+
+#[test]
+fn matches_reference_across_the_overlapping_tail_read() {
+    // The sub-word tail is covered by re-reading the last eight bytes
+    // with the already-cleared lanes masked off, which is exactly where
+    // a masked-off match can borrow into the lane above it. The pairs
+    // below are the ones that can do it: after the mask folds, `<`/`>`
+    // leave a `0x01` lane on a following `=` or `?`, and `"` on a
+    // following `#`. One is placed at every offset of every length so
+    // each lands on both sides of the tail boundary.
+    for pair in ["<=", "<?", ">=", ">?", "\"#"] {
+        for len in 2..40usize {
+            for at in 0..len - 1 {
+                let mut s = "x".repeat(len);
+                s.replace_range(at..at + 2, pair);
+                check(&s);
+            }
+        }
+    }
+}
+
+#[test]
+fn matches_reference_for_every_byte_value_at_every_offset() {
+    // The vector paths classify from nibble pairs rather than the flag
+    // table, so a wrong entry would admit or drop a byte the table
+    // disagrees with. Check all 256 values at every offset of a buffer
+    // long enough to cross the 16-byte step and land in the overlapping
+    // tail, and at lengths below one vector so the word path is covered
+    // too.
+    for value in 0..=255u8 {
+        for len in [1usize, 7, 8, 15, 16, 17, 33] {
+            for at in 0..len {
+                let mut buffer = vec![b'x'; len];
+                buffer[at] = value;
+                check(&String::from_utf8_lossy(&buffer));
+            }
+        }
+    }
+}
+
+#[test]
+fn matches_reference_on_pseudorandom_bytes() {
+    // xorshift over the printable-plus-needles range; deterministic so a
+    // failure is reproducible.
+    let mut state = 0x2545_F491_4F6C_DD1Du64;
+    let alphabet: Vec<u8> = (0x20u8..0x7f).chain(*b"&<>\"' \r\n").collect();
+    for len in 0..200 {
+        let mut s = String::with_capacity(len);
+        for _ in 0..len {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            s.push(alphabet[(state % alphabet.len() as u64) as usize] as char);
+        }
+        check(&s);
+    }
+}
+
+#[test]
+fn matches_reference_on_multibyte_utf8() {
+    check("日本語のテキスト");
+    check("emoji 🎉 and <tags> mixed");
+    check("café & naïve — \"quoted\"");
+}
+
+#[test]
+fn matches_reference_across_the_short_run_copy_boundaries() {
+    // `push_run` copies runs of 16 bytes or fewer with overlapping loads
+    // instead of `memmove`, switching strategy at 1, 4, 8 and 16 bytes. A
+    // run is the gap between two escapes, so bracketing a plain run of
+    // every length puts each of those boundaries through the mid-loop copy,
+    // the leading copy and the trailing copy in turn.
+    for len in 0..=40usize {
+        let run = "x".repeat(len);
+        check(&run);
+        check(&format!("&{run}"));
+        check(&format!("{run}&"));
+        check(&format!("&{run}&"));
+        check(&format!("<{run}>{run}\""));
+    }
+}
+
+#[test]
+fn short_run_copy_keeps_multibyte_sequences_intact() {
+    // The overlapping copy is byte-oriented, so anything that split a
+    // multi-byte sequence would surface as invalid UTF-8 rather than a
+    // wrong escape. Sweep lengths that straddle every branch boundary.
+    for filler in ["é", "→", "🙂", "日本語"] {
+        for count in 0..=12usize {
+            let run = filler.repeat(count);
+            check(&run);
+            check(&format!("&{run}<"));
+        }
+    }
+}

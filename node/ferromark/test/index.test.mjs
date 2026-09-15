@@ -58,7 +58,7 @@ test('reuses a renderer without leaking document state', () => {
   assert.match(renderer.toHtml('# Same\n\n# Same\n\nA[^a]\n\n[^a]: First'), /id="same-1"/)
   assert.equal(
     renderer.toHtml('# Same\n\n[local][ref]\n\n[^b]: Unused'),
-    '<h1 id="same">Same</h1>\n<p>[local][ref]</p>\n',
+    toHtml('# Same\n\n[local][ref]\n\n[^b]: Unused', { footnotes: true }),
   )
 })
 
@@ -70,28 +70,20 @@ test('validates reusable renderer options at construction', () => {
 })
 
 test('maps typed options to the Rust surface', () => {
-  assert.equal(toHtml('==mark==', { highlight: true }), '<p><mark>mark</mark></p>\n')
+  assert.equal(toHtml('x^2^', { superscript: true }), '<p>x<sup>2</sup></p>\n')
   assert.match(
-    toHtml('| Short | Long |\n| -- | ------ |', { tableColumnWidths: true }),
-    /<col style="width: 25%">/,
+    toHtml('| Short | Long |\n| -- | ------ |', { tableColgroup: true }),
+    /<col class="col-1">/,
   )
   assert.match(
     toHtml('| A | B |\n| --- | --- |\n| merged ||', { mergedTableCells: true }),
     /colspan="2"/,
   )
-  assert.match(
-    toHtml('Text.^[Node note.]', { inlineFootnotes: true }),
-    /user-content-inline-fn-1/,
-  )
   assert.equal(
     toHtml('Term\n: Definition', { definitionLists: true }),
-    '<dl>\n<dt>Term</dt>\n<dd>Definition</dd>\n</dl>\n',
+    '<dl class="ox-definition-list">\n<dt>Term</dt>\n<dd>Definition</dd>\n</dl>\n',
   )
   assert.equal(toHtml('// private note', { lineComments: true }), '')
-  assert.equal(
-    toHtml('    code', { indentedCodeBlocks: false }),
-    '<p>code</p>\n',
-  )
   assert.throws(
     () => toHtml('text', { renderPolicy: 'invalid' }),
     /renderPolicy must be either 'untrusted' or 'trusted'/,
@@ -413,14 +405,14 @@ test('transform omits ids when headingIds is disabled', () => {
   assert.equal(result.headings[0].text, 'Top')
 })
 
-test('linkBasePath prefixes internal links only', () => {
+test('linkBasePath uses v2 site URL routing', () => {
   const html = toHtml('[in](/guide) [out](https://e.com/) ![img](/i.png)', {
     linkBasePath: '/docs',
   })
 
   assert.match(html, /<a href="\/docs\/guide">/)
   assert.match(html, /<a href="https:\/\/e.com\/">/)
-  assert.match(html, /<img src="\/i.png"/)
+  assert.match(html, /<img src="\/docs\/i.png"/)
 })
 
 test('highlighter receives fence meta as Shiki-style __raw', () => {
@@ -465,3 +457,35 @@ function currentNativeTarget() {
   assert.ok(target, `test requires a supported native target, received ${key}`)
   return target
 }
+
+
+test('rejects removed v1 options instead of silently ignoring them', () => {
+  for (const key of ['tableColumnWidths', 'highlight', 'inlineFootnotes', 'allowLinkRefs', 'indentedCodeBlocks']) {
+    assert.throws(() => toHtml('text', { [key]: true }), /unknown option/)
+    assert.throws(() => new Renderer({ [key]: true }), /unknown option/)
+    assert.throws(() => transform('text', { [key]: true }), /unknown option/)
+  }
+})
+
+test('preserves the untrusted URL boundary across ordinary and hooked rendering', () => {
+  const source = '[x](javascript:alert%281%29) ![x](data:text/html,bad) <script>x</script>'
+  const highlighter = { codeToHtml: () => '<pre>trusted</pre>' }
+  for (const html of [toHtml(source), toHtmlWithHighlighter(source, highlighter, { theme: 'dark' })]) {
+    assert.doesNotMatch(html, /(?:href|src)="(?:javascript|data):/)
+    assert.doesNotMatch(html, /<script>/)
+  }
+})
+
+test('metadata IDs agree with v2 heading output and reset between documents', () => {
+  const source = '# A *title*!\n\n# A title!\n\n## Explicit {#custom}'
+  const result = transform(source, { headingAttributes: true })
+  assert.deepEqual(result.headings.map(h => h.id), ['a-title', 'a-title-1', 'custom'])
+  for (const heading of result.headings) assert.ok(result.html.includes(`id="${heading.id}"`))
+  assert.equal(transform('# A title!').headings[0].id, 'a-title')
+})
+
+test('a reusable renderer recovers after a bounded-depth parse error', () => {
+  const renderer = new Renderer()
+  assert.throws(() => renderer.toHtml('> '.repeat(150) + 'deep'), /nest|depth/i)
+  assert.equal(renderer.toHtml('recovered'), '<p>recovered</p>\n')
+})

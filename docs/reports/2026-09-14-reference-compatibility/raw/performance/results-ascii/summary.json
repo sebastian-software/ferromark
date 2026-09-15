@@ -1,0 +1,104 @@
+[
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 495.2708201267829,
+    "candidate_ns_per_document": 490.8739694566583,
+    "baseline_over_candidate_median": 1.00330688364099,
+    "baseline_over_candidate_min": 0.9977858958069948,
+    "baseline_over_candidate_max": 1.015325358483962,
+    "pairs": 9,
+    "round_medians": [
+      0.9991975964534511,
+      1.009106207245849,
+      1.0015968421633288
+    ]
+  },
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 170.92372087617588,
+    "candidate_ns_per_document": 169.02816387236345,
+    "baseline_over_candidate_median": 1.010668416551824,
+    "baseline_over_candidate_min": 1.0013118020272174,
+    "baseline_over_candidate_max": 1.0176742999006094,
+    "pairs": 9,
+    "round_medians": [
+      1.0151673679956768,
+      1.010668416551824,
+      1.008462629254348
+    ]
+  },
+  {
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "baseline_ns_per_document": 529.2552065695902,
+    "candidate_ns_per_document": 540.0505355908776,
+    "baseline_over_candidate_median": 0.9815449714912359,
+    "baseline_over_candidate_min": 0.9727733883806032,
+    "baseline_over_candidate_max": 0.9891468096380438,
+    "pairs": 9,
+    "round_medians": [
+      0.9756401365908721,
+      0.9815449714912359,
+      0.9865402707536067
+    ]
+  },
+  {
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "baseline_ns_per_document": 208.41286843158176,
+    "candidate_ns_per_document": 219.32310087719299,
+    "baseline_over_candidate_median": 0.9483504202962786,
+    "baseline_over_candidate_min": 0.9395568637843176,
+    "baseline_over_candidate_max": 1.0188248261604116,
+    "pairs": 9,
+    "round_medians": [
+      0.9406361893013455,
+      1.0107770126334712,
+      0.9483504202962786
+    ]
+  },
+  {
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 12861.509477459016,
+    "candidate_ns_per_document": 12998.525826446281,
+    "baseline_over_candidate_median": 0.9905262552339029,
+    "baseline_over_candidate_min": 0.9707961631413907,
+    "baseline_over_candidate_max": 1.0007883797629935,
+    "pairs": 9,
+    "round_medians": [
+      0.9942535029405468,
+      0.9864396326620036,
+      0.9905262552339029
+    ]
+  },
+  {
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 12336.624507874016,
+    "candidate_ns_per_document": 12423.342261904761,
+    "baseline_over_candidate_median": 0.9941857552908283,
+    "baseline_over_candidate_min": 0.9795126393587384,
+    "baseline_over_candidate_max": 1.0148315239483259,
+    "pairs": 9,
+    "round_medians": [
+      0.9914999932690433,
+      0.9941857552908283,
+      0.9977456410142203
+    ]
+  }
+]

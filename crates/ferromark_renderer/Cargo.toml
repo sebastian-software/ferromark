@@ -1,0 +1,41 @@
+[package]
+name = "ferromark_renderer"
+version.workspace = true
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "Markdown renderer for Ferromark"
+
+[lints]
+workspace = true
+
+[dependencies]
+ferromark_allocator = { workspace = true }
+ferromark_ast = { workspace = true }
+thiserror = { workspace = true }
+memchr = { workspace = true }
+rustc-hash = { workspace = true }
+compact_str = { workspace = true }
+smallvec = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+ferromark_parser = { workspace = true }
+insta = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "renderer"
+harness = false
+
+[[bench]]
+name = "headings"
+harness = false
+
+[[bench]]
+name = "sanitized_urls"
+harness = false

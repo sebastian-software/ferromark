@@ -37,7 +37,7 @@ export const meta: MetaFunction = () => [
   { title: "ferromark — high-throughput Markdown for Rust and Node.js" },
   {
     name: "description",
-    content: "A streaming CommonMark and GFM compiler for high-throughput Rust and Node.js pipelines.",
+    content: "An arena-allocated Markdown parser and HTML renderer for Rust and Node.js. Ferromark v2 development preview.",
   },
 ]
 
@@ -152,7 +152,7 @@ export default function Root() {
         current="ferromark"
         legal={
           <>
-            ferromark is dual-licensed under MIT or Apache-2.0; this site is MIT-licensed. Copyright{" "}
+            Ferromark v2 includes the MIT-licensed OX-Content core; this site is MIT-licensed. Copyright{" "}
             {new Date().getFullYear()} Sebastian Software GmbH ·{" "}
             <a href="https://ardo-docs.dev">Built with Ardo</a>
           </>

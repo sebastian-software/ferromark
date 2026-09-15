@@ -1,0 +1,113 @@
+{
+  "count": 1304,
+  "failures": [
+    {
+      "example": 306,
+      "section": "Lists",
+      "kind": "cr",
+      "markdown": "- foo\r\r- bar\r\r\r- baz\r",
+      "expected": "<ul>\n<li><p>foo</p>\n</li>\n<li><p>bar</p>\n</li>\n<li><p>baz</p>\n</li>\n</ul>\n",
+      "actual": "<ul>\n<li><p>foo</p>\n</li>\n<li><p>bar\n\n\n- baz</p>\n</li>\n<li><p>baz</p>\n</li>\n</ul>\n",
+      "error": null
+    },
+    {
+      "example": 309,
+      "section": "Lists",
+      "kind": "cr",
+      "markdown": "-   foo\r\r    notcode\r\r-   foo\r\r<!-- -->\r\r    code\r",
+      "expected": "<ul>\n<li><p>foo</p>\n<p>notcode</p>\n</li>\n<li><p>foo</p>\n</li>\n</ul>\n<!-- -->\n<pre><code>code\n</code></pre>\n",
+      "actual": "<ul>\n<li><p>foo</p>\n<p>notcode</p>\n</li>\n<li><p>foo\n\n<!-- -->\n\ncode</p>\n</li>\n</ul>\n<!-- -->\r\n<pre><code>code\n</code></pre>\n",
+      "error": null
+    },
+    {
+      "example": 311,
+      "section": "Lists",
+      "kind": "cr",
+      "markdown": "1. a\r\r  2. b\r\r   3. c\r",
+      "expected": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n</li>\n<li><p>c</p>\n</li>\n</ol>\n",
+      "actual": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n<li><p>c</p>\n</li>\n</ol>\n",
+      "error": null
+    },
+    {
+      "example": 313,
+      "section": "Lists",
+      "kind": "cr",
+      "markdown": "1. a\r\r  2. b\r\r    3. c\r",
+      "expected": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b</p>\n</li>\n</ol>\n<pre><code>3. c\n</code></pre>\n",
+      "actual": "<ol>\n<li><p>a</p>\n</li>\n<li><p>b\n\n3. c</p>\n</li>\n</ol>\n<pre><code>3. c\n</code></pre>\n",
+      "error": null
+    },
+    {
+      "example": 326,
+      "section": "Lists",
+      "kind": "cr",
+      "markdown": "- a\r  - b\r  - c\r\r- d\r  - e\r  - f\r",
+      "expected": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n",
+      "actual": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n<li>c</li>\n</ul>\n</li>\n<li><p>d</p>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n<ul>\n<li>e</li>\n<li>f</li>\n</ul>\n</li>\n</ul>\n",
+      "error": null
+    },
+    {
+      "example": 491,
+      "section": "Links",
+      "kind": "crlf",
+      "markdown": "[link](<foo\r\nbar>)\r\n",
+      "expected": "<p>[link](<foo\nbar>)</p>\n",
+      "actual": "<p>[link](&lt;foo\nbar&gt;)</p>\n",
+      "error": null
+    },
+    {
+      "example": 491,
+      "section": "Links",
+      "kind": "cr",
+      "markdown": "[link](<foo\rbar>)\r",
+      "expected": "<p>[link](<foo\nbar>)</p>\n",
+      "actual": "<p><a href=\"foo\rbar\">link</a></p>\n",
+      "error": null
+    },
+    {
+      "example": 615,
+      "section": "Raw HTML",
+      "kind": "crlf",
+      "markdown": "<a  /><b2\r\ndata=\"foo\" >\r\n",
+      "expected": "<p><a  /><b2\ndata=\"foo\" ></p>\n",
+      "actual": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "error": null
+    },
+    {
+      "example": 615,
+      "section": "Raw HTML",
+      "kind": "cr",
+      "markdown": "<a  /><b2\rdata=\"foo\" >\r",
+      "expected": "<p><a  /><b2\ndata=\"foo\" ></p>\n",
+      "actual": "<p><a  />&lt;b2\ndata=&quot;foo&quot; &gt;</p>\n",
+      "error": null
+    },
+    {
+      "example": 616,
+      "section": "Raw HTML",
+      "kind": "crlf",
+      "markdown": "<a foo=\"bar\" bam = 'baz <em>\"</em>'\r\n_boolean zoop:33=zoop:33 />\r\n",
+      "expected": "<p><a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 /></p>\n",
+      "actual": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "error": null
+    },
+    {
+      "example": 616,
+      "section": "Raw HTML",
+      "kind": "cr",
+      "markdown": "<a foo=\"bar\" bam = 'baz <em>\"</em>'\r_boolean zoop:33=zoop:33 />\r",
+      "expected": "<p><a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 /></p>\n",
+      "actual": "<p>&lt;a foo=&quot;bar&quot; bam = &#39;baz <em>&quot;</em>&#39;\n_boolean zoop:33=zoop:33 /&gt;</p>\n",
+      "error": null
+    },
+    {
+      "example": 621,
+      "section": "Raw HTML",
+      "kind": "cr",
+      "markdown": "< a><\rfoo><bar/ >\r<foo bar=baz\rbim!bop />\r",
+      "expected": "<p>&lt; a&gt;&lt;\nfoo&gt;&lt;bar/ &gt;\n&lt;foo bar=baz\nbim!bop /&gt;</p>\n",
+      "actual": "<p>&lt; a&gt;&lt;\nfoo&gt;&lt;bar/ &gt;\n<foo bar=baz\rbim!bop /></p>\n",
+      "error": null
+    }
+  ]
+}

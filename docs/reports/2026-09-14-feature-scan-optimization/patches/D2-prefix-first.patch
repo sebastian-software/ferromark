@@ -1,0 +1,172 @@
+diff --git a/crates/ferromark_parser/src/parser.rs b/crates/ferromark_parser/src/parser.rs
+index 3bb5af8..ba6b284 100644
+--- a/crates/ferromark_parser/src/parser.rs
++++ b/crates/ferromark_parser/src/parser.rs
+@@ -89,6 +89,10 @@ pub struct Parser<'a> {
+     /// `None` at the root means inspect physical line prefixes directly.
+     comment_lines: Option<std::rc::Rc<rustc_hash::FxHashSet<u32>>>,
+ 
++    /// Next possible definition-list body marker in this parser's source.
++    /// A cached exhausted suffix avoids rescanning it for every paragraph.
++    definition_marker: std::cell::Cell<Option<(usize, usize)>>,
++
+     /// Memoized "this bracket text already contains a link" verdicts,
+     /// keyed by the address and length of the bracketed slice.
+     ///
+@@ -158,6 +162,7 @@ impl<'a> Parser<'a> {
+             footnote_labels: None,
+             lazy_lines: None,
+             comment_lines: None,
++            definition_marker: std::cell::Cell::new(None),
+             link_probe_cache: std::cell::RefCell::default(),
+             last_closer: std::cell::RefCell::default(),
+             definition_region: None,
+@@ -208,6 +213,7 @@ impl<'a> Parser<'a> {
+             // line, and every block quote and list item builds one of these.
+             lazy_lines: (!lazy_lines.is_empty()).then(|| std::rc::Rc::new(lazy_lines)),
+             comment_lines: None,
++            definition_marker: std::cell::Cell::new(None),
+             link_probe_cache: std::cell::RefCell::default(),
+             last_closer: std::cell::RefCell::default(),
+             definition_region: None,
+diff --git a/crates/ferromark_parser/src/parser/definition_list.rs b/crates/ferromark_parser/src/parser/definition_list.rs
+index 9c2c2ef..04bc472 100644
+--- a/crates/ferromark_parser/src/parser/definition_list.rs
++++ b/crates/ferromark_parser/src/parser/definition_list.rs
+@@ -94,7 +94,10 @@ impl<'a> Parser<'a> {
+         &self,
+         start: usize,
+     ) -> Option<(ArenaVec<'a, (usize, usize)>, usize)> {
+-        if start >= self.source.len() || self.is_blank_line_at(start) {
++        if start >= self.source.len()
++            || self.next_definition_marker(start) == self.source.len()
++            || self.is_blank_line_at(start)
++        {
+             return None;
+         }
+ 
+@@ -125,6 +128,35 @@ impl<'a> Parser<'a> {
+         self.starts_definition_body_at(cursor).then_some((terms, cursor))
+     }
+ 
++    /// Necessary syntax only: actual term/body and container validation stays
++    /// in the collector. Each sub-parser has its own source and fresh cache.
++    fn next_definition_marker(&self, start: usize) -> usize {
++        if let Some((from, marker)) = self.definition_marker.get()
++            && from <= start
++            && start <= marker
++        {
++            return marker;
++        }
++        let bytes = self.source.as_bytes();
++        let mut marker = bytes.len();
++        for relative in memchr::memchr_iter(b':', &bytes[start..]) {
++            let colon = start + relative;
++            if !matches!(bytes.get(colon + 1), None | Some(b' ' | b'\t' | b'\n' | b'\r')) {
++                continue;
++            }
++            let mut prefix = colon;
++            while prefix > 0 && colon - prefix < 3 && bytes[prefix - 1] == b' ' {
++                prefix -= 1;
++            }
++            if prefix == 0 || matches!(bytes[prefix - 1], b'\n' | b'\r') {
++                marker = colon;
++                break;
++            }
++        }
++        self.definition_marker.set(Some((start, marker)));
++        marker
++    }
++
+     fn collect_definition_body(&self, start: usize) -> ParseResult<Option<(Node<'a>, usize)>> {
+         let Some(first_line) = self.definition_body_at(start) else {
+             return Ok(None);
+@@ -313,11 +345,10 @@ impl<'a> Parser<'a> {
+         if line_start >= self.source.len() {
+             return None;
+         }
+-        let line_end = self.line_end_at(line_start);
+         let bytes = self.source.as_bytes();
+         let mut cursor = line_start;
+         let mut spaces = 0usize;
+-        while cursor < line_end && spaces < 3 && bytes[cursor] == b' ' {
++        while cursor < bytes.len() && spaces < 3 && bytes[cursor] == b' ' {
+             cursor += 1;
+             spaces += 1;
+         }
+@@ -325,9 +356,13 @@ impl<'a> Parser<'a> {
+             return None;
+         }
+         let after_colon = cursor + 1;
+-        if after_colon < line_end && !matches!(bytes[after_colon], b' ' | b'\t') {
++        if !matches!(bytes.get(after_colon), None | Some(b' ' | b'\t' | b'\n' | b'\r')) {
+             return None;
+         }
++        // Reject ordinary term/body lines from their prefix before searching
++        // for a line ending. Long prose should not be scanned merely to learn
++        // that its first non-space byte is not a definition marker.
++        let line_end = self.line_end_at(after_colon);
+         let mut body_start = after_colon;
+         while body_start < line_end && matches!(bytes[body_start], b' ' | b'\t') {
+             body_start += 1;
+@@ -336,3 +371,60 @@ impl<'a> Parser<'a> {
+         Some(DefinitionBodyLine { body_start, body_end })
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    use ferromark_allocator::Allocator;
++
++    use super::Parser;
++    use crate::ParserOptions;
++
++    #[test]
++    fn rejected_definition_probes_do_not_allocate_terms() {
++        for source in [
++            "Ordinary prose without definition syntax.\n\nAnother paragraph.\n",
++            "A URL https://example.org and a time 12:34 are not definition markers.\n",
++            "Words: with an inline colon.\n\nMore prose.\n",
++        ] {
++            let allocator = Allocator::new();
++            let mut parser = Parser::with_options(
++                &allocator,
++                source,
++                ParserOptions { definition_lists: true, ..ParserOptions::commonmark() },
++            );
++            assert!(parser.parse_definition_list(0).unwrap().is_none());
++            assert_eq!(parser.position, 0);
++            assert_eq!(allocator.allocated_bytes(), 0, "rejected probe allocated: {source:?}");
++        }
++    }
++
++    #[test]
++    fn marker_cache_handles_forward_and_backward_probes() {
++        let source = "Words: text\r\nTerm\r\n   : body\r\nhttps://example.org\nTerm\n: next\n";
++        let allocator = Allocator::new();
++        let parser = Parser::new(&allocator, source);
++        let first = source.find(": body").unwrap();
++        let second = source.find(": next").unwrap();
++        assert_eq!(parser.next_definition_marker(0), first);
++        assert_eq!(parser.next_definition_marker(first), first);
++        assert_eq!(parser.next_definition_marker(first + 1), second);
++        assert_eq!(parser.next_definition_marker(second + 1), source.len());
++        assert_eq!(parser.next_definition_marker(0), first);
++    }
++
++    #[test]
++    fn marker_preflight_accepts_every_body_prefix() {
++        for indent in ["", " ", "  ", "   ", "    ", "\t", "\u{a0}"] {
++            for after in ["", " ", "\tvalue", "value", "\r", "\n", "\r\nvalue"] {
++                let source = format!("{indent}:{after}");
++                let allocator = Allocator::new();
++                let parser = Parser::new(&allocator, &source);
++                assert_eq!(
++                    parser.next_definition_marker(0) < source.len(),
++                    parser.definition_body_at(0).is_some(),
++                    "{source:?}",
++                );
++            }
++        }
++    }
++}

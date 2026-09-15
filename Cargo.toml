@@ -1,123 +1,135 @@
-[package]
-name = "ferromark"
-version = "0.9.0"
-edition = "2024"
-rust-version = "1.94"
-description = "Markdown to HTML with a secure default and every GFM extension included."
-license = "MIT OR Apache-2.0"
-authors = ["Sebastian Software GmbH"]
-repository = "https://github.com/sebastian-software/ferromark"
-homepage = "https://sebastian-software.github.io/ferromark/"
-documentation = "https://docs.rs/ferromark"
-readme = "README.md"
-# crates.io allows at most five keywords; "ferramenta" marks the tool family.
-keywords = ["markdown", "html", "commonmark", "gfm", "ferramenta"]
-categories = ["parsing", "text-processing", "web-programming"]
-exclude = [
-    "docs/reports",
-    "benchmarks/bun-comparison",
-    "benchmarks/cmark-comparison",
-    "benchmarks/native-pipeline-comparison",
-    "benchmarks/md4c-comparison",
-    "benchmarks/pulldown-comparison",
-    "benchmarks/workflows",
-    "fuzz",
-    "node",
-]
-
-[package.metadata.docs.rs]
-features = ["mdx"]
-no-default-features = true
-
 [workspace]
-members = ["node/native", "crates/ferro-byte-search"]
 resolver = "2"
+members = ["crates/ferromark", "crates/ferromark_allocator", "crates/ferromark_ast", "crates/ferromark_parser", "crates/ferromark_renderer", "node/native"]
 
-# The workspace lints mirror the CI gate (clippy with `-D warnings` over all
-# targets and features), so a local build or clippy run fails on exactly what
-# CI rejects.
+[workspace.package]
+version = "2.0.0-dev.0"
+authors = ["ubugeeei", "Sebastian Software GmbH"]
+categories = ["text-processing", "parser-implementations"]
+edition = "2024"
+keywords = ["markdown", "commonmark", "gfm", "parser", "html"]
+license = "MIT"
+rust-version = "1.95.0"
+publish = false
+
 [workspace.lints.rust]
-warnings = "deny"
+unsafe_code = "warn"
+absolute_paths_not_starting_with_crate = "warn"
+non_local_definitions = "warn"
+redundant_lifetimes = "warn"
+unit_bindings = "warn"
+unnameable_types = "warn"
 
 [workspace.lints.clippy]
-all = { level = "deny", priority = -1 }
+# Lint groups with lower priority
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
 
-[lints]
-workspace = true
+# Restrictions
+dbg_macro = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+format_push_string = "deny"
+format_collect = "deny"
+format_in_format_args = "deny"
+to_string_in_format_args = "deny"
+unused_format_specs = "deny"
+useless_format = "deny"
+write_with_newline = "deny"
+writeln_empty_string = "deny"
+disallowed_macros = "allow"
+disallowed_methods = "allow"
+disallowed_types = "allow"
 
-[lib]
-name = "ferromark"
-path = "src/lib.rs"
+# Allow
+match_same_arms = "allow"
+option_if_let_else = "allow"
+case_sensitive_file_extension_comparisons = "allow"
+single_option_map = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+module_name_repetitions = "allow"
+too_many_lines = "allow"
+doc_markdown = "allow"
+similar_names = "allow"
+needless_pass_by_value = "allow"
+multiple_crate_versions = "allow"
+cargo_common_metadata = "allow"
+missing_const_for_fn = "allow"
+cast_possible_truncation = "allow"
+struct_excessive_bools = "allow"
+unnecessary_wraps = "allow"
+wildcard_imports = "allow"
+if_not_else = "allow"
+unnested_or_patterns = "allow"
+derive_partial_eq_without_eq = "allow"
+elidable_lifetime_names = "allow"
+range_plus_one = "allow"
+use_self = "allow"
 
-[[bin]]
-name = "ferromark"
-path = "src/main.rs"
-
-[dependencies]
+[workspace.dependencies]
+ferromark = { path = "crates/ferromark", version = "=2.0.0-dev.0" }
+ferromark_allocator = { path = "crates/ferromark_allocator", version = "=2.0.0-dev.0" }
+ferromark_ast = { path = "crates/ferromark_ast", version = "=2.0.0-dev.0" }
+ferromark_parser = { path = "crates/ferromark_parser", version = "=2.0.0-dev.0" }
+ferromark_renderer = { path = "crates/ferromark_renderer", version = "=2.0.0-dev.0" }
+bumpalo = "3.16"
+compact_str = "0.10.0"
+smallvec = "1.15"
 memchr = "2.7"
-smallvec = "1.13"
-html-escape = { version = "0.2", default-features = false }
-rustc-hash = { version = "2.0" }
-unicode-ident = "1.0"
-
-[dev-dependencies]
-criterion = { version = "0.8.2", features = ["html_reports"] }
-serde = { version = "1.0", features = ["derive"] }
+rustc-hash = "2"
+thiserror = "2"
 serde_json = "1.0"
+criterion = "0.8"
+insta = "1"
 
-[features]
-default = []
-mdx = []
-profiling = []
+[profile.dev]
+debug = 2
 
-[[example]]
-name = "mdx_segment"
-required-features = ["mdx"]
-
-[[example]]
-name = "performance_audit"
-required-features = ["mdx"]
-
-[[bench]]
-name = "parsing"
-harness = false
-
-[[bench]]
-name = "footnotes"
-harness = false
-
-[[bench]]
-name = "fenced_code_renderer"
-harness = false
-
-[[bench]]
-name = "options"
-harness = false
-
-[[bench]]
-name = "mdx"
-harness = false
-required-features = ["mdx"]
+[profile.dev.package]
+# Snapshot testing spends most of its time in diff/render helpers rather than
+# ferromark itself. Optimizing only these dev dependencies keeps normal debug
+# builds fast while making `cargo test` output comparison cheaper.
+insta.opt-level = 3
+similar.opt-level = 3
 
 [profile.release]
+# Local binaries and benchmarks use this profile. It intentionally
+# favors runtime throughput over compile time: fat LTO plus a single codegen
+# unit gives LLVM whole-workspace visibility, while stripping and aborting
+# panics remove unwinding/symbol-table overhead from shipped artifacts.
+opt-level = 3
 lto = "fat"
 codegen-units = 1
+strip = "symbols"
+debug = false
+debug-assertions = false
+overflow-checks = false
+incremental = false
 panic = "abort"
-opt-level = 3
-strip = true
 
-# N-API catches Rust panics and turns them into JavaScript exceptions. Cargo only
-# reads workspace profiles from this manifest, so the Node addon must opt into
-# this profile explicitly rather than defining it in node/native/Cargo.toml.
+[profile.release.build-override]
+# Build scripts are tiny but run during release builds; keep
+# their codegen deterministic with the same single-unit optimization policy.
+opt-level = 3
+codegen-units = 1
+
+[profile.bench]
+# Benchmarks should measure the production hot paths, not a lighter
+# benchmark-only profile. Keep this aligned with `profile.release` except for
+# fields Cargo ignores for benchmark harnesses.
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = false
+debug-assertions = false
+overflow-checks = false
+incremental = false
+
+# N-API converts unwinding Rust panics into JavaScript exceptions.
 [profile.release-node]
 inherits = "release"
 panic = "unwind"
-
-[profile.release-debug]
-inherits = "release"
-debug = true
-strip = false
-
-[profile.bench]
-inherits = "release"
-debug = true

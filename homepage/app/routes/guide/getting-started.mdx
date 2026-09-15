@@ -2,40 +2,29 @@
 title: Getting Started
 ---
 
-import { headlineThroughput } from "../../components/benchmarks"
+# Getting Started
 
-# Getting Started with ferromark
+Ferromark v2 is developed on the `codex/v2` branch of the Ferromark repository.
+It combines an OX-Content-derived arena AST with Ferromark features and optimizations.
+All packages are currently unpublished. Installing the released `ferromark`
+package from npm or crates.io still installs v1.
 
-ferromark is a Rust Markdown parser built for high-throughput HTML rendering with full CommonMark conformance in trusted rendering mode and a secure-by-default output policy.
-
-## What this guide covers
-
-- [Quick Start](/guide/quick-start): install and run the core APIs fast.
-- [Benchmarks](/guide/benchmarks): throughput data and comparison setup.
-- [Features and Flags](/guide/features): everything included in the parser.
-- [MDX Examples](/guide/mdx-examples): how to render and segment `.mdx` input.
-
-## Why teams use ferromark
-
-- 652/652 CommonMark spec tests pass with trusted rendering; the secure default escapes raw HTML by design and passes 577/652.
-- All five GFM extensions are available.
-- Additional extensions include footnotes, heading IDs, front matter extraction, math spans, callouts, highlight, superscript, and subscript.
-- Throughput reaches {headlineThroughput} on the CommonMark 50 KB fixture of the published [benchmark run](/guide/benchmarks).
-
-## Core API
-
-```rust
-let html = ferromark::to_html("# Hello\n\n**World**");
+```sh
+git clone --branch codex/v2 https://github.com/sebastian-software/ferromark.git
+cd ferromark
+cargo test --workspace --all-features --locked
 ```
 
-Use `to_html_into` to reuse a buffer across calls:
+The repository toolchain selects the minimum Rust version from the workspace.
+For Node development, use Node.js 22.13.0 or newer and the pinned pnpm version:
 
-```rust
-let mut buffer = Vec::new();
-ferromark::to_html_into("# Reuse me", &mut buffer);
+```sh
+cd node
+pnpm install --frozen-lockfile
+pnpm build
+pnpm test
 ```
 
-## Learn more
-
-- [API documentation on docs.rs](https://docs.rs/ferromark)
-- [ferromark GitHub Repository](https://github.com/sebastian-software/ferromark)
+The native package supports Node.js 22.12.0 and newer. CI builds native packages
+for macOS, Windows, and glibc/musl Linux on x64 and arm64.
+See [Quick Start](./quick-start) for local Rust and Node examples.

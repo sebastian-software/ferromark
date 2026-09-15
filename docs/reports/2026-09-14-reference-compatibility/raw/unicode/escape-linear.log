@@ -1,0 +1,25 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_parser)
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/ferromark-v2/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.10s
+     Running unittests src/lib.rs (target/debug/deps/ferromark_renderer-515b19935b3d191b)
+
+running 16 tests
+test html::escape::tests::matches_reference_on_multibyte_utf8 ... ok
+test html::escape::tests::invalid_ipv6_authority_is_escaped_without_html_injection ... ok
+test html::escape::tests::commonmark_url_syntax_bytes_are_percent_encoded ... ok
+test html::escape::tests::matches_reference_on_fixtures ... ok
+test html::mdx_payload::tests::stringify_escapes_script_breakout ... ok
+test html::tests::blocks::test_render_heading_attributes_escape_explicit_attrs ... ok
+test html::escape::tests::url_escape_handles_escape_heavy_ascii_before_unicode_linearly ... ok
+test html::tests::mdx_islands::hostile_child_text_escaped ... ok
+test html::escape::tests::short_run_copy_keeps_multibyte_sequences_intact ... ok
+test html::escape::tests::matches_reference_across_the_short_run_copy_boundaries ... ok
+test html::escape::tests::matches_reference_on_borrow_propagation_shapes ... ok
+test html::escape::tests::matches_reference_on_pseudorandom_bytes ... ok
+test html::tests::code::test_render_code_block_with_vitepress_escape_next_line ... ok
+test html::tests::autolink::test_autolink_escapes_query_string_safely ... ok
+test html::escape::tests::matches_reference_across_the_overlapping_tail_read ... ok
+test html::escape::tests::matches_reference_for_every_byte_value_at_every_offset ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 102 filtered out; finished in 0.10s
+
