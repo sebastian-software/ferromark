@@ -186,7 +186,14 @@ jobs:
       checks: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # The audit tool has its own MSRV; keep its build independent of the
+      # project's pinned compiler. Rust tests still cover the project MSRV.
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: stable
       - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2
+        env:
+          RUSTUP_TOOLCHAIN: stable
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
