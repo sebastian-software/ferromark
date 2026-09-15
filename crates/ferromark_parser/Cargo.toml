@@ -29,7 +29,8 @@ smallvec = { workspace = true }
 [dev-dependencies]
 criterion = { workspace = true }
 insta = { workspace = true }
-ferromark_renderer = { workspace = true }
+# Repository-only test/benchmark dependency; omit it from published metadata.
+ferromark_renderer = { path = "../ferromark_renderer" }
 
 [[bench]]
 name = "parser"

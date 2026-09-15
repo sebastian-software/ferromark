@@ -1,0 +1,43 @@
+# Changelog
+
+## 2.0.0-rc.1
+
+First release candidate for the new arena-allocated Markdown parser and HTML
+renderer, based on the MIT-licensed OX-Content core. This is a breaking Rust API
+change and a candidate for testing before the stable v2 release.
+
+## Install
+
+```sh
+npm install ferromark@next
+cargo add ferromark@=2.0.0-rc.1
+```
+
+For reproducible Node testing, install `ferromark@2.0.0-rc.1` explicitly.
+The RC does not replace npm's stable `latest` tag.
+
+## What to test
+
+- Real documents through the Rust convenience functions or arena AST API.
+- Node's rendering, reusable renderer, metadata extraction and highlighter APIs.
+- Document-wide reference definitions and footnote scope, including containers.
+- Optional marked text, inline notes, reference policy and CSS-addressable tables.
+
+Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/v2.0.0-rc.1/docs/migration-v2.md)
+for removed options, changed defaults and the v2 API. The v1 CLI and MDX component
+compiler APIs are not part of v2. MDX syntax capture does not execute JavaScript.
+
+## Validation and known limits
+
+The release requires the full platform CI, five Rust package builds, and all
+nine npm archives. Six native targets have runtime tests; the two musl targets
+are built and inspected. Registry installations are checked before the GitHub
+prerelease is created.
+
+The measured structural reference-prepass overhead on two real documents is
+tracked in [#320](https://github.com/sebastian-software/ferromark/issues/320) as a
+follow-up optimization. The owner accepted it for this release. Performance
+claims remain tied to the archived workloads, options and library pins.
+
+Please include the input document, options, platform and version when reporting
+RC issues. Upstream attribution and specification-fixture licenses are preserved.

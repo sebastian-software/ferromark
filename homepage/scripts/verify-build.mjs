@@ -22,8 +22,8 @@ const guidePage = await readFile(new URL("guide/quick-start/index.html", outputD
 
 const requiredFragments = [
   "/ferromark/assets/", "/ferromark/favicon.ico", 'class="site-header"',
-  'class="site-footer"', "https://ferramenta.dev", "Development preview",
-  "arena-allocated", "Packages are unpublished", "OX-Content",
+  'class="site-footer"', "https://ferramenta.dev", "Release candidate",
+  "arena-allocated", "release-candidate testing", "OX-Content",
 ];
 
 // The family chrome replaces Ardo's own header and footer (`handle.chrome` in

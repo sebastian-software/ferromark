@@ -1,6 +1,6 @@
 //! Ferromark v2: an arena-allocated Markdown parser and HTML renderer.
 //!
-//! This local development baseline derives from OX-Content. Its API is not
+//! This implementation derives from OX-Content. Its API is not
 //! compatible with Ferromark v1 and is not yet a stable v2 release.
 //!
 //! ```

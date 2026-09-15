@@ -4,13 +4,20 @@ title: Getting Started
 
 # Getting Started
 
-Ferromark v2 is developed on the `codex/v2` branch of the Ferromark repository.
+Ferromark v2 lives in the Ferromark repository.
 It combines an OX-Content-derived arena AST with Ferromark features and optimizations.
-All packages are currently unpublished. Installing the released `ferromark`
-package from npm or crates.io still installs v1.
+The first release candidate is `2.0.0-rc.1`. After publication, install it explicitly:
 
 ```sh
-git clone --branch codex/v2 https://github.com/sebastian-software/ferromark.git
+npm install ferromark@2.0.0-rc.1
+cargo add ferromark@=2.0.0-rc.1
+```
+
+The npm `next` channel selects release candidates; `latest` stays on the stable
+release. To build from source:
+
+```sh
+git clone https://github.com/sebastian-software/ferromark.git
 cd ferromark
 cargo test --workspace --all-features --locked
 ```

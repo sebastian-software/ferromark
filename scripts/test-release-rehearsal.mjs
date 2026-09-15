@@ -3,8 +3,17 @@ import { it } from "node:test";
 import TOML from "@iarna/toml";
 import { proposeRelease, readReleaseFiles, validateRelease } from "./lib/release-rehearsal.mjs";
 
+async function developmentBaseline() {
+  return (
+    await proposeRelease(
+      readReleaseFiles(),
+      "chore: seed version rehearsal\n\nRelease-As: 2.0.0-dev.0",
+    )
+  ).files;
+}
+
 it("builds coordinated RC, subsequent RC, stable, and patch release PRs with the real updater", async () => {
-  let files = readReleaseFiles();
+  let files = await developmentBaseline();
   const external = TOML.parse(files.get("Cargo.lock")).package.filter((pkg) => pkg.source);
   for (const [version, message] of [
     ["2.0.0-rc.1", "feat!: prepare v2\n\nRelease-As: 2.0.0-rc.1"],
@@ -32,7 +41,10 @@ it("builds coordinated RC, subsequent RC, stable, and patch release PRs with the
           "A version bump must not enable publishing",
         );
     }
-    assert.equal(TOML.parse(proposed.files.get("Cargo.toml")).workspace.package.publish, false);
+    assert.deepEqual(
+      TOML.parse(proposed.files.get("Cargo.toml")).workspace.package.publish,
+      TOML.parse(files.get("Cargo.toml")).workspace.package.publish,
+    );
     files = proposed.files;
   }
 });
@@ -44,7 +56,7 @@ for (const missing of [
   "node/ferromark/package.json",
 ]) {
   it(`detects missing release updates for ${missing}`, async () => {
-    const files = readReleaseFiles();
+    const files = await developmentBaseline();
     const config = JSON.parse(files.get("release-please-config.json"));
     config.packages["."]["extra-files"] = config.packages["."]["extra-files"].filter(
       (entry) => (typeof entry === "string" ? entry : entry.path) !== missing,
