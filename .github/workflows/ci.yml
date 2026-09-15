@@ -21,6 +21,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: runner.os != 'Windows'
+      # NUL is a reserved Windows device name. Preserve the frozen report in
+      # Git and omit only this historical input from Windows working trees.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: runner.os == 'Windows'
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/reports/2026-09-14-ox-regression/normalization-guards/nul.md
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
           toolchain: ${{ matrix.rust }}
@@ -298,6 +308,16 @@ jobs:
         working-directory: node
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: runner.os != 'Windows'
+      # NUL is a reserved Windows device name. Preserve the frozen report in
+      # Git and omit only this historical input from Windows working trees.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: runner.os == 'Windows'
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/reports/2026-09-14-ox-regression/normalization-guards/nul.md
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           package_json_file: node/package.json
