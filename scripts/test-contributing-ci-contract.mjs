@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { parse } from "yaml";
+import TOML from "@iarna/toml";
 
 const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 const ci = parse(read(".github/workflows/ci.yml"));
@@ -83,4 +84,25 @@ test("Node native declarations follow the v2 option surface", () => {
   for (const name of ["tableColumnWidths", "indentedCodeBlocks"])
     assert.ok(!declarations.includes(`${name}?`));
   assert.ok(!declarations.includes("CodeCallback"), "callback types must be self-contained");
+});
+
+test("unversioned paths are limited to the two repository-only test dependencies", () => {
+  const policy = TOML.parse(read("deny.toml"));
+  assert.equal(policy.bans.wildcards, "deny");
+  assert.equal(policy.bans["allow-wildcard-paths"], true);
+  const workspace = TOML.parse(read("Cargo.toml")).workspace;
+  const unversioned = [];
+  for (const member of workspace.members) {
+    const manifest = TOML.parse(read(`${member}/Cargo.toml`));
+    for (const section of ["dependencies", "dev-dependencies", "build-dependencies"]) {
+      for (const [name, dependency] of Object.entries(manifest[section] ?? {})) {
+        const spec = dependency.workspace ? workspace.dependencies[name] : dependency;
+        if (spec.path && !spec.version) unversioned.push(`${member}:${section}:${name}`);
+      }
+    }
+  }
+  assert.deepEqual(unversioned.sort(), [
+    "crates/ferromark_parser:dev-dependencies:ferromark_renderer",
+    "crates/ferromark_renderer:dev-dependencies:ferromark_parser",
+  ]);
 });
