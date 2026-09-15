@@ -20,6 +20,7 @@ def main():
     ap.add_argument('after', type=Path)
     ap.add_argument('corpus', type=Path)
     ap.add_argument('output', type=Path)
+    ap.add_argument('--batches-only', action='store_true', help='Verify every document and time only full-profile batches')
     ap.add_argument('--rounds', type=int, default=3)
     ap.add_argument('--pairs', type=int, default=5)
     ap.add_argument('--window-ms', type=int, default=40)
@@ -38,7 +39,7 @@ def main():
     (out / 'corpus.json.gz').write_bytes(gzip.compress(json.dumps(corpus).encode()))
     (out / 'builds.json').write_text(json.dumps(builds, indent=2))
     (out / 'run.json').write_text(json.dumps(dict(rounds=args.rounds, pairs=args.pairs,
-        window_ms=args.window_ms, warmup_ms=20, seed=20260915, cases=len(cases)), indent=2))
+        window_ms=args.window_ms, warmup_ms=20, seed=20260915, cases=len(cases), batches_only=args.batches_only), indent=2))
     (out / 'host.json').write_text(json.dumps(paired.host(), indent=2))
     inputs = out / 'inputs'
     inputs.mkdir()
@@ -60,7 +61,7 @@ def main():
         path.write_bytes(c['input'].encode())
         assert paired.digest(path) == c['sha256']
         assert path.stat().st_size == c['byte_count']
-    jobs = [(c['name'], c['profile'], [c['name']]) for c in cases]
+    jobs = [] if args.batches_only else [(c['name'], c['profile'], [c['name']]) for c in cases]
     for profile in configs:
         members = [c['name'] for c in cases if c['profile'] == profile]
         if members:

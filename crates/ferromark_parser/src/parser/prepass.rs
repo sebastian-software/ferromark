@@ -1,19 +1,9 @@
-//! Fused document pre-pass: link reference definitions + footnote labels.
+//! Document-wide definition discovery.
 //!
-//! Both collectors used to run their own full line scan over the source.
-//! This module fuses them into a single scan and dispatches on each line's
-//! first byte, so the common case (prose, HTML, or code content that cannot
-//! affect either collector) costs one memchr line skip and a flag write
-//! instead of quote-stripping, trimming, and fence-classifying every line.
-//!
-//! Container-shaped reference candidates use the real block grammar in a
-//! temporary arena. Other inputs retain the original fused scan, including
-//! its asymmetry: the reference collector classifies fences on
-//! the quote-stripped line (so a quoted fence line opens a fence for it)
-//! while the footnote collector classifies fences on the raw line (so the
-//! same line does not). The two fence states are tracked independently,
-//! and the footnote scan still visits every line of a multi-line reference
-//! definition chunk the reference side skips over.
+//! A cheap syntax-shape filter keeps ordinary documents out of collection.
+//! Link definitions are collected by the real block grammar, so root and
+//! container definitions share context and precedence rules. Footnote labels
+//! retain their existing raw-line policy independently of link definitions.
 
 use std::rc::Rc;
 use std::sync::LazyLock;
@@ -22,11 +12,8 @@ use memchr::{memchr, memmem, memrchr2};
 
 use super::Parser;
 use super::footnote::{FootnoteLabels, normalize_footnote_label, parse_footnote_opener};
-use super::line_scan::{line_end as scan_line_end, line_terminator_end, next_line_start};
-use super::reference::{
-    ReferenceDef, ReferenceMap, closes_paragraph_context, fence_open, is_fence_close,
-    strip_quote_markers,
-};
+use super::line_scan::{line_end as scan_line_end, line_terminator_end};
+use super::reference::{ReferenceMap, fence_open, is_fence_close};
 
 /// Three-byte fence-run searchers, built once for the process.
 ///
@@ -61,7 +48,8 @@ pub(super) fn next_fence_run_line(bytes: &[u8], from: usize, fence_byte: u8) -> 
 /// and force the much more expensive structural pre-pass. The opening `[` of
 /// either a reference or footnote definition must begin a block line after
 /// optional container prefixes. The returned flags indicate any candidate
-/// and a candidate requiring full block context. Reference labels are capped at
+/// and a possible link definition (rather than only enabled footnote labels).
+/// Reference labels are capped at
 /// 1,000 bytes; footnote labels are line-bounded but have no length cap. This
 /// scanner only proves that necessary shape exists; the full pre-pass remains
 /// responsible for validating syntax and block context.
@@ -78,18 +66,15 @@ fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
     let mut line_start = previous_line_start(bytes, open);
     loop {
         let raw_prefix = &source[line_start..open];
-        let prefix = strip_quote_markers(raw_prefix);
-        let flat = prefix.len() <= 3 && prefix.as_bytes().iter().all(|&byte| byte == b' ');
         // A necessary shape, not a container grammar. False positives (for
         // example indented code) are rejected by the real block parser.
-        let container = !raw_prefix.is_empty()
-            && raw_prefix.bytes().all(|byte| {
-                matches!(
-                    byte,
-                    b' ' | b'\t' | b'>' | b'-' | b'+' | b'*' | b'.' | b')' | b'0'..=b'9'
-                )
-            });
-        if flat || container {
+        let block_prefix = raw_prefix.bytes().all(|byte| {
+            matches!(
+                byte,
+                b' ' | b'\t' | b'>' | b'-' | b'+' | b'*' | b'.' | b')' | b'0'..=b'9'
+            )
+        });
+        if block_prefix {
             let candidate_end = if footnotes && bytes.get(open + 1) == Some(&b'^') {
                 // Footnote labels cannot span lines, but unlike reference
                 // labels their parser deliberately has no length cap.
@@ -100,10 +85,13 @@ fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
                 open.saturating_add(1003).min(bytes.len())
             };
             if memmem::find(&bytes[open + 1..candidate_end], b"]:").is_some() {
-                if container {
+                if footnotes && bytes.get(open + 1) == Some(&b'^') {
+                    found = true;
+                } else {
+                    // All link definitions use the block grammar, so there
+                    // is no need to search for a later container candidate.
                     return (true, true);
                 }
-                found = true;
             }
         }
 
@@ -123,200 +111,38 @@ fn previous_line_start(bytes: &[u8], before: usize) -> usize {
 }
 
 impl<'a> Parser<'a> {
-    /// Runs the fused pre-pass for a root parser. Returns the
-    /// document-wide reference map and footnote label set that are shared
-    /// with sub-parsers.
-    ///
-    /// Either collection comes back as `None` when it stayed empty, so the
-    /// common document — no link reference definitions, no footnotes — never
-    /// allocates an `Rc` for a map nothing will read.
+    /// Collects document-wide facts before resolving inline references.
+    /// Absent maps stay `None`, avoiding shared allocations on ordinary input.
     pub(super) fn build_prepass(
         &self,
     ) -> (Option<Rc<ReferenceMap<'a>>>, Option<Rc<FootnoteLabels>>) {
         if !self.options.allow_link_refs && !self.options.footnotes {
             return (None, None);
         }
-        // Cheap bail: both collectors need a bounded `[...]:` opener at a
-        // valid block-line prefix. Full syntax and context validation still
-        // happens below, but ordinary prose decoys skip the structural scan.
-        let (has_candidate, container_candidate) =
+        let (has_candidate, has_link_candidate) =
             definition_candidates(self.source, self.options.footnotes);
         if !has_candidate {
             return (None, None);
         }
-        let collect_footnotes = self.options.footnotes && self.source.contains("[^");
-        if container_candidate && self.options.allow_link_refs && !collect_footnotes {
-            let definitions = self.collect_container_references();
-            return (
-                (!definitions.is_empty()).then(|| Rc::new(definitions)),
-                None,
-            );
-        }
-
-        let mut definitions = ReferenceMap::default();
+        let definitions = if self.options.allow_link_refs && has_link_candidate {
+            self.collect_references()
+        } else {
+            ReferenceMap::default()
+        };
         let mut labels = FootnoteLabels::default();
-        let bytes = self.source.as_bytes();
-        let mut pos = 0;
-        let mut def_fence: Option<(u8, usize)> = None;
-        let mut foot_fence: Option<(u8, usize)> = None;
-        let mut paragraph_open = false;
-
-        while pos < bytes.len() {
-            let first = bytes[pos];
-
-            if def_fence.is_none() && self.is_line_comment_at(pos) {
-                pos = next_line_start(bytes, pos);
-                continue;
+        if self.options.footnotes && self.source.contains("[^") {
+            // Preserve the existing footnote scope. Every physical line was
+            // already inspected independently of the reference scan's fence
+            // and paragraph state; no link-grammar approximation is needed.
+            let bytes = self.source.as_bytes();
+            let mut pos = 0;
+            let mut fence = None;
+            while pos < bytes.len() {
+                let end = scan_line_end(bytes, pos);
+                footnote_scan_line(&self.source[pos..end], bytes[pos], &mut fence, &mut labels);
+                pos = line_terminator_end(bytes, end);
             }
-
-            // Blank line: closes any open paragraph and is invisible to
-            // both fence trackers and both collectors.
-            if matches!(first, b'\n' | b'\r') {
-                if def_fence.is_none() {
-                    paragraph_open = false;
-                }
-                pos = line_terminator_end(bytes, pos);
-                continue;
-            }
-
-            // Fast lane: a line starting with any byte outside this set
-            // cannot open or close a fence, start a definition or footnote
-            // label, or close a paragraph. It only keeps (or opens)
-            // paragraph context while the reference collector is outside a
-            // fence.
-            if !matches!(
-                first,
-                b'[' | b' ' | b'\t' | b'>' | b'`' | b'~' | b'-' | b'=' | b'*' | b'#'
-            ) {
-                if def_fence.is_none() {
-                    paragraph_open = true;
-                }
-                pos = next_line_start(bytes, pos);
-                continue;
-            }
-
-            // ATX-heading-shaped line: closes paragraph context outside a
-            // fence and is invisible to fences and both collectors.
-            if first == b'#' {
-                if def_fence.is_none() {
-                    paragraph_open = false;
-                }
-                pos = next_line_start(bytes, pos);
-                continue;
-            }
-
-            let line_end = scan_line_end(bytes, pos);
-            let line = &self.source[pos..line_end];
-
-            // Footnote side first: the reference side `continue`s out of
-            // the loop body on its fence transitions.
-            if collect_footnotes {
-                footnote_scan_line(line, first, &mut foot_fence, &mut labels);
-            }
-
-            let stripped = strip_quote_markers(line);
-            let trimmed = stripped.trim_start_matches([' ', '\t']);
-
-            if let Some((fence_byte, fence_len)) = def_fence {
-                if is_fence_close(trimmed, fence_byte, fence_len) {
-                    def_fence = None;
-                    pos = line_terminator_end(bytes, line_end);
-                    continue;
-                }
-                // Nothing inside a fence is collected and `paragraph_open`
-                // is frozen while one is open, so the only line left worth
-                // stopping on is the one that closes it — and that needs
-                // three fence bytes in a row. Skip straight to it instead of
-                // walking the block's contents line by line.
-                //
-                // The footnote collector is the exception: it tracks its own
-                // fence on the raw line and looks for `[^` openers, so when
-                // it is running every line still has to be visited. Only
-                // 1-2 files in 100 across the bundled corpora contain a
-                // `[^` at all, so the skip still applies to almost every
-                // real document.
-                if collect_footnotes {
-                    pos = line_terminator_end(bytes, line_end);
-                    continue;
-                }
-                match next_fence_run_line(bytes, line_terminator_end(bytes, line_end), fence_byte) {
-                    Some(next) => pos = next,
-                    // An unterminated fence swallows the rest of the
-                    // document, so there is nothing left to collect.
-                    None => break,
-                }
-                continue;
-            }
-            if let Some(open) = fence_open(trimmed) {
-                def_fence = Some(open);
-                paragraph_open = false;
-                pos = line_terminator_end(bytes, line_end);
-                continue;
-            }
-            if trimmed.is_empty() {
-                paragraph_open = false;
-                pos = line_terminator_end(bytes, line_end);
-                continue;
-            }
-
-            if self.options.allow_link_refs
-                && !paragraph_open
-                && stripped.len() - trimmed.len() <= 3
-                && trimmed.starts_with('[')
-            {
-                // Candidate: join the stripped lines of this paragraph
-                // chunk and parse as many definitions as it holds.
-                let (chunk, line_starts) = self.join_stripped_chunk(pos);
-                let mut offset = 0;
-                while let Some(parsed) = self.parse_reference_definition(&chunk[offset..]) {
-                    definitions
-                        .entry(Self::normalize_reference_label(parsed.label))
-                        .or_insert(ReferenceDef {
-                            url: parsed.url,
-                            title: parsed.title,
-                        });
-                    offset += parsed.consumed;
-                }
-                // Skip the source lines the parsed prefix covered so fence
-                // tracking stays aligned (definition text can't open
-                // fences). A leftover suffix starts a paragraph.
-                let consumed_lines = chunk[..offset].matches('\n').count();
-                if consumed_lines > 0 {
-                    let next_pos = line_starts
-                        .get(consumed_lines)
-                        .copied()
-                        .unwrap_or(bytes.len());
-                    // The footnote collector's scan is line-independent, so
-                    // it must still see the definition's continuation lines
-                    // the reference side jumps over.
-                    if collect_footnotes {
-                        let mut foot_pos = line_terminator_end(bytes, line_end);
-                        while foot_pos < next_pos {
-                            let foot_line_end = scan_line_end(bytes, foot_pos);
-                            footnote_scan_line(
-                                &self.source[foot_pos..foot_line_end],
-                                bytes[foot_pos],
-                                &mut foot_fence,
-                                &mut labels,
-                            );
-                            foot_pos = line_terminator_end(bytes, foot_line_end);
-                        }
-                    }
-                    pos = next_pos;
-                    continue;
-                }
-            }
-
-            paragraph_open = !closes_paragraph_context(trimmed);
-            pos = line_terminator_end(bytes, line_end);
         }
-
-        if container_candidate && self.options.allow_link_refs {
-            // Rebuild the complete map in document order, so a nested first
-            // definition wins over a later root definition too.
-            definitions = self.collect_container_references();
-        }
-
         (
             (!definitions.is_empty()).then(|| Rc::new(definitions)),
             (!labels.is_empty()).then(|| Rc::new(labels)),
@@ -355,6 +181,19 @@ mod tests {
 
     fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
         definition_candidates(source, footnotes).0
+    }
+
+    #[test]
+    fn footnote_only_candidates_do_not_require_link_collection() {
+        assert_eq!(
+            definition_candidates("[^note]: body\n\n[^note]", true),
+            (true, false)
+        );
+        assert_eq!(
+            definition_candidates("[^note]: body\n\n[link]: /url", true),
+            (true, true)
+        );
+        assert_eq!(definition_candidates("[^note]: /url", false), (true, true));
     }
 
     #[test]
