@@ -110,6 +110,9 @@ pub enum Node<'a> {
     Link(Box<'a, Link<'a>>),
     /// Image.
     Image(Box<'a, Image<'a>>),
+    /// Highlighted text (`==text==`).
+    Highlight(Box<'a, Highlight<'a>>),
+
     /// Strikethrough (GFM extension).
     Delete(Box<'a, Delete<'a>>),
     /// Superscript (extension).
@@ -414,6 +417,15 @@ pub struct Delete<'a> {
     pub span: Span,
 }
 
+/// Highlighted inline text.
+#[derive(Debug)]
+pub struct Highlight<'a> {
+    /// Inline children.
+    pub children: Vec<'a, Node<'a>>,
+    /// Original source span, including delimiters.
+    pub span: Span,
+}
+
 /// Superscript.
 #[derive(Debug)]
 pub struct Superscript<'a> {
@@ -499,6 +511,7 @@ impl<'a> Node<'a> {
             Self::Break(n) => n.span,
             Self::Link(n) => n.span,
             Self::Image(n) => n.span,
+            Self::Highlight(n) => n.span,
             Self::Delete(n) => n.span,
             Self::Superscript(n) => n.span,
             Self::Subscript(n) => n.span,

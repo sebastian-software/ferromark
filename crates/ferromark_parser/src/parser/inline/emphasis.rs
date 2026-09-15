@@ -1,10 +1,10 @@
-//! Emphasis, strong emphasis, and GFM strikethrough via the delimiter stack.
+//! Emphasis, strong emphasis, GFM strikethrough, and marked text via the delimiter stack.
 //!
-//! During inline parsing every enabled `*`/`_`/`~` run is pushed as a plain text node
+//! During inline parsing every enabled `*`/`_`/`~`/`==` run is pushed as a plain text node
 //! plus a [`Delimiter`] record carrying its flanking classification. Once
 //! the inline sequence is complete, [`Parser::process_emphasis`] pairs
 //! closers with openers (nearest matching opener, rule of three), wraps
-//! the nodes between into `Emphasis`/`Strong`/`Delete`, and trims the delimiter
+//! the nodes between into `Emphasis`/`Strong`/`Delete`/`Highlight`, and trims the delimiter
 //! text nodes in place. Unpaired runs simply stay literal text.
 
 use ferromark_allocator::Vec;
@@ -25,7 +25,7 @@ pub(in crate::parser) struct Delimiter {
 }
 
 impl<'a> Parser<'a> {
-    /// Records a `*`/`_`/`~` run: pushes its text node and the delimiter
+    /// Records a `*`/`_`/`~`/`==` run: pushes its text node and the delimiter
     /// entry describing how it may participate in emphasis.
     pub(in crate::parser) fn push_delimiter_run(
         &self,
@@ -140,7 +140,12 @@ impl<'a> Parser<'a> {
                 }
             }
             let span = inner_span(&inner, use_delims);
-            let node = if strikethrough {
+            let node = if delimiters[closer_idx].marker == b'=' {
+                Node::Highlight(self.allocator.boxed(ferromark_ast::Highlight {
+                    children: inner,
+                    span,
+                }))
+            } else if strikethrough {
                 Node::Delete(self.allocator.boxed(ferromark_ast::Delete {
                     children: inner,
                     span,
@@ -205,6 +210,7 @@ struct OpenersBottom {
     star: [[Option<usize>; 2]; 3],
     underscore: [[Option<usize>; 2]; 3],
     tilde: [[Option<usize>; 2]; 3],
+    equals: [[Option<usize>; 2]; 3],
 }
 
 impl OpenersBottom {
@@ -212,6 +218,7 @@ impl OpenersBottom {
         let table = match closer.marker {
             b'_' => &mut self.underscore,
             b'~' => &mut self.tilde,
+            b'=' => &mut self.equals,
             _ => &mut self.star,
         };
         &mut table[closer.orig_len % 3][usize::from(closer.can_open)]
@@ -263,19 +270,7 @@ fn inner_span(inner: &Vec<'_, Node<'_>>, use_delims: u32) -> Span {
 }
 
 fn node_span(node: &Node<'_>) -> Span {
-    match node {
-        Node::Text(n) => n.span,
-        Node::Emphasis(n) => n.span,
-        Node::Strong(n) => n.span,
-        Node::InlineCode(n) => n.span,
-        Node::Link(n) => n.span,
-        Node::Image(n) => n.span,
-        Node::Delete(n) => n.span,
-        Node::Break(n) => n.span,
-        Node::Html(n) => n.span,
-        Node::FootnoteReference(n) => n.span,
-        _ => Span::new(0, 0),
-    }
+    node.span()
 }
 
 fn trim_text_tail(node: &mut Node<'_>, count: u32) {
@@ -317,7 +312,7 @@ fn classify_flanking(
     let left_flanking = !next_ws && (!next_punct || prev_ws || prev_punct);
     let right_flanking = !prev_ws && (!prev_punct || next_ws || next_punct);
 
-    if matches!(marker, b'*' | b'~') {
+    if matches!(marker, b'*' | b'~' | b'=') {
         (left_flanking, right_flanking)
     } else {
         (

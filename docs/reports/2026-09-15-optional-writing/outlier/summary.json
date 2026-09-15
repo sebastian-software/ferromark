@@ -1,0 +1,50 @@
+[
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.0301250305892415,
+    "ratio_range": [
+      1.0240735221901207,
+      1.0368897245623265
+    ],
+    "left_ns": 308.1611773986786,
+    "right_ns": 318.38961898940505
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.0024837691239499,
+    "ratio_range": [
+      0.9856657519036957,
+      1.0184471186920276
+    ],
+    "left_ns": 730.8121565934066,
+    "right_ns": 728.7483242014456
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.0064689717925033,
+    "ratio_range": [
+      1.0016068097218247,
+      1.0106769932651563
+    ],
+    "left_ns": 437.6849177170868,
+    "right_ns": 440.75639895642365
+  }
+]

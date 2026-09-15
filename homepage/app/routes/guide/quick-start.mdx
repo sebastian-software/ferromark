@@ -47,8 +47,7 @@ is inserted verbatim and must escape every untrusted value.
 ## Migrating from v1
 
 The Rust AST API replaces v1's one-shot and streaming APIs. Node keeps its
-rendering entry points, but `tableColumnWidths`, `highlight`, `inlineFootnotes`, `allowLinkRefs`,
-and `indentedCodeBlocks` are unsupported and rejected. Heading slugs, table
+rendering entry points, but `tableColumnWidths` and `indentedCodeBlocks` are unsupported and rejected. Heading slugs, table
 layout markup, and some extension output follow v2 semantics. `linkBasePath`
 also applies to root-absolute image and raw HTML URLs and converts Markdown
 links to index.html routes. Highlighter callbacks
@@ -56,3 +55,7 @@ apply to code blocks, including indented code.
 
 Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/migration-v2.md)
 before adopting the development package.
+
+`highlight` (`==text==`) and `inlineFootnotes` (`^[note]`) are opt-in writing
+extensions. `allowLinkRefs: false` disables reference links and preserves their
+definitions as visible Markdown. Inline links continue to work.

@@ -1,0 +1,5234 @@
+[
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0472698630008532,
+    "ratio_range": [
+      1.0423198693235387,
+      1.0516397899530194
+    ],
+    "left_ns": 416512.1458333333,
+    "right_ns": 436265.625
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0469269175458615,
+    "ratio_range": [
+      1.0220066042083984,
+      1.0495245882981903
+    ],
+    "left_ns": 2066.4435572687225,
+    "right_ns": 2164.4645017281105
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0002420719729432,
+    "ratio_range": [
+      0.9943801331378762,
+      1.0059103773958713
+    ],
+    "left_ns": 49464.22697368421,
+    "right_ns": 49384.9609375
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0053046392887333,
+    "ratio_range": [
+      1.001291591110533,
+      1.0268331886331417
+    ],
+    "left_ns": 48047.9828125,
+    "right_ns": 48437.825
+  },
+  {
+    "case": "notes-active-4096",
+    "kind": "notes-active",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4080,
+    "ratio": 0.8935086052981873,
+    "ratio_range": [
+      0.8795770108503246,
+      0.9109343633226058
+    ],
+    "left_ns": 22695.963541666668,
+    "right_ns": 20324.246010638297
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0319732272986446,
+    "ratio_range": [
+      1.020699546905516,
+      1.0506029653219573
+    ],
+    "left_ns": 2825.6698042168673,
+    "right_ns": 2920.617503894081
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0679659878385297,
+    "ratio_range": [
+      1.0432548465614249,
+      1.0703789041551457
+    ],
+    "left_ns": 2896.7375578703704,
+    "right_ns": 3093.6171875
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0698635895576596,
+    "ratio_range": [
+      1.0640577050472053,
+      1.0843407826675016
+    ],
+    "left_ns": 32782.911637931036,
+    "right_ns": 35133.631944444445
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0079334773395698,
+    "ratio_range": [
+      0.992777283490862,
+      1.0238688820489885
+    ],
+    "left_ns": 25807.50337837838,
+    "right_ns": 26096.716145833332
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 1.0116115527399738,
+    "ratio_range": [
+      0.988371722487459,
+      1.0223063999449367
+    ],
+    "left_ns": 96268.228125,
+    "right_ns": 96963.540625
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9967860152435986,
+    "ratio_range": [
+      0.9860321458741093,
+      1.0059789773947887
+    ],
+    "left_ns": 9871.880533854166,
+    "right_ns": 9856.255208333334
+  },
+  {
+    "case": "highlight-active-300",
+    "kind": "highlight-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 275,
+    "ratio": 1.004603218085908,
+    "ratio_range": [
+      0.9949611277818262,
+      1.0307952789342825
+    ],
+    "left_ns": 1030.8808379120878,
+    "right_ns": 1036.8640538674033
+  },
+  {
+    "case": "sparse-active-65536",
+    "kind": "sparse-active",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65570,
+    "ratio": 1.1320504827884998,
+    "ratio_range": [
+      1.1215660748372551,
+      1.1425137274836563
+    ],
+    "left_ns": 44541.96164772727,
+    "right_ns": 50345.46217105263
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0091107269278636,
+    "ratio_range": [
+      1.0029202355480544,
+      1.0217725820685772
+    ],
+    "left_ns": 1386.9287167159764,
+    "right_ns": 1404.9693581586826
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0582797173644594,
+    "ratio_range": [
+      1.0525844416154384,
+      1.0709382394510611
+    ],
+    "left_ns": 132.82706916702082,
+    "right_ns": 140.82350180234306
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.008288566386711,
+    "ratio_range": [
+      1.0014708732942115,
+      1.0185072826899537
+    ],
+    "left_ns": 187947.9125,
+    "right_ns": 189558.33125
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0386954897909828,
+    "ratio_range": [
+      1.0217892935725852,
+      1.0522061382912922
+    ],
+    "left_ns": 42183.479619565216,
+    "right_ns": 43868.548295454544
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0638854717603703,
+    "ratio_range": [
+      1.0376871792683409,
+      1.0826538061723123
+    ],
+    "left_ns": 2215.5715654481132,
+    "right_ns": 2344.453125
+  },
+  {
+    "case": "sparse-active-4096",
+    "kind": "sparse-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4110,
+    "ratio": 0.9982533081212545,
+    "ratio_range": [
+      0.9926523538048939,
+      1.0183007825873265
+    ],
+    "left_ns": 3186.1316737288134,
+    "right_ns": 3180.905720338983
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 0.9983592992608483,
+    "ratio_range": [
+      0.9790712064905396,
+      1.0188891386874497
+    ],
+    "left_ns": 5835.492624223602,
+    "right_ns": 5863.0697265625
+  },
+  {
+    "case": "highlight-active-65536",
+    "kind": "highlight-active",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65505,
+    "ratio": 1.819698952589719,
+    "ratio_range": [
+      1.7879729887966416,
+      1.8345072496626984
+    ],
+    "left_ns": 176117.40625,
+    "right_ns": 320487.4166666667
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.041299953111909,
+    "ratio_range": [
+      1.0315052409612904,
+      1.045279192909439
+    ],
+    "left_ns": 42800.01278409091,
+    "right_ns": 44462.061079545456
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 265,
+    "ratio": 0.9822229602013567,
+    "ratio_range": [
+      0.9718138539148045,
+      0.9987489235850865
+    ],
+    "left_ns": 3350.4138392857144,
+    "right_ns": 3312.1515184859154
+  },
+  {
+    "case": "highlight-active-4096",
+    "kind": "highlight-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4070,
+    "ratio": 1.0022161101674578,
+    "ratio_range": [
+      0.9887585301227918,
+      1.0117239710435944
+    ],
+    "left_ns": 10757.69424715909,
+    "right_ns": 10777.965198863636
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0428908464409814,
+    "ratio_range": [
+      1.030902539582181,
+      1.060543130754993
+    ],
+    "left_ns": 2069.394754955947,
+    "right_ns": 2155.3609913793102
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.98682403088521,
+    "ratio_range": [
+      0.9816506990293238,
+      1.0101883315396654
+    ],
+    "left_ns": 5556.25924556213,
+    "right_ns": 5515.861111111111
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.001622065927925,
+    "ratio_range": [
+      0.993212814622313,
+      1.0158942772309125
+    ],
+    "left_ns": 473.36479366481575,
+    "right_ns": 474.6291434716599
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 0.9974212884348372,
+    "ratio_range": [
+      0.9881248149314152,
+      1.0086453768954764
+    ],
+    "left_ns": 730.1706094236761,
+    "right_ns": 730.5153816199377
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 65536,
+    "ratio": 1.0286256155145155,
+    "ratio_range": [
+      1.0215192739327792,
+      1.0421189374357802
+    ],
+    "left_ns": 96328.90625,
+    "right_ns": 99204.81875
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.002758723868565,
+    "ratio_range": [
+      0.9956675023069891,
+      1.0156335686627367
+    ],
+    "left_ns": 413262.5833333333,
+    "right_ns": 415667.09375
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0455754253719498,
+    "ratio_range": [
+      1.015381649364479,
+      1.0573990505201123
+    ],
+    "left_ns": 467.729114713217,
+    "right_ns": 487.05491883116883
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.043974334053282,
+    "ratio_range": [
+      1.01488738195254,
+      1.0482501021999566
+    ],
+    "left_ns": 10228.756453804348,
+    "right_ns": 10638.2110252809
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4081,
+    "ratio": 0.9985487363739568,
+    "ratio_range": [
+      0.9936640818845882,
+      1.0050984764576913
+    ],
+    "left_ns": 43485.02698863636,
+    "right_ns": 43573.213068181816
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0309490222784317,
+    "ratio_range": [
+      1.02043634021656,
+      1.0481316499370263
+    ],
+    "left_ns": 238260.7421875,
+    "right_ns": 247565.4296875
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0318399867548318,
+    "ratio_range": [
+      1.0244869839891413,
+      1.062401855117171
+    ],
+    "left_ns": 1930.9386574074074,
+    "right_ns": 2002.0933502132195
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9907920772356644,
+    "ratio_range": [
+      0.9754488258173013,
+      1.012008007436393
+    ],
+    "left_ns": 10399.896978021978,
+    "right_ns": 10304.135529891304
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9967104891907133,
+    "ratio_range": [
+      0.98860878774519,
+      1.0113772004145642
+    ],
+    "left_ns": 5119.232676630435,
+    "right_ns": 5100.689695945946
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0339024525557383,
+    "ratio_range": [
+      1.031915519539504,
+      1.0393916156750929
+    ],
+    "left_ns": 477.1270674300254,
+    "right_ns": 493.95745521601685
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0654033308058122,
+    "ratio_range": [
+      1.0574300302742758,
+      1.0709486155094954
+    ],
+    "left_ns": 308404.9453125,
+    "right_ns": 327822.4895833333
+  },
+  {
+    "case": "highlight-active-65536",
+    "kind": "highlight-active",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65505,
+    "ratio": 1.7951650061477822,
+    "ratio_range": [
+      1.7830967304140748,
+      1.8197575040857923
+    ],
+    "left_ns": 177840.28125,
+    "right_ns": 321772.1354166667
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0834589715248395,
+    "ratio_range": [
+      1.0631947659563807,
+      1.0947542253248475
+    ],
+    "left_ns": 2016.1682123655914,
+    "right_ns": 2184.4355377906977
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0253163530896596,
+    "ratio_range": [
+      1.0240598561284635,
+      1.0419743483204935
+    ],
+    "left_ns": 2535.7861486486486,
+    "right_ns": 2605.0889756944443
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0302075748583777,
+    "ratio_range": [
+      1.0032916099353204,
+      1.0364913691476167
+    ],
+    "left_ns": 183.86392552461268,
+    "right_ns": 189.4302398989899
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 0.998130570526003,
+    "ratio_range": [
+      0.9803961432352309,
+      1.0154308737317703
+    ],
+    "left_ns": 2893.574749228395,
+    "right_ns": 2901.274787808642
+  },
+  {
+    "case": "sparse-active-65536",
+    "kind": "sparse-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65570,
+    "ratio": 1.001936092212032,
+    "ratio_range": [
+      0.9800662424173318,
+      1.0134977180381795
+    ],
+    "left_ns": 32935.16487068965,
+    "right_ns": 32947.96120689655
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0565402928197907,
+    "ratio_range": [
+      1.014109090021702,
+      1.0622745531477786
+    ],
+    "left_ns": 2219.399527186761,
+    "right_ns": 2334.4216417910447
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.013057962097474,
+    "ratio_range": [
+      0.9955737410658921,
+      1.0143852209099422
+    ],
+    "left_ns": 239382.8125,
+    "right_ns": 242523.4375
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4081,
+    "ratio": 0.9976222588075953,
+    "ratio_range": [
+      0.989654228706349,
+      1.0055137719917995
+    ],
+    "left_ns": 42804.6875,
+    "right_ns": 42664.47585227273
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0023070333904787,
+    "ratio_range": [
+      0.9807378573353508,
+      1.007410359478997
+    ],
+    "left_ns": 190857.8125,
+    "right_ns": 190571.875
+  },
+  {
+    "case": "notes-active-300",
+    "kind": "notes-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 272,
+    "ratio": 1.0190620057750777,
+    "ratio_range": [
+      1.0117566527317012,
+      1.036448012883279
+    ],
+    "left_ns": 1505.5615469502409,
+    "right_ns": 1534.2605698529412
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.000724219303256,
+    "ratio_range": [
+      0.9875821137653876,
+      1.0084911497259617
+    ],
+    "left_ns": 3934.4054654811716,
+    "right_ns": 3928.472135416667
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0722520341437642,
+    "ratio_range": [
+      1.0631869506736655,
+      1.0771389624379377
+    ],
+    "left_ns": 49044.465625,
+    "right_ns": 52706.88715277778
+  },
+  {
+    "case": "sparse-active-300",
+    "kind": "sparse-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 330,
+    "ratio": 1.0067119430320683,
+    "ratio_range": [
+      0.9887418498165106,
+      1.020522453810869
+    ],
+    "left_ns": 314.44395539906105,
+    "right_ns": 316.46030205872427
+  },
+  {
+    "case": "sparse-active-65536",
+    "kind": "sparse-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65570,
+    "ratio": 0.9955618861380362,
+    "ratio_range": [
+      0.9740694689299986,
+      1.0012708161285409
+    ],
+    "left_ns": 44128.01846590909,
+    "right_ns": 43726.97727272727
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 265,
+    "ratio": 0.4611486449913961,
+    "ratio_range": [
+      0.45298790431130975,
+      0.46485451943661005
+    ],
+    "left_ns": 2563.3929303278687,
+    "right_ns": 1179.9626572327045
+  },
+  {
+    "case": "notes-active-4096",
+    "kind": "notes-active",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4080,
+    "ratio": 1.2762493915520097,
+    "ratio_range": [
+      1.2622200758774833,
+      1.2841675692846461
+    ],
+    "left_ns": 28089.920036764706,
+    "right_ns": 35835.26273148148
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 4096,
+    "ratio": 1.0149248949497023,
+    "ratio_range": [
+      1.0110436715263078,
+      1.0217798043290327
+    ],
+    "left_ns": 6219.38803807947,
+    "right_ns": 6328.885276845637
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0754708332368503,
+    "ratio_range": [
+      1.0694947320957002,
+      1.096167476203145
+    ],
+    "left_ns": 192.86476548035384,
+    "right_ns": 207.42043003318585
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 0.9986527814888818,
+    "ratio_range": [
+      0.9944403011043658,
+      1.0056730409937824
+    ],
+    "left_ns": 193.987249120629,
+    "right_ns": 193.67043870068167
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0363386248460602,
+    "ratio_range": [
+      1.0201211902375307,
+      1.0621425542412766
+    ],
+    "left_ns": 2798.6746268656716,
+    "right_ns": 2900.3746141975307
+  },
+  {
+    "case": "sparse-active-300",
+    "kind": "sparse-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 330,
+    "ratio": 1.0112787817530928,
+    "ratio_range": [
+      1.0021817337837113,
+      1.0295732380500604
+    ],
+    "left_ns": 238.55027830788805,
+    "right_ns": 241.24083483406227
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.012418413576029,
+    "ratio_range": [
+      0.9944047465308934,
+      1.0331193546235375
+    ],
+    "left_ns": 1988.4992055084747,
+    "right_ns": 2013.2388009656652
+  },
+  {
+    "case": "sparse-active-300",
+    "kind": "sparse-active",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 330,
+    "ratio": 1.7562437183181916,
+    "ratio_range": [
+      1.7337450705941517,
+      1.7799626538056619
+    ],
+    "left_ns": 604.2413418170103,
+    "right_ns": 1059.9752824858756
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0311807107832447,
+    "ratio_range": [
+      1.0150469333959558,
+      1.036950075564168
+    ],
+    "left_ns": 2221.9188388625594,
+    "right_ns": 2291.1998475609757
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0332263507022061,
+    "ratio_range": [
+      1.0190380447583725,
+      1.0344948870487667
+    ],
+    "left_ns": 3941.3022584033615,
+    "right_ns": 4066.377976190476
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 0.9994225392581858,
+    "ratio_range": [
+      0.9791060010986463,
+      1.01021676249142
+    ],
+    "left_ns": 2829.3682228915663,
+    "right_ns": 2824.7599774096384
+  },
+  {
+    "case": "notes-active-4096",
+    "kind": "notes-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4080,
+    "ratio": 1.0322676588499704,
+    "ratio_range": [
+      1.0186916450576915,
+      1.0388257165252872
+    ],
+    "left_ns": 22226.956395348836,
+    "right_ns": 22903.83612804878
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0287959691488209,
+    "ratio_range": [
+      1.0209154060372396,
+      1.0382163109442648
+    ],
+    "left_ns": 7731.279969262295,
+    "right_ns": 7904.717962184874
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0533306572931445,
+    "ratio_range": [
+      1.0380634658925296,
+      1.0592334866816036
+    ],
+    "left_ns": 41911.967391304344,
+    "right_ns": 43700.75710227273
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.034525887394371,
+    "ratio_range": [
+      1.0255504475277861,
+      1.049212892434463
+    ],
+    "left_ns": 188.06784729187564,
+    "right_ns": 194.96565684133915
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 0.9944554774882293,
+    "ratio_range": [
+      0.985084062210831,
+      1.007011436345865
+    ],
+    "left_ns": 3206.1113481228667,
+    "right_ns": 3192.6772959183672
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0500647948164146,
+    "ratio_range": [
+      1.039859364786794,
+      1.0623912062118661
+    ],
+    "left_ns": 26004.29391891892,
+    "right_ns": 27353.42232142857
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.005017455955984,
+    "ratio_range": [
+      1.000274740521416,
+      1.0142066465051054
+    ],
+    "left_ns": 2842.2585227272725,
+    "right_ns": 2878.6626725460123
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 1.0421365077436986,
+    "ratio_range": [
+      1.0315485436246246,
+      1.061912622352022
+    ],
+    "left_ns": 96854.428125,
+    "right_ns": 100863.15
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9953364128645394,
+    "ratio_range": [
+      0.9907728086619346,
+      1.014933694780862
+    ],
+    "left_ns": 2065.382365088106,
+    "right_ns": 2077.2492394911505
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0297507313911602,
+    "ratio_range": [
+      1.0166729395908964,
+      1.0651784813153207
+    ],
+    "left_ns": 238658.5234375,
+    "right_ns": 245758.7890625
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.005524289184616,
+    "ratio_range": [
+      1.00120992572126,
+      1.0071976984455895
+    ],
+    "left_ns": 133.0562508870281,
+    "right_ns": 133.78256100171234
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.0531028213585873,
+    "ratio_range": [
+      1.0378104383302804,
+      1.0588295585076914
+    ],
+    "left_ns": 309.35240019795447,
+    "right_ns": 325.0392655979203
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 265,
+    "ratio": 1.0121504459653987,
+    "ratio_range": [
+      0.971559422525321,
+      1.0128631512868969
+    ],
+    "left_ns": 2986.0875796178343,
+    "right_ns": 3018.074719551282
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0318051923510723,
+    "ratio_range": [
+      1.027698240991804,
+      1.0439731879601755
+    ],
+    "left_ns": 2542.9828929539294,
+    "right_ns": 2628.3992471988795
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 256,
+    "ratio": 1.0305762166927908,
+    "ratio_range": [
+      1.012447624970956,
+      1.0568307426908814
+    ],
+    "left_ns": 440.8283527268453,
+    "right_ns": 453.73288582486697
+  },
+  {
+    "case": "notes-active-65536",
+    "kind": "notes-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65484,
+    "ratio": 1.0216037093687664,
+    "ratio_range": [
+      1.0134971914955324,
+      1.0300567721516993
+    ],
+    "left_ns": 413063.8020833333,
+    "right_ns": 422850.6979166667
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0455749988554064,
+    "ratio_range": [
+      1.0217694728354056,
+      1.051201600455139
+    ],
+    "left_ns": 1948.0409102697095,
+    "right_ns": 2043.6779684095861
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0384729593702546,
+    "ratio_range": [
+      1.0327457081783815,
+      1.0641113354198193
+    ],
+    "left_ns": 26184.172743055555,
+    "right_ns": 27330.803571428572
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0070161668807174,
+    "ratio_range": [
+      1.004279283754776,
+      1.008144949180795
+    ],
+    "left_ns": 470.26234954864594,
+    "right_ns": 474.09261248736095
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0401609840732204,
+    "ratio_range": [
+      1.0342753180578081,
+      1.0651321870515342
+    ],
+    "left_ns": 2082.308411862528,
+    "right_ns": 2185.4755244755243
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0303622523285294,
+    "ratio_range": [
+      1.0267979275478958,
+      1.0486808169868005
+    ],
+    "left_ns": 2786.663112017804,
+    "right_ns": 2877.7999424846626
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0115361550804258,
+    "ratio_range": [
+      1.008709572786517,
+      1.0172541994123525
+    ],
+    "left_ns": 49248.696875,
+    "right_ns": 49708.40131578947
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 0.9959113643805454,
+    "ratio_range": [
+      0.9839174092681123,
+      1.004544596174873
+    ],
+    "left_ns": 42183.19701086957,
+    "right_ns": 42158.57065217391
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0293590336829124,
+    "ratio_range": [
+      1.01107062779833,
+      1.0433255371421362
+    ],
+    "left_ns": 3964.8765756302523,
+    "right_ns": 4081.2815205627708
+  },
+  {
+    "case": "sparse-active-65536",
+    "kind": "sparse-active",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65570,
+    "ratio": 1.1484457595761823,
+    "ratio_range": [
+      1.1402580810796519,
+      1.1589883978509048
+    ],
+    "left_ns": 43795.69176136364,
+    "right_ns": 50394.94243421053
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.000647866418301,
+    "ratio_range": [
+      0.98197094186188,
+      1.0063968963135912
+    ],
+    "left_ns": 19039.47875,
+    "right_ns": 19089.03625
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0251792010256708,
+    "ratio_range": [
+      1.0104322123240876,
+      1.0265744571752822
+    ],
+    "left_ns": 2563.126195355191,
+    "right_ns": 2626.8855917366946
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9929740785823643,
+    "ratio_range": [
+      0.986676839455225,
+      0.998656430458184
+    ],
+    "left_ns": 7729.956454918033,
+    "right_ns": 7670.647103658536
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0066494272626652,
+    "ratio_range": [
+      0.9944064191817932,
+      1.016523651881346
+    ],
+    "left_ns": 42620.69701086957,
+    "right_ns": 42900.6875
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.0259269033358502,
+    "ratio_range": [
+      1.0136263216875048,
+      1.0336341995797123
+    ],
+    "left_ns": 723.643856095679,
+    "right_ns": 740.0930840568271
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 1.0033035535743542,
+    "ratio_range": [
+      0.9954558660101583,
+      1.0047242214448222
+    ],
+    "left_ns": 96172.00625,
+    "right_ns": 96258.075
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 0.9860598419179373,
+    "ratio_range": [
+      0.9771952736640721,
+      0.9957066751759723
+    ],
+    "left_ns": 318.1058450644505,
+    "right_ns": 314.7147218026183
+  },
+  {
+    "case": "sparse-active-4096",
+    "kind": "sparse-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4110,
+    "ratio": 1.008806544100662,
+    "ratio_range": [
+      0.9853827611967162,
+      1.0181005070339868
+    ],
+    "left_ns": 2792.215318991098,
+    "right_ns": 2816.8050863363364
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0512684637445633,
+    "ratio_range": [
+      1.0405132486112194,
+      1.0666671373902368
+    ],
+    "left_ns": 49169.0109375,
+    "right_ns": 51689.83059210526
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65508,
+    "ratio": 1.002750851896137,
+    "ratio_range": [
+      0.9960025903312958,
+      1.0144556167615295
+    ],
+    "left_ns": 685162.75,
+    "right_ns": 687047.53125
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.076815951050997,
+    "ratio_range": [
+      1.0619540198805537,
+      1.0909798966640438
+    ],
+    "left_ns": 2026.4353401727863,
+    "right_ns": 2181.679941860465
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0296587705700757,
+    "ratio_range": [
+      1.0217032945421265,
+      1.0363607839828566
+    ],
+    "left_ns": 2980.77876984127,
+    "right_ns": 3074.1590163934425
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.0373599060434595,
+    "ratio_range": [
+      1.023888818954156,
+      1.048643018138965
+    ],
+    "left_ns": 447.953371356904,
+    "right_ns": 463.79022935212663
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0425300990028477,
+    "ratio_range": [
+      1.0254753321779744,
+      1.0515407731165514
+    ],
+    "left_ns": 1934.8367912371134,
+    "right_ns": 2008.2781049250536
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.039838165052408,
+    "ratio_range": [
+      1.0299840437306653,
+      1.5197595592454953
+    ],
+    "left_ns": 42823.86363636364,
+    "right_ns": 44585.642045454544
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.1347440710910601,
+    "ratio_range": [
+      1.121698848484972,
+      1.1463567662613356
+    ],
+    "left_ns": 2025.8307235421166,
+    "right_ns": 2298.6494332107845
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0079872245888957,
+    "ratio_range": [
+      0.98810130781223,
+      1.0138301055566683
+    ],
+    "left_ns": 2957.897969242902,
+    "right_ns": 2973.3155656645567
+  },
+  {
+    "case": "sparse-active-4096",
+    "kind": "sparse-active",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4110,
+    "ratio": 1.2592086851559883,
+    "ratio_range": [
+      1.2375317687273637,
+      1.271580038144847
+    ],
+    "left_ns": 2788.4404673590507,
+    "right_ns": 3498.586663568773
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.040138769090724,
+    "ratio_range": [
+      1.0270497701575176,
+      1.0552297700859898
+    ],
+    "left_ns": 1893.9657196969697,
+    "right_ns": 1980.1363396624472
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.027263430827774,
+    "ratio_range": [
+      1.0071424857890752,
+      1.0353329116482717
+    ],
+    "left_ns": 332.34049317617865,
+    "right_ns": 340.0954842219804
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0511977983669387,
+    "ratio_range": [
+      1.0341979631785205,
+      1.0797242647206677
+    ],
+    "left_ns": 193.890870554177,
+    "right_ns": 203.81765625
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 0.9915471763127993,
+    "ratio_range": [
+      0.9851487045216348,
+      0.9992557766753395
+    ],
+    "left_ns": 484.15049044914815,
+    "right_ns": 480.0580517153098
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0026539382630053,
+    "ratio_range": [
+      0.9883741186408405,
+      1.0069258975144562
+    ],
+    "left_ns": 491.417714884696,
+    "right_ns": 491.93815582371457
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.024821298520902,
+    "ratio_range": [
+      1.01849883649591,
+      1.04074173693549
+    ],
+    "left_ns": 3319.1852915194345,
+    "right_ns": 3409.9573863636365
+  },
+  {
+    "case": "highlight-active-4096",
+    "kind": "highlight-active",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4070,
+    "ratio": 1.8162766904373557,
+    "ratio_range": [
+      1.777176955266598,
+      1.8247157233502784
+    ],
+    "left_ns": 11130.254411764707,
+    "right_ns": 20217.11569148936
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0197902402835042,
+    "ratio_range": [
+      1.0100642557946171,
+      1.0246053523880232
+    ],
+    "left_ns": 32345.81573275862,
+    "right_ns": 32934.13254310345
+  },
+  {
+    "case": "notes-active-4096",
+    "kind": "notes-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4080,
+    "ratio": 1.0128909522030876,
+    "ratio_range": [
+      0.9966289248649229,
+      1.0186507314831286
+    ],
+    "left_ns": 27147.916964285716,
+    "right_ns": 27497.879464285714
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 0.9959275469467614,
+    "ratio_range": [
+      0.9893534059882985,
+      1.0024410414411058
+    ],
+    "left_ns": 1412.2015248493976,
+    "right_ns": 1410.1953947368422
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4081,
+    "ratio": 0.52251521652386,
+    "ratio_range": [
+      0.5174498590086305,
+      0.5298092373161525
+    ],
+    "left_ns": 43610.795454545456,
+    "right_ns": 22939.024390243903
+  },
+  {
+    "case": "highlight-active-300",
+    "kind": "highlight-active",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 275,
+    "ratio": 1.6148213665092996,
+    "ratio_range": [
+      1.5916787822133003,
+      1.6328125418380153
+    ],
+    "left_ns": 1041.8040972222223,
+    "right_ns": 1683.3038599640934
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 65536,
+    "ratio": 1.0335693916888893,
+    "ratio_range": [
+      1.0192917824769623,
+      1.042884247414963
+    ],
+    "left_ns": 66186.63125,
+    "right_ns": 68326.63616071429
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0122641246751765,
+    "ratio_range": [
+      1.0078362355568957,
+      1.0190382997746483
+    ],
+    "left_ns": 472.48701196473553,
+    "right_ns": 480.0480510752688
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0261701650593393,
+    "ratio_range": [
+      1.006547423179898,
+      1.038589758885879
+    ],
+    "left_ns": 5095.544763513513,
+    "right_ns": 5228.211805555556
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 4096,
+    "ratio": 1.0493038212241372,
+    "ratio_range": [
+      1.0404614593722787,
+      1.0565191730356864
+    ],
+    "left_ns": 4083.9221467391303,
+    "right_ns": 4285.275114155251
+  },
+  {
+    "case": "sparse-active-65536",
+    "kind": "sparse-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65570,
+    "ratio": 0.9981062270066996,
+    "ratio_range": [
+      0.9938031568102204,
+      1.0087994224277712
+    ],
+    "left_ns": 45019.09821428572,
+    "right_ns": 44933.84226190476
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0380241571514717,
+    "ratio_range": [
+      1.0219873148648109,
+      1.057704234208168
+    ],
+    "left_ns": 421435.7604166667,
+    "right_ns": 438218.75
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0146929643039777,
+    "ratio_range": [
+      1.0049756526215905,
+      1.0488649899340223
+    ],
+    "left_ns": 3005.913661858974,
+    "right_ns": 3050.0794439935066
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.0031389322028195,
+    "ratio_range": [
+      0.9836576143884158,
+      1.0172236042198337
+    ],
+    "left_ns": 442.5811261208117,
+    "right_ns": 444.2682378019896
+  },
+  {
+    "case": "notes-active-300",
+    "kind": "notes-active",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 272,
+    "ratio": 1.2325865358299788,
+    "ratio_range": [
+      1.214923235619086,
+      1.2392841537103658
+    ],
+    "left_ns": 1899.180794534413,
+    "right_ns": 2333.7738650497513
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65508,
+    "ratio": 0.43934659183824654,
+    "ratio_range": [
+      0.43382112289051167,
+      0.4445902184849531
+    ],
+    "left_ns": 587616.53125,
+    "right_ns": 258167.3203125
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0565431123677733,
+    "ratio_range": [
+      1.0544222152619922,
+      1.0713353809191466
+    ],
+    "left_ns": 19040.96375,
+    "right_ns": 20151.208111702126
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0090590003316187,
+    "ratio_range": [
+      0.9878750309335457,
+      1.0151583092330072
+    ],
+    "left_ns": 1881.5495365731463,
+    "right_ns": 1895.183585858586
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0191032790412569,
+    "ratio_range": [
+      1.017158585658705,
+      1.0349345319860874
+    ],
+    "left_ns": 474.52897267206475,
+    "right_ns": 486.3976919087137
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0254763875290442,
+    "ratio_range": [
+      1.0117076739639428,
+      1.0315621324023252
+    ],
+    "left_ns": 5129.783627717391,
+    "right_ns": 5255.746682960894
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 265,
+    "ratio": 0.517726605766328,
+    "ratio_range": [
+      0.5078782904254444,
+      0.5328761346301527
+    ],
+    "left_ns": 3022.36143488746,
+    "right_ns": 1564.7569270833333
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0417176204315148,
+    "ratio_range": [
+      1.0369865707355876,
+      1.0438581275597467
+    ],
+    "left_ns": 25551.695945945947,
+    "right_ns": 26592.917534722223
+  },
+  {
+    "case": "sparse-active-4096",
+    "kind": "sparse-active",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4110,
+    "ratio": 1.2525287030817902,
+    "ratio_range": [
+      1.2287028455451037,
+      1.2633126519996576
+    ],
+    "left_ns": 2154.5955418577983,
+    "right_ns": 2690.29441260745
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0366892132492669,
+    "ratio_range": [
+      1.0290689522809537,
+      1.053716663798941
+    ],
+    "left_ns": 31110.845766129034,
+    "right_ns": 32047.526041666668
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0021216899793155,
+    "ratio_range": [
+      0.9771463340432005,
+      1.023092468973701
+    ],
+    "left_ns": 238422.8515625,
+    "right_ns": 238928.7109375
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0145412541888494,
+    "ratio_range": [
+      1.0057716001225574,
+      1.0337613622846609
+    ],
+    "left_ns": 5130.059782608696,
+    "right_ns": 5213.0498263888885
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0045131772400098,
+    "ratio_range": [
+      0.9964434269294983,
+      1.009858184195307
+    ],
+    "left_ns": 42639.73721590909,
+    "right_ns": 42962.59375
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0143637883593923,
+    "ratio_range": [
+      0.96606372311242,
+      1.0290286442988066
+    ],
+    "left_ns": 1927.2223434291582,
+    "right_ns": 1939.461195764463
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0657946815507229,
+    "ratio_range": [
+      1.0582732516210602,
+      1.0802185757835427
+    ],
+    "left_ns": 19219.839923469386,
+    "right_ns": 20538.213315217392
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0087975519418388,
+    "ratio_range": [
+      1.0030511560946846,
+      1.0118810406564422
+    ],
+    "left_ns": 26106.336805555555,
+    "right_ns": 26335.756944444445
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0287258705453501,
+    "ratio_range": [
+      1.0077908711904777,
+      1.0329014389420164
+    ],
+    "left_ns": 5564.148853550296,
+    "right_ns": 5703.117234848485
+  },
+  {
+    "case": "highlight-active-65536",
+    "kind": "highlight-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65505,
+    "ratio": 1.0044407571678031,
+    "ratio_range": [
+      0.9980269218862476,
+      1.0114710753457126
+    ],
+    "left_ns": 174550.13020833334,
+    "right_ns": 175471.13541666666
+  },
+  {
+    "case": "highlight-active-300",
+    "kind": "highlight-active",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 275,
+    "ratio": 1.8164496967729344,
+    "ratio_range": [
+      1.8064791858832536,
+      1.823217846412363
+    ],
+    "left_ns": 756.4337449596774,
+    "right_ns": 1373.5320278184481
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0534243260720717,
+    "ratio_range": [
+      1.0343685480439988,
+      1.073338151897414
+    ],
+    "left_ns": 49928.79605263158,
+    "right_ns": 52322.04861111111
+  },
+  {
+    "case": "highlight-active-65536",
+    "kind": "highlight-active",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65505,
+    "ratio": 1.8161509979515473,
+    "ratio_range": [
+      1.8104683278798557,
+      1.8337613558457622
+    ],
+    "left_ns": 139460.9375,
+    "right_ns": 253079.7578125
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 1.0039393966203922,
+    "ratio_range": [
+      0.9886614694516466,
+      1.0078700086184758
+    ],
+    "left_ns": 95695.575,
+    "right_ns": 96098.4375
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0301516062535634,
+    "ratio_range": [
+      1.0230179452129728,
+      1.0430335720932604
+    ],
+    "left_ns": 3991.3563829787236,
+    "right_ns": 4116.879111842105
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0038086296358006,
+    "ratio_range": [
+      0.9790288583673429,
+      1.010947833147098
+    ],
+    "left_ns": 2085.691527777778,
+    "right_ns": 2076.773921460177
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0408359470292712,
+    "ratio_range": [
+      1.022222048540621,
+      1.0506802443321204
+    ],
+    "left_ns": 189936.975,
+    "right_ns": 197693.23125
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9883843557589066,
+    "ratio_range": [
+      0.9786505040983392,
+      1.0056606662491647
+    ],
+    "left_ns": 9985.183881578947,
+    "right_ns": 9872.2060546875
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.073477252616952,
+    "ratio_range": [
+      1.0712825062616187,
+      1.092486626801138
+    ],
+    "left_ns": 3217.5415239726026,
+    "right_ns": 3460.058233394834
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4081,
+    "ratio": 0.5149781556352226,
+    "ratio_range": [
+      0.512244047666819,
+      0.518637100031095
+    ],
+    "left_ns": 42993.90340909091,
+    "right_ns": 22247.03270348837
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9911022434891716,
+    "ratio_range": [
+      0.9812276604371486,
+      1.0106502156741046
+    ],
+    "left_ns": 7771.607954545455,
+    "right_ns": 7717.586834016393
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.1232662433461942,
+    "ratio_range": [
+      1.1045252607208507,
+      1.124430106669508
+    ],
+    "left_ns": 32926.5,
+    "right_ns": 36846.604567307695
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0291445899428893,
+    "ratio_range": [
+      1.0089847305462658,
+      1.03475857691246
+    ],
+    "left_ns": 5545.105698529412,
+    "right_ns": 5706.71553030303
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0490098974893898,
+    "ratio_range": [
+      1.0388393100751239,
+      1.0640076235022256
+    ],
+    "left_ns": 3226.7370060137455,
+    "right_ns": 3375.1124100719426
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0102598759534192,
+    "ratio_range": [
+      0.9929678394723785,
+      1.0165329184131138
+    ],
+    "left_ns": 2195.553425058548,
+    "right_ns": 2217.454048463357
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0562927278785708,
+    "ratio_range": [
+      1.0465098095790668,
+      1.0571532242212531
+    ],
+    "left_ns": 311381.8359375,
+    "right_ns": 328070.3125
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0276857314615762,
+    "ratio_range": [
+      1.007635706720825,
+      1.0287743705322971
+    ],
+    "left_ns": 490.3374934657606,
+    "right_ns": 502.62161709539123
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0226928190877438,
+    "ratio_range": [
+      1.0095717375655655,
+      1.0399548097071318
+    ],
+    "left_ns": 138.93275322317723,
+    "right_ns": 142.16282221379834
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0119838919077906,
+    "ratio_range": [
+      0.998759419331286,
+      1.0339098053615847
+    ],
+    "left_ns": 5612.382254464285,
+    "right_ns": 5727.102324695122
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0043401426928389,
+    "ratio_range": [
+      0.9793669411774574,
+      1.0113152254191684
+    ],
+    "left_ns": 2817.215653153153,
+    "right_ns": 2824.7051016566265
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0416667362809613,
+    "ratio_range": [
+      1.0364430413826213,
+      1.050696855712019
+    ],
+    "left_ns": 416426.6458333333,
+    "right_ns": 432810.3333333333
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0975144400070167,
+    "ratio_range": [
+      1.0919319160162781,
+      1.1202268528331538
+    ],
+    "left_ns": 134.49600129106298,
+    "right_ns": 147.94723942717374
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 0.9953385593436035,
+    "ratio_range": [
+      0.9870710168886637,
+      1.0076237038647644
+    ],
+    "left_ns": 6232.0726407284765,
+    "right_ns": 6205.617804276316
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 0.9990199000775056,
+    "ratio_range": [
+      0.9878728573023405,
+      1.0180174267151245
+    ],
+    "left_ns": 18956.3025,
+    "right_ns": 18974.114375
+  },
+  {
+    "case": "notes-active-65536",
+    "kind": "notes-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65484,
+    "ratio": 1.0237896331914889,
+    "ratio_range": [
+      1.0059891562612049,
+      1.0323312473233113
+    ],
+    "left_ns": 414027.34375,
+    "right_ns": 422746.5208333333
+  },
+  {
+    "case": "highlight-active-65536",
+    "kind": "highlight-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65505,
+    "ratio": 1.007568769584599,
+    "ratio_range": [
+      0.9952503436507125,
+      1.0159038467155417
+    ],
+    "left_ns": 177696.18229166666,
+    "right_ns": 178347.4375
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0018295818652008,
+    "ratio_range": [
+      0.9916306277029223,
+      1.0123233721143459
+    ],
+    "left_ns": 2045.981413398693,
+    "right_ns": 2046.4069308278868
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.007760392242637,
+    "ratio_range": [
+      0.9902586801591955,
+      1.0245455207512202
+    ],
+    "left_ns": 4031.540638412017,
+    "right_ns": 4057.488146551724
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0094254122520157,
+    "ratio_range": [
+      0.9977245959641484,
+      1.024540580409572
+    ],
+    "left_ns": 42421.47826086957,
+    "right_ns": 42617.69701086957
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 0.997921435951287,
+    "ratio_range": [
+      0.986731966669093,
+      1.0064309051323943
+    ],
+    "left_ns": 2302.453507965686,
+    "right_ns": 2297.6677108801955
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 1.0138050161743464,
+    "ratio_range": [
+      1.008904172287434,
+      1.022665032625044
+    ],
+    "left_ns": 4079.6932065217393,
+    "right_ns": 4150.828539823009
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65508,
+    "ratio": 1.0177717458848416,
+    "ratio_range": [
+      1.0083794673966873,
+      1.0239546640871675
+    ],
+    "left_ns": 592346.34375,
+    "right_ns": 602123.703125
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0643490025786453,
+    "ratio_range": [
+      1.047410473253559,
+      1.0702849797779594
+    ],
+    "left_ns": 3246.3054714532873,
+    "right_ns": 3450.673943014706
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 65536,
+    "ratio": 1.0354102993611052,
+    "ratio_range": [
+      1.0090202784908169,
+      1.0392890768249348
+    ],
+    "left_ns": 97566.278125,
+    "right_ns": 100441.40625
+  },
+  {
+    "case": "highlight-active-4096",
+    "kind": "highlight-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4070,
+    "ratio": 1.0046063414553126,
+    "ratio_range": [
+      0.976188203402488,
+      1.0148705825551303
+    ],
+    "left_ns": 11188.63169642857,
+    "right_ns": 11185.453869047618
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 4096,
+    "ratio": 1.0411151324673602,
+    "ratio_range": [
+      1.0356458959084927,
+      1.0550748595091184
+    ],
+    "left_ns": 5899.43046875,
+    "right_ns": 6155.143790849673
+  },
+  {
+    "case": "highlight-active-4096",
+    "kind": "highlight-active",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4070,
+    "ratio": 1.7916369572117057,
+    "ratio_range": [
+      1.7726354564136548,
+      1.824189662213846
+    ],
+    "left_ns": 10932.397529069767,
+    "right_ns": 19558.756510416668
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0558372776162923,
+    "ratio_range": [
+      1.0302052026921733,
+      1.0603255724236678
+    ],
+    "left_ns": 1420.8135890151516,
+    "right_ns": 1499.2387180511182
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0264276815496525,
+    "ratio_range": [
+      1.0138459002570597,
+      1.0345190747048896
+    ],
+    "left_ns": 243049.15625,
+    "right_ns": 249419.921875
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0157387560620004,
+    "ratio_range": [
+      1.0022412231605895,
+      1.0271421586616518
+    ],
+    "left_ns": 3178.182415254237,
+    "right_ns": 3206.9735494880547
+  },
+  {
+    "case": "notes-active-65536",
+    "kind": "notes-active",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65484,
+    "ratio": 1.0025446522339028,
+    "ratio_range": [
+      1.0003925965353355,
+      1.0135074666484645
+    ],
+    "left_ns": 343367.1875,
+    "right_ns": 345061.1979166667
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 265,
+    "ratio": 0.9971776270746741,
+    "ratio_range": [
+      0.9923453645747274,
+      1.0118889720652011
+    ],
+    "left_ns": 2620.6318086592178,
+    "right_ns": 2635.9506671348313
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0469681839401705,
+    "ratio_range": [
+      1.0406035656764774,
+      1.0610213624288976
+    ],
+    "left_ns": 420575.9583333333,
+    "right_ns": 440398.875
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0059843187468833,
+    "ratio_range": [
+      0.9814869836185822,
+      1.0159324119323276
+    ],
+    "left_ns": 2574.686044520548,
+    "right_ns": 2585.3814566115702
+  },
+  {
+    "case": "sparse-active-4096",
+    "kind": "sparse-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4110,
+    "ratio": 1.007899245190261,
+    "ratio_range": [
+      0.9923400005570608,
+      1.0149426799031318
+    ],
+    "left_ns": 2164.620535714286,
+    "right_ns": 2170.3287760416665
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0403991690233134,
+    "ratio_range": [
+      1.0372433258650546,
+      1.051794628063531
+    ],
+    "left_ns": 3613.251201923077,
+    "right_ns": 3757.677125
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65508,
+    "ratio": 0.998951572099747,
+    "ratio_range": [
+      0.9958703736074973,
+      0.9999434431971671
+    ],
+    "left_ns": 691750.0,
+    "right_ns": 691001.953125
+  },
+  {
+    "case": "highlight-active-4096",
+    "kind": "highlight-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4070,
+    "ratio": 1.0180955894040145,
+    "ratio_range": [
+      1.0123350598527916,
+      1.028530063789925
+    ],
+    "left_ns": 8501.149493243243,
+    "right_ns": 8627.090309633028
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.005259081830833,
+    "ratio_range": [
+      1.0013726626635384,
+      1.0058287747626666
+    ],
+    "left_ns": 419814.6770833333,
+    "right_ns": 422186.1979166667
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0334237196553262,
+    "ratio_range": [
+      1.0297094732113972,
+      1.04622310302273
+    ],
+    "left_ns": 2991.3166799363057,
+    "right_ns": 3090.7046669407896
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0304313088023986,
+    "ratio_range": [
+      1.0188359460120147,
+      1.043219870433137
+    ],
+    "left_ns": 7727.757940573771,
+    "right_ns": 7967.238347457627
+  },
+  {
+    "case": "notes-active-65536",
+    "kind": "notes-active",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65484,
+    "ratio": 1.2988493900715237,
+    "ratio_range": [
+      1.284468675213418,
+      1.3161034386393073
+    ],
+    "left_ns": 419857.2083333333,
+    "right_ns": 547796.21875
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0345544510079199,
+    "ratio_range": [
+      1.0291118301204742,
+      1.0439223051526239
+    ],
+    "left_ns": 2817.141422672673,
+    "right_ns": 2933.43505859375
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0057760296797815,
+    "ratio_range": [
+      0.9971495051165167,
+      1.0177172000578794
+    ],
+    "left_ns": 240588.8671875,
+    "right_ns": 242335.9375
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.054024882629801,
+    "ratio_range": [
+      1.0506884635664755,
+      1.0586071233798746
+    ],
+    "left_ns": 418719.1875,
+    "right_ns": 441827.2604166667
+  },
+  {
+    "case": "highlight-active-300",
+    "kind": "highlight-active",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 275,
+    "ratio": 1.8482070792923533,
+    "ratio_range": [
+      1.8380920044322788,
+      1.8779016628412362
+    ],
+    "left_ns": 591.5763012618296,
+    "right_ns": 1098.2874707259953
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 0.9978027000349895,
+    "ratio_range": [
+      0.9945960677255463,
+      1.0004841961723019
+    ],
+    "left_ns": 66133.24791666666,
+    "right_ns": 66004.6875
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 0.9991820252603033,
+    "ratio_range": [
+      0.9917351227193854,
+      1.0126552333894339
+    ],
+    "left_ns": 32934.580818965514,
+    "right_ns": 32884.92349137931
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0097650333857737,
+    "ratio_range": [
+      1.0055077997943445,
+      1.0138830237407446
+    ],
+    "left_ns": 3621.9450721153844,
+    "right_ns": 3659.7660505836575
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0073374532522108,
+    "ratio_range": [
+      0.9995111101611263,
+      1.0189561501456523
+    ],
+    "left_ns": 48987.109375,
+    "right_ns": 49398.5015625
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 65536,
+    "ratio": 1.0523942697078832,
+    "ratio_range": [
+      1.0403171778115623,
+      1.0797406563705
+    ],
+    "left_ns": 97617.1875,
+    "right_ns": 102731.76875
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 0.998572525271625,
+    "ratio_range": [
+      0.9863845754575361,
+      1.021200518099536
+    ],
+    "left_ns": 25917.370777027027,
+    "right_ns": 26042.75760135135
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0374895631637013,
+    "ratio_range": [
+      1.020015479747126,
+      1.0419527634669727
+    ],
+    "left_ns": 3312.4174735915494,
+    "right_ns": 3432.4389826642337
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0210786212180099,
+    "ratio_range": [
+      0.9962773928983266,
+      1.0325202928594184
+    ],
+    "left_ns": 2797.773995535714,
+    "right_ns": 2835.8509252265862
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.040212588196864,
+    "ratio_range": [
+      1.0340305963409648,
+      1.0469224047665622
+    ],
+    "left_ns": 140.83820132942768,
+    "right_ns": 146.35469676865438
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9951713993634554,
+    "ratio_range": [
+      0.9876642838136122,
+      1.0017582473825095
+    ],
+    "left_ns": 5157.466700819672,
+    "right_ns": 5132.563353825137
+  },
+  {
+    "case": "notes-active-4096",
+    "kind": "notes-active",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4080,
+    "ratio": 1.1930095161999816,
+    "ratio_range": [
+      1.1904755934662192,
+      1.1960700729452967
+    ],
+    "left_ns": 27618.713392857142,
+    "right_ns": 32913.83728448276
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 256,
+    "ratio": 1.036743841773405,
+    "ratio_range": [
+      1.030188590339022,
+      1.048252614091518
+    ],
+    "left_ns": 318.01441655359565,
+    "right_ns": 329.90494150246303
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0540131431822102,
+    "ratio_range": [
+      1.041554299907213,
+      1.0649231165957518
+    ],
+    "left_ns": 1908.4942200203252,
+    "right_ns": 2008.4175588865096
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0469125059129876,
+    "ratio_range": [
+      1.0420136023621882,
+      1.0528079140674802
+    ],
+    "left_ns": 25589.879222972973,
+    "right_ns": 26809.11517857143
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 256,
+    "ratio": 1.0227086804672525,
+    "ratio_range": [
+      1.0174067633594153,
+      1.0456063909596602
+    ],
+    "left_ns": 739.0928634751773,
+    "right_ns": 757.0821226795803
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 0.9970112204348716,
+    "ratio_range": [
+      0.9535072453611311,
+      0.9991124104563414
+    ],
+    "left_ns": 5878.0111328125,
+    "right_ns": 5864.7705078125
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.043054331860555,
+    "ratio_range": [
+      1.038097487622157,
+      1.0494554437472612
+    ],
+    "left_ns": 195.4234967694873,
+    "right_ns": 204.7113810043668
+  },
+  {
+    "case": "highlight-active-300",
+    "kind": "highlight-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 275,
+    "ratio": 1.023885695923016,
+    "ratio_range": [
+      1.0161912436956286,
+      1.0370457075348416
+    ],
+    "left_ns": 579.0380787037037,
+    "right_ns": 593.5167721518987
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 0.9937807270396337,
+    "ratio_range": [
+      0.9677751146609892,
+      1.0028228876677399
+    ],
+    "left_ns": 31231.602822580644,
+    "right_ns": 31040.826612903227
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 0.9954664432925028,
+    "ratio_range": [
+      0.9911046417648944,
+      1.004985460819755
+    ],
+    "left_ns": 96530.859375,
+    "right_ns": 96093.23125
+  },
+  {
+    "case": "notes-active-300",
+    "kind": "notes-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 272,
+    "ratio": 1.0076372786198255,
+    "ratio_range": [
+      0.9932827898577155,
+      1.0185600800747099
+    ],
+    "left_ns": 2206.2898529411764,
+    "right_ns": 2211.4165683962265
+  },
+  {
+    "case": "sparse-active-300",
+    "kind": "sparse-active",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 330,
+    "ratio": 2.2319261119199334,
+    "ratio_range": [
+      2.2005164250420575,
+      2.280952664675119
+    ],
+    "left_ns": 317.79837923728815,
+    "right_ns": 709.0065192743764
+  },
+  {
+    "case": "notes-active-65536",
+    "kind": "notes-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65484,
+    "ratio": 1.0152861941555742,
+    "ratio_range": [
+      1.0085059867162325,
+      1.027706573744479
+    ],
+    "left_ns": 338132.375,
+    "right_ns": 344011.71875
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0040911830529151,
+    "ratio_range": [
+      0.9923258824416594,
+      1.0107804529185656
+    ],
+    "left_ns": 3337.3415258007117,
+    "right_ns": 3349.539620535714
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0037362095702813,
+    "ratio_range": [
+      0.9951017451784603,
+      1.0095594304453988
+    ],
+    "left_ns": 3977.969412076271,
+    "right_ns": 3994.4992055084745
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0392475237547052,
+    "ratio_range": [
+      1.0307244225143222,
+      1.0502765085865873
+    ],
+    "left_ns": 128.11962797212354,
+    "right_ns": 133.8415239114918
+  },
+  {
+    "case": "notes-active-65536",
+    "kind": "notes-active",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65484,
+    "ratio": 1.3867650223956798,
+    "ratio_range": [
+      0.9119843164518611,
+      1.4005710539037448
+    ],
+    "left_ns": 422563.3645833333,
+    "right_ns": 586267.578125
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0318377190415455,
+    "ratio_range": [
+      1.012863666942091,
+      1.0344756074553896
+    ],
+    "left_ns": 7769.477530991736,
+    "right_ns": 8017.528044871795
+  },
+  {
+    "case": "sparse-active-4096",
+    "kind": "sparse-active",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4110,
+    "ratio": 1.2354073029510007,
+    "ratio_range": [
+      1.2301337731624105,
+      1.2582028198297448
+    ],
+    "left_ns": 3203.1205204778157,
+    "right_ns": 3945.2250525210084
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 65536,
+    "ratio": 1.0491917445441294,
+    "ratio_range": [
+      1.0463529788097883,
+      1.0520472997096133
+    ],
+    "left_ns": 95075.9125,
+    "right_ns": 99752.8625
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65508,
+    "ratio": 0.5121562946930439,
+    "ratio_range": [
+      0.5071653274059509,
+      0.5141190015451172
+    ],
+    "left_ns": 682889.96875,
+    "right_ns": 350035.15625
+  },
+  {
+    "case": "highlight-active-300",
+    "kind": "highlight-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 275,
+    "ratio": 1.0154803785233353,
+    "ratio_range": [
+      0.9970009550890389,
+      1.0178746489125041
+    ],
+    "left_ns": 741.5616847826087,
+    "right_ns": 748.4214884277734
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 256,
+    "ratio": 1.029166929537853,
+    "ratio_range": [
+      1.0245495218761849,
+      1.0354988496905726
+    ],
+    "left_ns": 725.8509820046439,
+    "right_ns": 746.6380125398089
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0718779508050447,
+    "ratio_range": [
+      1.0512097648084933,
+      1.0789385252631323
+    ],
+    "left_ns": 18988.698125,
+    "right_ns": 20269.448138297874
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 256,
+    "ratio": 1.0631039762827728,
+    "ratio_range": [
+      1.0472425868332078,
+      1.0709171854379134
+    ],
+    "left_ns": 319.4975298126065,
+    "right_ns": 339.17410714285717
+  },
+  {
+    "case": "sparse-active-300",
+    "kind": "sparse-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 330,
+    "ratio": 1.0060914861553742,
+    "ratio_range": [
+      0.9974193548387096,
+      1.0069981189155122
+    ],
+    "left_ns": 599.943018234165,
+    "right_ns": 604.141490818299
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 0.9981256556547989,
+    "ratio_range": [
+      0.9896762843692555,
+      1.0027335714102195
+    ],
+    "left_ns": 140.47555345370094,
+    "right_ns": 140.0415421956684
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0028886699062316,
+    "ratio_range": [
+      1.00060320451205,
+      1.010039833004908
+    ],
+    "left_ns": 5583.441778273809,
+    "right_ns": 5599.570498511905
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 1.0153660971642968,
+    "ratio_range": [
+      1.0113688284114555,
+      1.0189343563167745
+    ],
+    "left_ns": 64422.135416666664,
+    "right_ns": 65641.92708333333
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 1.072618394576305,
+    "ratio_range": [
+      1.0704535749123134,
+      1.0812378567827137
+    ],
+    "left_ns": 4046.9143318965516,
+    "right_ns": 4343.545938940092
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.031934324230843,
+    "ratio_range": [
+      1.0220445085437175,
+      1.0479885060256775
+    ],
+    "left_ns": 2824.7857545045044,
+    "right_ns": 2923.826031931464
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0720139783097082,
+    "ratio_range": [
+      1.0671434664764332,
+      1.0789397743450055
+    ],
+    "left_ns": 1404.28125,
+    "right_ns": 1504.325671073718
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0318845321613488,
+    "ratio_range": [
+      1.0298815189244346,
+      1.0381372658635815
+    ],
+    "left_ns": 41658.40081521739,
+    "right_ns": 42984.849431818184
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.068802363597388,
+    "ratio_range": [
+      1.0566211235396878,
+      1.072956626499328
+    ],
+    "left_ns": 132.81914045898853,
+    "right_ns": 142.46900641999696
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.0141257020459644,
+    "ratio_range": [
+      1.0094504596020502,
+      1.0314428650329306
+    ],
+    "left_ns": 433.45168747110495,
+    "right_ns": 440.5023191639267
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.002356776571458,
+    "ratio_range": [
+      0.989928275394049,
+      1.0183396094091213
+    ],
+    "left_ns": 241465.4921875,
+    "right_ns": 241851.8828125
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0515437549959534,
+    "ratio_range": [
+      1.044582226727601,
+      1.0560460469164468
+    ],
+    "left_ns": 26042.28125,
+    "right_ns": 27384.598214285714
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 256,
+    "ratio": 1.0573313811369514,
+    "ratio_range": [
+      1.0419306556467935,
+      1.0794303068392495
+    ],
+    "left_ns": 437.31658115671644,
+    "right_ns": 463.4676532377657
+  },
+  {
+    "case": "highlight-active-65536",
+    "kind": "highlight-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65505,
+    "ratio": 1.0169890678726279,
+    "ratio_range": [
+      1.0070301603693226,
+      1.022564945025253
+    ],
+    "left_ns": 135460.00892857142,
+    "right_ns": 137684.3392857143
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0799148955365818,
+    "ratio_range": [
+      1.0706654350131717,
+      1.0838884311652828
+    ],
+    "left_ns": 32578.17025862069,
+    "right_ns": 35159.43287037037
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 4096,
+    "ratio": 1.0506504905546128,
+    "ratio_range": [
+      1.0284742883917302,
+      1.0531327755855109
+    ],
+    "left_ns": 6250.121458333333,
+    "right_ns": 6528.374565972223
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 4096,
+    "ratio": 1.0665397242553618,
+    "ratio_range": [
+      1.055341452366841,
+      1.0750691855937171
+    ],
+    "left_ns": 4132.519961453744,
+    "right_ns": 4413.775234741784
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0284753776945836,
+    "ratio_range": [
+      1.0208314597555492,
+      1.045367562816755
+    ],
+    "left_ns": 42829.36789772727,
+    "right_ns": 44123.69886363636
+  },
+  {
+    "case": "notes-active-300",
+    "kind": "notes-active",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 272,
+    "ratio": 1.0152154817152808,
+    "ratio_range": [
+      0.9936768549500025,
+      1.0237466242828772
+    ],
+    "left_ns": 1862.8756200396826,
+    "right_ns": 1882.5536521084337
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0031193280466602,
+    "ratio_range": [
+      0.9891461620038273,
+      1.0181632220283316
+    ],
+    "left_ns": 1927.0325333675564,
+    "right_ns": 1932.4792309670781
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0364211159426244,
+    "ratio_range": [
+      1.0318166065266623,
+      1.0424021866334319
+    ],
+    "left_ns": 3309.542803697183,
+    "right_ns": 3426.973996350365
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.051768844908193,
+    "ratio_range": [
+      1.036967752084722,
+      1.0564898633326065
+    ],
+    "left_ns": 2919.5458074534163,
+    "right_ns": 3052.12987012987
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.036552398252666,
+    "ratio_range": [
+      1.024912831243495,
+      1.0450272010486963
+    ],
+    "left_ns": 2839.4227719033233,
+    "right_ns": 2932.3689453125
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0282548931938953,
+    "ratio_range": [
+      1.0091282956352345,
+      1.0403559670001314
+    ],
+    "left_ns": 9775.330219072164,
+    "right_ns": 10028.74301861702
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0456361668863858,
+    "ratio_range": [
+      1.0418337677720642,
+      1.047865155816824
+    ],
+    "left_ns": 30758.23185483871,
+    "right_ns": 32044.964583333334
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.033881869294504,
+    "ratio_range": [
+      1.0190957319021976,
+      1.037295410334126
+    ],
+    "left_ns": 3918.836848958333,
+    "right_ns": 4039.2469152360513
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0104592908897765,
+    "ratio_range": [
+      0.9867334091780215,
+      1.019018841308326
+    ],
+    "left_ns": 10354.567307692309,
+    "right_ns": 10370.907967032967
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9914942480133665,
+    "ratio_range": [
+      0.9801444199296231,
+      1.0086363127231635
+    ],
+    "left_ns": 3320.8323763250883,
+    "right_ns": 3297.871052631579
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.044428399135102,
+    "ratio_range": [
+      1.0336533006913369,
+      1.0487109487974866
+    ],
+    "left_ns": 49233.7234375,
+    "right_ns": 51243.76480263158
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 0.9925069477948184,
+    "ratio_range": [
+      0.9818161539456816,
+      1.006698869323802
+    ],
+    "left_ns": 6302.546560402685,
+    "right_ns": 6253.480833333333
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0040668024806831,
+    "ratio_range": [
+      0.9822328557005905,
+      1.0152110917248298
+    ],
+    "left_ns": 3958.778349156118,
+    "right_ns": 3981.3405720338983
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.006954795440336,
+    "ratio_range": [
+      0.9959142455033394,
+      1.012793247443409
+    ],
+    "left_ns": 25431.72804054054,
+    "right_ns": 25608.600506756757
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0804016300332837,
+    "ratio_range": [
+      1.0763233201228817,
+      1.0862937086728675
+    ],
+    "left_ns": 49642.40625,
+    "right_ns": 53431.27951388889
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0823768728187984,
+    "ratio_range": [
+      1.0783543706139918,
+      1.0968343847339543
+    ],
+    "left_ns": 2888.798076923077,
+    "right_ns": 3128.7716666666665
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4081,
+    "ratio": 1.0095975843220366,
+    "ratio_range": [
+      0.9977464581391547,
+      1.022327230183835
+    ],
+    "left_ns": 36223.307692307695,
+    "right_ns": 36584.034855769234
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 1.0453813681271376,
+    "ratio_range": [
+      1.0317410805976686,
+      1.052148510785103
+    ],
+    "left_ns": 95239.58125,
+    "right_ns": 99478.646875
+  },
+  {
+    "case": "sparse-active-300",
+    "kind": "sparse-active",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 330,
+    "ratio": 1.8853205661046841,
+    "ratio_range": [
+      1.877825003207373,
+      1.8889544962962963
+    ],
+    "left_ns": 240.156994428791,
+    "right_ns": 452.7729206904877
+  },
+  {
+    "case": "reference-active-65536",
+    "kind": "reference-active",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65508,
+    "ratio": 0.512016363897847,
+    "ratio_range": [
+      0.5042818832946523,
+      0.515096430346908
+    ],
+    "left_ns": 683123.6875,
+    "right_ns": 350292.53125
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 0.994033499750855,
+    "ratio_range": [
+      0.9862386046544069,
+      0.9997215368333954
+    ],
+    "left_ns": 4096.37691048035,
+    "right_ns": 4069.4445346320344
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 0.9972275935594961,
+    "ratio_range": [
+      0.989046668484187,
+      1.006687467852678
+    ],
+    "left_ns": 469.2785285285285,
+    "right_ns": 468.895828125
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0496518049767787,
+    "ratio_range": [
+      1.0448821482756172,
+      1.060794454260432
+    ],
+    "left_ns": 1427.7274543378996,
+    "right_ns": 1503.956330128205
+  },
+  {
+    "case": "malformed-300",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 256,
+    "ratio": 1.036498207804477,
+    "ratio_range": [
+      1.0296878902680182,
+      1.0456107642320573
+    ],
+    "left_ns": 726.4424864446165,
+    "right_ns": 754.4907733306517
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0344179032437428,
+    "ratio_range": [
+      1.0278772378498071,
+      1.0648504957674143
+    ],
+    "left_ns": 3947.1617647058824,
+    "right_ns": 4083.6616847826085
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.04132926220266,
+    "ratio_range": [
+      1.033234411172575,
+      1.0481783237315367
+    ],
+    "left_ns": 30918.59879032258,
+    "right_ns": 32159.721875
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 65536,
+    "ratio": 1.0644783670837583,
+    "ratio_range": [
+      1.0602655996899693,
+      1.0684994245396653
+    ],
+    "left_ns": 65664.41041666667,
+    "right_ns": 69997.58258928571
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 1.0516207601356222,
+    "ratio_range": [
+      1.0443946093971228,
+      1.0525531203465999
+    ],
+    "left_ns": 6219.1270559210525,
+    "right_ns": 6526.846571180556
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0175694088410134,
+    "ratio_range": [
+      1.0127792393532071,
+      1.034685240802758
+    ],
+    "left_ns": 191294.26875,
+    "right_ns": 196190.10625
+  },
+  {
+    "case": "sparse-active-65536",
+    "kind": "sparse-active",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 65570,
+    "ratio": 1.177181281826308,
+    "ratio_range": [
+      1.1470884287158698,
+      1.2048634709525845
+    ],
+    "left_ns": 32845.50107758621,
+    "right_ns": 38686.25
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0043873190155876,
+    "ratio_range": [
+      1.0023759793728686,
+      1.0083159409596414
+    ],
+    "left_ns": 3571.396744296578,
+    "right_ns": 3587.0656011450383
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0280214820390579,
+    "ratio_range": [
+      1.0244561075823424,
+      1.0391464077117352
+    ],
+    "left_ns": 187.99216086825746,
+    "right_ns": 193.42210387868784
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0351515328918215,
+    "ratio_range": [
+      1.0060450679034634,
+      1.059194152000339
+    ],
+    "left_ns": 240208.0078125,
+    "right_ns": 248651.6875
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 0.9964755639097744,
+    "ratio_range": [
+      0.989808856776968,
+      1.008315775317165
+    ],
+    "left_ns": 307562.5,
+    "right_ns": 306478.515625
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0390060388188187,
+    "ratio_range": [
+      1.0318704574813349,
+      1.0443937443379183
+    ],
+    "left_ns": 138.82089780130292,
+    "right_ns": 144.52221751194696
+  },
+  {
+    "case": "notes-active-4096",
+    "kind": "notes-active",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4080,
+    "ratio": 1.0142120894922153,
+    "ratio_range": [
+      1.006363324678783,
+      1.0285228364313448
+    ],
+    "left_ns": 27458.258928571428,
+    "right_ns": 27880.284926470587
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.042282779348208,
+    "ratio_range": [
+      1.0378590037203763,
+      1.050019589377803
+    ],
+    "left_ns": 413223.5208333333,
+    "right_ns": 430203.5520833333
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0208659759076741,
+    "ratio_range": [
+      1.015051106539894,
+      1.0291043564850413
+    ],
+    "left_ns": 10304.6875,
+    "right_ns": 10519.704861111111
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0635864903206926,
+    "ratio_range": [
+      1.0510311248278923,
+      1.065679059644866
+    ],
+    "left_ns": 307013.671875,
+    "right_ns": 325963.5416666667
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0293393419286614,
+    "ratio_range": [
+      1.0213278324200195,
+      1.0426021287253728
+    ],
+    "left_ns": 238833.984375,
+    "right_ns": 244863.9296875
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 0.9902647788149281,
+    "ratio_range": [
+      0.9872294971248557,
+      0.9974642653718495
+    ],
+    "left_ns": 1892.727759576613,
+    "right_ns": 1883.335404116466
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4096,
+    "ratio": 1.0483575703538575,
+    "ratio_range": [
+      1.038843149213511,
+      1.0519673224014852
+    ],
+    "left_ns": 5809.421682098766,
+    "right_ns": 6084.097782258064
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0079902077782354,
+    "ratio_range": [
+      0.9999570461697093,
+      1.0157654176516484
+    ],
+    "left_ns": 409900.1666666667,
+    "right_ns": 414186.6354166667
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0002634612667345,
+    "ratio_range": [
+      0.9898200308475281,
+      1.0032625409332083
+    ],
+    "left_ns": 2817.864771021021,
+    "right_ns": 2816.1012575075074
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0115032994072024,
+    "ratio_range": [
+      1.0033583839741573,
+      1.01533218811893
+    ],
+    "left_ns": 409189.6666666667,
+    "right_ns": 413302.5208333333
+  },
+  {
+    "case": "highlight-active-4096",
+    "kind": "highlight-active",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4070,
+    "ratio": 1.8095288992352663,
+    "ratio_range": [
+      1.7735549670394934,
+      1.8332808532544573
+    ],
+    "left_ns": 8550.071022727272,
+    "right_ns": 15474.983094262296
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.02694587296416,
+    "ratio_range": [
+      1.0186594638895443,
+      1.0382406670830406
+    ],
+    "left_ns": 189270.3125,
+    "right_ns": 194002.0875
+  },
+  {
+    "case": "reference-active-300",
+    "kind": "reference-active",
+    "stage": "fresh",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 265,
+    "ratio": 0.5655108697558738,
+    "ratio_range": [
+      0.5613086032111881,
+      0.5674632363940254
+    ],
+    "left_ns": 3302.4271566901407,
+    "right_ns": 1864.207939860835
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 0.9993399722819427,
+    "ratio_range": [
+      0.9962535632299864,
+      1.002170217179482
+    ],
+    "left_ns": 187.91280686372747,
+    "right_ns": 187.5570426585317
+  },
+  {
+    "case": "notes-active-300",
+    "kind": "notes-active",
+    "stage": "fresh",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 272,
+    "ratio": 1.3337960972474805,
+    "ratio_range": [
+      1.3204037149618384,
+      1.335990832329872
+    ],
+    "left_ns": 2183.6542877906977,
+    "right_ns": 2906.9272445820434
+  },
+  {
+    "case": "reference-active-4096",
+    "kind": "reference-active",
+    "stage": "parse",
+    "comparison": "no-refs",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 4081,
+    "ratio": 0.44610099690260835,
+    "ratio_range": [
+      0.44105256188535996,
+      0.4486297242672841
+    ],
+    "left_ns": 36793.11899038462,
+    "right_ns": 16420.95474137931
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.053359287832154,
+    "ratio_range": [
+      1.044908485364217,
+      1.0615872592307616
+    ],
+    "left_ns": 25320.20970394737,
+    "right_ns": 26718.27951388889
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.03852631047079,
+    "ratio_range": [
+      1.0304271752492715,
+      1.0432020198708503
+    ],
+    "left_ns": 3569.1391397338402,
+    "right_ns": 3709.2509842519685
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.053743817922926,
+    "ratio_range": [
+      1.0280313819774711,
+      1.060597478566794
+    ],
+    "left_ns": 1900.3616523279352,
+    "right_ns": 1995.6781914893618
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "no-refs",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 0.997182242886375,
+    "ratio_range": [
+      0.9836003862134685,
+      1.0082726589877975
+    ],
+    "left_ns": 2530.1269373315363,
+    "right_ns": 2526.0101646505377
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0411067974852386,
+    "ratio_range": [
+      1.025595372293466,
+      1.0476877986695083
+    ],
+    "left_ns": 138.85218731486967,
+    "right_ns": 144.91986089644513
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0281966590454366,
+    "ratio_range": [
+      1.0155155141224284,
+      1.050785310259992
+    ],
+    "left_ns": 10274.49898097826,
+    "right_ns": 10542.100694444445
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0209118685362608,
+    "ratio_range": [
+      1.017607203139162,
+      1.0321348433535948
+    ],
+    "left_ns": 4012.0638354700855,
+    "right_ns": 4107.362172489083
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9946272379170397,
+    "ratio_range": [
+      0.8825967706386342,
+      1.4191362037547892
+    ],
+    "left_ns": 3099.048576732673,
+    "right_ns": 3013.3797075320513
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0287063711788926,
+    "ratio_range": [
+      1.0141730744394215,
+      1.0371326795358875
+    ],
+    "left_ns": 188.5094177221552,
+    "right_ns": 193.4679245769707
+  },
+  {
+    "case": "notes-active-300",
+    "kind": "notes-active",
+    "stage": "parse",
+    "comparison": "notes",
+    "same_output": false,
+    "same_ast": false,
+    "bytes": 272,
+    "ratio": 0.9311064382380759,
+    "ratio_range": [
+      0.9234264017563387,
+      0.9370801669988206
+    ],
+    "left_ns": 1536.7225859247135,
+    "right_ns": 1430.0050495426829
+  },
+  {
+    "case": "malformed-4096",
+    "kind": "malformed",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": false,
+    "bytes": 4096,
+    "ratio": 1.0251657799498566,
+    "ratio_range": [
+      1.0220896480416641,
+      1.037272709129659
+    ],
+    "left_ns": 5771.6560582822085,
+    "right_ns": 5938.488924050633
+  },
+  {
+    "case": "crates_ferromark_parser_benches_fixtures_upstream-changelog.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 82447,
+    "ratio": 1.0240457567413868,
+    "ratio_range": [
+      1.0085325091197335,
+      1.0432868786855638
+    ],
+    "left_ns": 238694.3359375,
+    "right_ns": 244433.921875
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.014526197532299,
+    "ratio_range": [
+      1.010070067244707,
+      1.0173099199768143
+    ],
+    "left_ns": 303084.9609375,
+    "right_ns": 306896.15625
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0522924280192059,
+    "ratio_range": [
+      1.0389963432758322,
+      1.0584495817734947
+    ],
+    "left_ns": 49305.5984375,
+    "right_ns": 51883.90789473684
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0418756724824276,
+    "ratio_range": [
+      1.0396204447756145,
+      1.0445695948493914
+    ],
+    "left_ns": 3578.2989026717555,
+    "right_ns": 3722.1964285714284
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0275480186478438,
+    "ratio_range": [
+      0.9961895470144917,
+      1.0380308731279033
+    ],
+    "left_ns": 187.49843781243752,
+    "right_ns": 193.07165748558484
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "notes",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0236686192760895,
+    "ratio_range": [
+      1.0099360931761459,
+      1.038248420777896
+    ],
+    "left_ns": 9824.8154296875,
+    "right_ns": 10063.940492021276
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0087665600690296,
+    "ratio_range": [
+      0.9898810978059654,
+      1.012031250046258
+    ],
+    "left_ns": 30645.24495967742,
+    "right_ns": 30917.045362903227
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0223206159934475,
+    "ratio_range": [
+      1.020894757116372,
+      1.0263468953916701
+    ],
+    "left_ns": 9868.055338541666,
+    "right_ns": 10077.501662234043
+  },
+  {
+    "case": "malformed-65536",
+    "kind": "malformed",
+    "stage": "parse",
+    "comparison": "highlight",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65536,
+    "ratio": 1.0695816779063194,
+    "ratio_range": [
+      1.0620993566802392,
+      1.0764823876300522
+    ],
+    "left_ns": 65415.104166666664,
+    "right_ns": 70053.01339285714
+  }
+]

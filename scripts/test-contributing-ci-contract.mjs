@@ -58,15 +58,12 @@ test("Node native declarations follow the v2 option surface", () => {
     "wikiLinks",
     "cjkEmphasis",
     "mdx",
-  ])
-    assert.ok(declarations.includes(`${name}?`));
-  for (const name of [
-    "tableColumnWidths",
     "highlight",
     "inlineFootnotes",
     "allowLinkRefs",
-    "indentedCodeBlocks",
   ])
+    assert.ok(declarations.includes(`${name}?`));
+  for (const name of ["tableColumnWidths", "indentedCodeBlocks"])
     assert.ok(!declarations.includes(`${name}?`));
   assert.ok(!declarations.includes("CodeCallback"), "callback types must be self-contained");
 });

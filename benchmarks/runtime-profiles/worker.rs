@@ -56,6 +56,12 @@ impl Engine {
         for (name, value) in config["parser"].as_object().expect("parser options") {
             match name.as_str() {
                 "gfm" => options.gfm = value.as_bool().expect("boolean option"),
+                #[cfg(feature = "optional-writing")]
+                "highlight" => options.highlight = value.as_bool().expect("boolean option"),
+                #[cfg(feature = "optional-writing")]
+                "inline_footnotes" => options.inline_footnotes = value.as_bool().expect("boolean option"),
+                #[cfg(feature = "optional-writing")]
+                "allow_link_refs" => options.allow_link_refs = value.as_bool().expect("boolean option"),
                 "footnotes" => options.footnotes = value.as_bool().expect("boolean option"),
                 "task_lists" => options.task_lists = value.as_bool().expect("boolean option"),
                 "tables" => options.tables = value.as_bool().expect("boolean option"),

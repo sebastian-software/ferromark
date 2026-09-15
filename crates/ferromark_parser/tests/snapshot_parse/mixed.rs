@@ -103,6 +103,7 @@ fn node_kind(node: Option<&Node<'_>>) -> &'static str {
         Some(Node::Link(_)) => "Link",
         Some(Node::Image(_)) => "Image",
         Some(Node::Delete(_)) => "Delete",
+        Some(Node::Highlight(_)) => "Highlight",
         Some(Node::Superscript(_)) => "Superscript",
         Some(Node::Subscript(_)) => "Subscript",
         Some(Node::FootnoteReference(_)) => "FootnoteReference",

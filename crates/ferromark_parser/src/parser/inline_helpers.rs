@@ -60,7 +60,9 @@ impl<'a> Parser<'a> {
             }
 
             let mut well_formed_reference = false;
-            if bytes.get(close + 1) == Some(&b'[') && self.has_closer_from(content, close + 2, b']')
+            if self.options.allow_link_refs
+                && bytes.get(close + 1) == Some(&b'[')
+                && self.has_closer_from(content, close + 2, b']')
             {
                 let label_start = close + 2;
                 let (label_end, _) = Self::scan_balanced(content, label_start);
@@ -304,6 +306,7 @@ fn flatten_inline_text(nodes: &[Node<'_>], out: &mut ferromark_allocator::String
             Node::InlineCode(n) => out.push_str(n.value),
             Node::Emphasis(n) => flatten_inline_text(&n.children, out),
             Node::Strong(n) => flatten_inline_text(&n.children, out),
+            Node::Highlight(n) => flatten_inline_text(&n.children, out),
             Node::Delete(n) => flatten_inline_text(&n.children, out),
             Node::Superscript(n) => flatten_inline_text(&n.children, out),
             Node::Subscript(n) => flatten_inline_text(&n.children, out),

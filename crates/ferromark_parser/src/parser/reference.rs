@@ -80,6 +80,9 @@ impl<'a> Parser<'a> {
     /// Parses a single definition at the start of `text`. `text` must not
     /// span a blank line (callers cut at paragraph boundaries).
     pub(super) fn parse_reference_definition(&self, text: &'a str) -> Option<ParsedDefinition<'a>> {
+        if !self.options.allow_link_refs {
+            return None;
+        }
         let bytes = text.as_bytes();
         let mut i = 0;
         while i < bytes.len() && bytes[i] == b' ' {

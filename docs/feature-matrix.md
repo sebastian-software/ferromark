@@ -97,7 +97,10 @@ For v2/OX, the option types, AST node types, inline parser, HTML renderer, and
 TOC/callout code establish the available features. Existing v2 regression tests
 cover the individual extensions and profile behavior. Options such as `highlight`
 on the HTML renderer are not evidence of `==marked text==` syntax: the parser
-must recognize that syntax before it can be counted.
+must recognize that syntax before it can be counted. The current v2 parser
+now implements opt-in marked text and inline notes; see
+[their syntax contract](optional-writing.md). Historical benchmark revisions
+and other engine columns remain unchanged.
 
 For pulldown-cmark, the versioned `Options` and `Tag` documentation, the bundled
 HTML writer, and `Parser::into_offset_iter()` establish the parser/rendering

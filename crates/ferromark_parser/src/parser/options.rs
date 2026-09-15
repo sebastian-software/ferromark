@@ -18,6 +18,18 @@ pub struct ParserOptions {
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
     pub footnotes: bool,
 
+    /// Enable `==highlighted text==`. Off in all presets.
+    pub highlight: bool,
+
+    /// Enable Pandoc-style `^[inline notes]`. Off in all presets.
+    /// Independent of reference footnotes; nested inline notes stay literal.
+    pub inline_footnotes: bool,
+
+    /// Resolve link/image references and consume their definitions.
+    /// Default: `true`. Disabling this leaves definitions as visible Markdown
+    /// and skips collection; inline links and footnotes remain independent.
+    pub allow_link_refs: bool,
+
     /// Enable GFM task-list item markers such as `- [x]`.
     ///
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
@@ -153,6 +165,9 @@ impl Default for ParserOptions {
     fn default() -> Self {
         Self {
             gfm: false,
+            highlight: false,
+            inline_footnotes: false,
+            allow_link_refs: true,
             footnotes: false,
             task_lists: false,
             tables: false,
@@ -200,6 +215,9 @@ impl ParserOptions {
     pub fn gfm() -> Self {
         Self {
             gfm: true,
+            highlight: false,
+            inline_footnotes: false,
+            allow_link_refs: true,
             footnotes: true,
             task_lists: true,
             tables: true,
@@ -229,6 +247,9 @@ impl ParserOptions {
     #[must_use]
     pub fn gfm_spec() -> Self {
         Self {
+            highlight: false,
+            inline_footnotes: false,
+            allow_link_refs: true,
             footnotes: false,
             ..Self::gfm()
         }

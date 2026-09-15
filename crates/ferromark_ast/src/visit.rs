@@ -122,6 +122,11 @@ pub trait Visit<'a> {
     /// Visits an image.
     fn visit_image(&mut self, _image: &Image<'a>) {}
 
+    /// Visits highlighted text and its children.
+    fn visit_highlight(&mut self, highlight: &Highlight<'a>) {
+        walk_highlight(self, highlight);
+    }
+
     /// Visits strikethrough.
     fn visit_delete(&mut self, delete: &Delete<'a>) {
         walk_delete(self, delete);

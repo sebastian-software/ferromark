@@ -273,6 +273,16 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
                 ),
             );
         }
+        Node::Highlight(d) => {
+            line(
+                out,
+                depth,
+                format_args!("Highlight {}", span(d.span, source)),
+            );
+            for child in &d.children {
+                format_node(child, source, depth + 1, out);
+            }
+        }
         Node::Delete(d) => {
             line(out, depth, format_args!("Delete {}", span(d.span, source)));
             for child in &d.children {

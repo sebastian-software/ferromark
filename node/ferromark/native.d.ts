@@ -28,6 +28,9 @@ export interface Options {
   autolinkLiterals?: boolean
   disallowedRawHtml?: boolean
   footnotes?: boolean
+  highlight?: boolean
+  inlineFootnotes?: boolean
+  allowLinkRefs?: boolean
   frontMatter?: boolean
   headingIds?: boolean
   headingAttributes?: boolean

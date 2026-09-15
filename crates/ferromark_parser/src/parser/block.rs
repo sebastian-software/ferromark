@@ -176,7 +176,8 @@ impl<'a> Parser<'a> {
 
         // Link reference definitions look like paragraphs but are
         // consumed as their own (non-rendered) nodes.
-        if bytes[trimmed_start] == b'['
+        if self.options.allow_link_refs
+            && bytes[trimmed_start] == b'['
             && let Some(node) = self.try_parse_definition_node()
         {
             return Ok(Some(node));

@@ -1,0 +1,1250 @@
+[
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0424888818578162,
+    "ratio_range": [
+      1.0371986917567644,
+      1.0601325728532982
+    ],
+    "left_ns": 418429.03125,
+    "right_ns": 437598.9609375
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.008214353358441,
+    "ratio_range": [
+      1.0047704812293468,
+      1.0171570493999706
+    ],
+    "left_ns": 48876.546875,
+    "right_ns": 49299.72265625
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0294288224962904,
+    "ratio_range": [
+      1.0121664943062332,
+      1.07595453438726
+    ],
+    "left_ns": 2843.932272727273,
+    "right_ns": 2921.7581775700933
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 0.999601973587024,
+    "ratio_range": [
+      0.9946200247353589,
+      1.0074575901679714
+    ],
+    "left_ns": 26009.477459016394,
+    "right_ns": 25982.539446721312
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0081003111343738,
+    "ratio_range": [
+      1.0024554765551659,
+      1.014159229721209
+    ],
+    "left_ns": 1390.4408084964414,
+    "right_ns": 1401.7038116591928
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0399516095973822,
+    "ratio_range": [
+      1.0323398975648017,
+      1.0529590732190242
+    ],
+    "left_ns": 41798.828125,
+    "right_ns": 43768.33767361111
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0485767717176142,
+    "ratio_range": [
+      1.037630013412816,
+      1.0624393018956095
+    ],
+    "left_ns": 2228.374643874644,
+    "right_ns": 2335.670870702541
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0490307929956366,
+    "ratio_range": [
+      1.0365141445575823,
+      1.0784400363725166
+    ],
+    "left_ns": 42552.54054054054,
+    "right_ns": 44638.92534722222
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0430958848457466,
+    "ratio_range": [
+      1.0263001231271573,
+      1.0540163449523003
+    ],
+    "left_ns": 2063.1853974274404,
+    "right_ns": 2160.5249050414363
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9968342910341643,
+    "ratio_range": [
+      0.9857292857005537,
+      1.009012808509697
+    ],
+    "left_ns": 10363.557119205298,
+    "right_ns": 10347.921875
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0205930336725266,
+    "ratio_range": [
+      1.0038263438747725,
+      1.0265670125495747
+    ],
+    "left_ns": 481.89771238051185,
+    "right_ns": 493.23311237373736
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0577524840376769,
+    "ratio_range": [
+      1.054691140594362,
+      1.0738029554979684
+    ],
+    "left_ns": 306789.0625,
+    "right_ns": 324829.6875
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0336247056174261,
+    "ratio_range": [
+      1.0267976149314524,
+      1.0398261914997453
+    ],
+    "left_ns": 2530.2829186893205,
+    "right_ns": 2620.664101758794
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0200829477166946,
+    "ratio_range": [
+      1.0171956723062374,
+      1.0273272744255488
+    ],
+    "left_ns": 184.60631055056712,
+    "right_ns": 188.66278525718425
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 0.9939957625924737,
+    "ratio_range": [
+      0.9891995635151017,
+      0.9999783447593029
+    ],
+    "left_ns": 3952.565972222222,
+    "right_ns": 3930.282898869347
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0695405808346063,
+    "ratio_range": [
+      1.0614051542705862,
+      1.0734887509350668
+    ],
+    "left_ns": 48736.860795454544,
+    "right_ns": 52046.7066532258
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0761327245425312,
+    "ratio_range": [
+      1.0659805180908533,
+      1.0816121257381797
+    ],
+    "left_ns": 193.7212992809323,
+    "right_ns": 208.18744171329604
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.01912094578725,
+    "ratio_range": [
+      1.009287952237459,
+      1.0245214132808151
+    ],
+    "left_ns": 1981.7807351077313,
+    "right_ns": 2019.674257105943
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 0.9979484702151767,
+    "ratio_range": [
+      0.9914651556410606,
+      1.0183110743735058
+    ],
+    "left_ns": 2858.8251256855574,
+    "right_ns": 2866.1310668498168
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0308067633350533,
+    "ratio_range": [
+      1.0214878634767504,
+      1.0316982468762699
+    ],
+    "left_ns": 187.9339221286831,
+    "right_ns": 193.67747195711453
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0123020821466577,
+    "ratio_range": [
+      1.0058231049663864,
+      1.0194897727329053
+    ],
+    "left_ns": 2858.784677787934,
+    "right_ns": 2891.7249306839185
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0011110810044093,
+    "ratio_range": [
+      0.9971767017544944,
+      1.0066590528527166
+    ],
+    "left_ns": 2073.1273624005307,
+    "right_ns": 2074.0322446949604
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0385846660771,
+    "ratio_range": [
+      1.027412959500179,
+      1.0541188180880714
+    ],
+    "left_ns": 1917.001761642157,
+    "right_ns": 2000.9686299615878
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0512056035015522,
+    "ratio_range": [
+      1.039683577293571,
+      1.0601682012103457
+    ],
+    "left_ns": 26255.880729166667,
+    "right_ns": 27597.199561403508
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0072565394248365,
+    "ratio_range": [
+      0.974100083320597,
+      1.0117416078117283
+    ],
+    "left_ns": 49552.287109375,
+    "right_ns": 49833.251953125
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 0.9983243814578044,
+    "ratio_range": [
+      0.9933955870377821,
+      1.0018809522628396
+    ],
+    "left_ns": 41900.76809210526,
+    "right_ns": 41642.06414473684
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.1218699338527607,
+    "ratio_range": [
+      1.1162084330515203,
+      1.1347316094286803
+    ],
+    "left_ns": 2036.4753011067708,
+    "right_ns": 2280.735650510204
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0136981645484318,
+    "ratio_range": [
+      1.0117557812066162,
+      1.0186675920905326
+    ],
+    "left_ns": 32117.161352040817,
+    "right_ns": 32650.661458333332
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 0.9987555023357361,
+    "ratio_range": [
+      0.9918722064635411,
+      1.0068200816471813
+    ],
+    "left_ns": 477.0303151709402,
+    "right_ns": 477.3463748472816
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0320233215017747,
+    "ratio_range": [
+      1.0309039176401227,
+      1.0339887518748094
+    ],
+    "left_ns": 2960.8733428030305,
+    "right_ns": 3054.50439453125
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0085092257258816,
+    "ratio_range": [
+      1.0053022572510546,
+      1.027226362577261
+    ],
+    "left_ns": 1883.0744728915663,
+    "right_ns": 1895.2020454545454
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.019810107419887,
+    "ratio_range": [
+      1.0118791058393182,
+      1.0228637192444041
+    ],
+    "left_ns": 474.0756598907767,
+    "right_ns": 483.0109350850077
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0213763085810434,
+    "ratio_range": [
+      1.0211938697395495,
+      1.0273474954956712
+    ],
+    "left_ns": 5068.087580906149,
+    "right_ns": 5188.526076158941
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.000092223842168,
+    "ratio_range": [
+      0.9824233645573783,
+      1.0024625566364522
+    ],
+    "left_ns": 42943.51773648649,
+    "right_ns": 42735.60641891892
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.9859471255108796,
+    "ratio_range": [
+      0.9851157161235305,
+      1.0064826978494024
+    ],
+    "left_ns": 9958.95134493671,
+    "right_ns": 9884.564858490567
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0830220030256468,
+    "ratio_range": [
+      1.0747644480851597,
+      1.085273963508513
+    ],
+    "left_ns": 3188.377800407332,
+    "right_ns": 3448.0772990088108
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 0.998376000962571,
+    "ratio_range": [
+      0.9951733553990249,
+      1.0196009676170465
+    ],
+    "left_ns": 7723.413177339901,
+    "right_ns": 7721.995535714285
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.1320791655964535,
+    "ratio_range": [
+      1.1235040402761887,
+      1.1349908837053366
+    ],
+    "left_ns": 32569.119140625,
+    "right_ns": 36842.41787790698
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 0.9959014839817657,
+    "ratio_range": [
+      0.9891611883948622,
+      1.003894011365977
+    ],
+    "left_ns": 2226.161858974359,
+    "right_ns": 2222.1568714488635
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0189883256639134,
+    "ratio_range": [
+      1.0169691858810774,
+      1.0234639890312573
+    ],
+    "left_ns": 136.25993252964773,
+    "right_ns": 139.45713409192325
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0182719293196292,
+    "ratio_range": [
+      1.0163803934879507,
+      1.0242442906647988
+    ],
+    "left_ns": 5541.73592641844,
+    "right_ns": 5659.667418772563
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.1086915492205391,
+    "ratio_range": [
+      1.0919357605896625,
+      1.1098967829136288
+    ],
+    "left_ns": 132.70843596059115,
+    "right_ns": 146.99001940263406
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0051818287226153,
+    "ratio_range": [
+      0.9888924498113457,
+      1.0229625066766908
+    ],
+    "left_ns": 18809.229166666668,
+    "right_ns": 18933.59375
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9911951394348926,
+    "ratio_range": [
+      0.7052321349749837,
+      0.99777128958622
+    ],
+    "left_ns": 3983.5368161577608,
+    "right_ns": 3959.4706487341773
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0073678677382782,
+    "ratio_range": [
+      1.0054473552447138,
+      1.0095078173664835
+    ],
+    "left_ns": 3152.4330267137098,
+    "right_ns": 3178.5680259146343
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 0.9951265864075343,
+    "ratio_range": [
+      0.9926418390772684,
+      1.0138607715580592
+    ],
+    "left_ns": 2539.060369318182,
+    "right_ns": 2531.233161407767
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0317115748969112,
+    "ratio_range": [
+      1.0245331264458442,
+      1.0390170503973692
+    ],
+    "left_ns": 7655.532317073171,
+    "right_ns": 7895.096748737374
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.039799706466373,
+    "ratio_range": [
+      1.03569822024325,
+      1.0472304776082164
+    ],
+    "left_ns": 2791.1551339285716,
+    "right_ns": 2897.272858796296
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 1.0298003474307227,
+    "ratio_range": [
+      1.0218783736594286,
+      1.0391332038873706
+    ],
+    "left_ns": 3317.7470806794054,
+    "right_ns": 3395.9604121475054
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0036453313391203,
+    "ratio_range": [
+      0.9969020250398053,
+      1.0090918041323176
+    ],
+    "left_ns": 2781.7342081850534,
+    "right_ns": 2796.3625335420393
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9961634089049676,
+    "ratio_range": [
+      0.9917461977090344,
+      0.9992481261539998
+    ],
+    "left_ns": 5092.067471590909,
+    "right_ns": 5079.122666396104
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0512359854521796,
+    "ratio_range": [
+      1.0392804022824895,
+      1.0550119648177727
+    ],
+    "left_ns": 25363.848286290322,
+    "right_ns": 26632.0625
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9979409883798969,
+    "ratio_range": [
+      0.9929068527879118,
+      1.0007879224011274
+    ],
+    "left_ns": 3290.4961842105263,
+    "right_ns": 3280.4337657232704
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0478272113509393,
+    "ratio_range": [
+      1.0409228662397936,
+      1.0507448374495594
+    ],
+    "left_ns": 126.85206861909401,
+    "right_ns": 132.84471444057132
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0651487985604349,
+    "ratio_range": [
+      1.0610591370227693,
+      1.0756194601469236
+    ],
+    "left_ns": 18932.432605421687,
+    "right_ns": 20177.93469551282
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 0.9984343674728055,
+    "ratio_range": [
+      0.9960262364023993,
+      1.0035744788369412
+    ],
+    "left_ns": 5509.123679577465,
+    "right_ns": 5505.593419894366
+  },
+  {
+    "case": "prose-4096",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4060,
+    "ratio": 1.0054129543026615,
+    "ratio_range": [
+      0.9918008197769507,
+      1.013014880765456
+    ],
+    "left_ns": 1916.9283471200981,
+    "right_ns": 1921.1455773955774
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.04908859090684,
+    "ratio_range": [
+      1.0401165134259298,
+      1.0566271749219163
+    ],
+    "left_ns": 30733.710784313724,
+    "right_ns": 32347.39030612245
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.0237160774029521,
+    "ratio_range": [
+      1.0174446306187628,
+      1.027735324557411
+    ],
+    "left_ns": 3931.290593592965,
+    "right_ns": 4026.8550771208224
+  },
+  {
+    "case": "mixed-4096",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4032,
+    "ratio": 1.0073281491788106,
+    "ratio_range": [
+      1.0039986643212746,
+      1.0098139424458632
+    ],
+    "left_ns": 25210.748487903227,
+    "right_ns": 25404.27620967742
+  },
+  {
+    "case": "equals-caret-65536",
+    "kind": "equals-caret",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65491,
+    "ratio": 1.0816868572600333,
+    "ratio_range": [
+      1.080445916284675,
+      1.0883270022928606
+    ],
+    "left_ns": 49501.6279296875,
+    "right_ns": 53662.58645833333
+  },
+  {
+    "case": "equals-caret-4096",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 4029,
+    "ratio": 1.0916166870995356,
+    "ratio_range": [
+      1.0841848851782265,
+      1.0927701514788875
+    ],
+    "left_ns": 2890.7237176524955,
+    "right_ns": 3152.566910282258
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.0049785427829334,
+    "ratio_range": [
+      0.9956365981149043,
+      1.0112156189080046
+    ],
+    "left_ns": 479.0133832771306,
+    "right_ns": 482.3073398919753
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0650380836644215,
+    "ratio_range": [
+      1.0629019952064507,
+      1.0772373921198324
+    ],
+    "left_ns": 1418.35985707804,
+    "right_ns": 1511.237699468085
+  },
+  {
+    "case": "docs_front-matter.md",
+    "kind": "document",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 5233,
+    "ratio": 1.0268720772907134,
+    "ratio_range": [
+      1.0141418931413773,
+      1.0422328435285442
+    ],
+    "left_ns": 4027.2430734536083,
+    "right_ns": 4137.590277777777
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.000738808526248,
+    "ratio_range": [
+      0.9947797157866403,
+      1.0064346010675065
+    ],
+    "left_ns": 3606.3508064516127,
+    "right_ns": 3609.808025404157
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0460843228734318,
+    "ratio_range": [
+      1.040001361333371,
+      1.0534103706520757
+    ],
+    "left_ns": 416280.9296875,
+    "right_ns": 435867.8359375
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "fresh",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0109308537517117,
+    "ratio_range": [
+      1.0011305474135856,
+      1.0186322473078298
+    ],
+    "left_ns": 412764.328125,
+    "right_ns": 418165.6953125
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.008777641450323,
+    "ratio_range": [
+      1.0064158618807726,
+      1.0128035296797557
+    ],
+    "left_ns": 410544.59375,
+    "right_ns": 415473.6328125
+  },
+  {
+    "case": "mixed-300",
+    "kind": "mixed",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 288,
+    "ratio": 1.0529153959302675,
+    "ratio_range": [
+      1.0480911859308266,
+      1.061980701516616
+    ],
+    "left_ns": 1890.3809325876662,
+    "right_ns": 1991.0662022292993
+  },
+  {
+    "case": "prose-300",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 280,
+    "ratio": 1.041687021036108,
+    "ratio_range": [
+      1.0383386517177748,
+      1.0448319742509322
+    ],
+    "left_ns": 139.25236442830408,
+    "right_ns": 145.20400926958462
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "fresh",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.025484059373974,
+    "ratio_range": [
+      1.0073914654844223,
+      1.0307280472938452
+    ],
+    "left_ns": 10309.004934210527,
+    "right_ns": 10569.520692567568
+  },
+  {
+    "case": "CONTRIBUTING.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2874,
+    "ratio": 0.9919984582809801,
+    "ratio_range": [
+      0.9763864628834644,
+      0.9988850178223901
+    ],
+    "left_ns": 2980.9002976190477,
+    "right_ns": 2958.471172022684
+  },
+  {
+    "case": "mixed-65536",
+    "kind": "mixed",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65472,
+    "ratio": 1.0085092203900083,
+    "ratio_range": [
+      1.0032187566410624,
+      1.0168820787999682
+    ],
+    "left_ns": 303713.3229166667,
+    "right_ns": 306133.6822916667
+  },
+  {
+    "case": "UPSTREAM.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 2214,
+    "ratio": 1.041976181566626,
+    "ratio_range": [
+      1.037171041098943,
+      1.0503684642805535
+    ],
+    "left_ns": 3577.6006149885584,
+    "right_ns": 3727.7746279761905
+  },
+  {
+    "case": "equals-caret-300",
+    "kind": "equals-caret",
+    "stage": "reuse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 237,
+    "ratio": 1.0330194780263204,
+    "ratio_range": [
+      1.0300293341898212,
+      1.0363780763589316
+    ],
+    "left_ns": 186.6637797156851,
+    "right_ns": 192.85522479017527
+  },
+  {
+    "case": "prose-65536",
+    "kind": "prose",
+    "stage": "parse",
+    "comparison": "baseline",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 65520,
+    "ratio": 1.0021346082114337,
+    "ratio_range": [
+      0.988353191359413,
+      1.0064134558480384
+    ],
+    "left_ns": 30953.023284313724,
+    "right_ns": 30775.071691176472
+  },
+  {
+    "case": "docs_table-layout.md",
+    "kind": "document",
+    "stage": "reuse",
+    "comparison": "both",
+    "same_output": true,
+    "same_ast": true,
+    "bytes": 7701,
+    "ratio": 1.0273889239619791,
+    "ratio_range": [
+      1.0182555510508706,
+      1.0382576283033045
+    ],
+    "left_ns": 9804.0365234375,
+    "right_ns": 10083.845766129032
+  }
+]
