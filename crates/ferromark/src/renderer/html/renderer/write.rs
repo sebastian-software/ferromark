@@ -39,10 +39,21 @@ impl HtmlRenderer {
         write_attribute_escaped_into(&mut self.output, s);
     }
 
+    /// Emits the optional `data-source-span` attribute.
+    ///
+    /// Every block visitor calls this, and the option is off by default, so
+    /// the gate stays inline while the formatting body is kept out of line:
+    /// the common case is one field load and a branch, not a call.
+    #[inline]
     pub(in crate::renderer::html::renderer) fn write_source_span_attr(&mut self, span: Span) {
         if !self.options.source_spans || span.start == span.end {
             return;
         }
+        self.write_source_span_attr_value(span);
+    }
+
+    #[inline(never)]
+    fn write_source_span_attr_value(&mut self, span: Span) {
         self.write(" data-source-span=\"");
         self.write_display(span.start);
         self.write("-");
