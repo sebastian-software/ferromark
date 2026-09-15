@@ -44,6 +44,34 @@ Node defaults escape raw HTML and filter link/image URL schemes. Set
 `renderPolicy: 'trusted'` only for trusted Markdown. Custom highlighter output
 is inserted verbatim and must escape every untrusted value.
 
+## Optional writing syntax
+
+```js
+const html = toHtml('This is ==important==^[An explanatory *note*.].', {
+  highlight: true,
+  inlineFootnotes: true,
+})
+```
+
+Both options default to `false` and also work with a reusable `Renderer`.
+Inline notes do not require reference footnotes to be enabled. `highlight`
+controls marked text, independently of code syntax highlighting.
+
+`allowLinkRefs` defaults to `true`. Set it to `false` to leave reference links,
+image references, and their definitions visible as ordinary Markdown. Inline
+links and images continue to work.
+
+Rust exposes these switches through `ParserOptions::highlight`,
+`ParserOptions::inline_footnotes`, and `ParserOptions::allow_link_refs`.
+See the [syntax and Rust example](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/optional-writing.md).
+
+Keep extensions disabled when their syntax is not needed. Measurements found
+no material disabled-option slowdown on representative documents, but enabling
+unused syntax costs several percent and more on marker-heavy inputs. Reference
+link savings depend on the profile; documents containing references also change
+output. The [performance report](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/reports/2026-09-15-optional-writing/README.md)
+includes repeated measurements and limitations.
+
 ## Migrating from v1
 
 The Rust AST API replaces v1's one-shot and streaming APIs. Node keeps its
@@ -55,7 +83,3 @@ apply to code blocks, including indented code.
 
 Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/codex/v2/docs/migration-v2.md)
 before adopting the development package.
-
-`highlight` (`==text==`) and `inlineFootnotes` (`^[note]`) are opt-in writing
-extensions. `allowLinkRefs: false` disables reference links and preserves their
-definitions as visible Markdown. Inline links continue to work.
