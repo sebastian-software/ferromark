@@ -8,6 +8,7 @@ use std::fmt::{Display, Write as _};
 
 use crate::ast::{Heading, Node, Span};
 use compact_str::CompactString;
+use smallvec::SmallVec;
 
 use super::super::autolink::find_autolink_match;
 use super::super::escape::{
@@ -89,7 +90,17 @@ impl HtmlRenderer {
         }
         // Borrow the relevant fields disjointly so the URL scan (which only
         // reads `options`/`autolink_index`) and the output writes can coexist.
-        let patterns = self.options.autolink_patterns();
+        // The pattern list is a slice of `Cow<str>`. Resolving each entry to
+        // a plain `&str` here, once per text node that can hold a match, keeps
+        // the per-candidate prefix loop in `find_autolink_match` free of the
+        // `Cow` discriminant test; the common no-match path never gets here.
+        let patterns: SmallVec<[&str; 4]> = self
+            .options
+            .autolink_patterns()
+            .iter()
+            .map(AsRef::as_ref)
+            .collect();
+        let patterns: &[&str] = &patterns;
         let target_blank = self.options.autolink_target_blank;
         let out = &mut self.output;
         let mut cursor = 0usize;
