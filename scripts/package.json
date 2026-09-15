@@ -10,7 +10,9 @@
     "test": "node --test ./test-*.mjs"
   },
   "devDependencies": {
+    "@iarna/toml": "3.0.0",
     "oxfmt": "0.57.0",
+    "release-please": "17.6.0",
     "yaml": "2.9.0"
   },
   "engines": {

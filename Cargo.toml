@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/ferromark", "crates/ferromark_allocator", "crates/ferromark_ast", "crates/ferromark_parser", "crates/ferromark_renderer", "node/native"]
 
 [workspace.package]
-version = "2.0.0-dev.0"
+version = "2.0.0-dev.0" # x-release-please-version
 authors = ["ubugeeei", "Sebastian Software GmbH"]
 categories = ["text-processing", "parser-implementations"]
 edition = "2024"
@@ -71,11 +71,11 @@ range_plus_one = "allow"
 use_self = "allow"
 
 [workspace.dependencies]
-ferromark = { path = "crates/ferromark", version = "=2.0.0-dev.0" }
-ferromark_allocator = { path = "crates/ferromark_allocator", version = "=2.0.0-dev.0" }
-ferromark_ast = { path = "crates/ferromark_ast", version = "=2.0.0-dev.0" }
-ferromark_parser = { path = "crates/ferromark_parser", version = "=2.0.0-dev.0" }
-ferromark_renderer = { path = "crates/ferromark_renderer", version = "=2.0.0-dev.0" }
+ferromark = { path = "crates/ferromark", version = "=2.0.0-dev.0" } # x-release-please-version
+ferromark_allocator = { path = "crates/ferromark_allocator", version = "=2.0.0-dev.0" } # x-release-please-version
+ferromark_ast = { path = "crates/ferromark_ast", version = "=2.0.0-dev.0" } # x-release-please-version
+ferromark_parser = { path = "crates/ferromark_parser", version = "=2.0.0-dev.0" } # x-release-please-version
+ferromark_renderer = { path = "crates/ferromark_renderer", version = "=2.0.0-dev.0" } # x-release-please-version
 bumpalo = "3.16"
 compact_str = "0.10.0"
 smallvec = "1.15"
