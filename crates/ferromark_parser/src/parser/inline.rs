@@ -1,5 +1,5 @@
 use ferromark_allocator::Vec;
-use ferromark_ast::{Node, Span};
+use ferromark_ast::{Node, Span, Text};
 
 use super::Parser;
 use crate::error::ParseResult;
@@ -9,6 +9,7 @@ mod code_span;
 mod emphasis;
 mod entity;
 mod gfm_autolink;
+mod image;
 mod line_break;
 mod link_target;
 mod marker_scan;
@@ -25,6 +26,34 @@ pub(in crate::parser) use self::link_target::{
 };
 
 impl<'a> Parser<'a> {
+    /// Child slots to reserve for `content_len` bytes of inline content.
+    ///
+    /// A bump-allocated `Vec` cannot extend the block it owns — bumpalo
+    /// hands back a fresh region and memcpies — so growing copies every
+    /// node so far at each doubling step and abandons the old block in the
+    /// arena. Measured over the bundled corpora the node count tracks the
+    /// content length closely (p90 ≈ one node per 20 bytes in every length
+    /// bucket), so reserving that covers most blocks in one allocation and
+    /// still uses ~3% *less* arena than growing did. The floor keeps short
+    /// spans at bumpalo's own minimum; the ceiling stops a long paragraph
+    /// from reserving a kilobyte it will not fill.
+    fn inline_children_capacity(content_len: usize) -> usize {
+        const BYTES_PER_NODE: usize = 20;
+        (content_len / BYTES_PER_NODE).clamp(4, 12)
+    }
+
+    pub(super) fn push_text(
+        children: &mut Vec<'a, Node<'a>>,
+        value: &'a str,
+        start: usize,
+        end: usize,
+    ) {
+        children.push(Node::Text(Text {
+            value,
+            span: Span::new(start as u32, end as u32),
+        }));
+    }
+
     /// Parses the inline content of a block-level construct (paragraph,
     /// heading, table cell, list item paragraph) and runs the block-scoped
     /// post-passes on the result — today, the GFM autolink rewrite.

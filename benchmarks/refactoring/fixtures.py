@@ -19,6 +19,9 @@ def corpus():
         'container-references': '- [target]: /url "title"\n\n[target] and ![image][target].\n\n',
         'fenced-decoys': '```ts\ninterface Map<T> {\n  [key: string]: T;\n}\n```\n\nParagraph [ordinary](/url).\n\n',
         'footnote-labels': 'Use[^note].\n\n[^note]: A **note**.\n\n',
+        'image-alt': '![plain](/image.png) ![**bold** and `code` &amp; [link](/url)](/image.png "title") ![missing][unknown] !literal\n\n',
+        'balanced-brackets': '[outer [inner] `]` <https://example.com/a]b>](target.md) ![a [b] c](/image.png) Text ^[note with `]` and [link](/url)].\n\n',
+        'unclosed-delimiters': ('![open [link {expression ' * 16) + '\n\n',
         'links': '[same](doc.md "title") **[web](https://example.com/path?q=1&x=2)** [unsafe](javascript:bad) ![image](image.md)\n\n',
     }
     cases = []
