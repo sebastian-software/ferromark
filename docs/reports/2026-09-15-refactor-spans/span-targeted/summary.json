@@ -1,0 +1,330 @@
+[
+  {
+    "case": "nested-spans",
+    "stage": "fresh",
+    "members": [
+      "nested-spans"
+    ],
+    "ratio": 0.9964737725543421,
+    "round_ratios": [
+      0.9947102561428082,
+      0.9964737725543421,
+      1.0022922647074464
+    ],
+    "before_ns": 62376.611607142855,
+    "after_ns": 62114.21130952381
+  },
+  {
+    "case": "nested-spans",
+    "stage": "reuse",
+    "members": [
+      "nested-spans"
+    ],
+    "ratio": 1.0010417483551437,
+    "round_ratios": [
+      1.0010417483551437,
+      0.9993701805225634,
+      1.0045891049392168
+    ],
+    "before_ns": 60589.53422619047,
+    "after_ns": 60652.65327380953
+  },
+  {
+    "case": "jsx-spans",
+    "stage": "fresh",
+    "members": [
+      "jsx-spans"
+    ],
+    "ratio": 1.0062128956791225,
+    "round_ratios": [
+      0.9958257561888837,
+      1.0062128956791225,
+      1.0164805291187406
+    ],
+    "before_ns": 106342.9921875,
+    "after_ns": 107001.41145833333
+  },
+  {
+    "case": "jsx-spans",
+    "stage": "reuse",
+    "members": [
+      "jsx-spans"
+    ],
+    "ratio": 1.0063791060419918,
+    "round_ratios": [
+      1.0127747767709632,
+      1.0032432156072986,
+      1.0063791060419918
+    ],
+    "before_ns": 104259.31490384616,
+    "after_ns": 104714.734375
+  },
+  {
+    "case": "table-spans",
+    "stage": "fresh",
+    "members": [
+      "table-spans"
+    ],
+    "ratio": 0.9936632020730718,
+    "round_ratios": [
+      1.0084325233101414,
+      0.9936632020730718,
+      0.9805023414218818
+    ],
+    "before_ns": 97115.58653846153,
+    "after_ns": 96441.87276785714
+  },
+  {
+    "case": "table-spans",
+    "stage": "reuse",
+    "members": [
+      "table-spans"
+    ],
+    "ratio": 0.9943136152938588,
+    "round_ratios": [
+      1.0150063607161073,
+      0.9943136152938588,
+      0.9930421676501184
+    ],
+    "before_ns": 95389.87946428571,
+    "after_ns": 95203.125
+  },
+  {
+    "case": "normalized-spans",
+    "stage": "fresh",
+    "members": [
+      "normalized-spans"
+    ],
+    "ratio": 1.0002997293595977,
+    "round_ratios": [
+      0.9998884221339233,
+      1.0002997293595977,
+      1.0059094638110357
+    ],
+    "before_ns": 37937.5,
+    "after_ns": 37917.43198529412
+  },
+  {
+    "case": "normalized-spans",
+    "stage": "reuse",
+    "members": [
+      "normalized-spans"
+    ],
+    "ratio": 1.000925151857299,
+    "round_ratios": [
+      1.0064122554254427,
+      1.000925151857299,
+      0.9982540665793375
+    ],
+    "before_ns": 36608.22142857143,
+    "after_ns": 36660.416964285716
+  },
+  {
+    "case": "root-references",
+    "stage": "fresh",
+    "members": [
+      "root-references"
+    ],
+    "ratio": 0.9994402934660575,
+    "round_ratios": [
+      0.9990782013376196,
+      1.002053886201059,
+      0.9994402934660575
+    ],
+    "before_ns": 50105.88625,
+    "after_ns": 50056.92625
+  },
+  {
+    "case": "root-references",
+    "stage": "reuse",
+    "members": [
+      "root-references"
+    ],
+    "ratio": 1.0039292468088132,
+    "round_ratios": [
+      1.0039292468088132,
+      1.003934444561658,
+      1.002159343352547
+    ],
+    "before_ns": 49451.171875,
+    "after_ns": 49722.30649038462
+  },
+  {
+    "case": "container-references",
+    "stage": "fresh",
+    "members": [
+      "container-references"
+    ],
+    "ratio": 0.9996924323468771,
+    "round_ratios": [
+      1.0017140592553622,
+      0.9996924323468771,
+      0.9983107634397959
+    ],
+    "before_ns": 62508.86607142857,
+    "after_ns": 62408.42113095238
+  },
+  {
+    "case": "container-references",
+    "stage": "reuse",
+    "members": [
+      "container-references"
+    ],
+    "ratio": 0.9996249118909585,
+    "round_ratios": [
+      1.0107511224365975,
+      0.9960564465138331,
+      0.9996249118909585
+    ],
+    "before_ns": 61568.513392857145,
+    "after_ns": 61672.06101190476
+  },
+  {
+    "case": "fenced-decoys",
+    "stage": "fresh",
+    "members": [
+      "fenced-decoys"
+    ],
+    "ratio": 0.998312211413078,
+    "round_ratios": [
+      0.999291243169966,
+      0.998312211413078,
+      0.997174414303221
+    ],
+    "before_ns": 23771.963443396227,
+    "after_ns": 23682.24233490566
+  },
+  {
+    "case": "fenced-decoys",
+    "stage": "reuse",
+    "members": [
+      "fenced-decoys"
+    ],
+    "ratio": 0.9999537589360855,
+    "round_ratios": [
+      0.9999537589360855,
+      1.0011715426684624,
+      0.9906258297352273
+    ],
+    "before_ns": 23380.81134259259,
+    "after_ns": 23322.072916666668
+  },
+  {
+    "case": "links",
+    "stage": "fresh",
+    "members": [
+      "links"
+    ],
+    "ratio": 1.0033112525963457,
+    "round_ratios": [
+      0.9970674704552557,
+      1.0077718532775783,
+      1.0033112525963457
+    ],
+    "before_ns": 30353.29910714286,
+    "after_ns": 30453.806547619046
+  },
+  {
+    "case": "links",
+    "stage": "reuse",
+    "members": [
+      "links"
+    ],
+    "ratio": 0.9974010483287491,
+    "round_ratios": [
+      0.9949742752593109,
+      0.9974010483287491,
+      1.0023264823618119
+    ],
+    "before_ns": 29716.29723837209,
+    "after_ns": 29680.02034883721
+  },
+  {
+    "case": "rotating-extended",
+    "stage": "fresh",
+    "members": [
+      "nested-spans",
+      "jsx-spans",
+      "table-spans",
+      "normalized-spans",
+      "root-references",
+      "container-references",
+      "fenced-decoys",
+      "links"
+    ],
+    "ratio": 0.9927482603052251,
+    "round_ratios": [
+      0.9902446571603613,
+      0.9927482603052251,
+      0.9976293749352385
+    ],
+    "before_ns": 479439.6666666667,
+    "after_ns": 476142.3645833333
+  },
+  {
+    "case": "rotating-extended",
+    "stage": "reuse",
+    "members": [
+      "nested-spans",
+      "jsx-spans",
+      "table-spans",
+      "normalized-spans",
+      "root-references",
+      "container-references",
+      "fenced-decoys",
+      "links"
+    ],
+    "ratio": 0.9996167575735311,
+    "round_ratios": [
+      1.0029214848505612,
+      0.9933393027808678,
+      0.9996167575735311
+    ],
+    "before_ns": 467911.0208333333,
+    "after_ns": 468798.1770833333
+  },
+  {
+    "case": "complete-suite",
+    "stage": "fresh",
+    "ratio": 0.9931225922413595,
+    "rounds": [
+      {
+        "before_ns": 479439.6666666667,
+        "after_ns": 476142.3645833333,
+        "ratio": 0.9931225922413595
+      },
+      {
+        "before_ns": 480368.9270833333,
+        "after_ns": 476885.4166666667,
+        "ratio": 0.9927482603052251
+      },
+      {
+        "before_ns": 477508.25,
+        "after_ns": 476125.0,
+        "ratio": 0.997103191410829
+      }
+    ]
+  },
+  {
+    "case": "complete-suite",
+    "stage": "reuse",
+    "ratio": 1.0018959934912839,
+    "rounds": [
+      {
+        "before_ns": 466166.2395833333,
+        "after_ns": 469044.2708333333,
+        "ratio": 1.0061738302897534
+      },
+      {
+        "before_ns": 469799.0416666667,
+        "after_ns": 467340.7083333333,
+        "ratio": 0.9947672661812759
+      },
+      {
+        "before_ns": 467911.0208333333,
+        "after_ns": 468798.1770833333,
+        "ratio": 1.0018959934912839
+      }
+    ]
+  }
+]

@@ -29,3 +29,7 @@ ratio sums the two profile batch times (one visit to each of the 57 documents).
 It is not an unweighted average of document percentages. Raw timing windows,
 per-round medians, and their ranges remain available; these are descriptive
 workstation measurements, not confidence intervals or cross-machine guarantees.
+
+Authored diagnostic corpora may supply a `profiles` object with explicit parser
+and renderer option dictionaries. These cannot replace the standard CommonMark
+or GFM profiles; empty profiles are not timed.

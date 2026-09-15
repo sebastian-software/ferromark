@@ -48,14 +48,23 @@ def main():
         config.write_text(json.dumps({'parser': {k: profile == 'gfm' for k in
             ('gfm', 'tables', 'task_lists', 'strikethrough')}, 'renderer': {}}))
         configs[profile] = str(config)
+    for profile, options in corpus.get('profiles', {}).items():
+        assert profile not in configs, ('cannot replace standard profile', profile)
+        assert profile.replace('-', '').isalnum(), ('invalid profile name', profile)
+        config = out / f'{profile}.json'
+        config.write_text(json.dumps(options))
+        configs[profile] = str(config)
     for c in cases:
+        assert c['profile'] in configs
         path = inputs / (c['name'] + '.md')
         path.write_bytes(c['input'].encode())
         assert paired.digest(path) == c['sha256']
         assert path.stat().st_size == c['byte_count']
     jobs = [(c['name'], c['profile'], [c['name']]) for c in cases]
     for profile in configs:
-        jobs.append(('rotating-' + profile, profile, [c['name'] for c in cases if c['profile'] == profile]))
+        members = [c['name'] for c in cases if c['profile'] == profile]
+        if members:
+            jobs.append(('rotating-' + profile, profile, members))
     rows, verified = [], {}
     for round_index in range(args.rounds):
         shuffled = [(job, stage) for job in jobs for stage in ('fresh', 'reuse')]

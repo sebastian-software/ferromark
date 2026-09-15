@@ -49,149 +49,30 @@ pub(super) fn normalize_indentation<'a>(
     }
 }
 
-pub(super) fn remap_node_spans<'a>(node: &mut Node<'a>, source_offset: u32, offsets: &[u32]) {
-    match node {
-        Node::Paragraph(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::Heading(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::ThematicBreak(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::BlockQuote(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::List(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for item in &mut node.children {
-                remap_list_item_spans(item, source_offset, offsets);
-            }
-        }
-        Node::ListItem(node) => remap_list_item_spans(node, source_offset, offsets),
-        Node::CodeBlock(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::MathBlock(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::Html(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::Table(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            if let Some(attributes) = &mut node.attributes {
-                for child in &mut attributes.caption {
-                    remap_node_spans(child, source_offset, offsets);
-                }
-            }
-            for row in &mut node.children {
-                remap_span(&mut row.span, source_offset, offsets);
-                for cell in &mut row.children {
-                    remap_span(&mut cell.span, source_offset, offsets);
-                    for child in &mut cell.children {
-                        remap_node_spans(child, source_offset, offsets);
-                    }
-                }
-            }
-        }
-        Node::DefinitionList(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::DefinitionListTerm(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::DefinitionListDefinition(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::Text(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::Emphasis(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::Strong(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::InlineCode(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::InlineMath(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::Break(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::Link(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::Image(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::Highlight(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::Delete(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::Superscript(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::Subscript(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::FootnoteReference(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::Definition(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::FootnoteDefinition(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::MdxJsxFlowElement(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for attribute in &mut node.attributes {
-                remap_mdx_attribute_entry(attribute, source_offset, offsets);
-            }
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::MdxJsxTextElement(node) => {
-            remap_span(&mut node.span, source_offset, offsets);
-            for attribute in &mut node.attributes {
-                remap_mdx_attribute_entry(attribute, source_offset, offsets);
-            }
-            for child in &mut node.children {
-                remap_node_spans(child, source_offset, offsets);
-            }
-        }
-        Node::MdxjsEsm(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::MdxFlowExpression(node) => remap_span(&mut node.span, source_offset, offsets),
-        Node::MdxTextExpression(node) => remap_span(&mut node.span, source_offset, offsets),
+/// JSX normalization maps generated byte boundaries back to its original
+/// child source. The shared traversal owns all AST node and attribute shapes.
+struct JsxSourceMap<'s> {
+    source_offset: u32,
+    offsets: &'s [u32],
+}
+
+impl super::super::spans::SpanMap for JsxSourceMap<'_> {
+    fn map_span(&self, span: Span) -> Span {
+        Span::new(
+            self.source_offset + boundary_offset(span.start as usize, self.offsets),
+            self.source_offset + boundary_offset(span.end as usize, self.offsets),
+        )
     }
+}
+
+pub(super) fn remap_node_spans(node: &mut Node<'_>, source_offset: u32, offsets: &[u32]) {
+    super::super::Parser::remap_node_spans(
+        node,
+        &JsxSourceMap {
+            source_offset,
+            offsets,
+        },
+    );
 }
 
 fn common_line_indent(source: &str) -> usize {
@@ -285,45 +166,9 @@ fn push_mapped_slice(
     }
 }
 
-fn remap_span(span: &mut Span, source_offset: u32, offsets: &[u32]) {
-    span.start = source_offset + boundary_offset(span.start as usize, offsets);
-    span.end = source_offset + boundary_offset(span.end as usize, offsets);
-}
-
 fn boundary_offset(index: usize, offsets: &[u32]) -> u32 {
     offsets
         .get(index)
         .copied()
         .unwrap_or_else(|| offsets.last().copied().unwrap_or_default())
-}
-
-fn remap_list_item_spans<'a>(
-    list_item: &mut ferromark_ast::ListItem<'a>,
-    source_offset: u32,
-    offsets: &[u32],
-) {
-    remap_span(&mut list_item.span, source_offset, offsets);
-    for child in &mut list_item.children {
-        remap_node_spans(child, source_offset, offsets);
-    }
-}
-
-fn remap_mdx_attribute_entry(
-    entry: &mut ferromark_ast::MdxJsxAttributeEntry<'_>,
-    source_offset: u32,
-    offsets: &[u32],
-) {
-    match entry {
-        ferromark_ast::MdxJsxAttributeEntry::Attribute(attribute) => {
-            remap_span(&mut attribute.span, source_offset, offsets);
-            if let Some(ferromark_ast::MdxJsxAttributeValue::Expression(expr)) =
-                &mut attribute.value
-            {
-                remap_span(&mut expr.span, source_offset, offsets);
-            }
-        }
-        ferromark_ast::MdxJsxAttributeEntry::Expression(expr) => {
-            remap_span(&mut expr.span, source_offset, offsets);
-        }
-    }
 }
