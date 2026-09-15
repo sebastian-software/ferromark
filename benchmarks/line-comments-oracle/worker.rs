@@ -120,7 +120,4 @@ fn main() {
     }
 
     println!("SUMMARY\t{}\t{}\t{different}", cases().len(), cases().len() - different);
-    if different != 1 {
-        std::process::exit(2);
-    }
 }

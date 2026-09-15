@@ -16,19 +16,20 @@ the test inputs and profiles.
   renderer has heading IDs, the tag filter, and its extra URL scanner disabled
   to match v1's trusted HTML profile.
 
-The list-item reference-definition mismatch is deliberately pinned as an
-existing limitation. With the current sources the comment-enabled run is
-`39/40` matching, with `list-definition-title` as the one known difference.
-The same list-reference case also differs when comments are disabled and the
-comment line is physically removed, proving it is outside the line-comment
-feature.
+The archived `results.json` records the original list-item definition limitation
+(39/40 exact matches, one semantic mismatch). It remains unchanged as historical
+evidence. The corrected parser resolves the list definition globally. The
+current runner requires all 40 cases and both baseline probes to agree under the
+existing conservative HTML comparator; it preserves exact-output differences.
+Only insignificant serialization differences are admitted, not heading IDs or
+changed link targets. See the [correction report](../../docs/reports/2026-09-15-container-references/README.md).
 
 Run from the repository root:
 
 ```sh
 python3 benchmarks/line-comments-oracle/run.py \
   --v1-source /private/tmp/ferromark-v2-native-comparison/build-01/sources/ferromark_v1 \
-  --output benchmarks/line-comments-oracle/results.json
+  --output /tmp/ferromark-line-comments-current.json
 ```
 
 The runner creates an ephemeral Cargo project with path dependencies, uses the

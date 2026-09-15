@@ -81,6 +81,9 @@ pub struct Parser<'a> {
     /// whether a definition exists before reaching it.
     footnote_labels: Option<std::rc::Rc<footnote::FootnoteLabels>>,
 
+    /// A temporary block-only pass for collecting container definitions.
+    collecting_references: bool,
+
     /// Shared by container sub-parsers. Allocated in the existing arena only
     /// when inline notes are enabled; avoids a source scan or AST walk when
     /// no inline note was parsed. Speculative parses may set it harmlessly.
@@ -173,6 +176,7 @@ impl<'a> Parser<'a> {
             position: 0,
             nesting_depth: 0,
             definitions: None,
+            collecting_references: false,
             footnote_labels: None,
             lazy_lines: None,
             comment_lines: None,
@@ -222,6 +226,7 @@ impl<'a> Parser<'a> {
             position: 0,
             nesting_depth: self.nesting_depth + 1,
             definitions: self.definitions.clone(),
+            collecting_references: self.collecting_references,
             footnote_labels: self.footnote_labels.clone(),
             inline_note_seen: self.inline_note_seen,
             // Most sub-sources are entered without any lazy continuation

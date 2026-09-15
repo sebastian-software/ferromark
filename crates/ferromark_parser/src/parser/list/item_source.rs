@@ -77,6 +77,12 @@ impl<'a> Parser<'a> {
             return true;
         };
 
+        // Definitions must reach block parsing even in a one-line item.
+        // Ordinary link labels retain the direct inline path.
+        if first == b'[' && content.contains("]:") {
+            return false;
+        }
+
         // These are the same leading-byte families that `parse_block` may
         // treat as block syntax in a freshly spawned sub-parser. Keep those
         // on the old path so `- # heading`, nested lists, fenced code, raw
