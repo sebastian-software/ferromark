@@ -176,9 +176,27 @@ expose elements in sequence. The three MDX entries cover bounded syntax handling
 not a full MDX compiler or JavaScript runtime. Single-tilde strikethrough and
 subscript compete for the same syntax; enabling subscript gives it priority.
 
-Opt-in `highlight` and `inline_footnotes` add marked text and inline notes.
-`allow_link_refs: false` disables reference links while preserving definitions as
-visible Markdown. [Syntax, defaults, and performance evidence](docs/optional-writing.md).
+### Optional writing syntax
+
+| Behavior | Rust `ParserOptions` | Node option | Default |
+| --- | --- | --- | --- |
+| `==marked text==` renders as `<mark>` | `highlight` | `highlight` | `false` |
+| `^[inline note]` creates a footnote | `inline_footnotes` | `inlineFootnotes` | `false` |
+| Resolve full, collapsed, and shortcut reference links/images | `allow_link_refs` | `allowLinkRefs` | `true` |
+
+Inline notes accept inline formatting and work independently of reference
+footnotes. Disabling reference links preserves definitions as visible Markdown;
+inline links and images continue to work. Marked text is separate from code
+syntax highlighting. [Rust and Node examples, syntax, and defaults](docs/optional-writing.md).
+
+The writing extensions remain off by default. Paired measurements found no
+material slowdown on representative documents with them disabled. Enabling them
+on documents without matching syntax still costs several percent, and literal
+marker-heavy inputs cost more. Disabling reference links can skip parsing work,
+but its benefit depends on the parser profile and changes the output of actual
+references. See the [measured costs and limitations](docs/reports/2026-09-15-optional-writing/README.md).
+
+### Other extension policies
 
 V2 preserves authored punctuation. Automatic typography belongs in an optional,
 locale-aware document transform; the former English-oriented parser option has
@@ -221,7 +239,7 @@ and one leading BOM is treated as an encoding marker with original spans preserv
 | CRLF / CR variants | 1,304/1,304 agree with their LF controls |
 | Original cmark / cmark-gfm corpus | 106/106 agree |
 | Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | 788 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, and definition-list scan regressions |
+| Workspace regression tests | 807 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, definition-list scans, and optional writing syntax; [latest validation](docs/reports/2026-09-15-optional-writing/README.md#validation) |
 
 Agreement permits conservative HTML serialization equivalence; raw output and
 all mismatches remain in the report. The two reference exceptions have exact

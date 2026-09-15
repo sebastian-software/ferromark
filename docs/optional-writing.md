@@ -5,6 +5,26 @@
 Node exposes the same switches as `highlight`, `inlineFootnotes`, and
 `allowLinkRefs` on all rendering entry points, including `Renderer` and hooks.
 
+## Configure the Rust parser
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, Parser, ParserOptions};
+
+let source = "This is ==important==^[An explanatory *note*.].";
+let allocator = Allocator::for_source_len(source.len());
+let options = ParserOptions {
+    highlight: true,
+    inline_footnotes: true,
+    ..ParserOptions::default()
+};
+let document = Parser::with_options(&allocator, source, options).parse()?;
+let html = HtmlRenderer::new().render(&document);
+```
+
+Use `..ParserOptions::gfm_spec()` to retain GFM parsing options instead. Set
+`allow_link_refs: false` separately when reference syntax should remain visible.
+The source and allocator must outlive the parsed document.
+
 ## Marked text
 
 ```js
@@ -80,3 +100,16 @@ disabled, enabled-but-unused, and active syntax. The
 frozen pre-change core, the candidate with both extensions off, and candidate
 options on/off. It separates unused options from active syntax and records
 HTML equality, AST equality, source bytes, raw paired timings, and build identity.
+
+The retained implementation meets the disabled-option target on representative
+workloads. Enabled-but-unused options have a modest cost on ordinary documents
+and higher costs on literal marker decoys. Actual marks and notes also require
+additional AST and rendering work; an inline note triggers document-wide
+identifier collection and lowering. Keep extensions disabled when their syntax
+is not part of the application's Markdown dialect.
+
+Reference-link disabling was effectively neutral on ordinary text in the GFM
+run. The CommonMark profile showed modest savings when reference footnotes were
+also off and the whole definition prepass could be skipped. Reference-heavy
+inputs change output, so those larger savings are not equivalent-output wins.
+The report preserves row ranges and repeated measurements on one ARM64 host.

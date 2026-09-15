@@ -56,6 +56,34 @@ Both ESM `import` and CommonJS `require()` work on supported Node.js versions:
 const { toHtml } = require('ferromark')
 ```
 
+## Optional writing syntax
+
+```js
+import { toHtml } from 'ferromark'
+
+const html = toHtml('This is ==important==^[An explanatory *note*.].', {
+  highlight: true,
+  inlineFootnotes: true,
+})
+
+// Reference definitions stay visible; ordinary inline links still work.
+const literalReferences = toHtml('[name]\n\n[name]: /target', {
+  allowLinkRefs: false,
+})
+```
+
+`highlight` and `inlineFootnotes` default to `false`; `allowLinkRefs` defaults to
+`true`. The same options work with `Renderer`, buffer output, transforms, and
+highlighter helpers. Inline notes do not require `footnotes: true`. Their output
+uses v2's existing footnote markup. Marked text does not enable code highlighting.
+
+Keep writing extensions off when their syntax is not needed. Disabled-option
+measurements were close to the pre-feature core; enabling unused syntax still
+costs several percent on ordinary documents and more on marker-heavy inputs.
+Reference-link savings depend on the profile and input. See the
+[syntax contract](../../docs/optional-writing.md) and
+[measured costs](../../docs/reports/2026-09-15-optional-writing/README.md).
+
 ## Repeated rendering
 
 Create a `Renderer` when processing many documents with the same options. It
