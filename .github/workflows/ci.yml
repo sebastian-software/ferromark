@@ -26,6 +26,12 @@ jobs:
       # Git and omit only this historical input from Windows working trees.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         if: runner.os == 'Windows'
+        # Git validates even sparse-excluded paths. Permit this index entry
+        # only for checkout; sparse rules prevent writing the device name.
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: core.protectNTFS
+          GIT_CONFIG_VALUE_0: "false"
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
@@ -320,6 +326,12 @@ jobs:
       # Git and omit only this historical input from Windows working trees.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         if: runner.os == 'Windows'
+        # Git validates even sparse-excluded paths. Permit this index entry
+        # only for checkout; sparse rules prevent writing the device name.
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: core.protectNTFS
+          GIT_CONFIG_VALUE_0: "false"
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
