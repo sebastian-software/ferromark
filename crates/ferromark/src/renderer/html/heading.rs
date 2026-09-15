@@ -6,6 +6,9 @@
 
 use crate::ast::{Link, Node};
 
+#[cfg(test)]
+mod tests;
+
 /// Class name on the opt-in heading permalink control.
 ///
 /// Headings that already contain an `<a class="header-anchor">` or a `#`
@@ -84,6 +87,17 @@ pub fn slugify_heading(text: &str) -> String {
 /// here on every heading. That avoids allocating one temporary slug string per
 /// heading while still leaving ownership decisions, such as cloning the final
 /// unique id into a hash map, with the caller.
+///
+/// # Slug alphabet
+///
+/// Every character appended here is either `-` or passes `is_alphanumeric`
+/// (`is_ascii_alphanumeric` on the ASCII path, `is_alphanumeric` on the
+/// lowercased Unicode path), plus the literal `section` fallback. None of
+/// `&`, `<`, `>`, `"`, `'`, CR, or LF is alphanumeric, and a multi-byte UTF-8
+/// encoding never contains an ASCII byte, so a generated slug never holds a
+/// byte that HTML attribute escaping would replace. `write_prepared_heading_id`
+/// relies on this to write generated ids to the output without escaping them;
+/// `heading::tests` pins the guarantee.
 pub(super) fn slugify_heading_into(text: &str, out: &mut String) {
     // Single-pass slugify. The hot path is the all-ASCII byte loop: no UTF-8
     // decode and no `char::to_lowercase` iterator allocation per character.

@@ -87,6 +87,17 @@ pub struct HtmlRenderer {
     /// any `-N` suffix. Permalinks reuse this exact value instead of
     /// slugifying again.
     heading_id_scratch: String,
+    /// Whether the id in `heading_id_scratch` came from an explicit `{#id}`
+    /// heading attribute rather than from the slugifier.
+    ///
+    /// A generated slug is built only from lowercase alphanumerics, `-`
+    /// separators, the `section` fallback, and an optional `-N` suffix (see
+    /// `slugify_heading_into`), so it can never contain a byte that attribute
+    /// escaping would replace. Recording the provenance lets the `id` and the
+    /// permalink `href` push such an id into the output verbatim, while
+    /// author-supplied ids keep the escaping pass. Written by
+    /// `prepare_heading_id` before either consumer reads it.
+    heading_id_is_explicit: bool,
     /// 1-based code block index inside the current render. Code-line link
     /// metadata uses this only when a block has no filename/title to derive a
     /// human-readable fragment prefix from.
@@ -185,6 +196,7 @@ impl HtmlRenderer {
             heading_text_scratch: String::new(),
             heading_slug_scratch: String::new(),
             heading_id_scratch: String::new(),
+            heading_id_is_explicit: false,
             code_block_index: 0,
             in_link: false,
             in_mdx_island_children: false,

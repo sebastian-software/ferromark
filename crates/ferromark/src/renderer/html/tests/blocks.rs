@@ -50,6 +50,52 @@ fn test_render_heading_attributes_escape_explicit_attrs() {
 }
 
 #[test]
+fn test_explicit_heading_ids_keep_escaping_in_id_and_permalink_href() {
+    // Generated slugs bypass attribute escaping because their alphabet cannot
+    // produce an escapable byte. Author-supplied ids have no such guarantee, so
+    // both the `id` attribute and the permalink `href` must still escape them.
+    let allocator = Allocator::new();
+    let doc = Parser::with_options(
+        &allocator,
+        "## Custom {#a\"b&c<d>e'f}",
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
+    )
+    .parse()
+    .unwrap();
+    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
+        heading_permalinks: true,
+        ..Default::default()
+    });
+    let html = renderer.render(&doc);
+
+    let escaped = "a&quot;b&amp;c&lt;d&gt;e&#39;f";
+    assert!(html.contains(&format!("<h2 id=\"{escaped}\">")), "{html}");
+    assert!(html.contains(&format!("href=\"#{escaped}\"")), "{html}");
+    // The raw characters must not reach the output through either path.
+    assert!(!html.contains("a\"b"), "{html}");
+    assert!(!html.contains("c<d>e"), "{html}");
+}
+
+#[test]
+fn test_generated_heading_ids_are_emitted_verbatim() {
+    // Duplicate, Unicode, and fallback slugs all take the no-escape path; the
+    // emitted bytes must equal the slugifier's own output.
+    let html = render_with_permalinks(
+        "# Options & Defaults\n\n# Options & Defaults\n\n# はじめに\n\n# !!!\n",
+    );
+
+    assert!(html.contains("<h1 id=\"options-defaults\">"), "{html}");
+    assert!(html.contains("<h1 id=\"options-defaults-1\">"), "{html}");
+    assert!(html.contains("href=\"#options-defaults-1\""), "{html}");
+    assert!(html.contains("<h1 id=\"はじめに\">"), "{html}");
+    assert!(html.contains("href=\"#はじめに\""), "{html}");
+    assert!(html.contains("<h1 id=\"section\">"), "{html}");
+}
+
+#[test]
 fn test_render_crlf_fenced_code_like_lf() {
     let lf = render_html("```rust\nfn main() {}\n```\n");
     let crlf = render_html("```rust\r\nfn main() {}\r\n```\r\n");

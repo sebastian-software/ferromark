@@ -223,7 +223,22 @@ impl HtmlRenderer {
     /// attribute, including duplicate `-N` suffixes.
     pub(in crate::renderer::html::renderer) fn write_heading_id(&mut self, heading: &Heading<'_>) {
         self.prepare_heading_id(heading);
-        write_attribute_escaped_into(&mut self.output, &self.heading_id_scratch);
+        self.write_prepared_heading_id();
+    }
+
+    /// Emits the prepared id from `heading_id_scratch` into the output.
+    ///
+    /// Only an author-supplied `{#id}` can contain a byte that attribute
+    /// escaping replaces. A generated slug is lowercase alphanumerics, `-`,
+    /// and an optional `-N` suffix, so running the CR/LF `memchr2` pass and
+    /// the escape scanner over it can only ever copy it back unchanged — the
+    /// `heading_id_is_explicit` flag lets that whole pass be skipped.
+    fn write_prepared_heading_id(&mut self) {
+        if self.heading_id_is_explicit {
+            write_attribute_escaped_into(&mut self.output, &self.heading_id_scratch);
+        } else {
+            self.output.push_str(&self.heading_id_scratch);
+        }
     }
 
     pub(in crate::renderer::html::renderer) fn write_heading_permalink_if_needed(
@@ -239,7 +254,9 @@ impl HtmlRenderer {
         self.output.push_str("<a class=\"");
         self.output.push_str(HEADING_PERMALINK_CLASS);
         self.output.push_str("\" href=\"#");
-        write_attribute_escaped_into(&mut self.output, &self.heading_id_scratch);
+        // The `href` fragment is the same id the `id` attribute just emitted,
+        // so it takes the same verbatim/escaped decision.
+        self.write_prepared_heading_id();
         if self.heading_text_scratch.is_empty() {
             self.output
                 .push_str("\" aria-label=\"Permalink to this section\">#</a>");
@@ -255,6 +272,7 @@ impl HtmlRenderer {
         reserve_heading_scratch(&mut self.heading_text_scratch);
         collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
         if let Some(id) = heading.id {
+            self.heading_id_is_explicit = true;
             self.heading_id_scratch.clear();
             reserve_heading_scratch(&mut self.heading_id_scratch);
             self.heading_id_scratch.push_str(id);
@@ -265,6 +283,7 @@ impl HtmlRenderer {
             }
             return;
         }
+        self.heading_id_is_explicit = false;
         self.heading_slug_scratch.clear();
         reserve_heading_scratch(&mut self.heading_slug_scratch);
         slugify_heading_into(&self.heading_text_scratch, &mut self.heading_slug_scratch);
