@@ -372,3 +372,70 @@ jobs:
         run: pnpm test
       - name: Verify platform package
         run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.artifact }}
+      - name: Upload verified native binary
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: native-${{ matrix.artifact }}
+          path: node/ferromark/npm/${{ matrix.artifact }}/ferromark.${{ matrix.artifact }}.node
+          if-no-files-found: error
+          retention-days: 7
+
+  npm-packages:
+    name: Assemble all npm packages
+    needs: native
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: node/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: native-*
+          merge-multiple: true
+          path: node/ferromark/.napi-artifacts
+      - name: Assemble all platform packages
+        run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm
+      - run: node ./scripts/verify-release.mjs
+      - run: node ./scripts/verify-pack.mjs --all-targets
+      - run: pnpm smoke:clean
+      - name: Upload verified npm archives
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-package-rehearsal
+          path: node/artifacts/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  rust-packages:
+    name: Verify packaged Rust consumer
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+      - run: cargo fetch --locked
+      - run: python3 scripts/rehearse-rust-packages.py "$RUNNER_TEMP/rust-packages"
+      - name: Upload verified Rust archives
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: rust-package-rehearsal
+          path: |
+            ${{ runner.temp }}/rust-packages/target/package/*.crate
+            ${{ runner.temp }}/rust-packages/results.json
+          if-no-files-found: error
+          retention-days: 7
