@@ -156,12 +156,20 @@ fn reserve_heading_scratch(buffer: &mut String) {
 
 impl HtmlRenderer {
     /// Creates a new HTML renderer with default options.
+    ///
+    /// Equivalent to `with_options(HtmlRendererOptions::new())`: the documented
+    /// defaults borrow static data, so this constructor has one source of truth
+    /// and neither path allocates for the configuration itself.
     #[must_use]
     pub fn new() -> Self {
-        Self::with_renderer_options(RendererOptions::defaults())
+        Self::with_options(HtmlRendererOptions::new())
     }
 
     /// Creates a new HTML renderer with the specified options.
+    ///
+    /// The options are moved in, not cloned. Default and static values stay
+    /// borrowed all the way through, so a renderer built per document from a
+    /// default options value performs no configuration allocation.
     #[must_use]
     pub fn with_options(options: HtmlRendererOptions) -> Self {
         Self::with_renderer_options(options.into())

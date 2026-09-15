@@ -96,7 +96,7 @@ fn test_autolink_custom_pattern_registration() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         autolink_urls: true,
-        autolink_patterns: vec!["mailto:".to_string()],
+        autolink_patterns: vec!["mailto:".into()].into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -118,12 +118,13 @@ fn test_autolink_many_patterns_uses_table_fallback() {
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         autolink_urls: true,
         autolink_patterns: vec![
-            "http://".to_string(),
-            "ftp://".to_string(),
-            "mailto:".to_string(),
-            "tel:".to_string(),
-            "ssh://".to_string(),
-        ],
+            "http://".into(),
+            "ftp://".into(),
+            "mailto:".into(),
+            "tel:".into(),
+            "ssh://".into(),
+        ]
+        .into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -208,7 +209,7 @@ fn test_autolink_conflicting_second_bytes_disable_the_filter() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         autolink_urls: true,
-        autolink_patterns: vec!["http://".to_string(), "hxxp://".to_string()],
+        autolink_patterns: vec!["http://".into(), "hxxp://".into()].into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -227,7 +228,7 @@ fn test_autolink_single_byte_pattern_bypasses_the_filter() {
     let doc = Parser::new(&allocator, "go htail now").parse().unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         autolink_urls: true,
-        autolink_patterns: vec!["h".to_string()],
+        autolink_patterns: vec!["h".into()].into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -241,9 +242,8 @@ fn test_autolink_single_byte_pattern_bypasses_the_filter() {
 #[test]
 fn default_gate_requires_colon_slash_slash() {
     use super::super::autolink::FirstByteIndex;
-    use super::super::options::AutolinkPatterns;
 
-    let index = FirstByteIndex::from_patterns(AutolinkPatterns::Defaults(&["http://", "https://"]));
+    let index = FirstByteIndex::from_patterns(&["http://", "https://"]);
     assert!(!index.may_match(b"Note: Listing 3-2: foo"));
     assert!(!index.may_match(b"no colons here"));
     assert!(index.may_match(b"see http://example.com"));
@@ -272,23 +272,24 @@ fn autolink_index_survives_reuse_fragments_and_resets() {
             ..Default::default()
         },
         HtmlRendererOptions {
-            autolink_patterns: vec!["mailto:".to_string()],
+            autolink_patterns: vec!["mailto:".into()].into(),
             ..Default::default()
         },
         // An empty pattern list leaves the renderer without an index at all.
         HtmlRendererOptions {
-            autolink_patterns: Vec::new(),
+            autolink_patterns: Vec::new().into(),
             ..Default::default()
         },
         // Five distinct leading bytes fall back to the lookup table.
         HtmlRendererOptions {
             autolink_patterns: vec![
-                "http://".to_string(),
-                "ftp://".to_string(),
-                "mailto:".to_string(),
-                "tel:".to_string(),
-                "ssh://".to_string(),
-            ],
+                "http://".into(),
+                "ftp://".into(),
+                "mailto:".into(),
+                "tel:".into(),
+                "ssh://".into(),
+            ]
+            .into(),
             ..Default::default()
         },
     ];

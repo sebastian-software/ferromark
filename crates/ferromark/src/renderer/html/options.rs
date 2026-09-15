@@ -3,10 +3,38 @@
 //! Keeping options separate from the renderer implementation makes the public API easy
 //! to scan: this module owns only user-supplied configuration and lightweight enums.
 
+use std::borrow::Cow;
+
 /// HTML renderer options.
 ///
 /// Use [`HtmlRendererOptions::new`] or [`Default::default`] for the documented
 /// defaults.
+///
+/// # String-valued fields
+///
+/// Every string-valued field is a [`Cow<'static, str>`](Cow), and
+/// [`Self::autolink_patterns`] is a borrowed-or-owned list of them. Every
+/// documented default is a compile-time constant, so the defaults are borrowed:
+/// building and cloning a default options value never touches the allocator,
+/// and a renderer constructed per document from such a value costs nothing for
+/// its configuration.
+///
+/// Supply your own values with `.into()`. A `&'static str` borrows and an owned
+/// `String` moves:
+///
+/// ```
+/// use ferromark::HtmlRendererOptions;
+///
+/// let configured_base = String::from("/docs/");
+/// let options = HtmlRendererOptions {
+///     hard_break: "<br />\n".into(),
+///     base_url: configured_base.into(),
+///     autolink_patterns: vec!["https://".into(), "mailto:".into()].into(),
+///     ..HtmlRendererOptions::default()
+/// };
+/// assert_eq!(&*options.hard_break, "<br />\n");
+/// assert_eq!(options.autolink_patterns.len(), 2);
+/// ```
 #[derive(Debug, Clone)]
 pub struct HtmlRendererOptions {
     /// Use XHTML-style self-closing tags (e.g., `<br />`).
@@ -17,12 +45,12 @@ pub struct HtmlRendererOptions {
     /// Add soft breaks between inline elements.
     ///
     /// Default: `"\n"`.
-    pub soft_break: String,
+    pub soft_break: Cow<'static, str>,
 
     /// Add hard breaks.
     ///
     /// Default: `"<br>\n"`.
-    pub hard_break: String,
+    pub hard_break: Cow<'static, str>,
 
     /// Enable syntax highlighting for code blocks.
     ///
@@ -54,13 +82,13 @@ pub struct HtmlRendererOptions {
     /// Base URL for absolute link conversion (e.g., "/" or "/docs/").
     ///
     /// Default: `"/"`.
-    pub base_url: String,
+    pub base_url: Cow<'static, str>,
 
     /// Source file path for relative link resolution.
     /// Used to determine if the current file is an index file.
     ///
     /// Default: empty string.
-    pub source_path: String,
+    pub source_path: Cow<'static, str>,
 
     /// Enable line annotations for code blocks using fence meta.
     ///
@@ -70,7 +98,7 @@ pub struct HtmlRendererOptions {
     /// Fence meta key used to read code annotations.
     ///
     /// Default: `"annotate"`.
-    pub code_annotation_meta_key: String,
+    pub code_annotation_meta_key: Cow<'static, str>,
 
     /// Code annotation syntax mode.
     ///
@@ -95,11 +123,13 @@ pub struct HtmlRendererOptions {
     pub autolink_urls: bool,
 
     /// URL prefix patterns recognised by [`Self::autolink_urls`]. Defaults
-    /// to `["http://", "https://"]`. Register additional schemes (e.g.
-    /// `"ftp://"`, `"mailto:"`) by pushing onto this vec.
+    /// to `["http://", "https://"]`, borrowed from static data. Register
+    /// additional schemes (e.g. `"ftp://"`, `"mailto:"`) by replacing the
+    /// list: `vec!["https://".into(), "ftp://".into()].into()`. An empty
+    /// list disables auto-linking just as [`Self::autolink_urls`] does.
     ///
     /// Default: `["http://", "https://"]`.
-    pub autolink_patterns: Vec<String>,
+    pub autolink_patterns: Cow<'static, [Cow<'static, str>]>,
 
     /// When auto-linking, emit `target="_blank" rel="noopener noreferrer"`.
     /// Independent from markdown-link behaviour; use
@@ -190,30 +220,34 @@ pub struct HtmlRendererOptions {
 const DEFAULT_SOFT_BREAK: &str = "\n";
 const DEFAULT_HARD_BREAK: &str = "<br>\n";
 const DEFAULT_BASE_URL: &str = "/";
+const DEFAULT_SOURCE_PATH: &str = "";
 const DEFAULT_CODE_ANNOTATION_META_KEY: &str = "annotate";
-const DEFAULT_AUTOLINK_PATTERNS: [&str; 2] = ["http://", "https://"];
+const DEFAULT_AUTOLINK_PATTERNS: &[Cow<'static, str>] =
+    &[Cow::Borrowed("http://"), Cow::Borrowed("https://")];
 
-/// Allocation-free internal form of [`HtmlRendererOptions`].
+/// Internal form of [`HtmlRendererOptions`], holding only what rendering reads.
 ///
-/// Public options stay ergonomic owned values, while [`super::HtmlRenderer::new`]
-/// can represent every default string and pattern with static data. Custom options
-/// are moved in without cloning and keep their exact values, including empty strings
-/// and an empty pattern list.
+/// The public options are moved in field by field, so every value arrives
+/// exactly as the caller wrote it — including empty strings and an empty
+/// pattern list, which are meaningful and must not be read as "use the
+/// default". Defaults borrow static data, so a renderer built from a default
+/// options value performs no allocation for its configuration and frees
+/// nothing when it drops.
 pub(super) struct RendererOptions {
     pub(super) xhtml: bool,
-    hard_break: Option<String>,
+    hard_break: Cow<'static, str>,
     pub(super) sanitize: bool,
     pub(super) disallow_raw_html: bool,
     pub(super) convert_md_links: bool,
-    base_url: Option<String>,
-    source_path: Option<String>,
+    base_url: Cow<'static, str>,
+    source_path: Cow<'static, str>,
     pub(super) code_annotations: bool,
-    code_annotation_meta_key: Option<String>,
+    code_annotation_meta_key: Cow<'static, str>,
     pub(super) code_annotation_syntax: CodeAnnotationSyntax,
     pub(super) code_annotation_default_line_numbers: bool,
     pub(super) toc_max_depth: u8,
     pub(super) autolink_urls: bool,
-    autolink_patterns: Option<Vec<String>>,
+    autolink_patterns: Cow<'static, [Cow<'static, str>]>,
     pub(super) autolink_target_blank: bool,
     pub(super) link_target_blank: bool,
     pub(super) semantic_footnotes: bool,
@@ -228,59 +262,25 @@ pub(super) struct RendererOptions {
 }
 
 impl RendererOptions {
-    pub(super) const fn defaults() -> Self {
-        Self {
-            xhtml: false,
-            hard_break: None,
-            sanitize: false,
-            disallow_raw_html: false,
-            convert_md_links: false,
-            base_url: None,
-            source_path: None,
-            code_annotations: false,
-            code_annotation_meta_key: None,
-            code_annotation_syntax: CodeAnnotationSyntax::Attribute,
-            code_annotation_default_line_numbers: false,
-            toc_max_depth: 3,
-            autolink_urls: true,
-            autolink_patterns: None,
-            autolink_target_blank: true,
-            link_target_blank: true,
-            semantic_footnotes: false,
-            heading_permalinks: false,
-            source_spans: false,
-            heading_ids: true,
-            callouts: true,
-            inline_toc: true,
-            code_fence_metadata: true,
-            table_colgroup: false,
-            table_column_names: false,
-        }
-    }
-
     pub(super) fn hard_break(&self) -> &str {
-        self.hard_break.as_deref().unwrap_or(DEFAULT_HARD_BREAK)
+        &self.hard_break
     }
 
     pub(super) fn base_url(&self) -> &str {
-        self.base_url.as_deref().unwrap_or(DEFAULT_BASE_URL)
+        &self.base_url
     }
 
     pub(super) fn source_path(&self) -> &str {
-        self.source_path.as_deref().unwrap_or("")
+        &self.source_path
     }
 
     pub(super) fn code_annotation_meta_key(&self) -> &str {
-        self.code_annotation_meta_key
-            .as_deref()
-            .unwrap_or(DEFAULT_CODE_ANNOTATION_META_KEY)
+        &self.code_annotation_meta_key
     }
 
-    pub(super) fn autolink_patterns(&self) -> AutolinkPatterns<'_> {
-        self.autolink_patterns.as_deref().map_or(
-            AutolinkPatterns::Defaults(&DEFAULT_AUTOLINK_PATTERNS),
-            AutolinkPatterns::Custom,
-        )
+    /// The configured URL prefixes, empty when auto-linking has none left.
+    pub(super) fn autolink_patterns(&self) -> &[Cow<'static, str>] {
+        &self.autolink_patterns
     }
 }
 
@@ -288,19 +288,19 @@ impl From<HtmlRendererOptions> for RendererOptions {
     fn from(options: HtmlRendererOptions) -> Self {
         Self {
             xhtml: options.xhtml,
-            hard_break: Some(options.hard_break),
+            hard_break: options.hard_break,
             sanitize: options.sanitize,
             disallow_raw_html: options.disallow_raw_html,
             convert_md_links: options.convert_md_links,
-            base_url: Some(options.base_url),
-            source_path: Some(options.source_path),
+            base_url: options.base_url,
+            source_path: options.source_path,
             code_annotations: options.code_annotations,
-            code_annotation_meta_key: Some(options.code_annotation_meta_key),
+            code_annotation_meta_key: options.code_annotation_meta_key,
             code_annotation_syntax: options.code_annotation_syntax,
             code_annotation_default_line_numbers: options.code_annotation_default_line_numbers,
             toc_max_depth: options.toc_max_depth,
             autolink_urls: options.autolink_urls,
-            autolink_patterns: Some(options.autolink_patterns),
+            autolink_patterns: options.autolink_patterns,
             autolink_target_blank: options.autolink_target_blank,
             link_target_blank: options.link_target_blank,
             semantic_footnotes: options.semantic_footnotes,
@@ -316,45 +316,30 @@ impl From<HtmlRendererOptions> for RendererOptions {
     }
 }
 
-#[derive(Clone, Copy)]
-pub(super) enum AutolinkPatterns<'a> {
-    Defaults(&'a [&'static str]),
-    Custom(&'a [String]),
-}
-
-impl<'a> AutolinkPatterns<'a> {
-    pub(super) fn is_empty(self) -> bool {
-        match self {
-            Self::Defaults(patterns) => patterns.is_empty(),
-            Self::Custom(patterns) => patterns.is_empty(),
-        }
-    }
-}
-
 impl HtmlRendererOptions {
     /// Creates new options with default values.
+    ///
+    /// Every default is static data, so this performs no heap allocation, and
+    /// neither does cloning the result.
     #[must_use]
     pub fn new() -> Self {
         Self {
             xhtml: false,
-            soft_break: DEFAULT_SOFT_BREAK.to_string(),
-            hard_break: DEFAULT_HARD_BREAK.to_string(),
+            soft_break: Cow::Borrowed(DEFAULT_SOFT_BREAK),
+            hard_break: Cow::Borrowed(DEFAULT_HARD_BREAK),
             highlight: false,
             sanitize: false,
             disallow_raw_html: false,
             convert_md_links: false,
-            base_url: DEFAULT_BASE_URL.to_string(),
-            source_path: String::new(),
+            base_url: Cow::Borrowed(DEFAULT_BASE_URL),
+            source_path: Cow::Borrowed(DEFAULT_SOURCE_PATH),
             code_annotations: false,
-            code_annotation_meta_key: DEFAULT_CODE_ANNOTATION_META_KEY.to_string(),
+            code_annotation_meta_key: Cow::Borrowed(DEFAULT_CODE_ANNOTATION_META_KEY),
             code_annotation_syntax: CodeAnnotationSyntax::Attribute,
             code_annotation_default_line_numbers: false,
             toc_max_depth: 3,
             autolink_urls: true,
-            autolink_patterns: DEFAULT_AUTOLINK_PATTERNS
-                .iter()
-                .map(ToString::to_string)
-                .collect(),
+            autolink_patterns: Cow::Borrowed(DEFAULT_AUTOLINK_PATTERNS),
             autolink_target_blank: true,
             link_target_blank: true,
             semantic_footnotes: false,

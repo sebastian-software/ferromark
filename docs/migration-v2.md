@@ -25,6 +25,35 @@ These helpers return `Result` and expose separate `ParserOptions` and
 The append helpers leave the output unchanged on parse errors. See
 [the Rust API guide](rust-api.md) for examples and AST access.
 
+### Renderer option strings take `.into()`
+
+After `2.0.0-rc.1`, the string-valued fields of `HtmlRendererOptions` are
+`Cow<'static, str>` and `autolink_patterns` is `Cow<'static, [Cow<'static, str>]>`,
+so the documented defaults are borrowed from static data instead of being
+rebuilt on the heap for every options value. Assignments need `.into()`:
+
+```rust
+// before
+HtmlRendererOptions {
+    base_url: "/docs/".to_string(),
+    autolink_patterns: vec!["mailto:".to_string()],
+    ..HtmlRendererOptions::default()
+}
+
+// after
+HtmlRendererOptions {
+    base_url: "/docs/".into(),
+    autolink_patterns: vec!["mailto:".into()].into(),
+    ..HtmlRendererOptions::default()
+}
+```
+
+A `&'static str` borrows, an owned `String` moves in, and a value that is
+neither must be owned first (`value.to_string().into()`). Reads are unchanged:
+the fields still deref to `str`. Rendered HTML is unchanged, including for empty
+strings and an empty pattern list, which keep their existing meaning. See the
+[decision record](decisions/2026-09-15-borrowed-renderer-options.md).
+
 When using the AST directly, the source and allocator outlive the document.
 Rust defaults pass raw HTML through; `sanitize: true` escapes raw HTML and
 filters link/image schemes. There is no v1-compatible CLI or MDX `segment`,

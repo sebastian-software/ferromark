@@ -144,18 +144,20 @@ impl Engine {
                     options.table_column_names = value.as_bool().expect("boolean option")
                 }
                 "soft_break" => {
-                    options.soft_break = value.as_str().expect("string option").to_owned()
+                    options.soft_break = value.as_str().expect("string option").to_owned().into()
                 }
                 "hard_break" => {
-                    options.hard_break = value.as_str().expect("string option").to_owned()
+                    options.hard_break = value.as_str().expect("string option").to_owned().into()
                 }
-                "base_url" => options.base_url = value.as_str().expect("string option").to_owned(),
+                "base_url" => {
+                    options.base_url = value.as_str().expect("string option").to_owned().into()
+                }
                 "source_path" => {
-                    options.source_path = value.as_str().expect("string option").to_owned()
+                    options.source_path = value.as_str().expect("string option").to_owned().into()
                 }
                 "code_annotation_meta_key" => {
                     options.code_annotation_meta_key =
-                        value.as_str().expect("string option").to_owned()
+                        value.as_str().expect("string option").to_owned().into()
                 }
                 "toc_max_depth" => {
                     options.toc_max_depth =
@@ -166,8 +168,9 @@ impl Engine {
                         .as_array()
                         .expect("patterns")
                         .iter()
-                        .map(|v| v.as_str().expect("pattern").to_owned())
-                        .collect()
+                        .map(|v| v.as_str().expect("pattern").to_owned().into())
+                        .collect::<Vec<_>>()
+                        .into()
                 }
                 "code_annotation_syntax" => {
                     options.code_annotation_syntax = match value.as_str().expect("syntax") {

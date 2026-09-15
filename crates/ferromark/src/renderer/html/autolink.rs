@@ -4,8 +4,6 @@
 //! first indexes possible leading bytes so most prose is skipped without repeated
 //! prefix checks, then validates word boundaries and trims punctuation around matches.
 
-use super::options::AutolinkPatterns;
-
 mod index;
 
 pub(in crate::renderer::html) use index::FirstByteIndex;
@@ -23,19 +21,7 @@ pub(in crate::renderer::html) use index::FirstByteIndex;
 /// `index` skips ahead to the next byte that could start a pattern, so the
 /// per-byte boundary and prefix checks below only run at real candidates
 /// rather than across every byte of non-URL prose.
-pub(super) fn find_autolink_match(
-    s: &str,
-    from: usize,
-    patterns: AutolinkPatterns<'_>,
-    index: &FirstByteIndex,
-) -> Option<(usize, usize)> {
-    match patterns {
-        AutolinkPatterns::Defaults(patterns) => find_autolink_match_in(s, from, patterns, index),
-        AutolinkPatterns::Custom(patterns) => find_autolink_match_in(s, from, patterns, index),
-    }
-}
-
-fn find_autolink_match_in<P: AsRef<str>>(
+pub(super) fn find_autolink_match<P: AsRef<str>>(
     s: &str,
     from: usize,
     patterns: &[P],

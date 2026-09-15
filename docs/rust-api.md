@@ -40,6 +40,40 @@ For specification-oriented GFM output, pair `ParserOptions::gfm_spec()` with
 `HtmlRendererOptions::gfm()`. CommonMark has a matching `commonmark()` pair.
 See [optional writing syntax](optional-writing.md) for marks and inline notes.
 
+### String-valued renderer options
+
+`soft_break`, `hard_break`, `base_url`, `source_path`, and
+`code_annotation_meta_key` are `Cow<'static, str>`, and `autolink_patterns` is
+`Cow<'static, [Cow<'static, str>]>`. Assign with `.into()`: a `&'static str`
+borrows and a `String` moves in.
+
+```rust
+use ferromark::{to_html_with_options, HtmlRendererOptions, ParserOptions};
+
+let base_from_config = String::from("/docs/");
+let html = to_html_with_options(
+    "[guide](/guide/setup.md) and https://example.com",
+    ParserOptions::default(),
+    HtmlRendererOptions {
+        convert_md_links: true,
+        base_url: base_from_config.into(),
+        hard_break: "<br />\n".into(),
+        autolink_patterns: vec!["https://".into(), "mailto:".into()].into(),
+        ..HtmlRendererOptions::default()
+    },
+)?;
+assert!(html.contains("/docs/guide/setup/index.html"));
+```
+
+Every documented default is static data, so `HtmlRendererOptions::new()`,
+`Default::default()`, the `commonmark()`/`gfm()` profiles, and cloning any of
+them perform no heap allocation. Building a renderer per document from such a
+value therefore costs nothing for its configuration. Empty values keep their
+meaning: an empty `base_url` is not the default `"/"`, and an empty
+`autolink_patterns` list disables auto-linking rather than restoring the
+defaults. See the
+[decision record](decisions/2026-09-15-borrowed-renderer-options.md).
+
 ## Append to an existing string
 
 ```rust
