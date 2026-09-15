@@ -53,10 +53,7 @@ fn jsx_indentation_preserves_nested_markdown_nodes_and_source_ranges() {
                 ..ParserOptions::gfm()
             };
             let allocator = Allocator::new();
-            // Labels are declared at document scope: this test isolates span
-            // remapping from the separate collection of nested footnotes.
-            let prefix = "[^note]: Global label\n\n";
-            let plain_source = format!("{prefix}{body}");
+            let plain_source = body.to_owned();
             let plain = Parser::with_options(&allocator, &plain_source, options.clone())
                 .parse()
                 .unwrap();
@@ -65,13 +62,11 @@ fn jsx_indentation_preserves_nested_markdown_nodes_and_source_ranges() {
                 indented.push_str(indent);
                 indented.push_str(line);
             }
-            let source = format!("{prefix}<Outer>\n{indented}</Outer>\n");
+            let source = format!("<Outer>\n{indented}</Outer>\n");
             let wrapped = Parser::with_options(&allocator, &source, options)
                 .parse()
                 .unwrap();
-            let [Node::FootnoteDefinition(_), Node::MdxJsxFlowElement(outer)] =
-                wrapped.children.as_slice()
-            else {
+            let [Node::MdxJsxFlowElement(outer)] = wrapped.children.as_slice() else {
                 panic!("expected one JSX container: {wrapped:?}");
             };
             let mut expected = Spans {
@@ -84,7 +79,7 @@ fn jsx_indentation_preserves_nested_markdown_nodes_and_source_ranges() {
                 indent,
                 values: Vec::new(),
             };
-            for child in plain.children.iter().skip(1) {
+            for child in &plain.children {
                 expected.visit_node(child);
             }
             for child in &outer.children {

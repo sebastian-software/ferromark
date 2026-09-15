@@ -1,0 +1,322 @@
+[
+  {
+    "case": "jsx-spans",
+    "stage": "fresh",
+    "members": [
+      "jsx-spans"
+    ],
+    "ratio": 1.0064616840027192,
+    "round_ratios": [
+      1.0124229501638629,
+      1.0064616840027192,
+      1.001478061174631
+    ],
+    "before_ns": 107041.06041666666,
+    "after_ns": 107237.15208333333
+  },
+  {
+    "case": "jsx-spans",
+    "stage": "reuse",
+    "members": [
+      "jsx-spans"
+    ],
+    "ratio": 0.9922379500048529,
+    "round_ratios": [
+      0.9846783187047902,
+      0.9922379500048529,
+      0.9922948426745688
+    ],
+    "before_ns": 104913.10833333334,
+    "after_ns": 103989.095703125
+  },
+  {
+    "case": "root-references",
+    "stage": "fresh",
+    "members": [
+      "root-references"
+    ],
+    "ratio": 1.0139011314698447,
+    "round_ratios": [
+      1.0079391754272413,
+      1.0171161335359906,
+      1.0139011314698447
+    ],
+    "before_ns": 44929.46428571428,
+    "after_ns": 45540.625
+  },
+  {
+    "case": "root-references",
+    "stage": "reuse",
+    "members": [
+      "root-references"
+    ],
+    "ratio": 1.0052935952110287,
+    "round_ratios": [
+      1.0052935952110287,
+      1.0051278565551736,
+      1.0154044903710782
+    ],
+    "before_ns": 44141.52951388889,
+    "after_ns": 44387.984375
+  },
+  {
+    "case": "fenced-decoys",
+    "stage": "fresh",
+    "members": [
+      "fenced-decoys"
+    ],
+    "ratio": 0.992213829979643,
+    "round_ratios": [
+      0.9861147062948936,
+      1.0022343937225093,
+      0.992213829979643
+    ],
+    "before_ns": 24138.862019230768,
+    "after_ns": 24082.592307692306
+  },
+  {
+    "case": "fenced-decoys",
+    "stage": "reuse",
+    "members": [
+      "fenced-decoys"
+    ],
+    "ratio": 0.9863292488152395,
+    "round_ratios": [
+      0.9863292488152395,
+      0.9880096601295867,
+      0.9728259853198781
+    ],
+    "before_ns": 23840.770833333332,
+    "after_ns": 23525.983675373136
+  },
+  {
+    "case": "footnote-labels",
+    "stage": "fresh",
+    "members": [
+      "footnote-labels"
+    ],
+    "ratio": 1.2405240126130936,
+    "round_ratios": [
+      1.2493191345367445,
+      1.2405240126130936,
+      1.2378693114355974
+    ],
+    "before_ns": 40339.743589743586,
+    "after_ns": 50045.654296875
+  },
+  {
+    "case": "footnote-labels",
+    "stage": "reuse",
+    "members": [
+      "footnote-labels"
+    ],
+    "ratio": 1.2704186450870136,
+    "round_ratios": [
+      1.2704186450870136,
+      1.2763329573151316,
+      1.2464696542275
+    ],
+    "before_ns": 38136.40167682927,
+    "after_ns": 48291.62784090909
+  },
+  {
+    "case": "disabled",
+    "stage": "fresh",
+    "members": [
+      "disabled"
+    ],
+    "ratio": 1.0009527745537425,
+    "round_ratios": [
+      1.0017437000691325,
+      0.99311050640854,
+      1.0009527745537425
+    ],
+    "before_ns": 17990.256824712644,
+    "after_ns": 17985.587284482757
+  },
+  {
+    "case": "disabled",
+    "stage": "reuse",
+    "members": [
+      "disabled"
+    ],
+    "ratio": 0.9980922077165012,
+    "round_ratios": [
+      0.9986452372020842,
+      0.9980922077165012,
+      0.9929645598081018
+    ],
+    "before_ns": 17471.25277777778,
+    "after_ns": 17426.11388888889
+  },
+  {
+    "case": "enabled-unused",
+    "stage": "fresh",
+    "members": [
+      "enabled-unused"
+    ],
+    "ratio": 0.9958565162657638,
+    "round_ratios": [
+      0.9938786372450917,
+      1.000014903115306,
+      0.9958565162657638
+    ],
+    "before_ns": 14541.570023148148,
+    "after_ns": 14520.049768518518
+  },
+  {
+    "case": "enabled-unused",
+    "stage": "reuse",
+    "members": [
+      "enabled-unused"
+    ],
+    "ratio": 1.0069277683499949,
+    "round_ratios": [
+      1.0079482024928588,
+      1.0067732854020783,
+      1.0069277683499949
+    ],
+    "before_ns": 14064.720703125,
+    "after_ns": 14157.72804054054
+  },
+  {
+    "case": "rotating-extended",
+    "stage": "fresh",
+    "members": [
+      "jsx-spans",
+      "root-references",
+      "fenced-decoys",
+      "footnote-labels"
+    ],
+    "ratio": 1.0473835422192146,
+    "round_ratios": [
+      1.0404896149614828,
+      1.0473835422192146,
+      1.0562095589526646
+    ],
+    "before_ns": 216123.859375,
+    "after_ns": 226366.6294642857
+  },
+  {
+    "case": "rotating-extended",
+    "stage": "reuse",
+    "members": [
+      "jsx-spans",
+      "root-references",
+      "fenced-decoys",
+      "footnote-labels"
+    ],
+    "ratio": 1.0475770301457967,
+    "round_ratios": [
+      1.0475770301457967,
+      1.038599196397373,
+      1.0508128608760994
+    ],
+    "before_ns": 212692.0546875,
+    "after_ns": 221991.2109375
+  },
+  {
+    "case": "rotating-disabled",
+    "stage": "fresh",
+    "members": [
+      "disabled"
+    ],
+    "ratio": 0.9969964619116959,
+    "round_ratios": [
+      0.9982652155406391,
+      0.9969964619116959,
+      0.9969843494904457
+    ],
+    "before_ns": 18088.436781609194,
+    "after_ns": 18010.79058908046
+  },
+  {
+    "case": "rotating-disabled",
+    "stage": "reuse",
+    "members": [
+      "disabled"
+    ],
+    "ratio": 1.0007626838735524,
+    "round_ratios": [
+      1.0007626838735524,
+      1.0070343547702392,
+      0.997824884169384
+    ],
+    "before_ns": 17392.69375,
+    "after_ns": 17439.453125
+  },
+  {
+    "case": "rotating-enabled-unused",
+    "stage": "fresh",
+    "members": [
+      "enabled-unused"
+    ],
+    "ratio": 0.9969101838509271,
+    "round_ratios": [
+      0.9946854344892909,
+      1.000236234306184,
+      0.9969101838509271
+    ],
+    "before_ns": 14536.036458333334,
+    "after_ns": 14493.766782407407
+  },
+  {
+    "case": "rotating-enabled-unused",
+    "stage": "reuse",
+    "members": [
+      "enabled-unused"
+    ],
+    "ratio": 1.0075573071670614,
+    "round_ratios": [
+      0.9971779976374181,
+      1.0086314899183098,
+      1.0075573071670614
+    ],
+    "before_ns": 14031.099051339286,
+    "after_ns": 14125.49268018018
+  },
+  {
+    "case": "complete-suite",
+    "stage": "fresh",
+    "ratio": 1.0393743109858657,
+    "rounds": [
+      {
+        "before_ns": 249965.0256126277,
+        "after_ns": 258881.7558483414,
+        "ratio": 1.035671911355839
+      },
+      {
+        "before_ns": 248446.73234280793,
+        "after_ns": 258229.1512454958,
+        "ratio": 1.0393743109858657
+      },
+      {
+        "before_ns": 248705.1246408046,
+        "after_ns": 260758.01498643038,
+        "ratio": 1.0484625733508037
+      }
+    ]
+  },
+  {
+    "case": "complete-suite",
+    "stage": "reuse",
+    "ratio": 1.0396171987712561,
+    "rounds": [
+      {
+        "before_ns": 243774.71576704545,
+        "after_ns": 253432.38713699495,
+        "ratio": 1.0396171987712561
+      },
+      {
+        "before_ns": 245051.70608258928,
+        "after_ns": 253587.81962743995,
+        "ratio": 1.0348339282403272
+      },
+      {
+        "before_ns": 244232.35512772817,
+        "after_ns": 254942.54736768018,
+        "ratio": 1.0438524708749208
+      }
+    ]
+  }
+]

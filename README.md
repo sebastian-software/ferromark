@@ -208,6 +208,10 @@ references. See the [measured costs and limitations](docs/reports/2026-09-15-opt
 
 ### Other extension policies
 
+Reference footnotes have document-wide scope, including definitions in lists,
+block quotes, and Markdown blocks inside MDX components. References can precede
+their definitions. Code and raw HTML cannot define footnotes.
+
 V2 preserves authored punctuation. Automatic typography belongs in an optional,
 locale-aware document transform; the former English-oriented parser option has
 been removed. See the [typography decision](docs/typography.md).
