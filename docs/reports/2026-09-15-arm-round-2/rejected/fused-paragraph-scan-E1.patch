@@ -1,0 +1,1999 @@
+From 39bbefd35f1d78d4418a3b1eb5197f763e71f0e9 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 22:44:24 +0200
+Subject: [PATCH] perf(parser): record inline markers during block line
+ scanning
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Paragraph text was read by two vector scans. Block parsing walked each
+line to find its end — and, with tables enabled, to look for a `|` — and
+the inline pass then ran the marker classifier over the very same bytes.
+
+The block-level line scan now classifies with the same option-selected
+nibble tables the inline scanner uses, appends the marker offsets it
+finds to a per-parser buffer, stops at the first line ending, and reports
+whether a `|` came before it. A paragraph's top-level inline pass replays
+that recording instead of classifying its bytes a second time. `|` is
+admitted by one extra low-nibble bit whose high-nibble partner no other
+row sets, so the same pass answers the table probe without changing any
+other byte's class; `|` is not an inline marker and never enters the
+recording.
+
+Recorded positions are candidates only: the filtering that rejects
+optional markers which cannot open anything still runs over the block's
+own content slice, from the one definition both marker sources share.
+
+Only a paragraph's own content replays. Nested inline contexts, setext
+headings, commented paragraphs, and the definition-collection phase keep
+the existing on-demand scan, and a test switch runs whole documents
+through the original path so differential tests can compare full AST
+`Debug` output and rendered HTML.
+
+aarch64 runs a fused NEON scan; other targets drive the walk with the
+existing marker scan and probe `|` with `memchr`. Both are held to a
+byte-at-a-time oracle for every byte value at every offset, on every
+target.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+---
+ crates/ferromark/src/parser/block.rs          | 123 +++-
+ crates/ferromark/src/parser/cursor.rs         |  93 ++-
+ crates/ferromark/src/parser/inline.rs         |  48 +-
+ .../src/parser/inline/marker_scan.rs          | 295 +++++++--
+ crates/ferromark/src/parser/inline/scan.rs    |  25 +-
+ crates/ferromark/src/parser/line_markers.rs   | 413 ++++++++++++
+ .../src/parser/line_markers/tests.rs          | 616 ++++++++++++++++++
+ crates/ferromark/src/parser/math.rs           |   8 +-
+ crates/ferromark/src/parser/mod.rs            |  11 +-
+ 9 files changed, 1514 insertions(+), 118 deletions(-)
+ create mode 100644 crates/ferromark/src/parser/line_markers.rs
+ create mode 100644 crates/ferromark/src/parser/line_markers/tests.rs
+
+diff --git a/crates/ferromark/src/parser/block.rs b/crates/ferromark/src/parser/block.rs
+index 4fa2981d..c8a8b803 100644
+--- a/crates/ferromark/src/parser/block.rs
++++ b/crates/ferromark/src/parser/block.rs
+@@ -2,13 +2,16 @@ use crate::ast::{Heading, Node, Paragraph, Span};
+ use memchr::memchr3;
+ 
+ use super::Parser;
++use super::cursor::LinePrefix;
++use super::inline::RecordedMarkers;
++use super::line_markers::MarkerMemo;
+ use super::line_scan::{
+     is_line_ending_byte, line_terminator_end, next_line_start as scan_next_line_start,
+ };
+ use crate::parser::error::{ParseErrorKind, ParseResult};
+ 
+ impl<'a> Parser<'a> {
+-    pub(super) fn parse_block(&mut self) -> ParseResult<Option<Node<'a>>> {
++    pub(super) fn parse_block(&mut self, memo: &mut MarkerMemo) -> ParseResult<Option<Node<'a>>> {
+         self.skip_blank_lines();
+ 
+         if self.is_at_end() {
+@@ -96,7 +99,7 @@ impl<'a> Parser<'a> {
+                 let line = self.line_at(start);
+                 let trimmed = &line[trimmed_start - start..];
+                 if self.try_parse_math_block_at(start, line, trimmed) {
+-                    return self.parse_math_block(start);
++                    return self.parse_math_block(start, memo);
+                 }
+             }
+             b'{' => {
+@@ -150,16 +153,31 @@ impl<'a> Parser<'a> {
+         // then falls through to paragraph parsing — carrying the line end
+         // that scan reached, which is the first thing `parse_paragraph`
+         // needs.
++        //
++        // When the memo is recording, that probe is the fused scan: the same
++        // pass reports the `|`, the line end, and the line's inline markers,
++        // so a paragraph starting here is already one line into its
++        // recording. A line that turns out to be a table header simply
++        // discards it.
+         let mut first_line_end = None;
+         if self.options.tables {
+-            match memchr3(b'|', b'\n', b'\r', &bytes[start..]) {
+-                Some(off) if bytes[start + off] == b'|' => {
+-                    if self.try_parse_table() {
+-                        return self.parse_table(start);
++            if memo.recording() {
++                memo.reset();
++                let scan = memo.scan_line(bytes, start);
++                if scan.pipe_seen && self.try_parse_table() {
++                    return self.parse_table(start);
++                }
++                first_line_end = Some(memo.push_line_terminator(bytes, scan.line_end));
++            } else {
++                match memchr3(b'|', b'\n', b'\r', &bytes[start..]) {
++                    Some(off) if bytes[start + off] == b'|' => {
++                        if self.try_parse_table() {
++                            return self.parse_table(start);
++                        }
+                     }
++                    Some(off) => first_line_end = Some(line_terminator_end(bytes, start + off)),
++                    None => first_line_end = Some(self.source.len()),
+                 }
+-                Some(off) => first_line_end = Some(line_terminator_end(bytes, start + off)),
+-                None => first_line_end = Some(self.source.len()),
+             }
+         }
+ 
+@@ -188,7 +206,7 @@ impl<'a> Parser<'a> {
+         }
+ 
+         // Default: parse as paragraph.
+-        self.parse_paragraph(start, first_line_end)
++        self.parse_paragraph(start, first_line_end, memo)
+     }
+ 
+     /// Dispatch once so the disabled paragraph loop carries no comment
+@@ -198,11 +216,12 @@ impl<'a> Parser<'a> {
+         &mut self,
+         start: usize,
+         first_line_end: Option<usize>,
++        memo: &mut MarkerMemo,
+     ) -> ParseResult<Option<Node<'a>>> {
+         if self.options.line_comments {
+-            self.parse_paragraph_impl::<true>(start, first_line_end)
++            self.parse_paragraph_impl::<true>(start, first_line_end, memo)
+         } else {
+-            self.parse_paragraph_impl::<false>(start, first_line_end)
++            self.parse_paragraph_impl::<false>(start, first_line_end, memo)
+         }
+     }
+ 
+@@ -210,6 +229,7 @@ impl<'a> Parser<'a> {
+         &mut self,
+         start: usize,
+         first_line_end: Option<usize>,
++        memo: &mut MarkerMemo,
+     ) -> ParseResult<Option<Node<'a>>> {
+         let bytes = self.source.as_bytes();
+ 
+@@ -222,8 +242,18 @@ impl<'a> Parser<'a> {
+         // `memchr`). This also removes the infinite-loop hazard the two
+         // dispatchers guard against: by always advancing past line one we can
+         // never return `Ok(None)` without progress on a non-blank line.
++        //
++        // `first_line_end` means block dispatch already ran the fused scan
++        // (or the table `memchr`) over line one; otherwise line one is
++        // scanned here, which is also where the memo for this paragraph
++        // starts.
+         let mut content_end = match first_line_end {
+             Some(end) => end,
++            None if memo.recording() => {
++                memo.reset();
++                let scan = memo.scan_line(bytes, start);
++                memo.push_line_terminator(bytes, scan.line_end)
++            }
+             None => scan_next_line_start(bytes, start),
+         };
+         self.position = content_end;
+@@ -248,6 +278,9 @@ impl<'a> Parser<'a> {
+ 
+             if LINE_COMMENTS && bytes[cursor] == b'/' && self.is_line_comment_at(line_start) {
+                 first_line_comment.get_or_insert(line_start);
++                // The skipped lines are never scanned, so the recording can
++                // no longer describe a content slice that reaches past them.
++                memo.invalidate();
+                 self.position = self.skip_line_comments_from(line_start);
+                 continue;
+             }
+@@ -285,16 +318,40 @@ impl<'a> Parser<'a> {
+             // Check for block-level element that would end paragraph. The
+             // probe's table scan usually reaches the newline, in which case
+             // consuming the line costs no further scanning.
+-            let probe = self.probe_line(line_start, cursor);
+-            if probe.starts_block {
+-                break;
+-            }
++            if memo.recording() {
++                let prefix = self.probe_line_prefix(line_start, cursor);
++                if prefix == LinePrefix::Block {
++                    break;
++                }
++                // The line is paragraph text unless it opens a table, which
++                // only a `|` on a non-indented line can do. Record first and
++                // roll the recording back on that one outcome, rather than
++                // scanning the line twice to find out.
++                let recorded = memo.len();
++                let scan = memo.scan_line(bytes, line_start);
++                if prefix == LinePrefix::Plain
++                    && self.options.tables
++                    && scan.pipe_seen
++                    && self.try_parse_table()
++                {
++                    memo.truncate(recorded);
++                    break;
++                }
++                content_end = memo.push_line_terminator(bytes, scan.line_end);
++            } else {
++                let probe = self.probe_line(line_start, cursor);
++                if probe.starts_block {
++                    break;
++                }
+ 
+-            content_end = match probe.line_end {
+-                Some(line_end) if line_end < bytes.len() => line_terminator_end(bytes, line_end),
+-                Some(_) => self.source.len(),
+-                None => scan_next_line_start(bytes, line_start),
+-            };
++                content_end = match probe.line_end {
++                    Some(line_end) if line_end < bytes.len() => {
++                        line_terminator_end(bytes, line_end)
++                    }
++                    Some(_) => self.source.len(),
++                    None => scan_next_line_start(bytes, line_start),
++                };
++            }
+             self.position = content_end;
+         }
+ 
+@@ -314,12 +371,36 @@ impl<'a> Parser<'a> {
+             return Ok(None);
+         }
+         let span = Span::new(start as u32, content_end as u32);
+-        let children = self.parse_inline_block(content, start)?;
++        let children = self.parse_paragraph_inlines(start, content_end, content, memo)?;
+         Ok(Some(Node::Paragraph(
+             self.allocator.boxed(Paragraph { children, span }),
+         )))
+     }
+ 
++    /// Parses a paragraph's inline content, replaying the block-level line
++    /// scan's marker positions when it covers the whole content slice.
++    ///
++    /// `content` is `source[start..content_end]` trimmed, so a recorded
++    /// position belongs to it exactly when it lies inside the trimmed range;
++    /// the leading trim is what translates source offsets to content offsets.
++    fn parse_paragraph_inlines(
++        &self,
++        start: usize,
++        content_end: usize,
++        content: &'a str,
++        memo: &MarkerMemo,
++    ) -> ParseResult<crate::allocator::Vec<'a, Node<'a>>> {
++        if !memo.usable() {
++            return self.parse_inline_block(content, start);
++        }
++        #[cfg(test)]
++        super::line_markers::note_replay();
++        let raw = &self.source[start..content_end];
++        let base = start + (raw.len() - raw.trim_start().len());
++        let markers = RecordedMarkers::new(memo.range(base, base + content.len()), base);
++        self.parse_inline_block_with_markers(content, start, markers)
++    }
++
+     /// Only paragraphs with an observed, included comment need filtering and
+     /// span remapping. Keep that state out of the ordinary borrowed-source
+     /// path, including when comments are enabled but absent. A trailing
+diff --git a/crates/ferromark/src/parser/cursor.rs b/crates/ferromark/src/parser/cursor.rs
+index 0351e77b..a14a698e 100644
+--- a/crates/ferromark/src/parser/cursor.rs
++++ b/crates/ferromark/src/parser/cursor.rs
+@@ -15,6 +15,21 @@ pub(super) struct BlockProbe {
+     pub line_end: Option<usize>,
+ }
+ 
++/// What the block dispatchers make of a line before the table check.
++///
++/// The distinction between [`Self::Indented`] and [`Self::Plain`] matters
++/// only to that check: a line indented four or more columns starts no block
++/// and is never a table header, so it must not run the two-line probe.
++#[derive(Clone, Copy, PartialEq, Eq)]
++pub(super) enum LinePrefix {
++    /// Indented four or more columns. Starts no block; skips the table check.
++    Indented,
++    /// Begins a block-level construct.
++    Block,
++    /// Ordinary text as far as the first-byte dispatch can tell.
++    Plain,
++}
++
+ impl<'a> Parser<'a> {
+     pub(super) fn is_at_end(&self) -> bool {
+         self.position >= self.source.len()
+@@ -138,14 +153,59 @@ impl<'a> Parser<'a> {
+     ) -> BlockProbe {
+         let bytes = self.source.as_bytes();
+ 
+-        // A line indented four or more columns cannot start any block, so
+-        // it can never interrupt a paragraph either (lazy continuation).
+-        if self.line_indent_width(line_start, trimmed_start) >= 4 {
++        match self.probe_line_prefix(line_start, trimmed_start) {
++            LinePrefix::Indented => {
++                return BlockProbe {
++                    starts_block: false,
++                    line_end: None,
++                };
++            }
++            LinePrefix::Block => {
++                return BlockProbe {
++                    starts_block: true,
++                    line_end: None,
++                };
++            }
++            LinePrefix::Plain => {}
++        }
++
++        if !check_tables {
+             return BlockProbe {
+                 starts_block: false,
+                 line_end: None,
+             };
+         }
++        match memchr3(b'|', b'\n', b'\r', &bytes[line_start..]) {
++            Some(off) if bytes[line_start + off] == b'|' => BlockProbe {
++                starts_block: self.try_parse_table(),
++                line_end: None,
++            },
++            Some(off) => BlockProbe {
++                starts_block: false,
++                line_end: Some(line_start + off),
++            },
++            None => BlockProbe {
++                starts_block: false,
++                line_end: Some(self.source.len()),
++            },
++        }
++    }
++
++    /// Classifies a line from its first non-whitespace byte, without the
++    /// table check.
++    ///
++    /// Splitting this out lets the paragraph loop replace the table check's
++    /// `memchr3` with a scan that also records the line's inline markers,
++    /// while keeping the one rule that check depends on: an indented line
++    /// never reaches it.
++    pub(super) fn probe_line_prefix(&self, line_start: usize, trimmed_start: usize) -> LinePrefix {
++        let bytes = self.source.as_bytes();
++
++        // A line indented four or more columns cannot start any block, so
++        // it can never interrupt a paragraph either (lazy continuation).
++        if self.line_indent_width(line_start, trimmed_start) >= 4 {
++            return LinePrefix::Indented;
++        }
+ 
+         let starts_block = match bytes[trimmed_start] {
+             b'#' => self.try_parse_heading_start(line_start, trimmed_start),
+@@ -193,30 +253,9 @@ impl<'a> Parser<'a> {
+         };
+ 
+         if starts_block {
+-            return BlockProbe {
+-                starts_block: true,
+-                line_end: None,
+-            };
+-        }
+-        if !check_tables {
+-            return BlockProbe {
+-                starts_block: false,
+-                line_end: None,
+-            };
+-        }
+-        match memchr3(b'|', b'\n', b'\r', &bytes[line_start..]) {
+-            Some(off) if bytes[line_start + off] == b'|' => BlockProbe {
+-                starts_block: self.try_parse_table(),
+-                line_end: None,
+-            },
+-            Some(off) => BlockProbe {
+-                starts_block: false,
+-                line_end: Some(line_start + off),
+-            },
+-            None => BlockProbe {
+-                starts_block: false,
+-                line_end: Some(self.source.len()),
+-            },
++            LinePrefix::Block
++        } else {
++            LinePrefix::Plain
+         }
+     }
+ 
+diff --git a/crates/ferromark/src/parser/inline.rs b/crates/ferromark/src/parser/inline.rs
+index c994d1ba..2b91b1a6 100644
+--- a/crates/ferromark/src/parser/inline.rs
++++ b/crates/ferromark/src/parser/inline.rs
+@@ -24,6 +24,13 @@ pub(in crate::parser) use self::autolink::autolink_end;
+ pub(in crate::parser) use self::link_target::{
+     parse_destination as parse_link_destination, parse_title as parse_link_title,
+ };
++pub(in crate::parser) use self::marker_scan::{RecordedMarkers, optional_marker_bits};
++/// Only the portable fused line scan drives its walk with this; the NEON one
++/// classifies with the nibble tables directly. Tests compile the portable
++/// scan on every target.
++#[cfg(any(not(target_arch = "aarch64"), test))]
++pub(in crate::parser) use self::scan::next_inline_marker;
++pub(in crate::parser) use self::scan::{PIPE_TABLE_BIT, PIPE_TABLE_INDEX, selected_marker_tables};
+ 
+ impl<'a> Parser<'a> {
+     /// Child slots to reserve for `content_len` bytes of inline content.
+@@ -66,11 +73,40 @@ impl<'a> Parser<'a> {
+         &self,
+         content: &'a str,
+         offset: usize,
++    ) -> ParseResult<Vec<'a, Node<'a>>> {
++        self.parse_inline_block_from(content, offset, InlineMarkerScan::new(&self.options))
++    }
++
++    /// [`Self::parse_inline_block`] for content whose marker positions the
++    /// block-level line scan already recorded.
++    ///
++    /// Only a paragraph's own top-level content arrives this way. Every
++    /// nested inline context — link text, image alt, table cells, headings —
++    /// still classifies its bytes on demand, because it parses a slice the
++    /// line scan never saw as one run.
++    pub(super) fn parse_inline_block_with_markers(
++        &self,
++        content: &'a str,
++        offset: usize,
++        markers: RecordedMarkers<'_>,
++    ) -> ParseResult<Vec<'a, Node<'a>>> {
++        self.parse_inline_block_from(
++            content,
++            offset,
++            InlineMarkerScan::recorded(&self.options, markers, content.len()),
++        )
++    }
++
++    fn parse_inline_block_from(
++        &self,
++        content: &'a str,
++        offset: usize,
++        markers: InlineMarkerScan<'_>,
+     ) -> ParseResult<Vec<'a, Node<'a>>> {
+         if self.phase == super::ParsePhase::Definitions {
+             return Ok(self.allocator.new_vec());
+         }
+-        let mut children = self.parse_inline(content, offset)?;
++        let mut children = self.parse_inline_from(content, offset, markers)?;
+         let scan = self
+             .options
+             .autolinks
+@@ -90,9 +126,17 @@ impl<'a> Parser<'a> {
+         &self,
+         content: &'a str,
+         offset: usize,
++    ) -> ParseResult<Vec<'a, Node<'a>>> {
++        self.parse_inline_from(content, offset, InlineMarkerScan::new(&self.options))
++    }
++
++    fn parse_inline_from(
++        &self,
++        content: &'a str,
++        offset: usize,
++        mut markers: InlineMarkerScan<'_>,
+     ) -> ParseResult<Vec<'a, Node<'a>>> {
+         let bytes = content.as_bytes();
+-        let mut markers = InlineMarkerScan::new(&self.options);
+         let first_special = markers.next(bytes, 0);
+ 
+         // Plain text is both the most common inline shape and exactly one AST
+diff --git a/crates/ferromark/src/parser/inline/marker_scan.rs b/crates/ferromark/src/parser/inline/marker_scan.rs
+index d766131f..b34f9a10 100644
+--- a/crates/ferromark/src/parser/inline/marker_scan.rs
++++ b/crates/ferromark/src/parser/inline/marker_scan.rs
+@@ -39,69 +39,180 @@ impl ForwardScan {
+     }
+ }
+ 
++/// Optional-marker bits enabled by `options`.
++///
++/// The block-level line scan classifies with the very same set, so this is
++/// the single definition both the scanning and the recorded source derive
++/// their marker table from.
++pub(in crate::parser) const fn optional_marker_bits(options: &crate::ParserOptions) -> u8 {
++    let mut optional = 0;
++    if options.mdx {
++        optional |= INLINE_MARKER_MDX;
++    }
++    if options.superscript || options.inline_footnotes {
++        optional |= INLINE_MARKER_SUPERSCRIPT;
++    }
++    if options.math {
++        optional |= INLINE_MARKER_MATH;
++    }
++    if options.highlight {
++        optional |= INLINE_MARKER_HIGHLIGHT;
++    }
++    optional
++}
++
++/// Marker offsets a block-level line scan already found, in source
++/// coordinates, together with the source offset of the block's content.
++///
++/// The positions are ascending and cover exactly `base..base + content.len()`.
++#[derive(Clone, Copy)]
++pub(in crate::parser) struct RecordedMarkers<'m> {
++    positions: &'m [u32],
++    base: usize,
++}
++
++impl<'m> RecordedMarkers<'m> {
++    pub(in crate::parser) const fn new(positions: &'m [u32], base: usize) -> Self {
++        Self { positions, base }
++    }
++}
++
++/// Walks recorded positions instead of rescanning the bytes.
++///
++/// Inline parsing asks for the next marker at or after a cursor that almost
++/// always moves forward, so the common step is "advance an index while it
++/// points before `from`". A backwards move — which the walk does not
++/// currently make, but which costs nothing to tolerate — re-seats the index
++/// with a binary search rather than silently returning a stale hit.
++struct RecordedCursor<'m> {
++    positions: &'m [u32],
++    base: usize,
++    end: usize,
++    index: usize,
++    last_from: usize,
++}
++
++impl RecordedCursor<'_> {
++    fn at_least(&mut self, from: usize) -> usize {
++        let wanted = self.base + from;
++        if from < self.last_from {
++            self.index = self.positions.partition_point(|&at| (at as usize) < wanted);
++        } else {
++            while self
++                .positions
++                .get(self.index)
++                .is_some_and(|&at| (at as usize) < wanted)
++            {
++                self.index += 1;
++            }
++        }
++        self.last_from = from;
++        self.positions
++            .get(self.index)
++            .map_or(self.end, |&at| at as usize - self.base)
++    }
++}
++
++/// Where the marker positions of the current inline content come from.
++enum MarkerSource<'m> {
++    /// Scan the bytes on demand.
++    Fresh(ForwardScan),
++    /// Replay what the block-level line scan already found.
++    Recorded(RecordedCursor<'m>),
++}
++
+ /// Where the next byte that can start an inline construct is.
+ ///
+ /// The core classifier and enabled extension markers are selected in one
+ /// forward lookup. Keeping one memo instead of one memo per optional marker
+ /// avoids repeated traversals when several extensions are enabled.
+-pub(super) struct InlineMarkerScan {
++pub(super) struct InlineMarkerScan<'m> {
+     optional: u8,
+     notes_only: bool,
+-    scan: ForwardScan,
++    source: MarkerSource<'m>,
+ }
+ 
+-impl InlineMarkerScan {
++impl<'m> InlineMarkerScan<'m> {
+     pub(super) const fn new(options: &crate::ParserOptions) -> Self {
+-        let mut optional = 0;
+-        if options.mdx {
+-            optional |= INLINE_MARKER_MDX;
+-        }
+-        if options.superscript || options.inline_footnotes {
+-            optional |= INLINE_MARKER_SUPERSCRIPT;
+-        }
+-        if options.math {
+-            optional |= INLINE_MARKER_MATH;
+-        }
+-        if options.highlight {
+-            optional |= INLINE_MARKER_HIGHLIGHT;
++        Self {
++            optional: optional_marker_bits(options),
++            notes_only: options.inline_footnotes && !options.superscript,
++            source: MarkerSource::Fresh(ForwardScan::new()),
+         }
++    }
++
++    /// The same scan, reading positions a block-level line scan recorded for
++    /// `content` rather than classifying the bytes a second time.
++    pub(super) const fn recorded(
++        options: &crate::ParserOptions,
++        markers: RecordedMarkers<'m>,
++        content_len: usize,
++    ) -> Self {
+         Self {
+-            optional,
++            optional: optional_marker_bits(options),
+             notes_only: options.inline_footnotes && !options.superscript,
+-            scan: ForwardScan::new(),
++            source: MarkerSource::Recorded(RecordedCursor {
++                positions: markers.positions,
++                base: markers.base,
++                end: content_len,
++                index: 0,
++                last_from: 0,
++            }),
+         }
+     }
+ 
+     pub(super) fn next(&mut self, bytes: &[u8], from: usize) -> usize {
+         let optional = self.optional;
+         let notes_only = self.notes_only;
+-        self.scan.hit(from, |mut at| {
+-            loop {
+-                at = next_inline_marker(bytes, at, optional);
+-                if optional == 0 || at == bytes.len() {
+-                    return at;
+-                }
+-                // An isolated equals sign or a caret that cannot start a note
+-                // stays in the current text run: no extra AST nodes or dispatch.
+-                if bytes[at] == b'='
+-                    && bytes.get(at + 1) == Some(&b'=')
+-                    && (at == 0 || bytes[at - 1].is_ascii_whitespace())
+-                    && bytes.get(at + 2).is_none_or(u8::is_ascii_whitespace)
+-                {
+-                    // A pair surrounded by whitespace can neither open nor
+-                    // close. Preserve it in the text run without a delimiter record.
+-                    at += 2;
+-                    continue;
+-                }
+-                if (bytes[at] == b'=' && bytes.get(at + 1) != Some(&b'='))
+-                    || (notes_only && bytes[at] == b'^' && bytes.get(at + 1) != Some(&b'['))
+-                {
+-                    at += 1;
+-                } else {
+-                    return at;
+-                }
++        match &mut self.source {
++            MarkerSource::Fresh(scan) => scan.hit(from, |at| {
++                accept_marker(bytes, at, optional, notes_only, |at| {
++                    next_inline_marker(bytes, at, optional)
++                })
++            }),
++            MarkerSource::Recorded(cursor) => {
++                accept_marker(bytes, from, optional, notes_only, |at| cursor.at_least(at))
+             }
+-        })
++        }
++    }
++}
++
++/// Skips the optional markers that cannot open anything, whatever found them.
++///
++/// `find` reports the next classifier hit at or after a position. Both marker
++/// sources hand this the exact same candidates, so the filtering — and hence
++/// the parse — cannot depend on which one produced them.
++fn accept_marker(
++    bytes: &[u8],
++    mut at: usize,
++    optional: u8,
++    notes_only: bool,
++    mut find: impl FnMut(usize) -> usize,
++) -> usize {
++    loop {
++        at = find(at);
++        if optional == 0 || at == bytes.len() {
++            return at;
++        }
++        // An isolated equals sign or a caret that cannot start a note
++        // stays in the current text run: no extra AST nodes or dispatch.
++        if bytes[at] == b'='
++            && bytes.get(at + 1) == Some(&b'=')
++            && (at == 0 || bytes[at - 1].is_ascii_whitespace())
++            && bytes.get(at + 2).is_none_or(u8::is_ascii_whitespace)
++        {
++            // A pair surrounded by whitespace can neither open nor
++            // close. Preserve it in the text run without a delimiter record.
++            at += 2;
++            continue;
++        }
++        if (bytes[at] == b'=' && bytes.get(at + 1) != Some(&b'='))
++            || (notes_only && bytes[at] == b'^' && bytes.get(at + 1) != Some(&b'['))
++        {
++            at += 1;
++        } else {
++            return at;
++        }
+     }
+ }
+ 
+@@ -134,6 +245,37 @@ mod tests {
+         at
+     }
+ 
++    fn fresh(options: u8) -> InlineMarkerScan<'static> {
++        InlineMarkerScan {
++            optional: options,
++            notes_only: false,
++            source: MarkerSource::Fresh(ForwardScan::new()),
++        }
++    }
++
++    /// Every classifier hit in `bytes`, offset by `base`, as the block-level
++    /// line scan would have recorded them.
++    fn record(bytes: &[u8], options: u8, base: usize) -> smallvec::SmallVec<[u32; 16]> {
++        (0..bytes.len())
++            .filter(|&at| is_marker(bytes[at], options))
++            .map(|at| (base + at) as u32)
++            .collect()
++    }
++
++    fn replayed(options: u8, positions: &[u32], base: usize, len: usize) -> InlineMarkerScan<'_> {
++        InlineMarkerScan {
++            optional: options,
++            notes_only: false,
++            source: MarkerSource::Recorded(RecordedCursor {
++                positions,
++                base,
++                end: len,
++                index: 0,
++                last_from: 0,
++            }),
++        }
++    }
++
+     #[test]
+     fn matches_scalar_oracle_for_all_option_masks_and_offsets() {
+         for options in 0..=15 {
+@@ -151,11 +293,7 @@ mod tests {
+                 }
+                 let bytes = &storage[..len];
+                 for from in 0..=len {
+-                    let mut scan = InlineMarkerScan {
+-                        optional: options,
+-                        notes_only: false,
+-                        scan: ForwardScan::new(),
+-                    };
++                    let mut scan = fresh(options);
+                     assert_eq!(
+                         scan.next(bytes, from),
+                         oracle(bytes, from, options),
+@@ -174,11 +312,7 @@ mod tests {
+                 for at in 0..bytes.len() {
+                     bytes[at] = value;
+                     for from in 0..=at {
+-                        let mut scan = InlineMarkerScan {
+-                            optional: options,
+-                            notes_only: false,
+-                            scan: ForwardScan::new(),
+-                        };
++                        let mut scan = fresh(options);
+                         assert_eq!(scan.next(&bytes, from), oracle(&bytes, from, options));
+                     }
+                 }
+@@ -191,14 +325,59 @@ mod tests {
+         let text = "prefixé 中 {math ^ $ * suffix";
+         let bytes = text.as_bytes();
+         for options in 0..=15 {
+-            let mut scan = InlineMarkerScan {
+-                optional: options,
+-                notes_only: false,
+-                scan: ForwardScan::new(),
+-            };
++            let mut scan = fresh(options);
+             for from in 0..=bytes.len() {
+                 assert_eq!(scan.next(bytes, from), oracle(bytes, from, options));
+             }
+         }
+     }
++
++    #[test]
++    fn recorded_positions_replay_the_scanning_source() {
++        // The recorded source must answer exactly what the scanning source
++        // answers, including for the option markers the filter can reject
++        // and for a non-zero source base.
++        for options in 0..=15u8 {
++            for len in 0..=48usize {
++                let mut storage = [b'x'; 48];
++                for (at, byte) in storage[..len].iter_mut().enumerate() {
++                    *byte = match at % 9 {
++                        0 => b'=',
++                        1 => b'=',
++                        2 => b'^',
++                        3 => b'[',
++                        4 => b' ',
++                        5 => b'$',
++                        6 => b'{',
++                        7 => b'\n',
++                        _ => b'y',
++                    };
++                }
++                let bytes = &storage[..len];
++                for base in [0usize, 1, 37] {
++                    let positions = record(bytes, options, base);
++                    let mut scanning = fresh(options);
++                    let mut replaying = replayed(options, &positions, base, len);
++                    for from in 0..=len {
++                        assert_eq!(
++                            replaying.next(bytes, from),
++                            scanning.next(bytes, from),
++                            "options {options}, len {len}, base {base}, from {from}"
++                        );
++                    }
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn recorded_positions_tolerate_a_backwards_cursor() {
++        let bytes = b"a*b_c`d[e";
++        let positions = record(bytes, 0, 5);
++        let mut replaying = replayed(0, &positions, 5, bytes.len());
++        assert_eq!(replaying.next(bytes, 6), 7);
++        assert_eq!(replaying.next(bytes, 0), 1);
++        assert_eq!(replaying.next(bytes, 8), bytes.len());
++        assert_eq!(replaying.next(bytes, 3), 3);
++    }
+ }
+diff --git a/crates/ferromark/src/parser/inline/scan.rs b/crates/ferromark/src/parser/inline/scan.rs
+index 7af60393..a1bd96f3 100644
+--- a/crates/ferromark/src/parser/inline/scan.rs
++++ b/crates/ferromark/src/parser/inline/scan.rs
+@@ -63,11 +63,9 @@ static INLINE_SPECIAL: [u8; 256] = {
+ /// A 16-entry table is what a vector shuffle can hold, which is the whole
+ /// point: `vqtbl1q_u8` / `pshufb` look up all sixteen lanes in one
+ /// instruction, where the flag table needs sixteen loads.
+-#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+ const LOW_NIBBLE: [u8; 16] = [
+     0x10, 0x02, 0, 0, 0, 0, 0x02, 0, 0, 0, 0x03, 0x08, 0x0C, 0x01, 0x20, 0x08,
+ ];
+-#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+ const HIGH_NIBBLE: [u8; 16] = [
+     0x01, 0, 0x02, 0x04, 0, 0x08, 0x10, 0x20, 0, 0, 0, 0, 0, 0, 0, 0,
+ ];
+@@ -78,7 +76,6 @@ const HIGH_NIBBLE: [u8; 16] = [
+ /// cross-product byte. `=` shares the `<` bit at (high 3, low D).
+ /// Sixteen precomputed pairs let each scan use only the
+ /// enabled extension markers; disabled bytes never need retry filtering.
+-#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+ const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
+     let mut low = LOW_NIBBLE;
+     let mut high = HIGH_NIBBLE;
+@@ -99,7 +96,6 @@ const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
+     (low, high)
+ }
+ 
+-#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+ const OPTION_TABLES: [([u8; 16], [u8; 16]); 16] = [
+     marker_tables(0),
+     marker_tables(1),
+@@ -119,13 +115,28 @@ const OPTION_TABLES: [([u8; 16], [u8; 16]); 16] = [
+     marker_tables(15),
+ ];
+ 
+-#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+ #[inline]
+-fn selected_marker_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
++pub(in crate::parser) fn selected_marker_tables(
++    options: u8,
++) -> (&'static [u8; 16], &'static [u8; 16]) {
+     let tables = &OPTION_TABLES[(options & 15) as usize];
+     (&tables.0, &tables.1)
+ }
+ 
++/// Low-nibble table bit that extends a marker table to also report `|`.
++///
++/// `0x20` is the bit [`HIGH_NIBBLE`] sets for row 7 and — across every option
++/// combination — for no other row, so ORing it into the entry for low nibble
++/// `0xC` admits exactly the byte with high nibble 7 and low nibble `0xC`,
++/// which is `|` (0x7C). No other byte changes class, in either direction.
++/// The block-level line scan uses this to answer "does this line hold a `|`"
++/// from the same classifier pass that records inline markers; `|` itself is
++/// not an inline marker and never enters the recorded positions.
++pub(in crate::parser) const PIPE_TABLE_BIT: u8 = 0x20;
++
++/// Low-nibble index [`PIPE_TABLE_BIT`] applies to.
++pub(in crate::parser) const PIPE_TABLE_INDEX: usize = (b'|' & 0x0F) as usize;
++
+ #[cfg(target_arch = "aarch64")]
+ #[inline]
+ pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
+@@ -203,7 +214,7 @@ pub(super) const INLINE_MARKER_MATH: u8 = 1 << 2;
+ /// extensions are enabled. With extensions, one option-specific nibble table
+ /// is selected and the shared SIMD path emits only enabled markers.
+ #[inline]
+-pub(super) fn next_inline_marker(bytes: &[u8], from: usize, options: u8) -> usize {
++pub(in crate::parser) fn next_inline_marker(bytes: &[u8], from: usize, options: u8) -> usize {
+     if options == 0 {
+         return next_inline_special(bytes, from);
+     }
+diff --git a/crates/ferromark/src/parser/line_markers.rs b/crates/ferromark/src/parser/line_markers.rs
+new file mode 100644
+index 00000000..fb7199c2
+--- /dev/null
++++ b/crates/ferromark/src/parser/line_markers.rs
+@@ -0,0 +1,413 @@
++//! Block-level line scanning that also records the line's inline markers.
++//!
++//! Paragraph text used to be read by two vector scans. Block parsing walked
++//! each line to find its end — and, with tables enabled, to look for a `|` —
++//! and inline parsing then ran the marker classifier over the very same
++//! bytes. The two scans ask different questions of the same pass: "where does
++//! this line end", "does it hold a pipe", and "where are the bytes that can
++//! begin an inline construct".
++//!
++//! [`MarkerMemo`] answers all three at once. It classifies with the same
++//! option-selected nibble tables [`crate::parser::inline`] uses, so the
++//! positions it records are exactly the positions the inline scan would have
++//! found, appends them to a stack-resident buffer, stops at the first line
++//! ending, and reports whether a `|` came before it. The paragraph's inline
++//! pass then replays the recording instead of classifying the bytes again.
++//!
++//! Only the classifier is shared, not the decision: recorded positions are
++//! candidates, and the same filtering the on-demand scan applies still runs
++//! over the block's own content slice.
++
++use smallvec::SmallVec;
++
++use super::inline::{
++    PIPE_TABLE_BIT, PIPE_TABLE_INDEX, optional_marker_bits, selected_marker_tables,
++};
++use super::line_scan::line_terminator_end;
++
++/// Marker offsets held without spilling to the heap.
++///
++/// One `u32` per marker byte. Prose on the bundled corpora lands a marker
++/// roughly every 20-40 bytes, so 64 slots cover a paragraph of about 1.5-2.5
++/// KB — comfortably past the long-line encyclopedia shape this exists for —
++/// for 256 bytes of stack. The buffer is threaded down from `parse_document`
++/// rather than created per paragraph, so a document with one atypically
++/// marker-dense paragraph spills once and then reuses that capacity.
++const MEMO_INLINE: usize = 64;
++
++type MarkerPositions = SmallVec<[u32; MEMO_INLINE]>;
++
++/// What one fused line scan found.
++pub(in crate::parser) struct LineScan {
++    /// Offset of the line's terminator, or `bytes.len()` when the last line
++    /// of the source is unterminated.
++    pub(in crate::parser) line_end: usize,
++    /// Whether a `|` occurs before `line_end`. Always `false` when the memo
++    /// was not built for a table-enabled parse.
++    pub(in crate::parser) pipe_seen: bool,
++}
++
++/// Marker positions recorded while block parsing walked a paragraph's lines.
++pub(in crate::parser) struct MarkerMemo {
++    /// Nibble classifier for the enabled marker set, extended with `|` when
++    /// the table check needs it.
++    #[cfg_attr(not(target_arch = "aarch64"), allow(dead_code))]
++    low: [u8; 16],
++    #[cfg_attr(not(target_arch = "aarch64"), allow(dead_code))]
++    high: [u8; 16],
++    /// The same marker set as an option mask, for the portable scan.
++    #[cfg_attr(target_arch = "aarch64", allow(dead_code))]
++    optional: u8,
++    #[cfg_attr(target_arch = "aarch64", allow(dead_code))]
++    tables: bool,
++    /// Whether this parse records at all. The definition-collection phase
++    /// builds no inline content, and a test switch turns recording off to
++    /// run the same document through the original two-scan path.
++    record: bool,
++    /// Whether the current block's recording is complete. A line consumed
++    /// without being scanned (a line comment) leaves a hole, and the block
++    /// falls back to scanning its content.
++    usable: bool,
++    positions: MarkerPositions,
++}
++
++impl MarkerMemo {
++    pub(in crate::parser) fn new(options: &crate::ParserOptions, record: bool) -> Self {
++        let optional = optional_marker_bits(options);
++        let (low, high) = selected_marker_tables(optional);
++        let mut low = *low;
++        if options.tables {
++            low[PIPE_TABLE_INDEX] |= PIPE_TABLE_BIT;
++        }
++        Self {
++            low,
++            high: *high,
++            optional,
++            tables: options.tables,
++            record: record && recording_enabled(),
++            usable: false,
++            positions: MarkerPositions::new(),
++        }
++    }
++
++    /// Whether the fused scan runs for this parse.
++    pub(in crate::parser) const fn recording(&self) -> bool {
++        self.record
++    }
++
++    /// Whether the recording covers the current block's whole content.
++    pub(in crate::parser) const fn usable(&self) -> bool {
++        self.record && self.usable
++    }
++
++    /// Starts a new block's recording.
++    pub(in crate::parser) fn reset(&mut self) {
++        self.positions.clear();
++        self.usable = true;
++    }
++
++    /// Marks the current block's recording incomplete.
++    pub(in crate::parser) fn invalidate(&mut self) {
++        self.usable = false;
++    }
++
++    pub(in crate::parser) fn len(&self) -> usize {
++        self.positions.len()
++    }
++
++    pub(in crate::parser) fn truncate(&mut self, len: usize) {
++        self.positions.truncate(len);
++    }
++
++    /// Scans one line starting at `from`, appending every inline marker it
++    /// holds. The line terminator itself is not appended: whether it belongs
++    /// to the block's content is the caller's decision, made by
++    /// [`Self::push_line_terminator`].
++    pub(in crate::parser) fn scan_line(&mut self, bytes: &[u8], from: usize) -> LineScan {
++        self.scan_line_arch(bytes, from)
++    }
++
++    #[cfg(target_arch = "aarch64")]
++    fn scan_line_arch(&mut self, bytes: &[u8], from: usize) -> LineScan {
++        let Self {
++            low,
++            high,
++            positions,
++            ..
++        } = self;
++        scan_line_neon(bytes, from, low, high, positions)
++    }
++
++    #[cfg(not(target_arch = "aarch64"))]
++    fn scan_line_arch(&mut self, bytes: &[u8], from: usize) -> LineScan {
++        let Self {
++            optional,
++            tables,
++            positions,
++            ..
++        } = self;
++        scan_line_portable(bytes, from, *optional, *tables, positions)
++    }
++
++    /// Records the line terminator bytes at `line_end` as markers and returns
++    /// the next line's start.
++    ///
++    /// `\n` and `\r` are inline markers, and a CRLF holds two of them. A
++    /// terminator that ends up outside the block's trimmed content is dropped
++    /// by [`Self::range`], so recording it unconditionally is safe.
++    pub(in crate::parser) fn push_line_terminator(
++        &mut self,
++        bytes: &[u8],
++        line_end: usize,
++    ) -> usize {
++        let next = line_terminator_end(bytes, line_end);
++        for at in line_end..next {
++            self.positions.push(at as u32);
++        }
++        next
++    }
++
++    /// The recorded positions inside `base..end`, both source offsets.
++    pub(in crate::parser) fn range(&self, base: usize, end: usize) -> &[u32] {
++        let first = self.positions.partition_point(|&at| (at as usize) < base);
++        let last = self.positions.partition_point(|&at| (at as usize) < end);
++        &self.positions[first..last]
++    }
++}
++
++/// Reports a hit run from one classifier mask, in increasing order.
++///
++/// Returns the offset of the line terminator that ended the line, if this
++/// mask contained one. `|` is reported through `pipe` and never recorded:
++/// it is a table marker, not an inline one.
++#[cfg(target_arch = "aarch64")]
++#[inline]
++fn drain_mask(
++    bytes: &[u8],
++    base: usize,
++    mut mask: u64,
++    out: &mut MarkerPositions,
++    pipe: &mut bool,
++) -> Option<usize> {
++    while mask != 0 {
++        let lane = (mask.trailing_zeros() / 4) as usize;
++        let at = base + lane;
++        let byte = bytes[at];
++        if byte == b'\n' || byte == b'\r' {
++            return Some(at);
++        }
++        if byte == b'|' {
++            *pipe = true;
++        } else {
++            out.push(at as u32);
++        }
++        mask &= !(0xF_u64 << (lane * 4));
++    }
++    None
++}
++
++#[cfg(target_arch = "aarch64")]
++#[allow(unsafe_code)]
++fn scan_line_neon(
++    bytes: &[u8],
++    from: usize,
++    low_table: &[u8; 16],
++    high_table: &[u8; 16],
++    out: &mut MarkerPositions,
++) -> LineScan {
++    use std::arch::aarch64::*;
++    let end = bytes.len();
++    let mut i = from;
++    let mut pipe_seen = false;
++    // SAFETY: every 16-byte load is bounded by an explicit `i + 16 <= end`
++    // check, or reads the final full vector at `end - 16` under `end >= 16`.
++    // The tail mask shift is at most 60 because the loops leave
++    // `end - 16 < i < end`.
++    unsafe {
++        let low = vld1q_u8(low_table.as_ptr());
++        let high = vld1q_u8(high_table.as_ptr());
++        let nibble = vdupq_n_u8(0x0F);
++        let classify = |v: uint8x16_t| {
++            let lo = vqtbl1q_u8(low, vandq_u8(v, nibble));
++            let hi = vqtbl1q_u8(high, vshrq_n_u8(v, 4));
++            // `vtstq_u8` turns the per-lane AND into the all-ones/all-zeros
++            // form the nibble-narrowing mask extraction needs.
++            let m = vtstq_u8(lo, hi);
++            let narrow = vshrn_n_u16(vreinterpretq_u16_u8(m), 4);
++            vget_lane_u64(vreinterpret_u64_u8(narrow), 0)
++        };
++        while i + 32 <= end {
++            let m0 = classify(vld1q_u8(bytes.as_ptr().add(i)));
++            if let Some(line_end) = drain_mask(bytes, i, m0, out, &mut pipe_seen) {
++                return LineScan {
++                    line_end,
++                    pipe_seen,
++                };
++            }
++            let m1 = classify(vld1q_u8(bytes.as_ptr().add(i + 16)));
++            if let Some(line_end) = drain_mask(bytes, i + 16, m1, out, &mut pipe_seen) {
++                return LineScan {
++                    line_end,
++                    pipe_seen,
++                };
++            }
++            i += 32;
++        }
++        while i + 16 <= end {
++            let mask = classify(vld1q_u8(bytes.as_ptr().add(i)));
++            if let Some(line_end) = drain_mask(bytes, i, mask, out, &mut pipe_seen) {
++                return LineScan {
++                    line_end,
++                    pipe_seen,
++                };
++            }
++            i += 16;
++        }
++        if i < end && end >= 16 {
++            // Overlapping tail: re-read the last vector and drop the lanes
++            // the loops already cleared, so no position is recorded twice.
++            // `vtstq_u8` is exact per lane.
++            let base = end - 16;
++            let mask =
++                classify(vld1q_u8(bytes.as_ptr().add(base))) & (u64::MAX << ((i - base) * 4));
++            if let Some(line_end) = drain_mask(bytes, base, mask, out, &mut pipe_seen) {
++                return LineScan {
++                    line_end,
++                    pipe_seen,
++                };
++            }
++            return LineScan {
++                line_end: end,
++                pipe_seen,
++            };
++        }
++    }
++    let tail = scan_line_scalar(bytes, i, low_table, high_table, out);
++    LineScan {
++        line_end: tail.line_end,
++        pipe_seen: pipe_seen || tail.pipe_seen,
++    }
++}
++
++/// The definition the vectorized scan has to agree with, and the short-tail
++/// path on targets that run it.
++#[cfg_attr(not(target_arch = "aarch64"), allow(dead_code))]
++fn scan_line_scalar(
++    bytes: &[u8],
++    from: usize,
++    low_table: &[u8; 16],
++    high_table: &[u8; 16],
++    out: &mut MarkerPositions,
++) -> LineScan {
++    let mut pipe_seen = false;
++    let mut i = from;
++    while i < bytes.len() {
++        let byte = bytes[i];
++        if low_table[(byte & 0x0F) as usize] & high_table[(byte >> 4) as usize] != 0 {
++            if byte == b'\n' || byte == b'\r' {
++                return LineScan {
++                    line_end: i,
++                    pipe_seen,
++                };
++            }
++            if byte == b'|' {
++                pipe_seen = true;
++            } else {
++                out.push(i as u32);
++            }
++        }
++        i += 1;
++    }
++    LineScan {
++        line_end: bytes.len(),
++        pipe_seen,
++    }
++}
++
++/// Portable fusion: the existing marker scan drives the walk and only the
++/// hits are inspected, so targets with their own vector classifier keep it.
++///
++/// The `|` probe stays a separate `memchr` here rather than a table bit,
++/// which leaves this path with the same two passes over a line that block
++/// parsing already made — the saving is the inline rescan, not the probe.
++///
++/// Compiled under `cfg(test)` on aarch64 as well, so the differential tests
++/// hold it to the same oracle wherever they run.
++#[cfg(any(not(target_arch = "aarch64"), test))]
++fn scan_line_portable(
++    bytes: &[u8],
++    from: usize,
++    optional: u8,
++    tables: bool,
++    out: &mut MarkerPositions,
++) -> LineScan {
++    let mut i = from;
++    let line_end = loop {
++        i = super::inline::next_inline_marker(bytes, i, optional);
++        if i == bytes.len() || bytes[i] == b'\n' || bytes[i] == b'\r' {
++            break i;
++        }
++        out.push(i as u32);
++        i += 1;
++    };
++    LineScan {
++        line_end,
++        pipe_seen: tables && memchr::memchr(b'|', &bytes[from..line_end]).is_some(),
++    }
++}
++
++#[cfg(test)]
++thread_local! {
++    /// Test-only switch onto the original two-scan path.
++    static RECORDING_DISABLED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
++}
++
++#[cfg(test)]
++fn recording_enabled() -> bool {
++    RECORDING_DISABLED.with(|disabled| !disabled.get())
++}
++
++#[cfg(not(test))]
++const fn recording_enabled() -> bool {
++    true
++}
++
++#[cfg(test)]
++thread_local! {
++    /// Blocks whose inline pass replayed a recording instead of scanning.
++    static REPLAYS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
++}
++
++#[cfg(test)]
++pub(in crate::parser) fn note_replay() {
++    REPLAYS.with(|count| count.set(count.get() + 1));
++}
++
++/// How many blocks `body` parsed by replaying a recording.
++///
++/// Keeps the differential tests honest: if both sides silently fell back to
++/// scanning, they would agree while proving nothing.
++#[cfg(test)]
++pub(in crate::parser) fn replays(body: impl FnOnce()) -> usize {
++    REPLAYS.with(|count| count.set(0));
++    body();
++    REPLAYS.with(std::cell::Cell::get)
++}
++
++/// Runs `body` with the marker memo turned off, so a differential test can
++/// parse the same document through the line scan block parsing used before.
++#[cfg(test)]
++pub(in crate::parser) fn without_recording<T>(body: impl FnOnce() -> T) -> T {
++    struct Restore;
++    impl Drop for Restore {
++        fn drop(&mut self) {
++            RECORDING_DISABLED.with(|disabled| disabled.set(false));
++        }
++    }
++    RECORDING_DISABLED.with(|disabled| disabled.set(true));
++    let _restore = Restore;
++    body()
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/ferromark/src/parser/line_markers/tests.rs b/crates/ferromark/src/parser/line_markers/tests.rs
+new file mode 100644
+index 00000000..8b3ae7fb
+--- /dev/null
++++ b/crates/ferromark/src/parser/line_markers/tests.rs
+@@ -0,0 +1,616 @@
++//! Fused line scan equivalence, and whole-document differential parses.
++//!
++//! The scanner tests pin the classifier: recorded positions, line end, and
++//! the `|` flag have to match a byte-at-a-time oracle for every byte value at
++//! every offset, and `|` must never be recorded as an inline marker.
++//!
++//! The document tests pin the consequence: parsing with the memo and with the
++//! original two-scan path has to produce byte-identical `Debug` output —
++//! every node, every span — and byte-identical HTML.
++
++// Test oracles and comparisons work with owned strings and vectors.
++#![allow(
++    clippy::disallowed_macros,
++    clippy::disallowed_methods,
++    clippy::disallowed_types
++)]
++
++use super::*;
++use crate::allocator::Allocator;
++use crate::parser::{Parser, ParserOptions};
++
++/// The marker set the inline scan recognizes, written out independently of
++/// the nibble tables the fused scan classifies with.
++fn is_marker(byte: u8, mask: u8) -> bool {
++    matches!(
++        byte,
++        b'*' | b'_' | b'`' | b'[' | b'!' | b'~' | b'\\' | b'<' | b'&' | b'\n' | b'\r'
++    ) || (mask & 1 != 0 && byte == b'{')
++        || (mask & 2 != 0 && byte == b'^')
++        || (mask & 4 != 0 && byte == b'$')
++        || (mask & 8 != 0 && byte == b'=')
++}
++
++/// Options producing exactly optional-marker mask `mask`.
++fn options_for(mask: u8, tables: bool) -> ParserOptions {
++    ParserOptions {
++        mdx: mask & 1 != 0,
++        superscript: mask & 2 != 0,
++        math: mask & 4 != 0,
++        highlight: mask & 8 != 0,
++        tables,
++        ..ParserOptions::default()
++    }
++}
++
++struct Expected {
++    line_end: usize,
++    pipe_seen: bool,
++    positions: Vec<u32>,
++}
++
++fn oracle(bytes: &[u8], from: usize, mask: u8, tables: bool) -> Expected {
++    let mut positions = Vec::new();
++    let mut at = from;
++    while at < bytes.len() {
++        let byte = bytes[at];
++        if byte == b'\n' || byte == b'\r' {
++            break;
++        }
++        if is_marker(byte, mask) {
++            positions.push(at as u32);
++        }
++        at += 1;
++    }
++    Expected {
++        line_end: at,
++        pipe_seen: tables && memchr::memchr(b'|', &bytes[from..at]).is_some(),
++        positions,
++    }
++}
++
++fn check(bytes: &[u8], from: usize, mask: u8, tables: bool, label: &str) {
++    let expected = oracle(bytes, from, mask, tables);
++    let mut memo = MarkerMemo::new(&options_for(mask, tables), true);
++    memo.reset();
++    let scan = memo.scan_line(bytes, from);
++    assert_eq!(scan.line_end, expected.line_end, "line end: {label}");
++    assert_eq!(scan.pipe_seen, expected.pipe_seen, "pipe: {label}");
++    assert_eq!(
++        memo.positions.as_slice(),
++        expected.positions.as_slice(),
++        "positions: {label}"
++    );
++
++    // The scalar fallback is the definition the vector path has to match, so
++    // it is checked over the same inputs rather than only as a short tail.
++    let mut scalar = MarkerPositions::new();
++    let fallback = scan_line_scalar(bytes, from, &memo.low, &memo.high, &mut scalar);
++    assert_eq!(fallback.line_end, expected.line_end, "scalar end: {label}");
++    assert_eq!(
++        fallback.pipe_seen, expected.pipe_seen,
++        "scalar pipe: {label}"
++    );
++    assert_eq!(
++        scalar.as_slice(),
++        expected.positions.as_slice(),
++        "scalar positions: {label}"
++    );
++
++    // The portable backend runs in production on every target without NEON,
++    // so it is held to the same oracle even where NEON is what ships.
++    let mut portable = MarkerPositions::new();
++    let other = scan_line_portable(bytes, from, memo.optional, memo.tables, &mut portable);
++    assert_eq!(other.line_end, expected.line_end, "portable end: {label}");
++    assert_eq!(
++        other.pipe_seen, expected.pipe_seen,
++        "portable pipe: {label}"
++    );
++    assert_eq!(
++        portable.as_slice(),
++        expected.positions.as_slice(),
++        "portable positions: {label}"
++    );
++}
++
++#[test]
++fn pipe_table_bit_admits_exactly_the_pipe() {
++    for mask in 0..=15u8 {
++        let plain = MarkerMemo::new(&options_for(mask, false), true);
++        let piped = MarkerMemo::new(&options_for(mask, true), true);
++        for byte in 0..=u8::MAX {
++            let low = usize::from(byte & 0x0F);
++            let high = usize::from(byte >> 4);
++            assert_eq!(
++                plain.low[low] & plain.high[high] != 0,
++                is_marker(byte, mask),
++                "plain table disagrees on {byte:#04x} for mask {mask}"
++            );
++            assert_eq!(
++                piped.low[low] & piped.high[high] != 0,
++                is_marker(byte, mask) || byte == b'|',
++                "pipe table disagrees on {byte:#04x} for mask {mask}"
++            );
++        }
++    }
++}
++
++#[test]
++fn matches_the_oracle_for_every_byte_value_at_every_offset() {
++    // Long enough to cross the 32-byte dual-vector step, the 16-byte
++    // overlapping tail, and the scalar remainder.
++    for value in 0..=u8::MAX {
++        for at in 0..72usize {
++            let mut buffer = [b'x'; 72];
++            buffer[at] = value;
++            for mask in [0u8, 15] {
++                for tables in [false, true] {
++                    check(
++                        &buffer,
++                        0,
++                        mask,
++                        tables,
++                        &format!("value {value:#04x} at {at} mask {mask} tables {tables}"),
++                    );
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn matches_the_oracle_from_every_offset_and_length() {
++    for mask in 0..=15u8 {
++        for len in 0..=72usize {
++            let mut buffer = [b'x'; 72];
++            for (at, byte) in buffer[..len].iter_mut().enumerate() {
++                *byte = match at % 17 {
++                    0 => b'|',
++                    1 => b'*',
++                    2 => b'{',
++                    3 => b'^',
++                    4 => b'$',
++                    5 => b'=',
++                    6 => b'\\',
++                    7 => 0xC3,
++                    8 => b'\n',
++                    9 => b'\r',
++                    10 => b'_',
++                    11 => b'`',
++                    12 => b'[',
++                    13 => b'!',
++                    14 => b'~',
++                    15 => b'&',
++                    _ => b'<',
++                };
++            }
++            let bytes = &buffer[..len];
++            for from in 0..=len {
++                for tables in [false, true] {
++                    check(
++                        bytes,
++                        from,
++                        mask,
++                        tables,
++                        &format!("mask {mask} len {len} from {from} tables {tables}"),
++                    );
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn matches_the_oracle_on_pseudo_random_buffers() {
++    // A small xorshift keeps the corpus reproducible without a dependency.
++    let mut state = 0x2545_F491_4F6C_DD1D_u64;
++    let mut next = move || {
++        state ^= state << 13;
++        state ^= state >> 7;
++        state ^= state << 17;
++        state
++    };
++    for round in 0..200 {
++        let len = usize::try_from(next() % 200).unwrap();
++        let mut buffer = Vec::with_capacity(len);
++        for _ in 0..len {
++            // Bias towards markers so lines stay short and hits stay dense.
++            let pick = next();
++            buffer.push(match pick % 5 {
++                0 => b"*_`[!~\\<&{^$=|"[usize::try_from(pick / 5 % 14).unwrap()],
++                1 => b"\n\r \t"[usize::try_from(pick / 5 % 4).unwrap()],
++                _ => u8::try_from(pick % 256).unwrap(),
++            });
++        }
++        for mask in [0u8, 3, 12, 15] {
++            for tables in [false, true] {
++                for from in [0, len / 3, len] {
++                    check(
++                        &buffer,
++                        from,
++                        mask,
++                        tables,
++                        &format!("round {round} mask {mask} tables {tables} from {from}"),
++                    );
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn records_the_line_terminator_bytes_inside_the_block() {
++    for (source, expected) in [
++        ("ab\ncd", &[2u32][..]),
++        ("ab\r\ncd", &[2, 3][..]),
++        ("ab\rcd", &[2][..]),
++        ("ab", &[][..]),
++    ] {
++        let bytes = source.as_bytes();
++        let mut memo = MarkerMemo::new(&ParserOptions::default(), true);
++        memo.reset();
++        let scan = memo.scan_line(bytes, 0);
++        let next = memo.push_line_terminator(bytes, scan.line_end);
++        assert_eq!(memo.positions.as_slice(), expected, "{source:?}");
++        assert_eq!(
++            next,
++            if expected.is_empty() {
++                2
++            } else {
++                2 + expected.len()
++            }
++        );
++    }
++}
++
++#[test]
++fn range_keeps_only_the_trimmed_content() {
++    let mut memo = MarkerMemo::new(&ParserOptions::default(), true);
++    memo.reset();
++    memo.positions.extend_from_slice(&[2, 5, 9, 14, 20]);
++    assert_eq!(memo.range(5, 15), &[5, 9, 14]);
++    assert_eq!(memo.range(0, 100), &[2, 5, 9, 14, 20]);
++    assert_eq!(memo.range(6, 9), &[] as &[u32]);
++}
++
++// --- whole-document differential parses -----------------------------------
++
++fn debug_parse(source: &str, options: &ParserOptions) -> String {
++    let allocator = Allocator::new();
++    match Parser::with_options(&allocator, source, options.clone()).parse() {
++        Ok(document) => format!("{document:#?}"),
++        Err(error) => format!("{error:?}"),
++    }
++}
++
++fn html(source: &str, options: &ParserOptions) -> String {
++    crate::to_html_with_options(
++        source,
++        options.clone(),
++        crate::HtmlRendererOptions::default(),
++    )
++    .unwrap_or_default()
++}
++
++fn assert_same_parse(source: &str, options: &ParserOptions, label: &str) {
++    let recorded = debug_parse(source, options);
++    let scanned = without_recording(|| debug_parse(source, options));
++    assert_eq!(recorded, scanned, "AST differs: {label}");
++    let recorded = html(source, options);
++    let scanned = without_recording(|| html(source, options));
++    assert_eq!(recorded, scanned, "HTML differs: {label}");
++}
++
++/// Option profiles that change either the marker set or the line scan.
++fn profiles() -> Vec<(&'static str, ParserOptions)> {
++    let mut profiles = vec![
++        ("commonmark", ParserOptions::commonmark()),
++        ("gfm", ParserOptions::gfm()),
++        ("mdx", ParserOptions::mdx()),
++        (
++            "line-comments",
++            ParserOptions {
++                line_comments: true,
++                ..ParserOptions::gfm()
++            },
++        ),
++        (
++            "everything",
++            ParserOptions {
++                highlight: true,
++                inline_footnotes: true,
++                superscript: true,
++                subscript: true,
++                math: true,
++                definition_lists: true,
++                heading_attributes: true,
++                wiki_links: true,
++                merged_table_cells: true,
++                table_attributes: true,
++                line_comments: true,
++                mdx: true,
++                ..ParserOptions::gfm()
++            },
++        ),
++    ];
++    // Every optional-marker combination, with and without the table scan.
++    for mask in 0..=15u8 {
++        for tables in [false, true] {
++            profiles.push((
++                "mask",
++                ParserOptions {
++                    inline_footnotes: mask & 2 != 0,
++                    ..options_for(mask, tables)
++                },
++            ));
++        }
++    }
++    profiles
++}
++
++/// Hand-written shapes that put the line scan and the memo under stress.
++const CORPUS: &[&str] = &[
++    "",
++    "plain paragraph",
++    "  indented paragraph with three spaces\n  and a second line",
++    "first\nsecond\nthird",
++    "hard break  \nnext line",
++    "backslash break\\\nnext line",
++    "trailing tab\t\nnext line",
++    "a\r\nb\r\nc",
++    "a\rb\rc",
++    "mixed\r\nendings\nand\rmore\r\n",
++    "tabs\tin\tthe\tmiddle\nand\tmore",
++    "unicode é 中文 🎉 text with *emphasis* and `code`",
++    "setext heading\n===",
++    "setext heading\n---",
++    "para\nstill para\n---\nafter",
++    "| not | a | table",
++    "a | pipe in prose\nand another | here",
++    "| head | row |\n| --- | --- |\n| a | b |",
++    "para before\n| head | row |\n| --- | --- |\n| a | b |",
++    "text | with pipe\ncontinued | line\n\nnext",
++    "para\n# heading interrupts",
++    "para\n> quote interrupts",
++    "para\n- list interrupts",
++    "para\n1. ordered interrupts",
++    "para\n```\nfence\n```",
++    "para\n~~~\nfence\n~~~",
++    "para\n***",
++    "para\n<div>\nhtml\n</div>",
++    "para\n    indented continuation is lazy",
++    "> quote paragraph\nlazy continuation of the quote\n\nafter",
++    "- list item paragraph\nlazy continuation\n\nafter",
++    "> - nested\n> continued lazily\ncompletely lazy",
++    "[ref]: /url\n\nuse [ref] here\n\n[ref]: /other",
++    "[^note]: body\n\nsee[^note] here",
++    "text ^[inline note] and ^sup^ and ~sub~ and ==mark== and $math$ and {expr}",
++    "== surrounded == equals ==pair==",
++    "^ lone caret ^[note] ^^double^^",
++    "a *b* _c_ `d` [e](f) ![g](h) <i> & ~j~ \\k",
++    "&amp; &#65; &notanentity; &",
++    "<https://example.com> and https://example.com bare",
++    "line with <a href=\"x\">tag</a> inline\nsecond line <b>bold</b>",
++    "{jsx} <Component /> and <Component>child</Component>",
++    "// comment line\nparagraph after comment\n// trailing comment",
++    "paragraph\n// middle comment\nmore paragraph",
++    "para with trailing comment\n// tail",
++    ": definition body\n\nterm\n: definition",
++    "$$\ndisplay math\n$$\n\npara",
++    "$$ unterminated display math\ncontinues as paragraph",
++    // `trim` removes Unicode whitespace, so the translation from source
++    // offsets to content offsets has to follow the real trim, not the
++    // space/tab indent the block dispatcher measured.
++    "\u{a0}nbsp leads the paragraph\nsecond *line*",
++    "\u{b}vertical tab leads\nsecond line",
++    "\u{c}form feed leads *the* line",
++    "para *one*\u{a0}\ntrailing nbsp after markers \u{a0}",
++    "  \u{a0} *mixed* leading whitespace\n  \u{a0} and again",
++    "\u{feff}bom paragraph",
++    "nul\0byte paragraph",
++    "   \t  \n\n   leading blanks then text",
++    "para ending at EOF without newline",
++    "*",
++    "|",
++    "\n\n\n",
++];
++
++fn generated() -> Vec<String> {
++    let mut documents = Vec::new();
++
++    // A long-line encyclopedia shape: many markers, one very long line.
++    let mut article = String::new();
++    for paragraph in 0..12 {
++        for sentence in 0..8 {
++            article.push_str(
++                "The subject is described in the literature as a [notable](https://example.com/x) ",
++            );
++            article.push_str("case of *emphasis*, `inline code`, and _underscores_; see also ");
++            article.push_str("<https://example.org> and the note & the caveat. ");
++            if sentence % 3 == 0 {
++                article.push_str("A pipe | appears here too. ");
++            }
++        }
++        article.push('\n');
++        if paragraph % 2 == 0 {
++            article.push_str("A second line of the same paragraph continues the thought.\n");
++        }
++        article.push('\n');
++    }
++    documents.push(article);
++
++    // The same content with CRLF endings.
++    documents.push(documents[0].replace('\n', "\r\n"));
++
++    // Very short lines: the shape most likely to be sensitive to per-line
++    // bookkeeping rather than per-byte scanning.
++    let mut short = String::new();
++    for index in 0..400 {
++        short.push_str(if index % 7 == 0 { "*a*" } else { "ab" });
++        short.push('\n');
++        if index % 13 == 0 {
++            short.push('\n');
++        }
++    }
++    documents.push(short);
++
++    // Marker-dense text: every byte a candidate.
++    let mut dense = String::new();
++    for index in 0..500 {
++        dense.push(b"*_`[!~\\<&{^$=|"[index % 14] as char);
++        if index % 40 == 39 {
++            dense.push('\n');
++        }
++    }
++    documents.push(dense);
++
++    // A paragraph longer than the memo's inline capacity, so the spill path
++    // and the reuse of the spilled buffer both run.
++    let mut spill = String::new();
++    for index in 0..900 {
++        spill.push_str("word ");
++        if index % 5 == 0 {
++            spill.push_str("*em* ");
++        }
++    }
++    spill.push_str("\n\nsecond paragraph *with* markers\n");
++    documents.push(spill);
++
++    // Paragraphs interrupted by every block starter, each after a paragraph
++    // line that the memo has already recorded.
++    for interrupt in [
++        "# atx",
++        "> quote",
++        "- bullet",
++        "+ bullet",
++        "1. ordered",
++        "```fence",
++        "~~~fence",
++        "***",
++        "---",
++        "___",
++        "<div>",
++        "<!-- c -->",
++        ": body",
++        "    code",
++        "$$",
++        "{expr}",
++        "import a from 'b'",
++        "| a |\n| - |",
++    ] {
++        documents.push(format!("paragraph line one\nline two\n{interrupt}\ntail"));
++        documents.push(format!("> quoted paragraph\n> {interrupt}\n\ntail"));
++        documents.push(format!("- item paragraph\n  {interrupt}\n\ntail"));
++    }
++
++    // Deeply nested lazy continuation, where sub-parsers build their own memo.
++    documents.push(
++        "> > > deep quote paragraph\nlazy one\nlazy two\n\n- > item quote\n  lazy three\n"
++            .to_string(),
++    );
++
++    documents
++}
++
++#[test]
++fn ordinary_paragraphs_replay_a_recording() {
++    let source = "a paragraph with *markers* and [a link](/x)\nand a second line\n\n\
++                  | pipe | in prose\n\nlast paragraph\n";
++    for (name, options) in [
++        ("commonmark", ParserOptions::commonmark()),
++        ("gfm", ParserOptions::gfm()),
++    ] {
++        let replayed = replays(|| drop(debug_parse(source, &options)));
++        assert_eq!(replayed, 3, "{name} should replay every paragraph");
++        let scanned = replays(|| without_recording(|| drop(debug_parse(source, &options))));
++        assert_eq!(scanned, 0, "{name} should not replay with recording off");
++    }
++}
++
++#[test]
++fn paths_without_a_complete_recording_fall_back_to_scanning() {
++    let gfm = ParserOptions::gfm();
++    // A setext heading is not a paragraph, and a paragraph holding a line
++    // comment has a hole in its recording.
++    for source in ["heading text\n===\n", "para\n---\n"] {
++        assert_eq!(replays(|| drop(debug_parse(source, &gfm))), 0, "{source:?}");
++    }
++    let commented = ParserOptions {
++        line_comments: true,
++        ..ParserOptions::gfm()
++    };
++    assert_eq!(
++        replays(|| drop(debug_parse("para one\n// note\npara two\n", &commented))),
++        0
++    );
++    // A trailing comment leaves the content itself fully recorded, but the
++    // paragraph still gives up its memo rather than reasoning about the hole.
++    assert_eq!(
++        replays(|| drop(debug_parse("para one\n// trailing\n", &commented))),
++        0
++    );
++}
++
++#[test]
++fn recorded_markers_reproduce_the_scanned_parse_on_the_corpus() {
++    let profiles = profiles();
++    for source in CORPUS {
++        for (name, options) in &profiles {
++            assert_same_parse(source, options, &format!("{name}: {source:?}"));
++        }
++    }
++}
++
++#[test]
++fn recorded_markers_reproduce_the_scanned_parse_on_generated_documents() {
++    let profiles = profiles();
++    for (index, source) in generated().iter().enumerate() {
++        for (name, options) in &profiles {
++            assert_same_parse(source, options, &format!("{name}: generated {index}"));
++        }
++    }
++}
++
++#[test]
++fn recorded_markers_reproduce_the_scanned_parse_on_the_specification_fixtures() {
++    // Whole specification documents: thousands of block transitions, every
++    // construct the parser knows, and the long prose lines the memo targets.
++    let fixtures = [
++        (
++            "commonmark",
++            include_str!("../../../tests/spec_fixtures/commonmark-0.31.2-spec.txt"),
++        ),
++        (
++            "gfm",
++            include_str!("../../../tests/spec_fixtures/gfm-extensions-spec.txt"),
++        ),
++        (
++            "changelog",
++            include_str!("../../../benches/fixtures/upstream-changelog.md"),
++        ),
++    ];
++    let profiles = [
++        ("commonmark", ParserOptions::commonmark()),
++        ("gfm", ParserOptions::gfm()),
++        (
++            "everything",
++            ParserOptions {
++                highlight: true,
++                inline_footnotes: true,
++                superscript: true,
++                math: true,
++                definition_lists: true,
++                heading_attributes: true,
++                line_comments: true,
++                ..ParserOptions::gfm()
++            },
++        ),
++    ];
++    for (fixture, source) in fixtures {
++        for (name, options) in &profiles {
++            assert_same_parse(source, options, &format!("{name}: {fixture}"));
++            let crlf = source.replace('\n', "\r\n");
++            assert_same_parse(&crlf, options, &format!("{name}: {fixture} (CRLF)"));
++        }
++    }
++}
+diff --git a/crates/ferromark/src/parser/math.rs b/crates/ferromark/src/parser/math.rs
+index 45622e35..4fde4c8e 100644
+--- a/crates/ferromark/src/parser/math.rs
++++ b/crates/ferromark/src/parser/math.rs
+@@ -22,12 +22,16 @@ impl<'a> Parser<'a> {
+             && math_block_close(self.source.as_bytes(), line_start + trimmed_offset + 2).is_some()
+     }
+ 
+-    pub(super) fn parse_math_block(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
++    pub(super) fn parse_math_block(
++        &mut self,
++        start: usize,
++        memo: &mut super::line_markers::MarkerMemo,
++    ) -> ParseResult<Option<Node<'a>>> {
+         let line = self.line_at(start);
+         let trimmed_offset = line.len() - line.trim_start_matches([' ', '\t']).len();
+         let open = start + trimmed_offset;
+         let Some(close) = math_block_close(self.source.as_bytes(), open + 2) else {
+-            return self.parse_paragraph(start, None);
++            return self.parse_paragraph(start, None, memo);
+         };
+         let close_end = close + 2;
+         self.position = next_line_start(self.source.as_bytes(), close_end);
+diff --git a/crates/ferromark/src/parser/mod.rs b/crates/ferromark/src/parser/mod.rs
+index 33b5a1f8..fc64f7df 100644
+--- a/crates/ferromark/src/parser/mod.rs
++++ b/crates/ferromark/src/parser/mod.rs
+@@ -60,6 +60,7 @@ mod inline_html;
+ mod inline_link;
+ mod leaf;
+ mod line_comments;
++mod line_markers;
+ mod line_scan;
+ mod list;
+ mod list_item;
+@@ -334,8 +335,16 @@ impl<'a> Parser<'a> {
+             .allocator
+             .new_vec_with_capacity(Self::document_children_capacity(self.source.len()));
+ 
++        // One marker buffer per (sub-)parser, reused by every paragraph it
++        // reads, so ordinary documents record into stack storage and an
++        // unusually marker-dense paragraph grows the buffer at most once.
++        // The definition-collection phase builds no inline content, so it
++        // keeps the original line scan.
++        let mut memo =
++            line_markers::MarkerMemo::new(&self.options, self.phase == ParsePhase::Document);
++
+         while !self.is_at_end() {
+-            if let Some(node) = self.parse_block()? {
++            if let Some(node) = self.parse_block(&mut memo)? {
+                 children.push(node);
+             }
+         }
+-- 
+2.55.0
+

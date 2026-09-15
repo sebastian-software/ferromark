@@ -1,0 +1,400 @@
+From 5abf69e0b02854172dd40b55d16c0f716c450001 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 23:34:19 +0200
+Subject: [PATCH] perf(renderer): cut escape runs out of the byte slice
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Both escapers scan `s.as_bytes()` and then hand `&s[start..i]` to the run
+copier. That slicing is `str` indexing, so it calls `is_char_boundary` on
+both ends of every run — re-establishing at run time exactly what the
+scanner has just proven, because a run is always cut at a byte the
+classifier flagged and every flagged byte is ASCII. A time profile of the
+render stage attributes a visible share of self time to those checks: on
+a URL-dense document they are the second largest item after the URL
+scanner itself, and they show up on ordinary documentation pages too,
+since the check lands once per run and runs are short.
+
+Take the runs from the byte slice instead and copy them as bytes.
+`push_run`/`push_run_long` now take `&[u8]` and are `unsafe`, because a
+byte slice no longer carries the "whole characters" guarantee a `&str`
+did; each escape loop states in one `SAFETY` comment why its cuts fall on
+char boundaries — `start` is zero, one past a flagged ASCII byte, or the
+end of a percent-encoded run, and `i` is a flagged ASCII byte — and why
+the output keeps ending on one. The copy strategies, the scanners and the
+growth checks are untouched; `push_run_long`'s long-run case now copies
+through `memcpy` directly rather than via `push_str`, which is what
+`push_str` did with the reserve already taken.
+
+Output is unchanged. The differential tests gain an independent text
+oracle, a UTF-8 re-validation of every escaper result (a run that split a
+multi-byte character would leave invalid UTF-8 that string comparison
+alone would not catch), a sweep of two-, three-, four-byte and mixed-width
+fillers across all three copy widths, and a URL run-length sweep across
+the same boundaries.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ crates/ferromark/src/renderer/html/escape.rs  | 88 +++++++++++++------
+ .../src/renderer/html/escape/tests.rs         | 54 ++++++++++++
+ .../ferromark/src/renderer/html/escape/url.rs | 67 ++++++++------
+ .../src/renderer/html/escape/url/tests.rs     | 26 ++++++
+ 4 files changed, 181 insertions(+), 54 deletions(-)
+
+diff --git a/crates/ferromark/src/renderer/html/escape.rs b/crates/ferromark/src/renderer/html/escape.rs
+index d29ad290..1b0f0b25 100644
+--- a/crates/ferromark/src/renderer/html/escape.rs
++++ b/crates/ferromark/src/renderer/html/escape.rs
+@@ -154,22 +154,34 @@ fn copy_eight(bytes: &[u8], from: usize) -> [u8; 8] {
+ /// `push_str` cannot avoid it: any length the compiler cannot see lowers to a
+ /// `memcpy` call. Two overlapping loads and stores cover every run up to 16
+ /// bytes with no length-dependent branching inside the copy.
++///
++/// The run arrives as bytes, not as a `&str`, because the escapers cut their
++/// runs at ASCII bytes they have just classified: re-deriving a `&str` would
++/// make `is_char_boundary` re-prove that for both ends of every run, which is
++/// a measurable share of escape-dense documents.
++///
++/// # Safety
++///
++/// `src` must hold whole UTF-8 characters, and `out` must end on a char
++/// boundary, so that appending the bytes leaves `out` valid UTF-8.
+ #[allow(unsafe_code)]
+ #[inline]
+-fn push_run(out: &mut String, src: &str) {
++unsafe fn push_run(out: &mut String, src: &[u8]) {
+     let len = src.len();
+     if len > 16 {
+-        push_run_long(out, src);
++        // SAFETY: the caller's guarantee is passed straight through.
++        unsafe { push_run_long(out, src) };
+         return;
+     }
+     out.reserve(len);
+ 
+     // SAFETY: `reserve` above guarantees `len` spare bytes past the current
+     // length, and every write below lands inside `[0, len)` of that spare
+-    // region, so `set_len` covers exactly the bytes written. `src` is a `&str`
+-    // appended at the end of `out`, which is a char boundary, so the result
+-    // stays valid UTF-8. The two pointers cannot overlap: `out` is borrowed
+-    // uniquely, so no live `&str` can alias its buffer.
++    // region, so `set_len` covers exactly the bytes written. The caller
++    // guarantees `src` holds whole UTF-8 characters appended at a char
++    // boundary, so the result stays valid UTF-8. The two pointers cannot
++    // overlap: `out` is borrowed uniquely, so no live slice can alias its
++    // buffer.
+     unsafe {
+         let vec = out.as_mut_vec();
+         let at = vec.len();
+@@ -195,30 +207,36 @@ fn push_run(out: &mut String, src: &str) {
+ /// Runs of 17-64 bytes -- the prose between two escaped bytes, most `href`
+ /// values -- are still short enough that `memmove` spends most of its time
+ /// choosing a strategy, so they are copied with two or four overlapping
+-/// 16-byte moves instead. Longer runs go to `push_str`. This stays out of
++/// 16-byte moves instead. Longer runs go to `memcpy`. This stays out of
+ /// line on purpose: inlining the wider copies into the escape loops made
+ /// their bodies larger and measurably slowed escape-dense code blocks.
++///
++/// # Safety
++///
++/// As for [`push_run`]: `src` must hold whole UTF-8 characters and `out` must
++/// end on a char boundary.
+ #[allow(unsafe_code)]
+ #[inline(never)]
+-fn push_run_long(out: &mut String, src: &str) {
++unsafe fn push_run_long(out: &mut String, src: &[u8]) {
+     let len = src.len();
+-    if len > 64 {
+-        out.push_str(src);
+-        return;
+-    }
+     out.reserve(len);
+ 
+     // SAFETY: `reserve` above guarantees `len` spare bytes past the current
+-    // length; `len` is in 17..=64, so every 16-byte block below lands inside
++    // length; `len` is at least 17, so every 16-byte block below lands inside
+     // `[0, len)` of that spare region and `set_len` covers exactly the bytes
+-    // written. `src` is a `&str` appended at a char boundary, so the result
+-    // stays valid UTF-8, and the buffers cannot overlap because `out` is
+-    // borrowed uniquely.
++    // written. The caller guarantees `src` holds whole UTF-8 characters
++    // appended at a char boundary, so the result stays valid UTF-8, and the
++    // buffers cannot overlap because `out` is borrowed uniquely.
+     unsafe {
+         let vec = out.as_mut_vec();
+         let at = vec.len();
+         let dst = vec.as_mut_ptr().add(at);
+         let src = src.as_ptr();
++        if len > 64 {
++            std::ptr::copy_nonoverlapping(src, dst, len);
++            vec.set_len(at + len);
++            return;
++        }
+         std::ptr::copy_nonoverlapping(src, dst, 16);
+         std::ptr::copy_nonoverlapping(src.add(len - 16), dst.add(len - 16), 16);
+         if len > 32 {
+@@ -234,6 +252,13 @@ fn push_run_long(out: &mut String, src: &str) {
+ /// `mask_of` proves a whole 8-byte word clean in one test; when a word is
+ /// dirty its mask names the exact byte, so no byte is ever examined twice.
+ /// `flags`/`table` drive the sub-word tail and the replacement itself.
++///
++/// Runs are cut out of the byte slice rather than out of `s`. Every cut sits
++/// on a byte the scanner has just classified as ASCII, so the ends are char
++/// boundaries by construction; slicing `s` instead would have `is_char_boundary`
++/// re-establish that at run time, twice per run, for a fact the loop already
++/// knows.
++#[allow(unsafe_code)]
+ #[inline]
+ fn escape_into(
+     out: &mut String,
+@@ -248,20 +273,27 @@ fn escape_into(
+     let bytes = s.as_bytes();
+     let mut start = 0usize;
+ 
+-    loop {
+-        let i = first_flagged(bytes, start, &mask_of, flags, tables);
+-        if i >= bytes.len() {
+-            break;
+-        }
+-        if start < i {
+-            push_run(out, &s[start..i]);
++    // SAFETY: `start` is zero or one past a flagged byte and `i` is the
++    // position of a flagged byte; every flagged byte is ASCII, so both ends of
++    // every run below fall on a char boundary of `s` and no run splits a
++    // multi-byte character. The replacements are ASCII too, so `out` keeps
++    // ending on a char boundary as well.
++    unsafe {
++        loop {
++            let i = first_flagged(bytes, start, &mask_of, flags, tables);
++            if i >= bytes.len() {
++                break;
++            }
++            if start < i {
++                push_run(out, &bytes[start..i]);
++            }
++            push_run(out, table[bytes[i] as usize].as_bytes());
++            start = i + 1;
+         }
+-        push_run(out, table[bytes[i] as usize]);
+-        start = i + 1;
+-    }
+ 
+-    if start < bytes.len() {
+-        push_run(out, &s[start..]);
++        if start < bytes.len() {
++            push_run(out, &bytes[start..]);
++        }
+     }
+ }
+ 
+diff --git a/crates/ferromark/src/renderer/html/escape/tests.rs b/crates/ferromark/src/renderer/html/escape/tests.rs
+index 409c05b2..ea0fa9f2 100644
+--- a/crates/ferromark/src/renderer/html/escape/tests.rs
++++ b/crates/ferromark/src/renderer/html/escape/tests.rs
+@@ -20,6 +20,37 @@ fn reference(s: &str, flags: &[u8; 256], table: &[&'static str; 256]) -> String
+     String::from_utf8(out).expect("escaping only rewrites ASCII bytes")
+ }
+ 
++/// Independent oracle for text escaping: a `match` over the five bytes the
++/// renderer replaces, with every other byte copied through verbatim.
++///
++/// Unlike [`reference`] it shares no table with the implementation, so a
++/// table indexed with the wrong byte shows up here even though both sides
++/// would agree on a shared table.
++fn text_oracle(s: &str) -> String {
++    let mut out: Vec<u8> = Vec::new();
++    for byte in s.bytes() {
++        match byte {
++            b'&' => out.extend_from_slice(b"&amp;"),
++            b'<' => out.extend_from_slice(b"&lt;"),
++            b'>' => out.extend_from_slice(b"&gt;"),
++            b'"' => out.extend_from_slice(b"&quot;"),
++            b'\'' => out.extend_from_slice(b"&#39;"),
++            other => out.push(other),
++        }
++    }
++    String::from_utf8(out).expect("escaping only rewrites ASCII bytes")
++}
++
++/// The escapers copy runs as raw bytes, so a run that split a multi-byte
++/// character would leave the output string holding invalid UTF-8 rather than
++/// wrong text. Comparing strings would not notice; re-validating does.
++fn assert_valid_utf8(out: &str, what: &str, s: &str) {
++    assert!(
++        std::str::from_utf8(out.as_bytes()).is_ok(),
++        "{what} produced invalid UTF-8 for {s:?}"
++    );
++}
++
+ fn check(s: &str) {
+     let mut text = String::new();
+     write_escaped_into(&mut text, s);
+@@ -28,10 +59,13 @@ fn check(s: &str) {
+         reference(s, &ESCAPE_FLAG, &ESCAPE_TABLE),
+         "text escape: {s:?}"
+     );
++    assert_eq!(text, text_oracle(s), "text oracle: {s:?}");
++    assert_valid_utf8(&text, "text escape", s);
+ 
+     let mut url = String::new();
+     write_url_escaped_into(&mut url, s);
+     assert_eq!(url, reference_url(s), "url escape: {s:?}");
++    assert_valid_utf8(&url, "url escape", s);
+ 
+     let mut attributes = String::from("prefix:");
+     let mut expected = attributes.clone();
+@@ -49,6 +83,7 @@ fn check(s: &str) {
+     }
+     write_attribute_escaped_into(&mut attributes, s);
+     assert_eq!(attributes, expected, "attribute escape: {s:?}");
++    assert_valid_utf8(&attributes, "attribute escape", s);
+ }
+ 
+ #[test]
+@@ -214,3 +249,22 @@ fn short_run_copy_keeps_multibyte_sequences_intact() {
+         }
+     }
+ }
++
++#[test]
++fn run_copies_keep_multibyte_sequences_intact_at_every_copy_width() {
++    // Runs are cut out of the byte slice and copied as bytes, with the copy
++    // strategy chosen by length: two overlapping loads up to 16 bytes,
++    // overlapping 16-byte blocks up to 64, `memcpy` beyond that. Sweeping
++    // fillers of two, three and four bytes — and a mixed one whose characters
++    // do not divide the run evenly — puts a character boundary at every offset
++    // of every strategy, at both ends of a run and in the middle of one.
++    for filler in ["é", "→", "🙂", "aé→🙂"] {
++        for count in 0..=40usize {
++            let run = filler.repeat(count);
++            check(&run);
++            check(&format!("&{run}"));
++            check(&format!("{run}&"));
++            check(&format!("<{run}>{run}\""));
++        }
++    }
++}
+diff --git a/crates/ferromark/src/renderer/html/escape/url.rs b/crates/ferromark/src/renderer/html/escape/url.rs
+index 49c486a8..5ac0f6fc 100644
+--- a/crates/ferromark/src/renderer/html/escape/url.rs
++++ b/crates/ferromark/src/renderer/html/escape/url.rs
+@@ -64,37 +64,52 @@ const fn url_escape_mask(word: u64) -> u64 {
+ /// byte by byte just to bound its ASCII runs. Percent encoding operates on
+ /// the UTF-8 bytes, as required by cmark's URI renderer, and leaves existing
+ /// `%HH` sequences alone.
++///
++/// As in the text escaper, runs are cut out of the byte slice: the scanner
++/// has already classified the bytes bounding them, so `is_char_boundary`
++/// would only re-prove what the loop knows. It is worth more here — a URL
++/// flags a byte every few positions, so the checks land once per run in a
++/// loop whose runs are short.
++#[allow(unsafe_code)]
+ pub(super) fn write_url_segment(out: &mut String, s: &str) {
+     let bytes = s.as_bytes();
+     let mut start = 0usize;
+-    loop {
+-        let i = next_url_flagged(bytes, start);
+-        if i >= bytes.len() {
+-            break;
+-        }
+-        if start < i {
+-            push_run(out, &s[start..i]);
+-        }
+-        let byte = bytes[i];
+-        if byte >= 0x80 {
+-            // `start` sits on a char boundary and this is the first non-ASCII
+-            // byte after it, so the run begins at a leading byte and ends at
+-            // the next ASCII byte or the end of the string.
+-            let unicode_end = bytes[i..]
+-                .iter()
+-                .position(|&byte| byte < 0x80)
+-                .map_or(bytes.len(), |offset| i + offset);
+-            for &byte in &bytes[i..unicode_end] {
+-                push_percent_byte(out, byte);
++
++    // SAFETY: a run ends at a flagged byte and starts at zero, one past a
++    // flagged ASCII byte, or at the ASCII byte ending a percent-encoded
++    // non-ASCII run — all char boundaries of `s`, so no run splits a
++    // multi-byte character. Replacements and percent escapes are ASCII, so
++    // `out` keeps ending on a char boundary as well.
++    unsafe {
++        loop {
++            let i = next_url_flagged(bytes, start);
++            if i >= bytes.len() {
++                break;
++            }
++            if start < i {
++                push_run(out, &bytes[start..i]);
++            }
++            let byte = bytes[i];
++            if byte >= 0x80 {
++                // `start` sits on a char boundary and this is the first
++                // non-ASCII byte after it, so the run begins at a leading byte
++                // and ends at the next ASCII byte or the end of the string.
++                let unicode_end = bytes[i..]
++                    .iter()
++                    .position(|&byte| byte < 0x80)
++                    .map_or(bytes.len(), |offset| i + offset);
++                for &byte in &bytes[i..unicode_end] {
++                    push_percent_byte(out, byte);
++                }
++                start = unicode_end;
++            } else {
++                push_run(out, URL_ESCAPE_TABLE[byte as usize].as_bytes());
++                start = i + 1;
+             }
+-            start = unicode_end;
+-        } else {
+-            push_run(out, URL_ESCAPE_TABLE[byte as usize]);
+-            start = i + 1;
+         }
+-    }
+-    if start < bytes.len() {
+-        push_run(out, &s[start..]);
++        if start < bytes.len() {
++            push_run(out, &bytes[start..]);
++        }
+     }
+ }
+ 
+diff --git a/crates/ferromark/src/renderer/html/escape/url/tests.rs b/crates/ferromark/src/renderer/html/escape/url/tests.rs
+index 8da94ef0..4095b8d9 100644
+--- a/crates/ferromark/src/renderer/html/escape/url/tests.rs
++++ b/crates/ferromark/src/renderer/html/escape/url/tests.rs
+@@ -31,6 +31,32 @@ fn url_escape_matches_reference_at_every_offset_and_tail() {
+     }
+ }
+ 
++#[test]
++fn url_escape_copies_runs_of_every_length_intact() {
++    // URL runs are ASCII by construction, but they are cut out of the byte
++    // slice and copied by the same helper as text runs, so they still cross
++    // its strategy boundaries at 16 and 64 bytes. Bracket each length with a
++    // replacement, a percent-encoded character and nothing at all.
++    for len in [0usize, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 200] {
++        let run = "u".repeat(len);
++        for source in [
++            run.clone(),
++            format!("https://example.com/{run}"),
++            format!("{run} {run}"),
++            format!("&{run}&"),
++            format!("é{run}é"),
++        ] {
++            let mut actual = String::new();
++            write_url_escaped_into(&mut actual, &source);
++            assert_eq!(actual, reference_url(&source), "source: {source:?}");
++            assert!(
++                std::str::from_utf8(actual.as_bytes()).is_ok(),
++                "url escape produced invalid UTF-8 for {source:?}"
++            );
++        }
++    }
++}
++
+ #[test]
+ fn commonmark_url_syntax_bytes_are_percent_encoded() {
+     for (source, expected) in [
+-- 
+2.55.0
+

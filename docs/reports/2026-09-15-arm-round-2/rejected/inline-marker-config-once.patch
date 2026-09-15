@@ -1,0 +1,128 @@
+From 2f5faa8dda3c526afc856ae7d6aa8aefca7ca1fb Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 23:44:44 +0200
+Subject: [PATCH] perf(parser): derive the inline marker set once per parser
+
+Every inline parse, including the nested ones for link text and image
+alt, rebuilt its marker scanner from five option flags. Compute the
+option-derived marker set once per (sub-)parser and hand a copy to each
+scan.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ crates/ferromark/src/parser/inline.rs         |  3 +-
+ .../src/parser/inline/marker_scan.rs          | 30 +++++++++++++++++--
+ crates/ferromark/src/parser/mod.rs            |  7 +++++
+ 3 files changed, 37 insertions(+), 3 deletions(-)
+
+diff --git a/crates/ferromark/src/parser/inline.rs b/crates/ferromark/src/parser/inline.rs
+index c994d1ba..7b63cffb 100644
+--- a/crates/ferromark/src/parser/inline.rs
++++ b/crates/ferromark/src/parser/inline.rs
+@@ -16,6 +16,7 @@ mod marker_scan;
+ mod scan;
+ mod script_span;
+ 
++pub(in crate::parser) use self::marker_scan::InlineMarkerConfig;
+ use self::marker_scan::InlineMarkerScan;
+ use self::script_span::same_marker_neighbor;
+ use super::line_scan::{is_line_ending_byte, line_terminator_end};
+@@ -92,7 +93,7 @@ impl<'a> Parser<'a> {
+         offset: usize,
+     ) -> ParseResult<Vec<'a, Node<'a>>> {
+         let bytes = content.as_bytes();
+-        let mut markers = InlineMarkerScan::new(&self.options);
++        let mut markers = InlineMarkerScan::with_config(self.inline_markers);
+         let first_special = markers.next(bytes, 0);
+ 
+         // Plain text is both the most common inline shape and exactly one AST
+diff --git a/crates/ferromark/src/parser/inline/marker_scan.rs b/crates/ferromark/src/parser/inline/marker_scan.rs
+index d766131f..ec6b05a7 100644
+--- a/crates/ferromark/src/parser/inline/marker_scan.rs
++++ b/crates/ferromark/src/parser/inline/marker_scan.rs
+@@ -50,8 +50,20 @@ pub(super) struct InlineMarkerScan {
+     scan: ForwardScan,
+ }
+ 
+-impl InlineMarkerScan {
+-    pub(super) const fn new(options: &crate::ParserOptions) -> Self {
++/// The option-derived part of an [`InlineMarkerScan`].
++///
++/// Every inline parse — including the nested ones for link text and image
++/// alt — starts a fresh scan, and deriving these two values from five option
++/// flags each time showed up in parse profiles. The parser computes them
++/// once per (sub-)parser and hands the copy to each scan.
++#[derive(Clone, Copy)]
++pub(in crate::parser) struct InlineMarkerConfig {
++    optional: u8,
++    notes_only: bool,
++}
++
++impl InlineMarkerConfig {
++    pub(in crate::parser) const fn new(options: &crate::ParserOptions) -> Self {
+         let mut optional = 0;
+         if options.mdx {
+             optional |= INLINE_MARKER_MDX;
+@@ -68,6 +80,20 @@ impl InlineMarkerScan {
+         Self {
+             optional,
+             notes_only: options.inline_footnotes && !options.superscript,
++        }
++    }
++}
++
++impl InlineMarkerScan {
++    #[cfg(test)]
++    pub(super) const fn new(options: &crate::ParserOptions) -> Self {
++        Self::with_config(InlineMarkerConfig::new(options))
++    }
++
++    pub(super) const fn with_config(config: InlineMarkerConfig) -> Self {
++        Self {
++            optional: config.optional,
++            notes_only: config.notes_only,
+             scan: ForwardScan::new(),
+         }
+     }
+diff --git a/crates/ferromark/src/parser/mod.rs b/crates/ferromark/src/parser/mod.rs
+index 7dfc9145..d8398336 100644
+--- a/crates/ferromark/src/parser/mod.rs
++++ b/crates/ferromark/src/parser/mod.rs
+@@ -193,6 +193,10 @@ pub struct Parser<'a> {
+ 
+     /// Reuse a comment-stripped definition region across consecutive definitions.
+     comment_definition_region: Option<std::rc::Rc<line_comments::CommentDefinitionRegion<'a>>>,
++
++    /// Option-derived inline marker set, computed once per parser instead of
++    /// on every nested inline parse.
++    inline_markers: inline::InlineMarkerConfig,
+ }
+ 
+ impl<'a> Parser<'a> {
+@@ -222,6 +226,7 @@ impl<'a> Parser<'a> {
+             .as_ref()
+             .map_or(0, |metadata| metadata.span.end as usize);
+         let (source, source_map) = source_normalization::normalize(allocator, source, body_start);
++        let inline_markers = inline::InlineMarkerConfig::new(&options);
+         let mut parser = Self {
+             allocator,
+             source,
+@@ -244,6 +249,7 @@ impl<'a> Parser<'a> {
+             last_closer: std::cell::RefCell::default(),
+             definition_region: None,
+             comment_definition_region: None,
++            inline_markers,
+         };
+         // Discover document-wide definitions once, before inline resolution
+         // (see `prepass.rs`). Collection itself must not recurse.
+@@ -299,6 +305,7 @@ impl<'a> Parser<'a> {
+             last_closer: std::cell::RefCell::default(),
+             definition_region: None,
+             comment_definition_region: None,
++            inline_markers: self.inline_markers,
+         }
+     }
+ 
+-- 
+2.55.0
+

@@ -1,0 +1,1003 @@
+From b5b1c8a950a78158a37c2cb690ad3b0a7a6b6e6d Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 22:25:39 +0200
+Subject: [PATCH 1/2] perf(renderer): write text escapes through a raw output
+ cursor
+
+The text escaper emitted its result one piece at a time: every clean run
+and every replacement went through `push_run`, which reserved, re-read the
+string's length and capacity from memory, and wrote the new length back.
+A text node is short and a replacement is at most six bytes, so that
+bookkeeping ran as often as the copies it guarded.
+
+Introduce `escape::cursor::Cursor`, which reserves once per escaper call
+and then keeps the write pointer and the spare byte count in locals for
+the rest of the call, committing the length once at the end. The growth
+path is cold and out of line; it commits the bytes written so far before
+reserving, so the string's length never covers bytes that were not
+written and an unwind leaves it valid, only shorter. Replacements move
+from a `[&str; 256]` of fat pointers to a table of packed words that hold
+the text and its length in one lane, so a replacement is a single
+eight-byte store plus an advance instead of a load, a branch and a copy.
+The wide run copies stay in an out-of-line helper, as before, to keep the
+loop body small.
+
+Output is unchanged. `escape/tests.rs` gains an oracle that shares no
+table or copy path with the escaper, and drives it through outputs with
+no spare capacity, with exactly the reserved amount, and with less than
+the replacements need, plus a pseudorandom sweep over the whole byte
+range.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ crates/ferromark/src/renderer/html/escape.rs  |  32 +-
+ .../src/renderer/html/escape/cursor.rs        | 274 ++++++++++++++++++
+ .../src/renderer/html/escape/tests.rs         | 114 +++++++-
+ 3 files changed, 408 insertions(+), 12 deletions(-)
+ create mode 100644 crates/ferromark/src/renderer/html/escape/cursor.rs
+
+diff --git a/crates/ferromark/src/renderer/html/escape.rs b/crates/ferromark/src/renderer/html/escape.rs
+index d29ad290..1a2879da 100644
+--- a/crates/ferromark/src/renderer/html/escape.rs
++++ b/crates/ferromark/src/renderer/html/escape.rs
+@@ -10,7 +10,7 @@
+ // Replacement strings for the bytes that must be escaped. `ESCAPE_FLAG[b]`
+ // answers "does byte `b` need replacing" for the scalar tail; the hot loop
+ // uses the SWAR word tests below instead of per-byte lookups.
+-static ESCAPE_TABLE: [&str; 256] = {
++const ESCAPE_STRINGS: [&str; 256] = {
+     let mut table: [&str; 256] = [""; 256];
+     table[b'&' as usize] = "&amp;";
+     table[b'<' as usize] = "&lt;";
+@@ -20,6 +20,10 @@ static ESCAPE_TABLE: [&str; 256] = {
+     table
+ };
+ 
++// The same replacements packed one per word for the output cursor: text in
++// the low bytes, length in the top byte. See `cursor::pack_replacement`.
++static ESCAPE_WORDS: [u64; 256] = pack_table(&ESCAPE_STRINGS);
++
+ static ESCAPE_FLAG: [u8; 256] = {
+     let mut t = [0u8; 256];
+     t[b'&' as usize] = 1;
+@@ -30,11 +34,13 @@ static ESCAPE_FLAG: [u8; 256] = {
+     t
+ };
+ 
++mod cursor;
+ mod nibble;
+ mod url;
+ 
+ use url::{ipv6_authority_brackets, write_url_segment};
+ 
++use cursor::{Cursor, pack_table};
+ use nibble::{ESCAPE_NIBBLES, NibbleTables, first_flagged_simd};
+ 
+ const ONES: u64 = 0x0101_0101_0101_0101;
+@@ -233,19 +239,26 @@ fn push_run_long(out: &mut String, src: &str) {
+ ///
+ /// `mask_of` proves a whole 8-byte word clean in one test; when a word is
+ /// dirty its mask names the exact byte, so no byte is ever examined twice.
+-/// `flags`/`table` drive the sub-word tail and the replacement itself.
++/// `flags`/`words` drive the sub-word tail and the replacement itself.
++///
++/// Everything the loop emits goes through one [`Cursor`], so the output's
++/// length and capacity are read once on entry and written back once on exit
++/// instead of once per copied piece.
+ #[inline]
+ fn escape_into(
+     out: &mut String,
+     s: &str,
+     mask_of: impl Fn(u64) -> u64,
+     flags: &[u8; 256],
+-    table: &[&'static str; 256],
++    words: &[u64; 256],
+     tables: &NibbleTables,
+ ) {
+     // The invariant: bytes in `s[start..i]` have not been copied yet, and
+     // everything before `start` has already been emitted in escaped form.
+     let bytes = s.as_bytes();
++    // `reserve(s.len())` covers the no-escape case exactly and reduces growth
++    // even when replacements make the final output longer.
++    let mut cursor = Cursor::new(out, s.len());
+     let mut start = 0usize;
+ 
+     loop {
+@@ -254,28 +267,27 @@ fn escape_into(
+             break;
+         }
+         if start < i {
+-            push_run(out, &s[start..i]);
++            cursor.push_run(&s[start..i]);
+         }
+-        push_run(out, table[bytes[i] as usize]);
++        cursor.push_replacement(words[bytes[i] as usize]);
+         start = i + 1;
+     }
+ 
+     if start < bytes.len() {
+-        push_run(out, &s[start..]);
++        cursor.push_run(&s[start..]);
+     }
++
++    cursor.finish();
+ }
+ 
+ #[inline]
+ pub(super) fn write_escaped_into(out: &mut String, s: &str) {
+-    // `reserve(s.len())` covers the no-escape case exactly and reduces growth
+-    // even when replacements make the final output longer.
+-    out.reserve(s.len());
+     escape_into(
+         out,
+         s,
+         escape_mask,
+         &ESCAPE_FLAG,
+-        &ESCAPE_TABLE,
++        &ESCAPE_WORDS,
+         &ESCAPE_NIBBLES,
+     );
+ }
+diff --git a/crates/ferromark/src/renderer/html/escape/cursor.rs b/crates/ferromark/src/renderer/html/escape/cursor.rs
+new file mode 100644
+index 00000000..7bf9efa4
+--- /dev/null
++++ b/crates/ferromark/src/renderer/html/escape/cursor.rs
+@@ -0,0 +1,274 @@
++//! Raw output cursor shared by the escape loops.
++//!
++//! An escaper emits its result in many short pieces: a clean run, a short
++//! replacement, another run. Appending each piece through `String` re-reads
++//! the length and capacity from memory, branches on whether the piece fits,
++//! and writes the new length back — once per piece, however short the piece
++//! is. On documentation-style corpora that bookkeeping shows up in profiles
++//! next to the copies it guards, because a text node is short and a
++//! replacement is five bytes at most.
++//!
++//! [`Cursor`] hoists it out of the loop. One `reserve` per escaper call sizes
++//! the output for the no-escape case, the write pointer and the spare byte
++//! count then stay in registers for the rest of the call, and the string's
++//! length is written back once at the end. Only growth touches the `String`
++//! again; that path is cold and out of line, and it commits the bytes written
++//! so far *before* reserving, so the length never covers bytes that were not
++//! written and the string stays valid UTF-8 even if the reserve unwinds.
++
++/// Bit position of the length byte inside a packed replacement.
++const LEN_SHIFT: u32 = 56;
++
++/// Longest replacement that still leaves the top lane free for the length.
++/// The longest one either escaper emits is `&quot;` at six bytes.
++const MAX_REPLACEMENT: usize = 7;
++
++/// Packs a replacement string into one word: its bytes in the low lanes, its
++/// length in the top lane.
++///
++/// A replacement is at most [`MAX_REPLACEMENT`] bytes, so the length lane
++/// never collides with the text, and a table of these words is half the size
++/// of the equivalent `[&str; 256]` of fat pointers while keeping the bytes
++/// themselves in the table instead of in a separate rodata string. Writing a
++/// replacement is then one unaligned eight-byte store plus an advance by the
++/// packed length: no length-dependent branch, no second load.
++pub(super) const fn pack_replacement(s: &str) -> u64 {
++    let bytes = s.as_bytes();
++    assert!(
++        bytes.len() <= MAX_REPLACEMENT,
++        "replacement is too long to pack"
++    );
++    let mut word = (bytes.len() as u64) << LEN_SHIFT;
++    let mut i = 0;
++    while i < bytes.len() {
++        word |= (bytes[i] as u64) << (8 * i as u32);
++        i += 1;
++    }
++    word
++}
++
++/// Packs a whole byte-indexed replacement table. Unused entries pack to zero,
++/// which writes nothing and advances nothing.
++pub(super) const fn pack_table(strings: &[&str; 256]) -> [u64; 256] {
++    let mut table = [0u64; 256];
++    let mut i = 0;
++    while i < 256 {
++        table[i] = pack_replacement(strings[i]);
++        i += 1;
++    }
++    table
++}
++
++/// A write pointer into a `String`'s spare capacity.
++///
++/// The string's length stays at the value it had when the cursor was created
++/// (or at the last growth) until [`Cursor::finish`], so no intermediate state
++/// of the string is ever observable and none of the writes below have to
++/// update it.
++pub(super) struct Cursor<'a> {
++    /// The output. Untouched between growths.
++    out: &'a mut String,
++    /// Next byte to write; `out.len() + written` bytes into the buffer.
++    dst: *mut u8,
++    /// Spare capacity left at `dst`.
++    remaining: usize,
++    /// Value `remaining` had when the length was last committed. The
++    /// difference to `remaining` is the number of uncommitted bytes, which
++    /// avoids re-reading the buffer pointer to recover it.
++    spare: usize,
++}
++
++impl<'a> Cursor<'a> {
++    /// Reserves `additional` bytes and takes a cursor to the spare capacity.
++    #[allow(unsafe_code)]
++    #[inline]
++    pub(super) fn new(out: &'a mut String, additional: usize) -> Self {
++        out.reserve(additional);
++
++        // SAFETY: the vector is only read here — `len` and `capacity` are
++        // taken without changing either, so the string is still the valid
++        // UTF-8 it was on entry. `len <= capacity`, so the write pointer is at
++        // most one past the end of the buffer, and `remaining` counts exactly
++        // the spare bytes at it.
++        let (dst, remaining) = unsafe {
++            let vec = out.as_mut_vec();
++            let len = vec.len();
++            (vec.as_mut_ptr().add(len), vec.capacity() - len)
++        };
++
++        Self {
++            out,
++            dst,
++            remaining,
++            spare: remaining,
++        }
++    }
++
++    /// Commits the bytes written so far and makes room for `need` more.
++    ///
++    /// Out of line and cold: the escapers reserve for the no-escape case up
++    /// front, so this runs only when replacements push the output past that.
++    #[allow(unsafe_code)]
++    #[cold]
++    #[inline(never)]
++    fn grow(&mut self, need: usize) {
++        let written = self.spare - self.remaining;
++
++        // SAFETY: `written` bytes were written at the end of the buffer by the
++        // methods below, each of them a whole run or a whole replacement, so
++        // extending the length by it covers initialized bytes only and ends on
++        // a char boundary. The reserve comes after that commit, so an unwind
++        // from it leaves a valid, merely shorter string. Afterwards the buffer
++        // pointer and capacity are re-read from the same vector, which keeps
++        // the cursor's invariants across a reallocation.
++        unsafe {
++            let vec = self.out.as_mut_vec();
++            let len = vec.len() + written;
++            vec.set_len(len);
++            vec.reserve(need);
++            self.dst = vec.as_mut_ptr().add(len);
++            self.remaining = vec.capacity() - len;
++        }
++
++        self.spare = self.remaining;
++    }
++
++    /// Records `len` written bytes.
++    ///
++    /// # Safety
++    ///
++    /// `len` bytes must have just been written at `dst`, and `len` must not
++    /// exceed `remaining`.
++    #[allow(unsafe_code)]
++    #[inline]
++    unsafe fn advance(&mut self, len: usize) {
++        // SAFETY: the caller guarantees `len <= self.remaining`, so the new
++        // pointer stays inside the buffer or one past its end.
++        self.dst = unsafe { self.dst.add(len) };
++        self.remaining -= len;
++    }
++
++    /// Appends a packed replacement produced by [`pack_replacement`].
++    ///
++    /// The store is a fixed eight bytes regardless of the replacement's
++    /// length, so the spare capacity is topped up to eight first; the bytes
++    /// past the replacement land in spare capacity the next write overwrites.
++    #[allow(unsafe_code)]
++    #[inline]
++    pub(super) fn push_replacement(&mut self, packed: u64) {
++        if self.remaining < 8 {
++            self.grow(8);
++        }
++        let len = (packed >> LEN_SHIFT) as usize;
++
++        // SAFETY: `remaining >= 8` here, so all eight bytes land in spare
++        // capacity, and the low `len <= MAX_REPLACEMENT < 8` of them are the
++        // replacement text `advance` then commits. Replacements are ASCII, so
++        // the result stays valid UTF-8.
++        unsafe {
++            std::ptr::copy_nonoverlapping(packed.to_le_bytes().as_ptr(), self.dst, 8);
++            self.advance(len);
++        }
++    }
++
++    /// Appends a run of clean bytes, copying short runs inline instead of
++    /// handing them to `memmove`.
++    ///
++    /// Half of the byte runs the escapers copy are under 16 bytes long — text
++    /// nodes are short, and the gap between two escapes is shorter still. At
++    /// that size libc's `memmove` spends most of its time picking a strategy,
++    /// and `push_str` cannot avoid it: any length the compiler cannot see
++    /// lowers to a `memcpy` call. Two overlapping loads and stores cover every
++    /// run up to 16 bytes with no length-dependent branching inside the copy.
++    #[allow(unsafe_code)]
++    #[inline]
++    pub(super) fn push_run(&mut self, src: &str) {
++        let len = src.len();
++        if len > 16 {
++            self.push_run_long(src);
++            return;
++        }
++        if self.remaining < len {
++            self.grow(len);
++        }
++
++        // SAFETY: `remaining >= len` here and every write below lands inside
++        // `[0, len)` of the spare capacity, which is what `advance` commits.
++        // `src` is a `&str` appended at the end of `out`, which is a char
++        // boundary, so the result stays valid UTF-8. The two pointers cannot
++        // overlap: `out` is borrowed uniquely, so no live `&str` can alias its
++        // buffer.
++        unsafe {
++            let dst = self.dst;
++            let src = src.as_ptr();
++            if len >= 8 {
++                std::ptr::copy_nonoverlapping(src, dst, 8);
++                std::ptr::copy_nonoverlapping(src.add(len - 8), dst.add(len - 8), 8);
++            } else if len >= 4 {
++                std::ptr::copy_nonoverlapping(src, dst, 4);
++                std::ptr::copy_nonoverlapping(src.add(len - 4), dst.add(len - 4), 4);
++            } else if len > 0 {
++                *dst = *src;
++                *dst.add(len / 2) = *src.add(len / 2);
++                *dst.add(len - 1) = *src.add(len - 1);
++            }
++            self.advance(len);
++        }
++    }
++
++    /// Appends a run longer than 16 bytes.
++    ///
++    /// Runs of 17-64 bytes — the prose between two escaped bytes, most `href`
++    /// values — are still short enough that `memmove` spends most of its time
++    /// choosing a strategy, so they are copied with two or four overlapping
++    /// 16-byte moves instead. Longer runs go to `memcpy`. This stays out of
++    /// line on purpose, together with its growth check: inlining the wider
++    /// copies into the escape loops made their bodies larger and measurably
++    /// slowed escape-dense code blocks.
++    #[allow(unsafe_code)]
++    #[inline(never)]
++    fn push_run_long(&mut self, src: &str) {
++        let len = src.len();
++        if self.remaining < len {
++            self.grow(len);
++        }
++
++        // SAFETY: `remaining >= len` here; `len` is at least 17, so every
++        // 16-byte block below lands inside `[0, len)` of the spare capacity,
++        // which is what `advance` commits. `src` is a `&str` appended at a
++        // char boundary, so the result stays valid UTF-8, and the buffers
++        // cannot overlap because `out` is borrowed uniquely.
++        unsafe {
++            let dst = self.dst;
++            let src = src.as_ptr();
++            if len > 64 {
++                std::ptr::copy_nonoverlapping(src, dst, len);
++            } else {
++                std::ptr::copy_nonoverlapping(src, dst, 16);
++                std::ptr::copy_nonoverlapping(src.add(len - 16), dst.add(len - 16), 16);
++                if len > 32 {
++                    std::ptr::copy_nonoverlapping(src.add(16), dst.add(16), 16);
++                    std::ptr::copy_nonoverlapping(src.add(len - 32), dst.add(len - 32), 16);
++                }
++            }
++            self.advance(len);
++        }
++    }
++
++    /// Commits everything written through the cursor to the output's length.
++    #[allow(unsafe_code)]
++    #[inline]
++    pub(super) fn finish(self) {
++        let written = self.spare - self.remaining;
++
++        // SAFETY: as in `grow`, `written` counts bytes this cursor wrote at
++        // the end of the buffer as whole runs and whole replacements, so the
++        // committed length covers initialized bytes only and ends on a char
++        // boundary.
++        unsafe {
++            let vec = self.out.as_mut_vec();
++            let len = vec.len() + written;
++            vec.set_len(len);
++        }
++    }
++}
+diff --git a/crates/ferromark/src/renderer/html/escape/tests.rs b/crates/ferromark/src/renderer/html/escape/tests.rs
+index 409c05b2..0174a6b9 100644
+--- a/crates/ferromark/src/renderer/html/escape/tests.rs
++++ b/crates/ferromark/src/renderer/html/escape/tests.rs
+@@ -20,14 +20,36 @@ fn reference(s: &str, flags: &[u8; 256], table: &[&'static str; 256]) -> String
+     String::from_utf8(out).expect("escaping only rewrites ASCII bytes")
+ }
+ 
++/// Independent oracle for text escaping: a `match` over the five bytes the
++/// renderer replaces, with every other byte copied through verbatim.
++///
++/// Unlike [`reference`] it shares no table with the implementation, so a
++/// mis-packed replacement word or a table indexed with the wrong byte shows
++/// up here even though both sides would agree on a shared table.
++fn text_oracle(s: &str) -> String {
++    let mut out: Vec<u8> = Vec::new();
++    for byte in s.bytes() {
++        match byte {
++            b'&' => out.extend_from_slice(b"&amp;"),
++            b'<' => out.extend_from_slice(b"&lt;"),
++            b'>' => out.extend_from_slice(b"&gt;"),
++            b'"' => out.extend_from_slice(b"&quot;"),
++            b'\'' => out.extend_from_slice(b"&#39;"),
++            other => out.push(other),
++        }
++    }
++    String::from_utf8(out).expect("escaping only rewrites ASCII bytes")
++}
++
+ fn check(s: &str) {
+     let mut text = String::new();
+     write_escaped_into(&mut text, s);
+     assert_eq!(
+         text,
+-        reference(s, &ESCAPE_FLAG, &ESCAPE_TABLE),
++        reference(s, &ESCAPE_FLAG, &ESCAPE_STRINGS),
+         "text escape: {s:?}"
+     );
++    assert_eq!(text, text_oracle(s), "text oracle: {s:?}");
+ 
+     let mut url = String::new();
+     write_url_escaped_into(&mut url, s);
+@@ -93,7 +115,7 @@ fn runs_of_every_length_are_copied_intact() {
+                 out,
+                 format!(
+                     "existing-content{}",
+-                    reference(&source, &ESCAPE_FLAG, &ESCAPE_TABLE)
++                    reference(&source, &ESCAPE_FLAG, &ESCAPE_STRINGS)
+                 )
+             );
+         }
+@@ -214,3 +236,91 @@ fn short_run_copy_keeps_multibyte_sequences_intact() {
+         }
+     }
+ }
++
++#[test]
++fn matches_the_oracle_for_every_output_capacity_shape() {
++    // The escaper reserves once on entry and then writes through a raw
++    // cursor, so the interesting outputs are the ones where that reserve is
++    // not the whole story: an output with no spare capacity at all, one sized
++    // exactly for the source, and ones whose replacements push the write past
++    // the reserve and into the cursor's growth path. Each source is escaped
++    // into all of those shapes, with and without content already present.
++    let mut sources: Vec<String> = vec![
++        String::new(),
++        "a".into(),
++        "&".into(),
++        "'".into(),
++        "\"".into(),
++        "&<>\"'".into(),
++        "&&&&&&&&&&&&&&&&&&&&".into(),
++        "plain ascii text with no escapes at all".into(),
++        "日本語 & <tags> 🙂".into(),
++    ];
++    for len in [1usize, 3, 7, 8, 15, 16, 17, 31, 32, 33, 64, 65, 200] {
++        let run = "x".repeat(len);
++        sources.push(format!("&{run}&"));
++        sources.push(format!("{run}\""));
++        sources.push("<x".repeat(len));
++        sources.push(run);
++    }
++
++    for source in &sources {
++        let expected = text_oracle(source);
++        for prefix in ["", "already here"] {
++            for spare in [
++                0,
++                1,
++                source.len() / 2,
++                source.len(),
++                source.len() + 1,
++                expected.len(),
++                expected.len() + 64,
++            ] {
++                let mut out = String::with_capacity(prefix.len() + spare);
++                out.push_str(prefix);
++                let spare_before = out.capacity() - out.len();
++                write_escaped_into(&mut out, source);
++                assert_eq!(
++                    out,
++                    format!("{prefix}{expected}"),
++                    "source {source:?} into an output holding {prefix:?} with {spare_before} spare"
++                );
++            }
++        }
++    }
++}
++
++#[test]
++fn matches_the_oracle_on_pseudorandom_bytes_from_the_whole_byte_range() {
++    // `matches_reference_on_pseudorandom_bytes` stays inside printable ASCII
++    // plus the needles. This one draws from all 256 values, so continuation
++    // bytes, control bytes and sequences the lossy conversion rewrites land
++    // next to escapes at every alignment and every length.
++    let mut state = 0x8765_4321_0fed_cba9u64;
++    for len in 0..200usize {
++        let mut buffer = Vec::with_capacity(len);
++        for _ in 0..len {
++            state ^= state << 13;
++            state ^= state >> 7;
++            state ^= state << 17;
++            buffer.push((state >> 24) as u8);
++        }
++        check(&String::from_utf8_lossy(&buffer));
++    }
++}
++
++#[test]
++fn packed_replacements_decode_to_the_replacement_strings() {
++    // A replacement is written as one eight-byte store followed by an advance
++    // of the length packed into the top lane. Decoding every entry keeps that
++    // packing honest against the strings the table is written from.
++    for byte in 0..=255usize {
++        let lanes = ESCAPE_WORDS[byte].to_le_bytes();
++        let len = usize::from(lanes[7]);
++        assert_eq!(
++            &lanes[..len],
++            ESCAPE_STRINGS[byte].as_bytes(),
++            "packed replacement for byte {byte:#04x}"
++        );
++    }
++}
+-- 
+2.55.0
+
+
+From ad93ff638d961c93079bdf818647202d33fe9133 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 22:30:17 +0200
+Subject: [PATCH 2/2] perf(renderer): write URL escapes through the same output
+ cursor
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`write_url_segment` still appended piece by piece, and percent encoding
+was the worst of it: a non-ASCII byte pushed its `%HH` one `char` at a
+time, so a Unicode path ran three growth checks and three length
+write-backs per source byte.
+
+Move the segment escaper onto the cursor introduced for text escaping.
+The scan is untouched — the eight-byte scalar walk after a hit stays, as
+do the percent-encoded non-ASCII runs and the IPv6 authority split — only
+the output mechanics change: one reserve per segment, a write pointer and
+a spare count in locals, one length write-back at the end. Table
+replacements come from packed words as in the text escaper, and `%HH` is
+packed the same way from a sixteen-byte hex table, so each escape is a
+single store. The free `push_run`/`push_run_long` helpers had no callers
+left and are removed; their copy strategy and the finding that keeps the
+wide copies out of line now live on the cursor's methods.
+
+The outer `reserve` in `write_url_escaped_into` is gone too, since every
+segment reserves its own length.
+
+Output is unchanged. `url/tests.rs` now spells its oracle out instead of
+reading the escaper's tables, and adds capacity-shape and pseudorandom
+sweeps plus a decode check for both kinds of packed replacement.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ crates/ferromark/src/renderer/html/escape.rs  |  93 +------------
+ .../src/renderer/html/escape/cursor.rs        |  16 ++-
+ .../ferromark/src/renderer/html/escape/url.rs |  32 +++--
+ .../src/renderer/html/escape/url/tests.rs     | 129 +++++++++++++++++-
+ 4 files changed, 161 insertions(+), 109 deletions(-)
+
+diff --git a/crates/ferromark/src/renderer/html/escape.rs b/crates/ferromark/src/renderer/html/escape.rs
+index 1a2879da..0a6030f8 100644
+--- a/crates/ferromark/src/renderer/html/escape.rs
++++ b/crates/ferromark/src/renderer/html/escape.rs
+@@ -5,7 +5,9 @@
+ //! roughly a seventh of a full parse+render pipeline on the bundled corpora.
+ //! They scan for the handful of bytes that must be replaced using SWAR
+ //! (SIMD-within-a-register) word tests, so long runs of safe text are proven
+-//! clean eight bytes at a time and then copied with one `push_str`.
++//! clean eight bytes at a time and then copied in one piece. Every escaper
++//! emits its result through the raw output cursor in `cursor`, which keeps
++//! the output's growth checks out of the scan/copy loops.
+ 
+ // Replacement strings for the bytes that must be escaped. `ESCAPE_FLAG[b]`
+ // answers "does byte `b` need replacing" for the scalar tail; the hot loop
+@@ -151,90 +153,6 @@ fn copy_eight(bytes: &[u8], from: usize) -> [u8; 8] {
+     chunk
+ }
+ 
+-/// Appends `src` to `out`, copying short runs inline instead of handing them
+-/// to `memmove`.
+-///
+-/// Half of the byte runs this module copies are under 16 bytes long — text
+-/// nodes are short, and every escape replacement is 5 bytes or fewer. At that
+-/// size libc's `memmove` spends most of its time picking a strategy, and
+-/// `push_str` cannot avoid it: any length the compiler cannot see lowers to a
+-/// `memcpy` call. Two overlapping loads and stores cover every run up to 16
+-/// bytes with no length-dependent branching inside the copy.
+-#[allow(unsafe_code)]
+-#[inline]
+-fn push_run(out: &mut String, src: &str) {
+-    let len = src.len();
+-    if len > 16 {
+-        push_run_long(out, src);
+-        return;
+-    }
+-    out.reserve(len);
+-
+-    // SAFETY: `reserve` above guarantees `len` spare bytes past the current
+-    // length, and every write below lands inside `[0, len)` of that spare
+-    // region, so `set_len` covers exactly the bytes written. `src` is a `&str`
+-    // appended at the end of `out`, which is a char boundary, so the result
+-    // stays valid UTF-8. The two pointers cannot overlap: `out` is borrowed
+-    // uniquely, so no live `&str` can alias its buffer.
+-    unsafe {
+-        let vec = out.as_mut_vec();
+-        let at = vec.len();
+-        let dst = vec.as_mut_ptr().add(at);
+-        let src = src.as_ptr();
+-        if len >= 8 {
+-            std::ptr::copy_nonoverlapping(src, dst, 8);
+-            std::ptr::copy_nonoverlapping(src.add(len - 8), dst.add(len - 8), 8);
+-        } else if len >= 4 {
+-            std::ptr::copy_nonoverlapping(src, dst, 4);
+-            std::ptr::copy_nonoverlapping(src.add(len - 4), dst.add(len - 4), 4);
+-        } else if len > 0 {
+-            *dst = *src;
+-            *dst.add(len / 2) = *src.add(len / 2);
+-            *dst.add(len - 1) = *src.add(len - 1);
+-        }
+-        vec.set_len(at + len);
+-    }
+-}
+-
+-/// Appends a run longer than 16 bytes.
+-///
+-/// Runs of 17-64 bytes -- the prose between two escaped bytes, most `href`
+-/// values -- are still short enough that `memmove` spends most of its time
+-/// choosing a strategy, so they are copied with two or four overlapping
+-/// 16-byte moves instead. Longer runs go to `push_str`. This stays out of
+-/// line on purpose: inlining the wider copies into the escape loops made
+-/// their bodies larger and measurably slowed escape-dense code blocks.
+-#[allow(unsafe_code)]
+-#[inline(never)]
+-fn push_run_long(out: &mut String, src: &str) {
+-    let len = src.len();
+-    if len > 64 {
+-        out.push_str(src);
+-        return;
+-    }
+-    out.reserve(len);
+-
+-    // SAFETY: `reserve` above guarantees `len` spare bytes past the current
+-    // length; `len` is in 17..=64, so every 16-byte block below lands inside
+-    // `[0, len)` of that spare region and `set_len` covers exactly the bytes
+-    // written. `src` is a `&str` appended at a char boundary, so the result
+-    // stays valid UTF-8, and the buffers cannot overlap because `out` is
+-    // borrowed uniquely.
+-    unsafe {
+-        let vec = out.as_mut_vec();
+-        let at = vec.len();
+-        let dst = vec.as_mut_ptr().add(at);
+-        let src = src.as_ptr();
+-        std::ptr::copy_nonoverlapping(src, dst, 16);
+-        std::ptr::copy_nonoverlapping(src.add(len - 16), dst.add(len - 16), 16);
+-        if len > 32 {
+-            std::ptr::copy_nonoverlapping(src.add(16), dst.add(16), 16);
+-            std::ptr::copy_nonoverlapping(src.add(len - 32), dst.add(len - 32), 16);
+-        }
+-        vec.set_len(at + len);
+-    }
+-}
+-
+ /// Scan/copy loop for HTML text escaping.
+ ///
+ /// `mask_of` proves a whole 8-byte word clean in one test; when a word is
+@@ -299,8 +217,9 @@ pub(super) fn write_url_escaped_into(out: &mut String, s: &str) {
+     // keep the URL value itself stable.
+     // Brackets in an IPv6 authority are URL syntax and must remain delimiters;
+     // brackets in a path or query are encoded. Split around the one authority
+-    // pair when present so the common scanner remains branch-free.
+-    out.reserve(s.len());
++    // pair when present so the common scanner remains branch-free. Each
++    // segment reserves its own length through its cursor, so the common
++    // single-segment URL still reserves exactly once.
+     if let Some((open, close)) = ipv6_authority_brackets(s) {
+         write_url_segment(out, &s[..open]);
+         out.push_str(&s[open..=close]);
+diff --git a/crates/ferromark/src/renderer/html/escape/cursor.rs b/crates/ferromark/src/renderer/html/escape/cursor.rs
+index 7bf9efa4..82b4085e 100644
+--- a/crates/ferromark/src/renderer/html/escape/cursor.rs
++++ b/crates/ferromark/src/renderer/html/escape/cursor.rs
+@@ -6,7 +6,7 @@
+ //! and writes the new length back — once per piece, however short the piece
+ //! is. On documentation-style corpora that bookkeeping shows up in profiles
+ //! next to the copies it guards, because a text node is short and a
+-//! replacement is five bytes at most.
++//! replacement is a handful of bytes.
+ //!
+ //! [`Cursor`] hoists it out of the loop. One `reserve` per escaper call sizes
+ //! the output for the no-escape case, the write pointer and the spare byte
+@@ -47,6 +47,20 @@ pub(super) const fn pack_replacement(s: &str) -> u64 {
+     word
+ }
+ 
++/// Packs the `%HH` escape of `byte` in the same layout.
++///
++/// Percent encoding applies to the 128 non-ASCII bytes, and deriving their
++/// words from a 16-byte hex table instead of storing a second 256-entry table
++/// keeps the escapers' constant data small while still writing each escape as
++/// one store.
++#[inline]
++pub(super) const fn pack_percent(byte: u8) -> u64 {
++    const HEX: [u8; 16] = *b"0123456789ABCDEF";
++    let high = HEX[(byte >> 4) as usize] as u64;
++    let low = HEX[(byte & 0x0F) as usize] as u64;
++    (b'%' as u64) | (high << 8) | (low << 16) | (3 << LEN_SHIFT)
++}
++
+ /// Packs a whole byte-indexed replacement table. Unused entries pack to zero,
+ /// which writes nothing and advances nothing.
+ pub(super) const fn pack_table(strings: &[&str; 256]) -> [u64; 256] {
+diff --git a/crates/ferromark/src/renderer/html/escape/url.rs b/crates/ferromark/src/renderer/html/escape/url.rs
+index 49c486a8..3f8c5e72 100644
+--- a/crates/ferromark/src/renderer/html/escape/url.rs
++++ b/crates/ferromark/src/renderer/html/escape/url.rs
+@@ -3,10 +3,11 @@
+ //! Use the shared scan/copy primitives without mixing URL policy into HTML text
+ //! escaping. Existing percent escapes and reserved URL delimiters stay intact.
+ 
++use super::cursor::{Cursor, pack_percent, pack_table};
+ use super::nibble::URL_ESCAPE_NIBBLES;
+-use super::{HIGH, first_flagged, has_zero, push_run, splat};
++use super::{HIGH, first_flagged, has_zero, splat};
+ 
+-static URL_ESCAPE_TABLE: [&str; 256] = {
++const URL_ESCAPE_STRINGS: [&str; 256] = {
+     let mut table: [&str; 256] = [""; 256];
+     table[b'&' as usize] = "&amp;";
+     table[b'<' as usize] = "%3C";
+@@ -20,6 +21,9 @@ static URL_ESCAPE_TABLE: [&str; 256] = {
+     table
+ };
+ 
++// The same replacements packed one per word for the output cursor.
++static URL_ESCAPE_WORDS: [u64; 256] = pack_table(&URL_ESCAPE_STRINGS);
++
+ // Non-ASCII bytes are flagged too: they are percent encoded, so one scan
+ // finds both kinds of replacement instead of bounding ASCII runs first.
+ static URL_ESCAPE_FLAG: [u8; 256] = {
+@@ -64,8 +68,15 @@ const fn url_escape_mask(word: u64) -> u64 {
+ /// byte by byte just to bound its ASCII runs. Percent encoding operates on
+ /// the UTF-8 bytes, as required by cmark's URI renderer, and leaves existing
+ /// `%HH` sequences alone.
++///
++/// Like the text escaper, the segment is emitted through one [`Cursor`]: the
++/// output's length and capacity are read once here and written back once at
++/// the end, instead of once per replacement. Percent encoding gains the most
++/// from that — a non-ASCII byte used to append its `%HH` one `char` at a
++/// time, three growth checks per byte of a Unicode path.
+ pub(super) fn write_url_segment(out: &mut String, s: &str) {
+     let bytes = s.as_bytes();
++    let mut cursor = Cursor::new(out, s.len());
+     let mut start = 0usize;
+     loop {
+         let i = next_url_flagged(bytes, start);
+@@ -73,7 +84,7 @@ pub(super) fn write_url_segment(out: &mut String, s: &str) {
+             break;
+         }
+         if start < i {
+-            push_run(out, &s[start..i]);
++            cursor.push_run(&s[start..i]);
+         }
+         let byte = bytes[i];
+         if byte >= 0x80 {
+@@ -85,17 +96,18 @@ pub(super) fn write_url_segment(out: &mut String, s: &str) {
+                 .position(|&byte| byte < 0x80)
+                 .map_or(bytes.len(), |offset| i + offset);
+             for &byte in &bytes[i..unicode_end] {
+-                push_percent_byte(out, byte);
++                cursor.push_replacement(pack_percent(byte));
+             }
+             start = unicode_end;
+         } else {
+-            push_run(out, URL_ESCAPE_TABLE[byte as usize]);
++            cursor.push_replacement(URL_ESCAPE_WORDS[byte as usize]);
+             start = i + 1;
+         }
+     }
+     if start < bytes.len() {
+-        push_run(out, &s[start..]);
++        cursor.push_run(&s[start..]);
+     }
++    cursor.finish();
+ }
+ 
+ /// Offset of the next URL byte that needs replacing or percent encoding.
+@@ -129,14 +141,6 @@ fn next_url_flagged(bytes: &[u8], from: usize) -> usize {
+     )
+ }
+ 
+-#[inline]
+-fn push_percent_byte(out: &mut String, byte: u8) {
+-    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+-    out.push('%');
+-    out.push(HEX[(byte >> 4) as usize] as char);
+-    out.push(HEX[(byte & 0x0F) as usize] as char);
+-}
+-
+ /// Returns the bracket pair delimiting an IPv6 host in a URL authority.
+ /// Brackets elsewhere are data and remain subject to URL escaping.
+ pub(super) fn ipv6_authority_brackets(s: &str) -> Option<(usize, usize)> {
+diff --git a/crates/ferromark/src/renderer/html/escape/url/tests.rs b/crates/ferromark/src/renderer/html/escape/url/tests.rs
+index 8da94ef0..57544e7a 100644
+--- a/crates/ferromark/src/renderer/html/escape/url/tests.rs
++++ b/crates/ferromark/src/renderer/html/escape/url/tests.rs
+@@ -1,17 +1,34 @@
+-//! URL-specific regression cases and the existing scalar reference.
++//! URL-specific regression cases and the scalar oracle.
+ 
+ use super::super::write_url_escaped_into;
+ use super::*;
+ 
++/// Byte-at-a-time oracle for URL escaping.
++///
++/// It spells out every replacement rather than reading the escaper's tables,
++/// so a mis-packed replacement word, a wrong flag entry or a percent escape
++/// built from the wrong nibble shows up as a mismatch instead of cancelling
++/// out on both sides.
+ pub(in crate::renderer::html::escape) fn reference_url(s: &str) -> String {
++    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+     let mut out = String::new();
+     for byte in s.bytes() {
+-        if byte >= 0x80 {
+-            push_percent_byte(&mut out, byte);
+-        } else if URL_ESCAPE_FLAG[byte as usize] != 0 {
+-            out.push_str(URL_ESCAPE_TABLE[byte as usize]);
+-        } else {
+-            out.push(byte as char);
++        match byte {
++            b'&' => out.push_str("&amp;"),
++            b'<' => out.push_str("%3C"),
++            b'>' => out.push_str("%3E"),
++            b'"' => out.push_str("%22"),
++            b' ' => out.push_str("%20"),
++            b'\\' => out.push_str("%5C"),
++            b'[' => out.push_str("%5B"),
++            b']' => out.push_str("%5D"),
++            b'`' => out.push_str("%60"),
++            _ if byte >= 0x80 => {
++                out.push('%');
++                out.push(char::from(HEX[(byte >> 4) as usize]));
++                out.push(char::from(HEX[(byte & 0x0F) as usize]));
++            }
++            _ => out.push(char::from(byte)),
+         }
+     }
+     out
+@@ -61,6 +78,104 @@ fn url_escape_handles_escape_heavy_ascii_before_unicode_linearly() {
+     assert_eq!(actual, reference_url(&source));
+ }
+ 
++#[test]
++fn url_escape_matches_the_oracle_for_every_output_capacity_shape() {
++    // The segment escaper reserves once and then writes through a raw
++    // cursor, so the shapes that matter are the ones where that reserve runs
++    // out: percent encoding triples the length of every non-ASCII byte, and
++    // `&` alone expands fivefold. Each source is escaped into outputs with no
++    // spare capacity, with exactly the source's length, and with room for the
++    // whole result, with and without content already present.
++    let mut sources: Vec<String> = vec![
++        String::new(),
++        "https://example.com/path?query=1#frag".into(),
++        "&".into(),
++        " [`]\\ ".into(),
++        "https://example.com/日本語/🙂?q=a b".into(),
++        // No IPv6 authority here: that path is split around the brackets
++        // before the segments are escaped, which the oracle does not model.
++        "https://example.com/path with spaces".into(),
++        "%41%42%43".into(),
++    ];
++    for len in [1usize, 7, 8, 15, 16, 17, 33, 64, 65, 200] {
++        let run = "u".repeat(len);
++        sources.push(format!("é{run}é"));
++        sources.push(format!("{run}&{run}"));
++        sources.push("&é".repeat(len));
++        sources.push(run);
++    }
++
++    for source in &sources {
++        let expected = reference_url(source);
++        for prefix in ["", "already here"] {
++            for spare in [
++                0,
++                1,
++                source.len(),
++                source.len() + 1,
++                expected.len(),
++                expected.len() + 64,
++            ] {
++                let mut out = String::with_capacity(prefix.len() + spare);
++                out.push_str(prefix);
++                let spare_before = out.capacity() - out.len();
++                write_url_escaped_into(&mut out, source);
++                assert_eq!(
++                    out,
++                    format!("{prefix}{expected}"),
++                    "source {source:?} into an output holding {prefix:?} with {spare_before} spare"
++                );
++            }
++        }
++    }
++}
++
++#[test]
++fn url_escape_matches_the_oracle_on_pseudorandom_bytes() {
++    // Random bytes put percent escapes, table replacements and clean runs at
++    // every alignment, including lengths that straddle the vector step and
++    // the eight-byte walk after a hit.
++    let mut state = 0x1234_5678_9abc_def1u64;
++    for len in 0..200usize {
++        let mut buffer = Vec::with_capacity(len);
++        for _ in 0..len {
++            state ^= state << 13;
++            state ^= state >> 7;
++            state ^= state << 17;
++            buffer.push((state >> 24) as u8);
++        }
++        let source = String::from_utf8_lossy(&buffer);
++        let mut actual = String::new();
++        write_url_escaped_into(&mut actual, &source);
++        assert_eq!(actual, reference_url(&source), "source: {source:?}");
++    }
++}
++
++#[test]
++fn packed_url_replacements_decode_to_the_replacement_strings() {
++    // The cursor writes a replacement as one eight-byte store and advances by
++    // the length packed into the top lane, for table entries and for the
++    // percent escapes alike.
++    const HEX: &[u8; 16] = b"0123456789ABCDEF";
++    for byte in 0..=255usize {
++        let lanes = URL_ESCAPE_WORDS[byte].to_le_bytes();
++        let len = usize::from(lanes[7]);
++        assert_eq!(
++            &lanes[..len],
++            URL_ESCAPE_STRINGS[byte].as_bytes(),
++            "packed replacement for byte {byte:#04x}"
++        );
++
++        let percent = pack_percent(byte as u8).to_le_bytes();
++        assert_eq!(usize::from(percent[7]), 3);
++        assert_eq!(
++            &percent[..3],
++            &[b'%', HEX[byte >> 4], HEX[byte & 0x0F]],
++            "percent escape for byte {byte:#04x}"
++        );
++    }
++}
++
+ #[test]
+ fn invalid_ipv6_authority_is_escaped_without_html_injection() {
+     let source = r#"https://[::1\"onerror=\"x]/"#;
+-- 
+2.55.0
+

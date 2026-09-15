@@ -1,0 +1,546 @@
+[
+  {
+    "case": "comment-ack",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 354.96817326802955,
+    "candidate_ns_per_document": 353.77353034804753,
+    "baseline_over_candidate_median": 1.0036124034206328,
+    "baseline_over_candidate_min": 0.5065619183604957,
+    "baseline_over_candidate_max": 1.0336332979219802,
+    "pairs": 9,
+    "round_medians": [
+      1.002281385897186,
+      0.9966578719541068,
+      1.0095367746944692
+    ]
+  },
+  {
+    "case": "comment-ack",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 76.00064407526752,
+    "candidate_ns_per_document": 75.66191135524484,
+    "baseline_over_candidate_median": 1.0042020845433424,
+    "baseline_over_candidate_min": 0.9943208719661645,
+    "baseline_over_candidate_max": 1.0302220589898867,
+    "pairs": 9,
+    "round_medians": [
+      1.0042020845433424,
+      0.9965066214584668,
+      1.0198631849364632
+    ]
+  },
+  {
+    "case": "comment-question",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 377.4704955464976,
+    "candidate_ns_per_document": 372.3372822364503,
+    "baseline_over_candidate_median": 1.0105966731733296,
+    "baseline_over_candidate_min": 0.98694747536394,
+    "baseline_over_candidate_max": 1.0346915359602373,
+    "pairs": 9,
+    "round_medians": [
+      1.0065674522363681,
+      1.0182645276203954,
+      1.0105966731733296
+    ]
+  },
+  {
+    "case": "comment-question",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 123.05245041342651,
+    "candidate_ns_per_document": 107.05428673888841,
+    "baseline_over_candidate_median": 1.0120141709933859,
+    "baseline_over_candidate_min": 0.39541334168346326,
+    "baseline_over_candidate_max": 1.679205629089041,
+    "pairs": 9,
+    "round_medians": [
+      1.0043943262860127,
+      1.289983695775655,
+      0.7395923666396382
+    ]
+  },
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 447.6141134085213,
+    "candidate_ns_per_document": 448.3664140961263,
+    "baseline_over_candidate_median": 1.0045444472033498,
+    "baseline_over_candidate_min": 0.9032047260595996,
+    "baseline_over_candidate_max": 2.021888377028426,
+    "pairs": 9,
+    "round_medians": [
+      1.0062822430677785,
+      1.544032111149773,
+      0.9978857933835183
+    ]
+  },
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 162.7710978190104,
+    "candidate_ns_per_document": 162.83911765663672,
+    "baseline_over_candidate_median": 0.9995822880975704,
+    "baseline_over_candidate_min": 0.8335997365685398,
+    "baseline_over_candidate_max": 1.1032762227170445,
+    "pairs": 9,
+    "round_medians": [
+      0.9995822880975704,
+      1.0454861776838948,
+      0.9978403798396107
+    ]
+  },
+  {
+    "case": "comment-links",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 683.4890992345544,
+    "candidate_ns_per_document": 686.6033429434377,
+    "baseline_over_candidate_median": 1.0015831514997338,
+    "baseline_over_candidate_min": 0.9797053920047738,
+    "baseline_over_candidate_max": 1.0192488899803227,
+    "pairs": 9,
+    "round_medians": [
+      0.9905420392753873,
+      1.0133981623455437,
+      1.0015831514997338
+    ]
+  },
+  {
+    "case": "comment-links",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 388.974506067206,
+    "candidate_ns_per_document": 390.89046865228266,
+    "baseline_over_candidate_median": 0.9973340237574138,
+    "baseline_over_candidate_min": 0.9477456176820832,
+    "baseline_over_candidate_max": 1.385227347859079,
+    "pairs": 9,
+    "round_medians": [
+      0.9929913354085718,
+      0.9832105958154382,
+      1.0036573470901935
+    ]
+  },
+  {
+    "case": "comment-checklist",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 841.5042269515478,
+    "candidate_ns_per_document": 837.891504691689,
+    "baseline_over_candidate_median": 1.0014793915383366,
+    "baseline_over_candidate_min": 0.9914798130864878,
+    "baseline_over_candidate_max": 1.0081057835419782,
+    "pairs": 9,
+    "round_medians": [
+      1.0024748603430345,
+      1.0017978846622755,
+      0.9993865812096595
+    ]
+  },
+  {
+    "case": "comment-checklist",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 541.692618067591,
+    "candidate_ns_per_document": 532.7645664678313,
+    "baseline_over_candidate_median": 1.009658398781039,
+    "baseline_over_candidate_min": 0.9836400970351139,
+    "baseline_over_candidate_max": 1.0307382633830489,
+    "pairs": 9,
+    "round_medians": [
+      1.0063701042343303,
+      1.010960843879654,
+      1.0039840772084665
+    ]
+  },
+  {
+    "case": "comment-quote",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 541.0964815015145,
+    "candidate_ns_per_document": 528.3497464074387,
+    "baseline_over_candidate_median": 1.027817806060244,
+    "baseline_over_candidate_min": 0.8955809472299286,
+    "baseline_over_candidate_max": 1.2821981869818058,
+    "pairs": 9,
+    "round_medians": [
+      1.0241255630020614,
+      0.9932566763635263,
+      1.0364762779810142
+    ]
+  },
+  {
+    "case": "comment-quote",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 230.67227002214432,
+    "candidate_ns_per_document": 226.91207002178254,
+    "baseline_over_candidate_median": 1.0119831402617432,
+    "baseline_over_candidate_min": 1.0035162514143305,
+    "baseline_over_candidate_max": 1.0218806601338402,
+    "pairs": 9,
+    "round_medians": [
+      1.0119831402617432,
+      1.0057932721848752,
+      1.0151867802054306
+    ]
+  },
+  {
+    "case": "comment-unicode",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 705.3164481105471,
+    "candidate_ns_per_document": 698.73254960872,
+    "baseline_over_candidate_median": 1.0064654258223724,
+    "baseline_over_candidate_min": 0.8636614407384862,
+    "baseline_over_candidate_max": 1.4393812978719807,
+    "pairs": 9,
+    "round_medians": [
+      1.000778150763727,
+      1.0115194142777613,
+      1.0762669351606546
+    ]
+  },
+  {
+    "case": "comment-unicode",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 406.44810630689204,
+    "candidate_ns_per_document": 405.17280662670123,
+    "baseline_over_candidate_median": 0.9880205089096108,
+    "baseline_over_candidate_min": 0.5324746961264464,
+    "baseline_over_candidate_max": 1.0092475491228043,
+    "pairs": 9,
+    "round_medians": [
+      1.0036966896275141,
+      1.0062250421999737,
+      0.9453423028220251
+    ]
+  },
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 504.8345907347598,
+    "candidate_ns_per_document": 500.8122370793269,
+    "baseline_over_candidate_median": 1.0053980823423838,
+    "baseline_over_candidate_min": 0.9939942943072597,
+    "baseline_over_candidate_max": 1.015518786715333,
+    "pairs": 9,
+    "round_medians": [
+      1.0037585718528592,
+      1.011949079228523,
+      1.003624656405289
+    ]
+  },
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 222.61683693910257,
+    "candidate_ns_per_document": 221.7449339304718,
+    "baseline_over_candidate_median": 1.004121271452597,
+    "baseline_over_candidate_min": 0.9943009862711519,
+    "baseline_over_candidate_max": 1.01351184872653,
+    "pairs": 9,
+    "round_medians": [
+      0.9967638033463171,
+      1.0046590597157903,
+      1.0074924419661666
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 573.9826101928375,
+    "candidate_ns_per_document": 572.6106848373797,
+    "baseline_over_candidate_median": 1.0028981507888368,
+    "baseline_over_candidate_min": 0.3125349433315586,
+    "baseline_over_candidate_max": 1.0387668462480057,
+    "pairs": 9,
+    "round_medians": [
+      0.9868472736510769,
+      1.0082379133323889,
+      0.6131952575516607
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 264.04682550158395,
+    "candidate_ns_per_document": 264.92387820512823,
+    "baseline_over_candidate_median": 0.9959011771350355,
+    "baseline_over_candidate_min": 0.8934704283632499,
+    "baseline_over_candidate_max": 1.0652106633593432,
+    "pairs": 9,
+    "round_medians": [
+      0.9959011771350355,
+      1.0389154537577165,
+      0.9946669792825561
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1351.0689457343412,
+    "candidate_ns_per_document": 1351.6047297297298,
+    "baseline_over_candidate_median": 0.9986661956896576,
+    "baseline_over_candidate_min": 0.9931388924694732,
+    "baseline_over_candidate_max": 1.007766171586152,
+    "pairs": 9,
+    "round_medians": [
+      0.9986661956896576,
+      0.9984554223402574,
+      0.9993365452764734
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1076.667016580534,
+    "candidate_ns_per_document": 1078.2271551724139,
+    "baseline_over_candidate_median": 0.994812162880949,
+    "baseline_over_candidate_min": 0.9835608247748101,
+    "baseline_over_candidate_max": 1.0070015554574259,
+    "pairs": 9,
+    "round_medians": [
+      0.994812162880949,
+      0.9951630725825279,
+      0.9903323997272595
+    ]
+  },
+  {
+    "case": "comment-review-long",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1004.1792168674699,
+    "candidate_ns_per_document": 992.2701884920635,
+    "baseline_over_candidate_median": 1.0058358251672788,
+    "baseline_over_candidate_min": 0.9985387472942832,
+    "baseline_over_candidate_max": 1.090623653353186,
+    "pairs": 9,
+    "round_medians": [
+      1.0017502585486704,
+      1.061607008712488,
+      1.0092671945035885
+    ]
+  },
+  {
+    "case": "comment-review-long",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 713.1517220479178,
+    "candidate_ns_per_document": 712.1550576594533,
+    "baseline_over_candidate_median": 1.0098414528711475,
+    "baseline_over_candidate_min": 0.9187052484288549,
+    "baseline_over_candidate_max": 1.218398171944755,
+    "pairs": 9,
+    "round_medians": [
+      1.0070089182669213,
+      1.0098414528711475,
+      1.0988614364489115
+    ]
+  },
+  {
+    "case": "comment-incident",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 2243.727598566308,
+    "candidate_ns_per_document": 2173.9945652173915,
+    "baseline_over_candidate_median": 1.0080742763219868,
+    "baseline_over_candidate_min": 0.8991473016191424,
+    "baseline_over_candidate_max": 1.040387353014949,
+    "pairs": 9,
+    "round_medians": [
+      1.0014328763135059,
+      1.0087739567036589,
+      1.0238474524311878
+    ]
+  },
+  {
+    "case": "comment-incident",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1874.4612068965516,
+    "candidate_ns_per_document": 1855.4552577893176,
+    "baseline_over_candidate_median": 1.0102432807406407,
+    "baseline_over_candidate_min": 1.0055497034153,
+    "baseline_over_candidate_max": 1.0540015732389296,
+    "pairs": 9,
+    "round_medians": [
+      1.011404669310854,
+      1.0102432807406407,
+      1.0095473471719028
+    ]
+  },
+  {
+    "case": "legacy-docs-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "fresh",
+    "baseline_ns_per_document": 4914.613970588235,
+    "candidate_ns_per_document": 4950.639204545455,
+    "baseline_over_candidate_median": 1.002474956833763,
+    "baseline_over_candidate_min": 0.9908903349468229,
+    "baseline_over_candidate_max": 1.2197166946933018,
+    "pairs": 9,
+    "round_medians": [
+      0.9911491695394173,
+      1.192499046838935,
+      1.001070732408415
+    ]
+  },
+  {
+    "case": "legacy-docs-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "reuse",
+    "baseline_ns_per_document": 4612.070082720588,
+    "candidate_ns_per_document": 4669.717817164179,
+    "baseline_over_candidate_median": 0.9914050063849494,
+    "baseline_over_candidate_min": 0.9812277373620347,
+    "baseline_over_candidate_max": 1.0594622573083443,
+    "pairs": 9,
+    "round_medians": [
+      1.025182843507581,
+      0.986199231847311,
+      0.9856600893057142
+    ]
+  },
+  {
+    "case": "wiki-rainbow-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1224.3868143976495,
+    "candidate_ns_per_document": 1230.338029035433,
+    "baseline_over_candidate_median": 1.0029028181932724,
+    "baseline_over_candidate_min": 0.8488077370940313,
+    "baseline_over_candidate_max": 1.90297017028901,
+    "pairs": 9,
+    "round_medians": [
+      1.0029028181932724,
+      0.990042496683713,
+      1.6129278232840394
+    ]
+  },
+  {
+    "case": "wiki-rainbow-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 919.775390625,
+    "candidate_ns_per_document": 933.6394697535475,
+    "baseline_over_candidate_median": 0.9930468560360878,
+    "baseline_over_candidate_min": 0.8155967981649102,
+    "baseline_over_candidate_max": 1.0712384702559032,
+    "pairs": 9,
+    "round_medians": [
+      0.9903907798224015,
+      1.006201671535175,
+      0.9930468560360878
+    ]
+  },
+  {
+    "case": "scan-short-link",
+    "profile": "commonmark",
+    "category": "link-scan-diagnostic",
+    "mode": "fresh",
+    "baseline_ns_per_document": 645.8750161331957,
+    "candidate_ns_per_document": 583.3515515632291,
+    "baseline_over_candidate_median": 1.1071797347627175,
+    "baseline_over_candidate_min": 1.0076364788611638,
+    "baseline_over_candidate_max": 3.0304816321370445,
+    "pairs": 9,
+    "round_medians": [
+      1.0346627871013583,
+      1.1071797347627175,
+      2.0848849628012087
+    ]
+  },
+  {
+    "case": "scan-short-link",
+    "profile": "commonmark",
+    "category": "link-scan-diagnostic",
+    "mode": "reuse",
+    "baseline_ns_per_document": 156.9734704608237,
+    "candidate_ns_per_document": 155.78346211365903,
+    "baseline_over_candidate_median": 1.0063931473001293,
+    "baseline_over_candidate_min": 0.9747482649495675,
+    "baseline_over_candidate_max": 1.0185458901454658,
+    "pairs": 9,
+    "round_medians": [
+      1.0063931473001293,
+      1.0113678314090815,
+      0.9782996726815186
+    ]
+  },
+  {
+    "case": "autolink-broad--comment-review",
+    "profile": "autolink",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 475.19905691752183,
+    "candidate_ns_per_document": 480.66398740868897,
+    "baseline_over_candidate_median": 0.9801728102272644,
+    "baseline_over_candidate_min": 0.7131786131862261,
+    "baseline_over_candidate_max": 1.4078823329885362,
+    "pairs": 9,
+    "round_medians": [
+      0.9801728102272644,
+      0.7561624963271162,
+      0.9914051806273694
+    ]
+  },
+  {
+    "case": "autolink-broad--comment-review",
+    "profile": "autolink",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 194.44302671488566,
+    "candidate_ns_per_document": 194.49644565893885,
+    "baseline_over_candidate_median": 1.001964678249,
+    "baseline_over_candidate_min": 0.9885072941569932,
+    "baseline_over_candidate_max": 2.3727941464547295,
+    "pairs": 9,
+    "round_medians": [
+      1.001964678249,
+      0.9929325332244711,
+      1.0080893071058767
+    ]
+  }
+]

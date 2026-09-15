@@ -1,0 +1,64 @@
+{
+  "schema": 2,
+  "rounds": 3,
+  "pairs_per_round": 3,
+  "window_ms": 40,
+  "warmup_ms": 40,
+  "seed": 20260914,
+  "modes": [
+    "render",
+    "fresh",
+    "parse",
+    "reuse"
+  ],
+  "case_filter": "^(comment-ack|comment-review|comment-links|comment-incident|legacy-docs-readme|legacy-docs-mdx|rust-book-ch17-00-async-await|vite-docs-features|typescript-handbook-compiler-options|vue-docs-slots|wiki-tea-lead|wiki-chess-article-body|wiki-volcano-plain-prose|scan-dense-escapes|scan-long-clean-links|scan-unicode-links|table-formatted-4096|autolink-broad--comment-links|autolink-broad--wiki-tea-lead|autolink-unicode-512)$",
+  "cases": [
+    "comment-ack",
+    "comment-review",
+    "comment-links",
+    "comment-incident",
+    "legacy-docs-mdx",
+    "legacy-docs-readme",
+    "rust-book-ch17-00-async-await",
+    "vue-docs-slots",
+    "vite-docs-features",
+    "typescript-handbook-compiler-options",
+    "wiki-tea-lead",
+    "wiki-chess-article-body",
+    "wiki-volcano-plain-prose",
+    "scan-long-clean-links",
+    "scan-unicode-links",
+    "scan-dense-escapes",
+    "table-formatted-4096",
+    "autolink-unicode-512",
+    "autolink-broad--comment-links",
+    "autolink-broad--wiki-tea-lead"
+  ],
+  "corpus_sha256": "9331c117ee7c24ff6a06090c44953fdd465894911b170f06657e339e8e48eeeb",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "bdc2ce24bf0d781c280abcb1b232248b8a33d6344645aef4eb65d1c7559adf40",
+  "host_before": {
+    "time_utc": "2026-09-15T21:02:42Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      4.23388671875,
+      8.66357421875,
+      14.884765625
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  },
+  "host_after": {
+    "time_utc": "2026-09-15T21:04:04Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      3.7568359375,
+      7.4404296875,
+      13.85546875
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  }
+}

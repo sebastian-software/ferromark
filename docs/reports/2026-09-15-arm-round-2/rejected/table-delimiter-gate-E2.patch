@@ -1,0 +1,306 @@
+From 7566f9dbd425b2f3a52526e7a6c718790829fcb6 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 23:41:16 +0200
+Subject: [PATCH] perf(parser): decide table headers from the row below
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+NOT FOR MERGE — archived negative result. Profiling says this is slower
+than the code it replaces on the dominant GFM shape; kept only so the
+measurement harness can check that reading.
+
+A GFM table needs a delimiter row directly under its header, and every
+cell of that row is a run of `-` with optional surrounding `:`, so the
+row's first non-space byte is `|`, `-`, or `:`. That settles the two-line
+check from the line below instead of searching the header for a `|`, so
+the block probe finds the line end with the existing NEON scan and always
+reports it — a paragraph line holding a pipe is no longer rescanned.
+
+Why it does not pay: the `memchr3('|', '\n', '\r')` it replaces answered
+"where does this line end" and "does it hold a pipe" in one pass, so the
+pipe answer was free. Reading the line below is not: real Markdown starts
+lines with `-` constantly, for bullets, thematic breaks and setext
+underlines, so the gate admits often and then pays a separate `|` search
+over the line that the fused scan used to cover.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+---
+ crates/ferromark/src/parser/block.rs  |  31 ++---
+ crates/ferromark/src/parser/cursor.rs | 187 +++++++++++++++++++++++---
+ 2 files changed, 180 insertions(+), 38 deletions(-)
+
+diff --git a/crates/ferromark/src/parser/block.rs b/crates/ferromark/src/parser/block.rs
+index 4fa2981d..c970885c 100644
+--- a/crates/ferromark/src/parser/block.rs
++++ b/crates/ferromark/src/parser/block.rs
+@@ -1,9 +1,8 @@
+ use crate::ast::{Heading, Node, Paragraph, Span};
+-use memchr::memchr3;
+ 
+ use super::Parser;
+ use super::line_scan::{
+-    is_line_ending_byte, line_terminator_end, next_line_start as scan_next_line_start,
++    is_line_ending_byte, line_end, line_terminator_end, next_line_start as scan_next_line_start,
+ };
+ use crate::parser::error::{ParseErrorKind, ParseResult};
+ 
+@@ -145,23 +144,19 @@ impl<'a> Parser<'a> {
+ 
+         // Table recognition is the one feature that cannot be decided from
+         // the first byte because table headers usually look like ordinary
+-        // paragraph text. Guard the expensive two-line delimiter check with
+-        // a same-line `|` probe so non-table prose does one marker scan and
+-        // then falls through to paragraph parsing — carrying the line end
+-        // that scan reached, which is the first thing `parse_paragraph`
+-        // needs.
+-        let mut first_line_end = None;
+-        if self.options.tables {
+-            match memchr3(b'|', b'\n', b'\r', &bytes[start..]) {
+-                Some(off) if bytes[start + off] == b'|' => {
+-                    if self.try_parse_table() {
+-                        return self.parse_table(start);
+-                    }
+-                }
+-                Some(off) => first_line_end = Some(line_terminator_end(bytes, start + off)),
+-                None => first_line_end = Some(self.source.len()),
++        // paragraph text. `table_header_at` decides it from the line below
++        // instead, which for prose costs one byte rather than a search of
++        // this line. The line end it needs is the first thing
++        // `parse_paragraph` needs too, so finding it here is not extra work.
++        let first_line_end = if self.options.tables {
++            let end = line_end(bytes, start);
++            if self.table_header_at(start, end) {
++                return self.parse_table(start);
+             }
+-        }
++            Some(line_terminator_end(bytes, end))
++        } else {
++            None
++        };
+ 
+         // Footnote definitions share the `[label]:` shape with link
+         // reference definitions, so they get first refusal when the
+diff --git a/crates/ferromark/src/parser/cursor.rs b/crates/ferromark/src/parser/cursor.rs
+index 0351e77b..8c6aa641 100644
+--- a/crates/ferromark/src/parser/cursor.rs
++++ b/crates/ferromark/src/parser/cursor.rs
+@@ -1,10 +1,28 @@
+-use memchr::memchr3;
++use memchr::memchr;
+ 
+ use super::Parser;
+ use super::line_scan::{
+     is_line_ending_byte, line_end, line_terminator_end, next_line_start as scan_next_line_start,
+ };
+ 
++/// Whether `byte` can be the first byte of a line holding a delimiter row.
++///
++/// [`Parser::try_parse_table`] trims the row before reading it and then
++/// requires every one of its cells to be a run of `-` with optional
++/// surrounding `:`. Leading whitespace and an optional opening `|` are the
++/// only things that can precede the first cell, so a delimiter row begins
++/// with `|`, `-`, or `:`.
++///
++/// The caller's whitespace skip knows only spaces and tabs while that trim
++/// removes Unicode whitespace too, so the two other forms it can strip stay
++/// accepted rather than guessed at: the ASCII vertical tab and form feed, and
++/// any byte that could open a multi-byte whitespace character. Being
++/// permissive here only costs a table check that then says no; being wrong
++/// the other way would lose a table. Prose lines start with none of these.
++const fn may_open_delimiter_row(byte: u8) -> bool {
++    matches!(byte, b'|' | b'-' | b':' | 0x0B | 0x0C) || byte >= 0x80
++}
++
+ /// What [`Parser::probe_line`] learned about the current line.
+ pub(super) struct BlockProbe {
+     /// Whether the line begins a block-level construct.
+@@ -105,12 +123,10 @@ impl<'a> Parser<'a> {
+     /// line's first non-whitespace byte, and that also wants to know where
+     /// the line ends.
+     ///
+-    /// The table check scans the line with `memchr2(b'|', b'\n')`. When it
+-    /// comes back with the newline — the answer for ordinary prose — it has
+-    /// incidentally answered "where does this line end", which is the very
+-    /// next thing paragraph parsing asks. Returning that offset lets the
+-    /// paragraph loop consume the line without a second scan over the same
+-    /// bytes.
++    /// The line end is what paragraph parsing asks for next, so the table
++    /// check is arranged around finding it: [`line_end`] answers that
++    /// question alone, and the `|` search only runs for the few lines that
++    /// [`Self::table_delimiter_may_follow`] cannot rule out.
+     pub(super) fn probe_line(&self, line_start: usize, trimmed_start: usize) -> BlockProbe {
+         self.probe_line_inner(line_start, trimmed_start, self.options.tables)
+     }
+@@ -204,20 +220,41 @@ impl<'a> Parser<'a> {
+                 line_end: None,
+             };
+         }
+-        match memchr3(b'|', b'\n', b'\r', &bytes[line_start..]) {
+-            Some(off) if bytes[line_start + off] == b'|' => BlockProbe {
+-                starts_block: self.try_parse_table(),
+-                line_end: None,
+-            },
+-            Some(off) => BlockProbe {
+-                starts_block: false,
+-                line_end: Some(line_start + off),
+-            },
+-            None => BlockProbe {
+-                starts_block: false,
+-                line_end: Some(self.source.len()),
+-            },
++        let end = line_end(bytes, line_start);
++        BlockProbe {
++            starts_block: self.table_header_at(line_start, end),
++            line_end: Some(end),
++        }
++    }
++
++    /// Whether the line `line_start..end` opens a GFM table.
++    ///
++    /// A table needs a delimiter row directly below its header, so the line
++    /// below decides the question far more cheaply than the header does: see
++    /// [`Self::table_delimiter_may_follow`]. Only when that cannot rule the
++    /// table out is the header searched for the `|` that
++    /// [`Parser::try_parse_table`] requires, and only then does the full
++    /// two-line check run.
++    pub(super) fn table_header_at(&self, line_start: usize, end: usize) -> bool {
++        self.options.tables
++            && self.table_delimiter_may_follow(end)
++            && memchr(b'|', &self.source.as_bytes()[line_start..end]).is_some()
++            && self.try_parse_table()
++    }
++
++    /// Whether a GFM delimiter row could begin on the line after `end`.
++    ///
++    /// Line comments are skipped exactly as the real check skips them, and an
++    /// unterminated final line has no row below it to delimit it — which is
++    /// also why [`Parser::try_parse_table`] rejects one.
++    fn table_delimiter_may_follow(&self, end: usize) -> bool {
++        let bytes = self.source.as_bytes();
++        if end >= bytes.len() {
++            return false;
+         }
++        let below = self.skip_line_comments_from(line_terminator_end(bytes, end));
++        self.first_non_whitespace_in_line(below)
++            .is_some_and(|at| may_open_delimiter_row(bytes[at]))
+     }
+ 
+     pub(super) fn line_at(&self, line_start: usize) -> &'a str {
+@@ -259,3 +296,113 @@ impl<'a> Parser<'a> {
+         None
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    // The exhaustive oracle builds owned strings.
++    #![allow(
++        clippy::disallowed_macros,
++        clippy::disallowed_methods,
++        clippy::disallowed_types
++    )]
++
++    use super::may_open_delimiter_row;
++    use crate::allocator::Allocator;
++    use crate::parser::{Parser, ParserOptions};
++
++    /// Tables nest inside containers, so ask the rendered output rather than
++    /// only the document's own children.
++    fn parses_as_table(source: &str, options: &ParserOptions) -> bool {
++        let allocator = Allocator::new();
++        let Ok(document) = Parser::with_options(&allocator, source, options.clone()).parse() else {
++            return false;
++        };
++        crate::HtmlRenderer::new()
++            .render(&document)
++            .contains("<table>")
++    }
++
++    /// What [`Parser::table_delimiter_may_follow`] decides for a line, spelled
++    /// out independently of how the parser reaches it.
++    fn gate_admits(line: &str) -> bool {
++        line.bytes()
++            .find(|byte| !matches!(byte, b' ' | b'\t'))
++            .is_some_and(may_open_delimiter_row)
++    }
++
++    /// The first-byte gate must never rule out a row the full check accepts.
++    ///
++    /// `try_parse_table` is the authority. Whenever a document still parses as
++    /// a table, the gate has to admit that table's delimiter line, or the
++    /// probe would have skipped the check and lost it.
++    #[test]
++    fn the_delimiter_gate_never_loses_a_table() {
++        let gfm = ParserOptions::gfm();
++        for byte in 0..=0x7Fu8 {
++            let lead = char::from(byte);
++            for row in ["---|---", "|---|---|", ":---|---:"] {
++                let line = format!("{lead}{row}");
++                let source = format!("a | b\n{line}\ncell | cell\n");
++                if parses_as_table(&source, &gfm) {
++                    assert!(
++                        gate_admits(&line),
++                        "byte {byte:#04x} opens a delimiter row but the gate rejects it"
++                    );
++                }
++            }
++        }
++        // Unicode whitespace the row's trim strips but the space/tab skip does
++        // not: the gate has to keep those rows reachable.
++        for lead in ["\u{a0}", "\u{2007}", "\u{3000}", "\u{b}", "\u{c}"] {
++            let line = format!("{lead}---|---");
++            assert!(
++                gate_admits(&line),
++                "the gate must not rule out a row starting with {lead:?}"
++            );
++        }
++    }
++
++    /// Prose that mentions a pipe must stay an ordinary paragraph.
++    #[test]
++    fn prose_with_pipes_stays_a_paragraph() {
++        let gfm = ParserOptions::gfm();
++        for source in [
++            "use a | b in a shell pipeline\nand another | here\n",
++            "a | b\nnot a delimiter row\n",
++            "a | b\n\n---|---\n",
++            "a | b",
++            "a | b\n",
++            "a | b\n# heading\n",
++        ] {
++            assert!(!parses_as_table(source, &gfm), "{source:?}");
++        }
++    }
++
++    #[test]
++    fn tables_still_open_in_every_position_the_probe_serves() {
++        let gfm = ParserOptions::gfm();
++        for source in [
++            "a | b\n---|---\ncell | cell\n",
++            "paragraph first\na | b\n---|---\ncell | cell\n",
++            "a | b\n  :---: | ---:\ncell | cell\n",
++            "| a | b |\n| --- | --- |\n| c | d |\n",
++            "> a | b\n> ---|---\n> c | d\n",
++            "- a | b\n  ---|---\n  c | d\n",
++        ] {
++            assert!(parses_as_table(source, &gfm), "{source:?}");
++        }
++    }
++
++    #[test]
++    fn a_line_comment_between_header_and_delimiter_still_opens_a_table() {
++        let commented = ParserOptions {
++            line_comments: true,
++            ..ParserOptions::gfm()
++        };
++        assert!(parses_as_table(
++            "a | b\n// note\n---|---\ncell | cell\n",
++            &commented
++        ));
++        assert!(!parses_as_table("a | b\n// note\nplain text\n", &commented));
++    }
++}
+-- 
+2.55.0
+

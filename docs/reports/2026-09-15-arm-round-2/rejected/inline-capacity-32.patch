@@ -1,0 +1,13 @@
+diff --git a/crates/ferromark/src/parser/inline.rs b/crates/ferromark/src/parser/inline.rs
+index c994d1ba..ca25243e 100644
+--- a/crates/ferromark/src/parser/inline.rs
++++ b/crates/ferromark/src/parser/inline.rs
+@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
+     /// from reserving a kilobyte it will not fill.
+     fn inline_children_capacity(content_len: usize) -> usize {
+         const BYTES_PER_NODE: usize = 20;
+-        (content_len / BYTES_PER_NODE).clamp(4, 12)
++        (content_len / BYTES_PER_NODE).clamp(4, 32)
+     }
+ 
+     pub(super) fn push_text(
