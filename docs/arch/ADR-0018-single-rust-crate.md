@@ -42,3 +42,9 @@ consolidation; verify each recorded lock hash and compare external entries in fu
 Check exact HTML, debug AST and source spans before measuring both individual
 real documents and complete-corpus batches. Retain the change only when these
 checks and measured performance support it.
+
+## Outcome
+
+The consolidation passed the existing tests and package checks. The retained
+[measurement report](../reports/2026-09-15-single-crate/README.md) records complete
+corpus timings, individual regressions, unchanged outputs and build identities.
