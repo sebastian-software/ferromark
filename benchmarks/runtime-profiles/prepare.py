@@ -28,6 +28,8 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--revision', default='HEAD')
     parser.add_argument('--working-tree', action='store_true', help='Freeze current core files, including untracked source files')
+    parser.add_argument('--worker-source', type=Path, default=HERE / 'worker.rs',
+                        help='Alternative worker, hashed and identical for both compared builds')
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -46,7 +48,7 @@ def main():
     source.mkdir()
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
         tar.extractall(source, filter='data')
-    worker = (HERE / 'worker.rs').read_bytes()
+    worker = args.worker_source.read_bytes()
     build = out / 'worker'
     (build / 'src').mkdir(parents=True)
     (build / 'src/main.rs').write_bytes(worker)
