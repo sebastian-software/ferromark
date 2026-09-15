@@ -127,3 +127,44 @@ synthetic medians reach +2.01%. Accept those small measured costs for clearer
 backend ownership and the x86 lint fix. All 828 native workspace tests and required
 Rust checks pass. x86 parser all-targets and WebAssembly library Clippy checks pass;
 no execution or speed claim is made for those non-native targets.
+
+## 6. URL escaping file boundary — retained with original entry points
+
+Keep all three existing escaping entry points in `escape.rs`, alongside HTML
+text/attribute escaping and shared scan/copy primitives. Move URL replacement
+tables, the URL word mask, UTF-8 percent encoding, segment scanning and IPv6
+authority recognition into `escape/url.rs`. The original URL entry keeps its
+orchestration and direct calls, importing only segment encoding and authority
+recognition from the child. No wrapper call or wider production API is introduced.
+
+The four URL-only tests and their existing scalar reference move into
+`escape/url/tests.rs`. Mixed differential tests remain in `escape/tests.rs`; only
+the scalar test reference is shared through test-only visibility. All thirteen
+test bodies and expected values are unchanged. Algorithms, allocation policies,
+SIMD/word-scan logic and optimization attributes stay intact. Unicode URL and IPv6
+diagnostics extend the authored benchmark inputs.
+
+### Rejected full move
+
+The first candidate also moved the URL entry point into the child and re-exported
+it. Exact-output and Rust checks passed, and the broad aggregate stayed near
+baseline (−0.13% fresh / +0.49% reused). However, the unclosed-delimiter diagnostic
+was consistently about 5% slower across all three rounds and both lifecycles.
+Reject that candidate. The revised boundary keeps the original entry-point owner;
+this is an organizational alternative, not an inlining knob or algorithm change.
+Compiler layout/code generation may explain file-move timing differences, but no
+specific cause has been established. Retain the first measurements for comparison.
+
+See the [report](../reports/2026-09-15-refactor-url-files/README.md) for verification,
+measurements and the final retention decision.
+
+Retain the revised boundary. Its focused unclosed-delimiter probe is −0.08% fresh /
+−0.16% reused, and the final full diagnostic run confirms the earlier 5% slowdown
+is absent. Final broad aggregate: +0.50% / +0.13%; fifteen diagnostics: −0.09% /
+−0.22%, with exact HTML/AST preserved. All 828 native workspace tests, required
+Rust checks, x86 renderer all-targets Clippy and WebAssembly library Clippy pass.
+
+A direct comparison of all three file-boundary steps against `61eafed` measures
+−0.34% fresh / −0.26% reused over the broad corpus. Treat the overall result as
+practically neutral on this workstation. The planned file-boundary sequence is
+complete; no further splitting is implied merely by a file's line count.
