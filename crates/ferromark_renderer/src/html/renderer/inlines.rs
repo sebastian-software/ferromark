@@ -57,27 +57,7 @@ impl HtmlRenderer {
     }
 
     pub(in crate::html::renderer) fn render_link(&mut self, link: &Link<'_>) {
-        self.write("<a href=\"");
-        let converted_url = if self.options.convert_md_links {
-            self.convert_markdown_url(link.url)
-        } else {
-            None
-        };
-        let href = self.sanitized_url(converted_url.as_deref().unwrap_or(link.url), "#");
-        self.write_url_escaped(href);
-        self.write("\"");
-        // Add target="_blank" for external links (http:// or https://)
-        if self.options.link_target_blank
-            && (href.starts_with("http://") || href.starts_with("https://"))
-        {
-            self.write(" target=\"_blank\" rel=\"noopener noreferrer\"");
-        }
-        if let Some(title) = link.title {
-            self.write(" title=\"");
-            self.write_escaped(title);
-            self.write("\"");
-        }
-        self.write(">");
+        self.write_link_open(link);
         // Suppress URL auto-linking inside the anchor — children text nodes
         // may contain literal URLs that we must not wrap in a nested <a>.
         let prev_in_link = self.in_link;

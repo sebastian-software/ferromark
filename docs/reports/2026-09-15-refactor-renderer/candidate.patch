@@ -1,0 +1,104 @@
+diff --git a/crates/ferromark_renderer/src/html/renderer/hooks/inlines.rs b/crates/ferromark_renderer/src/html/renderer/hooks/inlines.rs
+index afb8cec..85b5750 100644
+--- a/crates/ferromark_renderer/src/html/renderer/hooks/inlines.rs
++++ b/crates/ferromark_renderer/src/html/renderer/hooks/inlines.rs
+@@ -33,26 +33,7 @@ impl HtmlRenderer {
+         link: &Link<'_>,
+         hooks: &mut H,
+     ) {
+-        self.write("<a href=\"");
+-        let converted_url = if self.options.convert_md_links {
+-            self.convert_markdown_url(link.url)
+-        } else {
+-            None
+-        };
+-        let href = self.sanitized_url(converted_url.as_deref().unwrap_or(link.url), "#");
+-        self.write_url_escaped(href);
+-        self.write("\"");
+-        if self.options.link_target_blank
+-            && (href.starts_with("http://") || href.starts_with("https://"))
+-        {
+-            self.write(" target=\"_blank\" rel=\"noopener noreferrer\"");
+-        }
+-        if let Some(title) = link.title {
+-            self.write(" title=\"");
+-            self.write_escaped(title);
+-            self.write("\"");
+-        }
+-        self.write(">");
++        self.write_link_open(link);
+         let prev_in_link = self.in_link;
+         self.in_link = true;
+         for child in &link.children {
+diff --git a/crates/ferromark_renderer/src/html/renderer/inlines.rs b/crates/ferromark_renderer/src/html/renderer/inlines.rs
+index 8a048d3..6b18e6b 100644
+--- a/crates/ferromark_renderer/src/html/renderer/inlines.rs
++++ b/crates/ferromark_renderer/src/html/renderer/inlines.rs
+@@ -57,27 +57,7 @@ impl HtmlRenderer {
+     }
+ 
+     pub(in crate::html::renderer) fn render_link(&mut self, link: &Link<'_>) {
+-        self.write("<a href=\"");
+-        let converted_url = if self.options.convert_md_links {
+-            self.convert_markdown_url(link.url)
+-        } else {
+-            None
+-        };
+-        let href = self.sanitized_url(converted_url.as_deref().unwrap_or(link.url), "#");
+-        self.write_url_escaped(href);
+-        self.write("\"");
+-        // Add target="_blank" for external links (http:// or https://)
+-        if self.options.link_target_blank
+-            && (href.starts_with("http://") || href.starts_with("https://"))
+-        {
+-            self.write(" target=\"_blank\" rel=\"noopener noreferrer\"");
+-        }
+-        if let Some(title) = link.title {
+-            self.write(" title=\"");
+-            self.write_escaped(title);
+-            self.write("\"");
+-        }
+-        self.write(">");
++        self.write_link_open(link);
+         // Suppress URL auto-linking inside the anchor — children text nodes
+         // may contain literal URLs that we must not wrap in a nested <a>.
+         let prev_in_link = self.in_link;
+diff --git a/crates/ferromark_renderer/src/html/renderer/links.rs b/crates/ferromark_renderer/src/html/renderer/links.rs
+index 19862a3..4211423 100644
+--- a/crates/ferromark_renderer/src/html/renderer/links.rs
++++ b/crates/ferromark_renderer/src/html/renderer/links.rs
+@@ -6,8 +6,34 @@
+ 
+ use super::super::html_attr::{html_attr_value_range, is_html_attr_char, is_html_attr_start};
+ use super::HtmlRenderer;
++use ferromark_ast::Link;
+ 
+ impl HtmlRenderer {
++    /// Shared anchor policy for ordinary and hook-enabled child traversal.
++    pub(in crate::html::renderer) fn write_link_open(&mut self, link: &Link<'_>) {
++        self.write("<a href=\"");
++        let converted_url = if self.options.convert_md_links {
++            self.convert_markdown_url(link.url)
++        } else {
++            None
++        };
++        let href = self.sanitized_url(converted_url.as_deref().unwrap_or(link.url), "#");
++        self.write_url_escaped(href);
++        self.write("\"");
++        // Add target="_blank" for external links (http:// or https://)
++        if self.options.link_target_blank
++            && (href.starts_with("http://") || href.starts_with("https://"))
++        {
++            self.write(" target=\"_blank\" rel=\"noopener noreferrer\"");
++        }
++        if let Some(title) = link.title {
++            self.write(" title=\"");
++            self.write_escaped(title);
++            self.write("\"");
++        }
++        self.write(">");
++    }
++
+     pub(in crate::html::renderer) fn convert_markdown_url(&self, url: &str) -> Option<String> {
+         if let Some(converted) = self.convert_md_url(url) {
+             return Some(converted);
