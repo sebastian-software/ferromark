@@ -226,6 +226,21 @@ impl<'a> Parser<'a> {
         &self.source[line_start..end]
     }
 
+    /// The line starting at `line_start` plus the offset where the next line
+    /// begins, from a single terminator search.
+    ///
+    /// `line_at(x)` followed by `next_line_start(x)` scans the same bytes
+    /// twice: the second search re-finds the terminator the first one already
+    /// stopped on. Line-walking loops take both from one scan through this
+    /// helper, since the terminator's width is a two-byte test once its
+    /// offset is known.
+    pub(super) fn line_and_next(&self, line_start: usize) -> (&'a str, usize) {
+        let source = self.source;
+        let bytes = source.as_bytes();
+        let end = line_end(bytes, line_start);
+        (&source[line_start..end], line_terminator_end(bytes, end))
+    }
+
     pub(super) fn next_line_start(&self, line_start: usize) -> usize {
         scan_next_line_start(self.source.as_bytes(), line_start)
     }
@@ -257,5 +272,57 @@ impl<'a> Parser<'a> {
         }
 
         None
+    }
+}
+
+#[cfg(test)]
+pub(super) mod line_reuse_corpus {
+    /// Line shapes whose terminators exercise every branch of the scanner:
+    /// LF, CRLF, a lone CR, blank and whitespace-only lines, indentation by
+    /// space and tab, multi-byte characters, and an unterminated last line.
+    pub(in crate::parser) const SOURCES: &[&str] = &[
+        "",
+        "\n",
+        "\r",
+        "\r\n",
+        "alpha",
+        "alpha\n",
+        "alpha\r\nbeta\rgamma\n\n   \n\tdelta",
+        "- one\n- two\n\n- three\n  continued\n\n\n- four",
+        "1. one\r\n2. two\r\n\r\n   nested\r\n",
+        "* a\n*\n\n* c\n",
+        "- item\n\n      indented code\n\n- next\n",
+        "> quote\n> more\nlazy\n\n> second\n",
+        "| a | b |\n| - | - |\n| 1 | 2 |\npipe | in prose\n",
+        "# heading\n\ntext with é中🙂 and a tab\there\n\n```\nfence\n```\n",
+        "term\n: definition\n\n    indented body\n",
+        "text\n---\nsetext above\n===\n",
+        "<div>\nhtml block\n</div>\n\n<!-- comment -->\n",
+        "[^1]: footnote\n    continued\n\n[ref]: /url\n",
+    ];
+}
+
+#[cfg(test)]
+mod tests {
+    use super::line_reuse_corpus::SOURCES;
+    use crate::allocator::Allocator;
+    use crate::parser::Parser;
+
+    #[test]
+    fn line_and_next_matches_two_separate_scans() {
+        for source in SOURCES {
+            let allocator = Allocator::new();
+            let parser = Parser::new(&allocator, source);
+            for offset in 0..=source.len() {
+                if !source.is_char_boundary(offset) {
+                    continue;
+                }
+                assert_eq!(
+                    parser.line_and_next(offset),
+                    (parser.line_at(offset), parser.next_line_start(offset)),
+                    "source {source:?} offset {offset}"
+                );
+            }
+        }
     }
 }
