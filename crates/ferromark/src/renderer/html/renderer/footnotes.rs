@@ -98,7 +98,24 @@ impl HtmlRenderer {
     }
 
     pub(in crate::renderer::html::renderer) fn clear_footnote_state(&mut self) {
+        // The legacy marker path uses this one whether or not the semantic
+        // option is on.
         self.footnote_ref_counts.clear();
+        if !self.options.semantic_footnotes {
+            // The other three are written only from `footnote_index_of` and
+            // `assign_footnote_slug`, both reachable only through the semantic
+            // reference and definition renderers, and `options` cannot change
+            // after the renderer is constructed. With the option off they stay
+            // empty for the renderer's whole life, so there is nothing to
+            // clear.
+            debug_assert!(
+                self.footnote_index.is_empty()
+                    && self.footnote_records.is_empty()
+                    && self.footnote_slug_counts.is_empty(),
+                "semantic footnote state written while the option is off"
+            );
+            return;
+        }
         self.footnote_index.clear();
         self.footnote_records.clear();
         self.footnote_slug_counts.clear();

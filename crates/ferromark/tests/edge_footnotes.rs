@@ -11,6 +11,60 @@ fn gfm(source: &str) -> String {
     render(source, ParserOptions::gfm(), HtmlRendererOptions::default())
 }
 
+/// A renderer with semantic footnotes off never writes the three containers
+/// the semantic path owns, so its per-render reset skips them. Reusing such a
+/// renderer across footnote-heavy documents — including ones that repeat a
+/// slug, fall back to a positional slug, and have no footnotes at all — must
+/// still match a renderer built fresh for each document, in both modes.
+#[test]
+fn reused_renderers_reset_footnote_state_in_both_modes() {
+    use ferromark::allocator::Allocator;
+    use ferromark::parser::Parser;
+    use ferromark::renderer::HtmlRenderer;
+
+    let sources = [
+        "A[^1] and again[^1].\n\n[^1]: Shared note.\n",
+        "Plain paragraph with no footnotes.\n",
+        "X[^a] Y[^b] Z[^a]\n\n[^a]: First.\n\n[^b]: Second.\n",
+        // Two identifiers that slugify to the same base, forcing the
+        // uniquifier to hand out a suffix.
+        "P[^one two] Q[^one-two]\n\n[^one two]: Spaced.\n\n[^one-two]: Hyphenated.\n",
+        // An identifier with no alphanumerics falls back to a positional slug.
+        "R[^!!!]\n\n[^!!!]: Symbolic.\n",
+        "",
+    ];
+
+    let allocator = Allocator::new();
+    let documents: Vec<_> = sources
+        .iter()
+        .map(|source| {
+            Parser::with_options(&allocator, source, ParserOptions::gfm())
+                .parse()
+                .unwrap()
+        })
+        .collect();
+
+    for semantic_footnotes in [false, true] {
+        let options = HtmlRendererOptions {
+            semantic_footnotes,
+            ..HtmlRendererOptions::default()
+        };
+        let mut reused = HtmlRenderer::with_options(options.clone());
+        // Rotating the start point means no ordering can leave stale state.
+        for offset in 0..documents.len() {
+            for step in 0..documents.len() {
+                let document = &documents[(offset + step) % documents.len()];
+                let fresh = HtmlRenderer::with_options(options.clone()).render(document);
+                assert_eq!(
+                    reused.render_borrowed(document),
+                    fresh,
+                    "semantic_footnotes={semantic_footnotes} offset={offset}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn reference_and_definition_render_as_linked_pair() {
     let html = gfm("Here is a note[^1].\n\n[^1]: The note text.\n");
