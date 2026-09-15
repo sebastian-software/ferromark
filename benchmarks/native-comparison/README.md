@@ -66,7 +66,7 @@ IDs, callouts, inline TOC substitution, and fence metadata cleanup. V1 also
 disables its renderer extras. Original OX has no native flags to turn off those
 four behaviors; it remains unchanged. The harness neither replaces its renderer
 through hooks nor adds a slugifier to an engine that lacks one.
-The [current flag contract](../../docs/reports/2026-09-14-native-matched/FLAGS.md)
+The [current flag contract](../../docs/reports/2026-09-15-native-arm/FLAGS.md)
 lists each adapter's choices and executable guards. Every actual HTML output
 is archived. `verify.py` groups
 agreement without treating an engine as the correctness oracle and distinguishes:
@@ -122,10 +122,20 @@ and executable hashes. It uses a disposable directory and does not change the
 supplied source checkouts. Dependency choices and any lockfile differences are
 recorded with the build.
 
+If the temporary caches are missing, copy the current report's `restore.py` to
+an empty `/private/tmp/native-bench-cache` directory and run it there. It restores
+the original source pins and checks the original archive hashes. Adjust source
+paths below for your checkout layout.
+
 ```sh
 python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-build \
+  --bun-source /private/tmp/native-bench-cache/bun \
+  --bun-native-cache /private/tmp/native-bench-cache/native \
+  --md4c-source /private/tmp/native-bench-cache/md4c \
+  --ox-archive /private/tmp/native-bench-cache/ox.tar.gz \
+  --ferromark-v1-source ../ferromark --ferromark-v2-source . \
   --worker benchmarks/native-comparison/worker.rs --compile \
-  --lockfile docs/reports/2026-09-14-native-matched/Cargo.lock
+  --lockfile docs/reports/2026-09-15-native-arm/Cargo.lock
 python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py'
 python3 benchmarks/native-comparison/run.py \
   /private/tmp/native-bench-build/build.json \
@@ -136,6 +146,8 @@ python3 benchmarks/native-comparison/report.py /private/tmp/native-bench-results
 
 Use `run.py --verify-only` for behavior/output checks without timing. Build and
 output directories must be new so previous evidence is never overwritten.
-The current source pins are v2 `33c216b` and v1 `4e15141`; other engine pins are
-unchanged. The original pre-correction comparison is preserved separately in
+The current source pins are v2 `e93394e` and v1 `4e15141`; other engine pins are
+unchanged. The
+[previous matched-flags comparison](../../docs/reports/2026-09-14-native-matched/README.md)
+and original pre-correction comparison are preserved separately in
 [`2026-09-14-native-engines`](../../docs/reports/2026-09-14-native-engines/README.md).

@@ -81,6 +81,12 @@ and scans ASCII URL spans with NEON. The
 [first SIMD study](docs/reports/2026-09-14-simd-round/README.md) remains the historical
 record of the link prototype and its render-only build sensitivity.
 
+The [Apple Silicon iteration round](docs/reports/2026-09-15-arm-iterations/README.md)
+adds link scanners, URL escaping, fence search, smaller parse results, and output
+copy optimizations. The [complete 207-case rerun](docs/reports/2026-09-15-arm-full-suite/README.md)
+checks the finished branch against main in all four stages; the native engine
+comparison below uses its separately matched flags and build environment.
+
 The [runtime-profile study](docs/runtime-profiles.md) measures 37 individual
 options, unused-feature overhead, and candidate recipes for comments, articles,
 documentation, and MDX. It separates parser/rendering costs and fresh/reused
@@ -205,7 +211,7 @@ and one leading BOM is treated as an encoding marker with original spans preserv
 | CRLF / CR variants | 1,304/1,304 agree with their LF controls |
 | Original cmark / cmark-gfm corpus | 106/106 agree |
 | Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | 771 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, and definition-list scan regressions |
+| Workspace regression tests | 788 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, and definition-list scan regressions |
 
 Agreement permits conservative HTML serialization equivalence; raw output and
 all mismatches remain in the report. The two reference exceptions have exact
@@ -227,12 +233,7 @@ syntax and renderer settings across all six engines.
 
 ## Native engine comparison
 
-The newer [paragraph fast path](docs/reports/2026-09-14-paragraph-fast-path/README.md)
-removes comment filtering and mapping from ordinary paragraphs while preserving
-enabled-comment behavior. Its controlled before/after results cover all 57 inputs.
-
-The six-engine table below records **v2 `33c216b` and v1 `4e15141`**, before that
-paragraph optimization. Those cores were run with
+The current local cores, **v2 `e93394e` and v1 `4e15141`**, were rerun with
 explicit syntax and renderer flags on the original **57 documents (37–113,609
 UTF-8 bytes)**. Each scored column uses the same input set and equivalent HTML
 for every included engine. **Speed relative to v2: higher is faster; v2 = 1.00×.**
@@ -240,22 +241,18 @@ for every included engine. **Speed relative to v2: higher is faster; v2 = 1.00×
 | Engine | Fresh, 14 agreeing across six | Reuse, same 14 | Fresh, 50 agreeing across five | Reuse, same 50 |
 | --- | ---: | ---: | ---: | ---: |
 | Ferromark v2 | 1.00× | 1.00× | 1.00× | 1.00× |
-| OX-Content original | 1.09× | 1.12× | — | — |
-| Ferromark v1 | 0.78× | 0.82× | 0.66× | 0.69× |
-| md4c | 0.26× | 0.21× | 0.37× | 0.34× |
-| pulldown-cmark | 0.44× | 0.37× | 0.46× | 0.44× |
-| Bun native bun_md | 0.18× | 0.14× | 0.23× | 0.21× |
+| OX-Content original | 1.00× | 0.98× | — | — |
+| Ferromark v1 | 0.71× | 0.71× | 0.53× | 0.54× |
+| md4c | 0.26× | 0.21× | 0.31× | 0.28× |
+| pulldown-cmark | 0.46× | 0.38× | 0.42× | 0.39× |
+| Bun native bun_md | 0.17× | 0.12× | 0.18× | 0.16× |
 
-**OX-Content original leads the smaller all-six fresh aggregate;
-Ferromark v2 leads the broader five-engine fresh aggregate.** On the latter,
-v2 runs at 1.52× v1's speed fresh and
-1.45× with reuse. Individual documents can
-favor v1, including the 310-byte table comment in both lifecycles.
-
-The [OX regression investigation](docs/reports/2026-09-14-ox-regression/README.md)
-traces most of the gap in that run to paragraph handling added for
-line comments, even with the flag off; input normalization is a smaller contributor.
-That diagnosis led to the production paragraph optimization linked above.
+On the all-six agreement subset, v2 runs at
+**1.000× OX's throughput fresh** and
+**1.018× with reuse**. On the broader
+five-engine subset it runs at 1.90× v1's speed
+fresh and 1.85× with reuse. These are measured
+corpus aggregates; ratios close to 1.00 are not evidence of a universal lead.
 
 The all-six subset contains ten comments and four plain-prose views. The broader
 five-engine subset also covers technical docs, linked encyclopedia excerpts,
@@ -286,19 +283,21 @@ the same speed scale:
 
 | Group, five-engine agreement | N | V1 | md4c | pulldown | Bun native |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| <512 B | 10 | 0.81× | 0.25× | 0.56× | 0.29× |
-| 32–128 KiB | 7 | 0.62× | 0.31× | 0.34× | 0.11× |
-| comments | 11 | 0.82× | 0.26× | 0.54× | 0.28× |
-| technical-docs | 21 | 0.61× | 0.41× | 0.43× | 0.22× |
-| plain-prose | 4 | 0.70× | 0.28× | 0.25× | 0.07× |
+| <512 B | 10 | 0.71× | 0.26× | 0.55× | 0.26× |
+| 32–128 KiB | 7 | 0.57× | 0.29× | 0.37× | 0.10× |
+| comments | 11 | 0.74× | 0.28× | 0.55× | 0.25× |
+| technical-docs | 21 | 0.51× | 0.35× | 0.40× | 0.18× |
+| plain-prose | 4 | 0.65× | 0.26× | 0.30× | 0.06× |
 
 
-[Full results and per-document timings](docs/reports/2026-09-14-native-matched/README.md),
-[exact flags](docs/reports/2026-09-14-native-matched/FLAGS.md), and
-[HTML differences](docs/reports/2026-09-14-native-matched/OUTPUT-REVIEW.md)
+[Full results and per-document timings](docs/reports/2026-09-15-native-arm/README.md),
+[exact flags](docs/reports/2026-09-15-native-arm/FLAGS.md), and
+[HTML differences](docs/reports/2026-09-15-native-arm/OUTPUT-REVIEW.md)
 include raw measurements, source hashes, and reproducible configuration.
-The [older pre-correction six-engine run](docs/reports/2026-09-14-native-engines/README.md)
-is retained as historical evidence.
+The [previous matched-flags run](docs/reports/2026-09-14-native-matched/README.md)
+and [original six-engine run](docs/reports/2026-09-14-native-engines/README.md)
+remain historical evidence. The [full 207-case before/after suite](docs/reports/2026-09-15-arm-full-suite/README.md)
+uses a separate harness and reports all four stages.
 
 The historical [two-engine broad Markdown comparison](docs/reports/2026-09-14-broad-markdown/INTERPRETATION.md)
 measures 57 cases from 37 bytes to 114 KB: short comments, real documentation,

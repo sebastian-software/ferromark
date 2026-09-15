@@ -4,7 +4,16 @@ The [round report](../../docs/reports/2026-09-14-optimization-rounds/README.md)
 records accepted and rejected variants, exact patches, build controls, raw
 samples, output verification, and arena occupancy measurements.
 
-The frozen reference core is `4de75d4843747a218771b5ec46df9171d4f54a15`.
+The latest [complete Apple Silicon rerun](../../docs/reports/2026-09-15-arm-full-suite/README.md)
+compares main `a7f0a00` with the finished performance branch `e93394e` on all
+207 cases and all four stages. Its archived preparation script pins that newer
+baseline; use the report's reproduction instructions to replay it. The original
+[individual ARM attempts](../../docs/reports/2026-09-15-arm-iterations/README.md)
+and the separate [six-engine comparison](../../docs/reports/2026-09-15-native-arm/README.md)
+remain available with their own profiles and build settings.
+
+The live preparation script's original reference core remains
+`4de75d4843747a218771b5ec46df9171d4f54a15`.
 Prepare isolated source checkouts of that revision and the desired candidate;
 then run, using fresh output directories:
 
