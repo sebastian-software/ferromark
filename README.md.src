@@ -16,14 +16,18 @@ All Rust and npm packages remain unpublished.
 The API is not compatible with Ferromark v1 and is not a stable v2 release.
 
 ```rust
-use ferromark::{Allocator, HtmlRenderer, Parser};
-
-let source = "Hello, **world**!";
-let allocator = Allocator::for_source_len(source.len());
-let document = Parser::new(&allocator, source).parse().unwrap();
-let html = HtmlRenderer::new().render(&document);
+let html = ferromark::to_html("Hello, **world**!").unwrap();
 assert_eq!(html, "<p>Hello, <strong>world</strong>!</p>\n");
 ```
+
+Use `to_html_with_options` to select syntax and output settings, or
+`to_html_into` / `to_html_into_with_options` to append to a caller-owned `String`.
+The helpers return `Result` and use the same defaults as the low-level Rust API,
+including raw HTML passthrough. Select `HtmlRendererOptions { sanitize: true, .. }`
+for untrusted input. [Rust examples and API choices](docs/rust-api.md).
+
+For AST access, construct an `Allocator`, parse with `Parser`, then render the
+document with `HtmlRenderer`.
 
 `ParserOptions::gfm()` enables the implemented GFM syntax plus footnotes.
 For specification-oriented output, pair `ParserOptions::gfm_spec()` with
@@ -37,7 +41,7 @@ MDX compiler or runtime. Math, definition lists, and other extensions remain con
 The allocator and source must outlive the document. Reuse/reset an allocator only after its documents
 have been dropped. HTML options and renderer hooks remain available directly.
 
-The workspace contains four core crates and a small re-export facade:
+The workspace contains four core crates and a small public facade:
 
 | Crate | Responsibility |
 | --- | --- |
@@ -239,7 +243,7 @@ and one leading BOM is treated as an encoding marker with original spans preserv
 | CRLF / CR variants | 1,304/1,304 agree with their LF controls |
 | Original cmark / cmark-gfm corpus | 106/106 agree |
 | Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | 807 pass, including both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, definition-list scans, and optional writing syntax; [latest validation](docs/reports/2026-09-15-optional-writing/README.md#validation) |
+| Workspace regression tests | Both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, optional writing syntax, container references, and Rust convenience helpers |
 
 Agreement permits conservative HTML serialization equivalence; raw output and
 all mismatches remain in the report. The two reference exceptions have exact
