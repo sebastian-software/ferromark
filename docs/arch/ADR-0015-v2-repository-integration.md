@@ -9,6 +9,17 @@ merge with both histories as parents. The original Ferromark parent is
 `523e77e`. Preserve the full imported history, attribution, fixtures, and
 measured reports; the sibling source repository remains unchanged.
 
+### Release integration amendment (2026-09-15)
+
+The repository owner selected a linear history for the v2 release. Before
+merging PR #321, replay all 69 development commits above `523e77e`, preserving
+each commit's complete tree, author, author date and message. The import merge
+becomes a regular commit; every replayed commit has one parent. Verify tree
+identity for every commit and for the final release source before pushing.
+The original history remains on `codex/v2-before-rebase`, keeping historical
+report commit references available. The release PR uses GitHub's rebase merge;
+publication waits for successful CI on the resulting `main` commit.
+
 The root now contains the v2 virtual Rust workspace. This supersedes the
 v1 streaming/no-AST decision (ADR-0001) on this branch: v2 uses OX-Content's
 arena-allocated AST. Earlier v1 ADRs remain available in the first parent's
