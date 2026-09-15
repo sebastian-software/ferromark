@@ -113,3 +113,19 @@ fn disabling_references_keeps_container_definition_syntax_visible() {
     assert!(html.contains("[target]: /url"), "{html}");
     assert!(!html.contains("<a "), "{html}");
 }
+
+#[test]
+fn unclosed_quoted_fence_ends_before_root_reference_definitions() {
+    // CommonMark 0.31.2 section 4.5, example 128: the enclosing quote
+    // terminates an unclosed fence. The old flat prepass leaked fence state.
+    for fence in ["```", "~~~"] {
+        for ending in ["\n", "\r\n", "\r"] {
+            let source = format!("> {fence}{ending}{ending}[a]: /url{ending}{ending}[a]");
+            assert_eq!(
+                render(&source),
+                "<blockquote>\n<pre><code></code></pre>\n</blockquote>\n<p><a href=\"/url\">a</a></p>\n",
+                "{source:?}"
+            );
+        }
+    }
+}

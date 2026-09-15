@@ -42,6 +42,15 @@ mod tests;
 
 pub use options::ParserOptions;
 
+/// Internal parse phase, inherited by container sub-parsers. Collection uses
+/// the same block grammar without building ordinary inline content or invoking
+/// another document prepass. It is not a user-visible syntax option.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ParsePhase {
+    Document,
+    Definitions,
+}
+
 /// Markdown parser.
 pub struct Parser<'a> {
     /// Arena allocator.
@@ -81,8 +90,8 @@ pub struct Parser<'a> {
     /// whether a definition exists before reaching it.
     footnote_labels: Option<std::rc::Rc<footnote::FootnoteLabels>>,
 
-    /// A temporary block-only pass for collecting container definitions.
-    collecting_references: bool,
+    /// The document parse or its temporary block-only definition pass.
+    phase: ParsePhase,
 
     /// Shared by container sub-parsers. Allocated in the existing arena only
     /// when inline notes are enabled; avoids a source scan or AST walk when
@@ -157,6 +166,15 @@ impl<'a> Parser<'a> {
     /// Creates a new parser with the specified options.
     #[must_use]
     pub fn with_options(allocator: &'a Allocator, source: &'a str, options: ParserOptions) -> Self {
+        Self::with_phase(allocator, source, options, ParsePhase::Document)
+    }
+
+    fn with_phase(
+        allocator: &'a Allocator,
+        source: &'a str,
+        options: ParserOptions,
+        phase: ParsePhase,
+    ) -> Self {
         let front_matter = options
             .front_matter
             .then(|| front_matter::extract(source))
@@ -170,13 +188,15 @@ impl<'a> Parser<'a> {
             source,
             source_map,
             front_matter: front_matter.map(|metadata| allocator.boxed(metadata)),
-            inline_note_seen: (options.inline_footnotes && !source.is_empty())
-                .then(|| &*allocator.alloc(std::cell::Cell::new(false))),
+            inline_note_seen: (phase == ParsePhase::Document
+                && options.inline_footnotes
+                && !source.is_empty())
+            .then(|| &*allocator.alloc(std::cell::Cell::new(false))),
             options,
             position: 0,
             nesting_depth: 0,
             definitions: None,
-            collecting_references: false,
+            phase,
             footnote_labels: None,
             lazy_lines: None,
             comment_lines: None,
@@ -186,11 +206,13 @@ impl<'a> Parser<'a> {
             definition_region: None,
             comment_definition_region: None,
         };
-        // A single fused pre-pass collects both the reference definitions
-        // and the footnote labels (see `prepass.rs`).
-        let (definitions, footnote_labels) = parser.build_prepass();
-        parser.definitions = definitions;
-        parser.footnote_labels = footnote_labels;
+        // Discover document-wide definitions once, before inline resolution
+        // (see `prepass.rs`). Collection itself must not recurse.
+        if phase == ParsePhase::Document {
+            let (definitions, footnote_labels) = parser.build_prepass();
+            parser.definitions = definitions;
+            parser.footnote_labels = footnote_labels;
+        }
         parser
     }
 
@@ -226,7 +248,7 @@ impl<'a> Parser<'a> {
             position: 0,
             nesting_depth: self.nesting_depth + 1,
             definitions: self.definitions.clone(),
-            collecting_references: self.collecting_references,
+            phase: self.phase,
             footnote_labels: self.footnote_labels.clone(),
             inline_note_seen: self.inline_note_seen,
             // Most sub-sources are entered without any lazy continuation

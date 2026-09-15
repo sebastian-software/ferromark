@@ -1,8 +1,8 @@
 //! Pure byte/line scanners for the reference-definition parser.
 //!
 //! These helpers carry no parser state; they inspect raw source bytes to
-//! locate line boundaries, strip block quote markers, and recognize the
-//! fence and paragraph-closing markers the collection pre-pass needs.
+//! locate line boundaries and recognize fence and paragraph-closing markers
+//! used by block-quote parsing and footnote-label discovery.
 
 use super::super::line_scan::{is_line_ending_byte, line_end, line_terminator_end};
 
@@ -49,26 +49,6 @@ pub(super) fn next_blank_line(bytes: &[u8], mut pos: usize) -> usize {
         pos = line_terminator_end(bytes, line_end);
     }
     bytes.len()
-}
-
-/// Strips leading `>` block quote markers (each with up to three spaces of
-/// indent and one optional following space).
-pub(in crate::parser) fn strip_quote_markers(mut line: &str) -> &str {
-    loop {
-        let bytes = line.as_bytes();
-        let mut i = 0;
-        while i < bytes.len() && i < 3 && bytes[i] == b' ' {
-            i += 1;
-        }
-        if bytes.get(i) != Some(&b'>') {
-            return line;
-        }
-        i += 1;
-        if bytes.get(i) == Some(&b' ') {
-            i += 1;
-        }
-        line = &line[i..];
-    }
 }
 
 /// Lines that close an open paragraph without themselves opening one:

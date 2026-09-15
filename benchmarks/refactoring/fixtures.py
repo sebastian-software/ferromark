@@ -18,6 +18,7 @@ def corpus():
         'root-references': '[target]: /url "title"\n\n[target] and ![image][target].\n\n',
         'container-references': '- [target]: /url "title"\n\n[target] and ![image][target].\n\n',
         'fenced-decoys': '```ts\ninterface Map<T> {\n  [key: string]: T;\n}\n```\n\nParagraph [ordinary](/url).\n\n',
+        'footnote-labels': 'Use[^note].\n\n[^note]: A **note**.\n\n',
         'links': '[same](doc.md "title") **[web](https://example.com/path?q=1&x=2)** [unsafe](javascript:bad) ![image](image.md)\n\n',
     }
     cases = []

@@ -3,11 +3,10 @@
 //! Definitions (`[label]: destination "title"`) are usable anywhere in the
 //! document, including before their definition site, so the root parser
 //! runs a collection pre-pass over the source before block parsing starts.
-//! The pre-pass tracks just enough block structure to avoid false
-//! positives — fenced code regions, indented code lines, and block quote
-//! markers — while actual removal of definition paragraphs from the output
-//! happens later during regular block parsing via
-//! [`Parser::try_parse_definition_node`].
+//! The collection phase uses the same block grammar as the final parse, so
+//! code, HTML, containers, and definition precedence have one structural owner.
+//! Definition paragraphs are consumed by [`Parser::try_parse_definition_node`]
+//! in both phases; collection omits ordinary inline parsing.
 
 use compact_str::CompactString;
 use ferromark_ast::{Definition, Node, Span};
@@ -15,16 +14,15 @@ use rustc_hash::FxHashMap;
 
 use super::Parser;
 use super::line_comments::CommentDefinitionRegion;
-use super::line_scan::{is_line_ending_byte, line_end as scan_line_end, line_terminator_end};
+use super::line_scan::{is_line_ending_byte, line_terminator_end};
 use super::spans::SpanMap;
 
-mod containers;
+mod collect;
 mod scan;
 
 use scan::{line_end_if_blank_after, next_blank_line, skip_ws_one_newline};
-// The block quote collector and the fused pre-pass share the fence,
-// paragraph-context, and quote-strip helpers.
-pub(super) use scan::{closes_paragraph_context, fence_open, is_fence_close, strip_quote_markers};
+// Block quotes and the footnote-label scan share these line recognizers.
+pub(super) use scan::{closes_paragraph_context, fence_open, is_fence_close};
 
 #[derive(Debug)]
 pub(super) struct ReferenceDef<'a> {
@@ -236,37 +234,6 @@ impl<'a> Parser<'a> {
         let blank_line = next_blank_line(self.source.as_bytes(), start);
         self.definition_region = Some((start, blank_line));
         blank_line
-    }
-
-    /// Joins the block-quote-stripped lines of the paragraph chunk that
-    /// starts at `pos` (stopping at a blank line), returning the joined
-    /// text and each line's start offset in the original source. Used by
-    /// the fused pre-pass when it finds a definition candidate line.
-    pub(super) fn join_stripped_chunk(
-        &self,
-        mut pos: usize,
-    ) -> (&'a str, ferromark_allocator::Vec<'a, usize>) {
-        let bytes = self.source.as_bytes();
-        let mut joined = self.allocator.new_string();
-        let mut line_starts = self.allocator.new_vec();
-        while pos < bytes.len() {
-            pos = self.skip_line_comments_from(pos);
-            if pos >= bytes.len() {
-                break;
-            }
-            let line_end = scan_line_end(bytes, pos);
-            let line = &self.source[pos..line_end];
-            let stripped = strip_quote_markers(line);
-            if stripped.trim().is_empty() {
-                break;
-            }
-            line_starts.push(pos);
-            joined.push_str(stripped);
-            joined.push('\n');
-            pos = line_terminator_end(bytes, line_end);
-        }
-        line_starts.push(pos.min(bytes.len()));
-        (joined.into_bump_str(), line_starts)
     }
 
     fn unescape_reference_component(&self, raw: &'a str) -> &'a str {
