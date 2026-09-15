@@ -1,9 +1,9 @@
 # Refactoring checks
 
-`fixtures.py` emits thirteen authored inputs covering nested source spans, indented
+`fixtures.py` emits fifteen authored inputs covering nested source spans, indented
 JSX and attributes, escaped table pipes, BOM/NUL normalization, root and container
 references, footnote-only labels, fenced TypeScript decoys, and default/configured
-link rendering, image alternatives, balanced brackets, and unclosed delimiters.
+link rendering, image alternatives, balanced brackets, unclosed delimiters, Unicode URLs, and IPv6 authorities.
 Optional extensions are explicitly configured; none of these synthetic inputs represents the broad corpus.
 
 ```sh

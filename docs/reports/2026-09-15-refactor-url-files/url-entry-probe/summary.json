@@ -1,0 +1,170 @@
+[
+  {
+    "case": "unclosed-delimiters",
+    "stage": "fresh",
+    "members": [
+      "unclosed-delimiters"
+    ],
+    "ratio": 0.9992093080155624,
+    "round_ratios": [
+      1.0073949631583121,
+      0.9987184720712956,
+      0.9992093080155624
+    ],
+    "before_ns": 87635.68534482758,
+    "after_ns": 87791.5765086207
+  },
+  {
+    "case": "unclosed-delimiters",
+    "stage": "reuse",
+    "members": [
+      "unclosed-delimiters"
+    ],
+    "ratio": 0.9984384845932824,
+    "round_ratios": [
+      0.9984384845932824,
+      0.9990986781241659,
+      0.9976399353125854
+    ],
+    "before_ns": 87206.49245689655,
+    "after_ns": 87138.33512931035
+  },
+  {
+    "case": "url-unicode",
+    "stage": "fresh",
+    "members": [
+      "url-unicode"
+    ],
+    "ratio": 0.9988464985258619,
+    "round_ratios": [
+      1.0027995326222656,
+      0.994359794312605,
+      0.9988464985258619
+    ],
+    "before_ns": 27365.545516304348,
+    "after_ns": 27241.890285326088
+  },
+  {
+    "case": "url-unicode",
+    "stage": "reuse",
+    "members": [
+      "url-unicode"
+    ],
+    "ratio": 1.0005202336324652,
+    "round_ratios": [
+      1.0013536539356378,
+      1.0005202336324652,
+      0.9934886477583669
+    ],
+    "before_ns": 26861.702127659573,
+    "after_ns": 26848.778257978724
+  },
+  {
+    "case": "url-ipv6",
+    "stage": "fresh",
+    "members": [
+      "url-ipv6"
+    ],
+    "ratio": 1.0007137368575587,
+    "round_ratios": [
+      0.9998913953571678,
+      1.001824491293594,
+      1.0007137368575587
+    ],
+    "before_ns": 49971.251838235294,
+    "after_ns": 50059.97242647059
+  },
+  {
+    "case": "url-ipv6",
+    "stage": "reuse",
+    "members": [
+      "url-ipv6"
+    ],
+    "ratio": 1.000404972383347,
+    "round_ratios": [
+      1.0021532197708993,
+      0.9997280032095203,
+      1.000404972383347
+    ],
+    "before_ns": 49697.125,
+    "after_ns": 49719.388480392154
+  },
+  {
+    "case": "rotating-extended",
+    "stage": "fresh",
+    "members": [
+      "unclosed-delimiters",
+      "url-unicode",
+      "url-ipv6"
+    ],
+    "ratio": 1.0007816418778324,
+    "round_ratios": [
+      0.9981514545319689,
+      1.0007816418778324,
+      1.0012508169701486
+    ],
+    "before_ns": 165643.310546875,
+    "after_ns": 165795.083984375
+  },
+  {
+    "case": "rotating-extended",
+    "stage": "reuse",
+    "members": [
+      "unclosed-delimiters",
+      "url-unicode",
+      "url-ipv6"
+    ],
+    "ratio": 1.0004183644436773,
+    "round_ratios": [
+      1.0004183644436773,
+      1.00133635436337,
+      0.9988047892794691
+    ],
+    "before_ns": 164343.75,
+    "after_ns": 164362.548828125
+  },
+  {
+    "case": "complete-suite",
+    "stage": "fresh",
+    "ratio": 1.0009162666273628,
+    "rounds": [
+      {
+        "before_ns": 164853.109375,
+        "after_ns": 164266.6015625,
+        "ratio": 0.99644223991453
+      },
+      {
+        "before_ns": 165643.310546875,
+        "after_ns": 165795.083984375,
+        "ratio": 1.0009162666273628
+      },
+      {
+        "before_ns": 166102.376953125,
+        "after_ns": 166310.140625,
+        "ratio": 1.0012508169701486
+      }
+    ]
+  },
+  {
+    "case": "complete-suite",
+    "stage": "reuse",
+    "ratio": 1.0001143872409204,
+    "rounds": [
+      {
+        "before_ns": 164343.75,
+        "after_ns": 164362.548828125,
+        "ratio": 1.0001143872409204
+      },
+      {
+        "before_ns": 164170.734375,
+        "after_ns": 164358.07421875,
+        "ratio": 1.0011411281338491
+      },
+      {
+        "before_ns": 164898.84375,
+        "after_ns": 164649.90234375,
+        "ratio": 0.9984903386792243
+      }
+    ]
+  }
+]
