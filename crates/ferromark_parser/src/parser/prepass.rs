@@ -1,9 +1,8 @@
 //! Document-wide definition discovery.
 //!
 //! A cheap syntax-shape filter keeps ordinary documents out of collection.
-//! Link definitions are collected by the real block grammar, so root and
-//! container definitions share context and precedence rules. Footnote labels
-//! retain their existing raw-line policy independently of link definitions.
+//! Link definitions and footnote labels are collected by the real block
+//! grammar, so root and container definitions share context and scope.
 
 use std::rc::Rc;
 use std::sync::LazyLock;
@@ -11,9 +10,9 @@ use std::sync::LazyLock;
 use memchr::{memchr, memmem, memrchr2};
 
 use super::Parser;
-use super::footnote::{FootnoteLabels, normalize_footnote_label, parse_footnote_opener};
-use super::line_scan::{line_end as scan_line_end, line_terminator_end};
-use super::reference::{ReferenceMap, fence_open, is_fence_close};
+use super::footnote::FootnoteLabels;
+use super::line_scan::line_end as scan_line_end;
+use super::reference::ReferenceMap;
 
 /// Three-byte fence-run searchers, built once for the process.
 ///
@@ -53,7 +52,7 @@ pub(super) fn next_fence_run_line(bytes: &[u8], from: usize, fence_byte: u8) -> 
 /// 1,000 bytes; footnote labels are line-bounded but have no length cap. This
 /// scanner only proves that necessary shape exists; the full pre-pass remains
 /// responsible for validating syntax and block context.
-fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
+fn definition_candidates(source: &str, footnotes: bool, mdx: bool) -> (bool, bool) {
     let bytes = source.as_bytes();
     let Some(mut open) = memchr(b'[', bytes) else {
         return (false, false);
@@ -74,7 +73,10 @@ fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
                 b' ' | b'\t' | b'>' | b'-' | b'+' | b'*' | b'.' | b')' | b'0'..=b'9'
             )
         });
-        if block_prefix {
+        // A flow component can begin Markdown children on its opening line.
+        // Treat a preceding tag end as a candidate; the block grammar decides
+        // whether it really belongs to JSX rather than raw HTML or prose.
+        if block_prefix || (mdx && raw_prefix.contains('>')) {
             let candidate_end = if footnotes && bytes.get(open + 1) == Some(&b'^') {
                 // Footnote labels cannot span lines, but unlike reference
                 // labels their parser deliberately has no length cap.
@@ -120,29 +122,17 @@ impl<'a> Parser<'a> {
             return (None, None);
         }
         let (has_candidate, has_link_candidate) =
-            definition_candidates(self.source, self.options.footnotes);
+            definition_candidates(self.source, self.options.footnotes, self.options.mdx);
         if !has_candidate {
             return (None, None);
         }
-        let definitions = if self.options.allow_link_refs && has_link_candidate {
-            self.collect_references()
+        let (definitions, labels) = if (self.options.allow_link_refs && has_link_candidate)
+            || (self.options.footnotes && self.source.contains("[^"))
+        {
+            self.collect_definitions()
         } else {
-            ReferenceMap::default()
+            (ReferenceMap::default(), FootnoteLabels::default())
         };
-        let mut labels = FootnoteLabels::default();
-        if self.options.footnotes && self.source.contains("[^") {
-            // Preserve the existing footnote scope. Every physical line was
-            // already inspected independently of the reference scan's fence
-            // and paragraph state; no link-grammar approximation is needed.
-            let bytes = self.source.as_bytes();
-            let mut pos = 0;
-            let mut fence = None;
-            while pos < bytes.len() {
-                let end = scan_line_end(bytes, pos);
-                footnote_scan_line(&self.source[pos..end], bytes[pos], &mut fence, &mut labels);
-                pos = line_terminator_end(bytes, end);
-            }
-        }
         (
             (!definitions.is_empty()).then(|| Rc::new(definitions)),
             (!labels.is_empty()).then(|| Rc::new(labels)),
@@ -150,34 +140,11 @@ impl<'a> Parser<'a> {
     }
 }
 
-/// One line of the footnote-label scan: raw-line fence tracking plus the
-/// `[^label]:` opener check. Mirrors the former standalone footnote
-/// pre-pass exactly (no quote stripping).
-fn footnote_scan_line(
-    line: &str,
-    first: u8,
-    foot_fence: &mut Option<(u8, usize)>,
-    labels: &mut FootnoteLabels,
-) {
-    let raw_trimmed = line.trim_start_matches([' ', '\t']);
-    if let Some((fence_byte, fence_len)) = *foot_fence {
-        if is_fence_close(raw_trimmed, fence_byte, fence_len) {
-            *foot_fence = None;
-        }
-    } else if let Some(open) = fence_open(raw_trimmed) {
-        *foot_fence = Some(open);
-    } else if matches!(first, b'[' | b' ') {
-        // An opener starts with `[^` after at most three spaces, so only
-        // these first bytes can begin one.
-        if let Some((label, _)) = parse_footnote_opener(line) {
-            labels.insert(normalize_footnote_label(label));
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::definition_candidates;
+    fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
+        super::definition_candidates(source, footnotes, false)
+    }
 
     fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
         definition_candidates(source, footnotes).0

@@ -1,0 +1,50 @@
+[
+  {
+    "revision": "c7d55f138af43401b1b0cc038593a0b435f63094",
+    "working_tree": true,
+    "binary": "/private/tmp/ferromark-url-entry-after/worker/target/release/runtime-profile-worker",
+    "binary_sha256": "622162ee481ee69ec9d963a24ecc2841f282d07343b0fa917bd3ea19e0177fbd",
+    "worker_sha256": "0e91f623d0f02a3a2ffe2df23c83eba4896ca1d24531510ebc0076eae3302914",
+    "source_tree_sha256": "40f43695be7a0dfc50e9674121e190e3cf28487d06505014b703fc70d0711a4c",
+    "source_archive_sha256": "5208940281913b00019f60e6225cdc3b9d120dbc611813ed9fd6519b33736e44",
+    "source_lock_sha256": "15c12ce822a72b1e83d5f65268741d70d801ed80fcf35e0c7fa8a2a90ceddcd4",
+    "worker_lock_sha256": "ccdb89d0955633f7c503ef7b9ecda8aaec63ac764a8e2ea8bd0c3bc41109b926",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+    "command": [
+      "cargo",
+      "+1.95",
+      "build",
+      "--release",
+      "--offline",
+      "--features",
+      "optional-writing"
+    ],
+    "rustflags": "-C target-cpu=generic",
+    "lto": "fat",
+    "registry_versions_unchanged": true
+  },
+  {
+    "revision": "c06c5de6537d7aec285c9e07dc515d69310261b0",
+    "working_tree": true,
+    "binary": "/private/tmp/ferromark-footnotes-structural/worker/target/release/runtime-profile-worker",
+    "binary_sha256": "9e4d856b41192b01cb1be01b5ada773d81e1e51b7a77b36338761edca0871d00",
+    "worker_sha256": "0e91f623d0f02a3a2ffe2df23c83eba4896ca1d24531510ebc0076eae3302914",
+    "source_tree_sha256": "3d5c8f370a0017c00b8a7fe778b1fc507f64337aba83ded9afcf443b8266c4fb",
+    "source_archive_sha256": "f80dfe2d10570d3ccb6b4ff5dae1144fc579e1d5fb5207c1f361527decf57c5b",
+    "source_lock_sha256": "15c12ce822a72b1e83d5f65268741d70d801ed80fcf35e0c7fa8a2a90ceddcd4",
+    "worker_lock_sha256": "ccdb89d0955633f7c503ef7b9ecda8aaec63ac764a8e2ea8bd0c3bc41109b926",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+    "command": [
+      "cargo",
+      "+1.95",
+      "build",
+      "--release",
+      "--offline",
+      "--features",
+      "optional-writing"
+    ],
+    "rustflags": "-C target-cpu=generic",
+    "lto": "fat",
+    "registry_versions_unchanged": true
+  }
+]

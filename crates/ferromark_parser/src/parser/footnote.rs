@@ -8,7 +8,7 @@
 //! literal text, as GFM specifies.
 //!
 //! Because references may appear before their definitions, the root
-//! parser collects the label set in a pre-pass ([`Parser::build_footnote_labels`])
+//! parser collects the label set in a pre-pass ([`Parser::build_prepass`])
 //! and shares it with sub-parsers, mirroring how link reference
 //! definitions work.
 
@@ -196,32 +196,37 @@ impl<'a> Parser<'a> {
             return Ok(None);
         };
 
-        let identifier =
+        let identifier = if self.phase == super::ParsePhase::Definitions {
+            // The collector normalizes labels into its owned set; avoid
+            // allocating an intermediate normalized copy in the temporary AST.
+            label
+        } else {
             self.allocator
-                .alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
+                .alloc_str(normalize_footnote_label(label).as_str()) as &'a str
+        };
         let content_start = start + after_colon;
         let body_len = definition_body_len(self, content_start);
-        let body = dedent_body(
-            self.allocator,
-            &self.source[content_start..content_start + body_len],
-            content_start,
-        );
-
-        // The body is a full block context (paragraphs, lists, code), so
-        // hand it to a sub-parser rather than treating it as inline text.
-        let sub_doc = self
-            .sub_parser_with_source_map(
-                body.text,
-                rustc_hash::FxHashSet::default(),
-                &body.source_map,
-            )
-            .parse()?;
-        let mut children = sub_doc.children;
-        // Sub-parser spans are relative to the dedented body; map them
-        // back onto the original source so downstream tooling keeps ranges.
-        for child in &mut children {
-            body.source_map.remap_node_spans(child);
-        }
+        let raw_body = &self.source[content_start..content_start + body_len];
+        // Collection only needs nested definitions. Without the necessary
+        // closing label marker, this body cannot contribute any; the real
+        // document parse still validates and renders its complete content.
+        let children = if self.phase == super::ParsePhase::Definitions && !raw_body.contains("]:") {
+            ferromark_allocator::Vec::new_in(self.allocator.bump())
+        } else {
+            let body = dedent_body(self.allocator, raw_body, content_start);
+            let sub_doc = self
+                .sub_parser_with_source_map(
+                    body.text,
+                    rustc_hash::FxHashSet::default(),
+                    &body.source_map,
+                )
+                .parse()?;
+            let mut children = sub_doc.children;
+            for child in &mut children {
+                body.source_map.remap_node_spans(child);
+            }
+            children
+        };
         let end = content_start + body_len;
         self.position = end;
 

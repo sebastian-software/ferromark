@@ -103,3 +103,68 @@ fn definition_inside_fenced_code_is_not_collected() {
     assert!(html.contains("Plain[^x]."), "{html}");
     assert!(!html.contains("<sup>"), "{html}");
 }
+
+#[test]
+fn nested_definitions_resolve_across_the_document() {
+    for container in [
+        "<Outer>[^note]: Nested body.\n\nLocal[^NOTE].\n</Outer>",
+        "<Outer>\n\tLocal[^NOTE].\n\t\n\t[^note]: Nested body.\n</Outer>",
+        "> Local[^NOTE].\n>\n> [^note]: Nested body.",
+        "- Local[^NOTE].\n\n  [^note]: Nested body.",
+    ] {
+        for newline in ["\n", "\r\n", "\r"] {
+            for allow_link_refs in [false, true] {
+                let source = format!("Before[^note].\n\n{container}\n\nAfter[^note].")
+                    .replace('\n', newline);
+                let html = render(
+                    &source,
+                    ParserOptions {
+                        mdx: true,
+                        allow_link_refs,
+                        ..ParserOptions::gfm()
+                    },
+                    HtmlRendererOptions::default(),
+                );
+                assert_eq!(
+                    html.matches("href=\"#fn-note\"").count(),
+                    3,
+                    "{source:?}: {html}"
+                );
+                assert!(html.contains("<p>Nested body.</p>"), "{html}");
+            }
+        }
+    }
+}
+
+#[test]
+fn definition_lookalikes_in_non_markdown_blocks_stay_literal() {
+    for block in [
+        "<Outer>\n\t```\n\t[^note]: Hidden.\n\t```\n</Outer>",
+        "> ```\n> [^note]: Hidden.\n> ```",
+        "    [^note]: Hidden.",
+        "<script>\n[^note]: Hidden.\n</script>",
+    ] {
+        let source = format!("Before[^note].\n\n{block}");
+        let html = render(
+            &source,
+            ParserOptions {
+                mdx: !block.starts_with("<script>"),
+                ..ParserOptions::gfm()
+            },
+            HtmlRendererOptions::default(),
+        );
+        assert!(html.contains("Before[^note]."), "{html}");
+        assert!(!html.contains("<sup>"), "{html}");
+    }
+}
+
+#[test]
+fn nested_footnote_bodies_contribute_labels_without_scanning_code() {
+    let html = gfm(
+        "Use[^INNER] and [^hidden].\n\n[^outer]: Outer body.\n\n    [^inner]: Inner body.\n\n    ```\n    [^hidden]: Code only.\n    ```\n",
+    );
+    assert!(html.contains("href=\"#fn-inner\""), "{html}");
+    assert!(html.contains("<p>Inner body.</p>"), "{html}");
+    assert!(html.contains("and [^hidden]."), "{html}");
+    assert!(!html.contains("href=\"#fn-hidden\""), "{html}");
+}

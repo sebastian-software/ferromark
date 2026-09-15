@@ -1,0 +1,1209 @@
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark_parser)
+   Compiling ferromark v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark)
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark_renderer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.79s
+     Running unittests src/lib.rs (target/debug/deps/ferromark-111a3871422aee91)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/convenience.rs (target/debug/deps/convenience-4eb710d30e3a255b)
+
+running 4 tests
+test parse_failure_leaves_existing_output_unchanged ... ok
+test explicit_options_control_syntax_and_html_policy ... ok
+test append_preserves_prefix_and_document_isolation ... ok
+test owned_output_uses_rust_defaults ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/ferromark_allocator-d3bfa74b1fc022e8)
+
+running 6 tests
+test tests::test_alloc_value ... ok
+test tests::test_alloc_str ... ok
+test tests::test_arena_vec ... ok
+test tests::test_allocator_creation ... ok
+test tests::boxed_value_is_derefable_and_does_not_need_drop ... ok
+test tests::test_arena_string ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/ferromark_ast-7cd817cd31388c16)
+
+running 20 tests
+test mdx_tests::expression_attribute_value_keeps_source_without_braces ... ok
+test mdx_tests::flow_and_text_expressions_keep_source_without_braces ... ok
+test mdx_tests::literal_attribute_keeps_quoted_value ... ok
+test mdx_tests::esm_node_keeps_source_and_span ... ok
+test mdx_tests::fragment_name_is_none_for_flow_and_text ... ok
+test mdx_tests::document_visitor_reaches_mdx_children ... ok
+test mdx_tests::flow_element_exposes_mdast_fields ... ok
+test mdx_tests::boolean_attribute_has_no_value ... ok
+test mdx_tests::spread_attribute_is_expression_entry ... ok
+test mdx_tests::every_mdx_node_debug_contains_its_mdast_type_name ... ok
+test mdx_tests::text_element_exposes_mdast_fields ... ok
+test mdx_tests::visitor_does_not_invent_children_for_esm_or_expressions ... ok
+test mdx_tests::visitor_walks_flow_element_children_not_attributes ... ok
+test mdx_tests::visitor_walks_nested_jsx_and_text_expressions ... ok
+test span::tests::source_positions_keep_byte_offsets_separate_from_columns ... ok
+test span::tests::span_boundaries_merge_symmetrically_and_contain_empty_ranges ... ok
+test span::tests::test_source_text ... ok
+test span::tests::test_span_contains ... ok
+test span::tests::test_span_merge ... ok
+test span::tests::test_span_new ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/ferromark_parser-9a60411328daea0f)
+
+running 70 tests
+test parser::delimiters::tests::bracket_stop_matches_definition ... ok
+test parser::byte_class::tests::runtime_classes_preserve_arbitrary_ascii_membership ... ok
+test error::tests::results_stay_small ... ok
+test parser::byte_class::tests::first_in_finds_the_earliest_member ... ok
+test error::tests::kind_and_span_round_trip ... ok
+test parser::definition_list::tests::marker_cache_handles_forward_and_backward_probes ... ok
+test parser::definition_list::tests::rejected_definition_probes_do_not_allocate_terms ... ok
+test parser::definition_list::tests::marker_preflight_accepts_every_body_prefix ... ok
+test parser::byte_class::tests::runtime_classes_reject_non_ascii_members - should panic ... ok
+test parser::inline::gfm_autolink::scan::tests::preflight_matches_reference_on_fixtures ... ok
+test parser::inline::entity::tests::scans_named_numeric_and_invalid_references ... ok
+test parser::inline::link_target::tests::destination_stop_table_matches_definition ... ok
+test parser::inline::link_target::tests::destination_scan_matches_scalar_on_mixed_inputs ... ok
+test parser::inline::gfm_autolink::scan::tests::preflight_matches_reference_on_mixed_inputs ... ok
+test parser::inline::marker_scan::tests::matches_valid_utf8_and_earliest_marker ... ok
+test parser::fenced_code::fence_close_tests::close_search_matches_line_walk ... ok
+test parser::inline::marker_scan::tests::matches_scalar_oracle_for_all_option_masks_and_offsets ... ok
+test parser::inline::scan::tests::matches_reference_on_every_marker_byte ... ok
+test parser::delimiters::tests::scan_matches_scalar_on_mixed_inputs ... ok
+test parser::inline::scan::tests::matches_reference_with_no_marker ... ok
+test parser::inline::scan::tests::matches_reference_for_every_byte_value_at_every_offset ... ok
+test parser::line_scan::tests::matches_memchr_on_borrow_propagation_shapes ... ok
+test parser::line_scan::tests::matches_memchr_at_every_offset ... ok
+test parser::line_scan::tests::matches_memchr_on_multiline_walk ... ok
+test parser::line_scan::tests::matches_memchr_with_no_newline ... ok
+test parser::line_scan::tests::recognizes_crlf_and_lone_cr_line_endings ... ok
+test parser::mdx_jsx::braces::tests::scan_keeps_inner_source_without_braces ... ok
+test parser::mdx_jsx::braces::tests::scan_skips_block_comment_with_braces_inside ... ok
+test parser::mdx_jsx::braces::tests::scan_skips_nested_braces_and_strings ... ok
+test parser::mdx_jsx::braces::tests::unclosed_brace_or_comment_is_none ... ok
+test parser::prepass::tests::definition_candidate_accepts_valid_block_prefixes ... ok
+test parser::prepass::tests::definition_candidate_keeps_the_label_length_boundary ... ok
+test parser::prepass::tests::definition_candidate_rejects_inline_prose_decoys ... ok
+test parser::prepass::tests::footnote_only_candidates_do_not_require_link_collection ... ok
+test parser::table_cell_source::tests::adjacent_escaped_pipes_map_each_generated_boundary ... ok
+test parser::inline::scan::tests::matches_reference_on_overlapping_vector_tails ... ok
+test parser::table_cell_source::tests::skipped_unescaped_pipes_keep_content_and_sparse_source_map ... ok
+test parser::table_cell_source::tests::sparse_map_matches_dense_scalar_oracle ... ok
+test parser::inline::link_target::tests::component_scan_matches_scalar_at_byte_boundaries_and_tails ... ok
+test parser::tests::document_children_capacity_tracks_source_density ... ok
+test parser::tests::find_closing_tag_matches_case_insensitively ... ok
+test parser::tests::indented_heading_parses_and_does_not_loop ... ok
+test parser::tests::outdented_marker_starts_a_new_list ... ok
+test parser::tests::multi_item_list_skips_the_two_slot_growth_step ... ok
+test parser::tests::plain_text_paragraph_reserves_one_inline_node ... ok
+test parser::inline::scan::tests::matches_reference_around_the_prefix_boundary ... ok
+test parser::tests::test_parse_block_quote_multiline ... ok
+test parser::tests::test_parse_fenced_code ... ok
+test parser::tests::test_parse_hard_break ... ok
+test parser::tests::test_parse_heading ... ok
+test parser::tests::test_parse_block_quote ... ok
+test parser::tests::test_parse_image ... ok
+test parser::tests::test_parse_inline_code ... ok
+test parser::tests::test_parse_nested_block_quote ... ok
+test parser::tests::test_parse_ordered_list ... ok
+test parser::tests::test_parse_paragraph ... ok
+test parser::tests::test_parse_strikethrough ... ok
+test parser::tests::test_parse_strikethrough_lone_tilde_not_matched ... ok
+test parser::tests::test_parse_table ... ok
+test parser::tests::test_parse_table_preserves_escaped_pipes ... ok
+test parser::tests::test_parse_thematic_break ... ok
+test parser::tests::test_parse_unordered_list ... ok
+test parser::tests::thematic_break_after_list_stays_a_block_boundary ... ok
+test parser::table_cell_source::tests::pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries ... ok
+test parser::inline::link_target::tests::component_scan_matches_scalar_on_mixed_unicode_and_dense_candidates ... ok
+test parser::delimiters::tests::scan_matches_scalar_at_byte_boundaries_and_tails ... ok
+test parser::line_scan::tests::matches_memchr_on_long_lines ... ok
+test parser::inline::link_target::tests::destination_scan_matches_scalar_at_byte_boundaries_and_tails ... ok
+test parser::byte_class::tests::nibble_tables_match_flags_for_every_byte ... ok
+test parser::inline::marker_scan::tests::matches_every_byte_value_at_every_offset ... ok
+
+test result: ok. 70 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.60s
+
+     Running tests/bom_source.rs (target/debug/deps/bom_source-ae6013762eebc2a5)
+
+running 5 tests
+test bom_only_input_has_an_original_document_span ... ok
+test strips_one_leading_bom_and_preserves_original_spans ... ok
+test strips_only_the_first_of_two_boms ... ok
+test embedded_bom_and_nul_remain_content_after_leading_bom ... ok
+test bom_before_nested_link_and_nul_keeps_link_source_span ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/edge_cases.rs (target/debug/deps/edge_cases-d2f378d0f9886dac)
+
+running 124 tests
+test blocks::blank_input_yields_empty_document ... ok
+test blocks::blockquote_supports_multiple_paragraphs_when_blank_quote_line_is_used ... ok
+test autolinks::gfm_autolink_does_not_link_ampersand_only_code_spans ... ok
+test autolinks::gfm_autolink_does_not_fire_inside_link_text ... ok
+test autolinks::gfm_autolink_keeps_non_ascii_iri_paths ... ok
+test autolinks::gfm_autolink_url_query_ampersand_still_links ... ok
+test autolinks::gfm_autolink_stops_at_cjk_sentence_punctuation ... ok
+test autolinks::gfm_autolink_still_fires_inside_strikethrough ... ok
+test blocks::crlf_and_lone_cr_parse_as_line_endings ... ok
+test autolinks::literal_unicode_punctuation_stays_inside_gfm_autolink ... ok
+test autolinks::ascii_punctuation_stays_outside_following_gfm_autolink ... ok
+test blocks::fenced_code_normalizes_crlf_and_lone_cr_line_endings ... ok
+test blocks::fenced_code_supports_tildes_and_meta ... ok
+test blocks::heading_attributes_apply_to_setext_headings ... ok
+test blocks::heading_attributes_default_off_stay_literal ... ok
+test blocks::heading_attributes_leave_unusable_blocks_as_prose ... ok
+test blocks::heading_attributes_parse_id_classes_and_strip_text ... ok
+test blocks::heading_trims_closing_hashes ... ok
+test blocks::indented_content_at_end_of_input_still_parses ... ok
+test blocks::indented_fence_inside_list_item_stays_nested_block ... ok
+test blocks::invalid_atx_heading_without_space_stays_paragraph ... ok
+test blocks::mixed_thematic_break_is_not_recognized ... ok
+test blocks::thematic_break_accepts_spaces ... ok
+test blocks::too_many_hashes_stays_paragraph ... ok
+test blocks::trailing_whitespace_line_does_not_swallow_preceding_content ... ok
+test blocks::unclosed_fence_consumes_until_eof ... ok
+test blocks::whitespace_only_document_without_trailing_newline_terminates ... ok
+test extensions::digit_prefixed_inline_math_preserves_emphasis_markers_as_tex ... ok
+test extensions::definition_lists_parse_terms_definitions_and_block_body ... ok
+test extensions::inline_math_closing_delimiters_ignore_code_spans ... ok
+test extensions::link_text_preserves_authored_punctuation ... ok
+test extensions::math_nodes_are_opt_in_and_preserve_escaped_dollars ... ok
+test extensions::script_span_closing_delimiters_ignore_code_spans ... ok
+test extensions::script_spans_do_not_steal_strikethrough_or_code_spans ... ok
+test extensions::superscript_and_subscript_are_opt_in_and_outside_gfm ... ok
+test extensions::text_punctuation_is_preserved_in_every_profile ... ok
+test html::html_cdata_and_processing_instruction_terminators ... ok
+test html::html_comment_closing_on_the_opener_line_ends_the_block ... ok
+test html::html_comment_spans_lines_until_terminator_line ... ok
+test html::html_type1_close_on_opener_line_ends_the_block ... ok
+test html::html_type1_closing_tag_split_across_lines_does_not_close ... ok
+test html::html_type1_script_closes_case_insensitively ... ok
+test html::html_type6_trailing_whitespace_only_remainder_stays_unconsumed ... ok
+test html::html_type6_whitespace_only_line_terminates_and_stays_unconsumed ... ok
+test html::html_unclosed_comment_runs_to_eof ... ok
+test inline::backslash_before_non_punctuation_stays_literal ... ok
+test inline::cjk_emphasis_does_not_pair_across_whitespace ... ok
+test inline::cjk_emphasis_keeps_working_for_cases_commonmark_already_accepts ... ok
+test inline::cjk_emphasis_off_leaves_punctuation_adjacent_runs_literal ... ok
+test inline::escaped_marker_remains_literal_text ... ok
+test inline::cjk_emphasis_leaves_ascii_punctuation_alone ... ok
+test inline::cjk_emphasis_on_pairs_punctuation_adjacent_runs ... ok
+test inline::hard_break_creates_break_node ... ok
+test inline::image_url_handles_nested_parentheses ... ok
+test inline::inline_code_keeps_raw_html_literal ... ok
+test inline::inline_link_handles_nested_parentheses ... ok
+test inline::inline_raw_html_is_preserved_as_html_node ... ok
+test inline::list_item_allows_inline_raw_html ... ok
+test inline::unmatched_strikethrough_remains_text ... ok
+test inline::wiki_links_are_opt_in_and_use_raw_targets ... ok
+test inline::wiki_links_reject_empty_targets_and_nested_links ... ok
+test lists::crlf_and_lone_cr_tight_lists_stay_tight ... ok
+test inline::wiki_links_stay_literal_without_the_option_or_in_gfm ... ok
+test lists::list_item_paragraph_span_tracks_inline_content ... ok
+test lists::nested_list_is_attached_to_previous_item ... ok
+test lists::ordered_list_start_and_parenthesis_marker_are_preserved ... ok
+test lists::task_list_marker_is_literal_when_option_is_disabled ... ok
+test lists::task_list_marker_sets_checked_when_enabled ... ok
+test prepass::bracket_and_colon_split_across_lines_is_not_a_definition ... ok
+test prepass::chained_definitions_all_resolve ... ok
+test prepass::crlf_definition_resolves ... ok
+test prepass::definition_after_use_resolves ... ok
+test prepass::definition_at_start_of_source_resolves ... ok
+test prepass::definition_before_use_resolves ... ok
+test prepass::definition_without_trailing_newline_resolves ... ok
+test prepass::escaped_bracket_does_not_end_a_label ... ok
+test prepass::fenced_code_hides_definition ... ok
+test prepass::fenced_code_hides_footnote_definition ... ok
+test prepass::footnote_definition_after_use_resolves ... ok
+test prepass::footnote_definition_before_use_resolves ... ok
+test prepass::footnote_definition_directly_after_multiline_definition_resolves ... ok
+test prepass::footnote_without_definition_stays_literal ... ok
+test prepass::four_space_indent_is_not_a_definition ... ok
+test prepass::footnote_label_over_reference_limit_resolves ... ok
+test prepass::heading_line_closes_paragraph_context ... ok
+test prepass::indented_footnote_definition_up_to_three_spaces_resolves ... ok
+test prepass::indented_quote_marker_definition_resolves ... ok
+test prepass::link_only_document_resolves_nothing_and_parses_fine ... ok
+test prepass::list_item_continuation_is_not_a_definition ... ok
+test prepass::multiline_definition_with_title_resolves ... ok
+test prepass::multiline_reference_label_resolves ... ok
+test prepass::paragraph_continuation_is_not_a_definition ... ok
+test prepass::quoted_definition_resolves ... ok
+test prepass::quoted_fence_does_not_hide_later_footnote_definition ... ok
+test prepass::quoted_fence_does_not_hide_later_reference_definition ... ok
+test prepass::setext_underline_closes_paragraph_context ... ok
+test prepass::thematic_break_closes_paragraph_context ... ok
+test prepass::three_space_indent_is_a_definition ... ok
+test prepass::tilde_fenced_code_hides_definition ... ok
+test prepass::unclosed_fence_hides_rest_of_document ... ok
+test spans::block_quote_child_spans_index_the_document_source ... ok
+test spans::block_quote_tab_and_unicode_spans_stay_in_bounds ... ok
+test spans::footnote_definition_child_spans_index_the_document_source ... ok
+test spans::list_continuation_child_spans_account_for_stripped_indent ... ok
+test spans::nested_list_child_spans_account_for_marker_indent ... ok
+test spans::table_inline_strong_spans_after_escaped_pipes_index_document_source ... ok
+test spans::table_rows_cells_and_inline_children_index_source ... ok
+test spans::table_wiki_link_span_after_escaped_pipes_indexes_document_source ... ok
+test tables::merged_table_cells_are_opt_in ... ok
+test tables::merged_table_cells_clamp_and_pad_ragged_rows ... ok
+test tables::merged_table_cells_cover_header_and_body_logical_columns ... ok
+test tables::merged_table_cells_keep_whitespace_empty_cells_and_escaped_pipes ... ok
+test tables::merged_table_code_escaped_pipes_preserve_exact_source_spans ... ok
+test tables::merged_table_empty_terminal_cells_keep_their_span ... ok
+test tables::merged_table_header_spans_must_match_delimiter_width ... ok
+test tables::merged_table_terminal_header_spans_do_not_create_phantom_cells ... ok
+test tables::table_accepts_pipe_less_rows_and_stops_at_block_starts ... ok
+test tables::table_alignment_variants_are_parsed ... ok
+test tables::table_body_rows_are_normalized_to_header_width ... ok
+test tables::table_header_and_delimiter_must_have_matching_valid_cells ... ok
+test html::html_type1_pre_ignores_blank_lines_until_closing_tag ... ok
+test html::html_type6_details_terminates_at_first_blank_line ... ok
+test html::html_type6_div_stops_before_markdown_after_blank_line ... ok
+test html::html_details_block_is_preserved_as_raw_html ... ok
+
+test result: ok. 124 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/emphasis_pairing.rs (target/debug/deps/emphasis_pairing-c145efa6c3519b37)
+
+running 6 tests
+test retired_delimiters_never_pair_across_a_finished_span ... ok
+test a_failed_search_does_not_hide_a_later_opener ... ok
+test nested_pairs_keep_their_shape ... ok
+test a_long_sequence_of_unpairable_delimiters_stays_literal ... ok
+test every_pair_in_a_long_sequence_is_formed ... ok
+test emphasis_pairing_costs_linear_time ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests/input_panics.rs (target/debug/deps/input_panics-81203bd684361b71)
+
+running 2 tests
+test malformed_markdown_does_not_abort ... ok
+test nesting_limit_returns_an_error_instead_of_aborting ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/line_endings.rs (target/debug/deps/line_endings-1840f36e947dd7ef)
+
+running 5 tests
+test normalized_inline_html_keeps_original_span ... ok
+test lone_cr_does_not_duplicate_nested_list ... ok
+test angle_link_destination_rejects_cr_line_endings ... ok
+test html_tag_line_endings_accept_cr_and_crlf ... ok
+test lone_cr_keeps_blank_list_siblings_separate ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mdx_brace_scaling.rs (target/debug/deps/mdx_brace_scaling-dc1f464c7f563e18)
+
+running 4 tests
+test braces_still_parse_to_the_same_nodes ... ok
+test inline_expressions_cost_linear_time ... ok
+test unclosed_inline_braces_cost_linear_time ... ok
+test unclosed_flow_braces_cost_linear_time ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+
+     Running tests/mdx_esm.rs (target/debug/deps/mdx_esm-6af0104d435cacfe)
+
+running 16 tests
+test import_named_is_esm ... ok
+test hostile_script_string_stores_source_without_panic ... ok
+test important_word_is_not_esm ... ok
+test inline_code_import_is_not_esm ... ok
+test export_const_is_esm ... ok
+test consecutive_import_then_export ... ok
+test mdx_false_export_stays_paragraph ... ok
+test esm_then_heading_and_jsx ... ok
+test fenced_import_is_not_esm ... ok
+test mdx_false_import_stays_paragraph ... ok
+test esm_balances_delimiters_without_interpreting_strings_or_comments ... ok
+test multiline_export ... ok
+test multiline_import ... ok
+test unclosed_import_does_not_panic ... ok
+test value_is_source_not_evaluated ... ok
+test unterminated_esm_preserves_the_complete_source ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mdx_expressions.rs (target/debug/deps/mdx_expressions-22824a79aef06ce8)
+
+running 16 tests
+test multiline_flow_expression_stores_source ... ok
+test flow_arithmetic_stores_source ... ok
+test hostile_script_stores_source_without_evaluating ... ok
+test escaped_brace_is_not_an_expression ... ok
+test flow_expression_interrupts_paragraph ... ok
+test mdx_false_flow_brace_stays_paragraph ... ok
+test mdx_false_text_brace_stays_text ... ok
+test import_and_export_braces_stay_esm ... ok
+test flow_identifier_is_expression ... ok
+test fenced_and_inline_code_are_not_expressions ... ok
+test nested_braces_and_member_access ... ok
+test string_and_template_may_contain_closing_brace ... ok
+test text_arithmetic_in_prose ... ok
+test text_identifier_in_prose ... ok
+test trailing_text_on_same_line_is_text_expression ... ok
+test unclosed_brace_does_not_panic_or_emit_half_node ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mdx_indented_spans.rs (target/debug/deps/mdx_indented_spans-c8ae4b8bb8064833)
+
+running 1 test
+test jsx_indentation_preserves_nested_markdown_nodes_and_source_ranges ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mdx_jsx.rs (target/debug/deps/mdx_jsx-3198290cef9b5455)
+
+running 19 tests
+test boolean_and_expression_attrs ... ok
+test hostile_quoted_attr_is_literal_source ... ok
+test flow_self_closing_literal_attr ... ok
+test jsx_comment_is_flow_expression ... ok
+test disabled_mdx_does_not_parse_jsx_children ... ok
+test flow_open_close_parses_markdown_children ... ok
+test children_brace_expression_stores_source ... ok
+test fragment_parses_as_nameless_jsx ... ok
+test fenced_and_inline_code_are_not_components ... ok
+test fence_inside_component_is_code_not_island ... ok
+test lowercase_html_stays_html_when_mdx_is_on ... ok
+test mdx_false_does_not_emit_jsx_for_pascal_case ... ok
+test member_expression_name_parses ... ok
+test pascal_case_flow_interrupts_paragraph ... ok
+test spread_attr_is_expression_entry ... ok
+test text_open_close_parses_phrasing_children ... ok
+test text_self_closing_inside_paragraph ... ok
+test unclosed_tag_does_not_panic_or_emit_jsx ... ok
+test unclosed_component_does_not_swallow_file ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mdx_jsx_remainder.rs (target/debug/deps/mdx_jsx_remainder-f425e941fbb1e995)
+
+running 21 tests
+test hostile_spread_stores_source_without_evaluating ... ok
+test indented_fenced_code_inside_flow_jsx_remains_code ... ok
+test member_name_can_nest_and_take_attrs ... ok
+test jsx_comment_in_text_jsx_is_text_expression ... ok
+test flow_jsx_parses_nested_jsx_and_paragraphs ... ok
+test jsx_comment_inside_element_is_expression ... ok
+test flow_jsx_parses_heading_list_and_nested_markdown ... ok
+test indented_flow_children_parse_as_mdx_blocks ... ok
+test fenced_and_inline_code_ignore_remainder_constructs ... ok
+test mixed_phrasing_and_expression_children ... ok
+test disabled_mdx_does_not_emit_remainder_constructs ... ok
+test named_fragment_component_stays_pascal_case ... ok
+test nested_fragments_match_by_depth ... ok
+test same_line_open_close_is_flow_with_paragraph_child ... ok
+test spread_can_mix_with_named_attrs ... ok
+test text_children_expression_stores_source ... ok
+test text_fragment_parses_inside_paragraph ... ok
+test text_jsx_keeps_phrasing_not_flow ... ok
+test text_member_name_parses_inside_paragraph ... ok
+test unclosed_children_expression_does_not_emit_expression ... ok
+test unclosed_remainder_constructs_do_not_panic_or_emit ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mdx_options.rs (target/debug/deps/mdx_options-28144bd1bc5c877b)
+
+running 17 tests
+test default_options_disable_mdx ... ok
+test mdx_can_be_combined_with_gfm ... ok
+test gfm_helper_does_not_enable_mdx ... ok
+test clone_preserves_mdx_flag ... ok
+test debug_mentions_mdx_field ... ok
+test mdx_false_does_not_emit_mdx_nodes_for_jsx ... ok
+test mdx_flag_is_noop_for_inline_code ... ok
+test mdx_flag_is_noop_for_fenced_code ... ok
+test mdx_flag_is_noop_for_inline_html ... ok
+test mdx_flag_is_noop_for_gfm_table ... ok
+test mdx_flag_is_noop_for_plain_paragraph ... ok
+test mdx_flag_is_noop_for_nested_blockquote ... ok
+test mdx_flag_is_noop_for_html_block ... ok
+test mdx_flag_is_noop_for_headings_and_lists ... ok
+test mdx_flag_is_noop_for_gfm_task_list ... ok
+test mdx_flag_parses_brace_expression_when_enabled ... ok
+test mdx_helper_enables_mdx_without_gfm ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mdx_pretty.rs (target/debug/deps/mdx_pretty-3d9ac2cdfd519364)
+
+running 4 tests
+test pretty_prints_self_closing_flow_element_with_literal_attr ... ok
+test pretty_prints_esm_and_expressions ... ok
+test pretty_prints_fragment_and_text_element_children ... ok
+test pretty_prints_boolean_and_expression_and_spread_attrs ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/nested_links.rs (target/debug/deps/nested_links-7c6fc6ba53ba6132)
+
+running 11 tests
+test an_image_inside_link_text_is_still_allowed ... ok
+test bracket_text_without_a_link_still_becomes_link_children ... ok
+test only_the_innermost_inline_link_survives ... ok
+test identical_bracket_text_is_judged_per_occurrence ... ok
+test nesting_inside_a_block_quote_and_a_list_item_behaves_the_same ... ok
+test only_the_innermost_reference_link_survives ... ok
+test deeply_nested_images_in_links_finish_in_bounded_time ... ok
+test nested_bracket_cost_grows_far_slower_than_it_doubles ... ok
+test deeply_nested_unclosed_brackets_finish_in_bounded_time ... ok
+test deeply_nested_inline_links_finish_in_bounded_time ... ok
+test deeply_nested_reference_links_finish_in_bounded_time ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/nesting_depth.rs (target/debug/deps/nesting_depth-81456e24e3456ed2)
+
+running 9 tests
+test a_custom_cap_is_honored_for_every_construct ... ok
+test deeply_nested_quotes_fail_closed ... ok
+test nesting_within_the_cap_still_parses ... ok
+test zero_still_means_unlimited ... ok
+test deeply_nested_quotes_around_lists_fail_closed ... ok
+test the_cap_applies_without_the_gfm_profile ... ok
+test deeply_nested_lists_fail_closed ... ok
+test the_cap_applies_in_mdx_mode ... ok
+test deeply_nested_footnote_definitions_fail_closed ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.34s
+
+     Running tests/nul_source.rs (target/debug/deps/nul_source-83e3818c9c595569)
+
+running 3 tests
+test clean_source_remains_borrowed ... ok
+test nul_expansion_keeps_original_spans_through_nested_sources ... ok
+test replaces_literal_nul_before_syntax_and_reference_resolution ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/reference_definitions.rs (target/debug/deps/reference_definitions-9ab64c1947adf4e4)
+
+running 8 tests
+test multiline_definitions_inside_a_run_keep_their_titles ... ok
+test a_blank_line_ends_the_remembered_region ... ok
+test definition_runs_inside_a_block_quote_resolve ... ok
+test a_definition_after_a_paragraph_gets_a_fresh_region ... ok
+test a_failed_candidate_does_not_poison_the_definitions_after_it ... ok
+test references_in_a_long_run_still_resolve ... ok
+test every_definition_in_a_long_run_is_collected ... ok
+test a_run_of_definitions_costs_linear_time ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.85s
+
+     Running tests/snapshot_parse.rs (target/debug/deps/snapshot_parse-e615251df3bc9a7e)
+
+running 54 tests
+test basics::snapshot_single_paragraph ... ok
+test basics::snapshot_atx_headings_all_depths ... ok
+test basics::snapshot_empty_document ... ok
+test basics::snapshot_atx_heading_too_many_hashes ... ok
+test basics::snapshot_atx_heading_requires_space ... ok
+test basics::snapshot_whitespace_only_document ... ok
+test blocks::snapshot_blockquote_multi_paragraph ... ok
+test basics::snapshot_atx_heading_with_trailing_hashes ... ok
+test basics::snapshot_thematic_break_variants ... ok
+test basics::snapshot_thematic_break_invalid_mixed_markers ... ok
+test blocks::snapshot_blockquote_nested ... ok
+test blocks::snapshot_blockquote_with_nested_list_and_code ... ok
+test blocks::snapshot_fenced_code_indented_inside_list_item ... ok
+test blocks::snapshot_blockquote_single_line ... ok
+test blocks::snapshot_fenced_code_with_lang_and_meta ... ok
+test blocks::snapshot_indented_code_block_preserves_blank_lines ... ok
+test html::snapshot_html_block_div ... ok
+test blocks::snapshot_fenced_code_unclosed_until_eof ... ok
+test blocks::snapshot_fenced_code_tildes_with_meta ... ok
+test html::snapshot_html_block_details ... ok
+test html::snapshot_html_type6_details_resumes_markdown_after_blank ... ok
+test html::snapshot_inline_raw_html_in_paragraph ... ok
+test inline::snapshot_image_nested_parentheses ... ok
+test inline::snapshot_image_with_title ... ok
+test inline::snapshot_image_simple ... ok
+test inline::snapshot_inline_code_basic ... ok
+test inline::snapshot_inline_code_with_html_literal ... ok
+test inline::snapshot_inline_escaped_punctuation ... ok
+test inline::snapshot_inline_hard_break_backslash ... ok
+test inline::snapshot_inline_link_nested_parentheses ... ok
+test inline::snapshot_inline_emphasis_strong_combined ... ok
+test inline::snapshot_inline_link_with_title ... ok
+test inline::snapshot_inline_link_simple ... ok
+test inline::snapshot_inline_strikethrough_gfm ... ok
+test inline::snapshot_inline_strikethrough_unmatched ... ok
+test lists::snapshot_loose_vs_tight_list ... ok
+test inline::snapshot_inline_underscore_emphasis ... ok
+test lists::snapshot_ordered_list_parenthesis_marker ... ok
+test lists::snapshot_nested_lists_mixed_markers ... ok
+test lists::snapshot_task_list_literal_without_gfm ... ok
+test lists::snapshot_unordered_list_dash_marker ... ok
+test lists::snapshot_ordered_list_with_start ... ok
+test lists::snapshot_task_list_with_gfm ... ok
+test lists::snapshot_wrapped_list_item_continuation ... ok
+test mdx::snapshot_mdx_disabled_keeps_component_like_source_literal ... ok
+test mdx::snapshot_mdx_unclosed_constructs_remain_markdown_recoverable ... ok
+test mdx::snapshot_mdx_nested_member_components_and_fragments ... ok
+test mdx::snapshot_mdx_document_with_esm_components_expressions_and_fence ... ok
+test mixed::snapshot_first_block_node_kinds_for_basic_constructs ... ok
+test tables::snapshot_footnote_reference_and_definition ... ok
+test tables::snapshot_reference_link_definition ... ok
+test mixed::snapshot_kitchen_sink_document ... ok
+test tables::snapshot_table_with_inline_formatting ... ok
+test tables::snapshot_table_alignment_variants ... ok
+
+test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/table_attributes.rs (target/debug/deps/table_attributes-5f75f332f63cb587)
+
+running 6 tests
+test default_ast_visitor_includes_caption_text ... ok
+test table_metadata_is_opt_in_and_requires_tables ... ok
+test metadata_attaches_once_and_only_to_an_adjacent_table ... ok
+test caption_spans_map_back_through_containers_and_normalization ... ok
+test malformed_metadata_preserves_the_following_markdown ... ok
+test table_metadata_accepts_caption_or_attributes_only_with_all_line_endings ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/unclosed_brackets.rs (target/debug/deps/unclosed_brackets-a9d7c94d51034a4a)
+
+running 5 tests
+test the_literal_fallback_keeps_its_node_shape ... ok
+test an_unclosed_bracket_stays_literal ... ok
+test a_bracket_that_does_close_still_links ... ok
+test wiki_links_do_not_scan_unclosed_double_brackets_quadratically ... ok
+test a_run_of_unclosed_brackets_costs_linear_time ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+
+     Running unittests src/lib.rs (target/debug/deps/ferromark_renderer-a51c0b8bf907a993)
+
+running 121 tests
+test html::autolink::tests::preserves_mixed_utf8_and_cjk_boundaries ... ok
+test html::escape::tests::matches_reference_on_fixtures ... ok
+test html::escape::tests::matches_reference_on_multibyte_utf8 ... ok
+test html::escape::tests::matches_reference_across_the_short_run_copy_boundaries ... ok
+test html::escape::tests::matches_reference_on_borrow_propagation_shapes ... ok
+test html::escape::url::tests::commonmark_url_syntax_bytes_are_percent_encoded ... ok
+test html::escape::url::tests::invalid_ipv6_authority_is_escaped_without_html_injection ... ok
+test html::escape::tests::short_run_copy_keeps_multibyte_sequences_intact ... ok
+test html::escape::url::tests::url_escape_handles_escape_heavy_ascii_before_unicode_linearly ... ok
+test html::mdx_payload::tests::literals_and_json_expressions_become_props ... ok
+test html::mdx_payload::tests::non_json_expression_and_spread_store_source ... ok
+test html::mdx_payload::tests::serializes_payload_keys_in_a_stable_order ... ok
+test html::mdx_payload::tests::stringify_escapes_script_breakout ... ok
+test html::escape::tests::matches_reference_on_pseudorandom_bytes ... ok
+test html::renderer::visit::tests::typed_visitor_preserves_every_node_kind ... ok
+test html::renderer::write::tests::controls_remain_rejected_anywhere_in_the_url ... ok
+test html::autolink::tests::matches_scalar_for_ascii_tails_and_terminators ... ok
+test html::tagfilter::tests::detects_whether_filtering_is_needed ... ok
+test html::tagfilter::tests::filters_disallowed_tags_case_insensitively ... ok
+test html::tagfilter::tests::filters_truncated_trailing_tag ... ok
+test html::tagfilter::tests::leaves_other_markup_untouched ... ok
+test html::tests::autolink::default_gate_requires_colon_slash_slash ... ok
+test html::escape::tests::runs_of_every_length_are_copied_intact ... ok
+test html::escape::tests::matches_reference_across_the_overlapping_tail_read ... ok
+test html::tests::autolink::test_autolink_conflicting_second_bytes_disable_the_filter ... ok
+test html::escape::url::tests::url_escape_matches_reference_at_every_offset_and_tail ... ok
+test html::tests::autolink::test_autolink_basic_http_and_https ... ok
+test html::tests::autolink::test_autolink_can_be_disabled ... ok
+test html::tests::autolink::test_autolink_custom_pattern_registration ... ok
+test html::tests::autolink::test_autolink_does_not_nest_inside_existing_link ... ok
+test html::tests::autolink::test_autolink_keeps_non_ascii_iri_paths ... ok
+test html::tests::autolink::test_autolink_enabled_by_default ... ok
+test html::tests::autolink::test_autolink_many_patterns_uses_table_fallback ... ok
+test html::tests::autolink::test_autolink_escapes_query_string_safely ... ok
+test html::tests::autolink::test_autolink_prose_full_of_candidate_first_bytes_stays_plain ... ok
+test html::tests::autolink::test_autolink_single_byte_pattern_bypasses_the_filter ... ok
+test html::tests::autolink::test_autolink_uppercase_prefix_still_matches_through_filter ... ok
+test html::tests::autolink::test_autolink_stops_at_cjk_sentence_punctuation ... ok
+test html::tests::blocks::test_heading_permalinks_are_real_links_without_js ... ok
+test html::tests::autolink::test_autolink_strips_trailing_punctuation ... ok
+test html::tests::autolink::test_autolink_target_blank_can_be_disabled ... ok
+test html::tests::blocks::test_heading_permalinks_default_off_keeps_html ... ok
+test html::tests::autolink::test_autolink_word_boundary_required ... ok
+test html::tests::blocks::test_heading_permalinks_empty_heading_uses_section_id ... ok
+test html::tests::blocks::test_heading_permalinks_skip_existing_hash_link ... ok
+test html::tests::blocks::test_heading_permalinks_reuse_generated_id ... ok
+test html::tests::blocks::test_heading_permalinks_skip_existing_header_anchor_html ... ok
+test html::tests::blocks::test_render_crlf_fenced_code_like_lf ... ok
+test html::tests::blocks::test_render_block_quote ... ok
+test html::tests::blocks::test_render_block_quote_with_inline ... ok
+test html::tests::blocks::test_render_heading ... ok
+test html::tests::blocks::test_render_heading_attributes_escape_explicit_attrs ... ok
+test html::tests::blocks::test_render_github_style_important_callout ... ok
+test html::tests::blocks::test_heading_permalinks_unicode_and_duplicates ... ok
+test html::tests::blocks::test_render_heading_attributes_use_explicit_id_and_classes ... ok
+test html::tests::blocks::test_render_github_style_callout_with_inline_content_after_marker ... ok
+test html::tests::blocks::test_render_heading_id_uses_inline_text ... ok
+test html::tests::blocks::test_render_heading_ids_are_unique_and_unicode ... ok
+test html::tests::blocks::test_render_inline_toc_directive_is_case_insensitive ... ok
+test html::tests::blocks::test_render_inline_toc_directive ... ok
+test html::tests::blocks::test_render_inline_toc_honors_max_depth ... ok
+test html::tests::blocks::test_render_inline_toc_marker_is_suppressed_when_filtered_by_depth ... ok
+test html::tests::blocks::test_render_inline_toc_marker_is_suppressed_when_no_headings ... ok
+test html::tests::blocks::test_render_inline_toc_uses_heading_attribute_id ... ok
+test html::tests::blocks::test_render_paragraph ... ok
+test html::tests::blocks::test_render_inline_toc_uses_unique_and_unicode_ids ... ok
+test html::tests::blocks::test_render_inline_toc_requires_standalone_text ... ok
+test html::tests::code::test_render_code_block_with_annotations ... ok
+test html::tests::code::test_render_code_block_with_auto_line_link_prefix ... ok
+test html::tests::code::test_render_code_block ... ok
+test html::tests::code::test_render_code_block_with_custom_annotation_meta_key ... ok
+test html::tests::code::test_render_code_block_with_vitepress_escape_next_line ... ok
+test html::tests::code::test_render_code_block_with_line_links_and_wrapping ... ok
+test html::tests::inline_media::test_render_hard_break ... ok
+test html::tests::inline_media::test_render_heading_with_link ... ok
+test html::tests::code::test_render_code_block_with_vitepress_inline_directives ... ok
+test html::renderer::write::tests::allowed_schemes_preserve_all_case_and_space_combinations ... ok
+test html::tests::inline_media::test_render_strikethrough ... ok
+test html::tests::inline_media::test_render_wiki_link_parser_option ... ok
+test html::tests::code::test_render_code_block_with_vitepress_meta ... ok
+test html::tests::inline_media::test_render_image_xhtml ... ok
+test html::tests::inline_media::test_render_image ... ok
+test html::tests::links::test_convert_md_link_from_index_file ... ok
+test html::tests::links::test_convert_md_link_parent_relative_from_index ... ok
+test html::tests::links::test_convert_md_href_inside_raw_html_anchor ... ok
+test html::tests::links::test_convert_md_link_from_non_index_file ... ok
+test html::tests::links::test_convert_md_link_plain_relative_from_index ... ok
+test html::tests::links::test_convert_md_link_parent_relative_from_non_index ... ok
+test html::tests::links::test_convert_md_link_to_child_index_file ... ok
+test html::tests::links::test_convert_md_link_to_sibling_dir_index_from_non_index ... ok
+test html::tests::lists_tables::test_render_crlf_tight_list_like_lf ... ok
+test html::tests::links::test_convert_md_link_removes_only_the_final_index_segment ... ok
+test html::tests::links::test_convert_mdx_and_markdown_links ... ok
+test html::tests::lists_tables::test_render_list_with_bold ... ok
+test html::tests::lists_tables::test_render_table_no_gfm ... ok
+test html::tests::lists_tables::test_render_table ... ok
+test html::tests::lists_tables::test_render_task_list ... ok
+test html::tests::mdx::esm_is_metadata_only_in_static_html ... ok
+test html::tests::mdx::hostile_expression_does_not_emit_raw_markup ... ok
+test html::tests::mdx::prose_expressions_do_not_emit_javascript ... ok
+test html::tests::mdx_islands::disabled_mdx_does_not_parse_jsx_children ... ok
+test html::tests::lists_tables::test_render_nested_list ... ok
+test html::tests::mdx_islands::flow_component_renders_heading_and_strong_inside_island ... ok
+test html::tests::mdx_islands::fence_inside_component_is_code_not_island ... ok
+test html::tests::mdx_islands::island_expression_stores_source_and_does_not_eval ... ok
+test html::tests::mdx_islands::hostile_child_text_escaped ... ok
+test html::tests::mdx_islands::island_literal_props_serialize ... ok
+test html::tests::mdx_islands::island_spread_stores_source_and_does_not_eval ... ok
+test html::tests::mdx_islands::hostile_expression_source_cannot_break_out ... ok
+test html::tests::mdx_islands::mdx_false_does_not_emit_islands ... ok
+test html::tests::mdx_islands::nested_jsx_inside_markdown_children ... ok
+test html::tests::mdx_islands::nested_list_inside_component ... ok
+test html::tests::mdx_islands::page_without_islands_stays_js_free ... ok
+test html::tests::mdx_islands::unclosed_component_does_not_swallow_file ... ok
+test html::tests::mdx_islands::page_without_components_still_js_free ... ok
+test html::tests::static_default_options_match_owned_defaults ... ok
+test html::renderer::write::tests::scheme_mutations_match_the_previous_policy ... ok
+test html::escape::tests::matches_reference_for_every_byte_value_at_every_offset ... ok
+test html::autolink::tests::matches_scalar_for_every_byte_at_every_offset ... ok
+test html::autolink::trimming_tests::matches_original_for_exhaustive_bracket_and_punctuation_tails ... ok
+test html::autolink::trimming_tests::matches_original_for_long_unbalanced_and_unicode_urls ... ok
+
+test result: ok. 121 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.52s
+
+     Running tests/cmark_regressions.rs (target/debug/deps/cmark_regressions-3db0c3eb2766285f)
+
+running 10 tests
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test complex_cmark_oracle_cases_match_reference_output ... ok
+test tilde_binding_combinations_match_reference_output ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/compatibility_regressions.rs (target/debug/deps/compatibility_regressions-eb74ba038f8ff5b1)
+
+running 12 tests
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test commonmark_gfm_exceptions_keep_their_expected_links ... ok
+test all_current_gfm_extension_examples_match ... ok
+test all_commonmark_examples_preserve_meaning_with_crlf_and_cr ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/edge_blocks.rs (target/debug/deps/edge_blocks-fdbbc200561ad428)
+
+running 15 tests
+test definition_term_spans_survive_comments_between_terms ... ok
+test hard_breaks_render_inside_paragraphs ... ok
+test inline_raw_html_renders_without_extra_newline ... ok
+test definition_lists_render_native_dl_nodes ... ok
+test crlf_and_lone_cr_render_like_lf_line_endings ... ok
+test math_nodes_render_transform_compatible_markup ... ok
+test source_span_attributes_do_not_mutate_raw_html_blocks ... ok
+test definition_markers_remain_visible_in_dedented_sources_and_all_line_endings ... ok
+test source_span_attributes_are_opt_in_for_block_elements ... ok
+test aligned_tables_render_align_attributes ... ok
+test html_type6_details_allows_markdown_after_blank_line ... ok
+test ordered_lists_preserve_start_attribute ... ok
+test task_list_without_feature_renders_literal_text ... ok
+test code_block_meta_does_not_leak_into_class_name ... ok
+test fenced_code_inside_list_item_renders_as_block_code ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/edge_container_references.rs (target/debug/deps/edge_container_references-9d1189510cff6214)
+
+running 6 tests
+test disabling_references_keeps_container_definition_syntax_visible ... ok
+test unclosed_quoted_fence_ends_before_root_reference_definitions ... ok
+test first_definition_wins_across_root_and_nested_containers ... ok
+test definition_shapes_in_container_code_and_paragraphs_remain_literal ... ok
+test container_definitions_survive_comments_tabs_and_line_ending_normalization ... ok
+test list_definitions_resolve_forward_backward_and_image_references ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/edge_footnote_slugs.rs (target/debug/deps/edge_footnote_slugs-a60e30342f5bee12)
+
+running 7 tests
+test distinct_identifiers_keep_their_own_slugs ... ok
+test identifiers_without_a_usable_slug_fall_back_to_their_position ... ok
+test a_provisional_fragment_does_not_claim_slugs ... ok
+test slugs_do_not_carry_over_between_renders ... ok
+test colliding_slugs_are_numbered_in_document_order ... ok
+test a_slug_that_is_already_a_suffixed_form_is_not_taken_twice ... ok
+test many_footnotes_cost_linear_time ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/edge_footnotes.rs (target/debug/deps/edge_footnotes-78eda0d72b10c5e8)
+
+running 12 tests
+test footnotes_stay_literal_without_the_extension ... ok
+test definition_is_not_treated_as_a_link_reference ... ok
+test labels_match_case_insensitively ... ok
+test definition_inside_fenced_code_is_not_collected ... ok
+test nested_footnote_bodies_contribute_labels_without_scanning_code ... ok
+test definition_body_takes_indented_continuation_blocks ... ok
+test reference_and_definition_render_as_linked_pair ... ok
+test definition_body_supports_block_content ... ok
+test definition_lookalikes_in_non_markdown_blocks_stay_literal ... ok
+test repeated_references_get_unique_ids ... ok
+test undefined_reference_stays_literal_text ... ok
+test nested_definitions_resolve_across_the_document ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/edge_heading_buffers.rs (target/debug/deps/edge_heading_buffers-084f7a2794094374)
+
+running 2 tests
+test explicit_heading_ids_escape_identically_in_ids_and_permalinks ... ok
+test heading_buffers_do_not_leak_long_ids_or_duplicate_counts_across_renders ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/edge_links.rs (target/debug/deps/edge_links-e73416348a0fd83c)
+
+running 15 tests
+test link_target_blank_does_not_disable_renderer_autolink_attributes ... ok
+test ascii_punctuation_stays_outside_gfm_autolink_rendering ... ok
+test base_prefixes_root_absolute_markdown_images ... ok
+test commonmark_url_syntax_bytes_are_serialized_in_href ... ok
+test parsed_links_can_skip_target_blank_security_attributes ... ok
+test script_extensions_preserve_surrounding_punctuation ... ok
+test url_serialization_preserves_ipv6_authority_brackets ... ok
+test relative_links_do_not_get_external_attributes ... ok
+test local_markdown_urls_convert_around_query_and_fragment ... ok
+test markdown_urls_on_another_origin_are_left_alone ... ok
+test xhtml_images_self_close ... ok
+test base_prefixes_root_absolute_markdown_links ... ok
+test nested_parentheses_in_links_are_preserved_in_output ... ok
+test external_links_get_security_attributes ... ok
+test base_prefixes_root_absolute_raw_html_attrs ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/edge_optional_writing.rs (target/debug/deps/edge_optional_writing-4e01c13334017ea5)
+
+running 16 tests
+test inline_note_uses_existing_footnote_nodes_and_deferred_definition ... ok
+test inline_notes_work_without_reference_footnotes_or_link_references ... ok
+test mixed_notes_avoid_identifiers_and_share_semantic_numbering ... ok
+test marked_text_participates_in_autolinks_and_heading_metadata ... ok
+test extensions_are_opt_in_in_every_preset ... ok
+test inline_identifiers_do_not_collide_with_nested_unreferenced_definitions ... ok
+test no_op_hooks_and_renderer_reuse_preserve_both_extensions ... ok
+test notes_respect_escapes_code_balanced_brackets_and_superscript ... ok
+test notes_in_containers_have_document_wide_identifiers ... ok
+test highlight_respects_inline_boundaries_and_flanking ... ok
+test reference_toggle_preserves_definitions_and_inline_links ... ok
+test reference_toggle_keeps_footnotes_wiki_links_and_nested_contexts ... ok
+test speculative_links_and_images_do_not_leave_phantom_notes ... ok
+test notes_are_lifted_from_inline_definition_list_table_caption_and_mdx_containers ... ok
+test visitors_and_spans_cover_marks_and_lifted_notes ... ok
+test malformed_empty_and_nested_notes_have_bounded_literal_fallback ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/edge_render_hooks.rs (target/debug/deps/edge_render_hooks-266b21a1461af358)
+
+running 13 tests
+test render_hooks_can_skip_block_nodes ... ok
+test render_hooks_reach_named_mdx_child_nodes ... ok
+test render_hooks_can_replace_inline_nodes_with_escape_helpers ... ok
+test render_hooks_reach_inline_math_inside_footnote_definitions ... ok
+test render_hooks_preserve_inline_context_for_child_nodes ... ok
+test render_hooks_can_wrap_block_nodes ... ok
+test render_hooks_reach_callout_child_nodes ... ok
+test empty_hooks_are_byte_identical_to_default_render ... ok
+test render_hooks_reach_nested_blocks_inside_semantic_footnote_definitions ... ok
+test render_hooks_work_for_incremental_fragments ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test highlighter_fallback_preserves_extended_documents_and_reused_state ... ok
+test highlighter_fallback_preserves_the_complete_spec_corpus ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/edge_sanitize.rs (target/debug/deps/edge_sanitize-5cbadf1557d40053)
+
+running 11 tests
+test inline_raw_html_is_escaped_when_sanitize_is_enabled ... ok
+test disallow_raw_html_is_off_by_default ... ok
+test disallow_raw_html_filters_closing_tags_and_html_blocks ... ok
+test unsafe_image_urls_are_cleared_when_sanitize_is_enabled ... ok
+test obfuscated_unsafe_link_schemes_are_neutralized ... ok
+test html_blocks_are_escaped_when_sanitize_is_enabled ... ok
+test disallow_raw_html_leaves_similar_tag_names_alone ... ok
+test disallow_raw_html_filters_only_the_gfm_tag_list ... ok
+test unsafe_link_urls_are_neutralized_when_sanitize_is_enabled ... ok
+test whitespace_destinations_do_not_become_links_at_all ... ok
+test sanitize_keeps_relative_and_allowed_url_schemes ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/edge_semantic_footnotes.rs (target/debug/deps/edge_semantic_footnotes-09e4bdb0b26c5898)
+
+running 10 tests
+test undefined_reference_stays_literal_with_the_option_on ... ok
+test labels_still_match_case_insensitively ... ok
+test default_keeps_legacy_in_place_markup ... ok
+test definition_block_content_is_preserved_inside_the_list_item ... ok
+test unused_definition_is_still_listed_without_backlinks ... ok
+test unicode_and_empty_slugs_and_collisions_stay_unique ... ok
+test numeric_source_labels_are_renumbered_in_document_order ... ok
+test named_labels_get_document_order_numeric_markers ... ok
+test repeated_references_keep_unique_ids_and_every_backlink ... ok
+test definitions_emit_one_accessible_ordered_section ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/edge_table_extensions.rs (target/debug/deps/edge_table_extensions-7cb57f514d384b10)
+
+running 7 tests
+test gfm_presets_keep_plain_table_markup ... ok
+test table_attributes_caption_and_colgroup_render_in_order ... ok
+test merged_cells_emit_colspan_and_align_the_following_cell_logically ... ok
+test table_attributes_escape_values_from_a_transformed_ast ... ok
+test xhtml_colgroup_uses_self_closing_columns ... ok
+test combined_extensions_preserve_logical_columns_with_or_without_hooks ... ok
+test hooks_traverse_caption_children_and_match_default_output ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/edge_unicode_compat.rs (target/debug/deps/edge_unicode_compat-a8f5bf230a2969ce)
+
+running 2 tests
+test matches_cmark_unicode_url_and_leading_bom_serialization ... ok
+test keeps_existing_percent_escapes_and_valid_ipv6_brackets ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/front_matter.rs (target/debug/deps/front_matter-1cc7b3b2ba552a07)
+
+running 16 tests
+test metadata_only_documents_keep_the_full_original_document_span ... ok
+test empty_front_matter_and_eof_closing_delimiter_are_supported ... ok
+test delimiter_lines_allow_only_ascii_space_and_tab_after_three_markers ... ok
+test one_leading_bom_is_allowed_but_excluded_from_front_matter_span ... ok
+test value_is_an_exact_borrowed_slice_and_can_contain_nul ... ok
+test a_bom_after_front_matter_is_body_content_and_is_not_stripped_again ... ok
+test renderer_hooks_and_incremental_paths_omit_front_matter ... ok
+test metadata_is_opaque_to_markdown_extensions_and_definitions ... ok
+test visitor_sees_front_matter_once_before_body ... ok
+test a_second_front_matter_looking_block_is_ordinary_body_markdown ... ok
+test front_matter_is_disabled_in_every_parser_preset_by_default ... ok
+test toml_and_all_supported_line_endings_preserve_value_bytes ... ok
+test body_node_spans_keep_original_coordinates_after_prefix ... ok
+test yaml_is_extracted_and_omitted_from_html ... ok
+test invalid_openers_closers_and_prefixes_fall_back_to_markdown ... ok
+test front_matter_is_not_extracted_after_comments_or_inside_containers ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/gfm_extension_audit.rs (target/debug/deps/gfm_extension_audit-9f5e58b02ded5b8e)
+
+running 9 tests
+test explicit_subscript_keeps_priority_over_single_tilde_strikethrough ... ok
+test single_tilde_strikethrough_stays_literal_when_gfm_is_disabled ... ok
+test gfm_extended_autolinks_require_contiguous_addresses ... ok
+test gfm_single_tilde_ignores_escaped_and_code_span_tildes ... ok
+test gfm_official_strikethrough_examples_491_and_493 ... ok
+test gfm_tildes_allow_intraword_strikes_and_classify_adjacent_emphasis ... ok
+test gfm_official_extended_autolinks_examples_633_to_635 ... ok
+test gfm_strikethrough_keeps_links_images_titles_html_and_unicode_boundaries ... ok
+test gfm_cmark_tilde_binding_cases ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/line_comments.rs (target/debug/deps/line_comments-54d3fbe118385741)
+
+running 25 tests
+test comments_inside_multiline_references_and_between_definitions_do_not_leak ... ok
+test bom_and_nul_preserve_source_spans_while_comments_disappear ... ok
+test comments_before_forward_references_do_not_leak ... ok
+test comments_do_not_prevent_setext_headings_or_table_rows ... ok
+test comments_at_line_start_are_transparent_and_need_no_space ... ok
+test crlf_and_lone_cr_comments_match_lf ... ok
+test comments_before_table_attributes_do_not_drop_metadata_or_column_names ... ok
+test comments_inside_footnote_and_definition_list_bodies_disappear ... ok
+test explicit_blank_lines_still_separate_paragraphs ... ok
+test explicit_container_prefixes_keep_slashes_literal ... ok
+test fenced_code_and_raw_html_blocks_remain_opaque ... ok
+test line_comments_are_disabled_by_default ... ok
+test fenced_code_and_raw_html_inside_lists_keep_physical_comments_literal ... ok
+test ordinary_slashes_escaped_markers_and_inline_code_remain_text ... ok
+test renderer_paths_agree_when_comments_are_removed ... ok
+test root_four_space_comment_markers_remain_visible_code ... ok
+test slash_heavy_prose_without_eligible_comments_preserves_text ... ok
+test tabs_and_four_space_indentation_are_not_comments ... ok
+test trailing_comments_keep_lists_tight_but_real_blanks_make_them_loose ... ok
+test trailing_comments_outside_paragraph_content_do_not_change_html ... ok
+test setext_comment_boundaries_preserve_attributes_and_original_spans ... ok
+test unprefixed_comments_do_not_break_quote_or_list_structure ... ok
+test strong_spans_survive_removed_comments_in_root_setext_quote_and_list_contexts ... ok
+test absent_comments_preserve_full_ast_with_either_flag_value ... ok
+test comment_markers_survive_container_dedenting_with_original_inline_spans ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/profiles.rs (target/debug/deps/profiles-ca1a6617b60eb31f)
+
+running 5 tests
+test spec_profiles_disable_product_rendering_extras ... ok
+test spec_profile_flags_match_normal_hooks_and_incremental_paths ... ok
+test gfm_spec_uses_tagfilter_without_footnotes_or_ids ... ok
+test existing_defaults_keep_heading_ids_callouts_and_toc ... ok
+test heading_attributes_match_across_renderer_paths_and_disabled_ids ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/snapshot_blocks.rs (target/debug/deps/snapshot_blocks-85bf32ea78bb8b8a)
+
+running 15 tests
+test html_nested_lists_mixed_markers ... ok
+test html_empty_document ... ok
+test html_atx_headings_all_depths ... ok
+test html_fenced_code_with_meta_strips_meta_from_class ... ok
+test html_ordered_list_with_start ... ok
+test html_fenced_code_inside_list_item ... ok
+test html_single_paragraph ... ok
+test html_blockquote_multi_paragraph ... ok
+test html_fenced_code_with_lang ... ok
+test html_blockquote_nested ... ok
+test html_task_list_gfm ... ok
+test html_thematic_break ... ok
+test html_task_list_without_gfm_renders_literal ... ok
+test html_unordered_list_basic ... ok
+test html_wrapped_list_item_continuation ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/snapshot_inline_links.rs (target/debug/deps/snapshot_inline_links-650bd414492d2d32)
+
+running 10 tests
+test html_image_basic ... ok
+test html_inline_hard_break_backslash ... ok
+test html_inline_special_chars_are_escaped ... ok
+test html_inline_escaped_punctuation ... ok
+test html_inline_emphasis_strong_combined ... ok
+test html_inline_strikethrough_gfm ... ok
+test html_link_with_title ... ok
+test html_external_link_adds_security_attrs ... ok
+test html_relative_link_has_no_external_attrs ... ok
+test html_image_xhtml_self_closes ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/snapshot_kitchen.rs (target/debug/deps/snapshot_kitchen-c97b2b764248f6f6)
+
+running 1 test
+test html_kitchen_sink_document ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/snapshot_safety_urls.rs (target/debug/deps/snapshot_safety_urls-28a67f286f173d27)
+
+running 10 tests
+test html_sanitize_escapes_inline_raw_html ... ok
+test html_base_url_prefixes_root_absolute_links ... ok
+test html_sanitize_neutralizes_javascript_link ... ok
+test html_sanitize_keeps_allowed_schemes ... ok
+test html_base_url_leaves_protocol_relative_unchanged ... ok
+test html_sanitize_neutralizes_obfuscated_javascript_link ... ok
+test html_base_url_prefixes_root_absolute_images ... ok
+test html_sanitize_escapes_html_block ... ok
+test html_sanitize_clears_unsafe_image_data_url ... ok
+test html_base_url_prefixes_raw_html_attrs ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/snapshot_tables_html.rs (target/debug/deps/snapshot_tables_html-af8a5fac791e084c)
+
+running 10 tests
+test html_table_without_body_omits_tbody ... ok
+test html_table_preserves_escaped_pipes ... ok
+test html_table_body_width_matches_header ... ok
+test html_table_alignment_variants ... ok
+test html_table_stops_before_block_with_pipe ... ok
+test html_table_accepts_pipe_less_body_row ... ok
+test html_block_details_preserved_raw ... ok
+test html_type6_details_resumes_markdown_after_blank ... ok
+test html_inline_raw_html_in_list_item ... ok
+test html_table_with_inline_formatting ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/spec_commonmark.rs (target/debug/deps/spec_commonmark-5c88ea0963ae6edf)
+
+running 10 tests
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test commonmark_spec_conformance ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/spec_gfm.rs (target/debug/deps/spec_gfm-ea388c8c25aeac95)
+
+running 10 tests
+test normalize::text_codec::url_normalization_preserves_ascii_escapes ... ok
+test normalize::text_codec::entity_probe_never_splits_utf8 ... ok
+test spec_txt::parses_examples_and_sections ... ok
+test normalize::text_codec::decodes_common_and_numeric_entities ... ok
+test normalize::preserves_pre_content_verbatim ... ok
+test normalize::keeps_meaningful_differences ... ok
+test normalize::preserves_reserved_and_unsafe_url_bytes ... ok
+test normalize::normalizes_equivalent_markup ... ok
+test normalize::preserves_inline_code_and_raw_text_semantics ... ok
+test gfm_extension_conformance ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/stress_mutations.rs (target/debug/deps/stress_mutations-987492d5b970f6c0)
+
+running 3 tests
+test spec_txt::parses_examples_and_sections ... ok
+test whitespace_only_inputs_terminate ... ok
+test mutated_spec_examples_never_panic_or_hang ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+
+     Running tests/table_column_names.rs (target/debug/deps/table_column_names-fb830a982128e720)
+
+running 7 tests
+test names_are_opt_in_and_require_colgroup ... ok
+test merged_headers_name_each_covered_logical_column ... ok
+test column_names_use_heading_text_and_unicode_slug_rules ... ok
+test blank_headers_fall_back_and_numeric_headers_cannot_alias_positions ... ok
+test duplicate_names_and_natural_suffixes_never_collide ... ok
+test naming_is_table_local_and_does_not_change_heading_ids_or_renderer_reuse ... ok
+test named_columns_keep_xhtml_and_hook_output_identical ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ferromark
+
+running 3 tests
+test crates/ferromark/src/convenience.rs - convenience::to_html (line 12) ... ok
+test crates/ferromark/src/lib.rs - (line 6) ... ok
+test crates/ferromark/src/convenience.rs - convenience::to_html_with_options (line 32) ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+all doctests ran in 0.94s; merged doctests compilation took 0.73s
+   Doc-tests ferromark_allocator
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ferromark_ast
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ferromark_parser
+
+running 1 test
+test crates/ferromark_parser/src/lib.rs - (line 14) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+all doctests ran in 0.65s; merged doctests compilation took 0.45s
+   Doc-tests ferromark_renderer
+
+running 1 test
+test crates/ferromark_renderer/src/lib.rs - (line 7) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.67s; merged doctests compilation took 0.47s
+    Checking ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark_parser)
+    Checking ferromark v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark)
+    Checking ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark_renderer)
+    Checking ferromark-node v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/node/native)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.62s
+   Compiling ferromark_parser v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark_parser)
+   Compiling ferromark v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark)
+   Compiling ferromark_renderer v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/crates/ferromark_renderer)
+   Compiling ferromark-node v2.0.0-dev.0 (/Users/sebastian/Workspace/.codex/af2a/ferromark/node/native)
+    Finished `bench` profile [optimized] target(s) in 32.79s
+  Executable benches src/lib.rs (target/release/deps/ferromark-29f982faa49f8d1e)
+  Executable benches src/lib.rs (target/release/deps/ferromark_node-38c8fdc0a569c39b)
+  Executable benches src/lib.rs (target/release/deps/ferromark_allocator-66a9e614a47405c5)
+  Executable benches src/lib.rs (target/release/deps/ferromark_ast-3e02f97d40c085ef)
+  Executable benches src/lib.rs (target/release/deps/ferromark_parser-761cbcde651351e2)
+  Executable benches/parser.rs (target/release/deps/parser-41bcbc5dc7c81b95)
+  Executable benches/prepass.rs (target/release/deps/prepass-d8f4c6c643feb691)
+  Executable benches/table_pipes.rs (target/release/deps/table_pipes-46f714157d313371)
+  Executable benches/tables.rs (target/release/deps/tables-79f1c0c394caf368)
+  Executable benches src/lib.rs (target/release/deps/ferromark_renderer-2c4527c31b7cd56f)
+  Executable benches/headings.rs (target/release/deps/headings-0c9bdbf2dd465d29)
+  Executable benches/renderer.rs (target/release/deps/renderer-a8d627b2fb06d574)
+  Executable benches/sanitized_urls.rs (target/release/deps/sanitized_urls-ee56c45d0830b710)
