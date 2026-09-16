@@ -1,0 +1,18 @@
+---
+title: MDX Boundaries
+order: 8
+---
+
+# MDX Boundaries
+
+MDX mixes Markdown with component tags, expressions, and imports/exports.
+Ferromark v2 recognizes this syntax in its AST and can emit static island
+payloads. It stores expression and module source; it does not execute JavaScript.
+
+Component resolution, framework compilation, and hydration remain application
+responsibilities. Lowercase HTML stays HTML. Do not treat successful parsing as
+proof that arbitrary JavaScript or TypeScript is valid.
+
+Enable `ParserOptions::mdx` in [Rust](/rust/mdx) or `mdx: true` in
+[Node.js configuration](/node/configuration). The v1 segmenter and component
+compiler APIs are absent in v2. See [migration](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md).

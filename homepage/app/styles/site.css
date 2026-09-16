@@ -295,3 +295,129 @@
   font-size: 0.95rem;
   line-height: 1.6;
 }
+
+/* Runtime choices are shared by the landing page and documentation entry pages. */
+.platform-choices {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  margin-block: 2rem 1rem;
+  color: var(--ink);
+}
+.platform-choices article {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--line-heavy);
+  background: var(--bg-dim);
+}
+.platform-choices .platform-label {
+  font: 600 0.75rem/1.5 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin: 0;
+}
+.platform-choices h2 {
+  font:
+    750 2rem/1.2 var(--display),
+    var(--body);
+  margin: 0.6rem 0;
+  border: 0;
+  padding: 0;
+}
+.platform-choices p:not(.platform-label) {
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+.platform-choices .platform-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  min-height: 44px;
+  color: var(--rust);
+  font-weight: 650;
+  text-decoration: none;
+}
+.platform-link:hover {
+  text-decoration: underline;
+}
+.platform-choices .platform-primary {
+  border-top-color: var(--rust);
+}
+.platform-choices .platform-primary .platform-link {
+  margin-top: auto;
+  padding: 0.75rem 1rem;
+  background: var(--rust);
+  color: var(--bg);
+}
+.runtime-switch {
+  display: flex;
+  gap: 0.25rem;
+  margin-block: 1rem 2rem;
+  border-bottom: 1px solid var(--line-heavy);
+}
+.ferromark-shell .runtime-switch a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 1.25rem;
+  margin-bottom: -1px;
+  border-bottom: 3px solid transparent;
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-weight: 600;
+}
+.ferromark-shell .runtime-switch a[aria-current="page"] {
+  color: var(--rust);
+  border-bottom-color: var(--rust);
+}
+.ferromark-shell .runtime-switch a:hover {
+  color: var(--rust);
+  background: var(--bg-dim);
+}
+.ferromark-shell .runtime-switch a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.platform-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 5px;
+}
+.ferromark-product {
+  font-family: var(--display), var(--body);
+  font-size: 1.5rem;
+}
+.ferromark-nav a[data-active="true"] {
+  color: var(--ember);
+}
+.ferromark-guide-flyout {
+  max-height: calc(100dvh - var(--ardo-layout-headerHeight) - 2rem);
+  max-width: calc(100vw - 1.5rem);
+  overflow-y: auto;
+  color: var(--iron-ink);
+}
+.ferromark-section-switch {
+  border-bottom: 1px solid var(--iron-line);
+  padding-block: 0.25rem 0.5rem;
+}
+.ferromark-section-switch a[data-active="true"] {
+  color: var(--ember);
+  background: var(--iron-2);
+}
+.ferromark-menu-label {
+  color: var(--iron-soft);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  padding: 0.5rem 0.6rem 0;
+  margin-bottom: 0.25rem;
+}
+@media (max-width: 640px) {
+  .platform-choices {
+    grid-template-columns: 1fr;
+  }
+}

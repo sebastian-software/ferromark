@@ -1,0 +1,26 @@
+---
+title: Rust MDX Examples
+order: 6
+---
+
+# Rust MDX Examples
+
+## render()
+
+In v2, parse with `ParserOptions { mdx: true, .. }`, then call
+`HtmlRenderer::render()` on the document. The [MDX guide](/rust/mdx) contains a
+complete example using the current API. Front matter must precede imports and
+requires `front_matter: true`; it is available on `Document::front_matter`.
+
+## to_component()
+
+The v1 component-generation API is absent in v2. Use a downstream MDX compiler
+when you need an executable JSX/TSX module. Static island output is not a
+replacement for framework compilation.
+
+## segment()
+
+The v1 segmenter is absent in v2. Inspect the parsed AST and its source spans for
+MDX syntax. These headings remain available for older documentation links;
+see [v2 migration](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md)
+for the API changes.

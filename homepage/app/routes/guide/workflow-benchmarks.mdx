@@ -1,0 +1,21 @@
+---
+title: Runtime Profiles and Costs
+order: 12
+---
+
+# Runtime Profiles and Costs
+
+Match enabled features and allocation lifecycle to your workload. These v2 studies
+record the source revisions, hardware, configuration, raw samples, and known costs.
+
+- [Runtime profiles](https://github.com/sebastian-software/ferromark/blob/main/docs/runtime-profiles.md): individual options, unused-feature overhead, and recipes for comments, articles, documentation, and MDX.
+- [Release performance assessment](https://github.com/sebastian-software/ferromark/blob/main/docs/releases/2.0.0-rc.1.md#validation-and-known-limits): accepted costs and release scope.
+- [Full ARM suites](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-09-15-arm-full-suite): 207 cases across parser, rendering, and full-processing stages.
+- [Optional writing features](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-09-15-optional-writing): marked text, inline notes, and reference-policy costs.
+
+Unused enabled extensions can add work. Fresh calls include setup and teardown;
+reused lifecycles retain allocations where supported. No native-core result by
+itself measures Node request latency or an entire site's build time.
+
+[Native comparisons](/guide/benchmarks) use their own matched profiles and output
+checks. Historical v1 measurements remain in v1 history and are not v2 results.

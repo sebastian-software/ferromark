@@ -1,0 +1,66 @@
+---
+title: Build a Rust Content Pipeline
+order: 3
+---
+
+# Build a Rust Content Pipeline
+
+import { RuntimeSwitch } from "../../components/runtime-switch";
+
+<RuntimeSwitch topic="pipelines" />
+
+Use the direct HTML helpers for owned output. Use the arena AST when you need
+metadata, source spans, visitors, or custom rendering.
+
+## Parse once, inspect, then render
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, HtmlRendererOptions, Parser, ParserOptions};
+
+let source = "---\ntitle: Installation\n---\n# Installation\n";
+let allocator = Allocator::for_source_len(source.len());
+let document = Parser::with_options(
+    &allocator,
+    source,
+    ParserOptions { front_matter: true, ..ParserOptions::gfm() },
+).parse().unwrap();
+assert_eq!(document.front_matter.as_ref().unwrap().value, "title: Installation\n");
+let html = HtmlRenderer::with_options(HtmlRendererOptions {
+    sanitize: true,
+    ..HtmlRendererOptions::default()
+}).render(&document);
+assert!(html.contains("Installation"));
+```
+
+The front-matter value borrows the original source. Deserialize its raw YAML- or
+TOML-style contents with your chosen library. The source and allocator must
+outlive the document. Drop all documents before resetting an allocator.
+
+AST visitors expose nested nodes and source spans. Use the renderer's
+`collect_heading_text` and `slugify_heading` helpers when building heading-based
+tooling, and account for explicit IDs and duplicate suffixes. For a rendered
+inline table of contents, enable the renderer's TOC support and use `[[toc]]`.
+
+## Append HTML to an existing string
+
+```rust
+let mut output = String::from("<main>\n");
+ferromark::to_html_into("First document.", &mut output).unwrap();
+ferromark::to_html_into("Second document.", &mut output).unwrap();
+output.push_str("</main>\n");
+assert!(output.starts_with("<main>\n<p>First document.</p>"));
+```
+
+These functions append and retain output capacity. A parse error leaves the
+string unchanged. Every call creates a temporary arena and renderer, with
+independent heading, reference, and footnote state. For explicit scratch reuse,
+retain `HtmlRenderer` and reset an `Allocator` between documents.
+
+## Handle parser errors
+
+The helpers and `Parser::parse()` return `Result`. Exceeding the configured
+block-nesting limit returns an error; the default limit is 100. Keep a finite
+limit for untrusted input. See [the Rust API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md)
+for ownership and output contracts.
+
+Next: [custom HTML hooks](/rust/highlighting).

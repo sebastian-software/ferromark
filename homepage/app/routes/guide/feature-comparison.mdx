@@ -1,0 +1,129 @@
+---
+title: Feature Comparison
+order: 10
+---
+
+# Feature Comparison
+
+
+**CommonMark** defines everyday Markdown: headings, lists, links, emphasis, and
+code. **GFM** (GitHub Flavored Markdown) adds features such as tables and
+checklists. The groups below spell out those names and show useful extras.
+Footnotes and alert boxes are listed separately from the published GFM extensions.
+
+**✓** = built in, possibly requiring an option or Cargo feature. **—** = no
+built-in support. Qualifiers describe narrower support. This is a capability
+inventory, not a claim of identical output or complete specification conformance.
+It covers the native cores from the benchmark, with **v2 updated to the current
+local core**; these are not the options enabled during timing.
+[Exact versions, source references, and scope](https://github.com/sebastian-software/ferromark/blob/main/docs/feature-matrix.md).
+
+| Feature / what it does | Ferromark v1 | Ferromark v2 | OX-Content | pulldown-cmark | md4c | Bun native |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **CommonMark — everyday Markdown** | | | | | | |
+| Headings — `# Title` through `###### Title` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Paragraphs and line breaks | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Bold and italic — `**bold**`, `*italic*` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Numbered, bulleted, and nested lists | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Block quotes — `> quoted text` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Horizontal separators — `---` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Links, images, and reusable reference links | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Inline code, fenced code blocks, and indented code | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Raw HTML inside Markdown — `<details>…</details>` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **GFM — GitHub-style extensions** | | | | | | |
+| Tables with left/center/right column alignment | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Checklists — `- [x] done`, `- [ ] pending` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Crossed-out text — `~~removed~~` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Single-tilde crossed-out text — `~removed~` | — | ✓ | — | ✓ | ✓ | ✓ |
+| Turn bare URLs/emails into links — `www.example.com` | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| GFM HTML tag filter — filter its specified tag list | ✓ | ✓ | ✓ | — | — | ✓ |
+| **Writing extras — beyond CommonMark/GFM** | | | | | | |
+| Reference footnotes — `[^note]` plus a definition | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Inline footnotes — `^[note written here]` | ✓ | ✓ | — | — | — | — |
+| Definition lists — a term followed by `: explanation` | ✓ | ✓ | ✓ | ✓ | — | — |
+| Math notation — `$x^2$`, `$$…$$` | Syntax | Syntax | Syntax | Syntax | Syntax | Syntax |
+| Superscript — `x^2^` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Subscript — `H~2~O` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Highlighted text — `==important==` | ✓ | ✓ | — | — | ✓ | — |
+| Wiki links — `[[Page]]` | — | ✓ | ✓ | ✓ | Custom tag | Custom tag |
+| Smart punctuation — curly quotes and ellipses | — | — | ✓ | ✓ | — | — |
+| Extract frontmatter — metadata between `---` or `+++` | ✓ | ✓ | — | ✓ | — | — |
+| Source-only line comments — hide `// note` lines from HTML | ✓ | ✓ | — | — | — | — |
+| **Table layout — beyond GFM** | | | | | | |
+| Merged table cells — one cell spans several columns | ✓ | ✓ | — | — | — | — |
+| Numeric column-width hints — proportions from delimiter dashes | ✓ | — | — | — | — | — |
+| Table IDs/classes — style a whole table with CSS | — | ✓ | — | — | — | — |
+| Table captions — a label with inline Markdown formatting | — | With ID/class | — | — | — | — |
+| Column classes for CSS widths — `col-1`, `col-2`, etc. | — | ✓ | — | — | — | — |
+| Column names from headers — “Netto Preis” → `col-name-netto-preis` | — | ✓ | — | — | — | — |
+| **Documentation and navigation** | | | | | | |
+| Automatic heading IDs — link directly to a section | ✓ | ✓ | ✓ | — | — | ✓ |
+| Explicit heading IDs/classes — `# Title {#id .class}` | — | ✓ | ✓ | ✓ | — | — |
+| Alert boxes — `> [!NOTE]`, `> [!WARNING]` | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Table of contents from document headings | Heading data | Rendered TOC | Rendered TOC | — | — | — |
+| **MDX — components and expressions mixed with Markdown** | | | | | | |
+| Recognize JSX, `{expressions}`, and imports/exports | Limited | Limited | Limited | — | — | — |
+| **Application integration** | | | | | | |
+| Inspect/transform the parsed document | Events | Tree (AST) | Tree (AST) | Events | Callbacks | Callbacks |
+| Customize generated output | Code hook / events | HTML hooks | HTML hooks | Event transforms | Renderer callbacks | Renderer callbacks |
+
+Math support preserves formula notation; an application supplies mathematical
+typesetting. “Custom tag” wiki links also need application-side routing/rendering.
+Frontmatter support extracts metadata text, rather than parsing YAML/TOML values.
+“Heading data” lets an application build a TOC; “Rendered TOC” includes HTML for
+an inline `[[toc]]` marker. Trees expose nested document nodes; events/callbacks
+expose elements in sequence. The three MDX entries cover bounded syntax handling,
+not a full MDX compiler or JavaScript runtime. Single-tilde strikethrough and
+subscript compete for the same syntax; enabling subscript gives it priority.
+
+### Optional writing syntax
+
+| Behavior | Rust `ParserOptions` | Node option | Default |
+| --- | --- | --- | --- |
+| `==marked text==` renders as `<mark>` | `highlight` | `highlight` | `false` |
+| `^[inline note]` creates a footnote | `inline_footnotes` | `inlineFootnotes` | `false` |
+| Resolve full, collapsed, and shortcut reference links/images | `allow_link_refs` | `allowLinkRefs` | `true` |
+
+Inline notes accept inline formatting and work independently of reference
+footnotes. Disabling reference links preserves definitions as visible Markdown;
+inline links and images continue to work. Marked text is separate from code
+syntax highlighting. [Rust and Node examples, syntax, and defaults](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md).
+
+The writing extensions remain off by default. Paired measurements found no
+material slowdown on representative documents with them disabled. Enabling them
+on documents without matching syntax still costs several percent, and literal
+marker-heavy inputs cost more. Disabling reference links can skip parsing work,
+but its benefit depends on the parser profile and changes the output of actual
+references. See the [measured costs and limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-optional-writing/README.md).
+
+### Other extension policies
+
+Reference footnotes have document-wide scope, including definitions in lists,
+block quotes, and Markdown blocks inside MDX components. References can precede
+their definitions. Code and raw HTML cannot define footnotes.
+
+V2 preserves authored punctuation. Automatic typography belongs in an optional,
+locale-aware document transform; the former English-oriented parser option has
+been removed. See the [typography decision](https://github.com/sebastian-software/ferromark/blob/main/docs/typography.md).
+
+Enable `ParserOptions::front_matter` to extract a leading `---` (YAML) or `+++`
+(TOML) metadata block into `document.front_matter`. It exposes the format, raw
+content, and original source spans. The block is omitted from HTML and cannot
+define Markdown links or footnotes. The option is off in every preset.
+[Frontmatter syntax and Rust example](https://github.com/sebastian-software/ferromark/blob/main/docs/front-matter.md).
+
+Enable `ParserOptions::line_comments` to omit `// note` source lines from HTML.
+Comments may have up to three leading spaces and do not separate paragraphs.
+Code blocks, raw HTML blocks, and explicitly prefixed lines such as `> // text`
+remain literal. The option is off in every preset.
+[Syntax, examples, and source-span behavior](https://github.com/sebastian-software/ferromark/blob/main/docs/line-comments.md).
+
+V1 derives numeric column-width hints from delimiter dash counts. V2 instead
+supports table IDs/classes, inline captions, and generated `colgroup` columns
+whose widths are set in external CSS. Optional header-derived classes such
+as `col-name-netto-preis` use the heading slug rules and retain positional classes.
+Both versions use adjacent pipes for horizontal spans (`||` spans two columns).
+All V2 table extras are opt-in and off in every preset. The table-layout rows
+describe built-in handling of Markdown tables; raw HTML and custom rendering can
+provide additional layouts in any engine.
+[Syntax, options, and a runnable CSS example](https://github.com/sebastian-software/ferromark/blob/main/docs/table-layout.md).

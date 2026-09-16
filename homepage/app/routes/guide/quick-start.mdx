@@ -1,85 +1,23 @@
 ---
-title: Quick Start
+title: Choose Your Quick Start
+order: 2
 ---
 
-# Quick Start
+# Choose Your Quick Start
 
-## Rust
+import { PlatformChoices } from "../../components/platform-choices";
 
-Use the workspace facade while developing in the repository:
+Choose the package you are integrating. Each guide covers installation,
+configuration, and a working example for that runtime.
 
-```rust
-let html = ferromark::to_html("# Hello\n\n**World**")?;
-```
+<PlatformChoices />
 
-`to_html_with_options` accepts separate parser and renderer options.
-`to_html_into` and `to_html_into_with_options` append to a caller-owned `String`,
-preserving its existing contents if parsing fails. Each helper returns `Result`.
-Rust defaults pass raw HTML through; select `HtmlRendererOptions { sanitize: true, .. }`
-to escape raw HTML and filter unsafe link/image URL schemes.
+## Use the command line
 
-For document-tree access, use `Allocator`, `Parser`, and `HtmlRenderer` directly.
-The source and allocator must outlive the parsed document. For GFM, pair
-`ParserOptions::gfm_spec()` with `HtmlRendererOptions::gfm()`.
-See the [Rust API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md)
-for complete examples and ownership rules.
+To render files from a shell, follow the [CLI guide](/guide/cli).
 
-## Node.js
+## Understand the shared behavior
 
-After building from the repository root's `node/` directory:
-
-```js
-import { toHtml, toHtmlBuffer, Renderer, transform } from './ferromark/index.mjs'
-
-const html = toHtml('# Hello v2')
-const buffer = toHtmlBuffer('**UTF-8 output**')
-const renderer = new Renderer({ tables: true })
-renderer.toHtml('First document')
-renderer.toHtml('Second document')
-const result = transform('---\ntitle: Guide\n---\n# Guide', { frontMatter: true })
-console.log(result.headings, result.frontMatter)
-```
-
-Node defaults escape raw HTML and filter link/image URL schemes. Set
-`renderPolicy: 'trusted'` only for trusted Markdown. Custom highlighter output
-is inserted verbatim and must escape every untrusted value.
-
-## Optional writing syntax
-
-```js
-const html = toHtml('This is ==important==^[An explanatory *note*.].', {
-  highlight: true,
-  inlineFootnotes: true,
-})
-```
-
-Both options default to `false` and also work with a reusable `Renderer`.
-Inline notes do not require reference footnotes to be enabled. `highlight`
-controls marked text, independently of code syntax highlighting.
-
-`allowLinkRefs` defaults to `true`. Set it to `false` to leave reference links,
-image references, and their definitions visible as ordinary Markdown. Inline
-links and images continue to work.
-
-Rust exposes these switches through `ParserOptions::highlight`,
-`ParserOptions::inline_footnotes`, and `ParserOptions::allow_link_refs`.
-See the [syntax and Rust example](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md).
-
-Keep extensions disabled when their syntax is not needed. Measurements found
-no material disabled-option slowdown on representative documents, but enabling
-unused syntax costs several percent and more on marker-heavy inputs. Reference
-link savings depend on the profile; documents containing references also change
-output. The [performance report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-optional-writing/README.md)
-includes repeated measurements and limitations.
-
-## Migrating from v1
-
-The Rust AST API replaces v1's one-shot and streaming APIs. Node keeps its
-rendering entry points, but `tableColumnWidths` and `indentedCodeBlocks` are unsupported and rejected. Heading slugs, table
-layout markup, and some extension output follow v2 semantics. `linkBasePath`
-also applies to root-absolute image and raw HTML URLs and converts Markdown
-links to index.html routes. Highlighter callbacks
-apply to code blocks, including indented code.
-
-Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md)
-before adopting the development package.
+Both packages use the same Markdown engine with different trust defaults. [Markdown syntax](/guide/features),
+[rendering and trust](/guide/rendering), and [pipeline concepts](/guide/pipelines)
+are documented once, independently of API naming.

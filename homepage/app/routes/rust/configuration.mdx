@@ -1,0 +1,70 @@
+---
+title: Configure Rust Rendering
+order: 2
+---
+
+# Configure Rust Rendering
+
+import { RuntimeSwitch } from "../../components/runtime-switch";
+
+<RuntimeSwitch topic="configuration" />
+
+Choose syntax with `ParserOptions` and HTML output with `HtmlRendererOptions`.
+These are independent settings; Rust defaults preserve raw HTML.
+
+## Render untrusted content
+
+```rust
+use ferromark::{to_html_with_options, HtmlRendererOptions, ParserOptions};
+
+let html = to_html_with_options(
+    "==Important== <b>authored HTML</b>",
+    ParserOptions { highlight: true, ..ParserOptions::default() },
+    HtmlRendererOptions { sanitize: true, ..HtmlRendererOptions::default() },
+).unwrap();
+assert!(html.contains("<mark>Important</mark>"));
+assert!(html.contains("&lt;b&gt;"));
+```
+
+`sanitize: true` escapes raw HTML and filters unsafe link and image schemes.
+Custom hook output still requires your own escaping. See [rendering and trust](/guide/rendering).
+
+## Select a dialect
+
+| Profile                          | Parser                        | Renderer                            |
+| -------------------------------- | ----------------------------- | ----------------------------------- |
+| CommonMark specification         | `ParserOptions::commonmark()` | `HtmlRendererOptions::commonmark()` |
+| GFM specification                | `ParserOptions::gfm_spec()`   | `HtmlRendererOptions::gfm()`        |
+| GFM with publishing conveniences | `ParserOptions::gfm()`        | `HtmlRendererOptions::default()`    |
+
+The specification renderer profiles disable automatic heading IDs, callouts,
+inline TOCs, and fence metadata cleanup. The GFM specification profile enables
+the tag filter and leaves footnotes off. `ParserOptions::gfm()` also enables
+footnotes. No profile enables front matter or the extra table-layout options.
+Set `sanitize: true` independently when the source is untrusted.
+
+## Add publishing features
+
+```rust
+use ferromark::{HtmlRendererOptions, ParserOptions};
+
+let syntax = ParserOptions {
+    front_matter: true,
+    merged_table_cells: true,
+    table_attributes: true,
+    ..ParserOptions::gfm()
+};
+let output = HtmlRendererOptions {
+    table_colgroup: true,
+    table_column_names: true,
+    sanitize: true,
+    ..HtmlRendererOptions::default()
+};
+let html = ferromark::to_html_with_options("# Notes", syntax, output).unwrap();
+assert!(html.contains("Notes"));
+```
+
+See [Markdown syntax](/guide/features) for author-facing examples and
+[the Rust API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md)
+for all entry points. Keep unused extensions off when their syntax is unnecessary;
+[profile measurements](/guide/workflow-benchmarks) describe their costs.
