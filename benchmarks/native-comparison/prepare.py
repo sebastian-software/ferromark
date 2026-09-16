@@ -697,6 +697,13 @@ def main() -> None:
     worker.mkdir()
     shutil.move(bun / "comparison-worker.rs", worker / "worker.rs")
 
+    # The v2 crate is the repository root package since the release-blueprint
+    # move; a checkout of an older pinned revision still nests it under
+    # `crates/ferromark`, so the generated manifest follows the tree it got.
+    ferromark_v2 = "../sources/ferromark_v2"
+    if (sources / "ferromark_v2" / "crates" / "ferromark" / "Cargo.toml").is_file():
+        ferromark_v2 += "/crates/ferromark"
+
     # The parent worker owns the exact crate aliases and engine options.  The
     # generated package keeps the source paths explicit so no registry or JS
     # adapter is silently substituted.
@@ -715,14 +722,14 @@ bun_md.workspace = true
 bun_alloc.workspace = true
 bun_core.workspace = true
 ferromark_v1 = { package = "ferromark", path = "../sources/ferromark_v1" }
-ferromark_v2 = { package = "ferromark", path = "../sources/ferromark_v2/crates/ferromark" }
+ferromark_v2 = { package = "ferromark", path = "FERROMARK_V2" }
 ox_content_allocator = { package = "ox_content_allocator", path = "../sources/ox_content/crates/ox_content_allocator" }
 ox_content_parser = { package = "ox_content_parser", path = "../sources/ox_content/crates/ox_content_parser" }
 ox_content_renderer = { package = "ox_content_renderer", path = "../sources/ox_content/crates/ox_content_renderer" }
 pulldown-cmark = "=0.13.4"
 html-escape = "=0.2.14"
 serde_json = "1"
-""")
+""".replace("FERROMARK_V2", ferromark_v2))
     # These source paths are relative to the Bun checkout after it is copied.
     # Keep all source trees under build/sources so the generated workspace is
     # relocatable as one unit.

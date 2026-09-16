@@ -44,6 +44,16 @@ def file_sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def crate_source(source: Path) -> Path:
+    """Return the `ferromark` package directory inside a checkout.
+
+    The crate is the repository root package since the release-blueprint move;
+    checkouts of older revisions keep it under `crates/ferromark`.
+    """
+    nested = source / "crates" / "ferromark"
+    return nested if (nested / "Cargo.toml").is_file() else source
+
+
 def tree_sha(root: Path) -> str:
     digest = hashlib.sha256()
     for path in sorted(root.rglob("*")):
@@ -104,7 +114,7 @@ def main():
         (root / "src").mkdir(parents=True)
         root.joinpath("src/main.rs").write_bytes(worker_bytes)
         shutil.copyfile(source / "Cargo.lock", root / "Cargo.lock")
-        dependency = source / "crates/ferromark"
+        dependency = crate_source(source)
         root.joinpath("Cargo.toml").write_text(
             '[package]\nname = "simd-round-worker"\nversion = "0.0.0"\n'
             'edition = "2024"\npublish = false\n\n[workspace]\n\n[dependencies]\n'
