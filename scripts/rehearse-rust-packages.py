@@ -23,11 +23,16 @@ def main():
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir()
-    workspace = tomllib.loads((ROOT / 'Cargo.toml').read_text())['workspace']
-    version = workspace['package']['version']
-    names = sorted(tomllib.loads((ROOT / member / 'Cargo.toml').read_text())['package']['name']
-                   for member in workspace['members'] if member.startswith('crates/'))
+    root = tomllib.loads((ROOT / 'Cargo.toml').read_text())
+    workspace = root['workspace']
+    # `ferromark` is the repository root package, which is what Release Please's
+    # `rust` strategy requires; every workspace member below it is unpublished.
+    names = [root['package']['name']]
+    version = root['package']['version']
     assert names == ['ferromark']
+    for member in workspace['members']:
+        member_package = tomllib.loads((ROOT / member / 'Cargo.toml').read_text())['package']
+        assert member_package.get('publish') is False, f'{member}: workspace members stay private'
     run(['cargo', 'package', '-p', 'ferromark', '--locked', '--allow-dirty',
          '--target-dir', str(output / 'target')], output / 'package.log')
     unpacked = output / 'unpacked'

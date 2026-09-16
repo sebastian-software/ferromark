@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import tomllib
 
-from prepare import verify_baseline
+from prepare import crate_source, verify_baseline
 
 ENGINES = ("baseline", "candidate")
 MODES = ("fresh", "reuse", "parse")
@@ -73,7 +73,7 @@ def build_workers(baseline: Path, candidate: Path, build: Path):
         (root / "src").mkdir(parents=True)
         (root / "src/main.rs").write_bytes(worker_bytes)
         shutil.copyfile(source / "Cargo.lock", root / "Cargo.lock")
-        dependency = source / "crates/ferromark"
+        dependency = crate_source(source)
         (root / "Cargo.toml").write_text(
             '[package]\nname = "simd-round-allocation-worker"\nversion = "0.0.0"\n'
             'edition = "2024"\npublish = false\n\n[workspace]\n\n[dependencies]\n'

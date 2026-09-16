@@ -16,11 +16,11 @@ or packaging. No upstream `.git` directory was copied or created during cleanup.
 
 | Original path | Local path |
 | --- | --- |
-| `crates/ox_content_allocator/` | `crates/ferromark_allocator/` |
-| `crates/ox_content_ast/` | `crates/ferromark_ast/` |
-| `crates/ox_content_parser/` | `crates/ferromark_parser/` |
-| `crates/ox_content_renderer/` | `crates/ferromark_renderer/` |
-| `CHANGELOG.md` | `crates/ferromark_parser/benches/fixtures/upstream-changelog.md` |
+| `crates/ox_content_allocator/` | `src/allocator/` |
+| `crates/ox_content_ast/` | `src/ast/` |
+| `crates/ox_content_parser/` | `src/parser/` |
+| `crates/ox_content_renderer/` | `src/renderer/` |
+| `CHANGELOG.md` | `benches/fixtures/upstream-changelog.md` |
 | `LICENSE` | `LICENSE` (unchanged) |
 
 The changelog is retained solely as frozen input for the existing prepass
@@ -34,7 +34,7 @@ into the import. The workspace packages were renamed and use `2.0.0-dev.0`.
 All packages set `publish = false`.
 
 CommonMark and GFM specification text has separate CC-BY-SA 4.0 attribution in
-[the fixture README](crates/ferromark_renderer/tests/spec_fixtures/README.md).
+[the fixture README](tests/spec_fixtures/README.md).
 The original MIT copyright notice remains intact. Upstream references in source
 comments and literal HTML such as `data-ox-island` are intentionally retained when
 changing them could obscure provenance or change rendering behavior.

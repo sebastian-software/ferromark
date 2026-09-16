@@ -1,9 +1,91 @@
+# `ferromark` is the repository's root package, which is what Release Please's
+# native `rust` strategy requires: it updates the root `[package]` version, the
+# members listed below, their explicit path dependency requirements and
+# `Cargo.lock`. See docs/arch/ADR-0020-standards-release-blueprint.md.
+[package]
+name = "ferromark"
+version = "2.0.0-rc.1"
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/ferromark"
+readme = "README.md"
+description = "Arena-allocated Markdown parser and HTML renderer"
+# The package sits at the repository root, so the published archive is an
+# explicit allow-list rather than "everything Cargo finds". Compare
+# `cargo package --list` after changing it: docs/, benchmarks/, homepage/,
+# node/ and scripts/ must stay out, while the README, the upstream MIT notice
+# and the dual-license texts ship with the crate.
+include = [
+  "/src",
+  "/tests",
+  "/benches",
+  "/examples",
+  "/README.md",
+  "/LICENSE",
+  "/LICENSE-MIT",
+  "/LICENSE-APACHE",
+  "/UPSTREAM.md",
+]
+
+[lints]
+workspace = true
+
+[dependencies]
+bumpalo = { workspace = true, features = ["collections", "boxed"] }
+compact_str.workspace = true
+smallvec.workspace = true
+memchr.workspace = true
+rustc-hash.workspace = true
+thiserror.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+insta.workspace = true
+
+[[bench]]
+name = "parser"
+harness = false
+
+[[bench]]
+name = "prepass"
+harness = false
+
+[[bench]]
+name = "tables"
+harness = false
+
+[[bench]]
+name = "table_pipes"
+harness = false
+
+[[bench]]
+name = "renderer"
+harness = false
+
+[[bench]]
+name = "headings"
+harness = false
+
+[[bench]]
+name = "sanitized_urls"
+harness = false
+
 [workspace]
 resolver = "2"
-members = ["crates/ferromark", "node/native"]
+members = ["node/native"]
 
+# Package versions are deliberately not inherited: Release Please cannot replace
+# an inherited `version.workspace = true` with a concrete version, so the root
+# package and every member carry their own.
 [workspace.package]
-version = "2.0.0-rc.1" # x-release-please-version
 authors = ["ubugeeei", "Sebastian Software GmbH"]
 categories = ["text-processing", "parser-implementations"]
 edition = "2024"
@@ -72,8 +154,10 @@ elidable_lifetime_names = "allow"
 range_plus_one = "allow"
 use_self = "allow"
 
+# External crates only. The published internal requirement on `ferromark` lives
+# in the consuming package (node/native), because Release Please rewrites an
+# explicit `version` next to a `path`, not an inherited workspace entry.
 [workspace.dependencies]
-ferromark = { path = "crates/ferromark", version = "=2.0.0-rc.1" } # x-release-please-version
 bumpalo = "3.16"
 compact_str = "0.10.0"
 smallvec = "1.15"

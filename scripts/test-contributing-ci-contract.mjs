@@ -118,11 +118,15 @@ test("only ferromark is public and no path-only dependency exceptions remain", (
   const policy = TOML.parse(read("deny.toml"));
   assert.equal(policy.bans.wildcards, "deny");
   assert.notEqual(policy.bans["allow-wildcard-paths"], true);
-  const workspace = TOML.parse(read("Cargo.toml")).workspace;
-  assert.deepEqual(workspace.members, ["crates/ferromark", "node/native"]);
+  const root = TOML.parse(read("Cargo.toml"));
+  const workspace = root.workspace;
+  // `release-type: rust` updates the root `[package]`, the members below it and
+  // their explicit path requirements, so `ferromark` is the root package.
+  assert.equal(root.package.name, "ferromark");
+  assert.deepEqual(workspace.members, ["node/native"]);
   const unversioned = [];
-  for (const member of workspace.members) {
-    const manifest = TOML.parse(read(`${member}/Cargo.toml`));
+  for (const member of [".", ...workspace.members]) {
+    const manifest = member === "." ? root : TOML.parse(read(`${member}/Cargo.toml`));
     for (const section of ["dependencies", "dev-dependencies", "build-dependencies"]) {
       for (const [name, dependency] of Object.entries(manifest[section] ?? {})) {
         const spec = dependency.workspace ? workspace.dependencies[name] : dependency;

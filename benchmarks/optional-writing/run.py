@@ -41,7 +41,7 @@ def main():
     for name, config in configs.items():
         (out / f'{name}.json').write_text(json.dumps({'parser': gfm | config, 'renderer': {'semantic_footnotes': True}}))
     cases = []
-    for name in ['UPSTREAM.md', 'CONTRIBUTING.md', 'docs/front-matter.md', 'docs/table-layout.md', 'crates/ferromark/benches/fixtures/upstream-changelog.md']:
+    for name in ['UPSTREAM.md', 'CONTRIBUTING.md', 'docs/front-matter.md', 'docs/table-layout.md', 'benches/fixtures/upstream-changelog.md']:
         cases.append((name.replace('/', '_'), (ROOT / name).read_text(), 'document'))
     snippets = {
         'prose': 'The parser renders ordinary prose with clear sentences and useful words.\nA second line continues the paragraph without any special syntax.\n\n',

@@ -37,7 +37,7 @@ serde_json = "1"
 [profile.release]
 opt-level = 3
 '''.replace('WORKER', json.dumps(str(HERE / 'worker.rs')))
-        .replace('FACADE', json.dumps(str(ROOT / 'crates/ferromark'))))
+        .replace('FACADE', json.dumps(str(ROOT))))
     shutil.copyfile(ROOT / 'Cargo.lock', build / 'Cargo.lock')
     # Cargo only removes unused root dev dependencies and adds the worker entry.
     subprocess.run(['cargo', 'build', '--offline', '--release', '--manifest-path', str(build/'Cargo.toml')],

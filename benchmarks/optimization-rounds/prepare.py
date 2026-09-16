@@ -12,6 +12,10 @@ import tomllib
 
 BASELINE_REVISION = "4de75d4843747a218771b5ec46df9171d4f54a15"
 WORKER = Path(__file__).with_name("worker.rs")
+# The core the comparison freezes. `crates` is the pre-blueprint layout; the
+# crate is the repository root package since then, so its sources sit directly
+# below the checkout. Only the entries a revision actually has are archived.
+CORE_PATHS = ("Cargo.toml", "Cargo.lock", "crates", "src", "tests", "benches", "examples")
 
 
 def sha256(path: Path) -> str:
@@ -48,10 +52,24 @@ def revision(source: Path):
         return None
 
 
+def core_paths(repository: Path, revision: str = BASELINE_REVISION):
+    """The CORE_PATHS entries that exist at `revision`.
+
+    `git archive` fails on a pathspec that matches nothing, and the layout
+    changed between revisions, so the list is read from the tree itself.
+    """
+    listed = subprocess.check_output(
+        ["git", "-C", str(repository), "ls-tree", "--name-only", revision, "--", *CORE_PATHS],
+        text=True,
+    ).split()
+    if not listed:
+        raise ValueError(f"{revision} contains none of {CORE_PATHS}")
+    return listed
+
+
 def archived_hashes(repository: Path, revision: str = BASELINE_REVISION):
     raw = subprocess.check_output(
-        ["git", "-C", str(repository), "archive", revision,
-         "Cargo.toml", "Cargo.lock", "crates"],
+        ["git", "-C", str(repository), "archive", revision, "--", *core_paths(repository, revision)],
     )
     import io
     import tarfile
@@ -80,9 +98,11 @@ def verify_baseline(source: Path, revision: str = BASELINE_REVISION):
     repository = Path(__file__).resolve().parents[2]
     expected = archived_hashes(repository, revision)
     actual = {}
-    for path in [source / "Cargo.toml", source / "Cargo.lock", *sorted((source / "crates").rglob("*"))]:
-        if path.is_file():
-            actual[str(path.relative_to(source))] = sha256(path)
+    for name in core_paths(repository, revision):
+        entry = source / name
+        for path in [entry, *sorted(entry.rglob("*"))] if entry.is_dir() else [entry]:
+            if path.is_file():
+                actual[str(path.relative_to(source))] = sha256(path)
     if actual != expected:
         changed = sorted(set(actual) | set(expected))
         changed = [name for name in changed if actual.get(name) != expected.get(name)]
@@ -122,16 +142,21 @@ def build_engine(name, source: Path, build: Path, worker: bytes, worker_sha: str
     if snapshot.exists():
         shutil.rmtree(snapshot)
     snapshot.mkdir(parents=True)
-    for filename in ("Cargo.toml", "Cargo.lock", "rust-toolchain.toml"):
-        if (source / filename).exists():
+    for filename in ("Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "README.md", "LICENSE"):
+        if (source / filename).is_file():
             shutil.copyfile(source / filename, snapshot / filename)
-    shutil.copytree(source / "crates", snapshot / "crates")
+    for directory in ("crates", "src", "tests", "benches", "examples"):
+        if (source / directory).is_dir():
+            shutil.copytree(source / directory, snapshot / directory)
     if (source / "node/native").exists():
         shutil.copytree(source / "node/native", snapshot / "node/native")
     (root / "src").mkdir(parents=True, exist_ok=True)
     (root / "src" / "main.rs").write_bytes(worker)
     (root / "Cargo.lock").write_bytes((source / "Cargo.lock").read_bytes())
-    (root / "Cargo.toml").write_text(manifest(snapshot / "crates" / "ferromark", lto))
+    nested = snapshot / "crates" / "ferromark"
+    (root / "Cargo.toml").write_text(
+        manifest(nested if (nested / "Cargo.toml").is_file() else snapshot, lto)
+    )
     env = os.environ.copy()
     env.pop("CARGO_ENCODED_RUSTFLAGS", None)
     env["RUSTFLAGS"] = "-C target-cpu=generic"

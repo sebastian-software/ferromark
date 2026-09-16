@@ -16,6 +16,16 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 
 
+def crate_source(source: Path) -> Path:
+    """Return the `ferromark` package directory inside a checkout.
+
+    The crate is the repository root package since the release-blueprint move;
+    checkouts of older revisions keep it under `crates/ferromark`.
+    """
+    nested = source / "crates" / "ferromark"
+    return nested if (nested / "Cargo.toml").is_file() else source
+
+
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
@@ -56,7 +66,7 @@ def main():
     (build / 'Cargo.toml').write_text(
         '[package]\nname = "runtime-profile-worker"\nversion = "0.0.0"\n'
         'edition = "2024"\npublish = false\n\n[workspace]\n\n[dependencies]\n'
-        f'ferromark = {{ path = {json.dumps(str(source / "crates/ferromark"))} }}\n'
+        f'ferromark = {{ path = {json.dumps(str(crate_source(source)))} }}\n'
         'serde_json = "1.0"\n\n[features]\noptional-writing = []\n\n[profile.release]\nopt-level = 3\nlto = "fat"\n'
         'codegen-units = 1\npanic = "abort"\nstrip = true\n')
     env = os.environ.copy()
@@ -64,7 +74,7 @@ def main():
     env['RUSTFLAGS'] = '-C target-cpu=generic'
     env['CARGO_TARGET_DIR'] = str(build / 'target')
     command = ['cargo', '+1.95', 'build', '--release', '--offline']
-    if 'pub inline_footnotes:' in next(path for path in [source / 'crates/ferromark/src/parser/options.rs', source / 'crates/ferromark_parser/src/parser/options.rs'] if path.is_file()).read_text():
+    if 'pub inline_footnotes:' in next(path for path in [source / 'src/parser/options.rs', source / 'crates/ferromark/src/parser/options.rs', source / 'crates/ferromark_parser/src/parser/options.rs'] if path.is_file()).read_text():
         command += ['--features', 'optional-writing']
     with (out / 'build.log').open('w') as log:
         result = subprocess.run(command, cwd=build, env=env, stdout=log, stderr=log)

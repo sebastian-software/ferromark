@@ -83,7 +83,7 @@ remain unchanged. Adding a public `ParserOptions` field changes exhaustive
 struct literals in this unpublished API. Historical benchmark reports retain
 their original configurations and results; no performance claim is made here.
 
-The [integration tests](../crates/ferromark/tests/line_comments.rs)
+The [integration tests](../tests/line_comments.rs)
 cover comment syntax, paragraph/container structure, opaque content, references,
 tables, line endings, source spans, and renderer entry-point parity.
 

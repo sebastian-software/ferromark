@@ -1,9 +1,0 @@
----
-source: crates/ferromark/tests/snapshot_parse.rs
-assertion_line: 32
-description: "<details id=\"a\">\n<summary>S</summary>\n<p>Body</p>\n</details>\n\nAfter\n"
----
-Document [0..68]
-  Html value="<details id=\"a\">\n<summary>S</summary>\n<p>Body</p>\n</details>\n" [0..61]
-  Paragraph [62..68]
-    Text "After" [62..67]
