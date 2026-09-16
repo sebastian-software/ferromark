@@ -162,8 +162,15 @@ fn many_footnotes_cost_linear_time() {
         start.elapsed()
     };
 
-    let small = measure(&build(2_000)).max(Duration::from_micros(1));
-    let large = measure(&build(8_000));
+    // One render each is at the mercy of a shared CI runner's scheduler: a
+    // single preemption during the large render has failed this guard while
+    // the ratio was fine. Take the best of a few renders per size, as the
+    // other linearity guards do, so noise has to hit every repetition.
+    let best_of = |source: &str| (0..3).map(|_| measure(source)).min().unwrap_or_default();
+    let small_source = build(2_000);
+    let large_source = build(8_000);
+    let small = best_of(&small_source).max(Duration::from_micros(1));
+    let large = best_of(&large_source);
     assert!(
         large < small * 8,
         "8,000 footnotes took {large:?} against {small:?} for 2,000"
