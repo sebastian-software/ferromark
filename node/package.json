@@ -2,22 +2,30 @@
   "name": "ferromark-workspace",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.17.0",
-  "engines": {
-    "node": ">=22.13.0"
-  },
   "scripts": {
     "build": "pnpm --filter ferromark build",
     "build:native": "pnpm --filter ferromark build:native",
-    "lint": "node --check scripts/release-channel.mjs && node --check scripts/release-archives.mjs && node --check scripts/clean-install-smoke.mjs && node --check scripts/verify-npm-publish.mjs && node --check scripts/verify-pack.mjs && node --check scripts/verify-platform-artifact.mjs && node --check scripts/verify-release.mjs && pnpm --filter ferromark lint",
+    "lint": "oxlint -c oxlint.config.ts && eslint . --max-warnings=0 && node --check scripts/release-channel.mjs && node --check scripts/release-archives.mjs && node --check scripts/clean-install-smoke.mjs && node --check scripts/verify-npm-publish.mjs && node --check scripts/verify-pack.mjs && node --check scripts/verify-platform-artifact.mjs && node --check scripts/verify-release.mjs && pnpm --filter ferromark lint",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "pnpm --filter ferromark test",
     "pack:check": "node ./scripts/verify-pack.mjs",
-    "smoke:clean": "node ./scripts/clean-install-smoke.mjs"
+    "smoke:clean": "node ./scripts/clean-install-smoke.mjs",
+    "format": "oxfmt --write --ignore-path=.prettierignore .",
+    "format:check": "oxfmt --check --ignore-path=.prettierignore ."
   },
   "devDependencies": {
     "@napi-rs/cli": "3.7.4",
     "@types/node": "24.10.1",
-    "typescript": "7.0.2"
-  }
+    "@typescript/native": "npm:typescript@7.0.2",
+    "eslint": "10.4.0",
+    "eslint-config-setup": "0.4.0",
+    "jiti": "2.7.0",
+    "oxfmt": "0.57.0",
+    "oxlint": "1.83.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "packageManager": "pnpm@11.17.0"
 }

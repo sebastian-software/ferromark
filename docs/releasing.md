@@ -122,6 +122,7 @@ pnpm audit --audit-level high
 pnpm build
 pnpm test
 pnpm typecheck
+pnpm format:check
 pnpm lint
 pnpm pack:check
 pnpm smoke:clean

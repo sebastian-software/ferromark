@@ -35,9 +35,25 @@ Node and release changes also require the [package checks](docs/releasing.md#loc
 Those checks build a plain addon; reproducing the published, profile-guided one
 needs the `llvm-tools` rustup component and `FERROMARK_PGO=1`, as described in
 [ADR-0019](docs/arch/ADR-0019-profile-guided-native-addon.md).
-Website changes require `pnpm install --frozen-lockfile`, `pnpm typecheck`,
-`pnpm run audit`, and `pnpm build` from `homepage/`. The build checks all 27
-prerendered routes, navigation, and v2 content.
+Website changes require `pnpm install --frozen-lockfile`, `pnpm format:check`,
+`pnpm lint`, `pnpm typecheck`, `pnpm run audit`, and `pnpm build` from
+`homepage/`. The build checks all 27 prerendered routes, navigation, and v2 content.
+
+The Node and homepage workspaces use the managed Oxfmt configuration. Run
+`pnpm format` in the affected workspace before checking formatting. Their seeded
+ESLint, Oxlint, and spelling configurations may carry documented local adjustments;
+do not change the managed `.oxfmtrc.json`. Homepage's generated Ardo route table
+and frozen benchmark guide are excluded through `.prettierignore`; build output
+and generated route types are also excluded from linting. The build still checks
+the generated navigation and benchmark content.
+
+The Node workspace keeps TypeScript 7 for `tsc` through the `@typescript/native`
+alias. The `typescript` alias supplies the TypeScript 6 API required by
+`typescript-eslint`, following the [upstream compatibility guidance](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0).
+Both Oxlint and ESLint run in the Node and homepage lint gates.
+
+The NAPI-generated `node/ferromark/native.d.ts` is also excluded from formatting
+and linting; native builds regenerate it and TypeScript checks the package types.
 
 ## Repository contracts
 

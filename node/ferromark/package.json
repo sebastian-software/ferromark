@@ -1,39 +1,28 @@
 {
   "name": "ferromark",
   "version": "2.0.0-rc.1",
+  "private": false,
   "description": "Arena-allocated Markdown parser and HTML renderer for Node.js",
-  "license": "MIT",
-  "type": "module",
-  "author": "Sebastian Software GmbH",
+  "keywords": [
+    "commonmark",
+    "ferramenta",
+    "gfm",
+    "html",
+    "markdown",
+    "napi",
+    "rust"
+  ],
   "homepage": "https://sebastian-software.github.io/ferromark/",
+  "bugs": {
+    "url": "https://github.com/sebastian-software/ferromark/issues"
+  },
+  "license": "MIT",
+  "author": "Sebastian Software GmbH",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sebastian-software/ferromark.git",
     "directory": "node/ferromark"
   },
-  "bugs": {
-    "url": "https://github.com/sebastian-software/ferromark/issues"
-  },
-  "keywords": [
-    "markdown",
-    "html",
-    "commonmark",
-    "gfm",
-    "rust",
-    "napi",
-    "ferramenta"
-  ],
-  "sideEffects": false,
-  "exports": {
-    ".": {
-      "types": "./index.d.mts",
-      "default": "./index.mjs"
-    },
-    "./package.json": "./package.json"
-  },
-  "main": "./index.mjs",
-  "module": "./index.mjs",
-  "types": "./index.d.mts",
   "files": [
     "index.d.mts",
     "index.mjs",
@@ -44,6 +33,28 @@
     "README.md",
     "LICENSE"
   ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./index.mjs",
+  "module": "./index.mjs",
+  "types": "./index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "default": "./index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node ./scripts/build-native.mjs && node ./scripts/verify-package.mjs",
+    "build:native": "node ./scripts/build-native.mjs",
+    "lint": "node --check index.mjs && node --check native-target.mjs && node --check scripts/build-native.mjs && node --check scripts/verify-package.mjs && node --check scripts/verify-panic-unwind.mjs && node scripts/test-readme-contract.mjs",
+    "test": "node --test test/*.test.mjs && node ./scripts/verify-panic-unwind.mjs"
+  },
   "optionalDependencies": {
     "ferromark-darwin-arm64": "workspace:*",
     "ferromark-darwin-x64": "workspace:*",
@@ -53,19 +64,6 @@
     "ferromark-linux-x64-musl": "workspace:*",
     "ferromark-win32-arm64-msvc": "workspace:*",
     "ferromark-win32-x64-msvc": "workspace:*"
-  },
-  "engines": {
-    "node": ">=22.12.0"
-  },
-  "scripts": {
-    "build": "node ./scripts/build-native.mjs && node ./scripts/verify-package.mjs",
-    "build:native": "node ./scripts/build-native.mjs",
-    "lint": "node --check index.mjs && node --check native-target.mjs && node --check scripts/build-native.mjs && node --check scripts/verify-package.mjs && node --check scripts/verify-panic-unwind.mjs && node scripts/test-readme-contract.mjs",
-    "test": "node --test test/*.test.mjs && node ./scripts/verify-panic-unwind.mjs"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
   },
   "napi": {
     "binaryName": "ferromark",
@@ -81,5 +79,7 @@
       "x86_64-unknown-linux-musl"
     ]
   },
-  "private": false
+  "engines": {
+    "node": ">=22.12.0"
+  }
 }

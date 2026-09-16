@@ -1,6 +1,7 @@
 {
   "name": "ferromark-linux-x64-musl",
   "version": "2.0.0-rc.1",
+  "private": false,
   "description": "Native x86_64-unknown-linux-musl binary for ferromark",
   "license": "MIT",
   "repository": {
@@ -8,9 +9,11 @@
     "url": "git+https://github.com/sebastian-software/ferromark.git",
     "directory": "node/ferromark"
   },
-  "engines": {
-    "node": ">=22.12.0"
-  },
+  "files": [
+    "ferromark.linux-x64-musl.node",
+    "LICENSE",
+    "LICENSE-MIT"
+  ],
   "os": [
     "linux"
   ],
@@ -21,14 +24,11 @@
     "musl"
   ],
   "main": "ferromark.linux-x64-musl.node",
-  "files": [
-    "ferromark.linux-x64-musl.node",
-    "LICENSE",
-    "LICENSE-MIT"
-  ],
   "publishConfig": {
     "access": "public",
     "provenance": true
   },
-  "private": false
+  "engines": {
+    "node": ">=22.12.0"
+  }
 }

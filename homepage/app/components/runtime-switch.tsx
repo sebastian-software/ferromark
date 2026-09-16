@@ -1,6 +1,6 @@
 import { NavLink } from "react-router";
 
-type Topic = "getting-started" | "configuration" | "pipelines" | "highlighting";
+type Topic = "configuration" | "getting-started" | "highlighting" | "pipelines";
 
 /** Each runtime keeps a linkable page; switching preserves the current topic. */
 export function RuntimeSwitch({ topic }: { topic: Topic }) {

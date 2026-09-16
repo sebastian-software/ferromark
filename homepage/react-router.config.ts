@@ -1,9 +1,10 @@
-import type { Config } from "@react-router/dev/config"
-import { withArdoGitHubPages } from "ardo/vite"
+import type { Config } from "@react-router/dev/config";
+
+import { withArdoGitHubPages } from "ardo/vite";
 
 const config = {
   ssr: false,
   prerender: true,
-} satisfies Config
+} satisfies Config;
 
-export default withArdoGitHubPages(config, { basename: "/ferromark/" })
+export default withArdoGitHubPages(config, { basename: "/ferromark/" });

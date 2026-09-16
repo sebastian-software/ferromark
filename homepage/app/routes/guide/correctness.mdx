@@ -5,21 +5,20 @@ order: 7
 
 # Correctness and Compatibility
 
-
 The [second correction batch](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-14-reference-compatibility/README.md)
 closes the seven cmark findings left after the
 [first fixes](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-14-correctness-fixes/README.md). Strikethrough now
 uses the inline delimiter stack, Unicode URL bytes receive percent encoding,
 and one leading BOM is treated as an encoding marker with original spans preserved.
 
-| Check | Result |
-| --- | --- |
-| Explicit CommonMark 0.31.2 profile | 652/652 agree, without heading-ID exceptions |
-| Current GFM extension examples | 28/28 agree |
-| CRLF / CR variants | 1,304/1,304 agree with their LF controls |
-| Original cmark / cmark-gfm corpus | 106/106 agree |
-| Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead |
-| Workspace regression tests | Both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, optional writing syntax, container references, and Rust convenience helpers |
+| Check                                | Result                                                                                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Explicit CommonMark 0.31.2 profile   | 652/652 agree, without heading-ID exceptions                                                                                                                                          |
+| Current GFM extension examples       | 28/28 agree                                                                                                                                                                           |
+| CRLF / CR variants                   | 1,304/1,304 agree with their LF controls                                                                                                                                              |
+| Original cmark / cmark-gfm corpus    | 106/106 agree                                                                                                                                                                         |
+| Additional tilde/inline combinations | 254/256 agree with cmark-gfm; two pinned-oracle nested-link defects follow the specification instead                                                                                  |
+| Workspace regression tests           | Both oracle corpora, renderer-profile/span checks, table layout/column names, line comments, frontmatter, optional writing syntax, container references, and Rust convenience helpers |
 
 Agreement permits conservative HTML serialization equivalence; raw output and
 all mismatches remain in the report. The two reference exceptions have exact

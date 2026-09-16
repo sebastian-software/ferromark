@@ -3,10 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.17.0",
   "scripts": {
     "dev": "react-router dev",
     "build": "react-router build && node scripts/verify-build.mjs",
+    "lint": "oxlint -c oxlint.config.ts && eslint . --max-warnings=0",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "typecheck": "tsc6 --noEmit -p tsconfig.json",
     "preview": "vite preview",
     "audit": "pnpm audit --prod --audit-level high"
@@ -25,7 +27,13 @@
     "@react-router/dev": "^8.3.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "eslint": "10.4.0",
+    "eslint-config-setup": "0.4.0",
+    "jiti": "2.7.0",
+    "oxfmt": "0.57.0",
+    "oxlint": "1.83.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.1.5"
-  }
+  },
+  "packageManager": "pnpm@11.17.0"
 }

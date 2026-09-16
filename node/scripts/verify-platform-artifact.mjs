@@ -1,57 +1,53 @@
-import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
-import { readFile, stat } from 'node:fs/promises'
-import path from 'node:path'
-import process from 'node:process'
-import { fileURLToPath } from 'node:url'
-
-const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const packageDir = path.join(workspace, 'ferromark')
-const [target, ...extraArgs] = process.argv.slice(2)
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { readFile, stat } from "node:fs/promises";
+import path from "node:path";
+const workspace = path.resolve(import.meta.dirname, "..");
+const packageDir = path.join(workspace, "ferromark");
+const [target, ...extraArgs] = process.argv.slice(2);
 
 if (!target || extraArgs.length > 0 || !/^[a-z0-9-]+$/.test(target)) {
-  throw new Error(`Usage: node ${path.basename(fileURLToPath(import.meta.url))} <platform-target>`)
+  throw new Error(`Usage: node ${path.basename(import.meta.filename)} <platform-target>`);
 }
 
 const [mainPackage, platformPackage] = await Promise.all([
-  readFile(path.join(packageDir, 'package.json'), 'utf8').then(JSON.parse),
-  readFile(path.join(packageDir, 'npm', target, 'package.json'), 'utf8').then(JSON.parse),
-])
-const dependency = `${mainPackage.name}-${target}`
-const binary = path.join(packageDir, 'npm', target, `ferromark.${target}.node`)
-const binaryInfo = await stat(binary)
+  readFile(path.join(packageDir, "package.json"), "utf8").then(JSON.parse),
+  readFile(path.join(packageDir, "npm", target, "package.json"), "utf8").then(JSON.parse),
+]);
+const dependency = `${mainPackage.name}-${target}`;
+const binary = path.join(packageDir, "npm", target, `ferromark.${target}.node`);
+const binaryInfo = await stat(binary);
 
-assert.equal(platformPackage.name, dependency)
-assert.equal(platformPackage.version, mainPackage.version)
-assert.equal(mainPackage.optionalDependencies[dependency], 'workspace:*')
-assert.ok(binaryInfo.isFile() && binaryInfo.size > 0, `Invalid native binary: ${binary}`)
+assert.equal(platformPackage.name, dependency);
+assert.equal(platformPackage.version, mainPackage.version);
+assert.equal(mainPackage.optionalDependencies[dependency], "workspace:*");
+assert.ok(binaryInfo.isFile() && binaryInfo.size > 0, `Invalid native binary: ${binary}`);
 
-if (target.endsWith('-gnu')) {
-  verifyGlibcBaseline(binary)
+if (target.endsWith("-gnu")) {
+  verifyGlibcBaseline(binary);
 }
 
-console.log(`Verified ${dependency}@${platformPackage.version} (${binaryInfo.size} bytes)`)
+console.log(`Verified ${dependency}@${platformPackage.version} (${binaryInfo.size} bytes)`);
 
 function verifyGlibcBaseline(filename) {
-  const baseline = [2, 17]
-  const result = spawnSync('readelf', ['--version-info', filename], { encoding: 'utf8' })
+  const baseline = [2, 17];
+  const result = spawnSync("readelf", ["--version-info", filename], { encoding: "utf8" });
   if (result.error) {
-    throw result.error
+    throw result.error;
   }
-  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.status, 0, result.stderr);
 
-  const versions = [...result.stdout.matchAll(/\bGLIBC_(\d+)\.(\d+)(?:\.\d+)?\b/g)]
-    .map(([, major, minor]) => [Number(major), Number(minor)])
-  assert.ok(versions.length > 0, `No glibc symbol versions found in ${filename}`)
+  // The version format is fixed by readelf's GLIBC symbol output.
+  // eslint-disable-next-line security/detect-unsafe-regex
+  const versions = [...result.stdout.matchAll(/\bGLIBC_(\d+)\.(\d+)(?:\.\d+)?\b/g)].map(
+    ([, major, minor]) => [Number(major), Number(minor)],
+  );
+  assert.ok(versions.length > 0, `No glibc symbol versions found in ${filename}`);
 
-  const newer = versions.filter(version => compareVersions(version, baseline) > 0)
-  assert.deepEqual(
-    newer,
-    [],
-    `${filename} requires glibc newer than ${baseline.join('.')}`,
-  )
+  const newer = versions.filter((version) => compareVersions(version, baseline) > 0);
+  assert.deepEqual(newer, [], `${filename} requires glibc newer than ${baseline.join(".")}`);
 }
 
 function compareVersions(left, right) {
-  return left[0] - right[0] || left[1] - right[1]
+  return left[0] - right[0] || left[1] - right[1];
 }

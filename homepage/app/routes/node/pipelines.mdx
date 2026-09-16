@@ -50,8 +50,8 @@ between documents. Each call returns its own HTML. `Renderer` provides
 ## Send UTF-8 HTML directly
 
 ```js
-import { createServer } from "node:http";
 import { toHtmlBuffer } from "ferromark";
+import { createServer } from "node:http";
 
 const server = createServer((_request, response) => {
   response.setHeader("content-type", "text/html; charset=utf-8");
