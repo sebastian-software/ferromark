@@ -3,6 +3,14 @@
 //! A cheap syntax-shape filter keeps ordinary documents out of collection.
 //! Link definitions and footnote labels are collected by the real block
 //! grammar, so root and container definitions share context and scope.
+//!
+//! The filter reports *where* the possible definition openers are, not just
+//! that one exists. [`segments`] turns those offsets into the byte ranges the
+//! structural pass has to parse — each one bounded by a line start where the
+//! real parser is provably at the document root — so an ordinary document no
+//! longer block-parses itself twice because of a single `]:`. The planner
+//! falls back to the whole body whenever it cannot prove a bound, and the
+//! block grammar remains the only authority on what a definition is.
 
 use std::rc::Rc;
 use std::sync::LazyLock;
@@ -13,6 +21,10 @@ use super::Parser;
 use super::footnote::FootnoteLabels;
 use super::line_scan::is_line_ending_byte;
 use super::reference::ReferenceMap;
+
+mod segments;
+
+pub(super) use segments::{CandidateOpeners, DefinitionPlan, plan_definition_pass};
 
 /// Three-byte fence-run searchers, built once for the process.
 ///
@@ -52,7 +64,8 @@ pub(super) fn next_fence_run_line(bytes: &[u8], from: usize, fence_byte: u8) -> 
 /// well-formed reference definition is at most 1,001 bytes past its `[`.
 const MAX_LABEL_SPAN: usize = 1001;
 
-/// Whether the source contains the minimum shape of a definition opener.
+/// Whether the source contains the minimum shape of a definition opener, and
+/// where every such opener sits.
 ///
 /// A bare `]:` anywhere is not enough: ordinary prose can mention the token
 /// and force the much more expensive structural pre-pass. The opening `[` of
@@ -64,6 +77,12 @@ const MAX_LABEL_SPAN: usize = 1001;
 /// scanner only proves that necessary shape exists; the full pre-pass remains
 /// responsible for validating syntax and block context.
 ///
+/// Every positively judged opener is appended to `openers` in ascending order,
+/// which is what [`segments`] needs to bound the structural pass. Overreport-
+/// ing is safe there — an extra opener only widens a segment — but missing one
+/// is not, so the walk judges link and footnote openers alike and no longer
+/// stops at the first link candidate.
+///
 /// The scan is driven from the `]:` side. A document that holds one anywhere
 /// used to make every `[` in it pay for a backwards line search and a forward
 /// label search, which is the expensive direction on link-dense prose: `[` is
@@ -71,13 +90,19 @@ const MAX_LABEL_SPAN: usize = 1001;
 /// bounds the work per occurrence to the label window before it, and the
 /// window start only moves forwards, so an opener is judged once no matter how
 /// many `]:` follow it.
-fn definition_candidates(source: &str, footnotes: bool, mdx: bool) -> (bool, bool) {
+fn definition_candidates(
+    source: &str,
+    footnotes: bool,
+    mdx: bool,
+    openers: &mut CandidateOpeners,
+) -> (bool, bool) {
     let bytes = source.as_bytes();
     if memchr(b'[', bytes).is_none() {
         return (false, false);
     }
 
     let mut found = false;
+    let mut link = false;
     // Openers before this offset have already been judged. Their verdict
     // cannot improve for a later `]:`: the length window only moves forwards,
     // and a footnote label that already failed to share a line with one `]:`
@@ -91,9 +116,10 @@ fn definition_candidates(source: &str, footnotes: bool, mdx: bool) -> (bool, boo
         let label_start = closer.saturating_sub(MAX_LABEL_SPAN);
         // Footnote labels cannot span lines, but unlike reference labels their
         // parser deliberately has no length cap, so their window is the line
-        // rather than the label span. Once one is found the wider window has
-        // nothing left to prove.
-        let line_start = (footnotes && !found).then(|| previous_line_start(bytes, closer));
+        // rather than the label span. Only openers at or past `judged` are
+        // still undecided, so the backwards search stops there: the two
+        // searches then partition the source and cost one pass in total.
+        let line_start = footnotes.then(|| bounded_line_start(bytes, judged, closer));
         let window_start = line_start.map_or(label_start, |start| start.min(label_start));
         let mut at = window_start.max(judged);
         while let Some(offset) = memchr(b'[', &bytes[at..closer]) {
@@ -105,16 +131,18 @@ fn definition_candidates(source: &str, footnotes: bool, mdx: bool) -> (bool, boo
             if footnotes && bytes.get(open + 1) == Some(&b'^') {
                 if line_start.is_some_and(|start| open >= start) {
                     found = true;
+                    openers.push(open as u32);
                 }
             } else if open >= label_start {
-                // All link definitions use the block grammar, so there is no
-                // need to search for a later container candidate.
-                return (true, true);
+                link = true;
+                openers.push(open as u32);
             }
         }
         judged = closer;
     }
-    (found, false)
+    // A link candidate settles both flags: every link definition goes through
+    // the block grammar, whatever the footnote scan found.
+    if link { (true, true) } else { (found, false) }
 }
 
 /// Whether the bytes before `open` on its line could be a container prefix.
@@ -160,6 +188,15 @@ fn previous_line_start(bytes: &[u8], before: usize) -> usize {
     memrchr2(b'\n', b'\r', &bytes[..before]).map_or(0, |off| off + 1)
 }
 
+/// [`previous_line_start`] clamped to `from`.
+///
+/// Callers that only compare the result against offsets at or past `from` see
+/// the same verdicts: when no terminator lies in `from..before`, the real line
+/// start is at or before `from`, and every such comparison holds either way.
+fn bounded_line_start(bytes: &[u8], from: usize, before: usize) -> usize {
+    memrchr2(b'\n', b'\r', &bytes[from..before]).map_or(from, |off| from + off + 1)
+}
+
 impl<'a> Parser<'a> {
     /// Collects document-wide facts before resolving inline references.
     /// Absent maps stay `None`, avoiding shared allocations on ordinary input.
@@ -169,17 +206,32 @@ impl<'a> Parser<'a> {
         if !self.options.allow_link_refs && !self.options.footnotes {
             return (None, None);
         }
-        let (has_candidate, has_link_candidate) =
-            definition_candidates(self.source, self.options.footnotes, self.options.mdx);
-        if !has_candidate {
+        // Inline capacity covers every document the openers are collected for;
+        // a document with none never touches this buffer at all.
+        let mut openers = CandidateOpeners::new();
+        let (has_candidate, has_link_candidate) = definition_candidates(
+            self.source,
+            self.options.footnotes,
+            self.options.mdx,
+            &mut openers,
+        );
+        if !has_candidate
+            || !((self.options.allow_link_refs && has_link_candidate)
+                || (self.options.footnotes && self.source.contains("[^")))
+        {
             return (None, None);
         }
-        let (definitions, labels) = if (self.options.allow_link_refs && has_link_candidate)
-            || (self.options.footnotes && self.source.contains("[^"))
+        let (definitions, labels) = match plan_definition_pass(self.source, &self.options, &openers)
         {
-            self.collect_definitions()
-        } else {
-            (ReferenceMap::default(), FootnoteLabels::default())
+            DefinitionPlan::Fallback => self.collect_definitions(&[(0, self.source.len())]),
+            DefinitionPlan::Segments(segments) => {
+                // Every candidate sat inside code or raw HTML: no arena
+                // and no parser are built for this document.
+                if segments.is_empty() {
+                    return (None, None);
+                }
+                self.collect_definitions(&segments)
+            }
         };
         (
             (!definitions.is_empty()).then(|| Rc::new(definitions)),
@@ -255,17 +307,29 @@ mod tests {
     fn check_against_oracle(source: &str) {
         for footnotes in [false, true] {
             for mdx in [false, true] {
+                let mut openers = super::CandidateOpeners::new();
                 assert_eq!(
-                    super::definition_candidates(source, footnotes, mdx),
+                    super::definition_candidates(source, footnotes, mdx, &mut openers),
                     oracle(source, footnotes, mdx),
                     "footnotes {footnotes}, mdx {mdx}, source {source:?}"
+                );
+                assert!(
+                    openers.windows(2).all(|pair| pair[0] < pair[1]),
+                    "openers must be strictly ascending: {openers:?} for {source:?}"
+                );
+                assert!(
+                    openers
+                        .iter()
+                        .all(|&open| source.as_bytes().get(open as usize) == Some(&b'[')),
+                    "every reported opener must be a `[`: {openers:?} for {source:?}"
                 );
             }
         }
     }
 
     fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
-        super::definition_candidates(source, footnotes, false)
+        let mut openers = super::CandidateOpeners::new();
+        super::definition_candidates(source, footnotes, false, &mut openers)
     }
 
     fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
