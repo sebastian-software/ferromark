@@ -2,9 +2,9 @@
 
 # Whitespace is literal parser input/output; preserve these bytes on checkout.
 *.snap -text -whitespace
-crates/ferromark_parser/src/parser/inline/entities.txt -text -whitespace
-crates/ferromark_renderer/tests/spec_fixtures/*.txt -text -whitespace
-crates/ferromark_parser/benches/fixtures/upstream-changelog.md -text -whitespace
+src/parser/inline/entities.txt -text -whitespace
+tests/spec_fixtures/*.txt -text -whitespace
+benches/fixtures/upstream-changelog.md -text -whitespace
 
 # Preserve archived CSV bytes so the report checksums survive Git checkout.
 docs/reports/2026-09-15-native-arm/*.csv -text -whitespace

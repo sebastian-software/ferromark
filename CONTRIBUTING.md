@@ -20,6 +20,17 @@ cargo fmt --all --check
 cargo bench --workspace --no-run --locked
 ```
 
+`ferromark` is the repository root package: its `src/`, `tests/`, `benches/`
+and `examples/` sit at the top level, and `node/native` is the only workspace
+member. A Cargo `include` list decides what the published archive contains, so
+compare `cargo package --list` whenever you change it.
+
+Releases are automatic. Every push to `main` updates one release pull request,
+and **merging that pull request tags the version and publishes both
+registries**, so a change that lands on `main` is a change you are willing to
+ship. See [releasing](docs/releasing.md) and
+[ADR-0020](docs/arch/ADR-0020-standards-release-blueprint.md).
+
 Node and release changes also require the [package checks](docs/releasing.md#local-package-checks).
 Those checks build a plain addon; reproducing the published, profile-guided one
 needs the `llvm-tools` rustup component and `FERROMARK_PGO=1`, as described in
@@ -49,11 +60,13 @@ and linting; native builds regenerate it and TypeScript checks the package types
 ```sh
 (cd scripts && pnpm install --frozen-lockfile && pnpm format:check)
 node --test scripts/test-*.mjs
-./scripts/test-check-workflow-pins.sh
-./scripts/check-workflow-pins.sh
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
-All `uses:` entries must be full commit SHAs. Use US English and Conventional
+All `uses:` entries must be full commit SHAs with the version in a trailing
+comment. The CI `fmt` job enforces that with the organization's shared
+[`check-action-pins`](https://github.com/sebastian-software/standards/tree/main/.github/actions)
+action rather than a repository-local copy. Use US English and Conventional
 Commits; breaking changes use `!` or a `BREAKING CHANGE:` footer. Managed files
 come from standards; run the pinned standards CLI from CI to check or apply them.
 

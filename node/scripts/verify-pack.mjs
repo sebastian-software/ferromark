@@ -1,7 +1,9 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { mkdir, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
+import { gunzipSync } from "node:zlib";
+
 const workspace = path.resolve(import.meta.dirname, "..");
 const packageDir = path.join(workspace, "ferromark");
 const artifacts = path.join(workspace, "artifacts");
@@ -70,17 +72,54 @@ console.log(
   ),
 );
 
+// pnpm rather than npm: the facade references its native sidecars with the
+// workspace protocol, and only pnpm resolves `workspace:*` to the sidecar's
+// version while packing. An npm-packed facade would ship `workspace:*`, which
+// no registry consumer can install. The published archives are these tarballs.
 function pack(directory) {
-  const packed = spawnSync("npm", ["pack", "--json", "--pack-destination", artifacts], {
-    cwd: directory,
-    encoding: "utf8",
-    env: { ...process.env, npm_config_cache: path.join(tmpdir(), "ferromark-npm-cache") },
-  });
+  const packed = spawnSync(
+    process.platform === "win32" ? "pnpm.cmd" : "pnpm",
+    ["pack", "--json", "--pack-destination", artifacts],
+    { cwd: directory, encoding: "utf8", shell: process.platform === "win32" },
+  );
   if (packed.status !== 0) {
     process.stderr.write(packed.stderr);
     process.exit(packed.status ?? 1);
   }
-  return JSON.parse(packed.stdout)[0];
+  const result = JSON.parse(packed.stdout);
+  const filename = path.basename(result.filename);
+  return {
+    filename,
+    files: result.files,
+    // `pnpm pack --json` reports no unpacked size, so it is read back from the
+    // archive the check is about to approve.
+    unpackedSize: unpackedSize(path.join(artifacts, filename)),
+  };
+}
+
+/** Sum of the member sizes in a gzipped tar, read from its ustar headers. */
+function unpackedSize(archive) {
+  const tar = gunzipSync(readFileSync(archive));
+  let total = 0;
+  for (let offset = 0; offset + 512 <= tar.length; ) {
+    // Two consecutive zero blocks end the archive.
+    if (tar[offset] === 0) break;
+    const size = Number.parseInt(
+      tar
+        .toString("utf8", offset + 124, offset + 136)
+        // The tar size field is bounded to 12 bytes.
+        // eslint-disable-next-line regexp/no-super-linear-move
+        .replace(/\0.*$/, "")
+        .trim(),
+      8,
+    );
+    if (!Number.isFinite(size)) {
+      throw new TypeError(`Unreadable tar header at offset ${offset} in ${archive}`);
+    }
+    if (tar.toString("utf8", offset + 156, offset + 157) === "0") total += size;
+    offset += 512 + Math.ceil(size / 512) * 512;
+  }
+  return total;
 }
 
 function nativeTarget() {

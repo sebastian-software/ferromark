@@ -189,7 +189,7 @@ def main():
         help='exit 1 for configured CommonMark/GFM-extension, line-ending, or normative probe differences')
     args = p.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
-    fixtures = ROOT / 'crates/ferromark/tests/spec_fixtures'
+    fixtures = ROOT / 'tests/spec_fixtures'
     cm = parse_txt((fixtures / 'commonmark-0.31.2-spec.txt').read_text())
     ext = parse_txt((fixtures / 'gfm-extensions-spec.txt').read_text())
     gfm = GFMExamples(args.gfm_html.read_text()).examples

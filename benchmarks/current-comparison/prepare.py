@@ -18,6 +18,16 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def crate_source(source: Path) -> Path:
+    """Return the `ferromark` package directory inside a checkout.
+
+    The crate is the repository root package since the release-blueprint move;
+    checkouts of older revisions keep it under `crates/ferromark`.
+    """
+    nested = source / "crates" / "ferromark"
+    return nested if (nested / "Cargo.toml").is_file() else source
+
+
 def registry_packages(path):
     return {
         (p["name"], p["version"]): p.get("checksum")
@@ -50,7 +60,7 @@ def main():
         (root / "src").mkdir(parents=True)
         shutil.copyfile(Path(__file__).with_name("worker.rs"), root / "src/main.rs")
         shutil.copyfile(source / "Cargo.lock", root / "Cargo.lock")
-        dependency = source / "crates/ferromark" if name == "v2" else source
+        dependency = crate_source(source) if name == "v2" else source
         (root / "Cargo.toml").write_text(
             '[package]\nname = "comparison-worker"\nversion = "0.0.0"\n'
             'edition = "2024"\npublish = false\n\n[workspace]\n\n'

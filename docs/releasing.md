@@ -2,32 +2,65 @@
 
 One Rust crate, `ferromark`, publishes to crates.io. The npm facade and eight
 native platform packages share its version. The Node development workspace and
-`ferromark-node` binding crate remain private. Allocator, AST, parser and renderer
-are modules inside the Rust library; consumers can use them individually through
-`ferromark`. See [ADR-0018](arch/ADR-0018-single-rust-crate.md).
+`ferromark-node` binding crate remain private. Allocator, AST, parser and
+renderer are modules inside the Rust library; consumers can use them
+individually through `ferromark`. Since
+[ADR-0020](arch/ADR-0020-standards-release-blueprint.md) that crate is the
+repository root package, and the release follows the organization's
+[release blueprint](https://github.com/sebastian-software/standards/blob/main/reference/release-please/README.md):
+**merging the release pull request publishes.**
 
-The structural reference optimization is deferred to
-[issue #320](https://github.com/sebastian-software/ferromark/issues/320) and is not
-a v2.0 release blocker.
+## The flow
 
-## Prepare the version
+1. Every push to `main` runs `.github/workflows/publish.yml`. Its first job is
+   Release Please, which opens or updates one release pull request from the
+   commits since the last release tag.
+2. Review that pull request. It carries the whole coordinated version bump and
+   the changelog section that becomes the release notes.
+3. Merge it. Release Please writes the version commit, creates the `v<version>`
+   tag and the GitHub release, and sets `releases_created`.
+4. The gated jobs in the same workflow run from that tag: the crate goes to
+   crates.io, then the eight native addons are built, assembled, verified and
+   published to npm, sidecars before the facade, and the published versions are
+   confirmed on the registry.
 
-Every push to `main` runs `.github/workflows/release-please.yml`, which opens or
-updates one coordinated release pull request from the commits since the last
-release tag. It applies the mapping in `release-please-config.json`: Cargo.toml,
-Cargo.lock, version.txt, `.release-please-manifest.json`, the npm facade and its
-eight native manifests, the exact optional dependency pins, the pnpm workspace
-specifiers, the version-bearing README blocks (marked with
-`x-release-please-start-version` / `end-version` comments in `README.md.src`,
-the generated `README.md` and `node/ferromark/README.md`), and a new
-CHANGELOG.md section. It creates no tag and publishes
-nothing; the action runs with `skip-github-release`, so only `publish.yml` below
-tags a release. Merging source therefore still never publishes a package.
+Nothing else publishes. Merging ordinary source still only opens or updates the
+release pull request.
 
-The release pull request must be opened with the `RELEASE_PLEASE_TOKEN`
-organization secret. A pull request opened with `GITHUB_TOKEN` starts no further
-workflow runs, so `ci.yml` would never run on it and the pull request would
-show no checks at all.
+The release pull request is opened with the `RELEASE_PLEASE_TOKEN` organization
+secret. A pull request opened with `GITHUB_TOKEN` starts no further workflow
+runs, so `ci.yml` would never run on it and the pull request would show no
+checks at all.
+
+## What the release pull request changes
+
+`release-please-config.json` selects `release-type: rust` with one root
+component. The strategy updates natively, with no template to keep in step:
+
+- the root `Cargo.toml` `[package]` version,
+- `node/native/Cargo.toml`'s version and its explicit
+  `ferromark = { version = "…", path = "../.." }` requirement,
+- both local entries in `Cargo.lock`,
+- `CHANGELOG.md` and `.release-please-manifest.json`.
+
+Four `extra-files` entries cover the rest: a typed `$.version` for
+`node/ferromark/package.json`, one globbed `$.version` for the eight
+`node/ferromark/npm/*/package.json` manifests, and the three generic README
+blocks marked with `x-release-please-start-version` / `end-version` in
+`README.md.src`, the generated `README.md` and `node/ferromark/README.md`.
+
+There is deliberately **no** `version.txt`, no Cargo `extra-files` and no
+`pnpm-lock.yaml` jsonpath. The npm facade references its sidecars with
+`workspace:*`, which resolves to the sidecar's own version at pack time, so the
+pnpm lockfile holds no version at all and cannot go stale. The `node` CI job
+proves that in one line with `pnpm install --lockfile-only` and
+`git diff --exit-code`.
+
+Because the facade's references are resolved while packing, publishing uses the
+**pack-resolved tarballs** in `node/artifacts/` rather than the package
+directories: `pnpm pack` rewrites `workspace:*`, `npm pack` would not.
+
+## Version selection
 
 Version selection uses the `prerelease` strategy pinned to `rc`. Inside the
 candidate series the proposal is automatic: any commit range on top of
@@ -36,53 +69,48 @@ candidate series the proposal is automatic: any commit range on top of
 Leaving the series is deliberate, because the strategy never proposes a bare
 stable version on its own. Land the transition with an explicit footer —
 `Release-As: 2.0.0` for the stable release, `Release-As: 2.0.1` for the first
-patch after it — as [ADR-0016](arch/ADR-0016-coordinated-workspace-releases.md)
-prescribes. Without that footer a stable `2.0.0` would propose `2.0.1-rc`.
+patch after it. Without that footer a stable `2.0.0` would propose `2.0.1-rc`.
 
-The CHANGELOG.md section that the release pull request adds is the release
-text: `scripts/finish-github-release.py` uses exactly that section as the GitHub
-release body, and `publish.yml` refuses to publish a version whose section is
-missing. Review and, where useful, edit that section in the release pull request
-before merging — it lists the conventional commits in the range and is prepended
-above the authored `## 2.0.0-rc.1` entry already in Git. `docs/releases/` keeps
-the first candidate's hand-written notes as history; no file is added there for
-later versions. Never publish the rehearsal's synthetic changelog.
+`include-component-in-tag` is false, so tags stay `v<version>`, matching the
+published `v2.0.0-rc.1`.
 
-After the merge, the release commit is an ordinary `main` push: wait for its CI
-run and publish it with `gh workflow run publish.yml` as described below. Once
-`publish.yml` has created the `v<version>` tag, the next push to `main` starts
-the next cycle from that tag.
+## Channels
 
-Because `skip-github-release` suppresses the library's own tagging step, it also
-never retires the `autorelease: pending` label from the merged release pull
-request, and the library refuses to open a new one while a merged pending pull
-request exists. The workflow reconciles this before each run: a merged release
-pull request whose version (read from `.release-please-manifest.json` at its
-merge commit) has a `v<version>` tag becomes `autorelease: tagged`, however many
-commits landed on `main` before the publication was dispatched. A merged release
-pull request that was deliberately never
-published stays pending on purpose and blocks the next proposal; remove its label
-by hand to release that block.
+The dist-tag is derived from the version by `node/scripts/release-channel.mjs`
+and passed to the publishing action explicitly: `X.Y.Z-rc.N` publishes to
+`next`, a stable `X.Y.Z` to `latest`. No other version shape is publishable.
+
+While v2 is in candidate testing, npm users install `ferromark@next` or the
+exact version; `npm install ferromark` stays on the stable release. The GitHub
+release for a candidate is a prerelease and does not become `latest`.
+
+## Rehearse the version bump
 
 Install the pinned contract dependencies in `scripts/`, then run from the root:
 
 ```sh
-node --test scripts/test-release-rehearsal.mjs scripts/test-release-channel.mjs scripts/test-publish-packages.mjs
+node --test scripts/test-release-rehearsal.mjs scripts/test-release-channel.mjs
 node scripts/rehearse-release.mjs /tmp/ferromark-release-review
 ```
 
-The output directory must not exist. It writes one directory per case. The
-`automatic` case runs the repository's real released version through the
-prerelease strategy and must land on `2.0.0-rc.2`; the remaining cases seed an
-in-memory development version and check the forced RC1, RC2, stable and patch
-transitions. All of them use the real Release Please updater. Cargo.toml,
-Cargo.lock, version.txt, the Release Please manifest, all npm versions and native
-dependency pins must agree. External dependencies and publication flags stay
-unchanged. See [ADR-0016](arch/ADR-0016-coordinated-workspace-releases.md).
+The output directory must not exist. It writes one directory per case, with the
+complete updated files and the release pull request text. The `automatic` case
+runs the repository's real released version through the prerelease strategy and
+must land on `2.0.0-rc.2`; the remaining cases seed an in-memory development
+version and check the forced RC1, RC2, stable and patch transitions. All of them
+use the real Release Please 17.6.0 Manifest, strategies and updaters, with a
+local read-only repository and commit source substituted for the GitHub client.
 
-Only `X.Y.Z-rc.N` and stable `X.Y.Z` are publishable. Candidates use npm's `next`
-tag and a GitHub prerelease without replacing `latest`. Stable releases use
-`latest`. The publisher tests enforce this distinction.
+Each generated candidate is then proved with the real tools rather than only
+read:
+
+- `cargo metadata --locked` resolves the generated manifests against the
+  generated `Cargo.lock` and fails if either is stale;
+- `pnpm install --lockfile-only` re-locks the generated npm manifests and the
+  lockfile must come back byte-identical.
+
+`results.json` records both outcomes per case. Run `cargo fetch --locked` first;
+the Cargo check is offline.
 
 ## Local package checks
 
@@ -128,66 +156,81 @@ cargo fetch --locked
 python3 scripts/rehearse-rust-packages.py /tmp/ferromark-rust-package-review
 ```
 
-The output directory must not exist. `cargo package --locked` builds and verifies
-the actual `ferromark` archive. There are no internal crate dependencies or
-repository-only cross-crate test dependencies to resolve.
+The output directory must not exist. `cargo package --locked` builds and
+verifies the actual `ferromark` archive from the root package. There are no
+internal crate dependencies or repository-only cross-crate test dependencies to
+resolve.
 
 The rehearsal checks package metadata, upstream MIT notices and the absence of
-internal path dependencies, then builds/runs an isolated consumer from the
+internal path dependencies, then builds and runs an isolated consumer from the
 unpacked archive. External versions must remain within the workspace lockfile.
-The README and LICENSE ship with the package. This does not test registry credentials.
+The README, the upstream `LICENSE` notice, both dual-license texts and
+`UPSTREAM.md` ship with the package. This does not test registry credentials.
 
-## CI package assembly
+Because the crate sits at the repository root, a narrow `include` list in
+`Cargo.toml` decides what the archive contains. Compare `cargo package --list`
+before and after any change to it; `scripts/test_release_package.py` guards the
+allow-list and keeps `docs/`, `benchmarks/`, `homepage/`, `node/`, `scripts/`
+and `.github/` out.
 
-Each of eight native jobs uploads its verified binary. The dependent
-`npm-packages` job assembles all nine npm packages, checks their contents and
-performs a clean installation on Linux x64 GNU. Six native targets have runtime
-tests; the two musl targets are built and inspected. The `rust-packages` job runs
-the Cargo archive rehearsal. CI retains the verified archives for seven days.
-These jobs do not publish. Publication requires a successful **push CI run on
-main at the exact release commit**, including every gate.
+## The pre-merge rehearsal
 
-Seven native jobs set `FERROMARK_PGO=1`, so each published addon is built from
-a profile collected on its own runner. Five same-architecture targets receive
-that profile; the two cross-compiled musl targets do not, because a Cargo unit
-hash covers the target triple, and the Windows ARM64 job builds without PGO
+Because merging publishes, `ci.yml` is where a release is proven. On every pull
+request it builds all eight native addons with profile-guided optimization,
+runs the runtime tests on the six same-architecture targets, inspects the two
+cross-compiled musl builds, assembles the nine npm packages, checks their
+contents, performs a clean installation on Linux x64 GNU and rehearses the Cargo
+archive. It publishes nothing and retains its verified archives for seven days.
+
+Seven native jobs set `FERROMARK_PGO=1`, so each published addon is built from a
+profile collected on its own runner. The Windows ARM64 job builds without PGO
 because the pinned toolchain's `llvm-profdata` rejects the counters written on
-that runner. The crates.io crate is unaffected. Profile-guided
-binaries depend on counts taken at build time and are therefore no longer
-byte-identical between runs of the same commit, so a publish retry must reuse
-the original `ci_run_id`. See
-[ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
+that runner; the two cross-compiled musl targets do not receive the host
+profile, because a Cargo unit hash covers the target triple. The crates.io crate
+is unaffected. See [ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
+
+`publish.yml` repeats the assembly checks on the release tag —
+`verify-release.mjs`, `verify-pack.mjs --all-targets`, `pnpm smoke:clean` and
+`release-archives.mjs` — before the first registry call, and
+`verify-npm-publish.mjs` confirms all nine versions on the registry afterwards.
 
 ## Registry authorization
 
-Reuse the existing Trusted Publishing configuration for `ferromark`, repository
-`sebastian-software/ferromark`, workflow `publish.yml`. No new Rust crate names,
-bootstrap token or initial manual publication are required by the consolidation.
-The nine existing npm packages keep their Trusted Publishing configuration.
+Both registries authenticate through Trusted Publishing (OIDC): no crates.io or
+npm token exists in this repository. It is configured for the `ferromark` crate
+and for the nine npm packages, repository `sebastian-software/ferromark`,
+workflow `publish.yml`. The publishing jobs therefore need
+`permissions: id-token: write`, and npm publishing needs npm 11.5.1 or newer,
+which the workflow installs explicitly.
 
-## Publish the reviewed release
+Adding a new package name needs an initial credentialed publication before
+Trusted Publishing can be enabled for it; a first-ever publish cannot use it,
+because the package does not exist yet.
 
-Merge the release pull request, wait for all main CI gates on the resulting
-commit, and select its run ID. The workflow is manual so merging source, or the
-release pull request itself, never publishes a package:
+## Retry a failed publish
+
+The release is already tagged, so a retry runs against that tag:
 
 ```sh
-gh workflow run publish.yml --ref main -f version=2.0.0-rc.1 -f ci_run_id=SUCCESSFUL_MAIN_CI_RUN_ID
+gh workflow run publish.yml -f tag=v2.0.0-rc.1
 ```
 
-The workflow rejects a different commit, branch, workflow, version or failed run.
-It downloads that run's npm and Rust archives and validates all npm manifests
-and any existing versions before the first upload. It publishes the Rust
-crate with Cargo verification, then the eight native npm
-packages before the facade. npm uses Trusted Publishing with provenance.
+Every job checks out that tag rather than `main`, so a delayed retry cannot
+publish newer sources under a version that already exists, and an unknown tag
+fails the checkout. The crate publisher skips a version that is already in the
+crates.io sparse index, and an index lookup that fails outright stops the job
+instead of guessing. npm versions are immutable: a version that was already
+published cannot be replaced, and a conflict requires a new candidate rather
+than a forced upload.
 
-A retry accepts an existing npm version only when the tarball integrity matches;
-the existing Rust crate must have the exact clean source commit. A conflicting
-immutable version requires investigation and usually a new RC version.
-Registry checks confirm all npm versions and tags and preserve the previous
-stable tags for an RC. A fresh consumer installs npm from the registry and a
-separate Cargo consumer compiles without local patches. Only after both work
-does the workflow create the GitHub release and attach all ten archives.
+## Release notes and history
+
+The GitHub release body is the `CHANGELOG.md` section Release Please wrote for
+that version. Review and, where useful, edit that section in the release pull
+request before merging — it lists the conventional commits in the range and is
+prepended above the authored `## 2.0.0-rc.1` entry already in Git.
+`docs/releases/` keeps the first candidate's hand-written notes as history; no
+file is added there for later versions.
 
 The homepage deploys from main. Its deployment is independent of registry
 publication; the candidate documentation must state the selected prerelease.

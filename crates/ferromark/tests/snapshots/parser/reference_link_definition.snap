@@ -1,9 +1,0 @@
----
-source: crates/ferromark/tests/snapshot_parse.rs
-description: "[link][ref]\n\n[ref]: https://example.com \"Title\"\n"
----
-Document [0..48]
-  Paragraph [0..12]
-    Link url="https://example.com" title=Some("Title") [0..11]
-      Text "link" [1..5]
-  Definition identifier="ref" label=Some("ref") url="https://example.com" title=Some("Title") [13..48]

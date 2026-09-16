@@ -20,7 +20,7 @@ const binaryInfo = await stat(binary);
 
 assert.equal(platformPackage.name, dependency);
 assert.equal(platformPackage.version, mainPackage.version);
-assert.equal(mainPackage.optionalDependencies[dependency], mainPackage.version);
+assert.equal(mainPackage.optionalDependencies[dependency], "workspace:*");
 assert.ok(binaryInfo.isFile() && binaryInfo.size > 0, `Invalid native binary: ${binary}`);
 
 if (target.endsWith("-gnu")) {

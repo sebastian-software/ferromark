@@ -77,7 +77,7 @@ test("coverage retains the report before enforcing the floor", () => {
   assert.match(read("CONTRIBUTING.md"), /fail-under-lines 90/);
 });
 
-test("release packages target public registries and publication is main-only", () => {
+test("release packages target public registries", () => {
   assert.match(read("Cargo.toml"), /^publish = \["crates-io"\]$/m);
   const packageJson = JSON.parse(read("node/ferromark/package.json"));
   assert.equal(packageJson.private, false);
@@ -86,12 +86,65 @@ test("release packages target public registries and publication is main-only", (
     const suffix = dependency.replace(/^ferromark-/, "");
     assert.equal(JSON.parse(read(`node/ferromark/npm/${suffix}/package.json`)).private, false);
   }
-  const publisher = parse(read(".github/workflows/publish.yml"));
-  assert.equal(publisher.jobs.publish.if, "github.ref == 'refs/heads/main'");
-  assert.deepEqual(Object.keys(publisher.on), ["workflow_dispatch"]);
   assert.match(read("node/native/Cargo.toml"), /^publish = false$/m);
   const deploy = parse(read(".github/workflows/deploy-homepage.yml"));
   assert.equal(deploy.jobs.build.if, "github.ref == 'refs/heads/main'");
+});
+
+test("publication follows the standards release blueprint", () => {
+  const publisher = parse(read(".github/workflows/publish.yml"));
+  // One release signal: Release Please runs unconditionally on pushes to main,
+  // and merging the release pull request is what tags and publishes.
+  assert.deepEqual(Object.keys(publisher.on), ["push", "workflow_dispatch"]);
+  assert.deepEqual(publisher.on.push.branches, ["main"]);
+  assert.equal(publisher.jobs["release-please"].if, "${{ github.event_name == 'push' }}");
+  assert.equal(
+    publisher.jobs["release-please"].outputs.releases_created.includes("releases_created"),
+    true,
+  );
+  assert.equal(publisher.jobs["release-please"].outputs.tag_name.includes("tag_name"), true);
+
+  // The manual path is a retry for an existing release, so it needs the tag and
+  // every job checks that tag out rather than the branch head.
+  assert.equal(publisher.on.workflow_dispatch.inputs.tag.required, true);
+  const checkoutRef = "${{ inputs.tag || needs.release-please.outputs.tag_name }}";
+  for (const [name, job] of Object.entries(publisher.jobs)) {
+    if (name === "release-please" || name === "native-matrix") continue;
+    const checkouts = job.steps.filter((step) => step.uses?.startsWith("actions/checkout@"));
+    assert.ok(checkouts.length > 0, `${name}: checks out the release tag`);
+    for (const step of checkouts) {
+      assert.equal(step.with.ref, checkoutRef, `${name}: checks out the release tag`);
+    }
+  }
+  for (const name of ["publish-crates", "native-matrix"]) {
+    assert.match(publisher.jobs[name].if, /releases_created == 'true'/, name);
+  }
+  assert.deepEqual(publisher.jobs["publish-crates"].permissions["id-token"], "write");
+  assert.deepEqual(publisher.jobs["publish-npm"].permissions["id-token"], "write");
+
+  // The three release-shaped steps are the org's shared composite actions, not
+  // hand-written copies, and the platform list lives in exactly one place.
+  const uses = Object.values(publisher.jobs).flatMap((job) =>
+    job.steps.map((step) => step.uses).filter(Boolean),
+  );
+  for (const action of ["publish-crates", "napi-matrix", "publish-npm"]) {
+    assert.ok(
+      uses.some((entry) =>
+        new RegExp(`^sebastian-software/standards/\\.github/actions/${action}@[0-9a-f]{40}$`).test(
+          entry,
+        ),
+      ),
+      `${action} must come from the standards repository, pinned by commit`,
+    );
+  }
+  assert.ok(
+    !publisher.jobs["build-native"].strategy.matrix.include,
+    "the platform matrix comes from the napi-matrix action",
+  );
+  assert.equal(
+    publisher.jobs["build-native"].strategy.matrix,
+    "${{ fromJSON(needs.native-matrix.outputs.matrix) }}",
+  );
 });
 
 test("Node native declarations follow the v2 option surface", () => {
@@ -118,11 +171,15 @@ test("only ferromark is public and no path-only dependency exceptions remain", (
   const policy = TOML.parse(read("deny.toml"));
   assert.equal(policy.bans.wildcards, "deny");
   assert.notEqual(policy.bans["allow-wildcard-paths"], true);
-  const workspace = TOML.parse(read("Cargo.toml")).workspace;
-  assert.deepEqual(workspace.members, ["crates/ferromark", "node/native"]);
+  const root = TOML.parse(read("Cargo.toml"));
+  const workspace = root.workspace;
+  // `release-type: rust` updates the root `[package]`, the members below it and
+  // their explicit path requirements, so `ferromark` is the root package.
+  assert.equal(root.package.name, "ferromark");
+  assert.deepEqual(workspace.members, ["node/native"]);
   const unversioned = [];
-  for (const member of workspace.members) {
-    const manifest = TOML.parse(read(`${member}/Cargo.toml`));
+  for (const member of [".", ...workspace.members]) {
+    const manifest = member === "." ? root : TOML.parse(read(`${member}/Cargo.toml`));
     for (const section of ["dependencies", "dev-dependencies", "build-dependencies"]) {
       for (const [name, dependency] of Object.entries(manifest[section] ?? {})) {
         const spec = dependency.workspace ? workspace.dependencies[name] : dependency;

@@ -20,8 +20,9 @@ test("README introduces the v2 release candidate and delegates detailed document
   assert.match(source, /^# Ferromark v2$/m);
   assert.match(source, /arena-allocated/);
   assert.match(source, /release-candidate/);
-  // The release pull request bumps these lines together with version.txt.
-  const version = read("version.txt").trim();
+  // The release pull request bumps these lines together with the root package
+  // version, which is the product version the rust strategy owns.
+  const version = read("Cargo.toml").match(/^version = "([^"]+)"$/m)[1];
   assert.ok(source.includes(`npm install ferromark@${version}`), `README installs ${version}`);
   assert.ok(source.includes(`cargo add ferromark@=${version}`), `README adds ${version}`);
   assert.match(source, /docs\/migration-v2\.md/);

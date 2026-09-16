@@ -102,7 +102,7 @@ existing default HTML, debug, and pretty snapshots remain unchanged. Historical
 benchmark reports retain their original API/configuration and results; this
 change makes no performance claim.
 
-The [integration tests](../crates/ferromark/tests/front_matter.rs) cover
+The [integration tests](../tests/front_matter.rs) cover
 delimiters, fallbacks, raw values, source spans, metadata isolation, visitors,
 and renderer entry points.
 

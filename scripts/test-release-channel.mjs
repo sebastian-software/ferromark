@@ -1,24 +1,49 @@
 import assert from "node:assert/strict";
-import { it } from "node:test";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { test } from "node:test";
 import { releaseChannel } from "../node/scripts/release-channel.mjs";
-import { publishArguments } from "../node/scripts/publish-packages.mjs";
+import { releaseArchives } from "../node/scripts/release-archives.mjs";
 
-it("publishes release candidates only to next and marks them prereleases", () => {
+const facade = JSON.parse(
+  readFileSync(new URL("../node/ferromark/package.json", import.meta.url), "utf8"),
+);
+
+/** Nine archives with the manifests pnpm writes after resolving `workspace:*`. */
+function archives(t, transform = (manifest) => manifest) {
+  const root = mkdtempSync(join(tmpdir(), "ferromark-release-archives-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(join(root, "package"));
+  const sidecars = Object.fromEntries(
+    Object.keys(facade.optionalDependencies).map((name) => [name, facade.version]),
+  );
+  for (const name of [...Object.keys(facade.optionalDependencies), facade.name]) {
+    const manifest = transform(
+      name === facade.name
+        ? { ...facade, optionalDependencies: sidecars }
+        : { name, version: facade.version, private: false },
+    );
+    writeFileSync(join(root, "package/package.json"), JSON.stringify(manifest));
+    assert.equal(
+      spawnSync("tar", ["-czf", join(root, `${name}-${facade.version}.tgz`), "-C", root, "package"])
+        .status,
+      0,
+    );
+  }
+  return root;
+}
+
+test("publishes release candidates only to the next channel", () => {
   assert.deepEqual(releaseChannel("2.0.0-rc.1"), { tag: "next", prerelease: true });
-  assert.deepEqual(publishArguments("package.tgz", "2.0.0-rc.1"), [
-    "publish",
-    "package.tgz",
-    "--access",
-    "public",
-    "--provenance",
-    "--tag",
-    "next",
-  ]);
 });
-it("publishes stable versions to latest", () => {
+
+test("publishes stable versions to latest", () => {
   assert.deepEqual(releaseChannel("2.0.0"), { tag: "latest", prerelease: false });
 });
-it("rejects development versions and malformed release versions", () => {
+
+test("rejects development versions and malformed release versions", () => {
   for (const version of [
     "2.0.0-dev.0",
     "v2.0.0",
@@ -30,4 +55,34 @@ it("rejects development versions and malformed release versions", () => {
   ]) {
     assert.throws(() => releaseChannel(version));
   }
+});
+
+test("orders the native archives before the facade and names the channel", (t) => {
+  const { distTag, archives: ordered } = releaseArchives(archives(t), facade);
+  assert.equal(ordered.length, 9);
+  assert.equal(distTag, releaseChannel(facade.version).tag);
+  assert.ok(ordered.at(-1).endsWith(`/ferromark-${facade.version}.tgz`));
+  for (const archive of ordered.slice(0, -1)) {
+    assert.match(archive, /\/ferromark-[a-z0-9-]+-\d/);
+  }
+});
+
+test("rejects a packed facade whose sidecar references were not resolved", (t) => {
+  const directory = archives(t, (manifest) =>
+    manifest.name === facade.name
+      ? {
+          ...manifest,
+          optionalDependencies: Object.fromEntries(
+            Object.keys(manifest.optionalDependencies).map((name) => [name, "workspace:*"]),
+          ),
+        }
+      : manifest,
+  );
+  assert.throws(() => releaseArchives(directory, facade), /pin every sidecar/);
+});
+
+test("rejects an archive set that is missing a platform", (t) => {
+  const directory = archives(t);
+  rmSync(join(directory, `ferromark-darwin-arm64-${facade.version}.tgz`));
+  assert.throws(() => releaseArchives(directory, facade), /exactly the nine release archives/);
 });

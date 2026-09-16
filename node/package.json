@@ -5,14 +5,13 @@
   "scripts": {
     "build": "pnpm --filter ferromark build",
     "build:native": "pnpm --filter ferromark build:native",
-    "lint": "oxlint -c oxlint.config.ts && eslint . --max-warnings=0 && node --check scripts/release-channel.mjs && node --check scripts/publish-packages.mjs && node --check scripts/verify-published-release.mjs && node --check scripts/capture-release-tags.mjs && node --check scripts/clean-install-smoke.mjs && node --check scripts/publish-platform-packages.mjs && node --check scripts/verify-npm-publish.mjs && node --check scripts/verify-pack.mjs && node --check scripts/verify-platform-artifact.mjs && node --check scripts/verify-release.mjs && pnpm --filter ferromark lint",
-    "format": "oxfmt --write --ignore-path=.prettierignore .",
-    "format:check": "oxfmt --check --ignore-path=.prettierignore .",
+    "lint": "oxlint -c oxlint.config.ts && eslint . --max-warnings=0 && node --check scripts/release-channel.mjs && node --check scripts/release-archives.mjs && node --check scripts/clean-install-smoke.mjs && node --check scripts/verify-npm-publish.mjs && node --check scripts/verify-pack.mjs && node --check scripts/verify-platform-artifact.mjs && node --check scripts/verify-release.mjs && pnpm --filter ferromark lint",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "pnpm --filter ferromark test",
     "pack:check": "node ./scripts/verify-pack.mjs",
     "smoke:clean": "node ./scripts/clean-install-smoke.mjs",
-    "publish:ci": "node ./scripts/publish-packages.mjs artifacts"
+    "format": "oxfmt --write --ignore-path=.prettierignore .",
+    "format:check": "oxfmt --check --ignore-path=.prettierignore ."
   },
   "devDependencies": {
     "@napi-rs/cli": "3.7.4",
