@@ -85,7 +85,7 @@ jobs:
       # One published crate, so the dependency ordering is trivial; the action
       # still skips a version that is already in the index, which is what makes
       # a retry safe.
-      - uses: sebastian-software/standards/.github/actions/publish-crates@8a2f798698f90d24b5989e8a3488bb3f96ddfb75 # v0.12.0
+      - uses: sebastian-software/standards/.github/actions/publish-crates@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
         with:
           crates: ferromark
 
@@ -104,7 +104,7 @@ jobs:
       platform-ids: ${{ steps.platforms.outputs.platform-ids }}
     steps:
       - id: platforms
-        uses: sebastian-software/standards/.github/actions/napi-matrix@8a2f798698f90d24b5989e8a3488bb3f96ddfb75 # v0.12.0
+        uses: sebastian-software/standards/.github/actions/napi-matrix@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
         with:
           package: ferromark
 
@@ -254,7 +254,7 @@ jobs:
         name: Verify the packed archives and derive the release channel
         run: node ./scripts/release-archives.mjs artifacts
 
-      - uses: sebastian-software/standards/.github/actions/publish-npm@8a2f798698f90d24b5989e8a3488bb3f96ddfb75 # v0.12.0
+      - uses: sebastian-software/standards/.github/actions/publish-npm@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
         with:
           working-directory: node
           # Pack-resolved tarballs rather than directories, so the published

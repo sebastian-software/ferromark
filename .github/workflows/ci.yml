@@ -128,7 +128,7 @@ jobs:
       # The org-wide pin checker replaces this repository's own copy: a moved
       # tag changes what CI executes with this job's token, so every `uses:`
       # must be a full commit SHA with the version in a trailing comment.
-      - uses: sebastian-software/standards/.github/actions/check-action-pins@8a2f798698f90d24b5989e8a3488bb3f96ddfb75 # v0.12.0
+      - uses: sebastian-software/standards/.github/actions/check-action-pins@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
         with:
           paths: .github/workflows
       - run: python3 scripts/publish-native-readme.py --check
