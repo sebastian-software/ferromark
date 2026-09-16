@@ -49,9 +49,10 @@ creates no tag and no GitHub release, and it touches no registry. Publication
 remains the manual `publish.yml`, still bound to a successful main push CI run at
 the exact release commit, still verifying registry installs before
 `scripts/finish-github-release.py` creates the `v<version>` tag and the GitHub
-release with the authored notes. The two compose in one direction: that tag is
-what the next Release Please run reads as the last release.
+release. The release body is the CHANGELOG.md section the release pull request
+added, reviewed there; the hand-written `docs/releases/2.0.0-rc.1.md` stays as
+history and no such file is required for later versions. The two workflows
+compose in one direction: that tag is what the next Release Please run reads as
+the last release.
 
 Preparing the version is now automatic; releasing it is still a deliberate act.
-The maintainer adds `docs/releases/<version>.md` to the release pull request
-before merging, because `publish.yml` refuses to publish without it.

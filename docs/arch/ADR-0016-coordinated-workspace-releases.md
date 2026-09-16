@@ -68,7 +68,7 @@ Two consequences of that mode are load-bearing:
   pattern and of commits that land on `main` between merge and publication.
 - The release pull request needs the `RELEASE_PLEASE_TOKEN` personal access
   token. A pull request opened with `GITHUB_TOKEN` starts no further workflow
-  runs, so the `standards drift` check that protected `main` requires would never
+  runs, so no CI check would ever
   run on it.
 
 Version selection moves to `"versioning": "prerelease"` with

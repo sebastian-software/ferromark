@@ -23,8 +23,8 @@ tags a release. Merging source therefore still never publishes a package.
 
 The release pull request must be opened with the `RELEASE_PLEASE_TOKEN`
 organization secret. A pull request opened with `GITHUB_TOKEN` starts no further
-workflow runs, so `ci.yml` — and the `standards drift` check that protected
-`main` requires — would never run on it and it could not be merged.
+workflow runs, so `ci.yml` would never run on it and the pull request would
+show no checks at all.
 
 Version selection uses the `prerelease` strategy pinned to `rc`. Inside the
 candidate series the proposal is automatic: any commit range on top of
@@ -36,13 +36,14 @@ stable version on its own. Land the transition with an explicit footer —
 patch after it — as [ADR-0016](arch/ADR-0016-coordinated-workspace-releases.md)
 prescribes. Without that footer a stable `2.0.0` would propose `2.0.1-rc`.
 
-Before merging, add the authored notes for the proposed version as
-`docs/releases/<version>.md` to the release pull request itself; `publish.yml`
-refuses to publish without that file, and `scripts/finish-github-release.py`
-uses it as the GitHub release body. It is a separate document from the generated
-CHANGELOG.md section, which lists the conventional commits in the range and is
-prepended above the authored `## 2.0.0-rc.1` section already in Git. Review both,
-and never publish the rehearsal's synthetic changelog.
+The CHANGELOG.md section that the release pull request adds is the release
+text: `scripts/finish-github-release.py` uses exactly that section as the GitHub
+release body, and `publish.yml` refuses to publish a version whose section is
+missing. Review and, where useful, edit that section in the release pull request
+before merging — it lists the conventional commits in the range and is prepended
+above the authored `## 2.0.0-rc.1` entry already in Git. `docs/releases/` keeps
+the first candidate's hand-written notes as history; no file is added there for
+later versions. Never publish the rehearsal's synthetic changelog.
 
 After the merge, the release commit is an ordinary `main` push: wait for its CI
 run and publish it with `gh workflow run publish.yml` as described below. Once

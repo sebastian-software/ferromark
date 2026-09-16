@@ -77,9 +77,8 @@ jobs:
 
       # The release pull request must arrive with a personal access token.
       # A pull request opened with `GITHUB_TOKEN` does not start further workflow
-      # runs, so `ci.yml` — and with it the `standards drift` check that protected
-      # `main` requires — would never run on it and the pull request could not be
-      # merged. `RELEASE_PLEASE_TOKEN` is an organization secret available to this
+      # runs, so `ci.yml` would never run on it and the pull request would show
+      # no checks at all. `RELEASE_PLEASE_TOKEN` is an organization secret available to this
       # repository; the `GITHUB_TOKEN` fallback keeps forks and a revoked token
       # from failing the whole workflow, at the cost of a pull request a
       # maintainer has to nudge.
