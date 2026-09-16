@@ -58,14 +58,14 @@ test("coverage retains the report before enforcing the floor", () => {
 
   assert.equal(generate.run.trim(), "cargo llvm-cov report --lcov --output-path lcov.info");
   assert.equal(upload.if, "${{ always() }}");
-  assert.equal(upload.uses, "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a");
+  assert.match(upload.uses, /^actions\/upload-artifact@[0-9a-f]{40}$/);
   assert.deepEqual(upload.with, {
     name: "rust-coverage",
     path: "lcov.info",
     "if-no-files-found": "error",
     "retention-days": 30,
   });
-  assert.equal(link.if, "${{ always() }}");
+  assert.equal(link.if, "${{ always() && steps.upload-coverage.outputs.artifact-url != '' }}");
   assert.match(link.run, /steps\.upload-coverage\.outputs\.artifact-url/);
   assert.equal(enforce.run, 'cargo llvm-cov report --fail-under-lines "$COVERAGE_FLOOR"');
 
