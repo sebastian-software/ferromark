@@ -354,6 +354,8 @@ jobs:
         with:
           toolchain: "1.95"
           targets: ${{ matrix.rust_target }}
+          # llvm-profdata merges the profile-guided training counters.
+          components: llvm-tools
       - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         if: ${{ contains(matrix.rust_target, '-musl') }}
         with:
@@ -365,9 +367,12 @@ jobs:
         with:
           tool: cargo-zigbuild
       - run: pnpm install --frozen-lockfile
+      # Published addons are profile-guided; local builds stay opt-in.
+      # See docs/arch/ADR-0019-profile-guided-native-addon.md.
       - run: pnpm build:native
         env:
           FERROMARK_RUST_TARGET: ${{ matrix.rust_target }}
+          FERROMARK_PGO: "1"
       - name: Test native package
         if: ${{ matrix.runtime_test }}
         run: pnpm test
