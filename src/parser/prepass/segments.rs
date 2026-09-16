@@ -107,7 +107,7 @@ use super::next_fence_run_line;
 pub(in crate::parser) type CandidateOpeners = SmallVec<[u32; 16]>;
 
 /// `(start, end)` byte ranges of the body, in document order, merged so that
-/// no two of them overlap or touch.
+/// no two of them lie closer together than one segment costs.
 pub(in crate::parser) type Segments = SmallVec<[(usize, usize); 4]>;
 
 /// What the structural definition pass should parse.
@@ -719,10 +719,17 @@ fn interior_is_indented(bytes: &[u8], from: usize, to: usize, columns: usize) ->
     true
 }
 
-/// Appends `(start, end)`, merging it into the previous range when they touch.
+/// Appends `(start, end)`, merging it into the previous range when the gap
+/// between them costs more to skip than to parse.
+///
+/// Merging keeps both outer offsets, and those are the only ones exactness
+/// depends on: the earlier range's start and the later range's end are still
+/// the boundaries they were.
 fn push_segment(segments: &mut Segments, start: usize, end: usize) {
     match segments.last_mut() {
-        Some(last) if last.1 >= start => last.1 = last.1.max(end),
+        Some(last) if start.saturating_sub(last.1) < SEGMENT_COST_BYTES => {
+            last.1 = last.1.max(end);
+        }
         _ => segments.push((start, end)),
     }
 }
@@ -789,13 +796,31 @@ mod tests {
         assert_eq!(plan(source, &gfm()), Some(vec![(start, end)]));
     }
 
+    /// `[a]: /one`, `gap` bytes of prose, then `[b]: /two`.
+    fn two_definitions_apart(gap: usize) -> String {
+        let mut source = String::from("[a]: /one\n");
+        while source.len() < gap {
+            source.push_str("\nfiller filler filler filler\n");
+        }
+        source.push_str("\n[b]: /two\n");
+        source
+    }
+
     #[test]
     fn definitions_far_apart_produce_separate_segments() {
-        let source = "[a]: /one\n\nfiller\n\nfiller\n\n[b]: /two\n";
-        let plan = plan(source, &gfm()).expect("segmented");
+        let source = two_definitions_apart(4 * super::SEGMENT_COST_BYTES);
+        let plan = plan(&source, &gfm()).expect("segmented");
         assert_eq!(plan.len(), 2, "{plan:?}");
         assert_eq!(plan[0].0, 0);
-        assert_eq!(plan[1].0, source.find("[b]:").expect("second definition"));
+        assert_eq!(plan[1].0, source.rfind("[b]:").expect("second definition"));
+    }
+
+    #[test]
+    fn definitions_a_short_gap_apart_share_one_segment() {
+        // Skipping the gap would cost a second segment, which is worth more
+        // than the bytes it saves.
+        let source = two_definitions_apart(super::SEGMENT_COST_BYTES / 4);
+        assert_eq!(plan(&source, &gfm()), Some(vec![(0, source.len())]));
     }
 
     #[test]
