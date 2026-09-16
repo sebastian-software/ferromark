@@ -250,5 +250,17 @@ read when it lies between two.
 
 Specification fixtures, snapshots and conformance baselines are unchanged.
 
-No speed claim is made here; the measured numbers belong to the separate
-report.
+## Measured
+
+Paired against `main` (`e35e9f64`) with the round harness, 3 rounds × 5 pairs ×
+40 ms, exact HTML and AST equality verified first
+([report](../reports/2026-09-16-definition-segments/README.md)):
+`comment-incident` 1.295× fresh / 1.342× reuse / 1.443× parse,
+`rust-book-ch00-00-introduction` 1.197× / 1.196× / 1.235×,
+`typescript-handbook-advanced-types` 1.061× / 1.041× / 1.095×,
+`scan-extension-links` 1.170× / 1.172× / 1.218×; the marker-free copies of the
+same documents are unchanged. The 57 broad documents as a whole move
+1.007× / 1.009× / 1.009× / 1.002× (fresh / reuse / parse / render) with no
+document under 0.968×; the reference-dense diagnostic that the density rule
+sends to the whole-body pass is at 1.00×, and the 20-byte one that skips
+planning by length at 0.97–0.98×.

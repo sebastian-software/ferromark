@@ -1,0 +1,53 @@
+{
+  "schema": 2,
+  "rounds": 3,
+  "pairs_per_round": 5,
+  "window_ms": 40,
+  "warmup_ms": 40,
+  "seed": 20260914,
+  "modes": [
+    "fresh",
+    "reuse",
+    "parse",
+    "render"
+  ],
+  "case_filter": "^(comment-incident|comment-incident-nodef|rust-book-ch00-00-introduction|rust-book-ch00-00-introduction-nodef|typescript-handbook-advanced-types|typescript-handbook-advanced-types-nodef|scan-extension-links|scan-long-references|scan-short-reference)$",
+  "cases": [
+    "comment-incident",
+    "rust-book-ch00-00-introduction",
+    "typescript-handbook-advanced-types",
+    "scan-short-reference",
+    "scan-long-references",
+    "scan-extension-links",
+    "comment-incident-nodef",
+    "rust-book-ch00-00-introduction-nodef",
+    "typescript-handbook-advanced-types-nodef"
+  ],
+  "corpus_sha256": "31eb3cd51306029aef7e7b0cfd4dcf9be988809616e49ab0fced0ce30876a15e",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "bdc2ce24bf0d781c280abcb1b232248b8a33d6344645aef4eb65d1c7559adf40",
+  "host_before": {
+    "time_utc": "2026-09-16T12:30:22Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      9.04638671875,
+      9.6767578125,
+      10.5712890625
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  },
+  "host_after": {
+    "time_utc": "2026-09-16T12:31:15Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      7.14697265625,
+      9.06396484375,
+      10.287109375
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  }
+}

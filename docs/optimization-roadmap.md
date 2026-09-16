@@ -100,7 +100,7 @@ real parser is at the document root, and a document whose candidates all sit
 in code or raw HTML runs no structural pass at all. The exactness argument,
 what still falls back, and the differential proof are recorded in
 [the decision](decisions/2026-09-16-segmented-definition-pass.md); the
-measured effect belongs to its own report. A blocks-first parse with inline
+measured effect is in [its report](reports/2026-09-16-definition-segments/README.md). A blocks-first parse with inline
 content resolved afterwards remains the larger, unattempted variant.
 
 
