@@ -9,8 +9,10 @@ test("README introduces the v2 release candidate and delegates detailed document
   assert.match(source, /^# Ferromark v2$/m);
   assert.match(source, /arena-allocated/);
   assert.match(source, /release-candidate/);
-  assert.match(source, /npm install ferromark@2\.0\.0-rc\.1/);
-  assert.match(source, /cargo add ferromark@=2\.0\.0-rc\.1/);
+  // The release pull request bumps these lines together with version.txt.
+  const version = read("version.txt").trim();
+  assert.ok(source.includes(`npm install ferromark@${version}`), `README installs ${version}`);
+  assert.ok(source.includes(`cargo add ferromark@=${version}`), `README adds ${version}`);
   assert.match(source, /docs\/migration-v2\.md/);
   assert.match(source, /node\/ferromark\/README\.md/);
   assert.match(source, /UPSTREAM\.md/);

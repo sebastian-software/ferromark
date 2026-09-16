@@ -52,15 +52,15 @@ fn repeat_to(unit: &str, bytes: usize) -> String {
 }
 
 /// Parses on a worker thread so a regression fails the suite in bounded
-/// time instead of hanging it. Best of two, so one scheduling stall on a
-/// busy runner cannot fail the build.
+/// time instead of hanging it. Best of four, so a scheduling stall on a busy
+/// runner has to hit every repetition to fail the build.
 fn parse_within_budget(source: &str) -> Duration {
     parse_within_budget_with_options(source, ParserOptions::gfm())
 }
 
 fn parse_within_budget_with_options(source: &str, options: ParserOptions) -> Duration {
     let mut best = BUDGET;
-    for _ in 0..2 {
+    for _ in 0..4 {
         let owned = source.to_string();
         let options = options.clone();
         let (sender, receiver) = mpsc::channel();

@@ -29,22 +29,28 @@ fn render(source: &str, options: ParserOptions) -> String {
 }
 
 /// Parses `source` on a worker thread so a regression fails the suite in
-/// bounded time instead of hanging it. Returns how long the parse took.
+/// bounded time instead of hanging it. Returns the best of three parses, so a
+/// scheduling stall on a busy runner has to hit every repetition to fail.
 fn parse_within_budget(source: String) -> Duration {
-    let (sender, receiver) = mpsc::channel();
-    thread::spawn(move || {
-        let started = Instant::now();
-        let allocator = Allocator::new();
-        let parsed = Parser::with_options(&allocator, &source, ParserOptions::gfm())
-            .parse()
-            .is_ok();
-        let _ = sender.send((parsed, started.elapsed()));
-    });
-    let (parsed, elapsed) = receiver
-        .recv_timeout(BUDGET)
-        .expect("nested brackets should parse in bounded time, not exponential time");
-    assert!(parsed, "nested brackets should parse to a document");
-    elapsed
+    let mut best = BUDGET;
+    for _ in 0..3 {
+        let owned = source.clone();
+        let (sender, receiver) = mpsc::channel();
+        thread::spawn(move || {
+            let started = Instant::now();
+            let allocator = Allocator::new();
+            let parsed = Parser::with_options(&allocator, &owned, ParserOptions::gfm())
+                .parse()
+                .is_ok();
+            let _ = sender.send((parsed, started.elapsed()));
+        });
+        let (parsed, elapsed) = receiver
+            .recv_timeout(BUDGET)
+            .expect("nested brackets should parse in bounded time, not exponential time");
+        assert!(parsed, "nested brackets should parse to a document");
+        best = best.min(elapsed);
+    }
+    best
 }
 
 fn nested_inline_links(depth: usize) -> String {
