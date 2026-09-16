@@ -10,7 +10,8 @@
 //! real parser is provably at the document root — so an ordinary document no
 //! longer block-parses itself twice because of a single `]:`. The planner
 //! falls back to the whole body whenever it cannot prove a bound, and the
-//! block grammar remains the only authority on what a definition is.
+//! block grammar remains the only authority on what a definition is. See
+//! `docs/decisions/2026-09-16-segmented-definition-pass.md`.
 
 use std::rc::Rc;
 use std::sync::LazyLock;

@@ -5,10 +5,11 @@
 //! the temporary tree. The ordinary no-definition path never enters this pass.
 //!
 //! The pass runs over the segments the pre-pass planner hands it rather than
-//! over the whole document (see `super::super::prepass::segments`). Each
-//! segment starts and ends at a line where the real parser is at the document
-//! root with everything closed, so a segment parse sees the same blocks the
-//! full parse sees there. Segments arrive in document order and share one
+//! over the whole document (see `super::super::prepass::segments` and
+//! `docs/decisions/2026-09-16-segmented-definition-pass.md`). Each segment
+//! starts and ends at a line where the real parser is at the document root
+//! with everything closed, so a segment parse sees the same blocks the full
+//! parse sees there. Segments arrive in document order and share one
 //! collector, which is what keeps first-definition precedence intact.
 use crate::allocator::Allocator;
 use crate::ast::{Definition, FootnoteDefinition, Visit, walk_footnote_definition};
