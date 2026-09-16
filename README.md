@@ -16,10 +16,10 @@ or its native Node.js bindings.
 <!-- x-release-please-start-version -->
 
 [Documentation](https://sebastian-software.github.io/ferromark/) ·
-[Rust API](https://docs.rs/ferromark/2.0.0-rc.1/ferromark/) ·
+[Rust API](https://docs.rs/ferromark/2.0.0-rc.2/ferromark/) ·
 [Node.js package](node/ferromark/README.md)
 
-**V2 is in release-candidate testing.** Version `2.0.0-rc.1` is a breaking upgrade
+**V2 is in release-candidate testing.** Version `2.0.0-rc.2` is a breaking upgrade
 from v1. Read the [changelog](CHANGELOG.md) and
 [migration guide](docs/migration-v2.md). npm's stable `latest` channel remains on v1.
 
@@ -56,7 +56,7 @@ explain the details and trade-offs.
 <!-- x-release-please-start-version -->
 
 ```sh
-cargo add ferromark@=2.0.0-rc.1
+cargo add ferromark@=2.0.0-rc.2
 ```
 
 <!-- x-release-please-end-version -->
@@ -76,7 +76,7 @@ covers configuration, ownership, and AST access through `ferromark`.
 <!-- x-release-please-start-version -->
 
 ```sh
-npm install ferromark@2.0.0-rc.1
+npm install ferromark@2.0.0-rc.2
 ```
 
 <!-- x-release-please-end-version -->
