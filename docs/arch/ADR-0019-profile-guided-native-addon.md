@@ -80,11 +80,10 @@ The addon binary now depends on counts taken at build time, so two CI runs of
 the same commit no longer produce identical binaries. Nothing in the pipeline
 requires that: `node/scripts/verify-platform-artifact.mjs`,
 `verify-release.mjs` and `verify-pack.mjs` check names, versions, sizes,
-contents and the glibc baseline, not hashes. The one hash comparison, in
-`node/scripts/publish-packages.mjs`, checks an already-published npm version
-against the archive downloaded from the selected CI run, so a publish retry must
-reuse the same `ci_run_id` — which `scripts/release-preflight.py` already binds
-to one successful main run.
+contents and the glibc baseline, not hashes. `publish.yml` builds the addons
+itself from the release tag and never compares a rebuilt binary with a
+published one, so a retry is free to rebuild
+([ADR-0020](ADR-0020-standards-release-blueprint.md)).
 
 Training adds an instrumented build plus about twenty seconds of training to
 each of the eight native jobs.

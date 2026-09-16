@@ -20,6 +20,17 @@ cargo fmt --all --check
 cargo bench --workspace --no-run --locked
 ```
 
+`ferromark` is the repository root package: its `src/`, `tests/`, `benches/`
+and `examples/` sit at the top level, and `node/native` is the only workspace
+member. A Cargo `include` list decides what the published archive contains, so
+compare `cargo package --list` whenever you change it.
+
+Releases are automatic. Every push to `main` updates one release pull request,
+and **merging that pull request tags the version and publishes both
+registries**, so a change that lands on `main` is a change you are willing to
+ship. See [releasing](docs/releasing.md) and
+[ADR-0020](docs/arch/ADR-0020-standards-release-blueprint.md).
+
 Node and release changes also require the [package checks](docs/releasing.md#local-package-checks).
 Those checks build a plain addon; reproducing the published, profile-guided one
 needs the `llvm-tools` rustup component and `FERROMARK_PGO=1`, as described in

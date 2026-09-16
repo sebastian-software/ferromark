@@ -1,7 +1,16 @@
 # ADR-0016: Coordinate Rust and npm releases through one manifest
 
-Status: Accepted; the release pull request is automatic again, publication stays
-manual and verified. See the 2026-09-16 amendment below.
+Status: Superseded on 2026-09-16 by
+[ADR-0020](ADR-0020-standards-release-blueprint.md). The decision that Rust and
+npm share one version, one manifest entry, one changelog and one tag stands. The
+mechanism does not: the `simple` strategy, `version.txt`, the
+`x-release-please-version` annotations, the `Cargo.lock` and `pnpm-lock.yaml`
+jsonpaths and the separate `release-please.yml` with `skip-github-release` are
+all replaced by the native `rust` strategy and the organization's publish
+skeleton, where merging the release pull request publishes. The `prerelease`
+versioning decision and the `Release-As` rule below are unchanged and still
+enforced by the rehearsal. Read this ADR for why the coordination exists; read
+ADR-0020 for how it works now.
 
 ## Problem
 

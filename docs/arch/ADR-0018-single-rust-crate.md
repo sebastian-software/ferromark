@@ -2,6 +2,13 @@
 
 - Status: Accepted
 - Date: 2026-09-15
+- Amended 2026-09-16: the single crate is now the repository root package rather
+  than a member under `crates/ferromark`, which is what Release Please's native
+  `rust` strategy requires. Its sources, tests, benchmarks and examples live at
+  the repository root and a Cargo `include` allow-list keeps the published
+  archive to the file set described here. Nothing about the module boundaries,
+  the public API or the decision to publish exactly one crate changes. See
+  [ADR-0020](ADR-0020-standards-release-blueprint.md).
 
 ## Context
 
