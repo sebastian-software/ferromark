@@ -27,8 +27,9 @@ function record(label, version, proposal) {
   results.push({ label, version, title: proposal.title, updatedFiles: proposal.paths });
 }
 
-// What the Release Please workflow opens on the current `main` without any
-// `Release-As` footer, starting from the repository's own released version.
+// What the Release Please workflow opens after the first candidate without any
+// `Release-As` footer; the released version is seeded so the case does not
+// depend on the version the checkout itself carries.
 record(
   "automatic",
   "2.0.0-rc.2",
