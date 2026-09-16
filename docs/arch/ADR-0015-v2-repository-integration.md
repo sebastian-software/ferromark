@@ -31,6 +31,18 @@ Adapt CI to workspace tests, the v2 MSRV, benchmark compilation and harness
 checks. Keep Node's eight native targets, consumer floor, package verification,
 highlighter interface, and panic-unwind boundary.
 
+### Documentation layout exception (2026-09-16)
+
+Keep durable integration and architecture decisions in `docs/arch/`, including
+this ADR and the subsequent v2 release decisions. Keep retained v2 feature and
+product behavior decisions in the date-scoped files under `docs/decisions/`.
+This is a Ferromark-specific exception to the family layout: the two
+directories have different audiences and lifecycle rules, and their names are
+part of the v2 repository organization.
+Historical v1 ADRs remain in the original parent history and are not renamed to
+satisfy the retired repository-hygiene audit. New links should follow the
+existing directory and filename when they reference one of these records.
+
 ## Compatibility and publication
 
 The Rust API is intentionally breaking. Node keeps its public rendering entry
