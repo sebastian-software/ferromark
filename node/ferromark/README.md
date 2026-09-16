@@ -7,9 +7,13 @@ Native Node.js bindings for the [Ferromark](https://github.com/sebastian-softwar
 
 ## Install the release candidate
 
+<!-- x-release-please-start-version -->
+
 ```sh
 npm install ferromark@2.0.0-rc.1
 ```
+
+<!-- x-release-please-end-version -->
 
 After publication, `ferromark@next` selects the latest release candidate.
 `npm install ferromark` stays on the stable release until v2 is finalized.
