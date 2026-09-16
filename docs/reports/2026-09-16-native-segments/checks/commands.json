@@ -1,0 +1,26 @@
+{
+  "source_revision": "7c887a2b",
+  "harness_tests": {
+    "command": "python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py'",
+    "result": "32 tests passed",
+    "when": "before both builds and all timing"
+  },
+  "builds": {
+    "default": "prepare.py --compile, no PGO object in build.json",
+    "pgo": "prepare.py --pgo --compile, training disjoint from the measured half (asserted by prepare.py)",
+    "build_log": "build-log.txt (default build; the PGO build log is 7,086 lines of -pgo-warn-missing-function output and is not archived)"
+  },
+  "measurement": {
+    "log": "measure-log.txt",
+    "runs": 3,
+    "compilers_running_during_timing": "none; pgrep -x rustc and pgrep -x cargo gated every run",
+    "parameters": "--rounds 3 --samples 6 --window-ms 40 --warmup-ms 60"
+  },
+  "source_audit": {
+    "harness": "source-audit.json.gz: 35 v1, 3495 bun, 10 md4c, 393 ox files, 0 mismatches; 2 v2 files only (path-list coverage gap, see PROVENANCE.md)",
+    "supplement": "source-audit-v2.json: 182 v2 files, 0 mismatches"
+  },
+  "artifact_audit": "python3 docs/reports/2026-09-16-native-segments/audit.py: passed",
+  "output_equality": "342/342 engine/document HTML outputs byte-identical to 2026-09-15-release-native; all agreement classifications unchanged",
+  "workspace_gate_not_rerun": "cargo fmt/test/clippy and the benchmark builds were NOT re-run in this measurement session, deliberately: no compiler may run while the harness is timing. The gate for these nine commits is carried by the pull request and by docs/reports/2026-09-16-definition-segments. This report measures an already-committed revision and edits no product source."
+}
