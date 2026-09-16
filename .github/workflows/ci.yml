@@ -96,7 +96,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Link retained coverage report
-        if: ${{ always() }}
+        if: ${{ always() && steps.upload-coverage.outputs.artifact-url != '' }}
         run: |
           printf 'Retained report: [Download lcov.info](%s)\n' "${{ steps.upload-coverage.outputs.artifact-url }}" >> "$GITHUB_STEP_SUMMARY"
       - name: Enforce line coverage floor

@@ -67,6 +67,13 @@ CI validates all v2 benchmark builds and Python harness tests instead.
 CI retains the 90% Rust line coverage gate. It excludes the N-API library,
 which is exercised by the Node tests. Run `cargo llvm-cov --workspace --exclude
 ferromark-node --all-features --locked --fail-under-lines 90 -- --test-threads=1` for the same gate.
+
+CI uploads the generated `lcov.info` as the `rust-coverage` artifact for 30 days
+and links it from the coverage job summary. The upload runs before the coverage
+floor check, so the report remains available when coverage falls below 90%; the
+summary link is omitted when report generation or upload does not produce an
+artifact.
+
 `cargo deny check` and RustSec retain the repository's dependency checks.
 
 Coverage work must improve checked behavior, with a documented reason for any
