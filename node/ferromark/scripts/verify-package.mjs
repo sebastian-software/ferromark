@@ -28,13 +28,35 @@ assert.match(
   'GNU Linux targets must use the napi-rs glibc 2.17 cross-toolchain',
 )
 
+// One typed entry per manifest, and nothing that writes a version into the
+// pnpm lockfile: the sidecar references use the workspace protocol, so the
+// release pull request only ever changes the nine `version` fields.
 const extraFiles = releaseConfig.packages['.']['extra-files']
+const versioned = entry => entry?.type === 'json' && entry.jsonpath === '$.version'
+assert.ok(
+  extraFiles.some(entry => versioned(entry) && entry.path === 'node/ferromark/package.json'),
+  'the npm facade version must be versioned by release-please',
+)
+assert.ok(
+  extraFiles.some(
+    entry => versioned(entry) && entry.glob === true && entry.path === 'node/ferromark/npm/*/package.json',
+  ),
+  'the native package versions must be versioned by release-please',
+)
+assert.ok(
+  !extraFiles.some(entry => entry?.path?.endsWith('pnpm-lock.yaml')),
+  'a lockfile is generated state, not a release template target',
+)
+
 for (const triple of packageJson.napi.targets) {
   const target = packageTarget(triple)
   const dependency = `${packageJson.name}-${target.suffix}`
-  assert.equal(packageJson.optionalDependencies[dependency], packageJson.version)
+  assert.equal(
+    packageJson.optionalDependencies[dependency],
+    'workspace:*',
+    `${dependency} must be referenced with the workspace protocol`,
+  )
 
-  const packagePath = `node/ferromark/npm/${target.suffix}/package.json`
   const platformPackage = JSON.parse(
     await readFile(new URL(`../npm/${target.suffix}/package.json`, import.meta.url), 'utf8'),
   )
@@ -47,11 +69,6 @@ for (const triple of packageJson.napi.targets) {
   assert.deepEqual(platformPackage.files, [platformPackage.main, 'LICENSE', 'LICENSE-MIT'])
   assert.deepEqual(platformPackage.engines, packageJson.engines)
   assert.equal(platformPackage.publishConfig?.provenance, true)
-  assert.ok(extraFiles.includes(packagePath), `${packagePath} must be versioned by release-please`)
-  assert.ok(
-    extraFiles.some(file => file?.jsonpath === `$.optionalDependencies['${dependency}']`),
-    `${dependency} must be versioned by release-please`,
-  )
 }
 
 assert.deepEqual(
