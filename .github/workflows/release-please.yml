@@ -1,0 +1,86 @@
+name: Release Please
+
+# Opens and maintains the release pull request for the next version. It never
+# tags, never creates a GitHub release and never publishes: `publish.yml` keeps
+# doing that manually, bound to a successful main push CI run and gated on
+# registry verification (ADR-0017).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release-pull-request:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the release branch holding the version commit
+      pull-requests: write # open and update the release pull request
+      issues: write # create and move the `autorelease:` labels on that PR
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # `gh pr list --state merged` mirrors the 200 merged pull requests the
+      # pinned library itself scans in `findMergedReleasePullRequests`.
+      PENDING_WINDOW: "200"
+    steps:
+      # `skip-github-release` below suppresses `createReleases()`, which is the
+      # only place the library moves `autorelease: pending` to
+      # `autorelease: tagged`. A merged release pull request would therefore keep
+      # the pending label forever, and `createPullRequests()` returns early while
+      # any merged, pending release pull request exists ("There are untagged,
+      # merged release PRs outstanding - aborting"). Without this reconciliation
+      # the automation opens exactly one release pull request and then stalls.
+      #
+      # `publish.yml` tags the release commit through `gh release create
+      # v<version> --target <commit>`, so a merged release pull request whose
+      # merge commit already carries a tag is published and its pending label is
+      # stale. Matching on the merge commit rather than on the pull request title
+      # keeps this independent of the title pattern. A merged release pull request
+      # that was deliberately never published stays pending on purpose; remove its
+      # label by hand to unblock the next candidate.
+      - name: Retire the pending label of published release pull requests
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/tags" --paginate --jq '.[].commit.sha' \
+            > "$RUNNER_TEMP/tagged-shas"
+          pending=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --base main \
+            --label 'autorelease: pending' --limit "$PENDING_WINDOW" \
+            --json number,mergeCommit --jq '.[] | "\(.number) \(.mergeCommit.oid)"')
+          if [ -z "$pending" ]; then
+            echo "No merged release pull request is waiting for its label."
+            exit 0
+          fi
+          gh label create 'autorelease: tagged' --repo "$GITHUB_REPOSITORY" \
+            --color ededed --description 'Release Please: published release' 2>/dev/null || true
+          while read -r number sha; do
+            if grep -qxF "$sha" "$RUNNER_TEMP/tagged-shas"; then
+              echo "Release pull request #$number is tagged at $sha; retiring its pending label."
+              gh pr edit "$number" --repo "$GITHUB_REPOSITORY" \
+                --remove-label 'autorelease: pending' --add-label 'autorelease: tagged'
+            else
+              echo "Release pull request #$number is merged but unpublished; leaving it pending."
+            fi
+          done <<< "$pending"
+
+      # The release pull request must arrive with a personal access token.
+      # A pull request opened with `GITHUB_TOKEN` does not start further workflow
+      # runs, so `ci.yml` — and with it the `standards drift` check that protected
+      # `main` requires — would never run on it and the pull request could not be
+      # merged. `RELEASE_PLEASE_TOKEN` is an organization secret available to this
+      # repository; the `GITHUB_TOKEN` fallback keeps forks and a revoked token
+      # from failing the whole workflow, at the cost of a pull request a
+      # maintainer has to nudge.
+      - uses: googleapis/release-please-action@0dfd8538845b8e92600d271a895a5372865d4062 # v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Tag and GitHub release stay with the verified `publish.yml`. The
+          # action then only runs `createPullRequests()`.
+          skip-github-release: true
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
