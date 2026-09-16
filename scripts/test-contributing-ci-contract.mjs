@@ -132,3 +132,21 @@ test("only ferromark is public and no path-only dependency exceptions remain", (
   }
   assert.deepEqual(unversioned, []);
 });
+
+test("Node and homepage CI enforce their declared formatter and lint scripts", () => {
+  for (const workspace of ["node", "homepage"]) {
+    const { scripts, devDependencies } = JSON.parse(read(`${workspace}/package.json`));
+    assert.match(scripts["format:check"], /\boxfmt\s+--check\b/);
+    assert.match(scripts.lint, /\boxlint\b/);
+    assert.match(scripts.lint, /\beslint\b/);
+    assert.ok(devDependencies.oxfmt);
+    assert.ok(devDependencies.oxlint);
+    assert.ok(devDependencies["eslint-config-setup"]);
+    for (const command of ["pnpm format:check", "pnpm lint"]) {
+      assert.ok(
+        ci.jobs[workspace].steps.some((step) => step.run === command),
+        `${workspace}: ${command}`,
+      );
+    }
+  }
+});

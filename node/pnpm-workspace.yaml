@@ -16,8 +16,9 @@ supportedArchitectures:
     - glibc
     - musl
 
-onlyBuiltDependencies:
-  - '@napi-rs/cli'
+allowBuilds:
+  "@napi-rs/cli": true
+  unrs-resolver: true
 
 overrides:
   # GHSA-2883-xcg3-v3hh: count empty YAML merge sources toward the work limit.

@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-fs-filename -- Paths come from the fixed route table and locally generated site output. */
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -67,7 +68,7 @@ const requiredGuideFragments = [
   'class="ferromark-guide-menu"',
 ];
 
-function check(page, label, required, forbidden = []) {
+function check(page, label, { required, forbidden = [] }) {
   for (const fragment of required) {
     if (!page.includes(fragment)) {
       throw new Error(`Prerendered ${label} is missing ${JSON.stringify(fragment)}`);
@@ -81,27 +82,31 @@ function check(page, label, required, forbidden = []) {
 }
 
 const footer = homepage.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] ?? "";
-check(
-  footer,
-  "family footer",
-  ["ferramenta.dev", "ferriki"],
-  ["https://sebastian-software.github.io/ferromark/"],
-);
+check(footer, "family footer", {
+  required: ["ferramenta.dev", "ferriki"],
+  forbidden: ["https://sebastian-software.github.io/ferromark/"],
+});
 
-check(homepage, "homepage", requiredFragments, forbiddenFragments);
-check(benchmarkPage, "v2 benchmark evidence", ["v2", "source revisions", "native-arm"]);
-check(guidePage, "guide page", requiredGuideFragments, forbiddenFragments);
+check(homepage, "homepage", { required: requiredFragments, forbidden: forbiddenFragments });
+check(benchmarkPage, "v2 benchmark evidence", {
+  required: ["v2", "source revisions", "native-arm"],
+});
+check(guidePage, "guide page", { required: requiredGuideFragments, forbidden: forbiddenFragments });
 
+// eslint-disable-next-line security/detect-unsafe-regex -- This scans local build output, not externally supplied HTML.
 if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {
   throw new Error("Prerendered homepage contains a nav nested directly inside a paragraph");
 }
 
 for (const path of expectedPages) {
   const html = await readFile(new URL(path, outputDirectory), "utf8");
-  check(html, path, ["/ferromark/rust/getting-started", "/ferromark/node/getting-started"]);
+  check(html, path, {
+    required: ["/ferromark/rust/getting-started", "/ferromark/node/getting-started"],
+  });
   if ((html.match(/<h1(?:\s|>)/g) ?? []).length !== 1) {
     throw new Error(`${path} must have one h1`);
   }
+  // eslint-disable-next-line security/detect-unsafe-regex -- This scans local build output, not externally supplied HTML.
   for (const [, href] of html.matchAll(/href="([^"#]*)(?:#[^"]*)?"/g)) {
     if (!href.startsWith("/ferromark/") || href.startsWith("/ferromark/assets/")) continue;
     const pathname = href.slice("/ferromark/".length).split("?")[0].replace(/\/$/, "");

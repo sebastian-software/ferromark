@@ -39,7 +39,6 @@ Heading slugs and extension HTML follow v2. `linkBasePath` enables v2 site routi
 root-absolute links, images, and raw HTML URLs use the base, and Markdown links
 become index.html routes. Highlighters receive fenced and indented code blocks.
 
-
 The package requires Node.js 22.12 or newer. It installs one platform-specific
 native package for glibc or musl Linux, macOS, and Windows on x64 and arm64;
 musl support includes Alpine Linux. GNU Linux binaries target glibc 2.17 or
@@ -54,31 +53,31 @@ then runs the package tests on 22.12.0, so the published floor stays the one
 that is actually verified.
 
 ```js
-import { toHtml } from 'ferromark'
+import { toHtml } from "ferromark";
 
-const html = toHtml('# Hello')
+const html = toHtml("# Hello");
 ```
 
 Both ESM `import` and CommonJS `require()` work on supported Node.js versions:
 
 ```js
-const { toHtml } = require('ferromark')
+const { toHtml } = require("ferromark");
 ```
 
 ## Optional writing syntax
 
 ```js
-import { toHtml } from 'ferromark'
+import { toHtml } from "ferromark";
 
-const html = toHtml('This is ==important==^[An explanatory *note*.].', {
+const html = toHtml("This is ==important==^[An explanatory *note*.].", {
   highlight: true,
   inlineFootnotes: true,
-})
+});
 
 // Reference definitions stay visible; ordinary inline links still work.
-const literalReferences = toHtml('[name]\n\n[name]: /target', {
+const literalReferences = toHtml("[name]\n\n[name]: /target", {
   allowLinkRefs: false,
-})
+});
 ```
 
 `highlight` and `inlineFootnotes` default to `false`; `allowLinkRefs` defaults to
@@ -100,11 +99,11 @@ retains native parser scratch allocations between calls while keeping each
 document's headings, references, and footnotes isolated.
 
 ```js
-import { Renderer } from 'ferromark'
+import { Renderer } from "ferromark";
 
-const renderer = new Renderer({ headingIds: true })
-const first = renderer.toHtml('# First')
-const second = renderer.toHtml('# Second')
+const renderer = new Renderer({ headingIds: true });
+const first = renderer.toHtml("# First");
+const second = renderer.toHtml("# Second");
 ```
 
 Create one renderer per worker; its options are fixed at construction.
@@ -116,9 +115,9 @@ consumer such as an HTTP response. It returns a UTF-8 Node.js `Buffer` backed by
 the native output allocation, avoiding the extra JavaScript string transcode.
 
 ```js
-import { toHtmlBuffer } from 'ferromark'
+import { toHtmlBuffer } from "ferromark";
 
-response.end(toHtmlBuffer('# Hello'))
+response.end(toHtmlBuffer("# Hello"));
 ```
 
 Reusable renderers provide the same output path through
@@ -132,7 +131,7 @@ removed from the rendered attributes. Use this default for Markdown from users
 or other untrusted sources.
 
 ```js
-toHtml('<img src=x onerror=alert(1)>')
+toHtml("<img src=x onerror=alert(1)>");
 // '&lt;img src=x onerror=alert(1)&gt;'
 ```
 
@@ -144,8 +143,8 @@ untrusted user content.
 
 ```js
 toHtml('<span class="note">Internal note</span>', {
-  renderPolicy: 'trusted',
-})
+  renderPolicy: "trusted",
+});
 // '<p><span class="note">Internal note</span></p>\n'
 ```
 
@@ -172,26 +171,22 @@ instead of parsing with truncated source offsets.
 
 An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter plugs into the code-block renderer without coupling the two native cores:
 
-```js
-import { createHighlighter } from 'ferriki'
-import { toHtmlWithHighlighter } from 'ferromark'
+````js
+import { createHighlighter } from "ferriki";
+import { toHtmlWithHighlighter } from "ferromark";
 
 const highlighter = await createHighlighter({
-  langs: ['rust'],
-  themes: ['github-dark'],
-})
+  langs: ["rust"],
+  themes: ["github-dark"],
+});
 
-const html = toHtmlWithHighlighter(
-  '```rust\nfn main() {}\n```',
-  highlighter,
-  {
-    theme: 'github-dark',
-    onHighlightError(error, { lang }) {
-      console.warn(`Could not highlight ${lang}`, error)
-    },
+const html = toHtmlWithHighlighter("```rust\nfn main() {}\n```", highlighter, {
+  theme: "github-dark",
+  onHighlightError(error, { lang }) {
+    console.warn(`Could not highlight ${lang}`, error);
   },
-)
-```
+});
+````
 
 Unsupported languages and highlighter exceptions fall back to Ferromark's escaped `<pre><code>` output. Use `onHighlightError` to observe exceptions; if that callback throws, the render call throws too. Invalid highlighter return values also surface as native callback errors.
 Highlighter HTML is otherwise written verbatim, so only pass an implementation that escapes untrusted code and metadata.
@@ -202,9 +197,9 @@ Fence meta text after the language (e.g. ` ```ts {1-3} title="…" `) reaches th
 `transform()` returns HTML together with the data documentation tooling needs — headings for a table of contents and the raw front matter block:
 
 ```js
-import { transform } from 'ferromark'
+import { transform } from "ferromark";
 
-const { html, headings, frontMatter } = transform(source, { frontMatter: true })
+const { html, headings, frontMatter } = transform(source, { frontMatter: true });
 // headings: [{ level: 2, id: 'getting-started', text: 'Getting Started' }, …]
 // frontMatter: raw text between the --- delimiters (parse with your YAML library)
 ```
@@ -214,7 +209,7 @@ const { html, headings, frontMatter } = transform(source, { frontMatter: true })
 For sites deployed under a subpath (e.g. GitHub Pages), `linkBasePath` prefixes internal absolute link destinations natively:
 
 ```js
-toHtml('[guide](/guide)', { linkBasePath: '/docs' })
+toHtml("[guide](/guide)", { linkBasePath: "/docs" });
 // <p><a href="/docs/guide">guide</a></p>
 ```
 
@@ -226,12 +221,12 @@ The native binding loads when constructing `Renderer` or on the first call to
 `toHtml()`, `toHtmlBuffer()`, `transform()`, or a highlighter helper. If that
 load fails:
 
-| Message or environment | Resolution |
-| --- | --- |
-| Node.js below 22.12 | Upgrade to Node.js 22.12 or newer; this is the package's declared engine requirement and the first Node 22 release with unflagged `require(esm)` support. |
-| Unsupported platform or architecture | Use macOS, Windows, or glibc/musl Linux on x64 or arm64. |
-| `could not load the optional native package` | Reinstall without `--omit=optional` and verify that your lockfile includes Ferromark's package for the current platform. |
-| `ERR_DLOPEN_FAILED` | Read the wrapped loader message for the exact binary and platform. On GNU Linux, verify glibc 2.17 or newer and required shared libraries; on Windows, install or repair the Microsoft Visual C++ Redistributable; on macOS, check architecture, OS compatibility, quarantine, and code-signing policy. The original loader error is available as `error.cause`. |
+| Message or environment                       | Resolution                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node.js below 22.12                          | Upgrade to Node.js 22.12 or newer; this is the package's declared engine requirement and the first Node 22 release with unflagged `require(esm)` support.                                                                                                                                                                                                        |
+| Unsupported platform or architecture         | Use macOS, Windows, or glibc/musl Linux on x64 or arm64.                                                                                                                                                                                                                                                                                                         |
+| `could not load the optional native package` | Reinstall without `--omit=optional` and verify that your lockfile includes Ferromark's package for the current platform.                                                                                                                                                                                                                                         |
+| `ERR_DLOPEN_FAILED`                          | Read the wrapped loader message for the exact binary and platform. On GNU Linux, verify glibc 2.17 or newer and required shared libraries; on Windows, install or repair the Microsoft Visual C++ Redistributable; on macOS, check architecture, OS compatibility, quarantine, and code-signing policy. The original loader error is available as `error.cause`. |
 
 This package does not include a WASM fallback, so unsupported environments need
 one of the supported native runtimes rather than a JavaScript fallback.
@@ -244,7 +239,9 @@ N-API to translate a Rust panic into a JavaScript exception instead of aborting
 the Node.js process.
 
 <!-- ferramenta-family:start -->
+
 **ferromark** is part of the [Ferramenta](https://ferramenta.dev) family — A family of Rust tools.
 
 Siblings: [ferroni](https://sebastian-software.github.io/ferroni/) — Oniguruma-compatible regex engine · [ferriki](https://github.com/sebastian-software/ferriki) — Shiki-compatible syntax highlighting · [ferrolex](https://github.com/sebastian-software/ferrolex) — Spell checking for text and code · [ferrocat](https://ferrocat.dev) — Translation catalog engine · [palamedes](https://palamedes.dev) — Internationalization for TypeScript applications · [ferrovia](https://github.com/sebastian-software/ferrovia) — SVGO-compatible SVG optimizer · [ferralk](https://github.com/sebastian-software/ferralk) — Glob matching and parallel filesystem walking · [ferrugo](https://github.com/sebastian-software/ferrugo) — PDF previews for untrusted files.
+
 <!-- ferramenta-family:end -->

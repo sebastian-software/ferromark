@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import type { LinksFunction, MetaFunction } from "react-router";
+
 import {
   ArdoErrorBoundary,
   ArdoGeneratedSidebar,
@@ -6,21 +7,23 @@ import {
   ArdoRootLayout,
   ArdoSearch,
   ArdoSidebar,
-  ArdoSidebarSection,
   ArdoSidebarGroup,
   ArdoSidebarLink,
+  ArdoSidebarSection,
   ArdoThemeToggle,
 } from "ardo/ui";
 import { MarkDefs, SiteFooter, SiteHeader } from "ferramenta-family";
 import bigShouldersFont from "ferramenta-family/fonts/big-shoulders.woff2?url";
-import config from "virtual:ardo/config";
+import { useRef } from "react";
 import { NavLink, useLocation } from "react-router";
+import config from "virtual:ardo/config";
+
 import { documentationSections, sharedConcepts } from "./navigation";
-import type { LinksFunction, MetaFunction } from "react-router";
 import "ardo/ui/styles.css";
 import "ferramenta-family/tokens.css";
 import "ferramenta-family/fonts.css";
 import "ferramenta-family/theme.css";
+
 import "./styles/site.css";
 // Last on purpose, as the package README requires: the shared chrome has to win
 // the selector ties the site stylesheet would otherwise take.
@@ -38,7 +41,7 @@ export const links: LinksFunction = () => [
 
 export const meta: MetaFunction = ({ location }) => {
   const path = location.pathname.replace(/^\/ferromark(?=\/|$)/, "").replace(/\/$/, "");
-  const section = documentationSections.find((section) => path.startsWith(`/${section.id}/`));
+  const section = documentationSections.find((candidate) => path.startsWith(`/${candidate.id}/`));
   const page = section?.pages.find(([, to]) => to === path);
   const title = page
     ? `${page[0]} · ${section?.label} · Ferromark`
@@ -86,6 +89,54 @@ function GuideNav() {
   );
 }
 
+function GuideMenuLinks({
+  current,
+  close,
+}: {
+  current: (typeof documentationSections)[number] | undefined;
+  close: () => void;
+}) {
+  return (
+    <nav className="ferromark-guide-flyout" aria-label="Mobile documentation">
+      <NavLink to="/" onClick={close}>
+        ferromark home
+      </NavLink>
+      <div className="ferromark-section-switch" aria-label="Documentation sections">
+        {documentationSections.map((section) => (
+          <NavLink
+            key={section.id}
+            to={section.to}
+            onClick={close}
+            data-active={current?.id === section.id}
+          >
+            {section.label}
+          </NavLink>
+        ))}
+      </div>
+      {current && (
+        <>
+          <p className="ferromark-menu-label">{current.label}</p>
+          {current.pages.map(([label, to]) => (
+            <NavLink key={to} to={to} onClick={close}>
+              {label}
+            </NavLink>
+          ))}
+        </>
+      )}
+      {current?.id !== "guide" && (
+        <>
+          <p className="ferromark-menu-label">Shared concepts</p>
+          {sharedConcepts.map(([label, to]) => (
+            <NavLink key={to} to={to} onClick={close}>
+              {label}
+            </NavLink>
+          ))}
+        </>
+      )}
+    </nav>
+  );
+}
+
 function DocsActions() {
   const menuRef = useRef<HTMLDetailsElement>(null);
   const { pathname } = useLocation();
@@ -107,45 +158,23 @@ function DocsActions() {
         }}
       >
         <summary aria-label="Documentation menu">Docs</summary>
-        <nav className="ferromark-guide-flyout" aria-label="Mobile documentation">
-          <NavLink to="/" onClick={close}>
-            ferromark home
-          </NavLink>
-          <div className="ferromark-section-switch" aria-label="Documentation sections">
-            {documentationSections.map((section) => (
-              <NavLink
-                key={section.id}
-                to={section.to}
-                onClick={close}
-                data-active={current?.id === section.id}
-              >
-                {section.label}
-              </NavLink>
-            ))}
-          </div>
-          {current && (
-            <>
-              <p className="ferromark-menu-label">{current.label}</p>
-              {current.pages.map(([label, to]) => (
-                <NavLink key={to} to={to} onClick={close}>
-                  {label}
-                </NavLink>
-              ))}
-            </>
-          )}
-          {current?.id !== "guide" && (
-            <>
-              <p className="ferromark-menu-label">Shared concepts</p>
-              {sharedConcepts.map(([label, to]) => (
-                <NavLink key={to} to={to} onClick={close}>
-                  {label}
-                </NavLink>
-              ))}
-            </>
-          )}
-        </nav>
+        <GuideMenuLinks current={current} close={close} />
       </details>
     </>
+  );
+}
+
+function FamilyFooter() {
+  return (
+    <SiteFooter
+      current="ferromark"
+      legal={
+        <>
+          ferromark and this site are MIT-licensed. Copyright {new Date().getFullYear()} Sebastian
+          Software GmbH · <a href="https://ardo-docs.dev">Built with Ardo</a>
+        </>
+      }
+    />
   );
 }
 
@@ -192,15 +221,7 @@ export default function Root() {
         </ArdoRoot>
       </div>
 
-      <SiteFooter
-        current="ferromark"
-        legal={
-          <>
-            ferromark and this site are MIT-licensed. Copyright {new Date().getFullYear()} Sebastian
-            Software GmbH · <a href="https://ardo-docs.dev">Built with Ardo</a>
-          </>
-        }
-      />
+      <FamilyFooter />
     </>
   );
 }

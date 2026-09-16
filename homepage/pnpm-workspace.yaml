@@ -1,8 +1,10 @@
 allowBuilds:
   esbuild: true
+  unrs-resolver: true
 
 overrides:
-  brace-expansion@<=5.0.8: 5.0.9
+  # Older minimatch releases need brace-expansion's v2 default export.
+  brace-expansion@>=5.0.0 <=5.0.8: 5.0.9
   browserslist@<=4.28.6: 4.28.7
   esbuild@>=0.27.3 <0.28.1: 0.28.1
   # GHSA-2883-xcg3-v3hh: preserve gray-matter's v3 API while fixing merge limits.
