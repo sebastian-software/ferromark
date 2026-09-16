@@ -10,7 +10,7 @@ Native Node.js bindings for the [Ferromark](https://github.com/sebastian-softwar
 <!-- x-release-please-start-version -->
 
 ```sh
-npm install ferromark@2.0.0-rc.1
+npm install ferromark@2.0.0-rc.2
 ```
 
 <!-- x-release-please-end-version -->
