@@ -7,6 +7,7 @@
 //! These tests fix the observable consequences of that boundary rule: which
 //! `[label]:` lines become definitions and which stay text.
 
+use std::fmt::Write as _;
 use std::time::{Duration, Instant};
 
 use ferromark::parser::ParserOptions;
@@ -255,6 +256,36 @@ fn a_document_without_any_candidate_renders_unchanged() {
     let html = gfm("Earlier [link](https://example.com).\n\n- Skip `]:` in prose.\n");
     assert!(html.contains("https://example.com"), "{html}");
     assert!(html.contains("]:"), "{html}");
+}
+
+#[test]
+fn a_reference_dense_document_still_resolves_every_definition() {
+    // Planning cannot pay for itself here, so the pre-pass runs over the whole
+    // body. That decision must not change a single definition.
+    let mut source = String::new();
+    for index in 0..40 {
+        writeln!(source, "[r{index}]: /u{index}").expect("string write");
+    }
+    source.push('\n');
+    for index in 0..40 {
+        write!(source, "[link][r{index}] ").expect("string write");
+    }
+    source.push('\n');
+    let html = gfm(&source);
+    for index in 0..40 {
+        assert!(
+            html.contains(&format!("href=\"/u{index}\"")),
+            "missing /u{index} in {html}"
+        );
+    }
+    assert!(!html.contains("]:"), "{html}");
+}
+
+#[test]
+fn a_document_too_short_to_plan_still_resolves_its_definition() {
+    let html = gfm("[a][b]\n\n[b]: /c \"d\"\n");
+    assert!(html.contains("href=\"/c\""), "{html}");
+    assert!(html.contains("title=\"d\""), "{html}");
 }
 
 /// Shapes whose planning must not rescan the same bytes once per line:

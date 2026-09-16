@@ -102,6 +102,36 @@ pub(in crate::parser) enum DefinitionPlan {
 /// parse keeps as ordinary content.
 const BOM: &[u8] = b"\xEF\xBB\xBF";
 
+/// What one segment costs, expressed in bytes of ordinary block parsing.
+///
+/// A segment is not free: it builds a parser over the temporary arena, runs
+/// the block grammar over its own bytes, and hands its tree to the collector.
+/// Against the block-parse throughput of the measured corpora that fixed part
+/// is worth on the order of this many bytes. So `k` segments cost at least
+/// `k * SEGMENT_COST_BYTES` beyond the bytes they hold, which bounds both uses
+/// below:
+///
+/// * a document whose candidates span `S` bytes with `k` openers cannot profit
+///   from planning when `S / k` is under this, because the plan can never skip
+///   more than `S` and must pay `k` fixed costs;
+/// * two segments separated by a gap narrower than this are cheaper parsed
+///   together than apart.
+///
+/// Both are performance heuristics. Every plan the planner does produce stays
+/// exact, and so does every fallback.
+pub(in crate::parser) const SEGMENT_COST_BYTES: usize = 256;
+
+/// Openers to see before the density average above is trusted.
+///
+/// One tight pair proves nothing — a document can open with two adjacent
+/// definitions and then hold a megabyte of prose.
+pub(in crate::parser) const DENSITY_SAMPLE: usize = 8;
+
+/// A body shorter than this has nothing worth skipping: it is a handful of
+/// lines, so the plan is either the whole body or nothing at all, and the
+/// planner's own setup already costs more than the difference.
+pub(in crate::parser) const MIN_PLANNED_BYTES: usize = 64;
+
 /// Receives the candidate openers that survive the opaque-region filter.
 ///
 /// Production planning does not need them; the differential tests assert that
@@ -509,9 +539,16 @@ mod tests {
     use super::{DefinitionPlan, plan_definition_pass};
 
     /// The planned ranges, or `None` when the document falls back.
+    /// The planner's own verdict. The caller's density and length heuristics
+    /// are deliberately not applied here — they only ever choose the full
+    /// pass, and this helper exists to exercise the planner.
     fn plan(source: &str, options: &ParserOptions) -> Option<Vec<(usize, usize)>> {
         let mut openers = CandidateOpeners::new();
-        scan_definition_candidates(source, options.footnotes, options.mdx, &mut openers);
+        let scan = scan_definition_candidates(source, options.footnotes, options.mdx, &mut openers);
+        if scan.dense {
+            // An incomplete opener list must never reach the planner.
+            return None;
+        }
         match plan_definition_pass(source, options, &openers) {
             DefinitionPlan::Fallback => None,
             DefinitionPlan::Segments(segments) => Some(segments.into_vec()),

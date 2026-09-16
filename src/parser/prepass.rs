@@ -34,7 +34,10 @@ mod equivalence;
 #[cfg(test)]
 mod gzip;
 
-pub(super) use segments::{CandidateOpeners, DefinitionPlan, plan_definition_pass};
+pub(super) use segments::{
+    CandidateOpeners, DENSITY_SAMPLE, DefinitionPlan, MIN_PLANNED_BYTES, SEGMENT_COST_BYTES,
+    plan_definition_pass,
+};
 
 /// Three-byte fence-run searchers, built once for the process.
 ///
@@ -82,6 +85,10 @@ pub(super) struct CandidateScan {
     /// Some opener could begin a *link reference* definition, rather than only
     /// an enabled footnote label.
     pub link: bool,
+    /// The openers sit too close together for planning to pay for itself, so
+    /// the walk stopped early and `openers` is deliberately incomplete. Only a
+    /// full-body pass may follow.
+    pub dense: bool,
 }
 
 /// [`definition_candidates`] with the two probes [`Parser::build_prepass`]
@@ -97,6 +104,7 @@ pub(super) fn scan_definition_candidates(
     let absent = CandidateScan {
         any: false,
         link: false,
+        dense: false,
     };
     if memchr(b'[', bytes).is_none() {
         return absent;
@@ -180,6 +188,19 @@ fn definition_candidates(
             }
         }
         judged = closer;
+        // Stop as soon as the openers are provably too dense to plan: the
+        // span they cover cannot pay for one segment each. Everything after
+        // this point would only be collected to be thrown away.
+        if link
+            && openers.len() >= DENSITY_SAMPLE
+            && closer - (openers[0] as usize) < openers.len() * SEGMENT_COST_BYTES
+        {
+            return CandidateScan {
+                any: true,
+                link: true,
+                dense: true,
+            };
+        }
         let Some(offset) = DEFINITION_CLOSER.find(&bytes[from..]) else {
             break;
         };
@@ -190,6 +211,7 @@ fn definition_candidates(
     CandidateScan {
         any: link || found,
         link,
+        dense: false,
     }
 }
 
@@ -291,8 +313,15 @@ impl<'a> Parser<'a> {
         {
             return (None, None);
         }
-        let (definitions, labels) = match plan_definition_pass(self.source, &self.options, &openers)
-        {
+        // Two heuristics decide against planning before the planner runs.
+        // Both only ever choose the pass this code replaced, so neither can
+        // change what is collected.
+        let plan = if scan.dense || self.source.len() < MIN_PLANNED_BYTES {
+            DefinitionPlan::Fallback
+        } else {
+            plan_definition_pass(self.source, &self.options, &openers)
+        };
+        let (definitions, labels) = match plan {
             DefinitionPlan::Fallback => self.collect_definitions(&[(0, self.source.len())]),
             DefinitionPlan::Segments(segments) => {
                 // Every candidate sat inside code or raw HTML: no arena
@@ -406,6 +435,48 @@ mod tests {
 
     fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
         definition_candidates(source, footnotes).0
+    }
+
+    fn is_dense(source: &str) -> bool {
+        let mut openers = super::CandidateOpeners::new();
+        super::scan_definition_candidates(source, true, false, &mut openers).dense
+    }
+
+    /// `count` reference definitions, each padded to `spacing` bytes.
+    fn reference_run(count: usize, spacing: usize) -> String {
+        let mut source = String::new();
+        for index in 0..count {
+            let line = format!("[r{index}]: /u{index}\n");
+            source.push_str(&line);
+            for _ in line.len()..spacing {
+                source.push('x');
+            }
+            source.push('\n');
+        }
+        source
+    }
+
+    #[test]
+    fn a_reference_dense_document_stops_the_scan_early() {
+        // Definition after definition: the plan could never skip enough to pay
+        // for one segment each, so the scan gives up and the full pass runs.
+        assert!(is_dense(&reference_run(40, 0)));
+        // The same definitions spread thin are worth planning.
+        assert!(!is_dense(&reference_run(40, 4 * super::SEGMENT_COST_BYTES)));
+    }
+
+    #[test]
+    fn a_short_run_of_definitions_is_never_called_dense() {
+        // Below the sample size the average proves nothing, however tight.
+        assert!(!is_dense(&reference_run(super::DENSITY_SAMPLE - 1, 0)));
+    }
+
+    #[test]
+    fn a_dense_scan_still_reports_a_link_candidate() {
+        let mut openers = super::CandidateOpeners::new();
+        let source = reference_run(40, 0);
+        let scan = super::scan_definition_candidates(&source, true, false, &mut openers);
+        assert!(scan.dense && scan.any && scan.link);
     }
 
     #[test]
