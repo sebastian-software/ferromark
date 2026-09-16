@@ -24,6 +24,15 @@ use super::reference::ReferenceMap;
 
 mod segments;
 
+/// The segmented pass is proven against the unsegmented one, over the bundled
+/// specification fixtures, the frozen measurement corpora and generated token
+/// soup. `gzip` only exists so the corpora can be read without a compression
+/// dependency; both modules are test-only.
+#[cfg(test)]
+mod equivalence;
+#[cfg(test)]
+mod gzip;
+
 pub(super) use segments::{CandidateOpeners, DefinitionPlan, plan_definition_pass};
 
 /// Three-byte fence-run searchers, built once for the process.
