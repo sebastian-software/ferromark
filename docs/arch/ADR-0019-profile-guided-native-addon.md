@@ -59,12 +59,17 @@ build is a silent no-op.
 
 ## Coverage limits
 
-Six targets — both Darwin, both GNU Linux and both Windows — are built on
+Five targets — both Darwin, both GNU Linux and x86-64 Windows — are built on
 runners of their own architecture, so the host-trained profile applies to them.
 The two musl targets are cross-compiled from `x86_64` GNU runners with
 cargo-zigbuild, and `aarch64-unknown-linux-musl` is a different architecture
 from its runner. Their unit hash differs from the host's, so those builds carry
 the profile flag but receive no profile data; they are otherwise unchanged.
+The ARM64 Windows job is built without PGO (`pgo: false` in the CI matrix): on
+that runner the pinned toolchain's `llvm-profdata` rejects the counters its own
+instrumented binary writes (`malformed instrumentation profile data: symbol
+name is empty`), so the addon stays on the plain build until a toolchain
+update or a different instrumentation setting is verified there.
 Collecting a profile per target would require running an instrumented binary on
 each target, which needs emulation or additional runners. That is a separate
 decision, not a v2.0 blocker.

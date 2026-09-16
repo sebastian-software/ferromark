@@ -97,10 +97,12 @@ the Cargo archive rehearsal. CI retains the verified archives for seven days.
 These jobs do not publish. Publication requires a successful **push CI run on
 main at the exact release commit**, including every gate.
 
-Every native job sets `FERROMARK_PGO=1`, so each published addon is built from
-a profile collected on its own runner. The six same-architecture targets receive
+Seven native jobs set `FERROMARK_PGO=1`, so each published addon is built from
+a profile collected on its own runner. Five same-architecture targets receive
 that profile; the two cross-compiled musl targets do not, because a Cargo unit
-hash covers the target triple. The crates.io crate is unaffected. Profile-guided
+hash covers the target triple, and the Windows ARM64 job builds without PGO
+because the pinned toolchain's `llvm-profdata` rejects the counters written on
+that runner. The crates.io crate is unaffected. Profile-guided
 binaries depend on counts taken at build time and are therefore no longer
 byte-identical between runs of the same commit, so a publish retry must reuse
 the original `ci_run_id`. See
