@@ -505,13 +505,13 @@ mod tests {
 
     use crate::ParserOptions;
 
-    use super::super::{CandidateOpeners, definition_candidates};
+    use super::super::{CandidateOpeners, scan_definition_candidates};
     use super::{DefinitionPlan, plan_definition_pass};
 
     /// The planned ranges, or `None` when the document falls back.
     fn plan(source: &str, options: &ParserOptions) -> Option<Vec<(usize, usize)>> {
         let mut openers = CandidateOpeners::new();
-        definition_candidates(source, options.footnotes, options.mdx, &mut openers);
+        scan_definition_candidates(source, options.footnotes, options.mdx, &mut openers);
         match plan_definition_pass(source, options, &openers) {
             DefinitionPlan::Fallback => None,
             DefinitionPlan::Segments(segments) => Some(segments.into_vec()),

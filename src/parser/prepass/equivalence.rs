@@ -22,7 +22,7 @@ use crate::parser::{Parser, ParserOptions};
 
 use super::gzip::gunzip;
 use super::segments::{DefinitionPlan, plan_with_survivors};
-use super::{CandidateOpeners, definition_candidates};
+use super::{CandidateOpeners, scan_definition_candidates};
 
 /// Reference definitions and footnote labels in a comparable, ordered form.
 type Collected = (Vec<(String, String, Option<String>)>, Vec<String>);
@@ -80,7 +80,7 @@ fn check(source: &str, options: &ParserOptions) -> Outcome {
     let body = parser.source;
 
     let mut openers = CandidateOpeners::new();
-    definition_candidates(body, options.footnotes, options.mdx, &mut openers);
+    scan_definition_candidates(body, options.footnotes, options.mdx, &mut openers);
     let (plan, survivors) = plan_with_survivors(body, &parser.options, &openers);
 
     let DefinitionPlan::Segments(segments) = &plan else {
