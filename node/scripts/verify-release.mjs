@@ -35,8 +35,10 @@ for (const target of targets) {
       `Platform package version mismatch: ${platformPackage.name}@${platformPackage.version}`,
     )
   }
-  if (packageJson.optionalDependencies[platformPackage.name] !== packageJson.version) {
-    throw new Error(`Main package does not pin ${platformPackage.name}@${packageJson.version}`)
+  // `workspace:*` resolves to the sidecar's own version while packing, so the
+  // release pull request never has to touch this reference.
+  if (packageJson.optionalDependencies[platformPackage.name] !== 'workspace:*') {
+    throw new Error(`Main package does not reference ${platformPackage.name} as workspace:*`)
   }
   const file = path.join(platformDir, `ferromark.${target}.node`)
   const info = await stat(file)

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import TOML from "@iarna/toml";
 import { Manifest, setLogger } from "release-please";
@@ -21,21 +21,35 @@ export const candidateHistory = [
   "docs(perf): record the third Apple Silicon iteration round",
 ];
 
+/** The eight native sidecar directories, read from the workspace itself. */
+export function nativeTargets() {
+  return readdirSync(resolve(root, "node/ferromark/npm")).sort();
+}
+
+/**
+ * Expand one `extra-files` entry to the repository-relative paths it updates.
+ * `glob: true` entries are matched against the real directory, the way the
+ * library matches them against the target branch.
+ */
+function extraFilePaths(entry) {
+  if (typeof entry === "string") return [entry];
+  if (!entry.glob) return [entry.path];
+  const [prefix, suffix] = entry.path.split("*");
+  return nativeTargets().map((target) => `${prefix}${target}${suffix}`);
+}
+
 export function readReleaseFiles() {
   const read = (file) => readFileSync(resolve(root, file), "utf8");
   const config = JSON.parse(read("release-please-config.json"));
-  const workspace = TOML.parse(read("Cargo.toml")).workspace;
+  const manifest = TOML.parse(read("Cargo.toml"));
   const paths = new Set([
     "release-please-config.json",
     ".release-please-manifest.json",
     "Cargo.toml",
     "Cargo.lock",
-    "version.txt",
     "node/pnpm-lock.yaml",
-    ...workspace.members.map((member) => `${member}/Cargo.toml`),
-    ...config.packages["."]["extra-files"].map((entry) =>
-      typeof entry === "string" ? entry : entry.path,
-    ),
+    ...manifest.workspace.members.map((member) => `${member}/Cargo.toml`),
+    ...config.packages["."]["extra-files"].flatMap(extraFilePaths),
   ]);
   if (existsSync(resolve(root, "CHANGELOG.md"))) paths.add("CHANGELOG.md");
   return new Map([...paths].map((file) => [file, read(file)]));
@@ -63,6 +77,20 @@ export async function proposeRelease(files, history) {
         sha: "a".repeat(40),
       };
     },
+    // The `extra-files` glob for the eight native manifests resolves against
+    // the known file set rather than against a branch on GitHub.
+    async findFilesByGlobAndRef(glob, _ref, prefix) {
+      const pattern = new RegExp(
+        `^${glob
+          .split("*")
+          .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .join("[^/]*")}$`,
+      );
+      const base = prefix === undefined || prefix === "." ? "" : `${prefix}/`;
+      return [...files.keys()]
+        .filter((file) => file.startsWith(base) && pattern.test(file.slice(base.length)))
+        .map((file) => file.slice(base.length));
+    },
     async *releaseIterator() {
       yield { tagName: `v${previous}`, sha: "a".repeat(40), notes: "Rehearsal baseline" };
     },
@@ -70,7 +98,7 @@ export async function proposeRelease(files, history) {
       for (const [index, message] of messages.entries()) {
         // Distinct hexadecimal shas; "a" is reserved for the released commit.
         const sha = `${index + 1}`.padStart(40, "b");
-        yield { sha, message, files: ["crates/ferromark/src/lib.rs"] };
+        yield { sha, message, files: ["src/lib.rs"] };
       }
       yield { sha: "a".repeat(40), message: "chore: preceding release", files: [] };
     },
@@ -104,28 +132,39 @@ export async function proposeRelease(files, history) {
 export function validateRelease(files, expectedVersion) {
   const json = (file) => JSON.parse(files.get(file));
   const cargo = TOML.parse(files.get("Cargo.toml"));
-  assert.equal(cargo.workspace.package.version, expectedVersion, "Rust workspace version");
-  assert.equal(files.get("version.txt").trim(), expectedVersion, "Release version file");
+
+  // `release-type: rust` writes the root package version, every member version,
+  // the published internal requirements and Cargo.lock — natively, with no
+  // `version.txt` and no Cargo `extra-files` to keep in step.
+  assert.equal(cargo.package.name, "ferromark", "Root package");
+  assert.equal(cargo.package.version, expectedVersion, "Root package version");
+  assert.equal(
+    cargo.workspace.package?.version,
+    undefined,
+    "An inherited workspace version cannot be updated and must not come back",
+  );
   assert.equal(json(".release-please-manifest.json")["."], expectedVersion, "Release manifest");
-  const localNames = [];
+
+  const localNames = ["ferromark"];
   for (const member of cargo.workspace.members) {
-    const pkg = TOML.parse(files.get(`${member}/Cargo.toml`)).package;
-    assert.deepEqual(pkg.version, { workspace: true }, `${member}: version inheritance`);
-    localNames.push(pkg.name);
+    const memberManifest = TOML.parse(files.get(`${member}/Cargo.toml`));
+    assert.equal(memberManifest.package.version, expectedVersion, `${member}: package version`);
+    assert.equal(memberManifest.package.publish, false, `${member}: stays unpublished`);
+    const requirement = memberManifest.dependencies?.ferromark;
+    if (requirement) {
+      assert.equal(requirement.version, expectedVersion, `${member}: ferromark requirement`);
+      assert.equal(requirement.path, "../..", `${member}: ferromark path`);
+    }
+    localNames.push(memberManifest.package.name);
   }
+
   const lock = TOML.parse(files.get("Cargo.lock"));
   for (const name of localNames) {
     const matches = lock.package.filter((pkg) => pkg.name === name && !pkg.source);
     assert.equal(matches.length, 1, `${name}: unique local lockfile entry`);
     assert.equal(matches[0].version, expectedVersion, `${name}: Cargo.lock version`);
-    if (name !== "ferromark-node") {
-      assert.equal(
-        cargo.workspace.dependencies[name].version,
-        `=${expectedVersion}`,
-        `${name}: exact dependency pin`,
-      );
-    }
   }
+
   for (const readme of ["README.md.src", "README.md"]) {
     const text = files.get(readme);
     assert.ok(
@@ -140,13 +179,16 @@ export function validateRelease(files, expectedVersion) {
     files.get("node/ferromark/README.md").includes(`npm install ferromark@${expectedVersion}`),
     "node README: npm install for the selected version",
   );
+
   const main = json("node/ferromark/package.json");
   const pnpm = parseYaml(files.get("node/pnpm-lock.yaml"));
   assert.equal(main.version, expectedVersion, "npm facade version");
   assert.equal(Object.keys(main.optionalDependencies).length, 8, "Eight native packages");
-  for (const [name, pin] of Object.entries(main.optionalDependencies)) {
+  for (const [name, reference] of Object.entries(main.optionalDependencies)) {
     const target = name.replace(/^ferromark-/, "");
-    assert.equal(pin, expectedVersion, `${name}: optional dependency pin`);
+    // The sidecar reference carries no version at all, which is what keeps the
+    // pnpm lockfile out of the release template.
+    assert.equal(reference, "workspace:*", `${name}: workspace reference`);
     assert.equal(
       json(`node/ferromark/npm/${target}/package.json`).version,
       expectedVersion,
@@ -154,7 +196,7 @@ export function validateRelease(files, expectedVersion) {
     );
     assert.deepEqual(
       pnpm.importers.ferromark.optionalDependencies[name],
-      { specifier: expectedVersion, version: `link:npm/${target}` },
+      { specifier: "workspace:*", version: `link:npm/${target}` },
       `${name}: pnpm lockfile`,
     );
   }
