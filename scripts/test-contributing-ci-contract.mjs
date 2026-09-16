@@ -49,6 +49,34 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
   assert.ok(ci.jobs.test.steps.some((step) => step.run === 'rustup override set "$TOOLCHAIN"'));
 });
 
+test("coverage retains the report before enforcing the floor", () => {
+  const coverage = ci.jobs.coverage;
+  const generate = coverage.steps.find((step) => step.name === "Generate LCOV coverage report");
+  const upload = coverage.steps.find((step) => step.name === "Upload LCOV coverage report");
+  const link = coverage.steps.find((step) => step.name === "Link retained coverage report");
+  const enforce = coverage.steps.find((step) => step.name === "Enforce line coverage floor");
+
+  assert.equal(generate.run.trim(), "cargo llvm-cov report --lcov --output-path lcov.info");
+  assert.equal(upload.if, "${{ always() }}");
+  assert.equal(upload.uses, "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a");
+  assert.deepEqual(upload.with, {
+    name: "rust-coverage",
+    path: "lcov.info",
+    "if-no-files-found": "error",
+    "retention-days": 30,
+  });
+  assert.equal(link.if, "${{ always() }}");
+  assert.match(link.run, /steps\.upload-coverage\.outputs\.artifact-url/);
+  assert.equal(enforce.run, 'cargo llvm-cov report --fail-under-lines "$COVERAGE_FLOOR"');
+
+  const generateIndex = coverage.steps.indexOf(generate);
+  const uploadIndex = coverage.steps.indexOf(upload);
+  const enforceIndex = coverage.steps.indexOf(enforce);
+  assert.ok(generateIndex < uploadIndex && uploadIndex < enforceIndex);
+  assert.equal(coverage.env.COVERAGE_FLOOR, "90");
+  assert.match(read("CONTRIBUTING.md"), /fail-under-lines 90/);
+});
+
 test("release packages target public registries and publication is main-only", () => {
   assert.match(read("Cargo.toml"), /^publish = \["crates-io"\]$/m);
   const packageJson = JSON.parse(read("node/ferromark/package.json"));
