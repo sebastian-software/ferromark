@@ -4,6 +4,17 @@ import { test } from "node:test";
 
 const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 
+test("README source and generated output prominently link the live documentation", () => {
+  const link = "[Documentation](https://sebastian-software.github.io/ferromark/)";
+  for (const path of ["README.md.src", "README.md"]) {
+    const introduction = read(path).split(/^## /m)[0];
+    assert.ok(
+      introduction.includes(link),
+      `${path} links the live documentation before its sections`,
+    );
+  }
+});
+
 test("README introduces the v2 release candidate and delegates detailed documentation", () => {
   const source = read("README.md.src");
   assert.match(source, /^# Ferromark v2$/m);
