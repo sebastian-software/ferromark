@@ -80,7 +80,7 @@ fn check(source: &str, options: &ParserOptions) -> Outcome {
     let body = parser.source;
 
     let mut openers = CandidateOpeners::new();
-    let scan = scan_definition_candidates(body, options.footnotes, options.mdx, &mut openers);
+    let scan = scan_definition_candidates(body, options.footnotes, options.mdx, true, &mut openers);
     if scan.dense {
         // The scan stopped early, so `openers` is incomplete and only the
         // full-body pass may run. The planner is never handed such a list.

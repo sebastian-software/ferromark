@@ -98,6 +98,7 @@ pub(super) fn scan_definition_candidates(
     source: &str,
     footnotes: bool,
     mdx: bool,
+    plan: bool,
     openers: &mut CandidateOpeners,
 ) -> CandidateScan {
     let bytes = source.as_bytes();
@@ -112,7 +113,7 @@ pub(super) fn scan_definition_candidates(
     let Some(first_closer) = DEFINITION_CLOSER.find(bytes) else {
         return absent;
     };
-    definition_candidates(source, footnotes, mdx, first_closer, openers)
+    definition_candidates(source, footnotes, mdx, first_closer, plan, openers)
 }
 
 /// Where every possible definition opener sits.
@@ -148,6 +149,23 @@ fn definition_candidates(
     footnotes: bool,
     mdx: bool,
     first_closer: usize,
+    plan: bool,
+    openers: &mut CandidateOpeners,
+) -> CandidateScan {
+    // Monomorphize rather than branch: without planning the walk is the
+    // original two-flag scan, and it should compile to exactly that.
+    if plan {
+        definition_candidates_impl::<true>(source, footnotes, mdx, first_closer, openers)
+    } else {
+        definition_candidates_impl::<false>(source, footnotes, mdx, first_closer, openers)
+    }
+}
+
+fn definition_candidates_impl<const PLAN: bool>(
+    source: &str,
+    footnotes: bool,
+    mdx: bool,
+    first_closer: usize,
     openers: &mut CandidateOpeners,
 ) -> CandidateScan {
     let bytes = source.as_bytes();
@@ -168,7 +186,11 @@ fn definition_candidates(
         // rather than the label span. Only openers at or past `judged` are
         // still undecided, so the backwards search stops there: the two
         // searches then partition the source and cost one pass in total.
-        let line_start = footnotes.then(|| bounded_line_start(bytes, judged, closer));
+        // Without planning a footnote label that is already known has nothing
+        // left to prove, so the wider window is dropped as soon as one is
+        // found — collecting every opener needs it for all of them.
+        let line_start =
+            (footnotes && (PLAN || !found)).then(|| bounded_line_start(bytes, judged, closer));
         let window_start = line_start.map_or(label_start, |start| start.min(label_start));
         let mut at = window_start.max(judged);
         while let Some(offset) = memchr(b'[', &bytes[at..closer]) {
@@ -180,9 +202,20 @@ fn definition_candidates(
             if footnotes && bytes.get(open + 1) == Some(&b'^') {
                 if line_start.is_some_and(|start| open >= start) {
                     found = true;
-                    openers.push(open as u32);
+                    if PLAN {
+                        openers.push(open as u32);
+                    }
                 }
             } else if open >= label_start {
+                if !PLAN {
+                    // Nothing will be planned, so a link candidate settles
+                    // everything the caller still asks about.
+                    return CandidateScan {
+                        any: true,
+                        link: true,
+                        dense: false,
+                    };
+                }
                 link = true;
                 openers.push(open as u32);
             }
@@ -191,7 +224,8 @@ fn definition_candidates(
         // Stop as soon as the openers are provably too dense to plan: the
         // span they cover cannot pay for one segment each. Everything after
         // this point would only be collected to be thrown away.
-        if link
+        if PLAN
+            && link
             && openers.len() >= DENSITY_SAMPLE
             && closer - (openers[0] as usize) < openers.len() * SEGMENT_COST_BYTES
         {
@@ -298,6 +332,9 @@ impl<'a> Parser<'a> {
         &self,
         first_closer: usize,
     ) -> (Option<Rc<ReferenceMap<'a>>>, Option<Rc<FootnoteLabels>>) {
+        // The length heuristic is decided first: a body it rejects must not
+        // pay for collecting openers no planner will ever read.
+        let worth_planning = self.source.len() >= MIN_PLANNED_BYTES;
         // Inline capacity covers every document the openers are collected for.
         let mut openers = CandidateOpeners::new();
         let scan = definition_candidates(
@@ -305,6 +342,7 @@ impl<'a> Parser<'a> {
             self.options.footnotes,
             self.options.mdx,
             first_closer,
+            worth_planning,
             &mut openers,
         );
         if !scan.any
@@ -313,10 +351,9 @@ impl<'a> Parser<'a> {
         {
             return (None, None);
         }
-        // Two heuristics decide against planning before the planner runs.
-        // Both only ever choose the pass this code replaced, so neither can
-        // change what is collected.
-        let plan = if scan.dense || self.source.len() < MIN_PLANNED_BYTES {
+        // Two heuristics decide against planning. Both only ever choose the
+        // pass this code replaced, so neither can change what is collected.
+        let plan = if !worth_planning || scan.dense {
             DefinitionPlan::Fallback
         } else {
             plan_definition_pass(self.source, &self.options, &openers)
@@ -402,16 +439,36 @@ mod tests {
         }
     }
 
+    /// The boolean view both scan modes have to agree on.
+    fn scan_view(source: &str, footnotes: bool, mdx: bool, plan: bool) -> (bool, bool) {
+        let mut openers = super::CandidateOpeners::new();
+        let scan = super::scan_definition_candidates(source, footnotes, mdx, plan, &mut openers);
+        if !plan {
+            assert!(
+                openers.is_empty(),
+                "the non-planning scan must not fill the buffer: {openers:?} for {source:?}"
+            );
+        }
+        (scan.any, scan.link)
+    }
+
     #[track_caller]
     fn check_against_oracle(source: &str) {
         for footnotes in [false, true] {
             for mdx in [false, true] {
                 let mut openers = super::CandidateOpeners::new();
-                let scan = super::scan_definition_candidates(source, footnotes, mdx, &mut openers);
+                let scan =
+                    super::scan_definition_candidates(source, footnotes, mdx, true, &mut openers);
                 assert_eq!(
                     (scan.any, scan.link),
                     oracle(source, footnotes, mdx),
                     "footnotes {footnotes}, mdx {mdx}, source {source:?}"
+                );
+                assert_eq!(
+                    scan_view(source, footnotes, mdx, false),
+                    (scan.any, scan.link),
+                    "the two scan modes disagree: footnotes {footnotes}, mdx {mdx}, \
+                     source {source:?}"
                 );
                 assert!(
                     openers.windows(2).all(|pair| pair[0] < pair[1]),
@@ -428,9 +485,7 @@ mod tests {
     }
 
     fn definition_candidates(source: &str, footnotes: bool) -> (bool, bool) {
-        let mut openers = super::CandidateOpeners::new();
-        let scan = super::scan_definition_candidates(source, footnotes, false, &mut openers);
-        (scan.any, scan.link)
+        scan_view(source, footnotes, false, true)
     }
 
     fn has_definition_candidate(source: &str, footnotes: bool) -> bool {
@@ -439,7 +494,7 @@ mod tests {
 
     fn is_dense(source: &str) -> bool {
         let mut openers = super::CandidateOpeners::new();
-        super::scan_definition_candidates(source, true, false, &mut openers).dense
+        super::scan_definition_candidates(source, true, false, true, &mut openers).dense
     }
 
     /// `count` reference definitions, each padded to `spacing` bytes.
@@ -475,7 +530,7 @@ mod tests {
     fn a_dense_scan_still_reports_a_link_candidate() {
         let mut openers = super::CandidateOpeners::new();
         let source = reference_run(40, 0);
-        let scan = super::scan_definition_candidates(&source, true, false, &mut openers);
+        let scan = super::scan_definition_candidates(&source, true, false, true, &mut openers);
         assert!(scan.dense && scan.any && scan.link);
     }
 
@@ -539,9 +594,13 @@ mod tests {
 
     #[test]
     fn candidate_scan_matches_the_opener_walk_on_generated_mixes() {
-        // Bracket, colon, caret, line ending, container prefix, and tag bytes
-        // in every proportion: the shapes that decide a candidate, dense
-        // enough that windows of neighbouring `]:` overlap.
+        for_each_generated_mix(|source| check_against_oracle(source));
+    }
+
+    /// Bracket, colon, caret, line ending, container prefix, and tag bytes in
+    /// every proportion: the shapes that decide a candidate, dense enough that
+    /// windows of neighbouring `]:` overlap.
+    fn for_each_generated_mix(mut visit: impl FnMut(&str)) {
         let tokens = [
             "[", "]", ":", "^", "]:", "[^", "\n", "\r", "\r\n", " ", "\t", ">", "-", "+", "*", ".",
             ")", "0", "9", "a", "word ", "<div>", "é", "🙂",
@@ -559,8 +618,26 @@ mod tests {
             for _ in 0..len {
                 source.push_str(tokens[next() % tokens.len()]);
             }
-            check_against_oracle(&source);
+            visit(&source);
         }
+    }
+
+    #[test]
+    fn both_scan_modes_report_the_same_candidates_on_generated_mixes() {
+        // A body too short to plan runs a scan that stops at the first link
+        // candidate and never fills the opener buffer. What it tells the
+        // caller has to be word for word what the collecting scan tells it.
+        for_each_generated_mix(|source| {
+            for footnotes in [false, true] {
+                for mdx in [false, true] {
+                    assert_eq!(
+                        scan_view(source, footnotes, mdx, false),
+                        scan_view(source, footnotes, mdx, true),
+                        "footnotes {footnotes}, mdx {mdx}, source {source:?}"
+                    );
+                }
+            }
+        });
     }
 
     #[test]

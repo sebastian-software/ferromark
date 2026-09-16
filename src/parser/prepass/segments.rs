@@ -765,7 +765,8 @@ mod tests {
     /// pass, and this helper exists to exercise the planner.
     fn plan(source: &str, options: &ParserOptions) -> Option<Vec<(usize, usize)>> {
         let mut openers = CandidateOpeners::new();
-        let scan = scan_definition_candidates(source, options.footnotes, options.mdx, &mut openers);
+        let scan =
+            scan_definition_candidates(source, options.footnotes, options.mdx, true, &mut openers);
         if scan.dense {
             // An incomplete opener list must never reach the planner.
             return None;
