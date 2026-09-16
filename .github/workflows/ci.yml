@@ -79,11 +79,28 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       # Serialize instrumented tests so timing guards do not compete for CPU.
       - run: cargo llvm-cov --workspace --exclude ferromark-node --all-features --locked --no-report -- --test-threads=1
+      - name: Generate LCOV coverage report
+        run: |
+          cargo llvm-cov report --lcov --output-path lcov.info
       - name: Summarize line coverage
         run: |
           percent=$(cargo llvm-cov report --json --summary-only | jq -r '.data[0].totals.lines.percent')
           printf 'Line coverage: %.2f%% (gate: ≥ %s%%)\n' "$percent" "$COVERAGE_FLOOR" >> "$GITHUB_STEP_SUMMARY"
-      - run: cargo llvm-cov report --lcov --output-path lcov.info --fail-under-lines "$COVERAGE_FLOOR"
+      - name: Upload LCOV coverage report
+        id: upload-coverage
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: rust-coverage
+          path: lcov.info
+          if-no-files-found: error
+          retention-days: 30
+      - name: Link retained coverage report
+        if: ${{ always() }}
+        run: |
+          printf 'Retained report: [Download lcov.info](%s)\n' "${{ steps.upload-coverage.outputs.artifact-url }}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Enforce line coverage floor
+        run: cargo llvm-cov report --fail-under-lines "$COVERAGE_FLOOR"
 
   fmt:
     runs-on: ubuntu-latest
