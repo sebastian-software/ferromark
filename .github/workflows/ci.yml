@@ -144,7 +144,7 @@ jobs:
           done
 
   standards:
-    name: standards drift
+    name: Standards / Consistency
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -473,3 +473,38 @@ jobs:
             ${{ runner.temp }}/rust-packages/results.json
           if-no-files-found: error
           retention-days: 7
+
+  ci-check:
+    name: CI / Check
+    runs-on: ubuntu-latest
+    needs:
+      - test
+      - clippy
+      - coverage
+      - fmt
+      - rustsec
+      - cargo-deny
+      - homepage
+      - node
+      - node-floor
+      - native
+      - npm-packages
+      - rust-packages
+    if: ${{ always() }}
+    steps:
+      - name: Verify required CI jobs passed
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          node -e "
+          const needs = JSON.parse(process.env.NEEDS_JSON);
+          const failed = Object.entries(needs)
+            .filter(([, job]) => job.result !== 'success')
+            .map(([name, job]) => name + ': ' + job.result);
+          if (failed.length > 0) {
+            console.error('Required CI jobs did not pass:');
+            for (const line of failed) console.error('- ' + line);
+            process.exit(1);
+          }
+          console.log('All required CI jobs passed.');
+          "
