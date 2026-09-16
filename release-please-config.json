@@ -109,6 +109,18 @@
           "type": "yaml",
           "path": "node/pnpm-lock.yaml",
           "jsonpath": "$.importers.ferromark.optionalDependencies['ferromark-win32-x64-msvc'].specifier"
+        },
+        {
+          "type": "generic",
+          "path": "README.md.src"
+        },
+        {
+          "type": "generic",
+          "path": "README.md"
+        },
+        {
+          "type": "generic",
+          "path": "node/ferromark/README.md"
         }
       ],
       "version-file": "version.txt",

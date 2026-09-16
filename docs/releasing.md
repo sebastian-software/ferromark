@@ -17,7 +17,10 @@ updates one coordinated release pull request from the commits since the last
 release tag. It applies the mapping in `release-please-config.json`: Cargo.toml,
 Cargo.lock, version.txt, `.release-please-manifest.json`, the npm facade and its
 eight native manifests, the exact optional dependency pins, the pnpm workspace
-specifiers, and a new CHANGELOG.md section. It creates no tag and publishes
+specifiers, the version-bearing README blocks (marked with
+`x-release-please-start-version` / `end-version` comments in `README.md.src`,
+the generated `README.md` and `node/ferromark/README.md`), and a new
+CHANGELOG.md section. It creates no tag and publishes
 nothing; the action runs with `skip-github-release`, so only `publish.yml` below
 tags a release. Merging source therefore still never publishes a package.
 

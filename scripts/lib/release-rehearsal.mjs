@@ -126,6 +126,20 @@ export function validateRelease(files, expectedVersion) {
       );
     }
   }
+  for (const readme of ["README.md.src", "README.md"]) {
+    const text = files.get(readme);
+    assert.ok(
+      text.includes(`https://docs.rs/ferromark/${expectedVersion}/ferromark/`),
+      `${readme}: docs.rs link`,
+    );
+    assert.ok(text.includes(`Version \`${expectedVersion}\``), `${readme}: version statement`);
+    assert.ok(text.includes(`cargo add ferromark@=${expectedVersion}`), `${readme}: cargo add`);
+    assert.ok(text.includes(`npm install ferromark@${expectedVersion}`), `${readme}: npm install`);
+  }
+  assert.ok(
+    files.get("node/ferromark/README.md").includes(`npm install ferromark@${expectedVersion}`),
+    "node README: npm install for the selected version",
+  );
   const main = json("node/ferromark/package.json");
   const pnpm = parseYaml(files.get("node/pnpm-lock.yaml"));
   assert.equal(main.version, expectedVersion, "npm facade version");
