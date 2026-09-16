@@ -12,11 +12,54 @@ a v2.0 release blocker.
 
 ## Prepare the version
 
-Release Please uses the coordinated mapping in `release-please-config.json`;
-there is currently no automatic release PR or publishing trigger. Use an explicit
-`Release-As: 2.0.0-rc.1` footer when preparing a candidate with its updater.
-Commit the reviewed version changes and authored notes under
-`docs/releases/<version>.md`. Never publish the rehearsal's synthetic changelog.
+Every push to `main` runs `.github/workflows/release-please.yml`, which opens or
+updates one coordinated release pull request from the commits since the last
+release tag. It applies the mapping in `release-please-config.json`: Cargo.toml,
+Cargo.lock, version.txt, `.release-please-manifest.json`, the npm facade and its
+eight native manifests, the exact optional dependency pins, the pnpm workspace
+specifiers, and a new CHANGELOG.md section. It creates no tag and publishes
+nothing; the action runs with `skip-github-release`, so only `publish.yml` below
+tags a release. Merging source therefore still never publishes a package.
+
+The release pull request must be opened with the `RELEASE_PLEASE_TOKEN`
+organization secret. A pull request opened with `GITHUB_TOKEN` starts no further
+workflow runs, so `ci.yml` would never run on it and the pull request would
+show no checks at all.
+
+Version selection uses the `prerelease` strategy pinned to `rc`. Inside the
+candidate series the proposal is automatic: any commit range on top of
+`2.0.0-rc.1` proposes `2.0.0-rc.2`, including a breaking `feat!` or a
+`BREAKING CHANGE:` footer, which never promotes a candidate out of its series.
+Leaving the series is deliberate, because the strategy never proposes a bare
+stable version on its own. Land the transition with an explicit footer —
+`Release-As: 2.0.0` for the stable release, `Release-As: 2.0.1` for the first
+patch after it — as [ADR-0016](arch/ADR-0016-coordinated-workspace-releases.md)
+prescribes. Without that footer a stable `2.0.0` would propose `2.0.1-rc`.
+
+The CHANGELOG.md section that the release pull request adds is the release
+text: `scripts/finish-github-release.py` uses exactly that section as the GitHub
+release body, and `publish.yml` refuses to publish a version whose section is
+missing. Review and, where useful, edit that section in the release pull request
+before merging — it lists the conventional commits in the range and is prepended
+above the authored `## 2.0.0-rc.1` entry already in Git. `docs/releases/` keeps
+the first candidate's hand-written notes as history; no file is added there for
+later versions. Never publish the rehearsal's synthetic changelog.
+
+After the merge, the release commit is an ordinary `main` push: wait for its CI
+run and publish it with `gh workflow run publish.yml` as described below. Once
+`publish.yml` has created the `v<version>` tag, the next push to `main` starts
+the next cycle from that tag.
+
+Because `skip-github-release` suppresses the library's own tagging step, it also
+never retires the `autorelease: pending` label from the merged release pull
+request, and the library refuses to open a new one while a merged pending pull
+request exists. The workflow reconciles this before each run: a merged release
+pull request whose version (read from `.release-please-manifest.json` at its
+merge commit) has a `v<version>` tag becomes `autorelease: tagged`, however many
+commits landed on `main` before the publication was dispatched. A merged release
+pull request that was deliberately never
+published stays pending on purpose and blocks the next proposal; remove its label
+by hand to release that block.
 
 Install the pinned contract dependencies in `scripts/`, then run from the root:
 
@@ -25,11 +68,14 @@ node --test scripts/test-release-rehearsal.mjs scripts/test-release-channel.mjs 
 node scripts/rehearse-release.mjs /tmp/ferromark-release-review
 ```
 
-The output directory must not exist. This seeds an in-memory development version
-and checks RC1, RC2, stable and patch transitions with the real Release Please
-updater. Cargo.toml, Cargo.lock, version.txt, the Release Please manifest, all npm
-versions and native dependency pins must agree. External dependencies and
-publication flags stay unchanged. See [ADR-0016](arch/ADR-0016-coordinated-workspace-releases.md).
+The output directory must not exist. It writes one directory per case. The
+`automatic` case runs the repository's real released version through the
+prerelease strategy and must land on `2.0.0-rc.2`; the remaining cases seed an
+in-memory development version and check the forced RC1, RC2, stable and patch
+transitions. All of them use the real Release Please updater. Cargo.toml,
+Cargo.lock, version.txt, the Release Please manifest, all npm versions and native
+dependency pins must agree. External dependencies and publication flags stay
+unchanged. See [ADR-0016](arch/ADR-0016-coordinated-workspace-releases.md).
 
 Only `X.Y.Z-rc.N` and stable `X.Y.Z` are publishable. Candidates use npm's `next`
 tag and a GitHub prerelease without replacing `latest`. Stable releases use
@@ -117,8 +163,9 @@ The nine existing npm packages keep their Trusted Publishing configuration.
 
 ## Publish the reviewed release
 
-Merge the release changes, wait for all main CI gates, and select its run ID.
-The workflow is manual so merging source alone never publishes a package:
+Merge the release pull request, wait for all main CI gates on the resulting
+commit, and select its run ID. The workflow is manual so merging source, or the
+release pull request itself, never publishes a package:
 
 ```sh
 gh workflow run publish.yml --ref main -f version=2.0.0-rc.1 -f ci_run_id=SUCCESSFUL_MAIN_CI_RUN_ID

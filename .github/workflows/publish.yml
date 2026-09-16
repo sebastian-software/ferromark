@@ -55,7 +55,7 @@ jobs:
             releaseChannel(process.env.RELEASE_VERSION);
             validateRelease(readReleaseFiles(), process.env.RELEASE_VERSION);
           '
-          test -f "docs/releases/$RELEASE_VERSION.md"
+          python3 scripts/finish-github-release.py --notes-only > /dev/null
       - name: Require successful CI
         run: python3 scripts/release-preflight.py
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8

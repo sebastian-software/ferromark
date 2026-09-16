@@ -10,6 +10,17 @@ const quiet = Object.fromEntries(
   ["info", "debug", "trace", "warn", "error"].map((name) => [name, () => {}]),
 );
 
+// Representative of `git log --format=%B v2.0.0-rc.1..main`: a breaking renderer
+// change, a Node feature and documentation, and no `Release-As` footer. The
+// prerelease strategy must answer a breaking change on `2.0.0-rc.1` with
+// `2.0.0-rc.2` rather than promoting the candidate to a stable `3.0.0`.
+export const candidateHistory = [
+  "perf(renderer)!: borrow default renderer option strings\n\n" +
+    "BREAKING CHANGE: `HtmlRendererOptions::soft_break`, `hard_break` and `base_url` borrow their defaults.",
+  "feat(node): add a profile-guided training driver",
+  "docs(perf): record the third Apple Silicon iteration round",
+];
+
 export function readReleaseFiles() {
   const read = (file) => readFileSync(resolve(root, file), "utf8");
   const config = JSON.parse(read("release-please-config.json"));
@@ -32,8 +43,12 @@ export function readReleaseFiles() {
 
 // The real Manifest/strategy/updaters run against local file contents and a
 // synthetic commit history. No network client or publishing method exists here.
-export async function proposeRelease(files, message) {
+// `history` is one commit message or, newest first, the range since the last
+// release tag; version selection reads the whole range, not just its tip.
+export async function proposeRelease(files, history) {
   setLogger(quiet);
+  const messages = Array.isArray(history) ? history : [history];
+  assert.ok(messages.length > 0, "A release proposal needs at least one commit");
   const previous = JSON.parse(files.get(".release-please-manifest.json"))["."];
   const github = {
     repository: { owner: "sebastian-software", repo: "ferromark", defaultBranch: "main" },
@@ -52,7 +67,11 @@ export async function proposeRelease(files, message) {
       yield { tagName: `v${previous}`, sha: "a".repeat(40), notes: "Rehearsal baseline" };
     },
     async *mergeCommitIterator() {
-      yield { sha: "b".repeat(40), message, files: ["crates/ferromark/src/lib.rs"] };
+      for (const [index, message] of messages.entries()) {
+        // Distinct hexadecimal shas; "a" is reserved for the released commit.
+        const sha = `${index + 1}`.padStart(40, "b");
+        yield { sha, message, files: ["crates/ferromark/src/lib.rs"] };
+      }
       yield { sha: "a".repeat(40), message: "chore: preceding release", files: [] };
     },
   };

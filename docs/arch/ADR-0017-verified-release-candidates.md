@@ -38,3 +38,21 @@ The first RC exercises actual distribution, not just build output. Merging main
 does not automatically publish, and an RC cannot silently become npm's stable
 release. The five Rust crates need coordinated version pins and initial setup.
 A partial registry release can be resumed only from matching source/artifacts.
+
+## Amendment 2026-09-16: automatic release pull request, manual publication
+
+`.github/workflows/release-please.yml` restores the automatic release pull
+request that v2 lost ([ADR-0016](ADR-0016-coordinated-workspace-releases.md)).
+This does not weaken anything decided here. That workflow only proposes a version
+and its changelog in a pull request; it runs with `skip-github-release`, so it
+creates no tag and no GitHub release, and it touches no registry. Publication
+remains the manual `publish.yml`, still bound to a successful main push CI run at
+the exact release commit, still verifying registry installs before
+`scripts/finish-github-release.py` creates the `v<version>` tag and the GitHub
+release. The release body is the CHANGELOG.md section the release pull request
+added, reviewed there; the hand-written `docs/releases/2.0.0-rc.1.md` stays as
+history and no such file is required for later versions. The two workflows
+compose in one direction: that tag is what the next Release Please run reads as
+the last release.
+
+Preparing the version is now automatic; releasing it is still a deliberate act.
