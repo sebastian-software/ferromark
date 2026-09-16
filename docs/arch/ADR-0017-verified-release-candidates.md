@@ -1,6 +1,13 @@
 # ADR-0017: Verified release candidates
 
-- Status: Release verification accepted; five-crate layout and bootstrap superseded by [ADR-0018](ADR-0018-single-rust-crate.md).
+- Status: Five-crate layout and bootstrap superseded by
+  [ADR-0018](ADR-0018-single-rust-crate.md); manual, CI-run-bound publication
+  superseded on 2026-09-16 by
+  [ADR-0020](ADR-0020-standards-release-blueprint.md). Merging the release pull
+  request now publishes, and `scripts/release-preflight.py`,
+  `scripts/finish-github-release.py` and the `ci_run_id` input described below
+  no longer exist. The requirement that a release is verified before it reaches
+  consumers stands; ADR-0020 records where each check moved.
 - Date: 2026-09-15
 
 ## Context
