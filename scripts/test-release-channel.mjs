@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { releaseChannel } from "../node/scripts/release-channel.mjs";
-import { releaseArchives } from "../node/scripts/release-archives.mjs";
+import { publishArguments, releaseArchives } from "../node/scripts/release-archives.mjs";
 
 const facade = JSON.parse(
   readFileSync(new URL("../node/ferromark/package.json", import.meta.url), "utf8"),
@@ -85,4 +85,17 @@ test("rejects an archive set that is missing a platform", (t) => {
   const directory = archives(t);
   rmSync(join(directory, `ferromark-darwin-arm64-${facade.version}.tgz`));
   assert.throws(() => releaseArchives(directory, facade), /exactly the nine release archives/);
+});
+
+test("hands npm publish local tarball paths, never a GitHub shorthand", (t) => {
+  const directory = archives(t);
+  const { archives: ordered } = releaseArchives(directory, facade);
+  const args = publishArguments(ordered, join(directory, ".."));
+  assert.equal(args.length, 9);
+  for (const arg of args) {
+    // `artifacts/name.tgz` would be read as the shorthand `owner/repo`.
+    assert.match(arg, /^\.\/[^/]+\/[^/]+\.tgz$/, arg);
+    assert.ok(arg.endsWith(".tgz"));
+  }
+  assert.equal(args.at(-1), `./${basename(directory)}/${facade.name}-${facade.version}.tgz`);
 });

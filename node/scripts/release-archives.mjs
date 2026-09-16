@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 
 import { releaseChannel } from "./release-channel.mjs";
 
@@ -46,6 +46,19 @@ export function releaseArchives(directory, facade, { readManifest = archiveManif
   return { distTag: tag, archives };
 }
 
+/**
+ * The archive paths as `npm publish` arguments, relative to `workingDirectory`
+ * and always starting with `./`.
+ *
+ * npm reads a bare `directory/name.tgz` as the GitHub shorthand `owner/repo`
+ * and runs `git ls-remote ssh://git@github.com/directory/name.tgz.git`, which
+ * is exactly how the first v2.0.0-rc.2 publish attempt failed. A leading `./`
+ * is what makes npm treat the argument as a local tarball.
+ */
+export function publishArguments(archives, workingDirectory) {
+  return archives.map((archive) => `./${relative(workingDirectory, archive)}`);
+}
+
 function archiveManifest(archive) {
   const result = spawnSync("tar", ["-xOzf", archive, "package/package.json"], { encoding: "utf8" });
   if (result.error) throw result.error;
@@ -62,7 +75,7 @@ if (process.argv[1] === import.meta.filename) {
     readFileSync(new URL("../ferromark/package.json", import.meta.url), "utf8"),
   );
   const { distTag, archives } = releaseArchives(resolve(directory), facade);
-  const relative = archives.map((archive) => archive.slice(`${resolve(directory, "..")}/`.length));
+  const relative = publishArguments(archives, resolve(directory, ".."));
   if (process.env.GITHUB_OUTPUT) {
     const { appendFileSync } = await import("node:fs");
     appendFileSync(
