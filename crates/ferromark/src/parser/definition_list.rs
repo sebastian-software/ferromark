@@ -5,6 +5,7 @@ use crate::ast::{DefinitionList, DefinitionListDefinition, DefinitionListTerm, N
 use rustc_hash::FxHashSet;
 
 use super::Parser;
+use super::line_scan::line_terminator_end;
 use super::spans::SourceMap;
 use crate::parser::error::ParseResult;
 
@@ -85,7 +86,7 @@ impl<'a> Parser<'a> {
                 span: Span::new(line_start as u32, line_end as u32),
             };
             nodes.push(Node::DefinitionListTerm(self.allocator.boxed(term)));
-            line_start = self.next_line_start(line_start);
+            line_start = line_terminator_end(self.source.as_bytes(), line_end);
         }
 
         let mut cursor = terms.body_start;
@@ -122,14 +123,15 @@ impl<'a> Parser<'a> {
             if cursor >= self.source.len() {
                 break;
             }
-            if self.is_blank_line_at(cursor) || self.definition_body_at(cursor).is_some() {
+            let (line, next) = self.line_and_next(cursor);
+            if line.trim().is_empty() || self.definition_body_at(cursor).is_some() {
                 break;
             }
-            if !self.is_definition_term_line(cursor) {
+            if !self.is_definition_term_line(cursor, line) {
                 return None;
             }
             count += 1;
-            cursor = self.next_line_start(cursor);
+            cursor = next;
         }
 
         if count == 0 {
@@ -197,22 +199,22 @@ impl<'a> Parser<'a> {
         let mut source_map = SourceMap::default();
         let mut lazy_lines = FxHashSet::default();
 
+        let body_line_next = self.next_line_start(start);
         self.push_definition_body_line(
             &mut body_source,
             &mut source_map,
             first_line.body_start,
             first_line.body_end,
             first_line.body_start,
-            self.next_line_start(start),
+            body_line_next,
         );
 
-        let mut cursor = self.next_line_start(start);
+        let mut cursor = body_line_next;
         let mut end = cursor;
         let mut after_blank = false;
 
         while cursor < self.source.len() {
-            let line = self.line_at(cursor);
-            let next = self.next_line_start(cursor);
+            let (line, next) = self.line_and_next(cursor);
 
             if self.is_line_comment_at(cursor) {
                 source_map.push_line(body_source.len(), next - cursor, cursor, next - cursor);
@@ -237,8 +239,13 @@ impl<'a> Parser<'a> {
                     break;
                 }
 
+                // The first replayed line is the blank line that opened
+                // this branch; its successor is already known.
+                let mut first_blank_next = Some(next);
                 while cursor < lookahead {
-                    let blank_next = self.next_line_start(cursor);
+                    let blank_next = first_blank_next
+                        .take()
+                        .unwrap_or_else(|| self.next_line_start(cursor));
                     if self.is_line_comment_at(cursor) {
                         cursor = blank_next;
                         end = cursor;
@@ -354,14 +361,14 @@ impl<'a> Parser<'a> {
         self.options.definition_lists && self.collect_definition_terms(start).is_some()
     }
 
-    fn is_definition_term_line(&self, line_start: usize) -> bool {
+    /// `line` is the caller's already-scanned slice for `line_start`.
+    fn is_definition_term_line(&self, line_start: usize, line: &'a str) -> bool {
         let Some(trimmed_start) = self.first_non_whitespace_in_line(line_start) else {
             return false;
         };
         if self.line_indent_width(line_start, trimmed_start) >= 4 {
             return false;
         }
-        let line = self.line_at(line_start);
         let trimmed = &line[trimmed_start - line_start..];
         // None of the block prefixes rejected below starts with an ASCII
         // letter. Inline backticks can still disqualify an ordinary term.

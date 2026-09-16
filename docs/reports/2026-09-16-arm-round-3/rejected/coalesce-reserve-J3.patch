@@ -1,0 +1,60 @@
+From bf2599611c2447818904ce6fa3585296fea15bca Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Wed, 16 Sep 2026 00:17:42 +0200
+Subject: [PATCH] perf(parser): reserve the merged length before coalescing
+ text runs
+
+Every block the autolink pre-flight lets through pays for the text
+coalesce whether or not a candidate turns up, and the merged node was
+built in a bump-allocated `String` that starts empty. Such a string
+cannot extend the block it owns, so each `push_str` past the first hands
+back a fresh region and memcpies what is already there, leaving the
+earlier blocks stranded in the arena. Entity, escape, and
+unpaired-delimiter splits make three-node runs ordinary prose, so that
+happens on most paragraphs of a document with links in it.
+
+The run's merged length is the sum of its node values and is known
+before the first byte is written, so reserve it up front and let every
+run allocate once. The merged text and its span are unchanged.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ .../src/parser/inline/gfm_autolink.rs         | 21 +++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/crates/ferromark/src/parser/inline/gfm_autolink.rs b/crates/ferromark/src/parser/inline/gfm_autolink.rs
+index 9a8c738c..5dde4816 100644
+--- a/crates/ferromark/src/parser/inline/gfm_autolink.rs
++++ b/crates/ferromark/src/parser/inline/gfm_autolink.rs
+@@ -142,9 +142,26 @@ impl<'a> Parser<'a> {
+                 // A lone text node has nothing to merge with.
+                 1 => children.swap(write, run_start),
+                 _ => {
+-                    let mut merged = self.allocator.new_string();
++                    // The merged length is known before the first byte is
++                    // written, and a bump-allocated `String` cannot extend
++                    // the block it owns: growing from empty hands back a
++                    // fresh region and memcpies, once per node of the run,
++                    // abandoning every earlier block in the arena. Entity,
++                    // escape, and unpaired-delimiter splits make three-node
++                    // runs ordinary prose, and every block that reaches this
++                    // pass pays for them whether or not it holds a candidate.
++                    let run = &children[run_start..read];
++                    let capacity = run
++                        .iter()
++                        .map(|node| match node {
++                            Node::Text(text) => text.value.len(),
++                            _ => 0,
++                        })
++                        .sum();
++                    let mut merged =
++                        crate::allocator::String::with_capacity_in(capacity, self.allocator.bump());
+                     let mut span = Span::new(0, 0);
+-                    for (index, node) in children[run_start..read].iter().enumerate() {
++                    for (index, node) in run.iter().enumerate() {
+                         if let Node::Text(text) = node {
+                             if index == 0 {
+                                 span = text.span;
+-- 
+2.55.0
+

@@ -2,10 +2,10 @@
 
 use crate::allocator::Vec;
 use crate::ast::{Image, Node, Span};
-use memchr::{memchr, memchr3};
 
 use super::Parser;
 use crate::parser::error::ParseResult;
+use crate::parser::short_scan;
 
 impl<'a> Parser<'a> {
     pub(super) fn parse_image(
@@ -119,9 +119,11 @@ impl<'a> Parser<'a> {
     /// inlines and flattened to plain text (links contribute their text,
     /// code its literal content). Plain text stays zero-copy.
     fn flatten_image_alt(&self, raw: &'a str, offset: usize) -> ParseResult<&'a str> {
-        if memchr3(b'[', b'*', b'_', raw.as_bytes()).is_none()
-            && memchr3(b'`', b'\\', b'&', raw.as_bytes()).is_none()
-            && memchr(b'<', raw.as_bytes()).is_none()
+        // Alt text is usually a handful of words, so these three probes are
+        // short-slice searches (see `short_scan`) rather than vector ones.
+        if short_scan::find3(b'[', b'*', b'_', raw.as_bytes()).is_none()
+            && short_scan::find3(b'`', b'\\', b'&', raw.as_bytes()).is_none()
+            && short_scan::find(b'<', raw.as_bytes()).is_none()
         {
             return Ok(raw);
         }

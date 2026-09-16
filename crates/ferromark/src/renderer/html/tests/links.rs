@@ -12,8 +12,8 @@ fn test_convert_md_link_from_index_file() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/index.md".to_string(),
+        base_url: "/".into(),
+        source_path: "api/index.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -30,8 +30,8 @@ fn test_convert_md_link_from_non_index_file() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/types.md".to_string(),
+        base_url: "/".into(),
+        source_path: "api/types.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -47,8 +47,8 @@ fn test_convert_md_link_plain_relative_from_index() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/index.md".to_string(),
+        base_url: "/".into(),
+        source_path: "api/index.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -66,8 +66,8 @@ fn test_convert_mdx_and_markdown_links() {
     .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/index.mdx".to_string(),
+        base_url: "/".into(),
+        source_path: "api/index.mdx".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -83,8 +83,8 @@ fn test_convert_md_link_parent_relative_from_index() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/index.md".to_string(),
+        base_url: "/".into(),
+        source_path: "api/index.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -100,8 +100,8 @@ fn test_convert_md_link_parent_relative_from_non_index() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/types.md".to_string(),
+        base_url: "/".into(),
+        source_path: "api/types.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -119,8 +119,8 @@ fn test_convert_md_link_to_child_index_file() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/index.md".to_string(),
+        base_url: "/".into(),
+        source_path: "api/index.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -137,8 +137,8 @@ fn test_convert_md_link_to_sibling_dir_index_from_non_index() {
         .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/types.md".to_string(),
+        base_url: "/".into(),
+        source_path: "api/types.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -156,8 +156,8 @@ fn test_convert_md_link_removes_only_the_final_index_segment() {
     .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "api/types.md".to_string(),
+        base_url: "/".into(),
+        source_path: "api/types.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);
@@ -177,8 +177,8 @@ fn test_convert_md_href_inside_raw_html_anchor() {
     .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         convert_md_links: true,
-        base_url: "/".to_string(),
-        source_path: "lib/functions/createCounter.md".to_string(),
+        base_url: "/".into(),
+        source_path: "lib/functions/createCounter.md".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);

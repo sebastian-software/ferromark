@@ -6,16 +6,22 @@ git archives below the disposable build directory, copies the existing local
 Bun native dependency caches, and creates a temporary Bun workspace member for
 the worker supplied with ``--worker``.  It intentionally does not fetch or
 modify any source checkout.
+
+``--pgo`` adds a profile-guided optimization pass on top of the unchanged
+release recipe.  It leaves the default build byte-identical: every PGO step is
+skipped unless the flag is given.
 """
 
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tarfile
@@ -35,6 +41,26 @@ HWY_ARCHIVE_SHA256 = "741d705781e0b3e406beda8f1f994fbae01321237ce8023a1ad90fbaf7
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
+
+BASE_RUSTFLAGS = "-C target-cpu=generic"
+# The worker's own engine names, harness syntax profiles, and lifecycles.  The
+# PGO training pass drives this exact matrix so no engine's Rust code is left
+# without profile data in the shared executable.
+ENGINES = ("v2", "ox-content", "v1", "md4c", "pulldown-cmark", "bun")
+HARNESS_PROFILES = ("commonmark", "gfm")
+LIFECYCLES = ("fresh", "reuse")
+# Rust profile data reaches every Rust crate in the one shared executable, so
+# the four pure-Rust engines are PGO-built.  md4c's engine is C and Bun's
+# engine is a Rust/C++ mix; clang compiles those parts without PGO, which
+# would need a separate -fprofile-generate recipe this harness does not add.
+ENGINE_PROFILE_DATA = {
+    "v2": "rust-pgo",
+    "ox-content": "rust-pgo",
+    "v1": "rust-pgo",
+    "pulldown-cmark": "rust-pgo",
+    "bun": "rust-pgo-partial: Rust crates only; the C++ Highway/support objects are clang -O3 without PGO",
+    "md4c": "none: the C engine is clang -O3 without PGO; only its Rust FFI wrapper is in the Rust build",
+}
 
 
 def sha(path: Path) -> str:
@@ -354,6 +380,229 @@ def compile_native(bun: Path, md4c: Path, native: Path, env: dict[str, str]) -> 
     run(["ar", "rcs", native / "libbun_bench_native.a", *objects, native / "strings.o", native / "stack.o"], env=env)
 
 
+def read_corpus(path: Path) -> dict:
+    raw = gzip.decompress(path.read_bytes()) if path.suffix == ".gz" else path.read_bytes()
+    return json.loads(raw)
+
+
+def read_filter(path: Path) -> str:
+    """Read one case-selection regular expression from an explicit filter file."""
+    pattern = path.read_text().strip()
+    if not pattern:
+        raise SystemExit(f"empty case filter file: {path}")
+    try:
+        re.compile(pattern)
+    except re.error as error:
+        raise SystemExit(f"{path} is not a valid case filter: {error}") from error
+    return pattern
+
+
+def select_cases(cases: list[dict], pattern: str) -> list[dict]:
+    matcher = re.compile(pattern)
+    return [case for case in cases if matcher.search(case["name"])]
+
+
+def overlapping_cases(training: list[dict], measurement_pattern: str) -> list[str]:
+    """Training documents the measurement filter would also select."""
+    matcher = re.compile(measurement_pattern)
+    return sorted(case["name"] for case in training if matcher.search(case["name"]))
+
+
+def training_profiles(case: dict) -> tuple[str, ...]:
+    """Harness syntax profiles one training document is rendered under.
+
+    The six-engine worker implements ``commonmark`` and ``gfm`` only.  The
+    authored diagnostics also carry corpus profiles that select renderer or
+    scanner options this harness deliberately disables (``autolink``, ``mdx``,
+    ``extensions``, ``opt-*``).  Their input is still ordinary Markdown, so
+    such a document trains under both harness profiles rather than silently
+    borrowing one of them.
+    """
+    profile = case["profile"]
+    return (profile,) if profile in HARNESS_PROFILES else HARNESS_PROFILES
+
+
+def pgo_argument_error(args: argparse.Namespace) -> str | None:
+    """Reject PGO option combinations that would silently do nothing."""
+    inputs = ("pgo_training_corpus", "pgo_training_filter", "pgo_measurement_filter")
+    if not args.pgo:
+        supplied = sorted(name for name in inputs if getattr(args, name) is not None)
+        if supplied:
+            return "--pgo is required by: " + ", ".join("--" + n.replace("_", "-") for n in supplied)
+        return None
+    if not args.compile:
+        return "--pgo requires --compile: the profile is collected by running the built worker"
+    missing = sorted(name for name in inputs if getattr(args, name) is None)
+    if missing:
+        return "--pgo requires: " + ", ".join("--" + n.replace("_", "-") for n in missing)
+    if args.pgo_train_ms <= 0:
+        return "--pgo-train-ms must be positive"
+    return None
+
+
+def profdata_tool(toolchain: str, rustc_version: str) -> Path:
+    """The pinned toolchain's own llvm-profdata, so profile formats match."""
+    host = next(
+        line.split(":", 1)[1].strip()
+        for line in rustc_version.splitlines()
+        if line.startswith("host:")
+    )
+    sysroot = Path(subprocess.check_output(
+        ["rustc", f"+{toolchain}", "--print", "sysroot"], text=True
+    ).strip())
+    tool = sysroot / "lib" / "rustlib" / host / "bin" / "llvm-profdata"
+    if not tool.is_file():
+        raise SystemExit(
+            f"{tool} is missing; run: rustup component add llvm-tools --toolchain {toolchain}"
+        )
+    return tool
+
+
+def materialize_training_inputs(cases: list[dict], directory: Path) -> dict[str, list[Path]]:
+    """Write the training documents and group their paths by harness profile."""
+    directory.mkdir(parents=True)
+    by_profile: dict[str, list[Path]] = {profile: [] for profile in HARNESS_PROFILES}
+    for case in cases:
+        value = case["input"].encode()
+        if len(value) != case["byte_count"] or hashlib.sha256(value).hexdigest() != case["sha256"]:
+            raise SystemExit(f"training corpus case does not match its own checksum: {case['name']}")
+        path = directory / (case["name"] + ".md")
+        path.write_bytes(value)
+        for profile in training_profiles(case):
+            by_profile[profile].append(path)
+    if not any(by_profile.values()):
+        raise SystemExit("the training filter selected no documents")
+    return by_profile
+
+
+def train(binary: Path, by_profile: dict[str, list[Path]], profraw: Path,
+          window_ms: int, env: dict[str, str]) -> list[dict]:
+    """Drive every engine through both lifecycles over the training documents."""
+    runs = []
+    for profile in HARNESS_PROFILES:
+        paths = by_profile[profile]
+        if not paths:
+            continue
+        for engine in ENGINES:
+            for lifecycle in LIFECYCLES:
+                label = f"{engine}-{profile}-{lifecycle}"
+                before = set(profraw.glob("*.profraw"))
+                # Timing is irrelevant here; the loop exists to execute the
+                # engine.  `verify` is skipped so training never depends on
+                # output agreement -- run.py --verify-only is that gate.
+                child = subprocess.run(
+                    [str(binary), engine, profile, lifecycle, *map(str, paths)],
+                    input=f"bench {window_ms * 1_000_000}\nquit\n", text=True,
+                    capture_output=True, check=False,
+                    env={**env, "LLVM_PROFILE_FILE": str(profraw / f"{label}-%p.profraw")},
+                )
+                if child.returncode != 0:
+                    raise SystemExit(f"training run {label} failed: {child.stderr}")
+                fields = child.stdout.split()
+                if len(fields) != 4 or fields[0] != "timing" or int(fields[1]) <= 0:
+                    raise SystemExit(f"training run {label} produced no timing record")
+                written = sorted(path.name for path in set(profraw.glob("*.profraw")) - before)
+                if not written:
+                    raise SystemExit(f"training run {label} wrote no profile data")
+                runs.append({
+                    "engine": engine, "profile": profile, "lifecycle": lifecycle,
+                    "documents": len(paths), "iterations": int(fields[1]), "profraw": written,
+                })
+                print(f"  trained {label}: {len(paths)} documents", flush=True)
+    return runs
+
+
+def run_pgo(args: argparse.Namespace, build: Path, bun: Path, command: list[str],
+            env: dict[str, str], rustc_version: str) -> dict:
+    """Instrument, train, and merge; the caller then builds with -Cprofile-use.
+
+    Everything except the added ``-Cprofile-generate``/``-Cprofile-use`` flag
+    stays identical to the default build: the same pinned nightly toolchain,
+    generic CPU baseline, fat LTO, one codegen unit, and panic abort.
+    """
+    corpus_path = args.pgo_training_corpus.resolve()
+    train_pattern = read_filter(args.pgo_training_filter)
+    measure_pattern = read_filter(args.pgo_measurement_filter)
+    corpus = read_corpus(corpus_path)
+    training = select_cases(corpus["cases"], train_pattern)
+    if not training:
+        raise SystemExit(f"{args.pgo_training_filter} selected no case in {corpus_path}")
+    shared = overlapping_cases(training, measure_pattern)
+    if shared:
+        raise SystemExit("training and measured sets overlap: " + ", ".join(shared))
+    tool = profdata_tool(BUN_TOOLCHAIN, rustc_version)
+
+    profraw = build / "profraw"
+    profraw.mkdir()
+    (build / "profraw-build").mkdir()
+    # Instrumentation keeps Bun's unreachable support code alive, so the
+    # training binary alone needs the WebKit/simdutf symbols fat LTO otherwise
+    # removes.  The measured -Cprofile-use worker links without these.
+    stubs = build / "native" / "pgo_stubs.o"
+    run(["clang", "-O3", "-c", HERE / "pgo_stubs.c", "-o", stubs], env=env)
+    instrumented_flags = f"{BASE_RUSTFLAGS} -Cprofile-generate={profraw} -Clink-arg={stubs}"
+    generate_env = {
+        **env,
+        "RUSTFLAGS": instrumented_flags,
+        "CARGO_TARGET_DIR": str(build / "target-profile-generate"),
+        # Build scripts and proc macros are instrumented too; keep the profiles
+        # they emit while Cargo runs out of the training directory.
+        "LLVM_PROFILE_FILE": str(build / "profraw-build" / "build-%p.profraw"),
+    }
+    print("PGO: building the instrumented worker", flush=True)
+    run(command, cwd=bun, env=generate_env)
+    instrumented = Path(generate_env["CARGO_TARGET_DIR"]) / "release" / "native-comparison-worker"
+
+    inputs = build / "pgo-training-inputs"
+    by_profile = materialize_training_inputs(training, inputs)
+    print(f"PGO: training on {len(training)} documents", flush=True)
+    runs = train(instrumented, by_profile, profraw, args.pgo_train_ms, env)
+
+    merged = build / "merged.profdata"
+    raw_files = sorted(profraw.glob("*.profraw"))
+    run([tool, "merge", "-o", merged, *raw_files])
+    return {
+        "applied": True,
+        "toolchain": BUN_TOOLCHAIN,
+        "instrumented_rustflags": instrumented_flags,
+        "instrumented_link_stubs": {
+            "object": str(stubs),
+            "source_sha256": sha(HERE / "pgo_stubs.c"),
+            "note": "Bun support symbols kept alive by instrumentation; every stub aborts "
+                    "and none is linked into the measured -Cprofile-use worker.",
+        },
+        "llvm_profdata": str(tool),
+        "llvm_profdata_version": subprocess.check_output([str(tool), "--version"], text=True),
+        "instrumented_binary_sha256": sha(instrumented),
+        "training": {
+            "corpus": str(corpus_path),
+            "corpus_sha256": sha(corpus_path),
+            "corpus_case_count": len(corpus["cases"]),
+            "filter_file": str(args.pgo_training_filter.resolve()),
+            "filter_file_sha256": sha(args.pgo_training_filter.resolve()),
+            "filter": train_pattern,
+            "measurement_filter_file": str(args.pgo_measurement_filter.resolve()),
+            "measurement_filter_file_sha256": sha(args.pgo_measurement_filter.resolve()),
+            "measurement_filter": measure_pattern,
+            "disjoint_from_measured_set": True,
+            "case_count": len(training),
+            "cases": [case["name"] for case in training],
+            "documents_per_harness_profile": {p: len(v) for p, v in by_profile.items()},
+            "window_ms": args.pgo_train_ms,
+            "engines": list(ENGINES),
+            "lifecycles": list(LIFECYCLES),
+            "runs": runs,
+        },
+        "profile": {
+            "path": str(merged),
+            "sha256": sha(merged),
+            "bytes": merged.stat().st_size,
+            "profraw_files": len(raw_files),
+        },
+        "engine_profile_data": dict(ENGINE_PROFILE_DATA),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("build_dir", type=Path)
@@ -370,7 +619,14 @@ def main() -> None:
     parser.add_argument("--worker", type=Path, required=True, help="six-engine worker.rs supplied by the parent harness")
     parser.add_argument("--compile", action="store_true", help="compile native archives and the worker")
     parser.add_argument("--finalize-existing", action="store_true", help="record metadata for an already completed build")
+    parser.add_argument("--pgo", action="store_true", help="apply profile-guided optimization to every Rust engine with one recipe")
+    parser.add_argument("--pgo-training-corpus", type=Path, help="corpus holding the PGO training documents")
+    parser.add_argument("--pgo-training-filter", type=Path, help="file with the regex selecting training documents")
+    parser.add_argument("--pgo-measurement-filter", type=Path, help="file with run.py's measured-set regex; training must not select any of it")
+    parser.add_argument("--pgo-train-ms", type=int, default=250, help="training window per engine, profile, and lifecycle")
     args = parser.parse_args()
+    if (message := pgo_argument_error(args)) is not None:
+        parser.error(message)
     build = args.build_dir.resolve()
     if args.finalize_existing:
         finalize_existing(build, args.worker.resolve())
@@ -519,10 +775,18 @@ serde_json = "1"
             bun / "Cargo.lock",
         ])
         env["CARGO_NET_OFFLINE"] = "true"
-        env["CARGO_TARGET_DIR"] = str(build / "target")
         command = ["cargo", f"+{BUN_TOOLCHAIN}", "build", "--release", "--offline", "-p", "native-comparison-worker"]
         if args.lockfile:
             command.append("--locked")
+        if args.pgo:
+            records["pgo"] = run_pgo(args, build, bun, command, env, records["rustc"])
+            env["RUSTFLAGS"] = (
+                f"{BASE_RUSTFLAGS} -Cprofile-use={records['pgo']['profile']['path']}"
+                " -Cllvm-args=-pgo-warn-missing-function"
+            )
+            records["rustflags"] = env["RUSTFLAGS"]
+            print("PGO: building the optimized worker", flush=True)
+        env["CARGO_TARGET_DIR"] = str(build / "target")
         run(command, cwd=bun, env=env)
         resolved = registry_packages(bun / "Cargo.lock")
         if any(union.get(key) != checksum for key, checksum in resolved.items() if key in union):

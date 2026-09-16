@@ -1,0 +1,117 @@
+total samples: 6948
+
+== self (innermost, inlined-aware) ==
+ 49.08%  ferromark::renderer::html::autolink::trim_trailing_punct
+ 30.84%  ferromark::renderer::html::autolink::trim_trailing_punct::_$u7b$$u7b$closure$u7d$$u7d$
+  8.66%  core::option::Option<T>::get_or_insert_with
+  2.25%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vreinterpret_u64_u8
+  1.30%  _<core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::next
+  1.15%  ferromark::renderer::html::escape::first_flagged
+  0.73%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vorrq_u8
+  0.50%  ferromark::renderer::html::escape::nibble::first_flagged_vector
+  0.47%  core::core_arch::arm_shared::neon::generated::vgetq_lane_u64
+  0.40%  _platform_memmove
+  0.36%  ferromark::renderer::html::renderer::write::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_text_with_autolinks
+  0.35%  ferromark::renderer::html::escape::push_run_long
+  0.35%  _NtC::K0bEFm1U::::core::num::is_ascii_uppercase
+  0.33%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vtstq_u8
+  0.30%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vcgtq_u8
+  0.23%  K0bEFm1U::::core::slice::ascii::eq_ignore_ascii_case_simple
+  0.23%  ferromark::renderer::html::autolink::scan_ascii_url_prefix
+  0.20%  ferromark::renderer::html::escape::escape_into
+  0.17%  mach_absolute_time
+  0.17%  ferromark::renderer::html::autolink::find_autolink_match
+  0.16%  ferromark::renderer::html::renderer::HtmlRenderer::render_node
+  0.14%  alloc::vec::Vec<T,A>::append_elements
+  0.13%  alloc::raw_vec::RawVecInner<A>::capacity
+  0.12%  ferromark::renderer::html::escape::url::write_url_segment
+  0.09%  ferromark::renderer::html::toc::scan_node_for_render
+  0.09%  ferromark::renderer::html::toc::is_toc_marker_paragraph
+  0.09%  core::ptr::const_ptr::_<impl *const T>::add
+  0.07%  memchr::memmem::searcher::searcher_kind_neon
+  0.07%  _<core::ptr::non_null::NonNull<T> as core::cmp::PartialEq>::eq
+  0.07%  core::core_arch::arm_shared::neon::generated::vshrn_n_u16
+
+== self (containing out-of-line function) ==
+ 49.08%  ferromark::renderer::html::autolink::trim_trailing_punct
+ 30.84%  ferromark::renderer::html::autolink::trim_trailing_punct::_$u7b$$u7b$closure$u7d$$u7d$
+  8.66%  core::option::Option<T>::get_or_insert_with
+  2.25%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vreinterpret_u64_u8
+  1.30%  _<core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::next
+  1.15%  ferromark::renderer::html::escape::first_flagged
+  0.73%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vorrq_u8
+  0.50%  ferromark::renderer::html::escape::nibble::first_flagged_vector
+  0.47%  core::core_arch::arm_shared::neon::generated::vgetq_lane_u64
+  0.40%  _platform_memmove
+  0.36%  ferromark::renderer::html::renderer::write::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_text_with_autolinks
+  0.35%  ferromark::renderer::html::escape::push_run_long
+  0.35%  _NtC::K0bEFm1U::::core::num::is_ascii_uppercase
+  0.33%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vtstq_u8
+  0.30%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vcgtq_u8
+  0.23%  K0bEFm1U::::core::slice::ascii::eq_ignore_ascii_case_simple
+  0.23%  ferromark::renderer::html::autolink::scan_ascii_url_prefix
+  0.20%  ferromark::renderer::html::escape::escape_into
+  0.17%  mach_absolute_time
+  0.17%  ferromark::renderer::html::autolink::find_autolink_match
+  0.16%  ferromark::renderer::html::renderer::HtmlRenderer::render_node
+  0.14%  alloc::vec::Vec<T,A>::append_elements
+  0.13%  alloc::raw_vec::RawVecInner<A>::capacity
+  0.12%  ferromark::renderer::html::escape::url::write_url_segment
+  0.09%  ferromark::renderer::html::toc::scan_node_for_render
+  0.09%  ferromark::renderer::html::toc::is_toc_marker_paragraph
+  0.09%  core::ptr::const_ptr::_<impl *const T>::add
+  0.07%  memchr::memmem::searcher::searcher_kind_neon
+  0.07%  _<core::ptr::non_null::NonNull<T> as core::cmp::PartialEq>::eq
+  0.07%  core::core_arch::arm_shared::neon::generated::vshrn_n_u16
+
+== inclusive (ferromark/deps only) ==
+ 99.68%  ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+ 99.68%  ferromark::renderer::html::renderer::HtmlRenderer::render_into_output
+ 99.44%  ferromark::renderer::html::renderer::HtmlRenderer::render_node
+ 99.41%  ferromark::renderer::html::renderer::HtmlRenderer::render_document
+ 99.28%  ferromark::renderer::html::renderer::blocks::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::render_paragraph
+ 99.22%  ferromark::renderer::html::renderer::write::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_inline_node
+ 98.93%  ferromark::renderer::html::renderer::write::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_text_with_autolinks
+ 94.59%  ferromark::renderer::html::autolink::find_autolink_match
+ 89.88%  ferromark::renderer::html::autolink::trim_trailing_punct
+ 32.14%  ferromark::renderer::html::autolink::trim_trailing_punct::_$u7b$$u7b$closure$u7d$$u7d$
+  3.17%  ferromark::renderer::html::autolink::scan_url_end
+  3.12%  ferromark::renderer::html::autolink::scan_ascii_url_prefix
+  3.01%  ferromark::renderer::html::escape::write_escaped_into
+  2.89%  ferromark::renderer::html::autolink::scan_ascii_url_prefix::_$u7b$$u7b$closure$u7d$$u7d$
+  2.39%  ferromark::renderer::html::escape::first_flagged
+  1.58%  ferromark::renderer::html::escape::escape_into
+  1.30%  ferromark::renderer::html::escape::url::write_url_segment
+  1.24%  ferromark::renderer::html::escape::nibble::first_flagged_vector
+  1.24%  ferromark::renderer::html::escape::nibble::first_flagged_simd
+  1.15%  ferromark::renderer::html::escape::url::next_url_flagged
+  0.82%  ferromark::renderer::html::escape::push_run_long
+  0.73%  ferromark::renderer::html::escape::nibble::first_flagged_vector::_$u7b$$u7b$closure$u7d$$u7d$
+  0.73%  memchr::arch::generic::memchr::search_slice_with_raw
+  0.72%  ferromark::renderer::html::autolink::index::FirstByteIndex::next
+  0.71%  memchr::memchr::memchr2::_$u7b$$u7b$closure$u7d$$u7d$
+  0.71%  memchr::arch::aarch64::memchr::memchr2_raw
+  0.71%  memchr::memchr::memchr2
+  0.71%  memchr::memchr::memchr2_raw
+  0.71%  memchr::arch::aarch64::neon::memchr::Two::find_raw
+  0.68%  memchr::arch::aarch64::neon::memchr::Two::find_raw_impl
+  0.68%  memchr::arch::generic::memchr::Two<V>::find_raw
+  0.59%  alloc::vec::Vec<T,A>::append_elements
+  0.59%  _<alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,core::slice::iter::Iter<T>>>::spec_extend
+  0.59%  alloc::vec::Vec<T,A>::extend_from_slice
+  0.50%  memchr::vector::aarch64neon::_<impl memchr::vector::Vector for core::core_arch::arm_shared::neon::uint8x16_t>::movemask_will_have_non_zero
+  0.49%  ferromark::renderer::html::autolink::index::FirstByteIndex::may_match
+  0.43%  memchr::memmem::Finder::find
+  0.42%  memchr::memmem::searcher::Searcher::find
+  0.40%  _platform_memmove
+  0.23%  ferromark::renderer::html::renderer::HtmlRenderer::prepare_render
+  0.19%  ferromark::renderer::html::toc::scan_document_for_render
+  0.17%  ferromark::renderer::html::toc::scan_node_for_render
+  0.14%  memchr::memmem::searcher::searcher_kind_neon
+  0.14%  ferromark::renderer::html::escape::push_run
+  0.13%  alloc::raw_vec::RawVecInner<A>::capacity
+  0.12%  alloc::vec::Vec<T,A>::reserve
+  0.10%  alloc::raw_vec::RawVec<T,A>::reserve
+  0.10%  alloc::raw_vec::RawVecInner<A>::reserve
+  0.10%  alloc::raw_vec::RawVecInner<A>::needs_to_grow
+  0.09%  ferromark::renderer::html::toc::is_toc_marker_paragraph

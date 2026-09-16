@@ -15,7 +15,6 @@ impl<'a> Parser<'a> {
         start: usize,
         baseline_indent: usize,
         first_item: ParsedListItem<'a>,
-        first_line_len: usize,
     ) -> ParseResult<Option<Node<'a>>> {
         // Block dispatch has already parsed the first marker to distinguish a
         // real list from marker-shaped paragraph text. Reuse that result.
@@ -26,13 +25,19 @@ impl<'a> Parser<'a> {
 
         let mut children: Vec<'a, ListItem<'a>> = self.allocator.new_vec();
         let mut list_spread = false;
-        let mut first_line_len = Some(first_line_len);
 
         loop {
             let line_start = self.position;
-            let line_len = first_line_len
-                .take()
-                .unwrap_or_else(|| self.line_at(line_start).len());
+            // Every marker line reaching this loop was already scanned to its
+            // end by the recognizer that produced `item`, which recorded that
+            // offset as `content_source_end`. Re-deriving the length from it
+            // keeps the marker line to one terminator search per item.
+            let line_len = item.content_source_end - line_start;
+            debug_assert_eq!(
+                line_len,
+                self.line_at(line_start).len(),
+                "list marker line length must match a fresh line scan"
+            );
 
             // Consume the marker line.
             self.position += line_len;
@@ -149,8 +154,7 @@ impl<'a> Parser<'a> {
             }
 
             let continuation_start = self.position;
-            let continuation_line = self.line_at(continuation_start);
-            let continuation_next = self.next_line_start(continuation_start);
+            let (continuation_line, continuation_next) = self.line_and_next(continuation_start);
 
             if self.is_line_comment_at(continuation_start) {
                 let source = item_source
@@ -178,12 +182,17 @@ impl<'a> Parser<'a> {
 
             if continuation_line.trim().is_empty() {
                 let mut lookahead = continuation_next;
+                // The line that stops the walk is the one a sibling marker
+                // would be read from, so carry it out instead of scanning it
+                // again below.
+                let mut lookahead_line = "";
                 while lookahead < self.source.len() {
-                    let line = self.line_at(lookahead);
+                    let (line, next) = self.line_and_next(lookahead);
                     if !line.trim().is_empty() && !self.is_line_comment_at(lookahead) {
+                        lookahead_line = line;
                         break;
                     }
-                    lookahead = self.next_line_start(lookahead);
+                    lookahead = next;
                 }
 
                 if lookahead >= self.source.len() {
@@ -198,8 +207,13 @@ impl<'a> Parser<'a> {
                     let item_source = item_source
                         .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
                     let mut blank_start = continuation_start;
+                    // The first replayed line is the blank line that opened
+                    // this branch; its successor is already known.
+                    let mut first_blank_next = Some(continuation_next);
                     while blank_start < lookahead {
-                        let blank_next = self.next_line_start(blank_start);
+                        let blank_next = first_blank_next
+                            .take()
+                            .unwrap_or_else(|| self.next_line_start(blank_start));
                         if self.is_line_comment_at(blank_start) {
                             blank_start = blank_next;
                             continue;
@@ -223,7 +237,7 @@ impl<'a> Parser<'a> {
                 if next_indent >= baseline_indent
                     && next_indent <= baseline_indent + 3
                     && let Some(sibling) = self
-                        .parse_list_item_line(lookahead)
+                        .parse_list_item_line_from_line(lookahead, lookahead_line)
                         .filter(|next| next.ordered == item.ordered && next.marker == item.marker)
                 {
                     // Blank line between siblings: the list is loose.

@@ -1,0 +1,54 @@
+{
+  "schema": 2,
+  "rounds": 3,
+  "pairs_per_round": 3,
+  "window_ms": 40,
+  "warmup_ms": 40,
+  "seed": 20260914,
+  "modes": [
+    "parse",
+    "reuse",
+    "fresh"
+  ],
+  "case_filter": "^(wiki-(chess|tea|volcano)-article-body|wiki-(tea|chess)-lead|vite-docs-features|typescript-handbook-compiler-options|rust-book-ch17-00-async-await|legacy-docs-mdx|comment-review-long|comment-incident)$",
+  "cases": [
+    "comment-review-long",
+    "comment-incident",
+    "legacy-docs-mdx",
+    "rust-book-ch17-00-async-await",
+    "vite-docs-features",
+    "typescript-handbook-compiler-options",
+    "wiki-tea-lead",
+    "wiki-tea-article-body",
+    "wiki-chess-lead",
+    "wiki-chess-article-body",
+    "wiki-volcano-article-body"
+  ],
+  "corpus_sha256": "9331c117ee7c24ff6a06090c44953fdd465894911b170f06657e339e8e48eeeb",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "bdc2ce24bf0d781c280abcb1b232248b8a33d6344645aef4eb65d1c7559adf40",
+  "host_before": {
+    "time_utc": "2026-09-15T20:21:40Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      16.87548828125,
+      13.42529296875,
+      9.71630859375
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  },
+  "host_after": {
+    "time_utc": "2026-09-15T20:22:16Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      13.81982421875,
+      13.1181640625,
+      9.7578125
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  }
+}

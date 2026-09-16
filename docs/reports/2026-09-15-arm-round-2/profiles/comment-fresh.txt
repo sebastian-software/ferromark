@@ -1,0 +1,147 @@
+total samples: 6721
+
+== self (innermost, inlined-aware) ==
+ 11.95%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vreinterpret_u64_u8
+  7.45%  mach_absolute_time
+  5.53%  _xzm_xzone_malloc_tiny
+  4.21%  _xzm_free_main
+  3.69%  core::core_arch::arm_shared::neon::generated::vgetq_lane_u64
+  3.20%  core::ptr::const_ptr::_<impl *const T>::add
+  3.11%  _platform_memmove
+  2.86%  _malloc_zone_malloc
+  2.25%  <deduplicated_symbol>
+  1.73%  ferromark::parser::inline::scan::neon::next_special_neon_with_tables
+  1.62%  ferromark::renderer::html::escape::nibble::first_flagged_vector
+  1.61%  _free
+  1.59%  ferromark::parser::inline::_<impl ferromark::parser::Parser>::parse_inline
+  1.41%  ferromark::renderer::html::renderer::HtmlRenderer::render_node
+  1.28%  ferromark::parser::list::_<impl ferromark::parser::Parser>::consume_item_continuation
+  1.26%  K0bEFm1U::::core::str::is_char_boundary
+  1.16%  ferromark::parser::block::_<impl ferromark::parser::Parser>::parse_block
+  1.09%  K0bEFm1U::::core::char::methods::is_whitespace
+  1.09%  ferromark::parser::list::_<impl ferromark::parser::Parser>::parse_list
+  0.98%  ferromark::parser::inline::marker_scan::InlineMarkerScan::next
+  0.97%  bumpalo::Bump<_>::try_alloc_layout_fast
+  0.94%  ferromark::renderer::html::escape::push_run_long
+  0.94%  _<core::iter::adapters::take::Take<I> as core::iter::traits::iterator::Iterator>::nth
+  0.91%  ferromark::renderer::html::toc::is_toc_marker_paragraph
+  0.86%  alloc::raw_vec::RawVecInner<A>::capacity
+  0.86%  ferromark::renderer::html::renderer::HtmlRenderer::with_renderer_options
+  0.85%  ferromark::renderer::html::toc::scan_node_for_render
+  0.85%  ferromark::parser::list_item::_<impl ferromark::parser::Parser>::parse_list_item_line_from_trimmed
+  0.80%  ferromark::parser::line_scan::line_end_neon
+  0.80%  DYLD-STUB$$malloc
+  0.79%  DYLD-STUB$$memcpy
+  0.76%  ferromark::parser::cursor::_<impl ferromark::parser::Parser>::skip_blank_lines
+  0.76%  ferromark::parser::inline::_<impl ferromark::parser::Parser>::parse_inline_block
+  0.74%  ferromark::renderer::html::renderer::write::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_inline_node
+  0.73%  _<core::result::Result<T,E> as core::ops::try_trait::Try>::branch
+  0.73%  ferromark::parser::inline::marker_scan::InlineMarkerScan::new
+  0.68%  ferromark::renderer::html::renderer::HtmlRenderer::prepare_render
+  0.64%  ferromark::renderer::html::escape::escape_into
+  0.62%  ferromark::parser::Parser::parse_document
+  0.61%  ferromark::parser::inline::scan::next_inline_marker
+
+== self (containing out-of-line function) ==
+ 11.95%  K0bEFm1U::::core::core_arch::arm_shared::neon::generated::vreinterpret_u64_u8
+  7.45%  mach_absolute_time
+  5.53%  _xzm_xzone_malloc_tiny
+  4.21%  _xzm_free_main
+  3.69%  core::core_arch::arm_shared::neon::generated::vgetq_lane_u64
+  3.20%  core::ptr::const_ptr::_<impl *const T>::add
+  3.11%  _platform_memmove
+  2.86%  _malloc_zone_malloc
+  2.25%  <deduplicated_symbol>
+  1.73%  ferromark::parser::inline::scan::neon::next_special_neon_with_tables
+  1.62%  ferromark::renderer::html::escape::nibble::first_flagged_vector
+  1.61%  _free
+  1.59%  ferromark::parser::inline::_<impl ferromark::parser::Parser>::parse_inline
+  1.41%  ferromark::renderer::html::renderer::HtmlRenderer::render_node
+  1.28%  ferromark::parser::list::_<impl ferromark::parser::Parser>::consume_item_continuation
+  1.26%  K0bEFm1U::::core::str::is_char_boundary
+  1.16%  ferromark::parser::block::_<impl ferromark::parser::Parser>::parse_block
+  1.09%  K0bEFm1U::::core::char::methods::is_whitespace
+  1.09%  ferromark::parser::list::_<impl ferromark::parser::Parser>::parse_list
+  0.98%  ferromark::parser::inline::marker_scan::InlineMarkerScan::next
+  0.97%  bumpalo::Bump<_>::try_alloc_layout_fast
+  0.94%  ferromark::renderer::html::escape::push_run_long
+  0.94%  _<core::iter::adapters::take::Take<I> as core::iter::traits::iterator::Iterator>::nth
+  0.91%  ferromark::renderer::html::toc::is_toc_marker_paragraph
+  0.86%  alloc::raw_vec::RawVecInner<A>::capacity
+  0.86%  ferromark::renderer::html::renderer::HtmlRenderer::with_renderer_options
+  0.85%  ferromark::renderer::html::toc::scan_node_for_render
+  0.85%  ferromark::parser::list_item::_<impl ferromark::parser::Parser>::parse_list_item_line_from_trimmed
+  0.80%  ferromark::parser::line_scan::line_end_neon
+  0.80%  DYLD-STUB$$malloc
+  0.79%  DYLD-STUB$$memcpy
+  0.76%  ferromark::parser::cursor::_<impl ferromark::parser::Parser>::skip_blank_lines
+  0.76%  ferromark::parser::inline::_<impl ferromark::parser::Parser>::parse_inline_block
+  0.74%  ferromark::renderer::html::renderer::write::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_inline_node
+  0.73%  _<core::result::Result<T,E> as core::ops::try_trait::Try>::branch
+  0.73%  ferromark::parser::inline::marker_scan::InlineMarkerScan::new
+  0.68%  ferromark::renderer::html::renderer::HtmlRenderer::prepare_render
+  0.64%  ferromark::renderer::html::escape::escape_into
+  0.62%  ferromark::parser::Parser::parse_document
+  0.61%  ferromark::parser::inline::scan::next_inline_marker
+
+== inclusive (ferromark/deps only) ==
+ 47.89%  ferromark::parser::Parser::parse
+ 44.89%  ferromark::parser::Parser::parse_document
+ 43.64%  ferromark::parser::block::_<impl ferromark::parser::Parser>::parse_block
+ 21.37%  ferromark::parser::inline::_<impl ferromark::parser::Parser>::parse_inline_block
+ 18.72%  ferromark::parser::block::_<impl ferromark::parser::Parser>::parse_paragraph
+ 18.40%  ferromark::parser::list::_<impl ferromark::parser::Parser>::parse_list
+ 18.20%  ferromark::parser::block::_<impl ferromark::parser::Parser>::parse_paragraph_impl
+ 18.11%  ferromark::renderer::html::renderer::HtmlRenderer::render_into_output
+ 18.11%  ferromark::renderer::html::renderer::HtmlRenderer::render
+ 13.32%  ferromark::renderer::html::renderer::HtmlRenderer::render_document
+ 13.15%  ferromark::renderer::html::renderer::HtmlRenderer::render_node
+ 11.92%  O::oxbrv_5a::alloc::alloc
+ 11.87%  ferromark::parser::inline::_<impl ferromark::parser::Parser>::parse_inline
+ 11.71%  O::oxbrv_5a::alloc::dealloc
+ 11.66%  O::oxbrv_5a::alloc::_6Gl::K0bEFm1U::::core::alloc::Allocator::allocate
+ 11.66%  O::oxbrv_5a::alloc::_6::alloc_impl_runtime
+ 11.66%  O::oxbrv_5a::alloc::_6::alloc_impl
+ 10.10%  O::oxbrv_5a::alloc::_6::deallocate_impl
+ 10.10%  O::oxbrv_5a::alloc::_6::deallocate_impl_runtime
+ 10.10%  O::oxbrv_5a::alloc::_6Gl::K0bEFm1U::::core::alloc::Allocator::deallocate
+  9.64%  ferromark::renderer::html::renderer::write::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_inline_node
+  8.75%  _<ferromark::renderer::html::options::HtmlRendererOptions as core::clone::Clone>::clone
+  8.11%  ferromark::parser::inline::gfm_autolink::scan::may_contain_autolink
+  8.11%  ferromark::parser::inline::_<impl ferromark::parser::Parser>::parse_inline_block::_$u7b$$u7b$closure$u7d$$u7d$
+  7.95%  ferromark::parser::list::_<impl ferromark::parser::Parser>::consume_item_continuation
+  7.75%  ferromark::parser::Parser::with_options
+  7.75%  alloc::raw_vec::RawVecInner<A>::deallocate
+  7.75%  _<alloc::raw_vec::RawVec<T,A> as core::ops::drop::Drop>::drop
+  7.74%  ferromark::parser::Parser::with_phase
+  7.53%  memchr::memmem::Finder::find
+  7.35%  ferromark::renderer::html::renderer::blocks::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::render_paragraph
+  7.19%  memchr::memmem::searcher::Searcher::find
+  7.17%  memchr::memmem::searcher::searcher_kind_neon
+  7.07%  ferromark::renderer::html::escape::write_escaped_into
+  6.89%  O::oxbrv_5a::slice::to_vec_in::_10Co::to_vec::alloc::Global
+  6.75%  ferromark::parser::list::item_source::_<impl ferromark::parser::Parser>::parse_inline_list_item_children
+  6.74%  memchr::arch::generic::packedpair::Finder<V>::find
+  6.74%  memchr::arch::aarch64::neon::packedpair::Finder::find
+  6.74%  memchr::arch::aarch64::neon::packedpair::Finder::find_impl
+  6.61%  core::ptr::drop_in_place<alloc::string::String>
+  6.61%  core::ptr::drop_in_place<alloc::vec::Vec<u8>>
+  6.52%  core::ptr::drop_in_place<alloc::raw_vec::RawVec<u8>>
+  6.19%  ferromark::parser::prepass::_<impl ferromark::parser::Parser>::build_prepass
+  6.19%  ferromark::parser::prepass::definition_candidates
+  5.62%  ferromark::parser::inline::marker_scan::InlineMarkerScan::next
+  5.59%  core::ptr::drop_in_place<ferromark::renderer::html::renderer::HtmlRenderer>
+  5.10%  core::ptr::drop_in_place<ferromark::renderer::html::options::RendererOptions>
+  5.03%  memchr::memmem::find
+  5.01%  ferromark::renderer::html::escape::escape_into
+  4.95%  memchr::vector::aarch64neon::_<impl memchr::vector::Vector for core::core_arch::arm_shared::neon::uint8x16_t>::movemask
+  4.84%  ferromark::parser::inline::_<impl ferromark::parser::Parser>::parse_inline_special
+  4.78%  ferromark::parser::inline_link::_<impl ferromark::parser::Parser>::parse_link
+  4.72%  ferromark::renderer::html::renderer::HtmlRenderer::prepare_render
+  4.64%  ferromark::parser::inline::marker_scan::ForwardScan::hit
+  4.60%  ferromark::parser::inline::marker_scan::InlineMarkerScan::next::_$u7b$$u7b$closure$u7d$$u7d$
+  4.60%  ferromark::parser::inline::scan::next_inline_marker
+  4.46%  memchr::arch::generic::memchr::search_slice_with_raw
+  4.45%  ferromark::renderer::html::renderer::blocks::_<impl ferromark::renderer::html::renderer::HtmlRenderer>::render_list
+  4.30%  ferromark::renderer::html::escape::first_flagged
+  4.24%  core::ptr::drop_in_place<core::option::Option<alloc::vec::Vec<alloc::string::String>>>

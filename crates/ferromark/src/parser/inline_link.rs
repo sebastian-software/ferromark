@@ -9,6 +9,7 @@ use crate::ast::{Link, Node, Span};
 
 use super::Parser;
 use crate::parser::error::ParseResult;
+use crate::parser::short_scan;
 
 impl<'a> Parser<'a> {
     pub(super) fn parse_link(
@@ -193,7 +194,9 @@ impl<'a> Parser<'a> {
         };
 
         let mut label_nodes = None;
-        if memchr::memchr(b'[', label.as_bytes()).is_some()
+        // A link label is short enough that the probe stays off the vector
+        // path: nested-bracket candidates are rare, but every link pays it.
+        if short_scan::find(b'[', label.as_bytes()).is_some()
             && self.probe_link_text(label, offset + label_offset, &mut label_nodes)
         {
             return Ok(None);

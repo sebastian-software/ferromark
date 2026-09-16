@@ -9,9 +9,43 @@ use crate::ast::{
     TableCell, TableRow, ThematicBreak,
 };
 
-use super::super::code_annotations::normalize_code_block_language;
+use super::super::code_annotations::{normalize_code_block_language, plain_code_block_language};
 use super::super::toc::is_toc_marker_paragraph;
 use super::HtmlRenderer;
+
+/// The bytes a plain fence writes around its language and its body.
+const PLAIN_FENCE_MARKUP_LEN: usize =
+    "<pre><code class=\"language-".len() + "\">".len() + "</code></pre>\n".len();
+
+/// How a fence's info token reaches the `language-…` class attribute.
+///
+/// Splitting the decision from the writing keeps the resolved language borrowed
+/// from the source — no owned language string is ever built — and lets the
+/// caller size its reservation before emitting anything.
+enum FenceLanguage<'a> {
+    /// The fence carries no usable language; it gets no class attribute.
+    None,
+    /// Already normalized and free of bytes the escaper rewrites.
+    Plain(&'a str),
+    /// Normalized, but still has to go through the HTML escaper.
+    Escaped(&'a str),
+}
+
+impl<'a> FenceLanguage<'a> {
+    fn from_escaped(language: Option<&'a str>) -> Self {
+        match language {
+            Some(language) => Self::Escaped(language),
+            None => Self::None,
+        }
+    }
+
+    fn len(&self) -> usize {
+        match self {
+            Self::None => 0,
+            Self::Plain(language) | Self::Escaped(language) => language.len(),
+        }
+    }
+}
 
 impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn render_paragraph(
@@ -189,25 +223,7 @@ impl HtmlRenderer {
         code_block: &CodeBlock<'_>,
     ) {
         if !self.options.code_annotations || !self.options.code_fence_metadata {
-            self.write("<pre");
-            self.write_source_span_attr(code_block.span);
-            self.write("><code");
-            let language = if self.options.code_fence_metadata {
-                normalize_code_block_language(code_block.lang)
-            } else {
-                code_block
-                    .lang
-                    .map(str::trim)
-                    .filter(|lang| !lang.is_empty())
-            };
-            if let Some(lang) = language {
-                self.write(" class=\"language-");
-                self.write_escaped(lang);
-                self.write("\"");
-            }
-            self.write(">");
-            self.write_escaped(code_block.value);
-            self.write("</code></pre>\n");
+            self.write_plain_code_block(code_block);
             return;
         }
 
@@ -255,6 +271,70 @@ impl HtmlRenderer {
             self.write_escaped(code_block.value);
         }
         self.write("</code></pre>\n");
+    }
+
+    /// Writes a fence that carries no annotation markup.
+    ///
+    /// Everything around the language and the body is fixed, so the opening tag
+    /// pair and the class attribute name go out as whole literals rather than as
+    /// a tag, a delimiter, and an attribute name pushed separately. The source
+    /// span is the only optional part, and it is off in every default profile.
+    ///
+    /// One reservation up front covers the fixed markup, the class, and a body
+    /// that needs no escaping, so none of the pushes below has to grow the
+    /// buffer in the common case.
+    fn write_plain_code_block(&mut self, code_block: &CodeBlock<'_>) {
+        let language = self.code_block_language(code_block.lang);
+        self.output
+            .reserve(PLAIN_FENCE_MARKUP_LEN + language.len() + code_block.value.len());
+
+        if self.options.source_spans {
+            self.write("<pre");
+            self.write_source_span_attr(code_block.span);
+            self.write("><code");
+        } else {
+            self.write("<pre><code");
+        }
+
+        match language {
+            FenceLanguage::None => self.write(">"),
+            FenceLanguage::Plain(language) => {
+                self.write(" class=\"language-");
+                self.write(language);
+                self.write("\">");
+            }
+            FenceLanguage::Escaped(language) => {
+                self.write(" class=\"language-");
+                self.write_escaped(language);
+                self.write("\">");
+            }
+        }
+
+        self.write_escaped(code_block.value);
+        self.write("</code></pre>\n");
+    }
+
+    /// Resolves a fence's info token into the `language-…` class body.
+    ///
+    /// A bare language name is the overwhelmingly common info string, and
+    /// `plain_code_block_language` proves with one table lookup per byte that
+    /// such a token is already its own normalized, escaped form. That skips the
+    /// VitePress metadata tokenizer and the escape scan for it; anything the
+    /// proof does not cover falls back to the general route, which produces the
+    /// same bytes. Either way the result borrows from the source, so resolving
+    /// a language never allocates.
+    fn code_block_language<'a>(&self, lang: Option<&'a str>) -> FenceLanguage<'a> {
+        if !self.options.code_fence_metadata {
+            return FenceLanguage::from_escaped(
+                lang.map(str::trim).filter(|lang| !lang.is_empty()),
+            );
+        }
+
+        if let Some(plain) = lang.and_then(plain_code_block_language) {
+            return FenceLanguage::Plain(plain);
+        }
+
+        FenceLanguage::from_escaped(normalize_code_block_language(lang))
     }
 
     pub(in crate::renderer::html::renderer) fn render_math_block(&mut self, math: &MathBlock<'_>) {
@@ -392,3 +472,6 @@ impl HtmlRenderer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

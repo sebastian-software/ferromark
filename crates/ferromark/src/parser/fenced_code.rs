@@ -44,17 +44,21 @@ impl<'a> Parser<'a> {
 
             if count >= fence_len {
                 // A closing fence carries nothing but trailing whitespace
-                // (``` aaa is content, not a closer).
+                // (``` aaa is content, not a closer). Neither the indent nor
+                // the fence run can hold a terminator, so this scan finds the
+                // whole line's end and the next line starts just past it.
                 let line_end = line_end(bytes, cursor);
+                let after_fence = line_terminator_end(bytes, line_end);
                 let only_ws = bytes[cursor..line_end]
                     .iter()
                     .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'));
                 if only_ws {
                     // Body ends at `line_start`; the fence line ends at
                     // the next newline (inclusive) or EOF.
-                    let after_fence = line_terminator_end(bytes, line_end);
                     return (line_start, after_fence);
                 }
+                from = after_fence;
+                continue;
             }
 
             // Not a closing fence — move to the next line.
@@ -66,13 +70,28 @@ impl<'a> Parser<'a> {
     }
 
     /// Parses a fenced code block.
-    pub(super) fn parse_fenced_code(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
-        let opening_indent = self.calc_indentation(start).min(3);
-        for _ in 0..opening_indent {
-            if self.peek() == Some(' ') {
-                self.advance();
-            }
-        }
+    ///
+    /// `opening_indent` is the fence line's indentation in columns, which
+    /// block dispatch measured before it recognized the fence. It is below
+    /// four there, so it is a plain run of spaces and no tab-stop arithmetic
+    /// can disagree with it.
+    pub(super) fn parse_fenced_code(
+        &mut self,
+        start: usize,
+        opening_indent: usize,
+    ) -> ParseResult<Option<Node<'a>>> {
+        debug_assert_eq!(
+            opening_indent,
+            self.calc_indentation(start).min(3),
+            "fence indentation must match a fresh indentation scan"
+        );
+        debug_assert!(
+            self.source.as_bytes()[start..start + opening_indent]
+                .iter()
+                .all(|&byte| byte == b' '),
+            "an indent below four columns cannot contain a tab"
+        );
+        self.position = start + opening_indent;
 
         let Some(fence_char) = self.peek() else {
             return Err(ParseErrorKind::UnexpectedEof {
@@ -108,7 +127,9 @@ impl<'a> Parser<'a> {
         let lang = lang.map(|lang| self.unescape_link_component(lang));
 
         let bytes = self.source.as_bytes();
-        self.position = next_line_start(bytes, self.position);
+        // The info-string walk stopped on the terminator (or at EOF), so
+        // stepping over it needs no further search.
+        self.position = line_terminator_end(bytes, self.position);
 
         // Fast path: when the opening fence has no indentation, the body
         // lines need no indent stripping — we can find the closing fence
@@ -147,7 +168,7 @@ impl<'a> Parser<'a> {
                 }
 
                 let line_start = self.position;
-                let line = self.line_at(line_start);
+                let (line, next_line) = self.line_and_next(line_start);
                 let line_indent = Self::indentation_columns(line);
 
                 if line_indent <= 3 {
@@ -173,7 +194,7 @@ impl<'a> Parser<'a> {
                         // Skip rest of line
                         while let Some(ch) = self.peek() {
                             if matches!(ch, '\n' | '\r') {
-                                self.position = next_line_start(bytes, self.position);
+                                self.position = line_terminator_end(bytes, self.position);
                                 break;
                             }
                             self.advance();
@@ -184,7 +205,6 @@ impl<'a> Parser<'a> {
 
                 // Not a closing fence, reset and consume line
                 self.position = line_start;
-                let next_line = self.next_line_start(line_start);
                 let stripped = Self::strip_indent_columns(line, opening_indent);
                 value.push_str(stripped);
                 if line_start + line.len() < bytes.len() {

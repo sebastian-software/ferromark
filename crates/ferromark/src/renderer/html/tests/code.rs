@@ -42,7 +42,7 @@ fn test_render_code_block_with_custom_annotation_meta_key() {
     .unwrap();
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         code_annotations: true,
-        code_annotation_meta_key: "markers".to_string(),
+        code_annotation_meta_key: "markers".into(),
         ..Default::default()
     });
     let html = renderer.render(&doc);

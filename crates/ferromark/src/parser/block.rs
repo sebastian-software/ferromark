@@ -1,15 +1,19 @@
 use crate::ast::{Heading, Node, Paragraph, Span};
-use memchr::memchr3;
+use memchr::{memchr, memchr3};
 
 use super::Parser;
 use super::line_scan::{
-    is_line_ending_byte, line_terminator_end, next_line_start as scan_next_line_start,
+    is_line_ending_byte, line_end as scan_line_end, line_terminator_end,
+    next_line_start as scan_next_line_start,
 };
 use crate::parser::error::{ParseErrorKind, ParseResult};
 
 impl<'a> Parser<'a> {
     pub(super) fn parse_block(&mut self) -> ParseResult<Option<Node<'a>>> {
-        self.skip_blank_lines();
+        // The blank-line walk stops on the first non-space, non-tab byte of
+        // the line it settles on, so it already knows what the dispatcher
+        // needs to discriminate on.
+        let first_non_whitespace = self.skip_blank_lines();
 
         if self.is_at_end() {
             return Ok(None);
@@ -17,7 +21,12 @@ impl<'a> Parser<'a> {
 
         let start = self.position;
         let bytes = self.source.as_bytes();
-        let Some(trimmed_start) = self.first_non_whitespace_in_line(start) else {
+        debug_assert_eq!(
+            first_non_whitespace,
+            self.first_non_whitespace_in_line(start),
+            "the blank-line walk must report what a fresh indentation scan finds"
+        );
+        let Some(trimmed_start) = first_non_whitespace else {
             // Nothing but whitespace remains on this line. `skip_blank_lines`
             // normally consumes it, so reaching here means the line ends at
             // EOF; advance past it regardless so the caller's
@@ -65,35 +74,47 @@ impl<'a> Parser<'a> {
         // Keep this table in sync with `line_starts_block`: paragraph parsing
         // uses that helper to decide when a following line terminates the
         // paragraph, so the two dispatchers must agree on block starts.
+        //
+        // Arms that materialize the line record where it ends, so the table
+        // guard and the paragraph loop below reuse that offset instead of
+        // searching the same bytes for the terminator again.
+        let mut line_end_hint = None;
         match bytes[trimmed_start] {
             b'#' if self.try_parse_heading_start(start, trimmed_start) => {
                 return self.parse_heading(start);
             }
             b'-' | b'*' => {
                 let line = self.line_at(start);
+                line_end_hint = Some(start + line.len());
                 let trimmed = &line[trimmed_start - start..];
                 if Self::try_parse_thematic_break_line(line) {
-                    return self.parse_thematic_break(start);
+                    return self.parse_thematic_break(start, start + line.len());
                 }
                 if let Some(first_item) =
                     self.parse_list_item_line_from_trimmed(start, line, trimmed)
                 {
-                    return self.parse_list(start, line_indent, first_item, line.len());
+                    return self.parse_list(start, line_indent, first_item);
                 }
             }
-            b'_' if Self::try_parse_thematic_break_line(self.line_at(start)) => {
-                return self.parse_thematic_break(start);
+            b'_' => {
+                let line = self.line_at(start);
+                line_end_hint = Some(start + line.len());
+                if Self::try_parse_thematic_break_line(line) {
+                    return self.parse_thematic_break(start, start + line.len());
+                }
             }
             b'>' => return self.parse_block_quote(start),
             b'`' | b'~' => {
                 let line = self.line_at(start);
+                line_end_hint = Some(start + line.len());
                 let trimmed = &line[trimmed_start - start..];
                 if Self::try_parse_fenced_code_at(line, trimmed) {
-                    return self.parse_fenced_code(start);
+                    return self.parse_fenced_code(start, line_indent);
                 }
             }
             b'$' if self.options.math => {
                 let line = self.line_at(start);
+                line_end_hint = Some(start + line.len());
                 let trimmed = &line[trimmed_start - start..];
                 if self.try_parse_math_block_at(start, line, trimmed) {
                     return self.parse_math_block(start);
@@ -113,6 +134,7 @@ impl<'a> Parser<'a> {
                     return Ok(Some(node));
                 }
                 let line = self.line_at(start);
+                line_end_hint = Some(start + line.len());
                 let trimmed = &line[trimmed_start - start..];
                 if let Some(html_start) = Self::parse_html_block_start(trimmed) {
                     return self.parse_html_block(start, html_start);
@@ -126,11 +148,12 @@ impl<'a> Parser<'a> {
             }
             b'+' | b'0'..=b'9' => {
                 let line = self.line_at(start);
+                line_end_hint = Some(start + line.len());
                 let trimmed = &line[trimmed_start - start..];
                 if let Some(first_item) =
                     self.parse_list_item_line_from_trimmed(start, line, trimmed)
                 {
-                    return self.parse_list(start, line_indent, first_item, line.len());
+                    return self.parse_list(start, line_indent, first_item);
                 }
             }
             b'i' | b'e' => {
@@ -150,18 +173,37 @@ impl<'a> Parser<'a> {
         // then falls through to paragraph parsing — carrying the line end
         // that scan reached, which is the first thing `parse_paragraph`
         // needs.
-        let mut first_line_end = None;
-        if self.options.tables {
+        let first_line_end = if !self.options.tables {
+            line_end_hint.map(|end| line_terminator_end(bytes, end))
+        } else if let Some(end) = line_end_hint {
+            // The line is already bounded, so the guard only has to ask
+            // whether a pipe lives inside it.
+            if memchr(b'|', &bytes[start..end]).is_some() && self.try_parse_table() {
+                return self.parse_table(start);
+            }
+            Some(line_terminator_end(bytes, end))
+        } else {
             match memchr3(b'|', b'\n', b'\r', &bytes[start..]) {
                 Some(off) if bytes[start + off] == b'|' => {
                     if self.try_parse_table() {
                         return self.parse_table(start);
                     }
+                    // The pipe stopped the scan short of the terminator;
+                    // finishing the line from there keeps this to one pass
+                    // and spares `parse_paragraph` a fresh one.
+                    Some(line_terminator_end(
+                        bytes,
+                        scan_line_end(bytes, start + off + 1),
+                    ))
                 }
-                Some(off) => first_line_end = Some(line_terminator_end(bytes, start + off)),
-                None => first_line_end = Some(self.source.len()),
+                Some(off) => Some(line_terminator_end(bytes, start + off)),
+                None => Some(self.source.len()),
             }
-        }
+        };
+        debug_assert!(
+            first_line_end.is_none_or(|end| end == scan_next_line_start(bytes, start)),
+            "a reported first line end must match a fresh line scan"
+        );
 
         // Footnote definitions share the `[label]:` shape with link
         // reference definitions, so they get first refusal when the

@@ -156,9 +156,13 @@ implementations getting faster.
 
 Retained processing resets the arena and renders into a retained borrowed output
 buffer. Fresh processing includes owned option construction/cloning, allocation,
-and teardown. This matters on short inputs. `HtmlRenderer::new()` additionally
-has a static default-options path; the configurable fresh benchmark intentionally
-uses owned options on both sides. It does not measure that constructor shortcut.
+and teardown. This matters on short inputs. At the time of this study
+`HtmlRenderer::new()` additionally had a static default-options path; the
+configurable fresh benchmark intentionally used owned options on both sides, so
+it does not measure that constructor shortcut. Renderer option strings have
+since become `Cow<'static, str>`, which removes the asymmetry rather than
+changing any number recorded here — see the
+[decision record](decisions/2026-09-15-borrowed-renderer-options.md).
 
 Profiles do not remove baseline CommonMark reference discovery, source
 normalization, or the renderer's current structural AST scan. The last one still

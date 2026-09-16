@@ -26,7 +26,9 @@ use rustc_hash::FxHashMap;
 use super::autolink::FirstByteIndex;
 use super::escape::{write_escaped_into, write_url_escaped_into};
 use super::options::{HtmlRendererOptions, RendererOptions};
-use super::toc::{InlineTocEntry, collect_inline_toc_entries, scan_document_for_render};
+use super::toc::{
+    DocumentRenderScan, InlineTocEntry, collect_inline_toc_entries, scan_document_for_render,
+};
 use crate::renderer::render::{RenderResult, Renderer};
 
 pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRenderHooks};
@@ -74,7 +76,8 @@ pub struct HtmlRenderer {
     /// Reusable scratch buffer for the raw concatenated heading text in
     /// `heading_id`. A long-lived buffer avoids paying for a fresh
     /// `String` allocation per heading — `slugify_heading` previously
-    /// allocated one `text` String per call.
+    /// allocated one `text` String per call. Empty until the first heading
+    /// (see [`reserve_heading_scratch`]).
     heading_text_scratch: String,
     /// Reusable scratch buffer for the slugified id. The final id that
     /// ends up in `heading_id_counts` is copied out of here on vacant
@@ -84,6 +87,17 @@ pub struct HtmlRenderer {
     /// any `-N` suffix. Permalinks reuse this exact value instead of
     /// slugifying again.
     heading_id_scratch: String,
+    /// Whether the id in `heading_id_scratch` came from an explicit `{#id}`
+    /// heading attribute rather than from the slugifier.
+    ///
+    /// A generated slug is built only from lowercase alphanumerics, `-`
+    /// separators, the `section` fallback, and an optional `-N` suffix (see
+    /// `slugify_heading_into`), so it can never contain a byte that attribute
+    /// escaping would replace. Recording the provenance lets the `id` and the
+    /// permalink `href` push such an id into the output verbatim, while
+    /// author-supplied ids keep the escaping pass. Written by
+    /// `prepare_heading_id` before either consumer reads it.
+    heading_id_is_explicit: bool,
     /// 1-based code block index inside the current render. Code-line link
     /// metadata uses this only when a block has no filename/title to derive a
     /// human-readable fragment prefix from.
@@ -99,28 +113,78 @@ pub struct HtmlRenderer {
     /// island writes its own non-executing JSON payload.
     in_mdx_island_children: bool,
     /// First-byte skip index for the autolink scanner. It depends only on
-    /// `options.autolink_patterns`, which is immutable for the duration of a
-    /// render, so it is built once at `render()` entry and reused for every
-    /// text node instead of being rebuilt per node (the prior behaviour zeroed
-    /// and filled a 256-byte table on the hottest inline path). `None` when
+    /// `options.autolink_patterns` and `options.autolink_urls`, neither of
+    /// which can change after construction (`options` is private and never
+    /// reassigned), so it is built once per renderer and reused for every text
+    /// node of every render instead of being rebuilt per node — or, as before,
+    /// per render, which charged two 256-entry tables plus needle and gate
+    /// selection to documents far too short to amortize them. `None` when
     /// autolinking is disabled or there are no patterns.
+    ///
+    /// Callout bodies suppress autolinking by taking this field for the
+    /// duration of the body and putting it back afterwards, so the per-render
+    /// `is_some()` gate keeps its exact meaning.
     autolink_index: Option<FirstByteIndex>,
+}
+
+/// Working capacity a heading scratch buffer is given on first use.
+///
+/// A typical heading text, slug, and id all sit well under this, so one
+/// reservation covers the whole render.
+const HEADING_SCRATCH_CAPACITY: usize = 64;
+
+/// Smallest output buffer a document with any content is given.
+///
+/// Enough for a short paragraph, heading, or list item — the shapes whose
+/// markup overhead is not proportional to their source — to be written in one
+/// reservation. See [`HtmlRenderer::reserve_output_for`].
+pub(super) const MIN_OUTPUT_CAPACITY: usize = 64;
+
+/// Gives a just-cleared scratch buffer its working capacity on first use.
+///
+/// [`HtmlRenderer`] leaves the heading scratch buffers empty at construction,
+/// so building a renderer for a document without headings performs no scratch
+/// allocation at all. The first heading pays exactly the one reservation the
+/// constructor used to make, and a reused renderer keeps that capacity for
+/// later renders because these buffers are only ever cleared, never shrunk.
+#[inline]
+fn reserve_heading_scratch(buffer: &mut String) {
+    if buffer.capacity() == 0 {
+        buffer.reserve(HEADING_SCRATCH_CAPACITY);
+    }
 }
 
 impl HtmlRenderer {
     /// Creates a new HTML renderer with default options.
+    ///
+    /// Equivalent to `with_options(HtmlRendererOptions::new())`: the documented
+    /// defaults borrow static data, so this constructor has one source of truth
+    /// and neither path allocates for the configuration itself.
     #[must_use]
     pub fn new() -> Self {
-        Self::with_renderer_options(RendererOptions::defaults())
+        Self::with_options(HtmlRendererOptions::new())
     }
 
     /// Creates a new HTML renderer with the specified options.
+    ///
+    /// The options are moved in, not cloned. Default and static values stay
+    /// borrowed all the way through, so a renderer built per document from a
+    /// default options value performs no configuration allocation.
     #[must_use]
     pub fn with_options(options: HtmlRendererOptions) -> Self {
         Self::with_renderer_options(options.into())
     }
 
     fn with_renderer_options(options: RendererOptions) -> Self {
+        // The index is a pure function of the options, which are immutable for
+        // the life of the renderer, so it is built here rather than at every
+        // `render` entry.
+        let autolink_patterns = options.autolink_patterns();
+        let autolink_index = if options.autolink_urls && !autolink_patterns.is_empty() {
+            Some(FirstByteIndex::from_patterns(autolink_patterns))
+        } else {
+            None
+        };
         Self {
             options,
             output: String::new(),
@@ -131,18 +195,20 @@ impl HtmlRenderer {
             footnote_slug_counts: FxHashMap::default(),
             toc_entries: Vec::new(),
             document_has_toc_marker: false,
-            // Pre-size the heading scratch buffers: a typical heading text
-            // is well under 64 chars. Pre-allocating spares the first
-            // heading from a `String::with_capacity(0)` → `reserve(N)`
-            // round-trip without meaningful memory cost (these buffers
-            // live for the renderer's lifetime regardless).
-            heading_text_scratch: String::with_capacity(64),
-            heading_slug_scratch: String::with_capacity(64),
-            heading_id_scratch: String::with_capacity(64),
+            // The heading scratch buffers start empty. Constructing them
+            // pre-sized cost three allocations per renderer even for a
+            // document that has no heading at all — the common shape for
+            // short inputs and for pipelines that build one renderer per
+            // document. The first heading (or footnote slug) reserves the
+            // same working capacity instead, and reuse keeps it warm.
+            heading_text_scratch: String::new(),
+            heading_slug_scratch: String::new(),
+            heading_id_scratch: String::new(),
+            heading_id_is_explicit: false,
             code_block_index: 0,
             in_link: false,
             in_mdx_island_children: false,
-            autolink_index: None,
+            autolink_index,
         }
     }
 
@@ -186,34 +252,60 @@ impl HtmlRenderer {
         // unique-id map once.
         self.toc_entries.clear();
         self.code_block_index = 0;
-        let document_scan = scan_document_for_render(document);
-        // A TOC without emitted heading IDs would produce dead links. Keep
-        // the two product conveniences coupled for explicitly strict output.
-        self.document_has_toc_marker =
-            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+        // Both facts the scan derives are consumed only when `heading_ids` is
+        // on: the marker needs an inline TOC, and an inline TOC without
+        // heading IDs would produce dead links, so the two product
+        // conveniences stay coupled; the heading count only sizes a map that
+        // stays empty when no heading emits an ID. A profile with heading IDs
+        // off — the strict CommonMark and GFM profiles among them — therefore
+        // skips the structural walk instead of deriving facts nothing reads,
+        // and one with only the inline TOC off skips the per-paragraph marker
+        // predicate while still counting headings.
+        let document_scan = if self.options.heading_ids {
+            scan_document_for_render(document, self.options.inline_toc)
+        } else {
+            DocumentRenderScan::NONE
+        };
+        self.document_has_toc_marker = document_scan.has_toc_marker;
         if self.document_has_toc_marker {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }
         self.heading_id_counts.clear();
         self.heading_id_counts.reserve(document_scan.heading_count);
         self.clear_footnote_state();
-        // Build the autolink first-byte index once per render. It depends only
-        // on the immutable pattern list, not on the text node being rendered,
-        // so reusing it avoids rebuilding a 256-byte table on every inline
-        // text visit.
-        let autolink_patterns = self.options.autolink_patterns();
-        self.autolink_index = if self.options.autolink_urls && !autolink_patterns.is_empty() {
-            Some(FirstByteIndex::from_patterns(autolink_patterns))
-        } else {
-            None
-        };
-        // HTML output is typically 2×–3× the markdown source (every
-        // `**bold**` becomes `<strong>...</strong>` etc.) so the prior
-        // 1.5× estimate kept undersizing the buffer and forcing 1–2
-        // power-of-two reallocs per render on docs >32 KB. 2× hits the
-        // realistic mean for the bundled corpora (rust-book / vite /
-        // vue / typescript-handbook all land between 1.8× and 2.6×).
-        let estimated_len = (document.span.len() as usize).saturating_mul(2);
+        // The autolink first-byte index is built once per renderer (see the
+        // field) because it depends only on the immutable options.
+        self.reserve_output_for(document);
+    }
+
+    /// Sizes the output buffer for the document about to be rendered.
+    ///
+    /// HTML output is typically 2×–3× the markdown source (every `**bold**`
+    /// becomes `<strong>...</strong>` etc.) so the original 1.5× estimate kept
+    /// undersizing the buffer and forcing power-of-two reallocs on large
+    /// documents. 2× hits the realistic mean for the bundled corpora
+    /// (rust-book / vite / vue / typescript-handbook all land between 1.8×
+    /// and 2.6×).
+    ///
+    /// A ratio alone is wrong at the short end, though, because HTML overhead
+    /// is per block rather than proportional: the shortest paragraph the
+    /// renderer emits already carries `<p>` and `</p>\n`, and a heading with
+    /// an id carries its own text a second time inside the attribute. Doubling
+    /// a comment-sized source therefore under-sizes the buffer and makes the
+    /// output grow itself two or three times on the way out, which is the
+    /// whole render for such a document. [`MIN_OUTPUT_CAPACITY`] covers those
+    /// shapes in one reservation without changing what long documents get.
+    pub(in crate::renderer::html::renderer) fn reserve_output_for(
+        &mut self,
+        document: &Document<'_>,
+    ) {
+        let source_len = document.span.len() as usize;
+        if source_len == 0 {
+            // An empty document renders to nothing. Leave the buffer alone so
+            // an empty source still yields a string that never allocated.
+            return;
+        }
+        let estimated_len = source_len.saturating_mul(2).max(MIN_OUTPUT_CAPACITY);
         if self.output.capacity() < estimated_len {
             self.output.reserve(estimated_len - self.output.capacity());
         }

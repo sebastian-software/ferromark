@@ -66,7 +66,7 @@ fn base_prefixes_root_absolute_markdown_links() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/docs/".to_string(),
+            base_url: "/docs/".into(),
             ..Default::default()
         },
     );
@@ -81,7 +81,7 @@ fn base_prefixes_root_absolute_markdown_images() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/docs/".to_string(),
+            base_url: "/docs/".into(),
             ..Default::default()
         },
     );
@@ -99,7 +99,7 @@ fn base_prefixes_root_absolute_raw_html_attrs() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/docs/".to_string(),
+            base_url: "/docs/".into(),
             ..Default::default()
         },
     );
@@ -302,8 +302,8 @@ fn markdown_urls_on_another_origin_are_left_alone() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/".to_string(),
-            source_path: "content/blog/post.md".to_string(),
+            base_url: "/".into(),
+            source_path: "content/blog/post.md".into(),
             ..Default::default()
         },
     );
@@ -320,8 +320,8 @@ fn local_markdown_urls_convert_around_query_and_fragment() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/".to_string(),
-            source_path: "api/index.md".to_string(),
+            base_url: "/".into(),
+            source_path: "api/index.md".into(),
             ..Default::default()
         },
     );

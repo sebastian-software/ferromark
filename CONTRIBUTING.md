@@ -21,6 +21,9 @@ cargo bench --workspace --no-run --locked
 ```
 
 Node and release changes also require the [package checks](docs/releasing.md#local-package-checks).
+Those checks build a plain addon; reproducing the published, profile-guided one
+needs the `llvm-tools` rustup component and `FERROMARK_PGO=1`, as described in
+[ADR-0019](docs/arch/ADR-0019-profile-guided-native-addon.md).
 Website changes require `pnpm install --frozen-lockfile`, `pnpm typecheck`,
 `pnpm run audit`, and `pnpm build` from `homepage/`. The build checks all 27
 prerendered routes, navigation, and v2 content.

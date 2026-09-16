@@ -1,0 +1,690 @@
+From fccf2d1f19f044cd3519066cbf355af105fcbaf1 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Wed, 16 Sep 2026 00:10:14 +0200
+Subject: [PATCH 1/2] perf(parser): gate the autolink pre-flight on a document
+ scan
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Every block of a GFM document ran `may_contain_autolink` over its inline
+content: a `memchr2` pass for `@` and `:`, plus the `www.` substring
+search whenever no `@` turned up. On prose without URLs each of those
+passes reads the paragraph again after the block and inline marker scans
+and finds nothing, once per block.
+
+The root parser now scans its normalized source for the same three
+needles once, next to the definition pre-pass, and shares the verdict
+with sub-parsers like the other pre-pass results. When the document
+holds no `@`, no `www.`, and no `://`, no block of it can hold an
+autolink candidate and `parse_inline_block` skips the pre-flight
+outright; otherwise the per-block check runs exactly as before.
+
+The verdict is a superset of every block verdict: a sub-source is its
+parent's own bytes, copied whole lines at a time, with only spaces, line
+endings, and unescaped table pipes written between the copied runs, none
+of which occur in a needle, so no needle can appear in a sub-source
+without appearing in the root source. The document scan deliberately
+keeps the `](http://` destinations that the block check excludes, which
+only widens it further. Documents with autolinks off never scan at all,
+and the block-only definition phase builds no inline content.
+
+The differential tests parse both spec fixtures — example by example and
+whole — plus generated documents that put every needle shape into every
+container, under four option profiles, and compare full AST `Debug`
+output against a parser forced back to the ungated state.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ crates/ferromark/src/parser/inline.rs         |   8 +-
+ .../src/parser/inline/gfm_autolink.rs         |   4 +
+ .../parser/inline/gfm_autolink/gate_tests.rs  | 307 ++++++++++++++++++
+ .../src/parser/inline/gfm_autolink/scan.rs    |  67 +++-
+ crates/ferromark/src/parser/mod.rs            |  20 ++
+ 5 files changed, 400 insertions(+), 6 deletions(-)
+ create mode 100644 crates/ferromark/src/parser/inline/gfm_autolink/gate_tests.rs
+
+diff --git a/crates/ferromark/src/parser/inline.rs b/crates/ferromark/src/parser/inline.rs
+index c994d1ba..34801c0b 100644
+--- a/crates/ferromark/src/parser/inline.rs
++++ b/crates/ferromark/src/parser/inline.rs
+@@ -21,6 +21,7 @@ use self::script_span::same_marker_neighbor;
+ use super::line_scan::{is_line_ending_byte, line_terminator_end};
+ 
+ pub(in crate::parser) use self::autolink::autolink_end;
++pub(in crate::parser) use self::gfm_autolink::{AutolinkNeedles, scan_autolink_needles};
+ pub(in crate::parser) use self::link_target::{
+     parse_destination as parse_link_destination, parse_title as parse_link_title,
+ };
+@@ -71,9 +72,10 @@ impl<'a> Parser<'a> {
+             return Ok(self.allocator.new_vec());
+         }
+         let mut children = self.parse_inline(content, offset)?;
+-        let scan = self
+-            .options
+-            .autolinks
++        // The document scan already proved whether any needle exists at all;
++        // when it found none, no block of this document can hold a candidate
++        // and the per-block pre-flight has nothing left to look for.
++        let scan = (self.options.autolinks && self.autolink_needles.any())
+             .then(|| gfm_autolink::may_contain_autolink(content))
+             .flatten();
+         if let Some(scan) = scan {
+diff --git a/crates/ferromark/src/parser/inline/gfm_autolink.rs b/crates/ferromark/src/parser/inline/gfm_autolink.rs
+index 9a8c738c..066fa5bd 100644
+--- a/crates/ferromark/src/parser/inline/gfm_autolink.rs
++++ b/crates/ferromark/src/parser/inline/gfm_autolink.rs
+@@ -15,6 +15,10 @@ mod scan;
+ 
+ use self::candidate::find_candidate;
+ pub(super) use self::scan::may_contain_autolink;
++pub(in crate::parser) use self::scan::{AutolinkNeedles, scan_autolink_needles};
++
++#[cfg(test)]
++mod gate_tests;
+ 
+ use crate::parser::Parser;
+ 
+diff --git a/crates/ferromark/src/parser/inline/gfm_autolink/gate_tests.rs b/crates/ferromark/src/parser/inline/gfm_autolink/gate_tests.rs
+new file mode 100644
+index 00000000..9bc815f6
+--- /dev/null
++++ b/crates/ferromark/src/parser/inline/gfm_autolink/gate_tests.rs
+@@ -0,0 +1,307 @@
++//! Differential tests for the document-level autolink gate.
++//!
++//! The gate only ever *skips* the per-block pre-flight, so every document
++//! must parse to exactly the same AST — spans included — whether the root
++//! parser scanned for needles or was forced back to
++//! [`AutolinkNeedles::EVERY`], the "every needle may occur" state that keeps
++//! the ungated path reachable.
++
++// Owned strings keep the test oracle independent of arena storage.
++#![allow(
++    clippy::disallowed_macros,
++    clippy::disallowed_methods,
++    clippy::disallowed_types
++)]
++
++use crate::allocator::Allocator;
++use crate::parser::{Parser, ParserOptions};
++
++use super::AutolinkNeedles;
++
++const COMMONMARK_SPEC: &str =
++    include_str!("../../../../tests/spec_fixtures/commonmark-0.31.2-spec.txt");
++const GFM_SPEC: &str = include_str!("../../../../tests/spec_fixtures/gfm-extensions-spec.txt");
++
++/// The option sets every case is parsed under: the GFM preset that turns
++/// autolinks on, the strict spec profile, CommonMark with autolinks off, and
++/// a profile with every syntax extension that can build its own sub-source.
++fn profiles() -> Vec<(&'static str, ParserOptions)> {
++    vec![
++        ("gfm", ParserOptions::gfm()),
++        ("gfm_spec", ParserOptions::gfm_spec()),
++        ("commonmark", ParserOptions::default()),
++        (
++            "everything",
++            ParserOptions {
++                mdx: true,
++                math: true,
++                definition_lists: true,
++                highlight: true,
++                superscript: true,
++                subscript: true,
++                inline_footnotes: true,
++                line_comments: true,
++                front_matter: true,
++                table_attributes: true,
++                merged_table_cells: true,
++                wiki_links: true,
++                heading_attributes: true,
++                ..ParserOptions::gfm()
++            },
++        ),
++    ]
++}
++
++/// Parses `source` twice — once with the gate the root parser computed, once
++/// with the gate forced open — and returns both debug trees.
++fn debug_trees(source: &str, options: ParserOptions) -> (String, String) {
++    let allocator = Allocator::new();
++    let gated = Parser::with_options(&allocator, source, options.clone()).parse();
++    let mut ungated_parser = Parser::with_options(&allocator, source, options);
++    // The ungated path: claim every needle, exactly as a parser that never
++    // ran the document scan does.
++    ungated_parser.autolink_needles = AutolinkNeedles::EVERY;
++    let ungated = ungated_parser.parse();
++    (format!("{gated:#?}"), format!("{ungated:#?}"))
++}
++
++#[track_caller]
++fn assert_gate_is_transparent(source: &str, profile: &str, options: ParserOptions) {
++    let (gated, ungated) = debug_trees(source, options);
++    if gated == ungated {
++        return;
++    }
++    let at = gated
++        .char_indices()
++        .zip(ungated.char_indices())
++        .find_map(|((index, left), (_, right))| (left != right).then_some(index))
++        .unwrap_or_else(|| gated.len().min(ungated.len()));
++    let window = at.saturating_sub(120);
++    panic!(
++        "profile {profile}: the autolink gate changed the AST\n\
++         source: {source:?}\n\
++         gated:   ...{}\n\
++         ungated: ...{}",
++        &gated[window..(at + 120).min(gated.len())],
++        &ungated[window..(at + 120).min(ungated.len())],
++    );
++}
++
++#[track_caller]
++fn check_every_profile(source: &str) {
++    for (profile, options) in profiles() {
++        assert_gate_is_transparent(source, profile, options);
++    }
++}
++
++/// Markdown inputs of every conformance example in a `spec.txt` fixture.
++///
++/// Tabs are stored as `→` in the fixtures, as the spec suites' own loader
++/// documents; they are restored here so the parser sees real tabs.
++fn spec_examples(text: &str) -> Vec<String> {
++    const FENCE: &str = "````````````````````````````````";
++
++    let mut examples = Vec::new();
++    let mut lines = text.lines();
++    while let Some(line) = lines.next() {
++        let is_example = line
++            .strip_prefix(FENCE)
++            .is_some_and(|rest| rest.trim() == "example" || rest.trim().starts_with("example "));
++        if !is_example {
++            continue;
++        }
++        let mut markdown = String::new();
++        for body_line in lines.by_ref() {
++            if body_line.starts_with(FENCE) || body_line == "." {
++                break;
++            }
++            markdown.push_str(body_line);
++            markdown.push('\n');
++        }
++        examples.push(markdown.replace('→', "\t"));
++    }
++    examples
++}
++
++#[test]
++fn gate_is_transparent_on_commonmark_spec_examples() {
++    let examples = spec_examples(COMMONMARK_SPEC);
++    assert!(examples.len() > 600, "spec loader found {}", examples.len());
++    for example in &examples {
++        check_every_profile(example);
++    }
++}
++
++#[test]
++fn gate_is_transparent_on_gfm_spec_examples() {
++    let examples = spec_examples(GFM_SPEC);
++    assert!(examples.len() > 20, "spec loader found {}", examples.len());
++    for example in &examples {
++        check_every_profile(example);
++    }
++}
++
++#[test]
++fn gate_is_transparent_on_whole_spec_documents() {
++    // Corpus-sized prose: both fixtures are ordinary Markdown documents that
++    // mix every block type with URLs, emails, and bare `://` in code.
++    for source in [COMMONMARK_SPEC, GFM_SPEC] {
++        assert_gate_is_transparent(source, "gfm", ParserOptions::gfm());
++        assert_gate_is_transparent(source, "commonmark", ParserOptions::default());
++    }
++}
++
++/// The needle-bearing fragments a generated document is built from, paired
++/// with the container shapes that give the block parser a sub-source.
++const NEEDLE_BODIES: [&str; 22] = [
++    "plain prose with no needle at all",
++    "http://example.com",
++    "https://example.com/path?q=1&r=2",
++    "ftp://files.example.com/pub",
++    "see www.example.com now",
++    "WWW.example.com stays literal",
++    "user@example.com",
++    "mailto:user@example.com",
++    "xmpp:user@example.com/resource",
++    "mailto: with no address",
++    "xmpp: with no address",
++    "an @ on its own",
++    "a colon: and a slash / apart",
++    "`http://code.example.com`",
++    "[text](http://example.com)",
++    "[text](https://example.com) and http://bare.example",
++    "<https://example.com>",
++    "<a href=\"http://example.com\">raw</a>",
++    "an &#64;entity.example that decodes",
++    "user&#64;example.com beside http://x.test",
++    "ends with www",
++    "trailing colon:",
++];
++
++/// Container shapes, each `{}` filled with one body above.
++const CONTAINERS: [&str; 14] = [
++    "{}",
++    "# {}",
++    "## {} ##",
++    "> {}",
++    "> > {}",
++    "- {}",
++    "- item\n\n  {}",
++    "1. {}",
++    "| a | b |\n| - | - |\n| {} | x |",
++    "[^note]: {}\n\nbody[^note]",
++    "Term\n: {}",
++    "*{}*",
++    "~~{}~~",
++    "<div>\n\n{}\n\n</div>",
++];
++
++#[test]
++fn gate_is_transparent_on_every_container_and_needle() {
++    for body in NEEDLE_BODIES {
++        for container in CONTAINERS {
++            check_every_profile(&container.replace("{}", body));
++        }
++    }
++}
++
++#[test]
++fn gate_is_transparent_on_documents_holding_one_needle_kind() {
++    for source in [
++        // Emails only: no `www.` and no `://` anywhere.
++        "Write to user@example.com or admin@example.org.\n\n- team@example.net\n",
++        // `www.` only: no `@` and no `://` anywhere.
++        "Visit www.example.com.\n\n> www.example.org\n\n- www.example.net\n",
++        // Bare schemes only.
++        "Go to http://example.com.\n\n> https://example.org\n",
++        // Extended schemes with an address, so `@` is present.
++        "mailto:user@example.com and xmpp:user@example.org\n",
++        // Extended scheme words with no address at all: the pre-flight needs
++        // the `@` before either can matter.
++        "mailto: and xmpp: are schemes\n\n> mailto:\n",
++        // Needles only inside constructs the pass never descends into.
++        "```\nhttp://example.com\nwww.example.com\nuser@example.com\n```\n",
++        "    http://example.com\n    user@example.com\n",
++        "`http://example.com` and `user@example.com`\n",
++        "<pre>\nhttp://example.com\n</pre>\n",
++        // A markdown destination is the one `://` the block pre-flight
++        // excludes; the document gate keeps it, which is still a superset.
++        "[one](http://example.com) [two](https://example.org)\n",
++        "[one]: http://example.com\n\n[one]\n",
++        // Nothing at all.
++        "Just prose. With sentences, commas; and semicolons.\n\n## Heading\n\n- item\n",
++        "",
++        "\n\n\n",
++    ] {
++        check_every_profile(source);
++    }
++}
++
++#[test]
++fn gate_is_transparent_when_the_root_source_is_rewritten() {
++    for source in [
++        // Front matter is cut off the root source before the scan: needles in
++        // it can never reach a block.
++        "---\nsite: www.example.com\ncontact: me@example.com\n---\n\nPlain prose here.\n",
++        "---\nsite: plain\n---\n\nVisit www.example.com.\n",
++        // Line comments survive the scan and are stripped per paragraph.
++        "// www.example.com\nPlain prose here.\n",
++        "// comment\nVisit www.example.com.\n",
++        "text\n// user@example.com\nmore text\n",
++        // A BOM shifts the normalized source start.
++        "\u{feff}Visit www.example.com.\n",
++        "\u{feff}Plain prose here.\n",
++        // NUL becomes U+FFFD, which lengthens the normalized source.
++        "a\0b www.example.com\n",
++        "a\0b plain prose\n",
++        // Lazy continuation and tab expansion build joined sub-sources.
++        "> paragraph\nwww.example.com\n",
++        "> paragraph\nplain text\n",
++        "-\twww.example.com\n",
++        // A table pipe escape is unescaped into the cell source.
++        "| a | b |\n| - | - |\n| www\\|.example.com | x |\n",
++        "| a | b |\n| - | - |\n| x\\|y | http://example.com |\n",
++    ] {
++        check_every_profile(source);
++    }
++}
++
++#[test]
++fn gate_is_transparent_on_generated_needle_mixes() {
++    let tokens = [
++        "www.",
++        "://",
++        "http",
++        "@",
++        "mailto:",
++        "xmpp:",
++        "a.b",
++        " ",
++        "\n",
++        "\n\n",
++        "> ",
++        "- ",
++        "# ",
++        "`",
++        "[x](",
++        ")",
++        "\t",
++        "é",
++        "example.com",
++    ];
++    let mut state = 0x51ed_2701_ab34_9f6du64;
++    let mut next = move || {
++        state = state
++            .wrapping_mul(6_364_136_223_846_793_005)
++            .wrapping_add(1);
++        (state >> 33) as usize
++    };
++    for _ in 0..1500 {
++        let len = next() % 20;
++        let mut source = String::new();
++        for _ in 0..len {
++            source.push_str(tokens[next() % tokens.len()]);
++        }
++        assert_gate_is_transparent(&source, "gfm", ParserOptions::gfm());
++    }
++}
+diff --git a/crates/ferromark/src/parser/inline/gfm_autolink/scan.rs b/crates/ferromark/src/parser/inline/gfm_autolink/scan.rs
+index d6c4fbd8..417241e7 100644
+--- a/crates/ferromark/src/parser/inline/gfm_autolink/scan.rs
++++ b/crates/ferromark/src/parser/inline/gfm_autolink/scan.rs
+@@ -1,8 +1,8 @@
+ //! Needle searches for the GFM autolink post-pass.
+ //!
+-//! Everything here is a pure scan over one string: the block-level
+-//! pre-flight that decides whether the post-pass runs at all, and the
+-//! per-text-node search for the earliest valid candidate.
++//! Everything here is a pure scan over one string: the document-level gate
++//! and the block-level pre-flight that decide whether the post-pass runs at
++//! all, and the per-text-node search for the earliest valid candidate.
+ 
+ use std::sync::LazyLock;
+ 
+@@ -38,6 +38,67 @@ const SCHEMES: [&str; 3] = ["https", "http", "ftp"];
+ /// a `://` a candidate can begin.
+ pub(super) const LONGEST_SCHEME: usize = 5;
+ 
++/// Which of the three autolink needles occur anywhere in a document.
++///
++/// Every verdict [`may_contain_autolink`] can reach needs `@`, `www.`, or
++/// `://` inside the block content it is handed, and the block parser never
++/// manufactures one: a sub-source is its parent's own bytes, copied whole
++/// lines at a time, with only spaces, line endings, and unescaped table
++/// pipes written between the copied runs — and none of those bytes occur in
++/// a needle, so no needle can straddle a join. A needle missing from the
++/// root source is therefore missing from every string that reaches the
++/// pre-flight, which makes these flags a superset of every block verdict in
++/// the document.
++#[derive(Clone, Copy)]
++pub(in crate::parser) struct AutolinkNeedles {
++    at: bool,
++    www: bool,
++    scheme: bool,
++}
++
++impl AutolinkNeedles {
++    /// "Every needle may occur": the state of a parser that never ran the
++    /// document scan, and the one that leaves each block check as it was.
++    pub(in crate::parser) const EVERY: Self = Self {
++        at: true,
++        www: true,
++        scheme: true,
++    };
++
++    /// Whether any block of this document can hold an autolink candidate.
++    pub(in crate::parser) const fn any(self) -> bool {
++        self.at || self.www || self.scheme
++    }
++}
++
++/// Records which autolink needles the whole document holds, once, so blocks
++/// of a document that holds none never run the pre-flight at all.
++///
++/// `://` is taken here without the markdown-destination exclusion that
++/// [`may_contain_autolink`] applies to it: a wider document verdict is still
++/// a superset, and the exclusion needs the surrounding block context that
++/// only the per-block scan has.
++pub(in crate::parser) fn scan_autolink_needles(source: &str) -> AutolinkNeedles {
++    let bytes = source.as_bytes();
++    let mut at = false;
++    let mut scheme = false;
++    for found in memchr::memchr2_iter(b'@', b':', bytes) {
++        if bytes[found] == b'@' {
++            at = true;
++        } else if bytes[found + 1..].starts_with(b"//") {
++            scheme = true;
++        }
++        if at && scheme {
++            break;
++        }
++    }
++    AutolinkNeedles {
++        at,
++        www: WWW_FINDER.find(bytes).is_some(),
++        scheme,
++    }
++}
++
+ /// Cheap pre-flight over a block's raw inline content: can the autolink
+ /// pass possibly rewrite anything here, and if so does it need the `www.`
+ /// search at all?
+diff --git a/crates/ferromark/src/parser/mod.rs b/crates/ferromark/src/parser/mod.rs
+index 7dfc9145..53d597ca 100644
+--- a/crates/ferromark/src/parser/mod.rs
++++ b/crates/ferromark/src/parser/mod.rs
+@@ -129,6 +129,18 @@ pub struct Parser<'a> {
+     /// whether a definition exists before reaching it.
+     footnote_labels: Option<std::rc::Rc<footnote::FootnoteLabels>>,
+ 
++    /// Which GFM autolink needles the whole document holds, collected by the
++    /// root parser next to the definition pre-pass and shared with
++    /// sub-parsers the same way.
++    ///
++    /// Sub-sources are stripped copies of parts of the root source, so a
++    /// root-level "no needle anywhere" verdict holds for every one of them
++    /// and lets their blocks skip the pre-flight entirely. The default
++    /// [`inline::AutolinkNeedles::EVERY`] claims nothing, which is what a
++    /// parser that never ran the scan — autolinks off, or the definition
++    /// phase — must fall back to.
++    autolink_needles: inline::AutolinkNeedles,
++
+     /// The document parse or its temporary block-only definition pass.
+     phase: ParsePhase,
+ 
+@@ -235,6 +247,7 @@ impl<'a> Parser<'a> {
+             position: 0,
+             nesting_depth: 0,
+             definitions: None,
++            autolink_needles: inline::AutolinkNeedles::EVERY,
+             phase,
+             footnote_labels: None,
+             lazy_lines: None,
+@@ -251,6 +264,12 @@ impl<'a> Parser<'a> {
+             let (definitions, footnote_labels) = parser.build_prepass();
+             parser.definitions = definitions;
+             parser.footnote_labels = footnote_labels;
++            // Runs on the normalized source the block parser walks, so front
++            // matter is already out and NUL replacement already in. The
++            // definition phase builds no inline content and never reads it.
++            if parser.options.autolinks {
++                parser.autolink_needles = inline::scan_autolink_needles(parser.source);
++            }
+         }
+         parser
+     }
+@@ -287,6 +306,7 @@ impl<'a> Parser<'a> {
+             position: 0,
+             nesting_depth: self.nesting_depth + 1,
+             definitions: self.definitions.clone(),
++            autolink_needles: self.autolink_needles,
+             phase: self.phase,
+             footnote_labels: self.footnote_labels.clone(),
+             inline_note_seen: self.inline_note_seen,
+-- 
+2.55.0
+
+
+From 06513b69a8c5a15e65193b69199e2e05adf99e3e Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Wed, 16 Sep 2026 00:14:13 +0200
+Subject: [PATCH 2/2] perf(parser): narrow the block autolink pre-flight to the
+ document needles
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When the document gate is open, the per-block pre-flight still ran both
+of its searches on every block, including the ones looking for a needle
+the document does not contain anywhere.
+
+`may_contain_autolink` now takes the document verdict and drops the
+search whose needle the root scan ruled out: no `www.` in the source
+means the substring search can only come back empty, so `may_have_www`
+is just the block's own `@`; no `@` and no `://` in the source means the
+`memchr2` pass can raise neither `has_at` nor `has_bare_scheme`, and
+`may_have_extended` needs an `@` of its own, so the whole pass goes. A
+document that holds every needle runs exactly what it ran before.
+
+The block content is a copy of document bytes, so a needle in the block
+is a needle in the document and every skipped search is one that was
+going to fail. The pre-flight tests now assert that directly: for each
+case, every document verdict that covers the content's own needles —
+which is every verdict the root scan can produce for a source holding
+it — must give the same result as the unrestricted one.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ crates/ferromark/src/parser/inline.rs         |  5 +-
+ .../src/parser/inline/gfm_autolink/scan.rs    | 68 +++++++++++++++----
+ 2 files changed, 57 insertions(+), 16 deletions(-)
+
+diff --git a/crates/ferromark/src/parser/inline.rs b/crates/ferromark/src/parser/inline.rs
+index 34801c0b..8d110b15 100644
+--- a/crates/ferromark/src/parser/inline.rs
++++ b/crates/ferromark/src/parser/inline.rs
+@@ -74,9 +74,10 @@ impl<'a> Parser<'a> {
+         let mut children = self.parse_inline(content, offset)?;
+         // The document scan already proved whether any needle exists at all;
+         // when it found none, no block of this document can hold a candidate
+-        // and the per-block pre-flight has nothing left to look for.
++        // and the per-block pre-flight has nothing left to look for. What it
++        // did find narrows the searches the pre-flight still has to run.
+         let scan = (self.options.autolinks && self.autolink_needles.any())
+-            .then(|| gfm_autolink::may_contain_autolink(content))
++            .then(|| gfm_autolink::may_contain_autolink(content, self.autolink_needles))
+             .flatten();
+         if let Some(scan) = scan {
+             self.apply_gfm_autolinks(&mut children, scan);
+diff --git a/crates/ferromark/src/parser/inline/gfm_autolink/scan.rs b/crates/ferromark/src/parser/inline/gfm_autolink/scan.rs
+index 417241e7..0018c91a 100644
+--- a/crates/ferromark/src/parser/inline/gfm_autolink/scan.rs
++++ b/crates/ferromark/src/parser/inline/gfm_autolink/scan.rs
+@@ -114,7 +114,16 @@ pub(in crate::parser) fn scan_autolink_needles(source: &str) -> AutolinkNeedles
+ /// `://` inside a markdown destination (`](https://…)`) cannot become a
+ /// GFM autolink — the inline parser already turned it into a Link — so it
+ /// does not keep the pass on.
+-pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<AutolinkScan> {
++///
++/// `document` is what the root parser found in the whole source. Each of
++/// the two searches below can be dropped when the needle it looks for is
++/// missing from the document, because then it is missing from this block
++/// too and the search could only come back empty. The verdict it returns is
++/// the same either way; only the work to reach it changes.
++pub(in crate::parser::inline) fn may_contain_autolink(
++    content: &str,
++    document: AutolinkNeedles,
++) -> Option<AutolinkScan> {
+     let bytes = content.as_bytes();
+     // One pass over `@` and `:` settles the email separator, `://`,
+     // `mailto:`, and `xmpp:` together; only `www.` still needs its own
+@@ -124,18 +133,22 @@ pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<A
+     let mut has_at = false;
+     let mut has_extended_scheme = false;
+     let mut has_bare_scheme = false;
+-    for at in memchr::memchr2_iter(b'@', b':', bytes) {
+-        if bytes[at] == b'@' {
+-            has_at = true;
+-            continue;
+-        }
+-        if bytes[at + 1..].starts_with(b"//") {
+-            has_bare_scheme |= !scheme_is_markdown_destination(bytes, at);
++    // Without an `@` or a `://` anywhere in the document, this pass can
++    // raise neither flag, and the extended schemes need an `@` of their own.
++    if document.at || document.scheme {
++        for at in memchr::memchr2_iter(b'@', b':', bytes) {
++            if bytes[at] == b'@' {
++                has_at = true;
++                continue;
++            }
++            if bytes[at + 1..].starts_with(b"//") {
++                has_bare_scheme |= !scheme_is_markdown_destination(bytes, at);
++            }
++            let prefix = &bytes[..at];
++            has_extended_scheme |= prefix.ends_with(b"mailto") || prefix.ends_with(b"xmpp");
+         }
+-        let prefix = &bytes[..at];
+-        has_extended_scheme |= prefix.ends_with(b"mailto") || prefix.ends_with(b"xmpp");
+     }
+-    let may_have_www = has_at || WWW_FINDER.find(bytes).is_some();
++    let may_have_www = has_at || (document.www && WWW_FINDER.find(bytes).is_some());
+     // Both extended schemes require an email separator.
+     let may_have_extended = has_at && has_extended_scheme;
+     (may_have_www || may_have_extended || has_bare_scheme).then_some(AutolinkScan {
+@@ -438,10 +451,37 @@ mod tests {
+             .then_some((may_have_www, may_have_extended))
+     }
+ 
++    fn verdict(content: &str, document: AutolinkNeedles) -> Option<(bool, bool)> {
++        may_contain_autolink(content, document)
++            .map(|scan| (scan.may_have_www, scan.may_have_extended))
++    }
++
+     fn check(content: &str) {
+-        let actual =
+-            may_contain_autolink(content).map(|scan| (scan.may_have_www, scan.may_have_extended));
+-        assert_eq!(actual, reference(content), "input: {content:?}");
++        let expected = verdict(content, AutolinkNeedles::EVERY);
++        assert_eq!(expected, reference(content), "input: {content:?}");
++
++        // Any document verdict the root scan can produce for a source that
++        // holds this content is a superset of the content's own needles, and
++        // every one of them has to leave the result untouched.
++        let own = scan_autolink_needles(content);
++        for bits in 0..8u8 {
++            let document = AutolinkNeedles {
++                at: bits & 1 != 0,
++                www: bits & 2 != 0,
++                scheme: bits & 4 != 0,
++            };
++            let covers_content = (document.at || !own.at)
++                && (document.www || !own.www)
++                && (document.scheme || !own.scheme);
++            if !covers_content {
++                continue;
++            }
++            assert_eq!(
++                verdict(content, document),
++                expected,
++                "document needles {bits:#05b}, input: {content:?}"
++            );
++        }
+     }
+ 
+     #[test]
+-- 
+2.55.0
+

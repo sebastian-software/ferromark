@@ -1,0 +1,13 @@
+diff --git a/crates/ferromark/src/allocator/mod.rs b/crates/ferromark/src/allocator/mod.rs
+index afdd7428..587b1ae3 100644
+--- a/crates/ferromark/src/allocator/mod.rs
++++ b/crates/ferromark/src/allocator/mod.rs
+@@ -72,7 +72,7 @@ impl Allocator {
+         // chunk-growth allocations on precisely the small inputs where
+         // per-call cost dominates. 16 KB is one page-cluster of slack and
+         // covers everything under ~2 KB of Markdown in a single chunk.
+-        const MIN_CAPACITY: usize = 16 * 1024;
++        const MIN_CAPACITY: usize = 4 * 1024;
+         let capacity = source_len.saturating_mul(BYTES_PER_INPUT_BYTE);
+         if capacity < MIN_CAPACITY {
+             MIN_CAPACITY

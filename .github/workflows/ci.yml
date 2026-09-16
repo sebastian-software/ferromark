@@ -311,14 +311,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-latest, rust_target: aarch64-apple-darwin, artifact: darwin-arm64, runtime_test: true }
-          - { os: macos-15-intel, rust_target: x86_64-apple-darwin, artifact: darwin-x64, runtime_test: true }
-          - { os: ubuntu-24.04-arm, rust_target: aarch64-unknown-linux-gnu, artifact: linux-arm64-gnu, runtime_test: true }
-          - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-gnu, artifact: linux-x64-gnu, runtime_test: true }
-          - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-musl, artifact: linux-x64-musl, runtime_test: false }
-          - { os: ubuntu-latest, rust_target: aarch64-unknown-linux-musl, artifact: linux-arm64-musl, runtime_test: false }
-          - { os: windows-latest, rust_target: x86_64-pc-windows-msvc, artifact: win32-x64-msvc, runtime_test: true }
-          - { os: windows-11-arm, rust_target: aarch64-pc-windows-msvc, artifact: win32-arm64-msvc, runtime_test: true }
+          - { os: macos-latest, rust_target: aarch64-apple-darwin, artifact: darwin-arm64, runtime_test: true, pgo: true }
+          - { os: macos-15-intel, rust_target: x86_64-apple-darwin, artifact: darwin-x64, runtime_test: true, pgo: true }
+          - { os: ubuntu-24.04-arm, rust_target: aarch64-unknown-linux-gnu, artifact: linux-arm64-gnu, runtime_test: true, pgo: true }
+          - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-gnu, artifact: linux-x64-gnu, runtime_test: true, pgo: true }
+          - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-musl, artifact: linux-x64-musl, runtime_test: false, pgo: true }
+          - { os: ubuntu-latest, rust_target: aarch64-unknown-linux-musl, artifact: linux-arm64-musl, runtime_test: false, pgo: true }
+          - { os: windows-latest, rust_target: x86_64-pc-windows-msvc, artifact: win32-x64-msvc, runtime_test: true, pgo: true }
+          - { os: windows-11-arm, rust_target: aarch64-pc-windows-msvc, artifact: win32-arm64-msvc, runtime_test: true, pgo: false }
     runs-on: ${{ matrix.os }}
     name: native (${{ matrix.rust_target }})
     defaults:
@@ -354,6 +354,8 @@ jobs:
         with:
           toolchain: "1.95"
           targets: ${{ matrix.rust_target }}
+          # llvm-profdata merges the profile-guided training counters.
+          components: llvm-tools
       - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         if: ${{ contains(matrix.rust_target, '-musl') }}
         with:
@@ -365,9 +367,16 @@ jobs:
         with:
           tool: cargo-zigbuild
       - run: pnpm install --frozen-lockfile
+      # Published addons are profile-guided; local builds stay opt-in.
+      # See docs/arch/ADR-0019-profile-guided-native-addon.md.
+      # Windows ARM64 stays on the plain build: the toolchain's llvm-profdata
+      # rejects the counters its own instrumented binary writes there
+      # ("malformed instrumentation profile data: symbol name is empty").
+      # See docs/arch/ADR-0019-profile-guided-native-addon.md.
       - run: pnpm build:native
         env:
           FERROMARK_RUST_TARGET: ${{ matrix.rust_target }}
+          FERROMARK_PGO: ${{ matrix.pgo && '1' || '0' }}
       - name: Test native package
         if: ${{ matrix.runtime_test }}
         run: pnpm test

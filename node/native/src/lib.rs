@@ -106,7 +106,9 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.cjk_emphasis, options.cjk_emphasis);
         apply!(parser.mdx, options.mdx);
         if let Some(base) = options.link_base_path {
-            html.base_url = base;
+            // The JavaScript string is owned, so this becomes `Cow::Owned`;
+            // every other renderer option keeps its borrowed default.
+            html.base_url = base.into();
             html.convert_md_links = true;
         }
     }

@@ -96,7 +96,7 @@ fn html_base_url_prefixes_root_absolute_links() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/docs/".to_string(),
+            base_url: "/docs/".into(),
             ..HtmlRendererOptions::default()
         },
     );
@@ -110,7 +110,7 @@ fn html_base_url_prefixes_root_absolute_images() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/docs/".to_string(),
+            base_url: "/docs/".into(),
             ..HtmlRendererOptions::default()
         },
     );
@@ -124,7 +124,7 @@ fn html_base_url_prefixes_raw_html_attrs() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/docs/".to_string(),
+            base_url: "/docs/".into(),
             ..HtmlRendererOptions::default()
         },
     );
@@ -138,7 +138,7 @@ fn html_base_url_leaves_protocol_relative_unchanged() {
         ParserOptions::default(),
         HtmlRendererOptions {
             convert_md_links: true,
-            base_url: "/docs/".to_string(),
+            base_url: "/docs/".into(),
             ..HtmlRendererOptions::default()
         },
     );

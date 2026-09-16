@@ -55,6 +55,20 @@ on the workspace floor and tests the binary on the consumer floor.
 `release-node` inherits the optimized release profile with `panic = "unwind"`.
 The panic test verifies that Rust panics become JavaScript exceptions.
 
+`pnpm build` produces a plain addon. To reproduce the published build locally,
+install the `llvm-tools` component for the pinned toolchain
+(`rustup component add llvm-tools`) and run from `node/`:
+
+```sh
+FERROMARK_PGO=1 pnpm build:native
+```
+
+That builds an instrumented training binary, trains it on the frozen benchmark
+corpus, merges the counters with `llvm-profdata` and rebuilds the addon with the
+profile; the work lives under `target/pgo/`. Without `llvm-tools` the build
+fails rather than quietly producing an unoptimized addon. See
+[ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
+
 ## Rust archive rehearsal
 
 From the repository root, with Rust 1.95 and Python 3.12 or later:
@@ -82,6 +96,17 @@ tests; the two musl targets are built and inspected. The `rust-packages` job run
 the Cargo archive rehearsal. CI retains the verified archives for seven days.
 These jobs do not publish. Publication requires a successful **push CI run on
 main at the exact release commit**, including every gate.
+
+Seven native jobs set `FERROMARK_PGO=1`, so each published addon is built from
+a profile collected on its own runner. Five same-architecture targets receive
+that profile; the two cross-compiled musl targets do not, because a Cargo unit
+hash covers the target triple, and the Windows ARM64 job builds without PGO
+because the pinned toolchain's `llvm-profdata` rejects the counters written on
+that runner. The crates.io crate is unaffected. Profile-guided
+binaries depend on counts taken at build time and are therefore no longer
+byte-identical between runs of the same commit, so a publish retry must reuse
+the original `ci_run_id`. See
+[ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
 
 ## Registry authorization
 

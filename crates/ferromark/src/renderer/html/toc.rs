@@ -28,6 +28,17 @@ pub(super) struct DocumentRenderScan {
     pub(super) heading_count: usize,
 }
 
+impl DocumentRenderScan {
+    /// The result of a walk that found nothing, and the starting point of one
+    /// that has not run. A renderer whose options read neither fact uses this
+    /// instead of walking: `reserve(0)` is a no-op and "no marker" is what a
+    /// disabled inline TOC would have concluded anyway.
+    pub(super) const NONE: Self = Self {
+        has_toc_marker: false,
+        heading_count: 0,
+    };
+}
+
 pub(super) fn collect_inline_toc_entries(
     document: &Document<'_>,
     max_depth: u8,
@@ -44,19 +55,26 @@ pub(super) fn collect_inline_toc_entries(
 ///
 /// The TOC directive is recognized only when a paragraph's text content trims
 /// to exactly `[[toc]]`, which is also the only form `visit_paragraph` will
-/// render as a TOC.
-pub(super) fn scan_document_for_render(document: &Document<'_>) -> DocumentRenderScan {
-    let mut scan = DocumentRenderScan {
-        has_toc_marker: false,
-        heading_count: 0,
-    };
+/// render as a TOC. `detect_toc_marker` is false when the renderer would
+/// ignore a marker anyway — an inline TOC needs heading IDs to link to, so
+/// both conveniences must be on — which drops the per-paragraph marker
+/// predicate from the walk without changing what the renderer concludes.
+///
+/// The walk still descends into every container, because a marker paragraph
+/// or heading nested in a block quote, list, footnote definition, or MDX
+/// element counts exactly like a top-level one.
+pub(super) fn scan_document_for_render(
+    document: &Document<'_>,
+    detect_toc_marker: bool,
+) -> DocumentRenderScan {
+    let mut scan = DocumentRenderScan::NONE;
     for node in &document.children {
-        scan_node_for_render(node, &mut scan);
+        scan_node_for_render(node, detect_toc_marker, &mut scan);
     }
     scan
 }
 
-fn scan_node_for_render(node: &Node<'_>, scan: &mut DocumentRenderScan) {
+fn scan_node_for_render(node: &Node<'_>, detect_toc_marker: bool, scan: &mut DocumentRenderScan) {
     // This traversal intentionally collects only facts that are free to derive:
     // "does any paragraph equal the TOC marker?" and "how many headings exist?".
     // It does not slugify headings or collect text. That keeps the no-TOC
@@ -64,43 +82,49 @@ fn scan_node_for_render(node: &Node<'_>, scan: &mut DocumentRenderScan) {
     // enough information to reserve the heading-id map up front.
     match node {
         Node::Heading(_) => scan.heading_count += 1,
-        Node::Paragraph(p) if !scan.has_toc_marker && is_toc_marker_paragraph(p) => {
+        Node::Paragraph(p)
+            if detect_toc_marker && !scan.has_toc_marker && is_toc_marker_paragraph(p) =>
+        {
             scan.has_toc_marker = true;
         }
         Node::Paragraph(_) => {}
         Node::BlockQuote(bq) => {
             for child in &bq.children {
-                scan_node_for_render(child, scan);
+                scan_node_for_render(child, detect_toc_marker, scan);
             }
         }
         Node::List(list) => {
             for item in &list.children {
-                scan_list_item_for_render(item, scan);
+                scan_list_item_for_render(item, detect_toc_marker, scan);
             }
         }
-        Node::ListItem(item) => scan_list_item_for_render(item, scan),
+        Node::ListItem(item) => scan_list_item_for_render(item, detect_toc_marker, scan),
         Node::FootnoteDefinition(def) => {
             for child in &def.children {
-                scan_node_for_render(child, scan);
+                scan_node_for_render(child, detect_toc_marker, scan);
             }
         }
         Node::MdxJsxFlowElement(node) => {
             for child in &node.children {
-                scan_node_for_render(child, scan);
+                scan_node_for_render(child, detect_toc_marker, scan);
             }
         }
         Node::MdxJsxTextElement(node) => {
             for child in &node.children {
-                scan_node_for_render(child, scan);
+                scan_node_for_render(child, detect_toc_marker, scan);
             }
         }
         _ => {}
     }
 }
 
-fn scan_list_item_for_render(item: &ListItem<'_>, scan: &mut DocumentRenderScan) {
+fn scan_list_item_for_render(
+    item: &ListItem<'_>,
+    detect_toc_marker: bool,
+    scan: &mut DocumentRenderScan,
+) {
     for child in &item.children {
-        scan_node_for_render(child, scan);
+        scan_node_for_render(child, detect_toc_marker, scan);
     }
 }
 

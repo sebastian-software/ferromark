@@ -173,6 +173,63 @@ pub(in crate::renderer::html) fn normalize_code_block_language(lang: Option<&str
     }
 }
 
+/// Bytes an info token may hold and still be its own `language-…` class body.
+///
+/// The set is the complement of what the three passes `normalize_code_block_language`
+/// plus the class writer run over a token can react to:
+///
+/// * `str::trim`, applied to the raw token and again to the split result, reacts
+///   to every `char::is_whitespace` code point. ASCII whitespace is `\t\n\x0B\x0C\r`
+///   and space; every non-ASCII whitespace code point (NBSP, the U+2000 block,
+///   U+2028/9, …) is multi-byte, so excluding all bytes outside `0x21..=0x7E`
+///   excludes each of them without decoding UTF-8.
+/// * `split_code_block_language_token` reacts to `{`, `[`, and `:` — the last one
+///   only when a VitePress raw-meta keyword follows, but rejecting every `:`
+///   keeps the test a single table lookup and only sends `c:` style tokens,
+///   which are not real languages, down the general route.
+/// * `write_escaped_into` replaces `&`, `<`, `>`, `"`, and `'`.
+///
+/// A token built only from the remaining bytes therefore survives both trims and
+/// the split unchanged and needs no escaping, so it can be pushed onto the output
+/// verbatim.
+static PLAIN_LANGUAGE_BYTE: [bool; 256] = {
+    let mut table = [false; 256];
+    let mut byte = b'!';
+    while byte <= b'~' {
+        table[byte as usize] = true;
+        byte += 1;
+    }
+    table[b'{' as usize] = false;
+    table[b'[' as usize] = false;
+    table[b':' as usize] = false;
+    table[b'&' as usize] = false;
+    table[b'<' as usize] = false;
+    table[b'>' as usize] = false;
+    table[b'"' as usize] = false;
+    table[b'\'' as usize] = false;
+    table
+};
+
+/// Returns the class body for an info token that is a bare language name.
+///
+/// Bare names — `ts`, `js`, `bash`, `rust`, `json` — are the overwhelmingly common
+/// fence info string, and for them the metadata tokenizer, the two trims, and the
+/// escape scan all reduce to the identity. Proving that with one table lookup per
+/// byte lets the renderer push the token straight into the output. `None` means
+/// "not provably plain"; the caller then runs `normalize_code_block_language` and
+/// escapes its result, so the answer is identical either way.
+#[inline]
+pub(in crate::renderer::html) fn plain_code_block_language(lang: &str) -> Option<&str> {
+    let bytes = lang.as_bytes();
+    if bytes.is_empty() {
+        return None;
+    }
+    bytes
+        .iter()
+        .all(|byte| PLAIN_LANGUAGE_BYTE[*byte as usize])
+        .then_some(lang)
+}
+
 pub(in crate::renderer::html) fn apply_annotation_numbers(
     lines: &mut [CodeLineRenderState],
     line_numbers: &[usize],

@@ -13,9 +13,12 @@ and the separate [six-engine comparison](../../docs/reports/2026-09-15-native-ar
 remain available with their own profiles and build settings.
 
 The live preparation script's original reference core remains
-`4de75d4843747a218771b5ec46df9171d4f54a15`.
-Prepare isolated source checkouts of that revision and the desired candidate;
-then run, using fresh output directories:
+`4de75d4843747a218771b5ec46df9171d4f54a15`. Rounds that compare against the
+last promoted commit pass that revision with `--baseline-revision <rev>`;
+the baseline checkout is then verified against `git archive <rev>` instead of
+the frozen reference core, and `build.json` records the resolved hash.
+Prepare isolated source checkouts of the baseline revision and the desired
+candidate; then run, using fresh output directories:
 
 ```sh
 python3 benchmarks/optimization-rounds/make_corpus.py /tmp/fmv2-corpus.json \

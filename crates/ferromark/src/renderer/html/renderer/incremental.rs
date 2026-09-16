@@ -1,7 +1,6 @@
 use crate::ast::Document;
 
 use super::{HtmlRenderHooks, HtmlRenderer};
-use crate::renderer::html::autolink::FirstByteIndex;
 use crate::renderer::html::toc::{
     DocumentRenderScan, collect_inline_toc_entries, scan_document_for_render,
 };
@@ -35,7 +34,7 @@ impl HtmlRenderer {
     /// The returned HTML is meant to be replaceable by the next streaming update.
     #[must_use]
     pub fn render_provisional_fragment(&mut self, document: &Document<'_>) -> String {
-        let document_scan = scan_document_for_render(document);
+        let document_scan = self.scan_for_fragment(document);
         let heading_id_counts =
             (document_scan.heading_count != 0).then(|| self.heading_id_counts.clone());
         let footnote_ref_counts = self.footnote_ref_counts.clone();
@@ -60,7 +59,7 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
-        let document_scan = scan_document_for_render(document);
+        let document_scan = self.scan_for_fragment(document);
         let heading_id_counts =
             (document_scan.heading_count != 0).then(|| self.heading_id_counts.clone());
         let footnote_ref_counts = self.footnote_ref_counts.clone();
@@ -88,11 +87,28 @@ impl HtmlRenderer {
         self.heading_text_scratch.clear();
         self.heading_slug_scratch.clear();
         self.in_link = false;
-        self.autolink_index = None;
+        // `autolink_index` is deliberately untouched: it is derived from the
+        // renderer's immutable options, not from the fragments rendered so
+        // far, and every fragment path used to rebuild the identical value.
+    }
+
+    /// Scans a fragment for the facts its setup consumes.
+    ///
+    /// Unlike the one-shot render path this always walks: the provisional
+    /// entry points use the exact heading count to decide whether committed
+    /// heading-ID state has to be snapshotted, and an approximation there
+    /// would change what a provisional render leaves behind. Only the
+    /// per-paragraph marker predicate is skipped, and only when the renderer
+    /// would ignore a marker anyway.
+    fn scan_for_fragment(&self, document: &Document<'_>) -> DocumentRenderScan {
+        scan_document_for_render(
+            document,
+            self.options.inline_toc && self.options.heading_ids,
+        )
     }
 
     fn render_fragment(&mut self, document: &Document<'_>) -> String {
-        let document_scan = scan_document_for_render(document);
+        let document_scan = self.scan_for_fragment(document);
         self.render_fragment_with_scan(document, document_scan)
     }
 
@@ -101,7 +117,7 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
-        let document_scan = scan_document_for_render(document);
+        let document_scan = self.scan_for_fragment(document);
         self.render_fragment_with_scan_and_hooks(document, document_scan, hooks)
     }
 
@@ -112,23 +128,13 @@ impl HtmlRenderer {
     ) -> String {
         self.output.clear();
         self.toc_entries.clear();
-        self.document_has_toc_marker =
-            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+        self.document_has_toc_marker = document_scan.has_toc_marker;
         if self.document_has_toc_marker {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }
         self.heading_id_counts.reserve(document_scan.heading_count);
-        let autolink_patterns = self.options.autolink_patterns();
-        self.autolink_index = if self.options.autolink_urls && !autolink_patterns.is_empty() {
-            Some(FirstByteIndex::from_patterns(autolink_patterns))
-        } else {
-            None
-        };
         self.in_link = false;
-        let estimated_len = (document.span.len() as usize).saturating_mul(2);
-        if self.output.capacity() < estimated_len {
-            self.output.reserve(estimated_len - self.output.capacity());
-        }
+        self.reserve_output_for(document);
         self.render_document(document);
         self.finish_semantic_footnotes();
         std::mem::take(&mut self.output)
@@ -142,23 +148,13 @@ impl HtmlRenderer {
     ) -> String {
         self.output.clear();
         self.toc_entries.clear();
-        self.document_has_toc_marker =
-            self.options.inline_toc && self.options.heading_ids && document_scan.has_toc_marker;
+        self.document_has_toc_marker = document_scan.has_toc_marker;
         if self.document_has_toc_marker {
             collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
         }
         self.heading_id_counts.reserve(document_scan.heading_count);
-        let autolink_patterns = self.options.autolink_patterns();
-        self.autolink_index = if self.options.autolink_urls && !autolink_patterns.is_empty() {
-            Some(FirstByteIndex::from_patterns(autolink_patterns))
-        } else {
-            None
-        };
         self.in_link = false;
-        let estimated_len = (document.span.len() as usize).saturating_mul(2);
-        if self.output.capacity() < estimated_len {
-            self.output.reserve(estimated_len - self.output.capacity());
-        }
+        self.reserve_output_for(document);
         self.render_document_with_hooks(document, hooks);
         self.finish_semantic_footnotes();
         std::mem::take(&mut self.output)

@@ -1,0 +1,402 @@
+{
+  "rounds": 3,
+  "samples": 6,
+  "window_ms": 40,
+  "warmup_ms": 60,
+  "seed": 20260914,
+  "jobs": [
+    {
+      "name": "comment-question",
+      "profile": "gfm",
+      "members": [
+        "comment-question"
+      ]
+    },
+    {
+      "name": "comment-links",
+      "profile": "gfm",
+      "members": [
+        "comment-links"
+      ]
+    },
+    {
+      "name": "comment-quote",
+      "profile": "gfm",
+      "members": [
+        "comment-quote"
+      ]
+    },
+    {
+      "name": "comment-inline-code",
+      "profile": "gfm",
+      "members": [
+        "comment-inline-code"
+      ]
+    },
+    {
+      "name": "comment-table",
+      "profile": "gfm",
+      "members": [
+        "comment-table"
+      ]
+    },
+    {
+      "name": "comment-incident",
+      "profile": "gfm",
+      "members": [
+        "comment-incident"
+      ]
+    },
+    {
+      "name": "legacy-contributing",
+      "profile": "gfm",
+      "members": [
+        "legacy-contributing"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-2",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-migration-0-2"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-4",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-migration-0-4"
+      ]
+    },
+    {
+      "name": "legacy-docs-releasing",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-releasing"
+      ]
+    },
+    {
+      "name": "legacy-docs-markdown-extensions",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-markdown-extensions"
+      ]
+    },
+    {
+      "name": "legacy-docs-readme",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-readme"
+      ]
+    },
+    {
+      "name": "rust-book-ch03-04-comments",
+      "profile": "gfm",
+      "members": [
+        "rust-book-ch03-04-comments"
+      ]
+    },
+    {
+      "name": "rust-book-ch00-00-introduction",
+      "profile": "gfm",
+      "members": [
+        "rust-book-ch00-00-introduction"
+      ]
+    },
+    {
+      "name": "vue-docs-ways-of-using-vue",
+      "profile": "gfm",
+      "members": [
+        "vue-docs-ways-of-using-vue"
+      ]
+    },
+    {
+      "name": "vue-docs-slots",
+      "profile": "gfm",
+      "members": [
+        "vue-docs-slots"
+      ]
+    },
+    {
+      "name": "vite-docs-philosophy",
+      "profile": "gfm",
+      "members": [
+        "vite-docs-philosophy"
+      ]
+    },
+    {
+      "name": "vite-docs-api-plugin",
+      "profile": "gfm",
+      "members": [
+        "vite-docs-api-plugin"
+      ]
+    },
+    {
+      "name": "typescript-handbook-the-handbook",
+      "profile": "gfm",
+      "members": [
+        "typescript-handbook-the-handbook"
+      ]
+    },
+    {
+      "name": "typescript-handbook-compiler-options",
+      "profile": "gfm",
+      "members": [
+        "typescript-handbook-compiler-options"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-article-body"
+      ]
+    },
+    {
+      "name": "wiki-tea-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-tea-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-tea-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-tea-article-body"
+      ]
+    },
+    {
+      "name": "wiki-chess-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-chess-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-chess-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-chess-article-body"
+      ]
+    },
+    {
+      "name": "wiki-volcano-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-volcano-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-volcano-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-volcano-article-body"
+      ]
+    },
+    {
+      "name": "rotating-commonmark",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-first-paragraph",
+        "wiki-rainbow-article-body",
+        "wiki-tea-first-paragraph",
+        "wiki-tea-article-body",
+        "wiki-chess-first-paragraph",
+        "wiki-chess-article-body",
+        "wiki-volcano-first-paragraph",
+        "wiki-volcano-article-body"
+      ]
+    },
+    {
+      "name": "rotating-gfm",
+      "profile": "gfm",
+      "members": [
+        "comment-question",
+        "comment-links",
+        "comment-quote",
+        "comment-inline-code",
+        "comment-table",
+        "comment-incident",
+        "legacy-contributing",
+        "legacy-docs-migration-0-2",
+        "legacy-docs-migration-0-4",
+        "legacy-docs-releasing",
+        "legacy-docs-markdown-extensions",
+        "legacy-docs-readme",
+        "rust-book-ch03-04-comments",
+        "rust-book-ch00-00-introduction",
+        "vue-docs-ways-of-using-vue",
+        "vue-docs-slots",
+        "vite-docs-philosophy",
+        "vite-docs-api-plugin",
+        "typescript-handbook-the-handbook",
+        "typescript-handbook-compiler-options"
+      ]
+    }
+  ],
+  "modes": [
+    "fresh",
+    "reuse"
+  ],
+  "engines": [
+    "v2",
+    "ox-content",
+    "v1",
+    "md4c",
+    "pulldown-cmark",
+    "bun"
+  ],
+  "host_before": {
+    "time_utc": "2026-09-16T07:09:48Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "cpu": "arm64",
+    "load_average": [
+      3.890625,
+      4.50439453125,
+      4.517578125
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  },
+  "observations": [
+    {
+      "round": 0,
+      "before": {
+        "time_utc": "2026-09-16T07:09:48Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          3.890625,
+          4.50439453125,
+          4.517578125
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "after": {
+        "time_utc": "2026-09-16T07:11:41Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          3.60302734375,
+          4.25634765625,
+          4.41845703125
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "round": 1,
+      "before": {
+        "time_utc": "2026-09-16T07:11:41Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          3.60302734375,
+          4.25634765625,
+          4.41845703125
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "after": {
+        "time_utc": "2026-09-16T07:13:33Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          3.23681640625,
+          3.8818359375,
+          4.24560546875
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    },
+    {
+      "round": 2,
+      "before": {
+        "time_utc": "2026-09-16T07:13:33Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          3.23681640625,
+          3.8818359375,
+          4.24560546875
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      },
+      "after": {
+        "time_utc": "2026-09-16T07:15:26Z",
+        "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+        "cpu": "arm64",
+        "load_average": [
+          4.7080078125,
+          4.0283203125,
+          4.24267578125
+        ],
+        "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+        "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+      }
+    }
+  ],
+  "case_filter": "^(comment-question|comment-links|comment-quote|comment-inline-code|comment-table|comment-incident|legacy-contributing|legacy-docs-migration-0-2|legacy-docs-migration-0-4|legacy-docs-releasing|legacy-docs-markdown-extensions|legacy-docs-readme|rust-book-ch03-04-comments|rust-book-ch00-00-introduction|vue-docs-ways-of-using-vue|vue-docs-slots|vite-docs-philosophy|vite-docs-api-plugin|typescript-handbook-the-handbook|typescript-handbook-compiler-options|wiki-rainbow-first-paragraph|wiki-rainbow-article-body|wiki-tea-first-paragraph|wiki-tea-article-body|wiki-chess-first-paragraph|wiki-chess-article-body|wiki-volcano-first-paragraph|wiki-volcano-article-body)$",
+  "case_filter_file": "docs/reports/2026-09-16-arm-round-3/harness/filter-broad-test.txt",
+  "cases": [
+    "comment-question",
+    "comment-links",
+    "comment-quote",
+    "comment-inline-code",
+    "comment-table",
+    "comment-incident",
+    "legacy-contributing",
+    "legacy-docs-migration-0-2",
+    "legacy-docs-migration-0-4",
+    "legacy-docs-releasing",
+    "legacy-docs-markdown-extensions",
+    "legacy-docs-readme",
+    "rust-book-ch03-04-comments",
+    "rust-book-ch00-00-introduction",
+    "vue-docs-ways-of-using-vue",
+    "vue-docs-slots",
+    "vite-docs-philosophy",
+    "vite-docs-api-plugin",
+    "typescript-handbook-the-handbook",
+    "typescript-handbook-compiler-options",
+    "wiki-rainbow-first-paragraph",
+    "wiki-rainbow-article-body",
+    "wiki-tea-first-paragraph",
+    "wiki-tea-article-body",
+    "wiki-chess-first-paragraph",
+    "wiki-chess-article-body",
+    "wiki-volcano-first-paragraph",
+    "wiki-volcano-article-body"
+  ],
+  "corpus_case_count": 57,
+  "runner_sha256": "a9af016f40d78b309d4bb1f89fc643f878a10528678201403053ff5199b13f70",
+  "verifier_sha256": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018",
+  "corpus_sha256": "e8b7e468863b14a90ec4fe2b0ac54382dcc327c513ce9b9fdce8e871f8ffff43",
+  "aggregation": "Per-engine median of per-process round medians; equal-document geometric mean of time ratios.",
+  "lifecycle": "Fresh: new parser and owned HTML. Reuse: retained arenas/scratch/output where public API permits; Bun still uses its fresh owned-output API.",
+  "host_after": {
+    "time_utc": "2026-09-16T07:15:26Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "cpu": "arm64",
+    "load_average": [
+      4.7080078125,
+      4.0283203125,
+      4.24267578125
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t76%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  }
+}

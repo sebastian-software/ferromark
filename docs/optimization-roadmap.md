@@ -37,6 +37,35 @@ an immutable account of its original measurements apart from a follow-up link.
   and diagnostic losses remain visible in the full tables. The original
   attempts, rejected variants, patches, and raw results are archived with the
   iteration report.
+- The [second Apple Silicon round](reports/2026-09-15-arm-round-2/README.md)
+  added twelve commits on the single-crate core: renderer fixed costs (lazy
+  heading scratch buffers, the autolink first-byte index built once per
+  renderer, a setup walk skipped when no option reads it, a 64-byte output
+  floor, a minimal footnote reset), heading ids (no escape pass for generated
+  slugs, slugifying single-text headings from the source, an ASCII slug
+  cursor), an inline source-span gate, and parser work (the definition
+  pre-pass driven from `]:` with a static searcher, SWAR short-slice probes,
+  emphasis bookkeeping). Against `fea50462` the 57 broad documents gain
+  1.050× fresh, 1.041× with reuse, 1.012× in parsing, and 1.102× in
+  rendering; comment-sized inputs render 1.16× and the 45 diagnostics
+  1.129×. Two of the first round's top-ranked hot spots were tried and
+  lost: a raw output cursor in the escapers (render 0.973× / 0.940×) and a
+  fused block/inline paragraph scan (parse 0.949×). Patches and screens are
+  archived with the report.
+- The [third round](reports/2026-09-16-arm-round-3/README.md) added nine
+  commits: every block-level line walk finds a line end once (lists, block
+  dispatch and probe, containers and leaves, definition lists and table
+  metadata), bare fence languages bypass the metadata tokenizer and the
+  plain fence markup is assembled from merged literals, and — as a recorded
+  v2 API decision — `HtmlRendererOptions` strings became `Cow<'static, str>`
+  so default options and their clones allocate nothing. Against `f216b8da`
+  the 57 broad documents gain 1.142× fresh, 1.027× with reuse, 1.036× in
+  parsing (every document), and 1.009× in rendering. The fence-run finders,
+  a document-level autolink gate, and reserved text coalescing were measured
+  and rejected. The same report measures profile-guided optimization as a
+  build experiment: trained on half the broad documents plus the
+  diagnostics and measured on the other half, PGO gives 1.204× fresh,
+  1.240× reuse, 1.255× parse and 1.176× render on documents it never saw.
 
 The [new native comparison](reports/2026-09-15-native-arm/README.md) separately
 remeasures all six engines with matched syntax and renderer settings. V2 is
@@ -48,11 +77,25 @@ from optimization speedups; the older reports retain their frozen evidence.
 
 ## Next questions
 
-The [iteration-round report](reports/2026-09-15-arm-iterations/README.md) ranks
-the currently measured hot spots: output-buffer growth checks in the escaper,
-the double scan of paragraph lines, the reference-definition pre-pass bail, URL
-sanitization searches, heading slugs, and the renderer preparation scan. The
-questions below remain open as well.
+The [iteration-round report](reports/2026-09-15-arm-iterations/README.md) ranked
+the measured hot spots after the first round. The [second round](reports/2026-09-15-arm-round-2/README.md)
+settled most of them: the reference-definition pre-pass bail, heading slugs,
+and the renderer preparation scan are done; the escaper's output-buffer growth
+checks and the double paragraph scan were implemented as designed and measured
+slower, so they should be treated as structural floors unless a genuinely
+different mechanism is proposed. URL sanitization searches remain untested
+(the benchmark profiles do not enable `sanitize`). The questions below remain
+open as well. The third round settled the `HtmlRendererOptions` string
+ownership and the line-end rescans, and measured the fence-run finders and a
+document-level autolink gate as non-wins. Its two forward-looking items are
+(a) profile-guided optimization, by far the largest measured lever
+(1.18–1.26× on unseen documents) — now applied to the published native
+addons ([ADR-0019](arch/ADR-0019-profile-guided-native-addon.md)), with the
+native comparison able to build every Rust engine the same way so the
+published numbers stay fair — and (b) the definition
+pre-pass, which block-parses a document twice whenever it holds a `]:`
+candidate — the remaining structural target is a blocks-first parse with
+inline content resolved afterwards.
 
 
 1. **Code layout and render-only variance.** Unchanged render paths can shift

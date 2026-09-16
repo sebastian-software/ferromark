@@ -8,6 +8,7 @@ use std::fmt::{Display, Write as _};
 
 use crate::ast::{Heading, Node, Span};
 use compact_str::CompactString;
+use smallvec::SmallVec;
 
 use super::super::autolink::find_autolink_match;
 use super::super::escape::{
@@ -15,9 +16,9 @@ use super::super::escape::{
 };
 use super::super::heading::{
     HEADING_PERMALINK_CLASS, collect_heading_text_into, heading_has_permalink_marker,
-    slugify_heading_into,
+    single_text_child, slugify_heading_into,
 };
-use super::HtmlRenderer;
+use super::{HtmlRenderer, reserve_heading_scratch};
 
 impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn write(&mut self, s: &str) {
@@ -39,10 +40,21 @@ impl HtmlRenderer {
         write_attribute_escaped_into(&mut self.output, s);
     }
 
+    /// Emits the optional `data-source-span` attribute.
+    ///
+    /// Every block visitor calls this, and the option is off by default, so
+    /// the gate stays inline while the formatting body is kept out of line:
+    /// the common case is one field load and a branch, not a call.
+    #[inline]
     pub(in crate::renderer::html::renderer) fn write_source_span_attr(&mut self, span: Span) {
         if !self.options.source_spans || span.start == span.end {
             return;
         }
+        self.write_source_span_attr_value(span);
+    }
+
+    #[inline(never)]
+    fn write_source_span_attr_value(&mut self, span: Span) {
         self.write(" data-source-span=\"");
         self.write_display(span.start);
         self.write("-");
@@ -78,7 +90,17 @@ impl HtmlRenderer {
         }
         // Borrow the relevant fields disjointly so the URL scan (which only
         // reads `options`/`autolink_index`) and the output writes can coexist.
-        let patterns = self.options.autolink_patterns();
+        // The pattern list is a slice of `Cow<str>`. Resolving each entry to
+        // a plain `&str` here, once per text node that can hold a match, keeps
+        // the per-candidate prefix loop in `find_autolink_match` free of the
+        // `Cow` discriminant test; the common no-match path never gets here.
+        let patterns: SmallVec<[&str; 4]> = self
+            .options
+            .autolink_patterns()
+            .iter()
+            .map(AsRef::as_ref)
+            .collect();
+        let patterns: &[&str] = &patterns;
         let target_blank = self.options.autolink_target_blank;
         let out = &mut self.output;
         let mut cursor = 0usize;
@@ -223,7 +245,22 @@ impl HtmlRenderer {
     /// attribute, including duplicate `-N` suffixes.
     pub(in crate::renderer::html::renderer) fn write_heading_id(&mut self, heading: &Heading<'_>) {
         self.prepare_heading_id(heading);
-        write_attribute_escaped_into(&mut self.output, &self.heading_id_scratch);
+        self.write_prepared_heading_id();
+    }
+
+    /// Emits the prepared id from `heading_id_scratch` into the output.
+    ///
+    /// Only an author-supplied `{#id}` can contain a byte that attribute
+    /// escaping replaces. A generated slug is lowercase alphanumerics, `-`,
+    /// and an optional `-N` suffix, so running the CR/LF `memchr2` pass and
+    /// the escape scanner over it can only ever copy it back unchanged — the
+    /// `heading_id_is_explicit` flag lets that whole pass be skipped.
+    fn write_prepared_heading_id(&mut self) {
+        if self.heading_id_is_explicit {
+            write_attribute_escaped_into(&mut self.output, &self.heading_id_scratch);
+        } else {
+            self.output.push_str(&self.heading_id_scratch);
+        }
     }
 
     pub(in crate::renderer::html::renderer) fn write_heading_permalink_if_needed(
@@ -239,7 +276,9 @@ impl HtmlRenderer {
         self.output.push_str("<a class=\"");
         self.output.push_str(HEADING_PERMALINK_CLASS);
         self.output.push_str("\" href=\"#");
-        write_attribute_escaped_into(&mut self.output, &self.heading_id_scratch);
+        // The `href` fragment is the same id the `id` attribute just emitted,
+        // so it takes the same verbatim/escaped decision.
+        self.write_prepared_heading_id();
         if self.heading_text_scratch.is_empty() {
             self.output
                 .push_str("\" aria-label=\"Permalink to this section\">#</a>");
@@ -251,10 +290,26 @@ impl HtmlRenderer {
     }
 
     fn prepare_heading_id(&mut self, heading: &Heading<'_>) {
+        // `heading_text_scratch` has exactly two readers: the slugifier and
+        // the permalink's `aria-label`. Most headings are a single `Text`
+        // child, which the slugifier can read straight out of the source, and
+        // an explicit `{#id}` skips the slugifier altogether — so the
+        // concatenation only has to run when a reader will actually see its
+        // result. The buffer is still cleared on every heading so that a
+        // skipped fill can never leave the previous heading's text where the
+        // permalink would read it.
+        let single_text = single_text_child(&heading.children);
+        let permalink_reads_text = self.options.heading_permalinks;
         self.heading_text_scratch.clear();
-        collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
+        if permalink_reads_text || (heading.id.is_none() && single_text.is_none()) {
+            reserve_heading_scratch(&mut self.heading_text_scratch);
+            collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
+        }
+
         if let Some(id) = heading.id {
+            self.heading_id_is_explicit = true;
             self.heading_id_scratch.clear();
+            reserve_heading_scratch(&mut self.heading_id_scratch);
             self.heading_id_scratch.push_str(id);
             if let Some(count) = self.heading_id_counts.get_mut(id) {
                 *count += 1;
@@ -263,10 +318,17 @@ impl HtmlRenderer {
             }
             return;
         }
+        self.heading_id_is_explicit = false;
         self.heading_slug_scratch.clear();
-        slugify_heading_into(&self.heading_text_scratch, &mut self.heading_slug_scratch);
+        reserve_heading_scratch(&mut self.heading_slug_scratch);
+        if let Some(text) = single_text {
+            slugify_heading_into(text, &mut self.heading_slug_scratch);
+        } else {
+            slugify_heading_into(&self.heading_text_scratch, &mut self.heading_slug_scratch);
+        }
 
         self.heading_id_scratch.clear();
+        reserve_heading_scratch(&mut self.heading_id_scratch);
         if let Some(count) = self
             .heading_id_counts
             .get_mut(self.heading_slug_scratch.as_str())

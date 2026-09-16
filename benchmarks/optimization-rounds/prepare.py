@@ -48,9 +48,9 @@ def revision(source: Path):
         return None
 
 
-def archived_hashes(repository: Path):
+def archived_hashes(repository: Path, revision: str = BASELINE_REVISION):
     raw = subprocess.check_output(
-        ["git", "-C", str(repository), "archive", BASELINE_REVISION,
+        ["git", "-C", str(repository), "archive", revision,
          "Cargo.toml", "Cargo.lock", "crates"],
     )
     import io
@@ -62,10 +62,23 @@ def archived_hashes(repository: Path):
         }
 
 
-def verify_baseline(source: Path):
-    """Verify the baseline against the frozen 4de75d4 core when git is available."""
+def resolve_revision(repository: Path, revision: str) -> str:
+    """Resolve a Git revision to its full commit hash."""
+    return subprocess.check_output(
+        ["git", "-C", str(repository), "rev-parse", "--verify", f"{revision}^{{commit}}"],
+        text=True,
+    ).strip()
+
+
+def verify_baseline(source: Path, revision: str = BASELINE_REVISION):
+    """Verify the baseline core against the archived Git `revision`.
+
+    The default is the frozen original reference core. Rounds that compare
+    against the last promoted commit pass that commit instead, so the runner
+    still refuses a baseline checkout whose core files differ from Git.
+    """
     repository = Path(__file__).resolve().parents[2]
-    expected = archived_hashes(repository)
+    expected = archived_hashes(repository, revision)
     actual = {}
     for path in [source / "Cargo.toml", source / "Cargo.lock", *sorted((source / "crates").rglob("*"))]:
         if path.is_file():
@@ -73,8 +86,8 @@ def verify_baseline(source: Path):
     if actual != expected:
         changed = sorted(set(actual) | set(expected))
         changed = [name for name in changed if actual.get(name) != expected.get(name)]
-        raise ValueError(f"baseline core differs from {BASELINE_REVISION}: {changed[:10]}")
-    return {"revision": BASELINE_REVISION, "verified_core_files": len(expected), "core_file_hashes": expected}
+        raise ValueError(f"baseline core differs from {revision}: {changed[:10]}")
+    return {"revision": revision, "verified_core_files": len(expected), "core_file_hashes": expected}
 
 
 def manifest(dependency: Path, lto: str) -> str:
@@ -153,7 +166,12 @@ def main():
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--reuse-baseline-build", type=Path)
     parser.add_argument("--lto", choices=("fat", "thin", "off"), default="fat")
+    parser.add_argument(
+        "--baseline-revision", default=BASELINE_REVISION,
+        help="Git revision the baseline core must match (default: the frozen reference core)",
+    )
     args = parser.parse_args()
+    baseline_revision = resolve_revision(Path(__file__).resolve().parents[2], args.baseline_revision)
     baseline = args.baseline_path.resolve()
     candidate = args.candidate_path.resolve()
     build = args.out.resolve()
@@ -170,7 +188,7 @@ def main():
         if cached["rustc"] != subprocess.check_output(["rustc", "+1.95", "-vV"], text=True):
             raise SystemExit("cached rustc identity differs")
         previous["baseline"] = cached["engines"]["baseline"]
-    baseline_verification = verify_baseline(baseline)
+    baseline_verification = verify_baseline(baseline, baseline_revision)
     if sha256(baseline / "Cargo.lock") != sha256(candidate / "Cargo.lock"):
         raise SystemExit("baseline and candidate Cargo.lock files differ")
     if registry_packages(baseline / "Cargo.lock") != registry_packages(candidate / "Cargo.lock"):
@@ -181,7 +199,7 @@ def main():
     }
     record = {
         "schema": 2, "rustc": subprocess.check_output(["rustc", "+1.95", "-vV"], text=True),
-        "baseline_revision_expected": BASELINE_REVISION,
+        "baseline_revision_expected": baseline_revision,
         "baseline_verification": baseline_verification,
         "worker_sha256": worker_sha, "worker_source": str(WORKER), "lto": args.lto,
         "frozen_lock_sha256": sha256(baseline / "Cargo.lock"),

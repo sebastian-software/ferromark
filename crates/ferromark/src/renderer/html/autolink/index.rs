@@ -8,8 +8,6 @@ use std::sync::LazyLock;
 
 use memchr::memmem;
 
-use super::super::options::AutolinkPatterns;
-
 /// Process-wide finder for the default autolink gate (`://`).
 ///
 /// `http://` / `https://` both contain this caseless needle. The previous
@@ -68,14 +66,7 @@ impl FirstByteIndex {
     /// lowercasing the whole text node. One to three distinct bytes are stored
     /// in `needles` for `memchr`, `memchr2`, or `memchr3`; larger custom
     /// pattern sets keep correctness by falling back to the table scan.
-    pub(in crate::renderer::html) fn from_patterns(patterns: AutolinkPatterns<'_>) -> Self {
-        match patterns {
-            AutolinkPatterns::Defaults(patterns) => Self::from_pattern_slice(patterns),
-            AutolinkPatterns::Custom(patterns) => Self::from_pattern_slice(patterns),
-        }
-    }
-
-    fn from_pattern_slice<P: AsRef<str>>(patterns: &[P]) -> Self {
+    pub(in crate::renderer::html) fn from_patterns<P: AsRef<str>>(patterns: &[P]) -> Self {
         let mut table = [false; 256];
         let mut needles = [0u8; 3];
         let mut needle_len = 0usize;

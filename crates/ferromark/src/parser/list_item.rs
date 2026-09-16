@@ -91,14 +91,10 @@ impl<'a> Parser<'a> {
         None
     }
 
-    pub(super) fn parse_list_item_line(&self, line_start: usize) -> Option<ParsedListItem<'a>> {
-        // `str::lines()` recognizes LF and CRLF but not a lone CR. Use the
-        // parser's line scanner so a sibling after a CR blank line is limited
-        // to its own source line rather than swallowing the rest of the list.
-        let line = self.line_at(line_start);
-        self.parse_list_item_line_from_line(line_start, line)
-    }
-
+    /// `line` must come from the parser's own line scanner: `str::lines()`
+    /// recognizes LF and CRLF but not a lone CR, so a sibling after a CR
+    /// blank line has to stay limited to its own source line rather than
+    /// swallowing the rest of the list.
     pub(super) fn parse_list_item_line_from_line(
         &self,
         line_start: usize,
