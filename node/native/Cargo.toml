@@ -16,8 +16,16 @@ crate-type = ["cdylib"]
 doctest = false
 test = false
 
+[[bin]]
+name = "pgo_train"
+path = "src/bin/pgo_train.rs"
+# `napi build` compiles every target of this package. The profile-guided
+# training driver is a build tool, so it stays out of the addon build.
+required-features = ["pgo-train"]
+
 [features]
 panic-test = []
+pgo-train = []
 
 [dependencies]
 ferromark.workspace = true
