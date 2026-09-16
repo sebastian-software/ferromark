@@ -69,16 +69,39 @@
 //! Anything else falls back to the full pass. Skipping rather than walking the
 //! interior is also what keeps the planner linear: every closer search either
 //! ends the walk or covers a range the walk then jumps over.
+//!
+//! # What the walk reads
+//!
+//! Only two kinds of line can change a plan: one that holds a candidate, and
+//! one that opens a region. So while no segment is open the walk jumps between
+//! them, taking the nearest of the next fence-run line for either fence byte,
+//! the next `<` or (with math on) `$` at an indent of at most three columns,
+//! and the line of the next candidate opener. Each searcher remembers one
+//! answer, so together they read the document once. Beyond the last candidate
+//! nothing can matter at all, and the walk simply stops.
+//!
+//! Boundaries are not tracked forwards for that reason: a candidate's segment
+//! start is found by walking back from its line to the nearest one, which costs
+//! the bytes that segment is about to parse anyway. Once a segment is open the
+//! walk does read every line, because the boundary that closes it can be any of
+//! them. Whether the real parser starts a root block on a line is decided from
+//! the line itself — it is the first line, the line after a blank one, or the
+//! line after a tracked region's end.
 
 use smallvec::SmallVec;
 
 use crate::ParserOptions;
 
+use memchr::{memchr, memrchr2};
+
 use super::super::Parser;
 use super::super::fenced_code::fenced_close_bounds;
 use super::super::html::{HtmlBlockStart, html_block_bounds, html_block_end};
-use super::super::line_scan::{line_end, line_terminator_end, next_line_start};
+use super::super::line_scan::{
+    is_line_ending_byte, line_end, line_terminator_end, next_line_start,
+};
 use super::super::reference::fence_open;
+use super::next_fence_run_line;
 
 /// Byte offsets of the `[` openers the shape filter judged possible, ascending.
 pub(in crate::parser) type CandidateOpeners = SmallVec<[u32; 16]>;
@@ -195,6 +218,13 @@ struct RootLines {
 }
 
 impl RootLines {
+    const fn new() -> Self {
+        Self {
+            scanned_from: 0,
+            found: 0,
+        }
+    }
+
     fn next(&mut self, bytes: &[u8], from: usize) -> usize {
         if self.scanned_from <= from && from <= self.found {
             return self.found;
@@ -211,6 +241,139 @@ impl RootLines {
         self.found = at;
         at
     }
+}
+
+/// One remembered "next hit at or after `from`" answer.
+///
+/// The planner jumps between the few lines that can matter, and asking for
+/// each of them repeats the same search from a position the previous answer
+/// already covers. Remembering one answer per searcher makes every searcher
+/// cover the document once in total: a stale answer is re-searched from a
+/// position past it, so no two searches overlap.
+#[derive(Clone, Copy)]
+struct NextHit {
+    from: usize,
+    hit: Option<usize>,
+}
+
+impl NextHit {
+    /// `from` is past any real offset, so the first query always searches.
+    const UNSEARCHED: Self = Self {
+        from: usize::MAX,
+        hit: None,
+    };
+
+    fn at_or_after(
+        &mut self,
+        pos: usize,
+        search: impl FnOnce(usize) -> Option<usize>,
+    ) -> Option<usize> {
+        if self.from <= pos {
+            match self.hit {
+                // Nothing lies at or after `self.from`, so nothing lies at or
+                // after the later `pos` either.
+                None => return None,
+                Some(hit) if pos <= hit => return Some(hit),
+                Some(_) => {}
+            }
+        }
+        self.from = pos;
+        self.hit = search(pos);
+        self.hit
+    }
+}
+
+/// Start of the line holding the next candidate opener, remembered per index.
+struct CandidateLine {
+    index: usize,
+    line: usize,
+}
+
+impl CandidateLine {
+    const UNSET: Self = Self {
+        index: usize::MAX,
+        line: 0,
+    };
+
+    /// `pos` must be a line start at or before the opener, which bounds the
+    /// backwards search to the distance the walk has left to cover.
+    fn of(&mut self, bytes: &[u8], openers: &[u32], index: usize, pos: usize) -> Option<usize> {
+        let open = *openers.get(index)? as usize;
+        if self.index != index {
+            self.index = index;
+            self.line = memrchr2(b'\n', b'\r', &bytes[pos..open]).map_or(pos, |off| pos + off + 1);
+        }
+        Some(self.line)
+    }
+}
+
+/// Start of the first line at or after `from` whose first non-whitespace byte
+/// is `marker`, indented at most three columns.
+///
+/// A tab in the indentation always reaches column four, so such a line is
+/// never an opener the planner has to judge.
+fn next_marker_line(bytes: &[u8], from: usize, marker: u8) -> Option<usize> {
+    let mut at = from;
+    while let Some(offset) = memchr(marker, &bytes[at..]) {
+        let found = at + offset;
+        let mut start = found;
+        loop {
+            if start == 0 {
+                return Some(0);
+            }
+            match bytes[start - 1] {
+                b' ' if found - start < 3 => start -= 1,
+                b'\n' | b'\r' => return Some(start),
+                _ => break,
+            }
+        }
+        at = found + 1;
+    }
+    None
+}
+
+/// Whether the line before `line_start` holds nothing but spaces and tabs.
+///
+/// Walking back stops at the first byte that settles it, so a line of prose
+/// costs one load and a blank line costs its own width.
+fn previous_line_is_blank(bytes: &[u8], line_start: usize) -> bool {
+    if line_start == 0 {
+        return false;
+    }
+    let mut at = line_start - 1;
+    if bytes[at] == b'\n' && at > 0 && bytes[at - 1] == b'\r' {
+        at -= 1;
+    }
+    while at > 0 && matches!(bytes[at - 1], b' ' | b'\t') {
+        at -= 1;
+    }
+    at == 0 || is_line_ending_byte(bytes[at - 1])
+}
+
+/// Start of the line before the one beginning at `line_start`.
+fn preceding_line_start(bytes: &[u8], line_start: usize) -> usize {
+    debug_assert!(line_start > 0, "the first line has no predecessor");
+    let mut end = line_start - 1;
+    if bytes[end] == b'\n' && end > 0 && bytes[end - 1] == b'\r' {
+        end -= 1;
+    }
+    memrchr2(b'\n', b'\r', &bytes[..end]).map_or(0, |offset| offset + 1)
+}
+
+/// The greatest boundary at or before `line`, never earlier than `floor`.
+///
+/// `floor` is the end of the most recent tracked region, which is a root
+/// position in its own right, so the walk always terminates on one. Its cost
+/// is the distance back to that boundary — the very bytes the segment it
+/// opens will parse.
+fn segment_start(bytes: &[u8], mut line: usize, floor: usize, options: &ParserOptions) -> usize {
+    while line > floor {
+        if previous_line_is_blank(bytes, line) && boundary_shape(bytes, line, options) {
+            return line;
+        }
+        line = preceding_line_start(bytes, line);
+    }
+    floor
 }
 
 fn plan_with_sink<S: CandidateSink>(
@@ -233,20 +396,55 @@ fn plan_with_sink<S: CandidateSink>(
     // Start of a segment whose candidate has been seen but whose end is not
     // known yet.
     let mut open_segment: Option<usize> = None;
-    // The greatest boundary at or before the current line. Offset zero is
-    // always one: it is where the real parser begins.
-    let mut last_boundary = 0usize;
     let mut candidate = 0usize;
     let mut line_start = 0usize;
-    // Whether the real parser starts a fresh root block on this line. True on
-    // the first line, after a blank line, and after a tracked opaque region.
-    let mut at_root = true;
-    let mut root_lines = RootLines {
-        scanned_from: 0,
-        found: 0,
-    };
+    // End of the most recent tracked opaque region. The real parser is at the
+    // document root there, which makes it both a root block start and the
+    // floor for every segment start after it.
+    let mut region_end = 0usize;
+    let mut root_lines = RootLines::new();
+    let mut backtick_runs = NextHit::UNSEARCHED;
+    let mut tilde_runs = NextHit::UNSEARCHED;
+    let mut open_tags = NextHit::UNSEARCHED;
+    let mut math_markers = NextHit::UNSEARCHED;
+    let mut candidate_line = CandidateLine::UNSET;
 
     while line_start < bytes.len() {
+        if open_segment.is_none() {
+            // Nothing between here and the next line that can hold a candidate
+            // or open a region can change the plan, so none of it is read. A
+            // region past the last candidate cannot either, which is why the
+            // candidate's line is the target the searchers are clamped to.
+            let Some(mut event) = candidate_line.of(bytes, openers, candidate, line_start) else {
+                break;
+            };
+            if let Some(at) =
+                backtick_runs.at_or_after(line_start, |from| next_fence_run_line(bytes, from, b'`'))
+            {
+                event = event.min(at);
+            }
+            if let Some(at) =
+                tilde_runs.at_or_after(line_start, |from| next_fence_run_line(bytes, from, b'~'))
+            {
+                event = event.min(at);
+            }
+            if let Some(at) =
+                open_tags.at_or_after(line_start, |from| next_marker_line(bytes, from, b'<'))
+            {
+                event = event.min(at);
+            }
+            if options.math
+                && let Some(at) =
+                    math_markers.at_or_after(line_start, |from| next_marker_line(bytes, from, b'$'))
+            {
+                event = event.min(at);
+            }
+            line_start = event;
+            if line_start >= bytes.len() {
+                break;
+            }
+        }
+
         let end = line_end(bytes, line_start);
         let next = line_terminator_end(bytes, end);
 
@@ -257,46 +455,51 @@ fn plan_with_sink<S: CandidateSink>(
         if content == end {
             // A blank line closes every leaf block and every block quote, and
             // it cannot hold a candidate.
-            at_root = true;
             line_start = next;
             continue;
         }
 
         let indent = content - line_start;
         let trimmed = &source[content..end];
+        // The real parser starts a fresh root block on the first line, on a
+        // line after a blank one, and on the line after a tracked region.
+        let at_root = line_start == 0
+            || line_start == region_end
+            || previous_line_is_blank(bytes, line_start);
 
         if indent == 0 {
             // A region's own opening line is still a root block start, so the
-            // boundary is recorded before the region opens.
-            if line_start > 0 && at_root && is_boundary(bytes, line_start, trimmed, options) {
-                if let Some(start) = open_segment.take() {
-                    push_segment(&mut segments, start, line_start);
-                }
-                last_boundary = line_start;
+            // boundary closes an open segment before the region opens.
+            if at_root
+                && boundary_shape(bytes, line_start, options)
+                && let Some(start) = open_segment.take()
+            {
+                push_segment(&mut segments, start, line_start);
             }
 
             match root_region(bytes, line_start, next, trimmed, options, at_root) {
                 RegionVerdict::Unknown => return DefinitionPlan::Fallback,
-                RegionVerdict::Region(region_end) => {
+                RegionVerdict::Region(end_of_region) => {
                     // Candidates inside code or raw HTML cannot be definitions.
-                    while candidate < openers.len() && (openers[candidate] as usize) < region_end {
+                    while candidate < openers.len() && (openers[candidate] as usize) < end_of_region
+                    {
                         candidate += 1;
                     }
                     // A region's last line is a closing fence or a terminator
-                    // line, so the line at `region_end` starts a fresh root
-                    // block; a type-6 region instead ends on the blank line the
-                    // loop reads next, which sets the same flag.
-                    at_root = true;
-                    line_start = region_end;
+                    // line, so the line at its end starts a fresh root block;
+                    // a type-6 region instead ends on the blank line the loop
+                    // reads next, which says the same thing.
+                    region_end = end_of_region;
+                    line_start = end_of_region;
                     continue;
                 }
                 RegionVerdict::Ambiguous(kind, _) => {
                     let limit = root_lines.next(bytes, next);
-                    let Some(region_end) = bounded_region_end(bytes, limit, line_start, next, kind)
+                    let Some(block_end) = bounded_region_end(bytes, limit, line_start, next, kind)
                     else {
                         return DefinitionPlan::Fallback;
                     };
-                    if region_end > next {
+                    if block_end > next {
                         // The block reading would swallow the lines that
                         // follow, the paragraph reading would not.
                         return DefinitionPlan::Fallback;
@@ -321,31 +524,36 @@ fn plan_with_sink<S: CandidateSink>(
                 RegionVerdict::Unknown => return DefinitionPlan::Fallback,
                 RegionVerdict::Ambiguous(kind, keeps_container_open) => {
                     let limit = root_lines.next(bytes, next);
-                    let Some(region_end) = bounded_region_end(bytes, limit, line_start, next, kind)
+                    let Some(shallow_end) =
+                        bounded_region_end(bytes, limit, line_start, next, kind)
                     else {
                         return DefinitionPlan::Fallback;
                     };
-                    if keeps_container_open && interior_is_indented(bytes, next, region_end, indent)
+                    if keeps_container_open
+                        && interior_is_indented(bytes, next, shallow_end, indent)
                     {
                         // Opaque under one reading, container content under the
                         // other: nothing inside can start a root block. Its
                         // candidates still have to be collected, because the
                         // two readings may disagree about where it ends.
-                        if candidate < openers.len() && (openers[candidate] as usize) < region_end {
-                            open_segment.get_or_insert(last_boundary);
+                        if candidate < openers.len() && (openers[candidate] as usize) < shallow_end
+                        {
+                            open_segment.get_or_insert_with(|| {
+                                segment_start(bytes, line_start, region_end, options)
+                            });
                             while candidate < openers.len()
-                                && (openers[candidate] as usize) < region_end
+                                && (openers[candidate] as usize) < shallow_end
                             {
                                 kept.keep(openers[candidate]);
                                 candidate += 1;
                             }
                         }
-                        // The container reading leaves a block open here.
-                        at_root = false;
-                        line_start = region_end;
+                        // The container reading leaves a block open here, so
+                        // this end is not a root block start.
+                        line_start = shallow_end;
                         continue;
                     }
-                    if region_end > next {
+                    if shallow_end > next {
                         // Walking the interior instead would have to judge its
                         // lines without knowing which reading holds, and the
                         // scan that found this end would then be repeated for
@@ -360,14 +568,14 @@ fn plan_with_sink<S: CandidateSink>(
         }
 
         if candidate < openers.len() && (openers[candidate] as usize) < next {
-            open_segment.get_or_insert(last_boundary);
+            open_segment
+                .get_or_insert_with(|| segment_start(bytes, line_start, region_end, options));
             while candidate < openers.len() && (openers[candidate] as usize) < next {
                 kept.keep(openers[candidate]);
                 candidate += 1;
             }
         }
 
-        at_root = false;
         line_start = next;
     }
 
@@ -407,16 +615,22 @@ fn bounded_region_end(
     (closed || limit == bytes.len()).then_some(region_end)
 }
 
-/// Whether a column-0 content line that the real parser reaches at the root
-/// may also begin a segment.
-fn is_boundary(bytes: &[u8], line_start: usize, trimmed: &str, options: &ParserOptions) -> bool {
-    // A `:` body line after a blank line continues the definition list above
-    // it, so the parser is inside a `DefinitionList` there, not at the root.
-    if options.definition_lists && trimmed.as_bytes()[0] == b':' {
-        return false;
+/// The half of the boundary predicate that reads only the line itself: a
+/// column-0 content line that neither continues a definition list nor begins
+/// a byte-order mark.
+///
+/// The other half — that the real parser reaches this line at the document
+/// root — is `at_root` in the forward walk and a blank predecessor in the
+/// backwards one.
+fn boundary_shape(bytes: &[u8], line_start: usize, options: &ParserOptions) -> bool {
+    match bytes.get(line_start) {
+        None | Some(b' ' | b'\t' | b'\n' | b'\r') => false,
+        // A `:` body line after a blank line continues the definition list
+        // above it, so the parser is inside a `DefinitionList` there.
+        Some(b':') if options.definition_lists => false,
+        // Parser construction would strip a mark a sub-slice began with.
+        _ => !bytes[line_start..].starts_with(BOM),
     }
-    // Parser construction would strip a mark a sub-slice began with.
-    !bytes[line_start..].starts_with(BOM)
 }
 
 /// Classifies a column-0 content line as an opaque-region opener.
@@ -669,6 +883,30 @@ mod tests {
     #[test]
     fn a_leading_byte_order_mark_falls_back() {
         assert_eq!(plan("\u{feff}[a]: /one\n", &gfm()), None);
+    }
+
+    #[test]
+    fn an_opener_after_the_last_candidate_is_never_read() {
+        // The indented fence would force a fallback if the walk reached it,
+        // but no boundary past the last candidate can change the plan.
+        let source = "[a]: /one\n\nfiller\n\n ```\nat column zero\n";
+        let end = source.find("filler").expect("paragraph");
+        assert_eq!(plan(source, &gfm()), Some(vec![(0, end)]));
+    }
+
+    #[test]
+    fn an_opener_between_two_candidates_is_still_read() {
+        let source = "[a]: /one\n\n ```\nat column zero\n ```\n\n[b]: /two\n";
+        assert_eq!(plan(source, &gfm()), None);
+    }
+
+    #[test]
+    fn a_region_end_is_a_segment_start_even_when_its_line_is_indented() {
+        // Nothing before the fence can reach past it, so the definition's
+        // segment starts where the parser returns to the root.
+        let source = "prose\n\n```\ncode\n```\n   indented\n[a]: /one\n";
+        let start = source.find("   indented").expect("region end");
+        assert_eq!(plan(source, &gfm()), Some(vec![(start, source.len())]));
     }
 
     #[test]
