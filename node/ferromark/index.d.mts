@@ -1,3 +1,5 @@
+import type { Buffer } from "node:buffer";
+
 export type RenderPolicy = "untrusted" | "trusted";
 
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging

@@ -40,12 +40,14 @@ config.push({
 
 // Public declaration interfaces are intentionally preserved for declaration
 // merging and are checked by the repository's declaration structure contract.
+// Explicit Buffer types resolve even when consumers disable ambient Node globals.
 config.push({
   name: "ferromark/public-declarations",
   files: ["ferromark/index.d.mts"],
   rules: {
     "@typescript-eslint/consistent-type-definitions": "off",
     "perfectionist/sort-union-types": "off",
+    "node/prefer-global/buffer": "off",
   },
 });
 
