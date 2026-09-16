@@ -146,15 +146,73 @@ and let the grammar decide. Skipping rather than walking the interior is also
 what keeps planning linear — every closer search either ends the walk or covers
 a range the walk then jumps over.
 
+## What the walk reads
+
+Only two kinds of line can change a plan: one that holds a candidate, and one
+that opens a region. So while no segment is open the walk jumps between them,
+taking the nearest of the next fence-run line for either fence byte, the next
+`<` or — with `math` on — `$` at an indent of at most three columns, and the
+line of the next candidate opener. Each searcher remembers one answer and a
+stale one is re-searched from a position past it, so the searches partition the
+document and read it once in total. Past the last candidate nothing can matter,
+and the walk stops there. Once a segment is open every line is read again,
+because the boundary that closes it can be any of them.
+
+Two pieces of state follow. A candidate's segment start is found by walking
+back from its line to the nearest boundary, which costs the bytes that segment
+is about to parse anyway; the walk back stops at the end of the most recent
+tracked region, which is a root position in its own right and therefore a valid
+segment start — that also makes segments after a region tighter than a
+forward-tracked boundary would be. And whether the parser starts a root block
+on a line is decided from the line itself: it is the first line, the line after
+a blank one, or a tracked region's end.
+
+Not reading a line that cannot matter is not a change of rules, but it does
+have one visible effect: an ambiguous opener past the last candidate no longer
+forces a fallback, because the walk never reaches it.
+
+## What is not planned at all
+
+Planning is not free, and two shapes cannot profit from it. Both are decided
+before the planner runs, and both choose the whole-body pass this work
+replaced, so neither can change what is collected.
+
+A segment builds a parser over the temporary arena, block-parses its own bytes
+and hands its tree to the collector. Against the block-parse throughput of the
+measured corpora that fixed part is worth on the order of **256 bytes** of
+ordinary parsing. A plan with `k` segments therefore costs at least `k * 256`
+bytes more than the bytes it actually parses, while it can never skip more than
+the span `S` its candidates cover. So when `S / k` is under 256 the plan cannot
+pay for itself, whatever it comes out to be. The shape filter stops as soon as
+it holds a link candidate and **8** openers — fewer proves nothing, since a
+document can open with two adjacent definitions and then hold a megabyte of
+prose — whose span averages under that, and reports the source as dense; the
+pre-pass maps that straight to the full pass, which also restores the early
+return the old filter had for reference-dense input.
+
+The same arithmetic merges two planned segments whose gap is under 256 bytes:
+skipping the gap buys fewer bytes than the second segment costs. Merging is
+exact — the merged range keeps the earlier start and the later end, and those
+are the only offsets the boundary proof rests on.
+
+A body shorter than **64 bytes** is a handful of lines whose plan can only be
+the whole body or nothing, so it skips the planner too; its own setup already
+costs more than the difference.
+
+These three numbers are performance heuristics, and only these three. Every
+plan the planner does produce is exact, and so is every fallback.
+
 ## What falls back
 
 The whole body is parsed, exactly as before, when `mdx` or `line_comments` is
 on (both give lines meanings these rules do not model), when a `$` line at
 indent three or less appears with `math` on, when the body starts with a
-byte-order mark, and when an ambiguous opener fails the proofs above. On the
-57 broad documents of the frozen corpora no document falls back; about one
-percent of the specification examples do, all of them adversarial container and
-HTML shapes.
+byte-order mark, when an ambiguous opener the walk reaches fails the proofs
+above, and when either threshold of the previous section says planning cannot
+pay. On the 57 broad documents of the frozen corpora no document falls back for
+a structural reason; the reference-dense scanner diagnostic falls back on
+density, and about one in seven hundred specification examples falls back on an
+adversarial container or HTML shape.
 
 ## How it is tested
 
@@ -168,7 +226,9 @@ generated token soup built from the shapes that decide a boundary, a candidate
 or an opaque region, each under seven option sets (default, GFM, footnotes,
 definition lists, math, tables, and GFM without tables). A document the block
 grammar rejects for nesting depth is skipped: the real parse reports that error
-and no successful output reads the map.
+and no successful output reads the map. So is a source the shape filter called
+dense — its opener list is deliberately incomplete, and the planner is never
+handed one.
 
 Public regressions render the shapes the boundary rule has to get right:
 example 128 for both fence characters and all three line endings, indented
@@ -178,9 +238,15 @@ paragraph line, definition-list bodies with the option on and off, a closer
 longer than its opener, a backtick in an info string, definitions in lists and
 block quotes, first-definition precedence across two segments, a footnote and a
 link definition in different segments, a lazy continuation that is not a
-definition, definitions on the first and last line, an unterminated fence, and
-two timing guards that keep planning linear on indented openers that never
-close.
+definition, definitions on the first and last line, an unterminated fence, a
+reference-dense document and a twenty-byte one — the two shapes that skip the
+planner — and two timing guards that keep planning linear on indented openers
+that never close.
+
+The planner's own tests pin the plans the rules produce, including the two
+thresholds' effect on segment merging and the walk's early stop: an opener that
+would force a fallback is not read when it lies past the last candidate, and is
+read when it lies between two.
 
 Specification fixtures, snapshots and conformance baselines are unchanged.
 
