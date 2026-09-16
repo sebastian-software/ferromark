@@ -254,6 +254,28 @@ jobs:
         name: Verify the packed archives and derive the release channel
         run: node ./scripts/release-archives.mjs artifacts
 
+      # npm reads a bare `directory/name.tgz` as the GitHub shorthand
+      # `owner/repo`; only `./directory/name.tgz` is a local tarball. The
+      # script emits that shape since v2.0.0-rc.3, but a retry checks out the
+      # release tag's scripts while taking this workflow from `main`, so the
+      # workflow settles the shape itself for every tag.
+      - id: tarballs
+        name: Hand npm publish unambiguous local tarball paths
+        env:
+          PACKAGES: ${{ steps.release.outputs.packages }}
+        run: |
+          {
+            echo "packages<<PACKAGES_EOF"
+            while IFS= read -r package; do
+              [ -z "$package" ] && continue
+              case "$package" in
+                /*|./*) echo "$package" ;;
+                *) echo "./$package" ;;
+              esac
+            done <<< "$PACKAGES"
+            echo "PACKAGES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: sebastian-software/standards/.github/actions/publish-npm@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
         with:
           working-directory: node
@@ -261,7 +283,7 @@ jobs:
           # facade carries resolved sidecar versions instead of `workspace:*`.
           # The action derives its dist-tag from a directory's package.json, so
           # a tarball list has to name the channel explicitly.
-          packages: ${{ steps.release.outputs.packages }}
+          packages: ${{ steps.tarballs.outputs.packages }}
           dist-tag: ${{ steps.release.outputs.dist-tag }}
 
   verify-npm-publish:
