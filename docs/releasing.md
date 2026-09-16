@@ -53,8 +53,10 @@ Because `skip-github-release` suppresses the library's own tagging step, it also
 never retires the `autorelease: pending` label from the merged release pull
 request, and the library refuses to open a new one while a merged pending pull
 request exists. The workflow reconciles this before each run: a merged release
-pull request whose merge commit already carries a tag becomes
-`autorelease: tagged`. A merged release pull request that was deliberately never
+pull request whose version (read from `.release-please-manifest.json` at its
+merge commit) has a `v<version>` tag becomes `autorelease: tagged`, however many
+commits landed on `main` before the publication was dispatched. A merged release
+pull request that was deliberately never
 published stays pending on purpose and blocks the next proposal; remove its label
 by hand to release that block.
 

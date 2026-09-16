@@ -60,9 +60,12 @@ Two consequences of that mode are load-bearing:
   to `autorelease: tagged`, and `createPullRequests()` returns early while any
   merged pull request still carries the pending label. Skipping releases alone
   would open exactly one release pull request and then stall forever. The
-  workflow reconciles the label first, promoting merged release pull requests
-  whose merge commit is already tagged. Matching the merge commit rather than the
-  pull request title keeps that independent of the title pattern.
+  workflow reconciles the label first: for each merged pending release pull
+  request it reads the version its merge commit introduced from
+  `.release-please-manifest.json` and promotes the pull request when the tag
+  `v<version>` exists. Keying on the released version rather than on the pull
+  request title or on the tagged commit keeps that independent of the title
+  pattern and of commits that land on `main` between merge and publication.
 - The release pull request needs the `RELEASE_PLEASE_TOKEN` personal access
   token. A pull request opened with `GITHUB_TOKEN` starts no further workflow
   runs, so the `standards drift` check that protected `main` requires would never
