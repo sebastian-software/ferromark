@@ -33,11 +33,13 @@ prerendered routes, navigation, and v2 content.
 ```sh
 (cd scripts && pnpm install --frozen-lockfile && pnpm format:check)
 node --test scripts/test-*.mjs
-./scripts/test-check-workflow-pins.sh
-./scripts/check-workflow-pins.sh
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
-All `uses:` entries must be full commit SHAs. Use US English and Conventional
+All `uses:` entries must be full commit SHAs with the version in a trailing
+comment. The CI `fmt` job enforces that with the organization's shared
+[`check-action-pins`](https://github.com/sebastian-software/standards/tree/main/.github/actions)
+action rather than a repository-local copy. Use US English and Conventional
 Commits; breaking changes use `!` or a `BREAKING CHANGE:` footer. Managed files
 come from standards; run the pinned standards CLI from CI to check or apply them.
 

@@ -74,11 +74,15 @@ async function main() {
     throw new Error(`Invalid npm package manifest: ${packageJsonPath}`)
   }
 
-  await verifyNpmPublication({
-    packageName: packageJson.name,
-    version: packageJson.version,
-    publishResult: process.env.NPM_PUBLISH_RESULT ?? 'unknown',
-  })
+  // All nine packages, sidecars first: a facade that resolves while a sidecar
+  // is missing installs for nobody, so a partial release has to fail here.
+  for (const name of [...Object.keys(packageJson.optionalDependencies).sort(), packageJson.name]) {
+    await verifyNpmPublication({
+      packageName: name,
+      version: packageJson.version,
+      publishResult: process.env.NPM_PUBLISH_RESULT ?? 'unknown',
+    })
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

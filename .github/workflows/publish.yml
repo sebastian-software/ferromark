@@ -1,14 +1,25 @@
-name: Publish release
+name: publish
+
+# One product, one release signal. Every push to `main` runs Release Please,
+# which keeps a single release pull request open; merging it writes the version
+# commit, creates the `v<version>` tag and the GitHub release, and the jobs
+# below publish that tag to crates.io and npm. Merging the release pull request
+# is what publishes — see docs/arch/ADR-0020-standards-release-blueprint.md and
+# the blueprint in sebastian-software/standards.
+#
+# `workflow_dispatch` is the retry path only. It takes the release tag, and
+# every job checks out `inputs.tag || needs.release-please.outputs.tag_name`,
+# never `main`, so a delayed retry cannot publish newer sources under a version
+# that already exists. (A workflow-level `env` cannot hold that expression: the
+# `needs` context is not available there.)
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
-      version:
-        description: Version already committed on main (for example 2.0.0-rc.1)
-        required: true
-        type: string
-      ci_run_id:
-        description: Successful main CI run for this exact commit
+      tag:
+        description: "Release tag to (re)publish, for example v2.0.0-rc.1"
         required: true
         type: string
 
@@ -20,70 +31,255 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
-    if: github.ref == 'refs/heads/main'
+  release-please:
+    name: release please
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
-      actions: read
-      contents: write
-      id-token: write
-    env:
-      RELEASE_VERSION: ${{ inputs.version }}
-      CI_RUN_ID: ${{ inputs.ci_run_id }}
-      GH_TOKEN: ${{ github.token }}
+      contents: write # push the release branch and create the release tag
+      pull-requests: write # open and update the release pull request
+      issues: write # create and move the `autorelease:` labels
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+      - id: release
+        uses: googleapis/release-please-action@0dfd8538845b8e92600d271a895a5372865d4062 # v5
         with:
-          package_json_file: scripts/package.json
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Events created with the built-in GITHUB_TOKEN start no new workflow
+          # runs, so the release pull request would show no checks at all.
+          # RELEASE_PLEASE_TOKEN is an organization secret; the fallback keeps
+          # forks and a revoked token from failing the whole workflow.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+  publish-crates:
+    name: publish to crates.io
+    needs: release-please
+    # `!cancelled()` lets the job run when release-please was skipped by the
+    # manual path; a plain `needs` would skip it too.
+    if: >-
+      ${{ !cancelled() && (
+        (github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      ) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # crates.io Trusted Publishing exchanges this OIDC token for a
+      # short-lived registry token. It is enabled for `ferromark`, so the
+      # composite needs no `token` input and no long-lived secret exists.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: "24"
-          registry-url: https://registry.npmjs.org
-          cache: pnpm
-          cache-dependency-path: scripts/pnpm-lock.yaml
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
           toolchain: "1.95"
-      - run: pnpm install --frozen-lockfile
-        working-directory: scripts
-      - name: Validate release version and channel
-        run: |
-          node --input-type=module -e '
-            import { readReleaseFiles, validateRelease } from "./scripts/lib/release-rehearsal.mjs";
-            import { releaseChannel } from "./node/scripts/release-channel.mjs";
-            releaseChannel(process.env.RELEASE_VERSION);
-            validateRelease(readReleaseFiles(), process.env.RELEASE_VERSION);
-          '
-          python3 scripts/finish-github-release.py --notes-only > /dev/null
-      - name: Require successful CI
-        run: python3 scripts/release-preflight.py
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+
+      # One published crate, so the dependency ordering is trivial; the action
+      # still skips a version that is already in the index, which is what makes
+      # a retry safe.
+      - uses: sebastian-software/standards/.github/actions/publish-crates@8a2f798698f90d24b5989e8a3488bb3f96ddfb75 # v0.12.0
         with:
-          name: npm-package-rehearsal
-          path: release-artifacts/npm
-          run-id: ${{ inputs.ci_run_id }}
-          github-token: ${{ github.token }}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+          crates: ferromark
+
+  native-matrix:
+    name: napi platform matrix
+    needs: release-please
+    if: >-
+      ${{ !cancelled() && (
+        (github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      ) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.platforms.outputs.matrix }}
+      platform-ids: ${{ steps.platforms.outputs.platform-ids }}
+    steps:
+      - id: platforms
+        uses: sebastian-software/standards/.github/actions/napi-matrix@8a2f798698f90d24b5989e8a3488bb3f96ddfb75 # v0.12.0
         with:
-          name: rust-package-rehearsal
-          path: release-artifacts/rust
-          run-id: ${{ inputs.ci_run_id }}
-          github-token: ${{ github.token }}
-      - name: Validate npm archives and existing versions
-        run: node node/scripts/publish-packages.mjs release-artifacts/npm "$RELEASE_VERSION" --check
-      - name: Capture stable npm tags before publishing
-        run: node node/scripts/capture-release-tags.mjs release-artifacts/npm-tags-before.json
-      - name: Authenticate with crates.io
-        id: crates-io-auth
-        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
-      - name: Publish Rust crate
-        run: python3 scripts/publish-rust.py "$RELEASE_VERSION" "$GITHUB_SHA"
+          package: ferromark
+
+  build-native:
+    name: build ${{ matrix.id }}
+    needs: [release-please, native-matrix]
+    if: ${{ !cancelled() && needs.native-matrix.result == 'success' }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.native-matrix.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: runner.os != 'Windows'
+        with:
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+      # NUL is a reserved Windows device name. Preserve the frozen report in
+      # Git and omit only this historical input from Windows working trees.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: runner.os == 'Windows'
+        # Git validates even sparse-excluded paths. Permit this index entry
+        # only for checkout; sparse rules prevent writing the device name.
         env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.crates-io-auth.outputs.token }}
-      - name: Publish native npm packages and facade
-        run: node node/scripts/publish-packages.mjs release-artifacts/npm "$RELEASE_VERSION"
-      - name: Verify registry versions, channels and clean installations
-        run: node node/scripts/verify-published-release.mjs "$RELEASE_VERSION" release-artifacts/npm-tags-before.json
-      - name: Create GitHub release with verified archives
-        run: python3 scripts/finish-github-release.py
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: core.protectNTFS
+          GIT_CONFIG_VALUE_0: "false"
+        with:
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/reports/2026-09-14-ox-regression/normalization-guards/nul.md
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: node/pnpm-lock.yaml
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+          targets: ${{ matrix.target }}
+          # llvm-profdata merges the profile-guided training counters.
+          components: llvm-tools
+
+      # `matrix.native` is false for the two musl targets: their runner is not a
+      # musl host. This repository cross-compiles them with cargo-zigbuild, the
+      # way `napi build --cross-compile` expects, rather than with musl-tools.
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        if: ${{ matrix.libc == 'musl' }}
+        with:
+          version: 0.15.2
+      - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
+        if: ${{ matrix.libc == 'musl' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tool: cargo-zigbuild
+
+      - run: pnpm install --frozen-lockfile
+
+      # Published addons are profile-guided. Windows ARM64 stays on the plain
+      # build: the toolchain's llvm-profdata rejects the counters its own
+      # instrumented binary writes there. See
+      # docs/arch/ADR-0019-profile-guided-native-addon.md.
+      - run: pnpm build:native
+        env:
+          FERROMARK_RUST_TARGET: ${{ matrix.target }}
+          FERROMARK_PGO: ${{ matrix.target == 'aarch64-pc-windows-msvc' && '0' || '1' }}
+
+      - name: Test native package
+        if: ${{ matrix.native }}
+        run: pnpm test
+
+      - name: Verify platform package
+        run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.id }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: node/ferromark/npm/${{ matrix.id }}/${{ matrix.binary }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-npm:
+    name: publish to npm
+    needs: [release-please, native-matrix, build-native]
+    if: ${{ !cancelled() && needs.build-native.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # npm Trusted Publishing and the provenance attestation both use this
+      # OIDC token. No NPM_TOKEN is needed.
+      id-token: write
+    defaults:
+      run:
+        working-directory: node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+          cache-dependency-path: node/pnpm-lock.yaml
+
+      # npm Trusted Publishing needs npm 11.5.1 or newer, and the npm that ships
+      # with Node 22 is older. Pinned rather than `@latest`, so the tool that
+      # performs the publish cannot change under a release.
+      - run: npm install --global npm@11.5.1
+
+      - run: pnpm install --frozen-lockfile
+
+      # Every artifact holds one addon; `napi artifacts` moves them back into
+      # their sidecar packages, the same way the CI rehearsal assembles them.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: native-*
+          merge-multiple: true
+          path: node/ferromark/.napi-artifacts
+      - name: Assemble all platform packages
+        run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm
+
+      # The same checks the pre-merge rehearsal runs, on the assembled release.
+      # `verify-pack` packs with pnpm, which resolves the facade's `workspace:*`
+      # sidecar references, and `smoke:clean` installs those exact archives in a
+      # fresh consumer before anything reaches the registry.
+      - run: node ./scripts/verify-release.mjs
+      - run: node ./scripts/verify-pack.mjs --all-targets
+      - run: pnpm smoke:clean
+
+      - id: release
+        name: Verify the packed archives and derive the release channel
+        run: node ./scripts/release-archives.mjs artifacts
+
+      - uses: sebastian-software/standards/.github/actions/publish-npm@8a2f798698f90d24b5989e8a3488bb3f96ddfb75 # v0.12.0
+        with:
+          working-directory: node
+          # Pack-resolved tarballs rather than directories, so the published
+          # facade carries resolved sidecar versions instead of `workspace:*`.
+          # The action derives its dist-tag from a directory's package.json, so
+          # a tarball list has to name the channel explicitly.
+          packages: ${{ steps.release.outputs.packages }}
+          dist-tag: ${{ steps.release.outputs.dist-tag }}
+
+  verify-npm-publish:
+    name: verify the npm release
+    needs: [release-please, native-matrix, publish-npm]
+    if: ${{ always() && needs.native-matrix.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+
+      - name: Verify the published versions on the registry
+        run: node ./node/scripts/verify-npm-publish.mjs
+        env:
+          NPM_PUBLISH_RESULT: ${{ needs.publish-npm.result }}
