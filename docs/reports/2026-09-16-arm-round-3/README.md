@@ -109,6 +109,49 @@ PGO only for the natively built targets first. `docs/releasing.md` and the
 corpus would be the frozen benchmark corpus, which is already in the
 repository.
 
+## PGO fairness across the native engines
+
+The [native engine comparison](../../../benchmarks/native-comparison/README.md) gained a
+`--pgo` build mode (`092f3952`) that applies one recipe — instrumented build, a training
+pass over every Rust engine in both lifecycles, `llvm-profdata` merge, `-Cprofile-use` —
+to the single executable that holds all six engines. Training used the 29 broad documents
+and 45 diagnostics of the round-3 split; the table measures the other 28 broad documents,
+which no engine's profile ever saw. Same pinned nightly, generic CPU baseline, fat LTO and
+allocator as the archived comparison; the default build is byte-identical to before. The
+v2 engine in this harness is pinned at `e93394e` (the first round's tip) as in the archived
+comparison, so the numbers show the effect of PGO per engine, not the current core.
+
+| Engine | Profile data | Fresh | Reuse |
+| --- | --- | ---: | ---: |
+| Ferromark v2 (`e93394e`) | Rust PGO | 1.220× | 1.236× |
+| Original OX-Content | Rust PGO | 1.175× | 1.191× |
+| Ferromark v1 | Rust PGO | 1.195× | 1.185× |
+| pulldown-cmark | Rust PGO | 1.195× | 1.196× |
+| Bun native `bun_md` | Rust crates only (C++ part clang -O3) | 1.165× | 1.164× |
+| md4c | none (C, clang -O3) | 1.004× | 1.002× |
+
+PGO speedup = default-build time over PGO-build time per engine, geometric mean over the 28
+held-out documents. Every Rust engine gains 17–24%; md4c, whose parser is C compiled with
+clang `-O3`, is unchanged (only its Rust FFI wrapper is in the Rust build), and Bun's engine
+gains through its Rust crates only. The relative standing therefore has to be read within
+one build mode:
+
+| v2 throughput relative to | Default fresh | Default reuse | PGO fresh | PGO reuse |
+| --- | ---: | ---: | ---: | ---: |
+| Original OX-Content | 1.33× | 1.35× | 1.38× | 1.40× |
+| Ferromark v1 | 1.98× | 1.96× | 2.03× | 2.04× |
+| pulldown-cmark | 2.39× | 2.55× | 2.44× | 2.63× |
+| Bun native `bun_md` | 5.20× | 5.80× | 5.45× | 6.16× |
+| md4c | 3.15× | 3.41× | 3.83× | 4.21× |
+
+Comparing a PGO Ferromark build with default builds of the other Rust engines would
+overstate its lead by roughly the PGO gain of the other engine (17–20%); the harness README
+now states that a PGO row is compared only with PGO rows. The C engines' standing against
+PGO Rust engines is overstated by the same mechanism until they get a clang PGO recipe.
+Per-document ranges: v2 1.08–1.35× fresh, OX-Content 1.04–1.28×, pulldown-cmark 1.08–1.34×,
+Ferromark v1 0.92–1.38× (two short encyclopedia paragraphs lose). Raw results are in
+[`results/native-pgo-default`](results/native-pgo-default/) and [`results/native-pgo-pgo`](results/native-pgo-pgo/).
+
 ## Code candidates
 
 A/A control taken at the start of the measurement run, under the same

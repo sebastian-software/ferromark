@@ -88,8 +88,11 @@ different mechanism is proposed. URL sanitization searches remain untested
 open as well. The third round settled the `HtmlRendererOptions` string
 ownership and the line-end rescans, and measured the fence-run finders and a
 document-level autolink gate as non-wins. Its two forward-looking items are
-(a) profile-guided optimization in the release pipeline, by far the largest
-measured lever (1.18–1.26× on unseen documents), and (b) the definition
+(a) profile-guided optimization, by far the largest measured lever
+(1.18–1.26× on unseen documents) — now applied to the published native
+addons ([ADR-0019](arch/ADR-0019-profile-guided-native-addon.md)), with the
+native comparison able to build every Rust engine the same way so the
+published numbers stay fair — and (b) the definition
 pre-pass, which block-parses a document twice whenever it holds a `]:`
 candidate — the remaining structural target is a blocks-first parse with
 inline content resolved afterwards.
