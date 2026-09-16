@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import platform
 import random
+import re
 import shutil
 import statistics
 import struct
@@ -159,6 +160,32 @@ def behavior_checks(binary, directory):
     return result
 
 
+def case_filter(pattern, path):
+    """Resolve the measured-set regex; --filter-file keeps the set an auditable input."""
+    if pattern and path:
+        raise SystemExit('pass only one of --filter and --filter-file')
+    if path:
+        pattern = Path(path).read_text().strip()
+        if not pattern:
+            raise SystemExit(f'empty case filter file: {path}')
+    if pattern:
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise SystemExit(f'not a valid case filter: {error}') from error
+    return pattern or None
+
+
+def select_cases(cases, pattern):
+    if not pattern:
+        return cases
+    matcher = re.compile(pattern)
+    chosen = [case for case in cases if matcher.search(case['name'])]
+    if not chosen:
+        raise SystemExit('case filter selected no cases')
+    return chosen
+
+
 def summaries(rows, jobs):
     result = []
     for job in jobs:
@@ -188,8 +215,11 @@ def main():
     p.add_argument('--samples', type=int, default=6)
     p.add_argument('--window-ms', type=int, default=40)
     p.add_argument('--warmup-ms', type=int, default=60)
+    p.add_argument('--filter', dest='case_filter', help='regex selecting the measured documents')
+    p.add_argument('--filter-file', type=Path, help='file holding that regex, for example a held-out PGO split')
     args = p.parse_args()
     assert min(args.rounds, args.samples, args.window_ms, args.warmup_ms) > 0
+    pattern = case_filter(args.case_filter, args.filter_file)
     args.output.mkdir(parents=True, exist_ok=False)
     build = read_json(args.build)
     binary = Path(build['binary'])
@@ -200,9 +230,15 @@ def main():
     shutil.copyfile(lock, args.output / 'Cargo.lock')
     write_json(args.output / 'build.json', build)
     corpus = read_json(args.corpus)
-    write_json(args.output / 'corpus.json', corpus)
-    cases = corpus['cases']
+    available = len(corpus['cases'])
+    cases = select_cases(corpus['cases'], pattern)
     assert len({c['name'] for c in cases}) == len(cases)
+    # Retain the measured selection, not the whole corpus, so report.py groups
+    # and the archived corpus describe exactly what was timed.
+    corpus['cases'] = cases
+    corpus['case_filter'] = pattern
+    corpus['corpus_case_count'] = available
+    write_json(args.output / 'corpus.json', corpus)
     inputs = args.output / 'inputs'
     inputs.mkdir()
     for case in cases:
@@ -251,6 +287,8 @@ def main():
         return
     config = dict(rounds=args.rounds, samples=args.samples, window_ms=args.window_ms, warmup_ms=args.warmup_ms,
         seed=20260914, jobs=jobs, modes=MODES, engines=ENGINES, host_before=host(), observations=[],
+        case_filter=pattern, case_filter_file=str(args.filter_file) if args.filter_file else None,
+        cases=[c['name'] for c in cases], corpus_case_count=available,
         runner_sha256=sha(__file__), verifier_sha256=sha(HERE / 'verify.py'), corpus_sha256=sha(args.corpus),
         aggregation='Per-engine median of per-process round medians; equal-document geometric mean of time ratios.',
         lifecycle='Fresh: new parser and owned HTML. Reuse: retained arenas/scratch/output where public API permits; Bun still uses its fresh owned-output API.')
