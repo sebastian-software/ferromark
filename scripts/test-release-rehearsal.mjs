@@ -55,9 +55,14 @@ it("builds coordinated RC, subsequent RC, stable, and patch release PRs with the
 });
 
 it("proposes the next release candidate from the commit range alone", async () => {
-  // What the restored Release Please workflow opens on the current `main`: the
-  // repository really sits on 2.0.0-rc.1, and no commit carries `Release-As`.
-  const files = readReleaseFiles();
+  // What the restored Release Please workflow opens after the first candidate:
+  // the released version is 2.0.0-rc.1 and no commit carries `Release-As`.
+  // Seed that version explicitly instead of reading the checkout's own, so the
+  // case also holds on a release pull request branch, where the files already
+  // carry the next version.
+  const files = (
+    await proposeRelease(readReleaseFiles(), "chore: seed candidate\n\nRelease-As: 2.0.0-rc.1")
+  ).files;
   assert.equal(JSON.parse(files.get(".release-please-manifest.json"))["."], "2.0.0-rc.1");
   const proposed = await proposeRelease(files, candidateHistory);
   validateRelease(proposed.files, "2.0.0-rc.2");
