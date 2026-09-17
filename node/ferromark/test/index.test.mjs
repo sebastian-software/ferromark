@@ -510,6 +510,22 @@ test("a reusable renderer recovers after a bounded-depth parse error", () => {
   assert.equal(renderer.toHtml("recovered"), "<p>recovered</p>\n");
 });
 
+test("deeply nested inline brackets throw instead of killing the process", () => {
+  // Issue #349: these calls used to take the whole process down with a
+  // stack overflow, which is not a panic and so cannot be caught or
+  // reported as a JavaScript error. Reaching the assertions is the result.
+  const brackets = `${"[".repeat(20_000)}a${"]".repeat(20_000)}`;
+  const images = `${"![".repeat(20_000)}a${"](u)".repeat(20_000)}`;
+
+  assert.throws(() => toHtml(brackets), /nest|depth/i);
+  assert.throws(() => toHtmlBuffer(brackets), /nest|depth/i);
+  assert.throws(() => toHtml(images), /nest|depth/i);
+
+  const renderer = new Renderer();
+  assert.throws(() => renderer.toHtml(brackets), /nest|depth/i);
+  assert.equal(renderer.toHtml("recovered"), "<p>recovered</p>\n");
+});
+
 // The assertions exercise every equivalent rendering entry point.
 // eslint-disable-next-line max-statements
 test("supports optional marked text, inline notes, and reference policy", () => {

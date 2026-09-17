@@ -50,7 +50,7 @@ scan.
 | `wiki_links` | Only `[` inline candidates are affected; `[[...]]` candidates scan for a closing pair and parse/probe the label. | Nested-link rules still apply; renderer sees a normal `Link` node. |
 | `cjk_emphasis` | Delimiter-local Unicode punctuation classification. | No prepass or allocation; it changes emphasis pairing semantics for East Asian punctuation. |
 | `mdx` | Adds MDX marker/block dispatch for JSX, expressions, and ESM. Matching JSX tags or balanced expressions can scan forward; flow JSX children normalize and recursively parse subdocuments. | The renderer handles MDX AST nodes without a separate renderer flag. `max_nesting_depth` applies to JSX child subparsers. |
-| `max_nesting_depth` | Cheap per-block guard and recursion bound. | This is a safety limit, not a speed knob; lowering it changes accepted input and can produce `NestingTooDeep`. |
+| `max_nesting_depth` | Cheap per-block and per-inline-context guard and recursion bound. | This is a safety limit, not a speed knob; lowering it changes accepted input and can produce `NestingTooDeep`. |
 
 ## Renderer options
 

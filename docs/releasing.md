@@ -133,6 +133,13 @@ on the workspace floor and tests the binary on the consumer floor.
 `release-node` inherits the optimized release profile with `panic = "unwind"`.
 The panic test verifies that Rust panics become JavaScript exceptions.
 
+`pnpm smoke:clean` installs the packed archives for the current host. The same
+script takes `--target <platform-target>`, which fails unless the host really is
+that target, and `--package-tests`, which copies the package suite into the
+installed package and runs it there, against the installed loader and sidecar.
+The Alpine job runs
+`node ./scripts/clean-install-smoke.mjs --target linux-x64-musl --package-tests`.
+
 `pnpm build` produces a plain addon. To reproduce the published build locally,
 install the `llvm-tools` component for the pinned toolchain
 (`rustup component add llvm-tools`) and run from `node/`:
@@ -178,9 +185,29 @@ and `.github/` out.
 Because merging publishes, `ci.yml` is where a release is proven. On every pull
 request it builds all eight native addons with profile-guided optimization,
 runs the runtime tests on the six same-architecture targets, inspects the two
-cross-compiled musl builds, assembles the nine npm packages, checks their
-contents, performs a clean installation on Linux x64 GNU and rehearses the Cargo
-archive. It publishes nothing and retains its verified archives for seven days.
+cross-compiled musl builds and loads the x64 one on Alpine, assembles the nine
+npm packages, checks their contents, performs a clean installation on Linux x64
+GNU and rehearses the Cargo archive. It publishes nothing and retains its
+verified archives for seven days.
+
+The musl addons are cross-compiled, so inspection alone never proved that they
+load. The `node-musl` job closes that gap after the assembly: in a
+`node:22-alpine` container it downloads the `npm-package-rehearsal` archives,
+installs the packed facade together with the packed `ferromark-linux-x64-musl`
+sidecar in a fresh consumer, and runs the package test suite from inside that
+installation, so the whole public API — rendering, buffers, renderer reuse,
+metadata, the highlighter callback and error propagation — runs through the musl
+addon the release would publish. The job names the platform package it expects,
+and that check fails unless the container really is that musl host, so it cannot
+pass against a glibc addon.
+
+Two limits there are deliberate. `aarch64-unknown-linux-musl` stays inspected
+only; loading it needs an arm runner with a musl container. And
+`verify-panic-unwind.mjs` does not run in that container: it builds a throwaway
+addon from source with the `panic-test` Cargo feature, which no packed addon
+carries and which needs a Rust toolchain. Panic unwinding comes from the shared
+`release-node` profile, and `pnpm test` verifies it on the same-architecture
+native jobs.
 
 Seven native jobs set `FERROMARK_PGO=1`, so each published addon is built from a
 profile collected on its own runner. The Windows ARM64 job builds without PGO
@@ -190,8 +217,9 @@ profile, because a Cargo unit hash covers the target triple. The crates.io crate
 is unaffected. See [ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
 
 `publish.yml` repeats the assembly checks on the release tag —
-`verify-release.mjs`, `verify-pack.mjs --all-targets`, `pnpm smoke:clean` and
-`release-archives.mjs` — before the first registry call, and
+`verify-release.mjs`, `verify-pack.mjs --all-targets`, `pnpm smoke:clean`, the
+same Alpine musl runtime test through `docker run node:22-alpine` on the runner,
+and `release-archives.mjs` — before the first registry call, and
 `verify-npm-publish.mjs` confirms all nine versions on the registry afterwards.
 
 ## Registry authorization

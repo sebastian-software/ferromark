@@ -2,7 +2,7 @@ use crate::allocator::Vec;
 use crate::ast::{Node, Span, Text};
 
 use super::Parser;
-use crate::parser::error::ParseResult;
+use crate::parser::error::{ParseErrorKind, ParseResult};
 
 mod autolink;
 mod code_span;
@@ -86,11 +86,42 @@ impl<'a> Parser<'a> {
         self.options.mdx
     }
 
+    /// Opens one inline context and bounds how many may nest.
+    ///
+    /// Link text, image alt text, wiki-link labels, script spans and inline
+    /// JSX phrasing re-enter [`Self::parse_inline`] once per bracket level,
+    /// so `[[[[...` recurses as deeply as the input is nested. A stack
+    /// overflow aborts the process instead of unwinding, so the depth has to
+    /// be refused before the recursion happens rather than recovered from
+    /// afterwards.
+    ///
+    /// Counted like the block bound in `parse_block`: the outermost context
+    /// is depth zero, so `max_nesting_depth` levels of nesting are allowed
+    /// and the next one fails. Inline and block depth are separate counts
+    /// against the same limit — a document can be that deep in blocks *and*
+    /// that deep in inline brackets — because block containers cannot occur
+    /// inside inline content, so the two only ever add up along a path once.
+    fn enter_inline(&self, offset: usize) -> ParseResult<InlineDepthGuard<'_>> {
+        let depth = self.inline_depth.get();
+        if self.options.max_nesting_depth > 0 && depth > self.options.max_nesting_depth {
+            return Err(ParseErrorKind::NestingTooDeep {
+                span: Span::new(offset as u32, offset as u32),
+                max_depth: self.options.max_nesting_depth,
+            }
+            .into());
+        }
+        self.inline_depth.set(depth + 1);
+        Ok(InlineDepthGuard {
+            depth: &self.inline_depth,
+        })
+    }
+
     pub(super) fn parse_inline(
         &self,
         content: &'a str,
         offset: usize,
     ) -> ParseResult<Vec<'a, Node<'a>>> {
+        let _depth = self.enter_inline(offset)?;
         let bytes = content.as_bytes();
         let mut markers = InlineMarkerScan::new(&self.options);
         let first_special = markers.next(bytes, 0);
@@ -338,5 +369,17 @@ impl<'a> Parser<'a> {
             *pos += 1;
         }
         Ok(())
+    }
+}
+
+/// Closes the inline context opened by `Parser::enter_inline`, on every exit
+/// from `parse_inline` — including the `?` returns inside it.
+struct InlineDepthGuard<'p> {
+    depth: &'p std::cell::Cell<usize>,
+}
+
+impl Drop for InlineDepthGuard<'_> {
+    fn drop(&mut self) {
+        self.depth.set(self.depth.get().saturating_sub(1));
     }
 }

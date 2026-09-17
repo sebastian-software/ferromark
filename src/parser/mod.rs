@@ -113,6 +113,15 @@ pub struct Parser<'a> {
     /// Current nesting depth.
     nesting_depth: usize,
 
+    /// Inline contexts currently open above this one.
+    ///
+    /// Link text, image alt text, wiki-link labels, script spans and inline
+    /// JSX phrasing all re-enter [`Self::parse_inline`] on the same parser,
+    /// so this counts what `nesting_depth` cannot: inline parsing never
+    /// builds a sub-parser. Inline parsing runs behind `&self`, hence the
+    /// cell. See `inline::Parser::enter_inline` for the bound itself.
+    inline_depth: std::cell::Cell<usize>,
+
     /// Link reference definitions collected by the root parser's
     /// pre-pass, shared with sub-parsers (block quote and list item
     /// contents) so references resolve document-wide.
@@ -234,6 +243,7 @@ impl<'a> Parser<'a> {
             options,
             position: 0,
             nesting_depth: 0,
+            inline_depth: std::cell::Cell::new(0),
             definitions: None,
             phase,
             footnote_labels: None,
@@ -286,6 +296,12 @@ impl<'a> Parser<'a> {
             },
             position: 0,
             nesting_depth: self.nesting_depth + 1,
+            // Container sub-sources are entered from block parsing, where no
+            // inline context is open, so this normally copies a zero. An
+            // inline note (`^[...]`) is the exception: it builds a sub-parser
+            // from inside `parse_inline`, and carrying the count is what
+            // keeps a chain of them bounded.
+            inline_depth: std::cell::Cell::new(self.inline_depth.get()),
             definitions: self.definitions.clone(),
             phase: self.phase,
             footnote_labels: self.footnote_labels.clone(),
