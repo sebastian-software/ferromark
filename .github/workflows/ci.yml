@@ -261,6 +261,8 @@ jobs:
   native:
     # Each target is built on a runner with the same architecture. GNU targets
     # use the glibc 2.17 napi-rs toolchain; musl targets use cargo-zigbuild.
+    # A musl addon cannot run here, so `runtime_test` is false for both; the
+    # `node-musl` job below loads the packed x64 musl addon on Alpine.
     permissions:
       contents: read
     strategy:
@@ -383,6 +385,47 @@ jobs:
           path: node/artifacts/*.tgz
           if-no-files-found: error
           retention-days: 7
+
+  node-musl:
+    # The musl addons are cross-compiled with cargo-zigbuild and the `native`
+    # matrix cannot load them: its runners are glibc hosts. This job installs
+    # the packed facade together with the packed x64 musl sidecar in a musl
+    # container and runs the package test suite against that installation, so a
+    # musl-only load or runtime failure fails a pull request instead of a
+    # release. The arm64 musl addon stays inspected only; loading it needs an
+    # arm runner with a musl container.
+    #
+    # `verify-panic-unwind.mjs` deliberately stays out of this job. It builds a
+    # throwaway addon from source with the `panic-test` Cargo feature, which no
+    # packed addon carries, and this container has no Rust toolchain. Panic
+    # unwinding is a property of the shared `release-node` profile, and the
+    # six same-architecture `native` jobs verify it through `pnpm test`.
+    name: Alpine musl runtime test
+    needs: npm-packages
+    runs-on: ubuntu-latest
+    container: node:22-alpine
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # The image ships no bash, so the default `bash -e {0}` would not start.
+        shell: sh
+    steps:
+      # actions/checkout falls back to a REST download without git; busybox tar
+      # does not accept the flags that fallback uses, so install real git.
+      - name: Install git for the checkout
+        run: apk add --no-cache git
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Download the verified npm archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: npm-package-rehearsal
+          path: node/artifacts
+      # `--target` fails the job if this container is not the musl host the
+      # sidecar is built for, so the check cannot pass against a glibc addon.
+      - name: Install the packed archives and run the package tests on musl
+        working-directory: node
+        run: node ./scripts/clean-install-smoke.mjs --target linux-x64-musl --package-tests
 
   rust-packages:
     name: Verify packaged Rust consumer
