@@ -53,3 +53,29 @@ fn nesting_limit_returns_an_error_instead_of_aborting() {
         ParseErrorKind::NestingTooDeep { max_depth: 100, .. }
     ));
 }
+
+#[test]
+fn deep_inline_brackets_return_an_error_instead_of_aborting() {
+    // Issue #349: 16 KB of `[` overflowed an 8 MB stack because link text,
+    // image alt text and inline notes re-entered inline parsing without
+    // counting. A stack overflow aborts instead of unwinding, so
+    // `catch_unwind` here proves nothing on its own — the assertion is that
+    // the cap turns each of these into an ordinary `Err`.
+    let depth = 20_000;
+    let cases = [
+        "[".repeat(depth) + "a" + &"]".repeat(depth),
+        "[".repeat(depth) + "a" + &"](u)".repeat(depth),
+        "![".repeat(depth) + "a" + &"](u)".repeat(depth),
+        "[ ".repeat(depth) + &"]".repeat(depth),
+        "^[".repeat(depth) + "a" + &"]".repeat(depth),
+    ];
+
+    for source in cases {
+        let error = parse_or_err(&source, ParserOptions::gfm())
+            .expect_err("deeply nested inline brackets should fail closed");
+        assert!(
+            error.contains("nesting too deep"),
+            "expected the nesting cap, got {error}"
+        );
+    }
+}
