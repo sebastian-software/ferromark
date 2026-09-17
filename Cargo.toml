@@ -21,7 +21,7 @@ description = "Arena-allocated Markdown parser and HTML renderer"
 # explicit allow-list rather than "everything Cargo finds". Compare
 # `cargo package --list` after changing it: docs/, benchmarks/, homepage/,
 # node/ and scripts/ must stay out, while the README, the upstream MIT notice
-# and the dual-license texts ship with the crate.
+# and the MIT license text ship with the crate.
 include = [
   "/src",
   "/tests",
@@ -30,7 +30,6 @@ include = [
   "/README.md",
   "/LICENSE",
   "/LICENSE-MIT",
-  "/LICENSE-APACHE",
   "/UPSTREAM.md",
 ]
 

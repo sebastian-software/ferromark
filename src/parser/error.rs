@@ -20,36 +20,13 @@ pub type ParseResult<T> = Result<T, ParseError>;
 pub struct ParseError(Box<ParseErrorKind>);
 
 /// The kinds of parse error.
+///
+/// The set of variants is deliberately open: a future release can report a
+/// new error category additively, so callers must keep a wildcard arm.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 #[allow(clippy::disallowed_types)]
 pub enum ParseErrorKind {
-    /// Unexpected token encountered.
-    #[error("unexpected token at {span:?}: expected {expected}, found {found}")]
-    UnexpectedToken {
-        /// The span where the error occurred.
-        span: Span,
-        /// Expected token description.
-        expected: String,
-        /// Found token description.
-        found: String,
-    },
-
-    /// Unexpected end of input.
-    #[error("unexpected end of input at {span:?}")]
-    UnexpectedEof {
-        /// The span where the error occurred.
-        span: Span,
-    },
-
-    /// Invalid syntax.
-    #[error("invalid syntax at {span:?}: {message}")]
-    InvalidSyntax {
-        /// The span where the error occurred.
-        span: Span,
-        /// Error message.
-        message: String,
-    },
-
     /// Nesting too deep.
     #[error("nesting too deep at {span:?}: maximum depth is {max_depth}")]
     NestingTooDeep {
@@ -89,10 +66,7 @@ impl ParseError {
 
     pub(in crate::parser) fn span_mut(&mut self) -> &mut Span {
         match &mut *self.0 {
-            ParseErrorKind::UnexpectedToken { span, .. }
-            | ParseErrorKind::UnexpectedEof { span }
-            | ParseErrorKind::InvalidSyntax { span, .. }
-            | ParseErrorKind::NestingTooDeep { span, .. } => span,
+            ParseErrorKind::NestingTooDeep { span, .. } => span,
         }
     }
 }
@@ -109,10 +83,7 @@ impl ParseErrorKind {
     #[must_use]
     pub fn span(&self) -> Span {
         match self {
-            Self::UnexpectedToken { span, .. }
-            | Self::UnexpectedEof { span }
-            | Self::InvalidSyntax { span, .. }
-            | Self::NestingTooDeep { span, .. } => *span,
+            Self::NestingTooDeep { span, .. } => *span,
         }
     }
 }

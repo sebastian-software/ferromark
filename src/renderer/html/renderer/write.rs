@@ -210,6 +210,53 @@ impl HtmlRenderer {
         }
     }
 
+    /// Writes an inline text value, replacing its soft breaks.
+    ///
+    /// A soft break is a line ending inside inline content: the newline that
+    /// joins two lines of the same paragraph, heading, or table cell. The
+    /// inline parser keeps it as a `\n` in the text value — folded into the
+    /// surrounding run for an LF source, or as its own one-character node
+    /// where the run had to stop — and turns a hard break into a
+    /// [`crate::ast::Break`] node instead, so every line ending that reaches
+    /// here is a soft break.
+    ///
+    /// The cached flag keeps the whole question off the hot path while the
+    /// default `"\n"` is configured, where writing the line ending verbatim
+    /// and writing the configured value are the same thing.
+    #[inline]
+    pub(in crate::renderer::html::renderer) fn write_inline_text(&mut self, value: &str) {
+        if self.options.custom_soft_break {
+            self.write_inline_text_with_soft_breaks(value);
+        } else {
+            self.write_inline_text_run(value);
+        }
+    }
+
+    #[inline(never)]
+    fn write_inline_text_with_soft_breaks(&mut self, value: &str) {
+        let mut lines = value.split('\n');
+        if let Some(first) = lines.next() {
+            self.write_inline_text_run(first);
+        }
+        for line in lines {
+            self.output.push_str(self.options.soft_break());
+            self.write_inline_text_run(line);
+        }
+    }
+
+    /// Writes one run of inline text with no line ending in it.
+    #[inline]
+    fn write_inline_text_run(&mut self, value: &str) {
+        // See the matching gate in `visit_inline_node`: `autolink_index` is
+        // `Some` exactly when `autolink_urls` holds and the pattern list is
+        // not empty, so this one `Option` check replaces three field reads.
+        if self.autolink_index.is_some() && !self.in_link {
+            self.write_text_with_autolinks(value);
+        } else {
+            write_escaped_into(&mut self.output, value);
+        }
+    }
+
     pub(in crate::renderer::html::renderer) fn visit_inline_node(&mut self, node: &Node<'_>) {
         // Text is the overwhelmingly common child of paragraphs / headings
         // / links / emphasis / strong, etc. — on the bundled corpora it
@@ -218,22 +265,13 @@ impl HtmlRenderer {
         // `visit_text` wrapper, both of which are the only thing
         // `visit_text` would do anyway (escape into `self.output`).
         match node {
-            Node::Text(text) => {
-                // The autolink builtin lives on this hot path too: when
-                // the flag is on (and we're not already inside an `<a>`)
-                // we have to scan the text for URLs before escaping. The
-                // common case — flag off — collapses back to the original
-                // single `write_escaped_into` call thanks to the early
-                // boolean check.
-                // `autolink_index` is `Some` iff `autolink_urls` and a non-empty
-                // pattern list (computed once at `render()` entry), so this one
-                // Option check replaces the three field reads.
-                if self.autolink_index.is_some() && !self.in_link {
-                    self.write_text_with_autolinks(text.value);
-                } else {
-                    write_escaped_into(&mut self.output, text.value);
-                }
-            }
+            // The autolink builtin lives on this hot path too: when the flag
+            // is on (and we're not already inside an `<a>`) we have to scan
+            // the text for URLs before escaping. The common case — flag off,
+            // default soft break — collapses back to a single
+            // `write_escaped_into` call thanks to the early boolean checks in
+            // `write_inline_text`.
+            Node::Text(text) => self.write_inline_text(text.value),
             Node::Html(html) => self.write_html_value(html.value),
             _ => self.render_node(node),
         }

@@ -53,7 +53,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     // Preserve the Node package's safe output boundary and common defaults.
     let mut parser = ParserOptions::gfm_spec();
     parser.autolinks = false;
-    let mut html = HtmlRendererOptions::gfm();
+    let mut html = HtmlRendererOptions::gfm_spec();
     html.sanitize = true;
     html.heading_ids = true;
     html.callouts = true;

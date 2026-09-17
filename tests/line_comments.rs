@@ -23,7 +23,7 @@ fn render_with_options(
 }
 
 fn render(source: &str) -> String {
-    render_with_options(source, options(), HtmlRendererOptions::gfm())
+    render_with_options(source, options(), HtmlRendererOptions::gfm_spec())
 }
 
 struct StrongSpans {
@@ -153,7 +153,11 @@ fn fenced_code_and_raw_html_inside_lists_keep_physical_comments_literal() {
     ] {
         assert_eq!(
             render(source),
-            render_with_options(source, ParserOptions::gfm(), HtmlRendererOptions::gfm(),)
+            render_with_options(
+                source,
+                ParserOptions::gfm(),
+                HtmlRendererOptions::gfm_spec(),
+            )
         );
     }
 }
@@ -195,7 +199,8 @@ fn comment_markers_survive_container_dedenting_with_original_inline_spans() {
                 )
                 .parse()
                 .unwrap();
-                let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
+                let html =
+                    HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
                 assert!(!html.contains("hidden"), "{source:?}: {html}");
                 assert!(
                     html.contains("<strong>second</strong>"),
@@ -291,7 +296,7 @@ fn absent_comments_preserve_full_ast_with_either_flag_value() {
                     .unwrap();
                     let html = HtmlRenderer::with_options(HtmlRendererOptions {
                         source_spans: true,
-                        ..HtmlRendererOptions::gfm()
+                        ..HtmlRendererOptions::gfm_spec()
                     })
                     .render(&document);
                     (format!("{document:?}"), html)
@@ -341,7 +346,7 @@ fn setext_comment_boundaries_preserve_attributes_and_original_spans() {
                 );
                 let html = HtmlRenderer::with_options(HtmlRendererOptions {
                     heading_ids: true,
-                    ..HtmlRendererOptions::gfm()
+                    ..HtmlRendererOptions::gfm_spec()
                 })
                 .render(&document);
                 assert!(
@@ -392,7 +397,7 @@ fn comments_inside_footnote_and_definition_list_bodies_disappear() {
     let definition = render_with_options(
         "Term\n: first\n  // private\n    second\n",
         definition_options,
-        HtmlRendererOptions::gfm(),
+        HtmlRendererOptions::gfm_spec(),
     );
     assert!(definition.contains("<dt>Term</dt>"), "{definition}");
     assert!(
@@ -411,7 +416,7 @@ fn comments_before_table_attributes_do_not_drop_metadata_or_column_names() {
     let renderer_options = HtmlRendererOptions {
         table_colgroup: true,
         table_column_names: true,
-        ..HtmlRendererOptions::gfm()
+        ..HtmlRendererOptions::gfm_spec()
     };
     let html = render_with_options(
         "| Name | Price |\n| --- | --- |\n| Widget | 10 |\n// private\n: Caption {#products .wide}\n",
@@ -492,7 +497,7 @@ fn bom_and_nul_preserve_source_spans_while_comments_disappear() {
 
     let html = HtmlRenderer::with_options(HtmlRendererOptions {
         source_spans: true,
-        ..HtmlRendererOptions::gfm()
+        ..HtmlRendererOptions::gfm_spec()
     })
     .render(&document);
     assert_eq!(html, "<p data-source-span=\"14-23\">visible�</p>\n");
@@ -505,7 +510,7 @@ fn renderer_paths_agree_when_comments_are_removed() {
     let document = Parser::with_options(&allocator, source, options())
         .parse()
         .unwrap();
-    let renderer_options = HtmlRendererOptions::gfm();
+    let renderer_options = HtmlRendererOptions::gfm_spec();
     let expected = HtmlRenderer::with_options(renderer_options.clone()).render(&document);
 
     let mut hooks_renderer = HtmlRenderer::with_options(renderer_options.clone());

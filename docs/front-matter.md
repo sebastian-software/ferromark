@@ -46,7 +46,7 @@ let metadata = document.front_matter.as_ref().unwrap();
 assert_eq!(metadata.kind, FrontMatterKind::Yaml);
 assert_eq!(metadata.value, "title: Hello\n");
 assert_eq!(metadata.content_span.source_text(source), metadata.value);
-let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
+let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
 assert_eq!(html, "<h1>Content</h1>\n");
 ```
 

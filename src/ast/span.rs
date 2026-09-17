@@ -69,29 +69,6 @@ impl Span {
     }
 }
 
-/// Position in source text with line and column information.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub struct Position {
-    /// 1-indexed line number.
-    pub line: u32,
-    /// 1-indexed column number.
-    pub column: u32,
-    /// 0-indexed byte offset.
-    pub offset: u32,
-}
-
-impl Position {
-    /// Creates a new position.
-    #[must_use]
-    pub const fn new(line: u32, column: u32, offset: u32) -> Self {
-        Self {
-            line,
-            column,
-            offset,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,15 +92,9 @@ mod tests {
     }
 
     #[test]
-    fn source_positions_keep_byte_offsets_separate_from_columns() {
+    fn source_text_slices_multibyte_sources_by_byte_offset() {
         let source = "a\n日本語";
-        let position = Position::new(2, 2, 5);
-        assert_eq!(position.line, 2);
-        assert_eq!(position.column, 2);
-        assert_eq!(
-            Span::new(position.offset, position.offset + 3).source_text(source),
-            "本"
-        );
+        assert_eq!(Span::new(5, 8).source_text(source), "本");
     }
 
     #[test]

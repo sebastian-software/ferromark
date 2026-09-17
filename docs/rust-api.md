@@ -36,8 +36,19 @@ let html = to_html_with_options(
 ```
 
 Parser options select the Markdown dialect; renderer options control HTML.
-For specification-oriented GFM output, pair `ParserOptions::gfm_spec()` with
-`HtmlRendererOptions::gfm()`. CommonMark has a matching `commonmark()` pair.
+Both types name the same four profiles, so a pair is built from one name:
+
+| Profile | Parser | Renderer |
+| --- | --- | --- |
+| `commonmark()` | Strict CommonMark | Strict CommonMark, no product conveniences |
+| `gfm_spec()` | GFM without semantic footnotes | `commonmark()` plus the GFM tag filter |
+| `gfm()` | GFM plus footnotes | `new()` plus the GFM tag filter |
+| `mdx()` | MDX, GFM off | — |
+
+Pair `ParserOptions::gfm_spec()` with `HtmlRendererOptions::gfm_spec()` for
+specification-oriented GFM output, and `gfm()` with `gfm()` for the convenience
+profile that keeps heading IDs, callouts, TOC substitution, URL autolinking,
+link targets, and fence metadata cleanup. `commonmark()` pairs the same way.
 See [optional writing syntax](optional-writing.md) for marks and inline notes.
 
 ### String-valued renderer options
@@ -66,9 +77,9 @@ assert!(html.contains("/docs/guide/setup/index.html"));
 ```
 
 Every documented default is static data, so `HtmlRendererOptions::new()`,
-`Default::default()`, the `commonmark()`/`gfm()` profiles, and cloning any of
-them perform no heap allocation. Building a renderer per document from such a
-value therefore costs nothing for its configuration. Empty values keep their
+`Default::default()`, the `commonmark()`/`gfm()`/`gfm_spec()` profiles, and
+cloning any of them perform no heap allocation. Building a renderer per document
+from such a value therefore costs nothing for its configuration. Empty values keep their
 meaning: an empty `base_url` is not the default `"/"`, and an empty
 `autolink_patterns` list disables auto-linking rather than restoring the
 defaults. See the
@@ -103,3 +114,42 @@ The source and allocator must outlive the document. Drop the document before
 resetting its allocator. Use AST visitors and `HtmlRenderHooks` when a caller
 needs document structure or custom output. Reuse `HtmlRenderer` and reset the
 allocator between documents to retain their buffers explicitly.
+
+## The arena is single-threaded, and bumpalo is public
+
+`Allocator` wraps and dereferences to `bumpalo::Bump`, which it also re-exports,
+and `allocator::Box`, `allocator::Vec` and `allocator::String` are bumpalo
+collections or thin wrappers around them. bumpalo is therefore part of this
+crate's public API: a bumpalo major release is a ferromark major release. No
+other dependency leaks into the public surface.
+
+`Document` and `Node` are `!Send` and `!Sync`, and `Allocator` is `!Sync`. An
+arena and the AST that lives in it stay on the thread that created them; parse
+and render per thread, and move the rendered `String` — which owns nothing in
+the arena — across threads instead. See the
+[decision record](decisions/2026-09-17-bumpalo-public-api.md).
+
+## What the 2.0.0 API freeze covers
+
+From 2.0.0 the public Rust API follows semver, under the rules recorded in the
+[API surface decision](decisions/2026-09-17-api-surface.md):
+
+- `ParseErrorKind` is `#[non_exhaustive]`. Match it with a wildcard arm; new
+  error categories arrive in minor releases.
+- `Node` and its companion enums stay exhaustive, so a `match` over the AST is
+  checked by the compiler. A new AST node kind is a major release.
+- `ParserOptions` and `HtmlRendererOptions` stay exhaustive structs, so
+  `..Default::default()` keeps working. A new option field is a major release.
+- Build options with struct-update syntax rather than listing every field:
+
+  ```rust
+  use ferromark::HtmlRendererOptions;
+
+  let options = HtmlRendererOptions {
+      sanitize: true,
+      ..HtmlRendererOptions::gfm_spec()
+  };
+  ```
+
+  A field-by-field literal stops compiling when a field is added or removed;
+  the struct-update form survives a removal and needs no edit for an addition.

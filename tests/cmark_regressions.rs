@@ -42,7 +42,7 @@ fn compare_reference_cases(json: &str, count: usize) {
             ParserOptions::commonmark()
         };
         let options = if gfm {
-            HtmlRendererOptions::gfm()
+            HtmlRendererOptions::gfm_spec()
         } else {
             HtmlRendererOptions::commonmark()
         };

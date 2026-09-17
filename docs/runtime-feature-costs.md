@@ -33,7 +33,6 @@ scan.
 
 | Field | Scope and work | Dependencies or interactions |
 | --- | --- | --- |
-| `gfm` | No-op metadata field during parsing. The parser reads the individual extension fields, not this boolean. | `ParserOptions::gfm()` sets the GFM fields explicitly; setting `gfm: true` alone does not do so. |
 | `footnotes` | Extends the baseline prepass with footnote-label collection when `[^`/definition-shaped input is present; definitions then dedent and recursively parse a subdocument. | Shares the fused prepass with reference definitions; renderer `semantic_footnotes` is independent. |
 | `task_lists` | Trigger-local list-item prefix check for `[x]`, `[X]`, and `[ ]`. | Only applies after list-item recognition. |
 | `tables` | Block hot path: enables pipe probing during block dispatch and paragraph continuation checks; pipe candidates receive a two-line table probe. Actual rows/cells are trigger-local. | `merged_table_cells` and `table_attributes` only matter after a table is recognized. See [table dispatch](../src/parser/block.rs) and [table parser](../src/parser/table.rs). |
@@ -65,9 +64,8 @@ is baseline renderer work and still occurs when TOC substitution is disabled.
 | Field | Scope and work | Dependencies or interactions |
 | --- | --- | --- |
 | `xhtml` | Output-only branches for breaks, images, and table `<col>` tags. | Only affects nodes that emit one of those tags. |
-| `soft_break` | No-op: the value is stored in the public options but is not transferred into the internal renderer options or read during rendering. | Do not treat it as a measured renderer dimension until implemented. |
+| `soft_break` | Output-only value substituted for every line ending in inline text. A cached flag compares it against the default once per renderer, so the default configuration adds one predictable branch on the text path and no scan; a non-default value splits each text value at its line endings. | Does not affect parsing. Emitted verbatim, so `xhtml` does not rewrite it. Hard breaks keep using `hard_break`. |
 | `hard_break` | Output-only value emitted when a parsed hard-break node is visited. | Does not affect parsing or ordinary text. |
-| `highlight` | No-op: the public field is not transferred or read. Code annotation classes come from `code_annotations` metadata instead. | Do not infer a Markdown highlighting syntax from this field. |
 | `sanitize` | Trigger-local URL safety checks for links/images and escaping of raw HTML values. | Independent from `disallow_raw_html`; sanitization escapes all raw HTML values. |
 | `disallow_raw_html` | Trigger-local tag-filter check on raw HTML values; filtering work occurs only when the value needs filtering. | This is the GFM fixed-tag filter, not general sanitization. MDX island children are filtered by their own renderer state. |
 | `convert_md_links` | Trigger-local Markdown link/image conversion; raw HTML values with `href`/`src` are scanned and may allocate a rewritten string. | `base_url` and `source_path` matter only on conversion paths. |

@@ -24,7 +24,6 @@ EXPECTED_INCLUDE = [
     "/README.md",
     "/LICENSE",
     "/LICENSE-MIT",
-    "/LICENSE-APACHE",
     "/UPSTREAM.md",
 ]
 
@@ -80,7 +79,7 @@ class PublishedArchive(unittest.TestCase):
             self.assertNotIn(directory, included)
 
     def test_upstream_attribution_ships_with_the_crate(self):
-        for attribution in ("/LICENSE", "/LICENSE-MIT", "/LICENSE-APACHE", "/UPSTREAM.md"):
+        for attribution in ("/LICENSE", "/LICENSE-MIT", "/UPSTREAM.md"):
             self.assertIn(attribution, self.include)
 
 

@@ -42,20 +42,26 @@ pub struct HtmlRendererOptions {
     /// Default: `false`.
     pub xhtml: bool,
 
-    /// Add soft breaks between inline elements.
+    /// String emitted for a soft line break.
+    ///
+    /// A soft break is a line ending inside inline content: the newline that
+    /// joins two lines of the same paragraph, heading, or table cell. A hard
+    /// break is a separate AST node and uses [`Self::hard_break`] instead.
+    ///
+    /// The value replaces every line ending in rendered inline text, including
+    /// one written as a character reference such as `&#10;`. It is written
+    /// verbatim, exactly like [`Self::hard_break`], so [`Self::xhtml`] does not
+    /// rewrite it; supply `"<br />"` yourself when the output has to be XHTML.
     ///
     /// Default: `"\n"`.
     pub soft_break: Cow<'static, str>,
 
-    /// Add hard breaks.
+    /// String emitted for a hard line break.
+    ///
+    /// The value is written verbatim; [`Self::xhtml`] does not rewrite it.
     ///
     /// Default: `"<br>\n"`.
     pub hard_break: Cow<'static, str>,
-
-    /// Enable syntax highlighting for code blocks.
-    ///
-    /// Default: `false`.
-    pub highlight: bool,
 
     /// Sanitize HTML output.
     ///
@@ -235,6 +241,10 @@ const DEFAULT_AUTOLINK_PATTERNS: &[Cow<'static, str>] =
 /// nothing when it drops.
 pub(super) struct RendererOptions {
     pub(super) xhtml: bool,
+    soft_break: Cow<'static, str>,
+    /// `true` when `soft_break` differs from the default line ending, so the
+    /// text path can skip the soft-break check for the common configuration.
+    pub(super) custom_soft_break: bool,
     hard_break: Cow<'static, str>,
     pub(super) sanitize: bool,
     pub(super) disallow_raw_html: bool,
@@ -262,6 +272,10 @@ pub(super) struct RendererOptions {
 }
 
 impl RendererOptions {
+    pub(super) fn soft_break(&self) -> &str {
+        &self.soft_break
+    }
+
     pub(super) fn hard_break(&self) -> &str {
         &self.hard_break
     }
@@ -288,6 +302,8 @@ impl From<HtmlRendererOptions> for RendererOptions {
     fn from(options: HtmlRendererOptions) -> Self {
         Self {
             xhtml: options.xhtml,
+            custom_soft_break: options.soft_break != DEFAULT_SOFT_BREAK,
+            soft_break: options.soft_break,
             hard_break: options.hard_break,
             sanitize: options.sanitize,
             disallow_raw_html: options.disallow_raw_html,
@@ -327,7 +343,6 @@ impl HtmlRendererOptions {
             xhtml: false,
             soft_break: Cow::Borrowed(DEFAULT_SOFT_BREAK),
             hard_break: Cow::Borrowed(DEFAULT_HARD_BREAK),
-            highlight: false,
             sanitize: false,
             disallow_raw_html: false,
             convert_md_links: false,
@@ -373,11 +388,26 @@ impl HtmlRendererOptions {
         options
     }
 
-    /// Creates the strict GFM HTML profile.
+    /// Creates the GFM convenience HTML profile.
     ///
-    /// This adds GFM tag filtering to the strict CommonMark HTML profile.
+    /// This adds GFM tag filtering to [`Self::new`], so it keeps the product
+    /// conveniences — heading IDs, callouts, TOC substitution, URL
+    /// autolinking, link targets, and VitePress fence metadata cleanup. It
+    /// pairs with [`ParserOptions::gfm`](crate::ParserOptions::gfm); use
+    /// [`Self::gfm_spec`] for specification-oriented output.
     #[must_use]
     pub fn gfm() -> Self {
+        let mut options = Self::new();
+        options.disallow_raw_html = true;
+        options
+    }
+
+    /// Creates the strict GFM HTML profile.
+    ///
+    /// This adds GFM tag filtering to the strict CommonMark HTML profile and
+    /// pairs with [`ParserOptions::gfm_spec`](crate::ParserOptions::gfm_spec).
+    #[must_use]
+    pub fn gfm_spec() -> Self {
         let mut options = Self::commonmark();
         options.disallow_raw_html = true;
         options
@@ -390,6 +420,13 @@ impl Default for HtmlRendererOptions {
     }
 }
 
+/// Which fenced-code annotation dialect [`HtmlRendererOptions::code_annotations`]
+/// reads.
+///
+/// The variants select the metadata parsers that run for a fenced code block:
+/// the ox-content attribute syntax, the VitePress-compatible syntax, or both.
+/// Only [`HtmlRendererOptions::code_annotations`] decides whether annotations
+/// are applied at all; this decides how they are written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CodeAnnotationSyntax {
     /// Read `annotate="kind:line"` style metadata from the code-fence info string.

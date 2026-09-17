@@ -16,7 +16,7 @@ let document = Parser::with_options(
     source,
     ParserOptions { line_comments: true, ..ParserOptions::gfm() },
 ).parse().unwrap();
-let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
+let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
 assert_eq!(html, "<p>First line.\nSecond line.</p>\n");
 ```
 

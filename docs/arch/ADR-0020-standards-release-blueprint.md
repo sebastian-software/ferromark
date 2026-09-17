@@ -46,8 +46,8 @@ versions are concrete everywhere: Release Please cannot replace an inherited
 does not spell out a `version`. Workspace inheritance stays for edition,
 license, lints, profiles and external dependencies. A root package would offer
 the whole repository to crates.io, so the manifest carries a narrow `include`;
-the published file set is the one the nested crate had, plus the two license
-texts and `UPSTREAM.md` that the README's attribution section points at.
+the published file set is the one the nested crate had, plus the MIT license
+text and `UPSTREAM.md` that the README's attribution section points at.
 
 **No second source of truth for a version.** `version.txt`, the eight Cargo
 `x-release-please-version` annotations and the two `Cargo.lock` jsonpaths are

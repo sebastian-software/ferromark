@@ -356,7 +356,7 @@ fn highlighter_fallback_preserves_the_complete_spec_corpus() {
                     HtmlRendererOptions::commonmark(),
                     HtmlRendererOptions {
                         sanitize: true,
-                        ..HtmlRendererOptions::gfm()
+                        ..HtmlRendererOptions::gfm_spec()
                     },
                     HtmlRendererOptions::default(),
                 ] {

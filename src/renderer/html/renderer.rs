@@ -29,7 +29,6 @@ use super::options::{HtmlRendererOptions, RendererOptions};
 use super::toc::{
     DocumentRenderScan, InlineTocEntry, collect_inline_toc_entries, scan_document_for_render,
 };
-use crate::renderer::render::{RenderResult, Renderer};
 
 pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRenderHooks};
 
@@ -383,13 +382,5 @@ impl HtmlRenderer {
 impl Default for HtmlRenderer {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl Renderer for HtmlRenderer {
-    type Output = String;
-
-    fn render(&mut self, document: &Document<'_>) -> RenderResult<Self::Output> {
-        Ok(self.render(document))
     }
 }

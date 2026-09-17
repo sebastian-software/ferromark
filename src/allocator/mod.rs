@@ -2,6 +2,22 @@
 //!
 //! This crate provides a high-performance arena allocator based on bumpalo,
 //! designed for efficient memory management during parsing operations.
+//!
+//! # bumpalo is part of the public API
+//!
+//! [`Allocator`] re-exports and dereferences to [`bumpalo::Bump`], and [`Box`],
+//! [`Vec`] and [`String`] are bumpalo collections or thin wrappers around them.
+//! A bumpalo major release is therefore a ferromark major release; see the
+//! decision record `docs/decisions/2026-09-17-bumpalo-public-api.md`.
+//!
+//! # The arena and the AST are single-threaded
+//!
+//! [`Allocator`] holds a `Bump`, whose interior cells make it `!Sync`, and
+//! [`Box`] holds a raw [`NonNull`](std::ptr::NonNull), which makes
+//! [`crate::ast::Document`] and [`crate::ast::Node`] both `!Send` and `!Sync`.
+//! An arena and the AST that lives in it stay on the thread that created them.
+//! Parse and render per thread and move the rendered `String` — which owns
+//! nothing in the arena — across threads instead.
 
 #![deny(
     clippy::disallowed_macros,
