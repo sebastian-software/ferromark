@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -17,7 +17,7 @@ import {
   transform,
   transformWithHighlighter,
 } from "../index.mjs";
-import { nativeTarget } from "../native-target.mjs";
+import { linuxLibc, nativeTarget } from "../native-target.mjs";
 
 test("renders Markdown through the native binding", () => {
   assert.equal(toHtml("# Hello"), '<h1 id="hello">Hello</h1>\n');
@@ -155,22 +155,123 @@ test("maps every supported native platform and rejects unsupported targets", () 
   const targets = [
     ["darwin", "arm64", undefined, "darwin-arm64"],
     ["darwin", "x64", undefined, "darwin-x64"],
-    ["linux", "arm64", "2.17", "linux-arm64-gnu"],
-    ["linux", "arm64", undefined, "linux-arm64-musl"],
-    ["linux", "x64", "2.39", "linux-x64-gnu"],
-    ["linux", "x64", undefined, "linux-x64-musl"],
+    ["linux", "arm64", "gnu", "linux-arm64-gnu"],
+    ["linux", "arm64", "musl", "linux-arm64-musl"],
+    ["linux", "x64", "gnu", "linux-x64-gnu"],
+    ["linux", "x64", "musl", "linux-x64-musl"],
     ["win32", "arm64", undefined, "win32-arm64-msvc"],
     ["win32", "x64", undefined, "win32-x64-msvc"],
   ];
 
-  for (const [platform, arch, glibcVersionRuntime, expected] of targets) {
-    assert.equal(nativeTarget(platform, arch, glibcVersionRuntime), expected);
+  for (const [platform, arch, libc, expected] of targets) {
+    assert.equal(nativeTarget(platform, arch, libc), expected);
   }
+  assert.equal(nativeTarget("linux", "x64"), "linux-x64-gnu");
   assert.throws(
-    () => nativeTarget("linux", "riscv64", "2.39"),
+    () => nativeTarget("linux", "riscv64", "gnu"),
     /ferromark does not support linux\/riscv64/,
   );
   assert.throws(() => nativeTarget("freebsd", "x64"), /ferromark does not support freebsd\/x64/);
+});
+
+/** Loader helper contents on a system without a musl loader. */
+const noLoaderHelper = () => "";
+
+/** Loader helper contents on a musl system, where it is the loader itself. */
+const muslLoaderHelper = () => "musl libc (x86_64)\nVersion 1.2.5\n";
+
+test("detects the Linux C library and assumes gnu without evidence of musl", () => {
+  const glibcReport = {
+    header: { glibcVersionRuntime: "2.39" },
+    sharedObjects: ["/lib/libc.so.6"],
+  };
+  const muslReport = { header: {}, sharedObjects: ["/lib/ld-musl-x86_64.so.1"] };
+
+  assert.equal(linuxLibc(glibcReport, noLoaderHelper), "gnu");
+  assert.equal(linuxLibc(muslReport, noLoaderHelper), "musl");
+  // A report without a glibc runtime version describes a musl host.
+  assert.equal(linuxLibc({ header: {} }, noLoaderHelper), "musl");
+
+  // Without a report the loader helper is the only remaining evidence.
+  assert.equal(linuxLibc(undefined, muslLoaderHelper), "musl");
+  assert.equal(linuxLibc(undefined, noLoaderHelper), "gnu");
+  assert.equal(nativeTarget("linux", "x64", linuxLibc(undefined, noLoaderHelper)), "linux-x64-gnu");
+  assert.equal(
+    nativeTarget("linux", "x64", linuxLibc(undefined, muslLoaderHelper)),
+    "linux-x64-musl",
+  );
+});
+
+test("excludes network interfaces from the loader's diagnostic report", () => {
+  const entry = new URL("../index.mjs", import.meta.url).href;
+  const script = `
+    Object.defineProperty(process, 'platform', { value: 'linux' })
+    Object.defineProperty(process, 'arch', { value: 'x64' })
+    let excludeNetworkWhileCollecting
+    Object.defineProperty(process, 'report', {
+      value: {
+        excludeNetwork: false,
+        getReport() {
+          excludeNetworkWhileCollecting = this.excludeNetwork
+          return { header: { glibcVersionRuntime: '2.39' } }
+        },
+      },
+    })
+    const { toHtml } = await import(${JSON.stringify(entry)})
+    try {
+      toHtml('text')
+    }
+    catch {
+      // A host without the linux-x64-gnu binary still ran the detection.
+    }
+    if (excludeNetworkWhileCollecting !== true) {
+      process.exit(1)
+    }
+    if (process.report.excludeNetwork !== false) {
+      process.exit(2)
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("selects the gnu package on Linux without a diagnostic report", async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), "ferromark-loader-libc-"));
+  const entry = path.join(fixture, "index.mjs");
+  t.after(() => rm(fixture, { force: true, recursive: true }));
+
+  await Promise.all([
+    copyFile(new URL("../index.mjs", import.meta.url), entry),
+    copyFile(
+      new URL("../native-target.mjs", import.meta.url),
+      path.join(fixture, "native-target.mjs"),
+    ),
+  ]);
+
+  const script = `
+    Object.defineProperty(process, 'platform', { value: 'linux' })
+    Object.defineProperty(process, 'arch', { value: 'x64' })
+    Object.defineProperty(process, 'report', { value: undefined })
+    const { toHtml } = await import(${JSON.stringify(pathToFileURL(entry).href)})
+    try {
+      toHtml('text')
+    }
+    catch (error) {
+      console.error(error.message)
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  // Only the loader helper may still select musl, as it does on Alpine.
+  const loaderHelper = await readFile("/usr/bin/ldd", "latin1").catch(() => "");
+  const expected = loaderHelper.includes("musl") ? "musl" : "gnu";
+  assert.match(result.stderr, new RegExp(`ferromark-linux-x64-${expected}`));
 });
 
 test("does not collect a diagnostic report on non-Linux platforms", () => {
