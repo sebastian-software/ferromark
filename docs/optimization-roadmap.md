@@ -94,8 +94,14 @@ addons ([ADR-0019](arch/ADR-0019-profile-guided-native-addon.md)), with the
 native comparison able to build every Rust engine the same way so the
 published numbers stay fair — and (b) the definition
 pre-pass, which block-parses a document twice whenever it holds a `]:`
-candidate — the remaining structural target is a blocks-first parse with
-inline content resolved afterwards.
+candidate. Item (b) is now addressed structurally: the pass runs on the
+segments that can hold a definition, each bounded by a line start where the
+real parser is at the document root, and a document whose candidates all sit
+in code or raw HTML runs no structural pass at all. The exactness argument,
+what still falls back, and the differential proof are recorded in
+[the decision](decisions/2026-09-16-segmented-definition-pass.md); the
+measured effect is in [its report](reports/2026-09-16-definition-segments/README.md). A blocks-first parse with inline
+content resolved afterwards remains the larger, unattempted variant.
 
 
 1. **Code layout and render-only variance.** Unchanged render paths can shift

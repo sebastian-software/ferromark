@@ -1,0 +1,3728 @@
+{
+  "all": {
+    "fresh": {
+      "cases": 9,
+      "geometric_mean": 1.0764871628012003,
+      "round_geometric_means": [
+        1.0734886337843774,
+        1.070540352015147,
+        1.076017724852593
+      ],
+      "measured_above_1": 7,
+      "measured_below_1": 2,
+      "within_one_percent_ratio": 3,
+      "worst": [
+        {
+          "case": "scan-short-reference",
+          "profile": "commonmark",
+          "category": "link-scan-diagnostic",
+          "mode": "fresh",
+          "baseline_ns_per_document": 529.582830368488,
+          "candidate_ns_per_document": 551.24858079806,
+          "baseline_over_candidate_median": 0.9671372976121841,
+          "baseline_over_candidate_min": 0.9393150867563528,
+          "baseline_over_candidate_max": 1.0013479306419377,
+          "pairs": 15,
+          "round_medians": [
+            0.9725509220899059,
+            0.968532919100888,
+            0.9549245062030512
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction-nodef",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "fresh",
+          "baseline_ns_per_document": 12617.6690625,
+          "candidate_ns_per_document": 12643.991792929293,
+          "baseline_over_candidate_median": 0.9967302495038537,
+          "baseline_over_candidate_min": 0.9720345926154218,
+          "baseline_over_candidate_max": 1.0105443305747672,
+          "pairs": 15,
+          "round_medians": [
+            0.9889086039316434,
+            0.9988619388489431,
+            0.9949430393214896
+          ]
+        },
+        {
+          "case": "comment-incident-nodef",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "fresh",
+          "baseline_ns_per_document": 1231.0672674704724,
+          "candidate_ns_per_document": 1237.0023491592483,
+          "baseline_over_candidate_median": 1.0006374476695514,
+          "baseline_over_candidate_min": 0.9657532339041824,
+          "baseline_over_candidate_max": 1.0436923512945333,
+          "pairs": 15,
+          "round_medians": [
+            1.0130061056102095,
+            0.9745094398772043,
+            1.0006374476695514
+          ]
+        },
+        {
+          "case": "scan-long-references",
+          "profile": "gfm",
+          "category": "link-scan-diagnostic",
+          "mode": "fresh",
+          "baseline_ns_per_document": 32493.08894230769,
+          "candidate_ns_per_document": 32364.95112179487,
+          "baseline_over_candidate_median": 1.0024456247899685,
+          "baseline_over_candidate_min": 0.9817087265195431,
+          "baseline_over_candidate_max": 1.0155681086703876,
+          "pairs": 15,
+          "round_medians": [
+            1.0088239877342882,
+            1.0024679048804799,
+            0.998698182223295
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types-nodef",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "fresh",
+          "baseline_ns_per_document": 41279.905241935485,
+          "candidate_ns_per_document": 40174.8447265625,
+          "baseline_over_candidate_median": 1.0228310356047035,
+          "baseline_over_candidate_min": 0.935441211294876,
+          "baseline_over_candidate_max": 1.0924276444648384,
+          "pairs": 15,
+          "round_medians": [
+            0.9750279923642536,
+            0.9998791257361614,
+            1.0493962653138211
+          ]
+        }
+      ],
+      "best": [
+        {
+          "case": "comment-incident",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "fresh",
+          "baseline_ns_per_document": 1807.7338330924856,
+          "candidate_ns_per_document": 1378.4913519845645,
+          "baseline_over_candidate_median": 1.3146690019339007,
+          "baseline_over_candidate_min": 1.282611524111695,
+          "baseline_over_candidate_max": 1.322977596021551,
+          "pairs": 15,
+          "round_medians": [
+            1.317214309517882,
+            1.315282066150945,
+            1.3041716344375391
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "fresh",
+          "baseline_ns_per_document": 17072.47677364865,
+          "candidate_ns_per_document": 14464.888649425287,
+          "baseline_over_candidate_median": 1.1853253445928473,
+          "baseline_over_candidate_min": 1.171709046290644,
+          "baseline_over_candidate_max": 1.2085590776905835,
+          "pairs": 15,
+          "round_medians": [
+            1.1847161733058114,
+            1.1820310303263368,
+            1.1878286244930212
+          ]
+        },
+        {
+          "case": "scan-extension-links",
+          "profile": "extensions",
+          "category": "link-scan-diagnostic",
+          "mode": "fresh",
+          "baseline_ns_per_document": 3843.733991564417,
+          "candidate_ns_per_document": 3311.7559523809523,
+          "baseline_over_candidate_median": 1.1572229698543433,
+          "baseline_over_candidate_min": 1.1389371473491865,
+          "baseline_over_candidate_max": 1.175773790637657,
+          "pairs": 15,
+          "round_medians": [
+            1.1703914989548736,
+            1.1572229698543433,
+            1.1473228583583894
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "fresh",
+          "baseline_ns_per_document": 52206.705729166664,
+          "candidate_ns_per_document": 48116.286057692305,
+          "baseline_over_candidate_median": 1.0884322793328782,
+          "baseline_over_candidate_min": 1.0464601610144337,
+          "baseline_over_candidate_max": 1.1302795947928297,
+          "pairs": 15,
+          "round_medians": [
+            1.0815885601025275,
+            1.0862722234220576,
+            1.091899992318818
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types-nodef",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "fresh",
+          "baseline_ns_per_document": 41279.905241935485,
+          "candidate_ns_per_document": 40174.8447265625,
+          "baseline_over_candidate_median": 1.0228310356047035,
+          "baseline_over_candidate_min": 0.935441211294876,
+          "baseline_over_candidate_max": 1.0924276444648384,
+          "pairs": 15,
+          "round_medians": [
+            0.9750279923642536,
+            0.9998791257361614,
+            1.0493962653138211
+          ]
+        }
+      ]
+    },
+    "reuse": {
+      "cases": 9,
+      "geometric_mean": 1.0841925590313881,
+      "round_geometric_means": [
+        1.0777238152923987,
+        1.0812583534823443,
+        1.0869835670505419
+      ],
+      "measured_above_1": 8,
+      "measured_below_1": 1,
+      "within_one_percent_ratio": 3,
+      "worst": [
+        {
+          "case": "scan-short-reference",
+          "profile": "commonmark",
+          "category": "link-scan-diagnostic",
+          "mode": "reuse",
+          "baseline_ns_per_document": 423.1264065143824,
+          "candidate_ns_per_document": 444.550320056899,
+          "baseline_over_candidate_median": 0.952773087912612,
+          "baseline_over_candidate_min": 0.9398124725594276,
+          "baseline_over_candidate_max": 0.9634139996659613,
+          "pairs": 15,
+          "round_medians": [
+            0.952773087912612,
+            0.9557477311538755,
+            0.9513983720653469
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction-nodef",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "reuse",
+          "baseline_ns_per_document": 12382.263480392157,
+          "candidate_ns_per_document": 12363.12806372549,
+          "baseline_over_candidate_median": 1.0010031800345898,
+          "baseline_over_candidate_min": 0.9901684717602889,
+          "baseline_over_candidate_max": 1.037462487425361,
+          "pairs": 15,
+          "round_medians": [
+            0.9988877151556578,
+            1.0010031800345898,
+            1.0103193005798925
+          ]
+        },
+        {
+          "case": "scan-long-references",
+          "profile": "gfm",
+          "category": "link-scan-diagnostic",
+          "mode": "reuse",
+          "baseline_ns_per_document": 31981.77109375,
+          "candidate_ns_per_document": 31893.3265625,
+          "baseline_over_candidate_median": 1.0021527298464301,
+          "baseline_over_candidate_min": 0.9895764637647273,
+          "baseline_over_candidate_max": 1.0096021230978829,
+          "pairs": 15,
+          "round_medians": [
+            1.0021527298464301,
+            0.999265906302053,
+            1.003668005057679
+          ]
+        },
+        {
+          "case": "comment-incident-nodef",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "reuse",
+          "baseline_ns_per_document": 1077.4666774332472,
+          "candidate_ns_per_document": 1070.3760434503424,
+          "baseline_over_candidate_median": 1.0053307209047937,
+          "baseline_over_candidate_min": 0.9927286710752993,
+          "baseline_over_candidate_max": 1.0237578506208695,
+          "pairs": 15,
+          "round_medians": [
+            0.9996391961266771,
+            1.0053307209047937,
+            1.0062299615296604
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types-nodef",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "reuse",
+          "baseline_ns_per_document": 40810.18951612903,
+          "candidate_ns_per_document": 38710.34564393939,
+          "baseline_over_candidate_median": 1.0498508694427202,
+          "baseline_over_candidate_min": 0.930622048590173,
+          "baseline_over_candidate_max": 1.1217779382252384,
+          "pairs": 15,
+          "round_medians": [
+            1.0136829915974472,
+            1.0464350573830177,
+            1.0643121025765332
+          ]
+        }
+      ],
+      "best": [
+        {
+          "case": "comment-incident",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "reuse",
+          "baseline_ns_per_document": 1639.1983535386632,
+          "candidate_ns_per_document": 1226.9215529931305,
+          "baseline_over_candidate_median": 1.341942889568137,
+          "baseline_over_candidate_min": 1.3060828686499997,
+          "baseline_over_candidate_max": 1.3805562004357121,
+          "pairs": 15,
+          "round_medians": [
+            1.324542684869699,
+            1.3354469574926213,
+            1.3428776111808578
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "reuse",
+          "baseline_ns_per_document": 16545.744243421053,
+          "candidate_ns_per_document": 13792.196085164835,
+          "baseline_over_candidate_median": 1.1997601925493981,
+          "baseline_over_candidate_min": 1.183117753078658,
+          "baseline_over_candidate_max": 1.20923448880043,
+          "pairs": 15,
+          "round_medians": [
+            1.1997601925493981,
+            1.1956362967190757,
+            1.2015410263855826
+          ]
+        },
+        {
+          "case": "scan-extension-links",
+          "profile": "extensions",
+          "category": "link-scan-diagnostic",
+          "mode": "reuse",
+          "baseline_ns_per_document": 3560.199129971591,
+          "candidate_ns_per_document": 3034.239760315534,
+          "baseline_over_candidate_median": 1.1725603361861252,
+          "baseline_over_candidate_min": 1.149901649686877,
+          "baseline_over_candidate_max": 1.1825919874076862,
+          "pairs": 15,
+          "round_medians": [
+            1.1749589877155626,
+            1.1548207509628439,
+            1.1777616713624202
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "reuse",
+          "baseline_ns_per_document": 51459.21875,
+          "candidate_ns_per_document": 47119.26157407407,
+          "baseline_over_candidate_median": 1.0869228058569467,
+          "baseline_over_candidate_min": 0.9925063266651674,
+          "baseline_over_candidate_max": 1.496332324283902,
+          "pairs": 15,
+          "round_medians": [
+            1.0869228058569467,
+            1.0892910388088701,
+            1.0789392030928477
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types-nodef",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "reuse",
+          "baseline_ns_per_document": 40810.18951612903,
+          "candidate_ns_per_document": 38710.34564393939,
+          "baseline_over_candidate_median": 1.0498508694427202,
+          "baseline_over_candidate_min": 0.930622048590173,
+          "baseline_over_candidate_max": 1.1217779382252384,
+          "pairs": 15,
+          "round_medians": [
+            1.0136829915974472,
+            1.0464350573830177,
+            1.0643121025765332
+          ]
+        }
+      ]
+    },
+    "parse": {
+      "cases": 9,
+      "geometric_mean": 1.0955527630780189,
+      "round_geometric_means": [
+        1.095744015135422,
+        1.0958975023773703,
+        1.0971825127781398
+      ],
+      "measured_above_1": 6,
+      "measured_below_1": 3,
+      "within_one_percent_ratio": 3,
+      "worst": [
+        {
+          "case": "scan-short-reference",
+          "profile": "commonmark",
+          "category": "link-scan-diagnostic",
+          "mode": "parse",
+          "baseline_ns_per_document": 391.65989191729324,
+          "candidate_ns_per_document": 403.7009101549887,
+          "baseline_over_candidate_median": 0.9701035830390468,
+          "baseline_over_candidate_min": 0.958014489709579,
+          "baseline_over_candidate_max": 0.9805865777462373,
+          "pairs": 15,
+          "round_medians": [
+            0.972138436055768,
+            0.9701035830390468,
+            0.9662767015660773
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types-nodef",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "parse",
+          "baseline_ns_per_document": 21039.279166666667,
+          "candidate_ns_per_document": 21162.434895833332,
+          "baseline_over_candidate_median": 0.9890576073122106,
+          "baseline_over_candidate_min": 0.9697172122160737,
+          "baseline_over_candidate_max": 1.0318663717613752,
+          "pairs": 15,
+          "round_medians": [
+            0.9835352000585996,
+            0.999627152788506,
+            1.0000586017614777
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction-nodef",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "parse",
+          "baseline_ns_per_document": 9930.875992063493,
+          "candidate_ns_per_document": 9926.734744094489,
+          "baseline_over_candidate_median": 0.9930382122724777,
+          "baseline_over_candidate_min": 0.958148859637611,
+          "baseline_over_candidate_max": 1.0138526040233302,
+          "pairs": 15,
+          "round_medians": [
+            0.9946867245657569,
+            0.9817429979697664,
+            0.9981238293068242
+          ]
+        },
+        {
+          "case": "scan-long-references",
+          "profile": "gfm",
+          "category": "link-scan-diagnostic",
+          "mode": "parse",
+          "baseline_ns_per_document": 29548.691860465115,
+          "candidate_ns_per_document": 29422.571220930233,
+          "baseline_over_candidate_median": 1.0044376755399798,
+          "baseline_over_candidate_min": 0.9717232870633743,
+          "baseline_over_candidate_max": 1.0173087305211175,
+          "pairs": 15,
+          "round_medians": [
+            1.0044376755399798,
+            1.0040760043095864,
+            1.0086759794096931
+          ]
+        },
+        {
+          "case": "comment-incident-nodef",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "parse",
+          "baseline_ns_per_document": 777.8344605099503,
+          "candidate_ns_per_document": 773.4970817872604,
+          "baseline_over_candidate_median": 1.0067786141219142,
+          "baseline_over_candidate_min": 0.9927578862195547,
+          "baseline_over_candidate_max": 1.0246355483479472,
+          "pairs": 15,
+          "round_medians": [
+            1.0061997465773769,
+            1.0080012660285618,
+            1.0020848173685357
+          ]
+        }
+      ],
+      "best": [
+        {
+          "case": "comment-incident",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "parse",
+          "baseline_ns_per_document": 1335.3163353788686,
+          "candidate_ns_per_document": 923.2347904357459,
+          "baseline_over_candidate_median": 1.4456512741265521,
+          "baseline_over_candidate_min": 1.4108883644951538,
+          "baseline_over_candidate_max": 1.4646308699681967,
+          "pairs": 15,
+          "round_medians": [
+            1.4512414732691088,
+            1.4432572328023363,
+            1.4457641936300305
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "parse",
+          "baseline_ns_per_document": 14216.102176966293,
+          "candidate_ns_per_document": 11500.047878440368,
+          "baseline_over_candidate_median": 1.2392593344627805,
+          "baseline_over_candidate_min": 1.2157384016707717,
+          "baseline_over_candidate_max": 1.2522306635933247,
+          "pairs": 15,
+          "round_medians": [
+            1.2412962411351134,
+            1.228928677021781,
+            1.2392593344627805
+          ]
+        },
+        {
+          "case": "scan-extension-links",
+          "profile": "extensions",
+          "category": "link-scan-diagnostic",
+          "mode": "parse",
+          "baseline_ns_per_document": 3064.571231617647,
+          "candidate_ns_per_document": 2540.2721855983773,
+          "baseline_over_candidate_median": 1.2064190823675638,
+          "baseline_over_candidate_min": 1.1962959257504913,
+          "baseline_over_candidate_max": 1.2181149784149872,
+          "pairs": 15,
+          "round_medians": [
+            1.204725764985872,
+            1.2064190823675638,
+            1.2099095732165648
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "parse",
+          "baseline_ns_per_document": 31329.3296875,
+          "candidate_ns_per_document": 28706.173295454544,
+          "baseline_over_candidate_median": 1.0917246432950165,
+          "baseline_over_candidate_min": 1.0656865289977837,
+          "baseline_over_candidate_max": 1.115363278728343,
+          "pairs": 15,
+          "round_medians": [
+            1.0916089899210093,
+            1.1058066156359454,
+            1.0902592359297696
+          ]
+        },
+        {
+          "case": "comment-incident-nodef",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "parse",
+          "baseline_ns_per_document": 777.8344605099503,
+          "candidate_ns_per_document": 773.4970817872604,
+          "baseline_over_candidate_median": 1.0067786141219142,
+          "baseline_over_candidate_min": 0.9927578862195547,
+          "baseline_over_candidate_max": 1.0246355483479472,
+          "pairs": 15,
+          "round_medians": [
+            1.0061997465773769,
+            1.0080012660285618,
+            1.0020848173685357
+          ]
+        }
+      ]
+    },
+    "render": {
+      "cases": 9,
+      "geometric_mean": 1.0094054424050527,
+      "round_geometric_means": [
+        1.0114208607739057,
+        1.0068341150795435,
+        1.0107527996073555
+      ],
+      "measured_above_1": 7,
+      "measured_below_1": 2,
+      "within_one_percent_ratio": 6,
+      "worst": [
+        {
+          "case": "comment-incident-nodef",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "render",
+          "baseline_ns_per_document": 283.5093112244898,
+          "candidate_ns_per_document": 284.8201255980861,
+          "baseline_over_candidate_median": 0.9939994570441077,
+          "baseline_over_candidate_min": 0.9856245868411669,
+          "baseline_over_candidate_max": 1.011596250513734,
+          "pairs": 15,
+          "round_medians": [
+            0.9913523624427105,
+            0.9923735227202555,
+            0.9965144643058932
+          ]
+        },
+        {
+          "case": "comment-incident",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "render",
+          "baseline_ns_per_document": 283.71851594416705,
+          "candidate_ns_per_document": 285.0232486890105,
+          "baseline_over_candidate_median": 0.9948366426949418,
+          "baseline_over_candidate_min": 0.9730120349291959,
+          "baseline_over_candidate_max": 1.0094353732438561,
+          "pairs": 15,
+          "round_medians": [
+            0.999931258233545,
+            0.9938154112678161,
+            0.9982399893050276
+          ]
+        },
+        {
+          "case": "scan-long-references",
+          "profile": "gfm",
+          "category": "link-scan-diagnostic",
+          "mode": "render",
+          "baseline_ns_per_document": 2460.863188976378,
+          "candidate_ns_per_document": 2449.720768101761,
+          "baseline_over_candidate_median": 1.0009934436964723,
+          "baseline_over_candidate_min": 0.9883248021480057,
+          "baseline_over_candidate_max": 1.018466317619832,
+          "pairs": 15,
+          "round_medians": [
+            0.9979504300704035,
+            1.0028419164004074,
+            0.999895928205397
+          ]
+        },
+        {
+          "case": "scan-extension-links",
+          "profile": "extensions",
+          "category": "link-scan-diagnostic",
+          "mode": "render",
+          "baseline_ns_per_document": 477.6014849121467,
+          "candidate_ns_per_document": 476.0735910129475,
+          "baseline_over_candidate_median": 1.0042206596399867,
+          "baseline_over_candidate_min": 0.9955028796875459,
+          "baseline_over_candidate_max": 1.0121148327513174,
+          "pairs": 15,
+          "round_medians": [
+            1.0023281365475707,
+            1.0052861500646741,
+            1.0042206596399867
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 2268.6490036231885,
+          "candidate_ns_per_document": 2260.440212477396,
+          "baseline_over_candidate_median": 1.0080553076089258,
+          "baseline_over_candidate_min": 0.9915585633817325,
+          "baseline_over_candidate_max": 1.0133372999119994,
+          "pairs": 15,
+          "round_medians": [
+            1.0017343382643868,
+            1.0080553076089258,
+            1.0100345006244957
+          ]
+        }
+      ],
+      "best": [
+        {
+          "case": "typescript-handbook-advanced-types",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "render",
+          "baseline_ns_per_document": 16166.683493589744,
+          "candidate_ns_per_document": 15620.900848765432,
+          "baseline_over_candidate_median": 1.0346905249055527,
+          "baseline_over_candidate_min": 1.002515877418759,
+          "baseline_over_candidate_max": 1.3685502291072784,
+          "pairs": 15,
+          "round_medians": [
+            1.0475715212140695,
+            1.0189814551061025,
+            1.0349392554314463
+          ]
+        },
+        {
+          "case": "typescript-handbook-advanced-types-nodef",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "render",
+          "baseline_ns_per_document": 15968.79944620253,
+          "candidate_ns_per_document": 15471.305941358025,
+          "baseline_over_candidate_median": 1.02569244970788,
+          "baseline_over_candidate_min": 1.0078002605241894,
+          "baseline_over_candidate_max": 1.056913015634913,
+          "pairs": 15,
+          "round_medians": [
+            1.0406275121523219,
+            1.019100713304226,
+            1.02569244970788
+          ]
+        },
+        {
+          "case": "scan-short-reference",
+          "profile": "commonmark",
+          "category": "link-scan-diagnostic",
+          "mode": "render",
+          "baseline_ns_per_document": 40.06916530435619,
+          "candidate_ns_per_document": 39.544021464047326,
+          "baseline_over_candidate_median": 1.0132872568611677,
+          "baseline_over_candidate_min": 0.9881723992520847,
+          "baseline_over_candidate_max": 1.0285680610210401,
+          "pairs": 15,
+          "round_medians": [
+            1.0137531505697874,
+            1.0125543403867734,
+            1.0136457466002078
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction-nodef",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 2362.5982311320754,
+          "candidate_ns_per_document": 2338.0525116822428,
+          "baseline_over_candidate_median": 1.0095966491280064,
+          "baseline_over_candidate_min": 0.9989325591902588,
+          "baseline_over_candidate_max": 1.0487695022071324,
+          "pairs": 15,
+          "round_medians": [
+            1.0090351939276192,
+            1.0088628823808332,
+            1.01425609113485
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 2268.6490036231885,
+          "candidate_ns_per_document": 2260.440212477396,
+          "baseline_over_candidate_median": 1.0080553076089258,
+          "baseline_over_candidate_min": 0.9915585633817325,
+          "baseline_over_candidate_max": 1.0133372999119994,
+          "pairs": 15,
+          "round_medians": [
+            1.0017343382643868,
+            1.0080553076089258,
+            1.0100345006244957
+          ]
+        }
+      ]
+    }
+  },
+  "categories": {
+    "comments": {
+      "fresh": {
+        "cases": 2,
+        "geometric_mean": 1.146955550413971,
+        "round_geometric_means": [
+          1.155139012387146,
+          1.1321460990372618,
+          1.142367268266474
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1231.0672674704724,
+            "candidate_ns_per_document": 1237.0023491592483,
+            "baseline_over_candidate_median": 1.0006374476695514,
+            "baseline_over_candidate_min": 0.9657532339041824,
+            "baseline_over_candidate_max": 1.0436923512945333,
+            "pairs": 15,
+            "round_medians": [
+              1.0130061056102095,
+              0.9745094398772043,
+              1.0006374476695514
+            ]
+          },
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1807.7338330924856,
+            "candidate_ns_per_document": 1378.4913519845645,
+            "baseline_over_candidate_median": 1.3146690019339007,
+            "baseline_over_candidate_min": 1.282611524111695,
+            "baseline_over_candidate_max": 1.322977596021551,
+            "pairs": 15,
+            "round_medians": [
+              1.317214309517882,
+              1.315282066150945,
+              1.3041716344375391
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1807.7338330924856,
+            "candidate_ns_per_document": 1378.4913519845645,
+            "baseline_over_candidate_median": 1.3146690019339007,
+            "baseline_over_candidate_min": 1.282611524111695,
+            "baseline_over_candidate_max": 1.322977596021551,
+            "pairs": 15,
+            "round_medians": [
+              1.317214309517882,
+              1.315282066150945,
+              1.3041716344375391
+            ]
+          },
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1231.0672674704724,
+            "candidate_ns_per_document": 1237.0023491592483,
+            "baseline_over_candidate_median": 1.0006374476695514,
+            "baseline_over_candidate_min": 0.9657532339041824,
+            "baseline_over_candidate_max": 1.0436923512945333,
+            "pairs": 15,
+            "round_medians": [
+              1.0130061056102095,
+              0.9745094398772043,
+              1.0006374476695514
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 2,
+        "geometric_mean": 1.1615060966618285,
+        "round_geometric_means": [
+          1.1506801400643953,
+          1.1586914397311177,
+          1.162430078343449
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1077.4666774332472,
+            "candidate_ns_per_document": 1070.3760434503424,
+            "baseline_over_candidate_median": 1.0053307209047937,
+            "baseline_over_candidate_min": 0.9927286710752993,
+            "baseline_over_candidate_max": 1.0237578506208695,
+            "pairs": 15,
+            "round_medians": [
+              0.9996391961266771,
+              1.0053307209047937,
+              1.0062299615296604
+            ]
+          },
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1639.1983535386632,
+            "candidate_ns_per_document": 1226.9215529931305,
+            "baseline_over_candidate_median": 1.341942889568137,
+            "baseline_over_candidate_min": 1.3060828686499997,
+            "baseline_over_candidate_max": 1.3805562004357121,
+            "pairs": 15,
+            "round_medians": [
+              1.324542684869699,
+              1.3354469574926213,
+              1.3428776111808578
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1639.1983535386632,
+            "candidate_ns_per_document": 1226.9215529931305,
+            "baseline_over_candidate_median": 1.341942889568137,
+            "baseline_over_candidate_min": 1.3060828686499997,
+            "baseline_over_candidate_max": 1.3805562004357121,
+            "pairs": 15,
+            "round_medians": [
+              1.324542684869699,
+              1.3354469574926213,
+              1.3428776111808578
+            ]
+          },
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1077.4666774332472,
+            "candidate_ns_per_document": 1070.3760434503424,
+            "baseline_over_candidate_median": 1.0053307209047937,
+            "baseline_over_candidate_min": 0.9927286710752993,
+            "baseline_over_candidate_max": 1.0237578506208695,
+            "pairs": 15,
+            "round_medians": [
+              0.9996391961266771,
+              1.0053307209047937,
+              1.0062299615296604
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 2,
+        "geometric_mean": 1.2064206506309105,
+        "round_geometric_means": [
+          1.2084034105487937,
+          1.2061530242343357,
+          1.203652087578349
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 777.8344605099503,
+            "candidate_ns_per_document": 773.4970817872604,
+            "baseline_over_candidate_median": 1.0067786141219142,
+            "baseline_over_candidate_min": 0.9927578862195547,
+            "baseline_over_candidate_max": 1.0246355483479472,
+            "pairs": 15,
+            "round_medians": [
+              1.0061997465773769,
+              1.0080012660285618,
+              1.0020848173685357
+            ]
+          },
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 1335.3163353788686,
+            "candidate_ns_per_document": 923.2347904357459,
+            "baseline_over_candidate_median": 1.4456512741265521,
+            "baseline_over_candidate_min": 1.4108883644951538,
+            "baseline_over_candidate_max": 1.4646308699681967,
+            "pairs": 15,
+            "round_medians": [
+              1.4512414732691088,
+              1.4432572328023363,
+              1.4457641936300305
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 1335.3163353788686,
+            "candidate_ns_per_document": 923.2347904357459,
+            "baseline_over_candidate_median": 1.4456512741265521,
+            "baseline_over_candidate_min": 1.4108883644951538,
+            "baseline_over_candidate_max": 1.4646308699681967,
+            "pairs": 15,
+            "round_medians": [
+              1.4512414732691088,
+              1.4432572328023363,
+              1.4457641936300305
+            ]
+          },
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 777.8344605099503,
+            "candidate_ns_per_document": 773.4970817872604,
+            "baseline_over_candidate_median": 1.0067786141219142,
+            "baseline_over_candidate_min": 0.9927578862195547,
+            "baseline_over_candidate_max": 1.0246355483479472,
+            "pairs": 15,
+            "round_medians": [
+              1.0061997465773769,
+              1.0080012660285618,
+              1.0020848173685357
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 2,
+        "geometric_mean": 0.9944179617677645,
+        "round_geometric_means": [
+          0.9956325703441691,
+          0.9930942053065873,
+          0.9973768536471157
+        ],
+        "measured_above_1": 0,
+        "measured_below_1": 2,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 283.5093112244898,
+            "candidate_ns_per_document": 284.8201255980861,
+            "baseline_over_candidate_median": 0.9939994570441077,
+            "baseline_over_candidate_min": 0.9856245868411669,
+            "baseline_over_candidate_max": 1.011596250513734,
+            "pairs": 15,
+            "round_medians": [
+              0.9913523624427105,
+              0.9923735227202555,
+              0.9965144643058932
+            ]
+          },
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 283.71851594416705,
+            "candidate_ns_per_document": 285.0232486890105,
+            "baseline_over_candidate_median": 0.9948366426949418,
+            "baseline_over_candidate_min": 0.9730120349291959,
+            "baseline_over_candidate_max": 1.0094353732438561,
+            "pairs": 15,
+            "round_medians": [
+              0.999931258233545,
+              0.9938154112678161,
+              0.9982399893050276
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 283.71851594416705,
+            "candidate_ns_per_document": 285.0232486890105,
+            "baseline_over_candidate_median": 0.9948366426949418,
+            "baseline_over_candidate_min": 0.9730120349291959,
+            "baseline_over_candidate_max": 1.0094353732438561,
+            "pairs": 15,
+            "round_medians": [
+              0.999931258233545,
+              0.9938154112678161,
+              0.9982399893050276
+            ]
+          },
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 283.5093112244898,
+            "candidate_ns_per_document": 284.8201255980861,
+            "baseline_over_candidate_median": 0.9939994570441077,
+            "baseline_over_candidate_min": 0.9856245868411669,
+            "baseline_over_candidate_max": 1.011596250513734,
+            "pairs": 15,
+            "round_medians": [
+              0.9913523624427105,
+              0.9923735227202555,
+              0.9965144643058932
+            ]
+          }
+        ]
+      }
+    },
+    "link-scan-diagnostic": {
+      "fresh": {
+        "cases": 3,
+        "geometric_mean": 1.0390951891051314,
+        "round_geometric_means": [
+          1.0471758942726566,
+          1.0396024706985918,
+          1.0304564645582845
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 529.582830368488,
+            "candidate_ns_per_document": 551.24858079806,
+            "baseline_over_candidate_median": 0.9671372976121841,
+            "baseline_over_candidate_min": 0.9393150867563528,
+            "baseline_over_candidate_max": 1.0013479306419377,
+            "pairs": 15,
+            "round_medians": [
+              0.9725509220899059,
+              0.968532919100888,
+              0.9549245062030512
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 32493.08894230769,
+            "candidate_ns_per_document": 32364.95112179487,
+            "baseline_over_candidate_median": 1.0024456247899685,
+            "baseline_over_candidate_min": 0.9817087265195431,
+            "baseline_over_candidate_max": 1.0155681086703876,
+            "pairs": 15,
+            "round_medians": [
+              1.0088239877342882,
+              1.0024679048804799,
+              0.998698182223295
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 3843.733991564417,
+            "candidate_ns_per_document": 3311.7559523809523,
+            "baseline_over_candidate_median": 1.1572229698543433,
+            "baseline_over_candidate_min": 1.1389371473491865,
+            "baseline_over_candidate_max": 1.175773790637657,
+            "pairs": 15,
+            "round_medians": [
+              1.1703914989548736,
+              1.1572229698543433,
+              1.1473228583583894
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 3843.733991564417,
+            "candidate_ns_per_document": 3311.7559523809523,
+            "baseline_over_candidate_median": 1.1572229698543433,
+            "baseline_over_candidate_min": 1.1389371473491865,
+            "baseline_over_candidate_max": 1.175773790637657,
+            "pairs": 15,
+            "round_medians": [
+              1.1703914989548736,
+              1.1572229698543433,
+              1.1473228583583894
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 32493.08894230769,
+            "candidate_ns_per_document": 32364.95112179487,
+            "baseline_over_candidate_median": 1.0024456247899685,
+            "baseline_over_candidate_min": 0.9817087265195431,
+            "baseline_over_candidate_max": 1.0155681086703876,
+            "pairs": 15,
+            "round_medians": [
+              1.0088239877342882,
+              1.0024679048804799,
+              0.998698182223295
+            ]
+          },
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 529.582830368488,
+            "candidate_ns_per_document": 551.24858079806,
+            "baseline_over_candidate_median": 0.9671372976121841,
+            "baseline_over_candidate_min": 0.9393150867563528,
+            "baseline_over_candidate_max": 1.0013479306419377,
+            "pairs": 15,
+            "round_medians": [
+              0.9725509220899059,
+              0.968532919100888,
+              0.9549245062030512
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 3,
+        "geometric_mean": 1.0383717517453885,
+        "round_geometric_means": [
+          1.039079318903437,
+          1.0331886857173727,
+          1.0399280681916774
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 423.1264065143824,
+            "candidate_ns_per_document": 444.550320056899,
+            "baseline_over_candidate_median": 0.952773087912612,
+            "baseline_over_candidate_min": 0.9398124725594276,
+            "baseline_over_candidate_max": 0.9634139996659613,
+            "pairs": 15,
+            "round_medians": [
+              0.952773087912612,
+              0.9557477311538755,
+              0.9513983720653469
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 31981.77109375,
+            "candidate_ns_per_document": 31893.3265625,
+            "baseline_over_candidate_median": 1.0021527298464301,
+            "baseline_over_candidate_min": 0.9895764637647273,
+            "baseline_over_candidate_max": 1.0096021230978829,
+            "pairs": 15,
+            "round_medians": [
+              1.0021527298464301,
+              0.999265906302053,
+              1.003668005057679
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 3560.199129971591,
+            "candidate_ns_per_document": 3034.239760315534,
+            "baseline_over_candidate_median": 1.1725603361861252,
+            "baseline_over_candidate_min": 1.149901649686877,
+            "baseline_over_candidate_max": 1.1825919874076862,
+            "pairs": 15,
+            "round_medians": [
+              1.1749589877155626,
+              1.1548207509628439,
+              1.1777616713624202
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 3560.199129971591,
+            "candidate_ns_per_document": 3034.239760315534,
+            "baseline_over_candidate_median": 1.1725603361861252,
+            "baseline_over_candidate_min": 1.149901649686877,
+            "baseline_over_candidate_max": 1.1825919874076862,
+            "pairs": 15,
+            "round_medians": [
+              1.1749589877155626,
+              1.1548207509628439,
+              1.1777616713624202
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 31981.77109375,
+            "candidate_ns_per_document": 31893.3265625,
+            "baseline_over_candidate_median": 1.0021527298464301,
+            "baseline_over_candidate_min": 0.9895764637647273,
+            "baseline_over_candidate_max": 1.0096021230978829,
+            "pairs": 15,
+            "round_medians": [
+              1.0021527298464301,
+              0.999265906302053,
+              1.003668005057679
+            ]
+          },
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 423.1264065143824,
+            "candidate_ns_per_document": 444.550320056899,
+            "baseline_over_candidate_median": 0.952773087912612,
+            "baseline_over_candidate_min": 0.9398124725594276,
+            "baseline_over_candidate_max": 0.9634139996659613,
+            "pairs": 15,
+            "round_medians": [
+              0.952773087912612,
+              0.9557477311538755,
+              0.9513983720653469
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 3,
+        "geometric_mean": 1.0553903049059488,
+        "round_geometric_means": [
+          1.055633350636242,
+          1.0552636170611203,
+          1.056498050356219
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 391.65989191729324,
+            "candidate_ns_per_document": 403.7009101549887,
+            "baseline_over_candidate_median": 0.9701035830390468,
+            "baseline_over_candidate_min": 0.958014489709579,
+            "baseline_over_candidate_max": 0.9805865777462373,
+            "pairs": 15,
+            "round_medians": [
+              0.972138436055768,
+              0.9701035830390468,
+              0.9662767015660773
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 29548.691860465115,
+            "candidate_ns_per_document": 29422.571220930233,
+            "baseline_over_candidate_median": 1.0044376755399798,
+            "baseline_over_candidate_min": 0.9717232870633743,
+            "baseline_over_candidate_max": 1.0173087305211175,
+            "pairs": 15,
+            "round_medians": [
+              1.0044376755399798,
+              1.0040760043095864,
+              1.0086759794096931
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 3064.571231617647,
+            "candidate_ns_per_document": 2540.2721855983773,
+            "baseline_over_candidate_median": 1.2064190823675638,
+            "baseline_over_candidate_min": 1.1962959257504913,
+            "baseline_over_candidate_max": 1.2181149784149872,
+            "pairs": 15,
+            "round_medians": [
+              1.204725764985872,
+              1.2064190823675638,
+              1.2099095732165648
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 3064.571231617647,
+            "candidate_ns_per_document": 2540.2721855983773,
+            "baseline_over_candidate_median": 1.2064190823675638,
+            "baseline_over_candidate_min": 1.1962959257504913,
+            "baseline_over_candidate_max": 1.2181149784149872,
+            "pairs": 15,
+            "round_medians": [
+              1.204725764985872,
+              1.2064190823675638,
+              1.2099095732165648
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 29548.691860465115,
+            "candidate_ns_per_document": 29422.571220930233,
+            "baseline_over_candidate_median": 1.0044376755399798,
+            "baseline_over_candidate_min": 0.9717232870633743,
+            "baseline_over_candidate_max": 1.0173087305211175,
+            "pairs": 15,
+            "round_medians": [
+              1.0044376755399798,
+              1.0040760043095864,
+              1.0086759794096931
+            ]
+          },
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 391.65989191729324,
+            "candidate_ns_per_document": 403.7009101549887,
+            "baseline_over_candidate_median": 0.9701035830390468,
+            "baseline_over_candidate_min": 0.958014489709579,
+            "baseline_over_candidate_max": 0.9805865777462373,
+            "pairs": 15,
+            "round_medians": [
+              0.972138436055768,
+              0.9701035830390468,
+              0.9662767015660773
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 3,
+        "geometric_mean": 1.006153684501154,
+        "round_geometric_means": [
+          1.0046551991772428,
+          1.0068856985857362,
+          1.0059044235404386
+        ],
+        "measured_above_1": 3,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 2460.863188976378,
+            "candidate_ns_per_document": 2449.720768101761,
+            "baseline_over_candidate_median": 1.0009934436964723,
+            "baseline_over_candidate_min": 0.9883248021480057,
+            "baseline_over_candidate_max": 1.018466317619832,
+            "pairs": 15,
+            "round_medians": [
+              0.9979504300704035,
+              1.0028419164004074,
+              0.999895928205397
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 477.6014849121467,
+            "candidate_ns_per_document": 476.0735910129475,
+            "baseline_over_candidate_median": 1.0042206596399867,
+            "baseline_over_candidate_min": 0.9955028796875459,
+            "baseline_over_candidate_max": 1.0121148327513174,
+            "pairs": 15,
+            "round_medians": [
+              1.0023281365475707,
+              1.0052861500646741,
+              1.0042206596399867
+            ]
+          },
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 40.06916530435619,
+            "candidate_ns_per_document": 39.544021464047326,
+            "baseline_over_candidate_median": 1.0132872568611677,
+            "baseline_over_candidate_min": 0.9881723992520847,
+            "baseline_over_candidate_max": 1.0285680610210401,
+            "pairs": 15,
+            "round_medians": [
+              1.0137531505697874,
+              1.0125543403867734,
+              1.0136457466002078
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 40.06916530435619,
+            "candidate_ns_per_document": 39.544021464047326,
+            "baseline_over_candidate_median": 1.0132872568611677,
+            "baseline_over_candidate_min": 0.9881723992520847,
+            "baseline_over_candidate_max": 1.0285680610210401,
+            "pairs": 15,
+            "round_medians": [
+              1.0137531505697874,
+              1.0125543403867734,
+              1.0136457466002078
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 477.6014849121467,
+            "candidate_ns_per_document": 476.0735910129475,
+            "baseline_over_candidate_median": 1.0042206596399867,
+            "baseline_over_candidate_min": 0.9955028796875459,
+            "baseline_over_candidate_max": 1.0121148327513174,
+            "pairs": 15,
+            "round_medians": [
+              1.0023281365475707,
+              1.0052861500646741,
+              1.0042206596399867
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 2460.863188976378,
+            "candidate_ns_per_document": 2449.720768101761,
+            "baseline_over_candidate_median": 1.0009934436964723,
+            "baseline_over_candidate_min": 0.9883248021480057,
+            "baseline_over_candidate_max": 1.018466317619832,
+            "pairs": 15,
+            "round_medians": [
+              0.9979504300704035,
+              1.0028419164004074,
+              0.999895928205397
+            ]
+          }
+        ]
+      }
+    },
+    "reference": {
+      "fresh": {
+        "cases": 2,
+        "geometric_mean": 1.0551219434054226,
+        "round_geometric_means": [
+          1.0269270287225434,
+          1.0421808485415203,
+          1.0704371882719497
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 41279.905241935485,
+            "candidate_ns_per_document": 40174.8447265625,
+            "baseline_over_candidate_median": 1.0228310356047035,
+            "baseline_over_candidate_min": 0.935441211294876,
+            "baseline_over_candidate_max": 1.0924276444648384,
+            "pairs": 15,
+            "round_medians": [
+              0.9750279923642536,
+              0.9998791257361614,
+              1.0493962653138211
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 52206.705729166664,
+            "candidate_ns_per_document": 48116.286057692305,
+            "baseline_over_candidate_median": 1.0884322793328782,
+            "baseline_over_candidate_min": 1.0464601610144337,
+            "baseline_over_candidate_max": 1.1302795947928297,
+            "pairs": 15,
+            "round_medians": [
+              1.0815885601025275,
+              1.0862722234220576,
+              1.091899992318818
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 52206.705729166664,
+            "candidate_ns_per_document": 48116.286057692305,
+            "baseline_over_candidate_median": 1.0884322793328782,
+            "baseline_over_candidate_min": 1.0464601610144337,
+            "baseline_over_candidate_max": 1.1302795947928297,
+            "pairs": 15,
+            "round_medians": [
+              1.0815885601025275,
+              1.0862722234220576,
+              1.091899992318818
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 41279.905241935485,
+            "candidate_ns_per_document": 40174.8447265625,
+            "baseline_over_candidate_median": 1.0228310356047035,
+            "baseline_over_candidate_min": 0.935441211294876,
+            "baseline_over_candidate_max": 1.0924276444648384,
+            "pairs": 15,
+            "round_medians": [
+              0.9750279923642536,
+              0.9998791257361614,
+              1.0493962653138211
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 2,
+        "geometric_mean": 1.0682260307378941,
+        "round_geometric_means": [
+          1.0496643089467037,
+          1.0676480369029706,
+          1.07160069605987
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 40810.18951612903,
+            "candidate_ns_per_document": 38710.34564393939,
+            "baseline_over_candidate_median": 1.0498508694427202,
+            "baseline_over_candidate_min": 0.930622048590173,
+            "baseline_over_candidate_max": 1.1217779382252384,
+            "pairs": 15,
+            "round_medians": [
+              1.0136829915974472,
+              1.0464350573830177,
+              1.0643121025765332
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 51459.21875,
+            "candidate_ns_per_document": 47119.26157407407,
+            "baseline_over_candidate_median": 1.0869228058569467,
+            "baseline_over_candidate_min": 0.9925063266651674,
+            "baseline_over_candidate_max": 1.496332324283902,
+            "pairs": 15,
+            "round_medians": [
+              1.0869228058569467,
+              1.0892910388088701,
+              1.0789392030928477
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 51459.21875,
+            "candidate_ns_per_document": 47119.26157407407,
+            "baseline_over_candidate_median": 1.0869228058569467,
+            "baseline_over_candidate_min": 0.9925063266651674,
+            "baseline_over_candidate_max": 1.496332324283902,
+            "pairs": 15,
+            "round_medians": [
+              1.0869228058569467,
+              1.0892910388088701,
+              1.0789392030928477
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 40810.18951612903,
+            "candidate_ns_per_document": 38710.34564393939,
+            "baseline_over_candidate_median": 1.0498508694427202,
+            "baseline_over_candidate_min": 0.930622048590173,
+            "baseline_over_candidate_max": 1.1217779382252384,
+            "pairs": 15,
+            "round_medians": [
+              1.0136829915974472,
+              1.0464350573830177,
+              1.0643121025765332
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 2,
+        "geometric_mean": 1.0391239404138206,
+        "round_geometric_means": [
+          1.0361640151480487,
+          1.0513773436415939,
+          1.044185389210873
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 21039.279166666667,
+            "candidate_ns_per_document": 21162.434895833332,
+            "baseline_over_candidate_median": 0.9890576073122106,
+            "baseline_over_candidate_min": 0.9697172122160737,
+            "baseline_over_candidate_max": 1.0318663717613752,
+            "pairs": 15,
+            "round_medians": [
+              0.9835352000585996,
+              0.999627152788506,
+              1.0000586017614777
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 31329.3296875,
+            "candidate_ns_per_document": 28706.173295454544,
+            "baseline_over_candidate_median": 1.0917246432950165,
+            "baseline_over_candidate_min": 1.0656865289977837,
+            "baseline_over_candidate_max": 1.115363278728343,
+            "pairs": 15,
+            "round_medians": [
+              1.0916089899210093,
+              1.1058066156359454,
+              1.0902592359297696
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 31329.3296875,
+            "candidate_ns_per_document": 28706.173295454544,
+            "baseline_over_candidate_median": 1.0917246432950165,
+            "baseline_over_candidate_min": 1.0656865289977837,
+            "baseline_over_candidate_max": 1.115363278728343,
+            "pairs": 15,
+            "round_medians": [
+              1.0916089899210093,
+              1.1058066156359454,
+              1.0902592359297696
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 21039.279166666667,
+            "candidate_ns_per_document": 21162.434895833332,
+            "baseline_over_candidate_median": 0.9890576073122106,
+            "baseline_over_candidate_min": 0.9697172122160737,
+            "baseline_over_candidate_max": 1.0318663717613752,
+            "pairs": 15,
+            "round_medians": [
+              0.9835352000585996,
+              0.999627152788506,
+              1.0000586017614777
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 2,
+        "geometric_mean": 1.0301816631933947,
+        "round_geometric_means": [
+          1.044093743838464,
+          1.0190410824605685,
+          1.0303054790703239
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 15968.79944620253,
+            "candidate_ns_per_document": 15471.305941358025,
+            "baseline_over_candidate_median": 1.02569244970788,
+            "baseline_over_candidate_min": 1.0078002605241894,
+            "baseline_over_candidate_max": 1.056913015634913,
+            "pairs": 15,
+            "round_medians": [
+              1.0406275121523219,
+              1.019100713304226,
+              1.02569244970788
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 16166.683493589744,
+            "candidate_ns_per_document": 15620.900848765432,
+            "baseline_over_candidate_median": 1.0346905249055527,
+            "baseline_over_candidate_min": 1.002515877418759,
+            "baseline_over_candidate_max": 1.3685502291072784,
+            "pairs": 15,
+            "round_medians": [
+              1.0475715212140695,
+              1.0189814551061025,
+              1.0349392554314463
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 16166.683493589744,
+            "candidate_ns_per_document": 15620.900848765432,
+            "baseline_over_candidate_median": 1.0346905249055527,
+            "baseline_over_candidate_min": 1.002515877418759,
+            "baseline_over_candidate_max": 1.3685502291072784,
+            "pairs": 15,
+            "round_medians": [
+              1.0475715212140695,
+              1.0189814551061025,
+              1.0349392554314463
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 15968.79944620253,
+            "candidate_ns_per_document": 15471.305941358025,
+            "baseline_over_candidate_median": 1.02569244970788,
+            "baseline_over_candidate_min": 1.0078002605241894,
+            "baseline_over_candidate_max": 1.056913015634913,
+            "pairs": 15,
+            "round_medians": [
+              1.0406275121523219,
+              1.019100713304226,
+              1.02569244970788
+            ]
+          }
+        ]
+      }
+    },
+    "technical-docs": {
+      "fresh": {
+        "cases": 2,
+        "geometric_mean": 1.0869450889807037,
+        "round_geometric_means": [
+          1.0823936515885009,
+          1.0865936714022306,
+          1.0871162871772968
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 12617.6690625,
+            "candidate_ns_per_document": 12643.991792929293,
+            "baseline_over_candidate_median": 0.9967302495038537,
+            "baseline_over_candidate_min": 0.9720345926154218,
+            "baseline_over_candidate_max": 1.0105443305747672,
+            "pairs": 15,
+            "round_medians": [
+              0.9889086039316434,
+              0.9988619388489431,
+              0.9949430393214896
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 17072.47677364865,
+            "candidate_ns_per_document": 14464.888649425287,
+            "baseline_over_candidate_median": 1.1853253445928473,
+            "baseline_over_candidate_min": 1.171709046290644,
+            "baseline_over_candidate_max": 1.2085590776905835,
+            "pairs": 15,
+            "round_medians": [
+              1.1847161733058114,
+              1.1820310303263368,
+              1.1878286244930212
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 17072.47677364865,
+            "candidate_ns_per_document": 14464.888649425287,
+            "baseline_over_candidate_median": 1.1853253445928473,
+            "baseline_over_candidate_min": 1.171709046290644,
+            "baseline_over_candidate_max": 1.2085590776905835,
+            "pairs": 15,
+            "round_medians": [
+              1.1847161733058114,
+              1.1820310303263368,
+              1.1878286244930212
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 12617.6690625,
+            "candidate_ns_per_document": 12643.991792929293,
+            "baseline_over_candidate_median": 0.9967302495038537,
+            "baseline_over_candidate_min": 0.9720345926154218,
+            "baseline_over_candidate_max": 1.0105443305747672,
+            "pairs": 15,
+            "round_medians": [
+              0.9889086039316434,
+              0.9988619388489431,
+              0.9949430393214896
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 2,
+        "geometric_mean": 1.095884924625236,
+        "round_geometric_means": [
+          1.0947263208082558,
+          1.0939998789673493,
+          1.1017894941393878
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 12382.263480392157,
+            "candidate_ns_per_document": 12363.12806372549,
+            "baseline_over_candidate_median": 1.0010031800345898,
+            "baseline_over_candidate_min": 0.9901684717602889,
+            "baseline_over_candidate_max": 1.037462487425361,
+            "pairs": 15,
+            "round_medians": [
+              0.9988877151556578,
+              1.0010031800345898,
+              1.0103193005798925
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 16545.744243421053,
+            "candidate_ns_per_document": 13792.196085164835,
+            "baseline_over_candidate_median": 1.1997601925493981,
+            "baseline_over_candidate_min": 1.183117753078658,
+            "baseline_over_candidate_max": 1.20923448880043,
+            "pairs": 15,
+            "round_medians": [
+              1.1997601925493981,
+              1.1956362967190757,
+              1.2015410263855826
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 16545.744243421053,
+            "candidate_ns_per_document": 13792.196085164835,
+            "baseline_over_candidate_median": 1.1997601925493981,
+            "baseline_over_candidate_min": 1.183117753078658,
+            "baseline_over_candidate_max": 1.20923448880043,
+            "pairs": 15,
+            "round_medians": [
+              1.1997601925493981,
+              1.1956362967190757,
+              1.2015410263855826
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 12382.263480392157,
+            "candidate_ns_per_document": 12363.12806372549,
+            "baseline_over_candidate_median": 1.0010031800345898,
+            "baseline_over_candidate_min": 0.9901684717602889,
+            "baseline_over_candidate_max": 1.037462487425361,
+            "pairs": 15,
+            "round_medians": [
+              0.9988877151556578,
+              1.0010031800345898,
+              1.0103193005798925
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 2,
+        "geometric_mean": 1.1093384848804715,
+        "round_geometric_means": [
+          1.1111709554836608,
+          1.0984043534465722,
+          1.1121754683583958
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 9930.875992063493,
+            "candidate_ns_per_document": 9926.734744094489,
+            "baseline_over_candidate_median": 0.9930382122724777,
+            "baseline_over_candidate_min": 0.958148859637611,
+            "baseline_over_candidate_max": 1.0138526040233302,
+            "pairs": 15,
+            "round_medians": [
+              0.9946867245657569,
+              0.9817429979697664,
+              0.9981238293068242
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 14216.102176966293,
+            "candidate_ns_per_document": 11500.047878440368,
+            "baseline_over_candidate_median": 1.2392593344627805,
+            "baseline_over_candidate_min": 1.2157384016707717,
+            "baseline_over_candidate_max": 1.2522306635933247,
+            "pairs": 15,
+            "round_medians": [
+              1.2412962411351134,
+              1.228928677021781,
+              1.2392593344627805
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 14216.102176966293,
+            "candidate_ns_per_document": 11500.047878440368,
+            "baseline_over_candidate_median": 1.2392593344627805,
+            "baseline_over_candidate_min": 1.2157384016707717,
+            "baseline_over_candidate_max": 1.2522306635933247,
+            "pairs": 15,
+            "round_medians": [
+              1.2412962411351134,
+              1.228928677021781,
+              1.2392593344627805
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 9930.875992063493,
+            "candidate_ns_per_document": 9926.734744094489,
+            "baseline_over_candidate_median": 0.9930382122724777,
+            "baseline_over_candidate_min": 0.958148859637611,
+            "baseline_over_candidate_max": 1.0138526040233302,
+            "pairs": 15,
+            "round_medians": [
+              0.9946867245657569,
+              0.9817429979697664,
+              0.9981238293068242
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 2,
+        "geometric_mean": 1.0088256839998044,
+        "round_geometric_means": [
+          1.0053781389480083,
+          1.0084590141565686,
+          1.0121430948807293
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2268.6490036231885,
+            "candidate_ns_per_document": 2260.440212477396,
+            "baseline_over_candidate_median": 1.0080553076089258,
+            "baseline_over_candidate_min": 0.9915585633817325,
+            "baseline_over_candidate_max": 1.0133372999119994,
+            "pairs": 15,
+            "round_medians": [
+              1.0017343382643868,
+              1.0080553076089258,
+              1.0100345006244957
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2362.5982311320754,
+            "candidate_ns_per_document": 2338.0525116822428,
+            "baseline_over_candidate_median": 1.0095966491280064,
+            "baseline_over_candidate_min": 0.9989325591902588,
+            "baseline_over_candidate_max": 1.0487695022071324,
+            "pairs": 15,
+            "round_medians": [
+              1.0090351939276192,
+              1.0088628823808332,
+              1.01425609113485
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2362.5982311320754,
+            "candidate_ns_per_document": 2338.0525116822428,
+            "baseline_over_candidate_median": 1.0095966491280064,
+            "baseline_over_candidate_min": 0.9989325591902588,
+            "baseline_over_candidate_max": 1.0487695022071324,
+            "pairs": 15,
+            "round_medians": [
+              1.0090351939276192,
+              1.0088628823808332,
+              1.01425609113485
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2268.6490036231885,
+            "candidate_ns_per_document": 2260.440212477396,
+            "baseline_over_candidate_median": 1.0080553076089258,
+            "baseline_over_candidate_min": 0.9915585633817325,
+            "baseline_over_candidate_max": 1.0133372999119994,
+            "pairs": 15,
+            "round_medians": [
+              1.0017343382643868,
+              1.0080553076089258,
+              1.0100345006244957
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "sizes": {
+    "0..512": {
+      "fresh": {
+        "cases": 2,
+        "geometric_mean": 1.0579194183867104,
+        "round_geometric_means": [
+          1.0668951830028803,
+          1.0586824552450211,
+          1.0467123358274508
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 529.582830368488,
+            "candidate_ns_per_document": 551.24858079806,
+            "baseline_over_candidate_median": 0.9671372976121841,
+            "baseline_over_candidate_min": 0.9393150867563528,
+            "baseline_over_candidate_max": 1.0013479306419377,
+            "pairs": 15,
+            "round_medians": [
+              0.9725509220899059,
+              0.968532919100888,
+              0.9549245062030512
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 3843.733991564417,
+            "candidate_ns_per_document": 3311.7559523809523,
+            "baseline_over_candidate_median": 1.1572229698543433,
+            "baseline_over_candidate_min": 1.1389371473491865,
+            "baseline_over_candidate_max": 1.175773790637657,
+            "pairs": 15,
+            "round_medians": [
+              1.1703914989548736,
+              1.1572229698543433,
+              1.1473228583583894
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 3843.733991564417,
+            "candidate_ns_per_document": 3311.7559523809523,
+            "baseline_over_candidate_median": 1.1572229698543433,
+            "baseline_over_candidate_min": 1.1389371473491865,
+            "baseline_over_candidate_max": 1.175773790637657,
+            "pairs": 15,
+            "round_medians": [
+              1.1703914989548736,
+              1.1572229698543433,
+              1.1473228583583894
+            ]
+          },
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 529.582830368488,
+            "candidate_ns_per_document": 551.24858079806,
+            "baseline_over_candidate_median": 0.9671372976121841,
+            "baseline_over_candidate_min": 0.9393150867563528,
+            "baseline_over_candidate_max": 1.0013479306419377,
+            "pairs": 15,
+            "round_medians": [
+              0.9725509220899059,
+              0.968532919100888,
+              0.9549245062030512
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 2,
+        "geometric_mean": 1.0569692201156593,
+        "round_geometric_means": [
+          1.0580497639035855,
+          1.0505795127557707,
+          1.0585464263862823
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 423.1264065143824,
+            "candidate_ns_per_document": 444.550320056899,
+            "baseline_over_candidate_median": 0.952773087912612,
+            "baseline_over_candidate_min": 0.9398124725594276,
+            "baseline_over_candidate_max": 0.9634139996659613,
+            "pairs": 15,
+            "round_medians": [
+              0.952773087912612,
+              0.9557477311538755,
+              0.9513983720653469
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 3560.199129971591,
+            "candidate_ns_per_document": 3034.239760315534,
+            "baseline_over_candidate_median": 1.1725603361861252,
+            "baseline_over_candidate_min": 1.149901649686877,
+            "baseline_over_candidate_max": 1.1825919874076862,
+            "pairs": 15,
+            "round_medians": [
+              1.1749589877155626,
+              1.1548207509628439,
+              1.1777616713624202
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 3560.199129971591,
+            "candidate_ns_per_document": 3034.239760315534,
+            "baseline_over_candidate_median": 1.1725603361861252,
+            "baseline_over_candidate_min": 1.149901649686877,
+            "baseline_over_candidate_max": 1.1825919874076862,
+            "pairs": 15,
+            "round_medians": [
+              1.1749589877155626,
+              1.1548207509628439,
+              1.1777616713624202
+            ]
+          },
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 423.1264065143824,
+            "candidate_ns_per_document": 444.550320056899,
+            "baseline_over_candidate_median": 0.952773087912612,
+            "baseline_over_candidate_min": 0.9398124725594276,
+            "baseline_over_candidate_max": 0.9634139996659613,
+            "pairs": 15,
+            "round_medians": [
+              0.952773087912612,
+              0.9557477311538755,
+              0.9513983720653469
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 2,
+        "geometric_mean": 1.0818278395620315,
+        "round_geometric_means": [
+          1.0822015621174526,
+          1.0818278395620315,
+          1.0812527140317025
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 391.65989191729324,
+            "candidate_ns_per_document": 403.7009101549887,
+            "baseline_over_candidate_median": 0.9701035830390468,
+            "baseline_over_candidate_min": 0.958014489709579,
+            "baseline_over_candidate_max": 0.9805865777462373,
+            "pairs": 15,
+            "round_medians": [
+              0.972138436055768,
+              0.9701035830390468,
+              0.9662767015660773
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 3064.571231617647,
+            "candidate_ns_per_document": 2540.2721855983773,
+            "baseline_over_candidate_median": 1.2064190823675638,
+            "baseline_over_candidate_min": 1.1962959257504913,
+            "baseline_over_candidate_max": 1.2181149784149872,
+            "pairs": 15,
+            "round_medians": [
+              1.204725764985872,
+              1.2064190823675638,
+              1.2099095732165648
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 3064.571231617647,
+            "candidate_ns_per_document": 2540.2721855983773,
+            "baseline_over_candidate_median": 1.2064190823675638,
+            "baseline_over_candidate_min": 1.1962959257504913,
+            "baseline_over_candidate_max": 1.2181149784149872,
+            "pairs": 15,
+            "round_medians": [
+              1.204725764985872,
+              1.2064190823675638,
+              1.2099095732165648
+            ]
+          },
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 391.65989191729324,
+            "candidate_ns_per_document": 403.7009101549887,
+            "baseline_over_candidate_median": 0.9701035830390468,
+            "baseline_over_candidate_min": 0.958014489709579,
+            "baseline_over_candidate_max": 0.9805865777462373,
+            "pairs": 15,
+            "round_medians": [
+              0.972138436055768,
+              0.9701035830390468,
+              0.9662767015660773
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 2,
+        "geometric_mean": 1.0087437719708183,
+        "round_geometric_means": [
+          1.008024457208179,
+          1.0089137002631567,
+          1.0089221973433469
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 477.6014849121467,
+            "candidate_ns_per_document": 476.0735910129475,
+            "baseline_over_candidate_median": 1.0042206596399867,
+            "baseline_over_candidate_min": 0.9955028796875459,
+            "baseline_over_candidate_max": 1.0121148327513174,
+            "pairs": 15,
+            "round_medians": [
+              1.0023281365475707,
+              1.0052861500646741,
+              1.0042206596399867
+            ]
+          },
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 40.06916530435619,
+            "candidate_ns_per_document": 39.544021464047326,
+            "baseline_over_candidate_median": 1.0132872568611677,
+            "baseline_over_candidate_min": 0.9881723992520847,
+            "baseline_over_candidate_max": 1.0285680610210401,
+            "pairs": 15,
+            "round_medians": [
+              1.0137531505697874,
+              1.0125543403867734,
+              1.0136457466002078
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "scan-short-reference",
+            "profile": "commonmark",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 40.06916530435619,
+            "candidate_ns_per_document": 39.544021464047326,
+            "baseline_over_candidate_median": 1.0132872568611677,
+            "baseline_over_candidate_min": 0.9881723992520847,
+            "baseline_over_candidate_max": 1.0285680610210401,
+            "pairs": 15,
+            "round_medians": [
+              1.0137531505697874,
+              1.0125543403867734,
+              1.0136457466002078
+            ]
+          },
+          {
+            "case": "scan-extension-links",
+            "profile": "extensions",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 477.6014849121467,
+            "candidate_ns_per_document": 476.0735910129475,
+            "baseline_over_candidate_median": 1.0042206596399867,
+            "baseline_over_candidate_min": 0.9955028796875459,
+            "baseline_over_candidate_max": 1.0121148327513174,
+            "pairs": 15,
+            "round_medians": [
+              1.0023281365475707,
+              1.0052861500646741,
+              1.0042206596399867
+            ]
+          }
+        ]
+      }
+    },
+    "513..2048": {
+      "fresh": {
+        "cases": 2,
+        "geometric_mean": 1.146955550413971,
+        "round_geometric_means": [
+          1.155139012387146,
+          1.1321460990372618,
+          1.142367268266474
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1231.0672674704724,
+            "candidate_ns_per_document": 1237.0023491592483,
+            "baseline_over_candidate_median": 1.0006374476695514,
+            "baseline_over_candidate_min": 0.9657532339041824,
+            "baseline_over_candidate_max": 1.0436923512945333,
+            "pairs": 15,
+            "round_medians": [
+              1.0130061056102095,
+              0.9745094398772043,
+              1.0006374476695514
+            ]
+          },
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1807.7338330924856,
+            "candidate_ns_per_document": 1378.4913519845645,
+            "baseline_over_candidate_median": 1.3146690019339007,
+            "baseline_over_candidate_min": 1.282611524111695,
+            "baseline_over_candidate_max": 1.322977596021551,
+            "pairs": 15,
+            "round_medians": [
+              1.317214309517882,
+              1.315282066150945,
+              1.3041716344375391
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1807.7338330924856,
+            "candidate_ns_per_document": 1378.4913519845645,
+            "baseline_over_candidate_median": 1.3146690019339007,
+            "baseline_over_candidate_min": 1.282611524111695,
+            "baseline_over_candidate_max": 1.322977596021551,
+            "pairs": 15,
+            "round_medians": [
+              1.317214309517882,
+              1.315282066150945,
+              1.3041716344375391
+            ]
+          },
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1231.0672674704724,
+            "candidate_ns_per_document": 1237.0023491592483,
+            "baseline_over_candidate_median": 1.0006374476695514,
+            "baseline_over_candidate_min": 0.9657532339041824,
+            "baseline_over_candidate_max": 1.0436923512945333,
+            "pairs": 15,
+            "round_medians": [
+              1.0130061056102095,
+              0.9745094398772043,
+              1.0006374476695514
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 2,
+        "geometric_mean": 1.1615060966618285,
+        "round_geometric_means": [
+          1.1506801400643953,
+          1.1586914397311177,
+          1.162430078343449
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1077.4666774332472,
+            "candidate_ns_per_document": 1070.3760434503424,
+            "baseline_over_candidate_median": 1.0053307209047937,
+            "baseline_over_candidate_min": 0.9927286710752993,
+            "baseline_over_candidate_max": 1.0237578506208695,
+            "pairs": 15,
+            "round_medians": [
+              0.9996391961266771,
+              1.0053307209047937,
+              1.0062299615296604
+            ]
+          },
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1639.1983535386632,
+            "candidate_ns_per_document": 1226.9215529931305,
+            "baseline_over_candidate_median": 1.341942889568137,
+            "baseline_over_candidate_min": 1.3060828686499997,
+            "baseline_over_candidate_max": 1.3805562004357121,
+            "pairs": 15,
+            "round_medians": [
+              1.324542684869699,
+              1.3354469574926213,
+              1.3428776111808578
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1639.1983535386632,
+            "candidate_ns_per_document": 1226.9215529931305,
+            "baseline_over_candidate_median": 1.341942889568137,
+            "baseline_over_candidate_min": 1.3060828686499997,
+            "baseline_over_candidate_max": 1.3805562004357121,
+            "pairs": 15,
+            "round_medians": [
+              1.324542684869699,
+              1.3354469574926213,
+              1.3428776111808578
+            ]
+          },
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1077.4666774332472,
+            "candidate_ns_per_document": 1070.3760434503424,
+            "baseline_over_candidate_median": 1.0053307209047937,
+            "baseline_over_candidate_min": 0.9927286710752993,
+            "baseline_over_candidate_max": 1.0237578506208695,
+            "pairs": 15,
+            "round_medians": [
+              0.9996391961266771,
+              1.0053307209047937,
+              1.0062299615296604
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 2,
+        "geometric_mean": 1.2064206506309105,
+        "round_geometric_means": [
+          1.2084034105487937,
+          1.2061530242343357,
+          1.203652087578349
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 777.8344605099503,
+            "candidate_ns_per_document": 773.4970817872604,
+            "baseline_over_candidate_median": 1.0067786141219142,
+            "baseline_over_candidate_min": 0.9927578862195547,
+            "baseline_over_candidate_max": 1.0246355483479472,
+            "pairs": 15,
+            "round_medians": [
+              1.0061997465773769,
+              1.0080012660285618,
+              1.0020848173685357
+            ]
+          },
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 1335.3163353788686,
+            "candidate_ns_per_document": 923.2347904357459,
+            "baseline_over_candidate_median": 1.4456512741265521,
+            "baseline_over_candidate_min": 1.4108883644951538,
+            "baseline_over_candidate_max": 1.4646308699681967,
+            "pairs": 15,
+            "round_medians": [
+              1.4512414732691088,
+              1.4432572328023363,
+              1.4457641936300305
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 1335.3163353788686,
+            "candidate_ns_per_document": 923.2347904357459,
+            "baseline_over_candidate_median": 1.4456512741265521,
+            "baseline_over_candidate_min": 1.4108883644951538,
+            "baseline_over_candidate_max": 1.4646308699681967,
+            "pairs": 15,
+            "round_medians": [
+              1.4512414732691088,
+              1.4432572328023363,
+              1.4457641936300305
+            ]
+          },
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 777.8344605099503,
+            "candidate_ns_per_document": 773.4970817872604,
+            "baseline_over_candidate_median": 1.0067786141219142,
+            "baseline_over_candidate_min": 0.9927578862195547,
+            "baseline_over_candidate_max": 1.0246355483479472,
+            "pairs": 15,
+            "round_medians": [
+              1.0061997465773769,
+              1.0080012660285618,
+              1.0020848173685357
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 2,
+        "geometric_mean": 0.9944179617677645,
+        "round_geometric_means": [
+          0.9956325703441691,
+          0.9930942053065873,
+          0.9973768536471157
+        ],
+        "measured_above_1": 0,
+        "measured_below_1": 2,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 283.5093112244898,
+            "candidate_ns_per_document": 284.8201255980861,
+            "baseline_over_candidate_median": 0.9939994570441077,
+            "baseline_over_candidate_min": 0.9856245868411669,
+            "baseline_over_candidate_max": 1.011596250513734,
+            "pairs": 15,
+            "round_medians": [
+              0.9913523624427105,
+              0.9923735227202555,
+              0.9965144643058932
+            ]
+          },
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 283.71851594416705,
+            "candidate_ns_per_document": 285.0232486890105,
+            "baseline_over_candidate_median": 0.9948366426949418,
+            "baseline_over_candidate_min": 0.9730120349291959,
+            "baseline_over_candidate_max": 1.0094353732438561,
+            "pairs": 15,
+            "round_medians": [
+              0.999931258233545,
+              0.9938154112678161,
+              0.9982399893050276
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-incident",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 283.71851594416705,
+            "candidate_ns_per_document": 285.0232486890105,
+            "baseline_over_candidate_median": 0.9948366426949418,
+            "baseline_over_candidate_min": 0.9730120349291959,
+            "baseline_over_candidate_max": 1.0094353732438561,
+            "pairs": 15,
+            "round_medians": [
+              0.999931258233545,
+              0.9938154112678161,
+              0.9982399893050276
+            ]
+          },
+          {
+            "case": "comment-incident-nodef",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 283.5093112244898,
+            "candidate_ns_per_document": 284.8201255980861,
+            "baseline_over_candidate_median": 0.9939994570441077,
+            "baseline_over_candidate_min": 0.9856245868411669,
+            "baseline_over_candidate_max": 1.011596250513734,
+            "pairs": 15,
+            "round_medians": [
+              0.9913523624427105,
+              0.9923735227202555,
+              0.9965144643058932
+            ]
+          }
+        ]
+      }
+    },
+    "2049..16384": {
+      "fresh": {
+        "cases": 3,
+        "geometric_mean": 1.058015454072072,
+        "round_geometric_means": [
+          1.0572928396589745,
+          1.0577952354859936,
+          1.0568063676360326
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 12617.6690625,
+            "candidate_ns_per_document": 12643.991792929293,
+            "baseline_over_candidate_median": 0.9967302495038537,
+            "baseline_over_candidate_min": 0.9720345926154218,
+            "baseline_over_candidate_max": 1.0105443305747672,
+            "pairs": 15,
+            "round_medians": [
+              0.9889086039316434,
+              0.9988619388489431,
+              0.9949430393214896
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 32493.08894230769,
+            "candidate_ns_per_document": 32364.95112179487,
+            "baseline_over_candidate_median": 1.0024456247899685,
+            "baseline_over_candidate_min": 0.9817087265195431,
+            "baseline_over_candidate_max": 1.0155681086703876,
+            "pairs": 15,
+            "round_medians": [
+              1.0088239877342882,
+              1.0024679048804799,
+              0.998698182223295
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 17072.47677364865,
+            "candidate_ns_per_document": 14464.888649425287,
+            "baseline_over_candidate_median": 1.1853253445928473,
+            "baseline_over_candidate_min": 1.171709046290644,
+            "baseline_over_candidate_max": 1.2085590776905835,
+            "pairs": 15,
+            "round_medians": [
+              1.1847161733058114,
+              1.1820310303263368,
+              1.1878286244930212
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 17072.47677364865,
+            "candidate_ns_per_document": 14464.888649425287,
+            "baseline_over_candidate_median": 1.1853253445928473,
+            "baseline_over_candidate_min": 1.171709046290644,
+            "baseline_over_candidate_max": 1.2085590776905835,
+            "pairs": 15,
+            "round_medians": [
+              1.1847161733058114,
+              1.1820310303263368,
+              1.1878286244930212
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "fresh",
+            "baseline_ns_per_document": 32493.08894230769,
+            "candidate_ns_per_document": 32364.95112179487,
+            "baseline_over_candidate_median": 1.0024456247899685,
+            "baseline_over_candidate_min": 0.9817087265195431,
+            "baseline_over_candidate_max": 1.0155681086703876,
+            "pairs": 15,
+            "round_medians": [
+              1.0088239877342882,
+              1.0024679048804799,
+              0.998698182223295
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 12617.6690625,
+            "candidate_ns_per_document": 12643.991792929293,
+            "baseline_over_candidate_median": 0.9967302495038537,
+            "baseline_over_candidate_min": 0.9720345926154218,
+            "baseline_over_candidate_max": 1.0105443305747672,
+            "pairs": 15,
+            "round_medians": [
+              0.9889086039316434,
+              0.9988619388489431,
+              0.9949430393214896
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 3,
+        "geometric_mean": 1.0637051772830686,
+        "round_geometric_means": [
+          1.0629553235283429,
+          1.061463844854729,
+          1.0680603132227593
+        ],
+        "measured_above_1": 3,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 12382.263480392157,
+            "candidate_ns_per_document": 12363.12806372549,
+            "baseline_over_candidate_median": 1.0010031800345898,
+            "baseline_over_candidate_min": 0.9901684717602889,
+            "baseline_over_candidate_max": 1.037462487425361,
+            "pairs": 15,
+            "round_medians": [
+              0.9988877151556578,
+              1.0010031800345898,
+              1.0103193005798925
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 31981.77109375,
+            "candidate_ns_per_document": 31893.3265625,
+            "baseline_over_candidate_median": 1.0021527298464301,
+            "baseline_over_candidate_min": 0.9895764637647273,
+            "baseline_over_candidate_max": 1.0096021230978829,
+            "pairs": 15,
+            "round_medians": [
+              1.0021527298464301,
+              0.999265906302053,
+              1.003668005057679
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 16545.744243421053,
+            "candidate_ns_per_document": 13792.196085164835,
+            "baseline_over_candidate_median": 1.1997601925493981,
+            "baseline_over_candidate_min": 1.183117753078658,
+            "baseline_over_candidate_max": 1.20923448880043,
+            "pairs": 15,
+            "round_medians": [
+              1.1997601925493981,
+              1.1956362967190757,
+              1.2015410263855826
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 16545.744243421053,
+            "candidate_ns_per_document": 13792.196085164835,
+            "baseline_over_candidate_median": 1.1997601925493981,
+            "baseline_over_candidate_min": 1.183117753078658,
+            "baseline_over_candidate_max": 1.20923448880043,
+            "pairs": 15,
+            "round_medians": [
+              1.1997601925493981,
+              1.1956362967190757,
+              1.2015410263855826
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "reuse",
+            "baseline_ns_per_document": 31981.77109375,
+            "candidate_ns_per_document": 31893.3265625,
+            "baseline_over_candidate_median": 1.0021527298464301,
+            "baseline_over_candidate_min": 0.9895764637647273,
+            "baseline_over_candidate_max": 1.0096021230978829,
+            "pairs": 15,
+            "round_medians": [
+              1.0021527298464301,
+              0.999265906302053,
+              1.003668005057679
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 12382.263480392157,
+            "candidate_ns_per_document": 12363.12806372549,
+            "baseline_over_candidate_median": 1.0010031800345898,
+            "baseline_over_candidate_min": 0.9901684717602889,
+            "baseline_over_candidate_max": 1.037462487425361,
+            "pairs": 15,
+            "round_medians": [
+              0.9988877151556578,
+              1.0010031800345898,
+              1.0103193005798925
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 3,
+        "geometric_mean": 1.0732075466218418,
+        "round_geometric_means": [
+          1.074389079745161,
+          1.0660159263337587,
+          1.0765464352000649
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 9930.875992063493,
+            "candidate_ns_per_document": 9926.734744094489,
+            "baseline_over_candidate_median": 0.9930382122724777,
+            "baseline_over_candidate_min": 0.958148859637611,
+            "baseline_over_candidate_max": 1.0138526040233302,
+            "pairs": 15,
+            "round_medians": [
+              0.9946867245657569,
+              0.9817429979697664,
+              0.9981238293068242
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 29548.691860465115,
+            "candidate_ns_per_document": 29422.571220930233,
+            "baseline_over_candidate_median": 1.0044376755399798,
+            "baseline_over_candidate_min": 0.9717232870633743,
+            "baseline_over_candidate_max": 1.0173087305211175,
+            "pairs": 15,
+            "round_medians": [
+              1.0044376755399798,
+              1.0040760043095864,
+              1.0086759794096931
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 14216.102176966293,
+            "candidate_ns_per_document": 11500.047878440368,
+            "baseline_over_candidate_median": 1.2392593344627805,
+            "baseline_over_candidate_min": 1.2157384016707717,
+            "baseline_over_candidate_max": 1.2522306635933247,
+            "pairs": 15,
+            "round_medians": [
+              1.2412962411351134,
+              1.228928677021781,
+              1.2392593344627805
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 14216.102176966293,
+            "candidate_ns_per_document": 11500.047878440368,
+            "baseline_over_candidate_median": 1.2392593344627805,
+            "baseline_over_candidate_min": 1.2157384016707717,
+            "baseline_over_candidate_max": 1.2522306635933247,
+            "pairs": 15,
+            "round_medians": [
+              1.2412962411351134,
+              1.228928677021781,
+              1.2392593344627805
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "parse",
+            "baseline_ns_per_document": 29548.691860465115,
+            "candidate_ns_per_document": 29422.571220930233,
+            "baseline_over_candidate_median": 1.0044376755399798,
+            "baseline_over_candidate_min": 0.9717232870633743,
+            "baseline_over_candidate_max": 1.0173087305211175,
+            "pairs": 15,
+            "round_medians": [
+              1.0044376755399798,
+              1.0040760043095864,
+              1.0086759794096931
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 9930.875992063493,
+            "candidate_ns_per_document": 9926.734744094489,
+            "baseline_over_candidate_median": 0.9930382122724777,
+            "baseline_over_candidate_min": 0.958148859637611,
+            "baseline_over_candidate_max": 1.0138526040233302,
+            "pairs": 15,
+            "round_medians": [
+              0.9946867245657569,
+              0.9817429979697664,
+              0.9981238293068242
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 3,
+        "geometric_mean": 1.006208151569804,
+        "round_geometric_means": [
+          1.0028961135355963,
+          1.0065831610927511,
+          1.008044128446674
+        ],
+        "measured_above_1": 3,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 3,
+        "worst": [
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 2460.863188976378,
+            "candidate_ns_per_document": 2449.720768101761,
+            "baseline_over_candidate_median": 1.0009934436964723,
+            "baseline_over_candidate_min": 0.9883248021480057,
+            "baseline_over_candidate_max": 1.018466317619832,
+            "pairs": 15,
+            "round_medians": [
+              0.9979504300704035,
+              1.0028419164004074,
+              0.999895928205397
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2268.6490036231885,
+            "candidate_ns_per_document": 2260.440212477396,
+            "baseline_over_candidate_median": 1.0080553076089258,
+            "baseline_over_candidate_min": 0.9915585633817325,
+            "baseline_over_candidate_max": 1.0133372999119994,
+            "pairs": 15,
+            "round_medians": [
+              1.0017343382643868,
+              1.0080553076089258,
+              1.0100345006244957
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2362.5982311320754,
+            "candidate_ns_per_document": 2338.0525116822428,
+            "baseline_over_candidate_median": 1.0095966491280064,
+            "baseline_over_candidate_min": 0.9989325591902588,
+            "baseline_over_candidate_max": 1.0487695022071324,
+            "pairs": 15,
+            "round_medians": [
+              1.0090351939276192,
+              1.0088628823808332,
+              1.01425609113485
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction-nodef",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2362.5982311320754,
+            "candidate_ns_per_document": 2338.0525116822428,
+            "baseline_over_candidate_median": 1.0095966491280064,
+            "baseline_over_candidate_min": 0.9989325591902588,
+            "baseline_over_candidate_max": 1.0487695022071324,
+            "pairs": 15,
+            "round_medians": [
+              1.0090351939276192,
+              1.0088628823808332,
+              1.01425609113485
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2268.6490036231885,
+            "candidate_ns_per_document": 2260.440212477396,
+            "baseline_over_candidate_median": 1.0080553076089258,
+            "baseline_over_candidate_min": 0.9915585633817325,
+            "baseline_over_candidate_max": 1.0133372999119994,
+            "pairs": 15,
+            "round_medians": [
+              1.0017343382643868,
+              1.0080553076089258,
+              1.0100345006244957
+            ]
+          },
+          {
+            "case": "scan-long-references",
+            "profile": "gfm",
+            "category": "link-scan-diagnostic",
+            "mode": "render",
+            "baseline_ns_per_document": 2460.863188976378,
+            "candidate_ns_per_document": 2449.720768101761,
+            "baseline_over_candidate_median": 1.0009934436964723,
+            "baseline_over_candidate_min": 0.9883248021480057,
+            "baseline_over_candidate_max": 1.018466317619832,
+            "pairs": 15,
+            "round_medians": [
+              0.9979504300704035,
+              1.0028419164004074,
+              0.999895928205397
+            ]
+          }
+        ]
+      }
+    },
+    "16385..65536": {
+      "fresh": {
+        "cases": 2,
+        "geometric_mean": 1.0551219434054226,
+        "round_geometric_means": [
+          1.0269270287225434,
+          1.0421808485415203,
+          1.0704371882719497
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 41279.905241935485,
+            "candidate_ns_per_document": 40174.8447265625,
+            "baseline_over_candidate_median": 1.0228310356047035,
+            "baseline_over_candidate_min": 0.935441211294876,
+            "baseline_over_candidate_max": 1.0924276444648384,
+            "pairs": 15,
+            "round_medians": [
+              0.9750279923642536,
+              0.9998791257361614,
+              1.0493962653138211
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 52206.705729166664,
+            "candidate_ns_per_document": 48116.286057692305,
+            "baseline_over_candidate_median": 1.0884322793328782,
+            "baseline_over_candidate_min": 1.0464601610144337,
+            "baseline_over_candidate_max": 1.1302795947928297,
+            "pairs": 15,
+            "round_medians": [
+              1.0815885601025275,
+              1.0862722234220576,
+              1.091899992318818
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 52206.705729166664,
+            "candidate_ns_per_document": 48116.286057692305,
+            "baseline_over_candidate_median": 1.0884322793328782,
+            "baseline_over_candidate_min": 1.0464601610144337,
+            "baseline_over_candidate_max": 1.1302795947928297,
+            "pairs": 15,
+            "round_medians": [
+              1.0815885601025275,
+              1.0862722234220576,
+              1.091899992318818
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 41279.905241935485,
+            "candidate_ns_per_document": 40174.8447265625,
+            "baseline_over_candidate_median": 1.0228310356047035,
+            "baseline_over_candidate_min": 0.935441211294876,
+            "baseline_over_candidate_max": 1.0924276444648384,
+            "pairs": 15,
+            "round_medians": [
+              0.9750279923642536,
+              0.9998791257361614,
+              1.0493962653138211
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 2,
+        "geometric_mean": 1.0682260307378941,
+        "round_geometric_means": [
+          1.0496643089467037,
+          1.0676480369029706,
+          1.07160069605987
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 40810.18951612903,
+            "candidate_ns_per_document": 38710.34564393939,
+            "baseline_over_candidate_median": 1.0498508694427202,
+            "baseline_over_candidate_min": 0.930622048590173,
+            "baseline_over_candidate_max": 1.1217779382252384,
+            "pairs": 15,
+            "round_medians": [
+              1.0136829915974472,
+              1.0464350573830177,
+              1.0643121025765332
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 51459.21875,
+            "candidate_ns_per_document": 47119.26157407407,
+            "baseline_over_candidate_median": 1.0869228058569467,
+            "baseline_over_candidate_min": 0.9925063266651674,
+            "baseline_over_candidate_max": 1.496332324283902,
+            "pairs": 15,
+            "round_medians": [
+              1.0869228058569467,
+              1.0892910388088701,
+              1.0789392030928477
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 51459.21875,
+            "candidate_ns_per_document": 47119.26157407407,
+            "baseline_over_candidate_median": 1.0869228058569467,
+            "baseline_over_candidate_min": 0.9925063266651674,
+            "baseline_over_candidate_max": 1.496332324283902,
+            "pairs": 15,
+            "round_medians": [
+              1.0869228058569467,
+              1.0892910388088701,
+              1.0789392030928477
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 40810.18951612903,
+            "candidate_ns_per_document": 38710.34564393939,
+            "baseline_over_candidate_median": 1.0498508694427202,
+            "baseline_over_candidate_min": 0.930622048590173,
+            "baseline_over_candidate_max": 1.1217779382252384,
+            "pairs": 15,
+            "round_medians": [
+              1.0136829915974472,
+              1.0464350573830177,
+              1.0643121025765332
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 2,
+        "geometric_mean": 1.0391239404138206,
+        "round_geometric_means": [
+          1.0361640151480487,
+          1.0513773436415939,
+          1.044185389210873
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 21039.279166666667,
+            "candidate_ns_per_document": 21162.434895833332,
+            "baseline_over_candidate_median": 0.9890576073122106,
+            "baseline_over_candidate_min": 0.9697172122160737,
+            "baseline_over_candidate_max": 1.0318663717613752,
+            "pairs": 15,
+            "round_medians": [
+              0.9835352000585996,
+              0.999627152788506,
+              1.0000586017614777
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 31329.3296875,
+            "candidate_ns_per_document": 28706.173295454544,
+            "baseline_over_candidate_median": 1.0917246432950165,
+            "baseline_over_candidate_min": 1.0656865289977837,
+            "baseline_over_candidate_max": 1.115363278728343,
+            "pairs": 15,
+            "round_medians": [
+              1.0916089899210093,
+              1.1058066156359454,
+              1.0902592359297696
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 31329.3296875,
+            "candidate_ns_per_document": 28706.173295454544,
+            "baseline_over_candidate_median": 1.0917246432950165,
+            "baseline_over_candidate_min": 1.0656865289977837,
+            "baseline_over_candidate_max": 1.115363278728343,
+            "pairs": 15,
+            "round_medians": [
+              1.0916089899210093,
+              1.1058066156359454,
+              1.0902592359297696
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 21039.279166666667,
+            "candidate_ns_per_document": 21162.434895833332,
+            "baseline_over_candidate_median": 0.9890576073122106,
+            "baseline_over_candidate_min": 0.9697172122160737,
+            "baseline_over_candidate_max": 1.0318663717613752,
+            "pairs": 15,
+            "round_medians": [
+              0.9835352000585996,
+              0.999627152788506,
+              1.0000586017614777
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 2,
+        "geometric_mean": 1.0301816631933947,
+        "round_geometric_means": [
+          1.044093743838464,
+          1.0190410824605685,
+          1.0303054790703239
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 15968.79944620253,
+            "candidate_ns_per_document": 15471.305941358025,
+            "baseline_over_candidate_median": 1.02569244970788,
+            "baseline_over_candidate_min": 1.0078002605241894,
+            "baseline_over_candidate_max": 1.056913015634913,
+            "pairs": 15,
+            "round_medians": [
+              1.0406275121523219,
+              1.019100713304226,
+              1.02569244970788
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 16166.683493589744,
+            "candidate_ns_per_document": 15620.900848765432,
+            "baseline_over_candidate_median": 1.0346905249055527,
+            "baseline_over_candidate_min": 1.002515877418759,
+            "baseline_over_candidate_max": 1.3685502291072784,
+            "pairs": 15,
+            "round_medians": [
+              1.0475715212140695,
+              1.0189814551061025,
+              1.0349392554314463
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-advanced-types",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 16166.683493589744,
+            "candidate_ns_per_document": 15620.900848765432,
+            "baseline_over_candidate_median": 1.0346905249055527,
+            "baseline_over_candidate_min": 1.002515877418759,
+            "baseline_over_candidate_max": 1.3685502291072784,
+            "pairs": 15,
+            "round_medians": [
+              1.0475715212140695,
+              1.0189814551061025,
+              1.0349392554314463
+            ]
+          },
+          {
+            "case": "typescript-handbook-advanced-types-nodef",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 15968.79944620253,
+            "candidate_ns_per_document": 15471.305941358025,
+            "baseline_over_candidate_median": 1.02569244970788,
+            "baseline_over_candidate_min": 1.0078002605241894,
+            "baseline_over_candidate_max": 1.056913015634913,
+            "pairs": 15,
+            "round_medians": [
+              1.0406275121523219,
+              1.019100713304226,
+              1.02569244970788
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

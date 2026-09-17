@@ -19,56 +19,79 @@ impl<'a> Parser<'a> {
         fence_len: usize,
         body_start: usize,
     ) -> (usize, usize) {
-        let bytes = self.source.as_bytes();
-        let fence_byte = fence_char as u8;
-        let mut from = body_start;
+        fenced_close_bounds(
+            self.source.as_bytes(),
+            fence_char as u8,
+            fence_len,
+            body_start,
+        )
+    }
+}
 
-        // A closing fence holds at least three fence bytes in a row, so
-        // only lines containing such a run can close the block. Jump
-        // between those with the pre-pass's cached searcher instead of
-        // visiting every body line: code blocks are long and closers rare.
-        while let Some(line_start) = next_fence_run_line(bytes, from, fence_byte) {
-            // Skip up to 3 leading spaces.
-            let mut cursor = line_start;
-            let max_indent_end = (line_start + 3).min(bytes.len());
-            while cursor < max_indent_end && bytes[cursor] == b' ' {
-                cursor += 1;
-            }
+/// The closing-fence rule, shared by fenced-code parsing and the definition
+/// pre-pass's segment planner.
+///
+/// Both callers must agree on exactly where an unindented fence ends: the
+/// planner treats that range as opaque, so a closer it located differently
+/// from the parser would shift every later block boundary. Returning the two
+/// offsets keeps the rule in one place — the end of the code content and the
+/// start of the line after the closing fence (both `bytes.len()` when the
+/// fence is never closed).
+pub(in crate::parser) fn fenced_close_bounds(
+    bytes: &[u8],
+    fence_byte: u8,
+    fence_len: usize,
+    body_start: usize,
+) -> (usize, usize) {
+    let mut from = body_start;
 
-            // Count the run of `fence_char`.
-            let fence_start = cursor;
-            while cursor < bytes.len() && bytes[cursor] == fence_byte {
-                cursor += 1;
-            }
-            let count = cursor - fence_start;
-
-            if count >= fence_len {
-                // A closing fence carries nothing but trailing whitespace
-                // (``` aaa is content, not a closer). Neither the indent nor
-                // the fence run can hold a terminator, so this scan finds the
-                // whole line's end and the next line starts just past it.
-                let line_end = line_end(bytes, cursor);
-                let after_fence = line_terminator_end(bytes, line_end);
-                let only_ws = bytes[cursor..line_end]
-                    .iter()
-                    .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'));
-                if only_ws {
-                    // Body ends at `line_start`; the fence line ends at
-                    // the next newline (inclusive) or EOF.
-                    return (line_start, after_fence);
-                }
-                from = after_fence;
-                continue;
-            }
-
-            // Not a closing fence — move to the next line.
-            from = next_line_start(bytes, line_start);
+    // A closing fence holds at least three fence bytes in a row, so only
+    // lines containing such a run can close the block. Jump between those
+    // with the pre-pass's cached searcher instead of visiting every body
+    // line: code blocks are long and closers rare.
+    while let Some(line_start) = next_fence_run_line(bytes, from, fence_byte) {
+        // Skip up to 3 leading spaces.
+        let mut cursor = line_start;
+        let max_indent_end = (line_start + 3).min(bytes.len());
+        while cursor < max_indent_end && bytes[cursor] == b' ' {
+            cursor += 1;
         }
 
-        // No closing fence; consume everything as body.
-        (bytes.len(), bytes.len())
+        // Count the run of `fence_char`.
+        let fence_start = cursor;
+        while cursor < bytes.len() && bytes[cursor] == fence_byte {
+            cursor += 1;
+        }
+        let count = cursor - fence_start;
+
+        if count >= fence_len {
+            // A closing fence carries nothing but trailing whitespace
+            // (``` aaa is content, not a closer). Neither the indent nor the
+            // fence run can hold a terminator, so this scan finds the whole
+            // line's end and the next line starts just past it.
+            let line_end = line_end(bytes, cursor);
+            let after_fence = line_terminator_end(bytes, line_end);
+            let only_ws = bytes[cursor..line_end]
+                .iter()
+                .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'));
+            if only_ws {
+                // Body ends at `line_start`; the fence line ends at the next
+                // newline (inclusive) or EOF.
+                return (line_start, after_fence);
+            }
+            from = after_fence;
+            continue;
+        }
+
+        // Not a closing fence — move to the next line.
+        from = next_line_start(bytes, line_start);
     }
 
+    // No closing fence; consume everything as body.
+    (bytes.len(), bytes.len())
+}
+
+impl<'a> Parser<'a> {
     /// Parses a fenced code block.
     ///
     /// `opening_indent` is the fence line's indentation in columns, which

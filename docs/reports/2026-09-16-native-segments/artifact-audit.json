@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "documents": 57,
+  "workloads": 59,
+  "timed_windows": 12744,
+  "held_out_runs": {
+    "default": {
+      "documents": 28,
+      "timed_windows": 6480
+    },
+    "pgo": {
+      "documents": 28,
+      "timed_windows": 6480
+    }
+  },
+  "previous_html_outputs_unchanged": 342,
+  "checks": [
+    "input lengths and hashes",
+    "all timed checksums",
+    "complete unique window coverage",
+    "unchanged HTML and agreement classifications against 2026-09-15-release-native",
+    "archived runner and comparator hashes",
+    "summary medians recomputed from raw windows",
+    "held-out runs share the frozen inputs, parameters and HTML",
+    "default build carries no PGO; PGO build trained disjointly from the measured set"
+  ]
+}
