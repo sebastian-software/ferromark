@@ -67,8 +67,7 @@ All `uses:` entries must be full commit SHAs with the version in a trailing
 comment. The CI `fmt` job enforces that with the organization's shared
 [`check-action-pins`](https://github.com/sebastian-software/standards/tree/main/.github/actions)
 action rather than a repository-local copy. Use US English and Conventional
-Commits; breaking changes use `!` or a `BREAKING CHANGE:` footer. Managed files
-come from standards; run the pinned standards CLI from CI to check or apply them.
+Commits; breaking changes use `!` or a `BREAKING CHANGE:` footer.
 
 ## The Ferramenta family block
 
