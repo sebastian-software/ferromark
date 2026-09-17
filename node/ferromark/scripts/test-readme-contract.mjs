@@ -91,6 +91,17 @@ function assertReadmeContract(candidate) {
     "README must link the typed options",
   );
 
+  assert.match(
+    nativeOptions,
+    /html\.base_url = base\.into\(\);\s*html\.convert_md_links = true;/,
+    "linkBasePath must rebase root-absolute URLs in the binding",
+  );
+  assert.match(
+    candidate,
+    /Image sources take the same base/,
+    "README must document that linkBasePath rebases image sources",
+  );
+
   assert.match(candidate, /^## Repeated rendering$/m, "README must document reusable rendering");
   assert.match(candidate, /new Renderer\(/, "README must show the reusable Renderer API");
   assert.match(loader, /export class Renderer/, "loader must export the reusable Renderer API");
@@ -215,6 +226,14 @@ assert.throws(
     ),
   /actual trusted inline HTML output/,
   "security documentation contract must reject incorrect trusted output",
+);
+assert.throws(
+  () =>
+    assertReadmeContract(
+      readme.replace("Image sources take the same base", "Image sources are not rewritten"),
+    ),
+  /rebases image sources/,
+  "link documentation contract must reject a denial of image rebasing",
 );
 assert.throws(
   () => assertReadmeContract(readme.replace("glibc or musl Linux", "glibc Linux")),

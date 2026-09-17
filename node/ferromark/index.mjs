@@ -1,7 +1,8 @@
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
-import { nativeTarget as resolveNativeTarget } from "./native-target.mjs";
+import { linuxLibc, nativeTarget as resolveNativeTarget } from "./native-target.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -288,10 +289,53 @@ function nativeLoadHint(target) {
   return "Check the macOS version and binary architecture, and whether quarantine or code-signing policy blocked the addon.";
 }
 
+/** @returns {string} Native package target for the current runtime. */
 function nativeTarget() {
-  const report =
-    process.platform === "linux"
-      ? /** @type {{ header?: { glibcVersionRuntime?: string } }} */ (process.report?.getReport?.())
-      : undefined;
-  return resolveNativeTarget(process.platform, process.arch, report?.header?.glibcVersionRuntime);
+  const libc =
+    process.platform === "linux" ? linuxLibc(diagnosticReport(), readLoaderHelper) : undefined;
+  return resolveNativeTarget(process.platform, process.arch, libc);
+}
+
+/**
+ * Collect the diagnostic report that identifies the Linux C library.
+ *
+ * Network interfaces are excluded: enumerating them can stall for seconds in
+ * containers with slow DNS or many interfaces, and the loader only reads the
+ * report header and the list of shared objects. The previous setting is
+ * restored so an application's own reports keep their configured content.
+ *
+ * `excludeNetwork` is missing from the installed Node.js typings; Node.js has
+ * supported it since v13.12, and an unknown property is simply ignored.
+ *
+ * @returns {import('./native-target.mjs').DiagnosticReport | undefined} Report, if available.
+ */
+function diagnosticReport() {
+  const report = /** @type {{ excludeNetwork?: boolean, getReport(): object } | undefined} */ (
+    process.report
+  );
+  if (typeof report?.getReport !== "function") {
+    return;
+  }
+  const excludeNetwork = report.excludeNetwork;
+  try {
+    report.excludeNetwork = true;
+    return /** @type {import('./native-target.mjs').DiagnosticReport} */ (report.getReport());
+  } catch {
+    // A runtime that refuses to collect a report leaves only the loader helper.
+  } finally {
+    // Restored on both paths, so a failed collection cannot leave the process
+    // writing reports without network interfaces.
+    report.excludeNetwork = excludeNetwork;
+  }
+}
+
+/** @returns {string} Loader helper contents, or an empty string when unreadable. */
+function readLoaderHelper() {
+  try {
+    // The loader helper is a binary on musl systems, where it is the loader
+    // itself, so its bytes are read without UTF-8 decoding.
+    return readFileSync("/usr/bin/ldd", "latin1");
+  } catch {
+    return "";
+  }
 }

@@ -163,9 +163,10 @@ misspellings such as `taskList` cannot silently change rendered output.
 
 ## Input size limit
 
-Ferromark source positions use compact `u32` values, so input is limited to
-4,294,967,294 bytes. Calls above that limit throw an `InvalidArg` native error
-instead of parsing with truncated source offsets.
+Ferromark stores source positions as compact `u32` offsets, so the parser
+addresses just under 4 GB of Markdown. Node.js strings stop far below that
+(`buffer.constants.MAX_STRING_LENGTH`), so no JavaScript input can reach the
+limit and the binding does not check for it.
 
 ## Syntax highlighting with Ferriki
 
@@ -209,11 +210,13 @@ const { html, headings, frontMatter } = transform(source, { frontMatter: true })
 For sites deployed under a subpath (e.g. GitHub Pages), `linkBasePath` prefixes internal absolute link destinations natively:
 
 ```js
-toHtml("[guide](/guide)", { linkBasePath: "/docs" });
-// <p><a href="/docs/guide">guide</a></p>
+toHtml("[guide](/guide) ![logo](/logo.png)", { linkBasePath: "/docs" });
+// <p><a href="/docs/guide">guide</a> <img src="/docs/logo.png" alt="logo"></p>
 ```
 
-Image sources and autolinks are not rewritten.
+Image sources take the same base, as do root-absolute URLs in raw HTML under
+`renderPolicy: 'trusted'`, where raw HTML is written instead of escaped.
+Absolute URLs, including autolinks, keep their destination.
 
 ## Troubleshooting native loading
 
