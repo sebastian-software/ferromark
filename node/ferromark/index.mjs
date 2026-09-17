@@ -319,13 +319,13 @@ function diagnosticReport() {
   const excludeNetwork = report.excludeNetwork;
   try {
     report.excludeNetwork = true;
-    const collected = /** @type {import('./native-target.mjs').DiagnosticReport} */ (
-      report.getReport()
-    );
-    report.excludeNetwork = excludeNetwork;
-    return collected;
+    return /** @type {import('./native-target.mjs').DiagnosticReport} */ (report.getReport());
   } catch {
     // A runtime that refuses to collect a report leaves only the loader helper.
+  } finally {
+    // Restored on both paths, so a failed collection cannot leave the process
+    // writing reports without network interfaces.
+    report.excludeNetwork = excludeNetwork;
   }
 }
 

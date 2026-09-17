@@ -202,7 +202,13 @@ test("detects the Linux C library and assumes gnu without evidence of musl", () 
   );
 });
 
-test("excludes network interfaces from the loader's diagnostic report", () => {
+/**
+ * Loads the package on a Linux x64 host whose diagnostic report runs `body`,
+ * and reports what the loader observed.
+ *
+ * @param body Statements the stubbed `getReport()` runs.
+ */
+function loaderWithStubbedReport(body) {
   const entry = new URL("../index.mjs", import.meta.url).href;
   const script = `
     Object.defineProperty(process, 'platform', { value: 'linux' })
@@ -213,29 +219,48 @@ test("excludes network interfaces from the loader's diagnostic report", () => {
         excludeNetwork: false,
         getReport() {
           excludeNetworkWhileCollecting = this.excludeNetwork
-          return { header: { glibcVersionRuntime: '2.39' } }
+          ${body}
         },
       },
     })
     const { toHtml } = await import(${JSON.stringify(entry)})
+    let outcome = 'rendered'
     try {
       toHtml('text')
     }
-    catch {
-      // A host without the linux-x64-gnu binary still ran the detection.
+    catch (error) {
+      // A host without the selected binary still ran the detection.
+      outcome = error.message
     }
-    if (excludeNetworkWhileCollecting !== true) {
-      process.exit(1)
-    }
-    if (process.report.excludeNetwork !== false) {
-      process.exit(2)
-    }
+    console.log(JSON.stringify({
+      excludeNetworkWhileCollecting,
+      excludeNetworkAfter: process.report.excludeNetwork,
+      outcome,
+    }))
   `;
   const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
     encoding: "utf8",
   });
 
   assert.equal(result.status, 0, result.stderr);
+  return JSON.parse(result.stdout);
+}
+
+test("excludes network interfaces from the loader's diagnostic report", () => {
+  const collected = loaderWithStubbedReport("return { header: { glibcVersionRuntime: '2.39' } }");
+
+  assert.equal(collected.excludeNetworkWhileCollecting, true);
+  assert.equal(collected.excludeNetworkAfter, false);
+});
+
+test("restores the report setting when collecting it fails", () => {
+  const failed = loaderWithStubbedReport("throw new Error('report collection failed')");
+
+  assert.equal(failed.excludeNetworkWhileCollecting, true);
+  assert.equal(failed.excludeNetworkAfter, false);
+  // The loader falls back to the loader helper instead of surfacing that error.
+  assert.doesNotMatch(failed.outcome, /report collection failed/);
+  assert.match(failed.outcome, /^(?:rendered|ferromark could not load)/);
 });
 
 test("selects the gnu package on Linux without a diagnostic report", async (t) => {
