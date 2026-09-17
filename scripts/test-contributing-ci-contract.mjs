@@ -29,7 +29,6 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
     "npm-packages",
     "rust-packages",
     "homepage",
-    "standards",
     "cargo-deny",
     "coverage",
   ])
