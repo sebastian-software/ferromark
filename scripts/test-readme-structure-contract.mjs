@@ -5,7 +5,7 @@ import { test } from "node:test";
 const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 
 test("README source and generated output prominently link the live documentation", () => {
-  const link = "[Documentation](https://sebastian-software.github.io/ferromark/)";
+  const link = "[Documentation](https://ferromark.dev/)";
   for (const path of ["README.md.src", "README.md"]) {
     const introduction = read(path).split(/^## /m)[0];
     assert.ok(

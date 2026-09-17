@@ -2,7 +2,7 @@
 
 Native Node.js bindings for the [Ferromark](https://github.com/sebastian-software/ferromark) Markdown-to-HTML compiler.
 
-[Documentation site](https://sebastian-software.github.io/ferromark/) ·
+[Documentation site](https://ferromark.dev/) ·
 [Rust crate](https://crates.io/crates/ferromark)
 
 ## Install the release candidate

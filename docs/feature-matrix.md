@@ -1,6 +1,6 @@
 # Feature matrix: scope and sources
 
-The [website matrix](https://sebastian-software.github.io/ferromark/guide/feature-comparison) inventories built-in
+The [website matrix](https://ferromark.dev/guide/feature-comparison) inventories built-in
 capabilities, including opt-in parser flags, renderer options, and Cargo
 features. It does not claim that all options are enabled together, that output
 is identical, or that every edge case conforms to a specification. A missing

@@ -15,7 +15,7 @@ or its native Node.js bindings.
 
 <!-- x-release-please-start-version -->
 
-[Documentation](https://sebastian-software.github.io/ferromark/) ·
+[Documentation](https://ferromark.dev/) ·
 [Rust API](https://docs.rs/ferromark/2.0.0-rc.2/ferromark/) ·
 [Node.js package](node/ferromark/README.md)
 
@@ -44,9 +44,9 @@ fine until an author added one more footnote.
   scans, and SIMD reduce parser and renderer work. You can inspect or transform
   the document tree before rendering it.
 
-[Syntax and features](https://sebastian-software.github.io/ferromark/guide/features),
-[correctness and limits](https://sebastian-software.github.io/ferromark/guide/correctness),
-and [measured comparisons](https://sebastian-software.github.io/ferromark/guide/benchmarks)
+[Syntax and features](https://ferromark.dev/guide/features),
+[correctness and limits](https://ferromark.dev/guide/correctness),
+and [measured comparisons](https://ferromark.dev/guide/benchmarks)
 explain the details and trade-offs.
 
 ## Quick start
@@ -68,7 +68,7 @@ assert_eq!(html, "<p>Hello, <strong>world</strong>!</p>\n");
 
 Rust requires **1.95 or newer**. The helpers return `Result`. Rust defaults
 preserve raw HTML; set `HtmlRendererOptions::sanitize` to `true` for untrusted
-input. The [Rust guide](https://sebastian-software.github.io/ferromark/rust/getting-started)
+input. The [Rust guide](https://ferromark.dev/rust/getting-started)
 covers configuration, ownership, and AST access through `ferromark`.
 
 ### Node.js
@@ -88,16 +88,16 @@ const html = toHtml('Hello, **world**!')
 ```
 
 Requires **Node.js 22.12 or newer**. Node defaults escape raw HTML and filter
-unsafe URL schemes. The [Node.js guide](https://sebastian-software.github.io/ferromark/node/getting-started)
+unsafe URL schemes. The [Node.js guide](https://ferromark.dev/node/getting-started)
 covers metadata, Buffers, reusable renderers, and highlighters.
 
 ## Make it yours
 
-- [Configuration](https://sebastian-software.github.io/ferromark/guide/configuration) — syntax and output policies.
-- [Content pipelines](https://sebastian-software.github.io/ferromark/guide/pipelines) — document metadata, navigation, and presentation.
-- [Rendering and trust](https://sebastian-software.github.io/ferromark/guide/rendering) — defaults and input boundaries.
-- [Architecture](https://sebastian-software.github.io/ferromark/guide/architecture) — arena AST, modules, and integration points.
-- [MDX boundaries](https://sebastian-software.github.io/ferromark/guide/mdx) — syntax capture and static output.
+- [Configuration](https://ferromark.dev/guide/configuration) — syntax and output policies.
+- [Content pipelines](https://ferromark.dev/guide/pipelines) — document metadata, navigation, and presentation.
+- [Rendering and trust](https://ferromark.dev/guide/rendering) — defaults and input boundaries.
+- [Architecture](https://ferromark.dev/guide/architecture) — arena AST, modules, and integration points.
+- [MDX boundaries](https://ferromark.dev/guide/mdx) — syntax capture and static output.
 
 ## Contributing and license
 

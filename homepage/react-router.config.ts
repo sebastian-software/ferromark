@@ -7,4 +7,4 @@ const config = {
   prerender: true,
 } satisfies Config;
 
-export default withArdoGitHubPages(config, { basename: "/ferromark/" });
+export default withArdoGitHubPages(config, { basename: "/" });

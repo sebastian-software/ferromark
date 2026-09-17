@@ -40,7 +40,7 @@ export const links: LinksFunction = () => [
 ];
 
 export const meta: MetaFunction = ({ location }) => {
-  const path = location.pathname.replace(/^\/ferromark(?=\/|$)/, "").replace(/\/$/, "");
+  const path = location.pathname.replace(/\/$/, "");
   const section = documentationSections.find((candidate) => path.startsWith(`/${candidate.id}/`));
   const page = section?.pages.find(([, to]) => to === path);
   const title = page
@@ -57,7 +57,7 @@ export const meta: MetaFunction = ({ location }) => {
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  return <ArdoRootLayout iconBasePath="/ferromark/">{children}</ArdoRootLayout>;
+  return <ArdoRootLayout iconBasePath="/">{children}</ArdoRootLayout>;
 }
 
 export const ErrorBoundary = ArdoErrorBoundary;

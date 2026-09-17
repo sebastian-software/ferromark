@@ -43,8 +43,8 @@ const benchmarkPage = await readFile(
 const guidePage = await readFile(new URL("guide/quick-start/index.html", outputDirectory), "utf8");
 
 const requiredFragments = [
-  "/ferromark/assets/",
-  "/ferromark/favicon.ico",
+  '"/assets/',
+  '"/favicon.ico"',
   'class="site-header"',
   'class="site-footer"',
   "https://ferramenta.dev",
@@ -101,15 +101,16 @@ if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {
 for (const path of expectedPages) {
   const html = await readFile(new URL(path, outputDirectory), "utf8");
   check(html, path, {
-    required: ["/ferromark/rust/getting-started", "/ferromark/node/getting-started"],
+    required: ['href="/rust/getting-started"', 'href="/node/getting-started"'],
+    forbidden: ['href="/ferromark', "sebastian-software.github.io/ferromark"],
   });
   if ((html.match(/<h1(?:\s|>)/g) ?? []).length !== 1) {
     throw new Error(`${path} must have one h1`);
   }
   // eslint-disable-next-line security/detect-unsafe-regex -- This scans local build output, not externally supplied HTML.
   for (const [, href] of html.matchAll(/href="([^"#]*)(?:#[^"]*)?"/g)) {
-    if (!href.startsWith("/ferromark/") || href.startsWith("/ferromark/assets/")) continue;
-    const pathname = href.slice("/ferromark/".length).split("?")[0].replace(/\/$/, "");
+    if (!href.startsWith("/") || href.startsWith("//") || href.startsWith("/assets/")) continue;
+    const pathname = href.slice(1).split("?")[0].replace(/\/$/, "");
     if (/\.[a-z0-9]+$/i.test(pathname)) continue;
     const target = pathname ? `${pathname}/index.html` : "index.html";
     await access(new URL(target, outputDirectory));
