@@ -27,6 +27,7 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
     "node-floor",
     "native",
     "npm-packages",
+    "node-musl",
     "rust-packages",
     "homepage",
     "cargo-deny",
@@ -144,6 +145,30 @@ test("publication follows the standards release blueprint", () => {
     publisher.jobs["build-native"].strategy.matrix,
     "${{ fromJSON(needs.native-matrix.outputs.matrix) }}",
   );
+});
+
+test("the packed musl addon is loaded on Alpine before merge and before publishing", () => {
+  // The musl addons are cross-compiled, so only a musl container proves they
+  // load. The rehearsal job installs the archives the assembly job uploaded.
+  const musl = ci.jobs["node-musl"];
+  const smoke = "node ./scripts/clean-install-smoke.mjs --target linux-x64-musl --package-tests";
+  assert.equal(musl.needs, "npm-packages");
+  assert.equal(musl.container, "node:22-alpine");
+  assert.equal(musl.defaults.run.shell, "sh");
+  const upload = ci.jobs["npm-packages"].steps.find((step) =>
+    step.uses?.startsWith("actions/upload-artifact@"),
+  );
+  const download = musl.steps.find((step) => step.uses?.startsWith("actions/download-artifact@"));
+  assert.equal(download.with.name, upload.with.name);
+  assert.equal(download.with.path, "node/artifacts");
+  assert.ok(musl.steps.some((step) => step.run === smoke));
+
+  // The release runs the same check before the first registry call.
+  const steps = parse(read(".github/workflows/publish.yml")).jobs["publish-npm"].steps;
+  const alpine = steps.findIndex((step) => step.run?.includes(smoke));
+  const publish = steps.findIndex((step) => step.uses?.includes("/publish-npm@"));
+  assert.ok(alpine !== -1, "the release must load the musl addon on Alpine");
+  assert.ok(alpine < publish, "the Alpine check must precede the npm publish");
 });
 
 test("Node native declarations follow the v2 option surface", () => {

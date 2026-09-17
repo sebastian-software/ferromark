@@ -250,6 +250,22 @@ jobs:
       - run: node ./scripts/verify-pack.mjs --all-targets
       - run: pnpm smoke:clean
 
+      # The musl addons are cross-compiled and `smoke:clean` above runs on
+      # glibc, so the packed x64 musl sidecar is installed and exercised in a
+      # musl container before the first registry call, the same way the
+      # pre-merge `node-musl` job does it. This job holds the OIDC token and the
+      # assembled archives, so the check runs through Docker on the runner
+      # rather than as a separate container job. Only `.tgz` archives that
+      # `verify-pack.mjs --all-targets` just wrote are read; the container
+      # writes nothing back into the workspace.
+      - name: Run the Alpine musl runtime test before publishing
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/ferromark" \
+            --workdir /ferromark/node \
+            node:22-alpine \
+            node ./scripts/clean-install-smoke.mjs --target linux-x64-musl --package-tests
+
       - id: release
         name: Verify the packed archives and derive the release channel
         run: node ./scripts/release-archives.mjs artifacts
