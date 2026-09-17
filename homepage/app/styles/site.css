@@ -2,14 +2,16 @@
  * Site chrome — the seam between Ardo's documentation shell and the shared
  * family chrome from ferramenta-family.
  *
- * The family header and footer come from `ferramenta-family/chrome.css`, which
- * root.tsx loads *after* this file so the package keeps winning the ties. That
- * includes the chrome's own link colors and the tool switcher's
- * narrow-viewport flyout: the package ships both, so this file does not.
+ * The iron bar, the lockup, the tool switcher and the footer are styled by
+ * `ferramenta-family/chrome.css`, which root.tsx loads *after* this file so the
+ * package keeps winning the ties. That includes the chrome's own link colors
+ * and the tool switcher's narrow-viewport flyout: the package ships both, so
+ * this file does not.
  *
  * What this file owns is the integration — handing the scrolling back to the
- * document, the documentation affordances the site puts in the header's `nav`
- * and `actions` slots (guide links, search, the small-screen menu), and the one
+ * document, the documentation affordances the site puts into the bar it
+ * composes in root.tsx (guide links, search, the small-screen menu), the quiet
+ * family control that stands in for the package's "Tools" trigger, and the one
  * place the bar itself has to give way, at phone width.
  */
 
@@ -80,14 +82,49 @@
  */
 
 /*
- * ── The documentation affordances in the header slots ──
+ * ── The site's own contents of the bar ──
  *
- * The guide links go in `nav`, between the lockup and the family navigation;
- * search and the small-screen guide menu go in `actions`, just before the theme
- * toggle. The family chrome styles neither slot's contents, so everything below
- * is ours — and because `chrome.css` loads last, nothing below may reuse one of
- * its class names.
+ * The guide links sit between the lockup and the site navigation; the family
+ * switcher, search and the small-screen guide menu sit in that navigation,
+ * before the theme toggle. The family chrome styles the bar, the lockup and the
+ * switcher's flyout; everything below is ours — and because `chrome.css` loads
+ * last, nothing below may reuse one of its class names on its own. Where a rule
+ * has to adjust a package element (the switcher's trigger), it does so through
+ * the site's own class on that element, so it wins on specificity, not on order.
  */
+
+/*
+ * The family switcher, demoted. The package's trigger is a bold "Tools" at the
+ * weight of the guide links; here it is the family's name at a smaller size,
+ * regular weight and the bar's soft ink, so it reads as provenance rather than
+ * as navigation. The flyout underneath is the package's, unchanged: every other
+ * tool stays one click away.
+ */
+.site-header details.ferromark-family summary {
+  gap: 0.35rem;
+  font-family: var(--display), var(--body);
+  font-weight: var(--disp-weight);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--iron-soft);
+  transition: color 120ms ease;
+}
+
+.site-header details.ferromark-family summary:hover,
+.site-header details.ferromark-family[open] summary {
+  color: var(--iron-ink);
+}
+
+.site-header details.ferromark-family summary svg.chev {
+  width: 12px;
+  height: 12px;
+}
+
+.ferromark-family-mark {
+  color: var(--ember);
+  opacity: 0.85;
+}
 
 .ferromark-nav {
   display: flex;
@@ -228,6 +265,12 @@
   }
 
   .site-header .ghlink {
+    display: none;
+  }
+
+  /* The family control keeps its mark and chevron; the word would push the
+     theme toggle off the bar. Its accessible name ("All tools") stays. */
+  .site-header details.ferromark-family summary > span {
     display: none;
   }
 
@@ -387,10 +430,6 @@
 .platform-link:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 5px;
-}
-.ferromark-product {
-  font-family: var(--display), var(--body);
-  font-size: 1.5rem;
 }
 .ferromark-nav a[data-active="true"] {
   color: var(--ember);
