@@ -145,12 +145,18 @@ pub struct ParserOptions {
     /// Default: `false`.
     pub mdx: bool,
 
-    /// Maximum nesting depth for block elements.
+    /// Maximum nesting depth, for blocks and for inline content alike.
     ///
-    /// Every construct that re-enters the parser on a sub-source — block
-    /// quotes, list items, footnote definitions, and JSX children — counts
-    /// one level, so the cap bounds the recursion depth of a parse no
-    /// matter how the constructs are combined.
+    /// Every construct that re-enters the parser counts one level: on a
+    /// sub-source for block quotes, list items, footnote definitions and JSX
+    /// children, and on a bracketed slice for link text, image alt text,
+    /// wiki-link labels, inline notes, script spans and inline JSX phrasing.
+    /// Blocks and inline content are counted separately against this same
+    /// limit, because block containers cannot occur inside inline content;
+    /// either count reaching it fails the parse with
+    /// [`ParseErrorKind::NestingTooDeep`](crate::ParseErrorKind::NestingTooDeep), so
+    /// the cap bounds the recursion depth of a parse no matter how the
+    /// constructs are combined.
     ///
     /// `0` means unlimited, which lets a deeply nested document exhaust the
     /// stack and take the host process down with it. Prefer a finite cap on
@@ -193,11 +199,13 @@ impl Default for ParserOptions {
     }
 }
 
-/// Block nesting levels allowed before a parse fails with
-/// [`ParseError::NestingTooDeep`](crate::ParseError::NestingTooDeep).
+/// Block and inline nesting levels allowed before a parse fails with
+/// [`ParseErrorKind::NestingTooDeep`](crate::ParseErrorKind::NestingTooDeep).
 ///
 /// Deep enough that no hand-written document reaches it, shallow enough
-/// that the recursion it permits fits in a default thread stack.
+/// that the recursion it permits fits in a default thread stack: a 1 MB
+/// stack, the Windows main-thread default, overflowed at about 1000 levels
+/// of inline brackets, so this leaves an order of magnitude of headroom.
 const DEFAULT_MAX_NESTING_DEPTH: usize = 100;
 
 impl ParserOptions {

@@ -32,7 +32,16 @@ fn render(source: &str, options: ParserOptions) -> String {
 /// bounded time instead of hanging it. Returns the best of three parses, so a
 /// scheduling stall on a busy runner has to hit every repetition to fail.
 fn parse_within_budget(source: String) -> Duration {
+    let (best, parsed) = outcome_within_budget(source);
+    assert!(parsed, "nested brackets should parse to a document");
+    best
+}
+
+/// The same bounded parse, without requiring a document: past the nesting
+/// cap the expected answer is an error, and it still has to arrive quickly.
+fn outcome_within_budget(source: String) -> (Duration, bool) {
     let mut best = BUDGET;
+    let mut parsed_all = true;
     for _ in 0..3 {
         let owned = source.clone();
         let (sender, receiver) = mpsc::channel();
@@ -47,10 +56,10 @@ fn parse_within_budget(source: String) -> Duration {
         let (parsed, elapsed) = receiver
             .recv_timeout(BUDGET)
             .expect("nested brackets should parse in bounded time, not exponential time");
-        assert!(parsed, "nested brackets should parse to a document");
+        parsed_all &= parsed;
         best = best.min(elapsed);
     }
-    best
+    (best, parsed_all)
 }
 
 fn nested_inline_links(depth: usize) -> String {
@@ -159,5 +168,30 @@ fn nesting_inside_a_block_quote_and_a_list_item_behaves_the_same() {
     assert_eq!(
         render("- [a [b](/b)](/a)", ParserOptions::gfm()),
         "<ul>\n<li>[a <a href=\"/b\">b</a>](/a)</li>\n</ul>"
+    );
+}
+
+#[test]
+fn nesting_past_the_cap_fails_closed_in_bounded_time() {
+    // Depth 64 above is well inside `max_nesting_depth`; this is the other
+    // side of it. Without the inline bound this input did not run long, it
+    // overflowed the stack and aborted the test binary (issue #349).
+    let (_, parsed) = outcome_within_budget(nested_inline_links(20_000));
+    assert!(!parsed, "20,000 levels should be refused, not parsed");
+
+    let allocator = Allocator::new();
+    let error = Parser::with_options(
+        &allocator,
+        &nested_inline_links(20_000),
+        ParserOptions::gfm(),
+    )
+    .parse()
+    .expect_err("20,000 levels are past the cap");
+    assert!(
+        matches!(
+            error.kind(),
+            ferromark::parser::ParseErrorKind::NestingTooDeep { max_depth: 100, .. }
+        ),
+        "expected the nesting cap, got {error}"
     );
 }

@@ -8,7 +8,7 @@ use crate::allocator::Vec;
 use crate::ast::{Link, Node, Span};
 
 use super::Parser;
-use crate::parser::error::ParseResult;
+use crate::parser::error::{ParseErrorKind, ParseResult};
 use crate::parser::short_scan;
 
 impl<'a> Parser<'a> {
@@ -72,7 +72,7 @@ impl<'a> Parser<'a> {
             // inside the text; without one the probe cannot find a link.
             let mut inner_nodes = None;
             let inner_has_link =
-                nested && self.probe_link_text(link_text, offset + text_start, &mut inner_nodes);
+                nested && self.probe_link_text(link_text, offset + text_start, &mut inner_nodes)?;
 
             // Inline form: [text](dest "title")
             if !inner_has_link
@@ -197,7 +197,7 @@ impl<'a> Parser<'a> {
         // A link label is short enough that the probe stays off the vector
         // path: nested-bracket candidates are rare, but every link pays it.
         if short_scan::find(b'[', label.as_bytes()).is_some()
-            && self.probe_link_text(label, offset + label_offset, &mut label_nodes)
+            && self.probe_link_text(label, offset + label_offset, &mut label_nodes)?
         {
             return Ok(None);
         }
@@ -245,22 +245,29 @@ impl<'a> Parser<'a> {
         link_text: &'a str,
         offset: usize,
         nodes: &mut Option<Vec<'a, Node<'a>>>,
-    ) -> bool {
+    ) -> ParseResult<bool> {
         let key = (link_text.as_ptr() as usize, link_text.len());
         // Borrow only for the lookup: the parse below re-enters this method.
         let cached = self.link_probe_cache.borrow().get(&key).copied();
         if let Some(verdict) = cached {
-            return verdict;
+            return Ok(verdict);
         }
-        let Ok(parsed) = self.parse_inline(link_text, offset) else {
-            // A failing sub-parse cannot yield a link, and the caller's own
-            // parse of the same text surfaces the error.
-            return false;
+        let parsed = match self.parse_inline(link_text, offset) {
+            Ok(parsed) => parsed,
+            // A depth failure is a verdict on the document, not on this
+            // bracket text: the literal-bracket fallback below would go on
+            // to probe the next opener at the same depth, so the run has to
+            // end here. Any other failing sub-parse cannot yield a link, and
+            // the caller's own parse of the same text surfaces the error.
+            Err(error) if matches!(error.kind(), ParseErrorKind::NestingTooDeep { .. }) => {
+                return Err(error);
+            }
+            Err(_) => return Ok(false),
         };
         let verdict = contains_link(&parsed);
         self.link_probe_cache.borrow_mut().insert(key, verdict);
         *nodes = Some(parsed);
-        verdict
+        Ok(verdict)
     }
 }
 
