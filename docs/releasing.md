@@ -272,4 +272,6 @@ The homepage deploys from main. Its deployment is independent of registry
 publication and needs no release edit: `homepage/app/version.ts` reads the
 version from `node/ferromark/package.json`, which the release pull request
 updates, and `homepage/scripts/verify-build.mjs` fails the build unless the
-rendered pages carry exactly that version.
+rendered pages carry exactly that version. `deploy-homepage.yml` therefore runs
+on a push that changes that manifest as well as on one that changes `homepage/`,
+because a release pull request touches no file under `homepage/` at all.
