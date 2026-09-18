@@ -101,6 +101,11 @@ impl<'a> Parser<'a> {
     /// against the same limit — a document can be that deep in blocks *and*
     /// that deep in inline brackets — because block containers cannot occur
     /// inside inline content, so the two only ever add up along a path once.
+    ///
+    /// Within inline content the count is shared, because emphasis and
+    /// brackets *do* add up along a path: the guard also carries the depth
+    /// each level reports back to the one above it, which is what
+    /// [`Parser::process_emphasis`] needs to bound the tree pairing builds.
     fn enter_inline(&self, offset: usize) -> ParseResult<InlineDepthGuard<'_>> {
         let depth = self.inline_depth.get();
         if self.options.max_nesting_depth > 0 && depth > self.options.max_nesting_depth {
@@ -111,9 +116,25 @@ impl<'a> Parser<'a> {
             .into());
         }
         self.inline_depth.set(depth + 1);
+        let nested = self.nested_depth_cell();
         Ok(InlineDepthGuard {
             depth: &self.inline_depth,
+            nested,
+            outer_nested: nested.replace(0),
         })
+    }
+
+    /// The shared depth cell, allocated on the first inline context of a
+    /// parse. A parser that never reaches inline content — the definition
+    /// pre-pass, and every rejected block probe — leaves the arena
+    /// untouched, which its own tests hold it to.
+    fn nested_depth_cell(&self) -> &'a std::cell::Cell<usize> {
+        if let Some(cell) = self.nested_inline_depth.get() {
+            return cell;
+        }
+        let cell: &'a std::cell::Cell<usize> = &*self.allocator.alloc(std::cell::Cell::new(0));
+        self.nested_inline_depth.set(Some(cell));
+        cell
     }
 
     pub(super) fn parse_inline(
@@ -193,7 +214,7 @@ impl<'a> Parser<'a> {
         }
 
         if !delimiters.is_empty() {
-            self.process_emphasis(&mut children, &mut delimiters);
+            self.process_emphasis(&mut children, &mut delimiters)?;
         }
         Ok(children)
     }
@@ -376,10 +397,21 @@ impl<'a> Parser<'a> {
 /// from `parse_inline` — including the `?` returns inside it.
 struct InlineDepthGuard<'p> {
     depth: &'p std::cell::Cell<usize>,
+    nested: &'p std::cell::Cell<usize>,
+    /// What the enclosing level had accumulated before this one started.
+    outer_nested: usize,
 }
 
 impl Drop for InlineDepthGuard<'_> {
     fn drop(&mut self) {
         self.depth.set(self.depth.get().saturating_sub(1));
+        // This level's tree becomes one child subtree of the level above:
+        // the node built around it is one level deeper than the deepest
+        // thing in it, and the level above keeps the deepest of its
+        // children. Abandoned sub-parses (a speculative link probe that
+        // ends up literal) are folded in the same way, which over- rather
+        // than under-counts and keeps the bound safe.
+        let produced = self.nested.get() + 1;
+        self.nested.set(self.outer_nested.max(produced));
     }
 }
