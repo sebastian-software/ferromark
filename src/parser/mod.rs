@@ -122,6 +122,23 @@ pub struct Parser<'a> {
     /// cell. See `inline::Parser::enter_inline` for the bound itself.
     inline_depth: std::cell::Cell<usize>,
 
+    /// Depth of the deepest inline subtree finished inside the inline
+    /// context currently being scanned.
+    ///
+    /// `inline_depth` counts the contexts *above* a pairing; this counts
+    /// what is already *below* it, so that delimiter-run pairing can tell
+    /// how much of the budget an emphasis node would spend. Every
+    /// `parse_inline` resets it on entry and folds its own result back into
+    /// the enclosing level on exit (`inline::InlineDepthGuard`), so a level
+    /// only ever reads the subtrees nested directly inside it.
+    ///
+    /// Shared with container sub-parsers rather than copied, because an
+    /// inline note builds one from inside an inline parse and its content
+    /// nests inside the node the parent is about to wrap. It is allocated
+    /// on the first inline context instead of at construction, so a parser
+    /// that only probes blocks still touches the arena not at all.
+    nested_inline_depth: std::cell::Cell<Option<&'a std::cell::Cell<usize>>>,
+
     /// Link reference definitions collected by the root parser's
     /// pre-pass, shared with sub-parsers (block quote and list item
     /// contents) so references resolve document-wide.
@@ -265,6 +282,7 @@ impl<'a> Parser<'a> {
             position: 0,
             nesting_depth: 0,
             inline_depth: std::cell::Cell::new(0),
+            nested_inline_depth: std::cell::Cell::new(None),
             definitions: None,
             phase,
             footnote_labels: None,
@@ -324,6 +342,10 @@ impl<'a> Parser<'a> {
             // from inside `parse_inline`, and carrying the count is what
             // keeps a chain of them bounded.
             inline_depth: std::cell::Cell::new(self.inline_depth.get()),
+            // Shared, not copied: an inline note's content is parsed by a
+            // sub-parser and still ends up inside the node the enclosing
+            // inline level is building, so its depth has to reach that level.
+            nested_inline_depth: std::cell::Cell::new(self.nested_inline_depth.get()),
             definitions: self.definitions.clone(),
             phase: self.phase,
             footnote_labels: self.footnote_labels.clone(),

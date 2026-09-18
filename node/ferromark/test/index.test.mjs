@@ -652,6 +652,26 @@ test("deeply nested inline brackets throw instead of killing the process", () =>
   assert.equal(renderer.toHtml("recovered"), "<p>recovered</p>\n");
 });
 
+test("deeply nested emphasis throws instead of killing the process", () => {
+  // Issue #371: the parse survived this one — pairing is iterative — and
+  // the renderer then walked a 10,000-level tree and overflowed the stack,
+  // which takes the whole process down with no JavaScript error. Reaching
+  // the assertions is the result.
+  const stars = `${"*".repeat(20_000)}a${"*".repeat(20_000)}`;
+  const underscores = `${"_".repeat(20_000)}a${"_".repeat(20_000)}`;
+
+  assert.throws(() => toHtml(stars), /nest|depth/i);
+  assert.throws(() => toHtmlBuffer(stars), /nest|depth/i);
+  assert.throws(() => toHtml(underscores), /nest|depth/i);
+
+  // A run with nothing to close it nests nothing and still renders.
+  assert.equal(toHtml(`${"*".repeat(2000)}a`), `<p>${"*".repeat(2000)}a</p>\n`);
+
+  const renderer = new Renderer();
+  assert.throws(() => renderer.toHtml(stars), /nest|depth/i);
+  assert.equal(renderer.toHtml("recovered"), "<p>recovered</p>\n");
+});
+
 // The assertions exercise every equivalent rendering entry point.
 // eslint-disable-next-line max-statements
 test("supports optional marked text, inline notes, and reference policy", () => {

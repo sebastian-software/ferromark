@@ -143,12 +143,22 @@ pub struct ParserOptions {
     /// sub-source for block quotes, list items, footnote definitions and JSX
     /// children, and on a bracketed slice for link text, image alt text,
     /// wiki-link labels, inline notes, script spans and inline JSX phrasing.
+    /// Emphasis counts too, although it never recurses: pairing delimiter
+    /// runs builds `*`, `_`, `**`, `~~`, `==`, `~`, `^` and CJK emphasis
+    /// into a tree that the renderer and the [`Visit`](crate::ast::Visit)
+    /// walkers do recurse over, and its depth counts the same way — the
+    /// depth of the tree, so `*`×200 `a` `*`×200 is 100 levels while a run
+    /// with no closer and any number of adjacent pairs are none.
+    ///
     /// Blocks and inline content are counted separately against this same
-    /// limit, because block containers cannot occur inside inline content;
-    /// either count reaching it fails the parse with
+    /// limit, because block containers cannot occur inside inline content.
+    /// Within inline content there is one count, since brackets and
+    /// emphasis do nest inside one another: 50 levels of link text leave 50
+    /// levels of emphasis. Either count reaching the limit fails the parse
+    /// with
     /// [`ParseErrorKind::NestingTooDeep`](crate::ParseErrorKind::NestingTooDeep), so
-    /// the cap bounds the recursion depth of a parse no matter how the
-    /// constructs are combined.
+    /// the cap bounds the depth of a parse, and of the tree it produces, no
+    /// matter how the constructs are combined.
     ///
     /// `0` means unlimited, which lets a deeply nested document exhaust the
     /// stack and take the host process down with it. Prefer a finite cap on

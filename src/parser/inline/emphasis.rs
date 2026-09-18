@@ -11,6 +11,7 @@ use crate::allocator::Vec;
 use crate::ast::{Node, Span, Text};
 
 use crate::parser::Parser;
+use crate::parser::error::{ParseErrorKind, ParseResult};
 
 pub(in crate::parser) struct Delimiter {
     /// Index of the run's text node in the children vec.
@@ -22,6 +23,10 @@ pub(in crate::parser) struct Delimiter {
     remaining: usize,
     can_open: bool,
     can_close: bool,
+    /// Depth of the emphasis node this run currently holds as an opener,
+    /// counted in nodes below and including it, or zero while it holds
+    /// none. Pairing reads it back to measure the tree it is building.
+    depth: u32,
 }
 
 impl<'a> Parser<'a> {
@@ -55,6 +60,7 @@ impl<'a> Parser<'a> {
             remaining: run_len,
             can_open,
             can_close,
+            depth: 0,
         });
         *pos += run_len;
     }
@@ -104,11 +110,37 @@ impl<'a> Parser<'a> {
     /// walk the vector fixing indices up. And a failed opener search
     /// records how far down it looked (`openers_bottom`), so the next
     /// closer of the same class does not repeat it.
+    ///
+    /// # Bounding the tree
+    ///
+    /// Pairing itself is iterative, but the tree it builds is walked
+    /// recursively by the HTML renderer and by the public `ast::visit`
+    /// walkers, so it is bounded by
+    /// [`ParserOptions::max_nesting_depth`](crate::ParserOptions::max_nesting_depth)
+    /// like every other nesting: `*`×2n `a` `*`×2n nests n levels deep and
+    /// used to overflow the stack and abort the process.
+    ///
+    /// Depth is the depth of the tree, not the length of a run. Adjacent
+    /// pairs (`*a* *b*`) stay one level deep however many there are; only
+    /// pairs that enclose one another go deeper, and a closer always pairs
+    /// with the nearest opener, so a new node's depth is one more than the
+    /// deepest thing it encloses. Each opener remembers the depth of the
+    /// node it holds, which the delimiters it encloses (and the opener
+    /// itself, when it pairs again with characters left over) already have
+    /// to be walked for, so the measurement costs nothing a pairing did not
+    /// already pay and a long run stays linear.
+    ///
+    /// Two counts complete it. `inline_depth` is what encloses this whole
+    /// sequence — the link text, image alt or JSX phrasing it sits in — and
+    /// `nested_inline_depth` is the deepest subtree finished inside it, so
+    /// the bound holds along a path through both kinds of nesting rather
+    /// than per sequence, which is what a mixture like `<A>`/`*` nested
+    /// 100×100 needs.
     pub(in crate::parser) fn process_emphasis(
         &self,
         children: &mut Vec<'a, Node<'a>>,
         delimiters: &mut Vec<'a, Delimiter>,
-    ) {
+    ) -> ParseResult<()> {
         // Nothing else in inline parsing produces an empty text node, so the
         // sweep at the end is only owed the ones pairing leaves behind. The
         // spec suites and snapshot corpora hold this assertion up.
@@ -116,6 +148,15 @@ impl<'a> Parser<'a> {
             !children.iter().any(is_empty_text),
             "inline parsing produced an empty text node before pairing"
         );
+        // Everything already nested inside this sequence counts against the
+        // same budget as the nodes pairing is about to build, and so does
+        // everything the sequence itself is nested in. Both are read once:
+        // the scan is finished, so neither can change from here on.
+        let nested = self.nested_depth_cell();
+        let inside = nested.get() as u32;
+        let enclosing = self.inline_depth.get().saturating_sub(1);
+        let mut produced = inside;
+
         let mut openers_bottom = OpenersBottom::default();
         let mut emptied = false;
         let mut closer_idx = 0;
@@ -161,6 +202,36 @@ impl<'a> Parser<'a> {
             let opener_node = delimiters[opener_idx].node_index;
             let closer_node = delimiters[closer_idx].node_index;
 
+            // Retire the delimiters strictly inside the pair, which are now
+            // unreachable, and take the depth of the nodes they hold on the
+            // way: those are exactly the nodes pairing has already built
+            // inside the range about to be lifted. The opener counts too —
+            // with characters left over it pairs again around the node it
+            // already holds, which is how `***a** b*` nests. Retiring an
+            // entry means zeroing `remaining`: both the loop above and
+            // `find_opener` already skip those, and erasing it from the
+            // vector instead would shift every later entry down — which is
+            // what made a paragraph full of emphasis quadratic.
+            let mut enclosed = delimiters[opener_idx].depth;
+            for delimiter in &mut delimiters[opener_idx + 1..closer_idx] {
+                enclosed = enclosed.max(delimiter.depth);
+                delimiter.remaining = 0;
+            }
+            let depth = enclosed.max(inside) + 1;
+            if self.options.max_nesting_depth > 0
+                && enclosing + depth as usize > self.options.max_nesting_depth
+            {
+                return Err(ParseErrorKind::NestingTooDeep {
+                    span: Span::new(
+                        children[closer_node].span().start,
+                        children[closer_node].span().start,
+                    ),
+                    max_depth: self.options.max_nesting_depth,
+                }
+                .into());
+            }
+            produced = produced.max(depth);
+
             // Lift the nodes between the delimiters into the new emphasis
             // node and leave empty text behind, so every index stays put.
             // Text nodes emptied by earlier (inner) pairings are dropped on
@@ -205,15 +276,9 @@ impl<'a> Parser<'a> {
             emptied |= trim_text_tail(&mut children[opener_node], use_delims);
             emptied |= trim_text_head(&mut children[closer_node], use_delims);
 
-            // Delimiters strictly inside the pair are now unreachable, and
-            // the pair itself has spent `use_delims` characters. Retiring an
-            // entry means zeroing `remaining`: both the loop above and
-            // `find_opener` already skip those, and erasing it from the
-            // vector instead would shift every later entry down — which is
-            // what made a paragraph full of emphasis quadratic.
-            for delimiter in &mut delimiters[opener_idx + 1..closer_idx] {
-                delimiter.remaining = 0;
-            }
+            // The pair has spent `use_delims` characters, and the opener now
+            // holds the node just built.
+            delimiters[opener_idx].depth = depth;
             delimiters[opener_idx].remaining -= use_delims as usize;
             delimiters[closer_idx].remaining -= use_delims as usize;
             // Stay on the closer: with characters left it retries against an
@@ -228,6 +293,11 @@ impl<'a> Parser<'a> {
         if emptied {
             children.retain(|node| !is_empty_text(node));
         }
+
+        // Hand the finished depth to the level above, which wraps this
+        // sequence in one more node (see `InlineDepthGuard`).
+        nested.set(produced as usize);
+        Ok(())
     }
 }
 
