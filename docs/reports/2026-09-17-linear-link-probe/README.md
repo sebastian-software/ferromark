@@ -64,15 +64,15 @@ With the cap lifted, doubling the nesting:
 | Depth | Size | Before | After | After, per doubling |
 | ---: | ---: | ---: | ---: | ---: |
 | 800 | 4 KB | 0.3011 | 0.000075 | — |
-| 1600 | 8 KB | 2.5492 (×8.5) | 0.000163 | ×2.2 |
-| 3200 | 16 KB | (≈ 20 s, extrapolated ×8) | 0.000426 | ×2.6 |
-| 6400 | 32 KB | — | 0.001181 | ×2.8 |
+| 1600 | 8 KB | 2.5492 (×8.5) | 0.000166 | ×2.2 |
+| 3200 | 16 KB | (≈ 20 s, extrapolated ×8) | 0.000445 | ×2.7 |
+| 6400 | 32 KB | — | 0.001022 | ×2.3 |
 
 Before: ×6.9, ×8.5 per doubling over 400 → 800 → 1600, the cubic the issue
-reported. After: ×2.2 to ×2.8, against ×2 for the input size itself. The
-remainder is the two maps, which grow with the number of openers and leave
-cache-resident size at these depths: the cost per byte is 19 ns at 4 KB and
-37 ns at 32 KB. With the cap lifted the stack becomes the limit before the
+reported. After: ×2.2, ×2.7 and ×2.3 (best of three series each), against ×2
+for the input size itself. The remainder is the two maps, which grow with the
+number of openers and leave cache-resident size at these depths: the cost per
+byte is 19 ns at 4 KB and 32 ns at 32 KB. With the cap lifted the stack becomes the limit before the
 time does (see below), which is what the cap exists to prevent.
 
 A run of openers with one closer, doubling the run:
