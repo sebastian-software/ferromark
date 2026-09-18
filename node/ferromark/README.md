@@ -200,7 +200,7 @@ const { html, headings, frontMatter } = transform(source, { frontMatter: true })
 
 `transformWithHighlighter()` combines this with code-block highlighting in the same native pass.
 
-For sites deployed under a subpath (e.g. GitHub Pages), `linkBasePath` prefixes internal absolute link destinations natively:
+For sites deployed under a subpath (e.g. GitHub Pages), `linkBasePath` prefixes internal absolute link destinations natively. A trailing slash is optional:
 
 ```js
 toHtml("[guide](/guide) ![logo](/logo.png)", { linkBasePath: "/docs" });

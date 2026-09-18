@@ -555,6 +555,16 @@ test("linkBasePath uses v2 site URL routing", () => {
   assert.match(html, /<img src="\/docs\/i.png"/);
 });
 
+test("linkBasePath joins Markdown links with or without a trailing slash", () => {
+  for (const linkBasePath of ["/docs", "/docs/"]) {
+    const html = toHtml("[guide](/guide.md)", {
+      linkBasePath,
+    });
+
+    assert.match(html, /<a href="\/docs\/guide\/index.html">guide<\/a>/);
+  }
+});
+
 test("highlighter receives fence meta as Shiki-style __raw", () => {
   const calls = [];
   const highlighter = {
