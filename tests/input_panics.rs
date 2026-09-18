@@ -79,3 +79,26 @@ fn deep_inline_brackets_return_an_error_instead_of_aborting() {
         );
     }
 }
+
+#[test]
+fn deep_emphasis_nesting_returns_an_error_instead_of_aborting() {
+    // Issue #371: pairing `*`×n `a` `*`×n is iterative, so the parse itself
+    // survived; the tree it built was n/2 levels deep and overflowed the
+    // stack when the renderer walked it. 4 KB was enough for a 1 MB stack.
+    let count = 20_000;
+    let cases = [
+        "*".repeat(count) + "a" + &"*".repeat(count),
+        "_".repeat(count) + "a" + &"_".repeat(count),
+        "**".repeat(count) + "a" + &"**".repeat(count),
+        " ~~x".repeat(count) + " a " + &"x~~ ".repeat(count),
+    ];
+
+    for source in cases {
+        let error = parse_or_err(&source, ParserOptions::gfm())
+            .expect_err("deeply nested emphasis should fail closed");
+        assert!(
+            error.contains("nesting too deep"),
+            "expected the nesting cap, got {error}"
+        );
+    }
+}
