@@ -119,6 +119,29 @@ pub(super) fn find_matching_close(
     None
 }
 
+pub(super) fn has_closing_tag(source: &str, from: usize, name: Option<&str>) -> bool {
+    let bytes = source.as_bytes();
+    let mut cursor = from;
+    while cursor < bytes.len() {
+        match bytes[cursor] {
+            b'{' => cursor = skip_braces(bytes, cursor).unwrap_or(cursor + 1),
+            b'`' => cursor = skip_backticks(bytes, cursor).unwrap_or(cursor + 1),
+            b'<' => {
+                let Some(tag) = scan_tag_skip(source, cursor) else {
+                    cursor += 1;
+                    continue;
+                };
+                if tag.closing && tag.name == name {
+                    return true;
+                }
+                cursor = tag.end;
+            }
+            _ => cursor += 1,
+        }
+    }
+    false
+}
+
 fn scan_jsx_name(bytes: &[u8], start: usize) -> Option<usize> {
     if !bytes.get(start)?.is_ascii_uppercase() {
         return None;

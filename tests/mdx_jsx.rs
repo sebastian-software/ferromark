@@ -9,6 +9,7 @@
 
 use ferromark::allocator::Allocator;
 use ferromark::parser::{Parser, ParserOptions};
+use std::time::Instant;
 
 #[path = "support/pretty.rs"]
 mod pretty;
@@ -25,6 +26,33 @@ fn pretty_ast(source: &str, options: ParserOptions) -> String {
 
 fn mdx_tree(source: &str) -> String {
     pretty_ast(source, ParserOptions::mdx())
+}
+
+fn repeated_unclosed_jsx(bytes: usize) -> String {
+    "<A>".repeat(bytes / 3)
+}
+
+#[test]
+fn repeated_unclosed_jsx_openers_scale_linearly() {
+    let small = repeated_unclosed_jsx(8 * 1024);
+    let large = repeated_unclosed_jsx(32 * 1024);
+
+    let elapsed = |source: &str| {
+        let started = Instant::now();
+        let allocator = Allocator::new();
+        Parser::with_options(&allocator, source, ParserOptions::mdx())
+            .parse()
+            .expect("unclosed JSX should remain recoverable");
+        started.elapsed()
+    };
+
+    let small_time = elapsed(&small);
+    let large_time = elapsed(&large);
+    let ratio = large_time.as_secs_f64() / small_time.as_secs_f64().max(1e-9);
+    assert!(
+        ratio < 8.0,
+        "repeated unclosed JSX should scale linearly: {large_time:?} / {small_time:?} = {ratio:.1}"
+    );
 }
 
 #[test]

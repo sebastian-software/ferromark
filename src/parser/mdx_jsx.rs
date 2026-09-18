@@ -43,6 +43,9 @@ impl<'a> Parser<'a> {
             }
             (true, self.allocator.new_vec(), open.end)
         } else {
+            if !self.has_mdx_jsx_closer(self.source, open.end, open.name) {
+                return Ok(None);
+            }
             let Some((close_start, close_end)) =
                 scan::find_matching_close(self.source, open.end, open.name)
             else {
@@ -83,6 +86,9 @@ impl<'a> Parser<'a> {
         let (self_closing, children, end) = if open.self_closing {
             (true, self.allocator.new_vec(), open.end)
         } else {
+            if !self.has_mdx_jsx_closer(content, open.end, open.name) {
+                return Ok(None);
+            }
             let Some((close_start, close_end)) =
                 scan::find_matching_close(content, open.end, open.name)
             else {
@@ -103,6 +109,28 @@ impl<'a> Parser<'a> {
             })),
             end,
         )))
+    }
+
+    fn has_mdx_jsx_closer(
+        &self,
+        content: &'a str,
+        from: usize,
+        name: Option<&str>,
+    ) -> bool {
+        let key = (
+            content.as_ptr() as usize,
+            content.len(),
+            name.map_or(0, |name| name.as_ptr() as usize),
+            name.map_or(0, str::len),
+        );
+        if let Some(present) = self.mdx_jsx_closer_presence.borrow().get(&key) {
+            return *present;
+        }
+        let present = scan::has_closing_tag(content, from, name);
+        self.mdx_jsx_closer_presence
+            .borrow_mut()
+            .insert(key, present);
+        present
     }
 
     fn parse_jsx_phrasing(
