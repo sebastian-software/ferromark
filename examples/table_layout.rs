@@ -20,7 +20,7 @@ fn main() {
     let html = HtmlRenderer::with_options(HtmlRendererOptions {
         table_colgroup: true,
         table_column_names: true,
-        ..HtmlRendererOptions::gfm()
+        ..HtmlRendererOptions::gfm_spec()
     })
     .render(&document);
     #[allow(clippy::print_stdout)]

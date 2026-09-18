@@ -160,7 +160,7 @@ fn combined_extensions_preserve_logical_columns_with_or_without_hooks() {
     .unwrap();
     let options = HtmlRendererOptions {
         table_colgroup: true,
-        ..HtmlRendererOptions::gfm()
+        ..HtmlRendererOptions::gfm_spec()
     };
     let expected = concat!(
         "<table id=\"prices\" class=\"wide compact\">\n",
@@ -214,7 +214,7 @@ fn gfm_presets_keep_plain_table_markup() {
     let html = render(
         "| a | b |\n| --- | --- |\n| value ||",
         ParserOptions::gfm_spec(),
-        HtmlRendererOptions::gfm(),
+        HtmlRendererOptions::gfm_spec(),
     );
     assert_eq!(
         html,
@@ -226,7 +226,7 @@ fn gfm_presets_keep_plain_table_markup() {
     for preset in [
         HtmlRendererOptions::default(),
         HtmlRendererOptions::commonmark(),
-        HtmlRendererOptions::gfm(),
+        HtmlRendererOptions::gfm_spec(),
     ] {
         assert!(!preset.table_colgroup);
     }

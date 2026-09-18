@@ -5,14 +5,6 @@
 /// Flavored Markdown profile.
 #[derive(Debug, Clone)]
 pub struct ParserOptions {
-    /// Enable the GFM convenience profile.
-    ///
-    /// When set through [`ParserOptions::gfm`], this also enables footnotes,
-    /// task lists, tables, strikethrough, and autolinks.
-    ///
-    /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
-    pub gfm: bool,
-
     /// Enable footnote references and definitions.
     ///
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
@@ -170,7 +162,6 @@ pub struct ParserOptions {
 impl Default for ParserOptions {
     fn default() -> Self {
         Self {
-            gfm: false,
             highlight: false,
             inline_footnotes: false,
             allow_link_refs: true,
@@ -222,7 +213,6 @@ impl ParserOptions {
     #[must_use]
     pub fn gfm() -> Self {
         Self {
-            gfm: true,
             highlight: false,
             inline_footnotes: false,
             allow_link_refs: true,

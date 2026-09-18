@@ -171,7 +171,7 @@ resolve.
 The rehearsal checks package metadata, upstream MIT notices and the absence of
 internal path dependencies, then builds and runs an isolated consumer from the
 unpacked archive. External versions must remain within the workspace lockfile.
-The README, the upstream `LICENSE` notice, both dual-license texts and
+The README, the upstream `LICENSE` notice, the `LICENSE-MIT` text and
 `UPSTREAM.md` ship with the package. This does not test registry credentials.
 
 Because the crate sits at the repository root, a narrow `include` list in

@@ -21,7 +21,7 @@ fn render(source: &str, parser_options: ParserOptions) -> String {
     let document = Parser::with_options(&allocator, source, parser_options)
         .parse()
         .unwrap();
-    HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document)
+    HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document)
 }
 
 fn render_with_front_matter(source: &str) -> String {
@@ -74,14 +74,14 @@ fn renderer_hooks_and_incremental_paths_omit_front_matter() {
     let body_document = Parser::with_options(&body_allocator, "# Content\n", ParserOptions::gfm())
         .parse()
         .unwrap();
-    let mut baseline_renderer = HtmlRenderer::with_options(HtmlRendererOptions::gfm());
+    let mut baseline_renderer = HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec());
     let mut baseline_hooks = Hooks { nodes: 0 };
     assert_eq!(
         baseline_renderer.render_with_hooks(&body_document, &mut baseline_hooks),
         expected
     );
 
-    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions::gfm());
+    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec());
     let mut hooks = Hooks { nodes: 0 };
     assert_eq!(renderer.render_with_hooks(&document, &mut hooks), expected);
     assert_eq!(hooks.nodes, baseline_hooks.nodes);
@@ -317,7 +317,7 @@ fn metadata_is_opaque_to_markdown_extensions_and_definitions() {
         .unwrap();
     assert!(document.front_matter.is_some());
 
-    let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
+    let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
     assert_eq!(
         html,
         "<p>Use [ref] and [^note] and <a href=\"/body\">body</a>.</p>\n"

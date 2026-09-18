@@ -39,7 +39,6 @@ fn default_options_disable_mdx() {
         !options.mdx,
         "MDX must stay opt-in until the default-enable PR"
     );
-    assert!(!options.gfm);
     assert!(!options.footnotes);
     assert!(!options.task_lists);
     assert!(!options.tables);
@@ -51,7 +50,6 @@ fn default_options_disable_mdx() {
 fn gfm_helper_does_not_enable_mdx() {
     let options = ParserOptions::gfm();
     assert!(!options.mdx);
-    assert!(options.gfm);
     assert!(options.footnotes);
     assert!(options.task_lists);
     assert!(options.tables);
@@ -64,7 +62,6 @@ fn gfm_helper_does_not_enable_mdx() {
 fn mdx_helper_enables_mdx_without_gfm() {
     let options = ParserOptions::mdx();
     assert!(options.mdx);
-    assert!(!options.gfm);
     assert!(!options.footnotes);
     assert!(!options.task_lists);
     assert!(!options.tables);
@@ -78,7 +75,6 @@ fn mdx_can_be_combined_with_gfm() {
     let mut options = ParserOptions::gfm();
     options.mdx = true;
     assert!(options.mdx);
-    assert!(options.gfm);
     assert!(options.tables);
     assert_eq!(options.max_nesting_depth, 100);
 }

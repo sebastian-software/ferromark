@@ -75,6 +75,7 @@ fn combinations() -> Vec<(String, HtmlRendererOptions)> {
         ("defaults".to_string(), HtmlRendererOptions::new()),
         ("commonmark".to_string(), HtmlRendererOptions::commonmark()),
         ("gfm".to_string(), HtmlRendererOptions::gfm()),
+        ("gfm_spec".to_string(), HtmlRendererOptions::gfm_spec()),
     ];
 
     for base in ["/", "", "/docs/", "/docs"] {

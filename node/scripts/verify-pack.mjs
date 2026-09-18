@@ -26,7 +26,6 @@ const main = pack(packageDir);
 const mainFiles = main.files.map((file) => file.path).sort();
 const allowedMain = new Set([
   "LICENSE",
-  "LICENSE-APACHE",
   "LICENSE-MIT",
   "README.md",
   "index.d.mts",

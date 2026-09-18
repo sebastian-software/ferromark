@@ -43,7 +43,7 @@ fn gfm_spec_uses_tagfilter_without_footnotes_or_ids() {
 
     let allocator = Allocator::new();
     let document = parse(&allocator, parser_options);
-    let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
+    let html = HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
     assert!(!html.contains("id=\"hello\""), "{html}");
     assert!(!html.contains("ox-callout"), "{html}");
     assert!(html.contains("&lt;script>alert(1)&lt;/script>"), "{html}");
@@ -54,7 +54,7 @@ fn gfm_spec_uses_tagfilter_without_footnotes_or_ids() {
 fn spec_profile_flags_match_normal_hooks_and_incremental_paths() {
     let allocator = Allocator::new();
     let document = parse(&allocator, ParserOptions::gfm_spec());
-    let options = HtmlRendererOptions::gfm();
+    let options = HtmlRendererOptions::gfm_spec();
 
     let expected = HtmlRenderer::with_options(options.clone()).render(&document);
     let mut hooks_renderer = HtmlRenderer::with_options(options.clone());
@@ -150,4 +150,143 @@ fn existing_defaults_keep_heading_ids_callouts_and_toc() {
     assert!(html.contains("id=\"hello\""), "{html}");
     assert!(html.contains("ox-callout"), "{html}");
     assert!(html.contains("ox-toc"), "{html}");
+}
+
+/// The renderer flags the profiles disagree about, in a comparable shape.
+fn renderer_profile_flags(options: &HtmlRendererOptions) -> [bool; 8] {
+    [
+        options.disallow_raw_html,
+        options.heading_ids,
+        options.callouts,
+        options.inline_toc,
+        options.code_fence_metadata,
+        options.autolink_urls,
+        options.autolink_target_blank,
+        options.link_target_blank,
+    ]
+}
+
+#[test]
+fn parser_profiles_set_the_documented_fields() {
+    let commonmark = ParserOptions::commonmark();
+    assert!(!commonmark.footnotes);
+    assert!(!commonmark.task_lists);
+    assert!(!commonmark.tables);
+    assert!(!commonmark.strikethrough);
+    assert!(!commonmark.autolinks);
+    assert!(!commonmark.mdx);
+    assert!(!commonmark.highlight);
+    assert!(!commonmark.inline_footnotes);
+    assert!(commonmark.allow_link_refs);
+    assert_eq!(commonmark.max_nesting_depth, 100);
+
+    // `gfm()` is the convenience profile: GFM plus Ferromark's semantic
+    // footnotes. `gfm_spec()` is the same set without them.
+    let gfm = ParserOptions::gfm();
+    assert!(gfm.footnotes);
+    assert!(gfm.task_lists);
+    assert!(gfm.tables);
+    assert!(gfm.strikethrough);
+    assert!(gfm.autolinks);
+    assert!(!gfm.mdx);
+    assert!(!gfm.highlight);
+    assert!(!gfm.inline_footnotes);
+    assert!(!gfm.merged_table_cells);
+    assert!(!gfm.table_attributes);
+    assert!(!gfm.cjk_emphasis);
+    assert!(gfm.allow_link_refs);
+
+    let gfm_spec = ParserOptions::gfm_spec();
+    assert!(!gfm_spec.footnotes);
+    assert!(gfm_spec.task_lists);
+    assert!(gfm_spec.tables);
+    assert!(gfm_spec.strikethrough);
+    assert!(gfm_spec.autolinks);
+    assert!(!gfm_spec.mdx);
+
+    let mdx = ParserOptions::mdx();
+    assert!(mdx.mdx);
+    assert!(!mdx.footnotes);
+    assert!(!mdx.tables);
+    assert!(!mdx.strikethrough);
+    assert!(!mdx.autolinks);
+    assert_eq!(mdx.max_nesting_depth, 100);
+}
+
+#[test]
+fn renderer_profiles_set_the_documented_fields() {
+    // `new()` keeps every product convenience and filters nothing.
+    let new = HtmlRendererOptions::new();
+    assert_eq!(
+        renderer_profile_flags(&new),
+        [false, true, true, true, true, true, true, true]
+    );
+
+    // `commonmark()` drops the conveniences and still passes raw HTML through.
+    let commonmark = HtmlRendererOptions::commonmark();
+    assert_eq!(
+        renderer_profile_flags(&commonmark),
+        [false, false, false, false, false, false, false, false]
+    );
+
+    // `gfm()` is `new()` plus the GFM tag filter, matching the parser's
+    // convenience profile of the same name.
+    let gfm = HtmlRendererOptions::gfm();
+    assert_eq!(
+        renderer_profile_flags(&gfm),
+        [true, true, true, true, true, true, true, true]
+    );
+
+    // `gfm_spec()` is `commonmark()` plus the GFM tag filter.
+    let gfm_spec = HtmlRendererOptions::gfm_spec();
+    assert_eq!(
+        renderer_profile_flags(&gfm_spec),
+        [true, false, false, false, false, false, false, false]
+    );
+
+    // No profile turns on sanitization, XHTML output, or link conversion, and
+    // none of them changes a documented string default.
+    for (label, options) in [
+        ("new", &new),
+        ("commonmark", &commonmark),
+        ("gfm", &gfm),
+        ("gfm_spec", &gfm_spec),
+    ] {
+        assert!(!options.sanitize, "{label}");
+        assert!(!options.xhtml, "{label}");
+        assert!(!options.convert_md_links, "{label}");
+        assert!(!options.source_spans, "{label}");
+        assert!(!options.heading_permalinks, "{label}");
+        assert!(!options.semantic_footnotes, "{label}");
+        assert!(!options.code_annotations, "{label}");
+        assert!(!options.table_colgroup, "{label}");
+        assert!(!options.table_column_names, "{label}");
+        assert_eq!(&*options.soft_break, "\n", "{label}");
+        assert_eq!(&*options.hard_break, "<br>\n", "{label}");
+        assert_eq!(&*options.base_url, "/", "{label}");
+        assert_eq!(&*options.source_path, "", "{label}");
+        assert_eq!(&*options.code_annotation_meta_key, "annotate", "{label}");
+        assert_eq!(options.toc_max_depth, 3, "{label}");
+    }
+}
+
+#[test]
+fn the_gfm_renderer_profiles_differ_only_in_the_product_conveniences() {
+    let allocator = Allocator::new();
+    let document = parse(&allocator, ParserOptions::gfm());
+
+    let convenience = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
+    let strict = HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
+
+    // Both filter the disallowed raw HTML tag; only the convenience profile
+    // adds heading IDs, callouts and TOC substitution.
+    for html in [&convenience, &strict] {
+        assert!(html.contains("&lt;script>alert(1)&lt;/script>"), "{html}");
+    }
+    assert!(convenience.contains("id=\"hello\""), "{convenience}");
+    assert!(convenience.contains("ox-callout"), "{convenience}");
+    assert!(convenience.contains("ox-toc"), "{convenience}");
+    assert!(!strict.contains("id=\"hello\""), "{strict}");
+    assert!(!strict.contains("ox-callout"), "{strict}");
+    assert!(!strict.contains("ox-toc"), "{strict}");
 }

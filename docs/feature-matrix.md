@@ -95,9 +95,10 @@ rendering policies or identical edge cases across libraries.
 
 For v2/OX, the option types, AST node types, inline parser, HTML renderer, and
 TOC/callout code establish the available features. Existing v2 regression tests
-cover the individual extensions and profile behavior. Options such as `highlight`
-on the HTML renderer are not evidence of `==marked text==` syntax: the parser
-must recognize that syntax before it can be counted. The current v2 parser
+cover the individual extensions and profile behavior. A renderer option is not
+evidence of a Markdown syntax: the parser must recognize that syntax before it
+can be counted, which is why the inherited no-op `highlight` renderer option was
+removed rather than counted as `==marked text==` support. The current v2 parser
 now implements opt-in marked text and inline notes; see
 [their syntax contract](optional-writing.md). Historical benchmark revisions
 and other engine columns remain unchanged.

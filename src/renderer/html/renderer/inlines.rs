@@ -13,13 +13,7 @@ use super::HtmlRenderer;
 
 impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn render_text(&mut self, text: &Text<'_>) {
-        // See the matching gate in `visit_inline_node`: the cached
-        // `autolink_index` already encodes `autolink_urls && !patterns.is_empty()`.
-        if self.autolink_index.is_some() && !self.in_link {
-            self.write_text_with_autolinks(text.value);
-        } else {
-            self.write_escaped(text.value);
-        }
+        self.write_inline_text(text.value);
     }
 
     pub(in crate::renderer::html::renderer) fn render_emphasis(&mut self, emphasis: &Emphasis<'_>) {

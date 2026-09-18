@@ -109,6 +109,7 @@ fn default_options_never_allocate() {
         ("default", HtmlRendererOptions::default),
         ("commonmark", HtmlRendererOptions::commonmark),
         ("gfm", HtmlRendererOptions::gfm),
+        ("gfm_spec", HtmlRendererOptions::gfm_spec),
     ] {
         let (options, count) = allocations(|| black_box(build()));
         assert_eq!(count, 0, "`HtmlRendererOptions::{label}()` allocated");
@@ -144,6 +145,7 @@ fn every_static_profile_clone_is_allocation_free() {
     for (label, options) in [
         ("commonmark", HtmlRendererOptions::commonmark()),
         ("gfm", HtmlRendererOptions::gfm()),
+        ("gfm_spec", HtmlRendererOptions::gfm_spec()),
     ] {
         drop(black_box(options.clone()));
         let (clone, count) = allocations(|| black_box(options.clone()));

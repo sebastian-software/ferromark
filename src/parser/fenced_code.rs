@@ -3,7 +3,7 @@ use crate::ast::{Node, Span};
 use super::Parser;
 use super::line_scan::{line_end, line_terminator_end, next_line_start};
 use super::prepass::next_fence_run_line;
-use crate::parser::error::{ParseErrorKind, ParseResult};
+use crate::parser::error::ParseResult;
 
 impl<'a> Parser<'a> {
     /// Finds the body end and cursor position after a closing fence.
@@ -116,11 +116,13 @@ impl<'a> Parser<'a> {
         );
         self.position = start + opening_indent;
 
+        // Block dispatch only reaches this parser after `try_parse_fenced_code_at`
+        // has seen the fence run, so the fence character is always present.
+        // Treat its absence as "not a fenced code block" instead of reporting
+        // an error kind no real input can produce.
         let Some(fence_char) = self.peek() else {
-            return Err(ParseErrorKind::UnexpectedEof {
-                span: Span::new(start as u32, start as u32),
-            }
-            .into());
+            debug_assert!(false, "fenced code dispatch without a fence character");
+            return Ok(None);
         };
         let mut fence_len = 0;
 

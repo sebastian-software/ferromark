@@ -93,7 +93,7 @@ let document = Parser::with_options(&allocator, source, options).parse().unwrap(
 let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
     table_colgroup: true,
     table_column_names: true,
-    ..HtmlRendererOptions::gfm()
+    ..HtmlRendererOptions::gfm_spec()
 });
 let html = renderer.render(&document);
 ```

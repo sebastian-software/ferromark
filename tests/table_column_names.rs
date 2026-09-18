@@ -6,7 +6,7 @@ fn options() -> HtmlRendererOptions {
     HtmlRendererOptions {
         table_colgroup: true,
         table_column_names: true,
-        ..HtmlRendererOptions::gfm()
+        ..HtmlRendererOptions::gfm_spec()
     }
 }
 
@@ -139,10 +139,10 @@ fn names_are_opt_in_and_require_colgroup() {
     let document = Parser::with_options(&allocator, source, ParserOptions::gfm())
         .parse()
         .unwrap();
-    let plain = HtmlRenderer::with_options(HtmlRendererOptions::gfm()).render(&document);
+    let plain = HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
     let names_without_columns = HtmlRendererOptions {
         table_column_names: true,
-        ..HtmlRendererOptions::gfm()
+        ..HtmlRendererOptions::gfm_spec()
     };
     assert_eq!(
         HtmlRenderer::with_options(names_without_columns).render(&document),
@@ -150,7 +150,7 @@ fn names_are_opt_in_and_require_colgroup() {
     );
     let columns_only = HtmlRendererOptions {
         table_colgroup: true,
-        ..HtmlRendererOptions::gfm()
+        ..HtmlRendererOptions::gfm_spec()
     };
     assert_eq!(
         column_classes(&HtmlRenderer::with_options(columns_only).render(&document)),
@@ -159,7 +159,7 @@ fn names_are_opt_in_and_require_colgroup() {
     for preset in [
         HtmlRendererOptions::default(),
         HtmlRendererOptions::commonmark(),
-        HtmlRendererOptions::gfm(),
+        HtmlRendererOptions::gfm_spec(),
     ] {
         assert!(!preset.table_column_names);
     }

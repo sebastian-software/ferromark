@@ -43,7 +43,7 @@ fn configurations() -> [(&'static str, ParserOptions, HtmlRendererOptions); 4] {
             ParserOptions::gfm(),
             HtmlRendererOptions::new(),
         ),
-        ("gfm", ParserOptions::gfm(), HtmlRendererOptions::gfm()),
+        ("gfm", ParserOptions::gfm(), HtmlRendererOptions::gfm_spec()),
         ("mdx", ParserOptions::mdx(), HtmlRendererOptions::new()),
     ]
 }
