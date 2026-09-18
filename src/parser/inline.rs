@@ -16,7 +16,7 @@ mod marker_scan;
 mod scan;
 mod script_span;
 
-use self::marker_scan::InlineMarkerScan;
+pub(in crate::parser) use self::marker_scan::InlineMarkerScan;
 use self::script_span::same_marker_neighbor;
 use super::line_scan::{is_line_ending_byte, line_terminator_end};
 
@@ -106,7 +106,7 @@ impl<'a> Parser<'a> {
     /// brackets *do* add up along a path: the guard also carries the depth
     /// each level reports back to the one above it, which is what
     /// [`Parser::process_emphasis`] needs to bound the tree pairing builds.
-    fn enter_inline(&self, offset: usize) -> ParseResult<InlineDepthGuard<'_>> {
+    pub(super) fn enter_inline(&self, offset: usize) -> ParseResult<InlineDepthGuard<'_>> {
         let depth = self.inline_depth.get();
         if self.options.max_nesting_depth > 0 && depth > self.options.max_nesting_depth {
             return Err(ParseErrorKind::NestingTooDeep {
@@ -122,6 +122,25 @@ impl<'a> Parser<'a> {
             nested,
             outer_nested: nested.replace(0),
         })
+    }
+
+    /// The nested-inline-depth counter as it stands, without allocating it.
+    ///
+    /// An inline context that is opened and then thrown away whole — the
+    /// in-place bracket walk that finds a construct reaching past its
+    /// closing bracket — has to leave the counter as it found it, or the
+    /// probe that settles the same text afterwards would be counted twice.
+    pub(super) fn nested_inline_depth(&self) -> usize {
+        self.nested_inline_depth
+            .get()
+            .map_or(0, std::cell::Cell::get)
+    }
+
+    /// Puts back a value from [`Self::nested_inline_depth`].
+    pub(super) fn restore_nested_inline_depth(&self, depth: usize) {
+        if let Some(cell) = self.nested_inline_depth.get() {
+            cell.set(depth);
+        }
     }
 
     /// The shared depth cell, allocated on the first inline context of a
@@ -210,7 +229,14 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            self.parse_inline_special(content, offset, &mut children, &mut delimiters, &mut pos)?;
+            self.parse_inline_special(
+                content,
+                offset,
+                &mut children,
+                &mut delimiters,
+                &mut markers,
+                &mut pos,
+            )?;
         }
 
         if !delimiters.is_empty() {
@@ -225,6 +251,7 @@ impl<'a> Parser<'a> {
         offset: usize,
         children: &mut Vec<'a, Node<'a>>,
         delimiters: &mut Vec<'a, emphasis::Delimiter>,
+        markers: &mut InlineMarkerScan,
         pos: &mut usize,
     ) -> ParseResult<()> {
         let bytes = content.as_bytes();
@@ -342,7 +369,11 @@ impl<'a> Parser<'a> {
                 self.push_delimiter_run(content, offset, children, delimiters, pos);
             }
             b'`' => self.parse_inline_code(content, offset, children, pos),
-            b'[' => self.parse_link(content, offset, children, pos)?,
+            b'[' => {
+                // Whether the bracket became a link only matters to a
+                // bracket around it (`Parser::parse_bracket_text`).
+                self.parse_link(content, offset, children, markers, pos)?;
+            }
             b'!' => self.parse_image(content, offset, children, pos)?,
             _ => {
                 Self::push_text(
@@ -395,7 +426,7 @@ impl<'a> Parser<'a> {
 
 /// Closes the inline context opened by `Parser::enter_inline`, on every exit
 /// from `parse_inline` — including the `?` returns inside it.
-struct InlineDepthGuard<'p> {
+pub(super) struct InlineDepthGuard<'p> {
     depth: &'p std::cell::Cell<usize>,
     nested: &'p std::cell::Cell<usize>,
     /// What the enclosing level had accumulated before this one started.

@@ -188,10 +188,39 @@ pub struct Parser<'a> {
     /// work, so `[[[[a](u)](u)](u)]...` costs 2^depth — a 200-byte
     /// document already runs for minutes.
     ///
+    /// Most nested brackets no longer reach the probe — they are parsed
+    /// where they stand (`Parser::parse_bracket_text`) — but the ones it
+    /// still answers for are re-scanned by the same fallback.
+    ///
     /// Every slice lives in the source or the arena, both of which outlive
     /// the parser, so an address plus a length names one byte range for as
     /// long as the cache exists.
     link_probe_cache: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), bool>>,
+
+    /// Memoized bracket matches: for the address of a scan start and of the
+    /// content end, where that scan's `]` is and whether an opener sits
+    /// inside it.
+    ///
+    /// `scan_balanced` walks from one opener to its `]`, so a run of nested
+    /// brackets walked the same bytes once per level. One walk already
+    /// decides every opener it passes (see `scan_balanced_matched`), and
+    /// keeping those answers is what turns the run into a single pass.
+    /// Openers with no `]` after them are recorded too: they are the
+    /// unbalanced shape that used to walk to the end of the content once per
+    /// opener.
+    ///
+    /// Same lifetime argument as `link_probe_cache`: every slice lives in the
+    /// source or the arena, so an address pair names one byte range for as
+    /// long as the cache exists.
+    bracket_matches: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), (usize, bool)>>,
+
+    /// Memo for the next byte in a content slice that could start an inline
+    /// construct other than a bracket (see `next_bracket_text_stop`).
+    ///
+    /// Bracket text is parsed where it stands only while it holds nothing
+    /// but text and brackets, and a nested run asks that question once per
+    /// level over the same slice. One forward window answers all of them.
+    bracket_text_stop: std::cell::Cell<delimiters::ForwardMemo>,
 
     /// Memoized position of the final `]` or `}` in a content slice, keyed
     /// the same way as `link_probe_cache` plus the byte being looked for.
@@ -269,6 +298,8 @@ impl<'a> Parser<'a> {
             comment_lines: None,
             definition_marker: std::cell::Cell::new(None),
             link_probe_cache: std::cell::RefCell::default(),
+            bracket_matches: std::cell::RefCell::default(),
+            bracket_text_stop: std::cell::Cell::default(),
             last_closer: std::cell::RefCell::default(),
             definition_region: None,
             comment_definition_region: None,
@@ -334,6 +365,8 @@ impl<'a> Parser<'a> {
             comment_lines: None,
             definition_marker: std::cell::Cell::new(None),
             link_probe_cache: std::cell::RefCell::default(),
+            bracket_matches: std::cell::RefCell::default(),
+            bracket_text_stop: std::cell::Cell::default(),
             last_closer: std::cell::RefCell::default(),
             definition_region: None,
             comment_definition_region: None,
