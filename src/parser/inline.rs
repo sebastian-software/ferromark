@@ -16,7 +16,7 @@ mod marker_scan;
 mod scan;
 mod script_span;
 
-use self::marker_scan::InlineMarkerScan;
+pub(in crate::parser) use self::marker_scan::InlineMarkerScan;
 use self::script_span::same_marker_neighbor;
 use super::line_scan::{is_line_ending_byte, line_terminator_end};
 
@@ -101,7 +101,7 @@ impl<'a> Parser<'a> {
     /// against the same limit — a document can be that deep in blocks *and*
     /// that deep in inline brackets — because block containers cannot occur
     /// inside inline content, so the two only ever add up along a path once.
-    fn enter_inline(&self, offset: usize) -> ParseResult<InlineDepthGuard<'_>> {
+    pub(super) fn enter_inline(&self, offset: usize) -> ParseResult<InlineDepthGuard<'_>> {
         let depth = self.inline_depth.get();
         if self.options.max_nesting_depth > 0 && depth > self.options.max_nesting_depth {
             return Err(ParseErrorKind::NestingTooDeep {
@@ -189,7 +189,14 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            self.parse_inline_special(content, offset, &mut children, &mut delimiters, &mut pos)?;
+            self.parse_inline_special(
+                content,
+                offset,
+                &mut children,
+                &mut delimiters,
+                &mut markers,
+                &mut pos,
+            )?;
         }
 
         if !delimiters.is_empty() {
@@ -204,6 +211,7 @@ impl<'a> Parser<'a> {
         offset: usize,
         children: &mut Vec<'a, Node<'a>>,
         delimiters: &mut Vec<'a, emphasis::Delimiter>,
+        markers: &mut InlineMarkerScan,
         pos: &mut usize,
     ) -> ParseResult<()> {
         let bytes = content.as_bytes();
@@ -321,7 +329,11 @@ impl<'a> Parser<'a> {
                 self.push_delimiter_run(content, offset, children, delimiters, pos);
             }
             b'`' => self.parse_inline_code(content, offset, children, pos),
-            b'[' => self.parse_link(content, offset, children, pos)?,
+            b'[' => {
+                // Whether the bracket became a link only matters to a
+                // bracket around it (`Parser::parse_bracket_text`).
+                self.parse_link(content, offset, children, markers, pos)?;
+            }
             b'!' => self.parse_image(content, offset, children, pos)?,
             _ => {
                 Self::push_text(
@@ -374,7 +386,7 @@ impl<'a> Parser<'a> {
 
 /// Closes the inline context opened by `Parser::enter_inline`, on every exit
 /// from `parse_inline` — including the `?` returns inside it.
-struct InlineDepthGuard<'p> {
+pub(super) struct InlineDepthGuard<'p> {
     depth: &'p std::cell::Cell<usize>,
 }
 

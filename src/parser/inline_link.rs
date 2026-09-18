@@ -3,22 +3,35 @@
 //! Split out of `inline_helpers` because CommonMark's "a link may not
 //! contain a link" rule makes this the one inline construct that has to
 //! parse its own text before it can decide what it is.
+//!
+//! Bracket text that holds another bracket is parsed once, where it stands
+//! ([`Parser::parse_bracket_text`]), instead of being probed on its own and
+//! then parsed again by the literal-bracket fallback. See
+//! `docs/decisions/2026-09-17-linear-link-probe.md`.
 
 use crate::allocator::Vec;
 use crate::ast::{Link, Node, Span};
 
 use super::Parser;
 use crate::parser::error::{ParseErrorKind, ParseResult};
+use crate::parser::inline::InlineMarkerScan;
 use crate::parser::short_scan;
 
 impl<'a> Parser<'a> {
+    /// Parses the bracket at `pos` and reports whether it appended a link
+    /// node to `children`.
+    ///
+    /// The answer is what a bracket around this one needs: a link may not
+    /// contain a link, so an enclosing bracket that sees one here stays
+    /// literal. `parse_inline_special` ignores it.
     pub(super) fn parse_link(
         &self,
         content: &'a str,
         offset: usize,
         children: &mut Vec<'a, Node<'a>>,
+        markers: &mut InlineMarkerScan,
         pos: &mut usize,
-    ) -> ParseResult<()> {
+    ) -> ParseResult<bool> {
         let bytes = content.as_bytes();
         let link_start = *pos;
 
@@ -29,7 +42,7 @@ impl<'a> Parser<'a> {
             && bytes.get(*pos + 1) == Some(&b'^')
             && self.try_parse_footnote_reference(content, offset, children, pos)
         {
-            return Ok(());
+            return Ok(false);
         }
 
         // Every accepting branch below needs a `]`, and `scan_balanced`
@@ -39,7 +52,7 @@ impl<'a> Parser<'a> {
         if !self.has_closer_from(content, *pos + 1, b']') {
             Self::push_text(children, "[", offset + link_start, offset + link_start + 1);
             *pos = link_start + 1;
-            return Ok(());
+            return Ok(false);
         }
 
         if self.options.wiki_links
@@ -48,21 +61,37 @@ impl<'a> Parser<'a> {
         {
             children.push(link);
             *pos = end;
-            return Ok(());
+            return Ok(true);
         }
 
         *pos += 1;
         let text_start = *pos;
-        let (close, nested) = Self::scan_balanced(content, *pos);
+        let (close, nested) = self.scan_balanced_matched(content, *pos);
         *pos = close;
 
         if *pos < content.len() && bytes[*pos] == b']' {
             let close = *pos;
             let link_text = &content[text_start..close];
-            // Links may not contain other links; when the bracket text
-            // parses to one, the outer bracket stays literal and the
-            // inner (re-parsed after the fallback) wins.
-            //
+
+            // Bracket text with a bracket inside is the shape that used to
+            // be parsed once per level: probed here, then parsed again by
+            // the fallback below, at every enclosing bracket. Parse it in
+            // place instead — the fallback's own result — and decide
+            // afterwards. `None` means the region could not be parsed where
+            // it stands and the probe below has to settle it.
+            if nested
+                && let Some(made_link) = self.parse_nested_bracket(
+                    content,
+                    offset,
+                    children,
+                    markers,
+                    (link_start, close),
+                    pos,
+                )?
+            {
+                return Ok(made_link);
+            }
+
             // The probe needs the parsed children, and so does every
             // accepting branch below, so parse once and hand the nodes on.
             // The verdict is memoized because the literal-bracket fallback
@@ -74,82 +103,23 @@ impl<'a> Parser<'a> {
             let inner_has_link =
                 nested && self.probe_link_text(link_text, offset + text_start, &mut inner_nodes)?;
 
-            // Inline form: [text](dest "title")
-            if !inner_has_link
-                && bytes.get(close + 1) == Some(&b'(')
-                && let Some(target) = self.parse_link_target(content, close + 1)
+            // Links may not contain other links; when the bracket text
+            // parses to one, the outer bracket stays literal and the inner
+            // (re-parsed after the fallback) wins.
+            if !inner_has_link && let Some(resolved) = self.resolve_link(content, close, link_text)
             {
                 let children_nodes = match inner_nodes.take() {
                     Some(nodes) => nodes,
                     None => self.parse_inline(link_text, offset + text_start)?,
                 };
                 children.push(Node::Link(self.allocator.boxed(Link {
-                    url: target.url,
-                    title: target.title,
+                    url: resolved.url,
+                    title: resolved.title,
                     children: children_nodes,
-                    span: Span::new((offset + link_start) as u32, (offset + target.end) as u32),
+                    span: Span::new((offset + link_start) as u32, (offset + resolved.end) as u32),
                 })));
-                *pos = target.end;
-                return Ok(());
-            }
-
-            // Full [text][label] and collapsed [text][] reference forms.
-            let mut well_formed_reference = false;
-            if self.options.allow_link_refs
-                && !inner_has_link
-                && bytes.get(close + 1) == Some(&b'[')
-                && self.has_closer_from(content, close + 2, b']')
-            {
-                let label_start = close + 2;
-                let (label_end, _) = Self::scan_balanced(content, label_start);
-                if label_end < content.len() && bytes[label_end] == b']' {
-                    well_formed_reference = true;
-                    let raw_label = &content[label_start..label_end];
-                    let key = if raw_label.trim().is_empty() {
-                        link_text
-                    } else {
-                        raw_label
-                    };
-                    if let Some(reference) = self.lookup_reference(key) {
-                        let (url, title) = (reference.url, reference.title);
-                        let children_nodes = match inner_nodes.take() {
-                            Some(nodes) => nodes,
-                            None => self.parse_inline(link_text, offset + text_start)?,
-                        };
-                        children.push(Node::Link(self.allocator.boxed(Link {
-                            url,
-                            title,
-                            children: children_nodes,
-                            span: Span::new(
-                                (offset + link_start) as u32,
-                                (offset + label_end + 1) as u32,
-                            ),
-                        })));
-                        *pos = label_end + 1;
-                        return Ok(());
-                    }
-                }
-            }
-
-            // Shortcut form: [label]. Suppressed when an explicit (but
-            // unknown) [label] followed, which must stay literal.
-            if !inner_has_link
-                && !well_formed_reference
-                && let Some(reference) = self.lookup_reference(link_text)
-            {
-                let (url, title) = (reference.url, reference.title);
-                let children_nodes = match inner_nodes.take() {
-                    Some(nodes) => nodes,
-                    None => self.parse_inline(link_text, offset + text_start)?,
-                };
-                children.push(Node::Link(self.allocator.boxed(Link {
-                    url,
-                    title,
-                    children: children_nodes,
-                    span: Span::new((offset + link_start) as u32, (offset + close + 1) as u32),
-                })));
-                *pos = close + 1;
-                return Ok(());
+                *pos = resolved.end;
+                return Ok(true);
             }
         }
 
@@ -157,7 +127,210 @@ impl<'a> Parser<'a> {
         // rest of the bracketed run is re-parsed for other inline markup.
         Self::push_text(children, "[", offset + link_start, offset + link_start + 1);
         *pos = link_start + 1;
-        Ok(())
+        Ok(false)
+    }
+
+    /// Where a closed bracket's destination comes from: the inline
+    /// `(dest "title")` form, the full `[text][label]` or collapsed
+    /// `[text][]` reference form, or the shortcut `[label]` form.
+    ///
+    /// Only reached for bracket text that holds no link, since a link may
+    /// not contain a link.
+    fn resolve_link(
+        &self,
+        content: &'a str,
+        close: usize,
+        link_text: &'a str,
+    ) -> Option<ResolvedLink<'a>> {
+        let bytes = content.as_bytes();
+
+        // Inline form: [text](dest "title")
+        if bytes.get(close + 1) == Some(&b'(')
+            && let Some(target) = self.parse_link_target(content, close + 1)
+        {
+            return Some(ResolvedLink {
+                url: target.url,
+                title: target.title,
+                end: target.end,
+            });
+        }
+
+        // Full [text][label] and collapsed [text][] reference forms.
+        let mut well_formed_reference = false;
+        if self.options.allow_link_refs
+            && bytes.get(close + 1) == Some(&b'[')
+            && self.has_closer_from(content, close + 2, b']')
+        {
+            let label_start = close + 2;
+            let (label_end, _) = Self::scan_balanced(content, label_start);
+            if label_end < content.len() && bytes[label_end] == b']' {
+                well_formed_reference = true;
+                let raw_label = &content[label_start..label_end];
+                let key = if raw_label.trim().is_empty() {
+                    link_text
+                } else {
+                    raw_label
+                };
+                if let Some(reference) = self.lookup_reference(key) {
+                    return Some(ResolvedLink {
+                        url: reference.url,
+                        title: reference.title,
+                        end: label_end + 1,
+                    });
+                }
+            }
+        }
+
+        // Shortcut form: [label]. Suppressed when an explicit (but
+        // unknown) [label] followed, which must stay literal.
+        if !well_formed_reference && let Some(reference) = self.lookup_reference(link_text) {
+            return Some(ResolvedLink {
+                url: reference.url,
+                title: reference.title,
+                end: close + 1,
+            });
+        }
+
+        None
+    }
+
+    /// Parses bracket text that holds another bracket where it stands, and
+    /// reports whether the nodes it appended hold a link — or `None` when it
+    /// could not be parsed in place and the caller has to probe instead.
+    ///
+    /// The literal bracket is pushed first, speculatively: when the text
+    /// does hold a link, the nodes are already exactly what the
+    /// literal-bracket fallback would have produced and nothing is redone.
+    /// When it does not and the bracket resolves to a link after all, the
+    /// same nodes become that link's children.
+    fn parse_nested_bracket(
+        &self,
+        content: &'a str,
+        offset: usize,
+        children: &mut Vec<'a, Node<'a>>,
+        markers: &mut InlineMarkerScan,
+        bracket: (usize, usize),
+        pos: &mut usize,
+    ) -> ParseResult<Option<bool>> {
+        let (link_start, close) = bracket;
+        let text_start = link_start + 1;
+        let node_start = children.len();
+        Self::push_text(children, "[", offset + link_start, offset + link_start + 1);
+
+        let Some((resume, made_link)) =
+            self.parse_bracket_text(content, offset, children, markers, (text_start, close))?
+        else {
+            children.truncate(node_start);
+            return Ok(None);
+        };
+
+        if !made_link
+            && let Some(resolved) = self.resolve_link(content, close, &content[text_start..close])
+        {
+            // The trailing text run is held back for the caller to merge
+            // with what follows the bracket; as link children it ends here.
+            if resume < close {
+                Self::push_text(
+                    children,
+                    &content[resume..close],
+                    offset + resume,
+                    offset + close,
+                );
+            }
+            let mut inner_nodes = self
+                .allocator
+                .new_vec_with_capacity(children.len() - node_start - 1);
+            inner_nodes.extend(children.drain(node_start + 1..));
+            // Drops the speculative literal bracket.
+            children.truncate(node_start);
+            children.push(Node::Link(self.allocator.boxed(Link {
+                url: resolved.url,
+                title: resolved.title,
+                children: inner_nodes,
+                span: Span::new((offset + link_start) as u32, (offset + resolved.end) as u32),
+            })));
+            *pos = resolved.end;
+            return Ok(Some(true));
+        }
+
+        *pos = resume;
+        Ok(Some(made_link))
+    }
+
+    /// Parses `content[text_start..close]` in place: the same walk
+    /// `parse_inline` runs, bounded to the region and restricted to the one
+    /// marker that keeps it there.
+    ///
+    /// Returns the position where the region's trailing text run starts
+    /// (deliberately not pushed, so the caller's own run scan merges it with
+    /// what follows the bracket) and whether a link node was appended.
+    ///
+    /// `None` means the region is not one this walk can decide, and the
+    /// caller has to fall back to probing the text on its own:
+    ///
+    /// * A marker other than `[` inside it. Parsing a region in place is
+    ///   only the same as parsing it on its own while nothing inside it can
+    ///   reach past the closing bracket or pair with a delimiter outside it,
+    ///   and every other marker can: emphasis and the other delimiter runs
+    ///   pair across the bracket, a code span, an autolink, raw HTML, an
+    ///   image, an inline note or an MDX expression can all close after it,
+    ///   and a line ending folds into the run that follows.
+    /// * A construct that ended past the closing bracket after all. The
+    ///   brackets inside the region are balanced, so a `[` in it closes in
+    ///   it, but its destination or its label can still read past the `]` —
+    ///   `[[a](u]x)]` is one — and that answer is only known afterwards.
+    fn parse_bracket_text(
+        &self,
+        content: &'a str,
+        offset: usize,
+        children: &mut Vec<'a, Node<'a>>,
+        markers: &mut InlineMarkerScan,
+        region: (usize, usize),
+    ) -> ParseResult<Option<(usize, bool)>> {
+        let (text_start, close) = region;
+        // One inline context per bracket level, counted where the probe used
+        // to count it, so the nesting cap refuses exactly what it refused
+        // before (`docs/decisions/2026-09-17-inline-nesting-cap.md`).
+        let _depth = self.enter_inline(offset + text_start)?;
+        let bytes = content.as_bytes();
+        let mut made_link = false;
+        let mut recorded = false;
+        let mut pos = text_start;
+        loop {
+            let start = pos;
+            let marker = markers.next(bytes, pos);
+            if marker >= close {
+                return Ok(Some((start, made_link)));
+            }
+            if bytes[marker] != b'[' {
+                return Ok(None);
+            }
+            if !recorded {
+                // A bracket inside this one: without this, the brackets
+                // below would each walk their own text to find their `]`,
+                // once per level. One walk from here decides all of them.
+                // Not before the first one is found — a region that bails
+                // out above must not pay for the map.
+                recorded = true;
+                self.record_bracket_matches(content, marker + 1);
+            }
+            if marker > start {
+                Self::push_text(
+                    children,
+                    &content[start..marker],
+                    offset + start,
+                    offset + marker,
+                );
+            }
+            pos = marker;
+            made_link |= self.parse_link(content, offset, children, markers, &mut pos)?;
+            if pos > close {
+                return Ok(None);
+            }
+            if pos == close {
+                return Ok(Some((pos, made_link)));
+            }
+        }
     }
 
     fn try_parse_wiki_link(
@@ -269,6 +442,15 @@ impl<'a> Parser<'a> {
         *nodes = Some(parsed);
         Ok(verdict)
     }
+}
+
+/// Where a closed bracket resolves to, whichever of the three link forms
+/// answered (see [`Parser::resolve_link`]).
+struct ResolvedLink<'a> {
+    url: &'a str,
+    title: Option<&'a str>,
+    /// Byte index in the inline content just past the link's last byte.
+    end: usize,
 }
 
 fn split_wiki_link_inner(inner: &str, offset: usize) -> (&str, Option<&str>, usize) {

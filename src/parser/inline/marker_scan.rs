@@ -44,14 +44,14 @@ impl ForwardScan {
 /// The core classifier and enabled extension markers are selected in one
 /// forward lookup. Keeping one memo instead of one memo per optional marker
 /// avoids repeated traversals when several extensions are enabled.
-pub(super) struct InlineMarkerScan {
+pub(in crate::parser) struct InlineMarkerScan {
     optional: u8,
     notes_only: bool,
     scan: ForwardScan,
 }
 
 impl InlineMarkerScan {
-    pub(super) const fn new(options: &crate::ParserOptions) -> Self {
+    pub(in crate::parser) const fn new(options: &crate::ParserOptions) -> Self {
         let mut optional = 0;
         if options.mdx {
             optional |= INLINE_MARKER_MDX;
@@ -72,7 +72,7 @@ impl InlineMarkerScan {
         }
     }
 
-    pub(super) fn next(&mut self, bytes: &[u8], from: usize) -> usize {
+    pub(in crate::parser) fn next(&mut self, bytes: &[u8], from: usize) -> usize {
         let optional = self.optional;
         let notes_only = self.notes_only;
         self.scan.hit(from, |mut at| {
