@@ -45,9 +45,11 @@ component. The strategy updates natively, with no template to keep in step:
 
 Four `extra-files` entries cover the rest: a typed `$.version` for
 `node/ferromark/package.json`, one globbed `$.version` for the eight
-`node/ferromark/npm/*/package.json` manifests, and the three generic README
-blocks marked with `x-release-please-start-version` / `end-version` in
-`README.md.src`, the generated `README.md` and `node/ferromark/README.md`.
+`node/ferromark/npm/*/package.json` manifests, and the two generic README blocks
+marked with `x-release-please-start-version` / `end-version` in `README.md.src`
+and the generated `README.md`. Those blocks hold the versioned docs.rs link and
+nothing else: the install lines name the package alone, and
+`node/ferromark/README.md` carries no version, so it is not a template target.
 
 There is deliberately **no** `version.txt`, no Cargo `extra-files` and no
 `pnpm-lock.yaml` jsonpath. The npm facade references its sidecars with
@@ -62,17 +64,23 @@ directories: `pnpm pack` rewrites `workspace:*`, `npm pack` would not.
 
 ## Version selection
 
-Version selection uses the `prerelease` strategy pinned to `rc`. Inside the
-candidate series the proposal is automatic: any commit range on top of
-`2.0.0-rc.1` proposes `2.0.0-rc.2`, including a breaking `feat!` or a
-`BREAKING CHANGE:` footer, which never promotes a candidate out of its series.
-Leaving the series is deliberate, because the strategy never proposes a bare
-stable version on its own. Land the transition with an explicit footer —
-`Release-As: 2.0.0` for the stable release, `Release-As: 2.0.1` for the first
-patch after it. Without that footer a stable `2.0.0` would propose `2.0.1-rc`.
+Version selection uses Release Please's default strategy, so the commit range
+decides: a `fix:` proposes the next patch, a `feat:` the next minor, and a
+breaking change the next major. The candidate series ended with `2.0.0`, and the
+`versioning`, `prerelease-type` and `prerelease` keys were removed from
+`release-please-config.json` in that same release. A `Release-As: X.Y.Z` footer
+still overrides the proposal, which is how `2.0.0` left the candidate series.
+
+Starting a candidate series again is deliberate, never automatic. Land the first
+candidate with an explicit `Release-As: X.Y.Z-rc.1` footer. The default strategy
+then keeps the suffix but still bumps from the commit range — a `feat:` on
+`2.0.0-rc.1` proposes `2.1.0-rc.1` — so a series that has to stay inside one
+target version needs `versioning: prerelease`, `prerelease-type: rc` and
+`prerelease: true` restored for its duration and removed again by the commit
+that carries the stable `Release-As` footer.
 
 `include-component-in-tag` is false, so tags stay `v<version>`, matching the
-published `v2.0.0-rc.1`.
+published `v2.0.0`.
 
 ## Channels
 
@@ -80,9 +88,9 @@ The dist-tag is derived from the version by `node/scripts/release-channel.mjs`
 and passed to the publishing action explicitly: `X.Y.Z-rc.N` publishes to
 `next`, a stable `X.Y.Z` to `latest`. No other version shape is publishable.
 
-While v2 is in candidate testing, npm users install `ferromark@next` or the
-exact version; `npm install ferromark` stays on the stable release. The GitHub
-release for a candidate is a prerelease and does not become `latest`.
+Stable v2 is on `latest`, so `npm install ferromark` and `cargo add ferromark`
+select it. A future candidate publishes to `next` under an `X.Y.Z-rc.N` version,
+and its GitHub release is a prerelease that does not become `latest`.
 
 ## Rehearse the version bump
 
@@ -95,9 +103,9 @@ node scripts/rehearse-release.mjs /tmp/ferromark-release-review
 
 The output directory must not exist. It writes one directory per case, with the
 complete updated files and the release pull request text. The `automatic` case
-runs the repository's real released version through the prerelease strategy and
-must land on `2.0.0-rc.2`; the remaining cases seed an in-memory development
-version and check the forced RC1, RC2, stable and patch transitions. All of them
+seeds the stable `2.0.0` release and lets an ordinary maintenance range propose
+`2.0.1` on its own; the remaining cases seed an in-memory development version
+and check the forced RC1, RC2, stable and patch transitions. All of them
 use the real Release Please 17.6.0 Manifest, strategies and updaters, with a
 local read-only repository and commit source substituted for the GitHub client.
 
@@ -240,7 +248,7 @@ because the package does not exist yet.
 The release is already tagged, so a retry runs against that tag:
 
 ```sh
-gh workflow run publish.yml -f tag=v2.0.0-rc.1
+gh workflow run publish.yml -f tag=v2.0.0
 ```
 
 Every job checks out that tag rather than `main`, so a delayed retry cannot
@@ -261,4 +269,7 @@ prepended above the authored `## 2.0.0-rc.1` entry already in Git.
 file is added there for later versions.
 
 The homepage deploys from main. Its deployment is independent of registry
-publication; the candidate documentation must state the selected prerelease.
+publication and needs no release edit: `homepage/app/version.ts` reads the
+version from `node/ferromark/package.json`, which the release pull request
+updates, and `homepage/scripts/verify-build.mjs` fails the build unless the
+rendered pages carry exactly that version.

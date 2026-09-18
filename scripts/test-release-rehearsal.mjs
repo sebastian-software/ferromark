@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { it } from "node:test";
 import TOML from "@iarna/toml";
 import {
-  candidateHistory,
+  maintenanceHistory,
   proposeRelease,
   readReleaseFiles,
   root,
@@ -23,14 +23,16 @@ async function developmentBaseline() {
 it("configures the native rust strategy with one root component", () => {
   const config = JSON.parse(readReleaseFiles().get("release-please-config.json"));
   assert.equal(config["release-type"], "rust");
-  // The published tag is `v2.0.0-rc.1`, so the component must not enter it.
+  // The published tag is `v2.0.0`, so the component must not enter it.
   assert.equal(config["include-component-in-tag"], false);
   assert.deepEqual(Object.keys(config.packages), ["."]);
   const pkg = config.packages["."];
   assert.equal(pkg.component, "ferromark");
-  assert.equal(pkg.versioning, "prerelease");
-  assert.equal(pkg["prerelease-type"], "rc");
-  assert.equal(pkg.prerelease, true);
+  // The candidate series ended with 2.0.0; the stable series uses the default
+  // versioning strategy, so none of the prerelease keys may come back.
+  assert.equal(pkg.versioning, undefined, "the stable series uses default versioning");
+  assert.equal(pkg["prerelease-type"], undefined, "no candidate suffix is configured");
+  assert.equal(pkg.prerelease, undefined, "no prerelease flag is configured");
   assert.equal(pkg["version-file"], undefined, "version.txt belongs to the simple strategy");
   for (const entry of pkg["extra-files"]) {
     const path = typeof entry === "string" ? entry : entry.path;
@@ -85,23 +87,23 @@ it("builds coordinated RC, subsequent RC, stable, and patch release PRs with the
   }
 });
 
-it("proposes the next release candidate from the commit range alone", async () => {
-  // What the publish workflow opens after the first candidate: the released
-  // version is 2.0.0-rc.1 and no commit carries `Release-As`. Seed that version
+it("proposes the next patch release from the commit range alone", async () => {
+  // What the publish workflow opens after the stable release: the released
+  // version is 2.0.0 and no commit carries `Release-As`. Seed that version
   // explicitly instead of reading the checkout's own, so the case also holds on
   // a release pull request branch, where the files already carry the next one.
   const files = (
-    await proposeRelease(readReleaseFiles(), "chore: seed candidate\n\nRelease-As: 2.0.0-rc.1")
+    await proposeRelease(readReleaseFiles(), "chore: seed release\n\nRelease-As: 2.0.0")
   ).files;
-  assert.equal(JSON.parse(files.get(".release-please-manifest.json"))["."], "2.0.0-rc.1");
-  const proposed = await proposeRelease(files, candidateHistory);
-  validateRelease(proposed.files, "2.0.0-rc.2");
-  assert.ok(proposed.title.includes("2.0.0-rc.2"), proposed.title);
-  assert.ok(!proposed.title.includes("3.0.0"), "A breaking change must not leave the RC series");
+  assert.equal(JSON.parse(files.get(".release-please-manifest.json"))["."], "2.0.0");
+  const proposed = await proposeRelease(files, maintenanceHistory);
+  validateRelease(proposed.files, "2.0.1");
+  assert.ok(proposed.title.includes("2.0.1"), proposed.title);
+  assert.ok(!proposed.title.includes("-rc"), "The stable series carries no candidate suffix");
   // The generated notes head the authored 2.0.0-rc.1 section already in Git.
   const changelog = proposed.files.get("CHANGELOG.md");
-  assert.ok(changelog.startsWith("# Changelog\n\n## [2.0.0-rc.2]"), changelog.slice(0, 120));
-  assert.ok(changelog.includes("### ⚠ BREAKING CHANGES"));
+  assert.ok(changelog.startsWith("# Changelog\n\n## [2.0.1]"), changelog.slice(0, 120));
+  assert.ok(changelog.includes("### Bug Fixes"));
   assert.ok(changelog.includes("## 2.0.0-rc.1"), "Authored notes must survive");
   assert.ok(proposed.paths.includes("CHANGELOG.md"));
   assert.ok(proposed.paths.includes(".release-please-manifest.json"));
@@ -114,19 +116,38 @@ it("proposes the next release candidate from the commit range alone", async () =
   }
 });
 
-it("requires an explicit Release-As once the version leaves the candidate series", async () => {
-  // The prerelease strategy never proposes a bare stable version, so the
-  // `Release-As` footer stays mandatory for the stable and patch transitions.
+it("requires an explicit Release-As to leave a candidate series", async () => {
+  // With the default strategy a candidate series drifts rather than ending: a
+  // bare `feat:` on `2.0.0-rc.2` keeps the suffix and proposes `2.1.0-rc.2`.
+  // That is why the switch and the `Release-As: 2.0.0` footer belong together.
+  const files = (await proposeRelease(readReleaseFiles(), "chore: seed\n\nRelease-As: 2.0.0-rc.2"))
+    .files;
+  const drifted = await proposeRelease(files, "feat: a candidate addition");
+  assert.ok(drifted.title.includes("2.1.0-rc.2"), drifted.title);
+  const promoted = await proposeRelease(files, "feat: finalize v2\n\nRelease-As: 2.0.0");
+  validateRelease(promoted.files, "2.0.0");
+});
+
+it("proposes ordinary stable versions once the candidate series has ended", async () => {
   const files = (await proposeRelease(readReleaseFiles(), "chore: seed\n\nRelease-As: 2.0.0"))
     .files;
   validateRelease(files, "2.0.0");
-  const drifted = await proposeRelease(files, "fix: ordinary maintenance correction");
-  assert.ok(drifted.title.includes("2.0.1-rc"), drifted.title);
-  const pinned = await proposeRelease(
-    files,
-    "fix: ordinary maintenance correction\n\nRelease-As: 2.0.1",
-  );
-  validateRelease(pinned.files, "2.0.1");
+  for (const [expected, message] of [
+    ["2.0.1", "fix: ordinary maintenance correction"],
+    ["2.1.0", "feat: an added capability"],
+    ["3.0.0", "feat!: a removed option"],
+  ]) {
+    const proposed = await proposeRelease(files, message);
+    assert.ok(proposed.title.includes(expected), proposed.title);
+    assert.ok(!proposed.title.includes("-rc"), proposed.title);
+    validateRelease(proposed.files, expected);
+    if (message.startsWith("feat!")) {
+      assert.ok(proposed.files.get("CHANGELOG.md").includes("### ⚠ BREAKING CHANGES"));
+    }
+  }
+  // Starting a new candidate series again is deliberate, never automatic.
+  const candidate = await proposeRelease(files, "feat: prepare v3\n\nRelease-As: 3.0.0-rc.1");
+  validateRelease(candidate.files, "3.0.0-rc.1");
 });
 
 for (const missing of [

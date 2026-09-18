@@ -34,8 +34,8 @@ Custom hook output still requires your own escaping. See [rendering and trust](/
 | Profile                          | Parser                        | Renderer                            |
 | -------------------------------- | ----------------------------- | ----------------------------------- |
 | CommonMark specification         | `ParserOptions::commonmark()` | `HtmlRendererOptions::commonmark()` |
-| GFM specification                | `ParserOptions::gfm_spec()`   | `HtmlRendererOptions::gfm()`        |
-| GFM with publishing conveniences | `ParserOptions::gfm()`        | `HtmlRendererOptions::default()`    |
+| GFM specification                | `ParserOptions::gfm_spec()`   | `HtmlRendererOptions::gfm_spec()`   |
+| GFM with publishing conveniences | `ParserOptions::gfm()`        | `HtmlRendererOptions::gfm()`        |
 
 The specification renderer profiles disable automatic heading IDs, callouts,
 inline TOCs, and fence metadata cleanup. The GFM specification profile enables

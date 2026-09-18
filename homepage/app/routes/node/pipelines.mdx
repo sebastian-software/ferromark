@@ -17,8 +17,7 @@ with document metadata. All operations are synchronous.
 ```js
 import { transform } from "ferromark";
 
-const source =
-  "---\ntitle: Installation\n---\n# Installation\n\nRun `npm install ferromark@2.0.0-rc.1`.";
+const source = "---\ntitle: Installation\n---\n# Installation\n\nRun `npm install ferromark`.";
 const page = transform(source, { frontMatter: true });
 
 console.log(page.frontMatter); // 'title: Installation\n'
