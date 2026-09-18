@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 
 import { PlatformChoices } from "../components/platform-choices";
+import { version } from "../version";
 import "../styles/home.css";
 
 function LandingIntro() {
@@ -18,7 +19,7 @@ function LandingIntro() {
         features.
       </p>
       <p className="landing-aside">
-        <strong>Release candidate · 2.0.0-rc.1.</strong> V2 is in release-candidate testing.{" "}
+        <strong>Version {version}.</strong> V2 is a breaking upgrade from v1.{" "}
         <a href="https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md">
           Read the migration guide
         </a>

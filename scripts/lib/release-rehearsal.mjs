@@ -10,15 +10,13 @@ const quiet = Object.fromEntries(
   ["info", "debug", "trace", "warn", "error"].map((name) => [name, () => {}]),
 );
 
-// Representative of `git log --format=%B v2.0.0-rc.1..main`: a breaking renderer
-// change, a Node feature and documentation, and no `Release-As` footer. The
-// prerelease strategy must answer a breaking change on `2.0.0-rc.1` with
-// `2.0.0-rc.2` rather than promoting the candidate to a stable `3.0.0`.
-export const candidateHistory = [
-  "perf(renderer)!: borrow default renderer option strings\n\n" +
-    "BREAKING CHANGE: `HtmlRendererOptions::soft_break`, `hard_break` and `base_url` borrow their defaults.",
-  "feat(node): add a profile-guided training driver",
-  "docs(perf): record the third Apple Silicon iteration round",
+// Representative of an ordinary maintenance range on top of a stable release:
+// corrections and documentation, and no `Release-As` footer. The default
+// strategy must answer that range with the next patch version on its own.
+export const maintenanceHistory = [
+  "fix(renderer): keep footnote back-references inside the definition list",
+  "docs(releasing): describe the stable version selection",
+  "chore(deps): refresh the pinned toolchain",
 ];
 
 /** The eight native sidecar directories, read from the workspace itself. */
@@ -165,20 +163,18 @@ export function validateRelease(files, expectedVersion) {
     assert.equal(matches[0].version, expectedVersion, `${name}: Cargo.lock version`);
   }
 
+  // The docs.rs reference is the only versioned line left in a README, so it is
+  // the one assertion that proves the generic updater still runs. The install
+  // lines name the package alone and must stay that way after a bump.
   for (const readme of ["README.md.src", "README.md"]) {
     const text = files.get(readme);
     assert.ok(
       text.includes(`https://docs.rs/ferromark/${expectedVersion}/ferromark/`),
       `${readme}: docs.rs link`,
     );
-    assert.ok(text.includes(`Version \`${expectedVersion}\``), `${readme}: version statement`);
-    assert.ok(text.includes(`cargo add ferromark@=${expectedVersion}`), `${readme}: cargo add`);
-    assert.ok(text.includes(`npm install ferromark@${expectedVersion}`), `${readme}: npm install`);
+    assert.ok(text.includes("cargo add ferromark\n"), `${readme}: unversioned cargo add`);
+    assert.ok(text.includes("npm install ferromark\n"), `${readme}: unversioned npm install`);
   }
-  assert.ok(
-    files.get("node/ferromark/README.md").includes(`npm install ferromark@${expectedVersion}`),
-    "node README: npm install for the selected version",
-  );
 
   const main = json("node/ferromark/package.json");
   const pnpm = parseYaml(files.get("node/pnpm-lock.yaml"));

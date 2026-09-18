@@ -15,16 +15,21 @@ test("README source and generated output prominently link the live documentation
   }
 });
 
-test("README introduces the v2 release candidate and delegates detailed documentation", () => {
+test("README introduces the stable v2 release and delegates detailed documentation", () => {
   const source = read("README.md.src");
   assert.match(source, /^# Ferromark v2$/m);
   assert.match(source, /arena-allocated/);
-  assert.match(source, /release-candidate/);
-  // The release pull request bumps these lines together with the root package
-  // version, which is the product version the rust strategy owns.
+  assert.match(source, /breaking upgrade from v1/);
+  assert.match(source, /CHANGELOG\.md/);
+  // Install lines carry no version. The release pull request bumps the docs.rs
+  // reference alone, from the root package version the rust strategy owns.
   const version = read("Cargo.toml").match(/^version = "([^"]+)"$/m)[1];
-  assert.ok(source.includes(`npm install ferromark@${version}`), `README installs ${version}`);
-  assert.ok(source.includes(`cargo add ferromark@=${version}`), `README adds ${version}`);
+  assert.ok(
+    source.includes(`https://docs.rs/ferromark/${version}/ferromark/`),
+    `README links the docs.rs reference for ${version}`,
+  );
+  assert.ok(source.includes("npm install ferromark\n"), "README installs the npm package");
+  assert.ok(source.includes("cargo add ferromark\n"), "README adds the crate");
   assert.match(source, /docs\/migration-v2\.md/);
   assert.match(source, /node\/ferromark\/README\.md/);
   assert.match(source, /UPSTREAM\.md/);

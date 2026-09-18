@@ -6,6 +6,7 @@ order: 1
 # Start with Rust
 
 import { RuntimeSwitch } from "../../components/runtime-switch";
+import { docsRsUrl, version } from "../../version";
 
 <RuntimeSwitch topic="getting-started" />
 
@@ -13,13 +14,13 @@ Ferromark is an arena-allocated Markdown parser and HTML renderer. The Rust crat
 provides direct HTML helpers and an AST API for applications that need document
 structure. Requires **Rust 1.95 or newer**.
 
-## Install the release candidate
+## Install
 
 ```sh
-cargo add ferromark@=2.0.0-rc.1
+cargo add ferromark
 ```
 
-V2 is in release-candidate testing and has a breaking API change from v1.
+The current release is {version}. V2 has a breaking API change from v1.
 Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md).
 
 Save this in `src/main.rs` and run `cargo run`:
@@ -48,4 +49,4 @@ Rust defaults preserve raw HTML. For untrusted Markdown, explicitly set
 | Customize HTML output                   | `HtmlRenderHooks`                                |
 
 Continue with [configuration](/rust/configuration) and [content pipelines](/rust/pipelines).
-The [API reference](https://docs.rs/ferromark/2.0.0-rc.1/ferromark/) lists all types and methods.
+The <a href={docsRsUrl}>API reference</a> lists all types and methods.

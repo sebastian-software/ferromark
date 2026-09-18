@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'homepage/**'
+      # The documented version is read from this manifest at build time
+      # (homepage/app/version.ts), so a release pull request that touches
+      # nothing under homepage/ must still redeploy the site.
+      - 'node/ferromark/package.json'
       - '.github/workflows/deploy-homepage.yml'
   workflow_dispatch:
 

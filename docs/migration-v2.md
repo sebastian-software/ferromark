@@ -1,8 +1,9 @@
 # Migrating to Ferromark v2
 
 V2 lives in the existing Ferromark repository. The original v1 history and the
-separately developed v2 history are both retained. The first release candidate is
-`2.0.0-rc.1`; it is a breaking upgrade intended for testing before stable v2.
+separately developed v2 history are both retained. The stable release is `2.0.0`;
+it is a breaking upgrade from v1 and installs from npm's `latest` channel and
+from crates.io without a version qualifier.
 
 ## Rust
 
@@ -161,5 +162,6 @@ and strikethrough, plus heading IDs and callouts; autolink literals and footnote
 remain opt-in. Consult `node/ferromark/index.d.mts` for the supported options.
 
 MDX captures syntax and static island payloads; it does not compile or execute
-JavaScript. Release candidates use npm's `next` channel and explicit Cargo prerelease versions.
+JavaScript. Install the stable release with `npm install ferromark` and
+`cargo add ferromark`.
 Build and pack locally using [the package checks](releasing.md#local-package-checks).
