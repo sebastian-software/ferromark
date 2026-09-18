@@ -1,6 +1,6 @@
 //! Footnote reference and definition rendering.
 //!
-//! The default path keeps the current alpha markup: the source identifier is
+//! The default path keeps the established v2 markup: the source identifier is
 //! the visible marker, and each definition is an independent
 //! `<div class="footnote">`.
 //!

@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import {
-  candidateHistory,
+  maintenanceHistory,
   proposeRelease,
   readReleaseFiles,
   root,
@@ -108,20 +108,20 @@ function record(label, version, proposal) {
   });
 }
 
-// What the publish workflow opens after the first candidate without any
+// What the publish workflow opens after the stable release without any
 // `Release-As` footer; the released version is seeded so the case does not
 // depend on the version the checkout itself carries.
 record(
   "automatic",
-  "2.0.0-rc.2",
+  "2.0.1",
   await proposeRelease(
-    (await proposeRelease(readReleaseFiles(), "chore: seed candidate\n\nRelease-As: 2.0.0-rc.1"))
-      .files,
-    candidateHistory,
+    (await proposeRelease(readReleaseFiles(), "chore: seed release\n\nRelease-As: 2.0.0")).files,
+    maintenanceHistory,
   ),
 );
 
-// Forced transitions: the candidate series is automatic, leaving it is not.
+// Forced transitions: the candidate series that ended with 2.0.0 needed an
+// explicit footer to leave, which is what the rc.2 → 2.0.0 step rehearses.
 let files = (
   await proposeRelease(
     readReleaseFiles(),

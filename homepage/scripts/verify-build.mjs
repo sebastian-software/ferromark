@@ -42,14 +42,20 @@ const benchmarkPage = await readFile(
 );
 const guidePage = await readFile(new URL("guide/quick-start/index.html", outputDirectory), "utf8");
 
+// The documented version has one source: the npm facade manifest the release
+// pull request updates. `app/version.ts` reads it, so a release must reach the
+// rendered pages without any homepage edit. See docs/releasing.md.
+const { version } = JSON.parse(
+  await readFile(new URL("../../node/ferromark/package.json", import.meta.url), "utf8"),
+);
+
 const requiredFragments = [
   '"/assets/',
   '"/favicon.ico"',
   'class="site-header"',
   'class="site-footer"',
   "https://ferramenta.dev",
-  "Release candidate",
-  "release-candidate testing",
+  version,
   "Start with Rust",
   "Start with Node.js",
 ];
@@ -96,6 +102,13 @@ check(guidePage, "guide page", { required: requiredGuideFragments, forbidden: fo
 // eslint-disable-next-line security/detect-unsafe-regex -- This scans local build output, not externally supplied HTML.
 if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {
   throw new Error("Prerendered homepage contains a nav nested directly inside a paragraph");
+}
+
+// Removing the published version must leave no candidate version behind: any
+// `-rc.` that survives was written into a page by hand instead of read from
+// `node/ferromark/package.json`.
+if (homepage.replaceAll(version, "").includes("-rc.")) {
+  throw new Error("Prerendered homepage contains a hard-coded release-candidate version");
 }
 
 for (const path of expectedPages) {

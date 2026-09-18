@@ -13,11 +13,10 @@ or its native Node.js bindings.
 [Rust API](https://docs.rs/ferromark/2.0.0-rc.2/ferromark/) ·
 [Node.js package](node/ferromark/README.md)
 
-**V2 is in release-candidate testing.** Version `2.0.0-rc.2` is a breaking upgrade
-from v1. Read the [changelog](CHANGELOG.md) and
-[migration guide](docs/migration-v2.md). npm's stable `latest` channel remains on v1.
-
 <!-- x-release-please-end-version -->
+
+**V2 is a breaking upgrade from v1.** Read the [changelog](CHANGELOG.md) and the
+[migration guide](docs/migration-v2.md) before upgrading.
 
 ## Why Ferromark
 
@@ -47,13 +46,9 @@ explain the details and trade-offs.
 
 ### Rust
 
-<!-- x-release-please-start-version -->
-
 ```sh
-cargo add ferromark@=2.0.0-rc.2
+cargo add ferromark
 ```
-
-<!-- x-release-please-end-version -->
 
 ```rust
 let html = ferromark::to_html("Hello, **world**!").unwrap();
@@ -67,13 +62,9 @@ covers configuration, ownership, and AST access through `ferromark`.
 
 ### Node.js
 
-<!-- x-release-please-start-version -->
-
 ```sh
-npm install ferromark@2.0.0-rc.2
+npm install ferromark
 ```
-
-<!-- x-release-please-end-version -->
 
 ```js
 import { toHtml } from 'ferromark'

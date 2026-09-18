@@ -1,7 +1,7 @@
 //! Ferromark v2: an arena-allocated Markdown parser and HTML renderer.
 //!
 //! This implementation derives from OX-Content. Its API is not
-//! compatible with Ferromark v1 and is not yet a stable v2 release.
+//! compatible with Ferromark v1; see the migration guide in the repository.
 //!
 //! ```
 //! let html = ferromark::to_html("Hello, **world**!")?;

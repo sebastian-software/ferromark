@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to (re)publish, for example v2.0.0-rc.1"
+        description: "Release tag to (re)publish, for example v2.0.0"
         required: true
         type: string
 
@@ -272,7 +272,7 @@ jobs:
 
       # npm reads a bare `directory/name.tgz` as the GitHub shorthand
       # `owner/repo`; only `./directory/name.tgz` is a local tarball. The
-      # script emits that shape since v2.0.0-rc.3, but a retry checks out the
+      # script emits that shape itself, but a retry checks out the
       # release tag's scripts while taking this workflow from `main`, so the
       # workflow settles the shape itself for every tag.
       - id: tarballs

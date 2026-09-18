@@ -22,19 +22,15 @@ const [readme, packageJson, loader, nativeTargets, declarations, nativeOptions] 
 // This contract intentionally keeps all release-facing assertions together.
 // eslint-disable-next-line max-statements
 function assertReadmeContract(candidate) {
-  assert.match(candidate, /ferromark@next/);
-  assert.ok(
-    candidate.includes(`npm install ${packageJson.name}@${packageJson.version}`),
-    "README must show npm install for the selected version",
-  );
   assert.match(candidate, /pnpm build/);
   assert.match(candidate, /migration-v2/);
 
-  assert.match(candidate, /^## Install the release candidate$/m);
-  assert.match(
-    candidate,
-    new RegExp(`npm install ${packageJson.name}`),
-    "README must show npm install",
+  assert.match(candidate, /^## Install$/m);
+  // The stable install line carries no version, so the release template no
+  // longer updates this README and the line must stay unversioned.
+  assert.ok(
+    candidate.includes(`npm install ${packageJson.name}\n`),
+    `README must show \`npm install ${packageJson.name}\` without a version`,
   );
   assert.match(candidate, /pnpm install --frozen-lockfile/);
 

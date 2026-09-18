@@ -152,7 +152,7 @@ pub struct HtmlRendererOptions {
 
     /// Render footnotes as one ordered section with numeric display markers.
     ///
-    /// Off by default so current alpha HTML stays stable. When on, source
+    /// Off by default so the established v2 HTML stays stable. When on, source
     /// identifiers are used only for lookup and slugs; visible markers are
     /// 1, 2, … in document order, and definitions emit as
     /// `<section class="footnotes"><ol><li>…`.

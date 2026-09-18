@@ -78,7 +78,8 @@ wait are defined once for the organization. The repository-local
 automatic — a breaking change on `2.0.0-rc.1` proposes `2.0.0-rc.2`, not
 `3.0.0` — and leaving the series still needs an explicit `Release-As` footer.
 `include-component-in-tag` is false, so the tag stays `v<version>` and the
-published `v2.0.0-rc.1` remains the anchor for the next cycle.
+published `v2.0.0-rc.1` remains the anchor for the next cycle. The stable
+release amended this paragraph; see the amendment below.
 
 ## Consequences
 
@@ -108,7 +109,7 @@ protection on `main` is what carries that now.
 `node --test scripts/test-release-rehearsal.mjs` runs the pinned Release Please
 17.6.0 Manifest, strategies and updaters against the repository's own files and
 a synthetic commit history, with no GitHub client and no publishing method. It
-covers the automatic `rc.1 → rc.2` proposal, the forced
+covers the automatic `2.0.0 → 2.0.1` proposal, the forced
 `dev → rc.1 → rc.2 → stable → patch` transitions, a missing typed entry for each
 npm manifest group, an inherited member version — which the library's Cargo
 updater refuses outright — and a path dependency without a version, which it
@@ -128,6 +129,28 @@ Three things are observable only on GitHub and were not rehearsed here: the
 crates.io and npm Trusted Publishing exchanges, the two cross-compiled musl
 builds, and the `autorelease:` label lifecycle now that `createReleases()` runs
 again.
+
+## Amendment (2026-09-18): default versioning for the stable series
+
+The candidate series ended with `2.0.0`. That release removed `versioning`,
+`prerelease-type` and `prerelease` from `release-please-config.json`, so version
+selection follows Release Please's default strategy from here and the commit
+range decides the next stable version: `fix:` a patch, `feat:` a minor, a
+breaking change a major.
+
+Keeping the prerelease strategy was not an option. On top of a stable `2.0.0` it
+proposes `2.0.1-rc` for an ordinary fix — a shape
+`node/scripts/release-channel.mjs` refuses to publish, and it refuses it only
+after the tag and the GitHub release already exist. The switch and the
+`Release-As: 2.0.0` footer therefore belonged to the same release: under the
+default strategy without that footer a candidate series drifts instead of ending
+(a `feat:` on `2.0.0-rc.2` proposes `2.1.0-rc.2`).
+
+The GitHub release flag is unaffected. Release Please marks a release as a
+prerelease only when the version has a prerelease part or its major is 0, so
+`v2.0.0` is an ordinary release under either configuration. Starting a candidate
+series again is deliberate and is described in
+[releasing.md](../releasing.md).
 
 ## Sources
 

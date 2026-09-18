@@ -5,18 +5,11 @@ Native Node.js bindings for the [Ferromark](https://github.com/sebastian-softwar
 [Documentation site](https://ferromark.dev/) ·
 [Rust crate](https://crates.io/crates/ferromark)
 
-## Install the release candidate
-
-<!-- x-release-please-start-version -->
+## Install
 
 ```sh
-npm install ferromark@2.0.0-rc.2
+npm install ferromark
 ```
-
-<!-- x-release-please-end-version -->
-
-After publication, `ferromark@next` selects the latest release candidate.
-`npm install ferromark` stays on the stable release until v2 is finalized.
 
 To build from source, check out this repository and run from `node/`:
 
