@@ -16,8 +16,11 @@ compared as its message. Each source is rendered under three option sets:
 - GFM plus `wiki_links`, `inline_footnotes`, `superscript`, `subscript`,
   `highlight`, `math`, `mdx` and `definition_lists`
 
-each with `max_nesting_depth = 0`, so deep shapes are parsed rather than
-refused.
+in seven combinations: those three with `max_nesting_depth = 0`, so deep
+shapes are parsed rather than refused; GFM at the default cap of 100; and
+three more at an artificially tight cap of 4 (all extensions, GFM, and all
+extensions without `wiki_links`), where any difference in how a bracket level
+is counted turns into a different verdict on a short document.
 
 ## What is in it
 
@@ -34,16 +37,21 @@ suffix), and the depth series 1, 2, 3, 4, 8, 17 of five nesting shapes.
 
 ## Runs
 
-| Seed | Sources | Tokens per source | Renders | Checksum |
-| --- | ---: | ---: | ---: | --- |
-| `0x9e3779b97f4a7c15` | 60,129 | 1–14 | 180,387 | `3405cd6a654954cb` |
-| 11111111 | 200,129 | 1–8 | 600,387 | `4c640df9f294ad25` |
-| 2468013579 | 200,129 | 1–24 | 600,387 | `57f9c2ff9c06f9a8` |
-| 777777777 | 60,129 | 1–48 | 180,387 | `cf7151318335b39f` |
+| Seed | Sources | Tokens per source | Renders | Differing |
+| --- | ---: | ---: | ---: | ---: |
+| 777777777 | 60,129 | 1–48 | 420,903 | 1 |
+| 2468013579 | 60,129 | 1–24 | 420,903 | 0 |
+| 31415926 | 60,129 | 1–32 | 420,903 | 0 |
+| 8675309 | 60,129 | 1–16 | 420,903 | 0 |
+| 112358 | 60,129 | 1–40 | 420,903 | 1 |
 
-The checksum is the sum of the per-case hashes; it is equal on both sides of
-every run, and so is every individual line — the runs were compared with
-`diff`, not by checksum alone.
+Every line of every run was compared with `diff`, not by checksum. Both
+differing sources are the `wiki_links` case described in the decision record
+and both are under the cap of 4: every other option set, the default cap and
+the lifted cap included, is identical in all five runs. An earlier round of
+the same corpus, before the walk read and wrote the probe cache and before an
+abandoned attempt restored the depth counter, differed in five sources of one
+run instead of one.
 
 ## Harness
 

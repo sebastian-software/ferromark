@@ -20,6 +20,13 @@ The trailing text run of the region is deliberately left unpushed and its
 start is handed back, so the caller's own run scan produces the one text node
 that reaches past the closing bracket — the node shape the fallback produced.
 
+The walk runs only where it is the whole of the work. Bracket text holding
+any marker other than `[` is handed to the probe *before* a byte of it is
+parsed, and so is text the probe has already judged: its cached verdict
+stands and the fallback is what the parse of it has to be. The walk records
+its own verdict in that same cache, exactly as the probe would, and an
+attempt that has to be abandoned restores what it found.
+
 The walk for a bracket's `]` keeps what it learns. `scan_balanced` is one
 walk, and where a second walk over the same bytes is coming
 (`scan_balanced_matched`, `record_bracket_matches`) it records the match of
@@ -77,7 +84,38 @@ unbalanced too. An opener inside a region a walk skipped whole is never
 recorded, so a scan starting inside a code span still walks for itself.
 
 `link_probe_cache` stays: the probe path still memoizes its verdicts for the
-regions the guards exclude.
+regions the guards exclude, and the walk reads and writes it so that the two
+paths agree on which texts have been judged already.
+
+## The one verdict that can differ
+
+[The emphasis bound](2026-09-17-inline-nesting-cap.md) counts the inline
+contexts a parse opens, and a context is opened per sub-parse that *runs*: an
+abandoned probe counts, a probe answered from `link_probe_cache` does not.
+This change replaces a probe plus a re-parse of the same text with one parse,
+so which sub-parses run is not the same, and at the cap that can change a
+verdict.
+
+Reading the cache before the walk and recording the walk's verdict in it
+aligns every case the differential corpus found except one class, and that
+one needs `wiki_links`: it is the only path that probes a slice which is not
+a bracket text at the same position (a trimmed `[[…|…]]` label), so it seeds
+the cache for ranges the walk never sees. With `max_nesting_depth = 4` and
+every extension on, `[[[[[][]()]]]]` renders on `main` and is refused here;
+with `wiki_links` off, both refuse it. Across 300,645 generated sources under
+seven option sets (2.1 M renders) two sources differ, both of that class and
+both under an artificially tight cap; with the cap at its default of 100 or
+lifted, none do.
+
+The band this can move is the one the cap documents as pathological: a
+document has to reach `max_nesting_depth` levels of combined inline nesting
+before the bound fires at all, and the count it fires on is an
+over-approximation by construction — `main` refuses documents that are not
+that deep because a speculative parse ran, and it accepts documents that are
+because one was cached. No hand-written document is within one level of 100.
+Pinning the verdict there would mean bounding the tree a parse keeps rather
+than the sub-parses that happen to run, which is the emphasis bound's own
+concern and not this change's.
 
 ## Why change
 
@@ -93,13 +131,15 @@ quadratic in the number of openers. The numbers and the paired runs are in
 
 ## Validation
 
-Output equality first, timing after. A differential corpus of 460,000
+Output equality first, timing after. A differential corpus of 300,645
 generated bracket-heavy sources plus the hand-picked shapes around the new
-path, each rendered under the default, GFM and all-extensions profiles with
-the cap lifted (1.4 M renders), is byte-identical in HTML *and* in the AST
-`Debug` between `main` and this change. `cargo test --workspace
---all-features --locked` passes with no `.snap.new` file, so the snapshot
-suites and the CommonMark 0.31.2 and GFM conformance baselines are unchanged.
+path, each rendered under seven option sets — default, GFM and
+all-extensions with the cap lifted, GFM at the default cap of 100, and three
+at an artificially tight cap of 4 — is byte-identical in HTML *and* in the
+AST `Debug` between `main` and this change, apart from the two sources of the
+class above. `cargo test --workspace --all-features --locked` passes with no
+`.snap.new` file, so the snapshot suites and the CommonMark 0.31.2 and GFM
+conformance baselines are unchanged.
 
 `src/parser/delimiters/tests.rs` pins the recorded matches against the plain
 walk from every position of a generated token corpus, cold and after
@@ -108,13 +148,14 @@ produces, the destination that reaches past the outer bracket, the markup
 that keeps pairing across the bracket, and three costs: nested groups now
 cost the same per byte at depth 25 and depth 100, deep nesting past the
 lifted cap finishes, and a run of openers with one closer is linear. All
-three fail on `main`.
+three cost tests fail on `main`.
 
-The in-place walk also recurses less: three frames per bracket level against
-the probe path's four. On a 1 MiB stack with the cap lifted, `[`×N `a` `]`×N
-parsed to N = 950 before and to N = 2400 after. The default cap of 100 keeps
-every parse far from that either way.
+The walk also recurses less than the probe path it replaces. With the cap
+lifted on a 1 MiB worker stack, `[`×N `a` `]`×N parsed to N = 900 and
+overflowed by N = 950 before the change; after it, N = 1200 parses and
+N = 1600 overflows. The default cap of 100 keeps every ordinary parse an
+order of magnitude away from either bound, which is what the cap is for.
 
 The MDX open-tag case in the same issue (`<A>`×40000 with `mdx: true`) is
 quadratic for its own reason in `mdx_jsx`, shares nothing with this path and
-is unchanged at 4.9 s; it needs its own fix.
+is unchanged at 5.4 s; it needs its own fix.

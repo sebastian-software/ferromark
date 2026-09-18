@@ -214,6 +214,14 @@ pub struct Parser<'a> {
     /// long as the cache exists.
     bracket_matches: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), (usize, bool)>>,
 
+    /// Memo for the next byte in a content slice that could start an inline
+    /// construct other than a bracket (see `next_bracket_text_stop`).
+    ///
+    /// Bracket text is parsed where it stands only while it holds nothing
+    /// but text and brackets, and a nested run asks that question once per
+    /// level over the same slice. One forward window answers all of them.
+    bracket_text_stop: std::cell::Cell<delimiters::ForwardMemo>,
+
     /// Memoized position of the final `]` or `}` in a content slice, keyed
     /// the same way as `link_probe_cache` plus the byte being looked for.
     ///
@@ -291,6 +299,7 @@ impl<'a> Parser<'a> {
             definition_marker: std::cell::Cell::new(None),
             link_probe_cache: std::cell::RefCell::default(),
             bracket_matches: std::cell::RefCell::default(),
+            bracket_text_stop: std::cell::Cell::default(),
             last_closer: std::cell::RefCell::default(),
             definition_region: None,
             comment_definition_region: None,
@@ -357,6 +366,7 @@ impl<'a> Parser<'a> {
             definition_marker: std::cell::Cell::new(None),
             link_probe_cache: std::cell::RefCell::default(),
             bracket_matches: std::cell::RefCell::default(),
+            bracket_text_stop: std::cell::Cell::default(),
             last_closer: std::cell::RefCell::default(),
             definition_region: None,
             comment_definition_region: None,

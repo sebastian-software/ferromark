@@ -77,9 +77,14 @@ impl<'a> Parser<'a> {
             // be parsed once per level: probed here, then parsed again by
             // the fallback below, at every enclosing bracket. Parse it in
             // place instead — the fallback's own result — and decide
-            // afterwards. `None` means the region could not be parsed where
-            // it stands and the probe below has to settle it.
+            // afterwards. Text that holds anything but brackets is left to
+            // the probe *before* any of it is parsed, so the two paths never
+            // both run over the same bytes. `None` means the walk found a
+            // construct that ends past the closing bracket after all, which
+            // only its own parse can settle.
             if nested
+                && self.cached_probe_verdict(link_text).is_none()
+                && self.next_bracket_text_stop(content, text_start) >= close
                 && let Some(made_link) = self.parse_nested_bracket(
                     content,
                     offset,
@@ -214,19 +219,24 @@ impl<'a> Parser<'a> {
     ) -> ParseResult<Option<bool>> {
         let (link_start, close) = bracket;
         let text_start = link_start + 1;
+        let link_text = &content[text_start..close];
         let node_start = children.len();
+        let nested_depth = self.nested_inline_depth();
         Self::push_text(children, "[", offset + link_start, offset + link_start + 1);
 
         let Some((resume, made_link)) =
             self.parse_bracket_text(content, offset, children, markers, (text_start, close))?
         else {
             children.truncate(node_start);
+            self.restore_nested_inline_depth(nested_depth);
             return Ok(None);
         };
+        // This walk answered what the probe would have been asked, so the
+        // probe never has to ask it again — of this text, or of the same
+        // bytes reached as a wiki-link label.
+        self.remember_probe_verdict(link_text, made_link);
 
-        if !made_link
-            && let Some(resolved) = self.resolve_link(content, close, &content[text_start..close])
-        {
+        if !made_link && let Some(resolved) = self.resolve_link(content, close, link_text) {
             // The trailing text run is held back for the caller to merge
             // with what follows the bracket; as link children it ends here.
             if resume < close {
@@ -265,20 +275,20 @@ impl<'a> Parser<'a> {
     /// (deliberately not pushed, so the caller's own run scan merges it with
     /// what follows the bracket) and whether a link node was appended.
     ///
-    /// `None` means the region is not one this walk can decide, and the
-    /// caller has to fall back to probing the text on its own:
+    /// The caller has already refused every region holding a marker other
+    /// than `[` (`Parser::next_bracket_text_stop`): parsing a region in
+    /// place is only the same as parsing it on its own while nothing inside
+    /// it can reach past the closing bracket or pair with a delimiter
+    /// outside it, and every other marker can — emphasis and the other
+    /// delimiter runs pair across the bracket, a code span, an autolink,
+    /// raw HTML, an image, an inline note or an MDX expression can all close
+    /// after it, and a line ending folds into the run that follows.
     ///
-    /// * A marker other than `[` inside it. Parsing a region in place is
-    ///   only the same as parsing it on its own while nothing inside it can
-    ///   reach past the closing bracket or pair with a delimiter outside it,
-    ///   and every other marker can: emphasis and the other delimiter runs
-    ///   pair across the bracket, a code span, an autolink, raw HTML, an
-    ///   image, an inline note or an MDX expression can all close after it,
-    ///   and a line ending folds into the run that follows.
-    /// * A construct that ended past the closing bracket after all. The
-    ///   brackets inside the region are balanced, so a `[` in it closes in
-    ///   it, but its destination or its label can still read past the `]` —
-    ///   `[[a](u]x)]` is one — and that answer is only known afterwards.
+    /// `None` is the one thing left that only the walk can find: a
+    /// construct that ends past the closing bracket. The brackets inside
+    /// the region are balanced, so a `[` in it closes in it, but its
+    /// destination or its label can still read past the `]` — `[[a](u]x)]`
+    /// is one.
     fn parse_bracket_text(
         &self,
         content: &'a str,
@@ -303,6 +313,9 @@ impl<'a> Parser<'a> {
                 return Ok(Some((start, made_link)));
             }
             if bytes[marker] != b'[' {
+                // `next_bracket_text_stop` refused every other marker before
+                // this walk started; keep the walk honest if the two byte
+                // sets ever drift apart.
                 return Ok(None);
             }
             if !recorded {
@@ -407,6 +420,25 @@ impl<'a> Parser<'a> {
         None
     }
 
+    /// The verdict a probe has already reached for these exact bytes, if
+    /// any. Bracket text is parsed in place only when there is none, so a
+    /// text the probe has judged keeps taking the path it took before.
+    fn cached_probe_verdict(&self, link_text: &'a str) -> Option<bool> {
+        let cache = self.link_probe_cache.borrow();
+        if cache.is_empty() {
+            return None;
+        }
+        cache
+            .get(&(link_text.as_ptr() as usize, link_text.len()))
+            .copied()
+    }
+
+    fn remember_probe_verdict(&self, link_text: &'a str, verdict: bool) {
+        self.link_probe_cache
+            .borrow_mut()
+            .insert((link_text.as_ptr() as usize, link_text.len()), verdict);
+    }
+
     /// Reports whether `link_text` already parses to something containing a
     /// link, so the surrounding bracket cannot become one.
     ///
@@ -419,10 +451,9 @@ impl<'a> Parser<'a> {
         offset: usize,
         nodes: &mut Option<Vec<'a, Node<'a>>>,
     ) -> ParseResult<bool> {
-        let key = (link_text.as_ptr() as usize, link_text.len());
-        // Borrow only for the lookup: the parse below re-enters this method.
-        let cached = self.link_probe_cache.borrow().get(&key).copied();
-        if let Some(verdict) = cached {
+        // Look the verdict up without holding the borrow: the parse below
+        // re-enters this method.
+        if let Some(verdict) = self.cached_probe_verdict(link_text) {
             return Ok(verdict);
         }
         let parsed = match self.parse_inline(link_text, offset) {
@@ -438,7 +469,7 @@ impl<'a> Parser<'a> {
             Err(_) => return Ok(false),
         };
         let verdict = contains_link(&parsed);
-        self.link_probe_cache.borrow_mut().insert(key, verdict);
+        self.remember_probe_verdict(link_text, verdict);
         *nodes = Some(parsed);
         Ok(verdict)
     }

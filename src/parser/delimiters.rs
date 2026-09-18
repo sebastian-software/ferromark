@@ -123,6 +123,35 @@ impl<'a> Parser<'a> {
         })
     }
 
+    /// The first byte at or after `from` that could start an inline
+    /// construct other than a bracket, or `content.len()` when there is
+    /// none.
+    ///
+    /// Answers whether a bracket's text can be parsed where it stands
+    /// before any of it is parsed: a region that holds one of these bytes
+    /// is handed to the probe untouched, so the two paths never both run
+    /// over the same text. One memo covers a whole nested run, which is
+    /// what keeps the question O(1) per level.
+    pub(super) fn next_bracket_text_stop(&self, content: &'a str, from: usize) -> usize {
+        let memo = self.bracket_text_stop.get();
+        let base = content.as_ptr() as usize;
+        if memo.content == base
+            && memo.len == content.len()
+            && from >= memo.origin
+            && from <= memo.hit
+        {
+            return memo.hit;
+        }
+        let hit = BRACKET_TEXT_STOP.first_in(content.as_bytes(), from);
+        self.bracket_text_stop.set(ForwardMemo {
+            content: base,
+            len: content.len(),
+            origin: from,
+            hit,
+        });
+        hit
+    }
+
     /// The recorded match for a scan of `content` starting at `cursor`.
     ///
     /// A walk that recorded an opener recorded every opener inside it too,
@@ -233,6 +262,21 @@ impl<'a> Parser<'a> {
     }
 }
 
+/// One memoized forward byte search over one slice.
+///
+/// Same shape as the inline marker scan's memo: when the first hit at or
+/// after `origin` is `hit`, it is still `hit` for every position in
+/// `origin..=hit`, so a walk that moves forward recomputes only when it
+/// leaves that window. `content` and `len` name the slice the window
+/// belongs to, since nested content is parsed as slices of one buffer.
+#[derive(Clone, Copy, Default)]
+pub(super) struct ForwardMemo {
+    content: usize,
+    len: usize,
+    origin: usize,
+    hit: usize,
+}
+
 /// Bytes that can change the outcome of [`Parser::scan_balanced`]: the
 /// escape and code-span markers, the start of an autolink or raw HTML tag,
 /// and the brackets themselves.
@@ -243,6 +287,32 @@ static BRACKET_STOP: ByteClass = ByteClass::from_flags({
     t[b'<' as usize] = 1;
     t[b'[' as usize] = 1;
     t[b']' as usize] = 1;
+    t
+});
+
+/// Every byte that can start an inline construct, except `[`.
+///
+/// This is the marker set of `InlineMarkerScan` with every optional marker
+/// switched on and the bracket taken out, so a region without one of these
+/// holds nothing but text and brackets whatever the options say. Being
+/// wider than the enabled marker set only refuses more regions, never
+/// fewer.
+static BRACKET_TEXT_STOP: ByteClass = ByteClass::from_flags({
+    let mut t = [0u8; 256];
+    t[b'*' as usize] = 1;
+    t[b'_' as usize] = 1;
+    t[b'`' as usize] = 1;
+    t[b'!' as usize] = 1;
+    t[b'~' as usize] = 1;
+    t[b'\\' as usize] = 1;
+    t[b'<' as usize] = 1;
+    t[b'&' as usize] = 1;
+    t[b'\n' as usize] = 1;
+    t[b'\r' as usize] = 1;
+    t[b'{' as usize] = 1;
+    t[b'^' as usize] = 1;
+    t[b'$' as usize] = 1;
+    t[b'=' as usize] = 1;
     t
 });
 

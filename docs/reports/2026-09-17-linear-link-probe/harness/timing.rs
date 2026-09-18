@@ -2,9 +2,13 @@
 //! Timing harness for the nested-link shapes of issue #350.
 //!
 //! usage: probe <shape> <n> <groups> <cap> [profile]
+//!        probe stack <shape> <n> <stack_kib>   parse on a fixed stack
+//!        probe file <path>                      parse and render one file
+//!        probe one <profile> <source>           render one source
+//!        probe fuzz <seed> <count> <max_tokens> the differential corpus
 //! shape: nest-inline | nest-ref | nest-plain | one-closer | nest-image | mdx-open
 //! cap: max_nesting_depth (0 = unlimited)
-//! profile: default | gfm | all
+//! profile: default | gfm | wiki | mdx
 
 mod fuzz;
 use std::time::Instant;
@@ -89,6 +93,10 @@ fn main() {
         );
         return;
     }
+    if args[1] == "one" {
+        fuzz::one(args[2].parse().unwrap(), &args[3]);
+        return;
+    }
     if args[1] == "fuzz" {
         fuzz::run(
             args[2].parse().unwrap(),
@@ -112,6 +120,11 @@ fn main() {
         runs += 1;
         let mut options = match profile {
             "gfm" => ParserOptions::gfm(),
+            "wiki" => {
+                let mut o = ParserOptions::gfm();
+                o.wiki_links = true;
+                o
+            }
             "mdx" => {
                 let mut o = ParserOptions::default();
                 o.mdx = true;

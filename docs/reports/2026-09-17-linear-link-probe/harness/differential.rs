@@ -10,24 +10,34 @@ const TOKENS: &[&str] = &[
     "[a](u)", "][r]", "[]", "\t", "|", "\"", "'", ":", "-", "e",
 ];
 
+/// Five option sets. The capped ones matter as much as the lifted ones:
+/// with a tiny cap, any difference in how a bracket level is counted turns
+/// into a different verdict on a short document.
+const PROFILES: usize = 7;
+
 fn options(profile: usize) -> ParserOptions {
-    let mut o = match profile {
-        0 => ParserOptions::default(),
-        1 => ParserOptions::gfm(),
+    let mut all = ParserOptions::gfm();
+    all.wiki_links = true;
+    all.inline_footnotes = true;
+    all.superscript = true;
+    all.subscript = true;
+    all.highlight = true;
+    all.math = true;
+    all.mdx = true;
+    all.definition_lists = true;
+    let (mut o, cap) = match profile {
+        0 => (ParserOptions::default(), 0),
+        1 => (ParserOptions::gfm(), 0),
+        2 => (all, 0),
+        3 => (ParserOptions::gfm(), 100),
+        4 => (all, 4),
+        5 => (ParserOptions::gfm(), 4),
         _ => {
-            let mut all = ParserOptions::gfm();
-            all.wiki_links = true;
-            all.inline_footnotes = true;
-            all.superscript = true;
-            all.subscript = true;
-            all.highlight = true;
-            all.math = true;
-            all.mdx = true;
-            all.definition_lists = true;
-            all
+            all.wiki_links = false;
+            (all, 4)
         }
     };
-    o.max_nesting_depth = 0;
+    o.max_nesting_depth = cap;
     o
 }
 
@@ -40,6 +50,10 @@ fn render(source: &str, profile: usize) -> String {
         }
         Err(error) => format!("ERR {error}"),
     }
+}
+
+pub fn one(profile: usize, source: &str) {
+    println!("{}", render(source, profile));
 }
 
 pub fn run(seed: u64, count: usize, max_tokens: u64) {
@@ -83,7 +97,7 @@ pub fn run(seed: u64, count: usize, max_tokens: u64) {
     }
     let mut hits = 0u64;
     for (index, source) in cases.iter().enumerate() {
-        for profile in 0..3 {
+        for profile in 0..PROFILES {
             let rendered = render(source, profile);
             let mut hash = 0xcbf2_9ce4_8422_2325u64;
             for byte in rendered.as_bytes() {

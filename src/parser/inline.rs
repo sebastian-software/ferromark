@@ -124,6 +124,25 @@ impl<'a> Parser<'a> {
         })
     }
 
+    /// The nested-inline-depth counter as it stands, without allocating it.
+    ///
+    /// An inline context that is opened and then thrown away whole — the
+    /// in-place bracket walk that finds a construct reaching past its
+    /// closing bracket — has to leave the counter as it found it, or the
+    /// probe that settles the same text afterwards would be counted twice.
+    pub(super) fn nested_inline_depth(&self) -> usize {
+        self.nested_inline_depth
+            .get()
+            .map_or(0, std::cell::Cell::get)
+    }
+
+    /// Puts back a value from [`Self::nested_inline_depth`].
+    pub(super) fn restore_nested_inline_depth(&self, depth: usize) {
+        if let Some(cell) = self.nested_inline_depth.get() {
+            cell.set(depth);
+        }
+    }
+
     /// The shared depth cell, allocated on the first inline context of a
     /// parse. A parser that never reaches inline content — the definition
     /// pre-pass, and every rejected block probe — leaves the arena
