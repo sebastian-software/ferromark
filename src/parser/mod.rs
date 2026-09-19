@@ -234,6 +234,15 @@ pub struct Parser<'a> {
     /// one scan in total.
     last_closer: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize, u8), Option<usize>>>,
 
+    /// Memoized presence of a closing JSX tag in an inline content slice.
+    ///
+    /// An unclosed run of JSX openers used to rescan the rest of the slice for
+    /// every opener. The first scan settles the useful fast-path question for
+    /// the whole slice: when no matching closer exists, every later opener is
+    /// necessarily unclosed as well.
+    mdx_jsx_closer_presence:
+        std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize, String), bool>>,
+
     /// The last `[scanned_from, blank_line)` window found while bounding a
     /// link reference definition, so a run of them costs one scan in total.
     ///
@@ -301,6 +310,7 @@ impl<'a> Parser<'a> {
             bracket_matches: std::cell::RefCell::default(),
             bracket_text_stop: std::cell::Cell::default(),
             last_closer: std::cell::RefCell::default(),
+            mdx_jsx_closer_presence: std::cell::RefCell::default(),
             definition_region: None,
             comment_definition_region: None,
         };
@@ -368,6 +378,7 @@ impl<'a> Parser<'a> {
             bracket_matches: std::cell::RefCell::default(),
             bracket_text_stop: std::cell::Cell::default(),
             last_closer: std::cell::RefCell::default(),
+            mdx_jsx_closer_presence: std::cell::RefCell::default(),
             definition_region: None,
             comment_definition_region: None,
         }
