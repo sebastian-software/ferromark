@@ -241,7 +241,7 @@ pub struct Parser<'a> {
     /// the whole slice: when no matching closer exists, every later opener is
     /// necessarily unclosed as well.
     mdx_jsx_closer_presence:
-        std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize, usize, usize), bool>>,
+        std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize, String), bool>>,
 
     /// The last `[scanned_from, blank_line)` window found while bounding a
     /// link reference definition, so a run of them costs one scan in total.

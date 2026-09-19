@@ -120,8 +120,7 @@ impl<'a> Parser<'a> {
         let key = (
             content.as_ptr() as usize,
             content.len(),
-            name.map_or(0, |name| name.as_ptr() as usize),
-            name.map_or(0, str::len),
+            name.unwrap_or_default().to_owned(),
         );
         if let Some(present) = self.mdx_jsx_closer_presence.borrow().get(&key) {
             return *present;
