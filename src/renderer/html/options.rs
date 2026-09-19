@@ -85,7 +85,8 @@ pub struct HtmlRendererOptions {
     /// Default: `false`.
     pub convert_md_links: bool,
 
-    /// Base URL for absolute link conversion (e.g., "/" or "/docs/").
+    /// Base URL for absolute link conversion (e.g., "/" or "/docs"). A
+    /// trailing slash is optional.
     ///
     /// Default: `"/"`.
     pub base_url: Cow<'static, str>,

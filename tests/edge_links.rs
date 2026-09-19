@@ -75,6 +75,26 @@ fn base_prefixes_root_absolute_markdown_links() {
 }
 
 #[test]
+fn base_prefixes_markdown_links_with_or_without_trailing_slash() {
+    for base_url in ["/docs", "/docs/"] {
+        let html = render(
+            "[Markdown](/guide.md)",
+            ParserOptions::default(),
+            HtmlRendererOptions {
+                convert_md_links: true,
+                base_url: base_url.into(),
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(
+            html,
+            "<p><a href=\"/docs/guide/index.html\">Markdown</a></p>\n"
+        );
+    }
+}
+
+#[test]
 fn base_prefixes_root_absolute_markdown_images() {
     let html = render(
         "![logo](/img/logo.png)",

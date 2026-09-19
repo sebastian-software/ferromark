@@ -164,14 +164,16 @@ impl HtmlRenderer {
         let converted = if path.starts_with('/') {
             // Absolute path: /getting-started.md -> {base}getting-started/index.html
             let path_without_slash = &path_without_ext[1..];
-            let base = self.options.base_url();
             if path_without_slash.is_empty() || path_without_slash == "index" {
-                join2(base, "index.html")
+                join_base_route(self.options.base_url(), "index.html")
             } else if let Some(dir) = path_without_slash.strip_suffix("/index") {
                 // /lib/index.md names the lib/ directory page
-                join3(base, dir, "/index.html")
+                join_base_route(self.options.base_url(), &join2(dir, "/index.html"))
             } else {
-                join3(base, path_without_slash, "/index.html")
+                join_base_route(
+                    self.options.base_url(),
+                    &join2(path_without_slash, "/index.html"),
+                )
             }
         } else if path.starts_with("./") {
             // Same-directory relative path
@@ -287,6 +289,19 @@ fn join3(a: &str, b: &str, c: &str) -> String {
     out.push_str(b);
     out.push_str(c);
     out
+}
+
+fn join_base_route(base: &str, path: &str) -> String {
+    let normalized = base.trim_end_matches('/');
+    if normalized.is_empty() {
+        if base.starts_with('/') {
+            join2("/", path)
+        } else {
+            path.to_string()
+        }
+    } else {
+        join3(normalized, "/", path)
+    }
 }
 
 fn append_suffix(mut converted: String, suffix: &str) -> String {
