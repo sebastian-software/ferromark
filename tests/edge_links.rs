@@ -87,7 +87,10 @@ fn base_prefixes_markdown_links_with_or_without_trailing_slash() {
             },
         );
 
-        assert_eq!(html, "<p><a href=\"/docs/guide/index.html\">Markdown</a></p>\n");
+        assert_eq!(
+            html,
+            "<p><a href=\"/docs/guide/index.html\">Markdown</a></p>\n"
+        );
     }
 }
 
