@@ -1,5 +1,45 @@
 # Changelog
 
+## [2.0.0](https://github.com/sebastian-software/ferromark/compare/v2.0.0-rc.2...v2.0.0) (2026-09-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **api:** `Renderer`, `RenderError`, `RenderResult`, `ast::Position`, `ParseErrorKind::{UnexpectedToken, InvalidSyntax, UnexpectedEof}`, `ParserOptions.gfm` and `HtmlRendererOptions.highlight` are removed; `ParseErrorKind` is `#[non_exhaustive]`; `HtmlRendererOptions::gfm()` is now the convenience profile and the strict profile is `gfm_spec()`; `HtmlRendererOptions.soft_break` takes effect. See docs/migration-v2.md.
+
+### Features
+
+* **homepage:** put ferromark in the header lockup and quiet the family switcher ([98f630a](https://github.com/sebastian-software/ferromark/commit/98f630ae11919a0686ca57c4a3704e0250daa3a5))
+* **homepage:** put ferromark in the header lockup and quiet the family switcher ([779f72a](https://github.com/sebastian-software/ferromark/commit/779f72aaa423618c2e15b0dd53cdd805935dc093))
+* **homepage:** serve the documentation from ferromark.dev ([dc3c58f](https://github.com/sebastian-software/ferromark/commit/dc3c58faf2bb7d58919dc7b9f5302e885931cafc))
+* **homepage:** serve the documentation from ferromark.dev ([0cb0bf1](https://github.com/sebastian-software/ferromark/commit/0cb0bf143480333e6cfe50f6c73efd560bd49320))
+
+
+### Bug Fixes
+
+* **node:** harden libc detection and verify registry dist-tags ([#367](https://github.com/sebastian-software/ferromark/issues/367)) ([7740a5d](https://github.com/sebastian-software/ferromark/commit/7740a5d21ab39c82ce53628aad184489b48329ec)), closes [#359](https://github.com/sebastian-software/ferromark/issues/359) [#361](https://github.com/sebastian-software/ferromark/issues/361) [#362](https://github.com/sebastian-software/ferromark/issues/362)
+* **parser:** bound emphasis nesting with max_nesting_depth ([#372](https://github.com/sebastian-software/ferromark/issues/372)) ([e8439fd](https://github.com/sebastian-software/ferromark/commit/e8439fd81757678e7cb4e811cb40835d7dfe899d)), closes [#371](https://github.com/sebastian-software/ferromark/issues/371)
+* **parser:** bound inline bracket nesting with max_nesting_depth ([#369](https://github.com/sebastian-software/ferromark/issues/369)) ([2887b2b](https://github.com/sebastian-software/ferromark/commit/2887b2bd256263fd1a11b579cd1a148dc5a5c2e9)), closes [#349](https://github.com/sebastian-software/ferromark/issues/349)
+* **release:** hand npm publish local tarball paths ([5aa4384](https://github.com/sebastian-software/ferromark/commit/5aa43842bbea9a11342cc7974d5b0b596289d92d))
+* **release:** hand npm publish local tarball paths ([3a3fa03](https://github.com/sebastian-software/ferromark/commit/3a3fa03a8ea1aa04950f34d07399ae1f0f267632))
+* **renderer:** normalize base URL for Markdown links ([#376](https://github.com/sebastian-software/ferromark/issues/376)) ([012b1e4](https://github.com/sebastian-software/ferromark/commit/012b1e4d37828619bcb9bda1479bf5c720fb9008))
+
+
+### Performance Improvements
+
+* **parser:** make nested link probing linear ([#374](https://github.com/sebastian-software/ferromark/issues/374)) ([ca82ec2](https://github.com/sebastian-software/ferromark/commit/ca82ec2f4ae4d6154c008cd92c2ea32a8e51c4dc)), closes [#350](https://github.com/sebastian-software/ferromark/issues/350)
+* **parser:** memoize missing MDX JSX closers ([#377](https://github.com/sebastian-software/ferromark/issues/377)) ([e1b3489](https://github.com/sebastian-software/ferromark/commit/e1b34892fdfa15254a9445bce2f0c9f858438a14))
+
+
+### Miscellaneous Chores
+
+* **release:** finalize the stable 2.0.0 release ([#373](https://github.com/sebastian-software/ferromark/issues/373)) ([e0fe363](https://github.com/sebastian-software/ferromark/commit/e0fe363636c9e11444f634b5f10a1edce5854481)), closes [#363](https://github.com/sebastian-software/ferromark/issues/363) [#351](https://github.com/sebastian-software/ferromark/issues/351) [#352](https://github.com/sebastian-software/ferromark/issues/352)
+
+
+### Code Refactoring
+
+* **api:** freeze the public API for 2.0.0 ([#370](https://github.com/sebastian-software/ferromark/issues/370)) ([bdcbf87](https://github.com/sebastian-software/ferromark/commit/bdcbf871d983de8323506f5ce98c82b5cdf60a0c)), closes [#353](https://github.com/sebastian-software/ferromark/issues/353) [#354](https://github.com/sebastian-software/ferromark/issues/354) [#355](https://github.com/sebastian-software/ferromark/issues/355) [#356](https://github.com/sebastian-software/ferromark/issues/356) [#357](https://github.com/sebastian-software/ferromark/issues/357) [#358](https://github.com/sebastian-software/ferromark/issues/358)
+
 ## [2.0.0-rc.2](https://github.com/sebastian-software/ferromark/compare/v2.0.0-rc.1...v2.0.0-rc.2) (2026-09-16)
 
 
