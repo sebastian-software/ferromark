@@ -1,0 +1,990 @@
+From be641a8fb663e17c4ef90f9f719457dce47793f2 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Mon, 21 Sep 2026 21:04:47 +0200
+Subject: [PATCH] perf(parser): find a table row's pipes and escapes in one
+ pass and decode from that record
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Splitting a GFM row into cells and decoding `\|` inside a cell asked the
+same two questions of the same bytes: where the `|` bytes are, and whether
+an odd run of backslashes sits in front of each one. The splitter answered
+them with one `memchr` call per cell plus a backwards walk per pipe, and the
+decoder then asked them again over every byte of every cell it was handed —
+`escaped_pipe_scan_start` inspected each byte of a cell shorter than 64
+bytes, which is nearly every cell a real table has.
+
+`PipeCursor` in the new `parser::table_pipes` answers both once. One cursor
+walks a row forward for the whole split. On aarch64 it classifies sixteen
+bytes at a time with two `vceqq_u8` compares against `|` and `\`, narrowed
+by the `vshrn_n_u16(_, 4)` movemask emulation the crate's other vector
+scanners use, so each byte becomes one nibble of a `u64`. The escape state
+of every pipe in a block then follows from that block's backslash mask by
+bit arithmetic rather than a byte walk, and `memchr` still skips each
+pipe-free stretch in one step so a sparse row is never scanned block by
+block. Everywhere else the cursor keeps the original `memchr` probe and
+backwards walk; that scalar engine is both the portable fallback and the
+reference the vector path is tested against, over row shapes that place a
+pipe at every offset around a block boundary behind backslash runs of every
+parity, for every cursor start offset.
+
+The escaped pipes the splitter passes over inside a cell are handed to the
+decoder as an `EscapedPipes` record instead of being looked for again. An
+empty record means the cell holds no `\|`, so it decodes to its borrowed
+slice with no scan at all; a filled one bounds the decoder's walk to the
+stretch between the first and the last escape.
+
+Every row decodes the same because nothing about escape parity changed. A
+backslash run is ended only by a non-backslash byte, and a cell begins
+either at the row's content start or just past an unescaped `|`, with only
+whitespace trimmed from it — so a run can never reach across a cell
+boundary, and a pipe's parity is identical whether it is measured on the
+row or on the cell's own trimmed slice. That is what makes the splitter's
+row-coordinate record valid for the decoder after shifting it by the
+trimmed cell's offset. Code spans, `\|`, leading and trailing pipes,
+terminal pipe runs under `merged_table_cells`, malformed rows, alignment
+rows and the cell source maps all take the same decisions as before.
+
+Verified beyond the suite with a differential harness over ~8000 table
+documents — fixed shapes plus three seeded random corpora with backslash
+runs longer than a vector block — comparing the full pretty-printed AST
+with spans and the rendered HTML with source spans, in both merged and
+unmerged modes. The vector path and a build with the vector path forced off
+both produce output byte-identical to the previous revision.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ src/parser/mod.rs                     |   1 +
+ src/parser/table.rs                   | 169 +++++++-------
+ src/parser/table_cell_source.rs       |  59 ++---
+ src/parser/table_cell_source/tests.rs |  27 +--
+ src/parser/table_pipes.rs             | 302 ++++++++++++++++++++++++++
+ src/parser/table_pipes/tests.rs       | 143 ++++++++++++
+ 6 files changed, 578 insertions(+), 123 deletions(-)
+ create mode 100644 src/parser/table_pipes.rs
+ create mode 100644 src/parser/table_pipes/tests.rs
+
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index ad59f47c..f516ffe0 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -76,6 +76,7 @@ mod spans;
+ mod table;
+ mod table_attributes;
+ mod table_cell_source;
++mod table_pipes;
+ 
+ #[cfg(test)]
+ mod tests;
+diff --git a/src/parser/table.rs b/src/parser/table.rs
+index bb7b3e34..7815eff6 100644
+--- a/src/parser/table.rs
++++ b/src/parser/table.rs
+@@ -4,11 +4,23 @@ use memchr::memchr;
+ 
+ use super::Parser;
+ use super::line_scan::{line_end, line_terminator_end};
+-use super::table_cell_source::{
+-    is_escaped_table_pipe, remap_table_cell_inline_spans, unescape_table_pipes,
+-};
++use super::table_cell_source::{remap_table_cell_inline_spans, unescape_table_pipes};
++use super::table_pipes::{EscapedPipes, PipeCursor, is_escaped_table_pipe};
+ use crate::parser::error::ParseResult;
+ 
++/// One cell of a table row, as the row splitter found it.
++///
++/// `escapes` records the `\|` occurrences the splitter passed over on its
++/// way to this cell's terminator, in the coordinates of `content`, so the
++/// cell decoder does not have to look for them a second time.
++struct RowCell<'a> {
++    content: &'a str,
++    start: usize,
++    end: usize,
++    escapes: EscapedPipes,
++    colspan: usize,
++}
++
+ impl<'a> Parser<'a> {
+     /// Returns true when the next two lines look like a GFM table header.
+     ///
+@@ -53,7 +65,7 @@ impl<'a> Parser<'a> {
+     pub(super) fn table_header_cells(merged_table_cells: bool, line: &'a str) -> usize {
+         if merged_table_cells {
+             Self::table_row_cells_with_spans(line)
+-                .map(|(_, _, _, span)| span)
++                .map(|cell| cell.colspan)
+                 .sum()
+         } else {
+             Self::table_row_cells(line).count()
+@@ -164,33 +176,17 @@ impl<'a> Parser<'a> {
+         let line_end = line_start + line.len();
+         let mut logical_columns = 0;
+         if merged {
+-            for (cell_content, cell_start, cell_end, requested_span) in
+-                Self::table_row_cells_with_spans(line)
+-            {
++            for cell in Self::table_row_cells_with_spans(line) {
+                 if logical_columns >= column_count {
+                     break;
+                 }
+-                let colspan = requested_span.min(column_count - logical_columns);
+-                cells.push(self.parse_table_cell(
+-                    cell_content,
+-                    line_start,
+-                    cell_start,
+-                    cell_end,
+-                    colspan,
+-                )?);
++                let colspan = cell.colspan.min(column_count - logical_columns);
++                cells.push(self.parse_table_cell(&cell, line_start, colspan)?);
+                 logical_columns += colspan;
+             }
+         } else {
+-            for (cell_content, cell_start, cell_end) in
+-                Self::table_row_cells_with_offsets(line).take(column_count)
+-            {
+-                cells.push(self.parse_table_cell(
+-                    cell_content,
+-                    line_start,
+-                    cell_start,
+-                    cell_end,
+-                    1,
+-                )?);
++            for cell in Self::table_row_cells_with_offsets(line).take(column_count) {
++                cells.push(self.parse_table_cell(&cell, line_start, 1)?);
+                 logical_columns += 1;
+             }
+         }
+@@ -210,28 +206,26 @@ impl<'a> Parser<'a> {
+ 
+     fn parse_table_cell(
+         &self,
+-        cell_content: &'a str,
++        cell: &RowCell<'a>,
+         line_start: usize,
+-        cell_start: usize,
+-        cell_end: usize,
+         colspan: usize,
+     ) -> ParseResult<TableCell<'a>> {
+-        let cell_content = unescape_table_pipes(self.allocator, cell_content);
++        let cell_content = unescape_table_pipes(self.allocator, cell.content, cell.escapes);
+         let cell_children = if let Some(source_map) = &cell_content.source_map {
+             let mut children = self.parse_inline_block(cell_content.content, 0)?;
+-            let source_offset = (line_start + cell_start) as u32;
++            let source_offset = (line_start + cell.start) as u32;
+             for child in &mut children {
+                 remap_table_cell_inline_spans(child, source_offset, source_map);
+             }
+             children
+         } else {
+-            self.parse_inline_block(cell_content.content, line_start + cell_start)?
++            self.parse_inline_block(cell_content.content, line_start + cell.start)?
+         };
+         Ok(TableCell {
+             children: cell_children,
+             span: Span::new(
+-                (line_start + cell_start) as u32,
+-                (line_start + cell_end) as u32,
++                (line_start + cell.start) as u32,
++                (line_start + cell.end) as u32,
+             ),
+             colspan,
+         })
+@@ -242,12 +236,10 @@ impl<'a> Parser<'a> {
+     /// Leading/trailing pipes are syntax delimiters, not empty cells in this
+     /// parser's table model, so they are stripped once before splitting.
+     pub(super) fn table_row_cells(line: &'a str) -> impl Iterator<Item = &'a str> {
+-        Self::table_row_cells_with_offsets(line).map(|(cell, _, _)| cell)
++        Self::table_row_cells_with_offsets(line).map(|cell| cell.content)
+     }
+ 
+-    fn table_row_cells_with_offsets(
+-        line: &'a str,
+-    ) -> impl Iterator<Item = (&'a str, usize, usize)> {
++    fn table_row_cells_with_offsets(line: &'a str) -> impl Iterator<Item = RowCell<'a>> {
+         let trimmed = line.trim();
+         let trimmed_start = line.len() - line.trim_start().len();
+         let mut content_start = trimmed_start;
+@@ -267,28 +259,44 @@ impl<'a> Parser<'a> {
+         let content = &line[content_start..content_end];
+         let bytes = content.as_bytes();
+         let mut cell_start = 0;
++        // One cursor walks the whole row. Every pipe it reports already
++        // carries its escape state, and the escaped ones it passes over are
++        // handed to the cell decoder instead of being looked for again.
++        let mut pipes = PipeCursor::new(bytes, 0);
+ 
+         std::iter::from_fn(move || {
+             if cell_start > bytes.len() {
+                 return None;
+             }
+ 
+-            let mut search_start = cell_start;
+-            while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
+-                let pipe = search_start + relative;
+-                if !is_escaped_table_pipe(bytes, pipe) {
+-                    let raw = &content[cell_start..pipe];
+-                    let (cell, start, end) = trim_cell(raw, content_start + cell_start);
+-                    cell_start = pipe + 1;
+-                    return Some((cell, start, end));
++            let mut escapes = EscapedPipes::default();
++            while let Some(pipe) = pipes.next_pipe() {
++                if pipe.escaped {
++                    escapes.record(pipe.offset);
++                    continue;
+                 }
+-                search_start = pipe + 1;
++                let raw = &content[cell_start..pipe.offset];
++                let (cell, start, end) = trim_cell(raw, content_start + cell_start);
++                cell_start = pipe.offset + 1;
++                return Some(RowCell {
++                    content: cell,
++                    start,
++                    end,
++                    escapes: escapes.shifted(start - content_start),
++                    colspan: 1,
++                });
+             }
+ 
+             let raw = &content[cell_start..];
+             let (cell, start, end) = trim_cell(raw, content_start + cell_start);
+             cell_start = bytes.len() + 1;
+-            Some((cell, start, end))
++            Some(RowCell {
++                content: cell,
++                start,
++                end,
++                escapes: escapes.shifted(start - content_start),
++                colspan: 1,
++            })
+         })
+     }
+ 
+@@ -296,9 +304,7 @@ impl<'a> Parser<'a> {
+     /// horizontal spans. A terminal run is kept intact so `value ||` can
+     /// express a span even though the final pipe is also the usual row
+     /// boundary marker.
+-    fn table_row_cells_with_spans(
+-        line: &'a str,
+-    ) -> impl Iterator<Item = (&'a str, usize, usize, usize)> {
++    fn table_row_cells_with_spans(line: &'a str) -> impl Iterator<Item = RowCell<'a>> {
+         let trimmed = line.trim();
+         let trimmed_start = line.len() - line.trim_start().len();
+         let mut content_start = trimmed_start;
+@@ -328,42 +334,59 @@ impl<'a> Parser<'a> {
+         let content = &line[content_start..content_end];
+         let bytes = content.as_bytes();
+         let mut cell_start = 0;
++        let mut pipes = PipeCursor::new(bytes, 0);
+ 
+         std::iter::from_fn(move || {
+             if cell_start > bytes.len() {
+                 return None;
+             }
+ 
+-            let mut search_start = cell_start;
+-            while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
+-                let pipe = search_start + relative;
+-                if !is_escaped_table_pipe(bytes, pipe) {
+-                    let raw = &content[cell_start..pipe];
+-                    let (cell, start, end) = trim_cell(raw, content_start + cell_start);
+-                    let mut pipe_count = 1;
+-                    while pipe + pipe_count < bytes.len()
+-                        && bytes[pipe + pipe_count] == b'|'
+-                        && !is_escaped_table_pipe(bytes, pipe + pipe_count)
+-                    {
+-                        pipe_count += 1;
++            let mut escapes = EscapedPipes::default();
++            while let Some(pipe) = pipes.next_pipe() {
++                if pipe.escaped {
++                    escapes.record(pipe.offset);
++                    continue;
++                }
++                let raw = &content[cell_start..pipe.offset];
++                let (cell, start, end) = trim_cell(raw, content_start + cell_start);
++                let mut pipe_count = 1;
++                // Adjacent unescaped pipes widen the cell. Peeking leaves
++                // the pipe that ends the run, escaped or not, for the cell
++                // that follows it.
++                while let Some(next) = pipes.peek_pipe() {
++                    if next.escaped || next.offset != pipe.offset + pipe_count {
++                        break;
+                     }
+-                    // A preserved terminal run is the complete remainder of
+-                    // the row. Mark the iterator finished after yielding it;
+-                    // otherwise the next call fabricates an empty cell.
+-                    cell_start = if pipe + pipe_count == bytes.len() {
+-                        bytes.len() + 1
+-                    } else {
+-                        pipe + pipe_count
+-                    };
+-                    return Some((cell, start, end, pipe_count));
++                    pipes.take_peeked();
++                    pipe_count += 1;
+                 }
+-                search_start = pipe + 1;
++                // A preserved terminal run is the complete remainder of
++                // the row. Mark the iterator finished after yielding it;
++                // otherwise the next call fabricates an empty cell.
++                cell_start = if pipe.offset + pipe_count == bytes.len() {
++                    bytes.len() + 1
++                } else {
++                    pipe.offset + pipe_count
++                };
++                return Some(RowCell {
++                    content: cell,
++                    start,
++                    end,
++                    escapes: escapes.shifted(start - content_start),
++                    colspan: pipe_count,
++                });
+             }
+ 
+             let raw = &content[cell_start..];
+             let (cell, start, end) = trim_cell(raw, content_start + cell_start);
+             cell_start = bytes.len() + 1;
+-            Some((cell, start, end, 1))
++            Some(RowCell {
++                content: cell,
++                start,
++                end,
++                escapes: escapes.shifted(start - content_start),
++                colspan: 1,
++            })
+         })
+     }
+ }
+diff --git a/src/parser/table_cell_source.rs b/src/parser/table_cell_source.rs
+index 975e07bc..cfe25370 100644
+--- a/src/parser/table_cell_source.rs
++++ b/src/parser/table_cell_source.rs
+@@ -1,6 +1,7 @@
+ use crate::allocator::{Allocator, Vec};
+ use crate::ast::{MdxJsxAttributeEntry, MdxJsxAttributeValue, Node, Span};
+-use memchr::memchr;
++
++use super::table_pipes::{EscapedPipes, PipeCursor};
+ 
+ pub(super) struct TableCellContent<'a> {
+     pub content: &'a str,
+@@ -73,15 +74,17 @@ impl<'a> TableCellSourceMap<'a> {
+ /// GFM treats `\|` as a literal pipe even inside code spans. Normal inline
+ /// parsing already handles the escape in prose, but code spans preserve
+ /// backslashes, so the table parser must consume it first.
++///
++/// `escapes` is what the row splitter already saw inside this cell. An empty
++/// record means the cell holds no `\|` and is returned borrowed without any
++/// scan; otherwise only the stretch between the first and the last recorded
++/// escape is walked, instead of the whole cell twice.
+ pub(super) fn unescape_table_pipes<'a>(
+     allocator: &'a Allocator,
+     content: &'a str,
++    escapes: EscapedPipes,
+ ) -> TableCellContent<'a> {
+-    let bytes = content.as_bytes();
+-    // Most cells contain no pipe at all. Search only actual pipe positions
+-    // instead of examining every byte, then reuse the first escaped match
+-    // when constructing the remapped source below.
+-    let Some(first_pipe) = escaped_pipe_scan_start(bytes) else {
++    let Some((first, last)) = escapes.bounds() else {
+         return TableCellContent {
+             content,
+             source_map: None,
+@@ -91,16 +94,22 @@ pub(super) fn unescape_table_pipes<'a>(
+     let mut unescaped = crate::allocator::String::with_capacity_in(content.len(), allocator.bump());
+     let mut source_map = TableCellSourceMap::new(allocator);
+     let mut copied_through = 0;
+-    let mut search_start = first_pipe;
+-    while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
+-        let pipe = search_start + relative;
+-        if is_escaped_table_pipe(bytes, pipe) {
+-            push_unescaped_table_cell_slice(content, copied_through, pipe - 1, &mut unescaped);
++    let mut cursor = PipeCursor::new(content.as_bytes(), first);
++    while let Some(pipe) = cursor.next_pipe() {
++        if pipe.offset > last {
++            break;
++        }
++        if pipe.escaped {
++            push_unescaped_table_cell_slice(
++                content,
++                copied_through,
++                pipe.offset - 1,
++                &mut unescaped,
++            );
+             source_map.record_removed(unescaped.len());
+             unescaped.push('|');
+-            copied_through = pipe + 1;
++            copied_through = pipe.offset + 1;
+         }
+-        search_start = pipe + 1;
+     }
+     push_unescaped_table_cell_slice(content, copied_through, content.len(), &mut unescaped);
+     source_map.finish(unescaped.len());
+@@ -110,20 +119,6 @@ pub(super) fn unescape_table_pipes<'a>(
+     }
+ }
+ 
+-#[inline]
+-fn escaped_pipe_scan_start(bytes: &[u8]) -> Option<usize> {
+-    // Vector dispatch costs more than the scan for short labels. Keep the
+-    // scalar path there; long prose cells benefit from skipping whole runs.
+-    if bytes.len() < 64 {
+-        return bytes
+-            .iter()
+-            .enumerate()
+-            .any(|(index, &byte)| byte == b'|' && is_escaped_table_pipe(bytes, index))
+-            .then_some(0);
+-    }
+-    memchr::memchr_iter(b'|', bytes).find(|&index| is_escaped_table_pipe(bytes, index))
+-}
+-
+ fn push_unescaped_table_cell_slice(
+     source: &str,
+     start: usize,
+@@ -269,15 +264,5 @@ fn remap_table_cell_span(span: &mut Span, source_offset: u32, source_map: &Table
+     span.end = source_offset + source_map.boundary_offset(span.end as usize);
+ }
+ 
+-pub(super) fn is_escaped_table_pipe(bytes: &[u8], pipe: usize) -> bool {
+-    bytes[..pipe]
+-        .iter()
+-        .rev()
+-        .take_while(|&&byte| byte == b'\\')
+-        .count()
+-        % 2
+-        == 1
+-}
+-
+ #[cfg(test)]
+ mod tests;
+diff --git a/src/parser/table_cell_source/tests.rs b/src/parser/table_cell_source/tests.rs
+index 5d121346..f91a9187 100644
+--- a/src/parser/table_cell_source/tests.rs
++++ b/src/parser/table_cell_source/tests.rs
+@@ -1,8 +1,15 @@
+ // Test fixtures deliberately use owned formatting outside parser hot paths.
+ #![allow(clippy::disallowed_macros)]
+ 
+-use super::{escaped_pipe_scan_start, is_escaped_table_pipe, unescape_table_pipes};
++use super::unescape_table_pipes;
+ use crate::allocator::Allocator;
++use crate::parser::table_pipes::{EscapedPipes, is_escaped_table_pipe};
++
++/// Decodes a standalone cell the way the row splitter would: with the record
++/// of the escaped pipes it passed over inside that cell.
++fn decode<'a>(allocator: &'a Allocator, content: &'a str) -> super::TableCellContent<'a> {
++    unescape_table_pipes(allocator, content, EscapedPipes::scan(content.as_bytes()))
++}
+ 
+ #[test]
+ fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
+@@ -18,18 +25,12 @@ fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
+                 let expected = bytes.iter().enumerate().find_map(|(index, &byte)| {
+                     (byte == b'|' && is_escaped_table_pipe(bytes, index)).then_some(index)
+                 });
+-                let scan_start = escaped_pipe_scan_start(bytes);
+-                assert_eq!(scan_start.is_some(), expected.is_some(), "{source:?}");
+-                if let (Some(start), Some(first)) = (scan_start, expected) {
+-                    assert!(
+-                        start <= first,
+-                        "must not skip the first escaped pipe: {source:?}"
+-                    );
+-                }
++                let scan_start = EscapedPipes::scan(bytes).bounds().map(|(first, _)| first);
++                assert_eq!(scan_start, expected, "{source:?}");
+             }
+         }
+         assert_eq!(
+-            escaped_pipe_scan_start("x".repeat(prefix_len).as_bytes()),
++            EscapedPipes::scan("x".repeat(prefix_len).as_bytes()).bounds(),
+             None
+         );
+     }
+@@ -41,7 +42,7 @@ fn skipped_unescaped_pipes_keep_content_and_sparse_source_map() {
+         let prefix = "x".repeat(prefix_len);
+         let source = format!("{prefix}|日本語\\|end");
+         let allocator = Allocator::new();
+-        let result = unescape_table_pipes(&allocator, &source);
++        let result = decode(&allocator, &source);
+         assert_eq!(result.content, format!("{prefix}|日本語|end"));
+         let source_map = result.source_map.unwrap();
+         let removed_at = prefix_len + "|日本語".len();
+@@ -64,7 +65,7 @@ fn skipped_unescaped_pipes_keep_content_and_sparse_source_map() {
+ #[test]
+ fn adjacent_escaped_pipes_map_each_generated_boundary() {
+     let allocator = Allocator::new();
+-    let result = unescape_table_pipes(&allocator, r"a\|\|b");
++    let result = decode(&allocator, r"a\|\|b");
+     assert_eq!(result.content, "a||b");
+     let source_map = result.source_map.unwrap();
+     assert_eq!(source_map.removed_total, 2);
+@@ -82,7 +83,7 @@ fn sparse_map_matches_dense_scalar_oracle() {
+         r"\|\|\|",
+         r"slashes \\| and escaped \| pipes",
+     ] {
+-        let result = unescape_table_pipes(&allocator, source);
++        let result = decode(&allocator, source);
+         let bytes = source.as_bytes();
+         let mut expected_content = allocator.new_string();
+         let mut expected_offsets = [0usize; 128];
+diff --git a/src/parser/table_pipes.rs b/src/parser/table_pipes.rs
+new file mode 100644
+index 00000000..50a4ddb8
+--- /dev/null
++++ b/src/parser/table_pipes.rs
+@@ -0,0 +1,302 @@
++//! Pipe discovery and escape classification for GFM table rows.
++//!
++//! Splitting a row into cells and decoding `\|` inside a cell ask the same
++//! two questions of the same bytes: where the `|` bytes are, and whether an
++//! odd run of backslashes sits in front of each one. The row splitter used
++//! to answer them with one `memchr` call per cell plus a backwards walk per
++//! pipe, and the cell decoder then asked them again over every byte of every
++//! cell it was handed. [`PipeCursor`] answers both once while walking a row
++//! forward, and [`EscapedPipes`] carries what the splitter already saw into
++//! the decoder.
++//!
++//! On aarch64 one block of sixteen bytes is classified by two `vceqq_u8`
++//! compares and the nibble-narrowing movemask emulation the crate's other
++//! vector scanners use, which leaves one nibble per byte in a `u64`. The
++//! escape state of every pipe in the block then follows from the backslash
++//! mask by bit arithmetic instead of a byte walk. Everywhere else the cursor
++//! keeps the original `memchr` plus [`is_escaped_table_pipe`] scan, which is
++//! also the reference the vector path is differentially tested against.
++
++use memchr::memchr;
++
++/// A pipe in a table row, together with the escape state that both the row
++/// splitter and the cell decoder need for it.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(super) struct Pipe {
++    pub(super) offset: usize,
++    pub(super) escaped: bool,
++}
++
++/// Whether an odd run of backslashes ends immediately before `index`.
++///
++/// Only a non-backslash byte ends such a run, so the answer never changes
++/// when the slice is cut at a `|` or at the whitespace a cell is trimmed of.
++/// That is what lets the row splitter record escape positions in row
++/// coordinates and the cell decoder use them on its own trimmed slice.
++pub(super) fn is_escaped_table_pipe(bytes: &[u8], index: usize) -> bool {
++    bytes[..index]
++        .iter()
++        .rev()
++        .take_while(|&&byte| byte == b'\\')
++        .count()
++        % 2
++        == 1
++}
++
++/// Where a cell's escaped pipes sit, as the row splitter passed over them.
++///
++/// The splitter walks every pipe of a cell on its way to the cell's
++/// terminator, so the decoder never has to look for them from scratch. Only
++/// the first and the last offset are kept, which fits in a register pair: an
++/// empty record decodes the cell to its borrowed slice without any scan at
++/// all, and a filled one bounds the decoder's walk to the stretch that
++/// actually holds escapes.
++#[derive(Clone, Copy, Default)]
++pub(super) struct EscapedPipes {
++    bounds: Option<(u32, u32)>,
++}
++
++impl EscapedPipes {
++    /// Notes an escaped pipe. Offsets must arrive in ascending order, which
++    /// is how a forward row scan produces them.
++    pub(super) fn record(&mut self, offset: usize) {
++        let offset = offset as u32;
++        self.bounds = Some(match self.bounds {
++            Some((first, _)) => (first, offset),
++            None => (offset, offset),
++        });
++    }
++
++    /// The same record in the coordinates of a slice starting `by` bytes
++    /// later. A `|` is never part of the whitespace a cell is trimmed of, so
++    /// every recorded offset still lies inside the trimmed cell.
++    pub(super) fn shifted(self, by: usize) -> Self {
++        let by = by as u32;
++        Self {
++            bounds: self
++                .bounds
++                .map(|(first, last)| (first.saturating_sub(by), last.saturating_sub(by))),
++        }
++    }
++
++    /// The first and last escaped pipe, or `None` when the cell holds none.
++    pub(super) fn bounds(self) -> Option<(usize, usize)> {
++        self.bounds
++            .map(|(first, last)| (first as usize, last as usize))
++    }
++
++    /// Records every escaped pipe of a standalone slice, for callers that
++    /// hold a cell without having split its row.
++    #[cfg(test)]
++    pub(super) fn scan(bytes: &[u8]) -> Self {
++        let mut escapes = Self::default();
++        let mut cursor = PipeCursor::new(bytes, 0);
++        while let Some(pipe) = cursor.next_pipe() {
++            if pipe.escaped {
++                escapes.record(pipe.offset);
++            }
++        }
++        escapes
++    }
++}
++
++/// A forward walk over the pipes of one table row.
++///
++/// Every pipe is reported once, in order, with its escape state already
++/// decided. One pipe of pushback covers the merged-cell run scan, which has
++/// to look at the pipe after a run before it can tell the run is over.
++pub(super) struct PipeCursor<'a> {
++    bytes: &'a [u8],
++    pending: Option<Pipe>,
++    scan: Scan,
++}
++
++impl<'a> PipeCursor<'a> {
++    pub(super) fn new(bytes: &'a [u8], from: usize) -> Self {
++        Self {
++            bytes,
++            pending: None,
++            scan: Scan::new(bytes, from.min(bytes.len())),
++        }
++    }
++
++    /// The next pipe at or after the cursor.
++    pub(super) fn next_pipe(&mut self) -> Option<Pipe> {
++        match self.pending.take() {
++            Some(pipe) => Some(pipe),
++            None => self.scan.next_pipe(self.bytes),
++        }
++    }
++
++    /// The next pipe without consuming it.
++    pub(super) fn peek_pipe(&mut self) -> Option<Pipe> {
++        if self.pending.is_none() {
++            self.pending = self.scan.next_pipe(self.bytes);
++        }
++        self.pending
++    }
++
++    /// Drops the peeked pipe. Called only right after [`Self::peek_pipe`]
++    /// returned one that the caller decided to take.
++    pub(super) fn take_peeked(&mut self) {
++        self.pending = None;
++    }
++}
++
++/// Bytes classified per vector load.
++#[cfg(target_arch = "aarch64")]
++const LANES: usize = 16;
++
++/// The mask bits one byte lane occupies in a narrowed compare result.
++#[cfg(target_arch = "aarch64")]
++const LANE: u64 = 0xF;
++
++/// Vector engine: the lane masks of one cached block, plus the backslash
++/// parity that reaches that block from the bytes before it.
++///
++/// Pipes are usually spread over a row rather than packed into it, so the
++/// scan does not classify every block on the way. `memchr` skips each
++/// pipe-free stretch in one step and the scan re-seats on the block that
++/// holds the next pipe; classifying that block then settles every pipe in
++/// it, however many there are, without a backwards walk per pipe.
++#[cfg(target_arch = "aarch64")]
++struct Scan {
++    /// Offset of the cached block.
++    block: usize,
++    /// Pipe lanes of the cached block that have not been yielded yet.
++    pipes: u64,
++    /// Backslash lanes of the cached block.
++    backslashes: u64,
++    /// Whether an odd run of backslashes ends immediately before `block`.
++    carry_odd: bool,
++}
++
++#[cfg(target_arch = "aarch64")]
++impl Scan {
++    fn new(bytes: &[u8], from: usize) -> Self {
++        let mut scan = Self {
++            block: 0,
++            pipes: 0,
++            backslashes: 0,
++            carry_odd: false,
++        };
++        scan.seek(bytes, from);
++        scan
++    }
++
++    /// Caches the block holding `from` and drops the lanes before it.
++    fn seek(&mut self, bytes: &[u8], from: usize) {
++        self.block = from - from % LANES;
++        // A seek can land inside a block, so the backslash run that reaches
++        // the block start is walked once here, bounded by the run's own
++        // length, instead of being carried block by block.
++        self.carry_odd = is_escaped_table_pipe(bytes, self.block);
++        let rest = &bytes[self.block..];
++        let (pipes, backslashes) = if let Some(block) = rest.first_chunk::<LANES>() {
++            classify_block(block)
++        } else {
++            // The row's last bytes, zero padded. Neither `|` nor `\` is
++            // zero, so the padding adds no lane to either mask and the
++            // masks stay exact without a separate tail mask.
++            let mut tail = [0u8; LANES];
++            tail[..rest.len()].copy_from_slice(rest);
++            classify_block(&tail)
++        };
++        // Four mask bits per byte, so this drops the lanes before `from`.
++        self.pipes = pipes & (u64::MAX << ((from - self.block) * 4));
++        self.backslashes = backslashes;
++    }
++
++    fn next_pipe(&mut self, bytes: &[u8]) -> Option<Pipe> {
++        if self.pipes == 0 {
++            // The cached block is spent, and it held no pipe past the point
++            // the scan reached, so the search resumes at the next block.
++            let from = self.block + LANES;
++            if from >= bytes.len() {
++                return None;
++            }
++            let pipe = from + memchr(b'|', &bytes[from..])?;
++            self.seek(bytes, pipe);
++        }
++        let lane = self.pipes.trailing_zeros() as usize / 4;
++        self.pipes &= !(LANE << (lane * 4));
++        Some(Pipe {
++            offset: self.block + lane,
++            escaped: self.lane_is_escaped(lane),
++        })
++    }
++
++    /// Whether the pipe in `lane` carries a table-level escape, decided from
++    /// the backslash mask alone.
++    fn lane_is_escaped(&self, lane: usize) -> bool {
++        let below = (1u64 << (lane * 4)) - 1;
++        let gaps = !self.backslashes & below;
++        if gaps == 0 {
++            // Every byte before the pipe in this block is a backslash, so
++            // the run continues into the bytes before the block.
++            (lane % 2 == 1) != self.carry_odd
++        } else {
++            // Otherwise the run starts after the last non-backslash lane.
++            (lane - 1 - last_lane(gaps)) % 2 == 1
++        }
++    }
++}
++
++/// The highest lane set in a narrowed compare result. `mask` must not be 0.
++#[cfg(target_arch = "aarch64")]
++fn last_lane(mask: u64) -> usize {
++    (u64::BITS as usize - 1 - mask.leading_zeros() as usize) / 4
++}
++
++/// Pipe and backslash lane masks for one sixteen-byte block.
++#[cfg(target_arch = "aarch64")]
++#[allow(unsafe_code)]
++#[inline]
++fn classify_block(block: &[u8; LANES]) -> (u64, u64) {
++    use std::arch::aarch64::*;
++    // SAFETY: `block` is exactly one vector wide, so the load is in bounds.
++    unsafe {
++        // `vshrn_n_u16(_, 4)` narrows each pair of all-ones/all-zeros lanes
++        // into one byte of nibbles, which is this crate's movemask
++        // emulation: byte lane `i` becomes nibble `i` of the result.
++        let narrow = |mask: uint8x16_t| {
++            vget_lane_u64(
++                vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(mask), 4)),
++                0,
++            )
++        };
++        let bytes = vld1q_u8(block.as_ptr());
++        (
++            narrow(vceqq_u8(bytes, vdupq_n_u8(b'|'))),
++            narrow(vceqq_u8(bytes, vdupq_n_u8(b'\\'))),
++        )
++    }
++}
++
++/// Portable engine: the `memchr` probe and backwards backslash walk the
++/// table parser used before the vector path existed, kept both as the
++/// fallback and as the behavior the vector path must reproduce.
++#[cfg(not(target_arch = "aarch64"))]
++struct Scan {
++    next: usize,
++}
++
++#[cfg(not(target_arch = "aarch64"))]
++impl Scan {
++    fn new(_bytes: &[u8], from: usize) -> Self {
++        Self { next: from }
++    }
++
++    fn next_pipe(&mut self, bytes: &[u8]) -> Option<Pipe> {
++        let relative = memchr(b'|', &bytes[self.next..])?;
++        let offset = self.next + relative;
++        self.next = offset + 1;
++        Some(Pipe {
++            offset,
++            escaped: is_escaped_table_pipe(bytes, offset),
++        })
++    }
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/src/parser/table_pipes/tests.rs b/src/parser/table_pipes/tests.rs
+new file mode 100644
+index 00000000..e25172ce
+--- /dev/null
++++ b/src/parser/table_pipes/tests.rs
+@@ -0,0 +1,143 @@
++// Test fixtures deliberately use owned formatting outside parser hot paths.
++#![allow(
++    clippy::disallowed_macros,
++    clippy::disallowed_methods,
++    clippy::disallowed_types
++)]
++
++use super::{EscapedPipes, Pipe, PipeCursor, is_escaped_table_pipe};
++use memchr::memchr_iter;
++
++/// The scan the table parser used before [`PipeCursor`] existed: find every
++/// pipe with `memchr`, then walk backwards over the backslashes in front of
++/// it. It is the reference the vector path has to reproduce exactly.
++fn scalar_pipes(bytes: &[u8], from: usize) -> Vec<Pipe> {
++    memchr_iter(b'|', &bytes[from..])
++        .map(|relative| Pipe {
++            offset: from + relative,
++            escaped: is_escaped_table_pipe(bytes, from + relative),
++        })
++        .collect()
++}
++
++fn cursor_pipes(bytes: &[u8], from: usize) -> Vec<Pipe> {
++    let mut cursor = PipeCursor::new(bytes, from);
++    let mut pipes = Vec::new();
++    while let Some(pipe) = cursor.next_pipe() {
++        pipes.push(pipe);
++    }
++    pipes
++}
++
++/// Row shapes that exercise block boundaries, backslash runs that straddle
++/// them, adjacent pipes, leading and trailing pipes, and multibyte cells.
++fn row_shapes() -> Vec<String> {
++    let mut rows = vec![
++        String::new(),
++        String::from("|"),
++        String::from("||"),
++        String::from("no pipes at all"),
++        String::from(r"\|"),
++        String::from(r"\\|"),
++        String::from(r"\\\|"),
++        String::from(r"a\|b|c"),
++        String::from(r"| a \| b | c \\| d |"),
++        String::from(r"| 日本語 \| 🙂 | ok |"),
++        String::from(r"|||| trailing run ||||"),
++        String::from(r"\\\\\\\\\\\\\\\\|"),
++    ];
++    // A pipe placed at every offset around and across the block boundary,
++    // behind backslash runs of every parity, with and without a run that
++    // reaches back into the block before it.
++    for prefix in 0..40_usize {
++        for backslashes in 0..=6_usize {
++            for suffix in ["", "|", r" \| tail", r" \\| tail", " 日本語"] {
++                let mut row = "x".repeat(prefix);
++                row.push_str(&"\\".repeat(backslashes));
++                row.push('|');
++                row.push_str(suffix);
++                rows.push(row);
++            }
++        }
++    }
++    // Long backslash runs that fill and overrun a whole block.
++    for backslashes in 12..=36_usize {
++        let mut row = String::from("cell ");
++        row.push_str(&"\\".repeat(backslashes));
++        row.push_str("|rest");
++        rows.push(row);
++    }
++    rows
++}
++
++#[test]
++fn cursor_reports_the_same_pipes_and_escapes_as_the_scalar_scan() {
++    for row in row_shapes() {
++        let bytes = row.as_bytes();
++        for from in 0..=bytes.len() {
++            assert_eq!(
++                cursor_pipes(bytes, from),
++                scalar_pipes(bytes, from),
++                "row {row:?} from {from}"
++            );
++        }
++    }
++}
++
++#[test]
++fn peeking_does_not_consume_or_reorder_pipes() {
++    for row in row_shapes() {
++        let bytes = row.as_bytes();
++        let expected = scalar_pipes(bytes, 0);
++        let mut cursor = PipeCursor::new(bytes, 0);
++        let mut seen = Vec::new();
++        loop {
++            let peeked = cursor.peek_pipe();
++            assert_eq!(peeked, cursor.peek_pipe(), "{row:?}");
++            let Some(pipe) = peeked else { break };
++            // Alternate between the two ways of taking a peeked pipe so both
++            // leave the cursor on the same following pipe.
++            if seen.len() % 2 == 0 {
++                cursor.take_peeked();
++                seen.push(pipe);
++            } else {
++                seen.push(cursor.next_pipe().expect("peek promised a pipe"));
++            }
++        }
++        assert_eq!(seen, expected, "{row:?}");
++        assert_eq!(cursor.next_pipe(), None, "{row:?}");
++    }
++}
++
++#[test]
++fn escaped_pipe_records_bound_the_escapes_of_a_cell() {
++    for row in row_shapes() {
++        let bytes = row.as_bytes();
++        let escaped: Vec<usize> = scalar_pipes(bytes, 0)
++            .into_iter()
++            .filter(|pipe| pipe.escaped)
++            .map(|pipe| pipe.offset)
++            .collect();
++        let bounds = EscapedPipes::scan(bytes).bounds();
++        assert_eq!(
++            bounds,
++            escaped
++                .first()
++                .map(|&first| (first, *escaped.last().expect("a first implies a last"))),
++            "{row:?}"
++        );
++    }
++}
++
++#[test]
++fn shifting_a_record_moves_it_into_trimmed_cell_coordinates() {
++    let mut escapes = EscapedPipes::default();
++    assert_eq!(escapes.bounds(), None);
++    assert_eq!(escapes.shifted(7).bounds(), None);
++    escapes.record(9);
++    assert_eq!(escapes.bounds(), Some((9, 9)));
++    escapes.record(21);
++    assert_eq!(escapes.bounds(), Some((9, 21)));
++    assert_eq!(escapes.shifted(4).bounds(), Some((5, 17)));
++    assert_eq!(escapes.shifted(0).bounds(), Some((9, 21)));
++}
+-- 
+2.55.0
+

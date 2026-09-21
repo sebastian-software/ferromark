@@ -1,0 +1,648 @@
+From 9ffb767150e960b5e119d733fa42ac33e3cf46a7 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Mon, 21 Sep 2026 20:42:30 +0200
+Subject: [PATCH] perf(parser): measure each container line's indentation and
+ end once
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The list item collector and the block quote walk asked the same
+questions of every line they consumed — where it ends, where the next
+one starts, how deeply it is indented, whether it is blank, and what
+follows that indentation — and every answer came from its own scan over
+the same bytes. An indented list continuation line was walked by
+`trim`, by `calc_indentation` and by `push_line_without_indent`, and
+walked again by `trim_start` or `first_non_whitespace_in_line` once it
+turned out to carry a marker or to continue a paragraph lazily; a
+blank-line lookahead re-measured the very line it had just scanned; a
+quote line walked its prefix for the blank test and again for the
+marker's column arithmetic.
+
+`LineFacts` now produces all of that from one terminator search plus
+one walk of the leading whitespace, and both collectors hand the facts
+down. `push_line_without_indent` takes the measured run, so a tab-free
+indent dedents by slicing instead of walking, and `line_starts_block`
+takes the first non-whitespace byte its callers have already located.
+
+The result is unchanged because every fact is defined as the helper it
+replaces. The two column counts are kept apart rather than unified,
+since they have always disagreed: `calc_indentation`, which list
+continuation depth is compared against, charges a tab a flat four
+columns wherever it sits, while the true column count advances to the
+next multiple of four. `LineFacts::trimmed` stays byte-identical to
+`line.trim_start()`, Unicode whitespace included, so a marker behind a
+non-breaking space is still read the way it was. New unit tests pin
+each fact to the scan it replaces, and HTML plus full AST output —
+source spans included — was verified identical to the previous revision
+across the CommonMark and GFM spec examples, repository documents and
+list/quote edge cases under six option profiles.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ src/parser/block_quote.rs     |  52 +++-----
+ src/parser/cursor.rs          | 225 +++++++++++++++++++++++++++++++++-
+ src/parser/definition_list.rs |   9 +-
+ src/parser/list.rs            |  58 ++++++---
+ src/parser/list_item.rs       |  30 +++--
+ 5 files changed, 306 insertions(+), 68 deletions(-)
+
+diff --git a/src/parser/block_quote.rs b/src/parser/block_quote.rs
+index 071a4dcc..cc65e7aa 100644
+--- a/src/parser/block_quote.rs
++++ b/src/parser/block_quote.rs
+@@ -2,9 +2,6 @@ use crate::ast::{BlockQuote, Node, Span};
+ 
+ use super::Parser;
+ use super::lazy_paragraph::OpenParagraph;
+-use super::line_scan::{
+-    line_end as scan_line_end, line_terminator_end, next_line_start as scan_next_line_start,
+-};
+ use super::spans::SourceMap;
+ use crate::parser::error::ParseResult;
+ 
+@@ -38,37 +35,38 @@ impl<'a> Parser<'a> {
+             }
+ 
+             let line_start = self.position;
++            // One pass over the line answers every question below: where it
++            // ends, where the next one starts, how far it is indented — in
++            // the columns the marker's own arithmetic continues from — and
++            // whether anything follows that indentation.
++            let facts = self.line_facts(line_start);
++            let line_next = facts.next;
++
+             if self.is_line_comment_at(line_start) {
+-                let next = scan_next_line_start(bytes, line_start);
+                 source_map.push_line(
+                     inner.len(),
+-                    next - line_start,
++                    line_next - line_start,
+                     line_start,
+-                    next - line_start,
++                    line_next - line_start,
+                 );
+                 // The comment is copied verbatim and is not content the
+                 // tracker classifies: it catches up on what precedes it and
+                 // skips past it.
+                 open_paragraph.catch_up(&inner, &self.options);
+-                inner.push_str(&self.source[line_start..next]);
++                inner.push_str(&self.source[line_start..line_next]);
+                 open_paragraph.skip_to(inner.len());
+-                self.position = next;
++                self.position = line_next;
+                 continue;
+             }
+-            let mut ws_cursor = line_start;
+-            while ws_cursor < bytes.len() && matches!(bytes[ws_cursor], b' ' | b'\t') {
+-                ws_cursor += 1;
+-            }
+-
+             // Blank line ends the block quote
+-            if ws_cursor >= bytes.len() || matches!(bytes[ws_cursor], b'\n' | b'\r') {
++            let trimmed = facts.after_indent();
++            if trimmed.is_empty() {
+                 break;
+             }
+ 
+-            let line_end = scan_line_end(bytes, line_start);
+-            let line = &self.source[line_start..line_end];
+-            let trimmed_offset = ws_cursor - line_start;
+-            let trimmed = &line[trimmed_offset..];
++            let line = facts.line;
++            let line_end = line_start + line.len();
++            let trimmed_offset = facts.indent.bytes;
+ 
+             if let Some(after_gt) = trimmed.strip_prefix('>') {
+                 // The marker consumes `>` plus one column of following
+@@ -76,15 +74,7 @@ impl<'a> Parser<'a> {
+                 // spaces (with original column arithmetic) keeps tab stops
+                 // aligned through the re-parse: `>\t\tfoo` becomes six
+                 // spaces + foo, i.e. indented code with two extra columns.
+-                let mut column = 0usize;
+-                for &byte in &line.as_bytes()[..trimmed_offset] {
+-                    column = if byte == b'\t' {
+-                        (column / 4 + 1) * 4
+-                    } else {
+-                        column + 1
+-                    };
+-                }
+-                let after_marker_column = column + 1;
++                let after_marker_column = facts.indent.columns + 1;
+                 let ws_bytes = after_gt.as_bytes();
+                 let mut ws_len = 0usize;
+                 let mut ws_end_column = after_marker_column;
+@@ -110,9 +100,6 @@ impl<'a> Parser<'a> {
+                 inner.push('\n');
+                 let content_start =
+                     line_start + trimmed_offset + 1 + Self::quote_marker_space_bytes(after_gt);
+-                // The line's terminator is already located, so stepping
+-                // over it is a two-byte test rather than a second search.
+-                let line_next = line_terminator_end(bytes, line_end);
+                 let source_len =
+                     line_end.saturating_sub(content_start) + line_next.saturating_sub(line_end);
+                 source_map.push_line(
+@@ -125,7 +112,9 @@ impl<'a> Parser<'a> {
+                 // Advance past this line (and the trailing newline if any).
+                 self.position = line_next;
+             } else if !Self::quote_lazy_blocked(trimmed)
+-                && !self.line_starts_block()
++                // The line is not blank, so its first non-whitespace byte is
++                // exactly where its space/tab run ended.
++                && !self.line_starts_block(line_start, line_start + trimmed_offset)
+                 && open_paragraph.catch_up(&inner, &self.options)
+             {
+                 // Lazy continuation: the line joins the quote's open
+@@ -137,7 +126,6 @@ impl<'a> Parser<'a> {
+                 lazy_lines.insert(inner.len() as u32);
+                 inner.push_str(line);
+                 inner.push('\n');
+-                let line_next = line_terminator_end(bytes, line_end);
+                 source_map.push_line(
+                     generated_start,
+                     line.len() + 1,
+diff --git a/src/parser/cursor.rs b/src/parser/cursor.rs
+index 833e0909..3d5bbdf6 100644
+--- a/src/parser/cursor.rs
++++ b/src/parser/cursor.rs
+@@ -5,6 +5,115 @@ use super::line_scan::{
+     is_line_ending_byte, line_end, line_terminator_end, next_line_start as scan_next_line_start,
+ };
+ 
++/// The leading space/tab run of a line, in the units the block parsers
++/// measure indentation in.
++///
++/// The two column counts deliberately disagree on tabs, because their
++/// callers always have: [`Self::columns`] is the real column the run ends
++/// on, while [`Self::flat_columns`] reproduces
++/// [`Parser::calc_indentation`], which charges every tab four columns
++/// wherever it sits. List continuation depth has always been compared in
++/// the flat unit, so unifying the two would move item boundaries.
++#[derive(Clone, Copy)]
++pub(super) struct LineIndent {
++    /// Length of the run in bytes.
++    pub bytes: usize,
++    /// True columns: a tab advances to the next multiple of four, as in
++    /// `line_indent_width` and the tracker's `leading_indent`.
++    pub columns: usize,
++    /// [`Parser::calc_indentation`]'s count: a space is one column and a
++    /// tab a flat four.
++    pub flat_columns: usize,
++    /// Whether the run holds a tab at all. Without one both counts are the
++    /// byte length and column arithmetic collapses into slicing.
++    pub has_tab: bool,
++}
++
++impl LineIndent {
++    /// Measures the leading space/tab run of `line`, which must already be
++    /// bounded by its terminator.
++    pub(super) fn of(line: &str) -> Self {
++        let mut indent = LineIndent {
++            bytes: 0,
++            columns: 0,
++            flat_columns: 0,
++            has_tab: false,
++        };
++        for &byte in line.as_bytes() {
++            match byte {
++                b' ' => {
++                    indent.columns += 1;
++                    indent.flat_columns += 1;
++                }
++                b'\t' => {
++                    indent.columns = (indent.columns / 4 + 1) * 4;
++                    indent.flat_columns += 4;
++                    indent.has_tab = true;
++                }
++                _ => break,
++            }
++            indent.bytes += 1;
++        }
++        indent
++    }
++}
++
++/// Everything a container's line walk needs to know about one source line.
++///
++/// List items and block quotes ask the same questions of every line they
++/// consume — where it ends, where the next one starts, how deeply it is
++/// indented, whether it is blank, and what it looks like past its
++/// indentation — and each answer used to come from its own scan over the
++/// same bytes. These facts come from one terminator search followed by one
++/// walk of the leading whitespace.
++pub(super) struct LineFacts<'a> {
++    /// The line without its terminator.
++    pub line: &'a str,
++    /// Where the next line starts: past the terminator, or `source.len()`
++    /// when the line is unterminated.
++    pub next: usize,
++    /// Byte-identical to `line.trim_start()`. That also strips Unicode
++    /// whitespace, so it can be shorter than [`Self::after_indent`];
++    /// callers that mean "past the space/tab run" must use that instead.
++    pub trimmed: &'a str,
++    /// The leading space/tab run, measured once.
++    pub indent: LineIndent,
++}
++
++impl<'a> LineFacts<'a> {
++    fn of(line: &'a str, next: usize) -> Self {
++        let indent = LineIndent::of(line);
++        let after_indent = &line[indent.bytes..];
++        let trimmed = match after_indent.as_bytes().first() {
++            // The run already ends the line, or ends on a byte `trim_start`
++            // keeps. Anything else — a multi-byte character that may carry
++            // the White_Space property, or an ASCII control such as a form
++            // feed — falls back to the general trim.
++            None => after_indent,
++            Some(byte) if byte.is_ascii_graphic() => after_indent,
++            Some(_) => after_indent.trim_start(),
++        };
++        LineFacts {
++            line,
++            next,
++            trimmed,
++            indent,
++        }
++    }
++
++    /// The line past its leading space/tab run — what a container strips
++    /// before looking for its marker.
++    pub fn after_indent(&self) -> &'a str {
++        &self.line[self.indent.bytes..]
++    }
++
++    /// Whether the line holds nothing but whitespace, matching the
++    /// `line.trim().is_empty()` test the container walks have always used.
++    pub fn is_blank(&self) -> bool {
++        self.trimmed.is_empty()
++    }
++}
++
+ /// What [`Parser::probe_line`] learned about the current line.
+ pub(super) struct BlockProbe {
+     /// Whether the line begins a block-level construct.
+@@ -91,7 +200,8 @@ impl<'a> Parser<'a> {
+         }
+     }
+ 
+-    /// Returns true when the current line begins a block-level construct.
++    /// Returns true when the line at `line_start` begins a block-level
++    /// construct, given the offset of its first non-space, non-tab byte.
+     ///
+     /// This is the paragraph-continuation counterpart of `parse_block`'s
+     /// first-byte dispatcher. Paragraph parsing calls it for each following
+@@ -99,11 +209,16 @@ impl<'a> Parser<'a> {
+     /// the leading marker byte makes a block parse plausible. Keeping this
+     /// byte-dispatch table aligned with `parse_block` preserves Markdown
+     /// behavior while avoiding repeated full-line scans on ordinary prose.
+-    pub(super) fn line_starts_block(&self) -> bool {
+-        let line_start = self.position;
+-        let Some(trimmed_start) = self.first_non_whitespace_in_line(line_start) else {
+-            return false;
+-        };
++    ///
++    /// The callers reach this from their own line walk, which located that
++    /// byte on the way in: taking it as an argument keeps the indentation
++    /// from being walked a second time here.
++    pub(super) fn line_starts_block(&self, line_start: usize, trimmed_start: usize) -> bool {
++        debug_assert_eq!(
++            Some(trimmed_start),
++            self.first_non_whitespace_in_line(line_start),
++            "a reported first non-whitespace byte must match a fresh scan"
++        );
+         self.probe_line(line_start, trimmed_start).starts_block
+     }
+ 
+@@ -293,6 +408,13 @@ impl<'a> Parser<'a> {
+         scan_next_line_start(self.source.as_bytes(), line_start)
+     }
+ 
++    /// Everything the container walks need to know about the line starting
++    /// at `line_start`, from one pass over it. See [`LineFacts`].
++    pub(super) fn line_facts(&self, line_start: usize) -> LineFacts<'a> {
++        let (line, next) = self.line_and_next(line_start);
++        LineFacts::of(line, next)
++    }
++
+     pub(super) fn consume_line(&mut self) -> &'a str {
+         let start = self.position;
+         let bytes = self.source.as_bytes();
+@@ -420,6 +542,97 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn line_facts_match_the_separate_scans_they_replace() {
++        // Every fact the one-pass walk reports has to equal the answer the
++        // helper it replaced would have produced, including the two column
++        // counts, which disagree on tabs on purpose.
++        for source in SOURCES {
++            let allocator = Allocator::new();
++            let parser = Parser::new(&allocator, source);
++            for offset in 0..=source.len() {
++                if !source.is_char_boundary(offset) {
++                    continue;
++                }
++                let facts = parser.line_facts(offset);
++                assert_eq!(
++                    facts.line,
++                    parser.line_at(offset),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.next,
++                    parser.next_line_start(offset),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.trimmed,
++                    facts.line.trim_start(),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.is_blank(),
++                    facts.line.trim().is_empty(),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.indent.flat_columns,
++                    parser.calc_indentation(offset),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.indent.columns,
++                    parser.line_indent_width(offset, offset + facts.indent.bytes),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.after_indent(),
++                    facts.line.trim_start_matches([' ', '\t']),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.indent.has_tab,
++                    facts.after_indent().len() != facts.line.trim_start_matches(' ').len(),
++                    "source {source:?} offset {offset}"
++                );
++                if !facts.is_blank() {
++                    assert_eq!(
++                        parser.first_non_whitespace_in_line(offset),
++                        Some(offset + facts.indent.bytes),
++                        "source {source:?} offset {offset}"
++                    );
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn dedenting_a_line_agrees_with_the_walking_form() {
++        // The tab-free fast path has to reproduce the column walk exactly,
++        // both in what it writes and in the source offset it reports.
++        let lines = [
++            "", " ", "    ", "\t", " \tx", "x", "  x", "     x", "\tx", "\t\tx", "  \tx", " x \t",
++        ];
++        for line in lines {
++            for columns in 0..8usize {
++                let allocator = Allocator::new();
++                let mut fast = allocator.new_string();
++                let mut slow = allocator.new_string();
++                let indent = super::LineIndent::of(line);
++                let fast_offset =
++                    Parser::push_line_without_indent(&mut fast, line, &indent, columns);
++                let walked = super::LineIndent {
++                    has_tab: true,
++                    ..indent
++                };
++                let slow_offset =
++                    Parser::push_line_without_indent(&mut slow, line, &walked, columns);
++                assert_eq!(*fast, *slow, "line {line:?} columns {columns}");
++                assert_eq!(fast_offset, slow_offset, "line {line:?} columns {columns}");
++            }
++        }
++    }
++
+     #[test]
+     fn line_and_next_matches_two_separate_scans() {
+         for source in SOURCES {
+diff --git a/src/parser/definition_list.rs b/src/parser/definition_list.rs
+index 37ffbe09..355b2b13 100644
+--- a/src/parser/definition_list.rs
++++ b/src/parser/definition_list.rs
+@@ -5,6 +5,7 @@ use crate::ast::{DefinitionList, DefinitionListDefinition, DefinitionListTerm, N
+ use rustc_hash::FxHashSet;
+ 
+ use super::Parser;
++use super::cursor::LineIndent;
+ use super::line_scan::line_terminator_end;
+ use super::spans::SourceMap;
+ use crate::parser::error::ParseResult;
+@@ -284,8 +285,12 @@ impl<'a> Parser<'a> {
+             let indent = self.line_indent_width(cursor, trimmed_start);
+             if indent >= 4 {
+                 let generated_start = body_source.len();
+-                let source_offset_in_line =
+-                    Self::push_line_without_indent(&mut body_source, line, 4);
++                let source_offset_in_line = Self::push_line_without_indent(
++                    &mut body_source,
++                    line,
++                    &LineIndent::of(line),
++                    4,
++                );
+                 body_source.push('\n');
+                 let source_start = cursor + source_offset_in_line;
+                 source_map.push_line_with_block_start(
+diff --git a/src/parser/list.rs b/src/parser/list.rs
+index da3c0467..6ac98d45 100644
+--- a/src/parser/list.rs
++++ b/src/parser/list.rs
+@@ -160,7 +160,12 @@ impl<'a> Parser<'a> {
+             }
+ 
+             let continuation_start = self.position;
+-            let (continuation_line, continuation_next) = self.line_and_next(continuation_start);
++            // One pass over the line answers every question below: where it
++            // ends, where the next one starts, how far it is indented, what
++            // follows that indentation, and whether anything does.
++            let facts = self.line_facts(continuation_start);
++            let continuation_line = facts.line;
++            let continuation_next = facts.next;
+ 
+             if self.is_line_comment_at(continuation_start) {
+                 let source = item_source
+@@ -174,6 +179,7 @@ impl<'a> Parser<'a> {
+                 let stripped = Self::push_line_without_indent(
+                     &mut source.text,
+                     continuation_line,
++                    &facts.indent,
+                     content_indent,
+                 );
+                 source.text.push('\n');
+@@ -190,26 +196,28 @@ impl<'a> Parser<'a> {
+                 continue;
+             }
+ 
+-            if continuation_line.trim().is_empty() {
++            if facts.is_blank() {
+                 let mut lookahead = continuation_next;
+-                // The line that stops the walk is the one a sibling marker
+-                // would be read from, so carry it out instead of scanning it
+-                // again below.
+-                let mut lookahead_line = "";
++                // The line that stops the walk is the one the indentation
++                // test and a sibling marker are read from, so carry its
++                // facts out instead of measuring it again below.
++                let mut lookahead_facts = None;
+                 while lookahead < self.source.len() {
+-                    let (line, next) = self.line_and_next(lookahead);
+-                    if !line.trim().is_empty() && !self.is_line_comment_at(lookahead) {
+-                        lookahead_line = line;
++                    let line = self.line_facts(lookahead);
++                    if !line.is_blank() && !self.is_line_comment_at(lookahead) {
++                        lookahead_facts = Some(line);
+                         break;
+                     }
+-                    lookahead = next;
++                    lookahead = line.next;
+                 }
+ 
+-                if lookahead >= self.source.len() {
++                // The walk only stops early on a line it kept, so an empty
++                // result means it ran out of source.
++                let Some(lookahead_facts) = lookahead_facts else {
+                     break;
+-                }
++                };
+ 
+-                let next_indent = self.calc_indentation(lookahead);
++                let next_indent = lookahead_facts.indent.flat_columns;
+                 // An item with no content yet cannot continue past a
+                 // blank line, but its list may (`* a\n*\n\n* c`).
+                 if next_indent >= content_indent && !(item_is_empty && item_source.is_none()) {
+@@ -246,7 +254,11 @@ impl<'a> Parser<'a> {
+                 if next_indent >= baseline_indent
+                     && next_indent <= baseline_indent + 3
+                     && let Some(sibling) = self
+-                        .parse_list_item_line_from_line(lookahead, lookahead_line)
++                        .parse_list_item_line_from_trimmed(
++                            lookahead,
++                            lookahead_facts.line,
++                            lookahead_facts.trimmed,
++                        )
+                         .filter(|next| next.ordered == item.ordered && next.marker == item.marker)
+                 {
+                     // Blank line between siblings: the list is loose.
+@@ -259,7 +271,7 @@ impl<'a> Parser<'a> {
+                 break;
+             }
+ 
+-            let current_indent = self.calc_indentation(continuation_start);
++            let current_indent = facts.indent.flat_columns;
+             if current_indent >= content_indent {
+                 // Indented continuation content.
+                 let item_source = item_source
+@@ -268,6 +280,7 @@ impl<'a> Parser<'a> {
+                 let source_offset_in_line = Self::push_line_without_indent(
+                     &mut item_source.text,
+                     continuation_line,
++                    &facts.indent,
+                     content_indent,
+                 );
+                 item_source.text.push('\n');
+@@ -289,8 +302,11 @@ impl<'a> Parser<'a> {
+             // baseline — deeper "markers" are just text) ends this item.
+             if current_indent >= baseline_indent
+                 && current_indent <= baseline_indent + 3
+-                && let Some(sibling) =
+-                    self.parse_list_item_line_from_line(continuation_start, continuation_line)
++                && let Some(sibling) = self.parse_list_item_line_from_trimmed(
++                    continuation_start,
++                    continuation_line,
++                    facts.trimmed,
++                )
+             {
+                 // A thematic break can overlap list syntax only when an
+                 // unordered item's content starts with the same `-` or
+@@ -310,7 +326,13 @@ impl<'a> Parser<'a> {
+             // indentation (CommonMark laziness) — and only a paragraph: a
+             // line after a closed fence, an HTML block, a heading or a
+             // table belongs to the enclosing block instead.
+-            if item_is_empty || after_blank || self.line_starts_block() {
++            // The line is not blank, so its first non-whitespace byte is
++            // exactly where its space/tab run ended.
++            if item_is_empty
++                || after_blank
++                || self
++                    .line_starts_block(continuation_start, continuation_start + facts.indent.bytes)
++            {
+                 break;
+             }
+             let paragraph_open = match &item_source {
+diff --git a/src/parser/list_item.rs b/src/parser/list_item.rs
+index af84995f..27f7b964 100644
+--- a/src/parser/list_item.rs
++++ b/src/parser/list_item.rs
+@@ -1,4 +1,5 @@
+ use super::Parser;
++use super::cursor::LineIndent;
+ 
+ pub(super) struct ParsedListItem<'a> {
+     pub(super) ordered: bool,
+@@ -61,6 +62,10 @@ impl<'a> Parser<'a> {
+     }
+ 
+     /// Calculates the indentation level (number of spaces) of the current line.
++    ///
++    /// A tab counts as a flat four columns here, wherever it sits — see
++    /// [`LineIndent::flat_columns`](super::cursor::LineIndent), which
++    /// produces the same count for callers that walk the line anyway.
+     pub(super) fn calc_indentation(&self, start: usize) -> usize {
+         let mut indent = 0;
+         let bytes = self.source.as_bytes();
+@@ -95,16 +100,8 @@ impl<'a> Parser<'a> {
+     /// `line` must come from the parser's own line scanner: `str::lines()`
+     /// recognizes LF and CRLF but not a lone CR, so a sibling after a CR
+     /// blank line has to stay limited to its own source line rather than
+-    /// swallowing the rest of the list.
+-    pub(super) fn parse_list_item_line_from_line(
+-        &self,
+-        line_start: usize,
+-        line: &'a str,
+-    ) -> Option<ParsedListItem<'a>> {
+-        let trimmed = line.trim_start();
+-        self.parse_list_item_line_from_trimmed(line_start, line, trimmed)
+-    }
+-
++    /// swallowing the rest of the list. `trimmed` is `line.trim_start()`,
++    /// which every caller has already produced.
+     pub(super) fn parse_list_item_line_from_trimmed(
+         &self,
+         line_start: usize,
+@@ -256,11 +253,24 @@ impl<'a> Parser<'a> {
+     /// Pushes `line` minus its first `columns` columns onto `out`,
+     /// expanding the whole leading whitespace run to spaces so tab stops
+     /// keep their original alignment through item/quote re-parsing.
++    ///
++    /// `indent` is that run as the caller's line walk already measured it.
++    /// A run without tabs needs no walk at all: columns are bytes, so the
++    /// dedent is a slice and the padding a count.
+     pub(super) fn push_line_without_indent(
+         out: &mut crate::allocator::String<'a>,
+         line: &str,
++        indent: &LineIndent,
+         columns: usize,
+     ) -> usize {
++        if !indent.has_tab {
++            for _ in columns..indent.bytes {
++                out.push(' ');
++            }
++            out.push_str(&line[indent.bytes..]);
++            return indent.bytes.min(columns);
++        }
++
+         let bytes = line.as_bytes();
+         let mut col = 0usize;
+         let mut i = 0usize;
+-- 
+2.55.0
+

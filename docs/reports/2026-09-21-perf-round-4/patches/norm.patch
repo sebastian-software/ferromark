@@ -1,0 +1,113 @@
+From 90c73282927220b28f18696be252412c5fbda40c Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Mon, 21 Sep 2026 20:31:37 +0200
+Subject: [PATCH] perf(parser): keep only the normalization probe on the parse
+ entry frame
+
+Source normalization already handed ordinary Markdown back borrowed: a source
+that starts with no BOM and holds no NUL needs neither a generated string nor
+a source map, so the whole call was a three-byte compare and one `memchr`.
+Both producing paths shared that frame, though, so every fresh parse called
+out to a function carrying the arena string and the replacement vector, no
+matter how short the source and even though nothing there ran.
+
+Outline them. `normalize` now holds nothing but the probe and is small enough
+to inline into the parser constructor, `borrow_body` keeps the prefix-only
+borrow off that frame, and `replace_nuls` is additionally `#[cold]` because a
+literal NUL in Markdown is rare.
+
+Nothing is normalized differently. The same `source_start` comes from the same
+BOM and front-matter rules, the same `memchr` decides, and the two outlined
+bodies are the previous branches moved unchanged, so the produced source,
+every span and every error offset stay identical for all inputs, including the
+BOM, front-matter and NUL cases the tests pin.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ src/parser/source_normalization.rs | 58 +++++++++++++++++++++++++-----
+ 1 file changed, 49 insertions(+), 9 deletions(-)
+
+diff --git a/src/parser/source_normalization.rs b/src/parser/source_normalization.rs
+index fa5e6b58..5798a837 100644
+--- a/src/parser/source_normalization.rs
++++ b/src/parser/source_normalization.rs
+@@ -13,6 +13,16 @@ pub(super) struct NormalizedSourceMap<'a> {
+     original_len: u32,
+ }
+ 
++/// The probe every fresh parse pays for, and nothing else.
++///
++/// A source that starts no encoding prefix and holds no NUL — every ordinary
++/// Markdown document — is normalized by being handed back, so the whole cost
++/// is the BOM compare and the one NUL search that proves it. Both paths that
++/// do produce something are outlined, so this frame stays small enough to
++/// inline into the constructor rather than calling out to a frame carrying
++/// the generated string's machinery. Fresh parses of short sources are where
++/// a fixed cost like that is visible at all.
++#[inline]
+ pub(super) fn normalize<'a>(
+     allocator: &'a Allocator,
+     source: &'a str,
+@@ -26,20 +36,50 @@ pub(super) fn normalize<'a>(
+     } else {
+         usize::from(bytes.starts_with(b"\xEF\xBB\xBF")) * 3
+     };
+-    let first_nul = memchr::memchr(0, &bytes[source_start..]).map(|offset| source_start + offset);
+-    let Some(first) = first_nul else {
++    let Some(relative) = memchr::memchr(0, &bytes[source_start..]) else {
+         if source_start == 0 {
+             // Keep ordinary Markdown borrowed, with no map or string allocation.
+             return (source, None);
+         }
+-        let map = allocator.alloc(NormalizedSourceMap {
+-            replacements: allocator.new_vec(),
+-            source_start: source_start as u32,
+-            original_len: source.len() as u32,
+-        });
+-        // Prefix-only normalization borrows the body without a generated copy.
+-        return (&source[source_start..], Some(map));
++        return borrow_body(allocator, source, source_start);
+     };
++    replace_nuls(allocator, source, source_start, source_start + relative)
++}
++
++/// A source whose only normalization is the stripped prefix.
++///
++/// The body is borrowed without a generated copy; the map exists to carry the
++/// prefix length, so that spans and error offsets still name the caller's
++/// bytes. Outlined because the prefix is either a BOM or extracted metadata,
++/// and a parse with neither must not carry this on its frame.
++#[inline(never)]
++fn borrow_body<'a>(
++    allocator: &'a Allocator,
++    source: &'a str,
++    source_start: usize,
++) -> (&'a str, Option<&'a NormalizedSourceMap<'a>>) {
++    let map = allocator.alloc(NormalizedSourceMap {
++        replacements: allocator.new_vec(),
++        source_start: source_start as u32,
++        original_len: source.len() as u32,
++    });
++    (&source[source_start..], Some(map))
++}
++
++/// A source holding at least one NUL, whose first one sits at `first`.
++///
++/// Building the replaced source is the only path that allocates, and a
++/// literal NUL in Markdown is rare enough that it is worth keeping the code
++/// for it out of the caller entirely.
++#[cold]
++#[inline(never)]
++fn replace_nuls<'a>(
++    allocator: &'a Allocator,
++    source: &'a str,
++    source_start: usize,
++    first: usize,
++) -> (&'a str, Option<&'a NormalizedSourceMap<'a>>) {
++    let bytes = source.as_bytes();
+     let mut normalized = allocator.new_string();
+     normalized.reserve(source.len() - source_start + 2);
+     normalized.push_str(&source[source_start..first]);
+-- 
+2.55.0
+

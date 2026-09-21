@@ -1,0 +1,324 @@
+From 2a46cf5e34d1b57c3f534a977c5a1f0db1e19d59 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Mon, 21 Sep 2026 20:57:44 +0200
+Subject: [PATCH] perf(parser): answer the closer probe from a forward window,
+ not a hash table
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`has_closer_from` asked whether a closing byte follows an opener by hashing
+`(slice pointer, slice length, closer)` into a lazily allocated table holding
+the position of that slice's last closer, with a one-entry cell in front of
+it. Every `[` of a paragraph, every `![`, every `[^`, every `<` and every `{`
+pays that hash, and link-dense prose asks it once per bracket.
+
+The question is monotone in the position asked about — a closer at or after
+`from` is one at or after every earlier position too — so a window answers it
+instead: a range of bytes known to hold no such closer, and the closer just
+behind that range. A question inside the window is a comparison; one past it
+resumes the `memchr` where the window ends, and one behind it reads only up
+to the window's start, because from there on the window already decides. The
+run of unclosed openers the table was introduced for therefore still reads
+every byte once, by the first opener that reaches it, and the parser carries
+three words per closer instead of a table pointer and a cached key.
+
+The window is kept in addresses rather than in offsets of one named slice.
+Nested content is parsed as slices of one buffer, and "no `]` lies between
+these two addresses" holds for every slice that covers them, so a window
+built for a paragraph still answers inside a bracket text cut out of it and
+one built for the whole source still answers inside the paragraphs of it.
+One window per closer keeps `[`, `<` and `{` from evicting each other, which
+is what would have turned their interleaving back into a walk per opener.
+
+The answer is unchanged for every input. Both forms compute "is there a
+`closer` at or after `from` in this slice", the window only from bytes it has
+read: a hit is a byte the scan just passed and is reported only while it lies
+before the slice end, and a miss is reported only for a range the scan
+covered to that end. A position past the slice is `false` either way, as the
+old `memrchr` position could never reach it. A differential corpus of 120,252
+bracket-, angle- and brace-heavy sources — token soup, narrow bracket soup
+and the hand-picked run shapes — rendered under five option sets (CommonMark,
+GFM, MDX, all extensions, all extensions at a cap of 4) is byte-identical in
+HTML and in the AST `Debug` against the previous commit across all 601,260
+renders. `cargo test --workspace --all-features --locked` passes with no
+`.snap.new` file, so the snapshot suites and the CommonMark 0.31.2 and GFM
+conformance baselines are unchanged.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ src/parser/delimiters.rs | 141 +++++++++++++++++++++++++++++++++------
+ src/parser/mod.rs        |  39 ++++-------
+ 2 files changed, 133 insertions(+), 47 deletions(-)
+
+diff --git a/src/parser/delimiters.rs b/src/parser/delimiters.rs
+index 6d85e02e..09e989fc 100644
+--- a/src/parser/delimiters.rs
++++ b/src/parser/delimiters.rs
+@@ -43,40 +43,83 @@ impl<'a> Parser<'a> {
+     /// The balanced scans (`scan_balanced` for `]`, `skip_braces` for `}`)
+     /// only report that nothing closed after walking to the end of the
+     /// content, so a run of unclosed openers pays one full walk each and
+-    /// costs O(n²). The position of the last closer settles it for every
+-    /// opener in the slice at once, so the run costs one scan in total.
++    /// costs O(n²). A forward window settles the run instead: the answer is
++    /// monotone in `from` — a closer at or after `from` is one at or after
++    /// every earlier position too — so the bytes one opener reads answer for
++    /// every opener behind it, and the run costs one scan in total.
++    ///
++    /// See [`CloserWindow`] for the invariant and for why the window is kept
++    /// in addresses. Keeping it that way is what lets the same window answer
++    /// for a slice and for the sub-slices of it that nested content is
++    /// parsed from, instead of being rebuilt for each.
+     pub(super) fn has_closer_from(&self, content: &'a str, from: usize, closer: u8) -> bool {
+-        let key = (content.as_ptr() as usize, content.len(), closer);
++        let bytes = content.as_bytes();
++        if from >= bytes.len() {
++            return false;
++        }
++        let base = bytes.as_ptr() as usize;
++        // The question and the end of the slice, as addresses.
++        let at = base + from;
++        let end = base + bytes.len();
+ 
+-        // Every `[` and `<` of a paragraph asks about the same slice, so the
+-        // answer given last is the answer wanted next: one cell in front of
+-        // the table saves the hash and the probe for all but the first ask.
+-        // The table stays the record; the cell only mirrors its last entry.
+-        if let Some((hit_key, last)) = self.closer_hit.get()
+-            && hit_key == key
++        let cell = &self.closer_windows[closer_slot(closer)];
++        let cached = cell.get();
++        let known = cached.closer == closer;
++
++        // The bytes this question still has to read, and the window that
++        // decides it when they hold no closer.
++        let (start, stop, beyond) = if known && at >= cached.lo && at <= cached.hi {
++            if cached.hi >= end {
++                // Clean from here past the end of this slice.
++                return false;
++            }
++            if cached.found {
++                // The closer at `hi` is at or after `at` and inside the slice.
++                return true;
++            }
++            // Clean up to `hi`, unread from there on.
++            (cached.hi - base, bytes.len(), None)
++        } else if known && at < cached.lo && cached.lo <= end && (cached.found || cached.hi >= end)
+         {
+-            return last.is_some_and(|last| last >= from);
+-        }
+-        let cached = self.last_closer().borrow().get(&key).copied();
+-        let last = if let Some(last) = cached {
+-            last
++            // Behind the window: only `at..lo` is unread, and what the window
++            // knows from `lo` on already settles the rest of the slice.
++            (from, cached.lo - base, Some(cached))
+         } else {
+-            let last = memchr::memrchr(closer, content.as_bytes());
+-            self.last_closer().borrow_mut().insert(key, last);
+-            last
++            (from, bytes.len(), None)
+         };
+-        self.closer_hit.set(Some((key, last)));
+ 
+-        last.is_some_and(|last| last >= from)
++        let next = memchr(closer, &bytes[start..stop]).map(|offset| base + start + offset);
++        let window = match (next, beyond) {
++            // A closer inside the bytes just read, so inside the slice.
++            (Some(hit), _) => CloserWindow {
++                closer,
++                lo: at,
++                hi: hit,
++                found: true,
++            },
++            // Nothing up to `lo`, so the window's own answer stands, now
++            // reaching back to `at`.
++            (None, Some(settled)) => CloserWindow { lo: at, ..settled },
++            // Nothing in `at..stop`, and `stop` is the end of the slice.
++            (None, None) => CloserWindow {
++                closer,
++                lo: at,
++                hi: base + stop,
++                found: false,
++            },
++        };
++        cell.set(window);
++        window.found && window.hi < end
+     }
+ 
+     /// Reports whether `]]` occurs at or after `from` in `content`.
+     ///
+     /// The wiki-link scan walks to the end of the content to find that
+     /// nothing closes a `[[`, so a run of unclosed openers paid one walk each
+-    /// — `[`×n `a]` cost 8 s at 128 KB with wiki links on. Like
+-    /// [`Self::has_closer_from`], the position of the last closer settles it
+-    /// for every opener in the slice at once.
++    /// — `[`×n `a]` cost 8 s at 128 KB with wiki links on. The position of
++    /// the last closer settles it for every opener in the slice at once,
++    /// which is the bound [`Self::has_closer_from`] carries for the plain
++    /// closers.
+     pub(super) fn has_wiki_closer_from(&self, content: &'a str, from: usize) -> bool {
+         let key = (content.as_ptr() as usize, content.len());
+ 
+@@ -319,6 +362,60 @@ pub(super) struct ForwardMemo {
+     hit: usize,
+ }
+ 
++/// One forward window over the bytes a parser reads, for
++/// [`Parser::has_closer_from`]: no `closer` occurs at any address in
++/// `lo..hi`, and when `found`, the byte at `hi` is one.
++///
++/// Same shape as [`ForwardMemo`] and the same reason: the answer is monotone
++/// in the position asked about, so the closer found once ahead of `lo`
++/// answers for every position up to it, and only a question that leaves the
++/// window reads anything.
++///
++/// It is kept in addresses rather than in offsets of one named slice because
++/// nested content is parsed as slices of one buffer, and a statement about a
++/// range of that buffer holds for every slice that covers the range. A window
++/// built for a paragraph therefore still answers inside a bracket text cut
++/// out of it, and one built for the whole source still answers inside the
++/// paragraphs of it — which a window naming one slice would have to rebuild,
++/// re-reading the same bytes once per alternation. Live slices never overlap
++/// across buffers, so a window can only be read where it was written.
++///
++/// A default window names the empty range at address zero with `closer` 0,
++/// which no question can match: every closer asked about is an ASCII
++/// punctuation byte.
++#[derive(Clone, Copy, Default)]
++pub(super) struct CloserWindow {
++    /// The closing byte this window answers for.
++    closer: u8,
++    /// Whether a `closer` sits at `hi`. When it does not, `hi` is only as
++    /// far as the bytes behind the window have been read.
++    found: bool,
++    /// First address the window covers.
++    lo: usize,
++    /// One past the last address known to hold no `closer`.
++    hi: usize,
++}
++
++/// Number of windows [`Parser::has_closer_from`] keeps, one per closer.
++pub(super) const CLOSER_SLOTS: usize = 3;
++
++/// The window slot a closer's answers live in.
++///
++/// The `[`, `<` and `{` of one paragraph ask about the same slice in turn, so
++/// a single window between them would be rebuilt by every other question, and
++/// a run of openers that nothing closes would read the content once each —
++/// the quadratic shape the window exists to bound. A slot per closer keeps
++/// the three questions on their own forward walk. Any other byte shares the
++/// last slot, and since the slot names the closer it answers for, sharing
++/// costs a scan and never a wrong answer.
++const fn closer_slot(closer: u8) -> usize {
++    match closer {
++        b']' => 0,
++        b'>' => 1,
++        _ => 2,
++    }
++}
++
+ /// Bytes that can change the outcome of [`Parser::scan_balanced`]: the
+ /// escape and code-span markers, the start of an autolink or raw HTML tag,
+ /// and the brackets themselves.
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index ad59f47c..6733d640 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -144,8 +144,8 @@ struct ExtensionMemos<'a> {
+     ///
+     /// `skip_braces` reports that nothing closed only after walking to the
+     /// end of the content, so a run of `{` paid one walk each, and a single
+-    /// `}` behind the run defeats the cheap `last_closer` guard in front of
+-    /// it. One walk decides every brace it passes.
++    /// `}` behind the run defeats the cheap `has_closer_from` guard in front
++    /// of it. One walk decides every brace it passes.
+     brace_matches: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
+ 
+     /// The end of a content slice and a range of it the last brace walk
+@@ -190,7 +190,8 @@ struct ExtensionMemos<'a> {
+     math_block_close: std::cell::Cell<Option<(usize, usize)>>,
+ 
+     /// Memoized position of the last `]]` in a content slice, keyed like
+-    /// `link_probe_cache`: the wiki-link scan's counterpart to `last_closer`.
++    /// `link_probe_cache`: the wiki-link scan's counterpart to
++    /// `has_closer_from`.
+     /// A `[[` with no `]]` after it walks to the end of the content to find
+     /// that out, so a run of them cost one walk each; one search answers for
+     /// every opener in the slice.
+@@ -207,10 +208,6 @@ type LazyMap<'a, K, V> = std::cell::OnceCell<crate::allocator::Box<'a, MemoTable
+ /// A memo table behind a [`LazyMap`].
+ type MemoTable<K, V> = std::cell::RefCell<rustc_hash::FxHashMap<K, V>>;
+ 
+-/// Memo key of the last-closer scan: the identity of a content slice (pointer,
+-/// length) and the closing byte asked about.
+-type CloserKey = (usize, usize, u8);
+-
+ /// Markdown parser.
+ pub struct Parser<'a> {
+     /// Arena allocator.
+@@ -347,21 +344,19 @@ pub struct Parser<'a> {
+     /// long as the cache exists.
+     bracket_matches: LazyMap<'a, (usize, usize), (usize, bool)>,
+ 
+-    /// Memoized position of the final `]` or `}` in a content slice, keyed
+-    /// the same way as `link_probe_cache` plus the byte being looked for.
++    /// One forward window per closing byte — `]`, `>` and `}` — over the
++    /// bytes this parser reads: a range that holds none of it, and the one
++    /// just behind that range. See `Parser::has_closer_from`.
+     ///
+     /// An opener can only open something when its closer follows it, and
+     /// the balanced scans answer that by walking to the end of the content.
+     /// A run of openers with no closer therefore paid one full walk each:
+     /// 64 KiB of `[ ` took 1.0 s and 32 KiB of `{ ` took 0.26 s, both
+-    /// growing x16 for every x4 of input. The position of the last closer
+-    /// settles it for every opener in the slice at once, so the run costs
+-    /// one scan in total.
+-    last_closer: LazyMap<'a, (usize, usize, u8), Option<usize>>,
+-
+-    /// The last answer `has_closer_from` gave, keyed like `last_closer`:
+-    /// the `[` and `<` of one paragraph ask about the same slice in a row.
+-    closer_hit: std::cell::Cell<Option<(CloserKey, Option<usize>)>>,
++    /// growing x16 for every x4 of input. The window moves forward with the
++    /// parse and answers every opener in the run from bytes the first one
++    /// already read, so the run costs one scan in total — and it answers
++    /// from three words of parser state instead of a hash of the slice.
++    closer_windows: [std::cell::Cell<delimiters::CloserWindow>; delimiters::CLOSER_SLOTS],
+ 
+     /// The memo tables of the opt-in scans — MDX, math and wiki links —
+     /// allocated in the arena the first time one of them is consulted, so a
+@@ -398,10 +393,6 @@ impl<'a> Parser<'a> {
+         self.lazy_map(&self.bracket_matches)
+     }
+ 
+-    fn last_closer(&self) -> &MemoTable<CloserKey, Option<usize>> {
+-        self.lazy_map(&self.last_closer)
+-    }
+-
+     /// The opt-in scans' memo tables, allocated in the arena on first use.
+     fn extension_memos(&self) -> &ExtensionMemos<'a> {
+         self.extension_memos
+@@ -458,8 +449,7 @@ impl<'a> Parser<'a> {
+             definition_item_gap: std::cell::Cell::new(None),
+             link_probe_cache: std::cell::OnceCell::new(),
+             bracket_matches: std::cell::OnceCell::new(),
+-            last_closer: std::cell::OnceCell::new(),
+-            closer_hit: std::cell::Cell::new(None),
++            closer_windows: std::array::from_fn(|_| std::cell::Cell::default()),
+             extension_memos: std::cell::OnceCell::new(),
+             definition_region: None,
+             comment_definition_region: None,
+@@ -528,8 +518,7 @@ impl<'a> Parser<'a> {
+             definition_item_gap: std::cell::Cell::new(None),
+             link_probe_cache: std::cell::OnceCell::new(),
+             bracket_matches: std::cell::OnceCell::new(),
+-            last_closer: std::cell::OnceCell::new(),
+-            closer_hit: std::cell::Cell::new(None),
++            closer_windows: std::array::from_fn(|_| std::cell::Cell::default()),
+             extension_memos: std::cell::OnceCell::new(),
+             definition_region: None,
+             comment_definition_region: None,
+-- 
+2.55.0
+
