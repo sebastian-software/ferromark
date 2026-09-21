@@ -111,17 +111,8 @@ impl<'a> Parser<'a> {
         )))
     }
 
-    fn has_mdx_jsx_closer(
-        &self,
-        content: &'a str,
-        from: usize,
-        name: Option<&str>,
-    ) -> bool {
-        let key = (
-            content.as_ptr() as usize,
-            content.len(),
-            name.unwrap_or_default().to_owned(),
-        );
+    fn has_mdx_jsx_closer(&self, content: &'a str, from: usize, name: Option<&'a str>) -> bool {
+        let key = (content.as_ptr() as usize, content.len(), name);
         if let Some(present) = self.mdx_jsx_closer_presence.borrow().get(&key) {
             return *present;
         }

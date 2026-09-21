@@ -90,6 +90,12 @@ enum ParsePhase {
     Definitions,
 }
 
+/// Memo key for a JSX closer lookup: the identity of an inline slice
+/// (pointer, length) and the tag name a closer has to match. Borrowing the
+/// name keeps the lookup allocation-free; names come from the source slice
+/// and so live as long as the parser.
+type JsxCloserKey<'a> = (usize, usize, Option<&'a str>);
+
 /// Markdown parser.
 pub struct Parser<'a> {
     /// Arena allocator.
@@ -240,8 +246,7 @@ pub struct Parser<'a> {
     /// every opener. The first scan settles the useful fast-path question for
     /// the whole slice: when no matching closer exists, every later opener is
     /// necessarily unclosed as well.
-    mdx_jsx_closer_presence:
-        std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize, String), bool>>,
+    mdx_jsx_closer_presence: std::cell::RefCell<rustc_hash::FxHashMap<JsxCloserKey<'a>, bool>>,
 
     /// The last `[scanned_from, blank_line)` window found while bounding a
     /// link reference definition, so a run of them costs one scan in total.
