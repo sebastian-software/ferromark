@@ -82,6 +82,17 @@ have been frozen by 2.0.0.
 `#[non_exhaustive]` on `ParseErrorKind` is what makes this safe: a real error
 path can reintroduce any of these variants in a minor release.
 
+The five incremental fragment methods on `HtmlRenderer` were reviewed in the
+same pass and kept: `render_incremental_fragment`,
+`render_incremental_fragment_with_hooks`, `render_provisional_fragment`,
+`render_provisional_fragment_with_hooks` and `reset_incremental_state`. Unlike
+the items above they are implemented and exercised, and they express something
+`render` cannot: a streaming caller commits a document in pieces and needs
+heading IDs and footnote numbering to continue across them, while a provisional
+piece that the next update replaces must leave that state unclaimed. They stay
+in the frozen surface and are documented in the
+[Rust API guide](../rust-api.md#incremental-fragments).
+
 ## `ParserOptions.gfm` and `HtmlRendererOptions.highlight` removed
 
 Both fields were documented configuration that did nothing.
