@@ -3,10 +3,16 @@
 use crate::allocator::Vec;
 use crate::ast::{InlineMath, MathBlock, Node, Span};
 use memchr::{memchr, memchr2};
+use smallvec::SmallVec;
 
-use super::Parser;
 use super::line_scan::{is_line_ending_byte, next_line_start};
+use super::{MathCloserKey, Parser};
 use crate::parser::error::ParseResult;
+
+/// Ranges of one content slice that a scan for a closer of one opener width
+/// read without finding one. Four covers a line with three code spans in
+/// it; the shapes that go past that are the ones the record exists for.
+pub(super) type MathGaps = SmallVec<[(usize, usize); 4]>;
 
 /// What one scan for an inline-math closer settled, for every opener that
 /// starts at or after the scan did.
@@ -150,19 +156,36 @@ impl<'a> Parser<'a> {
     /// [`scan_inline_math_close`] reports "nothing closes this" only after
     /// reading to the end of the content — and, unlike the `^`/`~` script
     /// spans, it keeps going past a `$` that cannot close — so a run of
-    /// openers paid one walk each: 128 KiB of `$a ` took 6.2 s, x16 for
+    /// openers paid one walk each: 128 KiB of `$a ` took 5.9 s, x16 for
     /// every x4 of input.
     ///
-    /// The memo is what one scan settles for every later opener. A `$` can
-    /// only close when its own bytes and its neighbors allow it, which is
-    /// what [`first_close_candidate`] tests, and skipping a code span only
-    /// ever removes candidates from the scan above. So a range with no
-    /// candidate in it holds no closer for *any* start inside it, and where
-    /// no backtick stands in that range the two scans read the same bytes
-    /// and reach the same `$`.
+    /// Two memos answer it, in the order they cost.
+    ///
+    /// The first is what one candidate scan settles for every later opener.
+    /// A `$` can only close when its own bytes and its neighbors allow it,
+    /// which is what [`first_close_candidate`] tests, and skipping a code
+    /// span only ever removes candidates from the scan above. So a range
+    /// with no candidate in it holds no closer for *any* start inside it,
+    /// and where no backtick stands in that range the two scans read the
+    /// same bytes and reach the same `$`.
+    ///
+    /// That leaves the run whose only candidate sits inside a code span —
+    /// ``$a `` repeated with a trailing `` `$` `` — where every opener fell
+    /// back to the walk and read to the end for a `None`: 128 KiB took
+    /// 6.0 s. So a walk that ends in `None` also records the ranges it read
+    /// byte by byte, the ones between the code spans it stepped over. A
+    /// start inside one of them is a start the walk passed, and the walk
+    /// from there reads the same positions and reaches the same `None`. A
+    /// start inside a region the walk stepped over is not: the bytes that
+    /// hid it from this walk need not hide it from the parse, so it scans
+    /// for itself.
     fn inline_math_close(&self, content: &'a str, from: usize, open_len: usize) -> Option<usize> {
         let bytes = content.as_bytes();
         let key = (content.as_ptr() as usize, content.len(), open_len as u8);
+        if self.scanned_without_math_closer(key, from) {
+            return None;
+        }
+
         let cached = self.math_closers.borrow().get(&key).copied();
         let memo = match cached {
             Some(memo) if memo.origin <= from && from <= memo.candidate => memo,
@@ -179,7 +202,27 @@ impl<'a> Parser<'a> {
         if memo.code_free {
             return Some(memo.candidate);
         }
-        scan_inline_math_close(bytes, from, open_len)
+
+        let mut read = MathGaps::new();
+        let close = scan_inline_math_close(bytes, from, open_len, &mut read);
+        if close.is_none() {
+            let mut gaps = self.math_closer_gaps.borrow_mut();
+            let windows = gaps.entry(key).or_default();
+            for window in read {
+                record_math_gap(windows, window);
+            }
+        }
+        close
+    }
+
+    /// Whether a walk that found no closer has already read `from`.
+    fn scanned_without_math_closer(&self, key: MathCloserKey, from: usize) -> bool {
+        let gaps = self.math_closer_gaps.borrow();
+        let Some(windows) = gaps.get(&key) else {
+            return false;
+        };
+        let index = windows.partition_point(|window| window.0 <= from);
+        index > 0 && from < windows[index - 1].1
     }
 
     /// A `$` before a digit opens math only when something closes it, which
@@ -253,13 +296,26 @@ fn math_block_close(bytes: &[u8], mut cursor: usize) -> Option<usize> {
 /// The first `$` at or after `from` that closes an opener of `open_len`
 /// bytes, with closed code spans skipped whole so that `` $a `$` b$ ``
 /// closes on the last `$` and not the quoted one.
-fn scan_inline_math_close(bytes: &[u8], from: usize, open_len: usize) -> Option<usize> {
+///
+/// `read` collects the ranges the scan read byte by byte: the walk from any
+/// position inside one of them reaches the same answer. They are only
+/// meaningful when the answer is `None`, and the caller drops them
+/// otherwise.
+fn scan_inline_math_close(
+    bytes: &[u8],
+    from: usize,
+    open_len: usize,
+    read: &mut MathGaps,
+) -> Option<usize> {
     let mut cursor = from;
+    let mut window_start = from;
     while let Some(relative) = memchr2(b'$', b'`', &bytes[cursor..]) {
         let candidate = cursor + relative;
         if bytes[candidate] == b'`' {
             cursor = Parser::closed_code_span_end(bytes, candidate)
                 .unwrap_or_else(|| candidate + Parser::marker_run_len(bytes, candidate, b'`'));
+            read.push((window_start, candidate));
+            window_start = cursor;
             continue;
         }
         if can_close_at(bytes, candidate, open_len) {
@@ -267,7 +323,28 @@ fn scan_inline_math_close(bytes: &[u8], from: usize, open_len: usize) -> Option<
         }
         cursor = candidate + 1;
     }
+    read.push((window_start, bytes.len()));
     None
+}
+
+/// Adds one read range to a slice's record, keeping it sorted and free of
+/// overlap so the lookup is a binary search.
+fn record_math_gap(windows: &mut MathGaps, window: (usize, usize)) {
+    if window.0 >= window.1 {
+        return;
+    }
+    let index = windows.partition_point(|probe| probe.0 <= window.0);
+    let at = if index > 0 && windows[index - 1].1 >= window.0 {
+        windows[index - 1].1 = windows[index - 1].1.max(window.1);
+        index - 1
+    } else {
+        windows.insert(index, window);
+        index
+    };
+    while at + 1 < windows.len() && windows[at].1 >= windows[at + 1].0 {
+        windows[at].1 = windows[at].1.max(windows[at + 1].1);
+        windows.remove(at + 1);
+    }
 }
 
 /// [`scan_inline_math_close`] without the code-span skip: the first `$` at

@@ -372,7 +372,7 @@ impl<'a> Parser<'a> {
     /// term scan behind it walks forward to the next blank line: a run of
     /// lazy lines with a `:` marker somewhere later in the document — which
     /// keeps `next_definition_marker` from settling it — re-walked the rest
-    /// of the run for every line, so 128 KiB of them took 0.75 s, x16 for
+    /// of the run for every line, so 128 KiB of them took 0.82 s, x16 for
     /// every x4 of input. A scan that ends without an item ends the same way
     /// for every start inside the run it walked, so recording that window
     /// examines each line once.

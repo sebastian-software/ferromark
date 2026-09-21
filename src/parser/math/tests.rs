@@ -7,7 +7,7 @@
 use crate::allocator::Allocator;
 use crate::parser::{Parser, ParserOptions};
 
-use super::{math_block_close, scan_inline_math_close};
+use super::{MathGaps, math_block_close, scan_inline_math_close};
 
 fn math_parser<'a>(allocator: &'a Allocator, source: &'a str) -> Parser<'a> {
     Parser::with_options(
@@ -33,6 +33,15 @@ fn memoized_inline_closers_agree_with_the_plain_scan() {
         "a $x$ b $y$ c",
         "$a `$` b$ $c$",
         "`$a$` $b$ `$c$`",
+        // The only candidate sits inside a code span the scan steps over,
+        // which is what the recorded read ranges are for. The last shape
+        // puts a `$` inside a stepped-over region: a walk from there must
+        // not be answered from a range that never covered it.
+        "$a $a $a `$`",
+        "$1 $1 $1 `$`",
+        "$a $a `x` `$`",
+        "$a <i t=\"`\">$b$ x` z",
+        "$a `x$y` $b$",
         "\\$a$ $b\\$ $c$",
         "$a 1$ $2 b$ $3$",
         "$",
@@ -49,7 +58,7 @@ fn memoized_inline_closers_agree_with_the_plain_scan() {
                 if from > source.len() {
                     continue;
                 }
-                let expected = scan_inline_math_close(bytes, from, open_len);
+                let expected = scan_inline_math_close(bytes, from, open_len, &mut MathGaps::new());
                 assert_eq!(
                     parser.inline_math_close(source, from, open_len),
                     expected,

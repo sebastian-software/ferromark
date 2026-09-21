@@ -76,6 +76,10 @@ fn recorded_matches_agree_with_a_plain_skip() {
                 skip_braces(bytes, start),
                 "outer answer for {source:?} at {start}"
             );
+            assert!(
+                !recorded.contains_key(&start),
+                "the brace the walk started from is the return value, not a record"
+            );
             for (brace, close) in &recorded {
                 assert_eq!(
                     *close,

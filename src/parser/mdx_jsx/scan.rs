@@ -86,27 +86,42 @@ pub(super) fn scan_jsx_open<'a>(
     })
 }
 
+/// The closing tag that matches the opening tag ending at `from`, found by
+/// a walk that keeps nothing.
+///
+/// The parse takes the same answer from [`record_matching_closes`], which
+/// keeps what it passes; this is the plain walk the tests hold that record
+/// against.
+#[cfg(test)]
 pub(super) fn find_matching_close(
     source: &str,
     from: usize,
     name: Option<&str>,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<(usize, usize)> {
-    walk_close::<false>(source, from, name, &mut |_, _| {}).0
+    walk_close::<false>(source, from, name, skip_brace, &mut |_, _| {}).0
 }
 
 /// What one closing-tag walk settled.
 pub(super) struct CloseWalk {
-    /// Whether a closing tag matched the opening tag the walk started from.
-    pub closed: bool,
+    /// The closing tag that matched the opening tag the walk started from.
+    pub close: Option<(usize, usize)>,
     /// The range the walk read without stepping over anything that could
-    /// hide an opening tag. It is only meaningful when `closed` is false:
+    /// hide an opening tag. It is only meaningful when `close` is `None`:
     /// an opener in that range which `matched` did not report is an opener
     /// nothing closes.
     pub read: (usize, usize),
 }
 
-/// Reports whether a closing tag matches the opening tag that ends at
-/// `from`, and records the same answer for every opener the walk passes.
+/// The closing tag that matches the opening tag ending at `from`, recording
+/// the same answer for every opener the walk passes.
+///
+/// `skip_brace` reports the byte after the `}` that closes the `{` at a
+/// position, or `None` when nothing does. It is the caller's memoized scan:
+/// a brace that closes nothing is only known to close nothing once
+/// something has read to the end of the slice, so a run of them inside one
+/// walk cost one read each — 128 KiB of `<A>` over `{` with a single `}`
+/// behind it took 10.7 s.
 ///
 /// An opening tag only becomes a node once something closes it, and `<A>`
 /// repeated nests one level per tag: every opener but the innermost is
@@ -124,17 +139,19 @@ pub(super) struct CloseWalk {
 /// because an opener in there is an opener this walk never scanned. Open
 /// tags before that point are reported individually, so a run interleaved
 /// with such regions still costs one walk.
+///
+/// The opener the walk starts from is not reported: its answer is the
+/// return value, and a document of independent elements would otherwise pay
+/// a record for every one of them.
 pub(super) fn record_matching_closes(
     source: &str,
     from: usize,
     name: Option<&str>,
-    matched: &mut impl FnMut(usize, bool),
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+    matched: &mut impl FnMut(usize, Option<(usize, usize)>),
 ) -> CloseWalk {
-    let (close, read) = walk_close::<true>(source, from, name, matched);
-    CloseWalk {
-        closed: close.is_some(),
-        read,
-    }
+    let (close, read) = walk_close::<true>(source, from, name, skip_brace, matched);
+    CloseWalk { close, read }
 }
 
 /// The closing-tag walk both scans above are.
@@ -146,7 +163,8 @@ fn walk_close<const RECORD: bool>(
     source: &str,
     from: usize,
     name: Option<&str>,
-    matched: &mut impl FnMut(usize, bool),
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+    matched: &mut impl FnMut(usize, Option<(usize, usize)>),
 ) -> (Option<(usize, usize)>, (usize, usize)) {
     let bytes = source.as_bytes();
     // Deep enough for any nesting a document holds by hand; the runs that
@@ -158,15 +176,15 @@ fn walk_close<const RECORD: bool>(
     }
     let mut cursor = from;
     let mut depth = 1u32;
-    let mut braces_end = None;
     let mut read_from = from;
     while cursor < bytes.len() {
         match bytes[cursor] {
             b'{' => {
-                let (next, stepped_over) = skip_open_brace(bytes, cursor, &mut braces_end);
-                cursor = next;
-                if stepped_over {
+                if let Some(next) = skip_brace(cursor) {
+                    cursor = next;
                     read_from = next;
+                } else {
+                    cursor += 1;
                 }
             }
             b'`' => {
@@ -185,8 +203,11 @@ fn walk_close<const RECORD: bool>(
                 if tag.name == name {
                     if tag.closing {
                         depth = depth.saturating_sub(1);
-                        if RECORD && let Some(opener) = open.pop() {
-                            matched(opener, true);
+                        if RECORD
+                            && let Some(opener) = open.pop()
+                            && opener != from
+                        {
+                            matched(opener, Some((tag.start, tag.end)));
                         }
                         if depth == 0 {
                             return (Some((tag.start, tag.end)), (from, tag.end));
@@ -210,30 +231,12 @@ fn walk_close<const RECORD: bool>(
     }
     if RECORD {
         for opener in open {
-            if opener < read_from {
-                matched(opener, false);
+            if opener != from && opener < read_from {
+                matched(opener, None);
             }
         }
     }
     (None, (read_from, cursor))
-}
-
-/// Steps over a `{` inside a tag walk.
-///
-/// [`skip_braces`] reports that nothing closes a brace only after reading to
-/// the end of the slice, so a run of them cost one walk each: 128 KiB of
-/// `<A>` followed by `{` took 5.9 s. The first failure settles the rest of
-/// the run — past the last `}` nothing can close a brace either — for the
-/// price of one backward search.
-fn skip_open_brace(bytes: &[u8], cursor: usize, braces_end: &mut Option<usize>) -> (usize, bool) {
-    if braces_end.is_some_and(|end| cursor >= end) {
-        return (cursor + 1, false);
-    }
-    let Some(close) = skip_braces(bytes, cursor) else {
-        *braces_end = Some(memchr::memrchr(b'}', bytes).map_or(0, |last| last + 1));
-        return (cursor + 1, false);
-    };
-    (close, true)
 }
 
 fn scan_jsx_name(bytes: &[u8], start: usize) -> Option<usize> {

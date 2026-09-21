@@ -4,15 +4,17 @@
 //! Measured on the release build before the fix, at 32 KiB and 128 KiB —
 //! x16 for every x4 of input, which is the signature:
 //!
-//! - math: `$a ` 0.41 s / 6.2 s, `$1 ` 0.37 s / 6.0 s, `$$a ` 0.42 s /
-//!   7.0 s, and `$$ a` lines 0.23 s / 3.7 s;
-//! - MDX: `<A>` with one closer behind the run 0.70 s / 9.1 s, the same
-//!   inline 0.57 s / 9.9 s, `<A>` followed by `{` 0.33 s / 5.9 s, and a
-//!   brace run with one `}` behind it 0.33 s / 5.3 s, 0.33 s / 5.3 s
-//!   inline;
-//! - definition lists: lazy body lines 0.05 s / 0.75 s.
+//! - math: `$a ` 0.37 s / 5.9 s, `$1 ` 0.38 s / 6.2 s, `$$a ` 0.54 s /
+//!   6.7 s, the same runs with their only closing `$` inside a code span
+//!   0.47 s / 6.0 s, and `$$ a` lines 0.29 s / 3.7 s;
+//! - MDX: `<A>` with one closer behind the run 0.72 s / 9.4 s, the same
+//!   inline 0.72 s / 11.4 s, `<A>` over a `{` run 0.41 s / 5.3 s and over
+//!   one with a `}` behind it 0.83 s / 10.7 s (0.98 s / 17.5 s when the tag
+//!   closes too), and a brace run with one `}` behind it 0.33 s / 5.4 s,
+//!   0.33 s / 5.3 s inline;
+//! - definition lists: lazy body lines 0.04 s / 0.82 s.
 //!
-//! All of them are 0.5 to 1.1 ms and 2.0 to 4.8 ms now.
+//! All of them are 0.1 to 1.7 ms and 0.5 to 3.2 ms now.
 //!
 //! None of these is a crafted document. `$5 for a $10 book` is prose, a
 //! shell snippet outside a fence is full of braces, and a list of terms
@@ -195,6 +197,23 @@ fn inline_math_runs_with_one_closer_cost_linear_time() {
 }
 
 #[test]
+fn inline_math_runs_with_a_hidden_candidate_cost_linear_time() {
+    // The one `$` that could close sits inside a code span the scan steps
+    // over, so the candidate memo cannot refuse the run and every opener
+    // walked to the end for a `None`.
+    for (name, unit, suffix) in [
+        ("bare", "$a ", "`$`"),
+        ("digit", "$1 ", "`$`"),
+        ("display", "$$a ", "`$`"),
+        ("after a code span", "$a ", "`x` `$`"),
+    ] {
+        assert_linear(name, &math_options(), |bytes| {
+            run_to("", unit, bytes, suffix)
+        });
+    }
+}
+
+#[test]
 fn display_math_lines_cost_linear_time() {
     // Every line opening with `$$` asks for the terminator twice: once
     // through the block dispatch, once through the block-start probe.
@@ -227,9 +246,22 @@ fn jsx_open_runs_cost_linear_time() {
 #[test]
 fn jsx_tags_over_brace_runs_cost_linear_time() {
     // The tag walk steps over `{...}` whole, and an unclosed `{` reports
-    // that only after reading to the end of the slice.
-    for (name, unit) in [("bare", "{"), ("spaced", "{ "), ("nested", "{a{b")] {
-        assert_linear(name, &mdx_options(), |bytes| run_to("<A>", unit, bytes, ""));
+    // that only after reading to the end of the slice. The walk takes that
+    // answer from the same record the expression parse does, so a `}`
+    // behind the run — which no cheap guard can refuse — costs one walk for
+    // the whole run, whether or not the tag itself closes.
+    for (name, prefix, unit, suffix) in [
+        ("bare", "<A>", "{", ""),
+        ("spaced", "<A>", "{ ", ""),
+        ("nested", "<A>", "{a{b", ""),
+        ("one closer", "<A>", "{", "}"),
+        ("one closer, in text", "x<A>", "{", "}"),
+        ("one closer, tag closes", "<A>", "{", "}</A>"),
+        ("one closer, spaced", "<A>", "{ ", "}"),
+    ] {
+        assert_linear(name, &mdx_options(), |bytes| {
+            run_to(prefix, unit, bytes, suffix)
+        });
     }
 }
 
@@ -286,9 +318,38 @@ fn inline_math_keeps_its_shape() {
             "<p><span class=\"ox-math ox-math-inline\" data-ox-tex=\"a `$` b\">\
              <math><mtext>a `$` b</mtext></math></span></p>",
         ),
+        // The only `$` that could close is inside a code span, so the run
+        // stays literal and the code span stays a code span.
+        ("$a $a `$`", "<p>$a $a <code>$</code></p>"),
+        ("$1 $1 `$`", "<p>$1 $1 <code>$</code></p>"),
+        (
+            "$a $a `x` `$`",
+            "<p>$a $a <code>x</code> <code>$</code></p>",
+        ),
     ] {
         assert_eq!(render(source, math_options()), expected, "for {source:?}");
     }
+}
+
+#[test]
+fn math_hidden_from_one_scan_still_closes_for_a_later_opener() {
+    // The backtick inside the attribute is a code-span opener to the math
+    // scan and part of a raw HTML tag to the parse, so the first `$` steps
+    // over a region the second one opens inside. What one scan read is what
+    // it may answer for; a `$` it never looked at scans for itself.
+    assert_eq!(
+        render("$a <i t=\"`\">$b$ x` z", math_options()),
+        "<p>$a <i t=\"`\"><span class=\"ox-math ox-math-inline\" data-ox-tex=\"b\">\
+         <math><mtext>b</mtext></math></span> x` z</p>"
+    );
+    // The same skip the other way round: the scan steps over the code span
+    // and closes on the `$` behind it, so the span is math, not a code
+    // span with math after it.
+    assert_eq!(
+        render("$a `x$y` $b$", math_options()),
+        "<p><span class=\"ox-math ox-math-inline\" data-ox-tex=\"a `x$y` $b\">\
+         <math><mtext>a `x$y` $b</mtext></math></span></p>"
+    );
 }
 
 #[test]
@@ -326,6 +387,13 @@ fn jsx_runs_keep_their_shape() {
         (
             "<A>x</A>",
             "<div class=\"ox-island\" data-ox-island=\"A\"><p>x</p>\n</div>",
+        ),
+        // The brace run the tag walk steps over, with one `}` behind it.
+        ("<A>{{{}", "<p><A>{{</p>"),
+        ("x<A>{{{}", "<p>x<A>{{</p>"),
+        (
+            "<A>{{{}</A>",
+            "<div class=\"ox-island\" data-ox-island=\"A\"><p>{{</p>\n</div>",
         ),
     ] {
         assert_eq!(render(source, mdx_options()), expected, "for {source:?}");

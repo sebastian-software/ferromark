@@ -23,7 +23,7 @@ pub(super) struct BraceWalk {
 /// reaches the end of the content, so a run of them cost one walk each —
 /// and one `}` anywhere behind the run is enough to defeat a cheap
 /// last-closer guard in front of it: 128 KiB of `{` followed by a single
-/// `}` took 5.3 s. Every decision below depends on the position alone and
+/// `}` took 5.4 s. Every decision below depends on the position alone and
 /// never on where the walk began, so the `}` that returns the walk to a
 /// brace's own depth is the `}` a walk starting at that brace stops at, and
 /// a brace this walk leaves open is one such a walk leaves open too. One
@@ -33,7 +33,9 @@ pub(super) struct BraceWalk {
 /// range instead of one record each. The range starts after the last string
 /// or comment the walk stepped over, because a `{` inside one of those is a
 /// `{` this walk never looked at; the open braces before it are reported
-/// one by one, so a run interleaved with strings still costs one walk.
+/// one by one, so a run interleaved with strings still costs one walk. The
+/// brace the walk starts from is never reported: its answer is the return
+/// value.
 pub(super) fn record_brace_matches(
     bytes: &[u8],
     start: usize,
@@ -80,20 +82,23 @@ pub(super) fn record_brace_matches(
             b'}' => {
                 cursor += 1;
                 if let Some(brace) = open.pop() {
-                    matched(brace, Some(cursor));
                     if open.is_empty() {
+                        // The brace the walk started from: its answer is
+                        // the return value, so a document of expressions
+                        // that close at once keeps no record at all.
                         return BraceWalk {
                             close: Some(cursor),
                             read: (start, cursor),
                         };
                     }
+                    matched(brace, Some(cursor));
                 }
             }
             _ => cursor += 1,
         }
     }
     for brace in open {
-        if brace < read_from {
+        if brace != start && brace < read_from {
             matched(brace, None);
         }
     }

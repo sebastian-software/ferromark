@@ -274,7 +274,8 @@ pub struct Parser<'a> {
     /// The key names the opener, not just the slice: the answer depends on
     /// where the scan starts, so an answer recorded for one opener must never
     /// be handed to another.
-    mdx_jsx_closer_presence: std::cell::RefCell<rustc_hash::FxHashMap<JsxCloserKey<'a>, bool>>,
+    mdx_jsx_closer_presence:
+        std::cell::RefCell<rustc_hash::FxHashMap<JsxCloserKey<'a>, Option<(usize, usize)>>>,
 
     /// The range of unclosed openers the last such walk left behind.
     mdx_jsx_closer_gap: std::cell::Cell<Option<JsxCloserGap<'a>>>,
@@ -305,6 +306,15 @@ pub struct Parser<'a> {
     /// keeps going past a candidate that cannot close. A run of them
     /// therefore cost one walk each.
     math_closers: std::cell::RefCell<rustc_hash::FxHashMap<MathCloserKey, math::MathClose>>,
+
+    /// Ranges of a content slice that a scan for an inline-math closer read
+    /// without finding one, keyed like `math_closers`.
+    ///
+    /// The candidate memo above settles a run whose suffix holds no closing
+    /// `$` at all. This settles the run whose only candidate sits inside a
+    /// code span: the walk that stepped over it read everything else, so
+    /// every opener in what it read is answered from the record.
+    math_closer_gaps: std::cell::RefCell<rustc_hash::FxHashMap<MathCloserKey, math::MathGaps>>,
 
     /// Memo for the next `*` or `_` in a content slice, which is what a `$`
     /// before a digit has to find between itself and its closer before it
@@ -403,6 +413,7 @@ impl<'a> Parser<'a> {
             brace_matches: std::cell::RefCell::default(),
             brace_gap: std::cell::Cell::new(None),
             math_closers: std::cell::RefCell::default(),
+            math_closer_gaps: std::cell::RefCell::default(),
             math_emphasis: std::cell::Cell::new(None),
             math_block_close: std::cell::Cell::new(None),
             definition_item_gap: std::cell::Cell::new(None),
@@ -479,6 +490,7 @@ impl<'a> Parser<'a> {
             brace_matches: std::cell::RefCell::default(),
             brace_gap: std::cell::Cell::new(None),
             math_closers: std::cell::RefCell::default(),
+            math_closer_gaps: std::cell::RefCell::default(),
             math_emphasis: std::cell::Cell::new(None),
             math_block_close: std::cell::Cell::new(None),
             definition_item_gap: std::cell::Cell::new(None),
