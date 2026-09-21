@@ -11,26 +11,28 @@ and raw measurements. Results describe the recorded workloads and machines.
 
 ## Native engine comparison
 
-The current local cores, **v2 `e93394e` and v1 `4e15141`**, were rerun with
-explicit syntax and renderer flags on the original **57 documents (37–113,609
-UTF-8 bytes)**. Each scored column uses the same input set and equivalent HTML
-for every included engine. **Speed relative to v2: higher is faster; v2 = 1.00×.**
+The release head, **v2 `60602a5a` and v1 `4e15141`**, were measured with explicit
+syntax and renderer flags on the frozen **57 documents (37–113,609 UTF-8
+bytes)**. Each scored column uses the same input set and equivalent HTML for
+every included engine. **Speed relative to v2: higher is faster; v2 = 1.00×.**
 
 | Engine | Fresh, 14 agreeing across six | Reuse, same 14 | Fresh, 50 agreeing across five | Reuse, same 50 |
 | --- | ---: | ---: | ---: | ---: |
 | Ferromark v2 | 1.00× | 1.00× | 1.00× | 1.00× |
-| OX-Content original | 1.00× | 0.98× | — | — |
-| Ferromark v1 | 0.71× | 0.71× | 0.53× | 0.54× |
-| md4c | 0.26× | 0.21× | 0.31× | 0.28× |
-| pulldown-cmark | 0.46× | 0.38× | 0.42× | 0.39× |
-| Bun native bun_md | 0.17× | 0.12× | 0.18× | 0.16× |
+| OX-Content original | 0.87× | 0.96× | — | — |
+| Ferromark v1 | 0.62× | 0.70× | 0.50× | 0.54× |
+| md4c | 0.20× | 0.18× | 0.28× | 0.27× |
+| pulldown-cmark | 0.41× | 0.37× | 0.40× | 0.39× |
+| Bun native bun_md | 0.14× | 0.12× | 0.17× | 0.16× |
 
 On the all-six agreement subset, v2 runs at
-**1.000× OX's throughput fresh** and
-**1.018× with reuse**. On the broader
-five-engine subset it runs at 1.90× v1's speed
-fresh and 1.85× with reuse. These are measured
-corpus aggregates; ratios close to 1.00 are not evidence of a universal lead.
+**1.149× OX's throughput fresh** and
+**1.040× with reuse**. On the broader
+five-engine subset it runs at 1.98× v1's speed
+fresh and 1.85× with reuse, 2.53×
+pulldown-cmark's fresh, 3.54× md4c's and
+5.74× Bun's native engine. These are measured
+corpus aggregates on one machine, not a universal ranking.
 
 The all-six subset contains ten comments and four plain-prose views. The broader
 five-engine subset also covers technical docs, linked encyclopedia excerpts,
@@ -51,30 +53,45 @@ defaults.
 Fresh includes parser/renderer setup, complete processing, owned output, and
 destruction. Reuse retains state where the public API permits; Bun's native
 `bun_md` still uses its fresh owned-output API. No JavaScript, WASM, process
-startup, file I/O, or output normalization is timed. One macOS arm64 executable,
-one Rust compiler, shared mimalloc and the same pinned dependency lock; three
-process rounds with six rotating windows per round. Small differences on this
-shared workstation are not established significance.
+startup, file I/O, or output normalization is timed. One macOS arm64 executable
+on an Apple M1 Pro, one Rust compiler, shared mimalloc and the same pinned
+registry resolution; three process rounds with six rotating windows per round.
+Small differences on this shared workstation are not established significance.
 
 Selected groups, **fresh**, using only the five-engine agreement subset and
 the same speed scale:
 
 | Group, five-engine agreement | N | V1 | md4c | pulldown | Bun native |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| &lt;512 B | 10 | 0.71× | 0.26× | 0.55× | 0.26× |
-| 32–128 KiB | 7 | 0.57× | 0.29× | 0.37× | 0.10× |
-| comments | 11 | 0.74× | 0.28× | 0.55× | 0.25× |
-| technical-docs | 21 | 0.51× | 0.35× | 0.40× | 0.18× |
-| plain-prose | 4 | 0.65× | 0.26× | 0.30× | 0.06× |
+| &lt;512 B | 10 | 0.60× | 0.18× | 0.46× | 0.22× |
+| 32–128 KiB | 7 | 0.53× | 0.27× | 0.35× | 0.10× |
+| comments | 11 | 0.62× | 0.20× | 0.46× | 0.21× |
+| technical-docs | 21 | 0.50× | 0.33× | 0.39× | 0.18× |
+| plain-prose | 4 | 0.63× | 0.25× | 0.29× | 0.06× |
+
+Ferromark's published binaries are built with profile-guided optimization. The
+same recipe was applied to every Rust engine in the shared executable and
+measured on the **28 held-out documents** no profile saw. It gives v2
+1.27× fresh and 1.26× with reuse over its default
+build; against the PGO builds of the other engines, v2 stands at
+2.06× v1, 2.49× pulldown-cmark,
+4.06× md4c and 5.55× Bun's
+native engine fresh. md4c is C and is not PGO-built; a PGO row is compared only
+with PGO rows.
 
 
-[Full results and per-document timings](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-native-arm/README.md),
-[exact flags](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-native-arm/FLAGS.md), and
-[HTML differences](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-native-arm/OUTPUT-REVIEW.md)
+[Full results and per-document timings](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-release-fixed/README.md),
+[exact flags](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-release-fixed/FLAGS.md), and
+[HTML differences](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-release-fixed/OUTPUT-REVIEW.md)
 include raw measurements, source hashes, and reproducible configuration.
-The [previous matched-flags run](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-14-native-matched/README.md)
-and [original six-engine run](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-14-native-engines/README.md)
-remain historical evidence. The [full 207-case before/after suite](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-arm-full-suite/README.md)
+The [held-out PGO comparison](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-release-fixed/README.md#profile-guided-optimization-measured-on-the-held-out-half)
+measures the build recipe the published binaries use. The preceding runs at
+[`bffc89f6`](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-release/README.md) (the regressed
+release head this run repairs),
+[`7c887a2b`](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-16-native-segments/README.md),
+[`c232d97`](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-release-native/README.md), and
+[`e93394e`](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-native-arm/README.md) remain historical
+evidence. The [full 207-case before/after suite](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-arm-full-suite/README.md)
 uses a separate harness and reports all four stages.
 
 The historical [two-engine broad Markdown comparison](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-14-broad-markdown/INTERPRETATION.md)

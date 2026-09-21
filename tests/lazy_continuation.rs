@@ -89,6 +89,26 @@ fn a_list_item_still_takes_lazy_paragraph_text() {
 }
 
 #[test]
+fn text_that_only_ends_in_a_closing_angle_is_not_an_html_block() {
+    // The inline tag scanner assumes its caller saw a `<`; asked about
+    // `ab>` it read a tag, and the tracker then ended a paragraph the
+    // sub-parser keeps open, so `lazy` fell out of the container.
+    assert_eq!(
+        commonmark("- ab>\nlazy\n"),
+        "<ul>\n<li>ab&gt;\nlazy</li>\n</ul>\n"
+    );
+    assert_eq!(
+        commonmark("> ab>\nlazy\n"),
+        "<blockquote>\n<p>ab&gt;\nlazy</p>\n</blockquote>\n"
+    );
+    // A real complete tag on its own line is a type-7 block and ends it.
+    assert_eq!(
+        commonmark("- <b>\nlazy\n"),
+        "<ul>\n<li>\n<b>\n</li>\n</ul>\n<p>lazy</p>\n"
+    );
+}
+
+#[test]
 fn a_block_quote_ends_after_a_closed_fence_or_html_block() {
     assert_eq!(
         commonmark("> ```\n> x\n> ```\nlazy\n"),

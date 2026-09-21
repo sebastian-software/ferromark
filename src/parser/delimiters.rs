@@ -48,14 +48,24 @@ impl<'a> Parser<'a> {
     pub(super) fn has_closer_from(&self, content: &'a str, from: usize, closer: u8) -> bool {
         let key = (content.as_ptr() as usize, content.len(), closer);
 
-        let cached = self.last_closer.borrow().get(&key).copied();
+        // Every `[` and `<` of a paragraph asks about the same slice, so the
+        // answer given last is the answer wanted next: one cell in front of
+        // the table saves the hash and the probe for all but the first ask.
+        // The table stays the record; the cell only mirrors its last entry.
+        if let Some((hit_key, last)) = self.closer_hit.get()
+            && hit_key == key
+        {
+            return last.is_some_and(|last| last >= from);
+        }
+        let cached = self.last_closer().borrow().get(&key).copied();
         let last = if let Some(last) = cached {
             last
         } else {
             let last = memchr::memrchr(closer, content.as_bytes());
-            self.last_closer.borrow_mut().insert(key, last);
+            self.last_closer().borrow_mut().insert(key, last);
             last
         };
+        self.closer_hit.set(Some((key, last)));
 
         last.is_some_and(|last| last >= from)
     }
@@ -70,12 +80,20 @@ impl<'a> Parser<'a> {
     pub(super) fn has_wiki_closer_from(&self, content: &'a str, from: usize) -> bool {
         let key = (content.as_ptr() as usize, content.len());
 
-        let cached = self.wiki_closer.borrow().get(&key).copied();
+        let cached = self
+            .extension_memos()
+            .wiki_closer
+            .borrow()
+            .get(&key)
+            .copied();
         let last = if let Some(last) = cached {
             last
         } else {
             let last = memchr::memmem::rfind(content.as_bytes(), b"]]");
-            self.wiki_closer.borrow_mut().insert(key, last);
+            self.extension_memos()
+                .wiki_closer
+                .borrow_mut()
+                .insert(key, last);
             last
         };
 
@@ -139,7 +157,7 @@ impl<'a> Parser<'a> {
         let base = content.as_ptr() as usize;
         let end = base + content.len();
         Self::walk_balanced::<true>(content, cursor, &mut |start, close, nested| {
-            self.bracket_matches
+            self.bracket_matches()
                 .borrow_mut()
                 .insert((base + start, end), (close - start, nested));
         })
@@ -179,7 +197,9 @@ impl<'a> Parser<'a> {
     /// A walk that recorded an opener recorded every opener inside it too,
     /// so one hit here means the whole region below is answered.
     fn bracket_match(&self, content: &str, cursor: usize) -> Option<(usize, bool)> {
-        let matched = self.bracket_matches.borrow();
+        // Only a recording walk allocates the table, so a parse that never
+        // met a nested run answers every `[` here without a lookup.
+        let matched = self.bracket_matches.get()?.borrow();
         if matched.is_empty() {
             return None;
         }

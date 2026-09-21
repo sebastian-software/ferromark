@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 
+import { NativeBenchmarkFigures, nativeBenchmarks } from "../components/native-benchmarks";
 import { PlatformChoices } from "../components/platform-choices";
 import { version } from "../version";
 import "../styles/home.css";
@@ -95,6 +96,29 @@ function LandingPrinciples() {
   );
 }
 
+function LandingEvidence() {
+  const { documents, measured, machine, revision } = nativeBenchmarks;
+  return (
+    <section className="landing-evidence" aria-labelledby="evidence-title">
+      <div className="landing-section-head">
+        <p className="landing-kicker">Measured throughput</p>
+        <h2 id="evidence-title">Faster on real documents.</h2>
+        <p>
+          Ferromark v2 throughput relative to each engine on {documents.fiveEngineAgreement} real
+          documents, from short comments to long technical pages, that all five native engines
+          render to equivalent HTML. Fresh parser state, one {machine}; higher is faster.
+        </p>
+        <p className="landing-aside">
+          Measured {measured} at <code>{revision}</code> without profile-guided optimization. Reuse
+          lifecycles, PGO builds, per-document timings, and reproduction:{" "}
+          <Link to="/guide/benchmarks">Inspect the evidence →</Link>
+        </p>
+      </div>
+      <NativeBenchmarkFigures />
+    </section>
+  );
+}
+
 function LandingReference() {
   return (
     <section className="landing-reference" aria-labelledby="reference-title">
@@ -127,6 +151,7 @@ export default function HomePage() {
     <main className="landing">
       <LandingIntro />
       <LandingPrinciples />
+      <LandingEvidence />
       <LandingReference />
     </main>
   );

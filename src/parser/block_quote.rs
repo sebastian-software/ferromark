@@ -25,8 +25,9 @@ impl<'a> Parser<'a> {
         let bytes = self.source.as_bytes();
         let mut inner = crate::allocator::String::with_capacity_in(128, self.allocator.bump());
         // Lazy continuation applies only while the quote's last block is
-        // an open paragraph: follow the stripped content closely enough to
-        // know when that is the case.
+        // an open paragraph: the tracker follows the stripped content
+        // closely enough to know when that is the case, and is asked only
+        // when a line without the marker could continue the quote.
         let mut open_paragraph = OpenParagraph::default();
         let mut lazy_lines = rustc_hash::FxHashSet::default();
         let mut source_map = SourceMap::default();
@@ -45,7 +46,12 @@ impl<'a> Parser<'a> {
                     line_start,
                     next - line_start,
                 );
+                // The comment is copied verbatim and is not content the
+                // tracker classifies: it catches up on what precedes it and
+                // skips past it.
+                open_paragraph.catch_up(&inner, &self.options);
                 inner.push_str(&self.source[line_start..next]);
+                open_paragraph.skip_to(inner.len());
                 self.position = next;
                 continue;
             }
@@ -101,7 +107,6 @@ impl<'a> Parser<'a> {
                 }
                 let stripped_trimmed = &after_gt[ws_len..];
                 inner.push_str(stripped_trimmed);
-                open_paragraph.observe(&inner[generated_start..], &self.options);
                 inner.push('\n');
                 let content_start =
                     line_start + trimmed_offset + 1 + Self::quote_marker_space_bytes(after_gt);
@@ -119,9 +124,9 @@ impl<'a> Parser<'a> {
 
                 // Advance past this line (and the trailing newline if any).
                 self.position = line_next;
-            } else if open_paragraph.paragraph_open()
-                && !Self::quote_lazy_blocked(trimmed)
+            } else if !Self::quote_lazy_blocked(trimmed)
                 && !self.line_starts_block()
+                && open_paragraph.catch_up(&inner, &self.options)
             {
                 // Lazy continuation: the line joins the quote's open
                 // paragraph as if the `>` marker were present. Keeping the
@@ -131,7 +136,6 @@ impl<'a> Parser<'a> {
                 let generated_start = inner.len();
                 lazy_lines.insert(inner.len() as u32);
                 inner.push_str(line);
-                open_paragraph.observe(line, &self.options);
                 inner.push('\n');
                 let line_next = line_terminator_end(bytes, line_end);
                 source_map.push_line(

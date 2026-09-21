@@ -10,11 +10,16 @@ evidence live on the website; the README introduces the product and its first
 working example. Edit the Rust and Node.js sections under `homepage/app/routes/`,
 with common behavior in `guide/` and navigation in `homepage/app/navigation.ts`.
 
-Run `python3 scripts/publish-native-readme.py` to regenerate the website benchmark
-guide. The historical command name is retained for CI compatibility; it no longer
-modifies the README. `--check` verifies the guide against archived measurements.
-The wrapper runs the frozen publisher in a temporary copy, preserving report
-checksums. Do not format generated measurement tables independently of the publisher.
+Run `python3 scripts/publish-native-readme.py` after archiving a new native
+comparison report. It regenerates the website benchmark guide, the homepage
+figures in `homepage/app/data/native-benchmarks.json`, and the sentence between
+the `<!-- native-benchmarks -->` markers in both `README.md.src` and the
+generated `README.md`, all from that one archive. `--check` verifies the three
+against the archived measurements in CI. The wrapper runs the frozen publisher in
+a temporary copy, preserving report checksums. Do not edit the generated block
+or format generated measurement tables independently of the publisher; the
+markers are the only README content the wrapper touches, so the mdtheme check
+still passes.
 
 The npm README retains its separate compact family generator:
 `node scripts/check-readme-family.mjs --write`.

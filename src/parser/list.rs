@@ -149,10 +149,10 @@ impl<'a> Parser<'a> {
         let mut next_item = None;
         // Lazy paragraph continuation is only valid while the item's last
         // consumed line kept a paragraph open (not right after blanks, and
-        // not after a fence, an HTML block, a heading or a table).
+        // not after a fence, an HTML block, a heading or a table). The
+        // tracker that knows is asked only when such a line turns up.
         let mut after_blank = false;
         let mut open_paragraph = OpenParagraph::default();
-        open_paragraph.observe(item.content, &self.options);
 
         loop {
             if self.is_at_end() {
@@ -166,6 +166,9 @@ impl<'a> Parser<'a> {
                 let source = item_source
                     .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
                 let generated_start = source.text.len();
+                // The comment is not content the tracker classifies: it
+                // catches up on what precedes it and skips past it.
+                open_paragraph.catch_up(&source.text, &self.options);
                 // Preserve normal list dedenting even when a nested code or
                 // HTML parser will keep this eligible line as literal content.
                 let stripped = Self::push_line_without_indent(
@@ -174,6 +177,7 @@ impl<'a> Parser<'a> {
                     content_indent,
                 );
                 source.text.push('\n');
+                open_paragraph.skip_to(source.text.len());
                 source.source_map.push_line_with_block_start(
                     generated_start,
                     source.text.len() - generated_start,
@@ -236,7 +240,6 @@ impl<'a> Parser<'a> {
                     self.position = lookahead;
                     item_end = self.position;
                     after_blank = true;
-                    open_paragraph.observe_blank();
                     continue;
                 }
 
@@ -267,7 +270,6 @@ impl<'a> Parser<'a> {
                     continuation_line,
                     content_indent,
                 );
-                open_paragraph.observe(&item_source.text[generated_start..], &self.options);
                 item_source.text.push('\n');
                 let source_start = continuation_start + source_offset_in_line;
                 item_source.source_map.push_line_with_block_start(
@@ -308,11 +310,14 @@ impl<'a> Parser<'a> {
             // indentation (CommonMark laziness) — and only a paragraph: a
             // line after a closed fence, an HTML block, a heading or a
             // table belongs to the enclosing block instead.
-            if item_is_empty
-                || after_blank
-                || !open_paragraph.paragraph_open()
-                || self.line_starts_block()
-            {
+            if item_is_empty || after_blank || self.line_starts_block() {
+                break;
+            }
+            let paragraph_open = match &item_source {
+                Some(source) => open_paragraph.catch_up(&source.text, &self.options),
+                None => open_paragraph.catch_up_first_line(item.content, &self.options),
+            };
+            if !paragraph_open {
                 break;
             }
             let source = item_source
@@ -324,7 +329,6 @@ impl<'a> Parser<'a> {
             let generated_start = source.text.len();
             lazy_lines.insert(source.text.len() as u32);
             source.text.push_str(continuation_line);
-            open_paragraph.observe(continuation_line, &self.options);
             source.text.push('\n');
             source.source_map.push_line(
                 generated_start,

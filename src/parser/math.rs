@@ -92,14 +92,15 @@ impl<'a> Parser<'a> {
     /// it, and one walk settles the whole run.
     fn math_block_close_from(&self, cursor: usize) -> Option<usize> {
         let end = self.source.len();
-        if let Some((origin, close)) = self.math_block_close.get()
+        if let Some((origin, close)) = self.extension_memos().math_block_close.get()
             && origin <= cursor
             && cursor <= close
         {
             return (close < end).then_some(close);
         }
         let close = math_block_close(self.source.as_bytes(), cursor);
-        self.math_block_close
+        self.extension_memos()
+            .math_block_close
             .set(Some((cursor, close.unwrap_or(end))));
         close
     }
@@ -186,12 +187,20 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        let cached = self.math_closers.borrow().get(&key).copied();
+        let cached = self
+            .extension_memos()
+            .math_closers
+            .borrow()
+            .get(&key)
+            .copied();
         let memo = match cached {
             Some(memo) if memo.origin <= from && from <= memo.candidate => memo,
             _ => {
                 let memo = first_close_candidate(bytes, from, open_len);
-                self.math_closers.borrow_mut().insert(key, memo);
+                self.extension_memos()
+                    .math_closers
+                    .borrow_mut()
+                    .insert(key, memo);
                 memo
             }
         };
@@ -206,7 +215,7 @@ impl<'a> Parser<'a> {
         let mut read = MathGaps::new();
         let close = scan_inline_math_close(bytes, from, open_len, &mut read);
         if close.is_none() {
-            let mut gaps = self.math_closer_gaps.borrow_mut();
+            let mut gaps = self.extension_memos().math_closer_gaps.borrow_mut();
             let windows = gaps.entry(key).or_default();
             for window in read {
                 record_math_gap(windows, window);
@@ -217,7 +226,7 @@ impl<'a> Parser<'a> {
 
     /// Whether a walk that found no closer has already read `from`.
     fn scanned_without_math_closer(&self, key: MathCloserKey, from: usize) -> bool {
-        let gaps = self.math_closer_gaps.borrow();
+        let gaps = self.extension_memos().math_closer_gaps.borrow();
         let Some(windows) = gaps.get(&key) else {
             return false;
         };
@@ -258,7 +267,7 @@ impl<'a> Parser<'a> {
     /// bytes once per opener. One forward window answers all of them.
     fn first_emphasis_byte(&self, content: &'a str, from: usize) -> usize {
         let base = content.as_ptr() as usize;
-        if let Some(memo) = self.math_emphasis.get()
+        if let Some(memo) = self.extension_memos().math_emphasis.get()
             && memo.content == base
             && memo.len == content.len()
             && from >= memo.origin
@@ -268,7 +277,7 @@ impl<'a> Parser<'a> {
         }
         let hit = memchr2(b'*', b'_', &content.as_bytes()[from..])
             .map_or(content.len(), |relative| from + relative);
-        self.math_emphasis.set(Some(MathEmphasis {
+        self.extension_memos().math_emphasis.set(Some(MathEmphasis {
             content: base,
             len: content.len(),
             origin: from,

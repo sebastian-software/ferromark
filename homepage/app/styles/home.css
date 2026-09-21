@@ -90,6 +90,43 @@
 .landing-principle-list a {
   font-size: 0.95rem;
 }
+.landing-evidence {
+  border-top: 2px solid var(--line-heavy);
+  padding-top: 2rem;
+  margin-block: 4rem;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 4rem;
+}
+.landing-evidence code {
+  font: 0.9em var(--mono);
+}
+.landing-figures {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin: 0;
+  align-content: start;
+}
+.landing-figures div {
+  border-left: 2px solid var(--rust);
+  padding-left: 1rem;
+}
+.landing-figures dt {
+  font: 600 0.75rem/1.5 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.landing-figures dd {
+  margin: 0.25rem 0 0;
+  font-family: var(--display), var(--body);
+  font-size: clamp(2.6rem, 5vw, 3.6rem);
+  font-weight: var(--disp-weight);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--rust);
+}
 .landing-reference {
   border-top: 2px solid var(--line-heavy);
   padding-top: 2rem;
@@ -116,7 +153,8 @@
   margin-top: 0.5rem;
 }
 @media (max-width: 760px) {
-  .landing-principles {
+  .landing-principles,
+  .landing-evidence {
     grid-template-columns: 1fr;
     gap: 1.5rem;
     margin-block: 3rem;

@@ -1,0 +1,99 @@
+diff --git a/src/parser/lazy_paragraph.rs b/src/parser/lazy_paragraph.rs
+index 6585d0dd..a383fe3e 100644
+--- a/src/parser/lazy_paragraph.rs
++++ b/src/parser/lazy_paragraph.rs
+@@ -127,28 +127,56 @@ impl OpenParagraph {
+             }
+             return;
+         }
+-        if Parser::try_parse_thematic_break_line(content) || is_atx_heading(trimmed) {
+-            self.close_paragraph();
+-            return;
+-        }
+-        if self.paragraph_open && is_setext_underline(trimmed) {
+-            self.close_paragraph();
+-            return;
+-        }
+-        if let Some(fence) = fence_open(trimmed) {
+-            self.fence = Some(fence);
+-            self.close_paragraph();
+-            return;
+-        }
+-        if let Some(start) = Parser::parse_html_block_start(trimmed) {
+-            self.open_html(trimmed, start);
+-            return;
+-        }
+-        // A type-7 block — one complete tag on its own line — cannot
+-        // interrupt a paragraph; with one open, the line is its text.
+-        if !self.paragraph_open && Parser::is_html_block_type7_line(trimmed) {
+-            self.open_html(trimmed, HtmlBlockStart::Other);
+-            return;
++        // Every block start below is decided by the first byte of the
++        // line, so ordinary text — nearly every line a container holds —
++        // answers with one match and enters no classifier. The tracker
++        // runs once per content line on top of the sub-parse, which is
++        // why this matters. The thematic-break check trims Unicode
++        // whitespace itself, so a byte that could begin such whitespace
++        // still reaches it; nothing else reads past the first byte.
++        let first = trimmed.as_bytes()[0];
++        match first {
++            b'-' | b'*' | b'_' if Parser::try_parse_thematic_break_line(content) => {
++                self.close_paragraph();
++                return;
++            }
++            b'#' if is_atx_heading(trimmed) => {
++                self.close_paragraph();
++                return;
++            }
++            b'=' if self.paragraph_open && is_setext_underline(trimmed) => {
++                self.close_paragraph();
++                return;
++            }
++            b'`' | b'~' => {
++                if let Some(fence) = fence_open(trimmed) {
++                    self.fence = Some(fence);
++                    self.close_paragraph();
++                    return;
++                }
++            }
++            b'<' => {
++                if let Some(start) = Parser::parse_html_block_start(trimmed) {
++                    self.open_html(trimmed, start);
++                    return;
++                }
++                // A type-7 block — one complete tag on its own line —
++                // cannot interrupt a paragraph; with one open, the line is
++                // its text. The inline tag scanner assumes its caller saw
++                // the `<`, so it is only asked here: handed `ab>` it would
++                // read a tag and end a paragraph the sub-parser keeps open.
++                if !self.paragraph_open && Parser::is_html_block_type7_line(trimmed) {
++                    self.open_html(trimmed, HtmlBlockStart::Other);
++                    return;
++                }
++            }
++            _ if (first.is_ascii_whitespace() || !first.is_ascii())
++                && Parser::try_parse_thematic_break_line(content) =>
++            {
++                self.close_paragraph();
++                return;
++            }
++            _ => {}
+         }
+         if options.tables {
+             if let Some((header_markers, header_cells)) = self.header
+@@ -227,6 +255,15 @@ fn strip_container_markers(line: &str, paragraph_open: bool) -> (&str, Markers)
+             markers.quotes = markers.quotes.saturating_add(1);
+             continue;
+         }
++        // Only a bullet or a digit can start a list marker; every other
++        // first byte is content, whatever a thematic-break check would say
++        // about it, since either answer returns the line as it is.
++        if !matches!(
++            trimmed.as_bytes().first(),
++            Some(b'-' | b'*' | b'+') | Some(b'0'..=b'9')
++        ) {
++            return (content, markers);
++        }
+         if Parser::try_parse_thematic_break_line(content) || !Parser::try_parse_list_line(trimmed) {
+             return (content, markers);
+         }
