@@ -232,7 +232,7 @@ fn the_default_constructors_agree_with_explicit_defaults() {
 }
 
 #[test]
-fn an_empty_base_url_is_not_the_default_base_url() {
+fn an_empty_base_url_prefixes_nothing_and_is_not_a_configured_base() {
     let with_root = render(HtmlRendererOptions {
         convert_md_links: true,
         base_url: "/".into(),
@@ -243,12 +243,29 @@ fn an_empty_base_url_is_not_the_default_base_url() {
         base_url: "".into(),
         ..HtmlRendererOptions::new()
     });
-    assert_ne!(
+    // An empty base adds no path prefix, and a root-absolute source link keeps
+    // addressing the site root, so the output matches the default `"/"`. The
+    // empty value used to drop the leading slash from converted `.md` links
+    // only, which disagreed with the root-absolute URLs it left alone; see
+    // `docs/decisions/2026-09-21-renderer-fixes.md`.
+    assert_eq!(
         with_root, with_empty,
-        "an empty `base_url` was silently replaced by the default"
+        "an empty `base_url` must prefix nothing"
     );
-    assert!(with_root.contains("href=\"/guide/setup/index.html\""));
-    assert!(with_empty.contains("href=\"guide/setup/index.html\""));
+    assert!(with_empty.contains("href=\"/guide/setup/index.html\""));
+
+    // The configured value still reaches the renderer verbatim: a non-empty
+    // base prefixes the same link.
+    let with_configured = render(HtmlRendererOptions {
+        convert_md_links: true,
+        base_url: "/docs".into(),
+        ..HtmlRendererOptions::new()
+    });
+    assert_ne!(
+        with_empty, with_configured,
+        "a configured `base_url` was silently dropped"
+    );
+    assert!(with_configured.contains("href=\"/docs/guide/setup/index.html\""));
 
     let with_owned_empty = render(HtmlRendererOptions {
         convert_md_links: true,
