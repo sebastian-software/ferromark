@@ -21,17 +21,29 @@ compile `ferromark` themselves, so no build we control produces their binary.
 
 ## Decision
 
-Apply PGO to the eight native Node addons built by the `native` job of
-`.github/workflows/ci.yml`, whose artifacts the publish workflow later uploads.
+Apply PGO to the eight native Node addons. The `native` job of
+`.github/workflows/ci.yml` builds them on every pull request, and the
+`build-native` job of `.github/workflows/publish.yml` builds its own set the
+same way from the release tag; no addon crosses from one workflow to the other.
 Leave the `ferromark` source crate and local development builds unchanged.
 
 Add `node/native/src/bin/pgo_train.rs`, a training driver in the private
 `ferromark-node` crate behind a `pgo-train` feature so `napi build` does not
 compile it. It depends only on `ferromark` and the standard library — a `cdylib`
 cannot be used as a library target, and the addon's N-API surface is a thin
-wrapper around the parser and renderer anyway. It runs every document through
-the four option combinations the addon reaches (product defaults, GFM parser
-with default rendering, full GFM, MDX) in both addon lifecycles: a fresh
+wrapper around the parser and renderer anyway.
+
+A profile is only worth what the training run resembles, so the driver trains
+the addon's real configuration rather than the library's presets. The addon's
+defaults — the GFM specification parser without autolink literals, rendered with
+sanitizing, heading IDs and callouts on — live in `node/native/src/options.rs`,
+which both crate roots compile: `lib.rs` with `mod options;` and the driver with
+`#[path = "../options.rs"] mod options;`. Sharing the file is what keeps the two
+from drifting, since a `cdylib` cannot be depended on as a library. From those
+defaults the driver derives the four combinations the addon's entry points
+reach: the default itself (`renderPolicy: 'untrusted'`), the trusted variant
+with sanitizing off, the default plus every syntax switch a Node option can turn
+on, and the default plus MDX. Each runs in both addon lifecycles: a fresh
 allocator and renderer per document, and a retained allocator reset per document
 with a retained renderer writing into its own buffer.
 

@@ -1,10 +1,14 @@
+mod options;
+
 use ferromark::{
-    Allocator, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer,
-    HtmlRendererOptions, Parser, ParserOptions,
+    Allocator, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, Parser,
+    ParserOptions,
     ast::{Node, Visit},
 };
 use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
 use napi_derive::napi;
+
+use crate::options::{CoreOptions, addon_defaults};
 
 #[cfg(feature = "panic-test")]
 #[napi(catch_unwind)]
@@ -44,19 +48,11 @@ pub struct Options {
     pub link_base_path: Option<String>,
 }
 
-struct CoreOptions {
-    parser: ParserOptions,
-    html: HtmlRendererOptions,
-}
-
 fn core_options(options: Option<Options>) -> Result<CoreOptions> {
-    // Preserve the Node package's safe output boundary and common defaults.
-    let mut parser = ParserOptions::gfm_spec();
-    parser.autolinks = false;
-    let mut html = HtmlRendererOptions::gfm_spec();
-    html.sanitize = true;
-    html.heading_ids = true;
-    html.callouts = true;
+    let CoreOptions {
+        mut parser,
+        mut html,
+    } = addon_defaults();
     if let Some(options) = options {
         if let Some(policy) = options.render_policy {
             html.sanitize = match policy.as_str() {
