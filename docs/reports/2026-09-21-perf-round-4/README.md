@@ -141,17 +141,39 @@ before the six-engine comparison is rerun, because the three winners touch
 the same struct (`Parser`) and the same inline paths, and independent
 gains do not add up by assumption.
 
+## Merges, re-screened one on top of the other
+
+The winners went in one at a time, each rebased onto the `main` that holds
+the previous one and screened again against that `main` (36 cases, 3 rounds
+× 3 pairs), so a gain that only existed against the round baseline would
+have shown up before it was merged:
+
+| Merge | Baseline | fresh | reuse | parse | render |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `closer` (#386) | `23a59bdf`, the round baseline | 1.014 | 1.013 | 1.017 | 0.998 |
+| `arena` (#387) on top of `closer` | `6505b939` | 1.008 | 1.005 | 1.006 | 0.999 |
+| `depth` (#388) on top of both | `be8d6112` | 1.006 | 1.002 | 1.005 | 1.001 |
+
+`arena` on top of `closer` reproduces its solo screen (fresh 1.005 there,
+1.008 here, rounds 1.007–1.009, 27 of 36 cases up), and `depth` on top of
+both reproduces its own (fresh 1.006, 31 of 36 cases up, every round above
+1.000), so the three gains are independent as their mechanisms suggest: the
+inline scans, the allocator and the depth accounting do not overlap. `main`
+at `39b1f0b7` carries all three.
+
 ## Not measured: the product defaults
 
 The tenth idea was a measurement, not a change: run the runtime-profile
 study (`benchmarks/runtime-profiles`) at this revision so the cost of the
 product defaults — heading IDs, footnotes, sanitizing — is known next to
 the CommonMark-flag numbers the comparisons use. Its `prepare.py` still
-archives `crates`, the source layout from before the single-crate
-consolidation, and `git archive` fails at every revision since; the same
-path list is the coverage gap `audit_v2_sources.py` supplements in the
-native reports. The harness needs its path list moved to the root package
-before that study can run again; it is left as the next item.
+archived `crates`, the source layout from before the single-crate
+consolidation, so `git archive` failed at every revision since; that is
+fixed in a separate pull request, which reads the paths from the tree. With
+the paths fixed the harness's own worker no longer compiles against the v2
+API — it sets `ParserOptions.gfm` (now a preset, not a field) and
+`HtmlRendererOptions.highlight` (removed) — so the study still needs its
+worker and case generator brought up to date. It is left as the next item.
 
 ## Reproduction
 
