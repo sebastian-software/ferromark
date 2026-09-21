@@ -46,13 +46,18 @@ def main():
     helpers = load_module('optimization_prepare', HERE.parent / 'optimization-rounds/prepare.py')
     revision = subprocess.check_output(['git', 'rev-parse', args.revision], cwd=ROOT, text=True).strip()
     native = subprocess.check_output(['git', 'ls-tree', '--name-only', revision, 'node/native'], cwd=ROOT, text=True).splitlines()
-    archive = subprocess.check_output(['git', 'archive', revision, 'Cargo.toml', 'Cargo.lock',
-                                       'rust-toolchain.toml', 'crates', *native], cwd=ROOT)
+    # The core moved from `crates/ferromark` to the repository root package, so
+    # the paths are read from the tree at `revision` (the optimization-round
+    # helper does the same) instead of a fixed list that `git archive` rejects
+    # when an entry no longer exists.
+    paths = [*helpers.core_paths(ROOT, revision), 'rust-toolchain.toml', *native]
+    archive = subprocess.check_output(['git', 'archive', revision, '--', *paths], cwd=ROOT)
     if args.working_tree:
         buffer = io.BytesIO()
         with tarfile.open(fileobj=buffer, mode='w') as tar:
-            for name in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'crates', *native]:
-                tar.add(ROOT / name, arcname=name)
+            for name in paths:
+                if (ROOT / name).exists():
+                    tar.add(ROOT / name, arcname=name)
         archive = buffer.getvalue()
     source = out / 'source'
     source.mkdir()
