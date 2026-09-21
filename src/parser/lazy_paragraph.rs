@@ -196,7 +196,7 @@ impl OpenParagraph {
         let end = match start {
             HtmlBlockStart::Comment => HtmlBlockEnd::Terminator("-->"),
             HtmlBlockStart::Terminated(terminator) => HtmlBlockEnd::Terminator(terminator),
-            HtmlBlockStart::Type1(_) => HtmlBlockEnd::Type1,
+            HtmlBlockStart::Type1 => HtmlBlockEnd::Type1,
             HtmlBlockStart::Other => HtmlBlockEnd::Blank,
         };
         // Types 1–5 may close on their opening line.
@@ -294,21 +294,8 @@ fn html_block_ends(trimmed: &str, end: HtmlBlockEnd) -> bool {
 }
 
 /// Whether the line contains `</pre>`, `</script>`, `</style>` or
-/// `</textarea>`, in any case: any of the four ends a type-1 block.
+/// `</textarea>`, in any case: any of the four ends a type-1 block. The
+/// block parser owns that rule, so the tracker reuses its scanner.
 fn contains_type1_closer(bytes: &[u8]) -> bool {
-    const CLOSERS: [&[u8]; 4] = [b"pre>", b"script>", b"style>", b"textarea>"];
-    let mut search = 0;
-    while let Some(offset) = memchr(b'<', &bytes[search..]) {
-        let at = search + offset;
-        if bytes.get(at + 1) == Some(&b'/') {
-            let rest = &bytes[at + 2..];
-            if CLOSERS.iter().any(|closer| {
-                rest.len() >= closer.len() && rest[..closer.len()].eq_ignore_ascii_case(closer)
-            }) {
-                return true;
-            }
-        }
-        search = at + 1;
-    }
-    false
+    super::html::find_type1_end_tag(bytes, 0).is_some()
 }
