@@ -291,14 +291,20 @@ fn join3(a: &str, b: &str, c: &str) -> String {
     out
 }
 
+/// Prefixes a generated route with the configured base.
+///
+/// Every caller passes a route derived from a root-absolute Markdown link, so
+/// the result stays root-absolute. An empty base means "no prefix", not "make
+/// the route relative": dropping the leading slash would resolve the link
+/// against whatever directory the page is served from, and it disagreed with
+/// [`HtmlRenderer::apply_base_to_root_absolute_url`], which leaves a
+/// root-absolute non-Markdown URL alone under the same configuration. `base`
+/// without a leading slash is still taken verbatim, which keeps a deliberately
+/// relative base working.
 fn join_base_route(base: &str, path: &str) -> String {
     let normalized = base.trim_end_matches('/');
     if normalized.is_empty() {
-        if base.starts_with('/') {
-            join2("/", path)
-        } else {
-            path.to_string()
-        }
+        join2("/", path)
     } else {
         join3(normalized, "/", path)
     }

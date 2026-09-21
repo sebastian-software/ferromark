@@ -82,10 +82,12 @@ Every documented default is static data, so `HtmlRendererOptions::new()`,
 `Default::default()`, the `commonmark()`/`gfm()`/`gfm_spec()` profiles, and
 cloning any of them perform no heap allocation. Building a renderer per document
 from such a value therefore costs nothing for its configuration. Empty values keep their
-meaning: an empty `base_url` is not the default `"/"`, and an empty
+meaning: an empty `base_url` is used as configured and prefixes nothing, and an empty
 `autolink_patterns` list disables auto-linking rather than restoring the
 defaults. See the
 [decision record](decisions/2026-09-15-borrowed-renderer-options.md).
+A root-absolute link stays root-absolute under an empty base, as recorded in the
+[renderer review fixes](decisions/2026-09-21-renderer-fixes.md).
 
 ## Append to an existing string
 

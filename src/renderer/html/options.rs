@@ -88,6 +88,12 @@ pub struct HtmlRendererOptions {
     /// Base URL for absolute link conversion (e.g., "/" or "/docs"). A
     /// trailing slash is optional.
     ///
+    /// The value is used exactly as configured; it is never replaced by the
+    /// default. An empty value adds no prefix, so a root-absolute source link
+    /// stays root-absolute — `/guide.md` becomes `/guide/index.html` and
+    /// `/guide` is left alone — which is what `"/"` produces as well.
+    /// Relative links never receive the base.
+    ///
     /// Default: `"/"`.
     pub base_url: Cow<'static, str>,
 

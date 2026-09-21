@@ -41,6 +41,7 @@ impl HtmlRenderer {
         let footnote_index = self.footnote_index.clone();
         let footnote_records = self.footnote_records.clone();
         let footnote_slug_counts = self.footnote_slug_counts.clone();
+        let code_block_index = self.code_block_index;
         let html = self.render_fragment_with_scan(document, document_scan);
         if let Some(heading_id_counts) = heading_id_counts {
             self.heading_id_counts = heading_id_counts;
@@ -49,6 +50,7 @@ impl HtmlRenderer {
         self.footnote_index = footnote_index;
         self.footnote_records = footnote_records;
         self.footnote_slug_counts = footnote_slug_counts;
+        self.code_block_index = code_block_index;
         html
     }
 
@@ -66,6 +68,7 @@ impl HtmlRenderer {
         let footnote_index = self.footnote_index.clone();
         let footnote_records = self.footnote_records.clone();
         let footnote_slug_counts = self.footnote_slug_counts.clone();
+        let code_block_index = self.code_block_index;
         let html = self.render_fragment_with_scan_and_hooks(document, document_scan, hooks);
         if let Some(heading_id_counts) = heading_id_counts {
             self.heading_id_counts = heading_id_counts;
@@ -74,6 +77,7 @@ impl HtmlRenderer {
         self.footnote_index = footnote_index;
         self.footnote_records = footnote_records;
         self.footnote_slug_counts = footnote_slug_counts;
+        self.code_block_index = code_block_index;
         html
     }
 
@@ -86,6 +90,7 @@ impl HtmlRenderer {
         self.document_has_toc_marker = false;
         self.heading_text_scratch.clear();
         self.heading_slug_scratch.clear();
+        self.code_block_index = 0;
         self.in_link = false;
         // `autolink_index` is deliberately untouched: it is derived from the
         // renderer's immutable options, not from the fragments rendered so
