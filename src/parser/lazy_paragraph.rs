@@ -18,6 +18,14 @@
 //! contrived mix of nested containers could still fool it, the worst case is
 //! the old behavior — a line absorbed into, or split off from, the
 //! container — never a wrong block inside the sub-parse.
+//!
+//! It runs on demand. A container collects its stripped content into one
+//! text and only asks the tracker when a line without its marker could
+//! continue it, so the tracker catches up on the lines collected since it
+//! last answered ([`OpenParagraph::catch_up`]). A document without such
+//! lines never pays for the tracker; one with many pays once per line, in
+//! the same order the collector produced them, which is what keeps the
+//! answer identical to observing every line as it is collected.
 
 use memchr::{memchr, memmem};
 
@@ -62,18 +70,50 @@ pub(super) struct OpenParagraph {
     /// could head a table, with the markers it sat under.
     header: Option<(Markers, usize)>,
     paragraph_open: bool,
+    /// How many bytes of the container's collected text have been observed.
+    observed: usize,
 }
 
 impl OpenParagraph {
-    /// Whether the content seen so far ends in a paragraph that a lazy line
-    /// may continue.
-    pub(super) fn paragraph_open(&self) -> bool {
+    /// Observes every complete line of `text` — the container's collected
+    /// content — that has not been observed yet, and reports whether the
+    /// content ends in a paragraph that a lazy line may continue.
+    ///
+    /// The collector ends every line it appends with a newline before it can
+    /// ask, so a trailing line without one is not content yet and waits.
+    pub(super) fn catch_up(&mut self, text: &str, options: &ParserOptions) -> bool {
+        let bytes = text.as_bytes();
+        let mut start = self.observed.min(bytes.len());
+        while let Some(len) = memchr(b'\n', &bytes[start..]) {
+            self.observe(&text[start..start + len], options);
+            start += len + 1;
+        }
+        self.observed = start;
         self.paragraph_open
+    }
+
+    /// [`Self::catch_up`] for a list item that has collected nothing beyond
+    /// its first line and so has no text yet. The line is observed once; when
+    /// the item materializes its text — that line, its newline, then the
+    /// rest — the catch-up resumes after them.
+    pub(super) fn catch_up_first_line(&mut self, line: &str, options: &ParserOptions) -> bool {
+        if self.observed == 0 {
+            self.observe(line, options);
+            self.observed = line.len() + 1;
+        }
+        self.paragraph_open
+    }
+
+    /// Leaves the collected text up to `len` unobserved. A line comment the
+    /// collector copies verbatim is not content the tracker classifies, so
+    /// the collector catches up before it and skips past it.
+    pub(super) fn skip_to(&mut self, len: usize) {
+        self.observed = len;
     }
 
     /// Records a blank line: it closes a paragraph, a table and an HTML block
     /// of type 6 or 7.
-    pub(super) fn observe_blank(&mut self) {
+    fn observe_blank(&mut self) {
         if matches!(self.html, Some(HtmlBlockEnd::Blank)) {
             self.html = None;
         }
@@ -83,7 +123,7 @@ impl OpenParagraph {
     }
 
     /// Records one line of the container's stripped content.
-    pub(super) fn observe(&mut self, line: &str, options: &ParserOptions) {
+    fn observe(&mut self, line: &str, options: &ParserOptions) {
         if line.trim().is_empty() {
             self.observe_blank();
             return;
@@ -127,28 +167,56 @@ impl OpenParagraph {
             }
             return;
         }
-        if Parser::try_parse_thematic_break_line(content) || is_atx_heading(trimmed) {
-            self.close_paragraph();
-            return;
-        }
-        if self.paragraph_open && is_setext_underline(trimmed) {
-            self.close_paragraph();
-            return;
-        }
-        if let Some(fence) = fence_open(trimmed) {
-            self.fence = Some(fence);
-            self.close_paragraph();
-            return;
-        }
-        if let Some(start) = Parser::parse_html_block_start(trimmed) {
-            self.open_html(trimmed, start);
-            return;
-        }
-        // A type-7 block — one complete tag on its own line — cannot
-        // interrupt a paragraph; with one open, the line is its text.
-        if !self.paragraph_open && Parser::is_html_block_type7_line(trimmed) {
-            self.open_html(trimmed, HtmlBlockStart::Other);
-            return;
+        // Every block start below is decided by the first byte of the
+        // line, so ordinary text — nearly every line a container holds —
+        // answers with one match and enters no classifier. The tracker
+        // runs once per content line on top of the sub-parse, which is
+        // why this matters. The thematic-break check trims Unicode
+        // whitespace itself, so a byte that could begin such whitespace
+        // still reaches it; nothing else reads past the first byte.
+        let first = trimmed.as_bytes()[0];
+        match first {
+            b'-' | b'*' | b'_' if Parser::try_parse_thematic_break_line(content) => {
+                self.close_paragraph();
+                return;
+            }
+            b'#' if is_atx_heading(trimmed) => {
+                self.close_paragraph();
+                return;
+            }
+            b'=' if self.paragraph_open && is_setext_underline(trimmed) => {
+                self.close_paragraph();
+                return;
+            }
+            b'`' | b'~' => {
+                if let Some(fence) = fence_open(trimmed) {
+                    self.fence = Some(fence);
+                    self.close_paragraph();
+                    return;
+                }
+            }
+            b'<' => {
+                if let Some(start) = Parser::parse_html_block_start(trimmed) {
+                    self.open_html(trimmed, start);
+                    return;
+                }
+                // A type-7 block — one complete tag on its own line —
+                // cannot interrupt a paragraph; with one open, the line is
+                // its text. The inline tag scanner assumes its caller saw
+                // the `<`, so it is only asked here: handed `ab>` it would
+                // read a tag and end a paragraph the sub-parser keeps open.
+                if !self.paragraph_open && Parser::is_html_block_type7_line(trimmed) {
+                    self.open_html(trimmed, HtmlBlockStart::Other);
+                    return;
+                }
+            }
+            _ if (first.is_ascii_whitespace() || !first.is_ascii())
+                && Parser::try_parse_thematic_break_line(content) =>
+            {
+                self.close_paragraph();
+                return;
+            }
+            _ => {}
         }
         if options.tables {
             if let Some((header_markers, header_cells)) = self.header
@@ -226,6 +294,15 @@ fn strip_container_markers(line: &str, paragraph_open: bool) -> (&str, Markers) 
             content = rest.strip_prefix(' ').unwrap_or(rest);
             markers.quotes = markers.quotes.saturating_add(1);
             continue;
+        }
+        // Only a bullet or a digit can start a list marker; every other
+        // first byte is content, whatever a thematic-break check would say
+        // about it, since either answer returns the line as it is.
+        if !matches!(
+            trimmed.as_bytes().first(),
+            Some(b'-' | b'*' | b'+') | Some(b'0'..=b'9')
+        ) {
+            return (content, markers);
         }
         if Parser::try_parse_thematic_break_line(content) || !Parser::try_parse_list_line(trimmed) {
             return (content, markers);

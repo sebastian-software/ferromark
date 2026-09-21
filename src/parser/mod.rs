@@ -118,6 +118,99 @@ struct JsxCloserGap<'a> {
     until: usize,
 }
 
+/// Memo tables of the opt-in scans; see [`Parser::extension_memos`].
+#[derive(Default)]
+struct ExtensionMemos<'a> {
+    /// Memoized presence of a matching closing JSX tag for one opening tag.
+    ///
+    /// An opening tag can only become a node when a closer matches it, and
+    /// the walk that answers that reads the rest of the slice. `<A>` repeated
+    /// nests one level per tag, so every opener but the innermost is unclosed
+    /// and every one of them used to pay its own walk. One walk decides every
+    /// opener it passes (see `scan::record_matching_closes`), which is what
+    /// turns the run into a single pass.
+    ///
+    /// The key names the opener, not just the slice: the answer depends on
+    /// where the scan starts, so an answer recorded for one opener must never
+    /// be handed to another.
+    mdx_jsx_closer_presence:
+        std::cell::RefCell<rustc_hash::FxHashMap<JsxCloserKey<'a>, Option<(usize, usize)>>>,
+
+    /// The range of unclosed openers the last such walk left behind.
+    mdx_jsx_closer_gap: std::cell::Cell<Option<JsxCloserGap<'a>>>,
+
+    /// Memoized matching `}` for a `{`, keyed by the address of the brace
+    /// and of the content end, exactly as `bracket_matches` is.
+    ///
+    /// `skip_braces` reports that nothing closed only after walking to the
+    /// end of the content, so a run of `{` paid one walk each, and a single
+    /// `}` behind the run defeats the cheap `last_closer` guard in front of
+    /// it. One walk decides every brace it passes.
+    brace_matches: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
+
+    /// The end of a content slice and a range of it the last brace walk
+    /// read byte by byte without finding a closer: a `{` in that range
+    /// that `brace_matches` does not hold is a `{` nothing closes.
+    ///
+    /// A run of thousands of unclosed braces is one range here instead of
+    /// one record each, which is what keeps the memo from costing more
+    /// than the walk it replaces.
+    brace_gap: std::cell::Cell<Option<(usize, usize, usize)>>,
+
+    /// Memoized inline-math closer probe for a content slice and an opener
+    /// width. See `Parser::inline_math_close`.
+    ///
+    /// A `$` opener scans every later `$` to the end of the content before
+    /// it can report that nothing closes it, and — unlike the script spans —
+    /// keeps going past a candidate that cannot close. A run of them
+    /// therefore cost one walk each.
+    math_closers: std::cell::RefCell<rustc_hash::FxHashMap<MathCloserKey, math::MathClose>>,
+
+    /// Ranges of a content slice that a scan for an inline-math closer read
+    /// without finding one, keyed like `math_closers`.
+    ///
+    /// The candidate memo above settles a run whose suffix holds no closing
+    /// `$` at all. This settles the run whose only candidate sits inside a
+    /// code span: the walk that stepped over it read everything else, so
+    /// every opener in what it read is answered from the record.
+    math_closer_gaps: std::cell::RefCell<rustc_hash::FxHashMap<MathCloserKey, math::MathGaps>>,
+
+    /// Memo for the next `*` or `_` in a content slice, which is what a `$`
+    /// before a digit has to find between itself and its closer before it
+    /// opens anything. Without it a run of such openers searched the same
+    /// span once each.
+    math_emphasis: std::cell::Cell<Option<math::MathEmphasis>>,
+
+    /// The first `$$` terminator at or after a scan start in this parser's
+    /// source, with the source length standing for "nothing closes".
+    ///
+    /// Every line opening with `$$` asks for it, through the block dispatch
+    /// and again through the block-start probe, and the scan walks to the
+    /// end of the source to report that there is none.
+    math_block_close: std::cell::Cell<Option<(usize, usize)>>,
+
+    /// Memoized position of the last `]]` in a content slice, keyed like
+    /// `link_probe_cache`: the wiki-link scan's counterpart to `last_closer`.
+    /// A `[[` with no `]]` after it walks to the end of the content to find
+    /// that out, so a run of them cost one walk each; one search answers for
+    /// every opener in the slice.
+    wiki_closer: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
+}
+
+/// A memo table allocated in the arena on first use, so a parser that never
+/// consults it carries one pointer, not an empty table. The inline memos
+/// answer the quadratic shapes the release review bounded, which ordinary
+/// documents rarely present; held inline they had grown the parser from 272
+/// to 736 bytes, and every block quote and list item builds a sub-parser.
+type LazyMap<'a, K, V> = std::cell::OnceCell<crate::allocator::Box<'a, MemoTable<K, V>>>;
+
+/// A memo table behind a [`LazyMap`].
+type MemoTable<K, V> = std::cell::RefCell<rustc_hash::FxHashMap<K, V>>;
+
+/// Memo key of the last-closer scan: the identity of a content slice (pointer,
+/// length) and the closing byte asked about.
+type CloserKey = (usize, usize, u8);
+
 /// Markdown parser.
 pub struct Parser<'a> {
     /// Arena allocator.
@@ -205,6 +298,18 @@ pub struct Parser<'a> {
     /// A cached exhausted suffix avoids rescanning it for every paragraph.
     definition_marker: std::cell::Cell<Option<(usize, usize)>>,
 
+    /// Memo for the next byte in a content slice that could start an inline
+    /// construct other than a bracket (see `next_bracket_text_stop`).
+    ///
+    /// Bracket text is parsed where it stands only while it holds nothing
+    /// but text and brackets, and a nested run asks that question once per
+    /// level over the same slice. One forward window answers all of them.
+    bracket_text_stop: std::cell::Cell<delimiters::ForwardMemo>,
+
+    /// A `[start, end)` window of this parser's source that holds no
+    /// definition-list item start. See `Parser::can_start_definition_item_at`.
+    definition_item_gap: std::cell::Cell<Option<(usize, usize)>>,
+
     /// Memoized "this bracket text already contains a link" verdicts,
     /// keyed by the address and length of the bracketed slice.
     ///
@@ -223,7 +328,7 @@ pub struct Parser<'a> {
     /// Every slice lives in the source or the arena, both of which outlive
     /// the parser, so an address plus a length names one byte range for as
     /// long as the cache exists.
-    link_probe_cache: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), bool>>,
+    link_probe_cache: LazyMap<'a, (usize, usize), bool>,
 
     /// Memoized bracket matches: for the address of a scan start and of the
     /// content end, where that scan's `]` is and whether an opener sits
@@ -240,15 +345,7 @@ pub struct Parser<'a> {
     /// Same lifetime argument as `link_probe_cache`: every slice lives in the
     /// source or the arena, so an address pair names one byte range for as
     /// long as the cache exists.
-    bracket_matches: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), (usize, bool)>>,
-
-    /// Memo for the next byte in a content slice that could start an inline
-    /// construct other than a bracket (see `next_bracket_text_stop`).
-    ///
-    /// Bracket text is parsed where it stands only while it holds nothing
-    /// but text and brackets, and a nested run asks that question once per
-    /// level over the same slice. One forward window answers all of them.
-    bracket_text_stop: std::cell::Cell<delimiters::ForwardMemo>,
+    bracket_matches: LazyMap<'a, (usize, usize), (usize, bool)>,
 
     /// Memoized position of the final `]` or `}` in a content slice, keyed
     /// the same way as `link_probe_cache` plus the byte being looked for.
@@ -260,86 +357,16 @@ pub struct Parser<'a> {
     /// growing x16 for every x4 of input. The position of the last closer
     /// settles it for every opener in the slice at once, so the run costs
     /// one scan in total.
-    last_closer: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize, u8), Option<usize>>>,
+    last_closer: LazyMap<'a, (usize, usize, u8), Option<usize>>,
 
-    /// Memoized presence of a matching closing JSX tag for one opening tag.
-    ///
-    /// An opening tag can only become a node when a closer matches it, and
-    /// the walk that answers that reads the rest of the slice. `<A>` repeated
-    /// nests one level per tag, so every opener but the innermost is unclosed
-    /// and every one of them used to pay its own walk. One walk decides every
-    /// opener it passes (see `scan::record_matching_closes`), which is what
-    /// turns the run into a single pass.
-    ///
-    /// The key names the opener, not just the slice: the answer depends on
-    /// where the scan starts, so an answer recorded for one opener must never
-    /// be handed to another.
-    mdx_jsx_closer_presence:
-        std::cell::RefCell<rustc_hash::FxHashMap<JsxCloserKey<'a>, Option<(usize, usize)>>>,
+    /// The last answer `has_closer_from` gave, keyed like `last_closer`:
+    /// the `[` and `<` of one paragraph ask about the same slice in a row.
+    closer_hit: std::cell::Cell<Option<(CloserKey, Option<usize>)>>,
 
-    /// The range of unclosed openers the last such walk left behind.
-    mdx_jsx_closer_gap: std::cell::Cell<Option<JsxCloserGap<'a>>>,
-
-    /// Memoized matching `}` for a `{`, keyed by the address of the brace
-    /// and of the content end, exactly as `bracket_matches` is.
-    ///
-    /// `skip_braces` reports that nothing closed only after walking to the
-    /// end of the content, so a run of `{` paid one walk each, and a single
-    /// `}` behind the run defeats the cheap `last_closer` guard in front of
-    /// it. One walk decides every brace it passes.
-    brace_matches: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
-
-    /// The end of a content slice and a range of it the last brace walk
-    /// read byte by byte without finding a closer: a `{` in that range
-    /// that `brace_matches` does not hold is a `{` nothing closes.
-    ///
-    /// A run of thousands of unclosed braces is one range here instead of
-    /// one record each, which is what keeps the memo from costing more
-    /// than the walk it replaces.
-    brace_gap: std::cell::Cell<Option<(usize, usize, usize)>>,
-
-    /// Memoized inline-math closer probe for a content slice and an opener
-    /// width. See `Parser::inline_math_close`.
-    ///
-    /// A `$` opener scans every later `$` to the end of the content before
-    /// it can report that nothing closes it, and — unlike the script spans —
-    /// keeps going past a candidate that cannot close. A run of them
-    /// therefore cost one walk each.
-    math_closers: std::cell::RefCell<rustc_hash::FxHashMap<MathCloserKey, math::MathClose>>,
-
-    /// Ranges of a content slice that a scan for an inline-math closer read
-    /// without finding one, keyed like `math_closers`.
-    ///
-    /// The candidate memo above settles a run whose suffix holds no closing
-    /// `$` at all. This settles the run whose only candidate sits inside a
-    /// code span: the walk that stepped over it read everything else, so
-    /// every opener in what it read is answered from the record.
-    math_closer_gaps: std::cell::RefCell<rustc_hash::FxHashMap<MathCloserKey, math::MathGaps>>,
-
-    /// Memo for the next `*` or `_` in a content slice, which is what a `$`
-    /// before a digit has to find between itself and its closer before it
-    /// opens anything. Without it a run of such openers searched the same
-    /// span once each.
-    math_emphasis: std::cell::Cell<Option<math::MathEmphasis>>,
-
-    /// The first `$$` terminator at or after a scan start in this parser's
-    /// source, with the source length standing for "nothing closes".
-    ///
-    /// Every line opening with `$$` asks for it, through the block dispatch
-    /// and again through the block-start probe, and the scan walks to the
-    /// end of the source to report that there is none.
-    math_block_close: std::cell::Cell<Option<(usize, usize)>>,
-
-    /// A `[start, end)` window of this parser's source that holds no
-    /// definition-list item start. See `Parser::can_start_definition_item_at`.
-    definition_item_gap: std::cell::Cell<Option<(usize, usize)>>,
-
-    /// Memoized position of the last `]]` in a content slice, keyed like
-    /// `link_probe_cache`: the wiki-link scan's counterpart to `last_closer`.
-    /// A `[[` with no `]]` after it walks to the end of the content to find
-    /// that out, so a run of them cost one walk each; one search answers for
-    /// every opener in the slice.
-    wiki_closer: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
+    /// The memo tables of the opt-in scans — MDX, math and wiki links —
+    /// allocated in the arena the first time one of them is consulted, so a
+    /// parse that never enables them carries one pointer for all nine.
+    extension_memos: std::cell::OnceCell<crate::allocator::Box<'a, ExtensionMemos<'a>>>,
 
     /// The last `[scanned_from, blank_line)` window found while bounding a
     /// link reference definition, so a run of them costs one scan in total.
@@ -358,6 +385,29 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    /// A memo table, allocated in the arena the first time it is consulted.
+    fn lazy_map<'s, K, V>(&'s self, cell: &'s LazyMap<'a, K, V>) -> &'s MemoTable<K, V> {
+        cell.get_or_init(|| self.allocator.boxed(std::cell::RefCell::default()))
+    }
+
+    fn link_probe_cache(&self) -> &MemoTable<(usize, usize), bool> {
+        self.lazy_map(&self.link_probe_cache)
+    }
+
+    fn bracket_matches(&self) -> &MemoTable<(usize, usize), (usize, bool)> {
+        self.lazy_map(&self.bracket_matches)
+    }
+
+    fn last_closer(&self) -> &MemoTable<CloserKey, Option<usize>> {
+        self.lazy_map(&self.last_closer)
+    }
+
+    /// The opt-in scans' memo tables, allocated in the arena on first use.
+    fn extension_memos(&self) -> &ExtensionMemos<'a> {
+        self.extension_memos
+            .get_or_init(|| self.allocator.boxed(ExtensionMemos::default()))
+    }
+
     /// Creates a new parser with default options.
     #[must_use]
     pub fn new(allocator: &'a Allocator, source: &'a str) -> Self {
@@ -404,20 +454,13 @@ impl<'a> Parser<'a> {
             lazy_lines: None,
             comment_lines: None,
             definition_marker: std::cell::Cell::new(None),
-            link_probe_cache: std::cell::RefCell::default(),
-            bracket_matches: std::cell::RefCell::default(),
             bracket_text_stop: std::cell::Cell::default(),
-            last_closer: std::cell::RefCell::default(),
-            mdx_jsx_closer_presence: std::cell::RefCell::default(),
-            mdx_jsx_closer_gap: std::cell::Cell::new(None),
-            brace_matches: std::cell::RefCell::default(),
-            brace_gap: std::cell::Cell::new(None),
-            math_closers: std::cell::RefCell::default(),
-            math_closer_gaps: std::cell::RefCell::default(),
-            math_emphasis: std::cell::Cell::new(None),
-            math_block_close: std::cell::Cell::new(None),
             definition_item_gap: std::cell::Cell::new(None),
-            wiki_closer: std::cell::RefCell::default(),
+            link_probe_cache: std::cell::OnceCell::new(),
+            bracket_matches: std::cell::OnceCell::new(),
+            last_closer: std::cell::OnceCell::new(),
+            closer_hit: std::cell::Cell::new(None),
+            extension_memos: std::cell::OnceCell::new(),
             definition_region: None,
             comment_definition_region: None,
         };
@@ -481,20 +524,13 @@ impl<'a> Parser<'a> {
             lazy_lines: (!lazy_lines.is_empty()).then(|| std::rc::Rc::new(lazy_lines)),
             comment_lines: None,
             definition_marker: std::cell::Cell::new(None),
-            link_probe_cache: std::cell::RefCell::default(),
-            bracket_matches: std::cell::RefCell::default(),
             bracket_text_stop: std::cell::Cell::default(),
-            last_closer: std::cell::RefCell::default(),
-            mdx_jsx_closer_presence: std::cell::RefCell::default(),
-            mdx_jsx_closer_gap: std::cell::Cell::new(None),
-            brace_matches: std::cell::RefCell::default(),
-            brace_gap: std::cell::Cell::new(None),
-            math_closers: std::cell::RefCell::default(),
-            math_closer_gaps: std::cell::RefCell::default(),
-            math_emphasis: std::cell::Cell::new(None),
-            math_block_close: std::cell::Cell::new(None),
             definition_item_gap: std::cell::Cell::new(None),
-            wiki_closer: std::cell::RefCell::default(),
+            link_probe_cache: std::cell::OnceCell::new(),
+            bracket_matches: std::cell::OnceCell::new(),
+            last_closer: std::cell::OnceCell::new(),
+            closer_hit: std::cell::Cell::new(None),
+            extension_memos: std::cell::OnceCell::new(),
             definition_region: None,
             comment_definition_region: None,
         }

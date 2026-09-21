@@ -130,6 +130,7 @@ impl<'a> Parser<'a> {
     ) -> Option<(usize, usize)> {
         let slice = (content.as_ptr() as usize, content.len());
         let cached = self
+            .extension_memos()
             .mdx_jsx_closer_presence
             .borrow()
             .get(&(slice.0, slice.1, from, name))
@@ -137,7 +138,7 @@ impl<'a> Parser<'a> {
         if let Some(close) = cached {
             return close;
         }
-        if let Some(gap) = self.mdx_jsx_closer_gap.get()
+        if let Some(gap) = self.extension_memos().mdx_jsx_closer_gap.get()
             && gap.slice == slice
             && gap.name == name
             && gap.from <= from
@@ -151,19 +152,22 @@ impl<'a> Parser<'a> {
             name,
             &mut |at| self.matching_brace_end(content, at),
             &mut |opener, close| {
-                self.mdx_jsx_closer_presence
+                self.extension_memos()
+                    .mdx_jsx_closer_presence
                     .borrow_mut()
                     .insert((slice.0, slice.1, opener, name), close);
             },
         );
         if walk.close.is_none() {
             let (from, until) = walk.read;
-            self.mdx_jsx_closer_gap.set(Some(JsxCloserGap {
-                slice,
-                name,
-                from,
-                until,
-            }));
+            self.extension_memos()
+                .mdx_jsx_closer_gap
+                .set(Some(JsxCloserGap {
+                    slice,
+                    name,
+                    from,
+                    until,
+                }));
         }
         walk.close
     }
@@ -184,11 +188,16 @@ impl<'a> Parser<'a> {
         let base = content.as_ptr() as usize;
         let end = base + content.len();
         let brace = base + start;
-        let cached = self.brace_matches.borrow().get(&(brace, end)).copied();
+        let cached = self
+            .extension_memos()
+            .brace_matches
+            .borrow()
+            .get(&(brace, end))
+            .copied();
         if let Some(distance) = cached {
             return distance.map(|distance| start + distance);
         }
-        if let Some((slice_end, from, until)) = self.brace_gap.get()
+        if let Some((slice_end, from, until)) = self.extension_memos().brace_gap.get()
             && slice_end == end
             && from <= brace
             && brace < until
@@ -196,13 +205,16 @@ impl<'a> Parser<'a> {
             return None;
         }
         let walk = braces::record_brace_matches(content.as_bytes(), start, &mut |brace, close| {
-            self.brace_matches
+            self.extension_memos()
+                .brace_matches
                 .borrow_mut()
                 .insert((base + brace, end), close.map(|close| close - brace));
         });
         if walk.close.is_none() {
             let (from, until) = walk.read;
-            self.brace_gap.set(Some((end, base + from, base + until)));
+            self.extension_memos()
+                .brace_gap
+                .set(Some((end, base + from, base + until)));
         }
         walk.close
     }
