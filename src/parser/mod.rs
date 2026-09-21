@@ -144,8 +144,8 @@ struct ExtensionMemos<'a> {
     ///
     /// `skip_braces` reports that nothing closed only after walking to the
     /// end of the content, so a run of `{` paid one walk each, and a single
-    /// `}` behind the run defeats the cheap `last_closer` guard in front of
-    /// it. One walk decides every brace it passes.
+    /// `}` behind the run defeats the cheap `has_closer_from` guard in front
+    /// of it. One walk decides every brace it passes.
     brace_matches: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
 
     /// The end of a content slice and a range of it the last brace walk
@@ -190,7 +190,8 @@ struct ExtensionMemos<'a> {
     math_block_close: std::cell::Cell<Option<(usize, usize)>>,
 
     /// Memoized position of the last `]]` in a content slice, keyed like
-    /// `link_probe_cache`: the wiki-link scan's counterpart to `last_closer`.
+    /// `link_probe_cache`: the wiki-link scan's counterpart to
+    /// `has_closer_from`.
     /// A `[[` with no `]]` after it walks to the end of the content to find
     /// that out, so a run of them cost one walk each; one search answers for
     /// every opener in the slice.
@@ -206,10 +207,6 @@ type LazyMap<'a, K, V> = std::cell::OnceCell<crate::allocator::Box<'a, MemoTable
 
 /// A memo table behind a [`LazyMap`].
 type MemoTable<K, V> = std::cell::RefCell<rustc_hash::FxHashMap<K, V>>;
-
-/// Memo key of the last-closer scan: the identity of a content slice (pointer,
-/// length) and the closing byte asked about.
-type CloserKey = (usize, usize, u8);
 
 /// Markdown parser.
 pub struct Parser<'a> {
@@ -347,21 +344,19 @@ pub struct Parser<'a> {
     /// long as the cache exists.
     bracket_matches: LazyMap<'a, (usize, usize), (usize, bool)>,
 
-    /// Memoized position of the final `]` or `}` in a content slice, keyed
-    /// the same way as `link_probe_cache` plus the byte being looked for.
+    /// One forward window per closing byte — `]`, `>` and `}` — over the
+    /// bytes this parser reads: a range that holds none of it, and the one
+    /// just behind that range. See `Parser::has_closer_from`.
     ///
     /// An opener can only open something when its closer follows it, and
     /// the balanced scans answer that by walking to the end of the content.
     /// A run of openers with no closer therefore paid one full walk each:
     /// 64 KiB of `[ ` took 1.0 s and 32 KiB of `{ ` took 0.26 s, both
-    /// growing x16 for every x4 of input. The position of the last closer
-    /// settles it for every opener in the slice at once, so the run costs
-    /// one scan in total.
-    last_closer: LazyMap<'a, (usize, usize, u8), Option<usize>>,
-
-    /// The last answer `has_closer_from` gave, keyed like `last_closer`:
-    /// the `[` and `<` of one paragraph ask about the same slice in a row.
-    closer_hit: std::cell::Cell<Option<(CloserKey, Option<usize>)>>,
+    /// growing x16 for every x4 of input. The window moves forward with the
+    /// parse and answers every opener in the run from bytes the first one
+    /// already read, so the run costs one scan in total — and it answers
+    /// from three words of parser state instead of a hash of the slice.
+    closer_windows: [std::cell::Cell<delimiters::CloserWindow>; delimiters::CLOSER_SLOTS],
 
     /// The memo tables of the opt-in scans — MDX, math and wiki links —
     /// allocated in the arena the first time one of them is consulted, so a
@@ -396,10 +391,6 @@ impl<'a> Parser<'a> {
 
     fn bracket_matches(&self) -> &MemoTable<(usize, usize), (usize, bool)> {
         self.lazy_map(&self.bracket_matches)
-    }
-
-    fn last_closer(&self) -> &MemoTable<CloserKey, Option<usize>> {
-        self.lazy_map(&self.last_closer)
     }
 
     /// The opt-in scans' memo tables, allocated in the arena on first use.
@@ -458,8 +449,7 @@ impl<'a> Parser<'a> {
             definition_item_gap: std::cell::Cell::new(None),
             link_probe_cache: std::cell::OnceCell::new(),
             bracket_matches: std::cell::OnceCell::new(),
-            last_closer: std::cell::OnceCell::new(),
-            closer_hit: std::cell::Cell::new(None),
+            closer_windows: std::array::from_fn(|_| std::cell::Cell::default()),
             extension_memos: std::cell::OnceCell::new(),
             definition_region: None,
             comment_definition_region: None,
@@ -528,8 +518,7 @@ impl<'a> Parser<'a> {
             definition_item_gap: std::cell::Cell::new(None),
             link_probe_cache: std::cell::OnceCell::new(),
             bracket_matches: std::cell::OnceCell::new(),
-            last_closer: std::cell::OnceCell::new(),
-            closer_hit: std::cell::Cell::new(None),
+            closer_windows: std::array::from_fn(|_| std::cell::Cell::default()),
             extension_memos: std::cell::OnceCell::new(),
             definition_region: None,
             comment_definition_region: None,
