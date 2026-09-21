@@ -55,7 +55,7 @@ impl Allocator {
 
     /// Creates a new allocator pre-sized for parsing a Markdown source of
     /// the given length. The capacity is a heuristic (`source_len * 8`
-    /// bytes, with a 16 KB floor) that covers the typical AST footprint
+    /// bytes, with a 2 KB floor) that covers the typical AST footprint
     /// for real-world Markdown without growing through bumpalo's
     /// chunk-doubling path — on a fresh [`Self::new`], that path accounts
     /// for ~10 global allocations on a 64 KB document.
@@ -81,14 +81,27 @@ impl Allocator {
         // length. 8× errs slightly on the over-allocation side so the
         // first chunk almost always suffices.
         const BYTES_PER_INPUT_BYTE: usize = 8;
-        // Small documents break the ratio: a 500-byte document still builds a
-        // full block/inline tree, whose fixed per-node overhead lands nowhere
-        // near 8× the source. Measured against the md4x bench fixture (494
-        // bytes) the parse needs ~16 KB, so a 4 KB floor bought two extra
-        // chunk-growth allocations on precisely the small inputs where
-        // per-call cost dominates. 16 KB is one page-cluster of slack and
-        // covers everything under ~2 KB of Markdown in a single chunk.
-        const MIN_CAPACITY: usize = 16 * 1024;
+        // Small documents break the ratio: below ~256 bytes the parse's fixed
+        // and per-node arena costs, not the source, decide what the arena
+        // holds, so some floor is unavoidable. It only has to cover that fixed
+        // part, and the fixed part is small: measured with
+        // `iter_allocated_chunks_raw` after parse and render, an empty
+        // document occupies 128 bytes, the authored comment shapes of the
+        // broad corpus 208–2,688, and the densest nested-emphasis CommonMark
+        // example under 128 bytes 2,368.
+        //
+        // 2 KB covers that with room to spare. bumpalo rounds a sub-page
+        // request up to the next power of two minus its chunk overhead, so
+        // 2 KB becomes one chunk of 4,032 usable bytes, and none of 783
+        // measured documents — every CommonMark and GFM specification
+        // example, the repository's own Markdown, the broad corpus and its
+        // authored comments — needed a second chunk under any profile. A 16 KB
+        // request rounds up to a page multiple instead, so a 37-byte comment
+        // that occupies 208 bytes reserved 20,416 bytes on every fresh parse;
+        // an earlier 4 KB floor crossed the same page boundary and still
+        // reserved 8,128. The floor binds only up to 256 bytes of source;
+        // above that the 8× term is already larger and decides alone.
+        const MIN_CAPACITY: usize = 2 * 1024;
         let capacity = source_len.saturating_mul(BYTES_PER_INPUT_BYTE);
         if capacity < MIN_CAPACITY {
             MIN_CAPACITY
@@ -354,6 +367,67 @@ mod tests {
         s.push_str("hello");
         s.push_str(" world");
         assert_eq!(s.as_str(), "hello world");
+    }
+
+    #[test]
+    fn source_len_capacity_is_proportional_above_a_two_kilobyte_floor() {
+        // Pinned so a reservation change is a deliberate edit: the floor holds
+        // up to 256 bytes of source and the 8× term takes over above it.
+        for (source_len, expected) in [
+            (0, 2 * 1024),
+            (37, 2 * 1024),
+            (255, 2 * 1024),
+            (256, 2 * 1024),
+            (257, 257 * 8),
+            (512, 512 * 8),
+            (100 * 1024, 100 * 1024 * 8),
+        ] {
+            assert_eq!(
+                Allocator::capacity_for_source_len(source_len),
+                expected,
+                "capacity for a {source_len}-byte source"
+            );
+            assert!(
+                Allocator::for_source_len(source_len).allocated_bytes() >= expected,
+                "arena for a {source_len}-byte source reserved less than {expected}"
+            );
+        }
+        // The 8× term saturates rather than wrapping into a tiny reservation.
+        assert_eq!(
+            Allocator::capacity_for_source_len(usize::MAX),
+            usize::MAX,
+            "an implausible source length must not wrap"
+        );
+    }
+
+    #[test]
+    fn comment_sized_documents_parse_and_render_in_the_first_chunk() {
+        // The floor exists for exactly this: the fixed cost of a parse, which
+        // dwarfs the source at these sizes, must not force a second chunk.
+        for source in [
+            "",
+            "# Title\n",
+            "Thanks, this fixes the issue for me.\n",
+            "[The guide](<https://example.org/guide>)\n",
+            // The densest nested-emphasis specification examples, which need
+            // more arena than any other document under 128 bytes.
+            "*foo __bar *baz bim__ bam*\n",
+            "[foo *[bar [baz](/uri)](/uri)*](/uri)\n",
+            "Das Verhalten lässt sich auch mit Umlauten reproduzieren: **Änderungen**, *Größe* und `straße.md`.\n",
+        ] {
+            let arena = Allocator::for_source_len(source.len());
+            let reserved = arena.allocated_bytes();
+            let document = crate::Parser::new(&arena, source)
+                .parse()
+                .expect("the sample should parse");
+            let html = crate::HtmlRenderer::new().render(&document);
+            assert_eq!(
+                arena.allocated_bytes(),
+                reserved,
+                "{source:?} rendered to {} bytes and grew the arena past its first chunk",
+                html.len()
+            );
+        }
     }
 
     #[test]
