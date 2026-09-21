@@ -36,7 +36,9 @@ let html = to_html_with_options(
 ```
 
 Parser options select the Markdown dialect; renderer options control HTML.
-Both types name the same four profiles, so a pair is built from one name:
+Both types share the three names `commonmark()`, `gfm_spec()` and `gfm()`, so a
+pair is built from one name; `mdx()` is parser-only, because the renderer handles
+MDX nodes without a profile of its own:
 
 | Profile | Parser | Renderer |
 | --- | --- | --- |

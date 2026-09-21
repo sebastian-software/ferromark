@@ -143,8 +143,10 @@ The renderer now follows the parser:
   autolinking, link targets and fence metadata cleanup.
 
 Parser names do not change: they are the ones that were already right, and both
-types now answer to the same four names, so `commonmark()`, `gfm_spec()` and
-`gfm()` pair with themselves.
+types now answer to the same three shared names, so `commonmark()`, `gfm_spec()`
+and `gfm()` pair with themselves. `ParserOptions::mdx()` stays parser-only and
+gets no renderer counterpart, because the renderer emits MDX nodes without a
+flag of its own.
 
 This is a semantic change for anyone calling the renderer's `gfm()`, which is
 why it lands before 2.0.0 rather than after. Every internal caller that relied

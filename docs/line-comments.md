@@ -87,13 +87,15 @@ The [integration tests](../tests/line_comments.rs)
 cover comment syntax, paragraph/container structure, opaque content, references,
 tables, line endings, source spans, and renderer entry-point parity.
 
-The [direct v1 comparison](../benchmarks/line-comments-oracle/README.md) records
-39 agreeing cases out of 40. The remaining case exposes an existing limitation:
-link reference definitions directly inside list items are not collected
-globally by v2. The mismatch persists with comments disabled and the comment
-line physically removed. Definitions at the document root and inside block
-quotes resolve in the covered cases. This separate reference-collection issue
-is not fixed by the line-comment extension.
+The [direct v1 comparison](../benchmarks/line-comments-oracle/README.md) has 40
+cases. Its archived `results.json` records the historical 39 of 40, where the
+remaining case exposed a separate limitation: link reference definitions
+directly inside list items were not collected globally. That limitation was not
+caused by the line-comment extension, and the
+[container-reference correction](reports/2026-09-15-container-references/README.md)
+fixed it; see the [decision record](decisions/2026-09-15-container-references.md).
+The archived results stay unchanged as historical evidence, while the current
+runner requires all 40 cases and both baseline probes to agree.
 
 ## Validation
 
