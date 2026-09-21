@@ -1,0 +1,346 @@
+From 7594ceaef6dffb2abdcf76aecbef2ecd4cb7f831 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Mon, 21 Sep 2026 20:41:58 +0200
+Subject: [PATCH] perf(parser): reuse one delimiter-run buffer across inline
+ contexts
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Inline parsing built a fresh delimiter vector for every context — every
+paragraph, heading, table cell, link text and image alt — so each one
+holding a single `*`, `_`, `~` or `==` run paid an arena allocation, and a
+context past four runs paid bumpalo's grow-and-copy ladder on top of it.
+The runs are dead the moment pairing is done and nothing outside pairing
+reads them, so the buffer is now the parser's: a context borrows it when it
+records its first run and parks it again when it ends, cleared on the next
+take. The slot holding it is shared with sub-parsers, and allocated in the
+arena on the first run a parse records or the first sub-parser it builds —
+a list of items or a run of quotes parses all of its inline content through
+sub-parsers, so starting those with an empty slot would have kept one
+buffer per item. A parse that neither pairs emphasis nor opens a container
+still allocates nothing, and `Parser` grows by one pointer.
+
+A context that records no run — most headings, list items and short
+paragraphs — never asks for a buffer at all. The `Option` that answers that
+is also the emptiness check which used to gate pairing, so the pairing
+call, its linked-list walk and the two depth reads it opens with are all
+skipped on the `None`.
+
+Pairing itself is untouched: the buffer arrives empty, entries are pushed,
+linked and retired in the same order as before, and a nested context (link
+text, an image alt, an inline note's sub-source) that starts while the
+context around it holds the buffer gets its own, so no context ever sees
+another's runs; whichever of the two can hold more runs stays parked.
+
+Arena bytes over one pre-sized chunk, against `fe8987c4`: 500 emphasis-dense
+paragraphs 1,903,592 to 737,960, 500 list items 559,464 to 351,912, 500
+block quotes 627,488 to 419,936, 500 paragraphs with emphasis inside link
+text 564,048 to 356,496; prose without runs and a single 4,000-run
+paragraph are unchanged. The rendered output is unchanged as well:
+`tests/emphasis_pairing.rs` pins the nested shapes, and the CommonMark and
+GFM suites, the snapshots, a
+differential render of the 180 bundled documents in both profiles and 3,000
+random emphasis-heavy inputs are byte-identical to `fe8987c4`.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ src/parser/inline.rs          | 48 +++++++++++++++++++++++----
+ src/parser/inline/emphasis.rs | 62 ++++++++++++++++++++++++++++++++++-
+ src/parser/mod.rs             | 23 +++++++++++++
+ tests/emphasis_pairing.rs     | 50 ++++++++++++++++++++++++++++
+ 4 files changed, 176 insertions(+), 7 deletions(-)
+
+diff --git a/src/parser/inline.rs b/src/parser/inline.rs
+index e0468476..efe3852a 100644
+--- a/src/parser/inline.rs
++++ b/src/parser/inline.rs
+@@ -16,6 +16,7 @@ mod marker_scan;
+ mod scan;
+ mod script_span;
+ 
++pub(in crate::parser) use self::emphasis::DelimiterScratch;
+ pub(in crate::parser) use self::marker_scan::InlineMarkerScan;
+ use self::script_span::same_marker_neighbor;
+ use super::line_scan::{is_line_ending_byte, line_terminator_end};
+@@ -180,10 +181,42 @@ impl<'a> Parser<'a> {
+             return Ok(children);
+         }
+ 
++        // The runs of this context go in the parser's scratch buffer, which
++        // the first one recorded borrows (`Parser::push_delimiter_run`) and
++        // which is parked again below on every exit, the failing ones
++        // included. A context that records none — most headings, list items
++        // and short paragraphs — never asks for a buffer, and skips pairing
++        // and its depth bookkeeping with it.
++        let mut delimiters = None;
++        let children = self.parse_inline_nodes(
++            content,
++            offset,
++            first_special,
++            &mut markers,
++            &mut delimiters,
++        );
++        if let Some(delimiters) = delimiters {
++            self.put_delimiters(delimiters);
++        }
++        children
++    }
++
++    /// The scan loop of one inline context and the pairing that closes it.
++    ///
++    /// Split from [`Self::parse_inline`] so the buffer the runs go in is
++    /// handed back on the `?` returns too.
++    fn parse_inline_nodes(
++        &self,
++        content: &'a str,
++        offset: usize,
++        first_special: usize,
++        markers: &mut InlineMarkerScan,
++        delimiters: &mut Option<Vec<'a, emphasis::Delimiter>>,
++    ) -> ParseResult<Vec<'a, Node<'a>>> {
++        let bytes = content.as_bytes();
+         let mut children = self
+             .allocator
+             .new_vec_with_capacity(Self::inline_children_capacity(content.len()));
+-        let mut delimiters = self.allocator.new_vec();
+         let mut pos = 0;
+         let mut first_scan = Some(first_special);
+ 
+@@ -233,14 +266,17 @@ impl<'a> Parser<'a> {
+                 content,
+                 offset,
+                 &mut children,
+-                &mut delimiters,
+-                &mut markers,
++                delimiters,
++                markers,
+                 &mut pos,
+             )?;
+         }
+ 
+-        if !delimiters.is_empty() {
+-            self.process_emphasis(&mut children, &mut delimiters)?;
++        // A buffer exists only where a run was recorded, and a recorded run
++        // is one the pairing below has to look at.
++        if let Some(delimiters) = delimiters.as_mut() {
++            debug_assert!(!delimiters.is_empty(), "an empty run buffer was borrowed");
++            self.process_emphasis(&mut children, delimiters)?;
+         }
+         Ok(children)
+     }
+@@ -250,7 +286,7 @@ impl<'a> Parser<'a> {
+         content: &'a str,
+         offset: usize,
+         children: &mut Vec<'a, Node<'a>>,
+-        delimiters: &mut Vec<'a, emphasis::Delimiter>,
++        delimiters: &mut Option<Vec<'a, emphasis::Delimiter>>,
+         markers: &mut InlineMarkerScan,
+         pos: &mut usize,
+     ) -> ParseResult<()> {
+diff --git a/src/parser/inline/emphasis.rs b/src/parser/inline/emphasis.rs
+index 49ea1d14..b7edf902 100644
+--- a/src/parser/inline/emphasis.rs
++++ b/src/parser/inline/emphasis.rs
+@@ -45,6 +45,24 @@ pub(in crate::parser) struct Delimiter {
+ /// The end of the delimiter list in either direction.
+ const NO_DELIMITER: usize = usize::MAX;
+ 
++/// The buffer one inline context records its delimiter runs in, parked here
++/// between contexts.
++///
++/// Every context used to build its own vector, so each paragraph, heading or
++/// cell holding a single `*` paid an arena allocation and — once past four
++/// runs — bumpalo's grow-and-copy ladder as well. The runs of one context are
++/// dead the moment its pairing is done, and nothing outside pairing ever reads
++/// them, so one buffer serves the whole parse: it is taken when a context
++/// records its first run and handed back, cleared on the next take, when the
++/// context ends.
++///
++/// The slot only ever holds a buffer no context is using. A nested context
++/// (link text, an image alt, an inline note) that starts while the enclosing
++/// one holds the buffer finds the slot empty and gets its own, which keeps the
++/// enclosing runs untouched; whichever of the two can hold more runs stays in
++/// the slot afterwards.
++pub(in crate::parser) type DelimiterScratch<'a> = std::cell::Cell<Option<Vec<'a, Delimiter>>>;
++
+ /// Takes `index` out of the list of runs still worth visiting.
+ ///
+ /// The depth of the node the run holds is folded into the run before it,
+@@ -67,14 +85,55 @@ fn unlink(delimiters: &mut [Delimiter], index: usize) {
+ }
+ 
+ impl<'a> Parser<'a> {
++    /// The shared scratch slot, allocated in the arena the first time a run
++    /// is recorded or a sub-parser is built. A parse that pairs no emphasis
++    /// and opens no container — and every block probe that never reaches
++    /// inline content — leaves the arena as it is.
++    pub(in crate::parser) fn delimiter_scratch(&self) -> &'a DelimiterScratch<'a> {
++        if let Some(slot) = self.delimiter_scratch.get() {
++            return slot;
++        }
++        let slot: &'a DelimiterScratch<'a> = &*self.allocator.alloc(std::cell::Cell::new(None));
++        self.delimiter_scratch.set(Some(slot));
++        slot
++    }
++
++    /// The buffer this context records its runs in: the parked one, emptied,
++    /// or a fresh one while an enclosing context holds that.
++    fn take_delimiters(&self) -> Vec<'a, Delimiter> {
++        match self.delimiter_scratch().take() {
++            Some(mut buffer) => {
++                buffer.clear();
++                buffer
++            }
++            None => self.allocator.new_vec(),
++        }
++    }
++
++    /// Parks a finished context's buffer for the next one.
++    ///
++    /// A nested context hands its own buffer back before the context around
++    /// it does, so both reach here; keeping the wider one stops a long run
++    /// inside link text from being re-grown for every link.
++    pub(in crate::parser) fn put_delimiters(&self, buffer: Vec<'a, Delimiter>) {
++        let slot = self.delimiter_scratch();
++        match slot.take() {
++            Some(parked) if parked.capacity() >= buffer.capacity() => slot.set(Some(parked)),
++            _ => slot.set(Some(buffer)),
++        }
++    }
++
+     /// Records a `*`/`_`/`~`/`==` run: pushes its text node and the delimiter
+     /// entry describing how it may participate in emphasis.
++    ///
++    /// The run buffer is borrowed from the parser here rather than by the
++    /// caller, so a context that records no run never asks for one.
+     pub(in crate::parser) fn push_delimiter_run(
+         &self,
+         content: &'a str,
+         offset: usize,
+         children: &mut Vec<'a, Node<'a>>,
+-        delimiters: &mut Vec<'a, Delimiter>,
++        delimiters: &mut Option<Vec<'a, Delimiter>>,
+         pos: &mut usize,
+     ) {
+         let bytes = content.as_bytes();
+@@ -98,6 +157,7 @@ impl<'a> Parser<'a> {
+         if !can_open && !can_close {
+             return;
+         }
++        let delimiters = delimiters.get_or_insert_with(|| self.take_delimiters());
+         let index = delimiters.len();
+         let prev = match delimiters.last_mut() {
+             Some(last) => {
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index ad59f47c..c12eaac3 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -260,6 +260,20 @@ pub struct Parser<'a> {
+     /// that only probes blocks still touches the arena not at all.
+     nested_inline_depth: std::cell::Cell<Option<&'a std::cell::Cell<usize>>>,
+ 
++    /// The delimiter-run buffer inline contexts record their `*`, `_`, `~`
++    /// and `==` runs in, one per parse instead of one per context.
++    ///
++    /// Shared with sub-parsers and held behind a reference for the same two
++    /// reasons as `nested_inline_depth`: inline parsing runs behind `&self`,
++    /// and a list item or block quote builds its own parser for content that
++    /// is no different from the content around it. The slot is allocated in
++    /// the arena on the first run a parse records, or on the first sub-parser
++    /// it builds, so a parse that neither pairs emphasis nor opens a
++    /// container — and every block probe that never reaches inline content —
++    /// still touches the arena not at all. See the `inline::DelimiterScratch`
++    /// alias for how one buffer serves contexts nested in one another.
++    delimiter_scratch: std::cell::Cell<Option<&'a inline::DelimiterScratch<'a>>>,
++
+     /// Link reference definitions collected by the root parser's
+     /// pre-pass, shared with sub-parsers (block quote and list item
+     /// contents) so references resolve document-wide.
+@@ -448,6 +462,7 @@ impl<'a> Parser<'a> {
+             nesting_depth: 0,
+             inline_depth: std::cell::Cell::new(0),
+             nested_inline_depth: std::cell::Cell::new(None),
++            delimiter_scratch: std::cell::Cell::new(None),
+             definitions: None,
+             phase,
+             footnote_labels: None,
+@@ -515,6 +530,14 @@ impl<'a> Parser<'a> {
+             // sub-parser and still ends up inside the node the enclosing
+             // inline level is building, so its depth has to reach that level.
+             nested_inline_depth: std::cell::Cell::new(self.nested_inline_depth.get()),
++            // Shared as well: the runs of a sub-source are the same kind of
++            // scratch as the ones around it, and a parked buffer is one no
++            // context is using. The slot is allocated here when this parser
++            // has none yet, because a list of items or a run of quotes parses
++            // all of its inline content through sub-parsers and would
++            // otherwise start each one with an empty slot — one buffer per
++            // item, which is what this replaces.
++            delimiter_scratch: std::cell::Cell::new(Some(self.delimiter_scratch())),
+             definitions: self.definitions.clone(),
+             phase: self.phase,
+             footnote_labels: self.footnote_labels.clone(),
+diff --git a/tests/emphasis_pairing.rs b/tests/emphasis_pairing.rs
+index 12d1a69f..5e9dd42a 100644
+--- a/tests/emphasis_pairing.rs
++++ b/tests/emphasis_pairing.rs
+@@ -221,6 +221,56 @@ fn a_long_sequence_of_unpairable_delimiters_stays_literal() {
+     check_tree(&source);
+ }
+ 
++#[test]
++fn a_nested_context_never_disturbs_the_runs_around_it() {
++    // The delimiter runs of one inline context are recorded in a buffer the
++    // parser hands from context to context. Link text, image alt text and a
++    // sub-source each open a context of their own, some of them while the
++    // context around them still holds unpaired runs, so each has to record
++    // and pair its own without touching the enclosing ones.
++    let cases = [
++        (
++            "*a [*b* **c**](u) d*",
++            "<p><em>a <a href=\"u\"><em>b</em> <strong>c</strong></a> d</em></p>",
++        ),
++        (
++            "*a ![*b* c](/img) d*",
++            "<p><em>a <img src=\"/img\" alt=\"b c\"> d</em></p>",
++        ),
++        (
++            "*x [~~y~~ z](u) w*",
++            "<p><em>x <a href=\"u\"><del>y</del> z</a> w</em></p>",
++        ),
++        (
++            "> *a b*\n\n- *c* and **d**\n- ~~e~~\n",
++            concat!(
++                "<blockquote>\n<p><em>a b</em></p>\n</blockquote>\n",
++                "<ul>\n<li><em>c</em> and <strong>d</strong></li>\n<li><del>e</del></li>\n</ul>"
++            ),
++        ),
++        (
++            "| *a* | **b** |\n| --- | --- |\n| ~~c~~ | *d* |\n",
++            concat!(
++                "<table>\n<thead>\n<tr>\n<th><em>a</em></th>\n<th><strong>b</strong></th>\n</tr>\n",
++                "</thead>\n<tbody>\n<tr>\n<td><del>c</del></td>\n<td><em>d</em></td>\n</tr>\n",
++                "</tbody>\n</table>"
++            ),
++        ),
++    ];
++    for (source, expected) in cases {
++        assert_eq!(render(source), expected, "for {source:?}");
++        check_tree(source);
++    }
++
++    // The same shape repeated: every context after the first pairs in a
++    // buffer an earlier one already used.
++    let source = "*a [*b* **c**](u) d*\n\n".repeat(200);
++    let rendered = render(&source);
++    assert_eq!(rendered.matches("<em>").count(), 400);
++    assert_eq!(rendered.matches("<strong>").count(), 200);
++    check_tree(&source);
++}
++
+ #[test]
+ fn emphasis_pairing_costs_linear_time() {
+     // Compare equal bytes of work: four smaller parses against one 4x input.
+-- 
+2.55.0
+

@@ -1,0 +1,641 @@
+From 2df8c4efba1ef50e63b3b920a2791ecddb992a07 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Mon, 21 Sep 2026 20:43:11 +0200
+Subject: [PATCH] perf(parser): borrow the parent context when building a
+ container sub-parser
+
+Every block quote, list item, footnote body, definition body and JSX child
+builds a sub-parser. Each one cloned `ParserOptions`, bumped two reference
+counts and then initialized a 336-byte struct that is moved twice more on
+its way through `parse`.
+
+The options are now allocated once in the arena by the root parser and
+borrowed by every parser of that parse, and the two pre-pass tables share
+one handle instead of one each. Building a sub-source is a pointer copy
+plus one nullable reference count, and `Parser` drops from 336 to 304
+bytes, so both the construction and the moves touch one cache line less.
+
+Every sub-source still parses exactly as before:
+
+- Line comments stay off in sub-sources. `line_comments` is a per-parser
+  flag that starts false on every generated sub-source, and
+  `sub_parser_with_source_map` turns it back on for exactly the lines it
+  could carry across the dedent -- which is what it did through the option
+  field before. `ParserOptions::front_matter` needs no flag: it is read
+  only where a root parser lifts metadata off a document start, and the
+  definition pass now passes `None` there for the same reason its options
+  copy used to clear the flag.
+- Inline notes keep their override: `inline_footnotes` is the second
+  per-parser flag, so a note's body still leaves a nested `^[` literal,
+  and `InlineMarkerScan` is handed that flag instead of reading the shared
+  option.
+- Definitions and footnote labels stay shared and document-wide. They move
+  under one `Rc<Prepass>` because they are collected together and shared
+  together; `None` and an empty table still mean the same thing to every
+  reader, so both lookups answer as they did.
+- Lazy-line and comment-line sets stay per sub-source, and nesting depth
+  still increases by one per container.
+
+The definition-list probe test compares the arena's free space across the
+probe instead of asserting a completely untouched arena: construction now
+places the one shared copy of the options in it, while the probe itself
+still allocates nothing.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ src/parser/block.rs               |   2 +-
+ src/parser/block_quote.rs         |   4 +-
+ src/parser/definition_list.rs     |   8 ++-
+ src/parser/footnote.rs            |  12 +++-
+ src/parser/inline.rs              |   4 +-
+ src/parser/inline/marker_scan.rs  |  12 +++-
+ src/parser/inline_footnote.rs     |   3 +-
+ src/parser/line_comments.rs       |  10 +--
+ src/parser/list.rs                |   6 +-
+ src/parser/mod.rs                 | 105 ++++++++++++++++++++----------
+ src/parser/prepass.rs             |  50 +++++++-------
+ src/parser/prepass/equivalence.rs |   2 +-
+ src/parser/reference.rs           |   4 +-
+ src/parser/reference/collect.rs   |  18 +++--
+ 14 files changed, 147 insertions(+), 93 deletions(-)
+
+diff --git a/src/parser/block.rs b/src/parser/block.rs
+index b13b36bc..6551df75 100644
+--- a/src/parser/block.rs
++++ b/src/parser/block.rs
+@@ -241,7 +241,7 @@ impl<'a> Parser<'a> {
+         start: usize,
+         first_line_end: Option<usize>,
+     ) -> ParseResult<Option<Node<'a>>> {
+-        if self.options.line_comments {
++        if self.line_comments {
+             self.parse_paragraph_impl::<true>(start, first_line_end)
+         } else {
+             self.parse_paragraph_impl::<false>(start, first_line_end)
+diff --git a/src/parser/block_quote.rs b/src/parser/block_quote.rs
+index 071a4dcc..8e6f9c1e 100644
+--- a/src/parser/block_quote.rs
++++ b/src/parser/block_quote.rs
+@@ -49,7 +49,7 @@ impl<'a> Parser<'a> {
+                 // The comment is copied verbatim and is not content the
+                 // tracker classifies: it catches up on what precedes it and
+                 // skips past it.
+-                open_paragraph.catch_up(&inner, &self.options);
++                open_paragraph.catch_up(&inner, self.options);
+                 inner.push_str(&self.source[line_start..next]);
+                 open_paragraph.skip_to(inner.len());
+                 self.position = next;
+@@ -126,7 +126,7 @@ impl<'a> Parser<'a> {
+                 self.position = line_next;
+             } else if !Self::quote_lazy_blocked(trimmed)
+                 && !self.line_starts_block()
+-                && open_paragraph.catch_up(&inner, &self.options)
++                && open_paragraph.catch_up(&inner, self.options)
+             {
+                 // Lazy continuation: the line joins the quote's open
+                 // paragraph as if the `>` marker were present. Keeping the
+diff --git a/src/parser/definition_list.rs b/src/parser/definition_list.rs
+index 37ffbe09..a3ce7b8d 100644
+--- a/src/parser/definition_list.rs
++++ b/src/parser/definition_list.rs
+@@ -486,11 +486,15 @@ mod tests {
+                     ..ParserOptions::commonmark()
+                 },
+             );
++            // Construction copies the options every parser of this parse
++            // shares into the arena; the probe itself must add nothing on
++            // top of that, so compare the arena's free space across it.
++            let free = allocator.chunk_capacity();
+             assert!(parser.parse_definition_list(0).unwrap().is_none());
+             assert_eq!(parser.position, 0);
+             assert_eq!(
+-                allocator.allocated_bytes(),
+-                0,
++                allocator.chunk_capacity(),
++                free,
+                 "rejected probe allocated: {source:?}"
+             );
+         }
+diff --git a/src/parser/footnote.rs b/src/parser/footnote.rs
+index ed07df64..0f645d7b 100644
+--- a/src/parser/footnote.rs
++++ b/src/parser/footnote.rs
+@@ -250,9 +250,15 @@ impl<'a> Parser<'a> {
+ 
+     /// Whether a definition exists for `label` (already normalized-able).
+     pub(super) fn has_footnote_label(&self, label: &str) -> bool {
+-        self.footnote_labels
+-            .as_ref()
+-            .is_some_and(|labels| labels.contains(&normalize_footnote_label(label)))
++        self.prepass.as_ref().is_some_and(|prepass| {
++            // An empty table answers every label, and normalizing one
++            // allocates: keep that off a document that only holds link
++            // reference definitions.
++            !prepass.footnote_labels.is_empty()
++                && prepass
++                    .footnote_labels
++                    .contains(&normalize_footnote_label(label))
++        })
+     }
+ 
+     /// Emits a [`FootnoteReference`] for `[^label]` at `pos`. Returns
+diff --git a/src/parser/inline.rs b/src/parser/inline.rs
+index e0468476..b12e9938 100644
+--- a/src/parser/inline.rs
++++ b/src/parser/inline.rs
+@@ -163,7 +163,7 @@ impl<'a> Parser<'a> {
+     ) -> ParseResult<Vec<'a, Node<'a>>> {
+         let _depth = self.enter_inline(offset)?;
+         let bytes = content.as_bytes();
+-        let mut markers = InlineMarkerScan::new(&self.options);
++        let mut markers = InlineMarkerScan::new(self.options, self.inline_footnotes);
+         let first_special = markers.next(bytes, 0);
+ 
+         // Plain text is both the most common inline shape and exactly one AST
+@@ -334,7 +334,7 @@ impl<'a> Parser<'a> {
+                     *pos += run;
+                 }
+             }
+-            b'^' if self.options.inline_footnotes && bytes.get(*pos + 1) == Some(&b'[') => {
++            b'^' if self.inline_footnotes && bytes.get(*pos + 1) == Some(&b'[') => {
+                 self.parse_inline_footnote(content, offset, children, pos)?;
+             }
+             b'~' if self.options.strikethrough => {
+diff --git a/src/parser/inline/marker_scan.rs b/src/parser/inline/marker_scan.rs
+index b244ccd5..3883da46 100644
+--- a/src/parser/inline/marker_scan.rs
++++ b/src/parser/inline/marker_scan.rs
+@@ -51,12 +51,18 @@ pub(in crate::parser) struct InlineMarkerScan {
+ }
+ 
+ impl InlineMarkerScan {
+-    pub(in crate::parser) const fn new(options: &crate::ParserOptions) -> Self {
++    /// `inline_footnotes` is the flag of the source being scanned, not
++    /// `options.inline_footnotes`: an inline note's own body parses without
++    /// it, so a nested `^[` stays literal there.
++    pub(in crate::parser) const fn new(
++        options: &crate::ParserOptions,
++        inline_footnotes: bool,
++    ) -> Self {
+         let mut optional = 0;
+         if options.mdx {
+             optional |= INLINE_MARKER_MDX;
+         }
+-        if options.superscript || options.inline_footnotes {
++        if options.superscript || inline_footnotes {
+             optional |= INLINE_MARKER_SUPERSCRIPT;
+         }
+         if options.math {
+@@ -67,7 +73,7 @@ impl InlineMarkerScan {
+         }
+         Self {
+             optional,
+-            notes_only: options.inline_footnotes && !options.superscript,
++            notes_only: inline_footnotes && !options.superscript,
+             scan: ForwardScan::new(),
+         }
+     }
+diff --git a/src/parser/inline_footnote.rs b/src/parser/inline_footnote.rs
+index f874fd8e..ba869a50 100644
+--- a/src/parser/inline_footnote.rs
++++ b/src/parser/inline_footnote.rs
+@@ -42,7 +42,8 @@ impl<'a> Parser<'a> {
+                 if !body.lines().any(|line| line.trim().is_empty()) {
+                     let mut parser =
+                         self.sub_parser_with_lazy_lines(body, rustc_hash::FxHashSet::default());
+-                    parser.options.inline_footnotes = false;
++                    // Nested inline notes stay literal inside this body.
++                    parser.inline_footnotes = false;
+                     let inline = parser.parse_inline_block(body, offset + body_start)?;
+                     let span = Span::new((offset + start) as u32, (offset + close + 1) as u32);
+                     let mut blocks = self.allocator.new_vec_with_capacity(1);
+diff --git a/src/parser/line_comments.rs b/src/parser/line_comments.rs
+index a5ba82b2..c9c0de43 100644
+--- a/src/parser/line_comments.rs
++++ b/src/parser/line_comments.rs
+@@ -15,7 +15,7 @@ pub(super) struct CommentDefinitionRegion<'a> {
+ 
+ impl<'a> Parser<'a> {
+     pub(super) fn is_line_comment_at(&self, start: usize) -> bool {
+-        if !self.options.line_comments {
++        if !self.line_comments {
+             return false;
+         }
+         if let Some(lines) = &self.comment_lines {
+@@ -50,7 +50,7 @@ impl<'a> Parser<'a> {
+         map: &SourceMap,
+     ) -> Parser<'a> {
+         let mut parser = self.sub_parser_with_lazy_lines(source, lazy_lines);
+-        if self.options.line_comments {
++        if self.line_comments {
+             let lines: rustc_hash::FxHashSet<u32> = map
+                 .line_origins()
+                 .filter(|&(_, original)| {
+@@ -60,7 +60,7 @@ impl<'a> Parser<'a> {
+                 })
+                 .map(|(generated, _)| generated as u32)
+                 .collect();
+-            parser.options.line_comments = !lines.is_empty();
++            parser.line_comments = !lines.is_empty();
+             parser.comment_lines = (!lines.is_empty()).then(|| std::rc::Rc::new(lines));
+         }
+         parser
+@@ -81,7 +81,7 @@ impl<'a> Parser<'a> {
+         start: usize,
+         end: usize,
+     ) -> (&'a str, Option<SourceMap>) {
+-        if !self.options.line_comments {
++        if !self.line_comments {
+             return (&self.source[start..end], None);
+         }
+         let bytes = self.source.as_bytes();
+@@ -108,7 +108,7 @@ impl<'a> Parser<'a> {
+         end: usize,
+         first_comment: Option<usize>,
+     ) -> (&'a str, Option<SourceMap>) {
+-        if !self.options.line_comments {
++        if !self.line_comments {
+             return (&self.source[start..end], None);
+         }
+         let bytes = self.source.as_bytes();
+diff --git a/src/parser/list.rs b/src/parser/list.rs
+index da3c0467..8a0c6283 100644
+--- a/src/parser/list.rs
++++ b/src/parser/list.rs
+@@ -168,7 +168,7 @@ impl<'a> Parser<'a> {
+                 let generated_start = source.text.len();
+                 // The comment is not content the tracker classifies: it
+                 // catches up on what precedes it and skips past it.
+-                open_paragraph.catch_up(&source.text, &self.options);
++                open_paragraph.catch_up(&source.text, self.options);
+                 // Preserve normal list dedenting even when a nested code or
+                 // HTML parser will keep this eligible line as literal content.
+                 let stripped = Self::push_line_without_indent(
+@@ -314,8 +314,8 @@ impl<'a> Parser<'a> {
+                 break;
+             }
+             let paragraph_open = match &item_source {
+-                Some(source) => open_paragraph.catch_up(&source.text, &self.options),
+-                None => open_paragraph.catch_up_first_line(item.content, &self.options),
++                Some(source) => open_paragraph.catch_up(&source.text, self.options),
++                None => open_paragraph.catch_up_first_line(item.content, self.options),
+             };
+             if !paragraph_open {
+                 break;
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index ad59f47c..8b9a3a14 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -225,8 +225,29 @@ pub struct Parser<'a> {
+     /// Raw document metadata, already in original source coordinates.
+     front_matter: Option<crate::allocator::Box<'a, crate::ast::FrontMatter<'a>>>,
+ 
+-    /// Parser options.
+-    options: ParserOptions,
++    /// Parser options, shared by every parser of one parse.
++    ///
++    /// The root allocates the caller's options in the arena once; container
++    /// sub-parsers borrow the same copy. Syntax options are fixed for a whole
++    /// parse, so the only per-source parts are the two flags below — read
++    /// those, never `options.line_comments` or `options.inline_footnotes`.
++    options: &'a ParserOptions,
++
++    /// Whether physical line comments are recognized in *this* source.
++    ///
++    /// Comments are a property of the original document's physical lines, so
++    /// a generated sub-source starts without them and
++    /// [`Self::sub_parser_with_source_map`] turns them back on for exactly
++    /// the lines it could carry across the dedent.
++    ///
++    /// [`ParserOptions::front_matter`] needs no such flag: it is read only
++    /// where a root parser lifts metadata off a document start, and a
++    /// sub-source is never one.
++    line_comments: bool,
++
++    /// Whether `^[...]` opens an inline note in *this* source. Off inside an
++    /// inline note's own body, where a nested note stays literal.
++    inline_footnotes: bool,
+ 
+     /// Current position in the source.
+     position: usize,
+@@ -260,21 +281,18 @@ pub struct Parser<'a> {
+     /// that only probes blocks still touches the arena not at all.
+     nested_inline_depth: std::cell::Cell<Option<&'a std::cell::Cell<usize>>>,
+ 
+-    /// Link reference definitions collected by the root parser's
+-    /// pre-pass, shared with sub-parsers (block quote and list item
++    /// Link reference definitions and footnote labels collected by the root
++    /// parser's pre-pass, shared with sub-parsers (block quote and list item
+     /// contents) so references resolve document-wide.
+     ///
+-    /// `None` and an empty map mean the same thing to every reader; the
+-    /// distinction exists so that documents without definitions — the
+-    /// overwhelming majority, and the ones where per-call cost is most
+-    /// visible — never pay for the `Rc` allocation at all. The same applies
+-    /// to the two collections below.
+-    definitions: Option<std::rc::Rc<reference::ReferenceMap<'a>>>,
+-
+-    /// Footnote labels defined anywhere in the document, collected by the
+-    /// same kind of pre-pass as `definitions` so an inline `[^x]` can tell
+-    /// whether a definition exists before reaching it.
+-    footnote_labels: Option<std::rc::Rc<footnote::FootnoteLabels>>,
++    /// The two tables share one handle because they are collected together
++    /// and shared together: a sub-parser then touches one reference count
++    /// instead of two. `None` and an empty table mean the same thing to
++    /// every reader; the distinction exists so that documents without
++    /// definitions — the overwhelming majority, and the ones where per-call
++    /// cost is most visible — never pay for the `Rc` allocation at all. The
++    /// same applies to the two collections below.
++    prepass: Option<std::rc::Rc<prepass::Prepass<'a>>>,
+ 
+     /// The document parse or its temporary block-only definition pass.
+     phase: ParsePhase,
+@@ -417,19 +435,35 @@ impl<'a> Parser<'a> {
+     /// Creates a new parser with the specified options.
+     #[must_use]
+     pub fn with_options(allocator: &'a Allocator, source: &'a str, options: ParserOptions) -> Self {
+-        Self::with_phase(allocator, source, options, ParsePhase::Document)
++        let front_matter = options
++            .front_matter
++            .then(|| front_matter::extract(source))
++            .flatten();
++        // The arena keeps the one copy of the options this parse reads: every
++        // container sub-parser borrows it instead of cloning it.
++        Self::with_shared_options(
++            allocator,
++            source,
++            allocator.alloc(options),
++            ParsePhase::Document,
++            front_matter,
++        )
+     }
+ 
+-    fn with_phase(
++    /// Creates a root parser over `source` that shares `options` with every
++    /// sub-parser it goes on to build.
++    ///
++    /// `front_matter` is the metadata already lifted off a document start.
++    /// The definition pass passes `None`: its segments are ordinary body
++    /// text, so front matter is off for them exactly as it is for a
++    /// sub-source.
++    fn with_shared_options(
+         allocator: &'a Allocator,
+         source: &'a str,
+-        options: ParserOptions,
++        options: &'a ParserOptions,
+         phase: ParsePhase,
++        front_matter: Option<crate::ast::FrontMatter<'a>>,
+     ) -> Self {
+-        let front_matter = options
+-            .front_matter
+-            .then(|| front_matter::extract(source))
+-            .flatten();
+         let body_start = front_matter
+             .as_ref()
+             .map_or(0, |metadata| metadata.span.end as usize);
+@@ -444,13 +478,14 @@ impl<'a> Parser<'a> {
+                 && !source.is_empty())
+             .then(|| &*allocator.alloc(std::cell::Cell::new(false))),
+             options,
++            line_comments: options.line_comments,
++            inline_footnotes: options.inline_footnotes,
+             position: 0,
+             nesting_depth: 0,
+             inline_depth: std::cell::Cell::new(0),
+             nested_inline_depth: std::cell::Cell::new(None),
+-            definitions: None,
++            prepass: None,
+             phase,
+-            footnote_labels: None,
+             lazy_lines: None,
+             comment_lines: None,
+             definition_marker: std::cell::Cell::new(None),
+@@ -467,9 +502,7 @@ impl<'a> Parser<'a> {
+         // Discover document-wide definitions once, before inline resolution
+         // (see `prepass.rs`). Collection itself must not recurse.
+         if phase == ParsePhase::Document {
+-            let (definitions, footnote_labels) = parser.build_prepass();
+-            parser.definitions = definitions;
+-            parser.footnote_labels = footnote_labels;
++            parser.prepass = parser.build_prepass();
+         }
+         parser
+     }
+@@ -495,14 +528,17 @@ impl<'a> Parser<'a> {
+             source,
+             source_map: None,
+             front_matter: None,
++            // Borrowed, not copied: every parser of one parse reads the same
++            // options, and only the two per-source flags below differ.
++            options: self.options,
+             // Line comments are recognized on physical source lines, before
+             // container prefixes are stripped, never on generated sub-sources.
+-            // Front matter belongs only to the original document start.
+-            options: ParserOptions {
+-                line_comments: false,
+-                front_matter: false,
+-                ..self.options.clone()
+-            },
++            // `sub_parser_with_source_map` restores the ones it can still
++            // identify. Front matter belongs only to the original document
++            // start, which no sub-source is, and nothing below construction
++            // reads that option.
++            line_comments: false,
++            inline_footnotes: self.inline_footnotes,
+             position: 0,
+             nesting_depth: self.nesting_depth + 1,
+             // Container sub-sources are entered from block parsing, where no
+@@ -515,9 +551,8 @@ impl<'a> Parser<'a> {
+             // sub-parser and still ends up inside the node the enclosing
+             // inline level is building, so its depth has to reach that level.
+             nested_inline_depth: std::cell::Cell::new(self.nested_inline_depth.get()),
+-            definitions: self.definitions.clone(),
++            prepass: self.prepass.clone(),
+             phase: self.phase,
+-            footnote_labels: self.footnote_labels.clone(),
+             inline_note_seen: self.inline_note_seen,
+             // Most sub-sources are entered without any lazy continuation
+             // line, and every block quote and list item builds one of these.
+diff --git a/src/parser/prepass.rs b/src/parser/prepass.rs
+index b94e0583..ba88a922 100644
+--- a/src/parser/prepass.rs
++++ b/src/parser/prepass.rs
+@@ -301,37 +301,39 @@ fn bounded_line_start(bytes: &[u8], from: usize, before: usize) -> usize {
+     memrchr2(b'\n', b'\r', &bytes[from..before]).map_or(from, |off| from + off + 1)
+ }
+ 
++/// The document-wide tables the root parser's pre-pass collected, shared
++/// with every container sub-parser under one reference count.
++pub(super) struct Prepass<'a> {
++    /// Link reference definitions, usable from anywhere in the document.
++    pub(super) definitions: ReferenceMap<'a>,
++
++    /// Footnote labels defined anywhere in the document, so an inline `[^x]`
++    /// can tell whether a definition exists before reaching it.
++    pub(super) footnote_labels: FootnoteLabels,
++}
++
+ impl<'a> Parser<'a> {
+     /// Collects document-wide facts before resolving inline references.
+-    /// Absent maps stay `None`, avoiding shared allocations on ordinary input.
++    /// Absent tables stay `None`, avoiding shared allocations on ordinary input.
+     ///
+     /// Two byte searches settle the overwhelming majority of documents: one for
+     /// `[` and one for `]:`. They are the whole cost of the pre-pass there, so
+     /// they stay on this frame, and everything that needs the opener buffer
+     /// lives behind a call that is never inlined — otherwise an ordinary parse
+     /// pays for a buffer it never fills.
+-    pub(super) fn build_prepass(
+-        &self,
+-    ) -> (Option<Rc<ReferenceMap<'a>>>, Option<Rc<FootnoteLabels>>) {
++    pub(super) fn build_prepass(&self) -> Option<Rc<Prepass<'a>>> {
+         if !self.options.allow_link_refs && !self.options.footnotes {
+-            return (None, None);
++            return None;
+         }
+         let bytes = self.source.as_bytes();
+-        if memchr(b'[', bytes).is_none() {
+-            return (None, None);
+-        }
+-        let Some(first_closer) = DEFINITION_CLOSER.find(bytes) else {
+-            return (None, None);
+-        };
++        memchr(b'[', bytes)?;
++        let first_closer = DEFINITION_CLOSER.find(bytes)?;
+         self.discover_definitions(first_closer)
+     }
+ 
+     /// The rest of the pre-pass, for a source that holds a `[` and a `]:`.
+     #[inline(never)]
+-    fn discover_definitions(
+-        &self,
+-        first_closer: usize,
+-    ) -> (Option<Rc<ReferenceMap<'a>>>, Option<Rc<FootnoteLabels>>) {
++    fn discover_definitions(&self, first_closer: usize) -> Option<Rc<Prepass<'a>>> {
+         // The length heuristic is decided first: a body it rejects must not
+         // pay for collecting openers no planner will ever read.
+         let worth_planning = self.source.len() >= MIN_PLANNED_BYTES;
+@@ -349,30 +351,32 @@ impl<'a> Parser<'a> {
+             || !((self.options.allow_link_refs && scan.link)
+                 || (self.options.footnotes && self.source.contains("[^")))
+         {
+-            return (None, None);
++            return None;
+         }
+         // Two heuristics decide against planning. Both only ever choose the
+         // pass this code replaced, so neither can change what is collected.
+         let plan = if !worth_planning || scan.dense {
+             DefinitionPlan::Fallback
+         } else {
+-            plan_definition_pass(self.source, &self.options, &openers)
++            plan_definition_pass(self.source, self.options, &openers)
+         };
+-        let (definitions, labels) = match plan {
++        let (definitions, footnote_labels) = match plan {
+             DefinitionPlan::Fallback => self.collect_definitions(&[(0, self.source.len())]),
+             DefinitionPlan::Segments(segments) => {
+                 // Every candidate sat inside code or raw HTML: no arena
+                 // and no parser are built for this document.
+                 if segments.is_empty() {
+-                    return (None, None);
++                    return None;
+                 }
+                 self.collect_definitions(&segments)
+             }
+         };
+-        (
+-            (!definitions.is_empty()).then(|| Rc::new(definitions)),
+-            (!labels.is_empty()).then(|| Rc::new(labels)),
+-        )
++        (!definitions.is_empty() || !footnote_labels.is_empty()).then(|| {
++            Rc::new(Prepass {
++                definitions,
++                footnote_labels,
++            })
++        })
+     }
+ }
+ 
+diff --git a/src/parser/prepass/equivalence.rs b/src/parser/prepass/equivalence.rs
+index 691bace5..131e244d 100644
+--- a/src/parser/prepass/equivalence.rs
++++ b/src/parser/prepass/equivalence.rs
+@@ -86,7 +86,7 @@ fn check(source: &str, options: &ParserOptions) -> Outcome {
+         // full-body pass may run. The planner is never handed such a list.
+         return Outcome::FellBack;
+     }
+-    let (plan, survivors) = plan_with_survivors(body, &parser.options, &openers);
++    let (plan, survivors) = plan_with_survivors(body, parser.options, &openers);
+ 
+     let DefinitionPlan::Segments(segments) = &plan else {
+         return Outcome::FellBack;
+diff --git a/src/parser/reference.rs b/src/parser/reference.rs
+index 8935efd1..e68de732 100644
+--- a/src/parser/reference.rs
++++ b/src/parser/reference.rs
+@@ -70,7 +70,7 @@ impl<'a> Parser<'a> {
+     }
+ 
+     pub(super) fn lookup_reference(&self, raw_label: &str) -> Option<&ReferenceDef<'a>> {
+-        let definitions = self.definitions.as_ref()?;
++        let definitions = &self.prepass.as_ref()?.definitions;
+         if definitions.is_empty() {
+             return None;
+         }
+@@ -184,7 +184,7 @@ impl<'a> Parser<'a> {
+             .is_some_and(|region| {
+                 region.start <= start && start < region.end && region.end == region_end
+             });
+-        if self.options.line_comments && !cached {
++        if self.line_comments && !cached {
+             let (text, map) = self.without_line_comments(start, region_end);
+             self.comment_definition_region = Some(std::rc::Rc::new(CommentDefinitionRegion {
+                 start,
+diff --git a/src/parser/reference/collect.rs b/src/parser/reference/collect.rs
+index a1f14652..d5f5fee6 100644
+--- a/src/parser/reference/collect.rs
++++ b/src/parser/reference/collect.rs
+@@ -16,7 +16,6 @@ use crate::ast::{Definition, FootnoteDefinition, Visit, walk_footnote_definition
+ use compact_str::CompactString;
+ 
+ use super::{Parser, ReferenceDef, ReferenceMap};
+-use crate::ParserOptions;
+ use crate::parser::footnote::{FootnoteLabels, normalize_footnote_label};
+ 
+ struct Collector<'a> {
+@@ -54,24 +53,23 @@ impl<'a> Parser<'a> {
+         segments: &[(usize, usize)],
+     ) -> (ReferenceMap<'a>, FootnoteLabels) {
+         let temporary = Allocator::new();
+-        // Choose the collection phase at construction. Syntax options retain
+-        // their real meaning throughout; no temporarily disabled options or
+-        // post-construction state repair is needed to suppress recursion.
+-        let options = ParserOptions {
+-            front_matter: false,
+-            ..self.options.clone()
+-        };
+         let mut collector = Collector {
+             allocator: self.allocator,
+             definitions: ReferenceMap::default(),
+             labels: FootnoteLabels::default(),
+         };
+         for &(start, end) in segments {
+-            let mut parser = Parser::with_phase(
++            // Choose the collection phase at construction, and share the
++            // document's options rather than copying them per segment.
++            // Syntax options retain their real meaning throughout; no
++            // temporarily disabled options or post-construction state repair
++            // is needed to suppress recursion.
++            let mut parser = Parser::with_shared_options(
+                 &temporary,
+                 &self.source[start..end],
+-                options.clone(),
++                self.options,
+                 super::super::ParsePhase::Definitions,
++                None,
+             );
+             // If the block grammar rejects a segment (for example depth), the
+             // real parse reports that error; no successful output uses this
+-- 
+2.55.0
+
