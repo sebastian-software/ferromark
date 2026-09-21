@@ -5,18 +5,17 @@
 use crate::ast::{MdxFlowExpression, MdxTextExpression, Node, Span};
 
 use super::Parser;
-use super::braces;
 use super::scan;
 use crate::parser::error::ParseResult;
 
-pub(super) fn looks_like_flow_expression(source: &str, at: usize) -> bool {
-    let Some((_, brace_end)) = braces::scan_balanced_braces(source, at) else {
-        return false;
-    };
-    scan::only_ws_until_eol(source.as_bytes(), brace_end)
-}
-
 impl<'a> Parser<'a> {
+    /// Whether a flow `{expression}` stands at `at`, for the block-start
+    /// probe that runs before the parse below.
+    pub(in crate::parser) fn looks_like_mdx_flow_expression(&self, at: usize) -> bool {
+        self.matching_brace_end(self.source, at)
+            .is_some_and(|brace_end| scan::only_ws_until_eol(self.source.as_bytes(), brace_end))
+    }
+
     /// Parses a block `{expression}` or `{/* comment */}` at the current line.
     ///
     /// Succeeds only when the closing `}` is followed by line whitespace.
@@ -35,7 +34,7 @@ impl<'a> Parser<'a> {
         if !self.has_closer_from(source, trimmed_start + 1, b'}') {
             return Ok(None);
         }
-        let Some((value, brace_end)) = braces::scan_balanced_braces(source, trimmed_start) else {
+        let Some(brace_end) = self.matching_brace_end(source, trimmed_start) else {
             return Ok(None);
         };
         if !scan::only_ws_until_eol(self.source.as_bytes(), brace_end) {
@@ -44,7 +43,7 @@ impl<'a> Parser<'a> {
 
         self.position = scan::after_trailing_line_ws(self.source.as_bytes(), brace_end);
         Ok(Some(Node::MdxFlowExpression(MdxFlowExpression {
-            value,
+            value: &source[trimmed_start + 1..brace_end - 1],
             span: Span::new(start as u32, self.position as u32),
         })))
     }
@@ -63,14 +62,15 @@ impl<'a> Parser<'a> {
         }
         // `skip_braces` only reports that nothing closed after walking to
         // the end of the content, so a run of unclosed braces would pay one
-        // walk each.
+        // walk each. The guard settles the run that has no `}` behind it at
+        // all; `matching_brace_end` settles the rest.
         if !self.has_closer_from(content, pos + 1, b'}') {
             return None;
         }
-        let (value, end) = braces::scan_balanced_braces(content, pos)?;
+        let end = self.matching_brace_end(content, pos)?;
         Some((
             Node::MdxTextExpression(MdxTextExpression {
-                value,
+                value: &content[pos + 1..end - 1],
                 span: Span::new((offset + pos) as u32, (offset + end) as u32),
             }),
             end,

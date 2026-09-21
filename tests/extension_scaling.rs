@@ -1,0 +1,410 @@
+//! Three opt-in extensions answered "nothing closes this" by reading to the
+//! end of the document, once for every opener, so ordinary text cost O(n²).
+//!
+//! Measured on the release build before the fix, at 32 KiB and 128 KiB —
+//! x16 for every x4 of input, which is the signature:
+//!
+//! - math: `$a ` 0.48 s / 6.4 s, `$1 ` 0.46 s / 6.8 s, `$$a ` 0.53 s /
+//!   8.1 s, and `$$ a` lines 0.30 s / 4.3 s;
+//! - MDX: `<A>` with one closer behind the run 0.78 s / 11.1 s, the same
+//!   inline 0.74 s / 13.1 s, `<A>` followed by `{` 0.41 s / 6.6 s, and a
+//!   brace run with one `}` behind it 0.42 s / 6.5 s, 0.41 s / 6.4 s
+//!   inline;
+//! - definition lists: lazy body lines 0.05 s / 0.65 s.
+//!
+//! None of these is a crafted document. `$5 for a $10 book` is prose, a
+//! shell snippet outside a fence is full of braces, and a list of terms
+//! under a definition body is what the extension is for.
+//!
+//! Each test pins the cost back to linear and the parse the memo now
+//! short-circuits: the shape an extension specifies has to survive the
+//! early answer, and the literal fallbacks have to stay literal.
+
+use std::sync::{Mutex, mpsc};
+use std::thread;
+use std::time::{Duration, Instant};
+
+use ferromark::allocator::Allocator;
+use ferromark::parser::{Parser, ParserOptions};
+use ferromark::renderer::HtmlRenderer;
+
+#[path = "support/pretty.rs"]
+mod pretty;
+
+/// Generous enough that a slow shared runner never trips it, and far below
+/// what the quadratic paths needed at these sizes.
+const BUDGET: Duration = Duration::from_secs(30);
+
+/// Every shape here is a few milliseconds of real work at 128 KiB, in a
+/// debug build too. A second is an absolute floor under the ratio test, so
+/// a uniformly slow machine cannot pass by being slow at both sizes.
+const SANITY: Duration = Duration::from_secs(5);
+
+const SMALL: usize = 32 * 1024;
+const LARGE: usize = 128 * 1024;
+
+/// The test harness runs these functions in parallel, and a measurement
+/// that shares four cores with another one measures the scheduler. One
+/// shape is timed at a time; the parses that only check output are too
+/// short to disturb them.
+static MEASURING: Mutex<()> = Mutex::new(());
+
+fn math_options() -> ParserOptions {
+    ParserOptions {
+        math: true,
+        ..ParserOptions::gfm()
+    }
+}
+
+fn mdx_options() -> ParserOptions {
+    ParserOptions::mdx()
+}
+
+fn definition_options() -> ParserOptions {
+    ParserOptions {
+        definition_lists: true,
+        ..ParserOptions::gfm()
+    }
+}
+
+fn render(source: &str, options: ParserOptions) -> String {
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, options)
+        .parse()
+        .expect("source should parse");
+    HtmlRenderer::new().render(&document).trim().to_string()
+}
+
+/// An MDX expression renders to nothing, so its nodes are pinned instead.
+fn tree(source: &str, options: ParserOptions) -> String {
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, options)
+        .parse()
+        .expect("source should parse");
+    let mut out = String::new();
+    pretty::format_document(&document, source, &mut out);
+    out
+}
+
+/// `unit` repeated to at least `bytes`, between a prefix and a suffix. The
+/// suffix is what the cheap "is there a closer at all" guards cannot answer
+/// with: one closer behind the run leaves every opener in it to be decided
+/// on its own.
+fn run_to(prefix: &str, unit: &str, bytes: usize, suffix: &str) -> String {
+    let mut out = String::with_capacity(bytes + prefix.len() + unit.len() + suffix.len());
+    out.push_str(prefix);
+    while out.len() < bytes {
+        out.push_str(unit);
+    }
+    out.push_str(suffix);
+    out
+}
+
+/// A definition body followed by lazy continuation lines, with a second
+/// item far behind them so the marker cache cannot settle the question.
+fn definition_run(bytes: usize) -> String {
+    let mut out = String::with_capacity(bytes + 32);
+    out.push_str("term\n: body\n");
+    let mut line = 0;
+    while out.len() < bytes {
+        out.push_str("lazy line ");
+        out.push_str(&line.to_string());
+        out.push('\n');
+        line += 1;
+    }
+    out.push_str("\npara\n\n: x\n");
+    out
+}
+
+/// Parses on a worker thread so a regression fails the suite in bounded
+/// time instead of hanging it. Best of three, so a scheduling stall on a
+/// busy runner has to hit every repetition to fail the build.
+fn parse_within_budget(source: &str, options: &ParserOptions) -> Duration {
+    let mut best = BUDGET;
+    for _ in 0..3 {
+        let owned = source.to_string();
+        let options = options.clone();
+        let (sender, receiver) = mpsc::channel();
+        thread::spawn(move || {
+            let started = Instant::now();
+            let allocator = Allocator::new();
+            let parsed = Parser::with_options(&allocator, &owned, options)
+                .parse()
+                .is_ok();
+            let _ = sender.send((parsed, started.elapsed()));
+        });
+        let (parsed, elapsed) = receiver
+            .recv_timeout(BUDGET)
+            .expect("an extension run should parse in bounded time");
+        assert!(parsed, "an extension run should parse to a document");
+        best = best.min(elapsed);
+    }
+    best
+}
+
+/// 4x the input. Linear costs about 4x the time; quadratic costs 16x, which
+/// is what every shape here measured before the fix.
+fn assert_linear(name: &str, options: &ParserOptions, shape: impl Fn(usize) -> String) {
+    let measuring = MEASURING
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let small = parse_within_budget(&shape(SMALL), options);
+    let large = parse_within_budget(&shape(LARGE), options);
+    drop(measuring);
+
+    assert!(
+        large < SANITY,
+        "{name}: 128 KiB took {large:?}, past the {SANITY:?} bound on its own"
+    );
+    let ratio = large.as_secs_f64() / small.as_secs_f64().max(1e-9);
+    assert!(
+        ratio < 8.0,
+        "{name}: 128 KiB took {large:?} against {small:?} for 32 KiB (x{ratio:.1}); \
+         linear is about x4, quadratic about x16"
+    );
+}
+
+#[test]
+fn inline_math_runs_cost_linear_time() {
+    // A `$` opener used to scan every later `$` to the end of the content,
+    // and — unlike the `^`/`~` script spans — kept going past a `$` that
+    // cannot close. The digit-prefixed form pays the same scan before it
+    // can even decide to open.
+    for (name, unit) in [
+        ("bare", "$a "),
+        ("digit", "$1 "),
+        ("display", "$$a "),
+        ("spaced", "$ a "),
+        ("after text", "a$1 "),
+    ] {
+        assert_linear(name, &math_options(), |bytes| run_to("", unit, bytes, ""));
+    }
+}
+
+#[test]
+fn inline_math_runs_with_one_closer_cost_linear_time() {
+    // One closing `$` behind the run is what a cheap last-closer guard
+    // cannot answer with.
+    for (name, unit) in [("bare", "$a "), ("digit", "$1 "), ("display", "$$a ")] {
+        assert_linear(name, &math_options(), |bytes| {
+            run_to("", unit, bytes, "$x$")
+        });
+    }
+}
+
+#[test]
+fn display_math_lines_cost_linear_time() {
+    // Every line opening with `$$` asks for the terminator twice: once
+    // through the block dispatch, once through the block-start probe.
+    for (name, unit) in [
+        ("text", "$$ a\n"),
+        ("bare", "$$x\n"),
+        ("indented", "  $$a\n"),
+    ] {
+        assert_linear(name, &math_options(), |bytes| run_to("", unit, bytes, ""));
+    }
+}
+
+#[test]
+fn jsx_open_runs_cost_linear_time() {
+    // `<A>` repeated nests one level per tag, so a single `</A>` closes the
+    // innermost opener only and every other one has to learn that for
+    // itself.
+    for (name, prefix, suffix) in [
+        ("flow, one closer", "", "</A>"),
+        ("text, one closer", "x", "</A>"),
+        ("flow, no closer", "", ""),
+        ("text, no closer", "x", ""),
+    ] {
+        assert_linear(name, &mdx_options(), |bytes| {
+            run_to(prefix, "<A>", bytes, suffix)
+        });
+    }
+}
+
+#[test]
+fn jsx_tags_over_brace_runs_cost_linear_time() {
+    // The tag walk steps over `{...}` whole, and an unclosed `{` reports
+    // that only after reading to the end of the slice.
+    for (name, unit) in [("bare", "{"), ("spaced", "{ "), ("nested", "{a{b")] {
+        assert_linear(name, &mdx_options(), |bytes| run_to("<A>", unit, bytes, ""));
+    }
+}
+
+#[test]
+fn brace_runs_with_one_closer_cost_linear_time() {
+    // `tests/mdx_brace_scaling.rs` covers the run with nothing to close it,
+    // which the last-closer guard answers. One `}` behind the run defeats
+    // that guard and leaves every brace to the balanced scan.
+    for (name, prefix, unit) in [
+        ("flow", "", "{"),
+        ("flow, spaced", "", "{ "),
+        ("text", "x", "{"),
+        ("text, spaced", "x", "{ "),
+        ("lines", "", "{\n"),
+        ("nested", "", "{a{b"),
+    ] {
+        assert_linear(name, &mdx_options(), |bytes| {
+            run_to(prefix, unit, bytes, "}")
+        });
+    }
+}
+
+#[test]
+fn lazy_definition_body_lines_cost_linear_time() {
+    // Every non-indented continuation line of a body asks whether a new
+    // item starts there, and the term scan walks to the next blank line to
+    // answer. A `:` marker further down the document keeps the marker cache
+    // from settling it.
+    assert_linear("lazy lines", &definition_options(), definition_run);
+}
+
+#[test]
+fn inline_math_keeps_its_shape() {
+    // The early answers replace scans that ended in the literal fallback,
+    // so each of these has to render exactly as it did.
+    for (source, expected) in [
+        ("$a $a $a ", "<p>$a $a $a</p>"),
+        ("$1 $1 ", "<p>$1 $1</p>"),
+        ("$$a $$a ", "<p>$$a $$a</p>"),
+        ("$ a $", "<p>$ a $</p>"),
+        ("a $5 and $10 b", "<p>a $5 and $10 b</p>"),
+        (
+            "$a$",
+            "<p><span class=\"ox-math ox-math-inline\" data-ox-tex=\"a\">\
+             <math><mtext>a</mtext></math></span></p>",
+        ),
+        (
+            "x $1*2$ y",
+            "<p>x <span class=\"ox-math ox-math-inline\" data-ox-tex=\"1*2\">\
+             <math><mtext>1*2</mtext></math></span> y</p>",
+        ),
+        (
+            "$a `$` b$",
+            "<p><span class=\"ox-math ox-math-inline\" data-ox-tex=\"a `$` b\">\
+             <math><mtext>a `$` b</mtext></math></span></p>",
+        ),
+    ] {
+        assert_eq!(render(source, math_options()), expected, "for {source:?}");
+    }
+}
+
+#[test]
+fn display_math_keeps_its_shape() {
+    for (source, expected) in [
+        ("$$ a\n$$ a\n", "<p>$$ a\n$$ a</p>"),
+        (
+            "$$ a\n$$\n",
+            "<div class=\"ox-math ox-math-block\" data-ox-tex=\" a&#10;\">\
+             <math display=\"block\"><mtext> a\n</mtext></math></div>",
+        ),
+        (
+            "$$\na\n$$\n",
+            "<div class=\"ox-math ox-math-block\" data-ox-tex=\"&#10;a&#10;\">\
+             <math display=\"block\"><mtext>\na\n</mtext></math></div>",
+        ),
+    ] {
+        assert_eq!(render(source, math_options()), expected, "for {source:?}");
+    }
+}
+
+#[test]
+fn jsx_runs_keep_their_shape() {
+    for (source, expected) in [
+        (
+            "<A><A></A>",
+            "<p><A><span class=\"ox-island\" data-ox-island=\"A\"></span></p>",
+        ),
+        (
+            "x<A><A></A>",
+            "<p>x<A><span class=\"ox-island\" data-ox-island=\"A\"></span></p>",
+        ),
+        ("<A><A>", "<p><A><A></p>"),
+        ("<A>{{{", "<p><A>{{{</p>"),
+        (
+            "<A>x</A>",
+            "<div class=\"ox-island\" data-ox-island=\"A\"><p>x</p>\n</div>",
+        ),
+    ] {
+        assert_eq!(render(source, mdx_options()), expected, "for {source:?}");
+    }
+}
+
+#[test]
+fn a_closer_hidden_from_one_tag_still_closes_a_later_one() {
+    // The memo is keyed by the opener it answers for, not by the slice
+    // alone. The first `<A>` never sees the `</A>` below it — the tag walk
+    // steps over the backtick run whole — and that answer must not reach
+    // the second `<A>`, which the same `</A>` does close.
+    assert_eq!(
+        render("<A>`\n<A>x</A>\n`\n", mdx_options()),
+        "<p><A>`</p>\n<div class=\"ox-island\" data-ox-island=\"A\"><p>x</p>\n</div>\n<p>`</p>"
+    );
+    assert_eq!(
+        render("<A>{\n<A>x</A>\n}\n", mdx_options()),
+        "<p><A>{</p>\n<div class=\"ox-island\" data-ox-island=\"A\"><p>x</p>\n</div>\n<p>}</p>"
+    );
+}
+
+#[test]
+fn braces_keep_their_shape() {
+    // An expression renders to nothing — its source is stored, never
+    // evaluated — so the nodes and their spans are what has to be pinned:
+    // the braces that stay literal, and the one that does close.
+    for (source, expected) in [
+        (
+            "{{{}",
+            "Document [0..4]\n  Paragraph [0..4]\n    Text \"{\" [0..1]\n    \
+             Text \"{\" [1..2]\n    MdxTextExpression value=\"\" [2..4]\n",
+        ),
+        (
+            "x{{{}",
+            "Document [0..5]\n  Paragraph [0..5]\n    Text \"x\" [0..1]\n    \
+             Text \"{\" [1..2]\n    Text \"{\" [2..3]\n    MdxTextExpression value=\"\" [3..5]\n",
+        ),
+        (
+            "{ { { }",
+            "Document [0..7]\n  Paragraph [0..7]\n    Text \"{\" [0..1]\n    \
+             Text \" \" [1..2]\n    Text \"{\" [2..3]\n    Text \" \" [3..4]\n    \
+             MdxTextExpression value=\" \" [4..7]\n",
+        ),
+        (
+            "{a}",
+            "Document [0..3]\n  MdxFlowExpression value=\"a\" [0..3]\n",
+        ),
+        (
+            "x{a}y",
+            "Document [0..5]\n  Paragraph [0..5]\n    Text \"x\" [0..1]\n    \
+             MdxTextExpression value=\"a\" [1..4]\n    Text \"y\" [4..5]\n",
+        ),
+        (
+            "{a{b}}",
+            "Document [0..6]\n  MdxFlowExpression value=\"a{b}\" [0..6]\n",
+        ),
+    ] {
+        assert_eq!(tree(source, mdx_options()), expected, "for {source:?}");
+    }
+}
+
+#[test]
+fn definition_lists_keep_their_shape() {
+    // The window the term scan records must not swallow the item that does
+    // start after it.
+    assert_eq!(
+        render(
+            "term\n: body\nlazy one\nlazy two\n\npara\n\n: x\n",
+            definition_options()
+        ),
+        "<dl class=\"ox-definition-list\">\n<dt>term</dt>\n\
+         <dd>body\nlazy one\nlazy two</dd>\n<dt>para</dt>\n<dd>x</dd>\n</dl>"
+    );
+    assert_eq!(
+        render("term\n: body\n\nnext\n: also\n", definition_options()),
+        "<dl class=\"ox-definition-list\">\n<dt>term</dt>\n<dd>body</dd>\n\
+         <dt>next</dt>\n<dd>also</dd>\n</dl>"
+    );
+    assert_eq!(
+        render("lazy only\nmore lazy\n\npara\n", definition_options()),
+        "<p>lazy only\nmore lazy</p>\n<p>para</p>"
+    );
+}

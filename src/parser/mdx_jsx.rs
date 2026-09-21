@@ -2,7 +2,7 @@
 
 use crate::ast::{MdxJsxFlowElement, MdxJsxTextElement, Node, Span};
 
-use super::Parser;
+use super::{JsxCloserGap, Parser};
 use crate::parser::error::ParseResult;
 
 mod braces;
@@ -12,10 +12,6 @@ mod scan;
 
 pub(super) fn looks_like_jsx_open(bytes: &[u8], at: usize) -> bool {
     scan::looks_like_jsx_open(bytes, at)
-}
-
-pub(super) fn looks_like_flow_expression(source: &str, at: usize) -> bool {
-    expression::looks_like_flow_expression(source, at)
 }
 
 impl<'a> Parser<'a> {
@@ -111,16 +107,83 @@ impl<'a> Parser<'a> {
         )))
     }
 
+    /// Whether anything closes the opening tag that ends at `from`.
+    ///
+    /// The answer is the one `scan::find_matching_close` reaches, so the
+    /// call below it decides the same way it always did; taking it from the
+    /// record is what keeps a run of openers from walking once each.
     fn has_mdx_jsx_closer(&self, content: &'a str, from: usize, name: Option<&'a str>) -> bool {
-        let key = (content.as_ptr() as usize, content.len(), name);
-        if let Some(present) = self.mdx_jsx_closer_presence.borrow().get(&key) {
-            return *present;
+        let slice = (content.as_ptr() as usize, content.len());
+        let cached = self
+            .mdx_jsx_closer_presence
+            .borrow()
+            .get(&(slice.0, slice.1, from, name))
+            .copied();
+        if let Some(present) = cached {
+            return present;
         }
-        let present = scan::has_closing_tag(content, from, name);
-        self.mdx_jsx_closer_presence
-            .borrow_mut()
-            .insert(key, present);
-        present
+        if let Some(gap) = self.mdx_jsx_closer_gap.get()
+            && gap.slice == slice
+            && gap.name == name
+            && gap.from <= from
+            && from < gap.until
+        {
+            return false;
+        }
+        let walk = scan::record_matching_closes(content, from, name, &mut |opener, closed| {
+            self.mdx_jsx_closer_presence
+                .borrow_mut()
+                .insert((slice.0, slice.1, opener, name), closed);
+        });
+        if !walk.closed {
+            let (from, until) = walk.read;
+            self.mdx_jsx_closer_gap.set(Some(JsxCloserGap {
+                slice,
+                name,
+                from,
+                until,
+            }));
+        }
+        walk.closed
+    }
+
+    /// The byte after the `}` that closes the `{` at `start`, or `None`
+    /// when nothing in `content` closes it.
+    ///
+    /// One walk decides every brace it passes, so a run of `{` costs one
+    /// walk in total. See `braces::record_brace_matches`.
+    ///
+    /// The record is kept as a distance, not as an offset: the same bytes
+    /// are asked about both as a slice of the source and as a slice of a
+    /// paragraph's content, which name one range under the same addresses
+    /// but count from different zeros. The window is keyed by the end of
+    /// the slice as well, because a slice that stops earlier is a slice a
+    /// closer can fall outside of.
+    pub(super) fn matching_brace_end(&self, content: &'a str, start: usize) -> Option<usize> {
+        let base = content.as_ptr() as usize;
+        let end = base + content.len();
+        let brace = base + start;
+        let cached = self.brace_matches.borrow().get(&(brace, end)).copied();
+        if let Some(distance) = cached {
+            return distance.map(|distance| start + distance);
+        }
+        if let Some((slice_end, from, until)) = self.brace_gap.get()
+            && slice_end == end
+            && from <= brace
+            && brace < until
+        {
+            return None;
+        }
+        let walk = braces::record_brace_matches(content.as_bytes(), start, &mut |brace, close| {
+            self.brace_matches
+                .borrow_mut()
+                .insert((base + brace, end), close.map(|close| close - brace));
+        });
+        if walk.close.is_none() {
+            let (from, until) = walk.read;
+            self.brace_gap.set(Some((end, base + from, base + until)));
+        }
+        walk.close
     }
 
     fn parse_jsx_phrasing(

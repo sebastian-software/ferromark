@@ -186,12 +186,12 @@ impl<'a> Parser<'a> {
             }
             b':' => self.starts_definition_body_at(line_start),
             b'{' => {
-                // `looks_like_flow_expression` walks to the end of the
-                // source to report that nothing closed, so a run of lines
-                // starting with an unclosed `{` would pay one walk each.
+                // The balanced scan walks to the end of the source to report
+                // that nothing closed, so a run of lines starting with an
+                // unclosed `{` would pay one walk each.
                 self.options.mdx
                     && self.has_closer_from(self.source, trimmed_start + 1, b'}')
-                    && super::mdx_jsx::looks_like_flow_expression(self.source, trimmed_start)
+                    && self.looks_like_mdx_flow_expression(trimmed_start)
             }
             b'<' => {
                 let bytes = self.source.as_bytes();

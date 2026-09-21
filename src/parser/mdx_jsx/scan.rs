@@ -1,5 +1,7 @@
 //! JSX tag scanning: fragments, member names, named attrs, and spreads.
 
+use smallvec::SmallVec;
+
 use crate::allocator::Vec;
 use crate::ast::{
     MdxJsxAttribute, MdxJsxAttributeEntry, MdxJsxAttributeValue, MdxJsxAttributeValueExpression,
@@ -89,13 +91,92 @@ pub(super) fn find_matching_close(
     from: usize,
     name: Option<&str>,
 ) -> Option<(usize, usize)> {
+    walk_close::<false>(source, from, name, &mut |_, _| {}).0
+}
+
+/// What one closing-tag walk settled.
+pub(super) struct CloseWalk {
+    /// Whether a closing tag matched the opening tag the walk started from.
+    pub closed: bool,
+    /// The range the walk read without stepping over anything that could
+    /// hide an opening tag. It is only meaningful when `closed` is false:
+    /// an opener in that range which `matched` did not report is an opener
+    /// nothing closes.
+    pub read: (usize, usize),
+}
+
+/// Reports whether a closing tag matches the opening tag that ends at
+/// `from`, and records the same answer for every opener the walk passes.
+///
+/// An opening tag only becomes a node once something closes it, and `<A>`
+/// repeated nests one level per tag: every opener but the innermost is
+/// unclosed, and each one used to walk the rest of the slice for itself.
+/// Every decision below depends on the position alone and never on where
+/// the walk began, so the closing tag that returns the walk to an opener's
+/// own depth is the one a walk starting at that opener stops at, and an
+/// opener this walk leaves open is one such a walk leaves open too. One
+/// walk therefore decides the whole run.
+///
+/// The openers left open at the end are reported as a range rather than one
+/// by one, so the record of a long run costs what the walk does. The range
+/// starts after the last region the walk stepped over that could hold a
+/// `<` — an expression, a backtick run, a tag whose own body holds one —
+/// because an opener in there is an opener this walk never scanned. Open
+/// tags before that point are reported individually, so a run interleaved
+/// with such regions still costs one walk.
+pub(super) fn record_matching_closes(
+    source: &str,
+    from: usize,
+    name: Option<&str>,
+    matched: &mut impl FnMut(usize, bool),
+) -> CloseWalk {
+    let (close, read) = walk_close::<true>(source, from, name, matched);
+    CloseWalk {
+        closed: close.is_some(),
+        read,
+    }
+}
+
+/// The closing-tag walk both scans above are.
+///
+/// With `RECORD` the walk keeps the opener stack it otherwise only counts,
+/// and reports the openers it passes: closed at the tag that returns the
+/// walk to that opener's depth, open at the end of the slice.
+fn walk_close<const RECORD: bool>(
+    source: &str,
+    from: usize,
+    name: Option<&str>,
+    matched: &mut impl FnMut(usize, bool),
+) -> (Option<(usize, usize)>, (usize, usize)) {
     let bytes = source.as_bytes();
+    // Deep enough for any nesting a document holds by hand; the runs that
+    // go past it are the ones the record exists for, and they spill once.
+    // Never touched without `RECORD`.
+    let mut open: SmallVec<[usize; 16]> = SmallVec::new();
+    if RECORD {
+        open.push(from);
+    }
     let mut cursor = from;
     let mut depth = 1u32;
+    let mut braces_end = None;
+    let mut read_from = from;
     while cursor < bytes.len() {
         match bytes[cursor] {
-            b'{' => cursor = skip_braces(bytes, cursor).unwrap_or(cursor + 1),
-            b'`' => cursor = skip_backticks(bytes, cursor).unwrap_or(cursor + 1),
+            b'{' => {
+                let (next, stepped_over) = skip_open_brace(bytes, cursor, &mut braces_end);
+                cursor = next;
+                if stepped_over {
+                    read_from = next;
+                }
+            }
+            b'`' => {
+                if let Some(next) = skip_backticks(bytes, cursor) {
+                    cursor = next;
+                    read_from = next;
+                } else {
+                    cursor += 1;
+                }
+            }
             b'<' => {
                 let Some(tag) = scan_tag_skip(source, cursor) else {
                     cursor += 1;
@@ -104,42 +185,55 @@ pub(super) fn find_matching_close(
                 if tag.name == name {
                     if tag.closing {
                         depth = depth.saturating_sub(1);
+                        if RECORD && let Some(opener) = open.pop() {
+                            matched(opener, true);
+                        }
                         if depth == 0 {
-                            return Some((tag.start, tag.end));
+                            return (Some((tag.start, tag.end)), (from, tag.end));
                         }
                     } else if !tag.self_closing {
                         depth = depth.saturating_add(1);
+                        if RECORD {
+                            open.push(tag.end);
+                        }
                     }
                 }
-                cursor = tag.end;
-            }
-            _ => cursor += 1,
-        }
-    }
-    None
-}
-
-pub(super) fn has_closing_tag(source: &str, from: usize, name: Option<&str>) -> bool {
-    let bytes = source.as_bytes();
-    let mut cursor = from;
-    while cursor < bytes.len() {
-        match bytes[cursor] {
-            b'{' => cursor = skip_braces(bytes, cursor).unwrap_or(cursor + 1),
-            b'`' => cursor = skip_backticks(bytes, cursor).unwrap_or(cursor + 1),
-            b'<' => {
-                let Some(tag) = scan_tag_skip(source, cursor) else {
-                    cursor += 1;
-                    continue;
-                };
-                if tag.closing && tag.name == name {
-                    return true;
+                // A tag whose own body holds a `<` hides whatever that `<`
+                // starts, so the run of scanned bytes restarts after it.
+                if memchr::memchr(b'<', &bytes[cursor + 1..tag.end]).is_some() {
+                    read_from = tag.end;
                 }
                 cursor = tag.end;
             }
             _ => cursor += 1,
         }
     }
-    false
+    if RECORD {
+        for opener in open {
+            if opener < read_from {
+                matched(opener, false);
+            }
+        }
+    }
+    (None, (read_from, cursor))
+}
+
+/// Steps over a `{` inside a tag walk.
+///
+/// [`skip_braces`] reports that nothing closes a brace only after reading to
+/// the end of the slice, so a run of them cost one walk each: 128 KiB of
+/// `<A>` followed by `{` took 6.6 s. The first failure settles the rest of
+/// the run — past the last `}` nothing can close a brace either — for the
+/// price of one backward search.
+fn skip_open_brace(bytes: &[u8], cursor: usize, braces_end: &mut Option<usize>) -> (usize, bool) {
+    if braces_end.is_some_and(|end| cursor >= end) {
+        return (cursor + 1, false);
+    }
+    let Some(close) = skip_braces(bytes, cursor) else {
+        *braces_end = Some(memchr::memrchr(b'}', bytes).map_or(0, |last| last + 1));
+        return (cursor + 1, false);
+    };
+    (close, true)
 }
 
 fn scan_jsx_name(bytes: &[u8], start: usize) -> Option<usize> {
@@ -373,3 +467,6 @@ fn skip_unquoted_value(bytes: &[u8], cursor: &mut usize) {
         *cursor += 1;
     }
 }
+
+#[cfg(test)]
+mod tests;

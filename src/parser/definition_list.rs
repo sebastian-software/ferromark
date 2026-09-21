@@ -128,6 +128,10 @@ impl<'a> Parser<'a> {
                 break;
             }
             if !self.is_definition_term_line(cursor, line) {
+                // Every line the scan passed is a term line, so a scan
+                // starting at any of them reaches this same line and stops
+                // here too.
+                self.record_definition_item_gap(start, cursor);
                 return None;
             }
             count += 1;
@@ -141,6 +145,11 @@ impl<'a> Parser<'a> {
         let end = cursor;
         let body_start = self.skip_blank_lines_from(cursor);
         if !self.starts_definition_body_at(body_start) {
+            // The run ended at a blank line or at the end of the source —
+            // a body line would have started one here — and the first line
+            // after it is no body either. A scan starting anywhere inside
+            // the run ends at that same line and answers the same way.
+            self.record_definition_item_gap(start, cursor);
             return None;
         }
 
@@ -357,8 +366,34 @@ impl<'a> Parser<'a> {
         self.options.definition_lists && self.definition_body_at(line_start).is_some()
     }
 
+    /// Whether a definition item begins at `start`.
+    ///
+    /// Every non-indented continuation line of a body asks this, and the
+    /// term scan behind it walks forward to the next blank line: a run of
+    /// lazy lines with a `:` marker somewhere later in the document — which
+    /// keeps `next_definition_marker` from settling it — re-walked the rest
+    /// of the run for every line, so 119 KB of them took 1.25 s, x4 for
+    /// every x2 of input. A scan that ends without an item ends the same way
+    /// for every start inside the run it walked, so recording that window
+    /// examines each line once.
     fn can_start_definition_item_at(&self, start: usize) -> bool {
-        self.options.definition_lists && self.collect_definition_terms(start).is_some()
+        if !self.options.definition_lists {
+            return false;
+        }
+        if let Some((from, until)) = self.definition_item_gap.get()
+            && from <= start
+            && start < until
+        {
+            return false;
+        }
+        self.collect_definition_terms(start).is_some()
+    }
+
+    /// Records that no definition item begins anywhere in `start..end`.
+    fn record_definition_item_gap(&self, start: usize, end: usize) {
+        if start < end {
+            self.definition_item_gap.set(Some((start, end)));
+        }
     }
 
     /// `line` is the caller's already-scanned slice for `line_start`.
