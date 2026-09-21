@@ -2,31 +2,29 @@ use super::*;
 use crate::ast::Node;
 
 #[test]
-fn find_closing_tag_matches_case_insensitively() {
+fn find_type1_end_tag_matches_any_raw_text_tag_case_insensitively() {
     assert_eq!(
-        super::html::find_closing_tag(b"end </SCRIPT> tail", 0, b"script"),
+        super::html::find_type1_end_tag(b"end </SCRIPT> tail", 0),
         Some(4)
     );
-    assert_eq!(
-        super::html::find_closing_tag(b"</style ", 0, b"style"),
-        Some(0)
-    );
-    assert_eq!(
-        super::html::find_closing_tag(b"<scriptsource>", 0, b"script"),
-        None
-    );
-    assert_eq!(super::html::find_closing_tag(b"", 0, b"pre"), None);
-    assert_eq!(super::html::find_closing_tag(b"</pr", 0, b"pre"), None);
+    assert_eq!(super::html::find_type1_end_tag(b"</textarea>", 0), Some(0));
+    // Any of the four end tags closes a type-1 block, whichever one
+    // opened it (CommonMark 0.31.2, section 4.6, end condition 1).
+    assert_eq!(super::html::find_type1_end_tag(b"x </style> y", 0), Some(2));
+    // The end tag has to be complete: no `>`, no close.
+    assert_eq!(super::html::find_type1_end_tag(b"</style ", 0), None);
+    assert_eq!(super::html::find_type1_end_tag(b"</pr", 0), None);
+    assert_eq!(super::html::find_type1_end_tag(b"</pre", 0), None);
+    assert_eq!(super::html::find_type1_end_tag(b"<scriptsource>", 0), None);
+    assert_eq!(super::html::find_type1_end_tag(b"</prefix>", 0), None);
+    assert_eq!(super::html::find_type1_end_tag(b"", 0), None);
     // Search starts at `from`, skipping earlier occurrences.
     assert_eq!(
-        super::html::find_closing_tag(b"</pre> </pre>", 1, b"pre"),
+        super::html::find_type1_end_tag(b"</pre> </pre>", 1),
         Some(7)
     );
     // A closing tag split across a newline never matches.
-    assert_eq!(
-        super::html::find_closing_tag(b"</scr\nipt>", 0, b"script"),
-        None
-    );
+    assert_eq!(super::html::find_type1_end_tag(b"</scr\nipt>", 0), None);
 }
 
 #[test]
