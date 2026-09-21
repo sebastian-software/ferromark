@@ -69,6 +69,21 @@ impl ParseError {
             ParseErrorKind::NestingTooDeep { span, .. } => span,
         }
     }
+
+    /// Translates the span through `map`.
+    ///
+    /// Container sub-parsers (block quotes, list items, footnote and
+    /// definition bodies, JSX children) parse a stripped copy of their
+    /// content, so an error raised inside one carries offsets into that copy.
+    /// Each container maps its children's spans back to its own source, and
+    /// the error takes the same map on its way out, so the offset a caller
+    /// reads points into the document it handed to the root parser.
+    #[must_use]
+    pub(in crate::parser) fn remapped(mut self, map: &impl super::spans::SpanMap) -> Self {
+        let span = self.span_mut();
+        *span = map.map_span(*span);
+        self
+    }
 }
 
 impl From<ParseErrorKind> for ParseError {

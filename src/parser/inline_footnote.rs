@@ -34,7 +34,7 @@ impl<'a> Parser<'a> {
         let body_start = start + 2;
         let has_closer = self.has_closer_from(content, body_start, b']');
         if has_closer {
-            let (close, _) = Self::scan_balanced(content, body_start);
+            let (close, _) = self.scan_balanced_matched(content, body_start);
             if close < content.len() && close > body_start {
                 let body = &content[body_start..close];
                 // An inline note cannot cross a paragraph boundary. Block parsing

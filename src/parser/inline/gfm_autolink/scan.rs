@@ -211,6 +211,11 @@ const fn ends_url(ch: char) -> bool {
 
 fn trim_trailing_punctuation(value: &str, start: usize, mut end: usize) -> usize {
     let bytes = value.as_bytes();
+    // The parentheses are counted once and the count of closers is lowered
+    // as they are stripped: no other byte this loop removes is a
+    // parenthesis, so the counts stay right without rescanning the
+    // candidate for every `)` — which made `http://x/` + `)`×n quadratic.
+    let mut parens: Option<(usize, usize)> = None;
     loop {
         if end <= start {
             return end;
@@ -218,27 +223,32 @@ fn trim_trailing_punctuation(value: &str, start: usize, mut end: usize) -> usize
         match bytes[end - 1] {
             b'?' | b'!' | b'.' | b',' | b':' | b'*' | b'_' | b'~' | b'\'' | b'"' => end -= 1,
             b')' => {
-                let opens = value[start..end].bytes().filter(|&b| b == b'(').count();
-                let closes = value[start..end].bytes().filter(|&b| b == b')').count();
+                let (opens, closes) = *parens.get_or_insert_with(|| {
+                    let candidate = &bytes[start..end];
+                    (
+                        memchr::memchr_iter(b'(', candidate).count(),
+                        memchr::memchr_iter(b')', candidate).count(),
+                    )
+                });
                 if closes > opens {
                     end -= 1;
+                    parens = Some((opens, closes - 1));
                 } else {
                     return end;
                 }
             }
             b';' => {
-                // Strip an entity-like `&name;` suffix entirely.
-                let entity_start = value[start..end - 1].rfind('&').map(|found| start + found);
-                match entity_start {
-                    Some(amp)
-                        if value[amp + 1..end - 1]
-                            .bytes()
-                            .all(|byte| byte.is_ascii_alphanumeric())
-                            && amp + 1 < end - 1 =>
-                    {
-                        end = amp;
-                    }
-                    _ => end -= 1,
+                // Strip an entity-like `&name;` suffix entirely. The name is
+                // alphanumeric, so walking back over it bounds the search
+                // for its `&` to the entity itself.
+                let mut name_start = end - 1;
+                while name_start > start && bytes[name_start - 1].is_ascii_alphanumeric() {
+                    name_start -= 1;
+                }
+                if name_start < end - 1 && name_start > start && bytes[name_start - 1] == b'&' {
+                    end = name_start - 1;
+                } else {
+                    end -= 1;
                 }
             }
             _ => return end,

@@ -151,7 +151,13 @@ impl<'a> Parser<'a> {
         let child_source = children::normalize_indentation(self.allocator, inner);
         let sub =
             self.sub_parser_with_lazy_lines(child_source.source, rustc_hash::FxHashSet::default());
-        let mut children = sub.parse()?.children;
+        let mut children = sub
+            .parse()
+            .map_err(|error| match &child_source.offsets {
+                Some(offsets) => children::remap_error(error, inner_start as u32, offsets),
+                None => error.remapped(&super::spans::OffsetMap(inner_start as u32)),
+            })?
+            .children;
         for child in &mut children {
             if let Some(offsets) = &child_source.offsets {
                 children::remap_node_spans(child, inner_start as u32, offsets);

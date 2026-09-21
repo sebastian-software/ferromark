@@ -44,22 +44,31 @@ impl<'a> Parser<'a> {
             return false;
         }
 
-        let header_cells = if self.options.merged_table_cells {
-            Self::table_row_cells_with_spans(first_line)
+        let header_cells = Self::table_header_cells(self.options.merged_table_cells, first_line);
+        header_cells > 0 && Self::table_delimiter_cells(second_line) == Some(header_cells)
+    }
+
+    /// The cells a trimmed header line contributes, counting horizontal
+    /// spans when merged cells are on.
+    pub(super) fn table_header_cells(merged_table_cells: bool, line: &'a str) -> usize {
+        if merged_table_cells {
+            Self::table_row_cells_with_spans(line)
                 .map(|(_, _, _, span)| span)
                 .sum()
         } else {
-            Self::table_row_cells(first_line).count()
-        };
-        let mut delimiter_cells = 0;
-        for cell in Self::table_row_cells(second_line) {
-            if delimiter_alignment(cell).is_none() {
-                return false;
-            }
-            delimiter_cells += 1;
+            Self::table_row_cells(line).count()
         }
+    }
 
-        header_cells > 0 && header_cells == delimiter_cells
+    /// The cell count of a trimmed delimiter row, or `None` when a cell is
+    /// not a delimiter cell.
+    pub(super) fn table_delimiter_cells(line: &'a str) -> Option<usize> {
+        let mut cells = 0;
+        for cell in Self::table_row_cells(line) {
+            delimiter_alignment(cell)?;
+            cells += 1;
+        }
+        Some(cells)
     }
 
     pub(super) fn parse_table(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
