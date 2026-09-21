@@ -21,7 +21,7 @@ import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPORT = Path("docs/reports/2026-09-21-native-release-fixed")
+REPORT = Path("docs/reports/2026-09-21-native-round-4")
 GUIDE = ROOT / "homepage/app/routes/guide/benchmarks.mdx"
 FIGURES = ROOT / "homepage/app/data/native-benchmarks.json"
 READMES = (ROOT / "README.md.src", ROOT / "README.md")

@@ -1,0 +1,29 @@
+{
+  "source_revision": "39b1f0b7",
+  "harness_tests": {
+    "command": "python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py'",
+    "result": "32 tests passed",
+    "when": "before both builds and all timing"
+  },
+  "source_caches": "reused from the preceding run's restoration a few hours earlier (restore.json); archive checksums unchanged",
+  "builds": {
+    "default": "prepare.py --compile with --bun-lock docs/reports/2026-09-16-native-segments/Cargo.lock, no PGO object in build.json",
+    "pgo": "prepare.py --pgo --compile, training disjoint from the measured half (asserted by prepare.py)",
+    "build_log": "build-log.txt (default build; the PGO build log is -pgo-warn-missing-function output and is not archived)"
+  },
+  "verification_before_timing": "run.py --verify-only on the default build: all 342 HTML outputs and every agreement classification identical to 2026-09-21-native-release-fixed",
+  "measurement": {
+    "log": "measure-log.txt",
+    "runs": 3,
+    "compilers_running_during_timing": "none; pgrep -x rustc, cargo and clang gated every run",
+    "parameters": "--rounds 3 --samples 6 --window-ms 40 --warmup-ms 60"
+  },
+  "source_audit": {
+    "harness": "source-audit.json.gz: 35 v1, 2 v2, 3495 bun, 10 md4c, 393 ox-content files, 0 mismatches (v2 path-list coverage gap, see PROVENANCE.md)",
+    "supplement": "source-audit-v2.json: 184 v2 files, 0 mismatches"
+  },
+  "artifact_audit": "python3 docs/reports/2026-09-21-native-round-4/audit.py: passed",
+  "output_equality": "342/342 engine/document HTML outputs byte-identical to 2026-09-21-native-release-fixed and its predecessors; all agreement classifications unchanged",
+  "attribution": "the position is compared with 2026-09-21-native-release-fixed (the repaired head 60602a5a); the three merged optimizations are measured one by one and on top of each other in docs/reports/2026-09-21-perf-round-4",
+  "workspace_gate_not_rerun": "cargo fmt/test/clippy passed on every merged pull request in CI; no compiler ran while the harness was timing."
+}
