@@ -49,7 +49,19 @@ const { version } = JSON.parse(
   await readFile(new URL("../../node/ferromark/package.json", import.meta.url), "utf8"),
 );
 
+// The landing page states the measured figures that
+// scripts/publish-native-readme.py derives from the archived native comparison;
+// a hard-coded number would survive the next measurement, so the prerendered
+// page must carry the current lead figure and the measured revision.
+const benchmarks = JSON.parse(
+  await readFile(new URL("../app/data/native-benchmarks.json", import.meta.url), "utf8"),
+);
+const leadFigure = benchmarks.figures.find((figure) => figure.id === "pulldown-cmark");
+
 const requiredFragments = [
+  `${leadFigure.fresh.toFixed(1)}×`,
+  benchmarks.revision,
+  'href="/guide/benchmarks"',
   '"/assets/',
   '"/favicon.ico"',
   'class="site-header"',
@@ -95,7 +107,7 @@ check(footer, "family footer", {
 
 check(homepage, "homepage", { required: requiredFragments, forbidden: forbiddenFragments });
 check(benchmarkPage, "v2 benchmark evidence", {
-  required: ["v2", "source revisions", "native-arm"],
+  required: ["v2", "source revisions", benchmarks.report, benchmarks.revision],
 });
 check(guidePage, "guide page", { required: requiredGuideFragments, forbidden: forbiddenFragments });
 

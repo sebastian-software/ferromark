@@ -1,0 +1,29 @@
+{
+  "source_revision": "bffc89f6",
+  "harness_tests": {
+    "command": "python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py'",
+    "result": "32 tests passed",
+    "when": "before both builds and all timing"
+  },
+  "source_caches": "restored into a fresh /private/tmp directory with restore.py (macOS had purged the preceding cache's files); archive checksums matched restore.json",
+  "builds": {
+    "default": "prepare.py --compile with --bun-lock docs/reports/2026-09-16-native-segments/Cargo.lock, no PGO object in build.json",
+    "pgo": "prepare.py --pgo --compile, training disjoint from the measured half (asserted by prepare.py)",
+    "build_log": "build-log.txt (default build; the PGO build log is -pgo-warn-missing-function output and is not archived)"
+  },
+  "verification_before_timing": "run.py --verify-only on the default build: all 342 HTML outputs and every agreement classification identical to 2026-09-16-native-segments",
+  "measurement": {
+    "log": "measure-log.txt",
+    "runs": 3,
+    "compilers_running_during_timing": "none; pgrep -x rustc, cargo and clang gated every run",
+    "parameters": "--rounds 3 --samples 6 --window-ms 40 --warmup-ms 60"
+  },
+  "source_audit": {
+    "harness": "source-audit.json.gz: 35 v1, 2 v2, 3495 bun, 10 md4c, 393 ox-content files, 0 mismatches (v2 path-list coverage gap, see PROVENANCE.md)",
+    "supplement": "source-audit-v2.json: 184 v2 files, 0 mismatches"
+  },
+  "artifact_audit": "python3 docs/reports/2026-09-21-native-release/audit.py: passed",
+  "output_equality": "342/342 engine/document HTML outputs byte-identical to 2026-09-16-native-segments; all agreement classifications unchanged",
+  "attribution": "the loss of relative position against every engine is attributed by the paired harness in docs/reports/2026-09-21-release-fixes-paired, not by this report",
+  "workspace_gate_not_rerun": "cargo fmt/test/clippy and the benchmark builds were NOT re-run in this measurement session: no compiler may run while the harness is timing. The gate for the measured revision is carried by its merged pull requests. This report measures an already-committed revision and edits no product source."
+}

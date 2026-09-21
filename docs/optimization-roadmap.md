@@ -67,13 +67,22 @@ an immutable account of its original measurements apart from a follow-up link.
   diagnostics and measured on the other half, PGO gives 1.204× fresh,
   1.240× reuse, 1.255× parse and 1.176× render on documents it never saw.
 
-The [new native comparison](reports/2026-09-15-native-arm/README.md) separately
-remeasures all six engines with matched syntax and renderer settings. V2 is
-effectively tied with OX fresh (1.000×) and reaches 1.018× OX throughput with
-reuse on the 14 all-six agreeing inputs. On 50 inputs agreeing among the five
-configurable engines, v2 reaches 1.90× v1 fresh and 1.85× with reuse. OX has
-no score on that broader set. These direct measurements replace extrapolation
-from optimization speedups; the older reports retain their frozen evidence.
+The [native comparison](reports/2026-09-15-native-arm/README.md) separately
+remeasures all six engines with matched syntax and renderer settings, and has
+been rerun at every milestone since: the
+[release-readiness run](reports/2026-09-15-release-native/README.md), the
+[segmented definition pass](reports/2026-09-16-native-segments/README.md),
+and the [release head](reports/2026-09-21-native-release/README.md). That
+last run found the head 7–12% behind the position `7c887a2b` had held
+against every engine; the [paired attribution](reports/2026-09-21-release-fixes-paired/README.md)
+traced it to the final review's laziness tracker, to the parser struct its
+memo tables had grown, and to two hashed lookups per bracket, and the
+[decision record](decisions/2026-09-21-lazy-tracker-cost.md) describes the
+fix: the tracker runs on demand and classifies lines from their first byte,
+the memo tables allocate on first use, and the closer memo answers repeats
+from one cell. The [comparison at the fixed revision](reports/2026-09-21-native-release-fixed/README.md) measures v2 at 1.98× v1, 2.53× pulldown-cmark, 3.54× md4c and 5.74× Bun's native engine fresh on the 50 five-engine documents, and 1.15× OX on the 14 all-six documents; the paired harness puts the fixed core at 0.982× fresh and 0.967× parse against the `7c887a2b` core, the remainder being the review's nesting cap and link probe on link-dense prose and sub-microsecond comments. These direct measurements replace
+extrapolation from optimization speedups; the older reports retain their
+frozen evidence.
 
 ## Next questions
 

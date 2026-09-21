@@ -1,0 +1,90 @@
+/private/tmp/native-release-build/sources/md4c/src/md4c.c:2012:36: warning: redefinition of typedef 'MD_FOOTNOTE_DEF' is a C11 feature [-Wtypedef-redefinition]
+ 2012 | typedef struct MD_FOOTNOTE_DEF_tag MD_FOOTNOTE_DEF;
+      |                                    ^
+/private/tmp/native-release-build/sources/md4c/src/md4c.c:146:36: note: previous definition is here
+  146 | typedef struct MD_FOOTNOTE_DEF_tag MD_FOOTNOTE_DEF;
+      |                                    ^
+1 warning generated.
+     Locking 1 package to latest compatible version
+      Adding ferromark v2.0.0-rc.2 (/private/tmp/native-release-build/sources/ferromark_v2)
+warning: profile package spec `bun_react_compiler` in profile `release` did not match any packages
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.45
+   Compiling unicode-ident v1.0.24
+   Compiling memchr v2.8.0
+   Compiling rustversion v1.0.22
+   Compiling thiserror v2.0.18
+   Compiling itoa v1.0.18
+   Compiling libc v0.2.186
+   Compiling heck v0.5.0
+   Compiling bun_opaque v0.0.0 (/private/tmp/native-release-build/bun/src/opaque)
+   Compiling allocator-api2 v0.2.21
+   Compiling konst_macro_rules v0.2.19
+   Compiling unicode-xid v0.2.6
+   Compiling konst v0.2.20
+   Compiling bun_mimalloc_sys v0.0.0 (/private/tmp/native-release-build/bun/src/mimalloc_sys)
+   Compiling fnv v1.0.7
+   Compiling bun_output_tags v0.0.0 (/private/tmp/native-release-build/bun/src/bun_output_tags)
+   Compiling bun_core v0.0.0 (/private/tmp/native-release-build/bun/src/bun_core)
+   Compiling bstr v1.12.1
+   Compiling ident_case v1.0.1
+   Compiling bytemuck v1.25.0
+   Compiling bun_simdutf_sys v0.0.0 (/private/tmp/native-release-build/bun/src/simdutf_sys)
+   Compiling smallvec v1.15.1
+   Compiling rustc-hash v2.1.2
+   Compiling zmij v1.0.23
+   Compiling scopeguard v1.2.0
+   Compiling bun_windows_sys v0.0.0 (/private/tmp/native-release-build/bun/src/windows_sys)
+   Compiling bitflags v2.11.1
+   Compiling bun_highway v0.0.0 (/private/tmp/native-release-build/bun/src/highway)
+   Compiling bun_wyhash v0.0.0 (/private/tmp/native-release-build/bun/src/wyhash)
+   Compiling paste v1.0.15
+   Compiling serde_core v1.0.228
+   Compiling bun_hash v0.0.0 (/private/tmp/native-release-build/bun/src/hash)
+   Compiling bumpalo v3.20.3
+   Compiling cfg-if v1.0.4
+   Compiling serde_json v1.0.151
+   Compiling static_assertions v1.1.0
+   Compiling hashbrown v0.15.5
+   Compiling pulldown-cmark v0.13.4
+   Compiling bun_alloc v0.0.0 (/private/tmp/native-release-build/bun/src/bun_alloc)
+   Compiling castaway v0.2.4
+   Compiling unicode-width v0.2.2
+   Compiling ox_content_allocator v3.2.3 (/private/tmp/native-release-build/sources/ox_content/crates/ox_content_allocator)
+   Compiling unicase v2.9.0
+   Compiling compact_str v0.10.0
+   Compiling ox_content_ast v3.2.3 (/private/tmp/native-release-build/sources/ox_content/crates/ox_content_ast)
+   Compiling getopts v0.2.24
+   Compiling pulldown-cmark-escape v0.11.0
+   Compiling native-comparison-worker v0.0.0 (/private/tmp/native-release-build/bun/comparison-worker)
+   Compiling html-escape v0.2.14
+   Compiling syn v2.0.117
+   Compiling const_format_proc_macros v0.2.34
+   Compiling ferromark v0.9.0 (/private/tmp/native-release-build/sources/ferromark_v1)
+   Compiling const_format v0.2.36
+   Compiling darling_core v0.21.3
+   Compiling thiserror-impl v2.0.18
+   Compiling strum_macros v0.26.4
+   Compiling bun_dispatch v0.0.0 (/private/tmp/native-release-build/bun/src/dispatch)
+   Compiling bun_core_macros v0.0.0 (/private/tmp/native-release-build/bun/src/bun_core_macros)
+   Compiling enum-map-derive v0.17.0
+   Compiling enum-map v2.7.3
+   Compiling strum v0.26.3
+   Compiling ox_content_renderer v3.2.3 (/private/tmp/native-release-build/sources/ox_content/crates/ox_content_renderer)
+   Compiling ox_content_parser v3.2.3 (/private/tmp/native-release-build/sources/ox_content/crates/ox_content_parser)
+   Compiling ferromark v2.0.0-rc.2 (/private/tmp/native-release-build/sources/ferromark_v2)
+   Compiling darling_macro v0.21.3
+   Compiling bun_libuv_sys v0.0.0 (/private/tmp/native-release-build/bun/src/libuv_sys)
+   Compiling darling v0.21.3
+   Compiling enumset_derive v0.14.0
+   Compiling enumset v1.1.10
+   Compiling bun_errno v0.0.0 (/private/tmp/native-release-build/bun/src/errno)
+   Compiling bun_ptr v0.0.0 (/private/tmp/native-release-build/bun/src/ptr)
+   Compiling bun_paths v0.0.0 (/private/tmp/native-release-build/bun/src/paths)
+   Compiling bun_collections v0.0.0 (/private/tmp/native-release-build/bun/src/collections)
+   Compiling bun_sys v0.0.0 (/private/tmp/native-release-build/bun/src/sys)
+   Compiling bun_url v0.0.0 (/private/tmp/native-release-build/bun/src/url)
+   Compiling bun_md v0.0.0 (/private/tmp/native-release-build/bun/src/md)
+    Finished `release` profile [optimized + debuginfo] target(s) in 26.64s
+/private/tmp/native-release-build/build.json
+exit=0

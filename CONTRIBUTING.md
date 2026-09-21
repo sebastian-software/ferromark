@@ -42,10 +42,11 @@ Website changes require `pnpm install --frozen-lockfile`, `pnpm format:check`,
 The Node and homepage workspaces use the managed Oxfmt configuration. Run
 `pnpm format` in the affected workspace before checking formatting. Their seeded
 ESLint, Oxlint, and spelling configurations may carry documented local adjustments;
-do not change the managed `.oxfmtrc.json`. Homepage's generated Ardo route table
-and frozen benchmark guide are excluded through `.prettierignore`; build output
-and generated route types are also excluded from linting. The build still checks
-the generated navigation and benchmark content.
+do not change the managed `.oxfmtrc.json`. Homepage's generated Ardo route table,
+frozen benchmark guide, and homepage benchmark figures are excluded through
+`.prettierignore`; build output and generated route types are also excluded from
+linting. The build still checks the generated navigation and benchmark content,
+including the measured figures the landing page states.
 
 The Node workspace keeps TypeScript 7 for `tsc` through the `@typescript/native`
 alias. The `typescript` alias supplies the TypeScript 6 API required by

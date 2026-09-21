@@ -43,6 +43,13 @@ fine until an author added one more footnote.
   scans, and SIMD reduce parser and renderer work. You can inspect or transform
   the document tree before rendering it.
 
+<!-- native-benchmarks -->
+On 50 real documents rendered to equivalent HTML, v2 completes Markdown to HTML
+2.0× faster than Ferromark v1, 2.5× faster than pulldown-cmark, 3.5× faster than
+md4c, and 5.7× faster than Bun's native engine (Apple M1 Pro, fresh parser
+state, 2026-09-21).
+<!-- /native-benchmarks -->
+
 [Syntax and features](https://ferromark.dev/guide/features),
 [correctness and limits](https://ferromark.dev/guide/correctness),
 and [measured comparisons](https://ferromark.dev/guide/benchmarks)

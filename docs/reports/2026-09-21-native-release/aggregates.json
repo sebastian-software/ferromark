@@ -1,0 +1,754 @@
+[
+  {
+    "group": "All-six HTML agreement (14 cases)",
+    "count": 14,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.935309892040747,
+      "v1": 0.6660761028890567,
+      "md4c": 0.24614036972484227,
+      "pulldown-cmark": 0.43806961158856594,
+      "bun": 0.15657775495714943
+    }
+  },
+  {
+    "group": "Configurable-five HTML agreement (50 cases)",
+    "count": 50,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5203164436074628,
+      "md4c": 0.3086172287186752,
+      "pulldown-cmark": 0.41125554850272195,
+      "bun": 0.1802974992482843
+    }
+  },
+  {
+    "group": "All 57 native workloads (output differences included)",
+    "count": 57,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7860602234985883,
+      "v1": 0.5139799646003703,
+      "md4c": 0.31041356589233193,
+      "pulldown-cmark": 0.41415958314650375,
+      "bun": 0.18373426358050304
+    }
+  },
+  {
+    "group": "comments (five-engine agreement)",
+    "count": 11,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.6811536584926632,
+      "md4c": 0.25264417620523566,
+      "pulldown-cmark": 0.5101105555658754,
+      "bun": 0.22845841512989076
+    }
+  },
+  {
+    "group": "comments (all workloads)",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9225640101546779,
+      "v1": 0.6944507066851607,
+      "md4c": 0.2655945116407602,
+      "pulldown-cmark": 0.5290495619908463,
+      "bun": 0.23928747769140546
+    }
+  },
+  {
+    "group": "encyclopedia (five-engine agreement)",
+    "count": 8,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.31178783160006357,
+      "md4c": 0.24911812041049983,
+      "pulldown-cmark": 0.3055016171438968,
+      "bun": 0.16246268685292256
+    }
+  },
+  {
+    "group": "encyclopedia (all workloads)",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.5744156255369639,
+      "v1": 0.3394155941492952,
+      "md4c": 0.26913806034977333,
+      "pulldown-cmark": 0.3171546268842422,
+      "bun": 0.1564623357367019
+    }
+  },
+  {
+    "group": "plain-prose (five-engine agreement)",
+    "count": 4,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.6780000786398702,
+      "md4c": 0.2720400519445264,
+      "pulldown-cmark": 0.3151866439199638,
+      "bun": 0.06267974709047129
+    }
+  },
+  {
+    "group": "plain-prose (all workloads)",
+    "count": 4,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 1.059712711533517,
+      "v1": 0.6780000786398702,
+      "md4c": 0.2720400519445264,
+      "pulldown-cmark": 0.3151866439199638,
+      "bun": 0.06267974709047129
+    }
+  },
+  {
+    "group": "readme (five-engine agreement)",
+    "count": 2,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5834851106706969,
+      "md4c": 0.3968929751213271,
+      "pulldown-cmark": 0.49506280097316946,
+      "bun": 0.24931237461945152
+    }
+  },
+  {
+    "group": "readme (all workloads)",
+    "count": 2,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8400713097046103,
+      "v1": 0.5834851106706969,
+      "md4c": 0.3968929751213271,
+      "pulldown-cmark": 0.49506280097316946,
+      "bun": 0.24931237461945152
+    }
+  },
+  {
+    "group": "reference (five-engine agreement)",
+    "count": 4,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.58038089353924,
+      "md4c": 0.40858532809825504,
+      "pulldown-cmark": 0.5739983931138289,
+      "bun": 0.2750447292785023
+    }
+  },
+  {
+    "group": "reference (all workloads)",
+    "count": 4,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8761760604508789,
+      "v1": 0.58038089353924,
+      "md4c": 0.40858532809825504,
+      "pulldown-cmark": 0.5739983931138289,
+      "bun": 0.2750447292785023
+    }
+  },
+  {
+    "group": "syntax-guard (all workloads)",
+    "count": 1,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7718106036690489,
+      "v1": 0.45387435876139187,
+      "md4c": 0.2197054990333608,
+      "pulldown-cmark": 0.6244553873600114,
+      "bun": 0.4740635073806556
+    }
+  },
+  {
+    "group": "technical-docs (five-engine agreement)",
+    "count": 21,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5058788666571138,
+      "md4c": 0.3525314150864299,
+      "pulldown-cmark": 0.3990659645117516,
+      "bun": 0.18131219692550968
+    }
+  },
+  {
+    "group": "technical-docs (all workloads)",
+    "count": 22,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7896074789260303,
+      "v1": 0.5057551888794518,
+      "md4c": 0.3536062567412074,
+      "pulldown-cmark": 0.4008925163643338,
+      "bun": 0.18279920968592114
+    }
+  },
+  {
+    "group": "commonmark (five-engine agreement)",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.403939219967639,
+      "md4c": 0.2565357105091075,
+      "pulldown-cmark": 0.3086964328144303,
+      "bun": 0.1182709720190757
+    }
+  },
+  {
+    "group": "commonmark (all workloads)",
+    "count": 17,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.6750744361271003,
+      "v1": 0.40631321589679487,
+      "md4c": 0.26661629602273507,
+      "pulldown-cmark": 0.32956619836482887,
+      "bun": 0.13466377203224073
+    }
+  },
+  {
+    "group": "gfm (shared subset) (five-engine agreement)",
+    "count": 38,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5636234922443341,
+      "md4c": 0.32716687564546887,
+      "pulldown-cmark": 0.4502491206401442,
+      "bun": 0.20597494658788112
+    }
+  },
+  {
+    "group": "gfm (shared subset) (all workloads)",
+    "count": 40,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8385907887743554,
+      "v1": 0.5679791818471375,
+      "md4c": 0.33114152440832956,
+      "pulldown-cmark": 0.4563923562765217,
+      "bun": 0.20967149344348784
+    }
+  },
+  {
+    "group": "<512 B (five-engine agreement)",
+    "count": 10,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.6246573203933397,
+      "md4c": 0.22636866881764015,
+      "pulldown-cmark": 0.4850715249986525,
+      "bun": 0.22618361073122262
+    }
+  },
+  {
+    "group": "<512 B (all workloads)",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8568853720345501,
+      "v1": 0.6246157351607627,
+      "md4c": 0.23956273010344137,
+      "pulldown-cmark": 0.5159417554723047,
+      "bun": 0.252183923111758
+    }
+  },
+  {
+    "group": "512 B\u20132 KiB (five-engine agreement)",
+    "count": 9,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5005657972569153,
+      "md4c": 0.31663951215980773,
+      "pulldown-cmark": 0.40111140629300035,
+      "bun": 0.19795345701304698
+    }
+  },
+  {
+    "group": "512 B\u20132 KiB (all workloads)",
+    "count": 9,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.724085440273738,
+      "v1": 0.5005657972569153,
+      "md4c": 0.31663951215980773,
+      "pulldown-cmark": 0.40111140629300035,
+      "bun": 0.19795345701304698
+    }
+  },
+  {
+    "group": "2\u20138 KiB (five-engine agreement)",
+    "count": 15,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.4460427265889308,
+      "md4c": 0.3326762567966166,
+      "pulldown-cmark": 0.3740153300403539,
+      "bun": 0.17713266707761405
+    }
+  },
+  {
+    "group": "2\u20138 KiB (all workloads)",
+    "count": 15,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7319772683495887,
+      "v1": 0.4460427265889308,
+      "md4c": 0.3326762567966166,
+      "pulldown-cmark": 0.3740153300403539,
+      "bun": 0.17713266707761405
+    }
+  },
+  {
+    "group": "8\u201332 KiB (five-engine agreement)",
+    "count": 9,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5514930333790862,
+      "md4c": 0.40797820498946863,
+      "pulldown-cmark": 0.4596958748488714,
+      "bun": 0.21181786546015743
+    }
+  },
+  {
+    "group": "8\u201332 KiB (all workloads)",
+    "count": 9,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8411164918152385,
+      "v1": 0.5514930333790862,
+      "md4c": 0.40797820498946863,
+      "pulldown-cmark": 0.4596958748488714,
+      "bun": 0.21181786546015743
+    }
+  },
+  {
+    "group": "32\u2013128 KiB (five-engine agreement)",
+    "count": 7,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5436617531388023,
+      "md4c": 0.27648485762714975,
+      "pulldown-cmark": 0.3562833966310336,
+      "bun": 0.09764862084181637
+    }
+  },
+  {
+    "group": "32\u2013128 KiB (all workloads)",
+    "count": 12,
+    "mode": "fresh",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7968672039377774,
+      "v1": 0.48855110877936153,
+      "md4c": 0.29605351814940817,
+      "pulldown-cmark": 0.35771116890344196,
+      "bun": 0.11910177794005895
+    }
+  },
+  {
+    "group": "All-six HTML agreement (14 cases)",
+    "count": 14,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 1.047946554463346,
+      "v1": 0.7615271353487604,
+      "md4c": 0.21841484809870818,
+      "pulldown-cmark": 0.4064183495337088,
+      "bun": 0.1318547660649721
+    }
+  },
+  {
+    "group": "Configurable-five HTML agreement (50 cases)",
+    "count": 50,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5605067428525337,
+      "md4c": 0.2989850002401854,
+      "pulldown-cmark": 0.4051510119325695,
+      "bun": 0.1689182459385667
+    }
+  },
+  {
+    "group": "All 57 native workloads (output differences included)",
+    "count": 57,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8156787807825533,
+      "v1": 0.5538821789676731,
+      "md4c": 0.30118501306477236,
+      "pulldown-cmark": 0.4082118550856888,
+      "bun": 0.1724023089182563
+    }
+  },
+  {
+    "group": "comments (five-engine agreement)",
+    "count": 11,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.7822809233406213,
+      "md4c": 0.21452334512056587,
+      "pulldown-cmark": 0.4576796704477384,
+      "bun": 0.18347574990954998
+    }
+  },
+  {
+    "group": "comments (all workloads)",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 1.0650290367354276,
+      "v1": 0.7978790237362746,
+      "md4c": 0.22863006765295926,
+      "pulldown-cmark": 0.4796198851991573,
+      "bun": 0.19442028491206664
+    }
+  },
+  {
+    "group": "encyclopedia (five-engine agreement)",
+    "count": 8,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.3299241582270754,
+      "md4c": 0.24685305203049654,
+      "pulldown-cmark": 0.3030521226877607,
+      "bun": 0.15692462344366498
+    }
+  },
+  {
+    "group": "encyclopedia (all workloads)",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.5761031586353432,
+      "v1": 0.35599096717285594,
+      "md4c": 0.2684556851480015,
+      "pulldown-cmark": 0.31612926755838655,
+      "bun": 0.15236170768851715
+    }
+  },
+  {
+    "group": "plain-prose (five-engine agreement)",
+    "count": 4,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.7574077991838453,
+      "md4c": 0.2804279311200596,
+      "pulldown-cmark": 0.3280066879343761,
+      "bun": 0.06203998261613872
+    }
+  },
+  {
+    "group": "plain-prose (all workloads)",
+    "count": 4,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 1.061983212941794,
+      "v1": 0.7574077991838453,
+      "md4c": 0.2804279311200596,
+      "pulldown-cmark": 0.3280066879343761,
+      "bun": 0.06203998261613872
+    }
+  },
+  {
+    "group": "readme (five-engine agreement)",
+    "count": 2,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.622371200229796,
+      "md4c": 0.39936828399218127,
+      "pulldown-cmark": 0.507534934934635,
+      "bun": 0.24641214184357016
+    }
+  },
+  {
+    "group": "readme (all workloads)",
+    "count": 2,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8480613018455206,
+      "v1": 0.622371200229796,
+      "md4c": 0.39936828399218127,
+      "pulldown-cmark": 0.507534934934635,
+      "bun": 0.24641214184357016
+    }
+  },
+  {
+    "group": "reference (five-engine agreement)",
+    "count": 4,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5957156745229055,
+      "md4c": 0.41506851651714655,
+      "pulldown-cmark": 0.5896134152112581,
+      "bun": 0.27392141995304514
+    }
+  },
+  {
+    "group": "reference (all workloads)",
+    "count": 4,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.873439654737978,
+      "v1": 0.5957156745229055,
+      "md4c": 0.41506851651714655,
+      "pulldown-cmark": 0.5896134152112581,
+      "bun": 0.27392141995304514
+    }
+  },
+  {
+    "group": "syntax-guard (all workloads)",
+    "count": 1,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8940915741567145,
+      "v1": 0.5594026990180039,
+      "md4c": 0.1783990402142533,
+      "pulldown-cmark": 0.540935923637158,
+      "bun": 0.36604420414998856
+    }
+  },
+  {
+    "group": "technical-docs (five-engine agreement)",
+    "count": 21,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5322929398135238,
+      "md4c": 0.3540451049571496,
+      "pulldown-cmark": 0.4027522645165156,
+      "bun": 0.17713552701925075
+    }
+  },
+  {
+    "group": "technical-docs (all workloads)",
+    "count": 22,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7963771342569516,
+      "v1": 0.5326086254713259,
+      "md4c": 0.35553924759237265,
+      "pulldown-cmark": 0.4048918762723633,
+      "bun": 0.1788638785631795
+    }
+  },
+  {
+    "group": "commonmark (five-engine agreement)",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.43523051367956483,
+      "md4c": 0.25757245856081495,
+      "pulldown-cmark": 0.31115189706125784,
+      "bun": 0.11517316085617646
+    }
+  },
+  {
+    "group": "commonmark (all workloads)",
+    "count": 17,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.6826951303357444,
+      "v1": 0.436652513183101,
+      "md4c": 0.2647836160936489,
+      "pulldown-cmark": 0.32912135593118425,
+      "bun": 0.12985381600062676
+    }
+  },
+  {
+    "group": "gfm (shared subset) (five-engine agreement)",
+    "count": 38,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.6071191734363804,
+      "md4c": 0.31339839071714215,
+      "pulldown-cmark": 0.4403727591988165,
+      "bun": 0.19063398864578232
+    }
+  },
+  {
+    "group": "gfm (shared subset) (all workloads)",
+    "count": 40,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8797685190552941,
+      "v1": 0.6127904647862763,
+      "md4c": 0.3181330676916359,
+      "pulldown-cmark": 0.44733787634585787,
+      "bun": 0.1944713510379711
+    }
+  },
+  {
+    "group": "<512 B (five-engine agreement)",
+    "count": 10,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.7159946649422626,
+      "md4c": 0.18831419514410827,
+      "pulldown-cmark": 0.428734694254095,
+      "bun": 0.17772837729140217
+    }
+  },
+  {
+    "group": "<512 B (all workloads)",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.9931192327627857,
+      "v1": 0.7207031239925933,
+      "md4c": 0.2019762273777738,
+      "pulldown-cmark": 0.4605764239789825,
+      "bun": 0.20054856896159196
+    }
+  },
+  {
+    "group": "512 B\u20132 KiB (five-engine agreement)",
+    "count": 9,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5418495044544228,
+      "md4c": 0.3123232228389161,
+      "pulldown-cmark": 0.3975328882352972,
+      "bun": 0.1882447941177646
+    }
+  },
+  {
+    "group": "512 B\u20132 KiB (all workloads)",
+    "count": 9,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7384069073371576,
+      "v1": 0.5418495044544228,
+      "md4c": 0.3123232228389161,
+      "pulldown-cmark": 0.3975328882352972,
+      "bun": 0.1882447941177646
+    }
+  },
+  {
+    "group": "2\u20138 KiB (five-engine agreement)",
+    "count": 15,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.468597430964727,
+      "md4c": 0.33508554093142295,
+      "pulldown-cmark": 0.37876824450236835,
+      "bun": 0.17419609613654438
+    }
+  },
+  {
+    "group": "2\u20138 KiB (all workloads)",
+    "count": 15,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7394145349065845,
+      "v1": 0.468597430964727,
+      "md4c": 0.33508554093142295,
+      "pulldown-cmark": 0.37876824450236835,
+      "bun": 0.17419609613654438
+    }
+  },
+  {
+    "group": "8\u201332 KiB (five-engine agreement)",
+    "count": 9,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5759225674611473,
+      "md4c": 0.41378123410597867,
+      "pulldown-cmark": 0.469162860033005,
+      "bun": 0.21007235343293473
+    }
+  },
+  {
+    "group": "8\u201332 KiB (all workloads)",
+    "count": 9,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.8454141425260101,
+      "v1": 0.5759225674611473,
+      "md4c": 0.41378123410597867,
+      "pulldown-cmark": 0.469162860033005,
+      "bun": 0.21007235343293473
+    }
+  },
+  {
+    "group": "32\u2013128 KiB (five-engine agreement)",
+    "count": 7,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "v1": 0.5849364254873193,
+      "md4c": 0.2822027340142514,
+      "pulldown-cmark": 0.3663274799715473,
+      "bun": 0.09666412427718597
+    }
+  },
+  {
+    "group": "32\u2013128 KiB (all workloads)",
+    "count": 12,
+    "mode": "reuse",
+    "speed_relative_to_v2": {
+      "v2": 1.0,
+      "ox-content": 0.7944758783804438,
+      "v1": 0.5179576426819104,
+      "md4c": 0.30142709036648935,
+      "pulldown-cmark": 0.3651030749316269,
+      "bun": 0.11809815787975382
+    }
+  }
+]
