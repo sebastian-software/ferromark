@@ -253,9 +253,8 @@ impl<'a> Parser<'a> {
                     }
                     let generated_start = body_source.len();
                     body_source.push('\n');
-                    source_map.push_line(
+                    source_map.push_blank_line(
                         generated_start,
-                        1,
                         cursor,
                         blank_next.saturating_sub(cursor),
                     );
@@ -318,7 +317,8 @@ impl<'a> Parser<'a> {
         let body_source = body_source.into_bump_str();
         let sub_doc = self
             .sub_parser_with_source_map(body_source, lazy_lines, &source_map)
-            .parse()?;
+            .parse()
+            .map_err(|error| error.remapped(&source_map))?;
         let mut children = sub_doc.children;
         for child in &mut children {
             source_map.remap_node_spans(child);

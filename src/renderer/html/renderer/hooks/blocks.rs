@@ -179,7 +179,7 @@ impl HtmlRenderer {
                         continue;
                     }
                     before_body = false;
-                    self.write_escaped(value);
+                    self.write_inline_text(value);
                 }
                 _ => {
                     before_body = false;

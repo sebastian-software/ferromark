@@ -21,8 +21,9 @@ mod collect;
 mod scan;
 
 use scan::{line_end_if_blank_after, next_blank_line, skip_ws_one_newline};
-// Block quotes and the footnote-label scan share these line recognizers.
-pub(super) use scan::{closes_paragraph_context, fence_open, is_fence_close};
+// Block quotes, list items and the footnote-label scan share these line
+// recognizers through the open-paragraph tracker.
+pub(super) use scan::{fence_open, is_fence_close};
 
 #[derive(Debug)]
 pub(super) struct ReferenceDef<'a> {

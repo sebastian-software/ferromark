@@ -47,11 +47,14 @@ impl HtmlRenderer {
                         continue;
                     }
                     before_body = false;
-                    self.write_escaped(value);
+                    self.write_inline_text(value);
                 }
                 _ => {
                     before_body = false;
-                    self.render_node(child);
+                    // Inline children of the marker paragraph, including raw
+                    // inline HTML: the block path would append a line break
+                    // after every HTML fragment.
+                    self.visit_inline_node(child);
                 }
             }
         }

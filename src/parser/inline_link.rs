@@ -167,7 +167,7 @@ impl<'a> Parser<'a> {
             && self.has_closer_from(content, close + 2, b']')
         {
             let label_start = close + 2;
-            let (label_end, _) = Self::scan_balanced(content, label_start);
+            let (label_end, _) = self.scan_balanced_matched(content, label_start);
             if label_end < content.len() && bytes[label_end] == b']' {
                 well_formed_reference = true;
                 let raw_label = &content[label_start..label_end];
@@ -352,6 +352,9 @@ impl<'a> Parser<'a> {
         offset: usize,
         link_start: usize,
     ) -> ParseResult<Option<(Node<'a>, usize)>> {
+        if !self.has_wiki_closer_from(content, link_start + 2) {
+            return Ok(None);
+        }
         let Some(close) = Self::scan_wiki_link_close(content.as_bytes(), link_start + 2) else {
             return Ok(None);
         };

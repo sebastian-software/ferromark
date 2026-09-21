@@ -1,10 +1,10 @@
 use crate::ast::{BlockQuote, Node, Span};
 
 use super::Parser;
+use super::lazy_paragraph::OpenParagraph;
 use super::line_scan::{
     line_end as scan_line_end, line_terminator_end, next_line_start as scan_next_line_start,
 };
-use super::reference::{closes_paragraph_context, fence_open, is_fence_close};
 use super::spans::SourceMap;
 use crate::parser::error::ParseResult;
 
@@ -25,10 +25,9 @@ impl<'a> Parser<'a> {
         let bytes = self.source.as_bytes();
         let mut inner = crate::allocator::String::with_capacity_in(128, self.allocator.bump());
         // Lazy continuation applies only while the quote's last block is
-        // an open paragraph: track blank lines and fenced code regions of
-        // the stripped content to know when that is the case.
-        let mut fence: Option<(u8, usize)> = None;
-        let mut paragraph_open = false;
+        // an open paragraph: follow the stripped content closely enough to
+        // know when that is the case.
+        let mut open_paragraph = OpenParagraph::default();
         let mut lazy_lines = rustc_hash::FxHashSet::default();
         let mut source_map = SourceMap::default();
 
@@ -102,6 +101,7 @@ impl<'a> Parser<'a> {
                 }
                 let stripped_trimmed = &after_gt[ws_len..];
                 inner.push_str(stripped_trimmed);
+                open_paragraph.observe(&inner[generated_start..], &self.options);
                 inner.push('\n');
                 let content_start =
                     line_start + trimmed_offset + 1 + Self::quote_marker_space_bytes(after_gt);
@@ -117,28 +117,9 @@ impl<'a> Parser<'a> {
                     source_len,
                 );
 
-                match fence {
-                    Some((fence_byte, fence_len)) => {
-                        if is_fence_close(stripped_trimmed, fence_byte, fence_len) {
-                            fence = None;
-                        }
-                    }
-                    None => fence = fence_open(stripped_trimmed),
-                }
-                // Lazy continuation only ever extends an open paragraph:
-                // blank lines close it, indented code is not a paragraph,
-                // and heading/thematic lines close it too. Deeper markers
-                // (nested quotes, list items) keep a paragraph open.
-                paragraph_open = fence.is_none()
-                    && !stripped_trimmed.trim().is_empty()
-                    && indent_columns < 4
-                    && !stripped_trimmed.starts_with('#')
-                    && !closes_paragraph_context(stripped_trimmed);
-
                 // Advance past this line (and the trailing newline if any).
                 self.position = line_next;
-            } else if fence.is_none()
-                && paragraph_open
+            } else if open_paragraph.paragraph_open()
                 && !Self::quote_lazy_blocked(trimmed)
                 && !self.line_starts_block()
             {
@@ -150,6 +131,7 @@ impl<'a> Parser<'a> {
                 let generated_start = inner.len();
                 lazy_lines.insert(inner.len() as u32);
                 inner.push_str(line);
+                open_paragraph.observe(line, &self.options);
                 inner.push('\n');
                 let line_next = line_terminator_end(bytes, line_end);
                 source_map.push_line(
@@ -168,7 +150,9 @@ impl<'a> Parser<'a> {
         // Recursively parse the inner content from the same arena — no copy.
         let inner_str = inner.into_bump_str();
         let sub_parser = self.sub_parser_with_source_map(inner_str, lazy_lines, &source_map);
-        let sub_doc = sub_parser.parse()?;
+        let sub_doc = sub_parser
+            .parse()
+            .map_err(|error| error.remapped(&source_map))?;
         let mut children = sub_doc.children;
         for child in &mut children {
             source_map.remap_node_spans(child);

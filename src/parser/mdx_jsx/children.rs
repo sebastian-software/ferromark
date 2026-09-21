@@ -64,6 +64,17 @@ impl super::super::spans::SpanMap for JsxSourceMap<'_> {
     }
 }
 
+pub(super) fn remap_error(
+    error: crate::parser::error::ParseError,
+    source_offset: u32,
+    offsets: &[u32],
+) -> crate::parser::error::ParseError {
+    error.remapped(&JsxSourceMap {
+        source_offset,
+        offsets,
+    })
+}
+
 pub(super) fn remap_node_spans(node: &mut Node<'_>, source_offset: u32, offsets: &[u32]) {
     super::super::Parser::remap_node_spans(
         node,

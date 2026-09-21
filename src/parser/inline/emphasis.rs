@@ -27,6 +27,43 @@ pub(in crate::parser) struct Delimiter {
     /// counted in nodes below and including it, or zero while it holds
     /// none. Pairing reads it back to measure the tree it is building.
     depth: u32,
+    /// The runs still worth visiting, threaded as a doubly linked list
+    /// over the vector (`NO_DELIMITER` at either end).
+    ///
+    /// A closer looks for its opener by walking back through the runs
+    /// before it, and a run that pairing has retired — everything strictly
+    /// inside a pair, or an unequal strikethrough pair with its contents —
+    /// can never take part again. Skipping such runs one by one still
+    /// visits them, and openers retired in one place and closed from
+    /// another made the walk quadratic: `~a`×n `b_`×m `a~~`×n visited the
+    /// same retired entries once per closer. Unlinking a retired run costs
+    /// it one visit in total.
+    prev: usize,
+    next: usize,
+}
+
+/// The end of the delimiter list in either direction.
+const NO_DELIMITER: usize = usize::MAX;
+
+/// Takes `index` out of the list of runs still worth visiting.
+///
+/// The depth of the node the run holds is folded into the run before it,
+/// which is the opener of the pair that retired it or a run inside that
+/// pair, so a pair built later around either still measures the tree it
+/// encloses. `remaining` is the caller's to zero: it marks the run spent
+/// for the pairing loop, and an unlinked run is always spent.
+fn unlink(delimiters: &mut [Delimiter], index: usize) {
+    let (prev, next, depth) = {
+        let run = &delimiters[index];
+        (run.prev, run.next, run.depth)
+    };
+    if prev != NO_DELIMITER {
+        delimiters[prev].next = next;
+        delimiters[prev].depth = delimiters[prev].depth.max(depth);
+    }
+    if next != NO_DELIMITER {
+        delimiters[next].prev = prev;
+    }
 }
 
 impl<'a> Parser<'a> {
@@ -53,6 +90,22 @@ impl<'a> Parser<'a> {
             offset + *pos,
             offset + *pos + run_len,
         );
+        *pos += run_len;
+        // A run that can neither open nor close — an intraword `_`, a run
+        // with whitespace on both sides — is literal text, and the spec
+        // keeps it off the delimiter stack. Recording it anyway only gave
+        // every later opener search one more entry to step over.
+        if !can_open && !can_close {
+            return;
+        }
+        let index = delimiters.len();
+        let prev = match delimiters.last_mut() {
+            Some(last) => {
+                last.next = index;
+                index - 1
+            }
+            None => NO_DELIMITER,
+        };
         delimiters.push(Delimiter {
             node_index: children.len() - 1,
             marker,
@@ -61,8 +114,9 @@ impl<'a> Parser<'a> {
             can_open,
             can_close,
             depth: 0,
+            prev,
+            next: NO_DELIMITER,
         });
-        *pos += run_len;
     }
 
     /// Flanking classification for the run between `before` and `after`.
@@ -175,6 +229,7 @@ impl<'a> Parser<'a> {
                     // It cannot open and has just failed to close: retire it
                     // rather than shifting the rest of the vector down.
                     delimiters[closer_idx].remaining = 0;
+                    unlink(delimiters, closer_idx);
                 }
                 closer_idx += 1;
                 continue;
@@ -186,8 +241,15 @@ impl<'a> Parser<'a> {
                 // cmark-gfm consumes the delimiter records for an unequal
                 // single/double pair, retaining their literal text. Retire
                 // the enclosed records too: they cannot pair across it later.
-                for delimiter in &mut delimiters[opener_idx..=closer_idx] {
-                    delimiter.remaining = 0;
+                let mut index = opener_idx;
+                loop {
+                    let next = delimiters[index].next;
+                    delimiters[index].remaining = 0;
+                    unlink(delimiters, index);
+                    if index == closer_idx {
+                        break;
+                    }
+                    index = next;
                 }
                 closer_idx += 1;
                 continue;
@@ -208,14 +270,25 @@ impl<'a> Parser<'a> {
             // inside the range about to be lifted. The opener counts too —
             // with characters left over it pairs again around the node it
             // already holds, which is how `***a** b*` nests. Retiring an
-            // entry means zeroing `remaining`: both the loop above and
-            // `find_opener` already skip those, and erasing it from the
-            // vector instead would shift every later entry down — which is
-            // what made a paragraph full of emphasis quadratic.
+            // entry means zeroing `remaining` and unlinking it: erasing it
+            // from the vector instead would shift every later entry down —
+            // which is what made a paragraph full of emphasis quadratic —
+            // and leaving it linked would keep every later opener search
+            // stepping over it. Only the runs still linked are visited;
+            // a run retired earlier already folded its depth into one of
+            // them (see `unlink`).
             let mut enclosed = delimiters[opener_idx].depth;
-            for delimiter in &mut delimiters[opener_idx + 1..closer_idx] {
-                enclosed = enclosed.max(delimiter.depth);
-                delimiter.remaining = 0;
+            let mut inner_idx = delimiters[opener_idx].next;
+            while inner_idx != closer_idx {
+                debug_assert_ne!(
+                    inner_idx, NO_DELIMITER,
+                    "the closer is linked after its opener"
+                );
+                let next = delimiters[inner_idx].next;
+                enclosed = enclosed.max(delimiters[inner_idx].depth);
+                delimiters[inner_idx].remaining = 0;
+                unlink(delimiters, inner_idx);
+                inner_idx = next;
             }
             let depth = enclosed.max(inside) + 1;
             if self.options.max_nesting_depth > 0
@@ -353,29 +426,33 @@ impl OpenersBottom {
 /// Nearest opener that may pair with `delimiters[closer_idx]`, stopping at
 /// `bottom` — a `node_index` a previous failed search for this closer class
 /// already proved nothing below could match.
+///
+/// Walks the linked runs, so retired ones cost nothing; a spent run that
+/// still holds a node stays linked (its depth is read by the pair around it)
+/// and is skipped by its `remaining` of zero.
 fn find_opener(
     delimiters: &[Delimiter],
     closer_idx: usize,
     bottom: Option<usize>,
 ) -> Option<usize> {
     let closer = &delimiters[closer_idx];
-    for opener_idx in (0..closer_idx).rev() {
+    let mut opener_idx = closer.prev;
+    while opener_idx != NO_DELIMITER {
         let opener = &delimiters[opener_idx];
         if bottom.is_some_and(|bottom| opener.node_index < bottom) {
             return None;
         }
-        if opener.marker != closer.marker || !opener.can_open || opener.remaining == 0 {
-            continue;
+        if opener.marker == closer.marker && opener.can_open && opener.remaining != 0 {
+            // Rule of three: when one side can both open and close, sums
+            // divisible by three only pair if both lengths are.
+            let sum_of_three = (opener.can_close || closer.can_open)
+                && (opener.orig_len + closer.orig_len).is_multiple_of(3)
+                && !(opener.orig_len.is_multiple_of(3) && closer.orig_len.is_multiple_of(3));
+            if !sum_of_three {
+                return Some(opener_idx);
+            }
         }
-        // Rule of three: when one side can both open and close, sums
-        // divisible by three only pair if both lengths are.
-        let sum_of_three = (opener.can_close || closer.can_open)
-            && (opener.orig_len + closer.orig_len).is_multiple_of(3)
-            && !(opener.orig_len.is_multiple_of(3) && closer.orig_len.is_multiple_of(3));
-        if sum_of_three {
-            continue;
-        }
-        return Some(opener_idx);
+        opener_idx = opener.prev;
     }
     None
 }

@@ -215,15 +215,15 @@ impl<'a> Parser<'a> {
                         self.advance();
                     }
 
-                    if closing_fence_len >= fence_len {
-                        // Skip rest of line
-                        while let Some(ch) = self.peek() {
-                            if matches!(ch, '\n' | '\r') {
-                                self.position = line_terminator_end(bytes, self.position);
-                                break;
-                            }
-                            self.advance();
-                        }
+                    // A closing fence carries nothing but trailing
+                    // whitespace, exactly as `fenced_close_bounds` requires
+                    // of an unindented opener: ``` bar is content.
+                    if closing_fence_len >= fence_len
+                        && bytes[self.position..line_start + line.len()]
+                            .iter()
+                            .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'))
+                    {
+                        self.position = next_line;
                         break;
                     }
                 }

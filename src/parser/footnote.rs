@@ -141,17 +141,24 @@ fn dedent_body<'a>(
         };
         let dedented = &line[consumed..];
         let generated_start = out.len();
+        let has_newline = current_line_end < body.len();
         out.push_str(dedented);
-        if current_line_end < body.len() {
+        if has_newline {
             out.push('\n');
         }
-        source_map.push_line(
-            generated_start,
-            dedented.len() + usize::from(current_line_end < body.len()),
-            source_offset + line_start + consumed,
-            current_line_end.saturating_sub(line_start + consumed)
-                + next_line.saturating_sub(current_line_end),
-        );
+        let source_start = source_offset + line_start + consumed;
+        let source_len = current_line_end.saturating_sub(line_start + consumed)
+            + next_line.saturating_sub(current_line_end);
+        if dedented.is_empty() && has_newline {
+            source_map.push_blank_line(generated_start, source_start, source_len);
+        } else {
+            source_map.push_line(
+                generated_start,
+                dedented.len() + usize::from(has_newline),
+                source_start,
+                source_len,
+            );
+        }
         line_start = next_line;
         index += 1;
     }
@@ -220,7 +227,8 @@ impl<'a> Parser<'a> {
                     rustc_hash::FxHashSet::default(),
                     &body.source_map,
                 )
-                .parse()?;
+                .parse()
+                .map_err(|error| error.remapped(&body.source_map))?;
             let mut children = sub_doc.children;
             for child in &mut children {
                 body.source_map.remap_node_spans(child);

@@ -34,6 +34,8 @@ struct SourceMapLine {
     source_block_start: usize,
     source_start: usize,
     source_end: usize,
+    /// A run of blank lines kept as one entry; see [`SourceMap::push_blank_line`].
+    blank_run: bool,
 }
 
 impl SourceMap {
@@ -83,6 +85,42 @@ impl SourceMap {
             source_block_start,
             source_start,
             source_end: source_start + source_len,
+            blank_run: false,
+        });
+    }
+
+    /// Records one blank line of a sub-source, generated as a single `\n`
+    /// at `generated_start` from the `source_len` bytes at `source_start`.
+    ///
+    /// Consecutive blank lines share one entry. A container re-materializes
+    /// every interior blank line of its content for the sub-parser, and
+    /// every nesting level does so again for its own copy, so one entry per
+    /// blank line cost forty bytes per line per level: a hundred-level list
+    /// followed by a hundred thousand blank lines held four hundred
+    /// megabytes of source maps. No node starts or ends inside a blank run,
+    /// so a run mapped as a whole loses nothing a span can observe.
+    pub(in crate::parser) fn push_blank_line(
+        &mut self,
+        generated_start: usize,
+        source_start: usize,
+        source_len: usize,
+    ) {
+        if let Some(last) = self.lines.last_mut()
+            && last.blank_run
+            && last.generated_end == generated_start
+            && last.source_end == source_start
+        {
+            last.generated_end += 1;
+            last.source_end += source_len;
+            return;
+        }
+        self.lines.push(SourceMapLine {
+            generated_start,
+            generated_end: generated_start + 1,
+            source_block_start: source_start,
+            source_start,
+            source_end: source_start + source_len,
+            blank_run: true,
         });
     }
 
@@ -153,7 +191,7 @@ impl SourceMap {
 }
 
 /// Constant translation for nodes parsed from a borrowed sub-source.
-struct OffsetMap(u32);
+pub(in crate::parser) struct OffsetMap(pub(in crate::parser) u32);
 
 impl SpanMap for OffsetMap {
     fn map_span(&self, span: Span) -> Span {
