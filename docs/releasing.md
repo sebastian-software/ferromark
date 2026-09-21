@@ -19,10 +19,11 @@ repository root package, and the release follows the organization's
    the changelog section that becomes the release notes.
 3. Merge it. Release Please writes the version commit, creates the `v<version>`
    tag and the GitHub release, and sets `releases_created`.
-4. The gated jobs in the same workflow run from that tag: the crate goes to
-   crates.io, then the eight native addons are built, assembled, verified and
-   published to npm, sidecars before the facade, and the published versions are
-   confirmed on the registry.
+4. The gated jobs in the same workflow run from that tag. They gate on Release
+   Please alone, so the crates.io publication and the native addon pipeline start
+   in parallel: the crate goes to crates.io while the eight native addons are
+   built, assembled, verified and published to npm, sidecars before the facade,
+   and the published versions are confirmed on the registry.
 
 Nothing else publishes. Merging ordinary source still only opens or updates the
 release pull request.

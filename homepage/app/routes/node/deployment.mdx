@@ -47,8 +47,11 @@ does not verify native loading.
 
 ## Input and API boundaries
 
-Input is limited to 4,294,967,294 UTF-8 bytes. Oversized input throws an
-`InvalidArg` native error. Unknown option names throw `TypeError`.
+Ferromark stores source positions as compact `u32` offsets, so the parser
+addresses just under 4 GB of Markdown. Node.js strings stop far below that
+(`buffer.constants.MAX_STRING_LENGTH`), so no JavaScript input can reach the
+limit and the binding does not check for it. Unknown option names throw
+`TypeError`.
 
 The package exposes Markdown rendering, metadata, and highlighter helpers.
 `mdx: true` enables syntax capture and static island output; it does not compile

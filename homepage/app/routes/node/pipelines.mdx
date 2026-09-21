@@ -59,8 +59,8 @@ const server = createServer((_request, response) => {
 server.listen(3000, "127.0.0.1");
 ```
 
-`toHtmlBuffer()` returns a Node.js `Buffer` backed by the native output
-allocation. It avoids converting HTML into a JavaScript string when the next
+`toHtmlBuffer()` returns a UTF-8 Node.js `Buffer` copied from the rendered
+bytes. It avoids converting the HTML into a JavaScript string when the next
 consumer wants bytes. Reusable renderers also expose `renderer.toHtmlBuffer()`.
 
 ## Deploy under a subpath

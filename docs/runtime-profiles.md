@@ -164,15 +164,21 @@ since become `Cow<'static, str>`, which removes the asymmetry rather than
 changing any number recorded here — see the
 [decision record](decisions/2026-09-15-borrowed-renderer-options.md).
 
-Profiles do not remove baseline CommonMark reference discovery, source
-normalization, or the renderer's current structural AST scan. The last one still
-runs when both heading IDs and inline TOC are off and is a separate implementation
-optimization opportunity. Nesting limits stay enabled. HTML policy and syntax
-support remain product decisions, not settings to remove solely for a score.
+Profiles do not remove baseline CommonMark reference discovery or source
+normalization. At the time of measurement they did not remove the renderer's
+structural AST scan either: it still ran when both heading IDs and inline TOC
+were off, which this study named as a separate implementation optimization
+opportunity. A one-shot render now runs that scan only while `heading_ids` is
+enabled, so the strict profiles measured here no longer pay it. Nesting limits
+stay enabled. HTML policy and syntax support remain product decisions, not
+settings to remove solely for a score.
 
-Two inherited public renderer fields, `highlight` and `soft_break`, currently have
-no rendering effect. They are measured as controls and documented in the source
-map; they cannot yet serve as functional profile dimensions.
+At the time of measurement two inherited public renderer fields, `highlight` and
+`soft_break`, had no rendering effect; they were measured as controls rather than
+as functional profile dimensions. The 2.0.0 API freeze then removed
+`HtmlRendererOptions::highlight` and wired `soft_break` through, so the
+configured value is now emitted for every line ending in rendered inline text.
+See the [API surface decision](decisions/2026-09-17-api-surface.md).
 
 ## Next implementation targets
 
@@ -184,7 +190,9 @@ The results suggest three separate follow-ups:
    necessary parsing, text joining, and source mapping; a late definition marker
    can retain speculative term probes on earlier paragraphs.
 2. Avoid renderer preparation work when the selected output profile needs neither
-   heading IDs nor TOC discovery. Measure this separately from profile selection.
+   heading IDs nor TOC discovery. This has since been implemented: a one-shot
+   render derives the scan's facts only while `heading_ids` is on, and otherwise
+   skips the walk. The tables above predate that change and were not remeasured.
 3. Once each use-case contract is settled, expose a profile that pairs parser
    and renderer settings. A named profile should preserve its documented syntax
    and output policy while implementation optimizations evolve underneath it.

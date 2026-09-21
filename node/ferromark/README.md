@@ -104,8 +104,8 @@ Create one renderer per worker; its options are fixed at construction.
 ## Buffer output
 
 Use `toHtmlBuffer()` when the rendered HTML goes directly to a byte-oriented
-consumer such as an HTTP response. It returns a UTF-8 Node.js `Buffer` backed by
-the native output allocation, avoiding the extra JavaScript string transcode.
+consumer such as an HTTP response. It returns a UTF-8 Node.js `Buffer` copied
+from the rendered bytes, which skips the JavaScript string transcode.
 
 ```js
 import { toHtmlBuffer } from "ferromark";
