@@ -20,8 +20,13 @@ description = "Arena-allocated Markdown parser and HTML renderer"
 # The package sits at the repository root, so the published archive is an
 # explicit allow-list rather than "everything Cargo finds". Compare
 # `cargo package --list` after changing it: docs/, benchmarks/, homepage/,
-# node/ and scripts/ must stay out, while the README, the upstream MIT notice
-# and the MIT license text ship with the crate.
+# node/ and scripts/ must stay out as directories, while the README, the
+# upstream MIT notice and the MIT license text ship with the crate.
+# `/tests` ships, so everything those tests embed with `include_str!` has to
+# ship with them or the published crate cannot compile its own test targets.
+# The three regression corpora below are therefore named as individual files —
+# the only entries taken from a directory that is otherwise never published.
+# `scripts/test_release_package.py` guards both halves of that rule.
 include = [
   "/src",
   "/tests",
@@ -31,6 +36,9 @@ include = [
   "/LICENSE",
   "/LICENSE-MIT",
   "/UPSTREAM.md",
+  "/docs/reports/2026-09-14-correctness-fixes/raw/cmark-oracle/results.json",
+  "/docs/reports/2026-09-14-reference-compatibility/raw/bindings-before-aligned/results.json",
+  "/benchmarks/compatibility-audit/fixtures/gfm-examples.json",
 ]
 
 [lints]
